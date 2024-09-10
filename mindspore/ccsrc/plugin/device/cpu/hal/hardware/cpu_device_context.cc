@@ -76,6 +76,7 @@
 #include "kernel/oplib/oplib.h"
 #include "runtime/device/move_to.h"
 #include "include/backend/debug/profiler/profiling.h"
+#include "runtime/device/tensor_array.h"
 
 namespace mindspore {
 namespace device {
@@ -175,20 +176,7 @@ std::vector<void *> CPUDeviceResManager::AllocateContinuousMemory(const std::vec
 std::pair<vector<size_t>, vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  std::unordered_set<tensor::TensorPtr> unique_list;
-  vector<size_t> before_padding_sizes;
-  for (size_t i = 0; i < tensor_list.size(); ++i) {
-    const auto &tensor = tensor_list[i];
-    if (!unique_list.insert(tensor).second) {
-      MS_LOG(EXCEPTION) << "Tensor input should be unique. Tensor[" << i << "], " << tensor->ToString();
-    }
-    auto real_size = tensor->Size();
-    if (tensor->device_address() != nullptr) {
-      const auto &device_address = std::dynamic_pointer_cast<DeviceAddress>(tensor->device_address());
-      real_size = device_address->GetSize();
-    }
-    before_padding_sizes.emplace_back(real_size);
-  }
+  std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
   std::vector<size_t> after_padding_sizes = before_padding_sizes;
   auto stream_id = DefaultStream();
   auto device_ptr_list = AllocateContinuousMemory(before_padding_sizes, stream_id);

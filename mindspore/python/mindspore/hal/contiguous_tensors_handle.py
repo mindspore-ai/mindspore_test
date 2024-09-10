@@ -78,7 +78,7 @@ class ContiguousTensorsHandle:
         [2, 3]
     """
 
-    def __init__(self, tensor_list, enable_mem_align):
+    def __init__(self, tensor_list, enable_mem_align=True):
         if isinstance(tensor_list, (list, tuple)):
             for tensor in tensor_list:
                 if not isinstance(tensor, (Tensor, Tensor_)):

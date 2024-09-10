@@ -19,9 +19,11 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "pipeline/pynative/base.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace hal {
+device::DeviceContext *GetDeviceCtx();
 // Alloc device memory for tensor list
 py::object AllocDeviceMemoryForTensorList(const py::object &tensor_list, bool enable_mem_align = True);
 py::object GetSliceByTensorListIndexHandle(const py::object &object, const py::object &before_size_obj,
