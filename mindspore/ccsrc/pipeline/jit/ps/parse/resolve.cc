@@ -393,9 +393,10 @@ AnfNodePtr ResolveObjectAndAddToManager(const FuncGraphManagerPtr &manager, cons
     auto new_fg = GetValueNode<FuncGraphPtr>(resolved_node);
     auto fg = node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
-    // If func_graph has amp strategy but its python obj does not, it may be from cache and need to be cloned.
-    if (new_fg->amp_strategy() != nullptr && new_fg->amp_strategy() != fg->amp_strategy() &&
-        !py::hasattr(obj, FUNC_GRAPH_FLAG_AMP_STRATEGY)) {
+    // If func_graph has amp strategy (not to_float) but its python obj does not,
+    // it may be from cache and need to be cloned.
+    if (new_fg->amp_strategy() != nullptr && new_fg->amp_strategy()->IsEnable() &&
+        !py::hasattr(obj, FUNC_GRAPH_FLAG_AMP_STRATEGY) && new_fg->amp_strategy() != fg->amp_strategy()) {
       new_fg = BasicClone(new_fg);
       new_fg->set_amp_strategy(fg->amp_strategy());
       resolved_node = NewValueNode(new_fg);

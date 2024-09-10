@@ -21,7 +21,7 @@ from tests.mark_utils import arg_mark
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_fallback_round_tensor():
     """
@@ -38,6 +38,26 @@ def test_fallback_round_tensor():
     x = Tensor(np.array([0.1, 4.51, 9.9]), mstype.float32)
     out = net(x)
     expect = Tensor(np.array([0.0, 5.0, 10.0]))
+    np.testing.assert_almost_equal(out.asnumpy(), expect.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+def test_fallback_round_tensor_decimals():
+    """
+    Feature: JIT Fallback
+    Description: Test round(Tensor) with a variable tensor in graph mode
+    Expectation: No exception
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, decimals):
+            return round(x, decimals)
+
+    net = Net()
+    x = Tensor(np.array([0.4, 0.6, 9.9]), mstype.float32)
+    out = net(x, None)
+    expect = Tensor(np.array([0.0, 1.0, 10.0]))
     np.testing.assert_almost_equal(out.asnumpy(), expect.asnumpy())
 
 
