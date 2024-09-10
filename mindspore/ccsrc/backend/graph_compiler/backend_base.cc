@@ -516,28 +516,33 @@ bool MindRTBackendBase::CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, 
     MS_LOG(INFO) << "Status record: End load backend kernel graph.";
     return true;
   } catch (std::exception &e) {
-    MS_LOG(WARNING) << "Fail to load compile cache, error info:" << e.what();
+    MS_LOG(WARNING) << "Fail to load backend compile cache, error info:" << e.what();
     return false;
   }
 }
 
 bool MindRTBackendBase::CacheCompileGraphs() {
   MS_EXCEPTION_IF_NULL(graph_compiler_);
-  std::vector<KernelGraphPtr> graphs;
-  for (const auto &pair : graph_id_to_device_context_) {
-    (void)graphs.emplace_back(graph_compiler_->Fetch(pair.first));
-  }
-  MS_LOG(INFO) << "Status record: Start cache backend kernel graph.";
-  graph_compiler_->CacheGraphKbk(graphs);
-  bool is_dump_control_node_cache = DumpBackendInfo();
-  if (is_dump_control_node_cache) {
-    MS_LOG(INFO) << "Dump control node cache success.";
-  } else {
-    MS_LOG(INFO) << "Dump control node cache failed.";
+  try {
+    std::vector<KernelGraphPtr> graphs;
+    for (const auto &pair : graph_id_to_device_context_) {
+      (void)graphs.emplace_back(graph_compiler_->Fetch(pair.first));
+    }
+    MS_LOG(INFO) << "Status record: Start cache backend kernel graph.";
+    graph_compiler_->CacheGraphKbk(graphs);
+    bool is_dump_control_node_cache = DumpBackendInfo();
+    if (is_dump_control_node_cache) {
+      MS_LOG(INFO) << "Dump control node cache success.";
+    } else {
+      MS_LOG(INFO) << "Dump control node cache failed.";
+      return false;
+    }
+    MS_LOG(INFO) << "Status record: End cache backend kernel graph.";
+    return true;
+  } catch (std::exception &e) {
+    MS_LOG(WARNING) << "Fail to dump backend compile cache, error info:" << e.what();
     return false;
   }
-  MS_LOG(INFO) << "Status record: End cache backend kernel graph.";
-  return true;
 }
 
 bool MindRTBackendBase::DumpBackendInfo() {
@@ -776,7 +781,7 @@ bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceT
 bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
   MS_EXCEPTION_IF_NULL(func_graph);
   if (!CompileCacheEnable()) {
-    MS_LOG(WARNING) << "Compile cache: disable by front compile cache config.";
+    MS_LOG(INFO) << "Compile cache: disable by front compile cache config.";
     return false;
   }
   if (common::IsDisableRuntimeConfig(common::kRuntimeCache)) {

@@ -643,13 +643,14 @@ void SchedulerHelper::ConvertDataArrowToControlArrow(AbstractActor *const from_a
   }
 
   // Erase the output data arrow in from actor.
+  const auto &arrow_addr = (*(from_actor->output_data_arrows_.begin() + SizeToLong(data_arrow_index))).get();
   (void)from_actor->output_data_arrows_.erase(from_actor->output_data_arrows_.begin() + SizeToLong(data_arrow_index));
   (void)from_actor->output_data_nodes_.erase(from_actor->output_data_nodes_.begin() + SizeToLong(data_arrow_index));
 
   // Erase the input data arrow aid in to actor.
   bool to_actor_erase = false;
   for (auto iter = to_actor->input_data_arrow_aids_.begin(); iter != to_actor->input_data_arrow_aids_.end(); ++iter) {
-    if ((*iter).first == from_actor->GetAID()) {
+    if ((*iter).first == from_actor->GetAID() && (*iter).second == arrow_addr) {
       (void)to_actor->input_data_arrow_aids_.erase(iter);
       to_actor_erase = true;
       to_actor->input_datas_num_--;
