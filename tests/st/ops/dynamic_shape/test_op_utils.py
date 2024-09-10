@@ -697,7 +697,7 @@ def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yam
             If ``True`` , yaml check will be disabled.
             Default: ``False`` .
         disable_mode (list[str]): Disable the given running mode.
-            If ``GRAPH_MODE`` , GRAPH_MODE with jit_level=O0 will not set as running mode.
+            If ``GRAPH_MODE`` , GRAPH_MODE with jit_level=O2 will not set as running mode.
             If ``PYNATIVE_MODE`` , PYNATIVE_MODE will not set as running mode.
             If ``GRAPH_MODE_O0`` , GRAPH_MODE with jit_level=O0 will not set as running mode, kernel by kernel will be
             enabled on this running mode.
