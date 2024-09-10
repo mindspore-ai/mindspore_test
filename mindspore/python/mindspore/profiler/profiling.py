@@ -1460,8 +1460,6 @@ class Profiler:
             key = name if name.startswith("hcom_") else (name, ts)
             launch_op = kernel_map.get(key)
             if not launch_op:
-                if context.get_context("mode") == context.GRAPH_MODE or not name.startswith("aclnn"):
-                    logger.warning(f"Failed to get launch operator for {name}!")
                 continue
             launch_ops[index] = launch_op.name
         return launch_ops
