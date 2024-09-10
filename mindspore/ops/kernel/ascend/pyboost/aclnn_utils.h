@@ -47,47 +47,44 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
     MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                     \
   });
 
-#define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                               \
-  [](const std::string &api_str, const auto &... args) -> auto {                                               \
-    uint64_t hash_id = mindspore::transform::AclnnHash(api_str, args...);                                      \
-    if (hash_map_.count(hash_id) != 0) {                                                                       \
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id]);                                \
-      auto cur_run = hash_cache_.front();                                                                      \
-      runtime::ProfilerRecorder aclnn_profiler2(runtime::ProfilerModule::kPynative,                            \
-                                                runtime::ProfilerEvent::kAclnnHitCacheStage1, api_str, false); \
-      const auto &ws_size = std::get<3>(cur_run);                                                              \
-      const auto &executor = std::get<1>(cur_run);                                                             \
-      const auto &cache = std::get<2>(cur_run);                                                                \
-      auto address_list = mindspore::transform::GetTensorAddress(args...);                                     \
-      std::function<void()> update_func = [cache, address_list]() -> void {                                    \
-        cache(transform::ProcessCacheType::kUpdateTensorAddress, address_list);                                \
-      };                                                                                                       \
-      auto release_func = std::function<void()>(nullptr);                                                      \
-      return std::make_tuple(ws_size, executor, cache, release_func, update_func);                             \
-    } else {                                                                                                   \
-      runtime::ProfilerRecorder miss_profiler(runtime::ProfilerModule::kPynative,                              \
-                                              runtime::ProfilerEvent::kAclnnMissCacheStage1, api_str, false);  \
-      auto [ws_size, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(api_str, args...);                 \
-      auto update_func = std::function<void()>(nullptr);                                                       \
-      if (!fail_cache) {                                                                                       \
-        hash_cache_.emplace_front(hash_id, executor, cache, ws_size);                                          \
-        hash_map_[hash_id] = hash_cache_.begin();                                                              \
-        if (hash_cache_.size() > capacity_) {                                                                  \
-          hash_map_.erase(std::get<0>(hash_cache_.back()));                                                    \
-          auto release_func = std::get<2>(hash_cache_.back());                                                 \
-          release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                            \
-          hash_cache_.pop_back();                                                                              \
-        }                                                                                                      \
-        auto release_func = std::function<void()>(nullptr);                                                    \
-        return std::make_tuple(ws_size, executor, cache, release_func, update_func);                           \
-      } else {                                                                                                 \
-        std::function<void()> release_func = [cache]() -> void {                                               \
-          cache(transform::ProcessCacheType::kReleaseParams, std::vector<std::vector<void *>>{});              \
-        };                                                                                                     \
-        return std::make_tuple(ws_size, executor, cache, release_func, update_func);                           \
-      }                                                                                                        \
-    }                                                                                                          \
-  }                                                                                                            \
+#define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                  \
+  [](const std::string &api_str, const auto &... args) -> auto {                                  \
+    uint64_t hash_id = mindspore::transform::AclnnHash(api_str, args...);                         \
+    if (hash_id != 0 && hash_map_.count(hash_id) != 0) {                                          \
+      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id]);                   \
+      auto cur_run = hash_cache_.front();                                                         \
+      const auto &ws_size = std::get<3>(cur_run);                                                 \
+      const auto &executor = std::get<1>(cur_run);                                                \
+      const auto &cache = std::get<2>(cur_run);                                                   \
+      auto address_list = mindspore::transform::GetTensorAddress(args...);                        \
+      std::function<void()> update_func = [cache, address_list]() -> void {                       \
+        cache(transform::ProcessCacheType::kUpdateTensorAddress, address_list);                   \
+      };                                                                                          \
+      auto release_func = std::function<void()>(nullptr);                                         \
+      return std::make_tuple(ws_size, executor, cache, release_func, update_func);                \
+    } else {                                                                                      \
+      MS_LOG(INFO) << "Api " << api_str << " miss cache, with hash id:" << hash_id;               \
+      auto [ws_size, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(api_str, args...);    \
+      auto update_func = std::function<void()>(nullptr);                                          \
+      if (hash_id != 0 && !fail_cache) {                                                          \
+        hash_cache_.emplace_front(hash_id, executor, cache, ws_size);                             \
+        hash_map_[hash_id] = hash_cache_.begin();                                                 \
+        if (hash_cache_.size() > capacity_) {                                                     \
+          hash_map_.erase(std::get<0>(hash_cache_.back()));                                       \
+          auto release_func = std::get<2>(hash_cache_.back());                                    \
+          release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});               \
+          hash_cache_.pop_back();                                                                 \
+        }                                                                                         \
+        auto release_func = std::function<void()>(nullptr);                                       \
+        return std::make_tuple(ws_size, executor, cache, release_func, update_func);              \
+      } else {                                                                                    \
+        std::function<void()> release_func = [cache]() -> void {                                  \
+          cache(transform::ProcessCacheType::kReleaseParams, std::vector<std::vector<void *>>{}); \
+        };                                                                                        \
+        return std::make_tuple(ws_size, executor, cache, release_func, update_func);              \
+      }                                                                                           \
+    }                                                                                             \
+  }                                                                                               \
   (aclnn_api, __VA_ARGS__)
 
 #define LAUNCH_ACLNN(aclnn_api, device_context, stream_id, ...)                                                     \
