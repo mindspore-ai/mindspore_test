@@ -334,7 +334,9 @@ const AnfNodePtr FuseAddAndLayernorm::Process(const FuncGraphPtr &graph, const A
   auto add_layernorm = graph->NewCNode(inputs);
   MS_CHECK_TRUE_RET(add_layernorm != nullptr, nullptr);
   auto layernorm_node = opt::GetAnfNodeByVar(equiv, layer_norm_);
+  MS_CHECK_TRUE_RET(layernorm_node != nullptr, nullptr);
   auto layernorm_abs = layernorm_node->abstract();
+  MS_CHECK_TRUE_RET(layernorm_abs != nullptr, nullptr);
   if (!layernorm_abs->isa<abstract::AbstractTuple>()) {
     return node;
   }
