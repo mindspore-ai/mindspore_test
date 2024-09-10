@@ -8,7 +8,7 @@ mindspore.load_obf_params_into_net
     参数：
         - **network** (nn.Cell) - 待混淆的原始网络。
         - **target_modules** (list[str]) - 需要混淆的目标算子。第一个字符串表示目标算子在原网络中的路径，应该是 ``"A/B/C"`` 的形式。第二个字符串表示同一个路径下的多个目标算子名，它应该是 ``"D|E|F"`` 的形式。例如，GPT2的 `target_modules` 可以是 ``['backbone/blocks/attention', 'dense1|dense2|dense3']`` 。如果 `target_modules` 有第三个值，它的格式应该是 ``"obfuscate_layers:all"`` 或 ``"obfuscate_layers:int"`` ，这表示需要混淆重复层（如transformer层或resnet块）的层数。
-        - **obf_ratios** (Tensor) - 混淆系数，由 `mindspore.obfuscate_ckpt` 接口生成。
+        - **obf_ratios** (Tensor) - 混淆系数，由 `mindspore.obfuscate_ckpt` 接口生成。默认值：``None`` 。
         - **obf_config** (dict) - 模型混淆策略的配置。默认值：``None`` 。
         - **data_parallel_num** (int) - 模型并行训练的数据并行度。默认值：``1`` 。
         - **kwargs** (dict) - 配置选项字典。
@@ -31,3 +31,4 @@ mindspore.load_obf_params_into_net
         - **ValueError** - `target_modules` 的第二个字符串为空或包含大小写字母，数字， ``'_'`` 和 ``'/''`` 以外的字符。
         - **ValueError** - `target_modules` 的第三个字符串不是 ``"obfuscate_layers:all"`` 或 ``"obfuscate_layers:int"`` 的格式。
         - **TypeError** - `ignored_func_decorators` 不是字符串列表，或 `ignored_class_decorators` 不是字符串列表。
+    

@@ -11,10 +11,10 @@ mindspore.obfuscate_ckpt
         - **target_modules** (list[str]) - 需要混淆的目标算子。第一个字符串表示目标算子在原网络中的路径，应该是 ``"A/B/C"`` 的形式。第二个字符串表示同一个路径下的多个目标算子名，它应该是 ``"D|E|F"`` 的形式。例如，GPT2的 `target_modules` 可以是 ``['backbone/blocks/attention', 'dense1|dense2|dense3']`` 。如果 `target_modules` 有第三个值，它的格式应该是 ``"obfuscate_layers:all"`` 或 ``"obfuscate_layers:int"`` ，这表示需要混淆重复层（如transformer层或resnet块）的层数。默认值：``None`` 。
         - **obf_config** (dict) - 模型混淆策略的配置。默认值：``None`` 。
         - **saved_path** (str) - 混淆后权重文件的保存路径。默认值： ``'./'`` 。
-        - **obfuscate_scale** (str) - 权重混淆尺度，控制混淆系数的取值范围(>1的int/float)。
+        - **obfuscate_scale** (Union[float, int]) - 权重混淆尺度，控制混淆系数的取值范围(>1的int/float)。默认值： 100。
 
     返回：
-        解混淆元数据(dict)。
+        解混淆元数据(dict)。该数据在运行混淆网络时加载使用。
 
     异常：
         - **TypeError** - `network` 不是nn.Cell类型。
@@ -27,4 +27,3 @@ mindspore.obfuscate_ckpt
         - **ValueError** - `target_modules` 的第一个字符串包含大小写字母、数字、``'_'`` 和 ``'/'`` 以外的字符。
         - **ValueError** - `target_modules` 的第二个字符串为空或包含大小写字母，数字，``'_'`` 和 ``'/''`` 以外的字符。
         - **ValueError** - `target_modules` 的第三个字符串不是 ``"obfuscate_layers:all"`` 或 ``"obfuscate_layers:int"`` 的格式。
-
