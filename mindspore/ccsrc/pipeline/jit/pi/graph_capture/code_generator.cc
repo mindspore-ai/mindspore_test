@@ -360,7 +360,8 @@ py::object CodeGenerator::Transform(const Code &ccode) {
 }
 
 std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyInstr(const std::vector<std::unique_ptr<Instr>> &list,
-                                                             size_t start_bci, size_t end_bci) {
+                                                             size_t start_bci, size_t end_bci,
+                                                             bool erase_invalid_jump) {
   std::vector<std::pair<size_t, size_t>> edges;
   std::vector<std::unique_ptr<Instr>> instrs;
 
@@ -380,12 +381,15 @@ std::vector<std::unique_ptr<Instr>> CodeGenerator::CopyInstr(const std::vector<s
     if (i->extra_jump()) {
       size_t tar = i->extra_jump()->bci();
       bool valid = i->bci() == SizeToInt(bci) && start_bci <= tar && tar <= size;
-      if (!valid) {
+      if (valid) {
+        insert_nop_to_end |= (tar == size);
+        edges.push_back({index, tar - start_bci});
+      } else if (erase_invalid_jump) {
+        i->set_op(Opcode(i->op()).IsNotFall() ? NOP : POP_TOP);
+      } else {
         MS_LOG(INTERNAL_EXCEPTION) << "check instruction index failed," << i->bci() << " == " << bci << " && "
                                    << start_bci << " <= " << tar << " && " << tar << " <= " << size;
       }
-      insert_nop_to_end |= (tar == size);
-      edges.push_back({index, tar - start_bci});
     }
   }
   if (insert_nop_to_end) {
@@ -995,22 +999,42 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
   auto jcr = GetJitCompileResults(co_);
 
   CodeGenerator code_gen(&interpret_);
-  code_gen.SetGlobals(GetGlobals());
-  code_gen.Init();
-  for (auto i : captured_.inputs) {
-    code_gen.MarkAlive(i);
+
+  if (no_graph_) {
+    interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
+    int stack_count = interpret_.outputs.size() - alive_locals_.size();
+    int output_index = 0;
+    std::vector<std::unique_ptr<Instr>> instrs;
+    std::vector<ValueNode *> locals(co_->co_nlocals + stack_count, &ValueNode::kUnboundLocal);
+    for (; output_index < stack_count; ++output_index) {
+      locals[co_->co_nlocals + output_index] = interpret_.outputs[output_index];
+      instrs.push_back(std::make_unique<Instr>(STORE_FAST, co_->co_nlocals + output_index));
+    }
+    for (size_t i = 0, size = alive_locals_.size(); i < size; ++i, ++output_index) {
+      locals[alive_locals_[i]] = interpret_.outputs[output_index];
+    }
+    std::swap(locals, interpret_.inputs);
+    code_gen.Init();
+    code_gen.AddInstrs(CodeGenerator::CopyInstr(GetCFG()->instr_pool(), 0, break_bci_, true));
+    code_gen.AddInstrs({std::make_move_iterator(instrs.rbegin()), std::make_move_iterator(instrs.rend())});
+    std::swap(locals, interpret_.inputs);
+  } else {
+    code_gen.SetGlobals(GetGlobals());
+    code_gen.Init();
+    for (auto i : captured_.inputs) {
+      code_gen.MarkAlive(i);
+    }
+    for (auto i : outputs_optimize_.inputs) {
+      code_gen.MarkAlive(i);
+    }
+    code_gen.Build();
+
+    CallCapturedCode(&code_gen);
+    FixInterpretOuput(&code_gen);
+
+    side_effect_handler_->Restore(&code_gen);
+    interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
   }
-  for (auto i : outputs_optimize_.inputs) {
-    code_gen.MarkAlive(i);
-  }
-  code_gen.Build();
-
-  CallCapturedCode(&code_gen);
-  FixInterpretOuput(&code_gen);
-
-  side_effect_handler_->Restore(&code_gen);
-  interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
-
   CallUntrackedCode(&code_gen);
   MakeReturn(&code_gen);
 
@@ -1121,6 +1145,7 @@ void CodeBreakGenerator::Init(const Graph *graph, const GraphAnalyzer &analyzer)
   graph_inputs_info_.kwargs = info.graph_inputs_.kwargs;
   graph_inputs_info_.globals = info.graph_inputs_.globals;
   side_effect_handler_ = graph->GetSideEffect();
+  no_graph_ = captured_.operations.empty() && !graph->GetSideEffect()->IsEmpty();
 
   size_t alive_count;
   if (break_bci_ != -1) {

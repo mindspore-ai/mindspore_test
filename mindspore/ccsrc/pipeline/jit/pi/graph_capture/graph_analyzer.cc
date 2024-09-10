@@ -697,6 +697,21 @@ void MindGraphAnalyzer::CollectCapturedInputs() {
 }
 
 void MindGraphAnalyzer::Analyze() {
+  auto collect_trace_nodes = [this]() {
+    const auto &nodes = graph_->GetTracedNodes();
+    if (graph_->GetStopTraceBci() == -1) {
+      return nodes;
+    }
+    std::vector<ValueNode *> result;
+    for (const auto &node : nodes) {
+      if (node->bci() >= graph_->GetStopTraceBci()) {
+        break;
+      }
+      result.push_back(node);
+    }
+    return result;
+  };
+
   OptimizeSideEffectRecord();
 
   auto origin_stop_bci = graph_->GetStopTraceBci();
@@ -711,26 +726,29 @@ void MindGraphAnalyzer::Analyze() {
     if (origin_stop_bci == -1) {
       MS_LOG(ERROR) << "no graph in " << py::str(reinterpret_cast<PyObject *>(co.ptr()));
     } else {
-      MS_LOG(ERROR) << "no graph before " << co.FileName() << ", line " << PyCode_Addr2Line(co.ptr(), origin_stop_bci);
-    }
-
-    GetCaptureInfo().interpret_.operations.clear();
-    for (const auto &traced_node : graph_->GetTracedNodes()) {
-      if (origin_stop_bci != -1 && traced_node->bci() >= origin_stop_bci) {
-        break;
-      }
-      AddToEscaped(traced_node);
+      MS_LOG(ERROR) << "no graph captured, trace break at " << co.FileName() << ", line "
+                    << PyCode_Addr2Line(co.ptr(), origin_stop_bci);
     }
     graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceDataDependsOnGraphOut);
-    ResetSideEffectRecord();
-
     need_interpret_ = true;
-    GetCaptureInfo().captured_.clear();
-    CollectCapturedAndInterpret();
+    GetCaptureInfo().clear();
+
+    GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
+    GetCaptureInfo().interpret_.operations = collect_trace_nodes();
+    GetCaptureInfo().interpret_.outputs = graph_->CollectAliveNode(origin_stop_bci, &alive_locals_);
+    // remove side-effect node
+    auto is_remove = [this](ValueNode *node) {
+      const auto &rec = this->graph_->GetSideEffect();
+      return rec->IsRecord(node) && !rec->NeedTrack(node);
+    };
+    auto *ops = &GetCaptureInfo().interpret_.operations;
+    ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
     return;
   }
-  ResetSideEffectRecord();
 
+  // assume all values is captured to func_graph
+  GetCaptureInfo().captured_.operations = collect_trace_nodes();
+  ResetSideEffectRecord();
   CollectCapturedAndInterpret();
   CollectGraphInputs();
 
@@ -813,40 +831,14 @@ void MindGraphAnalyzer::UpdateCapturedOrder() {
   GetCaptureInfo().interpret_.values.insert(locals.begin(), locals.end());
   GetCaptureInfo().interpret_.values.insert(graph_->prepare().inputs_.begin(), graph_->prepare().inputs_.end());
   GetCaptureInfo().interpret_.values.insert(graph_->prepare().operations_.begin(), graph_->prepare().operations_.end());
-
-  // assume all values is captured to func_graph
-  const auto &traced_nodes = graph_->GetTracedNodes();
-  auto stop_bci = graph_->GetStopTraceBci();
-  if (stop_bci == -1) {
-    GetCaptureInfo().captured_.operations = traced_nodes;
-  } else {
-    GetCaptureInfo().captured_.operations.clear();
-    for (const auto &traced_node : traced_nodes) {
-      if (traced_node->bci() >= stop_bci) {
-        break;
-      }
-      GetCaptureInfo().captured_.operations.push_back(traced_node);
-    }
-  }
-  const auto &captured_local_order = GetCaptureInfo().captured_.operations;
-  mindspore::CompactSet<ValueNode *> new_capture_local_values;
-  for (auto val : captured_local_order) {
-    new_capture_local_values.insert(val);
-  }
-  // remove duplicates
-  GetCaptureInfo().captured_.values = std::move(new_capture_local_values);
 }
 
 void MindGraphAnalyzer::CollectCapturedAndInterpret() {
   CollectCapturedInputs();
-  int break_bci = graph_->GetStopTraceBci();
-  std::vector<ValueNode *> alive_nodes = graph_->CollectAliveNode(break_bci, &alive_locals_);
 
   GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
-  GetCaptureInfo().interpret_.outputs = std::move(alive_nodes);
-  GetCaptureInfo().interpret_.operations.insert(GetCaptureInfo().interpret_.operations.end(),
-                                                graph_->prepare().operations_.begin(),
-                                                graph_->prepare().operations_.end());
+  GetCaptureInfo().interpret_.outputs = graph_->CollectAliveNode(graph_->GetStopTraceBci(), &alive_locals_);
+  GetCaptureInfo().interpret_.operations = graph_->prepare().operations_;
 
   std::set<ValueNode *> outputs_optimize_inputs;
   for (const auto &i : GetCaptureInfo().outputs_optimize_.operations) {
