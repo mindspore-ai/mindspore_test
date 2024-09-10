@@ -264,11 +264,7 @@ AbstractBasePtr MakeMonadAbstract(const MonadTypePtr &type) {
 }
 
 AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId &type) {
-  if (shape.empty()) {
-    return std::make_shared<abstract::AbstractScalar>(kValueAny, TypeIdToType(type));
-  } else {
-    return std::make_shared<abstract::AbstractTensor>(TypeIdToType(type), std::make_shared<Shape>(shape));
-  }
+  return std::make_shared<abstract::AbstractTensor>(TypeIdToType(type), std::make_shared<Shape>(shape));
 }
 
 AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId> &types) {

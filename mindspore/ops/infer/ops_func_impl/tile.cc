@@ -111,9 +111,6 @@ ShapeArray TileFuncImpl::InferShape(const PrimitivePtr &primitive, const InferIn
 
     inferred_shape.push_back(dims[i] * x_shape[i]);
   }
-  if (inferred_shape.empty()) {
-    inferred_shape = {1};
-  }
   return {inferred_shape};
 }
 
