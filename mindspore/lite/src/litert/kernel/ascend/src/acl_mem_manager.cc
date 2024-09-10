@@ -153,6 +153,7 @@ STATUS AclMemManager::GetModelWorkMem(AclModelMemInfo *acl_work_mem_info, int32_
       MS_LOG(ERROR) << "Call aclrtMalloc failed, err_code = " << acl_ret;
       return lite::RET_ERROR;
     }
+    share_mem_info.allocated = true;
     MS_LOG(DEBUG) << "Malloc max work size is " << share_mem_info.mem_info.mem_size;
   }
   *acl_work_mem_info = share_mem_info.mem_info;
