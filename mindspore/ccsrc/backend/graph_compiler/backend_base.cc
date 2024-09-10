@@ -860,6 +860,8 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   if (!load_compile_cache) {
     // Current only ascend do need do checkout in PartitionGraph
     bool all_support = device_context->PartitionGraph(func_graph);
+    bool is_dynamic_graph = common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph);
+    auto sub_graph_run_mode = is_dynamic_graph ? run_mode : device::RunMode::kUnknown;
     PROF_START(CompileSubGraph);
     if (all_support) {
       if (run_mode == device::RunMode::kGraphMode && pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
@@ -867,14 +869,14 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
         graph_id_to_device_context_[graph_id] = device_context;
       } else {
         BuildSymbolEngine(func_graph, run_mode);
-        CompileSubGraph(func_graph);
+        CompileSubGraph(func_graph, sub_graph_run_mode);
       }
     } else {
       if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
         ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
       }
       BuildSymbolEngine(func_graph, run_mode);
-      CompileSubGraph(func_graph);
+      CompileSubGraph(func_graph, sub_graph_run_mode);
     }
     PROF_END(CompileSubGraph);
   }
