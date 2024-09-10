@@ -15,6 +15,8 @@
  */
 #include "cxx_api/model/acl/acl_vm/ms_tensor_ref.h"
 
+#include <algorithm>
+
 namespace mindspore {
 VectorRef MSTensorRef::Convert(const std::vector<MSTensor> &tensors) {
   VectorRef res;

@@ -19,7 +19,7 @@ set(ENABLE_ACL on)
 set(MODE_ASCEND_ACL off)
 add_subdirectory(${TOP_DIR}/mindspore/ccsrc/transform/graph_ir _mindspore_transform_graph_ir_obj)
 add_subdirectory(${TOP_DIR}/mindspore/ccsrc/transform/symbol _mindspore_transform_symbol_obj)
-add_subdirectory(${TOP_DIR}/mindspore/ccsrc/cxx_api mslite_shared_lib)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/cxx_api_lite/cxx_api mslite_shared_lib)
 
 
 set_property(SOURCE ${ACL_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_LITE)

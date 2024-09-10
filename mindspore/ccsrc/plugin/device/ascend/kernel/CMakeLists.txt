@@ -28,7 +28,6 @@ list(APPEND D_SRC_LIST ${OPS_KERNEL_ASCEND_SRC_LIST})
 file(GLOB_RECURSE INTERNAL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "internal/*.cc"
 )
-add_compile_definitions(ENABLE_D)
 
 if(ENABLE_SECURITY)
     list(REMOVE_ITEM D_SRC_LIST "rts/profiling_kernel_mod.cc")

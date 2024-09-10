@@ -15,7 +15,11 @@
  */
 
 #include "cxx_api/model/acl/model_converter.h"
+
 #include <memory>
+#include <algorithm>
+#include <utility>
+#include <vector>
 #include "include/transform/graph_ir/utils.h"
 #include "graph/graph_buffer.h"
 #include "graph/graph.h"
