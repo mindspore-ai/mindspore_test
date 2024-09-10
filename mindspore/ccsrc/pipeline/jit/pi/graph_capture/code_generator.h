@@ -161,7 +161,7 @@ class CodeGenerator {
    * \return instruction list
    */
   static std::vector<std::unique_ptr<Instr>> CopyInstr(const std::vector<std::unique_ptr<Instr>> &list, size_t start,
-                                                       size_t end = -1);
+                                                       size_t end = -1, bool erase_invalid_jump = false);
 
   /**
    * Erase unused instr
@@ -281,6 +281,8 @@ class CodeBreakGenerator {
 
   // used to store graph outputs
   int extra_local_;
+
+  bool no_graph_;
 };
 
 class MindCodeBreakGenerator : public CodeBreakGenerator {
