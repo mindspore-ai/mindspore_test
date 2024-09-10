@@ -1958,6 +1958,15 @@ void DataConvert::MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const Valu
   } else if (v->isa<ValueSequence>()) {
     ConvertTupleValueToTensor(op_run_info, v->cast<ValueSequencePtr>(), index, top_cell);
     return;
+  } else if (v->isa<ValueDictionary>()) {
+    auto v_dict = v->cast<ValueDictionaryPtr>();
+    std::vector<ValuePtr> vec;
+    vec.reserve(v_dict->value().size());
+    for (const auto &kv : v_dict->value()) {
+      (void)vec.emplace_back(kv.second);
+    }
+    ConvertTupleValueToTensor(op_run_info, std::make_shared<ValueTuple>(vec), index, top_cell);
+    return;
   } else if (v->isa<tensor::MapTensor>()) {
     ConvertMapTensor(op_run_info, v->cast<tensor::MapTensorPtr>(), top_cell, index);
     return;
@@ -2157,6 +2166,13 @@ bool AutoGrad::NeedGrad(const std::vector<ValuePtr> &input_values) {
       }
     } else if (input_arg->isa<tensor::COOTensor>() || input_arg->isa<tensor::CSRTensor>()) {
       return true;
+    } else if (input_arg->isa<ValueDictionary>()) {
+      auto dict_val = input_arg->cast<ValueDictionaryPtr>()->value();
+      for (auto kv : dict_val) {
+        if (NeedGrad({kv.second})) {
+          return true;
+        }
+      }
     }
     MS_LOG(DEBUG) << "Get value " << input_arg->ToString();
   }

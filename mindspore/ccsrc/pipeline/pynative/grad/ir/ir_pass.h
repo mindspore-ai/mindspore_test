@@ -22,6 +22,7 @@
 #include <memory>
 #include "ir/anf.h"
 #include "include/backend/kernel_graph.h"
+#include "pipeline/pynative/base.h"
 
 namespace mindspore {
 namespace pynative {
@@ -45,6 +46,8 @@ struct IrPassForward {
   void ReversePassFuncGraph(const FuncGraphPtr &func_graph);
   void ReversePassCNode(const CNodePtr &cnode, ValuePtrList *inputs_value, AnfNodePtrList *cnode_inputs);
   static bool need_reverse_graph() { return need_reverse_graph_; }
+  // If hook input is dict, change dict to value tuple.
+  void PassForHookOp(const OpGradInfoPtr &op_grad_info);
 
  private:
   CNodePtr ConvertConstInputToAttr(const CNodePtr &cnode, bool is_dynamic_shape);

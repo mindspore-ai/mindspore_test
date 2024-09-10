@@ -102,6 +102,15 @@ ValuePtr CopyTensorValueWithNewId(const ValuePtr &v) {
     }
     return std::make_shared<ValueList>(list);
   }
+  if (v->isa<ValueDictionary>()) {
+    const auto &v_dict = v->cast<ValueDictionaryPtr>();
+    std::vector<std::pair<ValuePtr, ValuePtr>> res;
+    res.reserve(v_dict->value().size());
+    for (const auto &[k, v] : v_dict->value()) {
+      (void)res.emplace_back(std::make_pair(k, CopyTensorValueWithNewId(v)));
+    }
+    return std::make_shared<ValueDictionary>(res);
+  }
   return v;
 }
 

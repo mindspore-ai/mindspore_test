@@ -291,6 +291,7 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
 }
 
 void HookBackwardNode::Release() {
+  py::gil_scoped_acquire gil;
   prim_ = nullptr;
   args_.clear();
 }

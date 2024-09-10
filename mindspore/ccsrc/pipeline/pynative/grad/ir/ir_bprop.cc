@@ -1104,7 +1104,7 @@ AnfNodePtr IrBprop::TraceInputForDict(const IrFunctionNodePtr &fn, const ValuePt
   auto new_din = ad_param_->tape_->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
   new_din->set_abstract(abs_dict);
   if (index != -1) {
-    LazyAddUser(fn->fake_dout(), new_din, index);
+    LazyAddUser(fn->fake_dout(), local_value_node, index);
   }
   return new_din;
 }

@@ -2444,9 +2444,10 @@ class Cell(Cell_):
         # cell_backward_hook has CellBackwardHook op, so keep input args as they are.
         outputs = self._cell_backward_hook(*inputs)
         # If the inputs have more than two args, the outputs will also have more than two args and will be wrapped into
-        # a tuple, so need to do unwrapping.
+        # a tuple, so need to do unwrapping. If inputs is empty, we also need to unwrap it.
+        # Because when output of runop method is one, it will not wrap a tuple, we need not unwrap it.
         is_need_unwrap = False
-        if isinstance(outputs, tuple) and len(inputs) > 1:
+        if isinstance(outputs, tuple) and len(inputs) != 1:
             is_need_unwrap = True
 
         if self._recompute_cell is not None:

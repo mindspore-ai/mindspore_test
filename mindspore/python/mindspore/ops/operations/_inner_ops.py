@@ -1567,6 +1567,9 @@ class CellBackwardHook(PrimitiveWithInfer):
         self.grad_output = None
 
     def __call__(self, *args):
+        # If args is empty, just return.
+        if not args:
+            return args
         return _run_op(self, self.name, args)
 
     def infer_shape(self, *inputs_shape):

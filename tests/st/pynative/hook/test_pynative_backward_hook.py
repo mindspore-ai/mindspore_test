@@ -71,6 +71,11 @@ def backward_hook_fn6(cell, grad_inp, grad_outp):
     return (Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 10),)
 
 
+def backward_hook_fn7(cell, grad_inp, grad_outp):
+    print("grad_inp", grad_inp)
+    print("grad_outp", grad_outp)
+
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -94,6 +99,41 @@ class SingleNet(nn.Cell):
         x = self.conv(x)
         x = self.bn(x)
         return x
+
+
+class DictNet(nn.Cell):
+    def __init__(self):
+        super(DictNet, self).__init__()
+        self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
+        self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
+
+    def construct(self, x):
+        x = self.conv(x)
+        y = self.bn(x)
+        return {'res': y, 'tmp': x}
+
+
+class TestDictNet(nn.Cell):
+    def __init__(self):
+        super(TestDictNet, self).__init__()
+        self.dict_net = DictNet()
+        self.dict_net.a = 2
+
+    def construct(self, x):
+        z = self.dict_net(x)
+        return z['res']
+
+
+class DictInputNet(nn.Cell):
+    def __init__(self):
+        super(DictInputNet, self).__init__()
+        self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
+        self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
+
+    def construct(self, *args, **kwargs):
+        x = self.conv(args[0])
+        y = self.bn(x)
+        return y
 
 
 class CmpNet(nn.Cell):
@@ -351,3 +391,45 @@ def test_pynative_backward_hook_unpair():
     net.conv.register_backward_hook(backward_hook_fn6)
     grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
     assert unpair_v == 2
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_backward_with_dict():
+    """
+    Feature: PyNative backward hook function.
+    Description: The dict case for PyNative hook function.
+    Expectation: The calculation result is correct.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    input_x = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 2)
+    grad_op = GradOperation(get_by_list=True, sens_param=False)
+    # register backward hook.
+    net = TestDictNet()
+    net.dict_net.register_backward_hook(backward_hook_fn6)
+    grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    assert len(grad) == 3
+    assert net.dict_net.a == 2
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_backward_with_dict_input():
+    """
+    Feature: PyNative backward hook function.
+    Description: The dict input case for PyNative hook function.
+    Expectation: The calculation result is correct.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    input_x = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 2)
+    input_y = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 2)
+    grad_op = GradOperation(get_by_list=True, sens_param=False)
+    # register backward hook.
+    net = DictInputNet()
+    net.register_backward_hook(backward_hook_fn7)
+    grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x, tmp=input_y)
+    assert len(grad) == 3
