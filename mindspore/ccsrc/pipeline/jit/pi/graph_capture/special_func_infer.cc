@@ -671,7 +671,7 @@ static bool InferTensorAsType(CallNode *call_node, GraphBuilder *unused = nullpt
 
   Graph *sub_graph = call_node->GetSubGraph();
 
-  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "cast", false, true);
+  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "_cast", false, true);
 
   PyTypeObject *tp = Py_TYPE(prim_cast.ptr());
   std::stringstream s;

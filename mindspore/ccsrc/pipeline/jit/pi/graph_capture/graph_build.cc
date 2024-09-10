@@ -598,7 +598,7 @@ bool GraphBuilder::DoReturn(const Instr &instr) {
 }
 
 ValueNode *GraphBuilder::GetCallFunctionNode(ValueNode *node, PyObject *dst_dtype) {
-  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "cast", false, true);
+  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "_cast", false, true);
   ValueNode *prim_node = NewValueNode(AObject::Convert(prim_cast), LOAD_CONST, {});
   ValueNode *dtype_node = NewValueNode(AObject::Convert(dst_dtype), LOAD_CONST, -1, {});
   std::vector<ValueNode *> cast_args = {prim_node, node, dtype_node};
@@ -1327,7 +1327,7 @@ ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, Va
 }
 
 ValueNode *GraphBuilder::MakeTensorCopy(ValueNode *tensor) {
-  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "cast", false, true);
+  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "_cast", false, true);
   push(NewValueNode(AObject::Convert(prim_cast), LOAD_CONST, -1, {}));
   push(tensor);
   push(tensor);

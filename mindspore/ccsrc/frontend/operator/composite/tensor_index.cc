@@ -433,7 +433,7 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTupleIndex(const AnfNodePtr &data_
         MS_EXCEPTION(IndexError) << "The tensor element in tuple index must be int or bool type, but got"
                                  << tensor_abs->element()->BuildType();
       }
-      auto cast = prim::GetPythonOps("cast", "mindspore.ops.functional");
+      auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
       ValueNodePtr cast_vnode = NewValueNode(cast);
       auto new_index_item = res_graph_->NewCNode({cast_vnode, new_index_node, NewValueNode(kInt64)});
       (void)normalized_tensors.emplace_back(new_index_item);
@@ -655,7 +655,7 @@ void TensorIndexGetitem::GetStrideInfoFromTuple(const AnfNodePtr &data_node, con
       // in this case the Tensor must be a single value whose shape is (), which has the same behavior with Scalar
       // the other cases is handled in other function
       // cast + TensorToScalar + ScalarCast can replaced by only one TensorToScalar when it supports a type input
-      auto cast = prim::GetPythonOps("cast", "mindspore.ops.functional");
+      auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
       new_index_node = res_graph_->NewCNode({NewValueNode(cast), new_index_node, NewValueNode(kInt64)});
       new_index_node = res_graph_->NewCNode({NewValueNode(kPrimTensorToScalar), new_index_node});
       new_index_node = res_graph_->NewCNode({NewValueNode(kPrimScalarCast), new_index_node,
@@ -894,7 +894,7 @@ void TensorIndexSetitem::SetItemBySlice(const AnfNodePtr &data_node, const AnfNo
   auto new_value_node = value_node;
   auto type_id = dyn_cast<abstract::AbstractTensor>(data)->element()->BuildType();
   if (value->isa<abstract::AbstractTensor>()) {
-    auto cast = prim::GetPythonOps("cast", "mindspore.ops.functional");
+    auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
     ValueNodePtr cast_vnode = NewValueNode(cast);
     new_value_node = res_graph_->NewCNode({cast_vnode, value_node, NewValueNode(type_id)});
   } else if (value->isa<abstract::AbstractScalar>()) {
@@ -931,7 +931,7 @@ AnfNodePtr PreSetitemByTuple::FormatIndex(const abstract::AbstractBasePtr &index
     MS_EXCEPTION_IF_NULL(type);
     auto type_id = type->type_id();
     if (CheckTypeIsInstance<TypeId>(type_id, {kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64})) {
-      auto cast = prim::GetPythonOps("cast", "mindspore.ops.functional");
+      auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
       ValueNodePtr cast_vnode = NewValueNode(cast);
       new_index_node = res_graph_->NewCNode({cast_vnode, index_node, NewValueNode(kInt64)});
       if (!IsDynamic(data_shape_)) {
