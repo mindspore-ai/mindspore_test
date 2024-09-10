@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/rand_like_ext_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/randint_aclnn_kernel.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -26,24 +26,24 @@
 namespace mindspore {
 namespace kernel {
 
-void RandLikeExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                         const std::vector<KernelTensor *> &outputs) {
-  constexpr double from_ = 0.0;
-  constexpr double to_ = 1.0;
-  seed_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]));
-  offset_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]));
+void RandIntAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                     const std::vector<KernelTensor *> &outputs) {
+  from_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex0 + input_idx_shift_]);
+  to_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1 + input_idx_shift_]);
+  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
+  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   GetWorkspaceForResize(outputs[kIndex0], from_, to_, seed_, offset_);
 }
 
-bool RandLikeExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool RandIntAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  constexpr double from_ = 0.0;
-  constexpr double to_ = 1.0;
+  hash_id_ = 0;
   RunOp(stream_ptr, workspace, outputs[kIndex0], from_, to_, seed_, offset_);
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(RandLikeExt, RandLikeExtAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(RandInt, RandIntAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(RandIntLike, RandIntLikeAscend);
 }  // namespace kernel
 }  // namespace mindspore

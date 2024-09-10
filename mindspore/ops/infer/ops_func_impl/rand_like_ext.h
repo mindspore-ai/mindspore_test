@@ -24,12 +24,17 @@
 #include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore::ops {
-class OPS_API RandLikeExtFuncImpl : public EltwiseOpFuncImpl {
+class OPS_API RandLikeExtFuncImpl : public OpFuncImpl {
  public:
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
 
   // For aclnn GetWorkspace
   std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex1, kInputIndex2}; };
+
+ protected:
+  size_t dtype_idx_{3};
 };
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_RAND_LIKE_EXT_H

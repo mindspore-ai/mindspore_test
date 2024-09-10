@@ -29,6 +29,13 @@ REG_BPROP_BUILDER("Assign").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("InvertPermutation").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("RandExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("Randn").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("RandInt").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("RandLikeExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("RandnLike").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("RandIntLike").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("IOU").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("SyncBatchNorm").SetUnusedInputs({i2, i3, i4}).SetBody(BODYFUNC(ib) {

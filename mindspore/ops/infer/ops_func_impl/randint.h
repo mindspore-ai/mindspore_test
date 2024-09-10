@@ -14,33 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RAND_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RAND_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RANDINT_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RANDINT_H_
 
 #include <set>
 #include <vector>
 #include <memory>
-#include "infer/ops_func_impl/ones.h"
-#include "ops/ops_func_impl/op_func_impl.h"
-#include "ops/base_operator.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
-
+#include "infer/ops_func_impl/rand_ext.h"
 namespace mindspore {
 namespace ops {
-class OPS_API RandExtFuncImpl : public OnesFuncImpl {
+class OPS_API RandIntFuncImpl : public RandExtFuncImpl {
  public:
-  RandExtFuncImpl() : dtype_idx_(3) {}
-  TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-
+  RandIntFuncImpl() {
+    dtype_idx_ = 5;
+    shape_idx_ = 2;
+  }
   // For aclnn GetWorkspace
-  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex1, kInputIndex2}; };
-
- protected:
-  size_t dtype_idx_;
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex3, kInputIndex4}; };
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RAND_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_RANDINT_H_

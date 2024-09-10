@@ -23,12 +23,10 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr OnesFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto shape_v = GetArrayValue<int64_t>(input_args[kInputIndex0]);
+ShapeArray OnesFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto shape_v = input_infos[shape_idx_]->GetArrayValue<int64_t>();
   if (!shape_v.has_value()) {
-    ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
-    return std::make_shared<abstract::TensorShape>(dyn_output);
+    return {{abstract::TensorShape::kShapeRankAny}};
   }
 
   auto shape = shape_v.value();
@@ -45,54 +43,16 @@ BaseShapePtr OnesFuncImpl::InferShape(const PrimitivePtr &primitive,
     }
   }
 
-  return std::make_shared<abstract::TensorShape>(output_shape);
+  return {output_shape};
 }
 
-TypePtr OnesFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  auto prim_name = primitive->name();
+std::vector<TypeId> OnesFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   // check
-  auto dtype_type = input_args[kInputIndex1]->GetType();
-  if (dtype_type->isa<TypeNone>()) {
-    return kFloat32;
+  if (input_infos[kInputIndex1]->IsNone()) {
+    return {kNumberTypeFloat32};
   }
-  auto dtype_ptr = input_args[kInputIndex1]->GetValue();
-  if (!dtype_ptr->isa<Int64Imm>()) {
-    MS_EXCEPTION(TypeError) << "For '" << prim_name
-                            << "', 'dtype' must be a TypeId, but got an invalid type: " << dtype_ptr->ToString() << ".";
-  }
-  auto val = GetValue<int64_t>(dtype_ptr);
-  auto output_type = TypeIdToType(static_cast<TypeId>(val));
-  return std::make_shared<TensorType>(output_type);
+  auto output_type = static_cast<TypeId>(input_infos[kInputIndex1]->GetScalarValueWithCheck<int64_t>());
+  return {output_type};
 }
-
-ShapeArray OnesFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  auto shape_v = GetArrayValue<int64_t>(input_values[kInputIndex0]);
-  auto shape = shape_v.value();
-  for (size_t i = 0; i < shape_v->size(); i++) {
-    int64_t shape_i = shape[i];
-    MS_CHECK_VALUE(shape_i >= 0,
-                   CheckAndConvertUtils::FormatCheckIntegerMsg(
-                     "the " + std::to_string(i) + "th dimension of input shape", shape_i, kGreaterEqual, 0, primitive));
-  }
-  return {shape.ToVector()};
-}
-
-TypePtrList OnesFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  auto prim_name = primitive->name();
-  auto dtype = input_values[kIndex1];
-  if (dtype->isa<None>()) {
-    return {kFloat32};
-  }
-  if (!dtype->isa<Int64Imm>()) {
-    MS_EXCEPTION(TypeError) << "For '" << prim_name
-                            << "', 'dtype' must be a TypeId, but got an invalid type: " << dtype->ToString() << ".";
-  }
-  const auto &dtype_scalar = dtype->cast<Int64ImmPtr>();
-  MS_EXCEPTION_IF_NULL(dtype_scalar);
-  auto type_id = static_cast<TypeId>(dtype_scalar->value());
-  return {TypeIdToType(type_id)};
-}
-
-REGISTER_SIMPLE_INFER(kNameOnes, OnesFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

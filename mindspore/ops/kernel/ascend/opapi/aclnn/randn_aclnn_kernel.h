@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RAND_LIKE_EXT_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RAND_LIKE_EXT_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RANDN_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RANDN_ACLNN_KERNEL_MOD_H_
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
@@ -24,22 +24,22 @@
 namespace mindspore {
 namespace kernel {
 
-class RandLikeExtAscend : public AclnnKernelMod {
+class RandnAscend : public AclnnKernelMod {
  public:
-  RandLikeExtAscend() : AclnnKernelMod(std::move("aclnnInplaceUniform")) {}
-  ~RandLikeExtAscend() = default;
+  RandnAscend() : AclnnKernelMod(std::move("aclnnInplaceNormal")) {}
+  ~RandnAscend() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  uint64_t seed_;
-  uint64_t offset_;
-  double from_{0.};
-  double to_{1.};
+  int64_t seed_;
+  int64_t offset_;
+  float mean_{0.};
+  float std_{1.};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RAND_LIKE_EXT_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RANDN_ACLNN_KERNEL_MOD_H_
