@@ -485,7 +485,8 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
         << kernel_actor->kernel_->fullname_with_scope();
     }
     std::vector<DeviceTensor *> mem_alloc_list = {dest_device_address};
-    MemoryManagerActor::GetInstance()->AllocateMemory(&mem_alloc_list, dest_device_context, context, GetAID());
+    MemoryManagerActor::GetInstance()->AllocateMemory(&mem_alloc_list, dest_device_context, context,
+                                                      kernel_actor->GetAID());
     if (IsRunningFailed(context)) {
       // Maybe allocate memory failed, early stop to run graph.
       return false;
@@ -532,6 +533,10 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       continue;
     }
     const auto &kernel = kernel_actor->kernel();
+    if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, kernel_actor->GetAID().Name(),
+                                                     kernel->fullname_with_scope(), kernel->func_graph()->ToString());
+    }
     // 1. Prepare input data for kernel
     const auto &iter = kernel_input_to_graph_input_indices_.find(kernel.get());
     if (iter != kernel_input_to_graph_input_indices_.end()) {
