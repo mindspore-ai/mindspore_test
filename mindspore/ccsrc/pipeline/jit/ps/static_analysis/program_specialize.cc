@@ -1254,6 +1254,13 @@ AnfNodePtr FuncGraphSpecializer::BuildSpecializedNodeInner(const CNodePtr &cnode
                                << cnode->DebugString() << ", args: " << mindspore::ToString(args);
   }
 
+  if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
+    if (context->func_graph() == nullptr) {
+      MS_LOG(INFO) << "context func_graph is null, return func: " << func->DebugString();
+      return func;
+    }
+  }
+
   constexpr auto recursive_level = 2;
   MS_LOG(DEBUG) << "Specialize function graph: " << context->func_graph()->ToString() << ", args: " << args_abs_list
                 << ", func: " << func->DebugString(recursive_level) << ", context: " << context.get() << ", "

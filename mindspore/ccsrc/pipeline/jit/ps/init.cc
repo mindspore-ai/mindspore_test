@@ -280,9 +280,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_optimize_config", &GraphExecutorPy::GetOptimizeConfig, "Get the optimize config.")
     .def("set_config_passes", &GraphExecutorPy::SetConfigPasses, py::arg("passes") = py::list(),
          "Set the optimizer passes.")
-    .def("get_running_passes", &GraphExecutorPy::GetRunningPasses, "Get the running passes.")
-    .def("inc_graph_cell_count", &GraphExecutorPy::IncGraphCellCount, "Increase the count of GraphCell instance.")
-    .def("dec_graph_cell_count", &GraphExecutorPy::DecGraphCellCount, "Decrease the count of GraphCell instance.");
+    .def("get_running_passes", &GraphExecutorPy::GetRunningPasses, "Get the running passes.");
 
   (void)m.def("reset_op_id", &mindspore::pipeline::ResetOpId, "Reset Operator Id");
   (void)m.def("reset_op_id_with_offset", &mindspore::pipeline::ResetOpIdWithOffset, "Reset Operator Id With Offset");

@@ -333,6 +333,24 @@ FuncGraphPtr ProgramSpecialize(const abstract::AnalysisEnginePtr &engine, const 
   return result;
 }
 
+void SetMindIRLoadFlag(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto manager = resource->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  FuncGraphPtr loaded_graph = nullptr;
+  size_t loaded_graph_num = 0;
+  auto all_graphs = manager->func_graphs();
+  for (auto &graph : all_graphs) {
+    MS_EXCEPTION_IF_NULL(graph);
+    if (graph->has_attr("is_load")) {
+      loaded_graph = graph;
+      loaded_graph_num += 1;
+      resource->set_is_load(true);
+      return;
+    }
+  }
+}
+
 FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_graph,
                          const abstract::AbstractBasePtrList &args_abs) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -376,24 +394,6 @@ FuncGraphPtr Renormalize(const ValuePtr &func, const abstract::AbstractBasePtrLi
   }
 
   return res;
-}
-
-void SetMindIRLoadFlag(const ResourcePtr &resource) {
-  MS_EXCEPTION_IF_NULL(resource);
-  auto manager = resource->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  FuncGraphPtr loaded_graph = nullptr;
-  size_t loaded_graph_num = 0;
-  auto all_graphs = manager->func_graphs();
-  for (auto &graph : all_graphs) {
-    MS_EXCEPTION_IF_NULL(graph);
-    if (graph->has_attr("is_load")) {
-      loaded_graph = graph;
-      loaded_graph_num += 1;
-      resource->set_is_load(true);
-      return;
-    }
-  }
 }
 
 namespace {
@@ -1156,6 +1156,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   }
 
   UpdateFuncGraphParameter(new_fg, resource->arguments());
+  SetMindIRLoadFlag(resource);
   MS_LOG(DEBUG) << "End graph: " << new_fg->ToString() << ", return: " << new_fg->get_return()->DebugString(true);
   return true;
 }
@@ -1915,7 +1916,7 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   std::vector<ActionItem> actions;
   auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
   MS_EXCEPTION_IF_NULL(graph_executor);
-  const bool boost_infer = common::GetEnv("MS_DEV_BOOST_INFER") != "0" && graph_executor->graph_cell_count() == 0;
+  const bool boost_infer = common::GetEnv("MS_DEV_BOOST_INFER") != "0";
   if (!trace_flag) {
     if (boost_infer) {
       // Bootstrap for JIT.
