@@ -42,6 +42,7 @@
 #include "src/common/common.h"
 #include "tools/converter/parser/conv2d_transpose_input_adjust.h"
 #include "tools/converter/parser/einsum_adjust.h"
+#include "tools/converter/import/convert_extend_ops_pass.h"
 
 namespace mindspore::lite {
 namespace {
@@ -116,6 +117,8 @@ int CommonAnfAdjust(const FuncGraphPtr &func_graph) {
   auto asylic_pm = std::make_shared<opt::LitePassManager>("asylic pass manager", false);
   MS_CHECK_TRUE_MSG(asylic_pm != nullptr, RET_NULL_PTR, "asylic_pm is nullptr.");
 
+  // convert some extend ops to normal ops
+  asylic_pm->AddPass(std::make_shared<opt::ConvertExtendOpsPass>());
   // fuse tf1.x bidirection_gru into GRU, must be placed here because graph is cyclic
   asylic_pm->AddPass(std::make_shared<opt::TfBidirectionGruCfFusion>());
   // remove remaining cyclic nodes
