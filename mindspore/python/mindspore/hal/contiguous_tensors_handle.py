@@ -32,7 +32,7 @@ def combine_tensor_list_contiguous(tensor_list, enable_mem_align=True):
             False is not supported. Default: ``True`` .
 
     Returns:
-            ContiguousTensorsHandle. a manager with contiguous memory.
+            ContiguousTensorsHandle, a manager with contiguous memory.
 
     Examples:
         >>> import numpy as np
@@ -62,7 +62,7 @@ class ContiguousTensorsHandle:
             False is not supported. Default: ``True`` .
 
     Returns:
-        ContiguousTensorsHandle. a manager with contiguous memory.
+        ContiguousTensorsHandle, a manager with contiguous memory.
 
     Examples:
         >>> import numpy as np
