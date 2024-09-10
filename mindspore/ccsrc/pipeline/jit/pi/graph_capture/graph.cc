@@ -62,6 +62,42 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
   }
 }
 
+bool Graph::PrepareParameter(ValueNode *node) {
+  using PrepareHelper = bool (*)(ValueNode *, std::vector<ValueNode *> *);
+  static PrepareHelper prepare_oper = [](ValueNode *node, std::vector<ValueNode *> *oper) {
+    int opcode = node->GetOpcode();
+    if (opcode == LOAD_CONST || opcode == LOAD_GLOBAL || opcode == LOAD_DEREF || node->GetType() == ValueNode::Param ||
+        oper->end() != std::find(oper->begin(), oper->end(), node)) {
+      return true;
+    }
+    while (node->GetType() == ValueNode::Call) {
+      auto g = static_cast<CallNode *>(node)->GetSubGraph();
+      if (g != nullptr && g->GetRetVal() != nullptr) {
+        node = g->GetRetVal();
+      }
+    }
+    if (opcode != LOAD_ATTR && opcode != BINARY_SUBSCR) {
+      return false;
+    }
+    for (const auto &in : node->getInputs()) {
+      if (!prepare_oper(in, oper)) {
+        return false;
+      }
+    }
+    oper->push_back(node);
+    return true;
+  };
+
+  prepare_.inputs_.push_back(node);
+  size_t backup = prepare_.operations_.size();
+  if (prepare_oper(node, &prepare_.operations_)) {
+    return true;
+  }
+  prepare_.operations_.resize(backup);
+  prepare_.inputs_.pop_back();
+  return false;
+}
+
 const std::shared_ptr<SideEffect> &Graph::GetSideEffect() const { return side_effect_; }
 void Graph::SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_effect_ = handler; }
 
