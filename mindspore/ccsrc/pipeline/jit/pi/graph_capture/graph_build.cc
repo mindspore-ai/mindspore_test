@@ -4554,6 +4554,17 @@ std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(con
   return std::make_pair(should_parse_in_ast, callable_info);
 }
 
+void MindGraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info,
+                                        const std::vector<ValueNode *> &args, StopTraceReason *stop_reason) {
+  // Need to add unpack call when handling kwargs.
+  if (call_node->GetOpcode() == CALL_FUNCTION_KW || call_node->GetOpcode() == CALL_FUNCTION_EX) {
+    auto res = FGBuilder()->AddNodeWithKwargs(callable_info, HandleInputArgs(args));
+    UpdateNodeInfo(res, call_node, stop_reason);
+    return;
+  }
+  FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+}
+
 py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
   *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
@@ -4587,18 +4598,12 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     MS_LOG(INFO) << "Should be parsed by ast for object: " << py::str(callable_info);
     std::vector<ValueNode *> args;
     auto self_node = GetBoundSelf(call_node);
-    BindArgumentsHelper<ValueNode *> bind_helper =
-      PackInputsForFunc(callable_info, call_node->GetOpcode(), call_node->getInputs(), self_node);
-    auto bind_arguments_result = bind_helper.results();
-    const auto &bind_args = bind_arguments_result.args_;
-    const auto &bind_vargs = bind_arguments_result.va_;
-    const auto &bind_kwargs = bind_arguments_result.kw_va_;
-    if (!bind_kwargs.empty()) {
-      MS_LOG(WARNING) << "Encounter kwargs scene, builder can not handle yet.";
+    if (callable_info != original_callable && self_node != nullptr) {
+      args.push_back(self_node);
     }
-    (void)std::copy(bind_args.begin(), bind_args.end(), std::back_inserter(args));
-    (void)std::copy(bind_vargs.begin(), bind_vargs.end(), std::back_inserter(args));
-    FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+    const auto &call_node_inputs = call_node->getInputs();
+    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
+    FGAddNodeWithAst(call_node, callable_info, args, stop_reason);
     return py::object();
   }
   if (FGBuilder()->CheckCallable(callable_info)) {

@@ -70,6 +70,15 @@ class FuncGraphBuilder {
   /// \return The abstract wrapper of the infer result.
   AbstractWrapperPtr AddNode(const ValuePtr &callable_value, const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
+  /// \brief Add a cnode to the graph with kwargs.
+  ///
+  /// \param[in] callable_value The callable value.
+  /// \param[in] inputs_obj The input python objects.
+  ///
+  /// \return The abstract wrapper of the infer result.
+  AbstractWrapperPtr AddNodeWithKwargs(const py::object &callable_obj,
+                                       const AbstractWrapperPtrList &inputs_abstract_wrapper);
+
   /// \brief Add a python object to graph.
   ///
   /// \param[in] object The python object add to graph.

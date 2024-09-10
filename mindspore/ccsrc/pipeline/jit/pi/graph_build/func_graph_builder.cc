@@ -581,6 +581,45 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
   return AddNode(callable_value, inputs_abstract_wrapper);
 }
 
+AbstractWrapperPtr FuncGraphBuilder::AddNodeWithKwargs(const py::object &callable_obj,
+                                                       const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+  auto key_abstract = inputs_abstract_wrapper.back()->abstract();
+  if (key_abstract == nullptr || !key_abstract->isa<abstract::AbstractTuple>()) {
+    MS_LOG(INFO) << "Key abstract should be tuple but got: " << key_abstract->ToString();
+    return nullptr;
+  }
+  auto key_tuple_abstract = key_abstract->cast<abstract::AbstractTuplePtr>();
+  auto key_tuple_value = key_tuple_abstract->BuildValue();
+  if (key_tuple_value == kValueAny) {
+    MS_LOG(INFO) << "Key abstract should be constant but got: " << key_abstract->ToString();
+    return nullptr;
+  }
+  size_t dict_len = key_tuple_abstract->size();
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() - dict_len - 1 >= 0, "kwargs length check error");
+  size_t arg_len = inputs_abstract_wrapper.size() - dict_len - 1;
+
+  auto fg = std::make_shared<FuncGraph>();
+  std::vector<AnfNodePtr> arg_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t i = 0; i < arg_len; ++i) {
+    (void)arg_inputs.emplace_back(fg->add_parameter());
+  }
+  std::vector<AnfNodePtr> dict_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  for (size_t i = 0; i < dict_len; ++i) {
+    (void)dict_value_inputs.emplace_back(fg->add_parameter());
+  }
+  auto arg_tuple_node = fg->NewCNodeInOrder(arg_inputs);
+  auto dict_value_node = fg->NewCNodeInOrder(dict_value_inputs);
+  auto dict_key_node = NewValueNode(key_tuple_value);
+  auto dict_node_inputs = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), dict_key_node, dict_value_node});
+  auto callable_value = ConvertPyObjToValue(callable_obj);
+  auto call_node = fg->NewCNodeInOrder(
+    {NewValueNode(prim::kPrimDoUnpackCall), NewValueNode(callable_value), arg_tuple_node, dict_node_inputs});
+  fg->set_output(call_node);
+
+  AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end() - 1);
+  return AddNode(fg, new_abstract_wrapper);
+}
+
 AbstractWrapperPtr FuncGraphBuilder::AddAttrPythonObject(const py::object &object) {
   if (object.ptr() == nullptr) {
     MS_LOG(INFO) << "Convert python object with empty object, convert failed.";

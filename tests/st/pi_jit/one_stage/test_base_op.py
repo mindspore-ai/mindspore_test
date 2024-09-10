@@ -16,6 +16,7 @@
 import sys
 import pytest
 import numpy as np
+import mindspore
 import mindspore.nn as nn
 from mindspore import ops
 from mindspore import Tensor, Parameter
@@ -833,6 +834,25 @@ def test_function_parse_by_ast():
 
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor(np.ones((3, 128, 352, 224)))
+    net = Net()
+    net(a)
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_parse_by_ast_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(mode="PIJit")
+        def construct(self, x):
+            return ops.full_like(x, 1, dtype=mindspore.float32)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a = Tensor([[1, 2], [3, 4]])
     net = Net()
     net(a)
     jcr = get_code_extra(Net.construct.__wrapped__)

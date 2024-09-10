@@ -353,6 +353,8 @@ class MindGraphBuilder : public GraphBuilder {
                  StopTraceReason *stop_reason);
   void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);
+  void FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info, const std::vector<ValueNode *> &args,
+                        StopTraceReason *stop_reason);
   void FGAddOutput(bool is_top_graph);
   StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                 const GraphBuilderPtr &subgraph) override;
