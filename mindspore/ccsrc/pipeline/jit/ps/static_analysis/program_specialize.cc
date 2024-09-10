@@ -989,11 +989,12 @@ bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input)
                  << cnode_input->DebugString() << ", flag: " << cnode_input->has_side_effect_node();
   }
   // Recheck input
-  if (IsPrimitiveCNode(node_input->cast<CNodePtr>(), prim::kPrimStopGradient)) {
-    return GetIgnoreBuildValueFlag(node_input->cast<CNodePtr>()->input(1));
+  auto cnode = node_input->cast<CNodePtr>();
+  if (IsPrimitiveCNode(cnode, prim::kPrimStopGradient)) {
+    return GetIgnoreBuildValueFlag(cnode->input(1));
   }
-  if (IsPrimitiveCNode(node_input->cast<CNodePtr>(), prim::kPrimMakeTuple)) {
-    auto inner_inputs = node_input->cast<CNodePtr>()->inputs();
+  if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
+    auto inner_inputs = cnode->inputs();
     for (auto inner_input : inner_inputs) {
       auto cnode_inner_input = dyn_cast_ptr<CNode>(inner_input);
       bool inner_ignore_build_value = (cnode_inner_input != nullptr && cnode_inner_input->has_side_effect_node());
