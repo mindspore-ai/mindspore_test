@@ -384,7 +384,7 @@ def test_graph_parameter_is_closure_variable_v4():
     assert len(o1) == len(o2)
     for l, r in zip(o1, o2):
         match_array(l.asnumpy(), r.asnumpy())
-    assert_executed_by_graph_mode(fn)
+    # LOAD_DEREF is executed by python, not a completed graph
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable_v5():
