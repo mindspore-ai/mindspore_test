@@ -28,6 +28,7 @@ ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateStreamWithConfig, aclError, aclrtStrea
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyContext, aclError, aclrtContext)
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyEvent, aclError, aclrtEvent)
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyStream, aclError, aclrtStream)
+ORIGIN_METHOD_WITH_SIMU(aclrtDestroyStreamForce, aclError, aclrtStream)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtEventElapsedTime, aclError, float *, aclrtEvent, aclrtEvent)
 ORIGIN_METHOD_WITH_SIMU(aclrtFree, aclError, void *)
 ORIGIN_METHOD_WITH_SIMU(aclrtFreeHost, aclError, void *)

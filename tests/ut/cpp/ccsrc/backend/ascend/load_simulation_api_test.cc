@@ -68,6 +68,7 @@ TEST_F(TestLoadSimulationAPI, test_load_simulation_api) {
   EXPECT_NE(aclrtDestroyContext_, nullptr);
   EXPECT_NE(aclrtDestroyEvent_, nullptr);
   EXPECT_NE(aclrtDestroyStream_, nullptr);
+  EXPECT_NE(aclrtDestroyStreamForce_, nullptr);
   EXPECT_NE(aclrtEventElapsedTime_, nullptr);
   EXPECT_NE(aclrtFree_, nullptr);
   EXPECT_NE(aclrtFreeHost_, nullptr);

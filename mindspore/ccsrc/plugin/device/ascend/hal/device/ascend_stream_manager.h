@@ -75,6 +75,7 @@ class AscendStreamMng {
   void CreateStreamWithFlags(size_t *stream_id, uint32_t flags, int32_t priority = 0);
   bool DestroyStream(size_t stream_id);
   bool DestroyAllStreams();
+  bool ForceDestroyAllStreams();
   aclrtStream GetStream(size_t stream_id) const;
   bool SyncStream(size_t stream_id) const;
   bool SyncStream(aclrtStream stream) const;
