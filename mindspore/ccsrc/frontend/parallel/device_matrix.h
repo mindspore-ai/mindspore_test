@@ -34,7 +34,7 @@ using Shapes = std::vector<Shape>;
 
 class ShapeBase {
  public:
-  explicit ShapeBase(bool is_list) { is_list_ = is_list; }
+  explicit ShapeBase(bool is_list) : is_list_(is_list) {}
   virtual ~ShapeBase() = default;
   bool is_list() const { return is_list_; }
   virtual bool empty() const = 0;

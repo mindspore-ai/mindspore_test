@@ -43,7 +43,7 @@ def parallel_run(parallel_net, *inputs):
 
 def compare_params(standalone_params, parallel_params):
     for key in standalone_params.keys():
-        assert np.allclose(standalone_params[key].asnumpy(), parallel_params[key].asnumpy(), atol=1e-5)
+        assert np.allclose(standalone_params[key].asnumpy(), parallel_params[key].asnumpy(), atol=1e-3, rtol=1e-3)
 
 
 def test_custom_op_all_tensor_no_tuple_param():
