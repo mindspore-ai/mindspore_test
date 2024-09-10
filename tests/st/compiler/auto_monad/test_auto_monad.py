@@ -16,6 +16,7 @@ import os
 import sys
 import re
 import time
+import subprocess
 import pytest
 import numpy as np
 import mindspore as ms
@@ -1907,3 +1908,56 @@ def test_bprop_assign_func():
     print("out:", out)
     assert out[0] == 5
     assert out[1] == 3
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_assign_func():
+    """
+    Feature: Support side effect.
+    Description: Support side effect.
+    Expectation: No exception.
+    """
+
+    assign_data = P.Assign()
+    def my_assign(param, data):
+        assign_data(param, data)
+
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            my_assign(x, y * 2)
+            my_assign(x, y * 3)
+            return x
+
+    x = Parameter(Tensor([1], dtype=ms.int32), name='para')
+    y = ms.Tensor([2], dtype=ms.int32)
+    out = Net()(x, y)
+    assert out == 6
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_warning():
+    """
+    Feature: Support side effect.
+    Description: Support side effect.
+    Expectation: No exception.
+    """
+    def check_auto_monad_warning_info():
+        # Clear log files
+        log_file_name = "check_auto_monad_warning_info.log"
+        if os.path.exists(log_file_name):
+            os.remove(log_file_name)
+        assert not os.path.exists(log_file_name)
+
+        cmd_first = (f"export GLOG_v=2; pytest -sv test_auto_monad.py::test_assign_func > " + log_file_name + " 2>&1")
+        subprocess.check_output(cmd_first, shell=True)
+        assert os.path.exists(log_file_name)
+        with open(log_file_name, "r") as f_first:
+            data_first = f_first.read()
+
+        expected_msg = "Some side effect nodes were eliminated by mistake."
+        match = expected_msg in data_first
+
+        # Clean files
+        os.remove(log_file_name)
+        return match
+
+    assert not check_auto_monad_warning_info()

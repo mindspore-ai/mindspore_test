@@ -1462,6 +1462,26 @@ class AutoMonadConverter {
     AttachToOutput(make_tuple_node);
   }
 
+  // Check has UpdateState user
+  bool CheckHasUpdateStateUsers(const CNodePtr &cnode) const {
+    auto fg = cnode->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    auto manager = fg->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    const auto &node_users = manager->node_users();
+    auto found = node_users.find(cnode);
+    if (found == node_users.end()) {
+      return false;
+    }
+    for (auto &user : found->second) {
+      auto user_node = dyn_cast<CNode>(user.first);
+      if (IsPrimitiveCNode(user_node, prim::kPrimUpdateState)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Clean no side effect dependency nodes.
   //   From:  output = Depend(output, StopGrad)
   //          return output
@@ -1470,21 +1490,39 @@ class AutoMonadConverter {
   void ClearIsolatedNodes() const {
     auto output = GetGraphOutput();
     constexpr size_t attach_index = 2;
-    if (IsPrimitiveCNode(output, prim::kPrimDepend)) {
-      auto attach_node = output->cast<CNodePtr>()->input(attach_index);
-      if (IsPrimitiveCNode(attach_node, prim::kPrimStopGradient)) {
-        auto attach_cnode = attach_node->cast<CNodePtr>();
-        auto input = attach_cnode->input(1);
-        // Check the input of stop_gradient.
-        if (input->isa<CNode>() && input->cast<CNodePtr>()->has_side_effect_node()) {
-          MS_LOG(WARNING) << "Some side effect nodes were eliminated by mistake.";
+    if (!IsPrimitiveCNode(output, prim::kPrimDepend)) {
+      return;
+    }
+    auto attach_node = output->cast<CNodePtr>()->input(attach_index);
+    if (!IsPrimitiveCNode(attach_node, prim::kPrimStopGradient)) {
+      return;
+    }
+    auto attach_cnode = attach_node->cast<CNodePtr>();
+    auto input = attach_cnode->input(1);
+    // Check the input of stop_gradient.
+    if (input->isa<CNode>() && input->cast<CNodePtr>()->has_side_effect_node()) {
+      auto input_cnode = input->cast<CNodePtr>();
+      if (IsPrimitiveCNode(input_cnode, prim::kPrimMakeTuple)) {
+        auto make_tuple_inputs = input_cnode->inputs();
+        for (size_t index = 1; index < make_tuple_inputs.size(); ++index) {
+          auto inner_input = make_tuple_inputs[index];
+          if (inner_input->isa<CNode>() && !CheckHasUpdateStateUsers(inner_input->cast<CNodePtr>())) {
+            MS_LOG(WARNING) << "Some side effect nodes were eliminated by mistake. The node is:"
+                            << inner_input->DebugString();
+          }
         }
-        // Replace Depend(orig_output, StopGrad) node with orig_output.
-        // After that, nodes may be eliminated if have no side effects.
-        auto &orig_output = output->cast<CNodePtr>()->input(1);
-        func_graph_->set_output(orig_output);
+      } else {
+        // Has UpdateState user, mean the node is not eliminated from the graph.
+        if (!CheckHasUpdateStateUsers(input_cnode)) {
+          MS_LOG(WARNING) << "Some side effect nodes were eliminated by mistake. The node is:"
+                          << input_cnode->DebugString();
+        }
       }
     }
+    // Replace Depend(orig_output, StopGrad) node with orig_output.
+    // After that, nodes may be eliminated if have no side effects.
+    auto &orig_output = output->cast<CNodePtr>()->input(1);
+    func_graph_->set_output(orig_output);
   }
 
   void HandleOuterNode(const CNodePtr &cnode, const EffectInfo &info) {
