@@ -26,21 +26,6 @@ ${ASCEND_RPATH}:/usr/local/Ascend/latest/opp/built-in/op_impl/ai_core/tbe/op_til
 endif()
 
 
-### cxx api need file ###
-if(ENABLE_ACL)
-    include_directories(${CMAKE_BINARY_DIR}/proto/ge)
-    file(GLOB_RECURSE API_INFER_D
-            "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/graph/ascend/*.cc"
-            "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/model/acl/*.cc"
-            "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/model/model_converter_utils/*.cc"
-            "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/graph/acl/*.cc"
-            "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/model/ms/*.cc"
-            )
-    add_library(mindspore_axx_api_d_obj OBJECT ${API_INFER_D})
-    list(APPEND ASCEND_SUB_OBJECTS_SRC $<TARGET_OBJECTS:mindspore_axx_api_d_obj>)
-    list(APPEND ASCEND_910B_OBJ_SRC $<TARGET_OBJECTS:mindspore_axx_api_d_obj>)
-endif()
-
 ### check dvm binary file ###
 set(DVM_LIB)
 if(ENABLE_DVM)
@@ -116,7 +101,6 @@ set(MS_KERNELS_INTERNAL_LIB_PATH
     ${ORIGIN_PATH}/ascend/ms_kernels_internal/internal_kernel/lib)
 
 target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
-target_link_libraries(mindspore_ascend PRIVATE mindspore_shared_lib)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_ascend PRIVATE securec d_collective)
 target_link_libraries(mindspore_ascend PRIVATE multi_ascend_collective)

@@ -57,20 +57,6 @@ install(
 )
 
 install(
-    TARGETS mindspore_shared_lib
-    DESTINATION ${INSTALL_LIB_DIR}
-    COMPONENT mindspore
-)
-
-if(ENABLE_D OR ENABLE_GPU)
-    install(
-            TARGETS api_lib
-            DESTINATION ${INSTALL_LIB_DIR}
-            COMPONENT mindspore
-    )
-endif()
-
-install(
     TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_np_dtype
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore

@@ -33,20 +33,12 @@ endif()
 
 ### cxx api need file ###
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
-file(GLOB_RECURSE API_INFER_GPU
-        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/graph/gpu/*.cc"
-        "${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/model/ms/*.cc"
-        )
-add_library(mindspore_axx_api_gpu_obj OBJECT ${API_INFER_GPU})
-list(APPEND GPU_SUB_OBJECTS_SRC $<TARGET_OBJECTS:mindspore_axx_api_gpu_obj>)
-
 add_library(mindspore_gpu SHARED ${GPU_SUB_OBJECTS_SRC})
 set_target_properties(mindspore_gpu PROPERTIES SOVERSION ${CUDA_VERSION})
 if(MSVC)
 target_link_options(mindspore_gpu PRIVATE /FORCE:UNRESOLVED)
 endif()
 target_link_libraries(mindspore_gpu PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
-target_link_libraries(mindspore_gpu PRIVATE mindspore_shared_lib)
 target_link_libraries(mindspore_gpu PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_gpu PRIVATE securec)
 set_target_properties(mindspore_gpu PROPERTIES INSTALL_RPATH

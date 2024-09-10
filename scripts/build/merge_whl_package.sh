@@ -46,9 +46,6 @@ do
   if [ -f "./$i/mindspore/lib/libmindspore.so" ]; then
     \cp -rf ./$i/mindspore/lib/libmindspore.so $BASE_PACKAGE_UNZIP_DIR/mindspore/lib/
   fi;
-  if [ -f "./$i/mindspore/lib/libmindspore_shared_lib.so" ]; then
-    \cp -rf ./$i/mindspore/lib/libmindspore_shared_lib.so $BASE_PACKAGE_UNZIP_DIR/mindspore/lib/
-  fi;
 
   # dataset library "mindspore/_c_dataengine.*.so" with 910b dvpp which is biggest should be used
   file_size_src=`du ./$i/mindspore/_c_dataengine.*.so | awk '{print $1;}'`

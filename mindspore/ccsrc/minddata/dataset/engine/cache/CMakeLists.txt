@@ -105,10 +105,10 @@ if(ENABLE_CACHE)
   add_executable(cache_admin cache_admin.cc cache_admin_arg.cc)
   target_link_libraries(cache_admin _c_dataengine _c_mindrecord ${PYTHON_LIBRARIES} pthread -ldl)
   if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(cache_admin mindspore::protobuf mindspore_core mindspore_shared_lib)
+    target_link_libraries(cache_admin mindspore::protobuf mindspore_core)
   else()
     target_link_libraries(cache_admin
-        -Wl,--start-group mindspore::protobuf mindspore_core mindspore_shared_lib -Wl,--end-group)
+        -Wl,--start-group mindspore::protobuf mindspore_core -Wl,--end-group)
   endif()
 
   if(USE_GLOG)

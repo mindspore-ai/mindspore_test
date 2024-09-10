@@ -32,6 +32,13 @@ if(NOT BUILD_LITE AND ENABLE_D)
         )
 endif()
 
+if(NOT MSLITE_ENABLE_ACL)
+    set(DATASET_CORE_SRC_FILES
+        ${DATASET_CORE_SRC_FILES}
+        types.cc # in lite, src code has types.cc impl
+        )
+endif()
+
 ms_protobuf_generate(EXAMPLE_SRCS EXAMPLE_HDRS example.proto)
 ms_protobuf_generate(FEATURE_SRCS FEATURE_HDRS feature.proto)
 add_library(core OBJECT ${DATASET_CORE_SRC_FILES} ${EXAMPLE_SRCS} ${FEATURE_SRCS})

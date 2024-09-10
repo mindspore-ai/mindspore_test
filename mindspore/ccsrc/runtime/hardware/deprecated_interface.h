@@ -23,7 +23,6 @@
 #include "ir/func_graph.h"
 #include "pybind11/pytypes.h"
 #include "utils/ms_context.h"
-#include "include/api/types.h"
 #include "nlohmann/json.hpp"
 
 namespace mindspore {

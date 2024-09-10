@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020.Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2024.Huawei Technologies Co., Ltd. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,7 +29,7 @@
 #include "acl/acl.h"
 
 #ifndef BUILD_LITE
-#include "mindspore/ccsrc/cxx_api/graph/acl/acl_env_guard.h"
+#include "acl_env_guard.h"
 #else
 #include "mindspore/lite/src/extendrt/kernel/ascend/model/acl_env_guard.h"
 #endif
