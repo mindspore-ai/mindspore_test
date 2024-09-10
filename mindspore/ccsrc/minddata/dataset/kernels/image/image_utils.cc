@@ -1532,7 +1532,7 @@ Status Posterize(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *
     RETURN_STATUS_UNEXPECTED("Posterize: input image is not in shape of <H,W,C> or <H,W>, but got rank: " +
                              std::to_string(input_cv->Rank()));
   }
-  uint8_t mask_value = ~((uint8_t)(1 << (8 - bits)) - 1);
+  uint8_t mask_value = ~(static_cast<uint8_t>(1 << (8 - bits)) - 1);
   std::vector<uint8_t> lut_vector;
   for (std::size_t i = 0; i < 256; i++) {
     lut_vector.push_back(i & mask_value);
