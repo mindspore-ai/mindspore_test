@@ -358,11 +358,12 @@ def test_bucket_batch_default_pad():
     assert output == expected_output
 
 
-def test_bucket_batch_drop_remainder():
+@pytest.mark.parametrize("drop_remainder", (True, False))
+def test_bucket_batch_drop_remainder(drop_remainder):
     """
-    Feature: bucket_batch_by_length op
-    Description: Test bucket_batch_by_length op with drop_remainder
-    Expectation: Output is equal to the expected output
+    Feature: bucket_batch_by_length
+    Description: Test bucket_batch_by_length with drop_remainder
+    Expectation: Output is as expected
     """
     dataset = ds.GeneratorDataset((lambda: generate_sequential_same_shape(27)), ["col1"])
 
@@ -372,7 +373,6 @@ def test_bucket_batch_drop_remainder():
     element_length_function = (lambda x: x[0] % 3)
     pad_info = None
     pad_to_bucket_boundary = False
-    drop_remainder = True
 
     dataset = dataset.bucket_batch_by_length(column_names, bucket_boundaries,
                                              bucket_batch_sizes, element_length_function,
@@ -386,12 +386,18 @@ def test_bucket_batch_drop_remainder():
                        [[10], [13], [16]],
                        [[18], [21]],
                        [[19], [22], [25]]]
+    if not drop_remainder:
+        # append the remainder
+        expected_output += [[[24]], [[17], [20], [23], [26]]]
 
-    output = []
-    for data in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
-        output.append(data["col1"].tolist())
-
-    assert output == expected_output
+    # iterate at least 2 epochs to check if the remainder is dropped
+    num_epochs = 2
+    iterator = dataset.create_dict_iterator(num_epochs=num_epochs, output_numpy=True)
+    for _ in range(num_epochs):
+        output = []
+        for data in iterator:
+            output.append(data["col1"].tolist())
+        assert output == expected_output
 
 
 def test_bucket_batch_default_length_function():
@@ -606,7 +612,7 @@ if __name__ == '__main__':
     test_bucket_batch_single_bucket_with_padding()
     test_bucket_batch_pad_to_bucket_boundary()
     test_bucket_batch_default_pad()
-    test_bucket_batch_drop_remainder()
+    test_bucket_batch_drop_remainder(drop_remainder=True)
     test_bucket_batch_default_length_function()
     test_bucket_batch_multi_column()
     test_bucket_batch_three_columns()
