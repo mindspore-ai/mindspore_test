@@ -55,7 +55,7 @@ void UniformExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
   seed_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
   offset_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
 
-  GetWorkspaceForResize(inputs[kIndex0], a_, b_, seed_, offset_);
+  GetWorkspaceForResize(outputs[kIndex0], a_, b_, seed_, offset_);
 }
 
 bool UniformExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
