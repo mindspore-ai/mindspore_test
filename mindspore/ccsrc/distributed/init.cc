@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include "include/backend/distributed/recovery/recovery_context.h"
+#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #include "runtime/pynative/op_executor.h"
@@ -27,6 +28,7 @@
 namespace mindspore {
 namespace distributed {
 using distributed::recovery::RecoveryContext;
+using mindspore::debug::tft::TFTWaitSem;
 
 bool Initialize() {
   // If this process participates in the cluster building, we need to initialize cluster context.
@@ -94,6 +96,9 @@ bool InitializeCluster() {
   // Set the callback for the cluster node.
   auto callback = std::make_shared<std::function<void(void)>>([]() {
     MS_LOG(INFO) << "Callback on exception is called.";
+    if (TFTWaitSem::IsEnable()) {
+      TFTWaitSem::GetInstance().Wait();
+    }
     if (!collective::CollectiveManager::instance()->Finalize()) {
       MS_LOG(EXCEPTION) << "Failed to finalize the collective communication lib.";
     }

@@ -52,7 +52,7 @@ TensorReportUtils &TensorReportUtils::GetInstance() {
       auto commPrefix = curDir.substr(0, found);
       const std::string &tftMsPrefix = commPrefix + "mindio_ttp/mindspore_api/";
       const std::string &tftCommPrefix = commPrefix + "mindio_ttp/framework_ttp/";
-      const std::vector<string> depLibs = {"libcrypto.so", "libssl.so", "libacc_tcp_net.so", "libttp_framework.so"};
+      const std::vector<string> depLibs = {"libttp_framework.so"};
       for (auto lPath : depLibs) {
         auto libPath = tftCommPrefix + lPath;
         void *handle = dlopen(libPath.c_str(), RTLD_LAZY);
