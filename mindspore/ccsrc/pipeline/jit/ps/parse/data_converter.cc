@@ -886,7 +886,11 @@ FuncGraphPtr ProcessLazyInline(const py::object &obj, const ValuePtrList &args_v
     MS_LOG(DEBUG) << "Get the cache data, obj: " << obj_key;
     reusing_graph = key_value->cast<FuncGraphPtr>();
   } else {
-    auto base_graph = ParsePythonCode(obj, python_mod_get_parse_method, args_value_list);
+    FuncGraphPtr base_graph = nullptr;
+    {
+      MS_LOG_TRY_CATCH_SCOPE;
+      base_graph = ParsePythonCode(obj, python_mod_get_parse_method, args_value_list);
+    }
     if (base_graph == nullptr) {
       MS_LOG(ERROR) << "Parse resolve function error.";
       return nullptr;
@@ -948,7 +952,10 @@ FuncGraphPtr ConvertToFuncGraph(const py::object &obj, const ValuePtrList &args_
       return nullptr;
     }
   } else {
-    func_graph = ParsePythonCode(obj, python_mod_get_parse_method, args_value_list);
+    {
+      MS_LOG_TRY_CATCH_SCOPE;
+      func_graph = ParsePythonCode(obj, python_mod_get_parse_method, args_value_list);
+    }
     if (func_graph == nullptr) {
       MS_LOG(ERROR) << "Parse resolve function error.";
       return nullptr;

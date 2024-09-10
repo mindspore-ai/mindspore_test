@@ -67,7 +67,10 @@ FuncGraphPtr GetTaylorRule(const PrimitivePtr &prim, const pipeline::ResourceBas
     MS_LOG(INFO) << "Fail to find taylor rule function for " << prim->name() << ". taylor_fn: " << py::str(taylor_fn);
     return nullptr;
   }
-  func_graph = parse::ParsePythonCode(taylor_fn);
+  {
+    MS_LOG_TRY_CATCH_SCOPE;
+    func_graph = parse::ParsePythonCode(taylor_fn);
+  }
   if (func_graph == nullptr) {
     MS_LOG(ERROR) << "Fail to parse taylor rule function for " << prim->name() << ".";
     return nullptr;
