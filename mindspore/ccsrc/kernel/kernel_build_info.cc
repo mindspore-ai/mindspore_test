@@ -222,15 +222,29 @@ size_t KernelBuildInfo::GetInputNum() const { return inputs_format_.size(); }
 size_t KernelBuildInfo::GetOutputNum() const { return outputs_format_.size(); }
 
 size_t KernelBuildInfo::GetOutputNumWithoutMonad() const {
-  const auto count = std::count_if(outputs_device_type_.begin(), outputs_device_type_.end(),
-                                   [](TypeId type) { return type != TypeId::kObjectTypeUMonad; });
-  return static_cast<size_t>(count);
+  std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad, TypeId::kObjectTypeIOMonad};
+  size_t count = 0;
+  for (auto &out_type_id : outputs_device_type_) {
+    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
+                    [&out_type_id](const TypeId type_id) { return type_id == out_type_id; })) {
+      continue;
+    }
+    ++count;
+  }
+  return count;
 }
 
 size_t KernelBuildInfo::GetInputNumWithoutMonad() const {
-  const auto count = std::count_if(inputs_device_type_.begin(), inputs_device_type_.end(),
-                                   [](TypeId type) { return type != TypeId::kObjectTypeUMonad; });
-  return static_cast<size_t>(count);
+  std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad, TypeId::kObjectTypeIOMonad};
+  size_t count = 0;
+  for (auto &in_type_id : inputs_device_type_) {
+    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
+                    [&in_type_id](const TypeId type_id) { return type_id == in_type_id; })) {
+      continue;
+    }
+    ++count;
+  }
+  return count;
 }
 
 std::string KernelBuildInfo::GetInputReshapeType(size_t input_index) const {
