@@ -192,6 +192,9 @@ class Graph {
   static std::vector<ValueNode *> CollectAliveNode(const FrameStates &, BitMap *, std::vector<int> * = nullptr);
   void FoundInnerClass() { found_inner_class = true; }
 
+  const auto &prepare() const { return prepare_; }
+  bool PrepareParameter(ValueNode *node);
+
  private:
   std::unique_ptr<CFG> cfg_;
   std::vector<LoopInfo *> loops_;
@@ -228,6 +231,11 @@ class Graph {
   Graph *parent_{nullptr};
   std::shared_ptr<SideEffect> side_effect_;
   bool found_inner_class = false;
+
+  struct PrepareInfo {
+    std::vector<ValueNode *> inputs_;
+    std::vector<ValueNode *> operations_;
+  } prepare_;
 };
 }  // namespace pijit
 }  // namespace mindspore

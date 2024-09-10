@@ -632,11 +632,9 @@ void CodeGenerator::Init() {
     ValueNode *param = nodes_->inputs[i];
     locals_map_[param] = i;
 
-    if (param->GetOpcode() == LOAD_DEREF && kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-      // One-stage mode allows param to be a LOAD_DEREF node, so no need to do the checks below.
-      continue;
+    if (IsNonLocalValue(param)) {
+      MS_LOG(INFO) << "got nonlocal parameter node: " << param->ToString();
     }
-    MS_EXCEPTION_IF_CHECK_FAIL(!IsNonLocalValue(param), "got nonlocal parameter node: " + param->ToString());
   }
 }
 

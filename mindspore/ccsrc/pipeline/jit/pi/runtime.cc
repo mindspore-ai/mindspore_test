@@ -463,16 +463,6 @@ static auto TraceRun(JitCompileResults *jcr) {
 
   GraphJitConfig &conf = *jcr->conf();
   GraphBuilderPtr g = GraphBuilder::Creator(jcr->origin_frame(), conf.GetBoolConfig(GraphJitConfig::kTraceFlag));
-
-  if (conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-    auto mg = std::dynamic_pointer_cast<MindGraphBuilder>(g);
-    MS_EXCEPTION_IF_NULL(mg);
-    bool has_vargs;
-    bool has_kwargs;
-    int args_count = jcr->origin_frame().GetCode().ArgCount(&has_vargs, &has_kwargs);
-    (void)mg->FGAddTopInputs(args_count - has_vargs - has_kwargs, has_vargs, has_kwargs);
-  }
-
   (void)g->TraceRun();
   return g;
 }

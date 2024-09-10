@@ -347,8 +347,6 @@ class MindGraphBuilder : public GraphBuilder {
   }
   bool trace_flag() { return true; }
   mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
-  bool FGAddTopInputs(int args_count, bool has_vargs, bool has_kwargs);
-  bool FGAddInputs(const std::vector<ValueNode *> &args);
   void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);
   void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
@@ -381,6 +379,9 @@ class MindGraphBuilder : public GraphBuilder {
   ValueNode *HandleCallClass(CallNode *call_node) override;
 
  private:
+  void FGAddTopInputs();
+  bool FGAddInputs(const std::vector<ValueNode *> &args);
+
   AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
   std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
   bool IsGradCallable(ValueNode *node);

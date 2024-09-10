@@ -805,7 +805,8 @@ bool GraphBuilder::DoExcMatch(const mindspore::pijit::Instr &instr) {
   if (res == 0) {
     cur_bci_ = instr.extra_jump()->bci();  // 没有匹配上，跳到目标bci
   } else {
-    cur_bci_++;  // 匹配到对应类型，fallthrough
+    // 匹配到对应类型，fallthrough
+    cur_bci_++;
   }
   return true;
 }
@@ -2508,6 +2509,8 @@ MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f) {
   fg_builder_ = std::make_shared<FuncGraphBuilder>(true);
   fg_builder_->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
   co_name_ = name;
+
+  this->FGAddTopInputs();
 }
 
 namespace {
@@ -4007,47 +4010,65 @@ LocationPtr MindGraphBuilder::GetLocation(CallNode *call_node) const {
   return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));
 }
 
-bool MindGraphBuilder::FGAddTopInputs(int args_count, bool has_vargs, bool has_kwargs) {
-  const auto &locals = frame_.GetLocals();
-  MS_EXCEPTION_IF_CHECK_FAIL(args_count + has_vargs + has_kwargs <= SizeToInt(locals.size()),
-                             "Locals size check failed");
-  int cur_index = 0;
-  for (cur_index = 0; cur_index < args_count; ++cur_index) {
-    auto cur = locals[cur_index];
-    auto cur_object = cur->GetVobj()->GetPyObject();
-    if (cur_index == 0 && cur->GetName() == "self" && py::isinstance<Cell>(cur_object)) {
-      MS_LOG(INFO) << "Eliminate self node as input, node is " << cur->ToString();
-      continue;
+void MindGraphBuilder::FGAddTopInputs() {
+  auto add_input = [this](ValueNode *cur) {
+    if (cur == &ValueNode::kUnboundLocal) {
+      return; /* LOAD_DEREF */
     }
+    auto cur_object = cur->GetVobj()->GetPyObject();
     if (fg_builder_->IsParameterSequence(cur_object)) {
-      continue;
+      MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
+      cur->SetOpcode(LOAD_CONST);
+      return;
     }
     auto ret = fg_builder_->AddTopGraphArgInput(cur_object);
     if (ret == nullptr) {
-      return false;
+      return;
     }
     cur->set_abstract_wrapper(ret);
+    root()->GetGraph()->PrepareParameter(cur);
+  };
+  auto add_var_input = [this](ValueNode *cur, bool is_var_keywords) {
+    if (cur == &ValueNode::kUnboundLocal) {
+      return; /* LOAD_DEREF */
+    }
+    auto cur_object = cur->GetVobj()->GetPyObject();
+    auto ret = is_var_keywords ? fg_builder_->AddTopGraphKwargsInputs(cur_object)
+                               : fg_builder_->AddTopGraphVargsInputs(cur_object);
+    if (ret == nullptr) {
+      return;
+    }
+    cur->set_abstract_wrapper(ret);
+    root()->GetGraph()->PrepareParameter(cur);
+  };
+
+  bool has_vargs;
+  bool has_kwargs;
+  int args_count = PyCodeWrapper(GetGraph()->GetCodeObj()).ArgCount(&has_vargs, &has_kwargs);
+  const auto &locals = frame_.GetLocals();
+  MS_EXCEPTION_IF_CHECK_FAIL(args_count <= SizeToInt(locals.size()), "Locals size check failed");
+  args_count = args_count - has_vargs - has_kwargs;
+
+  for (const auto &node : frame_.GetClosures()) {
+    auto cur = node->GetValue();
+    if (cur != nullptr) {
+      add_input(cur); /* LOAD_DEREF */
+    }
+  }
+  int cur_index = 0;
+  for (cur_index = 0; cur_index < args_count; ++cur_index) {
+    auto cur = locals[cur_index];
+    add_input(cur);
   }
   if (has_vargs) {
     auto cur = locals[cur_index];
-    auto cur_object = cur->GetVobj()->GetPyObject();
-    auto ret = fg_builder_->AddTopGraphVargsInputs(cur_object);
-    if (ret == nullptr) {
-      return false;
-    }
-    cur->set_abstract_wrapper(ret);
+    add_var_input(cur, false);
     cur_index++;
   }
   if (has_kwargs) {
     auto cur = locals[cur_index];
-    auto cur_object = cur->GetVobj()->GetPyObject();
-    auto ret = fg_builder_->AddTopGraphKwargsInputs(cur_object);
-    if (ret == nullptr) {
-      return false;
-    }
-    cur->set_abstract_wrapper(ret);
+    add_var_input(cur, true);
   }
-  return true;
 }
 
 bool MindGraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
@@ -4465,8 +4486,22 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
   //   1. function with side effect such as list.__setitem__.
   //   2. function return iterator, such as enumerate.
   static std::vector<std::string> forbidden_list = {
-    "Tensor.__setitem__", "list.append",      "list.pop",  "list.insert", "list.clear", "list.reverse",
-    "list.__setitem__",   "dict.__setitem__", "enumerate", "zip",         "map",        "filter"};
+    "Tensor.__setitem__",
+    "list.append",
+    "list.pop",
+    "list.insert",
+    "list.clear",
+    "list.reverse",
+    "list.__setitem__",
+    "dict.__setitem__",
+    "dict.update",
+    "dict.clear",
+    "dict.pop",
+    "enumerate",
+    "zip",
+    "map",
+    "filter",
+  };
   return std::any_of(forbidden_list.begin(), forbidden_list.end(),
                      [&qualname](const std::string &name) { return qualname == name; });
 }
