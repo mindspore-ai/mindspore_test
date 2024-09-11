@@ -398,6 +398,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &objec
   para->set_user_data(kPiJitPyObjKey, std::make_shared<py::object>(object));
   AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, para);
+  origin_top_input_num_ = origin_top_input_num_ + 1;
   MS_LOG(INFO) << "Add top arg input success, python object: " << py::str(object) << ", node: " << para->DebugString()
                << ", abstract: " << abs->ToString();
   return abstract_wrapper;
@@ -444,6 +445,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   (void)key_to_node_.emplace(abstract_wrapper, para);
   MS_LOG(INFO) << "Add top vargs input success, python object: " << py::str(vargs) << ", node: " << para->DebugString()
                << ", abstract: " << new_vargs_abs->ToString();
+  origin_top_input_num_ = origin_top_input_num_ + 1;
   return abstract_wrapper;
 }
 
@@ -524,6 +526,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphKwargsInputs(const py::object &k
   (void)key_to_node_.emplace(abstract_wrapper, para);
   MS_LOG(INFO) << "Add top kwargs input success, python object: " << py::str(kwargs)
                << ", node: " << para->DebugString() << ", abstract: " << new_kwargs_abs->ToString();
+  origin_top_input_num_ = origin_top_input_num_ + 1;
   return abstract_wrapper;
 }
 

@@ -881,3 +881,85 @@ def test_constant_flod_for_variable():
     net = Net()
     ret = net(a, b)
     assert np.all(ret.asnumpy() == np.array([4, 6, 8]))
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.a = 1
+
+        @jit(mode="PIJit", jit_config={"pijit_attr_as_input": ["a"]})
+        def construct(self, x):
+            self.a = self.a + 1
+            return self.a + x
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    m = Tensor([1, 2, 3])
+    net = Net()
+    ret = net(m)
+    assert np.all(ret.asnumpy() == np.array([3, 4, 5]))
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.a = 1
+            self.b = Parameter(Tensor([1, 1, 1]), name='b')
+
+        @jit(mode="PIJit", jit_config={"pijit_attr_as_input": ["a"]})
+        def construct(self, x):
+            b = self.b
+            self.a = self.a + 1
+            return b + self.a + x
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    m = Tensor([1, 2, 3])
+    net = Net()
+    ret = net(m)
+    assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_attr_as_inputs_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.a = 1
+            self.b = Parameter(Tensor([1, 1, 1]), name='b')
+
+        @jit(mode="PIJit", jit_config={"pijit_attr_as_input": ["a"]})
+        def construct(self, x):
+            b = self.b
+            self.a = self.a + 1
+            return b + self.a + x
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    m = Parameter(Tensor([1, 2, 3]), name='m')
+    net = Net()
+    ret = net(m)
+    assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
