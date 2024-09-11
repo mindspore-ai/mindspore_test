@@ -200,14 +200,19 @@ bool EnableLccl() {
     return false;
   }
   auto enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
-  if (!enable_infer_boost) {
+  if (enable_infer_boost) {
+    static bool disable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "off";
+    if (disable_lccl) {
+      return false;
+    }
+    return true;
+  } else {
+    static bool enable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "on";
+    if (enable_lccl) {
+      return true;
+    }
     return false;
   }
-  static bool disable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "off";
-  if (disable_lccl) {
-    return false;
-  }
-  return true;
 }
 
 void InitializeAcl() {
