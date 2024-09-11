@@ -138,6 +138,43 @@ bool CheckTypeIdAndShapeEqual(const AbstractBasePtr &left, const AbstractBasePtr
   return left_type->type_id() == right_type->type_id() &&
          CheckAndConvertUtils::CheckAbstractShapeSame({left, right}) == 0;
 }
+
+CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEnginePtr &engine,
+                                  const AnfNodeConfigPtr &out_conf) {
+  AnfNodePtrList new_inputs;
+  auto fg = out_conf->node()->func_graph();
+  for (size_t idx = 0; idx < source_node->size(); ++idx) {
+    auto input = source_node->input(idx);
+    AnfNodeConfigPtr config = engine->MakeConfig(input, out_conf->context(), out_conf->func_graph());
+    MS_EXCEPTION_IF_NULL(config);
+    const auto &eval_result = config->ObtainEvalResult();
+    MS_EXCEPTION_IF_NULL(eval_result);
+    auto input_abs = eval_result->abstract();
+    if (input_abs->isa<AbstractDictionary>()) {
+      const auto &dict_elems = input_abs->cast<AbstractDictionaryPtr>()->elements();
+      for (const auto &elem : dict_elems) {
+        auto key_node = NewValueNode(elem.first->BuildValue());
+        auto value_node = fg->NewCNode({NewValueNode(prim::kPrimDictGetItem), input, key_node});
+        (void)new_inputs.emplace_back(fg->NewCNode({NewValueNode(prim::kPrimMakeKeywordArg), key_node, value_node}));
+      }
+    } else if (input_abs->isa<AbstractTuple>()) {
+      auto arg_tuple = input_abs->cast<AbstractTuplePtr>();
+      for (size_t i = 0; i < arg_tuple->size(); ++i) {
+        (void)new_inputs.emplace_back(
+          fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(SizeToLong(i))}));
+      }
+    } else if (input_abs->isa<AbstractList>()) {
+      auto arg_list = input_abs->cast<AbstractListPtr>();
+      for (size_t i = 0; i < arg_list->size(); ++i) {
+        (void)new_inputs.emplace_back(
+          fg->NewCNode({NewValueNode(prim::kPrimListGetItem), input, NewValueNode(SizeToLong(i))}));
+      }
+    } else {
+      (void)new_inputs.emplace_back(input);
+    }
+  }
+  return fg->NewCNodeInOrder(new_inputs);
+}
 }  // namespace
 
 CNodePtr DoSignatureEvaluator::GenerateNewNodeBySignatures(const ValuePtr &func,
@@ -2917,12 +2954,23 @@ EvalResultPtr PrimInstanceEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
   AnfNodePtrList call_args_list;
   (void)std::copy(cnode->inputs().begin() + input_start_index, cnode->inputs().end(),
                   std::back_inserter(call_args_list));
-  // Add args: a, b.
-  MS_EXCEPTION_IF_NULL(instance_node_.lock());
-  auto prim_instance_cnode = instance_node_.lock()->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(prim_instance_cnode);
-  (void)std::copy(prim_instance_cnode->inputs().begin() + 1, prim_instance_cnode->inputs().end(),
-                  std::back_inserter(init_args_list));
+  // Add init args: a, b.
+  constexpr size_t op_index = 0;
+  auto partial_node = cnode->input(op_index);
+  MS_EXCEPTION_IF_NULL(partial_node);
+  auto partial_cnode = partial_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(partial_cnode);
+  auto fn_input = partial_cnode->input(0);
+  size_t init_begin_index = 2;
+  if (IsValueNode<prim::UnpackCall>(fn_input) || IsPrimitive(fn_input, prim::kPrimDoUnpackCall)) {
+    auto instance_nodes = GetInputsAfterUnpackCall(partial_cnode, engine, out_conf);
+    (void)std::copy(instance_nodes->inputs().begin() + init_begin_index, instance_nodes->inputs().end(),
+                    std::back_inserter(init_args_list));
+  } else {
+    init_begin_index = 1;
+    (void)std::copy(partial_cnode->inputs().begin() + init_begin_index, partial_cnode->inputs().end(),
+                    std::back_inserter(init_args_list));
+  }
   // Create new cnode.
   std::vector<ops::OpInputArg> op_call_args;
   std::vector<ops::OpInputArg> op_init_args;
@@ -2952,7 +3000,7 @@ EvalResultPtr PrimInstanceEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
   auto new_conf = engine->MakeConfig(new_cnode, out_conf->context(), out_conf->func_graph());
   constexpr auto recursive_level = 2;
   MS_LOG(DEBUG) << "For Primitive[" << prim_name_ << "], using old node " << cnode->DebugString(recursive_level)
-                << " and instance node " << prim_instance_cnode->DebugString(recursive_level) << "to create new node "
+                << " and instance node " << partial_cnode->DebugString(recursive_level) << "to create new node "
                 << new_cnode->DebugString(recursive_level);
   return engine->ForwardConfig(out_conf, new_conf);
 }
@@ -5044,9 +5092,9 @@ class DoUnpackCallEvaluator : public TransitionPrimEvaluator {
     // Unpack call for primitive.
     auto unpack_prim_node = UnpackCallForPrimitive(args_abs_list, cnode, engine, out_conf);
     if (unpack_prim_node != nullptr) {
+      auto new_node = GetInputsAfterUnpackCall(unpack_prim_node, engine, out_conf);
       MS_LOG(DEBUG) << "Unpack call for primitive: convert " << cnode->DebugString() << " to "
-                    << unpack_prim_node->DebugString();
-      auto new_node = GetInputNodes(unpack_prim_node, engine, out_conf);
+                    << new_node->DebugString();
       AnfNodeConfigPtr fn_conf = engine->MakeConfig(new_node, out_conf->context(), out_conf->func_graph());
       return engine->ForwardConfig(out_conf, fn_conf);
     }
@@ -5061,44 +5109,6 @@ class DoUnpackCallEvaluator : public TransitionPrimEvaluator {
                   << unpack_call_node->DebugString();
     AnfNodeConfigPtr fn_conf = engine->MakeConfig(unpack_call_node, out_conf->context(), out_conf->func_graph());
     return engine->ForwardConfig(out_conf, fn_conf);
-  }
-
-  CNodePtr GetInputNodes(const CNodePtr &source_node, const AnalysisEnginePtr &engine,
-                         const AnfNodeConfigPtr &out_conf) {
-    AnfNodePtrList new_inputs;
-    auto fg = out_conf->node()->func_graph();
-    for (size_t idx = 0; idx < source_node->size(); ++idx) {
-      auto input = source_node->input(idx);
-      AnfNodeConfigPtr config = engine->MakeConfig(input, out_conf->context(), out_conf->func_graph());
-      MS_EXCEPTION_IF_NULL(config);
-      const auto &eval_result = config->ObtainEvalResult();
-      MS_EXCEPTION_IF_NULL(eval_result);
-      auto input_abs = eval_result->abstract();
-      if (input_abs->isa<AbstractDictionary>()) {
-        auto dict_elems = input_abs->cast<AbstractDictionaryPtr>()->elements();
-        for (const auto &elem : dict_elems) {
-          auto key = GetValue<std::string>(elem.first->BuildValue());
-          auto key_node = NewValueNode(key);
-          auto value_node = fg->NewCNode({NewValueNode(prim::kPrimDictGetItem), input, key_node});
-          (void)new_inputs.emplace_back(fg->NewCNode({NewValueNode(prim::kPrimMakeKeywordArg), key_node, value_node}));
-        }
-      } else if (input_abs->isa<AbstractTuple>()) {
-        auto arg_tuple = input_abs->cast<AbstractTuplePtr>();
-        for (size_t i = 0; i < arg_tuple->size(); ++i) {
-          (void)new_inputs.emplace_back(
-            fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), input, NewValueNode(SizeToLong(i))}));
-        }
-      } else if (input_abs->isa<AbstractList>()) {
-        auto arg_list = input_abs->cast<AbstractListPtr>();
-        for (size_t i = 0; i < arg_list->size(); ++i) {
-          (void)new_inputs.emplace_back(
-            fg->NewCNode({NewValueNode(prim::kPrimListGetItem), input, NewValueNode(SizeToLong(i))}));
-        }
-      } else {
-        (void)new_inputs.emplace_back(input);
-      }
-    }
-    return fg->NewCNodeInOrder(new_inputs);
   }
 
   CNodePtr UnpackCallForPrimitive(const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode,

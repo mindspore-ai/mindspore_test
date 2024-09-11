@@ -248,3 +248,35 @@ def test_diagonal_unsupported_input_type(mode):
     with pytest.raises(TypeError) as info:
         Diagonal()(1.0, 1, 1, -3)
     assert "Failed calling Diagonal with" in str(info.value)
+
+
+class Isclose(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.net = ms.ops.isclose
+
+    @ms.jit
+    def construct(self, input_x, other, rtol, atol, equal_nan):
+        return self.net(input_x, other, rtol, atol, equal_nan)
+
+def test_isclose_dynamic_shape():
+    """
+    Feature: DynamicShape.
+    Description: Test ops.isclose in dynamic shape.
+    Expectation: No exception.
+    """
+    input_x = ms.Tensor(shape=(None, None), dtype=ms.float32)
+    other = ms.Tensor(shape=(None, None), dtype=ms.float32)
+    rtol = mutable(3e-3, dynamic_len=False)
+    atol = mutable(2e-3, dynamic_len=False)
+    equal_nan = mutable(True, dynamic_len=False)
+
+    input_x1 = ms.Tensor(np.random.randn(4, 3), dtype=ms.float32)
+    other1 = ms.Tensor(np.random.randn(1, 3), dtype=ms.float32)
+    rtol1 = mutable(3e-3, dynamic_len=False)
+    atol1 = mutable(2e-3, dynamic_len=False)
+    equal_nan1 = mutable(True, dynamic_len=False)
+
+    net = Isclose()
+    net.set_inputs(input_x, other, rtol, atol, equal_nan)
+    net(input_x1, other1, rtol1, atol1, equal_nan1)

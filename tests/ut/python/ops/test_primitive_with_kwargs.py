@@ -21,7 +21,6 @@ from mindspore import ops
 from mindspore.ops.operations._inner_ops import AntiQuant
 
 
-
 def test_primitive_init_keyword_argument():
     """
     Feature: DynamicShape.
