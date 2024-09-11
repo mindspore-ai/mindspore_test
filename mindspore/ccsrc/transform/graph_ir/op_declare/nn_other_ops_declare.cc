@@ -214,7 +214,8 @@ OUTPUT_MAP(EmbeddingApplyRmsprop) = {{0, OUTPUT_DESC(var_handle)}};
 REG_ADPT_DESC(EmbeddingApplyRmsprop, ops::kNameEmbeddingApplyRmsprop, ADPT_DESC(EmbeddingApplyRmsprop))
 
 // EmbeddingTableImport
-INPUT_MAP(EmbeddingTableImport) = {{1, INPUT_DESC(file_path)}, {2, INPUT_DESC(ps_id)}, {3, INPUT_DESC(table_id)}};
+INPUT_MAP(EmbeddingTableImport) = {
+  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(ps_id)}, {3, INPUT_DESC(table_id)}, {4, INPUT_DESC(global_step)}};
 ATTR_MAP(EmbeddingTableImport) = {
   {"embedding_dim", ATTR_DESC(embedding_dim, AnyTraits<std::vector<int64_t>>())},
   {"value_total_len", ATTR_DESC(value_total_len, AnyTraits<std::vector<int64_t>>())},
@@ -245,10 +246,7 @@ REG_ADPT_DESC(EmbeddingTableExport, kNameEmbeddingTableExport, ADPT_DESC(Embeddi
 
 // EmbeddingComputeVarExport
 INPUT_MAP(EmbeddingComputeVarExport) = {
-  {1, INPUT_DESC(file_path)},
-  {2, INPUT_DESC(ps_id)},
-  {3, INPUT_DESC(table_id)},
-};
+  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(ps_id)}, {3, INPUT_DESC(table_id)}, {4, INPUT_DESC(global_step)}};
 ATTR_MAP(EmbeddingComputeVarExport) = {
   {"table_name", ATTR_DESC(table_name, AnyTraits<std::vector<std::string>>())},
   {"_process_node_engine_id", ATTR_DESC(_process_node_engine_id, AnyTraits<std::string>())},
@@ -258,10 +256,7 @@ REG_ADPT_DESC(EmbeddingComputeVarExport, kNameEmbeddingComputeVarExport, ADPT_DE
 
 // EmbeddingComputeVarImport
 INPUT_MAP(EmbeddingComputeVarImport) = {
-  {1, INPUT_DESC(file_path)},
-  {2, INPUT_DESC(ps_id)},
-  {3, INPUT_DESC(table_id)},
-};
+  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(ps_id)}, {3, INPUT_DESC(table_id)}, {4, INPUT_DESC(global_step)}};
 ATTR_MAP(EmbeddingComputeVarImport) = {
   {"table_name", ATTR_DESC(table_name, AnyTraits<std::vector<std::string>>())},
   {"_process_node_engine_id", ATTR_DESC(_process_node_engine_id, AnyTraits<std::string>())},
@@ -336,18 +331,19 @@ REG_ADPT_DESC(EmbeddingFeatureMappingFind, ops::kNameEmbeddingFeatureMappingFind
 
 // EmbeddingFeatureMappingExport
 INPUT_MAP(EmbeddingFeatureMappingExport) = {
-  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(table_name)}, {3, INPUT_DESC(values)}};
-DYN_INPUT_MAP(EmbeddingFeatureMappingExport) = {{5, DYN_INPUT_DESC(feature_id)}, {6, DYN_INPUT_DESC(offset_id)}};
-INPUT_ATTR_MAP(EmbeddingFeatureMappingExport) = {{4, ATTR_DESC(embedding_dim, AnyTraits<std::vector<int64_t>>())}};
+  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(table_name)}, {3, INPUT_DESC(global_step)}, {4, INPUT_DESC(values)}};
+DYN_INPUT_MAP(EmbeddingFeatureMappingExport) = {{6, DYN_INPUT_DESC(feature_id)}, {7, DYN_INPUT_DESC(offset_id)}};
+INPUT_ATTR_MAP(EmbeddingFeatureMappingExport) = {{5, ATTR_DESC(embedding_dim, AnyTraits<std::vector<int64_t>>())}};
 ATTR_MAP(EmbeddingFeatureMappingExport) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(EmbeddingFeatureMappingExport) = EMPTY_OUTPUT_MAP;
 REG_ADPT_DESC(EmbeddingFeatureMappingExport, ops::kNameEmbeddingFeatureMappingExport,
               ADPT_DESC(EmbeddingFeatureMappingExport))
 
 // EmbeddingFeatureMappingFileSize
-INPUT_MAP(EmbeddingFeatureMappingFileSize) = {{1, INPUT_DESC(file_path)}, {2, INPUT_DESC(table_name)}};
-INPUT_ATTR_MAP(EmbeddingFeatureMappingFileSize) = {{3, ATTR_DESC(embedding_dim, AnyTraits<std::vector<int64_t>>())},
-                                                   {4, ATTR_DESC(only_offset_flag, AnyTraits<bool>())}};
+INPUT_MAP(EmbeddingFeatureMappingFileSize) = {
+  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(table_name)}, {3, INPUT_DESC(global_step)}};
+INPUT_ATTR_MAP(EmbeddingFeatureMappingFileSize) = {{4, ATTR_DESC(embedding_dim, AnyTraits<std::vector<int64_t>>())},
+                                                   {5, ATTR_DESC(only_offset_flag, AnyTraits<bool>())}};
 ATTR_MAP(EmbeddingFeatureMappingFileSize) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(EmbeddingFeatureMappingFileSize) = {{0, OUTPUT_DESC(feature_size)}};
 REG_ADPT_DESC(EmbeddingFeatureMappingFileSize, ops::kNameEmbeddingFeatureMappingFileSize,
@@ -355,10 +351,10 @@ REG_ADPT_DESC(EmbeddingFeatureMappingFileSize, ops::kNameEmbeddingFeatureMapping
 
 // EmbeddingFeatureMappingImport
 INPUT_MAP(EmbeddingFeatureMappingImport) = {
-  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(table_name)}, {3, INPUT_DESC(feature_size)}};
-INPUT_ATTR_MAP(EmbeddingFeatureMappingImport) = {{4, ATTR_DESC(embedding_dim, AnyTraits<std::vector<int64_t>>())},
-                                                 {5, ATTR_DESC(only_offset_flag, AnyTraits<bool>())},
-                                                 {6, ATTR_DESC(num, AnyTraits<int64_t>())}};
+  {1, INPUT_DESC(file_path)}, {2, INPUT_DESC(table_name)}, {3, INPUT_DESC(feature_size)}, {4, INPUT_DESC(global_step)}};
+INPUT_ATTR_MAP(EmbeddingFeatureMappingImport) = {{5, ATTR_DESC(embedding_dim, AnyTraits<std::vector<int64_t>>())},
+                                                 {6, ATTR_DESC(only_offset_flag, AnyTraits<bool>())},
+                                                 {7, ATTR_DESC(num, AnyTraits<int64_t>())}};
 ATTR_MAP(EmbeddingFeatureMappingImport) = EMPTY_ATTR_MAP;
 DYN_OUTPUT_MAP(EmbeddingFeatureMappingImport) = {
   {0, DYN_OUTPUT_DESC(feature_id)}, {1, DYN_OUTPUT_DESC(offset_id)}, {2, DYN_OUTPUT_DESC(values)}};

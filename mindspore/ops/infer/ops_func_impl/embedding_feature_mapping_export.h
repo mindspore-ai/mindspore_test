@@ -26,8 +26,8 @@ class OPS_API EmbeddingFeatureMappingExportFuncImpl final : public EmbeddingFeat
  public:
   EmbeddingFeatureMappingExportFuncImpl() {
     table_name_idx_ = 1;
-    feature_id_idx_ = 4;
-    other_arg_num_ = 4;
+    feature_id_idx_ = 5;
+    other_arg_num_ = 5;
   }
 
   ~EmbeddingFeatureMappingExportFuncImpl() = default;
@@ -39,8 +39,8 @@ class OPS_API EmbeddingFeatureMappingExportFuncImpl final : public EmbeddingFeat
                          size_t table_num, const std::vector<int64_t> &feature_size) const override;
 
  private:
-  const size_t values_idx_{2};
-  const size_t embedding_dim_idx_{3};
+  const size_t values_idx_{3};
+  const size_t embedding_dim_idx_{4};
 };
 }  // namespace ops
 }  // namespace mindspore
