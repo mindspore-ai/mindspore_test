@@ -259,11 +259,15 @@ ShapeArray ReduceInferShape(const PrimitivePtr &primitive, const ValuePtrList &i
 }
 
 ShapeArray ReduceExtandSimpleInferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) {
+  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input);
+  const auto &input_shape = input->shape();
+  const auto input_shape_size = input_shape.size();
   const auto &keep_dims = input_values[kIndex2]->cast<BoolImmPtr>();
   MS_EXCEPTION_IF_NULL(keep_dims);
 
   if (input_values[kIndex1] == mindspore::kNone) {
-    return keep_dims->value() ? ShapeArray{ShapeVector({1})} : ShapeArray{ShapeVector({})};
+    return keep_dims->value() ? ShapeArray{ShapeVector(input_shape_size, 1)} : ShapeArray{ShapeVector({})};
   }
 
   const auto &axis = input_values[kIndex1]->cast<ValueTuplePtr>();
@@ -277,13 +281,8 @@ ShapeArray ReduceExtandSimpleInferShape(const PrimitivePtr &primitive, const Val
   }
 
   if (axis_vector.empty()) {
-    return keep_dims->value() ? ShapeArray{ShapeVector({1})} : ShapeArray{ShapeVector({})};
+    return keep_dims->value() ? ShapeArray{ShapeVector(input_shape_size, 1)} : ShapeArray{ShapeVector({})};
   }
-
-  const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input);
-  const auto &input_shape = input->shape();
-  const auto input_shape_size = input_shape.size();
 
   std::vector<int64_t> real_axis_vector;
   (void)std::transform(
