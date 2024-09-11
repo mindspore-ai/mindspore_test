@@ -350,10 +350,10 @@ class ESEmbeddingCKPTExport(nn.Cell):
         self.table_id_tensor = Tensor(table_id_list, ms.int32)
         self.depend = ops.Depend()
 
-    def construct(self):
-        export_op1 = self.embedding_table_export(self.file_path, self.ps_id_tensor, self.table_id_tensor)
+    def construct(self, global_step):
+        export_op1 = self.embedding_table_export(self.file_path, self.ps_id_tensor, self.table_id_tensor, global_step)
         z = self.depend(self.file_path, export_op1)
-        export_op2 = self.embedding_compute_var_export(z, self.ps_id_tensor, self.table_id_tensor)
+        export_op2 = self.embedding_compute_var_export(z, self.ps_id_tensor, self.table_id_tensor, global_step)
         return export_op2
 
 
@@ -374,8 +374,8 @@ class ESEmbeddingTableExport(nn.Cell):
         self.ps_id_tensor = Tensor(0, ms.int32)
         self.table_id_tensor = Tensor(table_id_list, ms.int32)
 
-    def construct(self):
-        y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor)
+    def construct(self, global_step):
+        y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor, global_step)
         return y
 
 
@@ -397,8 +397,8 @@ class ESIncrementalEmbeddingTableExport(nn.Cell):
         self.ps_id_tensor = Tensor(0, ms.int32)
         self.table_id_tensor = Tensor(table_id_list, ms.int32)
 
-    def construct(self):
-        y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor)
+    def construct(self, global_step):
+        y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor, global_step)
         return y
 
 
@@ -418,10 +418,10 @@ class ESEmbeddingCKPTImport(nn.Cell):
         self.table_id_tensor = Tensor(table_id_list, ms.int32)
         self.depend = ops.Depend()
 
-    def construct(self):
-        export_op1 = self.embedding_table_import(self.file_path, self.ps_id_tensor, self.table_id_tensor)
+    def construct(self, global_step):
+        export_op1 = self.embedding_table_import(self.file_path, self.ps_id_tensor, self.table_id_tensor, global_step)
         z = self.depend(self.file_path, export_op1)
-        export_op2 = self.embedding_compute_var_import(z, self.ps_id_tensor, self.table_id_tensor)
+        export_op2 = self.embedding_compute_var_import(z, self.ps_id_tensor, self.table_id_tensor, global_step)
         return export_op2
 
 
@@ -440,8 +440,8 @@ class ESEmbeddingTableImport(nn.Cell):
         self.ps_id_tensor = Tensor(0, ms.int32)
         self.table_id_tensor = Tensor(table_id_list, ms.int32)
 
-    def construct(self):
-        y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor)
+    def construct(self, global_step):
+        y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor, global_step)
         return y
 
 
@@ -476,6 +476,7 @@ class ESEmbeddingFeatureMappingExport(nn.Cell):
         self.var = Tensor(var, ms.float32)
         self.var_name = Tensor(np.array([var_name]))
         self.small_table_embedding_dim = [small_table_embedding_dim]
+        self.global_step = Tensor([-1], ms.int64)
 
     def construct(self):
         """
@@ -488,7 +489,7 @@ class ESEmbeddingFeatureMappingExport(nn.Cell):
             embed_values = values
         else:
             embed_values = Tensor([0], ms.float32)
-        feature_mapping_export = self.embedding_feature_mapping_export(self.file_path, self.var_name,
+        feature_mapping_export = self.embedding_feature_mapping_export(self.file_path, self.var_name, self.global_step,
                                                                        embed_values, self.small_table_embedding_dim,
                                                                        [feature_id], [offset_id])
         return feature_mapping_export
@@ -498,7 +499,7 @@ class ESEmbeddingFeatureMappingImport(nn.Cell):
     """
     ESEmbeddingFeatureMappingImport.
     """
-    def __init__(self, file_path, small_table_name, small_table_embedding_dim):
+    def __init__(self, file_path, small_table_name, small_table_embedding_dim, only_offset_flag):
         super(ESEmbeddingFeatureMappingImport, self).__init__()
         self.embedding_feature_mapping_file_size = EmbeddingFeatureMappingFileSize()
         self.embedding_feature_mapping_import = EmbeddingFeatureMappingImport()
@@ -506,6 +507,8 @@ class ESEmbeddingFeatureMappingImport(nn.Cell):
         self.file_path = file_path
         self.small_table_name = Tensor(np.array([small_table_name]))
         self.small_table_embedding_dim = [small_table_embedding_dim]
+        self.only_offset_flag = only_offset_flag
+        self.global_step = Tensor([-1], ms.int64)
 
     def construct(self):
         """
@@ -513,13 +516,14 @@ class ESEmbeddingFeatureMappingImport(nn.Cell):
         """
         feature_size = self.embedding_feature_mapping_file_size(self.file_path,
                                                                 self.small_table_name,
+                                                                self.global_step,
                                                                 self.small_table_embedding_dim,
-                                                                True)
+                                                                self.only_offset_flag)
         feature_id, offset_id = self.embedding_feature_mapping_import(self.file_path,
                                                                       self.small_table_name,
-                                                                      feature_size,
+                                                                      feature_size, self.global_step,
                                                                       self.small_table_embedding_dim,
-                                                                      True, 1)
+                                                                      self.only_offset_flag, 1)
         feature_mapping_insert = self.embedding_feature_mapping_insert(self.small_table_name, 1,
                                                                        [feature_id], [offset_id])
         return feature_mapping_insert

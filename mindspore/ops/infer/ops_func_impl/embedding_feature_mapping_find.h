@@ -27,6 +27,11 @@ class OPS_API EmbeddingFeatureMappingFindFuncImpl final : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+ private:
+  const size_t table_name_idx_{0};
+  const size_t feature_size_idx_{1};
+  const size_t num_idx_{2};
 };
 }  // namespace ops
 }  // namespace mindspore

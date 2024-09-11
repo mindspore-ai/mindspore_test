@@ -40,6 +40,7 @@ class EmbeddingFeatueMappingExportNet(nn.Cell):
         self.table_name = Tensor(np.array(table_name))
         self.len = len(table_name)
         self.table_name_list = [Tensor(np.array([name])) for name in table_name]
+        self.global_step = Tensor(-1, ms.int64)
 
     def construct(self, file_path, values, embedding_dim):
         feature_id = []
@@ -51,6 +52,7 @@ class EmbeddingFeatueMappingExportNet(nn.Cell):
             feature_id.append(f)
             offset_id.append(o)
         out = ops.auto_generate.embedding_feature_mapping_export(file_path, self.table_name,
+                                                                 self.global_step,
                                                                  values, embedding_dim,
                                                                  feature_id, offset_id)
         return out
@@ -66,8 +68,9 @@ class EmbeddingFeatueMappingInsertNet(nn.Cell):
         self.table_name = Tensor(np.array(table_name))
         self.len = len(table_name)
         self.table_name_list = [Tensor(np.array([name])) for name in table_name]
+        self.global_step = Tensor(-1, ms.int64)
 
-    def construct(self, file_path, embedding_dim, only_offset_flag=True):
+    def construct(self, file_path, embedding_dim, only_offset_flag=False):
         feature_id = []
         offset_id = []
         for i in range(self.len):
@@ -75,10 +78,13 @@ class EmbeddingFeatueMappingInsertNet(nn.Cell):
             cur_embedding_dim = embedding_dim[i:i + 1]
             cur_feature_size = ops.auto_generate.embedding_feature_mapping_file_size(file_path,
                                                                                      cur_table_name,
+                                                                                     self.global_step,
                                                                                      cur_embedding_dim,
                                                                                      only_offset_flag)
             f, o = ops.auto_generate.embedding_feature_mapping_import(file_path, cur_table_name,
-                                                                      cur_feature_size, cur_embedding_dim,
+                                                                      cur_feature_size,
+                                                                      self.global_step,
+                                                                      cur_embedding_dim,
                                                                       only_offset_flag, 1)
             feature_id.append(f)
             offset_id.append(o)

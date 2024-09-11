@@ -28,6 +28,9 @@ class OPS_API EmbeddingFeatureMappingFileSizeFuncImpl final : public EmbeddingFe
   ~EmbeddingFeatureMappingFileSizeFuncImpl() = default;
 
   int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+ private:
+  const size_t embedding_dim_idx_{3};
 };
 }  // namespace ops
 }  // namespace mindspore

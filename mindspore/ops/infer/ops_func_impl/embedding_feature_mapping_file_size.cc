@@ -29,7 +29,7 @@ int32_t EmbeddingFeatureMappingFileSizeFuncImpl::CheckValidation(const Primitive
   }
 
   auto table_num = SizeOf(table_name_shape);
-  auto embedding_dim_opt = GetArrayValue<int64_t>(input_args[table_name_idx_ + kIndex1]);
+  auto embedding_dim_opt = GetArrayValue<int64_t>(input_args[embedding_dim_idx_]);
   if (MS_UNLIKELY(!embedding_dim_opt.has_value())) {
     return OP_CHECK_RETRY;
   }

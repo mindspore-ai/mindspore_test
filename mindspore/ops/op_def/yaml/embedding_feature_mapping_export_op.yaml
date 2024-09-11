@@ -3,7 +3,9 @@ embedding_feature_mapping_export:
     args:
         file_path:
             dtype: str
-        teble_name:
+        table_name:
+            dtype: tensor
+        global_step:
             dtype: tensor
         values:
             dtype: tensor

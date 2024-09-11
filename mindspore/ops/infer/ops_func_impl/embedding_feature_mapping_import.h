@@ -29,6 +29,12 @@ class OPS_API EmbeddingFeatureMappingImportFuncImpl final : public OpFuncImpl {
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
   int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+ private:
+  const size_t table_name_idx_{1};
+  const size_t feature_size_idx_{2};
+  const size_t embedding_dim_idx_{4};
+  const size_t num_idx_{6};
 };
 }  // namespace ops
 }  // namespace mindspore

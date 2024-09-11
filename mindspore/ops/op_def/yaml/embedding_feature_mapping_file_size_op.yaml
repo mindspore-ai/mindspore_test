@@ -5,6 +5,8 @@ embedding_feature_mapping_file_size:
             dtype: str
         table_name:
             dtype: tensor
+        global_step:
+            dtype: tensor
         embedding_dim:
             dtype: tuple[int]
             type_cast: list[int]
