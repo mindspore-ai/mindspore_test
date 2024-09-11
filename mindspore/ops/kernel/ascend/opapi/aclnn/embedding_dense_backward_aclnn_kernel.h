@@ -17,7 +17,6 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_EMBEDDING_DENSE_BACKWARD_ACLNN_KERNEL_MOD_H_
 #include <vector>
 #include <utility>
-#include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "transform/acl_ir/acl_convert.h"
 

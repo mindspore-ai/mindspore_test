@@ -67,7 +67,6 @@ int32_t EmbeddingFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   auto padding_idx_type = input_args[kIndex2]->GetType();
   if (!padding_idx_type->isa<TypeNone>()) {
     auto value = input_args[kIndex2]->GetValue();
-    MS_EXCEPTION_IF_NULL(value);
     auto padding_idx_opt = GetScalarValue<int64_t>(value);
     if (!padding_idx_opt.has_value()) {
       return OP_CHECK_RETRY;

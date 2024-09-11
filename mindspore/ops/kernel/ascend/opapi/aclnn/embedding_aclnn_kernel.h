@@ -18,7 +18,6 @@
 #include <vector>
 #include <utility>
 #include <string>
-#include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "transform/acl_ir/acl_convert.h"
 

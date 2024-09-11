@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <vector>
 #include <memory>
-#include <string>
 #include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
