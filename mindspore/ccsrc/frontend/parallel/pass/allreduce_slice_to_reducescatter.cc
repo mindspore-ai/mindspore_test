@@ -211,8 +211,7 @@ std::vector<Shape> GetBatchMatMulStrategy(const AnfNodePtr &node) {
   return origin_strategy;
 }
 
-bool CheckBatchMatmulAndStridedSliceStrategy(const std::vector<Shape> &bmm_input_strategy,
-                                             const std::vector<Shape> &stridedslice_input_strategy) {
+bool CheckBatchMatmulStrategy(const std::vector<Shape> &bmm_input_strategy) {
   if (bmm_input_strategy.size() < kBatchMatMulStrategyNum) {
     return false;
   }
@@ -242,11 +241,24 @@ bool CheckBatchMatmulAndStridedSliceStrategy(const std::vector<Shape> &bmm_input
     return false;
   }
 
+  return true;
+}
+
+bool CheckBatchMatmulAndStridedSliceStrategy(const std::vector<Shape> &bmm_input_strategy,
+                                             const std::vector<Shape> &stridedslice_input_strategy) {
+  // (x, ep, 1, mp) * (ep, mp, 1)
+  if (!CheckBatchMatmulStrategy(bmm_input_strategy)) {
+    return false;
+  }
+
   if (stridedslice_input_strategy.empty()) {
     return false;
   }
 
-  // (ep, 1, mp, 1)
+  auto &bmm_input1_strategy = bmm_input_strategy.at(0);
+  auto input1_mp = bmm_input1_strategy[bmm_input1_strategy.size() - 1];
+  auto input1_ep = bmm_input1_strategy[bmm_input1_strategy.size() - kEpIndexFromRight];
+  // (ep, 1, mp, 1) or (1, ep, mp, 1)
   auto &stridedslice_input1_strategy = stridedslice_input_strategy.at(0);
   if (stridedslice_input1_strategy.size() < kEpIndexFromRight + 1) {
     return false;
@@ -254,11 +266,16 @@ bool CheckBatchMatmulAndStridedSliceStrategy(const std::vector<Shape> &bmm_input
 
   auto ss_no_split1 = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - 1];
   auto ss_mp = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kMpIndexFromRight];
-  auto ss_no_split2 = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kEpIndexFromRight];
-  auto ss_ep = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kEpIndexFromRight - 1];
-  if (ss_mp != input1_mp || ss_ep != input1_ep || ss_no_split1 != 1 || ss_no_split2 != 1) {
+  auto ss_ep1 = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kEpIndexFromRight];
+  auto ss_ep2 = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kEpIndexFromRight - 1];
+  if (ss_mp != input1_mp || ss_no_split1 != 1) {
     return false;
   }
+
+  if (ss_ep1 != input1_ep && ss_ep2 != input1_ep) {
+    return false;
+  }
+
   return true;
 }
 
@@ -304,10 +321,6 @@ size_t GetReshapeDim(const CNodePtr &reshape_cnode) {
 // BatchMatMul -> AllReduce （-> Reshape）-> StridedSlice change to
 // BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
 void AllReduceSliceToReduceScatterCase1(const AllReduceSliceToReduceScatterParams &params) {
-  if (!CheckCase1Strategy(params)) {
-    return;
-  }
-
   auto transpose_dim = k4DTransposeDim;
   auto current_node = params.batch_matmul;
   if (params.reshape != nullptr) {
@@ -433,8 +446,11 @@ std::vector<int64_t> GetShapeFromStridedSliceNode(const AnfNodePtr &stridedslice
   return end_vector;
 }
 
-std::vector<int64_t> GetTargetShapeFromStridedSlice(const AllReduceSliceToReduceScatterParams &params) {
+std::vector<int64_t> GetCase2TargetShapeFromStridedSlice(const AllReduceSliceToReduceScatterParams &params) {
   std::vector<int64_t> target_shape{};
+  if (params.stridedslice == nullptr) {
+    return target_shape;
+  }
   auto origin_shape = GetShapeFromStridedSliceNode(params.stridedslice);
   if (origin_shape.size() <= kMpIndexFromRight) {
     return target_shape;
@@ -471,12 +487,6 @@ std::vector<int64_t> GetTargetShapeFromStridedSlice(const AllReduceSliceToReduce
   return target_shape;
 }
 
-std::vector<int64_t> GetTargetShapeForReshape(const AllReduceSliceToReduceScatterParams &params) {
-  if (params.stridedslice != nullptr) {
-    return GetTargetShapeFromStridedSlice(params);
-  }
-  return {};
-}
 // case2:
 // BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
 // AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
@@ -491,7 +501,7 @@ void AllReduceSliceToReduceScatterCase2(const AllReduceSliceToReduceScatterParam
     return;
   }
 
-  auto target_shape = GetTargetShapeForReshape(params);
+  auto target_shape = GetCase2TargetShapeFromStridedSlice(params);
   if (target_shape.size() != k4DTransposeDim) {
     return;
   }
@@ -531,6 +541,73 @@ void AllReduceSliceToReduceScatterCase2(const AllReduceSliceToReduceScatterParam
   }
 }
 
+bool CheckCase3Strategy(const AllReduceSliceToReduceScatterParams &params) {
+  auto bmm_input_strategy = GetBatchMatMulStrategy(params.batch_matmul);
+  auto bias_add_input_strategy = GetNodeStrategy(params.bias_add);
+  // (x, ep, 1, mp) * (ep, mp, 1)
+  if (!CheckBatchMatmulStrategy(bmm_input_strategy)) {
+    return false;
+  }
+
+  // (x, ep, mp, 1)+(1, ep, 1, 1)
+  if (bias_add_input_strategy.empty()) {
+    return false;
+  }
+
+  auto &bmm_input1_strategy = bmm_input_strategy.at(0);
+  auto input1_mp = bmm_input1_strategy[bmm_input1_strategy.size() - 1];
+  auto input1_ep = bmm_input1_strategy[bmm_input1_strategy.size() - kEpIndexFromRight];
+  auto &bias_add_input1_strategy = bias_add_input_strategy.at(0);
+  auto &bias_add_input2_strategy = bias_add_input_strategy.at(1);
+  if (bias_add_input1_strategy.size() < kMinInputDimNum || bias_add_input2_strategy.size() < kMinInputDimNum) {
+    return false;
+  }
+
+  auto bias_input1_mp = bias_add_input1_strategy[bias_add_input1_strategy.size() - kMpIndexFromRight];
+  auto bias_input1_ep = bias_add_input1_strategy[bias_add_input1_strategy.size() - kEpIndexFromRight];
+  auto bias_input2_ep = bias_add_input2_strategy[bias_add_input2_strategy.size() - kEpIndexFromRight];
+  if (input1_mp != bias_input1_mp || input1_ep != bias_input1_ep || input1_ep != bias_input2_ep) {
+    return false;
+  }
+  return true;
+}
+
+// case3:
+// BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
+// change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+void AllReduceSliceToReduceScatterCase3(const AllReduceSliceToReduceScatterParams &params) {
+  auto bias_add_cnode = params.bias_add->cast<CNodePtr>();
+  if (bias_add_cnode == nullptr) {
+    return;
+  }
+
+  if (!CheckCase3Strategy(params)) {
+    return;
+  }
+
+  auto origin_shape = GetShapeFromStridedSliceNode(params.stridedslice);
+  if (origin_shape.size() != k4DTransposeDim) {
+    return;
+  }
+  auto perm = GetTransposePerm(origin_shape.size());
+  auto transpose_out = CreateTransposeNode(params.graph, params.batch_matmul, perm);
+  auto reduce_scatter_node = CreateReduceScatterNode(params.graph, transpose_out, params.allreduce);
+  if (reduce_scatter_node == nullptr) {
+    return;
+  }
+  auto transpose_in = CreateTransposeNode(params.graph, reduce_scatter_node, perm);
+  params.manager->Replace(bias_add_cnode->input(params.bias_add_replace_index), transpose_in);
+}
+
+bool CheckCase4Strategy(const AllReduceSliceToReduceScatterParams &params) {
+  auto bmm_input_strategy = GetBatchMatMulStrategy(params.batch_matmul);
+  auto stridedslice_input_strategy = GetNodeStrategy(params.stridedslice);
+  if (!CheckBatchMatmulAndStridedSliceStrategy(bmm_input_strategy, stridedslice_input_strategy)) {
+    return false;
+  }
+  return true;
+}
+
 bool CheckAndFillParallelParams(AllReduceSliceToReduceScatterParams *params) {
   MS_EXCEPTION_IF_NULL(params);
   auto bmm_input_strategy = GetBatchMatMulStrategy(params->batch_matmul);
@@ -550,10 +627,10 @@ bool CheckAndFillParallelParams(AllReduceSliceToReduceScatterParams *params) {
   return true;
 }
 
-void FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
+bool FillBiasAddParams(AllReduceSliceToReduceScatterParams *params) {
   MS_EXCEPTION_IF_NULL(params);
   if (!CheckAndFillParallelParams(params)) {
-    return;
+    return false;
   }
 
   auto current_node = GetSingleUserPrimNode(params->manager, params->anchor, prim::kPrimReshape);
@@ -562,27 +639,32 @@ void FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
   }
   auto bias_add_node = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimAdd);
   if (bias_add_node == nullptr) {
-    return;
+    return false;
   }
 
   params->bias_add = bias_add_node;
   auto bias_add_cnode = bias_add_node->cast<CNodePtr>();
   if (bias_add_cnode == nullptr) {
-    return;
+    return false;
   }
 
   if (bias_add_cnode->input(kBiasAddRightIndex) == current_node) {
     params->bias_add_replace_index = kBiasAddRightIndex;
   }
+  return true;
+}
 
-  current_node = GetSingleUserPrimNode(params->manager, bias_add_node, prim::kPrimReshape);
+bool FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
+  MS_EXCEPTION_IF_NULL(params);
+
+  auto current_node = GetSingleUserPrimNode(params->manager, params->bias_add, prim::kPrimReshape);
   if (current_node == nullptr) {
     current_node = params->bias_add;
   }
 
   current_node = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimAlltoAll);
   if (current_node == nullptr) {
-    return;
+    return false;
   }
 
   auto anchor_node = current_node;
@@ -595,7 +677,7 @@ void FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
   if (strategy_stridedslice_node == nullptr) {
     current_node = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimAlltoAll);
     if (current_node == nullptr) {
-      return;
+      return false;
     }
     anchor_node = current_node;
     final_reshape = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimReshape);
@@ -608,16 +690,23 @@ void FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
   params->anchor = anchor_node;
   params->final_reshape = final_reshape;
   params->strategy_stridedslice = strategy_stridedslice_node;
+  return true;
 }
 
 // For Structure as following:
 // case1:
 // BatchMatMul -> AllReduce -> Reshape -> StridedSlice change to
 // BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
+//
 // case2:
 // BatchMatMul -> AllReduce (-> Reshape) -> StridedSlice (-> Reshape) -> BiasAdd -> Reshape ->
 // AlltoAll（-> AlltoAll -> Reshape）change to BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose ->
 // (Reshape ->) BiasAdd (-> Reshape)
+//
+// case3:
+// BatchMatMul -> AllReduce -> StridedSlice -> BiasAdd
+// change to BatchMatMul -> Transpose -> ReduceScatter -> Transpose -> BiasAdd
+//
 // thus it can reduce half of the communication traffic.
 bool AllReduceSliceToReduceScatter(const FuncGraphPtr &graph, const opt::OptimizerPtr &) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -677,12 +766,17 @@ bool AllReduceSliceToReduceScatter(const FuncGraphPtr &graph, const opt::Optimiz
       params.anchor = stridedslice_node;
       params.strategy_stridedslice = GetSingleUserPrimNode(manager, current_node, prim::kPrimStridedSlice);
       if (params.strategy_stridedslice != nullptr) {
-        AllReduceSliceToReduceScatterCase1(params);
-      } else {
-        FillCase2Params(&params);
-        if (params.strategy_stridedslice != nullptr) {
-          AllReduceSliceToReduceScatterCase2(params);
+        if (CheckCase1Strategy(params)) {
+          AllReduceSliceToReduceScatterCase1(params);
         }
+      } else if (FillBiasAddParams(&params)) {
+        if (FillCase2Params(&params)) {
+          AllReduceSliceToReduceScatterCase2(params);
+        } else {
+          AllReduceSliceToReduceScatterCase3(params);
+        }
+      } else if (CheckCase4Strategy(params)) {
+        AllReduceSliceToReduceScatterCase1(params);
       }
     }
   }
