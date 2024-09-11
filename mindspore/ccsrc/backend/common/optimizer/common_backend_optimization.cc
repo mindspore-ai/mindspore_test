@@ -76,8 +76,8 @@ PassManagerPtr GetBackendCommonOptimizationPassManagerPtr(const FuncGraphPtr &gr
 }
 
 void BackendCommonOptimization(const std::shared_ptr<session::KernelGraph> &kernel_graph) {
-  PROF_START(backend_common_optimization);
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(BackendCommonOptimization);
   MS_LOG(INFO) << "Status record: start common optimization. graph id: " << kernel_graph->graph_id();
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -91,7 +91,7 @@ void BackendCommonOptimization(const std::shared_ptr<session::KernelGraph> &kern
   optimizer->AddPassManager(GetBackendCommonOptimizationPassManagerPtr(kernel_graph));
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
-  PROF_END(backend_common_optimization);
+  PROF_END(BackendCommonOptimization);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name = "hwopt_common_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
@@ -148,6 +148,7 @@ PassManagerPtr GetCommonUnifyMindIRPassManager() {
 
 void CommonUnifyMindIR(const std::shared_ptr<session::KernelGraph> &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(CommonUnifyMindIR);
   MS_LOG(INFO) << "start common unify mindir opt graph:" << kernel_graph->graph_id();
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -162,6 +163,7 @@ void CommonUnifyMindIR(const std::shared_ptr<session::KernelGraph> &kernel_graph
   opt->AddPassManager(GetCommonUnifyMindIRPassManager());
   (void)opt->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(CommonUnifyMindIR);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name = "hwopt_common_unify_mindir_after_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
@@ -187,6 +189,7 @@ PassManagerPtr GetEliminateIllegalDataTypePassManager() {
 
 void EliminateIllegalDataTypePass(const std::shared_ptr<session::KernelGraph> &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(EliminateIllegalDataTypePass);
   MS_LOG(INFO) << "Start eliminate illegal data type for kernel graph id:" << kernel_graph->graph_id();
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -201,6 +204,7 @@ void EliminateIllegalDataTypePass(const std::shared_ptr<session::KernelGraph> &k
   opt->AddPassManager(GetEliminateIllegalDataTypePassManager());
   (void)opt->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(EliminateIllegalDataTypePass);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name =
@@ -239,6 +243,7 @@ void DynamicShapeConvertPass(const std::shared_ptr<session::KernelGraph> &kernel
 
 void OptimizationWithoutBackend(const std::shared_ptr<session::KernelGraph> &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(OptimizationWithoutBackend);
   MS_LOG(DEBUG) << "Start OptimizationWithoutBackend for kernel graph id:" << kernel_graph->graph_id();
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
@@ -253,6 +258,7 @@ void OptimizationWithoutBackend(const std::shared_ptr<session::KernelGraph> &ker
   CommonUnifyMindIR(kernel_graph);
   BackendCommonOptimization(kernel_graph);
   MS_LOG(DEBUG) << "End OptimizationWithoutBackend for kernel graph id:" << kernel_graph->graph_id();
+  PROF_END(OptimizationWithoutBackend);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name =
