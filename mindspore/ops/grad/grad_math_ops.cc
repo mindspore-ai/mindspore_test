@@ -526,19 +526,20 @@ inline NodePtr GradDiagonal(Emitter *ib, const NodePtr &dout, const NodePtr &dx_
   return dx;
 }
 
-inline NodePtr MedianExtOpGetMask(BpropBuilder *ib, const NodePtr &x, const NodePtr &out) {
+inline NodePtr ReduceExtOpGetMask(BpropBuilder *ib, const NodePtr &x, const NodePtr &out) {
   auto out_is_nan = ib->IsNanFunc(out);
   auto input_is_nan = [&x](Emitter *e) -> NodePtrList { return {e->IsNanFunc(x)}; };
   auto input_equal_out = [&x, &out](Emitter *e) -> NodePtrList { return {e->Equal(x, out)}; };
   return ib->Conditional(out_is_nan, input_is_nan, input_equal_out);
 }
 
-inline NodePtr MedianExtOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &out, const NodePtr &dout) {
-  auto mask = MedianExtOpGetMask(ib, x, out);
+inline NodePtr ReduceExtOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &out, const NodePtr &dout) {
+  auto mask = ReduceExtOpGetMask(ib, x, out);
   auto x_zeros = ib->Zeros(x);
-  auto mask_sum = ib->Emit("SumExt", {mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone)});
+  auto mask_sum = ib->SumExt(mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
   auto grad_div_mask_sum = ib->Div(dout, ib->Cast(mask_sum, ib->GetDtype(dout)));
-  auto dx = ib->Emit("MaskedFill", {x_zeros, mask, grad_div_mask_sum});
+  grad_div_mask_sum = ib->Reshape(ib->Cast(grad_div_mask_sum, ib->GetDtype(x)), ShapeVector{});
+  auto dx = ib->MaskedFill(x_zeros, mask, grad_div_mask_sum);
   return {dx};
 }
 
@@ -2096,7 +2097,15 @@ REG_BPROP_BUILDER("Median").SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("MedianExt").SetBody(BODYFUNC(ib) {
-  auto dx = MedianExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
+  auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
+  return {dx};
+});
+REG_BPROP_BUILDER("Max").SetBody(BODYFUNC(ib) {
+  auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
+  return {dx};
+});
+REG_BPROP_BUILDER("Min").SetBody(BODYFUNC(ib) {
+  auto dx = ReduceExtOpGrad(ib, ib->GetInput(kIndex0), ib->GetInput(kIndex1), ib->GetInput(kIndex2));
   return {dx};
 });
 
