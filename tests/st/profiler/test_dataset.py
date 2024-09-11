@@ -15,7 +15,6 @@
 """Test dataset profiling."""
 import os
 import tempfile
-import glob
 
 import mindspore.dataset as ds
 from mindspore.dataset import DSCallback
@@ -25,6 +24,7 @@ import mindspore.dataset.transforms as transforms
 import mindspore as ms
 from mindspore.profiler import Profiler
 from tests.mark_utils import arg_mark
+from file_check import FileChecker
 
 MNIST_DIR = "/home/workspace/mindspore_dataset/mnist/"
 CIFAR10_DIR = "/home/workspace/mindspore_dataset/cifar-10-batches-bin/"
@@ -115,8 +115,8 @@ def test_ascend_dataset_profiler():
     Expectation: No dataset_iterator_profiling file generated.
     """
     ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(suffix="profiler_dataset") as tmpdir:
         profiler = Profiler(output_path=tmpdir, data_process=True)
         other_method_dataset()
         profiler.analyse()
-        assert len(glob.glob(f"{tmpdir}/profiler*/dataset_iterator_profiling_*.txt")) == 1
+        FileChecker.check_file_line_count(f"{tmpdir}/profiler/dataset_iterator_profiling_0.txt", 40)
