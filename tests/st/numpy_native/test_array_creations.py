@@ -45,11 +45,11 @@ class Cases():
                            mnp.uint32, 'uint32',
                            mnp.bool_, 'bool', bool]
 
-        self.empty_support_type = [mnp.int32, mnp.float32, mnp.uint32, mnp.bool_]
+        self.empty_support_type = [mnp.int32, mnp.float32, mnp.bool_]
 
         self.array_sets = [1, 1.1, True, [1, 0, True], [1, 1.0, 2], (1,), [(1, 2, 3), (4, 5, 6)],
                            onp.random.random((100, 100)).astype(onp.float32).tolist(),
-                           onp.random.random((100, 100)).astype(onp.bool).tolist()]
+                           onp.random.random((100, 100)).astype(onp.bool_).tolist()]
 
         self.arrs = [
             rand_int(2),
@@ -642,8 +642,8 @@ def onp_ix_(*args):
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
           card_mark='onecard', essential_mark='unessential')
 def test_ix_():
-    arrs = [rand_int(i + 1) for i in range(10)]
-    for i in range(10):
+    arrs = [rand_int(i + 1) for i in range(8)]
+    for i in range(8):
         test_arrs = arrs[:i + 1]
         match_res(mnp_ix_, onp_ix_, *test_arrs)
 

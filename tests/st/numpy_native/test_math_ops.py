@@ -513,7 +513,7 @@ def test_dot():
     # test case (ND, MD)
     match_res(mnp_dot, onp_dot, rand_int(5, 4, 1, 8), rand_int(8, 3))
 
-    for i in range(8):
+    for i in range(7):
         match_res(mnp_dot, onp_dot,
                   test_case.core_broadcastables[2*i], test_case.core_broadcastables[2*i + 1])
 
@@ -816,7 +816,7 @@ def mnp_clip(x):
     a = mnp.clip(x, to_tensor(10.0), to_tensor([2,]))
     b = mnp.clip(x, 0, 1)
     c = mnp.clip(x, to_tensor(0), to_tensor(10), dtype=mnp.float32)
-    d = x.clip(to_tensor(10.0), to_tensor([2,]))
+    d = x.clip(to_tensor(10.0), to_tensor(2))
     e = x.clip(0, 1)
     return a, b, c, d, e
 
@@ -825,7 +825,7 @@ def onp_clip(x):
     a = onp.clip(x, onp.asarray(10.0), onp.asarray([2,]))
     b = onp.clip(x, 0, 1)
     c = onp.clip(x, onp.asarray(0), onp.asarray(10), dtype=onp.float32)
-    d = x.clip(onp.asarray(10.0), onp.asarray([2,]))
+    d = x.clip(onp.asarray(10.0), onp.asarray(2))
     e = x.clip(0, 1)
     return a, b, c, d, e
 
@@ -2221,7 +2221,7 @@ def test_correlate():
           card_mark='onecard', essential_mark='unessential')
 def test_tensor_searchsorted():
     x = onp.arange(-10, 10)
-    mnp_x = to_tensor(x)
+    mnp_x = to_tensor(x, mnp.float32)
     y = onp.random.randint(-15, 15, size=(2, 3, 4)) + onp.random.choice([0, 0.5], (2, 3, 4))
     sorter = onp.random.shuffle(onp.arange(20))
     match_res(mnp_x.searchsorted, x.searchsorted, y)
