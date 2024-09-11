@@ -15,6 +15,10 @@
 """mint nn functional."""
 from __future__ import absolute_import
 import mindspore.ops as ops
+import mindspore.mint as mint
+from mindspore import log as logger
+from mindspore import _checkparam as validator
+from mindspore.ops.primitive import constexpr
 from mindspore.ops.function.nn_func import max_pool2d_ext as max_pool2d
 from mindspore.ops.functional import (
     conv_transpose2d,
@@ -546,6 +550,104 @@ def smooth_l1_loss(input, target, reduction='mean', beta=1.0):
     return ops.function.smooth_l1_loss(input, target, beta, reduction)
 
 
+@constexpr
+def log_warning(msg):
+    """Adds warning to logger."""
+    logger.warning(msg)
+
+
+def dropout2d(input, p=0.5, training=True):
+    r"""
+    During training, randomly zeroes some channels of the input tensor with probability `p`
+    from a Bernoulli distribution(For a 4-dimensional tensor with a shape of :math:`NCHW`,
+    the channel feature map refers to a 2-dimensional feature map with the shape of :math:`HW`).
+
+    For example, the :math:`j\_th` channel of the :math:`i\_th` sample in the batched input is a to-be-processed
+    `2D` tensor input[i,j].
+    Each channel will be zeroed out independently on every forward call which based on Bernoulli distribution
+    probability `p`.
+    The parper `Dropout: A Simple Way to Prevent Neural Networks from Overfitting
+    <http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf>`_ mentioned this technology, and it is proved that
+    it can effectively reduce over fitting and prevent neuronal coadaptation.
+    For more details, refer to `Improving neural networks by preventing co-adaptation of feature detectors
+    <https://arxiv.org/pdf/1207.0580.pdf>`_ .
+
+    `dropout2d` can improve the independence between channel feature maps.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): A `4D` tensor with shape :math:`(N, C, H, W)`, where `N` is the batch size, `C` is the number
+            of channels, `H` is the feature height, and `W` is the feature width.
+        p (float): The dropping probability of a channel, between 0 and 1, e.g. `p` = 0.8,
+            which means dropping out 80% of channels. Default: ``0.5`` .
+        training(bool): If `training` is True, applying dropout, otherwise, not applying. Default: ``True`` .
+
+    Returns:
+        Tensor, output, with the same shape and data type as `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If the data type of `p` is not float.
+        ValueError: If `p` is out of the range `[0.0, 1.0]`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.ones([2, 1, 2, 3]), mindspore.float32)
+        >>> output = mint.nn.functional.dropout2d(input, 0.5)
+        >>> print(output.shape)
+        (2, 1, 2, 3)
+    """
+    def dropout2d_impl_(input, p, training):
+        if p == 0 or not training or input.numel() == 0:
+            return input
+
+        if p == 1:
+            return mint.mul(input, mint.zeros((), dtype=input.dtype))
+
+        if input.ndim < 2:
+            raise ValueError(f'For dropout2d, input size after unsqueeze must be greater or equal to 2')
+
+        if ops.is_sequence_shape_unknown(input.shape):
+            input_tensor_shape = ops.TensorShape()(input)
+            nosie_tensor_shape = mint.ones_like(input_tensor_shape)
+            nosie_tensor_shape[0] = input_tensor_shape[0]
+            nosie_tensor_shape[1] = input_tensor_shape[1]
+            nosie_shape = ops.TensorToTuple()(nosie_tensor_shape)
+        else:
+            nosie_shape = input.shape[:2] + tuple(1 for _ in range(len(input.shape) - 2))
+        nosie = mint.full(nosie_shape, 1 - p, dtype=input.dtype)
+        nosie = mint.bernoulli(nosie)
+        nosie = mint.div(nosie, 1 - p)
+
+        return mint.mul(input, nosie)
+
+    validator.check_float_range(p, 0.0, 1.0, validator.INC_BOTH, "p", "dropout2d")
+    validator.check_bool(training, "training", "dropout2d")
+
+    if input.ndim not in (3, 4):
+        log_warning(f"dropout2d receviced a {input.ndim}-D input which is not recommended. Please use dropout instead.")
+
+    is_batched = input.ndim == 4
+    if not is_batched:
+        input_shape = input.shape
+        if ops.is_sequence_shape_unknown(input.shape):
+            input_shape = ops.TensorToTuple()(ops.TensorShape()(input))
+        input = input.reshape((1, *input_shape))
+        result = dropout2d_impl_(input, p, training)
+        result = result.reshape(input_shape)
+    else:
+        result = dropout2d_impl_(input, p, training)
+
+    return result
+
+
 __all__ = [
     'conv_transpose2d',
     'max_pool2d',
@@ -767,6 +869,6 @@ __all__ = [
     'adaptive_avg_pool1d',
 
     'adaptive_avg_pool2d',
-
-
+    # 393
+    'dropout2d',
 ]

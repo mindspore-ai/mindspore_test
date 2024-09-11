@@ -29,11 +29,20 @@ from mindspore.mint.nn.layer.normalization import BatchNorm3d
 from mindspore.mint.nn.layer.normalization import LayerNorm
 from mindspore.mint.nn.layer.activation import LogSigmoid
 from mindspore.mint.nn.layer.activation import SiLU
+from mindspore.mint.nn.layer.basic import Dropout2d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
 from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
 
 
-__all__ = []
-__all__.extend(normalization.__all__)
-__all__.extend(activation.__all__)
-__all__.extend(pooling.__all__)
+__all__ = [
+    'GroupNorm',
+    'BatchNorm1d',
+    'BatchNorm2d',
+    'BatchNorm3d',
+    'LayerNorm',
+    'LogSigmoid',
+    'SiLU',
+    'Dropout2d',
+    'AdaptiveAvgPool1d',
+    'AdaptiveAvgPool2d'
+]
