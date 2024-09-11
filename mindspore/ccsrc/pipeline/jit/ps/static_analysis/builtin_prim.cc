@@ -149,8 +149,10 @@ EvalResultPtr InnerRoundEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
   auto cnode = out_conf->node()->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   // Convert pyexecute.
-  if (fallback::ContainsSequenceAnyType(args_abs_list[0]) ||
-      (args_abs_list.size() == max_input_index && fallback::ContainsSequenceAnyType(args_abs_list[1]))) {
+  constexpr auto index_input = 0;
+  constexpr auto index_decimals = 1;
+  if (fallback::ContainsSequenceAnyType(args_abs_list[index_input]) ||
+      (args_abs_list.size() == max_input_index && fallback::ContainsSequenceAnyType(args_abs_list[index_decimals]))) {
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (allow_fallback_runtime) {
       auto pyexecute_node = fallback::ConvertCNodeToPyExecuteForPrim(cnode, "round");
@@ -162,15 +164,15 @@ EvalResultPtr InnerRoundEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
   // Process constants.
   bool is_const = CheckConst(args_abs_list);
   if (is_const) {
-    auto const_value = args_abs_list[0]->BuildValue();
-    auto type = args_abs_list[0]->BuildType();
+    auto const_value = args_abs_list[index_input]->BuildValue();
+    auto type = args_abs_list[index_input]->BuildType();
     py::tuple tuple_args(max_input_index);
-    tuple_args[0] = ValueToPyData(const_value);
-    tuple_args[1] = py::none();
-    if (args_abs_list.size() > 1) {
-      auto point_num_value = args_abs_list[1]->BuildValue();
-      auto py_point_data = ValueToPyData(point_num_value);
-      tuple_args[1] = py_point_data;
+    tuple_args[index_input] = ValueToPyData(const_value);
+    if (args_abs_list.size() == max_input_index) {
+      auto point_num_value = args_abs_list[index_decimals]->BuildValue();
+      tuple_args[index_decimals] = ValueToPyData(point_num_value);
+    } else {
+      tuple_args[index_decimals] = py::none();
     }
     py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
     py::object round_data = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_GET_CONST_ROUND, tuple_args);
@@ -180,12 +182,16 @@ EvalResultPtr InnerRoundEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
     evaluator_cache_mgr_->SetValue(args_abs_list, infer_result);
     return infer_result;
   }
-  if (args_abs_list.size() == max_input_index) {
-    MS_EXCEPTION(TypeError) << "When applying round() to tensor, only one tensor is supported as input.";
-  }
   // Convert round ops.
-  auto new_cnode = std::make_shared<CNode>(*cnode);
-  new_cnode->set_input(0, NewValueNode(prim::kPrimRound));
+  AnfNodePtrList round_inputs = {NewValueNode(prim::kPrimRound), cnode->input(index_input + 1)};
+  if (args_abs_list.size() == max_input_index) {
+    (void)round_inputs.emplace_back(cnode->input(index_decimals + 1));
+  } else {
+    (void)round_inputs.emplace_back(NewValueNode(kNone));
+  }
+  auto fg = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(fg);
+  auto new_cnode = fg->NewCNodeInOrder(round_inputs);
   AnfNodeConfigPtr fn_conf = engine->MakeConfig(new_cnode, out_conf->context(), out_conf->func_graph());
   return engine->ForwardConfig(out_conf, fn_conf);
 }
