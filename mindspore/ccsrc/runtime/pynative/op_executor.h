@@ -62,6 +62,8 @@ class BACKEND_EXPORT OpExecutor {
 
   static bool NeedSync();
 
+  void RegisterCallbackForMemoryPool();
+
   static void DispatchLaunchTask(const std::function<void()> &func);
 
  private:

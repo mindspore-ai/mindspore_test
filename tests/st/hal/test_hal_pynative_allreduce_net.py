@@ -49,11 +49,9 @@ class AllReduceNet(nn.Cell):
 
     def construct(self, x1, y1, x, enable_multi_stream):
         out = self.add(x1, y1)
-        if enable_multi_stream:
-            with ms.hal.StreamCtx(self.s1):
-                out = self.all_reduce(out)
-        else:
-            out = self.all_reduce(out)
+        out, handle = self.all_reduce(out)
+        if not enable_multi_stream:
+            handle.wait()
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.conv2(x)
@@ -66,7 +64,7 @@ class AllReduceNet(nn.Cell):
         x = self.pool(x)
         x = x*2
         if enable_multi_stream:
-            self.s1.synchronize()
+            handle.wait()
         out = self.mul(out, x)
         return out
 

@@ -34,32 +34,37 @@ void InnerCommReduceScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, 
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 
-  PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, rank_size, op_type, group]() {
-      auto device_context = op->device_context();
+  auto run_func = [op, input_tensor, rank_size, op_type, group]() {
+    auto device_context = op->device_context();
 
-      PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-      PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
+    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+    PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
 
-      auto rank_size_imm = GetValue<int64_t>(rank_size);
-      auto [hccl_count, hccl_data_type] =
-        HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor, rank_size_imm);
-      auto op_type_enum = HcomUtil::GetHcomReduceOpType(GetValue<std::string>(op_type));
+    auto rank_size_imm = GetValue<int64_t>(rank_size);
+    auto [hccl_count, hccl_data_type] =
+      HcomUtil::GetHcclCountAndTypeFromTensor(op->primitive(), input_tensor, rank_size_imm);
+    auto op_type_enum = HcomUtil::GetHcomReduceOpType(GetValue<std::string>(op_type));
 
-      const auto &op_name = op->primitive()->name();
-      auto input_data_ptr = GetDevicePtrFromTensor(op_name, input_tensor);
-      auto output_data_ptr = GetDevicePtrFromTensor(op_name, op->output(0));
-      auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum](
-                           const HcclComm &hccl_comm, void *comm_stream_ptr) {
-        auto hccl_result = hccl::HcclAdapter::GetInstance().HcclReduceScatter(
-          input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum, comm_stream_ptr, hccl_comm);
-        if (hccl_result != HCCL_SUCCESS) {
-          MS_LOG(EXCEPTION) << "HcomRecv failed, ret:" << hccl_result;
-        }
-      };
+    const auto &op_name = op->primitive()->name();
+    auto input_data_ptr = GetDevicePtrFromTensor(op_name, input_tensor);
+    auto output_data_ptr = GetDevicePtrFromTensor(op_name, op->output(0));
+    auto launch_func = [input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum](
+                         const HcclComm &hccl_comm, void *comm_stream_ptr) {
+      auto hccl_result = hccl::HcclAdapter::GetInstance().HcclReduceScatter(
+        input_data_ptr, output_data_ptr, hccl_count, hccl_data_type, op_type_enum, comm_stream_ptr, hccl_comm);
+      if (hccl_result != HCCL_SUCCESS) {
+        MS_LOG(EXCEPTION) << "HcomRecv failed, ret:" << hccl_result;
+      }
+    };
 
-      CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
-    }));
+    CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
+  };
+
+  if (runtime::OpExecutor::NeedSync()) {
+    run_func();
+  } else {
+    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(std::make_shared<runtime::PassthroughDeviceTask>(run_func));
+  }
 }
 
 }  // namespace pyboost

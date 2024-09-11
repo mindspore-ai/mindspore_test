@@ -105,21 +105,25 @@ void InnerCommAllToAllVAscendCustomize(const std::shared_ptr<OpRunner> &op, cons
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, input_tensor, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty]() {
-      auto device_context = op->device_context();
+  auto run_func = [op, input_tensor, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty]() {
+    auto device_context = op->device_context();
 
-      PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-      PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
+    PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+    PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
 
-      auto is_split_sizes_empty = GetValue<bool>(split_sizes_empty);
-      // Call AlltoAll for better performance when split_sizes is empty.
-      const auto &launch_func = is_split_sizes_empty
-                                  ? CallAllToAll(op, input_tensor, rank_size)
-                                  : CallAllToAllV(op, input_tensor, send_numel_list, recv_numel_list);
+    auto is_split_sizes_empty = GetValue<bool>(split_sizes_empty);
+    // Call AlltoAll for better performance when split_sizes is empty.
+    const auto &launch_func = is_split_sizes_empty ? CallAllToAll(op, input_tensor, rank_size)
+                                                   : CallAllToAllV(op, input_tensor, send_numel_list, recv_numel_list);
 
-      CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
-    }));
+    CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
+  };
+
+  if (runtime::OpExecutor::NeedSync()) {
+    run_func();
+  } else {
+    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(std::make_shared<runtime::PassthroughDeviceTask>(run_func));
+  }
 }
 
 }  // namespace pyboost

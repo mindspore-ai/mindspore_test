@@ -33,7 +33,7 @@ void InnerCommAllReduceAscendCustomize(const std::shared_ptr<OpRunner> &op, cons
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, op_type, group]() {
+  auto run_func = [op, input_tensor, op_type, group]() {
     PyBoostUtils::MallocOpInputs(op->device_context(), input_tensor);
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
@@ -53,7 +53,13 @@ void InnerCommAllReduceAscendCustomize(const std::shared_ptr<OpRunner> &op, cons
     };
 
     CommonCommAscendFunc(op, input_tensor, group, launch_func, nullptr);
-  }));
+  };
+
+  if (runtime::OpExecutor::NeedSync()) {
+    run_func();
+  } else {
+    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(std::make_shared<runtime::PassthroughDeviceTask>(run_func));
+  }
 }
 
 }  // namespace pyboost

@@ -325,6 +325,7 @@ void ForwardExecutor::Init() {
   compile::SetMindRTEnable();
   python_adapter::set_python_env_flag(true);
   tensor::Tensor::RegisterLazyCallback([]() { runtime::Pipeline::Get().WaitAll(); });
+  runtime::OpExecutor::GetInstance().RegisterCallbackForMemoryPool();
   op_backend_ = std::make_unique<compile::OpBackend>();
 }
 

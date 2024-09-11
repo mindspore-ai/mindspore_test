@@ -20,6 +20,7 @@
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/comm_utils.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -31,25 +32,38 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   const auto &op_name = op->primitive()->name();
   MS_LOG(DEBUG) << "Run device task " << op_name << " end";
 
+  runtime::Pipeline::Get().launch_stage()->Wait();
+
   const auto &group_str = GetValue<std::string>(group);
   const auto &hccl_comm = device::ascend::AscendCollectiveCommLib::GetInstance().GetHcomByGroup(group_str);
 
   auto comm_handle = op->comm_handle();
   auto device_context = op->device_context();
+  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||
+                     MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";
+
+  // Need to bind context if the comm_op is the first op launched in this thread.
+  device_context->device_res_manager_->BindDeviceToCurrentThread(false);
+
   auto comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamID();
-  runtime::OpExecutor::DispatchLaunchTask(
-    [device_context, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id, op_name, launch_func]() {
-      runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,
-                                         runtime::ProfilerEvent::kPyNativeLaunchTask, op_name, false);
 
-      CommUtils::GetInstance().SyncOpStream(device_context, op_stream_id, comm_stream_id);
-      auto comm_stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(comm_stream_id);
+  [device_context, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id, op_name, launch_func]() {
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
+                                       op_name, false);
 
-      if (launch_func) {
-        launch_func(hccl_comm, comm_stream_ptr);
+    CommUtils::GetInstance().SyncOpStream(device_context, op_stream_id, comm_stream_id);
+    auto comm_stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(comm_stream_id);
+
+    if (launch_func) {
+      launch_func(hccl_comm, comm_stream_ptr);
+      if (sync) {
+        if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
+          MS_LOG(EXCEPTION) << "SyncStream failed for op " << op_name;
+        }
       }
-      comm_handle->RecordEvent(comm_stream_id);
-    });
+    }
+    comm_handle->RecordEvent(comm_stream_id);
+  }();
 
   comm_handle->UpdateTaskId(comm_stream_id);
   if (post_func) {
@@ -58,6 +72,12 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
     // Default post function
     runtime::DeviceAddressUtils::ProcessCrossStreamAddressWithEvent(
       op->primitive()->name(), device_context, comm_stream_id, comm_handle->event(), input_tensor, op->output(0));
+  }
+
+  if (sync) {
+    if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
+      MS_LOG(EXCEPTION) << "SyncStream failed for op " << op_name;
+    }
   }
   MS_LOG(DEBUG) << "Run device task " << op_name << " end";
 }

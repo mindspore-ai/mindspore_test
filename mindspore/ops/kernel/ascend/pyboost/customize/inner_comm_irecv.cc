@@ -32,7 +32,7 @@ void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ba
   OpRunner::InferOpOutput(op, input_tensor, tag, src, shape, group, dtype);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, src, group]() {
+  auto run_func = [op, input_tensor, src, group]() {
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
@@ -55,7 +55,13 @@ void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ba
                                                                       comm_stream_id, event, output_tensor);
     };
     CommonCommAscendFunc(op, input_tensor, group, launch_func, post_func);
-  }));
+  };
+
+  if (runtime::OpExecutor::NeedSync()) {
+    run_func();
+  } else {
+    runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(std::make_shared<runtime::PassthroughDeviceTask>(run_func));
+  }
 }
 
 }  // namespace pyboost

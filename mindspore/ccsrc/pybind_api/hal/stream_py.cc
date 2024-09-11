@@ -82,6 +82,7 @@ bool StreamPy::StreamEqual(const std::shared_ptr<StreamPy> other_stream) {
 
 void SetCurStream(const StreamPyPtr &cur_stream) {
   MS_EXCEPTION_IF_NULL(cur_stream);
+  runtime::Pipeline::Get().WaitForward();
   MS_LOG(DEBUG) << "current_stream_id:" << cur_stream->stream_id();
   cur_stream->device_ctx()->device_res_manager_->SetCurrentStreamId(cur_stream->stream_id());
 }

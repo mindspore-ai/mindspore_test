@@ -29,29 +29,19 @@ CommHandlePy::~CommHandlePy() {
   if (comm_handle_ == nullptr) {
     return;
   }
+  // The handle may be destroyed in other thread, so cannot do this in pipeline.
+  runtime::Pipeline::Get().WaitForward();
+  auto device_ctx = comm_handle_->device_ctx();
+  auto event = comm_handle_->event();
 
-  pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>([comm_handle = comm_handle_]() {
-    auto destroy_fn = [comm_handle]() {
-      runtime::OpExecutor::DispatchLaunchTask([device_ctx = comm_handle->device_ctx(), event = comm_handle->event()]() {
-        MS_EXCEPTION_IF_NULL(device_ctx);
-        if (event == nullptr) {
-          // event is nullptr in gpu and cpu
-          return;
-        }
-
-        MS_LOG(DEBUG) << "DestroyEvent, event:" << event;
-        if (device_ctx != nullptr && device_ctx->initialized()) {
-          device_ctx->device_res_manager_->DestroyEvent(event);
-        }
-      });
-    };
-    if (!runtime::OpExecutor::NeedSync()) {
-      runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
-        std::make_shared<runtime::PassthroughNoWaitDeviceTask>(destroy_fn));
-    } else {
-      destroy_fn();
-    }
-  }));
+  if (event == nullptr) {
+    return;
+  }
+  MS_LOG(DEBUG) << "DestroyEvent, event:" << event;
+  if (device_ctx != nullptr && device_ctx->initialized()) {
+    device_ctx->device_res_manager_->DestroyEvent(event);
+    MS_LOG(DEBUG) << "DestroyEvent done, event:" << event;
+  }
 }
 
 void CommHandlePy::Wait() {

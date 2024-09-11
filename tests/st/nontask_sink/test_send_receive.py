@@ -34,12 +34,13 @@ x2 = np.ones([3, 3, 3, 3]).astype(np.float32)
 class SendNet(nn.Cell):
     def construct(self, tensor):
         out = isend(tensor, rank + size // 2)
-        return out[0]
+        return out
 
 class RecvNet(nn.Cell):
     def construct(self, tensor):
-        out = irecv(tensor, rank - size // 2)
-        return out[0]
+        out, handle = irecv(tensor, rank - size // 2)
+        handle.wait()
+        return out
 
 def test_hccl_send_recv_2p():
     """

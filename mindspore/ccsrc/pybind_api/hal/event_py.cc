@@ -31,23 +31,12 @@ std::mutex EventCnt::unrecorded_cnt_mtx_;
 
 EventPy::~EventPy() {
   if (creator_stream_ != nullptr && event_ != nullptr) {
+    runtime::Pipeline::Get().WaitForward();
     const auto &device_ctx = creator_stream_->device_ctx();
-    pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>([device_ctx, event = event_]() {
-      auto destroy_fn = [device_ctx, event]() {
-        MS_LOG(DEBUG) << "DestroyEvent, event:" << event;
-        runtime::OpExecutor::DispatchLaunchTask([device_ctx, event]() {
-          if (device_ctx != nullptr && device_ctx->initialized()) {
-            device_ctx->device_res_manager_->DestroyEvent(event);
-          }
-        });
-      };
-      if (!runtime::OpExecutor::NeedSync()) {
-        runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
-          std::make_shared<runtime::PassthroughNoWaitDeviceTask>(destroy_fn));
-      } else {
-        destroy_fn();
-      }
-    }));
+    MS_LOG(DEBUG) << "DestroyEvent, event:" << event_;
+    if (device_ctx != nullptr && device_ctx->initialized()) {
+      device_ctx->device_res_manager_->DestroyEvent(event_);
+    }
   }
   creator_stream_ = nullptr;
   event_ = nullptr;
@@ -77,7 +66,10 @@ void EventPy::DispatchRecordEventTask(const StreamPyPtr &stream) {
           device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(stream->device_ctx(), record_stream_id);
         *task_id_on_stream = task_id;
         auto stream_ptr = stream->stream();
-        runtime::OpExecutor::DispatchLaunchTask([stream_ptr, event]() {
+        auto device_ctx = stream->device_ctx();
+        MS_EXCEPTION_IF_NULL(device_ctx);
+        runtime::OpExecutor::DispatchLaunchTask([stream_ptr, event, device_ctx]() {
+          device_ctx->device_res_manager_->BindDeviceToCurrentThread(false);
           event->set_record_stream(stream_ptr);
           event->RecordEvent();
         });
@@ -115,7 +107,10 @@ void EventPy::DispatchWaitEventTask(const StreamPyPtr &stream) {
         auto stream_ptr = stream->stream();
         MS_LOG(DEBUG) << "WaitEvent wait stream id:" << stream->stream_id() << ", record_stream_id:" << record_stream_id
                       << ", event:" << event << ", task_id_on_stream:" << *task_id_on_stream;
-        runtime::OpExecutor::DispatchLaunchTask([stream_ptr, event]() {
+        auto device_ctx = stream->device_ctx();
+        MS_EXCEPTION_IF_NULL(device_ctx);
+        runtime::OpExecutor::DispatchLaunchTask([stream_ptr, event, device_ctx]() {
+          device_ctx->device_res_manager_->BindDeviceToCurrentThread(false);
           event->set_wait_stream(stream_ptr);
           event->WaitEventWithoutReset();
         });

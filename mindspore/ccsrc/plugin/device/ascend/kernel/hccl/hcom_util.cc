@@ -28,6 +28,7 @@
 #include "utils/trace_base.h"
 #include "ir/dtype/type.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 ::HcclDataType HcomUtil::ConvertHcclType(TypeId type_id) {
@@ -111,9 +112,12 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclData
   size_t input_size;
   uint32_t type_size = 4;
   size_t rank_size = 1;
+
+  bool is_reduce_scatter =
+    primitive->name() == kReduceScatterOpName || primitive->name() == ops::kNameInnerCommReduceScatter;
   if (rank_size_opt.has_value()) {
     rank_size = LongToSize(rank_size_opt.value());
-  } else if (primitive->name() == kReduceScatterOpName) {
+  } else if (is_reduce_scatter) {
     int64_t tmp_rank_size = 0;
     if (!HcomUtil::GetHcomAttr<int64_t>(primitive, kAttrRankSize, &tmp_rank_size)) {
       MS_LOG(ERROR) << "Get kAttrRankSize fail in " << primitive->name();
@@ -141,7 +145,9 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclData
       input_size = (input_size + align_size - 1 + filled_size) / align_size * align_size;
     }
 
-    input_size /= rank_size;
+    if (is_reduce_scatter) {
+      input_size /= rank_size;
+    }
     bool all_dynamic = std::all_of(shape_list[i].begin(), shape_list[i].end(), [](int64_t x) { return x == -1; });
     if (!all_dynamic && (type_size == 0 || input_size % type_size != 0)) {
       MS_LOG(ERROR) << "primitive=" << primitive->name() << ", Input_size[" << input_size << "],Type_size[" << type_size

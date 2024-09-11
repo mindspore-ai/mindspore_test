@@ -17,6 +17,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/pipeline/pipeline.h"
+#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 
 namespace mindspore::runtime {
 OpExecutor &OpExecutor::GetInstance() {
@@ -74,6 +75,13 @@ bool OpExecutor::NeedSync() {
          (context->get_param<int>(MS_CTX_EXECUTION_MODE) == mindspore::kGraphMode && !async_for_graph_);
 }
 
+void OpExecutor::RegisterCallbackForMemoryPool() {
+  device::DynamicMemPoolBestFit::set_wait_callback([]() {
+    MS_LOG(DEBUG) << "Wait all in memory pool";
+    runtime::Pipeline::Get().WaitAll();
+  });
+}
+
 void OpExecutor::ChildAfterFork() {
   MS_LOG(DEBUG) << "OpExecutor reinitialize after fork";
   MS_LOG(DEBUG) << "Reinitialize async_queue_.";
@@ -81,6 +89,7 @@ void OpExecutor::ChildAfterFork() {
   runtime::Pipeline::Get().launch_stage()->ChildAfterFork();
   // Refresh the lazy callback in Tensor.
   tensor::Tensor::RegisterLazyCallback([]() { runtime::Pipeline::Get().WaitAll(); });
+  RegisterCallbackForMemoryPool();
   MS_LOG(DEBUG) << "OpExecutor reinitialize after fork done.";
 }
 }  // namespace mindspore::runtime
