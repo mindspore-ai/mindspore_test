@@ -115,6 +115,9 @@ GVAR_DEF(PrimitivePtr, kPrimSetAttr,
 // GraphKernel ops
 GVAR_DEF(PrimitivePtr, kPrimGraphKernel, std::make_shared<Primitive>("GraphKernel"));
 
+// Custom
+GVAR_DEF(PrimitivePtr, kPrimCustom, std::make_shared<Primitive>("Custom"));
+
 // Type introspection
 GVAR_DEF(PrimitivePtr, kPrimTypeOf, std::make_shared<Primitive>("typeof"));
 GVAR_DEF(PrimitivePtr, kPrimTopTypeOf, std::make_shared<Primitive>("TopTypeof"));

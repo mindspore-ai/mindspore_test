@@ -22,10 +22,10 @@
 #include <vector>
 
 #include "ops/base_operator.h"
-#include "op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace ops {
+constexpr auto kNameCustom = "Custom";
 /// \brief Custom defined user-defined operator prototype.
 class OPS_API Custom : public BaseOperator {
  public:

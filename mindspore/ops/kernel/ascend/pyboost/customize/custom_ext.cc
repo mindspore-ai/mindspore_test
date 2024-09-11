@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/custom.h"
+#include "kernel/ascend/pyboost/customize/custom_ext.h"
 #include <string>
-#include "kernel/ascend/pyboost/auto_generate/custom.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
@@ -54,8 +53,8 @@ void LaunchCustomAclnn(const std::string &aclnn_name, const std::shared_ptr<OpRu
 }
 }  // namespace
 
-tensor::BaseTensorPtr CustomAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                            const ValueTuplePtr &tensors_tensor_list) {
+tensor::BaseTensorPtr CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                               const ValueTuplePtr &tensors_tensor_list) {
   MS_EXCEPTION_IF_NULL(op);
   MS_EXCEPTION_IF_NULL(tensors_tensor_list);
   MS_LOG(DEBUG) << "Start custom ascend customize";

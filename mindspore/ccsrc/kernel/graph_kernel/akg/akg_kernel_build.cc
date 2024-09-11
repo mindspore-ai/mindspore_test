@@ -26,7 +26,6 @@
 #include <vector>
 #include <iostream>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ir/dtype.h"
 #include "ir/func_graph.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
