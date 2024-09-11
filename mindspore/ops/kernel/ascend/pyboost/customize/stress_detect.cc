@@ -51,7 +51,7 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
 
 int StressDetectKernel(const device::DeviceContext *device_context) {
   auto ret = LaunchAclnnWithNoInput("StressDetect", device_context);
-  constexpr int clear_device_state_fail = 100010;
+  constexpr int clear_device_state_fail = 574007;
   if (ret == clear_device_state_fail) {
     MS_LOG(EXCEPTION) << "Stress detect: clear device state fail!";
   }
