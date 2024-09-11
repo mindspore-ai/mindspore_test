@@ -74,7 +74,13 @@ abstract::TupleShapePtr LSTMInferShape(const PrimitivePtr &primitive, const std:
     num_directions = 2;
   }
   int64_t hidden_size = GetValue<int64_t>(primitive->GetAttr(kHidden_size));
-  int64_t proj_size = GetValue<int64_t>(primitive->GetAttr(kProjection_size));
+  // Adapt for addition of proj_size attribute.
+  int64_t proj_size = 0;
+  if (primitive->HasAttr(kProjection_size)) {
+    proj_size = GetValue<int64_t>(primitive->GetAttr(kProjection_size));
+  } else {
+    primitive->AddAttr(kProjection_size, MakeValue<int64_t>(proj_size));
+  }
   int64_t real_hidden_size = proj_size > 0 ? proj_size : hidden_size;
 
   bool x_is_dynamic = IsDynamic(x_input_shape);

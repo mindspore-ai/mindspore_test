@@ -57,7 +57,11 @@ bool LSTMGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const
   hidden_size_ = GetValue<int64_t>(KernelMod::primitive_->GetAttr(ops::kHidden_size));
   num_layers_ = GetValue<int64_t>(KernelMod::primitive_->GetAttr(ops::kNumLayers));
   has_bias_ = GetValue<bool>(KernelMod::primitive_->GetAttr(ops::kHasBias));
-  proj_size_ = GetValue<int64_t>(KernelMod::primitive_->GetAttr(ops::kProjection_size));
+  if (KernelMod::primitive_->HasAttr(ops::kProjection_size)) {
+    proj_size_ = GetValue<int64_t>(KernelMod::primitive_->GetAttr(ops::kProjection_size));
+  } else {
+    proj_size_ = 0;
+  }
   real_hidden_size_ = proj_size_ > 0 ? proj_size_ : hidden_size_;
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto match = MatchKernelAttr(kernel_attr, GetOpSupport());
