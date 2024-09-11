@@ -28,7 +28,7 @@ bool MoveToD2H(const tensor::TensorPtr &src_tensor, const DeviceAddressPtr &src_
   MS_EXCEPTION_IF_NULL(src_tensor);
   MS_EXCEPTION_IF_NULL(dst_tensor);
   if (src_device_ptr == nullptr) {
-    MS_LOG(WARNING) << "Origin tensor has no device address, just copy host value";
+    MS_LOG(DEBUG) << "Origin tensor has no device address, just copy host value";
     size_t size = dst_tensor->Size();
     auto ret = memcpy_s(dst_tensor->data_c(), size, src_tensor->data_c(), size);
     return ret == EOK;
@@ -79,7 +79,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     MS_EXCEPTION_IF_NULL(src_device_ptr);
     auto src_type = GetDeviceNameByType(src_device_ptr->GetDeviceType());
     if (to == src_type) {
-      MS_LOG(WARNING) << "The tensor is already on: " << to << ", no need move again";
+      MS_LOG(DEBUG) << "The tensor is already on: " << to << ", no need move again";
       *return_self = true;
       return;
     }
