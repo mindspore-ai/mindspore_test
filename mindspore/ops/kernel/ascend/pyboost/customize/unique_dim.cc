@@ -52,7 +52,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
     LAUNCH_ACLNN_SYNC(aclnnUniqueDim, device_context, stream_id, input_tensor, sorted_imm, return_inverse_imm, dim_imm,
                       outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
   const auto &cache_func_ptr = std::get<kIndex2>(return_value);
-  auto all_acl_tensor = cache_func_ptr(false, {}, true);
+  auto all_acl_tensor = cache_func_ptr(transform::ProcessCacheType::kGetOutputShape, {});
 
   // update shape
   auto output_real_shape0 = all_acl_tensor[kIndex4];

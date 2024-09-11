@@ -783,11 +783,11 @@ inline TypeId ConvertKernelTensor<TypeId>(mindspore::kernel::KernelTensor *tenso
 }
 
 template <>
-inline std::vector<mindspore::kernel::KernelTensor *>
-ConvertKernelTensor<std::vector<mindspore::kernel::KernelTensor *>>(mindspore::kernel::KernelTensor *tensor) {
+inline std::vector<mindspore::kernel::KernelTensorPtr>
+ConvertKernelTensor<std::vector<mindspore::kernel::KernelTensorPtr>>(mindspore::kernel::KernelTensor *tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->type_id() != kObjectTypeTuple && tensor->type_id() != kObjectTypeList) {
-    return {tensor};
+    return {std::shared_ptr<mindspore::kernel::KernelTensor>(tensor)};
   }
   auto shape = tensor->GetShapeVector();
   if (shape.empty()) {
@@ -797,7 +797,7 @@ ConvertKernelTensor<std::vector<mindspore::kernel::KernelTensor *>>(mindspore::k
     MS_LOG(EXCEPTION) << shape << " is an invalid shape, please check op infer!";
   }
 
-  std::vector<mindspore::kernel::KernelTensor *> res;
+  std::vector<mindspore::kernel::KernelTensorPtr> res;
 
   auto split_num = shape[kIndex0];
   auto offset = tensor->size() / split_num;
@@ -805,7 +805,7 @@ ConvertKernelTensor<std::vector<mindspore::kernel::KernelTensor *>>(mindspore::k
   new_shape.erase(new_shape.begin());
 
   for (int i = 0; i < split_num; ++i) {
-    auto new_tensor = new KernelTensor(*tensor);
+    auto new_tensor = std::make_shared<mindspore::kernel::KernelTensor>(*tensor);
     new_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(tensor->dtype_id())));
     auto tensor_shape = std::make_shared<abstract::TensorShape>();
     tensor_shape->SetShapeVector(new_shape);
@@ -852,6 +852,15 @@ inline void Release(aclBoolArray *p) {
   aclDestroyBoolArray(p);
 }
 
+inline void Release(aclFloatArray *p) {
+  static const auto aclDestroyFloatArray = GET_OP_API_FUNC(aclDestroyFloatArray);
+  if (aclDestroyFloatArray == nullptr) {
+    return;
+  }
+
+  aclDestroyFloatArray(p);
+}
+
 inline void Release(aclTensorList *p) {
   static const auto aclDestroyTensorList = GET_OP_API_FUNC(aclDestroyTensorList);
   if (aclDestroyTensorList == nullptr) {
@@ -859,15 +868,6 @@ inline void Release(aclTensorList *p) {
   }
 
   aclDestroyTensorList(p);
-}
-
-inline void Release(aclOpExecutor *p) {
-  static const auto aclDestroyAclOpExecutor = GET_OP_API_FUNC(aclDestroyAclOpExecutor);
-  if (aclDestroyAclOpExecutor == nullptr) {
-    return;
-  }
-
-  aclDestroyAclOpExecutor(p);
 }
 
 template <typename T>

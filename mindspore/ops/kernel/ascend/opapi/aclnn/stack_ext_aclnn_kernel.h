@@ -33,7 +33,8 @@ class StackExtAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
-  std::vector<KernelTensor *> tensor_;
+  std::vector<KernelTensor *> GetStackRealInputs(const std::vector<KernelTensor *> &inputs);
+  std::vector<KernelTensorPtr> tuple_tensors_;
   int64_t axis_;
 };
 }  // namespace kernel

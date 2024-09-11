@@ -35,11 +35,20 @@
 
 namespace mindspore {
 namespace transform {
+enum class ProcessCacheType {
+  kReleaseParams,
+  kReleaseParamsAndExecutor,
+  kGetOutputShape,
+  kUpdateTensorAddress,
+};
+
 using InitHugeMemThreadLocal = std::function<int(void *, bool)>;
 using UnInitHugeMemThreadLocal = std::function<void(void *, bool)>;
 using ReleaseHugeMem = std::function<void(void *, bool)>;
+using ReleaseExecutor = std::function<int(transform::aclOpExecutor *)>;
 using ReleaseCallBack = std::function<void()>;
-using ProcessCache = std::function<std::vector<ShapeVector>(bool, const std::vector<std::vector<void *>> &, bool)>;
+using ProcessCache = std::function<std::vector<ShapeVector>(const transform::ProcessCacheType &,
+                                                            const std::vector<std::vector<void *>> &)>;
 using RunApiFunc = int (*)(void *, uint64_t, transform::aclOpExecutor *, const aclrtStream);
 
 class OpApiDefaultResource {
@@ -49,6 +58,7 @@ class OpApiDefaultResource {
   InitHugeMemThreadLocal init_mem_func();
   UnInitHugeMemThreadLocal uninit_mem_func();
   ReleaseHugeMem release_mem_func();
+  ReleaseExecutor release_executor_func();
 
  private:
   OpApiDefaultResource() = default;
@@ -57,6 +67,7 @@ class OpApiDefaultResource {
   InitHugeMemThreadLocal init_mem_func_{nullptr};
   UnInitHugeMemThreadLocal uninit_mem_func_{nullptr};
   ReleaseHugeMem release_mem_func_{nullptr};
+  ReleaseExecutor release_executor_func_{nullptr};
 };
 
 template <typename Tuple>
@@ -140,16 +151,26 @@ template <typename T>
 class GraphCache {
  public:
   explicit GraphCache(transform::aclOpExecutor *executor, T &&param) : executor_(executor), converted_params_(param) {}
-  std::vector<ShapeVector> operator()(bool is_release = false,
-                                      const std::vector<std::vector<void *>> &address_list = {},
-                                      bool get_shapes = false) {
-    if (get_shapes) {
-      return FillShapeListFromTuple(converted_params_);
-    }
-    if (is_release) {
-      ReleaseConvertTypes(converted_params_);
-    } else {
-      UpdateAddressForTensor(executor_, address_list, converted_params_);
+  std::vector<ShapeVector> operator()(const transform::ProcessCacheType &process_cache_type,
+                                      const std::vector<std::vector<void *>> &address_list = {}) {
+    auto release_executor_func = transform::OpApiDefaultResource::GetInstance().release_executor_func();
+    switch (process_cache_type) {
+      case ProcessCacheType::kGetOutputShape:
+        return FillShapeListFromTuple(converted_params_);
+      case ProcessCacheType::kReleaseParamsAndExecutor:
+        ReleaseConvertTypes(converted_params_);
+        if (release_executor_func != nullptr) {
+          release_executor_func(executor_);
+        }
+        break;
+      case ProcessCacheType::kReleaseParams:
+        ReleaseConvertTypes(converted_params_);
+        break;
+      case ProcessCacheType::kUpdateTensorAddress:
+        UpdateAddressForTensor(executor_, address_list, converted_params_);
+        break;
+      default:
+        break;
     }
     return {};
   }
@@ -339,10 +360,10 @@ class ApiCachePool {
   (aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
 // Update tensor for static graph.
-#define UPDATE_TENSOR_FOR_LAUNCH(process_cache, ...)                     \
-  do {                                                                   \
-    const auto &address_list = transform::GetTensorAddress(__VA_ARGS__); \
-    process_cache(false, address_list, false);                           \
+#define UPDATE_TENSOR_FOR_LAUNCH(process_cache, ...)                                \
+  do {                                                                              \
+    const auto &address_list = transform::GetTensorAddress(__VA_ARGS__);            \
+    process_cache(transform::ProcessCacheType::kUpdateTensorAddress, address_list); \
   } while (false)
 
 // Async run op.

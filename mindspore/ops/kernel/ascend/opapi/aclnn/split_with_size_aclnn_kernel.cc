@@ -48,8 +48,9 @@ std::vector<KernelTensor *> SplitWithSizeAscend::GetSplitRealOutputs(const std::
   std::vector<KernelTensor *> split_results;
   for (auto &output : outputs) {
     if (IsTuple(output)) {
-      auto converted_output = transform::ConvertKernelTensor<std::vector<KernelTensor *>>(output);
-      split_results.insert(split_results.end(), converted_output.begin(), converted_output.end());
+      converted_output_ = transform::ConvertKernelTensor<std::vector<KernelTensorPtr>>(output);
+      std::transform(converted_output_.begin(), converted_output_.end(), std::back_inserter(split_results),
+                     [](const KernelTensorPtr &tensor) -> KernelTensor * { return tensor.get(); });
     } else {
       split_results.push_back(output);
     }

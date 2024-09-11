@@ -42,7 +42,7 @@ tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner
   auto return_value =
     LAUNCH_ACLNN_SYNC(aclnnMaskedSelect, device_context, op->stream_id(), input_tensor, mask_tensor, outputs[0]);
   const auto &cache_func_ptr = std::get<kIndex2>(return_value);
-  auto all_acl_tensor = cache_func_ptr(false, {}, true);
+  auto all_acl_tensor = cache_func_ptr(transform::ProcessCacheType::kGetOutputShape, {});
 
   auto output_real_shape = all_acl_tensor[kIndex2];
   auto simple_infer_ptr = op->output_value_simple_info();
