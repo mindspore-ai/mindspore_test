@@ -50,7 +50,6 @@ TypePtr CumsumExtFuncImpl::InferType(const PrimitivePtr &primitive,
   auto prim_name = primitive->name();
   auto input_type = input_args[kInputIndex0]->GetType();
   auto dtype_type = input_args[kInputIndex2]->GetType();
-  MS_EXCEPTION_IF_NULL(input_type);
   auto input_tensor = input_type->cast<TensorTypePtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_type_id = input_tensor->element()->type_id();

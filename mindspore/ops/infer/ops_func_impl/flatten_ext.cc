@@ -65,10 +65,8 @@ ShapeVector FlattenShapeCalc(const ShapeVector &input_shape, const int64_t &star
 BaseShapePtr FlattenExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
   auto input_x_shape = input_args[kIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_x_shape);
 
   auto x_shape = input_x_shape->GetShapeVector();
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   const int64_t input_num = 3;
   (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kGreaterEqual, input_num,
@@ -111,7 +109,6 @@ ShapeArray FlattenExtFuncImpl::InferShape(const PrimitivePtr &primitive, const V
   MS_EXCEPTION_IF_NULL(x_tensor);
 
   const auto x_shape = x_tensor->shape();
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   const int64_t input_num = 3;
   (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_values.size()), kGreaterEqual, input_num,

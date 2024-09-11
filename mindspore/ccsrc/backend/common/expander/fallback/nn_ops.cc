@@ -322,7 +322,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest1D").SetBody(BODYFUNC(ib) {
   auto output_size = ib->GetInput(kIndex1);
   auto scales = ib->GetInput(kIndex2);
 
-  NodePtr size_node;
+  NodePtr size_node{nullptr};
   if (output_size->abstract()->BuildType()->isa<TypeNone>()) {
     auto value_ptr = scales->BuildValue();
     auto x_shape = x->shape();
@@ -379,14 +379,14 @@ REG_FALLBACK_BUILDER("UpsampleNearest2D").SetBody(BODYFUNC(ib) {
   auto output_size = ib->GetInput(kIndex1);
   auto scales = ib->GetInput(kIndex2);
 
-  NodePtr size_node;
+  NodePtr size_node{nullptr};
   auto x_shape = x->shape();
   if (output_size->abstract()->BuildType()->isa<TypeNone>()) {
     auto value_ptr = scales->BuildValue();
     if (!IsDynamicShape(x_shape) && IsValueKnown(value_ptr)) {
       auto scales = GetValue<std::vector<pyfloat>>(value_ptr);
-      std::vector<int64_t> size{static_cast<int64_t>(x_shape[2] * scales[0]),
-                                static_cast<int64_t>(x_shape[3] * scales[1])};
+      std::vector<int64_t> size{static_cast<int64_t>(x_shape[kIndex2] * scales[kIndex0]),
+                                static_cast<int64_t>(x_shape[kIndex3] * scales[kIndex1])};
       size_node = ib->Value(size);
     } else {
       MS_LOG(ERROR) << "For UpsampleNearest2D, x should not be dynamic and scales should be const.";
@@ -439,7 +439,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest1DGrad").SetBody(BODYFUNC(ib) {
   auto scales = ib->GetInput(kIndex3);
 
   auto value_ptr = input_size->BuildValue();
-  NodePtr size_node;
+  NodePtr size_node{nullptr};
   if (IsValueKnown(value_ptr)) {
     auto input_size_val = GetValue<std::vector<int64_t>>(value_ptr);
     std::vector<int64_t> size{input_size_val[input_size_val.size() - 1], 1};
@@ -481,7 +481,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest2DGrad").SetBody(BODYFUNC(ib) {
   auto scales = ib->GetInput(kIndex3);
 
   auto value_ptr = input_size->BuildValue();
-  NodePtr size_node;
+  NodePtr size_node{nullptr};
   if (IsValueKnown(value_ptr)) {
     auto input_size_val = GetValue<std::vector<int64_t>>(value_ptr);
     std::vector<int64_t> size{input_size_val.begin() + (input_size_val.size() - kIndex2), input_size_val.end()};
