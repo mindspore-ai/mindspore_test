@@ -23,6 +23,10 @@ namespace mindspore {
 namespace parallel {
 void StrategyCheckpointInfo::set_strategy_map(const StrategyMap &strategy_map) { strategy_map_ = strategy_map; }
 
+void StrategyCheckpointInfo::set_out_strategy_map(const StrategyMap &out_strategy_map) {
+  out_strategy_map_ = out_strategy_map;
+}
+
 void StrategyCheckpointInfo::set_tensor_info_map(const TensorInfoMap &tensor_info_map) {
   tensor_info_map_ = tensor_info_map;
 }
@@ -76,6 +80,14 @@ nlohmann::json StrategyCheckpointInfo::to_json() const {
     stra_j["stage"] = node_stra->GetInputStage();
     stra_j["parallel_strategy"] = node_stra->GetInputDim();
     stra_ckpt_info_j["parallel_strategy_item"][node_name] = stra_j;
+  }
+  for (const auto &stra_pair : out_strategy_map_) {
+    auto node_name = stra_pair.first;
+    auto node_stra = stra_pair.second;
+    nlohmann::json stra_j;
+    stra_j["stage"] = node_stra->GetInputStage();
+    stra_j["parallel_strategy"] = node_stra->GetInputDim();
+    stra_ckpt_info_j["parallel_out_strategy_item"][node_name] = stra_j;
   }
   for (const auto &layout_pair : tensor_info_map_) {
     auto parameter_name = layout_pair.first;
@@ -180,6 +192,12 @@ void StrategyJsonInfo::FromJson(const nlohmann::json &stra_json_info_j) {
     auto stage = stra_j.value().at("stage").get<int64_t>();
     auto stra = stra_j.value().at("parallel_strategy").get<std::vector<std::vector<int64_t>>>();
     strategy_map_[node_name] = std::make_shared<Strategy>(stage, stra);
+  }
+  for (const auto &stra_j : stra_json_info_j.at("parallel_out_strategy_item").items()) {
+    auto node_name = stra_j.key();
+    auto stage = stra_j.value().at("stage").get<int64_t>();
+    auto stra = stra_j.value().at("parallel_strategy").get<std::vector<std::vector<int64_t>>>();
+    out_strategy_map_[node_name] = std::make_shared<Strategy>(stage, stra);
   }
 }
 }  // namespace parallel

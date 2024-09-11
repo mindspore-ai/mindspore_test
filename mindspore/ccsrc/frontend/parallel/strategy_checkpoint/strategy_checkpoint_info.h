@@ -44,12 +44,15 @@ class StrategyCheckpointInfo {
   void Init(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
             const ManualShapeMap &manual_shape_map, int64_t current_stage) {
     strategy_map_ = strategy_map;
+    out_strategy_map_ = StrategyMap();
     tensor_info_map_ = tensor_info_map;
     manual_shape_map_ = manual_shape_map;
     current_stage_ = current_stage;
   }
   StrategyMap strategy_map() const { return strategy_map_; }
   void set_strategy_map(const StrategyMap &strategy_map);
+  StrategyMap out_strategy_map() const { return out_strategy_map_; }
+  void set_out_strategy_map(const StrategyMap &out_strategy_map);
   TensorInfoMap tensor_info_map() const { return tensor_info_map_; }
   void set_tensor_info_map(const TensorInfoMap &tensor_info_map);
   ManualShapeMap manual_shape_map() const { return manual_shape_map_; }
@@ -64,6 +67,7 @@ class StrategyCheckpointInfo {
 
  protected:
   StrategyMap strategy_map_;
+  StrategyMap out_strategy_map_;
   int64_t current_stage_;
   TensorInfoMap tensor_info_map_;
   ManualShapeMap manual_shape_map_;
@@ -73,7 +77,13 @@ class StrategyJsonInfo : public StrategyCheckpointInfo {
  public:
   StrategyJsonInfo() : StrategyCheckpointInfo() {}
   ~StrategyJsonInfo() override = default;
-
+  void Init(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map, int64_t current_stage) {
+    strategy_map_ = strategy_map;
+    out_strategy_map_ = out_strategy_map;
+    tensor_info_map_ = TensorInfoMap();
+    manual_shape_map_ = ManualShapeMap();
+    current_stage_ = current_stage;
+  }
   void FromJson(const nlohmann::json &stra_json_info_j) override;
 };
 }  // namespace parallel
