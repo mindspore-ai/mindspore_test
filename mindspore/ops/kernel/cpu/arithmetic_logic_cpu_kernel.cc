@@ -333,7 +333,7 @@ void ArithLogicCpuTypeFunc<T>::NotEqual(const T *input1, const T *input2, bool *
 
 template <typename T>
 inline bool ComplexLogicalAnd(const T &a, const T &b) {
-  return (a.real() && b.real()) && (a.imag() && b.imag());
+  return (a.real() || a.imag()) && (b.real() || b.imag());
 }
 
 template <typename T>
