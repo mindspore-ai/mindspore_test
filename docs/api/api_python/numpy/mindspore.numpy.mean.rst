@@ -18,3 +18,6 @@ mindspore.numpy.mean
 
     返回：
         Tensor或标量，包含元素为所得均值的数组。
+    
+    异常：
+        - **ValueError** - 如果 `axes` 的范围超过 `[-a.ndim, a.ndim)` ，或如果 `axes` 包含重复项。
