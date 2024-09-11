@@ -489,12 +489,14 @@ const std::pair<size_t, size_t> DynamicMemPoolBestFit::FreeIdleMemsByEagerFree()
     std::cout << "Total eager free memory : " << free_size << ", real free : " << real_free_size
               << ", not free size: " << (free_size - real_free_size) << "." << std::endl;
   }
+  size_t not_free_size = (free_size > real_free_size) ? (free_size - real_free_size) : 0;
   if (real_free_size > kGBToByte) {
     MS_LOG(WARNING) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
-                    << ", real free : " << real_free_size << ", not free size: " << (free_size - real_free_size) << ".";
+                    << ", real free : " << real_free_size << ", not free size: " << not_free_size << ".";
+  } else {
+    MS_LOG(INFO) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
+                 << ", real free : " << real_free_size << ", not free size: " << not_free_size << ".";
   }
-  MS_LOG(INFO) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
-               << ", real free : " << real_free_size << ", not free size: " << (free_size - real_free_size) << ".";
   return {free_size, real_free_size};
 }
 
