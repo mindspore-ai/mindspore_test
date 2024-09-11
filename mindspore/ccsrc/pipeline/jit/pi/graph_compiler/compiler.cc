@@ -17,6 +17,7 @@
 #include "pipeline/jit/pi/graph_compiler/compiler.h"
 #include <memory>
 #include <string>
+#include <algorithm>
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "ir/func_graph.h"
@@ -66,10 +67,26 @@ bool CanbeMutable(const py::object &arg) {
   return false;
 }
 
-void MarkArgmentMutable(const py::tuple &args) {
+void MarkArgumentMutable(const py::tuple &args) {
   for (size_t idx = 0; idx < args.size(); idx++) {
     if (CanbeMutable(args[idx])) {
       args[idx] = python_adapter::CallPyFn("mindspore.common", "mutable", args[idx]);
+    }
+  }
+}
+
+void MarkArgumentMutableWithParams(const py::tuple &args, const AnfNodePtrList &params) {
+  for (auto param : params) {
+    auto abstract = param->abstract();
+    MS_EXCEPTION_IF_NULL(abstract);
+    if (abstract->BuildValue() == kValueAny && abstract->has_user_data("param_index")) {
+      auto index = *(abstract->user_data<size_t>("param_index"));
+      auto arg = args[index];
+      py::object o = python_adapter::CallPyFn("mindspore.common.mutable", "_check_element_type", arg);
+      if (py::isinstance<py::bool_>(o) && py::bool_(o)) {
+        args[index] = python_adapter::CallPyFn("mindspore.common", "mutable", arg);
+        MS_LOG(INFO) << "Add mutable to object index " << index;
+      }
     }
   }
 }
@@ -139,13 +156,16 @@ py::tuple ExpandVariableArgs(const py::tuple &args, int co_flags, int co_argcoun
 
 PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::string &name, int co_flags,
                    bool enable_tuple_broaden) {
-  py::tuple args_tuple = EliminateSelf(args, name);
-  args_tuple = EliminateStubTensor(args_tuple);
-  MarkArgmentMutable(args_tuple);
-  args_tuple = EliminateInvalidArgs(args_tuple, co_flags, enable_tuple_broaden);
-  MS_LOG(INFO) << "Args for run: " << std::string(py::str(args_tuple));
   auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
+  py::tuple args_tuple = EliminateSelf(args, name);
+  args_tuple = EliminateStubTensor(args_tuple);
+  auto origin_fg = graph_executor->GetFuncGraph(phase);
+  const auto &params = origin_fg->parameters();
+  MarkArgumentMutableWithParams(args_tuple, params);
+  MarkArgumentMutable(args_tuple);
+  args_tuple = EliminateInvalidArgs(args_tuple, co_flags, enable_tuple_broaden);
+  MS_LOG(INFO) << "Args for run: " << std::string(py::str(args_tuple));
   py::object ret;
   int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto executor = pynative::PyNativeExecutor::GetInstance();
@@ -219,7 +239,7 @@ CallableGraph Compiler::Compile(const PyFunctionObject &func, const PyFrameWrapp
     DumpIR("func_graph_builder.ir", graph);
   }
   args = ExpandVariableArgs(args, code->co_flags, code->co_argcount);
-  MarkArgmentMutable(args);
+  MarkArgumentMutable(args);
   try {
     SkipBoostInferScope skip_boost_infer_scope;
     (void)graph_executor->CompileInner(graph, args, kwargs, phase, false);
@@ -280,6 +300,21 @@ CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tu
     DumpIR("graph_before_compile.ir", func_graph);
   }
   MS_LOG(INFO) << "Args for compile: " << std::string(py::str(new_arg));
+
+  auto origin_num = compile_info.origin_top_input_num_;
+
+  const auto &params = func_graph->parameters();
+  if (origin_num != params.size()) {
+    MS_LOG(INFO) << "Reorder top function graph inputs.";
+    AnfNodePtrList new_params;
+    (void)std::copy(params.begin(), params.begin() + origin_num, std::back_inserter(new_params));
+    (void)std::copy_if(params.begin() + origin_num, params.end(), std::back_inserter(new_params),
+                       [](const AnfNodePtr &param) { return !param->abstract()->isa<abstract::AbstractRefTensor>(); });
+    (void)std::copy_if(params.begin() + origin_num, params.end(), std::back_inserter(new_params),
+                       [](const AnfNodePtr &param) { return param->abstract()->isa<abstract::AbstractRefTensor>(); });
+    func_graph->set_parameters(new_params);
+  }
+
   (void)jit_executor->CompileInner(func_graph, new_arg, kwargs, phase, true);
 
   return callable;

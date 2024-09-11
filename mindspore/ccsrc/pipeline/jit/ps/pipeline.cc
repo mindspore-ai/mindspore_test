@@ -1358,6 +1358,7 @@ void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs,
     if (is_auto_parallel) {
       (void)parallel::ExtendInputArgsAbstractShape(args_abstract_item, i);
     }
+    args_abstract_item->set_user_data<size_t>("param_index", std::make_shared<size_t>(i));
     (void)args_abs->emplace_back(args_abstract_item);
     SetHookForArgAbstract(args[i], args_abstract_item);
   }

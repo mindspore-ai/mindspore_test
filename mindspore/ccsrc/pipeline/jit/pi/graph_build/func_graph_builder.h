@@ -181,6 +181,8 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr AddAttributeInput(const py::object &object);
 
+  size_t origin_top_input_num() const { return origin_top_input_num_; }
+
  private:
   static bool CheckCallable(const ValuePtr &value, const AbstractBasePtr &abs);
 
@@ -228,6 +230,7 @@ class FuncGraphBuilder {
   std::vector<FuncGraphBuilder *> prev_builders_;
 
   FuncGraphManagerPtr mng_;
+  size_t origin_top_input_num_ = 0;
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_PI_JIT_GRAPH_BUILD_FUNC_GRAPH_BUILDER_H_

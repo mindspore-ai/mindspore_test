@@ -45,6 +45,7 @@ class MindCompiler {
     int co_argcount_;
     int co_kwonlyargcount_;
     int co_flags_;
+    size_t origin_top_input_num_;
   };
   static CallableGraph Compile(const FuncGraphPtr &func_graph, const py::tuple &args, const py::dict &kwargs,
                                const std::string &phase, const CompileInfo &compile_info);
