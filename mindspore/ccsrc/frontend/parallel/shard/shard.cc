@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/shard/shard.h"
@@ -225,12 +226,12 @@ static void updateStrategyType(const std::vector<ValuePtr> &layout_value_vector,
                        [](const auto &item) { return IsItemTypeBool(item); });
   });
   if (has_bool) {
-    *strategy_type = "layout";
+    *strategy_type = LAYOUT;
   }
 }
 
-static CNodePtr InsertIdentityCNode(const AnfNodePtr parameter, const FuncGraphPtr func_graph,
-                                    const CNodePtr to_insert_cnode, const int execution_mode) {
+static CNodePtr InsertIdentityCNode(const AnfNodePtr &parameter, const FuncGraphPtr &func_graph,
+                                    const CNodePtr &to_insert_cnode, const int execution_mode) {
   CNodePtr identity_cnode = nullptr;
   FuncGraphManagerPtr manager = func_graph->manager();
   if (execution_mode == kGraphMode) {
@@ -276,12 +277,13 @@ static void CheckInputStrategy(const std::vector<std::vector<int64_t>> &input_st
     // its check.
     auto param_shape = common::AnfAlgo::GetOutputInferShape(parameter, 0);
     if (!input_strategy[i].empty() && param_shape.size() != input_strategy[i].size()) {
-      MS_LOG(EXCEPTION) << "Input dimension: " << param_shape.size()
-                        << " is not equal to in_strategy dimension: " << input_strategy[i].size() << " at index " << i;
+      MS_LOG_WITH_NODE(EXCEPTION, parameter)
+        << "Input dimension: " << param_shape.size()
+        << " is not equal to in_strategy dimension: " << input_strategy[i].size() << " at index " << i;
     }
     if (!CheckShapeStrategy(input_strategy[i], param_shape)) {
-      MS_LOG(EXCEPTION) << "Check conformance between input strategy " << input_strategy[i] << "and tensor shape "
-                        << param_shape << "failed";
+      MS_LOG_WITH_NODE(EXCEPTION, parameter) << "Check conformance between input strategy " << input_strategy[i]
+                                             << "and tensor shape " << param_shape << "failed";
     }
   }
 }
@@ -296,20 +298,21 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
   std::vector<AnfNodePtr> input_nodes;
   GetInputNodes(func_graph, &input_nodes);
   if (input_nodes.size() != in_strategy_size) {
-    MS_LOG(ERROR) << "Input numbers: " << input_nodes.size()
-                  << " is not equal to in_strategy numbers: " << in_strategy_size;
+    MS_LOG_WITH_NODE(EXCEPTION, in_strategy)
+      << "Input numbers: " << input_nodes.size() << " is not equal to in_strategy numbers: " << in_strategy_size;
   }
 
   // Get strategy in ValueTuple.
   std::vector<ValuePtr> layout_value_vector;
   auto &in_strategy_value = in_strategy_tuple->value();
   if (!in_strategy_value->isa<ValueTuple>()) {
-    MS_LOG(EXCEPTION) << "Parse in_strategy to ValueType failed. Please check in_strategy format.";
+    MS_LOG_WITH_NODE(EXCEPTION, in_strategy)
+      << "Parse in_strategy to ValueType failed. Please check in_strategy format.";
   }
   layout_value_vector = in_strategy_value->cast<ValueTuplePtr>()->value();
 
   // Check strategy type, it can only be "tuple" or "layout".
-  std::string strategy_type = "tuple";
+  std::string strategy_type = TUPLE;
   if (!need_default_strategy) {
     updateStrategyType(layout_value_vector, &strategy_type);
   }
@@ -317,17 +320,17 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
   // Get strategy either in input_strategy (given tuple) or input_layout (given layout).
   std::vector<std::vector<int64_t>> input_strategy;
   std::vector<ValuePtr> input_layout;
-  if (strategy_type == "tuple") {
+  if (strategy_type == TUPLE) {
     if (need_default_strategy) {
       GenerateDefaultStrategy(in_strategy_tuple, input_nodes, device_num, &input_strategy);
     } else {
       input_strategy = GetValue<std::vector<std::vector<int64_t>>>(in_strategy_tuple->value());
     }
     if (!CheckDeviceNum(input_strategy, device_num)) {
-      MS_LOG(EXCEPTION) << "check device number failed";
+      MS_LOG_WITH_NODE(EXCEPTION, in_strategy) << "check device number failed";
     }
   }
-  if (strategy_type == "layout") {
+  if (strategy_type == LAYOUT) {
     GetInputLayout(&input_layout, layout_value_vector);
   }
 
@@ -373,7 +376,7 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
       if (!input_strategy.empty()) {
         Shapes current_layout = {input_strategy[layout_index]};
         SetStrategyToCNode(identity_cnode, current_layout);
-        MS_LOG(INFO) << "Succeed to set layout " << current_layout << "to node "
+        MS_LOG(INFO) << "Succeed to set strategy " << current_layout << "to node "
                      << to_insert_cnode->fullname_with_scope();
       }
       if (!input_layout.empty()) {
@@ -404,9 +407,9 @@ static void SetParameterLayout(const FuncGraphPtr &root) {
     auto param_name = param_info->name();
     std::string param_type;
     if (!param_strategy.empty()) {
-      param_type = "tuple";
+      param_type = TUPLE;
     } else if (!device_matrix.empty()) {
-      param_type = "layout";
+      param_type = LAYOUT;
     } else {
       continue;
     }
@@ -429,13 +432,13 @@ static void SetParameterLayout(const FuncGraphPtr &root) {
       MS_EXCEPTION_IF_NULL(load_cnode_abstract);
       identity_cnode->set_abstract(load_cnode_abstract->Clone());
       (void)local_manager->Replace(load_cnode, identity_cnode);
-      if (param_type == "tuple") {
+      if (param_type == TUPLE) {
         Shapes current_layout = {param_strategy};
         SetStrategyToCNode(identity_cnode, current_layout);
         MS_LOG(INFO) << "The layout of \"" << param_name << "\" has been set to " << load_cnode->fullname_with_scope()
                      << ". Current strategies is " << current_layout;
       }
-      if (param_type == "layout") {
+      if (param_type == LAYOUT) {
         std::vector<std::pair<ValuePtr, ValuePtr>> layout_map;
         layout_map.emplace_back(std::make_pair(MakeValue(DEVICE_MATRIX), MakeValue(device_matrix)));
         layout_map.emplace_back(std::make_pair(MakeValue(TENSOR_MAP), MakeValue(tensor_map)));
@@ -547,6 +550,9 @@ bool Shard(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   if (parallel_mode != kSemiAutoParallel && parallel_mode != kAutoParallel) {
     MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support shard";
     return change;
+  }
+  if (IsParallelDynamicShape(root)) {
+    MS_LOG(WARNING) << "Sharding does not support dynamic shape, will be ignored in the following procedures.";
   }
 
   if (ParallelInit() != SUCCESS) {

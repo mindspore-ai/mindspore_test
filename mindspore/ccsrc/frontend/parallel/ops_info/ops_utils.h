@@ -145,6 +145,7 @@ constexpr char FIAS_SP_RUN_ONCE_ONLY[] = "FIAS_SP_RUN_ONCE_ONLY";
 constexpr char IN_STRATEGY[] = "in_strategy";
 constexpr char OUT_STRATEGY[] = "out_strategy";
 constexpr char INTERFERED_SAPP[] = "MS_INTERFERED_SAPP";
+constexpr char TUPLE[] = "tuple";
 constexpr char LAYOUT[] = "layout";
 constexpr char ROOT_RANK[] = "root_rank";
 constexpr char DEV_MATRIX[] = "dev_matrix";

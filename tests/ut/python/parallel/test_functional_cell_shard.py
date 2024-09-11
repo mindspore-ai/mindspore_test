@@ -81,9 +81,7 @@ class ShardNet(nn.Cell):
         self.relu = P.ReLU()
 
     def construct(self, x):
-        # y = self.add(x, self.bias)
         y = self.subnet_shard(x)
-        # y = self.subnet(x)
         output = self.relu(y)
         return output
 

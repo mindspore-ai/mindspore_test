@@ -2670,7 +2670,7 @@ void ConvertLayoutToStrategy(Dimensions *sub_strategy_vec, const std::vector<std
         continue;
       }
       int64_t actual_ind = std::abs(tensor_ind - alias_len);
-      if (alias_name[actual_ind] != "interleaved_parallel") {
+      if (alias_name[actual_ind] != INTERLEAVED_PARALLEL) {
         dim_strategy *= device_matrix[actual_ind];
       }
     }
