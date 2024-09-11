@@ -677,7 +677,8 @@ def test_parallel_dynamic_shape_with_rmsnorm_001():
     phase = compile_net(model, input_x)
     validator = ParallelValidator(model, phase)
     assert validator.check_node_inputs('TupleGetItem-3', ['RmsNorm-0', 0])
-    assert validator.check_node_inputs('Shape-1', ['TupleGetItem-3'])
+    assert validator.check_node_inputs(
+        'Reshape-2', ['TupleGetItem-3', (1, -1, 96)])
 
 
 def test_parallel_dynamic_shape_with_split():
