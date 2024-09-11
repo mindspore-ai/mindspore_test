@@ -11951,7 +11951,7 @@ def round(input, *, decimals=None):
         input (Tensor): The input tensor.
 
     Keyword Args:
-        decimals (int, optional): Number of decimal places to round to (default: None). If decimals is negative,
+        decimals (int, optional): Number of decimal places to round to (default: 0). If decimals is negative,
             it specifies the number of positions to the left of the decimal point. It supports converting the
             single-element tensor to an int.
 
@@ -11973,7 +11973,7 @@ def round(input, *, decimals=None):
         >>> print(output)
         [ 1.  2.  2.  2. -4.]
         >>> input = Tensor(np.array([0.81, 1.52, 2.35, 2.53, -4.57]), mindspore.float32)
-        >>> output = ops.round(input, 1)
+        >>> output = ops.round(input, decimals=1)
         >>> print(output)
         [ 0.8  1.5  2.4  2.5 -4.6]
     """
