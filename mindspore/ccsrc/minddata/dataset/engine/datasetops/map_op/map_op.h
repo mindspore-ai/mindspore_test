@@ -142,8 +142,8 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
   }
 
   /// Set the instance of python multiprocessing which will passed from python
-  /// \param python_mp PythonMultiprocessingRuntime
-  void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_mp);
+  /// \param python_multiprocessing_runtime PythonMultiprocessingRuntime
+  void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime);
 
   /// Return the list of PIDs of worker processes
   /// \return vector of int
@@ -178,7 +178,7 @@ class MapOp : public ParallelOp<std::unique_ptr<MapWorkerJob>, TensorRow> {
 
   std::unique_ptr<ChildIterator> child_iterator_;  // An iterator for fetching.
 
-  std::shared_ptr<PythonMultiprocessingRuntime> python_mp_;  // python multiprocessing instance
+  std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;  // python multiprocessing instance
 
   // Private function for worker/thread to loop continuously. It comprises the main
   // logic of MapOp: getting the data from previous Op, validating user specified column names,

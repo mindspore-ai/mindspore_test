@@ -53,7 +53,7 @@ MapOp::MapOp(const std::vector<std::string> &in_col_names, const std::vector<std
       tfuncs_(std::vector<TensorOpVector>(num_workers, TensorOpVector())),
       in_columns_(in_col_names),
       out_columns_(out_col_names),
-      python_mp_(nullptr) {
+      python_multiprocessing_runtime_(nullptr) {
   // Set connector size via config.
   // If caller didn't specify the out_col_names, assume they are same as the in_columns.
 
@@ -334,8 +334,8 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
   // Handshake with TaskManager that thread creation is successful.
   TaskManager::FindMe()->Post();
   // let Python layer know the worker id of this thread
-  if (python_mp_ != nullptr) {
-    python_mp_->set_thread_to_worker(worker_id);
+  if (python_multiprocessing_runtime_ != nullptr) {
+    python_multiprocessing_runtime_->set_thread_to_worker(worker_id);
   }
 
 #if !defined(BUILD_LITE) && defined(ENABLE_D)
@@ -457,7 +457,7 @@ Status MapOp::WorkerCompute(const TensorRow &in_row, TensorRow *out_row,
         if (TaskManager::FindMe()->Interrupted()) {
           MS_LOG(INFO) << "Current thread had been interrupted by TaskManager.";
           return StatusCode::kMDInterrupted;
-        } else if (python_mp_ != nullptr && !python_mp_->is_running()) {
+        } else if (python_multiprocessing_runtime_ != nullptr && !python_multiprocessing_runtime_->is_running()) {
           // when sink_mode=True, dataset_size / output_shapes / output_types / columna_names ops before training
           // will cause map workers to stop first
           MS_LOG(INFO) << "The multi workers of map operation had stopped.";
@@ -549,7 +549,7 @@ Status MapOp::WorkerCompute(const TensorRow &in_row, TensorRow *out_row,
         if (TaskManager::FindMe()->Interrupted()) {
           MS_LOG(INFO) << "Current thread had been interrupted by TaskManager.";
           return StatusCode::kMDInterrupted;
-        } else if (python_mp_ != nullptr && !python_mp_->is_running()) {
+        } else if (python_multiprocessing_runtime_ != nullptr && !python_multiprocessing_runtime_->is_running()) {
           // when sink_mode=True, dataset_size / output_shapes / output_types / columna_names ops before training
           // will cause map workers to stop first
           MS_LOG(INFO) << "The multi workers of map operation had stopped.";
@@ -730,9 +730,9 @@ Status MapOp::AddNewWorkers(int32_t num_new_workers) {
       tensor_operations_.begin(), tensor_operations_.end(), std::back_inserter(tfuncs_[tfuncs_.size() - 1]),
       [](std::shared_ptr<TensorOperation> operation) -> std::shared_ptr<TensorOp> { return operation->Build(); });
   }
-  if (python_mp_ != nullptr) {
+  if (python_multiprocessing_runtime_ != nullptr) {
     CHECK_FAIL_RETURN_UNEXPECTED(num_new_workers > 0, "Number of workers added should be greater than 0.");
-    python_mp_->add_new_workers(num_new_workers);
+    python_multiprocessing_runtime_->add_new_workers(num_new_workers);
   }
   return Status::OK();
 }
@@ -742,26 +742,28 @@ Status MapOp::RemoveWorkers(int32_t num_workers) {
   for (int32_t i = 0; i < num_workers; i++) {
     tfuncs_.pop_back();
   }
-  if (python_mp_ != nullptr) {
+  if (python_multiprocessing_runtime_ != nullptr) {
     CHECK_FAIL_RETURN_UNEXPECTED(num_workers > 0, "Number of workers removed should be greater than 0.");
-    python_mp_->remove_workers(num_workers);
+    python_multiprocessing_runtime_->remove_workers(num_workers);
   }
   return Status::OK();
 }
-void MapOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_mp) { python_mp_ = std::move(python_mp); }
+void MapOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
+  python_multiprocessing_runtime_ = std::move(python_multiprocessing_runtime);
+}
 
 Status MapOp::Launch() {
   // launch python multiprocessing. This will create the MP pool and shared memory if needed.
-  if (python_mp_) {
+  if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for MapOp:" << id();
-    python_mp_->launch(id());
+    python_multiprocessing_runtime_->launch(id());
   }
   return DatasetOp::Launch();
 }
 
 std::vector<int32_t> MapOp::GetMPWorkerPIDs() const {
-  if (python_mp_ != nullptr) {
-    return python_mp_->get_pids();
+  if (python_multiprocessing_runtime_ != nullptr) {
+    return python_multiprocessing_runtime_->get_pids();
   }
   return DatasetOp::GetMPWorkerPIDs();
 }
@@ -842,7 +844,7 @@ Status MapOp::GetNextRowPullMode(TensorRow *const row) {
 }
 
 Status MapOp::ReleaseResource(int32_t worker_id) {
-  if (python_mp_ == nullptr) {
+  if (python_multiprocessing_runtime_ == nullptr) {
     for (auto &op : tfuncs_[worker_id]) {
       if (op->Name() == kPyFuncOp) {
         RETURN_IF_NOT_OK(op->ReleaseResource());

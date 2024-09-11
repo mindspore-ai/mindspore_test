@@ -36,7 +36,7 @@ class BatchNode : public DatasetNode {
             const std::vector<std::string> &in_col_names, const std::vector<std::string> &out_col_names,
             py::function batch_size_func, py::function batch_map_func,
             std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>> pad_map,
-            std::shared_ptr<PythonMultiprocessingRuntime> python_mp = nullptr);
+            std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime = nullptr);
 #endif
 
   /// \brief Constructor #2 for C++ API to create a BatchNode
@@ -123,7 +123,7 @@ class BatchNode : public DatasetNode {
   py::function batch_map_func_;
 #endif
   std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>> pad_map_;
-  std::shared_ptr<PythonMultiprocessingRuntime> python_mp_;
+  std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;
 };
 }  // namespace dataset
 }  // namespace mindspore

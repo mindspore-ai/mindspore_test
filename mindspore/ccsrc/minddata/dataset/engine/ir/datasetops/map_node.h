@@ -35,7 +35,7 @@ class MapNode : public DatasetNode {
           std::vector<std::string> input_columns = {}, std::vector<std::string> output_columns = {},
           const std::shared_ptr<DatasetCache> &cache = nullptr, std::vector<std::shared_ptr<DSCallback>> callbacks = {},
           ManualOffloadMode offload = ManualOffloadMode::kUnspecified,
-          std::shared_ptr<PythonMultiprocessingRuntime> python_mp = nullptr);
+          std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime = nullptr);
 
   /// \brief Constructor used in InsertMap pass.
   MapNode(std::vector<std::shared_ptr<TensorOperation>> operations, std::vector<std::string> input_columns,
@@ -131,7 +131,7 @@ class MapNode : public DatasetNode {
   /// \brief ManualOffloadMode to indicate manual_offload status
   ManualOffloadMode offload_;
 
-  std::shared_ptr<PythonMultiprocessingRuntime> python_mp_;
+  std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;
 };
 }  // namespace dataset
 }  // namespace mindspore

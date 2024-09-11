@@ -24,22 +24,25 @@
 
 namespace mindspore {
 namespace dataset {
-GeneratorOp::GeneratorOp(py::function generator_function, std::vector<std::string> column_names,
+GeneratorOp::GeneratorOp(const py::function &generator_function, std::vector<std::string> column_names,
                          std::vector<DataType> column_types, int32_t prefetch_size, int32_t connector_size,
                          std::shared_ptr<SamplerRT> sampler, int32_t num_parallel_workers)
     : PipelineOp(connector_size, std::move(sampler)),
-      generator_function_(std::move(generator_function)),
       column_names_(std::move(column_names)),
       column_types_(std::move(column_types)),
       prefetch_size_(prefetch_size),
       generator_counter_(0),
       num_parallel_workers_(num_parallel_workers),
-      num_rows_sampled_{0} {}
+      num_rows_sampled_{0} {
+  py::gil_scoped_acquire gil_acquire;
+  generator_function_ = generator_function;
+}
 
 GeneratorOp::~GeneratorOp() {
-  // we need to acquire gil before release py::object
+  // we need to acquire gil before release python object
   py::gil_scoped_acquire gil_acquire;
-  (void)generator_.release();
+  generator_ = py::none();
+  generator_function_ = py::none();
 }
 
 void GeneratorOp::Print(std::ostream &out, bool show_all) const {
@@ -99,11 +102,11 @@ Status GeneratorOp::CreateGeneratorObject() {
 
 Status GeneratorOp::Launch() {
   // Launch the python multiprocessing
-  if (python_mp_) {
+  if (python_multiprocessing_runtime_) {
     py::gil_scoped_acquire gil_acquire;
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for GeneratorOp: " << id();
     try {
-      python_mp_->launch(id());
+      python_multiprocessing_runtime_->launch(id());
     } catch (py::error_already_set &e) {
       std::string traceback;
       try {
@@ -350,8 +353,8 @@ Status GeneratorOp::Reset() {
   return Status::OK();
 }
 
-void GeneratorOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_mp) {
-  python_mp_ = std::move(python_mp);
+void GeneratorOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
+  python_multiprocessing_runtime_ = std::move(python_multiprocessing_runtime);
 }
 
 Status GeneratorOp::ComputeColMap() {

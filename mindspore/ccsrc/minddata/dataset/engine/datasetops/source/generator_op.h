@@ -44,11 +44,11 @@ constexpr int32_t kGetItemTimeOutMilliSeconds = 60000;
 
 class GeneratorOp : public PipelineOp, public RandomAccessOp {
  public:
-  GeneratorOp(py::function generator_function, std::vector<std::string> column_names,
+  GeneratorOp(const py::function &generator_function, std::vector<std::string> column_names,
               std::vector<DataType> column_types, int32_t prefetch_size, int32_t connector_size,
               std::shared_ptr<SamplerRT> sampler, int32_t num_parallel_workers);
 
-  ~GeneratorOp();
+  ~GeneratorOp() override;
 
   /// A print method typically used for debugging
   /// \param out - The output stream to write output to
@@ -88,8 +88,8 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   int32_t NumWorkers() const override { return num_parallel_workers_; }
 
   /// Set the instance of python multiprocessing which will passed from python
-  /// \param python_mp PythonMultiprocessingRuntime
-  void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_mp);
+  /// \param python_multiprocessing_runtime PythonMultiprocessingRuntime
+  void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime);
 
   /// \brief In pull mode, gets the next row
   /// \param row[out] - Fetched TensorRow
@@ -121,7 +121,7 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   bool prepared_data_{false};  // flag to indicate whether the data is prepared before taking for pull mode
   bool eof_received_{false};   // flag to indicate whether end of epoch signal is reached in pull mode
 
-  std::shared_ptr<PythonMultiprocessingRuntime> python_mp_;  // python multiprocessing instance
+  std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;  // python multiprocessing instance
 
   Status PyRowToTensorRow(py::object py_data, TensorRow *tensor_row);
 
