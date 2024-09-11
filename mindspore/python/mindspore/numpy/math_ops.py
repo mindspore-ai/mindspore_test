@@ -5337,7 +5337,7 @@ def unwrap(p, discont=3.141592653589793, axis=-1):
         differently than numpy due to differences in round-off.
 
     Args:
-        p (Union[int, float, bool, list, tuple, Tensor): Input array.
+        p (Union[int, float, bool, list, tuple, Tensor]): Input array.
         discont (float, optional): Maximum discontinuity between values, default: ``pi`` .
         axis (int, optional): Axis along which unwrap will operate, default: ``-1`` .
 
