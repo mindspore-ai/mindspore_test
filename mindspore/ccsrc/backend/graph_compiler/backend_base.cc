@@ -1107,9 +1107,8 @@ bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
       return false;
     }
   }
-  const auto &mng = graph->manager();
-  if (mng != nullptr && std::any_of(mng->all_nodes().begin(), mng->all_nodes().end(),
-                                    [](const AnfNodePtr &node) { return !IsNodeValid(node); })) {
+  const auto &all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
+  if (std::any_of(all_nodes.begin(), all_nodes.end(), [](const AnfNodePtr &node) { return !IsNodeValid(node); })) {
     return false;
   }
   MS_LOG(INFO) << "Start check parallel switch call.";
