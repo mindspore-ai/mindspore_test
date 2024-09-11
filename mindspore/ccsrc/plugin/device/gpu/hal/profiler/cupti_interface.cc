@@ -28,8 +28,25 @@ namespace mindspore {
 namespace profiler {
 namespace gpu {
 #ifndef _MSC_VER
+class Handle {
+ public:
+  explicit Handle(const char *name) { _handle = dlopen(name, RTLD_LAZY | RTLD_LOCAL); }
+
+  ~Handle() {
+    if (_handle != nullptr) {
+      dlclose(_handle);
+    }
+  }
+
+  void *GetHandle() { return _handle; }
+
+ private:
+  void *_handle;
+};
+
 inline void *LoadLib(const char *name) {
-  auto handle = dlopen(name, RTLD_LAZY | RTLD_LOCAL);
+  static Handle lib_handle(name);
+  void *handle = lib_handle.GetHandle();
   if (handle == nullptr) {
     MS_LOG(EXCEPTION) << "Load lib " << name << " Please check whether configured the path of CUPTI to LD_LIBRARY_PATH";
   }
