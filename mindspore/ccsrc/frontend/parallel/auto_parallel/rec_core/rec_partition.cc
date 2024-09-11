@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
@@ -236,151 +237,118 @@ bool HandleDynamicShapeFix(Graph::NodeType *node, const std::shared_ptr<Graph> &
   return false;
 }
 
+std::function<StrategyRec(Graph::NodeType, const std::vector<std::pair<std::string, StrategyRec>> &,
+                          const std::shared_ptr<Graph> &, bool, int64_t, bool &)>
+  HandleCostCommon = [](Graph::NodeType node,
+                        const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                        const std::shared_ptr<Graph> &graph, bool, int64_t, bool &) {
+    auto cost_ptr = std::make_shared<CostCommon>();
+    return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
+  };
+
+std::function<StrategyRec(Graph::NodeType, const std::vector<std::pair<std::string, StrategyRec>> &,
+                          const std::shared_ptr<Graph> &, bool, int64_t, bool &)>
+  HandleCostBatchParallel = [](Graph::NodeType node, const std::vector<std::pair<std::string, StrategyRec>> &,
+                               const std::shared_ptr<Graph> &, bool, int64_t, bool &) {
+    auto cost_ptr = std::make_shared<CostBatchParallel>();
+    return cost_ptr->GetOptimalStr(node);
+  };
+
+static const std::unordered_map<
+  OperatorType, std::function<StrategyRec(Graph::NodeType, const std::vector<std::pair<std::string, StrategyRec>> &,
+                                          const std::shared_ptr<Graph> &, bool, int64_t, bool &)>>
+  operation_map = {{OperatorType::kRecMatMul,
+                    [](Graph::NodeType node,
+                       const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                       const std::shared_ptr<Graph> &graph, bool isTraining, int64_t loop, bool &) {
+                      auto cost_ptr = std::make_shared<CostMatMul>();
+                      return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph, isTraining, loop);
+                    }},
+                   {OperatorType::kRecBatchMatMul,
+                    [](Graph::NodeType node,
+                       const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                       const std::shared_ptr<Graph> &graph, bool isTraining, int64_t, bool &) {
+                      auto cost_ptr = std::make_shared<CostBatchMatMul>();
+                      return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph, isTraining);
+                    }},
+                   {OperatorType::kRecConvolution,
+                    [](Graph::NodeType node,
+                       const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                       const std::shared_ptr<Graph> &graph, bool, int64_t, bool &enable_conv_chw_partition) {
+                      auto cost_ptr = std::make_shared<CostConvolution>();
+                      return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph, enable_conv_chw_partition);
+                    }},
+                   {OperatorType::kRecPooling,
+                    [](Graph::NodeType node,
+                       const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                       const std::shared_ptr<Graph> &graph, bool, int64_t, bool &) {
+                      auto cost_ptr = std::make_shared<CostPooling>();
+                      return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
+                    }},
+                   {OperatorType::kRecElmWiseOp,
+                    [](Graph::NodeType node,
+                       const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                       const std::shared_ptr<Graph> &graph, bool, int64_t, bool &) {
+                      auto cost_ptr = std::make_shared<CostTensorAdd>();
+                      return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
+                    }},
+                   {OperatorType::kRecReshape,
+                    [](Graph::NodeType node, const std::vector<std::pair<std::string, StrategyRec>> &,
+                       const std::shared_ptr<Graph> &, bool, int64_t, bool &) {
+                      auto cost_ptr = std::make_shared<CostReshape>();
+                      return cost_ptr->GetOptimalStr(node);
+                    }},
+                   {OperatorType::kRecBiasAdd,
+                    [](Graph::NodeType node,
+                       const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                       const std::shared_ptr<Graph> &graph, bool, int64_t, bool &) {
+                      auto cost_ptr = std::make_shared<CostBiasAdd>();
+                      return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
+                    }},
+                   {OperatorType::kRecSoftmaxCrossEntropyWithLogits,
+                    [](Graph::NodeType node, const std::vector<std::pair<std::string, StrategyRec>> &,
+                       const std::shared_ptr<Graph> &, bool, int64_t, bool &) {
+                      auto cost_ptr = std::make_shared<CostSoftmaxCrossEntropyWithLogits>();
+                      return cost_ptr->GetOptimalStr(node);
+                    }},
+                   {OperatorType::kRecLog, HandleCostCommon},
+                   {OperatorType::kRecExp, HandleCostCommon},
+                   {OperatorType::kRecAdd, HandleCostCommon},
+                   {OperatorType::kRecSub, HandleCostCommon},
+                   {OperatorType::kRecMul, HandleCostCommon},
+                   {OperatorType::kRecDiv, HandleCostCommon},
+                   {OperatorType::kRecReLU, HandleCostCommon},
+                   {OperatorType::kRecCast, HandleCostCommon},
+                   {OperatorType::kRecSqueeze, HandleCostCommon},
+                   {OperatorType::kRecPReLU, HandleCostBatchParallel},
+                   {OperatorType::kRecOneHot, HandleCostBatchParallel},
+                   {OperatorType::kRecSoftmax, HandleCostBatchParallel},
+                   {OperatorType::kRecVirtual, HandleCostBatchParallel},
+                   {OperatorType::kRecBatchNorm, HandleCostBatchParallel},
+                   {OperatorType::kRecBatchParallel, HandleCostBatchParallel},
+                   {OperatorType::kRecUnsortedSegmentOp, HandleCostBatchParallel},
+                   {OperatorType::kRecSparseSoftmaxCrossEntropyWithLogits, HandleCostBatchParallel}};
+
 // Get optimal strategy to partition the target node
 StrategyRec PartitionNode(Graph::NodeType node,
                           const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
-                          const std::shared_ptr<Graph> &graph, const bool isTraining, int64_t loop) {
+                          const std::shared_ptr<Graph> &graph, const bool isTraining, const int64_t loop) {
   MS_EXCEPTION_IF_NULL(graph);
   if (HandleDynamicShapeFix(&node, graph)) {
     return node.apply.str;
   }
-  bool enable_conv_chw_partition = false;
-  static const std::map<OperatorType, std::function<StrategyRec()>> operator_map = {
-    {OperatorType::kRecMatMul,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostMatMul>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph, isTraining, loop);
-     }},
-    {OperatorType::kRecBatchMatMul,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchMatMul>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph, isTraining);
-     }},
-    {OperatorType::kRecConvolution,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostConvolution>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph, enable_conv_chw_partition);
-     }},
-    {OperatorType::kRecPooling,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostPooling>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecElmWiseOp,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostTensorAdd>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecReLU,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecReshape,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostReshape>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecBiasAdd,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBiasAdd>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecLog,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecExp,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecAdd,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecSub,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecMul,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecDiv,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecSqueeze,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecCast,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostCommon>();
-       return cost_ptr->GetOptimalStr(node, node_name_to_strategy, *graph);
-     }},
-    {OperatorType::kRecBatchNorm,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecOneHot,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecPReLU,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecSoftmax,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecSparseSoftmaxCrossEntropyWithLogits,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecUnsortedSegmentOp,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecBatchParallel,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecVirtual,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostBatchParallel>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecSoftmaxCrossEntropyWithLogits,
-     [&]() {
-       auto cost_ptr = std::make_shared<CostSoftmaxCrossEntropyWithLogits>();
-       return cost_ptr->GetOptimalStr(node);
-     }},
-    {OperatorType::kRecUnknownType, [&]() { return StrategyRec(); }},
-    {OperatorType::kRecStandAlone, [&]() { return StrategyRec(); }}};
 
-  auto it = operator_map.find(node.apply.op_type);
-  if (it != operator_map.end()) {
-    return it->second();
+  auto it = operation_map.find(node.apply.op_type);
+  if (it != operation_map.end()) {
+    bool enable_conv_chw_partition = false;
+    return it->second(node, node_name_to_strategy, graph, isTraining, loop, enable_conv_chw_partition);
   }
 
-  MS_LOG(EXCEPTION) << "Failure: Partition Operator failed.";
-  return StrategyRec();
+  if (node.apply.op_type == OperatorType::kRecUnknownType || node.apply.op_type == OperatorType::kRecStandAlone) {
+    return StrategyRec();
+  }
+
+  MS_LOG(EXCEPTION) << "Failure: OperatorType not matched for " << node.name;
 }
 
 StrategyRec GetOneLoopStrategy(size_t op_inputs_num, const StrategyRec &old_str, StrategyRec new_str) {

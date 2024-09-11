@@ -235,7 +235,7 @@ TEST_F(TestPartition, test_PartitionNode2) {
   graph->nodes[4].apply.op_type = OperatorType::kRecBatchMatMul;
   graph->nodes[6].apply.op_type = OperatorType::kRecBatchMatMul;
   graph->nodes[8].apply.op_type = OperatorType::kRecBatchMatMul;
-  
+
   Graph::NodeType node = graph->nodes[2];
   std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
   bool isTraining = true;
