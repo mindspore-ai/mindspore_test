@@ -130,11 +130,13 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
   char line[200];
   int line_num = 0;
   file_out = fgets(line, 200, file);
+  line[strcspn(line, "\n")] = '\0';
   while (line_num != line_ - 1 && file_out != NULL) {
     if (tip == kSourceSectionTipNextLineHere && line_num >= start_line - 1) {
       section_debug_info_ss << line << "\n";
     }
     file_out = fgets(line, 200, file);
+    line[strcspn(line, "\n")] = '\0';
     ++line_num;
   }
   fclose(file);
