@@ -43,3 +43,4 @@ class Registry:
 
 
 tensor_operator_registry = Registry()
+tensor_operator_registry_for_mint = Registry()

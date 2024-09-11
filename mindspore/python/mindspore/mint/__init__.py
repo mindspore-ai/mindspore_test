@@ -14,6 +14,7 @@
 # ============================================================================
 """mint module."""
 from __future__ import absolute_import
+from mindspore.common._register_for_tensor import tensor_operator_registry_for_mint
 import mindspore.ops as ops
 from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
@@ -1265,6 +1266,27 @@ __all__ = [
     # 305
 
 ]
+
+setattr(tensor_operator_registry_for_mint, 'add', add)
+setattr(tensor_operator_registry_for_mint, 'all', all)
+setattr(tensor_operator_registry_for_mint, 'any', any)
+setattr(tensor_operator_registry_for_mint, 'ceil', ceil)
+setattr(tensor_operator_registry_for_mint, 'clamp', clamp)
+setattr(tensor_operator_registry_for_mint, 'cos', cos)
+setattr(tensor_operator_registry_for_mint, 'flatten', flatten)
+setattr(tensor_operator_registry_for_mint, 'log', log)
+setattr(tensor_operator_registry_for_mint, 'max', max)
+setattr(tensor_operator_registry_for_mint, 'mean', mean)
+setattr(tensor_operator_registry_for_mint, 'min', min)
+setattr(tensor_operator_registry_for_mint, 'repeat_interleave', repeat_interleave)
+setattr(tensor_operator_registry_for_mint, 'round', round)
+setattr(tensor_operator_registry_for_mint, 'sin', sin)
+setattr(tensor_operator_registry_for_mint, 'split', split)
+setattr(tensor_operator_registry_for_mint, 'sqrt', sqrt)
+setattr(tensor_operator_registry_for_mint, 'square', square)
+setattr(tensor_operator_registry_for_mint, 'sub', sub)
+setattr(tensor_operator_registry_for_mint, 'sum', sum)
+
 __all__.extend(functional.__all__)
 __all__.extend(nn.__all__)
 __all__.extend(optim.__all__)
