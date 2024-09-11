@@ -29,14 +29,15 @@ namespace mindspore {
 namespace lite {
 namespace {
 const size_t kNumInputSize = 4;
-const size_t kNumCnodeInputIndex = 1;
+const size_t kNumCnodeInputIndex1 = 1;  // var
+const size_t kNumCnodeInputIndex3 = 3;  // updates
 }  // namespace
 STATUS ScatterNdUpdateMapper::Mapper(const CNodePtr &cnode) {
   if (cnode->size() != kNumInputSize) {
     MS_LOG(ERROR) << "cnode input size is " << cnode->size() << ", not equal kNumInputSize.";
     return RET_ERROR;
   }
-  auto status = opt::AdjustInputToCnode(cnode, kNumCnodeInputIndex);
+  auto status = opt::AdjustInputToCnode(cnode, kNumCnodeInputIndex1);
   if (status != RET_OK) {
     MS_LOG(ERROR) << "AdjustInputToCnode failed.";
     return RET_ERROR;
@@ -57,25 +58,29 @@ STATUS ScatterNdUpdateMapper::Mapper(const CNodePtr &cnode) {
     return RET_ERROR;
   }
   TypeId type_id;
-  if (cnode->inputs().size() < kNumCnodeInputIndex + 1) {
-    MS_LOG(ERROR) << "The inputs num of " << cnode->fullname_with_scope() << " is smaller than "
-                  << (kNumCnodeInputIndex + 1) << ", please check it!";
-    return RET_ERROR;
-  }
-  auto scale_input = cnode->inputs()[kNumCnodeInputIndex];
+  auto scale_input = cnode->inputs()[kNumCnodeInputIndex1];
   if (opt::GetDataTypeFromAnfNode(scale_input, &type_id) != RET_OK) {
     MS_LOG(ERROR) << "GetDataTypeFromAnfNode failed!";
     return RET_ERROR;
   }
-  if (type_id == kNumberTypeBool && cnode->input(kNumCnodeInputIndex)->abstract() != nullptr) {
-    auto cast_int32_node = NewCNode(
-      cnode, prim::kPrimCast, {cnode->input(kNumCnodeInputIndex), NewValueNode(TypeIdToType(kNumberTypeInt32))},
-      cnode->input(kNumCnodeInputIndex)->abstract()->Clone(), cnode->fullname_with_scope() + "_cast_int32");
-    if (cast_int32_node == nullptr) {
+  if (type_id == kNumberTypeBool && cnode->input(kNumCnodeInputIndex1)->abstract() != nullptr) {
+    auto cast_fp16_node_1 = NewCNode(
+      cnode, prim::kPrimCast, {cnode->input(kNumCnodeInputIndex1), NewValueNode(TypeIdToType(kNumberTypeFloat16))},
+      cnode->input(kNumCnodeInputIndex1)->abstract()->Clone(), cnode->fullname_with_scope() + "_cast_fp16_1");
+    if (cast_fp16_node_1 == nullptr) {
       MS_LOG(ERROR) << "Make CNode failed!";
       return RET_ERROR;
     }
-    cnode->set_input(kNumCnodeInputIndex, cast_int32_node);
+    cnode->set_input(kNumCnodeInputIndex1, cast_fp16_node_1);
+
+    auto cast_fp16_node_3 = NewCNode(
+      cnode, prim::kPrimCast, {cnode->input(kNumCnodeInputIndex3), NewValueNode(TypeIdToType(kNumberTypeFloat16))},
+      cnode->input(kNumCnodeInputIndex3)->abstract()->Clone(), cnode->fullname_with_scope() + "_cast_fp16_3");
+    if (cast_fp16_node_3 == nullptr) {
+      MS_LOG(ERROR) << "Make CNode failed!";
+      return RET_ERROR;
+    }
+    cnode->set_input(kNumCnodeInputIndex3, cast_fp16_node_3);
   }
   dst_prim->SetAttrs(src_prim->attrs());
   value_node->set_value(dst_prim);
