@@ -250,6 +250,7 @@ mindspore.mint.nn
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.GELU
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
