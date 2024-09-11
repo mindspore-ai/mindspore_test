@@ -1079,6 +1079,8 @@ void ControlNodeParser::Parse(const std::vector<AnfNodePtr> &control_nodes, cons
   ParseFirstControlNodeAndKernelGraphForFuncGraph(control_nodes);
 
   ParseDynamicLenFormalParameter(control_nodes);
+
+  ParserSinglePartialFuncgraph(control_nodes);
   MS_LOG(INFO) << "Control node parse end.";
 }
 
@@ -1267,6 +1269,79 @@ void ControlNodeParser::ParseDynamicLenFormalParameter(const std::vector<AnfNode
                       << " start index:" << indexes.first << " size:" << indexes.second;
       }
     }
+  }
+}
+
+bool IsSameInputNum(const std::vector<AnfNodePtr> &nodes) {
+  if (nodes.size() <= 1) {
+    return true;
+  }
+  MS_EXCEPTION_IF_NULL(nodes[0]);
+  const auto &first_node = nodes[0]->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(first_node);
+  size_t input_num = first_node->size();
+  for (size_t i = 1; i < nodes.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(nodes[i]);
+    const auto &cnode = nodes[i]->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (input_num != cnode->size()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void ControlNodeParser::ParserSinglePartialFuncgraph(const std::vector<AnfNodePtr> &control_nodes) {
+  std::unordered_map<FuncGraphPtr, std::vector<AnfNodePtr>> func_graph_to_call_node;
+  for (const auto &pair : call_node_to_func_graphs_) {
+    for (const auto &func_graph : pair.second) {
+      func_graph_to_call_node[func_graph].emplace_back(pair.first);
+    }
+  }
+
+  std::unordered_map<FuncGraphPtr, std::vector<AnfNodePtr>> func_graph_to_partial_node;
+  for (const auto &control_node : control_nodes) {
+    MS_EXCEPTION_IF_NULL(control_node);
+    if (!common::AnfAlgo::CheckPrimitiveType(control_node, prim::kPrimPartial)) {
+      continue;
+    }
+    const auto &cnode = control_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (cnode->size() <= 1) {
+      continue;
+    }
+    const auto &graph_value_node = cnode->input(1);
+    if (graph_value_node == nullptr || !IsValueNode<FuncGraph>(graph_value_node)) {
+      continue;
+    }
+    const auto &func_graph = GetValueNode<FuncGraphPtr>(graph_value_node);
+    if (func_graph == nullptr) {
+      continue;
+    }
+    func_graph_to_partial_node[func_graph].emplace_back(control_node);
+  }
+
+  for (const auto &pair : func_graph_to_call_node) {
+    const auto &func_graph = pair.first;
+    if (func_graph == nullptr || pair.second.empty() || !IsSameInputNum(pair.second) ||
+        func_graph_to_partial_node.find(func_graph) == func_graph_to_partial_node.end() ||
+        func_graph_to_partial_node[func_graph].size() != 1) {
+      continue;
+    }
+    const auto &partial_node = func_graph_to_partial_node[func_graph][0];
+    MS_EXCEPTION_IF_NULL(partial_node);
+    const auto &partial_cnode = partial_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(partial_cnode);
+    size_t partial_arg_size = partial_cnode->size() - 2;
+    size_t call_arg_size = pair.second[0]->cast<CNodePtr>()->size() - 1;
+    size_t para_size = func_graph->parameters().size();
+    if (partial_arg_size + call_arg_size != para_size) {
+      MS_LOG(WARNING) << "Invalid args size for partial:" << partial_cnode->DebugString()
+                      << " and call node:" << pair.second[0]->DebugString() << " parameter size:" << para_size;
+      continue;
+    }
+    func_graph_to_partial_node_[func_graph] = partial_node;
+    MS_LOG(INFO) << "Add single partial:" << partial_node->DebugString() << " to funcgraph:" << func_graph->ToString();
   }
 }
 
