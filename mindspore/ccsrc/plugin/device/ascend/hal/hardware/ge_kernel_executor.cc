@@ -225,6 +225,7 @@ void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel
 void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *const memo) {
   // select kernel
   MS_EXCEPTION_IF_NULL(memo);
+  PROF_START(SelectKernel);
   if (memo->find(kernel_graph) != memo->end()) {
     return;
   }
@@ -242,6 +243,7 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
     }
     SelectKernel(child_graph.lock(), memo);
   }
+  PROF_END(SelectKernel);
 }
 
 void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph, CNodePtr kernel_cnode,
@@ -294,6 +296,7 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
 void InlineCallGraph(const KernelGraphPtr &graph) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  PROF_START(InlineCallGraph);
 #ifdef ENABLE_DUMP_IR
   bool save_graphs = context_ptr->CanDump(kIntroductory);
   if (save_graphs) {
@@ -321,6 +324,7 @@ void InlineCallGraph(const KernelGraphPtr &graph) {
     }
   }
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterInline(graph);
+  PROF_END(InlineCallGraph);
 #ifdef ENABLE_DUMP_IR
   if (save_graphs) {
     std::string file_name = "hwopt_d_after_inline_graph_" + std::to_string(graph->graph_id()) + ".ir";
@@ -742,6 +746,7 @@ void FlattenConditionNodeInput(const KernelGraphPtr &graph) {
 void InlineSwitchGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  PROF_START(InlineSwitchGraph);
   if (memo->find(graph) != memo->end()) {
     return;
   }
@@ -796,6 +801,7 @@ void InlineSwitchGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *co
   }
   FlattenConditionNodeInput(graph);
   graph->SetExecOrderByDefault();
+  PROF_END(InlineSwitchGraph);
 #ifdef ENABLE_DUMP_IR
   if (save_graphs) {
     std::string file_name = "hwopt_d_after_inline_switch_graph_" + std::to_string(graph->graph_id()) + ".ir";
@@ -936,7 +942,6 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   // build kernel mod
   MS_LOG(DEBUG) << "Status record: start create kernel.";
   uint64_t start_time = profiler::GetClockSyscnt();
-  PROF_START(create_kernel);
   SetKernelInfoBeforeCreateKernel(nodes);
   auto ret = GenerateKernelMod(nodes, graph_executor_);
   if (!ret) {
@@ -949,7 +954,6 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   } else {
     MS_LOG(INFO) << "Skip optimize after create kernel for:" << kernel_graph->ToString();
   }
-  PROF_END(create_kernel);
   (void)profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", start_time, profiler::GetClockSyscnt(),
                                   1);
   MS_LOG(DEBUG) << "Status record: end create kernel.";
@@ -1020,6 +1024,7 @@ void GeKernelExecutor::DoSomas(const FuncGraphPtr &graph) {
 
 void GeKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
+  PROF_START(OptimizeExecutionOrder);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start optimize execution order. graph id: " << kernel_graph->graph_id();
@@ -1030,6 +1035,7 @@ void GeKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
   kernel_graph->set_execution_order(execution_order);
   MS_LOG(DEBUG) << "Status record: end optimize execution order. graph id: " << kernel_graph->graph_id();
   FixExecutionOrderForInlineControlFlowGraph(kernel_graph);
+  PROF_END(OptimizeExecutionOrder);
 }
 
 void GeKernelExecutor::AllocGraphFixedMemory() const { graph_executor_->AllocGEFixMemory(); }

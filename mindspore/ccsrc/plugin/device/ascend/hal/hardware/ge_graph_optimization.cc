@@ -75,6 +75,7 @@ void MarkRefGraph(const KernelGraphPtr &kernel_graph) {
 void GEGraphOptimization::OptimizeGEGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(memo);
+  PROF_START(OptimizeGEGraph);
   if (memo->find(graph) != memo->end()) {
     return;
   }
@@ -104,12 +105,14 @@ void GEGraphOptimization::OptimizeGEGraph(const KernelGraphPtr &graph, std::set<
     }
     OptimizeGEGraph(child_graph.lock(), memo);
   }
+  PROF_END(OptimizeGEGraph);
   MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
 }
 
 void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *const memo) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(memo);
+  PROF_START(OptimizeACLGraph);
   if (memo->find(graph) != memo->end()) {
     return;
   }
@@ -132,6 +135,7 @@ void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set
       OptimizeACLGraph(child_graph.lock(), memo);
     }
   }
+  PROF_END(OptimizeACLGraph);
   MS_LOG(DEBUG) << "Status record: end optimize acl graph. graph id: " << graph->graph_id();
 }
 
@@ -139,6 +143,7 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
                                                             std::set<KernelGraphPtr> *const memo) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(memo);
+  PROF_START(OptimizeACLGraphAfterKernelSelect);
   if (memo->find(graph) != memo->end()) {
     return;
   }
@@ -167,12 +172,14 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
     }
     OptimizeACLGraphAfterKernelSelect(child_graph.lock(), memo);
   }
+  PROF_END(OptimizeACLGraphAfterKernelSelect);
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after kernel select. graph id: " << graph->graph_id();
 }
 
 void GEGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph) {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  PROF_START(OptimizeACLGraphAfterCreateKernel);
   int execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   // pynaitve process the pass in GEBackendOptimizeACLAfterKernelSelect
   if (execution_mode == kPynativeMode) {
@@ -188,6 +195,7 @@ void GEGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr
     MS_LOG(DEBUG) << "Status record: end optimize acl graph after create kernel. graph id: " << graph->graph_id();
   }
   opt::AclAfterCreateKernel(graph);
+  PROF_END(OptimizeACLGraphAfterCreateKernel);
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after create kernel. graph id: " << graph->graph_id();
 }
 
@@ -209,10 +217,10 @@ void GEGraphOptimization::UnifyMindIR(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Status record: start unify mindir. graph id: " << graph->graph_id();
   uint64_t start_time = profiler::GetClockSyscnt();
-  PROF_START(unify_mindir);
+  PROF_START(UnifyMindIR);
   opt::CommonUnifyMindIR(graph);
   opt::GEUnifyMindIR(graph);
-  PROF_END(unify_mindir);
+  PROF_END(UnifyMindIR);
   (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "UnifyMindIR", start_time, profiler::GetClockSyscnt(),
                                   0);
   MS_LOG(INFO) << "Status record: end unify mindir. graph id: " << graph->graph_id();

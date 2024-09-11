@@ -598,9 +598,10 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   auto device_target = device_context->GetDeviceType();
   // Generate kernel graph.
   uint64_t start_time = profiler::GetClockSyscnt();
+  PROF_START(ConstructKernelGraph);
   auto kernel_graph =
     session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, true, IsEnableZeroCopy(run_in_pynative));
-
+  PROF_END(ConstructKernelGraph);
   auto actual_run_mode = run_mode;
   if (actual_run_mode == device::RunMode::kUnknown) {
     actual_run_mode = device_context->GetRunMode(kernel_graph);
@@ -1069,8 +1070,10 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   // Set device target for parameter affinity.
   AnfAlgo::SetParameterDeviceTarget(graph);
 
+  PROF_START(CreateDeviceAddress);
   // Create device address for all anf nodes of graph.
   CreateDeviceAddress(graph, device_context);
+  PROF_END(CreateDeviceAddress);
 
 #if defined(__linux__) && defined(WITH_BACKEND)
   // Set device address for embedding cache parameter, only enable when enable embedding cache mode.

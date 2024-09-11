@@ -81,7 +81,7 @@ namespace opt {
 void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize ge pass. graph id: " << kernel_graph->graph_id();
-  PROF_START(ascend_backend_optimize_ge);
+  PROF_START(GEBackendOptimization);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 #ifdef ENABLE_DUMP_IR
@@ -119,13 +119,13 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   optimizer->AddPassManager(opt_ge_pm);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(GEBackendOptimization);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name = "hwopt_d_end_opt_ge_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
     DumpIR(file_name, kernel_graph, true, kWholeStack);
   }
 #endif
-  PROF_END(ascend_backend_optimize_ge);
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize ge pass. graph id: " << kernel_graph->graph_id();
 }
 
@@ -134,7 +134,7 @@ void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph) {
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass after kernel create. graph id: "
                 << kernel_graph->graph_id();
   profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 0);
-  PROF_START(ascend_backend_optimize_acl);
+  PROF_START(AclAfterCreateKernel);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 #ifdef ENABLE_DUMP_IR
@@ -150,13 +150,13 @@ void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph) {
   optimizer->AddPassManager(opt_acl_ack);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(AclAfterCreateKernel);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name = "hwopt_d_end_acl_graph_final_" + std::to_string(kernel_graph->graph_id()) + ".ir";
     DumpIR(file_name, kernel_graph, true, kWholeStack);
   }
 #endif
-  PROF_END(ascend_backend_optimize_acl);
   profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 1);
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass after kernel create. graph id: "
                 << kernel_graph->graph_id();
@@ -192,7 +192,7 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
   uint64_t start_time = profiler::GetClockSyscnt();
-  PROF_START(ascend_backend_optimize_acl);
+  PROF_START(GEBackendOptimizeACL);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 #ifdef ENABLE_DUMP_IR
@@ -224,13 +224,13 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   optimizer->AddPassManager(opt_acl_pm);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(GEBackendOptimizeACL);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name = "hwopt_d_end_opt_acl_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
     DumpIR(file_name, kernel_graph, true, kWholeStack);
   }
 #endif
-  PROF_END(ascend_backend_optimize_acl);
   (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", start_time,
                                   profiler::GetClockSyscnt(), 0);
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
@@ -241,7 +241,7 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass after kernel select. graph id: "
                 << kernel_graph->graph_id();
   uint64_t start_time = profiler::GetClockSyscnt();
-  PROF_START(ascend_backend_optimize_acl_after_kernel_select);
+  PROF_START(GEBackendOptimizeACLAfterKernelSelect);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 #ifdef ENABLE_DUMP_IR
@@ -277,6 +277,7 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   optimizer->AddPassManager(opt_acl_after_kernel_select_pm);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(GEBackendOptimizeACLAfterKernelSelect);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name =
@@ -284,7 +285,6 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
     DumpIR(file_name, kernel_graph, true, kWholeStack);
   }
 #endif
-  PROF_END(ascend_backend_optimize_acl_after_kernel_select);
   (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACLAfterKernelSelect",
                                   start_time, profiler::GetClockSyscnt(), 0);
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
@@ -293,6 +293,7 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
 void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
   uint64_t start_time = profiler::GetClockSyscnt();
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(GEUnifyMindIR);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 #ifdef ENABLE_DUMP_IR
@@ -307,6 +308,7 @@ void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
   optimizer->AddPassManager(GetGEFusionGroupPassManager());
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(GEUnifyMindIR);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name = "hwopt_d_after_unify_mindir_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
@@ -320,6 +322,7 @@ void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
 void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   uint64_t start_time = profiler::GetClockSyscnt();
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  PROF_START(GEAfterInlineOptimize);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
 #ifdef ENABLE_DUMP_IR
@@ -339,6 +342,7 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
+  PROF_END(GEAfterInlineOptimize);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name =
