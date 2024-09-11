@@ -128,7 +128,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   const bool IsEnableVmm() const override { return enable_vmm_; }
   void SetEnableVmm(bool enable_vmm) { enable_vmm_ = enable_vmm; }
 
-  const size_t FreeIdleMemsByEagerFree() override;
+  const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 #ifdef WITH_BACKEND
 
  private:

@@ -385,6 +385,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   void DefragMemory() override;
 
   void DumpDynamicMemPoolStateInfo() override;
+  std::string DynamicMemPoolStateInfo() const;
   void DumpDynamicMemPoolDebugInfo() override;
 
   // The statistics information.
@@ -413,7 +414,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
  protected:
   const bool IsEnableVmm() const override { return enable_vmm_; }
   void SetEnableVmm(bool enable_vmm) { enable_vmm_ = enable_vmm; }
-  const size_t FreeIdleMemsByEagerFree() override;
+  const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 #ifdef WITH_BACKEND
 
  protected:
@@ -432,7 +433,6 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
 
   size_t eager_free_count_{0};
   size_t last_eager_free_count_{0};
-  size_t last_vmm_used_size_{0};
   Lock lock_;
 };
 

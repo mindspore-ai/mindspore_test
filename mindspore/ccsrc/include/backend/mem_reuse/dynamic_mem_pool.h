@@ -193,7 +193,7 @@ class BACKEND_EXPORT DynamicMemPool {
   virtual size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) { return 0; }
   virtual size_t FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const size_t size) { return 0; }
   virtual size_t MmapDeviceMem(size_t size, DeviceMemPtr addr) { return 0; }
-  virtual const size_t FreeIdleMemsByEagerFree() { return 0; }
+  virtual const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() { return {0, 0}; }
 };
 
 // Recording information for debugging the memory allocator.
