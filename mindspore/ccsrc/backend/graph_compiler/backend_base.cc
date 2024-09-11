@@ -745,13 +745,18 @@ bool MindRTBackendBase::LoadBackendInfo() {
 }
 
 namespace {
-bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
+bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type,
+                           device::RunMode run_mode) {
   if (!CompileCacheEnable()) {
     MS_LOG(INFO) << "Disable backend compile cache by front config.";
     return false;
   }
   if (common::IsDisableRuntimeConfig(common::kRuntimeCache)) {
     MS_LOG(INFO) << "Disable backend compile cache by backend config.";
+    return false;
+  }
+  if (run_mode != device::RunMode::kKernelMode) {
+    MS_LOG(INFO) << "Disable backend compile cache by run mode. Only support KernelMode";
     return false;
   }
   auto &context = CompileCacheContext::GetInstance();
@@ -778,7 +783,8 @@ bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceT
   return true;
 }
 
-bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
+bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type,
+                           device::RunMode run_mode) {
   MS_EXCEPTION_IF_NULL(func_graph);
   if (!CompileCacheEnable()) {
     MS_LOG(INFO) << "Compile cache: disable by front compile cache config.";
@@ -786,6 +792,10 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
   }
   if (common::IsDisableRuntimeConfig(common::kRuntimeCache)) {
     MS_LOG(INFO) << "Compile cache: disable by backend compile cache config.";
+    return false;
+  }
+  if (run_mode != device::RunMode::kKernelMode) {
+    MS_LOG(INFO) << "Disable backend compile cache by run mode. Only support KernelMode";
     return false;
   }
   auto &context = CompileCacheContext::GetInstance();
@@ -852,7 +862,7 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   control_nodes_.clear();
 
   bool load_compile_cache = false;
-  if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType())) {
+  if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType(), run_mode)) {
     PROF_START(Load_backend_compile_cache);
     load_compile_cache = CompileGraphsByKbkCache(func_graph, device_context);
     PROF_END(Load_backend_compile_cache);
@@ -881,7 +891,7 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
     PROF_END(CompileSubGraph);
   }
 
-  if (ExportCompileCacheKBK(func_graph, device_context->GetDeviceType()) && !load_compile_cache) {
+  if (ExportCompileCacheKBK(func_graph, device_context->GetDeviceType(), run_mode) && !load_compile_cache) {
     PROF_START(save_backend_compile_cache);
     bool is_success = CacheCompileGraphs();
     PROF_END(save_backend_compile_cache);
