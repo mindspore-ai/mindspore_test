@@ -101,7 +101,6 @@ int32_t EmbeddingFeatureMappingInsertFuncImpl::CheckValidation(const PrimitivePt
   if (ret != OP_CHECK_SUCCESS) {
     return OP_CHECK_RETRY;
   }
-  SetDynInputSizes(primitive, table_num);
   ret = SpecifiedCheck(primitive, input_args, table_num, feature_size);
   return ret;
 }
@@ -118,6 +117,7 @@ std::tuple<int32_t, size_t, std::vector<int64_t>> EmbeddingFeatureMappingInsertF
                   input_args.size() != (kIndex2 + other_arg_num_))) {
     MS_EXCEPTION(RuntimeError) << "For " << primitive->name() << ", something unexpected happened!";
   }
+  SetDynInputSizes(primitive, table_num);
 
   int32_t ret = OP_CHECK_SUCCESS;
   auto feature_sie = EmbeddingFeatureMappingCheckFeatureAndOffsetId(primitive, input_args, feature_id_idx_, table_num);

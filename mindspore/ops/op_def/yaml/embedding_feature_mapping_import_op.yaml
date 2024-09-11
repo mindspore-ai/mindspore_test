@@ -7,6 +7,8 @@ embedding_feature_mapping_import:
             dtype: tensor
         feature_size:
             dtype: tensor
+        global_step:
+            dtype: tensor
         embedding_dim:
             dtype: tuple[int]
             type_cast: list[int]

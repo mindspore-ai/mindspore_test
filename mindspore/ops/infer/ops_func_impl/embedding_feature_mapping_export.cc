@@ -26,7 +26,8 @@
 namespace mindspore {
 namespace ops {
 void EmbeddingFeatureMappingExportFuncImpl::SetDynInputSizes(const PrimitivePtr &primitive, int64_t table_num) const {
-  (void)primitive->AddAttr("dyn_input_sizes", MakeValue(std::vector<int64_t>{-1, -1, -1, -1, table_num, table_num}));
+  (void)primitive->AddAttr("dyn_input_sizes",
+                           MakeValue(std::vector<int64_t>{-1, -1, -1, -1, -1, table_num, table_num}));
 }
 
 int32_t EmbeddingFeatureMappingExportFuncImpl::SpecifiedCheck(const PrimitivePtr &primitive,

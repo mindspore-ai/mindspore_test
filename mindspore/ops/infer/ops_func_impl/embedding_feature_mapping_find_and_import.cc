@@ -19,11 +19,38 @@
 #include "abstract/dshape.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
+#include "utils/convert_utils_base.h"
 #include "utils/shape_utils.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
+size_t FetchEmbeddingFeatureMappingTableNum(const PrimitivePtr &primitive, const AbstractBasePtr &table_name_arg) {
+  const auto &table_name_shape = table_name_arg->GetShape()->GetShapeVector();
+  if (MS_UNLIKELY(IsDynamic(table_name_shape))) {
+    MS_EXCEPTION(RuntimeError) << "For " << primitive->name()
+                               << ", table_name_shape should not be dynamic, which has not been supported.";
+  }
+  auto table_num = SizeOf(table_name_shape);
+  if (table_num != kIndex1) {
+    MS_EXCEPTION(ValueError) << "For " << primitive->name()
+                             << ", the cases have not been supported where table_num is not 1, but got " << table_num;
+  }
+  return table_num;
+}
+
+int32_t CheckEmbeddingFeatureMappingNum(const PrimitivePtr &primitive, const AbstractBasePtr &num_arg,
+                                        int64_t table_num) {
+  auto num_opt = GetScalarValue<int64_t>(num_arg->GetValue());
+  if (MS_UNLIKELY(!num_opt.has_value())) {
+    return OP_CHECK_RETRY;
+  }
+  auto num = num_opt.value();
+  MS_CHECK_VALUE(table_num == num,
+                 CheckAndConvertUtils::FormatCheckIntegerMsg("num", num, kEqual, table_num, primitive));
+  return OP_CHECK_SUCCESS;
+}
+
 void EmbeddingFeatureMappingInsertMultiDynamicShapes(abstract::BaseShapePtrList *const shapes, size_t num) {
   for (size_t i = 0; i < num; i++) {
     shapes->emplace_back(std::make_shared<abstract::TensorShape>(ShapeVector{abstract::Shape::kShapeDimAny}));
@@ -34,17 +61,7 @@ std::tuple<abstract::BaseShapePtrList, std::optional<ArrayValue<int64_t>>, size_
 EmbeddingFeatureMappingInferFeatureIdAndOffsetIdShapes(const PrimitivePtr &primitive,
                                                        const std::vector<AbstractBasePtr> &input_args,
                                                        size_t table_name_idx, size_t feature_size_idx) {
-  const auto &table_name_shape = input_args[table_name_idx]->GetShape()->GetShapeVector();
-  if (MS_UNLIKELY(IsDynamic(table_name_shape))) {
-    MS_EXCEPTION(RuntimeError) << "For " << primitive->name()
-                               << ", table_name_shape should not be dynamic, which has not been supported.";
-  }
-
-  auto table_num = SizeOf(table_name_shape);
-  if (table_num != kIndex1) {
-    MS_EXCEPTION(ValueError) << "For " << primitive->name()
-                             << ", the cases have not been supported where table_num is not 1, but got " << table_num;
-  }
+  auto table_num = FetchEmbeddingFeatureMappingTableNum(primitive, input_args[table_name_idx]);
   auto feature_size_opt = GetArrayValue<int64_t>(input_args[feature_size_idx]);
   abstract::BaseShapePtrList shapes;
   // feature_id shapes
@@ -90,8 +107,10 @@ std::tuple<TypePtrList, size_t> EmbeddingFeatureMappingInferFeatureIdAndOffsetId
 BaseShapePtr EmbeddingFeatureMappingFindFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                              const std::vector<AbstractBasePtr> &input_args) const {
   abstract::BaseShapePtrList shapes;
-  std::tie(shapes, std::ignore, std::ignore) =
-    EmbeddingFeatureMappingInferFeatureIdAndOffsetIdShapes(primitive, input_args, kIndex0, kIndex1);
+  size_t table_num;
+  std::tie(shapes, std::ignore, table_num) =
+    EmbeddingFeatureMappingInferFeatureIdAndOffsetIdShapes(primitive, input_args, table_name_idx_, feature_size_idx_);
+  (void)CheckEmbeddingFeatureMappingNum(primitive, input_args[num_idx_], SizeToLong(table_num));
   return std::make_shared<abstract::TupleShape>(std::move(shapes));
 }
 
@@ -99,16 +118,16 @@ TypePtr EmbeddingFeatureMappingFindFuncImpl::InferType(const PrimitivePtr &primi
                                                        const std::vector<AbstractBasePtr> &input_args) const {
   TypePtrList out_types;
   std::tie(out_types, std::ignore) =
-    EmbeddingFeatureMappingInferFeatureIdAndOffsetIdTypes(primitive, input_args, kIndex0);
+    EmbeddingFeatureMappingInferFeatureIdAndOffsetIdTypes(primitive, input_args, table_name_idx_);
   return std::make_shared<Tuple>(std::move(out_types));
 }
 
 BaseShapePtr EmbeddingFeatureMappingImportFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                                const std::vector<AbstractBasePtr> &input_args) const {
   auto [shapes, feature_size_opt, table_num] =
-    EmbeddingFeatureMappingInferFeatureIdAndOffsetIdShapes(primitive, input_args, kIndex1, kIndex2);
+    EmbeddingFeatureMappingInferFeatureIdAndOffsetIdShapes(primitive, input_args, table_name_idx_, feature_size_idx_);
   // value shapes
-  auto embedding_dim_opt = GetArrayValue<int64_t>(input_args[kIndex3]);
+  auto embedding_dim_opt = GetArrayValue<int64_t>(input_args[embedding_dim_idx_]);
   if (MS_LIKELY(feature_size_opt.has_value() && embedding_dim_opt.has_value())) {
     const auto &feature_size = feature_size_opt.value();
     const auto &embedding_dim = embedding_dim_opt.value();
@@ -131,18 +150,18 @@ BaseShapePtr EmbeddingFeatureMappingImportFuncImpl::InferShape(const PrimitivePt
 
 TypePtr EmbeddingFeatureMappingImportFuncImpl::InferType(const PrimitivePtr &primitive,
                                                          const std::vector<AbstractBasePtr> &input_args) const {
-  auto [out_types, table_num] = EmbeddingFeatureMappingInferFeatureIdAndOffsetIdTypes(primitive, input_args, kIndex1);
+  auto [out_types, table_num] =
+    EmbeddingFeatureMappingInferFeatureIdAndOffsetIdTypes(primitive, input_args, table_name_idx_);
   out_types.insert(out_types.end(), table_num, kFloat32);
   return std::make_shared<Tuple>(std::move(out_types));
 }
 
 int32_t EmbeddingFeatureMappingImportFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                                                const std::vector<AbstractBasePtr> &input_args) const {
-  auto embedding_dim_opt = GetArrayValue<int64_t>(input_args[kIndex3]);
+  auto embedding_dim_opt = GetArrayValue<int64_t>(input_args[embedding_dim_idx_]);
   if (MS_UNLIKELY(!embedding_dim_opt.has_value())) {
     return OP_CHECK_RETRY;
   }
-
   auto embedding_dim = embedding_dim_opt.value();
   for (size_t i = 0; i < embedding_dim.size(); i++) {
     if (MS_UNLIKELY(embedding_dim.IsValueUnknown(i))) {
@@ -151,8 +170,8 @@ int32_t EmbeddingFeatureMappingImportFuncImpl::CheckValidation(const PrimitivePt
     MS_CHECK_VALUE(embedding_dim[i] > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("embedding_dim", embedding_dim[i],
                                                                                      kGreaterThan, 0, primitive));
   }
-
-  return OP_CHECK_SUCCESS;
+  auto table_num = SizeToLong(embedding_dim.size());
+  return CheckEmbeddingFeatureMappingNum(primitive, input_args[num_idx_], table_num);
 }
 }  // namespace ops
 }  // namespace mindspore
