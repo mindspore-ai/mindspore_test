@@ -52,20 +52,6 @@ constexpr char kGeDumpMode[3][7] = {"all", "input", "output"};
 constexpr auto kSaturationMode = "Saturation";
 constexpr auto kINFNANMode = "INFNAN";
 
-bool IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph) {
-  if (func_graph == nullptr) {
-    return false;
-  }
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
-  return std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
-    if (node == nullptr || common::AnfAlgo::IsCallNode(node)) {
-      return false;
-    }
-    return common::AnfAlgo::IsDynamicShape(node) || common::AnfAlgo::IsDynamicSequence(node) ||
-           common::AnfAlgo::IsNodeMutableScalar(node);
-  });
-}
-
 bool IsNeedHybridMode(const FuncGraphPtr &func_graph) {
   // cell reuse + pipeline parallel
   // only O2
@@ -134,7 +120,7 @@ void SetAclOpDebugOption(const std::shared_ptr<MsContext> &ms_context) {
 bool GeDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (IsDynamicShapeFuncGraph(func_graph)) {
+  if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
     // dynamic shape default kernel be kernel before ge support
     if (GetRunMode(func_graph) == RunMode::kKernelMode) {
       return true;
@@ -189,7 +175,7 @@ bool GeDeviceContext::PartitionGraph(const FuncGraphPtr &func_graph) const {
 RunMode GeDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  if (IsDynamicShapeFuncGraph(func_graph)) {
+  if (common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph)) {
     if (context->get_param<std::string>(MS_CTX_JIT_LEVEL) == "O2" &&
         context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
       MS_LOG(INFO) << "set dynamic shape RunMode::kGraphMode";

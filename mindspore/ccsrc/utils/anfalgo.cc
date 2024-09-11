@@ -1654,6 +1654,20 @@ bool AnfAlgo::IsNodeOutputDynamicRank(const AnfNodePtr &node) {
   return base_shape->IsDimUnknown();
 }
 
+bool AnfAlgo::IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph) {
+  if (func_graph == nullptr) {
+    return false;
+  }
+  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  return std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
+    if (node == nullptr || common::AnfAlgo::IsCallNode(node)) {
+      return false;
+    }
+    return common::AnfAlgo::IsDynamicShape(node) || common::AnfAlgo::IsDynamicSequence(node) ||
+           common::AnfAlgo::IsNodeMutableScalar(node);
+  });
+}
+
 bool AnfAlgo::IsDynamicShape(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
