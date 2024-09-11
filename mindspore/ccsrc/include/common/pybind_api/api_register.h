@@ -32,6 +32,7 @@ void RegUpdateFuncGraphHyperParams(py::module *m);
 void RegParamInfo(const py::module *m);
 void RegPrimitive(const py::module *m);
 void RegPrimitiveFunction(const py::module *m);
+void RegFunctional(const py::module *m);
 void RegSignatureEnumRW(const py::module *m);
 void RegValues(const py::module *m);
 void RegMsContext(const py::module *m);

@@ -32,6 +32,7 @@
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/debug/trace.h"
+#include "abstract/abstract_function.h"
 
 namespace mindspore {
 namespace validator {
@@ -148,7 +149,7 @@ void ValidateAbstract(const AnfNodePtr &node) {
                            abstract->isa<AbstractRefTensor>() || abstract->isa<AbstractMapTensor>() ||
                            abstract->isa<abstract::AbstractNone>() || abstract->isa<abstract::AbstractMonad>() ||
                            abstract->isa<abstract::AbstractScript>();
-  if (is_legal_abstract) {
+  if (is_legal_abstract && !abstract->isa<abstract::FunctionalAbstractClosure>()) {
     return;
   }
 

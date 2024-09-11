@@ -204,5 +204,24 @@ class MS_CORE_API MindIRSymbol final : public Named {
   std::string symbol_;
 };
 using MindIRSymbolPtr = std::shared_ptr<MindIRSymbol>;
+
+/// \brief Functional defines interface for functional data.
+class MS_CORE_API Functional : public Named {
+ public:
+  /// \brief The default constructor for Functional.
+  explicit Functional(const std::string &name) : Named(name) {}
+  /// \brief The destructor of Functional.
+  ~Functional() override = default;
+  MS_DECLARE_PARENT(Functional, Named);
+
+  abstract::AbstractBasePtr ToAbstract() override;
+  std::string ToString() const override { return "Functional_" + name(); }
+  void set_is_method(bool flag) { is_method_ = flag; }
+  bool is_method() const { return is_method_; }
+
+ private:
+  bool is_method_{false};
+};
+using FunctionalPtr = std::shared_ptr<Functional>;
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_NAMED_H_

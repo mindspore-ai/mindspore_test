@@ -758,6 +758,7 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
     std::make_shared<ByTypeDataConvertFunc<Type>>(ObjCast<TypePtr>),
     std::make_shared<ByTypeDataConvertFunc<UMonad>>(ObjCast<UMonadPtr>),
     std::make_shared<ByTypeDataConvertFunc<IOMonad>>(ObjCast<IOMonadPtr>),
+    std::make_shared<ByTypeDataConvertFunc<Functional>>(ObjCast<FunctionalPtr>),
     std::make_shared<ByAttrDataConvertFunc>(ConvertNameSpace, PYTHON_CLASS_MEMBER_NAMESPACE),
     std::make_shared<ByTypeDataConvertFunc<py::dict>>(ConvertDict),
     std::make_shared<ByAttrDataConvertFunc>(ConvertDict, PYTHON_CELL_AS_DICT),

@@ -175,14 +175,12 @@ BuiltInTypeMap &GetMethodMap() {
        {"slogdet", std::string("slogdet")},                                // slogdet
        {"trace", std::string("trace")},                                    // trace
        {"tril", std::string("tril")},                                      // tril
-       {"__add__", std::string("add")},                                    // C.add
        {"__sub__", std::string("sub")},                                    // C.sub
        {"__mul__", std::string("mul")},                                    // C.mul
        {"__matmul__", std::string("matmul")},                              // F.matmul
        {"xdivy", std::string("xdivy")},                                    // P.Xdivy
        {"abs", std::string("abs_")},                                       // C.abs_
        {"absolute", std::string("abs_")},                                  // C.abs_
-       {"mean", std::string("mean")},                                      // C.mean
        {"prod", std::string("prod")},                                      // C.reduce_prod
        {"__truediv__", std::string("truediv")},                            // C.truediv
        {"__floordiv__", std::string("floordiv")},                          // C.floordiv
@@ -260,7 +258,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"matrix_power", std::string("matrix_power")},                      // P.MatrixPower()
        {"det", std::string("det")},                                        // matrix_determinant()
        {"ndimension", std::string("ndim_")},                               // ndimension()
-       {"max", std::string("max")},                                        // P.reduce_max()
        {"min", std::string("min")},                                        // P.reduce_min()
        {"pow", std::string("pow")},                                        // P.Pow()
        {"log", std::string("log")},                                        // P.Log()
@@ -291,7 +288,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"fill_diagonal", std::string("fill_diagonal")},                    // P.FillDiagonal()
        {"uniform", std::string("uniform")},                                // P.UniformExt()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
-       {"clamp", std::string("clamp")},                                    // clamp()
        {"clip", std::string("clamp")},                                     // clamp()
        {"__bool__", std::string("tensor_bool")},                           // C.tensor_bool
        {"argmax", std::string("argmax")},                                  // P.Argmax()

@@ -42,6 +42,7 @@ std::string EnumToString(OP_DTYPE dtype) {
     {OP_DTYPE::DT_LIST_STR, "list of string"},
     {OP_DTYPE::DT_LIST_ANY, "list of Any"},
     {OP_DTYPE::DT_TYPE, "mstype"},
+    {OP_DTYPE::DT_NONE, "None"},
   };
 
   auto it = kEnumToStringMap.find(dtype);

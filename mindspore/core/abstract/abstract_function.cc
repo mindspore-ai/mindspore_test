@@ -397,6 +397,22 @@ std::string PrimInstanceAbstractClosure::ToString() const {
   return buffer.str();
 }
 
+AbstractFunctionPtr FunctionalAbstractClosure::Copy() const {
+  return std::make_shared<FunctionalAbstractClosure>(name_, is_method_);
+}
+
+bool FunctionalAbstractClosure::operator==(const AbstractFunction &other) const {
+  if (!other.isa<FunctionalAbstractClosure>()) {
+    return false;
+  }
+  const auto &other_functional = static_cast<const FunctionalAbstractClosure &>(other);
+  return name_ == other_functional.name_;
+}
+
+std::size_t FunctionalAbstractClosure::hash() const { return hash_combine(tid(), std::hash<std::string>()(name_)); }
+
+std::string FunctionalAbstractClosure::ToString() const { return "FunctionalAbstractClosure(" + name_ + ")"; }
+
 bool JTransformedAbstractClosure::operator==(const AbstractFunction &other) const {
   if (!other.isa<JTransformedAbstractClosure>()) {
     return false;

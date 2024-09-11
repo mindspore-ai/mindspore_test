@@ -18,6 +18,7 @@
 #include <stack>
 #include "kernel/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/static_analysis/functional_utils.h"
 #include "frontend/operator/composite/composite.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "utils/symbolic.h"
@@ -154,6 +155,7 @@ void RegModule(py::module *m) {
   RegParamInfo(m);
   RegPrimitive(m);
   RegPrimitiveFunction(m);
+  RegFunctional(m);
   RegSignatureEnumRW(m);
   RegRandomSeededGenerator(m);
   mindspore::tensor::RegMetaTensor(m);

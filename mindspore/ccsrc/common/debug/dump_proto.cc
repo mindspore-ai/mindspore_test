@@ -354,7 +354,8 @@ void ProtoExporter::GetOpNodeTypeAndAttrs(const FuncGraphPtr & /* func_graph */,
     return;
   }
 
-  if (op_node->isa<CNode>() || op_node->isa<Parameter>() || IsValueNode<FuncGraph>(op_node)) {
+  if (op_node->isa<CNode>() || op_node->isa<Parameter>() || IsValueNode<FuncGraph>(op_node) ||
+      IsValueNode<Functional>(op_node)) {
     MS_LOG(INTERNAL_EXCEPTION) << "Op node can not be CNode, Parameter or ValueNode Graph. But got "
                                << op_node->ToString();
   }
@@ -507,7 +508,7 @@ void ProtoExporter::ExportCNode(const FuncGraphPtr &func_graph, const CNodePtr &
   irpb::NodeProto *node_proto = graph_proto->add_node();
 
   // CNode/ConstGraph/Const/Parameter
-  if (op->isa<CNode>() || IsValueNode<FuncGraph>(op) || op->isa<Parameter>()) {
+  if (op->isa<CNode>() || IsValueNode<FuncGraph>(op) || op->isa<Parameter>() || IsValueNode<Functional>(op)) {
     MS_LOG(DEBUG) << "Operator must be a primitive";
   } else {
     GetOpNodeTypeAndAttrs(func_graph, node, node_proto);
