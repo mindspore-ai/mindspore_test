@@ -343,7 +343,6 @@ def test_ring_attention_semi_auto_parallel_alltoallv(input_layout):
     context.reset_auto_parallel_context()
 
 
-@pytest.mark.skip(reason="fail in pipeline")
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
 def test_ring_attention_semi_auto_parallel_send_recv(input_layout):
     """
