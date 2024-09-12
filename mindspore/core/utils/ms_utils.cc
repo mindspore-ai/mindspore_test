@@ -118,6 +118,11 @@ bool IsEnableRuntimeConfig(const std::string &runtime_config) {
 }
 
 bool IsDisableRuntimeConfig(const std::string &runtime_config) {
+  // ge_kbk mix cann not use rank_table
+  if (runtime_config == common::kRuntimeGeKernel && !common::UseHostCollective() &&
+      !common::GetEnv("RANK_TABLE_FILE").empty()) {
+    return true;
+  }
   const auto &value = GetConfigValue(kRuntimeConf, runtime_config);
   return ((value == "False") || (value == "false"));
 }
