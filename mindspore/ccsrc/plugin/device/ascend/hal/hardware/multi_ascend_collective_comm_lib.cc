@@ -168,6 +168,8 @@ uint32_t MultiAscendCollectiveCommLib::GetGroupRankFromWorldRank(uint32_t world_
   MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
   return ascend_collective_comm_lib_->GetGroupRankFromWorldRank(world_rank, group_name);
 }
+
+bool MultiAscendCollectiveCommLib::ResumeHcclComm() { return ascend_collective_comm_lib_->ResumeHcclComm(); }
 }  // namespace ascend
 
 using MultiAscendCollectiveCommLib = mindspore::device::ascend::MultiAscendCollectiveCommLib;
