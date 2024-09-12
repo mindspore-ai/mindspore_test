@@ -238,7 +238,6 @@ mindspore.mint.nn
     :template: classtemplate.rst
 
     mindspore.mint.nn.GroupNorm
-    mindspore.mint.nn.LayerNorm
 
 非线性激活层 (加权和，非线性)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

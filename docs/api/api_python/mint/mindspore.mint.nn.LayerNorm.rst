@@ -18,7 +18,7 @@ mindspore.mint.nn.LayerNorm
 
     参数：
         - **normalized_shape** (Union(tuple[int], list[int], int)) - 对 `x` 执行归一化的shape。
-        - **eps** (float) - 添加到分母中的值（:math:`\epsilon`），以确保数值稳定。默认值： ``1e-5`` 。
+        - **eps** (float，可选) - 添加到分母中的值（:math:`\epsilon`），以确保数值稳定。默认值： ``1e-5`` 。
         - **elementwise_affine** (bool) - 是否需要仿射变换。当被设置为 ``True`` 时，权重参数初始化为1，偏差初始化为0。默认值： ``True`` 。
         - **bias** (bool) - 当被设置为 ``False`` 时，不会学习结果性偏差（仅 `elementwise_affine` 值为 ``True`` 时生效）。默认值： ``True`` 。
         - **dtype** (:class:`mindspore.dtype`) - Parameters的dtype。默认值： ``None`` 。
