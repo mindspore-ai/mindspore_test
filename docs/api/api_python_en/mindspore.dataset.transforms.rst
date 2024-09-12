@@ -46,7 +46,7 @@ Vision
 Example Gallery
 ^^^^^^^^^^^^^^^^
 
-Example gallery of using vision transform APIs, jump to `Load & Process Data With Dataset Pipeline <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/vision_gallery.html>`_.
+Example gallery of using vision transform APIs, jump to `Illustration of vision transforms <https://www.mindspore.cn/docs/en/master/api_python/samples/dataset/vision_gallery.html>`_.
 This guide presents various transforms and input/output results.
 
 Transforms

@@ -31,9 +31,6 @@ Note: Legacy c_transforms and py_transforms are deprecated but can still be impo
     import mindspore.dataset.vision.c_transforms as c_vision
     import mindspore.dataset.vision.py_transforms as py_vision
 
-See `Vision Transforms
-<https://www.mindspore.cn/tutorials/en/master/beginner/transforms.html#vision-transforms>`_ tutorial for more details.
-
 Descriptions of common data processing terms are as follows:
 
 - TensorOperation, the base class of all data processing operations implemented in C++.
@@ -46,7 +43,7 @@ The data transform operation can be executed in the data processing pipeline or 
   `introduction to data processing pipeline <https://www.mindspore.cn/docs/en/master/api_python/
   mindspore.dataset.html#introduction-to-data-processing-pipeline>`_ .
 - Eager mode is more like a function call to process data. Examples refer to
-  `Lightweight Data Processing <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/eager.html>`_ .
+  `Lightweight Data Processing <https://www.mindspore.cn/docs/en/master/model_train/dataset/eager.html>`_ .
 """
 from . import c_transforms
 from . import py_transforms
