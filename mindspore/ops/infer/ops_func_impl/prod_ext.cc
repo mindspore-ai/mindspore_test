@@ -95,7 +95,12 @@ ShapeArray ProdExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
   MS_EXCEPTION_IF_NULL(keep_dims);
 
   if (input_values[kIndex1] == mindspore::kNone) {
-    return keep_dims->value() ? ShapeArray{ShapeVector({1})} : ShapeArray{ShapeVector({})};
+    if (keep_dims->value()) {
+      MS_EXCEPTION(ValueError) << "For " << primitive->name()
+                               << ", when axis is None, keep_dims can only set to false, but got keep_dims=True.";
+    } else {
+      return ShapeArray{ShapeVector({})};
+    }
   }
 
   const auto &axis = input_values[kIndex1]->cast<Int64ImmPtr>();

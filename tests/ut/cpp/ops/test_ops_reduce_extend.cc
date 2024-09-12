@@ -180,7 +180,11 @@ auto ReduceExtendTestCase = testing::ValuesIn(
    ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateIntTuple({0}), keep_dims_false, value_none},
    ReduceExtendParams{{}, kFloat32, {-2}, kFloat32, value_any, value_any, value_none},
    ReduceExtendParams{{}, kFloat32, {}, kFloat32, value_any, keep_dims_true, value_none},
-   ReduceExtendParams{{}, kFloat32, {-2}, kFloat32, value_any, keep_dims_false, value_none}});
+   ReduceExtendParams{{}, kFloat32, {-2}, kFloat32, value_any, keep_dims_false, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {1, 1, 1}, kFloat32, value_none, keep_dims_true, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {1, 1, 1}, kFloat32, CreateIntTuple({}), keep_dims_true, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {}, kFloat32, value_none, keep_dims_false, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {}, kFloat32, CreateIntTuple({}), keep_dims_false, value_none}});
 
 auto ReduceExtendTestCase_ProdExt = testing::ValuesIn(
   {ReduceExtendParams{{2, 3, 4}, kFloat32, {2, 1, 4}, kFloat32, CreateInt(1), keep_dims_true, value_none},
@@ -206,7 +210,8 @@ auto ReduceExtendTestCase_ProdExt = testing::ValuesIn(
    ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateInt(0), keep_dims_false, value_none},
    ReduceExtendParams{{}, kFloat32, {-2}, kFloat32, value_any, value_any, value_none},
    ReduceExtendParams{{}, kFloat32, {}, kFloat32, value_any, keep_dims_true, value_none},
-   ReduceExtendParams{{}, kFloat32, {}, kFloat32, value_any, keep_dims_false, value_none}});
+   ReduceExtendParams{{}, kFloat32, {}, kFloat32, value_any, keep_dims_false, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {}, kFloat32, value_none, keep_dims_false, value_none}});
 
 auto ReduceExtendTestCase_ExtraDtype = testing::ValuesIn(
   {ReduceExtendParams{{}, kFloat32, {}, kFloat32, value_none, keep_dims_false, value_none},
@@ -244,7 +249,11 @@ auto ReduceExtendSimpleInferTestCase = testing::ValuesIn(
    ReduceExtendParams{{2, 3, 4}, kFloat32, {4}, kFloat32, CreateIntTuple({-2, -3}), keep_dims_false, value_none},
    ReduceExtendParams{{2, 3, 4}, kFloat32, {}, kFloat32, CreateIntTuple({}), keep_dims_false, value_none},
    ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateIntTuple({0}), keep_dims_true, value_none},
-   ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateIntTuple({0}), keep_dims_false, value_none}});
+   ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateIntTuple({0}), keep_dims_false, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {1, 1, 1}, kFloat32, value_none, keep_dims_true, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {1, 1, 1}, kFloat32, CreateIntTuple({}), keep_dims_true, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {}, kFloat32, value_none, keep_dims_false, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {}, kFloat32, CreateIntTuple({}), keep_dims_false, value_none}});
 
 auto ReduceExtendSimpleInferTestCase_ProdExt = testing::ValuesIn(
   {ReduceExtendParams{{2, 3, 4}, kFloat32, {2, 1, 4}, kFloat32, CreateInt(1), keep_dims_true, value_none},
@@ -252,7 +261,8 @@ auto ReduceExtendSimpleInferTestCase_ProdExt = testing::ValuesIn(
    ReduceExtendParams{{2, 3, 4}, kFloat32, {2, 3, 1}, kFloat32, CreateInt(-1), keep_dims_true, value_none},
    ReduceExtendParams{{2, 3, 4}, kFloat32, {2, 4}, kFloat32, CreateInt(-2), keep_dims_false, value_none},
    ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateInt(0), keep_dims_true, value_none},
-   ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateInt(0), keep_dims_false, value_none}});
+   ReduceExtendParams{{}, kFloat32, {}, kFloat32, CreateInt(0), keep_dims_false, value_none},
+   ReduceExtendParams{{2, 3, 4}, kFloat32, {}, kFloat32, value_none, keep_dims_false, value_none}});
 
 INSTANTIATE_TEST_CASE_P(TestMeanExtGroup, TestReduceExtendSimpleInfer,
                         testing::Combine(testing::ValuesIn({kNameMeanExt}), ReduceExtendSimpleInferTestCase));
