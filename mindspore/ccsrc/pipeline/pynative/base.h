@@ -68,6 +68,12 @@ struct AsyncStatus {
 };
 
 struct OpGradInfo {
+  ~OpGradInfo() {
+    // Dict value will hold python object which need gil.
+    py::gil_scoped_acquire gil;
+    input_value.clear();
+    out_value = nullptr;
+  }
   bool is_need_recompute{false};
 
   // Mark op output value whether used in bprop graph

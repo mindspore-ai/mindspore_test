@@ -140,7 +140,7 @@ AnfNodePtr HandleRealToComplex(const tensor::BaseTensorPtr &input, const Abstrac
 void PlantFuncGradBpropGraphDout(const GradParamPtr &grad_param, const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(grad_param);
-  if (!grad_param->is_func_grad) {
+  if (!grad_param->is_func_grad || graph->parameters().empty()) {
     return;
   }
   // Plant dout tuple or dict
