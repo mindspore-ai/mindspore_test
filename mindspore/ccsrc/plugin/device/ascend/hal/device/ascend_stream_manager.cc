@@ -214,6 +214,22 @@ bool AscendStreamMng::DestroyStream(size_t stream_id) {
   return true;
 }
 
+bool AscendStreamMng::ForceDestroyAllStreams() {
+  std::lock_guard<std::mutex> lock_streams(stream_mutex_);
+  for (const auto &stream : streams_) {
+    if (stream == nullptr) {
+      continue;
+    }
+    const auto ret = CALL_ASCEND_API(aclrtDestroyStreamForce, stream);
+    if (ret != ACL_ERROR_NONE) {
+      MS_LOG(EXCEPTION) << "Call aclrtDestroyStream, ret[" << ret << "]";
+    }
+    UnRegCallback(stream);
+  }
+  streams_.clear();
+  return true;
+}
+
 bool AscendStreamMng::DestroyAllStreams() {
   std::lock_guard<std::mutex> lock_streams(stream_mutex_);
   for (const auto &stream : streams_) {

@@ -153,6 +153,7 @@ ACL_FUNC_VISIBILITY aclError aclrtMemset(void *devPtr, size_t maxCount, int32_t 
 }
 
 ACL_FUNC_VISIBILITY aclError aclrtDestroyStream(aclrtStream stream) { return ACL_SUCCESS; }
+ACL_FUNC_VISIBILITY aclError aclrtDestroyStreamForce(aclrtStream stream) { return ACL_SUCCESS; }
 
 ACL_FUNC_VISIBILITY aclError aclrtSetCurrentContext(aclrtContext context) { return ACL_SUCCESS; }
 

@@ -49,6 +49,11 @@ bool MultiAscendCollectiveCommLib::isGroupWithinLocalMachine(const std::vector<u
                      [&](uint32_t rank) { return all_host_hashs[rank] == all_host_hashs[0]; });
 }
 
+bool MultiAscendCollectiveCommLib::InitializeWatchDog(uint32_t global_rank_id, uint32_t global_rank_size,
+                                                      uint32_t local_rank_id) {
+  return ascend_collective_comm_lib_->InitializeWatchDog(global_rank_id, global_rank_size, local_rank_id);
+}
+
 bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) {
   global_rank_id_ = global_rank;
   global_rank_size_ = global_rank_size;

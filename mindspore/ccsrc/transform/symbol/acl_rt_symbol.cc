@@ -26,6 +26,7 @@ aclrtCreateStreamWithConfigFunObj aclrtCreateStreamWithConfig_ = nullptr;
 aclrtDestroyContextFunObj aclrtDestroyContext_ = nullptr;
 aclrtDestroyEventFunObj aclrtDestroyEvent_ = nullptr;
 aclrtDestroyStreamFunObj aclrtDestroyStream_ = nullptr;
+aclrtDestroyStreamForceFunObj aclrtDestroyStreamForce_ = nullptr;
 aclrtEventElapsedTimeFunObj aclrtEventElapsedTime_ = nullptr;
 aclrtFreeFunObj aclrtFree_ = nullptr;
 aclrtFreeHostFunObj aclrtFreeHost_ = nullptr;
@@ -88,6 +89,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtDestroyContext_ = DlsymAscendFuncObj(aclrtDestroyContext, handler);
   aclrtDestroyEvent_ = DlsymAscendFuncObj(aclrtDestroyEvent, handler);
   aclrtDestroyStream_ = DlsymAscendFuncObj(aclrtDestroyStream, handler);
+  aclrtDestroyStreamForce_ = DlsymAscendFuncObj(aclrtDestroyStreamForce, handler);
   aclrtEventElapsedTime_ = DlsymAscendFuncObj(aclrtEventElapsedTime, handler);
   aclrtFree_ = DlsymAscendFuncObj(aclrtFree, handler);
   aclrtFreeHost_ = DlsymAscendFuncObj(aclrtFreeHost, handler);
@@ -146,6 +148,7 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtDestroyContext);
   ASSIGN_SIMU(aclrtDestroyEvent);
   ASSIGN_SIMU(aclrtDestroyStream);
+  ASSIGN_SIMU(aclrtDestroyStreamForce);
   ASSIGN_SIMU(aclrtEventElapsedTime);
   ASSIGN_SIMU(aclrtFree);
   ASSIGN_SIMU(aclrtFreeHost);

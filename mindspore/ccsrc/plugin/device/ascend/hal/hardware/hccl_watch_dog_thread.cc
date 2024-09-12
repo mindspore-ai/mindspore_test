@@ -16,6 +16,7 @@
 
 #include "plugin/device/ascend/hal/hardware/hccl_watch_dog_thread.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
+#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
@@ -66,8 +67,8 @@ void HcclWatchDogHandler::SetException(HcclComm hcom, std::string *error_info) {
   MS_LOG(DEBUG) << "Check watch dog for: " << hcom;
   if (!hccl::HcclAdapter::GetInstance().HcclWatchdogThread(hcom, error_info)) {
     std::ostringstream param_oss;
-    param_oss << "[rank " << local_rank_id_ << "] HcclWatchdogThread catch an error: " << *error_info
-              << ". Global rank id: [" << global_rank_id_ << "]. Global rank size: [" << global_rank_size_ << "].";
+    param_oss << "HcclWatchdogThread catch an error: " << *error_info << ", local rank id: [" << local_rank_id_
+              << "], global rank id: [" << global_rank_id_ << "], global rank size: [" << global_rank_size_ << "].";
     auto exception_ptr = std::make_exception_ptr(std::runtime_error(param_oss.str()));
     std::unique_lock<std::mutex> lock(mutex_);
     exception_ = exception_ptr;
@@ -97,6 +98,7 @@ void HcclWatchDogHandler::Terminate() { terminate_.store(true, std::memory_order
 void HcclWatchDogHandler::DoProcess() {
   // check exception in every 2s
   constexpr int64_t kQueryFrequency = 2000;
+  MS_LOG(INFO) << "Start check watch dog thread in every 2s .";
   while (!terminate_.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(kQueryFrequency));
     std::string error_info;
@@ -123,7 +125,15 @@ void HcclWatchDogHandler::WatchDogProcess() {
     DoProcess();
   } catch (const std::exception &e) {
     auto msg = e.what();
-    MS_LOG(ERROR) << "HcclWatchDog thread catch exception: " << msg;
+    MS_LOG(ERROR) << "HcclWatchDog thread catch exception: " << msg
+                  << ".\n Try to destroy all streams by watch dog thread.";
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {kAscendDevice, ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
+    MS_EXCEPTION_IF_NULL(device_context);
+    (void)device_context->device_res_manager_->BindDeviceToCurrentThread(false);
+    AscendStreamMng::GetInstance().ForceDestroyAllStreams();
     auto exp = std::make_exception_ptr(std::runtime_error(msg));
     MsException::Instance().SetException(exp);
   }
