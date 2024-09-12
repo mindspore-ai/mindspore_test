@@ -725,16 +725,17 @@ bool GraphBuilder::DoRaise(const mindspore::pijit::Instr &instr) {
     return false;
   }
 
-  auto tryBlock = PopStack();
-  while (tryBlock.name == "EXCEPT_HANDLER") {
+  auto currentBlock = PopStack();
+  while (currentBlock.name == "EXCEPT_HANDLER") {
     popn(3);
     if (StackSize() < 1) {
       return false;
     }
-    tryBlock = PopStack();
+    currentBlock = PopStack();
   }
 
-  if (tryBlock.type != SETUP_FINALLY && tryBlock.type != SETUP_EXCEPT) {
+  if (currentBlock.type != SETUP_FINALLY && currentBlock.type != SETUP_EXCEPT) {
+    PushStack(currentBlock);
     return false;
   }
 
@@ -757,7 +758,7 @@ bool GraphBuilder::DoRaise(const mindspore::pijit::Instr &instr) {
   push(exc);       // value
   push(exc);       // type
 
-  cur_bci_ = tryBlock.bci - 1;
+  cur_bci_ = currentBlock.bci - 1;
   return true;
 }
 
