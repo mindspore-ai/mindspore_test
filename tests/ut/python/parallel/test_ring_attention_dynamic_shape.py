@@ -314,7 +314,7 @@ def test_ring_attention_semi_auto_parallel_send_recv(input_layout):
     """
     set_auto_parallel_context(device_num=4, global_rank=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./test_ring_attention_semi_auto_parallel_send_recv")
     dp = 1
     mp = 1
     sp = 4
@@ -323,11 +323,11 @@ def test_ring_attention_semi_auto_parallel_send_recv(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, use_send_recv=True)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./test_ring_attention_semi_auto_parallel_send_recv/rank_0"):
+        shutil.rmtree("./test_ring_attention_semi_auto_parallel_send_recv/rank_0")
     net.set_inputs(query, key, value, real_shift, attn_mask)
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./rank_0/*validate*.ir"
+    file = "./test_ring_attention_semi_auto_parallel_send_recv/rank_0/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -359,7 +359,7 @@ def test_flash_sp_semi_auto_parallel(input_layout):
     """
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./test_flash_sp_semi_auto_parallel")
     dp = 1
     mp = 1
     sp = 8
@@ -368,11 +368,11 @@ def test_flash_sp_semi_auto_parallel(input_layout):
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_flash_sp=True)
-    if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+    if os.path.exists("./test_flash_sp_semi_auto_parallel/rank_0"):
+        shutil.rmtree("./test_flash_sp_semi_auto_parallel/rank_0")
     net.set_inputs(query, key, value, real_shift, attn_mask)
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./rank_0/*validate*.ir"
+    file = "./test_flash_sp_semi_auto_parallel/rank_0/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -405,7 +405,7 @@ def test_ring_attention_user_define_mask_semi_auto_parallel(input_layout):
 
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(save_graphs=True, save_graphs_path="./")
+    context.set_context(save_graphs=True, save_graphs_path="./test_ring_attention_user_define_mask_semi_auto_parallel")
     dp = 1
     mp = 1
     sp = 8
