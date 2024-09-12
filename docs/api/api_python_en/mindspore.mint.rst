@@ -203,7 +203,6 @@ Other Operations
     mindspore.mint.cumsum
     mindspore.mint.flatten
     mindspore.mint.flip
-    mindpsore.mint.histc
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
 
