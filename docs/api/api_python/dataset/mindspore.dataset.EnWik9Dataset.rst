@@ -53,7 +53,7 @@ mindspore.dataset.EnWik9Dataset
 
         @NetworkResource{Hutter_prize,
         author    = {English Wikipedia},
-        url       = "https://cs.fit.edu/~mmahoney/compression/textdata.html",
+        url       = "https://mattmahoney.net/dc/textdata.html",
         month     = {March},
         year      = {2006}
         }
