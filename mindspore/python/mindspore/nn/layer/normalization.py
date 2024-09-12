@@ -19,7 +19,7 @@ from __future__ import division
 import itertools
 import numbers
 import hashlib
-
+import numpy as np
 import mindspore.ops as ops
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
@@ -781,8 +781,9 @@ class LayerNormExt(Cell):
 
     Layer Normalization is widely used in recurrent neural networks. It applies
     normalization on a mini-batch of inputs for each single training case as described
-    in the paper `Layer Normalization <https://arxiv.org/pdf/1607.06450.pdf>`_. Unlike Batch
-    Normalization, Layer Normalization performs exactly the same computation at training and
+    in the paper `Layer Normalization <https://arxiv.org/pdf/1607.06450.pdf>`_.
+
+    Unlike Batch Normalization, Layer Normalization performs exactly the same computation at training and
     testing time. It is applied across all channels and pixel but only one batch size.
     :math:`\gamma` and :math:`\beta` are trainable scale and shift.
     It can be described using the following formula:
@@ -790,26 +791,26 @@ class LayerNormExt(Cell):
     .. math::
         y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
-        normalized_shape (Union(tuple[int], list[int])): The normalized shape of `x` for LayerNorm
-        gamma_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\gamma` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
-            ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'ones'`` .
-        beta_init (Union[Tensor, str, Initializer, numbers.Number]): Initializer for the :math:`\beta` weight.
-            The values of str refer to the function `initializer` including ``'zeros'`` , ``'ones'`` ,
-            ``'xavier_uniform'`` , ``'he_uniform'`` , etc. Default: ``'zeros'`` .
+        normalized_shape (Union(tuple[int], list[int], int)): The normalized shape of `x` for LayerNorm
         eps (float): A value added to the denominator for numerical stability(:math:`\epsilon`). Default: ``1e-5`` .
-        elementwise_affine (bool): A bool value, When set to True, gamma and beta can be learned. Default: True.
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``mstype.float32`` .
+        elementwise_affine (bool): Whether affine transformation is required. When this parameter is set to ``True``,
+            the weight parameter is initialized to 1 and the offset is initialized to 0. Default: ``True``.
+        bias (bool): If set to ``False``, the layer will not learn an additive bias (only relevant if
+             `elementwise_affine` is ``True``). Default: ``True``.
+        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
-        - **x** (Tensor) - The shape is :math:`(N, *)`, where :math:`*` means, any number of additional dimensions.
+        - **x** (Tensor) - The shape is :math:`(N, *)`, where :math:`*` is equal to normalized_shape.
 
     Outputs:
         Tensor, the normalized and scaled offset tensor, has the same shape and data type as the `x`.
 
     Raises:
-        TypeError: If `epsilon` is not a float.
+        TypeError: If `eps` is not a float.
 
     Supported Platforms:
         ``Ascend``
@@ -819,7 +820,7 @@ class LayerNormExt(Cell):
         >>> import numpy as np
         >>> x = ms.Tensor(np.ones([20, 5, 10, 10]), ms.float32)
         >>> shape1 = x.shape[1:]
-        >>> m = ms.mint.nn.LayerNorm(shape1)
+        >>> m = ms.nn.LayerNormExt(shape1)
         >>> output = m(x).shape
         >>> print(output)
         (20, 5, 10, 10)
@@ -827,14 +828,16 @@ class LayerNormExt(Cell):
 
     def __init__(self,
                  normalized_shape,
-                 gamma_init='ones',
-                 beta_init='zeros',
                  eps=1e-5,
                  elementwise_affine=True,
-                 dtype=mstype.float32
+                 bias=True,
+                 dtype=None
                  ):
-        """Initialize LayerNorm."""
+        """Initialize LayerNormExt."""
         super(LayerNormExt, self).__init__()
+        if isinstance(normalized_shape, numbers.Integral):
+            # mypy error: incompatible types in assignment
+            normalized_shape = (normalized_shape,)  # type: ignore[assignment]
         if not isinstance(normalized_shape, (tuple, list)):
             raise TypeError(f"For '{self.cls_name}', the type of 'normalized_shape' must be tuple[int] or list[int], "
                             f"but got {normalized_shape} and the type is {type(normalized_shape)}.")
@@ -843,20 +846,28 @@ class LayerNormExt(Cell):
                 f"Expected normalized_shape to be at least 1-dimensional, i.e., containing at "
                 f"least one element, but got normalized_shape = {normalized_shape}"
             )
-        self.normalized_shape = normalized_shape
-        self.epsilon = eps
-        self.gamma = Parameter(initializer(
-            gamma_init, normalized_shape, dtype=dtype), name="gamma", requires_grad=elementwise_affine)
-        self.beta = Parameter(initializer(
-            beta_init, normalized_shape, dtype=dtype), name="beta", requires_grad=elementwise_affine)
+        self.normalized_shape = tuple(normalized_shape)
+        self.eps = eps
+        self.elementwise_affine = elementwise_affine
+        ms_dtype = mstype.float32 if dtype is None else dtype
+        if self.elementwise_affine:
+            self.weight = Parameter(Tensor(np.ones(normalized_shape), ms_dtype), name="weight")
+            if bias:
+                self.bias = Parameter(Tensor(np.zeros(normalized_shape), ms_dtype), name="bias")
+            else:
+                self.bias = None
+        else:
+            self.weight = None
+            self.bias = None
 
     def construct(self, input_x):
-        y = ops.layer_norm(input_x, self.normalized_shape, self.gamma.astype(input_x.dtype),
-                           self.beta.astype(input_x.dtype), self.epsilon)
+        y = ops.layer_norm(input_x, self.normalized_shape, self.weight,
+                           self.bias, self.eps)
         return y
 
     def extend_repr(self):
-        return 'normalized_shape={}, gamma{}, beta={}'.format(self.normalized_shape, self.gamma, self.beta)
+        return 'normalized_shape={}, eps={}, elementwise_affine={}'.format(
+            self.normalized_shape, self.eps, self.elementwise_affine)
 
 
 class _InstanceNorm(Cell):

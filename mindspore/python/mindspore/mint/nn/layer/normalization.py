@@ -27,6 +27,7 @@ from mindspore.common.initializer import initializer
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
+from mindspore.nn.layer.normalization import LayerNormExt as LayerNorm
 from mindspore.ops import group_norm
 
 
@@ -472,4 +473,5 @@ __all__ = [
     'BatchNorm1d',
     'BatchNorm2d',
     'BatchNorm3d',
+    'LayerNorm',
 ]

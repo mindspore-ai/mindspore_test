@@ -104,7 +104,7 @@ from mindspore.nn.layer import PReLUExt as PReLU
 
 # 40
 from mindspore.mint.nn.layer.normalization import GroupNorm
-
+from mindspore.mint.nn.layer.normalization import LayerNorm
 # 41
 
 # 42

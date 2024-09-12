@@ -239,6 +239,7 @@ Normalization Layers
     :template: classtemplate.rst
 
     mindspore.mint.nn.GroupNorm
+    mindspore.mint.nn.LayerNorm
 
 Non-linear Activations (weighted sum, nonlinearity)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
