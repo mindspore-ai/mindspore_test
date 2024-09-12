@@ -358,6 +358,9 @@ AbstractBasePtr FuncGraphBuilder::BuildAbstractForInputObject(const py::object &
     MS_LOG(INFO) << "Get top graph arg input failed.";
     return nullptr;
   }
+  if (py::isinstance<Cell>(object) || PyFunction_Check(object.ptr()) || PyMethod_Check(object.ptr())) {
+    return nullptr;
+  }
   auto value = ConvertPyObjToValue(object);
   if (value == nullptr) {
     return nullptr;

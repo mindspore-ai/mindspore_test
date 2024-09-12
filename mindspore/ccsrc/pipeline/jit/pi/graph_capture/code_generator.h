@@ -64,7 +64,10 @@ class CodeGenerator {
     py::object co_filename;
   };
 
-  explicit CodeGenerator(const NodeSet *nodes) : nodes_(nodes), globals_(), code_(), nodes_alive_(), locals_map_() {}
+  explicit CodeGenerator(const NodeSet *nodes)
+      : nodes_(nodes), globals_(), code_(), nodes_alive_(), locals_map_(), missing_value_to_undefine_(false) {}
+
+  void set_missing_value_to_undefine(bool v) { missing_value_to_undefine_ = v; }
 
   void SetGlobals(const py::dict &dict) { globals_ = dict; }
   std::vector<std::unique_ptr<Instr>> MoveCode() { return std::move(code_.co_code); }
@@ -181,6 +184,7 @@ class CodeGenerator {
   Code code_;
   std::unordered_map<ValueNode *, int> nodes_alive_;
   std::unordered_map<ValueNode *, int> locals_map_;
+  bool missing_value_to_undefine_;
 };
 
 class CodeBreakGenerator;

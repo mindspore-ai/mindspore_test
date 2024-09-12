@@ -419,6 +419,54 @@ def test_graph_parameter_is_closure_variable_v5():
     assert jcr['break_count_'] == 1
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable_v6():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function's parameter x is a closure variable.
+        2.x is graph's parameter, and x is used as a free variable in inner function.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.The code before the graph break point should be executed in graph mode.
+    """
+    def factory():
+        var = None
+        def producer(x):
+            nonlocal var
+            var = x
+            return x
+        def consumer(x):
+            return x + var
+        return producer, consumer
+
+    producer, consumer = factory()
+    consumer = jit(consumer, mode="PIJit")
+
+    res = []
+    x = Tensor([1, 1])
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+    x = producer(x)
+    x = consumer(x)
+    res.append(x)
+
+    jcr = get_code_extra(consumer.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['compile_count_'] == 1
+    assert (res[0] == Tensor([2, 2])).all()
+    assert (res[1] == Tensor([4, 4])).all()
+    assert (res[2] == Tensor([8, 8])).all()
+
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_branch():
     """
