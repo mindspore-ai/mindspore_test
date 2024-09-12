@@ -22,6 +22,7 @@
 #include "src/common/decrypt.h"
 #include "src/common/file_utils.h"
 #endif
+#include "utils/crypto.h"
 
 namespace mindspore {
 namespace {
@@ -78,6 +79,7 @@ Status Model::Build(const void *model_data, size_t data_size, ModelType model_ty
   try {
     Status ret = impl_->Build(model_data, data_size, model_type, model_context);
     if (ret != kSuccess) {
+      MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
       return ret;
     }
     return kSuccess;
@@ -96,6 +98,30 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
   try {
     Status ret = impl_->Build(CharToString(model_path), model_type, model_context);
     if (ret != kSuccess) {
+      MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
+      return ret;
+    }
+    return kSuccess;
+  } catch (const std::exception &exe) {
+    MS_LOG(ERROR) << "Catch exception: " << exe.what();
+    return kCoreFailed;
+  }
+}
+
+Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
+                    const std::shared_ptr<Context> &model_context, const CryptoInfo &cryptoInfo) {
+  size_t decrypt_len;
+  auto decrypt_data =
+    Decrypt(&decrypt_len, CharToString(model_path).c_str(), cryptoInfo.key.key, cryptoInfo.key.len, cryptoInfo.mode);
+  if (decrypt_data == nullptr) {
+    MS_LOG(ERROR) << "Decrypt failed!";
+    return kLiteFileError;
+  }
+  try {
+    Status ret = impl_->Build(decrypt_data.get(), decrypt_len, model_type, model_context,
+                              CharToString(model_path).c_str(), cryptoInfo);
+    if (ret != kSuccess) {
+      MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
       return ret;
     }
     return kSuccess;
@@ -134,6 +160,7 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
       ret = impl_->Build(decrypt_buffer.get(), decrypt_len, model_type, model_context);
       if (ret != kSuccess) {
         delete[] model_buf;
+        MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
         return ret;
       }
       delete[] model_buf;
@@ -147,6 +174,7 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
     try {
       Status ret = impl_->Build(CharToString(model_path), model_type, model_context);
       if (ret != kSuccess) {
+        MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
         return ret;
       }
       return kSuccess;
@@ -176,12 +204,13 @@ Status Model::Build(const void *model_data, size_t data_size, ModelType model_ty
     Status ret = DecryptModel(CharToString(cropto_lib_path), model_data, data_size, dec_key, CharToString(dec_mode),
                               &decrypt_buffer, &decrypt_len);
     if (ret != kSuccess) {
-      MS_LOG(ERROR) << "Decrypt model failed.";
+      MS_LOG(ERROR) << "Decrypt model failed. ret = " << ret;
       return ret;
     }
     try {
       ret = impl_->Build(decrypt_buffer.get(), decrypt_len, model_type, model_context);
       if (ret != kSuccess) {
+        MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
         return ret;
       }
       return kSuccess;
@@ -193,6 +222,7 @@ Status Model::Build(const void *model_data, size_t data_size, ModelType model_ty
     try {
       Status ret = impl_->Build(model_data, data_size, model_type, model_context);
       if (ret != kSuccess) {
+        MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
         return ret;
       }
       return kSuccess;
