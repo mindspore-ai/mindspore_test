@@ -23,7 +23,7 @@ from mindspore import context
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
-from mindspore._c_expression import _repair_device, _stop_device
+from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv
 from mindspore._c_expression import CollectiveManager
@@ -81,6 +81,7 @@ def _rename_save_result(step, cb_ctx):
 
 def _tft_exit_cb(ctx):
     logger.error("Enter mindio ttp exit process, which means other ranks occur exception, check other ranks' logs!")
+    _tft_sem_post()
     os._exit(1)   # pylint: disable=W0212
 
 

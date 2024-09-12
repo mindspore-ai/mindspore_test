@@ -89,6 +89,7 @@
 #include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
 #include "include/backend/distributed/init.h"
 #include "include/backend/debug/profiler/profiling.h"
+#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
@@ -2690,6 +2691,7 @@ void ClearResPart3() {
 void ClearSingleton() {
   MS_LOG(INFO) << "Start clear singleton...";
   profiler::Profiler::Clear();
+  debug::tft::TFTWaitSem::GetInstance().Clear();
 #ifdef ENABLE_AKG
   kernel::GraphKernelBuildManager::Instance().Clear();
 #endif

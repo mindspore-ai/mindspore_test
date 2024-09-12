@@ -1,0 +1,48 @@
+/**
+ * Copyright 2021 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef MINDSPORE_CCSRC_DEBUG_TFT_ADAPTER_TFT_WAIT_SEM_H_
+#define MINDSPORE_CCSRC_DEBUG_TFT_ADAPTER_TFT_WAIT_SEM_H_
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+#include <semaphore.h>
+#endif
+#include <utility>
+#include "include/backend/visible.h"
+
+namespace mindspore {
+namespace debug {
+namespace tft {
+class BACKEND_EXPORT TFTWaitSem {
+ public:
+  static TFTWaitSem &GetInstance();
+  ~TFTWaitSem();
+  TFTWaitSem(const TFTWaitSem &) = delete;
+  TFTWaitSem &operator=(const TFTWaitSem &) = delete;
+  void Wait();
+  void Post();
+  void Clear();
+  static bool IsEnable();
+
+ private:
+  TFTWaitSem();
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+  sem_t waitSem_;
+#endif
+};
+}  // namespace tft
+}  // namespace debug
+}  // namespace mindspore
+#endif

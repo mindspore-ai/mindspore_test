@@ -15,6 +15,7 @@
  */
 
 #include "include/common/pybind_api/api_register.h"
+#include "include/backend/debug/tft_adapter/tft_wait_sem.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 
@@ -57,11 +58,13 @@ void ThrowUCEError() {
   device_ctx->device_res_manager_->ThrowUCEError();
 }
 
-void RegUCE(py::module *m) {
+void RegTFT(py::module *m) {
   (void)m->def("_stop_device", &mindspore::StopDevice, "Stop the device.");
   (void)m->def("_repair_device", &mindspore::UceMemRepair, "Repair the device.");
   (void)m->def("_get_uce_process_strategy", &mindspore::GetUceProcessStrategy, "Get UCE process strategy.");
   (void)m->def("_get_uce_mem_info", &mindspore::GetMemUceInfo, "Get UCE mem info.");
   (void)m->def("_throw_uce_error", &mindspore::ThrowUCEError, "Throw UCE error.");
+  (void)m->def(
+    "_tft_sem_post", []() { mindspore::debug::tft::TFTWaitSem::GetInstance().Post(); }, "TFT sem start post");
 }
 }  // namespace mindspore
