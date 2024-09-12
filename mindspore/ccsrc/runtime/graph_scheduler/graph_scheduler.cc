@@ -871,8 +871,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
                          const VectorRef &args, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
-  MS_EXCEPTION_IF_NULL(actor_set->loop_count_actor_);
-  actor_set->loop_count_actor_->IncreaseTotalRunningCount();
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   SignalGuard sg(IntHandler);
 #endif

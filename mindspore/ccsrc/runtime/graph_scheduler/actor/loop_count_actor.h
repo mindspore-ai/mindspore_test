@@ -68,11 +68,7 @@ class LoopCountActor : public DebugAwareActor {
   const AID &data_prepare_aid() const { return data_prepare_aid_; }
   const std::vector<AID> &entrance_aids() const { return entrance_aids_; }
 
-  void ResetState() {
-    --total_running_count_;
-    current_count_ = 0;
-  }
-  void IncreaseTotalRunningCount() { total_running_count_++; }
+  void ResetState() { current_count_ = 0; }
 
  protected:
   void Run(OpContext<DeviceTensor> *const context) override;
