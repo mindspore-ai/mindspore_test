@@ -52,11 +52,11 @@ def test_ckpt_save_with_crc(mode):
                         [1.3987198, 0.04099071]], dtype=ms.float32)
     bias = ms.Tensor([-0.41271235, 0.28378568, -0.81612898], dtype=ms.float32)
     net = Network(weight, bias)
-    ms.save_checkpoint(net, './save_with_crc.ckpt', crc_check=True)
-    ms.load_checkpoint("./save_with_crc.ckpt", crc_check=True)
-    ms.load_checkpoint("./save_with_crc.ckpt", crc_check=False)
-    os.chmod('./save_with_crc.ckpt', stat.S_IWRITE)
-    os.remove('./save_with_crc.ckpt')
+    ms.save_checkpoint(net, f"./save_with_crc_{mode}.ckpt", crc_check=True)
+    ms.load_checkpoint(f"./save_with_crc_{mode}.ckpt", crc_check=True)
+    ms.load_checkpoint(f"./save_with_crc_{mode}.ckpt", crc_check=False)
+    os.chmod(f"./save_with_crc_{mode}.ckpt", stat.S_IWRITE)
+    os.remove(f"./save_with_crc_{mode}.ckpt")
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -74,14 +74,14 @@ def test_ckpt_save_with_crc_failed(mode):
     weight = ms.Tensor([[0.27201429, 2.22499485], [-0.5636731, -2.21354142], [1.3987198, 0.04099071]], dtype=ms.float32)
     bias = ms.Tensor([-0.41271235, 0.28378568, -0.81612898], dtype=ms.float32)
     net = Network(weight, bias)
-    ms.save_checkpoint(net, './save_with_crc_failed.ckpt', crc_check=True)
+    ms.save_checkpoint(net, f'./save_with_crc_failed_{mode}.ckpt', crc_check=True)
 
     _ckpt_fs = FileSystem()
-    os.chmod("./save_with_crc_failed.ckpt", stat.S_IWRITE)
-    with _ckpt_fs.open("./save_with_crc_failed.ckpt", *_ckpt_fs.create_args) as f:
+    os.chmod(f"./save_with_crc_failed_{mode}.ckpt", stat.S_IWRITE)
+    with _ckpt_fs.open(f"./save_with_crc_failed_{mode}.ckpt", *_ckpt_fs.create_args) as f:
         f.write(b"111")
 
     with pytest.raises(ValueError):
-        ms.load_checkpoint("./save_with_crc_failed.ckpt", crc_check=True)
-    os.chmod('./save_with_crc_failed.ckpt', stat.S_IWRITE)
-    os.remove('./save_with_crc_failed.ckpt')
+        ms.load_checkpoint(f"./save_with_crc_failed_{mode}.ckpt", crc_check=True)
+    os.chmod(f'./save_with_crc_failed_{mode}.ckpt', stat.S_IWRITE)
+    os.remove(f'./save_with_crc_failed_{mode}.ckpt')
