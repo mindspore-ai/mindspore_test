@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import subprocess
 from mindspore import context
 from tests.mark_utils import arg_mark
 
@@ -27,8 +28,12 @@ def test_lccl_allreduce():
     os.environ['MS_ENABLE_LCCL'] = "on"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     return_code = os.system(
-        "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_allreduce.py")
+        "msrun --worker_num=8 --local_worker_num=8 --join=True --log_dir=./output_allreduce "\
+        "pytest -s test_lccl_allreduce.py"
+    )
+    result = subprocess.getoutput("grep -rn 'Loading LCCL because' ./output_allreduce")
     assert return_code == 0
+    assert result.find("Loading LCCL because env MS_ENABLE_LCCL is set to on") != -1
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level2', card_mark='allcards', essential_mark='unessential')
