@@ -20,6 +20,21 @@
 
 namespace mindspore {
 namespace runtime {
+
+std::atomic<int64_t> gActorId = 0;
+
+AbstractActor::AbstractActor(const std::string &name, KernelTransformType type, const AID *recorder_aid)
+    : OpActor(name),
+      type_(type),
+      recorder_aid_(recorder_aid),
+      actor_id_(++gActorId),
+      input_datas_num_(0),
+      input_controls_num_(0),
+      running_dependent_msg_num_(0),
+      parent_fusion_actor_{nullptr},
+      memory_alloc_insert_position_{nullptr},
+      memory_free_insert_position_{nullptr} {}
+
 void AbstractActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_data);
   MS_EXCEPTION_IF_NULL(input_data->data_);

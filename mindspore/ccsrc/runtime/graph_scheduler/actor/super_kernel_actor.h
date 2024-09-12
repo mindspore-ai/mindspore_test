@@ -48,11 +48,12 @@ class SuperKernelActor : public DebugAwareActor {
   SuperKernelActor(const std::string &name, const KernelGraphPtr &graph, const DeviceContext *device_context,
                    const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
                    KernelTransformType type = KernelTransformType::kSuperKernelActor)
-      : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr), graph_(graph) {
+      : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr),
+        graph_(graph),
+        enable_kbk_sub_graph_execute_(EnableKbkSubGraphExecute()),
+        enable_trace_memory_(EnableTraceMemory()) {
     (void)device_contexts_.emplace_back(device_context);
     input_device_tensors_.resize(graph->input_nodes().size());
-    enable_kbk_sub_graph_execute_ = EnableKbkSubGraphExecute();
-    enable_trace_memory_ = EnableTraceMemory();
     kernel_async_infer_aid_ = KernelAsyncInferActor::GetInstance()->GetAID();
     kernel_async_resize_aid_ = KernelAsyncResizeActor::GetInstance()->GetAID();
     kernel_async_launch_aid_ = KernelAsyncLaunchActor::GetInstance()->GetAID();
