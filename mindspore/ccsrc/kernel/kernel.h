@@ -80,12 +80,8 @@ class PointerRefCount {
   explicit PointerRefCount(void *ptr) : ptr_(ptr) {}
   PointerRefCount(void *ptr, const Deleter &deleter) : ptr_(ptr), deleter_(deleter) {}
 
-  PointerRefCount(const PointerRefCount &other)
-      : ptr_(other.ptr_),
-        original_ref_count_(other.original_ref_count_),
-        ref_count_(other.ref_count_.load()),
-        dynamic_ref_count_(other.dynamic_ref_count_.load()),
-        deleter_(other.deleter_) {}
+  PointerRefCount(const PointerRefCount &) = delete;
+  PointerRefCount &operator=(const PointerRefCount &) = delete;
 
   ~PointerRefCount() {
     try {
@@ -270,6 +266,7 @@ struct KernelHostInfo {
   KernelHostInfo() = default;
 
   KernelHostInfo(const KernelHostInfo &other);
+  KernelHostInfo &operator=(const KernelHostInfo &other) = delete;
 
   // The shape vector transformed according `shape_vector_` and `format_` is generally used on the operator side.
   // Operators on different platforms may require different format and shape information.
@@ -336,6 +333,8 @@ struct AddressCommon {
     shape_vector_ = other.shape_vector_;
     managed_by_somas_ = other.managed_by_somas_;
   }
+  AddressCommon &operator=(const AddressCommon &) = delete;
+
   PointerRefCountPtr pointer_ref_count_;
   TensorStorageInfoPtr tensor_storage_info_{nullptr};
   uint32_t stream_id_{0};
@@ -403,6 +402,7 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
                const ValuePtr &value, const ShapeVector &host_shape, const UserDataPtr &user_data = nullptr);
 
   KernelTensor(const KernelTensor &other);
+  KernelTensor &operator=(const KernelTensor &) = delete;
 
   MS_DECLARE_PARENT(KernelTensor, AbstractBase);
 
