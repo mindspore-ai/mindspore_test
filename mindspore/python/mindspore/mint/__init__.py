@@ -336,6 +336,8 @@ from mindspore.ops.auto_generate import trace_ext as trace
 # 304
 from mindspore.ops.function.array_func import tril_ext as tril
 
+# 538
+from mindspore.ops.function.math_func import histc_ext as histc
 
 def add(input, other, *, alpha=1):
     r"""
@@ -1441,6 +1443,9 @@ __all__ = [
     'tril',
 
     # 305
+
+    # 538
+    'histc',
 
 ]
 __all__.extend(functional.__all__)
