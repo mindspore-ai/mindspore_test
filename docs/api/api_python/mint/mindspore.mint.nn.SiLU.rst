@@ -22,6 +22,9 @@ mindspore.nn.SiLU
     .. image:: ../images/SiLU.png
         :align: center
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     输入：
         - **input** (Tensor) - `input` 即为上述公式中的 :math:`x`。数据类型为float16或float32的输入。任意维度的Tensor。
 

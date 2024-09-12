@@ -42,6 +42,9 @@ class SiLU(Cell):
     .. image:: ../images/SiLU.png
         :align: center
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Inputs:
         - **input** (Tensor) - `input` is :math:`x` in the preceding formula.
           Input with the data type float16 or float32. Tensor of any dimension.

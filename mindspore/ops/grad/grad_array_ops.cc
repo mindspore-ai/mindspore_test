@@ -2043,6 +2043,51 @@ REG_BPROP_BUILDER("SelectView").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   return {params_grad, ib->OutZeros(ori_indices), ib->OutZeros(axis)};
 });
 
+DEF_PURE_SHAPE_CALC(g_select_ext)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shape = inputs.at(0);
+    auto axis = inputs.at(1);
+    auto index = inputs.at(2);
+
+    MS_EXCEPTION_IF_CHECK_FAIL(axis.size() == 1, "axis should be a scalar.");
+    auto axis_value = axis[0];
+    MS_EXCEPTION_IF_CHECK_FAIL(index.size() == 1, "begin should be a scalar.");
+    auto index_value = index[0];
+
+    axis_value = axis_value < 0 ? axis_value + x_shape.size() : axis_value;
+    index_value = index_value < 0 ? index_value + x_shape[axis_value] : index_value;
+    auto begin_shape = x_shape;
+    begin_shape[axis_value] = index_value;
+    auto end_shape = x_shape;
+    end_shape[axis_value] = end_shape[axis_value] - (index_value + 1);
+
+    return {begin_shape, end_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    auto x = inputs.at(0);
+    auto axis = inputs.at(1);
+    if (!unknown_inputs.empty() || IsDynamicRank(x) || IsDynamicRank(axis)) {
+      return {-1, -1};
+    }
+    auto size = SizeToLong(inputs.at(0).size());
+    return {size, size};
+  });
+
+REG_BPROP_BUILDER("SelectExt").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto res = ib->ShapeCalc(g_select_ext, {x, axis, index}, {1, 2, 3});
+  auto dout_expand = ib->Emit("ExpandDims", {dout, axis});
+  auto dx = ib->Emit(kConcatOpName,
+                     {ib->MakeTuple({ib->Emit("Zeros", {res[0], ib->Value<int64_t>(ib->GetDtypeId(dout))}), dout_expand,
+                                     ib->Emit("Zeros", {res[1], ib->Value<int64_t>(ib->GetDtypeId(dout))})}),
+                      axis});
+
+  return {dx, ib->OutZeros(axis), ib->OutZeros(index)};
+});
+
 REG_BPROP_BUILDER("MatrixBandPart").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto lower = ib->GetInput(kIndex1);
   auto upper = ib->GetInput(kIndex2);
