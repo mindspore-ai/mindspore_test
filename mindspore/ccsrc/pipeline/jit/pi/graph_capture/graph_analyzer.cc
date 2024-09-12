@@ -724,10 +724,10 @@ void MindGraphAnalyzer::Analyze() {
     // Graph build failed, add all nodes to ordered_escaped_locals.
     PyCodeWrapper co(graph_->GetCodeObj());
     if (origin_stop_bci == -1) {
-      MS_LOG(ERROR) << "no graph in " << py::str(reinterpret_cast<PyObject *>(co.ptr()));
+      MS_LOG(INFO) << "no graph in " << py::str(reinterpret_cast<PyObject *>(co.ptr()));
     } else {
-      MS_LOG(ERROR) << "no graph captured, trace break at " << co.FileName() << ", line "
-                    << PyCode_Addr2Line(co.ptr(), origin_stop_bci);
+      MS_LOG(INFO) << "no graph captured, trace break at " << co.FileName() << ", line "
+                   << PyCode_Addr2Line(co.ptr(), origin_stop_bci);
     }
     graph_->StopTraceAt(origin_stop_bci, StopTraceReason::kStopTraceDataDependsOnGraphOut);
     need_interpret_ = true;

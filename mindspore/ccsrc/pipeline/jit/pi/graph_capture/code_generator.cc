@@ -578,6 +578,15 @@ void CodeGenerator::LoadValue(ValueNode *node) {
     LoadConst(cnst);
     return;
   }
+  if (missing_value_to_undefine_) {
+    std::stringstream name;
+    auto abs = node->abstract_wrapper() == nullptr ? nullptr : node->abstract_wrapper()->abstract();
+    name << "<missing value " << (node->GetOpcode() <= 0 ? "" : Opcode(node->GetOpcode()).name())
+         << ": mindspore::AbstractBase * at " << abs.get();
+    NewInstr(LOAD_NAME);
+    code_.co_code.back()->set_name(name.str());
+    return;
+  }
   MS_LOG(INTERNAL_EXCEPTION) << "missing value, [" << node->ToString() << "]";
 }
 
@@ -710,6 +719,7 @@ std::vector<std::string> CodeBreakGenerator::GetClosureNames() const {
 py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Instr>> &&load_oper,  // prepare parameters
                                                 int argc, unsigned code_flag) const {
   CodeGenerator code_gen(&captured_);
+  code_gen.set_missing_value_to_undefine(true);
   code_gen.SetGlobals(GetGlobals());
   code_gen.Init();
   code_gen.AddInstrs(std::move(load_oper));
@@ -1000,7 +1010,7 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
 
   CodeGenerator code_gen(&interpret_);
 
-  if (no_graph_) {
+  if (no_graph_ && !side_effect_handler_->IsEmpty()) {
     interpret_.outputs.resize(interpret_.outputs.size() - side_effect_handler_->GetRequiredNodes().size());
     int stack_count = interpret_.outputs.size() - alive_locals_.size();
     int output_index = 0;
@@ -1145,7 +1155,7 @@ void CodeBreakGenerator::Init(const Graph *graph, const GraphAnalyzer &analyzer)
   graph_inputs_info_.kwargs = info.graph_inputs_.kwargs;
   graph_inputs_info_.globals = info.graph_inputs_.globals;
   side_effect_handler_ = graph->GetSideEffect();
-  no_graph_ = captured_.operations.empty() && !graph->GetSideEffect()->IsEmpty();
+  no_graph_ = captured_.operations.empty();
 
   size_t alive_count;
   if (break_bci_ != -1) {

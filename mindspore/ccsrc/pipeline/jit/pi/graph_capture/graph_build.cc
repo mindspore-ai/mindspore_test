@@ -71,6 +71,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {DUP_TOP_TWO, &GraphBuilder::DoStackOp},
   {NOP, &GraphBuilder::DoNop},
   {EXTENDED_ARG, &GraphBuilder::DoNop},
+  {GEN_START, &GraphBuilder::DoNop},
   {RETURN_VALUE, &GraphBuilder::DoReturn},
   {UNARY_POSITIVE, &GraphBuilder::DoUnary},
   {UNARY_NEGATIVE, &GraphBuilder::DoUnary},
@@ -4018,11 +4019,15 @@ void MindGraphBuilder::FGAddTopInputs() {
     auto cur_object = cur->GetVobj()->GetPyObject();
     if (fg_builder_->IsParameterSequence(cur_object)) {
       MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
+      graph_->GuardValueNode(cur, GuardLevel::GDeduce);
       cur->SetOpcode(LOAD_CONST);
       return;
     }
     auto ret = fg_builder_->AddTopGraphArgInput(cur_object);
     if (ret == nullptr) {
+      MS_LOG(INFO) << "erased arguments";
+      graph_->GuardValueNode(cur, GuardLevel::GDeduce);
+      cur->SetOpcode(LOAD_CONST);
       return;
     }
     cur->set_abstract_wrapper(ret);
@@ -4750,10 +4755,11 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
     if (abstract_wrapper != nullptr) {
       graph_attr_node = attr_node;
       graph_attr_node->set_abstract_wrapper(abstract_wrapper);
+      root()->GetGraph()->PrepareParameter(attr_node);
+      return graph_attr_node;
     } else {
       MS_LOG(ERROR) << "Failed to add attribute " << cur_name << " as input failed.";
     }
-    return graph_attr_node;
   }
 
   // If the attr_obj can convert to anf node directly, return the origin attr node.
