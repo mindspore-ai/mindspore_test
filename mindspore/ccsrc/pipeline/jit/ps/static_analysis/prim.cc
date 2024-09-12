@@ -49,6 +49,8 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "ops_utils/op_utils.h"
+#include "ops/infer_info/abstract_infer_info_adapter.h"
+#include "ops/infer_info/infer_info_utils.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
@@ -1293,17 +1295,20 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
 
 AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrList &args) {
   if (op_def_ != nullptr) {
-    (void)op_def_->func_impl_.CheckValidation(prim_func_, args);
-    if (frontend_func_impl_ != nullptr) {
-      auto infer_result = frontend_func_impl_->InferAbstract(prim_func_, args);
-      if (infer_result != nullptr) {
-        return infer_result;
+    if (op_def_->func_impl_.GeneralInferRegistered()) {
+      return ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
+    } else {
+      (void)op_def_->func_impl_.CheckValidation(prim_func_, args);
+      if (frontend_func_impl_ != nullptr) {
+        auto infer_result = frontend_func_impl_->InferAbstract(prim_func_, args);
+        if (infer_result != nullptr) {
+          return infer_result;
+        }
       }
+      auto type = op_def_->func_impl_.InferType(prim_func_, args);
+      auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
+      return MakeAbstract(shape, type);
     }
-
-    auto type = op_def_->func_impl_.InferType(prim_func_, args);
-    auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
-    return MakeAbstract(shape, type);
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Find infer function failed, primitive: " << prim_func_->ToString();
 }

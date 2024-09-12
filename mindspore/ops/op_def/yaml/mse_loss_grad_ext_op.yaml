@@ -1,0 +1,23 @@
+#operator mse_loss_grad_ext
+mse_loss_grad_ext:
+    args:
+        dout:
+            dtype: tensor
+        x:
+            dtype: tensor
+        target:
+            dtype: tensor
+        reduction:
+            dtype: int
+            arg_handler: str_to_enum
+            default: "'mean'"
+    returns:
+        dx:
+            dtype: tensor
+    class:
+        name: MSELossGradExt
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: MSELossGradExtAscend

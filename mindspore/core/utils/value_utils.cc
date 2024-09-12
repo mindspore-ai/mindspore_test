@@ -155,6 +155,7 @@ std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value) {
   }
 
   std::vector<T> array_data;
+  std::set<size_t> unknown_value_indexes;
   if (value->isa<KernelTensorValue>()) {
     auto kernel_tensor_value = value->cast<KernelTensorValuePtr>();
     MS_EXCEPTION_IF_NULL(kernel_tensor_value);
@@ -182,7 +183,9 @@ std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value) {
       const auto &element = element_values[i];
       MS_EXCEPTION_IF_NULL(element);
       if (element->isa<ValueAny>() || element->isa<None>()) {
-        return std::nullopt;
+        array_data.push_back(static_cast<T>(0));
+        (void)unknown_value_indexes.insert(i);
+        continue;
       }
       if constexpr (std::is_same_v<T, float16>) {
         MS_LOG(EXCEPTION) << "For ValueSequence, float16 type is not support!";
@@ -200,7 +203,7 @@ std::optional<ArrayValue<T>> GetArrayValue(const ValuePtr &value) {
   } else {
     MS_LOG(EXCEPTION) << "Failed to get array value, expect sequence or tensor type, but got: " << value->type_name();
   }
-  return std::optional<ArrayValue<T>>(std::in_place, std::move(array_data), std::set<size_t>());
+  return std::optional<ArrayValue<T>>(std::in_place, std::move(array_data), std::move(unknown_value_indexes));
 }
 
 template <typename T>

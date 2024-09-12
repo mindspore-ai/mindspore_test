@@ -9,12 +9,16 @@ batch_norm_grad_ext:
       dtype: tensor
     running_mean:
       dtype: tensor
+      default: None
     running_var:
       dtype: tensor
+      default: None
     saved_mean:
       dtype: tensor
+      default: None
     saved_rstd:
       dtype: tensor
+      default: None
     training:
       dtype: bool
       default: False

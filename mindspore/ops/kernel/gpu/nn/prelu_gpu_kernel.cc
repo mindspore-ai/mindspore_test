@@ -39,6 +39,19 @@ int PReLUGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   }
   auto input_shape = LongVecToSizeVec(inputs[kIndex0]->GetShapeVector());
   auto weight_shape = LongVecToSizeVec(inputs[kIndex1]->GetShapeVector());
+
+  auto weight_rank = weight_shape.size();
+  if (weight_rank != 1) {
+    MS_EXCEPTION(ValueError) << "The dimension of 'weight' must be 1";
+  }
+  auto x_rank = input_shape.size();
+  auto channel_num = x_rank <= 1 ? 1 : input_shape[1];
+  auto weight_len = weight_shape[0];
+  if (weight_len != 1 && weight_len != channel_num) {
+    MS_EXCEPTION(ValueError) << "For 'Prelu', the length of 'weight' must be equal to number of channels: "
+                             << channel_num << ", but got " << weight_shape << ".";
+  }
+
   input_length_ = std::accumulate(input_shape.begin(), input_shape.end(), size_t(1), std::multiplies<>());
   per_channel_length_ =
     input_shape.size() <= 1 ? input_length_ : input_length_ / (input_shape[kIndex0] * input_shape[kIndex1]);

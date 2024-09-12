@@ -5,12 +5,15 @@ scatter:
             dtype: tensor
         dim:
             dtype: int
+            type_cast: tensor
         index:
             dtype: tensor
         src:
             dtype: tensor
         reduce:
             dtype: int
+            default: "'none'"
+            arg_handler: str_to_enum
     returns:
         out:
             dtype: tensor

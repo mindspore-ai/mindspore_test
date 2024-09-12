@@ -20,7 +20,7 @@
 #include <map>
 #include "abstract/dshape.h"
 #include "ops/op_def.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
@@ -40,6 +40,7 @@ BaseShapePtr RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive,
   MS_EXCEPTION_IF_CHECK_FAIL(!IsShapeNone(x_shape) && !IsShapeNone(gamma_shape),
                              "For RmsNorm, [gamma] or [input] is none tensor, which is not allowed.");
   auto rstd_shape = x_shape;
+  auto out_shape = x_shape;
   if (IsDynamicRank(gamma_shape)) {
     if (!IsDynamicRank(x_shape)) {
       rstd_shape = ShapeVector(x_rank, abstract::TensorShape::kShapeDimAny);
@@ -52,16 +53,21 @@ BaseShapePtr RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive,
                                "But got: " +
                                  std::to_string(gamma_rank) + " vs " + std::to_string(x_rank));
     for (auto dim = x_rank - gamma_rank; dim < x_rank; dim++) {
+      int64_t x_dim = x_shape[dim];
+      int64_t gamma_dim = gamma_shape[dim - x_rank + gamma_rank];
       MS_EXCEPTION_IF_CHECK_FAIL(
-        x_shape[dim] == gamma_shape[dim - x_rank + gamma_rank] || x_shape[dim] == abstract::TensorShape::kShapeDimAny ||
-          gamma_shape[dim - x_rank + gamma_rank] == abstract::TensorShape::kShapeDimAny,
+        x_dim == gamma_dim || x_dim == abstract::TensorShape::kShapeDimAny ||
+          gamma_dim == abstract::TensorShape::kShapeDimAny,
         "For RmsNorm, Each dimension of [gamma] must be aligned to the corresponding dimension of [input]. "
         "But got: " +
-          std::to_string(x_shape[dim]) + " vs " + std::to_string(gamma_shape[dim - x_rank + gamma_rank]));
+          std::to_string(gamma_dim) + " vs " + std::to_string(x_dim));
       rstd_shape[dim] = 1;
+      if (x_dim == abstract::TensorShape::kShapeDimAny && gamma_dim != abstract::TensorShape::kShapeDimAny) {
+        out_shape[dim] = gamma_dim;
+      }
     }
   }
-  auto y_output_ptr = std::make_shared<abstract::Shape>(x_shape);
+  auto y_output_ptr = std::make_shared<abstract::Shape>(out_shape);
   auto rstd_output_ptr = std::make_shared<abstract::Shape>(rstd_shape);
   return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{y_output_ptr, rstd_output_ptr});
 }

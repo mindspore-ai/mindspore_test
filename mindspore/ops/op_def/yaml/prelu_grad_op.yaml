@@ -16,3 +16,5 @@ prelu_grad:
         name: PReLUGrad
     function:
         disable: True
+    dispatch:
+        enable: True

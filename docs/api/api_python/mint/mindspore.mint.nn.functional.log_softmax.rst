@@ -15,7 +15,8 @@ mindspore.mint.nn.functional.log_softmax
         - **dim** (int, 可选) - 指定进行Log softmax运算的轴。默认值： ``None`` 。
 
     关键字参数：
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 输出数据类型。如果不为None，则输入会转化为 `dtype`。这有利于防止数值溢出。如果为None，则输出和输入的数据类型一致。默认值： ``None`` 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 输出数据类型。如果不为None，则输入会转化为 `dtype`。这有利于防止数值溢出。
+          如果为None，则输出和输入的数据类型一致。默认值： ``None`` 。支持的数据类型是{float16, float32, double, bfloat16}。
 
     返回：
         Tensor，和输入Tensor的shape相同。

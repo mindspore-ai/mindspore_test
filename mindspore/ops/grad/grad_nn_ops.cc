@@ -1327,6 +1327,27 @@ REG_BPROP_BUILDER("L1LossExt").SetUnusedInputs({i3}).SetBody((BODYFUNC(ib) {
   ret.emplace_back(ib->OutZeros(reduction));
   return ret;
 }));
+REG_BPROP_BUILDER("MSELossExt").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto target = ib->GetInput(kIndex1);
+  auto reduction = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  NodePtr dx = nullptr;
+  NodePtr dtarget = nullptr;
+  if (input->need_compute_grad_out()) {
+    dx = ib->Emit("MSELossGradExt", {dout, input, target, reduction});
+    if (target->need_compute_grad_out()) {
+      dtarget = ib->Neg(dx);
+    }
+  } else {
+    if (target->need_compute_grad_out()) {
+      dtarget = ib->Emit("MSELossGradExt", {dout, target, input, reduction});
+    }
+  }
+  std::vector<NodePtr> ret = BinopGradCommon(ib, input, target, dx, dtarget);
+  ret.emplace_back(ib->OutZeros(reduction));
+  return ret;
+});
 
 REG_BPROP_BUILDER("L2Loss").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);

@@ -53,6 +53,8 @@ T ShapeSize(const std::vector<T> &shape) {
   return std::accumulate(shape.begin(), shape.end(), static_cast<T>(1), std::multiplies<T>());
 }
 
+MS_CORE_API AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId &type);
+MS_CORE_API AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId> &types);
 MS_CORE_API AbstractBasePtr MakeAbstract(const BaseShapePtr &base_shape, const TypePtr &type);
 MS_CORE_API AbstractBasePtr MakeMonadAbstract(const MonadTypePtr &type);
 MS_CORE_API AbstractBasePtr MakeAbstractTensor(const ShapePtr &shape, const TypePtr &type);

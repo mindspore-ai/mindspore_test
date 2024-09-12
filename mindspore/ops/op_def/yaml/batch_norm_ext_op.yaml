@@ -9,8 +9,10 @@ batch_norm_ext:
             dtype: tensor
         running_mean:
             dtype: tensor
+            default: None
         runnning_var:
             dtype: tensor
+            default: None
         training:
             dtype: bool
             default: False

@@ -1,0 +1,43 @@
+mse_loss_ext:
+  description: |
+    Calculates the mean squared error between the predicted value and the label value.
+
+    For detailed information, please refer to :class:`mindspore.nn.MSELoss`.
+
+    .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor of any dimension. The data type needs to be consistent with the `target`.
+        It should also be broadcastable with the `target`.
+        target (Tensor): The input label. Tensor of any dimension. The data type needs to be consistent with the `input`.
+        It should also be broadcastable with the `input`.
+        reduction (str, optional): Apply specific reduction method to the output: ``'mean'`` , ``'none'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Returns:
+        Tensor, loss of type float. If `reduction` is ``'mean'`` or ``'sum'``, the shape of output is tensor scalar.
+        If reduction is ``'none'``, the shape of output is the broadcasted shape of **input** and **target** .
+
+    Raises:
+        ValueError: If `reduction` is not one of ``'mean'`` , ``'sum'`` or ``'none'``.
+        ValueError: If `input` and `target` are not broadcastable.
+        TypeError: If `input` and `target` are in different data type.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> logits = Tensor(np.array([1, 2, 3]), mindspore.float32)
+        >>> labels = Tensor(np.array([[1, 1, 1], [1, 2, 2]]), mindspore.float32)
+        >>> output = ops.mse_loss_ext(logits, labels, reduction='none')
+        >>> print(output)
+        [[0. 1. 4.]
+         [0. 0. 1.]]

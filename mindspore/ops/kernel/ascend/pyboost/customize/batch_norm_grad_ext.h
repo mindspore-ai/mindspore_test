@@ -29,8 +29,10 @@ namespace kernel {
 namespace pyboost {
 void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dout_tensor,
                                      const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
-                                     const BaseTensorPtr &running_mean_tensor, const BaseTensorPtr &runnning_var_tensor,
-                                     const BaseTensorPtr &saved_mean_tensor, const BaseTensorPtr &saved_rstd_tensor,
+                                     const std::optional<BaseTensorPtr> &running_mean_tensor,
+                                     const std::optional<BaseTensorPtr> &runnning_var_tensor,
+                                     const std::optional<BaseTensorPtr> &saved_mean_tensor,
+                                     const std::optional<BaseTensorPtr> &saved_rstd_tensor,
                                      const BoolImmPtr &training, const FP32ImmPtr &eps);
 }  // namespace pyboost
 }  // namespace kernel

@@ -21,6 +21,7 @@
 #include <memory>
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
+#include "ops/infer_info/infer_info.h"
 
 namespace mindspore {
 // The operator input shape and value check status.
@@ -50,6 +51,16 @@ class MIND_API OpFuncImpl {
     MS_LOG(EXCEPTION) << "Not implement exception";
   }
 
+  /// \brief Infer the output shape for target operator.
+  ///
+  /// \param[in] primitive Operator's primitive.
+  /// \param[in] input_infos Operator's input InferInfo list.
+  ///
+  /// \return The inferred output shape array.
+  virtual ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+    MS_LOG(EXCEPTION) << "Not implement exception";
+  }
+
   /// \brief Infer the output type for target operator.
   ///
   /// \param[in] primitive Operator's primitive.
@@ -70,6 +81,16 @@ class MIND_API OpFuncImpl {
     MS_LOG(EXCEPTION) << "Not implement exception";
   }
 
+  /// \brief Infer the output shape for target operator.
+  ///
+  /// \param[in] primitive Operator's primitive.
+  /// \param[in] input_infos Operator's input InferInfo list.
+  ///
+  /// \return The inferred output type id.
+  virtual std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+    MS_LOG(EXCEPTION) << "Not implement exception";
+  }
+
   /// \brief The operator input shape and value check, the function only carries the check of the
   /// value of InferShape unrelated parameters.
   ///
@@ -81,10 +102,26 @@ class MIND_API OpFuncImpl {
     return OP_CHECK_SUCCESS;
   }
 
+  /// \brief The operator input shape and value check, the function only carries the check of the
+  /// value of InferShape unrelated parameters.
+  ///
+  /// \param[in] primitive Operator's primitive.
+  /// \param[in] input_args Operator's input arguments pointer list.
+  ///
+  /// \return OP_CHECK_SUCCESS if success, else OP_CHECK_RETRY.
+  virtual int32_t CheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+    return OP_CHECK_SUCCESS;
+  }
+
   /// \brief Get the indices of infer-depend value.
   ///
   /// \return Set with indices of infer-depend value.
   virtual std::set<int64_t> GetValueDependArgIndices() const { return {}; }
+
+  /// \brief If the general infer is implemented
+  ///
+  /// \return Boolean value indicating if the general infer is implemented
+  virtual bool GeneralInferRegistered() const { return false; }
 };
 
 using OpFuncImplPtr = std::shared_ptr<OpFuncImpl>;

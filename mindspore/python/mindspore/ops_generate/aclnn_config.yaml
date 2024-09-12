@@ -93,7 +93,8 @@ Col2ImGrad: 'aclnnIm2col'
 LogSoftmaxExt: 'aclnnLogSoftmax'
 LogSoftmaxGrad: 'aclnnLogSoftmaxBackward'
 # 9
-
+PReLU: 'aclnnPrelu'
+PReLUGrad: 'aclnnPreluBackward'
 # 10
 
 # 11
@@ -318,3 +319,4 @@ MishExt: 'aclnnMish'
 MishGradExt: 'aclnnMishBackward'
 
 # 301
+TrilExt: 'aclnnTril'

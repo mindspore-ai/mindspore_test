@@ -1,0 +1,23 @@
+# operator: ScatterValue
+scatter_value:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: int
+            type_cast: tensor
+        index:
+            dtype: tensor
+        src:
+            dtype: number
+        reduce:
+            dtype: int
+            default: "'none'"
+            arg_handler: str_to_enum
+    returns:
+        out:
+            dtype: tensor
+    dispatch:
+        enable: True
+    function:
+        disable: True

@@ -10,31 +10,30 @@ prelu:
     
         where :math:`x_i` is an element of a channel of the input, `w` is the weight of the channel.
     
-        Note:
-            Scalar or 1-D Tensor is not supported on Ascend.
-        
         PReLU Activation Function Graph:
 
-        .. image:: ../images/PReLU.png
+        .. image:: ../images/PReLU2.png
             :align: center
+
+        .. note::
+            Channel dim is the 2nd dim of input. When input has dims < 2, then there is
+            no channel dim and the number of channels = 1.
+
+        .. warning::
+                This is an experimental API that is subject to change or deletion.
         
         Args:
-            x (Tensor): The input Tensor of the activation function. The data type is float16 or float32.
-                The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-            weight (Tensor):  Weight Tensor. The data type is float16 or float32.
-                The weight can only be a Tensor, and the length is the same as the number of channels C of the `input_x`.
-                On GPU devices, when the input is a scalar, the shape is :math:`(1,)` .
+            input (Tensor): The input Tensor of the activation function.
+            weight (Tensor):  Weight Tensor. The size of the weight should be 1 or the number of channels at Tensor `input`.
     
         Returns:
-            Tensor, with the same shape and dtype as `x`.
-            For detailed information, please refer to :class:`mindspore.nn.PReLU`.
+            Tensor, with the same shape and dtype as `input`.
+            For detailed information, please refer to :class:`mindspore.mint.nn.PReLU`.
     
         Raises:
-            TypeError: If dtype of `x` or `weight` is neither float16 nor float32.
-            TypeError: If the `x` or the `weight` is not a Tensor.
-            ValueError: If the `x` is a 0-D or 1-D Tensor on Ascend.
-            ValueError: If the `weight` is not a 1-D Tensor.
-    
+            TypeError: If the `input` or the `weight` is not a Tensor.
+            ValueError: If the `weight` is not a 0-D or 1-D Tensor.
+
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     

@@ -21,6 +21,7 @@
 #include "include/common/profiler.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "ops/ops_frontend_func_impl.h"
+#include "ops/infer_info/infer_info_utils.h"
 
 namespace mindspore {
 namespace pynative {
@@ -112,6 +113,12 @@ bool InferByOpDef(const FrontendOpRunInfoPtr &op_run_info) {
 
   auto op_def = mindspore::ops::GetOpDef(prim->name());
   if (op_def) {
+    if (op_def->func_impl_.GeneralInferRegistered()) {
+      op_run_info->base_op_run_info.abstract = ops::DoGeneralInfer(prim, op_run_info->op_grad_info->input_abs);
+      MS_LOG(DEBUG) << "Pynative Infer by DoGeneralInfer, got abstract: "
+                    << op_run_info->base_op_run_info.abstract->ToString();
+      return true;
+    }
     (void)op_def->func_impl_.CheckValidation(prim, op_run_info->op_grad_info->input_abs);
     auto shape = op_def->func_impl_.InferShape(prim, op_run_info->op_grad_info->input_abs);
     auto type = op_def->func_impl_.InferType(prim, op_run_info->op_grad_info->input_abs);

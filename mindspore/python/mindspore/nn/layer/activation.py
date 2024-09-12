@@ -47,6 +47,7 @@ __all__ = ['Softmin',
            'Sigmoid',
            'Softsign',
            'PReLU',
+           'PReLUExt',
            'get_activation',
            'LeakyReLU',
            'HSigmoid',
@@ -1210,6 +1211,75 @@ class PReLU(Cell):
         return self.prelu(x, F.cast(self.w, x.dtype))
 
 
+class PReLUExt(Cell):
+    r"""
+    Applies PReLU activation function element-wise.
+
+    PReLU is defined as:
+
+    .. math::
+
+        PReLU(x_i)= \max(0, x_i) + w * \min(0, x_i),
+
+    where :math:`x_i` is an element of an channel of the input.
+
+    Here :math:`w` is a learnable parameter with a default initial value 0.25.
+    Parameter :math:`w` has dimensionality of the argument channel. If called without argument
+    channel, a single parameter :math:`w` will be shared across all channels.
+
+    PReLU Activation Function Graph:
+
+    .. image:: ../images/PReLU.png
+        :align: center
+
+    .. note::
+        Channel dim is the 2nd dim of input. When input has dims < 2, then there is
+        no channel dim and the number of channels = 1.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        num_parameters (int): number of `w` to learn. Although it takes an int as input,
+            there is only two legitimate values: 1, or the number of channels at Tensor `input`. Default: ``1`` .
+        init (float): the initial value of `w`. Default: ``0.25`` .
+        dtype (mindspore.dtype, optional): the type of `w`. Default: ``None`` . Supported data type
+        is {float16, float32, bfloat16}.
+
+    Inputs:
+        - **input** (Tensor) - The input of PReLU.
+
+    Outputs:
+        Tensor, with the same dtype and shape as the `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, nn
+        >>> import numpy as np
+        >>> x = Tensor(np.array([[[[0.1, 0.6], [0.9, 0.9]]]]), mindspore.float32)
+        >>> prelu = nn.PReLUExt()
+        >>> output = prelu(x)
+        >>> print(output)
+        [[[[0.1 0.6]
+           [0.9 0.9]]]]
+
+    """
+
+    def __init__(self, num_parameters=1, init=0.25, dtype=None):
+        """Initialize PReLUExt."""
+        super(PReLUExt, self).__init__()
+        tmp = np.empty((num_parameters,), dtype=np.float32)
+        tmp.fill(init)
+        w = Tensor(tmp, dtype=dtype)
+        self.weight = Parameter(w, name='weight')
+
+    def construct(self, input):
+        return ops.prelu(input, self.weight)
+
+
 class HSwish(Cell):
     r"""
     Applies Hard Swish activation function element-wise.
@@ -1678,6 +1748,7 @@ _activation = {
     'sigmoid': Sigmoid,
     'softsign': Softsign,
     'prelu': PReLU,
+    'preluExt': PReLUExt,
     'leakyrelu': LeakyReLU,
     'hswish': HSwish,
     'hsigmoid': HSigmoid,

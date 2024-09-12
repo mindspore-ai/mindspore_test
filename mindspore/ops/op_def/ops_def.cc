@@ -15,8 +15,8 @@
  */
 
 #include "op_def/ops_def.h"
-#include "mindspore/core/include/ir/signature.h"
-#include "mindspore/ops/infer/ops_func_impl/ge_graph_op.h"
+#include "ir/signature.h"
+#include "infer/ops_func_impl/ge_graph_op.h"
 
 namespace mindspore::ops {
 GEGraphOpFuncImpl gGEGraphOpFuncImpl;

@@ -85,13 +85,8 @@ inline std::pair<ShapeVector, int64_t> CheckShapesValid(const ShapeArray &shapes
   return std::make_pair(output_shape, diff_idx);
 }
 
-inline ShapeVector CalOutputShapeInDynamicLenCase(const BaseShapePtr &base_shape, std::optional<int64_t> axis_res,
+inline ShapeVector CalOutputShapeInDynamicLenCase(ShapeVector key_shape, std::optional<int64_t> axis_res,
                                                   const PrimitivePtr &primitive) {
-  auto dynamic_sequence = base_shape->cast<abstract::DynamicSequenceShapePtr>();
-  MS_EXCEPTION_IF_NULL(dynamic_sequence);
-  auto element_base_shape = dynamic_sequence->element_shape();
-  MS_EXCEPTION_IF_NULL(element_base_shape);
-  auto key_shape = element_base_shape->GetShapeVector();
   if (MS_UNLIKELY(IsDynamicRank(key_shape))) {
     key_shape = ShapeVector{abstract::TensorShape::kShapeRankAny};
   } else if (MS_UNLIKELY(!axis_res.has_value())) {
@@ -148,64 +143,53 @@ inline ShapeVector CheckAndCalOutputShapeInTupleCase(const ShapeArray &shapes, s
   return output_shape;
 }
 }  // namespace
-BaseShapePtr ConcatFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                        const std::vector<AbstractBasePtr> &input_args) const {
-  auto axis_index = input_args.size() - 1;
-  auto axis_value = input_args[axis_index]->GetValue();
-  auto axis_res = GetScalarValue<int64_t>(axis_value);
 
+ShapeArray ConcatFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto axis = input_infos.back()->GetScalarValue<int64_t>();
+  auto &tensors = input_infos[0];
   ShapeVector output_shape;
-  if (MS_LIKELY(!CheckAndConvertUtils::IsTensor(input_args[kInputIndex0]))) {
-    auto x_base_shape = input_args[kInputIndex0]->GetShape();
-    if (MS_UNLIKELY(x_base_shape->isa<abstract::DynamicSequenceShape>())) {
-      output_shape = CalOutputShapeInDynamicLenCase(x_base_shape, axis_res, primitive);
+  if (MS_LIKELY(tensors->IsSequence())) {
+    if (MS_UNLIKELY(tensors->IsDynamicSequence())) {
+      output_shape = CalOutputShapeInDynamicLenCase(tensors->GetDynamicSequenceElement()->GetShape(), axis, primitive);
     } else {
-      auto tuple_shape = x_base_shape->cast<abstract::TupleShapePtr>();
-      MS_EXCEPTION_IF_NULL(tuple_shape);
+      auto elements = tensors->GetSequenceElements();
       ShapeArray shapes;
-      shapes.reserve(tuple_shape->size());
-      for (size_t i = 0; i < tuple_shape->size(); ++i) {
-        shapes.push_back((*tuple_shape)[i]->GetShapeVector());
-      }
-      output_shape = CheckAndCalOutputShapeInTupleCase(shapes, axis_res, primitive);
+      std::transform(elements.begin(), elements.end(), std::back_inserter(shapes),
+                     [](const InferInfoPtr &info) { return info->GetShape(); });
+      output_shape = CheckAndCalOutputShapeInTupleCase(shapes, axis, primitive);
     }
   } else {
     ShapeArray shapes;
-    for (size_t i = 0; i < axis_index; ++i) {
-      shapes.push_back(input_args[i]->GetShape()->GetShapeVector());
-    }
-    output_shape = CheckAndCalOutputShapeInTupleCase(shapes, axis_res, primitive);
+    std::transform(input_infos.begin(), input_infos.end() - 1, std::back_inserter(shapes),
+                   [](const InferInfoPtr &info) { return info->GetShape(); });
+    output_shape = CheckAndCalOutputShapeInTupleCase(shapes, axis, primitive);
   }
-
-  return std::make_shared<abstract::TensorShape>(output_shape);
+  return {output_shape};
 }
 
-TypePtr ConcatFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  TypePtrList elements;
-  if (!CheckAndConvertUtils::IsTensor(input_args[kInputIndex0])) {
-    auto tuple_type = input_args[kInputIndex0]->GetType()->cast<TuplePtr>();
-    MS_EXCEPTION_IF_NULL(tuple_type);
-    if (MS_UNLIKELY(tuple_type->dynamic_len())) {
-      auto element_type = tuple_type->dynamic_element_type();
-      MS_EXCEPTION_IF_NULL(element_type);
-      (void)CheckAndConvertUtils::CheckTensorTypeValid("dynamic-length element", element_type,
-                                                       common_valid_types_with_complex_and_bool, primitive->name());
-      return element_type->Clone();
+std::vector<TypeId> ConcatFuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  std::vector<TypeId> element_types;
+  auto &input = input_infos[kInputIndex0];
+  if (input->IsSequence()) {
+    if (MS_UNLIKELY(input->IsDynamicSequence())) {
+      auto element_type = input->GetDynamicSequenceElement()->GetType();
+      CheckAndConvertUtils::CheckTypeIdValid("tensors", element_type, common_valid_type_ids_with_complex_and_bool,
+                                             primitive->name());
+      return {element_type};
+    } else {
+      const auto &elements = input->GetSequenceElements();
+      (void)std::transform(elements.begin(), elements.end(), std::back_inserter(element_types),
+                           [](const auto &info) { return info->GetType(); });
     }
-    elements = tuple_type->elements();
   } else {
-    (void)std::transform(input_args.begin(), input_args.end() - 1, std::back_inserter(elements),
-                         [](const auto &ele) { return ele->GetType(); });
+    (void)std::transform(input_infos.begin(), input_infos.end() - 1, std::back_inserter(element_types),
+                         [](const auto &info) { return info->GetType(); });
   }
-  MS_CHECK_VALUE(elements.size() > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("elements size", elements.size(),
-                                                                                  kGreaterThan, 0, primitive));
-  std::map<std::string, TypePtr> types;
-  for (size_t i = 0; i < elements.size(); ++i) {
-    std::string element = "element" + std::to_string(i);
-    (void)types.emplace(element, elements[i]);
-  }
-  (void)CheckAndConvertUtils::CheckTensorTypeSame(types, common_valid_types_with_complex_and_bool, primitive->name());
-  MS_EXCEPTION_IF_NULL(elements[0]);
-  return elements[0]->Clone();
+  MS_CHECK_VALUE(element_types.size() > 0, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                             "elements size", element_types.size(), kGreaterThan, 0, primitive));
+  (void)CheckAndConvertUtils::CheckTypeIdsSame("tensors", element_types, primitive->name());
+  return {element_types[0]};
 }
+
 }  // namespace mindspore::ops

@@ -49,7 +49,10 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          log, log1p, neg, not_equal, pow, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
-                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op)
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc)
+
+
+
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
 from mindspore.nn import layer
@@ -223,7 +226,6 @@ slice_ = P.Slice()
 size_ = P.Size()
 scalar_to_tensor_ = P.ScalarToTensor()
 shape_ = P.Shape()
-sign_ = P.Sign()
 sparse_segment_mean_ = SparseSegmentMean()
 tanh_ = P.Tanh()
 tensor_round_ = P.Round()
@@ -3072,34 +3074,6 @@ def truncate_mod(x, y):
         [ 2  1 -1]
     """
     return truncate_mod_(x, y)
-
-
-def trunc(input):
-    r"""
-    Returns a new tensor with the truncated integer values of the elements of the input tensor.
-
-    Args:
-        input (Tensor): The input tensor.
-
-    Returns:
-        Tensor, the same shape and data type as the input.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([3.4742, 0.5466, -0.8008, -3.9079]),mindspore.float32)
-        >>> output = ops.trunc(x)
-        >>> print(output)
-        [3. 0. 0. -3.]
-    """
-    return trunc_(input)
 
 
 def ldexp(x, other):
@@ -8653,7 +8627,7 @@ def baddbmm(input, batch1, batch2, beta=1, alpha=1):
     return y
 
 
-def baddbmm_ext(input, batch1, batch2, beta=1, alpha=1):
+def baddbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
     r"""
     The result is the sum of the input and a batch matrix-matrix product of matrices in batch1 and batch2.
     The formula is defined as follows:
@@ -8661,38 +8635,37 @@ def baddbmm_ext(input, batch1, batch2, beta=1, alpha=1):
     .. math::
         \text{out}_{i} = \beta \text{input}_{i} + \alpha (\text{batch1}_{i} \mathbin{@} \text{batch2}_{i})
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         input (Tensor): The input Tensor. When batch1 is a :math:`(C, W, T)` Tensor and batch2 is a
             :math:`(C, T, H)` Tensor, input must be broadcastable with :math:`(C, W, H)` Tensor.
         batch1 (Tensor): :math:`batch1` in the above formula. Must be 3-D Tensor, dtype is same as input.
         batch2 (Tensor): :math:`batch2` in the above formula. Must be 3-D Tensor, dtype is same as input.
+
+    Keyword Args:
         beta (Union[float, int], optional): multiplier for input. Default: ``1`` .
         alpha (Union[float, int], optional): multiplier for :math:`batch1 @ batch2`. Default: ``1`` .
-            Arguments beta and alpha must be integers when inputs of type not FloatTensor, otherwise they should
-            be a real number.
 
     Returns:
         Tensor, has the same dtype as input, shape will be :math:`(C, W, H)`.
 
     Raises:
-        TypeError: The type of `input`, `batch1`, `batch2` is not Tensor.
-        TypeError: The types of `input`, `batch1`, `batch2` are different.
-        TypeError: For inputs of type FloatTensor or DoubleTensor, \
-                    arguments beta and alpha not be real numbers, otherwise not be integers.
-        TypeError: For Baddbmm, attributes alpha and beta are not real numbers
+        TypeError: If the type of `input`, `batch1`, `batch2` is not Tensor.
+        TypeError: If the types of `input`, `batch1`, `batch2` are different.
         ValueError: If `batch1` and `batch2` are not 3-D tensors.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.math_func import baddbmm_ext
         >>> input = Tensor(np.ones([1, 3, 3]).astype(np.float32))
         >>> batch1 = Tensor(np.ones([1, 3, 4]).astype(np.float32))
         >>> batch2 = Tensor(np.ones([1, 4, 3]).astype(np.float32))
-        >>> output = baddbmm_ext(input, batch1, batch2)
+        >>> output = ops.baddbmm_ext(input, batch1, batch2)
         >>> print(output)
         [[[5. 5. 5.]
           [5. 5. 5.]
@@ -12203,6 +12176,7 @@ __all__ = [
     'accumulate_n',
     'iou',
     'baddbmm',
+    'baddbmm_ext',
     'bmm',
     'trapz',
     'cholesky',

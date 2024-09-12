@@ -15,60 +15,55 @@
  */
 
 #include "infer/ops_func_impl/sign.h"
-
-#include <memory>
 #include <set>
-#include <vector>
-
-#include "abstract/abstract_value.h"
-#include "abstract/dshape.h"
-#include "abstract/ops/op_infer.h"
-#include "abstract/ops/primitive_infer_map.h"
-#include "abstract/utils.h"
-#include "base/base.h"
-#include "ir/anf.h"
-#include "ir/dtype/number.h"
-#include "ir/primitive.h"
-#include "mindapi/helper.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "ops/primitive_c.h"
-#include "utils/check_convert_utils.h"
-#include "utils/convert_utils_base.h"
-#include "utils/log_adapter.h"
+#include <string>
+#include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-abstract::ShapePtr SignInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  auto prim_name = primitive->name();
-  (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual, 1, prim_name);
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  (void)CheckAndConvertUtils::CheckArgsType(prim_name, input_args, 0, kObjectTypeTensorType);
-  auto x = input_args[0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x);
-  auto shape_element = x->cast<abstract::ShapePtr>();
-  MS_EXCEPTION_IF_NULL(shape_element);
-  return shape_element;
-}
-
-TypePtr SignInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  const std::set<TypePtr> valid_types = {kFloat16, kFloat32,   kFloat64,    kInt32,
-                                         kInt64,   kComplex64, kComplex128, kBFloat16};
-  auto x_type = input_args[0]->GetType();
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, primitive->name());
-  return x_type;
+void CheckSignValidTypes(const PrimitivePtr &primitive, const TypeId &type_id) {
+    const std::set<TypeId> valid_types_set = {kNumberTypeBool,      kNumberTypeInt32,      kNumberTypeInt64,
+                                              kNumberTypeFloat16,   kNumberTypeFloat32,    kNumberTypeFloat64,
+                                              kNumberTypeComplex64, kNumberTypeComplex128, kNumberTypeBFloat16};
+    if (MS_UNLIKELY(valid_types_set.find(type_id) == valid_types_set.end())) {
+      std::string valid_types_str;
+      std::string spot = ", ";
+      for (const auto &type : valid_types_set) valid_types_str += (TypeIdToString(type) + spot);
+      valid_types_str.erase(valid_types_str.size() - spot.size());
+      MS_EXCEPTION(TypeError) << "For Primitive " << primitive->name() << ", the type of input must be in {"
+                              << valid_types_str << "}, but got " << TypeIdToString(type_id) << ".";
+    }
 }
 }  // namespace
 
 BaseShapePtr SignFuncImpl::InferShape(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
-  return SignInferShape(primitive, input_args);
+  return input_args[0]->GetShape()->Clone();
 }
 
 TypePtr SignFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  return SignInferType(primitive, input_args);
+  auto x_type = input_args[0]->GetType();
+  auto x_tensor_type = x_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor_type);
+  CheckSignValidTypes(primitive, x_tensor_type->element()->type_id());
+  return x_type;
 }
 
+ShapeArray SignFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  return {x_tensor->shape()};
+}
+
+TypePtrList SignFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  const auto &x_tensor_type = x_tensor->Dtype();
+  CheckSignValidTypes(primitive, x_tensor_type->type_id());
+  return {x_tensor_type};
+}
+REGISTER_SIMPLE_INFER(kNameSign, SignFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

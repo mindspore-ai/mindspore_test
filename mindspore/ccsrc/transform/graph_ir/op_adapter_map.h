@@ -500,6 +500,7 @@ constexpr const char kNameTfIdfVectorizer[] = "TfIdfVectorizer";
 constexpr const char kNameMVNV2[] = "MVNV2";
 constexpr const char kNameCommonGRU[] = "CommonGRU";
 constexpr const char kNameTril[] = "Tril";
+constexpr const char kNameTrilExt[] = "TrilExt";
 constexpr const char kNameConv2DTransposeV2[] = "Conv2DTransposeV2";
 constexpr const char kNameGridSampler3D[] = "GridSampler3D";
 constexpr const char kNameGridSampler3DGrad[] = "GridSampler3DGrad";

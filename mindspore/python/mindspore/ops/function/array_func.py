@@ -33,11 +33,10 @@ from mindspore.ops.operations._sequence_ops import TupleToTensor
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.operations._sequence_ops import TensorToList
 from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, Chunk, UniqueDim, \
-    Unique2, SortExt, NonZero, NonZeroExt
+    Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim
-
 from mindspore.ops.operations.array_ops import (
     UniqueConsecutive,
     MatrixDiagV3,
@@ -70,7 +69,7 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     broadcast_to, strided_slice, ones, zeros, max_, min_, select
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, slice_ext_op, gather_d_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
 
 arg_max_with_value_ = ArgMaxWithValue()
 arg_min_with_value_ = ArgMinWithValue()
@@ -135,6 +134,8 @@ zeros_like_ext_ = ZerosLikeExt()
 fill_scalar_ = FillScalar()
 fill_tensor_ = FillTensor()
 sort_ext_ = SortExt()
+scatter_ = Scatter()
+scatter_value_ = ScatterValue()
 arange_ = Arange()
 chunk_ = Chunk()
 repeat_interleave_int_ = RepeatInterleaveInt()
@@ -200,7 +201,8 @@ def _get_max_type(start, end, step):
 
     type_map = {'Float64': '3', 'Float32': '2', "<class 'float'>": '2', 'Int64': '1', "<class 'int'>": '1',
                 'Int32': '0'}
-    type_map_reverse = {'3': mstype.float64, '2': mstype.float32, '1': mstype.int64, '0': mstype.int32}
+    type_map_reverse = {'3': mstype.float64,
+                        '2': mstype.float32, '1': mstype.int64, '0': mstype.int32}
     type_level = [type_map.get(i) for i in arg_type_map]
     max_level = builtins.max(type_level)
     return type_map_reverse.get(max_level)
@@ -452,20 +454,25 @@ def hamming_window(window_length, periodic=True, alpha=0.54, beta=0.46, *, dtype
         [0.08 0.39785218 0.91214782  0.91214782  0.39785218 0.08]
     """
     if not isinstance(window_length, int):
-        raise TypeError(f"For array function 'hamming_window', 'window_length' must be int, but got" \
+        raise TypeError(f"For array function 'hamming_window', 'window_length' must be int, but got"
                         f" {type(window_length)}.")
     if window_length < 0:
-        raise ValueError(f"For array function 'hamming_window', 'window_length' must be non negative number.")
+        raise ValueError(
+            f"For array function 'hamming_window', 'window_length' must be non negative number.")
     if not isinstance(periodic, bool):
-        raise TypeError(f"For array function 'hamming_window', 'periodic' must be bool, but got {type(periodic)}.")
+        raise TypeError(
+            f"For array function 'hamming_window', 'periodic' must be bool, but got {type(periodic)}.")
     if not isinstance(alpha, float):
-        raise TypeError(f"For array function 'hamming_window', 'alpha' must be float, but got {type(alpha)}.")
+        raise TypeError(
+            f"For array function 'hamming_window', 'alpha' must be float, but got {type(alpha)}.")
     if not isinstance(beta, float):
-        raise TypeError(f"For array function 'hamming_window', 'beta' must be float, but got {type(beta)}.")
+        raise TypeError(
+            f"For array function 'hamming_window', 'beta' must be float, but got {type(beta)}.")
     if window_length <= 1:
         return Tensor(np.ones(window_length))
     if dtype is not None and dtype not in mstype.float_type:
-        raise TypeError(f"For array function 'hamming_window', 'dtype' must be floating point dtypes, but got {dtype}.")
+        raise TypeError(
+            f"For array function 'hamming_window', 'dtype' must be floating point dtypes, but got {dtype}.")
 
     dtype = mstype.float32 if dtype is None else dtype
     op = _get_cache_prim(P.HammingWindow)(periodic, alpha, beta, dtype)
@@ -642,7 +649,8 @@ def _check_axis_type(axis, type_int=True, type_tuple=True, type_list=True, ops_n
     if (type_tuple and isinstance(axis, tuple)) or (type_list and isinstance(axis, list)):
         for ax in axis:
             if not isinstance(ax, int):
-                raise TypeError(f"For {ops_name}, each axis must be integer, but got {type(ax)} in {axis}.")
+                raise TypeError(
+                    f"For {ops_name}, each axis must be integer, but got {type(ax)} in {axis}.")
         return True
 
     type_str = ""
@@ -652,7 +660,8 @@ def _check_axis_type(axis, type_int=True, type_tuple=True, type_list=True, ops_n
         type_str += "tuple, "
     if type_list:
         type_str += "list, "
-    raise TypeError(f"For {ops_name}, the axis should be {type_str}, but got {type(axis)}.")
+    raise TypeError(
+        f"For {ops_name}, the axis should be {type_str}, but got {type(axis)}.")
 
 
 def one_hot(indices, depth, on_value=1, off_value=0, axis=-1):
@@ -787,11 +796,13 @@ def full(size, fill_value, *, dtype=None):  # pylint: disable=redefined-outer-na
          [0. 0. 0.]]
     """
     if not isinstance(size, (list, tuple)):
-        raise TypeError(f"For 'ops.full', 'size' must be a tuple or list of ints, but got {type(size)}.")
+        raise TypeError(
+            f"For 'ops.full', 'size' must be a tuple or list of ints, but got {type(size)}.")
     if dtype is None:
         dtype = mstype.int64
     if dtype not in mstype.all_types:
-        raise TypeError(f"For 'ops.full', 'dtype' must be mindspore.type, but got {dtype}.")
+        raise TypeError(
+            f"For 'ops.full', 'dtype' must be mindspore.type, but got {dtype}.")
     if isinstance(size, list):
         size = tuple(size)
     return ops.fill(dtype, size, fill_value)
@@ -872,7 +883,8 @@ def full_like(input, fill_value, *, dtype=None):
          [0. 0. 0.]]
     """
     if not isinstance(input, Tensor):
-        raise TypeError(f"For ops.full_like, the argument 'x' must be tensor, but got {type(input)}")
+        raise TypeError(
+            f"For ops.full_like, the argument 'x' must be tensor, but got {type(input)}")
     if dtype is None:
         dtype = input.dtype
     return full(input.shape, fill_value, dtype=dtype)
@@ -914,14 +926,17 @@ def chunk(input, chunks, axis=0):
          Tensor(shape=[3], dtype=Float32, value= [ 6.00000000e+00,  7.00000000e+00,  8.00000000e+00]))
     """
     if not isinstance(input, Tensor):
-        raise TypeError(f'For ops.chunk parameter `input` must be Tensor, but got {type(input)}')
+        raise TypeError(
+            f'For ops.chunk parameter `input` must be Tensor, but got {type(input)}')
     _check_axis_type(axis, True, False, False, "ops.chunk")
     arr_axis = _canonicalize_axis(axis, input.ndim)
 
     if not isinstance(chunks, int):
-        raise TypeError(f"For ops.chunk type of argument `chunks` should be integer, but got {type(chunks)}")
+        raise TypeError(
+            f"For ops.chunk type of argument `chunks` should be integer, but got {type(chunks)}")
     if chunks <= 0:
-        raise ValueError(f"For ops.chunk parameter 'chunks' must be greater than 0, but got {chunks}")
+        raise ValueError(
+            f"For ops.chunk parameter 'chunks' must be greater than 0, but got {chunks}")
 
     arr_shape = input.shape
     length_along_dim = arr_shape[arr_axis]
@@ -941,9 +956,11 @@ def chunk(input, chunks, axis=0):
         size1 = _tuple_setitem(arr_shape, arr_axis, length1)
         start2 = _tuple_setitem(start1, arr_axis, length1)
         size2 = _tuple_setitem(arr_shape, arr_axis, length2)
-        res = _get_cache_prim(P.Split)(arr_axis, true_chunks)(tensor_slice(input, start1, size1))
+        res = _get_cache_prim(P.Split)(arr_axis, true_chunks)(
+            tensor_slice(input, start1, size1))
         if length2:
-            res += _get_cache_prim(P.Split)(arr_axis, 1)(tensor_slice(input, start2, size2))
+            res += _get_cache_prim(P.Split)(arr_axis,
+                                            1)(tensor_slice(input, start2, size2))
     return res
 
 
@@ -1262,11 +1279,14 @@ def unique_ext(input, sorted=True, return_inverse=False, return_counts=False, di
         [0 1 2 1]
     """
     if not F.isconstant(return_inverse) or not F.isconstant(return_counts):
-        raise ValueError(f"For 'unique_ext', 'return_inverse' and 'return_counts' cannot be mutable")
+        raise ValueError(
+            f"For 'unique_ext', 'return_inverse' and 'return_counts' cannot be mutable")
     if dim is None:
-        y, inverse, counts = unique2_(input, sorted, return_inverse, return_counts)
+        y, inverse, counts = unique2_(
+            input, sorted, return_inverse, return_counts)
     else:
-        validator.check_value_type("return_counts", return_counts, [bool], "unique_ext")
+        validator.check_value_type(
+            "return_counts", return_counts, [bool], "unique_ext")
         y, inverse, counts = unique_dim_(input, sorted, return_inverse, dim)
     if return_inverse and return_counts:
         return y, inverse, counts
@@ -1374,7 +1394,8 @@ def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
 
     if not isinstance(input, (Tensor, Tensor_)):
         raise TypeError("For 'unique_consecutive', 'input' must be Tensor.")
-    unique_consecutive_op = _get_cache_prim(UniqueConsecutive)(return_idx, return_counts, axis)
+    unique_consecutive_op = _get_cache_prim(
+        UniqueConsecutive)(return_idx, return_counts, axis)
     output, idx, counts = unique_consecutive_op(input)
     if return_idx and return_counts:
         return output, idx, counts
@@ -1685,7 +1706,8 @@ def flatten(input, order='C', *, start_dim=1, end_dim=-1):
 
     def check_dim_valid(start_dim, end_dim):
         if start_dim > end_dim:
-            raise ValueError("For 'flatten', 'start_dim' cannot come after 'end_dim'.")
+            raise ValueError(
+                "For 'flatten', 'start_dim' cannot come after 'end_dim'.")
 
     def canonicalize_axis(axis, x_rank):
         ndim = x_rank if x_rank != 0 else 1
@@ -1697,7 +1719,8 @@ def flatten(input, order='C', *, start_dim=1, end_dim=-1):
         raise TypeError(f"For 'flatten', argument 'input' must be Tensor.")
     if not isinstance(start_dim, int) or not isinstance(end_dim, int) or \
             isinstance(start_dim, bool) or isinstance(end_dim, bool):
-        raise TypeError(f"For 'flatten', both 'start_dim' and 'end_dim' must be int.")
+        raise TypeError(
+            f"For 'flatten', both 'start_dim' and 'end_dim' must be int.")
     check_flatten_order_const(order)
     if order == 'F':
         x_rank = rank_(input)
@@ -3323,7 +3346,8 @@ def tensor_scatter_elements(input_x, indices, updates, axis=0, reduction="none")
          [ 5  5 14]
          [ 7 15 11]]
     """
-    _tensor_scatter_elements = _get_cache_prim(TensorScatterElements)(axis, reduction)
+    _tensor_scatter_elements = _get_cache_prim(
+        TensorScatterElements)(axis, reduction)
     return _tensor_scatter_elements(input_x, indices, updates)
 
 
@@ -3337,19 +3361,19 @@ def scatter(input, axis, index, src):
         axis (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input).
         index (Tensor): The index to do update operation whose data type must be mindspore.int32 or
             mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
-        src (Tensor): The tensor doing the update operation with `input` , has the same type as `input` ,
-            and the shape of `src` should be equal to the shape of `index` .
+        src (Tensor, float): The tensor doing the update operation with `input` , has the same data type as
+            `input`, and the shape of `src` should be equal to the shape of `index`. Also can be a float number to
+            scatter.
 
     Returns:
         Tensor, has the same shape and type as `input` .
 
     Raises:
         TypeError: If `index` is neither int32 nor int64.
-        ValueError: If anyone of the rank among `input` , `index` and `src` less than 1.
+        ValueError: If rank of any of `input` , `index` and `src` less than 1.
         ValueError: If the shape of `src` is not equal to the shape of `index` .
         ValueError: If the rank of `src` is not equal to the rank of `input` .
-        RuntimeError: If the data type of `input` and `src` conversion of Parameter
-            is required when data type conversion of Parameter is not supported.
+        TypeError: If the data type of `input` and `src` have different dtypes.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -3385,7 +3409,9 @@ def scatter(input, axis, index, src):
         [0. 0. 0. 0. 0.]
         [0. 0. 0. 0. 0.]]
     """
-    return ops.tensor_scatter_elements(input_x=input, indices=index, updates=src, axis=axis)
+    if isinstance(src, Tensor):
+        return scatter_(input, axis, index, src)
+    return scatter_value_(input, axis, index, src)
 
 
 def scatter_add_ext(input, dim, index, src):
@@ -3520,7 +3546,8 @@ def slice_scatter(input, src, axis=0, start=None, end=None, step=1):
     _check_is_tensor("input", input, "slice_scatter")
     _check_is_tensor("src", src, "slice_scatter")
     input_shape = input.shape
-    input_rank, index, axis = _get_slice_scatter_const(input_shape, axis, start, end, step)
+    input_rank, index, axis = _get_slice_scatter_const(
+        input_shape, axis, start, end, step)
 
     src_shape = src.shape
     index_shape = input_shape[:axis] + (len(index),) + input_shape[axis + 1:]
@@ -3642,7 +3669,8 @@ def space_to_batch_nd(input_x, block_size, paddings):
          [[[3.]]]
          [[[4.]]]]
     """
-    _space_to_batch_nd = _get_cache_prim(P.SpaceToBatchND)(block_size, paddings)
+    _space_to_batch_nd = _get_cache_prim(
+        P.SpaceToBatchND)(block_size, paddings)
     return _space_to_batch_nd(input_x)
 
 
@@ -4334,9 +4362,11 @@ def index_select(input, axis, index):
          [[ 8.  9. 10. 11.]]]
     """
     if not (isinstance(input, Tensor) and isinstance(index, Tensor)):
-        raise TypeError(f"For 'index_select', `input` and `index` must be all tensors.")
+        raise TypeError(
+            f"For 'index_select', `input` and `index` must be all tensors.")
     if index.ndim != 1:
-        raise ValueError(f"For 'index_select', the dimension of `index` must be 1, but got {index.ndim}")
+        raise ValueError(
+            f"For 'index_select', the dimension of `index` must be 1, but got {index.ndim}")
     axis = _check_check_axis_in_range(axis, input.ndim)
     return gather_(input, index, axis)
 
@@ -4429,9 +4459,11 @@ def is_nonzero(input):
         True
     """
     if not isinstance(input, Tensor):
-        raise TypeError(f'For is_nonzero, the input must be a Tensor, but got {type(input)}.')
+        raise TypeError(
+            f'For is_nonzero, the input must be a Tensor, but got {type(input)}.')
     if input.numel() != 1:
-        raise ValueError(f"For is_nonzero, the numel of input must be 1, but got {input.numel()}.")
+        raise ValueError(
+            f"For is_nonzero, the numel of input must be 1, but got {input.numel()}.")
     out = ops.squeeze(input)
     return bool(out)
 
@@ -4659,9 +4691,11 @@ def diagflat(input, offset=0):
          [0. 0. 0.]]
     """
     if not isinstance(input, Tensor):
-        raise TypeError(f"For diagflat, the input x must be tensor, but got {type(input)}")
+        raise TypeError(
+            f"For diagflat, the input x must be tensor, but got {type(input)}")
     if not isinstance(offset, int):
-        raise TypeError(f"For diagflat, the offset must be int, but got {type(offset)}")
+        raise TypeError(
+            f"For diagflat, the offset must be int, but got {type(offset)}")
     offset_abs = abs(offset)
     if input.size == 0:
         return zeros((offset_abs, offset_abs), input.dtype)
@@ -4747,7 +4781,7 @@ def _split_int(x, split_size_or_sections, axis):
         start2 = _tuple_setitem(start1, axis, length1)
         size2 = _tuple_setitem(arr_shape, axis, length2)
         res = _get_cache_prim(P.Split)(axis, num_sections)(tensor_slice(x, start1, size1)) + \
-              _get_cache_prim(P.Split)(axis, 1)(tensor_slice(x, start2, size2))
+            _get_cache_prim(P.Split)(axis, 1)(tensor_slice(x, start2, size2))
     return res
 
 
@@ -4814,7 +4848,8 @@ def split(tensor, split_size_or_sections, axis=0):
     if not isinstance(tensor, Tensor):
         raise TypeError(f'expect `tensor` is a Tensor, but got {type(tensor)}')
     if type(axis) is not int:
-        raise TypeError(f"Type of Argument `axis` should be integer but got {type(axis)}")
+        raise TypeError(
+            f"Type of Argument `axis` should be integer but got {type(axis)}")
     arr_axis = _canonicalize_axis(axis, tensor.ndim)
 
     if type(split_size_or_sections) is int:
@@ -4826,7 +4861,8 @@ def split(tensor, split_size_or_sections, axis=0):
     elif isinstance(split_size_or_sections, (list, tuple)):
         for item in split_size_or_sections:
             if type(item) is not int:
-                raise TypeError(f"Each element in 'split_size_or_sections' should be integer, but got {type(item)}.")
+                raise TypeError(
+                    f"Each element in 'split_size_or_sections' should be integer, but got {type(item)}.")
             if item < 0:
                 raise TypeError(f"Each element in 'split_size_or_sections' should be non-negative, "
                                 f"but got {split_size_or_sections}.")
@@ -4836,7 +4872,7 @@ def split(tensor, split_size_or_sections, axis=0):
                              f"but got {sum(split_size_or_sections)}.")
         res = _split_sub_tensors(tensor, split_size_or_sections, arr_axis)
     else:
-        raise TypeError(f"Type of Argument `split_size_or_sections` should be integer, tuple(int) or list(int), " \
+        raise TypeError(f"Type of Argument `split_size_or_sections` should be integer, tuple(int) or list(int), "
                         f"but got {type(split_size_or_sections)}")
     return tuple(res)
 
@@ -4884,7 +4920,7 @@ def split_ext(tensor, split_size_or_sections, axis=0):
     elif isinstance(split_size_or_sections, (list, tuple)):
         res = split_with_size(tensor, split_size_or_sections, axis)
     else:
-        raise TypeError(f"Type of Argument `split_size_or_sections` should be integer, tuple(int) or list(int), " \
+        raise TypeError(f"Type of Argument `split_size_or_sections` should be integer, tuple(int) or list(int), "
                         f"but got {type(split_size_or_sections)}")
     return res
 
@@ -4946,8 +4982,71 @@ def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
          [10 11  0  0]
          [14 15 16  0]]
     """
-    tril_ = Tril(diagonal)
+    tril_ = _get_cache_prim(Tril)(diagonal)
     return tril_(input)
+
+
+def tril_ext(input, diagonal=0):
+    """
+    Returns the lower triangle part of 'input' (elements that contain the diagonal and below),
+    and set the other elements to zeros.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
+          Supporting all number types including bool.
+        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: 0,
+            indicating the main diagonal.
+
+    Returns:
+        Tensor, the same shape and data type as the input `x`.
+
+    Raises:
+        TypeError: If `x` is not a Tensor.
+        TypeError: If `diagonal` is not an int.
+        TypeError: If the type of `x` is neither number nor bool.
+        ValueError: If the rank of `x` is less than 2.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
+        ...                      [ 5,  6,  7,  8],
+        ...                      [10, 11, 12, 13],
+        ...                      [14, 15, 16, 17]]))
+        >>> result = ops.function.array_func.tril_ext(x)
+        >>> print(result)
+        [[ 1  0  0  0]
+         [ 5  6  0  0]
+         [10 11 12  0]
+         [14 15 16 17]]
+        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
+        ...                      [ 5,  6,  7,  8],
+        ...                      [10, 11, 12, 13],
+        ...                      [14, 15, 16, 17]]))
+        >>> result = ops.function.array_func.tril_ext(x, diagonal=1)
+        >>> print(result)
+        [[ 1  2  0  0]
+         [ 5  6  7  0]
+         [10 11 12 13]
+         [14 15 16 17]]
+        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
+        ...                      [ 5,  6,  7,  8],
+        ...                      [10, 11, 12, 13],
+        ...                      [14, 15, 16, 17]]))
+        >>> result = ops.function.array_func.tril_ext(x, diagonal=-1)
+        >>> print(result)
+        [[ 0  0  0  0]
+         [ 5  0  0  0]
+         [10 11  0  0]
+         [14 15 16  0]]
+    """
+    return tril_ext_impl(input, diagonal)
 
 
 @_primexpr
@@ -4968,7 +5067,8 @@ def _canonicalize_axis(axis, ndim):
         if not isinstance(ax, int):
             raise TypeError(f'axis should be integers, not {type(ax)}')
         if not -ndim <= ax < ndim:
-            raise ValueError(f'axis {ax} is out of bounds for array of dimension {ndim}')
+            raise ValueError(
+                f'axis {ax} is out of bounds for array of dimension {ndim}')
 
     def canonicalizer(ax):
         return ax + ndim if ax < 0 else ax
@@ -5061,14 +5161,16 @@ def _tensor_split_sub_int(x, indices_or_sections, axis):
     else:
         num_long_tensor = length_along_dim % indices_or_sections
         num_short_tensor = indices_or_sections - num_long_tensor
-        length1 = num_long_tensor * (length_along_dim // indices_or_sections + 1)
+        length1 = num_long_tensor * \
+            (length_along_dim // indices_or_sections + 1)
         length2 = length_along_dim - length1
         start1 = _list_comprehensions(rank_(x), 0, True)
         size1 = _tuple_setitem(arr_shape, axis, length1)
         start2 = _tuple_setitem(start1, axis, length1)
         size2 = _tuple_setitem(arr_shape, axis, length2)
         res = _get_cache_prim(P.Split)(axis, num_long_tensor)(tensor_slice(x, start1, size1)) + \
-              _get_cache_prim(P.Split)(axis, num_short_tensor)(tensor_slice(x, start2, size2))
+            _get_cache_prim(P.Split)(axis, num_short_tensor)(
+                tensor_slice(x, start2, size2))
     return res
 
 
@@ -5121,21 +5223,25 @@ def tensor_split(input, indices_or_sections, axis=0):
         raise TypeError(f'expect `x` is a Tensor, but got {type(input)}')
 
     if type(axis) is not int:
-        raise TypeError(f"Type of Argument `axis` should be integer but got {type(axis)}")
+        raise TypeError(
+            f"Type of Argument `axis` should be integer but got {type(axis)}")
     handle_axis = _canonicalize_axis(axis, input.ndim)
     if type(indices_or_sections) is int:
         if indices_or_sections > 0:
-            res = _tensor_split_sub_int(input, indices_or_sections, handle_axis)
+            res = _tensor_split_sub_int(
+                input, indices_or_sections, handle_axis)
         else:
             raise ValueError(f"For tensor_split, the value of 'indices_or_sections' must be more than zero "
                              f"but got {indices_or_sections}")
     elif isinstance(indices_or_sections, (list, tuple)):
         for item in indices_or_sections:
             if type(item) is not int:
-                raise TypeError(f"Each element in 'indices_or_sections' should be integer, but got {type(item)}.")
-        res = _tensor_split_sub_tensors(input, indices_or_sections, handle_axis)
+                raise TypeError(
+                    f"Each element in 'indices_or_sections' should be integer, but got {type(item)}.")
+        res = _tensor_split_sub_tensors(
+            input, indices_or_sections, handle_axis)
     else:
-        raise TypeError(f"Type of Argument `indices_or_sections` should be integer, tuple(int) or list(int), " \
+        raise TypeError(f"Type of Argument `indices_or_sections` should be integer, tuple(int) or list(int), "
                         f"but got {type(indices_or_sections)}")
 
     return res
@@ -5171,7 +5277,8 @@ def vsplit(input, indices_or_sections):
     if not isinstance(input, Tensor):
         raise TypeError(f'expect `x` is a Tensor, but got {type(input)}')
     if input.ndim < 1:
-        raise ValueError(f'vsplit expect `x` is a Tensor with at least 1 dimension, but got {input.ndim}')
+        raise ValueError(
+            f'vsplit expect `x` is a Tensor with at least 1 dimension, but got {input.ndim}')
     return tensor_split(input, indices_or_sections, 0)
 
 
@@ -5207,7 +5314,8 @@ def hsplit(input, indices_or_sections):
     if not isinstance(input, Tensor):
         raise TypeError(f'expect `x` is a Tensor, but got {type(input)}')
     if input.ndim < 2:
-        raise ValueError(f'hsplit expect `x` is a Tensor with at least 2 dimension, but got {input.ndim}')
+        raise ValueError(
+            f'hsplit expect `x` is a Tensor with at least 2 dimension, but got {input.ndim}')
 
     return tensor_split(input, indices_or_sections, 1)
 
@@ -5240,7 +5348,8 @@ def dsplit(input, indices_or_sections):
     if not isinstance(input, Tensor):
         raise TypeError(f'expect `x` is a Tensor, but got {type(input)}')
     if input.ndim < 3:
-        raise ValueError(f'dsplit expect `x` is a Tensor with at least 3 dimension, but got {input.ndim}')
+        raise ValueError(
+            f'dsplit expect `x` is a Tensor with at least 3 dimension, but got {input.ndim}')
 
     return tensor_split(input, indices_or_sections, 2)
 
@@ -5332,7 +5441,8 @@ def max(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylin
     if axis is None:
         return (max_(input), Tensor(0, dtype=mstype.int64))
     if initial is not None and not isinstance(initial, numbers.Number):
-        raise TypeError(f"For 'max', 'initial' must be a scalar, but got {type(initial)}")
+        raise TypeError(
+            f"For 'max', 'initial' must be a scalar, but got {type(initial)}")
     if axis is not None and not isinstance(axis, int):
         raise TypeError(f"For 'max', 'axis' must be int, but got {type(axis)}")
     input = _init_and_select_elem(input, initial, where, ops.maximum)
@@ -5448,7 +5558,8 @@ def min(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylin
     if axis is None:
         return (min_(input), Tensor(0, dtype=mstype.int64))
     if initial is not None and not isinstance(initial, numbers.Number):
-        raise TypeError(f"For 'min', 'initial' must be a scalar, but got {type(initial)}")
+        raise TypeError(
+            f"For 'min', 'initial' must be a scalar, but got {type(initial)}")
     if axis is not None and not isinstance(axis, int):
         raise TypeError(f"For 'min', 'axis' must be int, but got {type(axis)}")
     input = _init_and_select_elem(input, initial, where, ops.minimum)
@@ -5561,7 +5672,8 @@ def narrow(input, axis, start, length):
     validator.check_value_type("input", input, Tensor, "narrow")
     validator.check_axis_in_range(axis, input.ndim)
     validator.check_int_range(start, 0, input.shape[axis], validator.INC_LEFT)
-    validator.check_int_range(length, 1, input.shape[axis] - start, validator.INC_BOTH)
+    validator.check_int_range(
+        length, 1, input.shape[axis] - start, validator.INC_BOTH)
 
     begins = [0] * input.ndim
     begins[axis] = start
@@ -5802,7 +5914,8 @@ def _check_unfold_params(param, param_name, param_size):
     """Check the parameters of unfold op."""
     validator.check_value_type(param_name, param, [int, tuple, list], 'unfold')
     param = (param, param) if isinstance(param, int) else param
-    validator.check(param_name + " size", len(param), "", param_size, validator.IN, 'unfold')
+    validator.check(param_name + " size", len(param), "",
+                    param_size, validator.IN, 'unfold')
     if param_name == "padding":
         validator.check_non_negative_int_sequence(param, param_name, 'unfold')
     else:
@@ -5905,7 +6018,8 @@ def _check_diagonal_axes(dim1, dim2, x_ndim):
 def _check_is_tensor(param_name, input, cls_name):
     """Returns True if input is Tensor."""
     if not isinstance(input, Tensor):
-        raise TypeError(f"For {cls_name}, {param_name} must be a Tensor, but got {type(input)}.")
+        raise TypeError(
+            f"For {cls_name}, {param_name} must be a Tensor, but got {type(input)}.")
 
 
 @_primexpr
@@ -6218,19 +6332,22 @@ def column_stack(tensors):
          [1 2]]
     """
     if not isinstance(tensors, (list, tuple)):
-        raise TypeError(f"For column_stack, the input must be list or tuple of tensors, but got {type(tensors)}.")
+        raise TypeError(
+            f"For column_stack, the input must be list or tuple of tensors, but got {type(tensors)}.")
 
     trans_x = ()
     for tensor in tensors:
         if not isinstance(tensor, Tensor):
-            raise TypeError(f"For column_stack, the input element must be tensor, but got {type(tensor)}.")
+            raise TypeError(
+                f"For column_stack, the input element must be tensor, but got {type(tensor)}.")
         if tensor.ndim < 1:
             tensor = expand_dims(tensor, 0)
         if tensor.ndim == 1:
             tensor = expand_dims(tensor, 1)
         trans_x += (tensor,)
     if not trans_x:
-        raise ValueError(f"For column_stack, the input must have at least 1 tensor, but got 0.")
+        raise ValueError(
+            f"For column_stack, the input must have at least 1 tensor, but got 0.")
     _concat = _get_cache_prim(P.Concat)(1)
     return _concat(trans_x)
 
@@ -6266,17 +6383,20 @@ def hstack(tensors):
         [1. 1. 1. 2. 2. 2.]
     """
     if not isinstance(tensors, (list, tuple)):
-        raise TypeError(f"For hstack, the input must be list or tuple, but got {type(tensors)}.")
+        raise TypeError(
+            f"For hstack, the input must be list or tuple, but got {type(tensors)}.")
 
     tuple_of_tensor = ()
     for tensor in tensors:
         if not isinstance(tensor, Tensor):
-            raise TypeError(f"For hstack, the input element must be tensor, but got {type(tensor)}.")
+            raise TypeError(
+                f"For hstack, the input element must be tensor, but got {type(tensor)}.")
         if tensor.ndim < 1:
             tensor = expand_dims(tensor, 0)
         tuple_of_tensor += (tensor,)
     if not tuple_of_tensor:
-        raise ValueError("For hstack, the input must have at least 1 tensor, but got 0.")
+        raise ValueError(
+            "For hstack, the input must have at least 1 tensor, but got 0.")
     if tuple_of_tensor[0].ndim <= 1:
         _concat = _get_cache_prim(P.Concat)(0)
         return _concat(tuple_of_tensor)
@@ -6305,7 +6425,8 @@ def _get_moved_perm(ndim, source, destination):
     Helper function for movedim, returns permutation after moving axis
     from source to destination.
     """
-    dest_sorted_idx = [i for i, _ in sorted(enumerate(destination), key=operator.itemgetter(1))]
+    dest_sorted_idx = [i for i, _ in sorted(
+        enumerate(destination), key=operator.itemgetter(1))]
     axis_orig = [i for i in builtins.range(0, ndim) if i not in source]
 
     k = 0
@@ -6432,7 +6553,8 @@ def swapaxes(input, axis0, axis1):
         (4, 3, 2)
     '''
     if not isinstance(input, Tensor):
-        raise TypeError(f'For ops.swapaxes, parameter `input` must be Tensor, but got {type(input)}')
+        raise TypeError(
+            f'For ops.swapaxes, parameter `input` must be Tensor, but got {type(input)}')
 
     axis0, axis1 = _check_swapaxes_axis((axis0, axis1), input.ndim)
     if axis0 == axis1:
@@ -6443,10 +6565,10 @@ def swapaxes(input, axis0, axis1):
     perm = ops.make_range(0, input.ndim)
     if axis1 + 1 < input.ndim:
         new_perm = perm[0:axis0] + perm[axis1:axis1 + 1] + \
-                   perm[axis0 + 1:axis1] + perm[axis0:axis0 + 1] + perm[axis1 + 1:]
+            perm[axis0 + 1:axis1] + perm[axis0:axis0 + 1] + perm[axis1 + 1:]
     else:
         new_perm = perm[0:axis0] + perm[axis1:axis1 + 1] + \
-                   perm[axis0 + 1:axis1] + perm[axis0:axis0 + 1]
+            perm[axis0 + 1:axis1] + perm[axis0:axis0 + 1]
 
     return transpose_(input, new_perm)
 
@@ -6492,13 +6614,15 @@ def _check_is_int(arg_value, arg_name, op_name):
 
 @_primexpr
 def _check_positive_int(arg_value, arg_name, op_name):
-    arg_value = validator.check_int_range(arg_value, 0, 2147483647, validator.INC_RIGHT, arg_name, op_name)
+    arg_value = validator.check_int_range(
+        arg_value, 0, 2147483647, validator.INC_RIGHT, arg_name, op_name)
     return arg_value
 
 
 @constexpr
 def _check_axis_range(arg_value, limit, arg_name, op_name):
-    arg_value = validator.check_int_range(arg_value, -limit, limit, validator.INC_LEFT, arg_name, op_name)
+    arg_value = validator.check_int_range(
+        arg_value, -limit, limit, validator.INC_LEFT, arg_name, op_name)
     return arg_value
 
 
@@ -6718,7 +6842,8 @@ def sequence_mask(lengths, maxlen=None):
          [[ True  True False False ]
           [ True  True  True  True ]]]
     """
-    const_utils.check_type_valid(ops.dtype(lengths), [mstype.int64, mstype.int32], 'lengths')
+    const_utils.check_type_valid(
+        ops.dtype(lengths), [mstype.int64, mstype.int32], 'lengths')
 
     if maxlen is None:
         flatten_data = reshape_(lengths, (-1,))
@@ -6729,7 +6854,8 @@ def sequence_mask(lengths, maxlen=None):
         maxlen = _check_positive_int(maxlen, "maxlen", "sequence_mask")
         maxlen = scalar_to_tensor_(maxlen, mstype.int32)
 
-    range_vector = range_(scalar_to_tensor_(0, mstype.int32), maxlen, scalar_to_tensor_(1, mstype.int32))
+    range_vector = range_(scalar_to_tensor_(0, mstype.int32),
+                          maxlen, scalar_to_tensor_(1, mstype.int32))
     mask = expand_dims(lengths, -1)
     result = range_vector < mask
     return result
@@ -6836,7 +6962,8 @@ def max_ext(input, dim=None, keepdim=False):
     """
     if dim is None:
         if keepdim is not False:
-            raise ValueError(f"For 'max', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
+            raise ValueError(
+                f"For 'max', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
         return max_(input)
     argmax_with_value_op = _get_cache_prim(ArgMaxWithValue)(dim, keepdim)
     indices, values = argmax_with_value_op(input)
@@ -6885,7 +7012,8 @@ def min_ext(input, dim=None, keepdim=False):
     """
     if dim is None:
         if keepdim is not False:
-            raise ValueError(f"For 'min', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
+            raise ValueError(
+                f"For 'min', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
         return min_(input)
     argmin_with_value_op = _get_cache_prim(ArgMinWithValue)(dim, keepdim)
     indices, values = argmin_with_value_op(input)

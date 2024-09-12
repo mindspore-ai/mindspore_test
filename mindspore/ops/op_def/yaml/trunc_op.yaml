@@ -1,0 +1,10 @@
+#operator trunc
+trunc:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    dispatch:
+        enable: True

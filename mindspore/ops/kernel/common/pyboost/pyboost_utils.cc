@@ -23,6 +23,7 @@
 #include "mindapi/base/type_id.h"
 #include "runtime/device/device_address_utils.h"
 #include "ops/ops_frontend_func_impl.h"
+#include "ops/infer_info/infer_info_utils.h"
 #include "ops/op_def.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
@@ -259,10 +260,15 @@ AbstractBasePtr PyBoostUtils::InferByOpDef(const PrimitivePtr &prim, const std::
                                      prim->name(), false);
   auto op_def = mindspore::ops::GetOpDef(prim->name());
   if (op_def) {
-    (void)op_def->func_impl_.CheckValidation(prim, input_abs);
-    auto shape = op_def->func_impl_.InferShape(prim, input_abs);
-    auto type = op_def->func_impl_.InferType(prim, input_abs);
-    auto output_abs = mindspore::abstract::MakeAbstract(shape, type);
+    AbstractBasePtr output_abs;
+    if (op_def->func_impl_.GeneralInferRegistered()) {
+      output_abs = ops::DoGeneralInfer(prim, input_abs);
+    } else {
+      (void)op_def->func_impl_.CheckValidation(prim, input_abs);
+      auto shape = op_def->func_impl_.InferShape(prim, input_abs);
+      auto type = op_def->func_impl_.InferType(prim, input_abs);
+      output_abs = mindspore::abstract::MakeAbstract(shape, type);
+    }
     MS_LOG(DEBUG) << "Pynative Infer " << prim->name() << " by OpDef, got abstract: " << output_abs->ToString();
     return output_abs;
   } else {

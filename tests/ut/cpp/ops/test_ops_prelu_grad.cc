@@ -20,9 +20,9 @@
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(PReLUGrad, MultiInputOpParams);
+OP_FUNC_IMPL_INFER_TEST_DECLARE(PReLUGrad, MultiInputOpParams);
 
-OP_FUNC_IMPL_TEST_CASES(
+OP_FUNC_IMPL_INFER_TEST_CASES(
   PReLUGrad,
   testing::Values(
     MultiInputOpParams{{{5}, {5}, {1}}, {kFloat16, kFloat16, kFloat16}, {{5}, {1}}, {kFloat16, kFloat16}, {}},

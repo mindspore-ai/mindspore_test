@@ -93,6 +93,44 @@ std::vector<int64_t> CalBroadCastShape(const std::vector<int64_t> &x_shape, cons
   return broadcast_shape;
 }
 
+// CalBroadCastShape for simple infer
+std::vector<int64_t> CalBroadCastShapeV2(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape,
+                                         const std::string &op_name, const std::string &op_x_name,
+                                         const std::string &op_y_name) {
+  if (x_shape == y_shape) {
+    return x_shape;
+  }
+
+  std::vector<int64_t> broadcast_shape;
+  auto x_length = x_shape.size();
+  auto y_length = y_shape.size();
+  auto res = x_length > y_length;
+  size_t max_len = res ? x_length : y_length;
+  size_t min_len = res ? y_length : x_length;
+  const std::vector<int64_t> &max_shape = res ? x_shape : y_shape;
+  const std::vector<int64_t> &min_shape = res ? y_shape : x_shape;
+
+  broadcast_shape = max_shape;
+  auto miss = max_len - min_len;
+  for (size_t i = 0; i < min_len; i++) {
+    auto dst_i = miss + i;
+    if (max_shape[dst_i] == 1) {
+      broadcast_shape[dst_i] = min_shape[i];
+    } else if (min_shape[i] != 1 && max_shape[dst_i] != min_shape[i]) {
+      auto x_shape_name = op_x_name + ".shape";
+      auto y_shape_name = op_y_name + ".shape";
+      MS_EXCEPTION(ValueError) << "For '" << op_name << "', " << x_shape_name << " and " << y_shape_name
+                               << " need to broadcast. The value of " << x_shape_name << "["
+                               << std::to_string(x_length + i) << "] or " << y_shape_name << "["
+                               << std::to_string(y_length + i) << "] must be 1 when they are not the same, but got "
+                               << x_shape_name << " = " << tensor::ShapeToString(x_shape) << " and " << y_shape_name
+                               << " = " << tensor::ShapeToString(y_shape);
+    }
+  }
+  return broadcast_shape;
+}
+
+
 abstract::ShapePtr BroadCastInferShape(const std::string &op_name, const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   MS_EXCEPTION_IF_NULL(input_args[kIndex1]);

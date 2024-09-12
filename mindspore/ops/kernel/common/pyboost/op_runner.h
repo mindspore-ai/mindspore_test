@@ -30,6 +30,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "ops/infer_info/infer_info_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore {
@@ -83,7 +84,13 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   void InferOutput(T &... args) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyBoostInferOutput,
                                        primitive_->name(), false);
-    if (output_value_simple_info_ = ops::InferBySimple(primitive_, args...); output_value_simple_info_ != nullptr) {
+    if (output_value_simple_info_ = ops::DoGeneralInfer(primitive_, args...); output_value_simple_info_ != nullptr) {
+      MS_LOG(DEBUG) << "Op " << primitive_->name() << " infer by infer_info, get output "
+                    << ValueSimpleInfoToString(*output_value_simple_info_);
+      PyBoostUtils::CreateOutputTensor(output_value_simple_info_, &outputs_);
+      return;
+    } else if (output_value_simple_info_ = ops::InferBySimple(primitive_, args...);
+               output_value_simple_info_ != nullptr) {
       MS_LOG(DEBUG) << "Op " << primitive_->name() << " infer by simple, get output "
                     << ValueSimpleInfoToString(*output_value_simple_info_);
       PyBoostUtils::CreateOutputTensor(output_value_simple_info_, &outputs_);

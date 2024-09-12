@@ -26,105 +26,44 @@
 
 namespace mindspore {
 namespace ops {
-TypePtr TopkExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                   const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  auto prim_name = primitive->name();
-  auto output0_type = input_args[kInputIndex0]->GetType();
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("input_x", output0_type, common_valid_types, prim_name);
-  auto k_type = input_args[kInputIndex1]->GetType();
-  const std::set<TypePtr> int_types = {kInt32, kInt64};
-  (void)CheckAndConvertUtils::CheckTypeValid("k", k_type, int_types, prim_name);
-  auto output1_type = kInt64;
-  return std::make_shared<Tuple>(std::vector<TypePtr>{output0_type, output1_type});
-}
-
-BaseShapePtr TopkExtFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                         const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  auto prim_name = primitive->name();
-  auto shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputIndex0]->GetShape());
-  auto x_shape = shape_map[kShape];
-  if (IsDynamicRank(x_shape)) {
-    abstract::BaseShapePtr out_shape_ptr =
-      std::make_shared<abstract::Shape>(ShapeVector{abstract::Shape::kShapeRankAny});
-    return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{out_shape_ptr, out_shape_ptr});
+ShapeArray TopkExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto &prim_name = primitive->name();
+  auto &x = input_infos[kInputIndex0];
+  auto k_opt = input_infos[kInputIndex1]->GetScalarValue<int64_t>();
+  if (x->IsDynamicRank() || !k_opt.has_value()) {
+    return {{abstract::Shape::kShapeRankAny}, {abstract::Shape::kShapeRankAny}};
   }
-
-  if ((IsDynamicRank(x_shape)) || !IsValueKnown(input_args[kInputIndex1])) {
-    auto unknown_shape_p = std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
-    return std::make_shared<abstract::TupleShape>(
-      std::vector<abstract::BaseShapePtr>{unknown_shape_p, unknown_shape_p});
-  }
-
-  int64_t k_v = 0;
-  // 2rd input is a Tensor when TopK is a dynamic shape operator
-  if (CheckAndConvertUtils::IsTensor(input_args[kInputIndex1])) {
-    auto k_dim = input_args[kInputIndex1]->GetShape()->GetShapeVector().size();
-    if (k_dim > 1) {
-      MS_LOG(EXCEPTION) << "For '" << prim_name
-                        << "', the dimension of 'k' should only be 0 or 1 when 'k' is a Tensor, but got: " << k_dim
-                        << ".";
+  auto k = k_opt.value();
+  auto x_shape = x->GetShape();
+  if (!CheckAndConvertUtils::IsEmptyTensorShape(x_shape) && !x_shape.empty()) {
+    auto n_dims_opt = input_infos[kInputIndex2]->GetScalarValue<int64_t>();
+    if (MS_UNLIKELY(!n_dims_opt.has_value())) {
+      MS_EXCEPTION(ValueError) << "Failed to get 'n_dims' value.";
     }
-    auto k_val = CheckAndConvertUtils::CheckTensorIntValue("k", input_args[kInputIndex1]->GetValue(), prim_name,
-                                                           input_args[kInputIndex1]->GetType());
-    k_v = k_val[0];
-  } else if (CheckAndConvertUtils::IsScalar(input_args[kInputIndex1])) {
-    k_v = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue()).value();
-  } else {
-    MS_LOG(EXCEPTION) << "Invalid abstract type:" << input_args[kInputIndex1]->type_name();
-  }
-
-  // empty tensor shape: {0}
-  if (!x_shape.empty() && !(x_shape.size() == 1 && x_shape[0] == 0)) {
-    auto ndims = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue()).value();
-    CheckAndConvertUtils::CheckInRange<int64_t>("dim", ndims, kIncludeLeft, {-x_shape.size(), x_shape.size()},
+    auto n_dims = n_dims_opt.value();
+    CheckAndConvertUtils::CheckInRange<int64_t>("dim", n_dims, kIncludeLeft, {-x_shape.size(), x_shape.size()},
                                                 prim_name);
-    if (ndims < 0) {
-      ndims = SizeToLong(x_shape.size()) + ndims;
+    if (n_dims < 0) {
+      n_dims = SizeToLong(x_shape.size()) + n_dims;
     }
 
-    if (x_shape[ndims] != abstract::Shape::kShapeDimAny) {
-      std::pair<int64_t, int64_t> k_range(0, x_shape[ndims]);
-      CheckAndConvertUtils::CheckInRange<int64_t>("k", k_v, kIncludeBoth, k_range, prim_name);
-      x_shape[ndims] = k_v;
+    if (x_shape[n_dims] != abstract::Shape::kShapeDimAny) {
+      std::pair<int64_t, int64_t> k_range(0, x_shape[n_dims]);
+      CheckAndConvertUtils::CheckInRange<int64_t>("k", k, kIncludeBoth, k_range, prim_name);
+      x_shape[n_dims] = k;
     }
   }
-
-  auto out_shape_ptr = std::make_shared<abstract::Shape>(x_shape);
-  return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{out_shape_ptr, out_shape_ptr});
+  return {x_shape, x_shape};
 }
 
-ShapeArray TopkExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  auto x_shape_vector = x_tensor->shape();
-  if (x_shape_vector.empty() || (x_shape_vector.size() == 1 && x_shape_vector[0] == 0)) {
-    return {x_shape_vector, x_shape_vector};
-  }
-
-  const auto &dim = input_values[kInputIndex2]->cast<Int64ImmPtr>();
-  MS_EXCEPTION_IF_NULL(dim);
-  auto dim_value = dim->value();
-  MS_CHECK_VALUE(dim_value >= static_cast<int64_t>(-x_shape_vector.size()) &&
-                   dim_value < static_cast<int64_t>(x_shape_vector.size()),
-                 CheckAndConvertUtils::FormatCheckInRangeMsg(
-                   "dim", dim_value, kIncludeLeft, {-x_shape_vector.size(), x_shape_vector.size()}, primitive));
-  if (dim_value < 0) {
-    dim_value += static_cast<int64_t>(x_shape_vector.size());
-  }
-
-  const auto &k = input_values[kInputIndex1]->cast<Int64ImmPtr>();
-  MS_EXCEPTION_IF_NULL(k);
-  auto k_value = k->value();
-
-  x_shape_vector[dim_value] = k_value;
-
-  return {x_shape_vector, x_shape_vector};
-}
-
-TypePtrList TopkExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(x_tensor);
-  return {x_tensor->Dtype(), kInt64};
+std::vector<TypeId> TopkExtFuncImpl::InferType(const PrimitivePtr &primitive,
+                                               const InferInfoPtrList &input_infos) const {
+  const auto x_type = input_infos[kInputIndex0]->GetType();
+  const auto &prim_name = primitive->name();
+  CheckAndConvertUtils::CheckTypeIdValid("input_x", x_type, common_valid_type_ids, prim_name);
+  const auto k_type = input_infos[kInputIndex1]->GetType();
+  CheckAndConvertUtils::CheckTypeIdValid("k", k_type, {kNumberTypeInt32, kNumberTypeInt64}, prim_name);
+  return {x_type, kNumberTypeInt64};
 }
 
 REGISTER_SIMPLE_INFER(kNameTopkExt, TopkExtFuncImpl)

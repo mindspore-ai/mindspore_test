@@ -83,25 +83,21 @@ void AdaptShapeAndMultipies(ShapeVector *shape, ShapeVector *dims) {
   ExpandInHeadIfNeed(dims, expect_len);
 }
 
-BaseShapePtr TileFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  // The output rank is determined by data's rank and dims's length.
-  auto x_base_shape = input_args[kInputIndex0]->GetShape();
-  auto x_shape = x_base_shape->GetShapeVector();
-  if (MS_UNLIKELY(IsDynamicRank(x_shape))) {
-    return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
+ShapeArray TileFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto &x = input_infos[kInputIndex0];
+  auto x_shape = x->GetShape();
+  if (MS_UNLIKELY(x->IsDynamicRank())) {
+    return {{abstract::TensorShape::kShapeRankAny}};
   }
-
-  auto dims_base_shape = input_args[kInputIndex1]->GetShape();
-  if (MS_UNLIKELY(dims_base_shape->isa<abstract::DynamicSequenceShape>())) {
-    return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
+  auto &dim = input_infos[kInputIndex1];
+  if (MS_UNLIKELY(dim->IsSequence() && dim->IsDynamicSequence())) {
+    return {{abstract::TensorShape::kShapeRankAny}};
   }
-
-  auto dims_array_opt = GetArrayValue<int64_t>(input_args[kInputIndex1]);
-  MS_CHECK_VALUE(dims_array_opt.has_value(),
-                 CheckAndConvertUtils::FormatCommMsg("For primitive[Tile], the dims must has value here."));
-  auto dims_array = dims_array_opt.value();
-  auto dims = ToMultiplesVector(dims_array);
+  auto dim_array_opt = dim->GetArrayValue<int64_t>();
+  MS_CHECK_VALUE(dim_array_opt.has_value(),
+                 CheckAndConvertUtils::FormatCommMsg("For primitive[Tile], the dims must has value."));
+  auto dim_array = dim_array_opt.value();
+  auto dims = ToMultiplesVector(dim_array);
 
   AdaptShapeAndMultipies(&x_shape, &dims);
   auto adapted_rank = x_shape.size();
@@ -115,11 +111,10 @@ BaseShapePtr TileFuncImpl::InferShape(const PrimitivePtr &primitive,
 
     inferred_shape.push_back(dims[i] * x_shape[i]);
   }
-  return std::make_shared<abstract::TensorShape>(inferred_shape);
+  return {inferred_shape};
 }
 
-TypePtr TileFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kInputIndex0]->GetType();
-  return input_type->Clone();
+std::vector<TypeId> TileFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex0]->GetType()};
 }
 }  // namespace mindspore::ops

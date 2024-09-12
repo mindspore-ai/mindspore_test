@@ -135,7 +135,7 @@ from mindspore.ops.function.math_func import bitwise_or_ext as bitwise_or
 # 48
 from mindspore.ops.function.math_func import bitwise_xor_ext as bitwise_xor
 # 49
-
+from mindspore.ops.function.math_func import baddbmm_ext as baddbmm
 # 50
 from mindspore.ops.functional import tile
 # 51
@@ -211,7 +211,7 @@ from mindspore.mint import nn, optim
 # 86
 
 # 87
-
+from mindspore.ops.auto_generate import trunc
 # 88
 
 # 89
@@ -238,8 +238,47 @@ from mindspore.ops.function.math_func import tanh
 
 # 100
 
+# 101
+
+# 102
+
+# 103
+
+# 104
+
+# 105
+
+# 106
+
+# 107
+
+# 108
+
 # 109
 from mindspore.ops.auto_generate import argmin_ext as argmin
+# 110
+
+# 111
+
+# 112
+
+# 113
+
+# 114
+
+# 115
+
+# 116
+
+# 117
+
+# 118
+
+# 119
+
+# 120
+
+# 121
 
 # 122
 
@@ -286,12 +325,16 @@ from mindspore.ops.auto_generate import log1p
 from mindspore.ops.function.math_func import remainder_ext as remainder
 # 285
 from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
-
+# 289
+from mindspore.ops.auto_generate import sign
 
 # 301
 from mindspore.ops.function.math_func import tan
 
 from mindspore.ops.auto_generate import trace_ext as trace
+
+# 304
+from mindspore.ops.function.array_func import tril_ext as tril
 
 
 def add(input, other, *, alpha=1):
@@ -985,6 +1028,87 @@ def zeros(size, *, dtype=None):
     return ops.auto_generate.zeros(size, dtype)
 
 
+def fix(x):
+    """
+    Alias for mindspore.mint.trunc()
+
+    For more details, see func:`mindspore.mint.trunc`.
+    """
+    return trunc(x)
+
+
+def scatter(input, dim, index, src):
+    """
+    Update the value in `src` to `input` according to the specified index.
+    For a 3-D tensor, the output will be:
+
+    .. code-block::
+
+        output[index[i][j][k]][j][k] = src[i][j][k]  # if dim == 0
+
+        output[i][index[i][j][k]][k] = src[i][j][k]  # if dim == 1
+
+        output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The target tensor. The rank of `input` must be at least 1.
+        dim (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input).
+        index (Tensor): The index to do update operation whose data type must be mindspore.int32 or
+            mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
+        src (Tensor, float): The tensor doing the update operation with `input` , has the same data type as
+            `input`, and the shape of `src` should be equal to the shape of `index`. Also can be a float number to
+            scatter.
+
+    Returns:
+        Tensor, has the same shape and type as `input` .
+
+    Raises:
+        TypeError: If `index` is neither int32 nor int64.
+        ValueError: If rank of any of `input` , `index` and `src` less than 1.
+        ValueError: If the shape of `src` is not equal to the shape of `index` .
+        ValueError: If the rank of `src` is not equal to the rank of `input` .
+        TypeError: If the data type of `input` and `src` have different dtypes.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
+        >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
+        >>> out = mint.scatter(input=input, dim=1, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 8. 4. 8.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
+        >>> out = mint.scatter(input=input, dim=0, index=index, src=src)
+        >>> print(out)
+        [[1. 2. 3. 0. 0.]
+        [0. 0. 0. 0. 0.]
+        [4. 5. 6. 0. 0.]
+        [0. 0. 0. 0. 0.]
+        [7. 8. 9. 0. 0.]]
+        >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+        >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+        >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
+        >>> out = mint.scatter(input=input, dim=1, index=index, src=src)
+        >>> print(out)
+        [[1. 0. 2. 0. 3.]
+        [4. 0. 5. 0. 6.]
+        [7. 0. 8. 0. 9.]
+        [0. 0. 0. 0. 0.]
+        [0. 0. 0. 0. 0.]]
+    """
+    return ops.function.array_func.scatter(input, dim, index, src)
+
+
 __all__ = [
     'conv2d',
     'full',
@@ -1101,7 +1225,7 @@ __all__ = [
     # 48
     'min',
     # 49
-
+    'baddbmm',
     # 50
     'tile',
     # 51
@@ -1208,8 +1332,49 @@ __all__ = [
 
     # 100
 
+    # 101
+
+    # 102
+
+    # 103
+
+    # 104
+
+    # 105
+
+    # 106
+
+    # 107
+
+    # 108
+
     # 109
     'argmin',
+    # 110
+
+    # 111
+
+    # 112
+
+    # 113
+
+    # 114
+
+    # 115
+
+    # 116
+
+    # 117
+
+    # 118
+
+    # 119
+
+    # 120
+
+    # 121
+
+    # 122
 
     # 151
     'acos',
@@ -1217,6 +1382,16 @@ __all__ = [
     # 152
     'acosh',
     'arccosh',
+    # 153
+
+    # 154
+
+    # 155
+
+    # 156
+
+    # 157
+    'scatter',
     # 172
     'asin',
     'arcsin',
@@ -1257,10 +1432,13 @@ __all__ = [
     'remainder',
     # 285
     'scatter_add',
+    # 289
+    'sign',
     # 301
     'tan',
     'trace',
     # 304
+    'tril',
 
     # 305
 
