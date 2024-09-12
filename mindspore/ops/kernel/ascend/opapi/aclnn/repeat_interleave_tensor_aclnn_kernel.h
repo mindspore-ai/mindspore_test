@@ -34,7 +34,7 @@ class RepeatInterleaveTensorAscend : public AclnnKernelMod {
 
  private:
   int64_t output_size_ = 0;
-  int64_t dim_;
+  int64_t dim_ = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace kernel

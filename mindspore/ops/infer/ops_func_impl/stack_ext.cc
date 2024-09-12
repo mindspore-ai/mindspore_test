@@ -122,7 +122,7 @@ BaseShapePtr StackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                    "dim", axis_temp, kIncludeBoth, {-SizeToLong(out_rank), SizeToLong(out_rank) - 1}, primitive));
 
   auto axis = axis_temp < 0 ? SizeToLong(out_rank) + axis_temp : axis_temp;
-  (void)inferred_shape.insert(inferred_shape.begin() + axis, num);
+  inferred_shape.insert(inferred_shape.begin() + axis, num);
   return std::make_shared<abstract::TensorShape>(inferred_shape);
 }
 
@@ -138,8 +138,8 @@ TypePtr StackExtFuncImpl::InferType(const PrimitivePtr &primitive,
   auto elements = tuple_type->elements();
   MS_CHECK_VALUE(elements.size() >= 1, CheckAndConvertUtils::FormatCheckIntegerMsg("size of elements", elements.size(),
                                                                                    kGreaterEqual, 1, primitive));
-  MS_EXCEPTION_IF_NULL(elements[0]);
-  auto first_element = elements[0]->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(elements[kInputIndex0]);
+  auto first_element = elements[kInputIndex0]->cast<TensorTypePtr>();
   if (MS_UNLIKELY(first_element == nullptr)) {
     MS_EXCEPTION(TypeError) << "Infer type failed.";
   }
@@ -183,7 +183,7 @@ ShapeArray StackExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Val
                    "dim", axis, kIncludeBoth, {-SizeToLong(out_rank), SizeToLong(out_rank) - 1}, primitive));
 
   axis = axis < 0 ? SizeToLong(out_rank) + axis : axis;
-  (void)inferred_shape.insert(inferred_shape.begin() + axis, num);
+  inferred_shape.insert(inferred_shape.begin() + axis, num);
   return {inferred_shape};
 }
 
@@ -192,7 +192,7 @@ TypePtrList StackExtFuncImpl::InferType(const PrimitivePtr &primitive, const Val
   MS_EXCEPTION_IF_NULL(tuple_x);
   MS_CHECK_VALUE(tuple_x->size() >= 1, CheckAndConvertUtils::FormatCheckIntegerMsg("size of elements", tuple_x->size(),
                                                                                    kGreaterEqual, 1, primitive));
-  TypePtrList elements;
+  TypePtrList elements{};
   elements.reserve(tuple_x->size());
   for (const auto &item : tuple_x->value()) {
     MS_EXCEPTION_IF_NULL(item);

@@ -40,7 +40,6 @@ BaseShapePtr DiagonalFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
   auto input_shape = input_args[0]->GetShape()->GetShapeVector();
   constexpr auto kDimNum = 2;
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   const int64_t input_num = 4;
   const int64_t dyn_shape = abstract::Shape::kShapeDimAny;
@@ -87,7 +86,6 @@ BaseShapePtr DiagonalFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr DiagonalFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]->GetType());
   return input_args[kIndex0]->GetType()->Clone();
 }
 }  // namespace ops

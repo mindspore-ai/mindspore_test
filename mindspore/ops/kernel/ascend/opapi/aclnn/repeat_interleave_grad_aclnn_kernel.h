@@ -35,7 +35,7 @@ class RepeatInterleaveGradAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
-  int64_t dim_;
+  int64_t dim_ = 0;
   int64_t output_size_;
 };
 }  // namespace kernel
