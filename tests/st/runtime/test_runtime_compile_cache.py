@@ -88,9 +88,19 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert not os.path.exists(log_file_name_first)
     assert not os.path.exists(log_file_name_second)
 
+    # Only support kbk
+    assert os.path.exists(file_name)
+    temp_file = file_name + ".tp.py"
+    with open(file_name, "r") as file:
+        ctx = file.read()
+    ctx = ctx.replace("O2", "O0")
+    with open(temp_file, "w") as file:
+        file.write(ctx)
+    assert os.path.exists(temp_file)
+
     os.environ['MS_DEV_RUNTIME_CONF'] = "memory_statistics:True,compile_statistics:True,kbk_cache:True"
     # First run without compile cache
-    cmd_first = f"export GLOG_v=1; python " + file_name + " '" \
+    cmd_first = f"export GLOG_v=1; python " + temp_file + " '" \
         + cache_path + "' > " + log_file_name_first + " 2>&1"
     subprocess.check_output(cmd_first, shell=True)
     assert os.path.exists(log_file_name_first)
@@ -120,7 +130,7 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert check_hash_file(cache_path, first_run_hash)
 
     # Second run with compile cache
-    cmd_second = f"export GLOG_v=1; python " + file_name + " '" \
+    cmd_second = f"export GLOG_v=1; python " + temp_file + " '" \
         + cache_path + "' > " + log_file_name_second + " 2>&1"
     subprocess.check_output(cmd_second, shell=True)
     assert os.path.exists(log_file_name_second)
@@ -147,10 +157,11 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     # Clean files
     os.remove(log_file_name_first)
     os.remove(log_file_name_second)
+    os.remove(temp_file)
     shutil.rmtree(cache_path)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_compile_cache_load_weights():
     """
     Feature: compile cache.
@@ -162,7 +173,7 @@ def test_compile_cache_load_weights():
     run_twice_with_same_network(pypath, "./weight", "weight_first.txt", "weight_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_compile_cache_lenet():
     """
     Feature: compile cache.
@@ -174,7 +185,7 @@ def test_compile_cache_lenet():
     run_twice_with_same_network(pypath, "./lenet", "lenet_first.txt", "lenet_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_compile_cache_ms_function():
     """
     Feature: compile cache.
@@ -187,7 +198,7 @@ def test_compile_cache_ms_function():
                                 "lenet_ms_function_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_compile_cache_lenet_ge():
     """
     Feature: compile cache.
@@ -199,7 +210,7 @@ def test_compile_cache_lenet_ge():
     run_twice_with_same_network(pypath, "./lenet", "lenet_first.txt", "lenet_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_resnet_infer_compile_cache():
     """
     Feature: support compile cache in inference scenarios.
