@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <Eigen/Core>
 
 #include "inc/cpu_context.h"
 #include "inc/kernel_log.h"
@@ -333,6 +334,68 @@ inline int32_t LongToInt(CpuKernelContext &ctx, int64_t u) {
     return INT_MAX;
   }
   return static_cast<int32_t>(u);
+}
+
+template <typename T>
+bool FloatEqualImpl(T lhs, T rhs, T eps) {
+  auto diff = std::fabs(lhs - rhs);
+  if (diff <= eps) {
+    return true;
+  }
+  return diff <= eps * std::fmax(std::fabs(lhs), std::fabs(rhs));
+}
+
+template <typename T>
+struct always_false : std::false_type {};
+
+template <typename T, typename S>
+bool FloatEqual(T lhs, S rhs) {
+  static_assert(std::is_floating_point<T>::value, "Value must be an floating point type.");
+  static_assert(std::is_floating_point<S>::value, "Value must be an floating point type.");
+  using PromotedType = std::common_type_t<T, S>;
+  PromotedType eps;
+  if constexpr (std::is_same_v<PromotedType, double>) {
+    eps = 1e-9f;
+  } else if constexpr (std::is_same_v<PromotedType, float>) {
+    eps = 1e-5f;
+  } else {
+    static_assert(always_false<PromotedType>::value, "Type is not supported.");
+  }
+  return FloatEqualImpl(static_cast<PromotedType>(lhs), static_cast<PromotedType>(rhs), eps);
+}
+
+template <typename T>
+bool FloatEqual(T lhs, Eigen::half rhs) {
+  return FloatEqual(lhs, static_cast<float>(rhs));
+}
+
+template <typename T>
+bool FloatEqual(Eigen::half lhs, T rhs) {
+  return FloatEqual(static_cast<float>(lhs), rhs);
+}
+
+template <typename TargetType, typename SourceType>
+TargetType IntegerCast(CpuKernelContext &ctx, SourceType value) {
+  static_assert(std::is_integral<TargetType>::value, "TargetType must be an integral type.");
+  static_assert(std::is_integral<SourceType>::value, "SourceType must be an integral type.");
+
+  // Check for overflow/underflow when casting signed to unsigned
+  if constexpr (std::is_unsigned<TargetType>::value && std::is_signed<SourceType>::value) {
+    if (value < 0) {
+      CUST_AICPU_LOGE(ctx, "Try to cast negative value to unsigned type.");
+      return 0;
+    }
+  }
+
+  // Check if the value is within the range of TargetType
+  if (value < static_cast<SourceType>(std::numeric_limits<TargetType>::min()) ||
+      value > static_cast<SourceType>(std::numeric_limits<TargetType>::max())) {
+    CUST_AICPU_LOGE(ctx, "Value out of range for target type.");
+    return 0;
+  }
+
+  // Safe to cast
+  return static_cast<TargetType>(value);
 }
 }  // namespace aicpu
 #endif

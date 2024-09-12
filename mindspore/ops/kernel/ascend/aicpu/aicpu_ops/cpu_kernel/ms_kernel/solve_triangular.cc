@@ -171,8 +171,11 @@ uint32_t SolveTriangularCpuKernel::SolveTriangularCompute(CpuKernelContext &ctx)
   CUST_KERNEL_CHECK_NULLPTR(ctx, casted_a_addr, KERNEL_STATUS_PARAM_INVALID,
                             "[Solve_triangular] Malloc memory [casted_a_array] failed!")
   T_out *casted_b_addr = static_cast<T_out *>(malloc(sizeof(T_out) * b_mat_size));
-  CUST_KERNEL_CHECK_NULLPTR(ctx, casted_b_addr, KERNEL_STATUS_PARAM_INVALID,
-                            "[Solve_triangular] Malloc memory [casted_b_array] failed!")
+  if (casted_b_addr == nullptr) {
+    free(casted_a_addr);
+    CUST_KERNEL_LOG_ERROR(ctx, "[Solve_triangular] Malloc memory [casted_b_array] failed!");
+    return KERNEL_STATUS_INNER_ERROR;
+  }
 
   for (size_t i = 0; i < batch; ++i) {
     T_in *a_batch_addr = input_a_addr + i * a_mat_size;

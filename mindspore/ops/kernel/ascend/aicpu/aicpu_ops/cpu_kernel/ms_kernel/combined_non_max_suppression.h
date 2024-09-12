@@ -21,6 +21,7 @@
 #include "inc/ms_cpu_kernel.h"
 
 #include "utils/bcast.h"
+#include "utils/kernel_util.h"
 
 namespace non_max_suppression_local {
 struct score_index {
@@ -30,7 +31,7 @@ struct score_index {
   score_index() {}
   score_index(int bi, float s, int sbi) : box_index(bi), score(s), suppress_begin_index(sbi) {}
   bool operator<(const score_index &b) const {
-    return (score < b.score) || ((score == b.score) && (box_index > b.box_index));
+    return (score < b.score) || (aicpu::FloatEqual(score, b.score) && (box_index > b.box_index));
   }
 };
 

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <memory>
 #include <iostream>
+#include <math.h>
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_types.h"
 #include "inc/kernel_log.h"
@@ -194,7 +195,7 @@ HsvTuple rgb2hsv(const float r, const float g, const float b) {
   float s = 0.0f;
   // hue
   if (chroma > 0.0f) {
-    if (M == r) {
+    if (FloatEqual(M, r)) {
       const float num = (g - b) / chroma;
       const float sign = copysignf(1.0f, num);
       h = ((sign < 0.0f) * 6.0f + sign * fmodf(sign * num, 6.0f)) / 6.0f;

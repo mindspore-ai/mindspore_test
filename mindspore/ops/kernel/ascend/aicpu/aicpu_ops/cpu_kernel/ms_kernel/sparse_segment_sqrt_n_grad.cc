@@ -122,7 +122,7 @@ uint32_t SparseSegmentSqrtNGradCpuKernel::ComputeKernel(CpuKernelContext &ctx) {
     countnum = 1;
   }
 
-  int i = m;
+  int i = IntegerCast<int>(ctx, m);
   for (size_t j = 1; j <= countnum; j++) {
     for (size_t a = 0; a < n; a++) {
       y_addr[indices_addr[i - j] * n + a] += x_addr[beginindex * n + a] / (T)(sqrt(countnum));

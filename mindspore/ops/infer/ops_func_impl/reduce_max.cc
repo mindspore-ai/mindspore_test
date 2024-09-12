@@ -27,8 +27,6 @@ BaseShapePtr ReduceMaxFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ReduceMaxFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
   return input_args[0]->GetType()->Clone();
 }
 }  // namespace ops

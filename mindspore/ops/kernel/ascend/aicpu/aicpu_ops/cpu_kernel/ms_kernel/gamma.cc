@@ -57,9 +57,9 @@ uint32_t GammaCpuKernel::Compute(CpuKernelContext &ctx) {
     beta_shape.insert(beta_shape.begin(), 1);
   }
 
-  int64_t remainder = output_size;
-  int64_t alpha_remainder = alpha_size;
-  int64_t beta_remainder = beta_size;
+  int64_t remainder = IntegerCast<int64_t>(ctx, output_size);
+  int64_t alpha_remainder = IntegerCast<int64_t>(ctx, alpha_size);
+  int64_t beta_remainder = IntegerCast<int64_t>(ctx, beta_size);
   std::vector<int64_t> a_idx(output_size);
   std::vector<int64_t> b_idx(output_size);
   for (size_t i = 0; i < output_shape.size(); ++i) {

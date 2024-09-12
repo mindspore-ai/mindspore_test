@@ -138,7 +138,7 @@ void CombinedNonMaxSuppressionCpuKernel::non_max_suppression(float **boxes_buffe
 
     next_si.suppress_begin_index = selected.size();
     if (!should_hard_suppress) {
-      if (next_si.score == original_score) {
+      if (FloatEqual(next_si.score, original_score)) {
         selected.push_back(next_si.box_index);
         continue;
       }

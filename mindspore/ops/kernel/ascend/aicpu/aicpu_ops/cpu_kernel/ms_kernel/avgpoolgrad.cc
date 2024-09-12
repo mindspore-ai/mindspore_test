@@ -354,7 +354,7 @@ uint32_t ComputeAvgPoolGradImpl(CpuKernelContext &ctx) {
         max_core_num = std::min(max_core_num, 4U);
       }
       if (max_core_num > total_images) {
-        max_core_num = total_images;
+        max_core_num = IntegerCast<uint32_t>(ctx, total_images);
       }
       return CpuKernelUtils::ParallelFor(ctx, total_images, total_images / max_core_num, shard_NCHW);
     }
@@ -371,7 +371,7 @@ uint32_t ComputeAvgPoolGradImpl(CpuKernelContext &ctx) {
         max_core_num = std::min(max_core_num, 4U);
       }
       if (max_core_num > out_backprop_batch) {
-        max_core_num = out_backprop_batch;
+        max_core_num = IntegerCast<uint32_t>(ctx, out_backprop_batch);
       }
       return CpuKernelUtils::ParallelFor(ctx, out_backprop_batch, out_backprop_batch / max_core_num, shard_NHWC);
     }

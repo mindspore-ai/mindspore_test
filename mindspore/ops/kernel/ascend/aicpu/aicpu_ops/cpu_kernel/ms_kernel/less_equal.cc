@@ -140,7 +140,7 @@ uint32_t LessEqualCpuKernel::NoBcastCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_less = [&](int64_t start, int64_t end) { SpecialCompute<T>(ctx, type, start, end, in0, in1, out); };
@@ -173,7 +173,7 @@ uint32_t LessEqualCpuKernel::BcastCompute(CpuKernelContext &ctx, const Bcast &bc
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_less = [&](int64_t start, int64_t end) {

@@ -399,7 +399,7 @@ uint32_t SparseCrossCpuKernel::SparseCrossCompute(CpuKernelContext &ctx) {
     num_buckets_ = num_buckets_ptr->GetInt();
   }
   uint32_t start1 = 0;
-  uint32_t stop = num;
+  uint32_t stop = IntegerCast<uint32_t>(ctx, num);
   OpInputList indices_list_in(&ctx, start1, stop);
   start1 = start1 + num;
   stop = start1 + num;

@@ -162,7 +162,7 @@ uint32_t SparseReshapeCpuKernel::Compute(CpuKernelContext &ctx) {
       max_core_num = std::min(max_core_num, 4U);  // up to 4 cpu cores
     }
     if (max_core_num > nnz) {
-      max_core_num = nnz;
+      max_core_num = IntegerCast<uint32_t>(ctx, nnz);
     }
     auto sharder_sparse_reshape = [&](int64_t start, int64_t end) {
       SpecialCompute(start, end, in0, out0, input_strides, output_strides, input_rank, output_rank);

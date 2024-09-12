@@ -17,6 +17,7 @@
 #include "fused_sparse_ftrl.h"
 #include "inc/kernel_log.h"
 #include "utils/fused_sparse_utils.h"
+#include "utils/kernel_util.h"
 
 namespace aicpu {
 namespace {
@@ -45,7 +46,7 @@ void ComputeFtrl(CpuKernelContext &ctx, MultiThreadComputeParams *input_params, 
       auto summed_grad = unique_sparse_grad.value_[k];
       auto accum_new = accum[j] + summed_grad * summed_grad;
       float y;
-      if (lr_power == DefaultLrPower) {
+      if (FloatEqual(lr_power, DefaultLrPower)) {
         y = std::sqrt(accum_new);
         linear[j] += summed_grad - (y - std::sqrt(accum[j])) / lr * var[j];
       } else {

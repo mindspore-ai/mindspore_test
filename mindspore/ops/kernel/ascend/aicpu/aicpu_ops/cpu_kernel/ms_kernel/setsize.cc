@@ -133,7 +133,7 @@ uint32_t SetSizeCpuKernel::IndicesValid(CpuKernelContext &ctx, SparseTensor &st)
       max_core_num = std::min(max_core_num, 4U);
     }
     if (max_core_num > dim_size) {
-      max_core_num = dim_size;
+      max_core_num = IntegerCast<uint32_t>(ctx, dim_size);
     }
     auto invalid_setsize = [&](int64_t start, int64_t end) {
       for (int64_t i = start; i < end; ++i) {
@@ -193,7 +193,7 @@ uint32_t SetSizeCpuKernel::PopulateFromSparseGroup(CpuKernelContext &ctx, const 
       max_core_num = std::min(max_core_num, 4U);
     }
     if (max_core_num > dim_size) {
-      max_core_num = dim_size;
+      max_core_num = IntegerCast<uint32_t>(ctx, dim_size);
     }
     auto group_value_setsize = [&](int64_t start, int64_t end) {
       for (int64_t i = start; i < end; ++i) {

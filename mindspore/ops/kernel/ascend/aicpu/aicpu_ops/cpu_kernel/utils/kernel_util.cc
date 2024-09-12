@@ -20,8 +20,10 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <math.h>
 
 #include "inc/cust_cpu_utils.h"
+#include "utils/eigen_tensor.h"
 
 namespace aicpu {
 namespace {
@@ -295,5 +297,4 @@ uint32_t CheckTensorShapeSame(CpuKernelContext &ctx, const std::map<std::string,
   }
   return KERNEL_STATUS_OK;
 }
-
 }  // namespace aicpu

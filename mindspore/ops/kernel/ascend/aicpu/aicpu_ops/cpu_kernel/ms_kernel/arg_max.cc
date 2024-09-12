@@ -173,7 +173,7 @@ uint32_t ArgMaxCpuKernel::ArgMaxCompute(CpuKernelContext &ctx) {
       for (size_t i = start; i < end; i++) {
         int64_t output_seq[kDimsNum];
         output_seq[data_addr_zero] = 0;
-        int64_t tmp = i;
+        int64_t tmp = IntegerCast<int64_t>(ctx, i);
         int64_t addr_base = 0;
         for (int64_t j = kDimsNum - 1; j > -1; j--) {
           if (j == data_addr_zero) {

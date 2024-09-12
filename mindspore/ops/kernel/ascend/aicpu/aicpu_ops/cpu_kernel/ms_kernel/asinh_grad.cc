@@ -125,7 +125,7 @@ void AsinhGradCpuKernel::SpecialComputeFP16(int64_t start, int64_t end, const T 
   for (int64_t i = start; i < end; i++) {
     float dividend = static_cast<float>(input2[i]);
     float divisor = static_cast<float>(std::cosh(static_cast<float>(input1[i])));
-    if (divisor == 0) {
+    if (FloatEqual(divisor, 0.f)) {
       output[i] = std::numeric_limits<T>::quiet_NaN();
       continue;
     }

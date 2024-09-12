@@ -89,7 +89,8 @@ uint32_t LogCpuKernel::LogCheck(CpuKernelContext &ctx) {
   AttrValue *base_ptr = ctx.GetAttr("base");
   CUST_KERNEL_CHECK_NULLPTR(ctx, base_ptr, KERNEL_STATUS_PARAM_INVALID, "Get attr base failed.");
   float base_ = base_ptr->GetFloat();
-  CUST_KERNEL_CHECK_FALSE(ctx, ((base_ > 0 && base_ != 1.0) || base_ == -1.0), KERNEL_STATUS_PARAM_INVALID,
+  CUST_KERNEL_CHECK_FALSE(ctx, ((base_ > 0 && !FloatEqual(base_, 1.0)) || FloatEqual(base_, -1.0)),
+                          KERNEL_STATUS_PARAM_INVALID,
                           "Attr base must be -1.0  or base > 0 and base is not "
                           "equal to 1 , but got attr base[%lld]",
                           base_);

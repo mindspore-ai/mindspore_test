@@ -1,14 +1,23 @@
-/*
+/**
+ * Copyright (c) 2022-2022 Huawei Technologies Co., Ltd.  All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "op_proto/inc/nn_pooling_ops.h"
 #include <cmath>
 #include <utility>
 #include <vector>
 #include <unordered_map>
+#include "op_proto/inc/nn_pooling_ops.h"
 #include "custom_op_proto/cust_nn_ops.h"
 #include "register/op_impl_registry.h"
 #include "utils/util.h"
@@ -33,6 +42,10 @@ CUST_IMPLEMT_INFERFUNC(AdaptiveAvgPool2D, AdaptiveAvgPool2dInferShape) {
     return GRAPH_FAILED;
   }
   std::vector<int64_t> dims_input = shape.GetDims();
+  if (dims_input.size() < DIM_SIZE2) {
+    OP_LOGE(TbeGetName(op).c_str(), "input rank must be greater than 2.");
+    return GRAPH_FAILED;
+  }
   // set output shape
   std::vector<int64_t> dim_vector;
   for (size_t i = 0; i < dims_input.size(); i++) {
@@ -106,6 +119,10 @@ IMPLEMT_COMMON_INFERFUNC(AdaptiveAvgPool3dInferShape) {
   auto input_size_dim_num = input_size_shape.size();
   std::vector<int64_t> output_shape(input_size_shape.begin(), input_size_shape.end());
   auto output_size_num = output_size.size();
+  if (input_size_dim_num <= 3) {
+    OP_LOGE(TbeGetName(op).c_str(), "Input rank must be greater than 3.");
+    return GRAPH_PARAM_INVALID;
+  }
   if (output_size_num == 1) {
     for (uint64_t i = input_size_dim_num - 3; i < input_size_dim_num; ++i) {
       if (output_size[0] < 0) {
@@ -495,9 +512,9 @@ CUST_IMPLEMT_VERIFIER(MaxPool3DWithArgmax, MaxPool3DWithArgmaxVerify) {
 
 CUST_INFER_FUNC_REG(MaxPool3DWithArgmax, MaxPool3DWithArgmaxInferShape);
 CUST_VERIFY_FUNC_REG(MaxPool3DWithArgmax, MaxPool3DWithArgmaxVerify);
-//-------------------MaxPool3DWithArgmax---------------------
+// ------------------MaxPool3DWithArgmax---------------------
 
-//-------------------FractionalMaxPool---------------------
+// ------------------FractionalMaxPool---------------------
 IMPLEMT_INFERFUNC(FractionalMaxPool, FractionalMaxPoolInfer) {
   auto tensor = op.get_input_desc_x();
   Shape input_value;
@@ -559,9 +576,9 @@ IMPLEMT_INFERFUNC(FractionalMaxPool, FractionalMaxPoolInfer) {
 }
 
 INFER_FUNC_REG(FractionalMaxPool, FractionalMaxPoolInfer);
-//-------------------FractionalMaxPool END---------------------
+// ------------------FractionalMaxPool END---------------------
 
-//-------------------FractionalMaxPoolGrad---------------------
+// ------------------FractionalMaxPoolGrad---------------------
 IMPLEMT_INFERFUNC(FractionalMaxPoolGrad, FractionalMaxPoolGradInfer) {
   Shape input_shape;
   if (WithRank(op.GetInputDesc(0), 4, input_shape, op) != GRAPH_SUCCESS) {
@@ -584,9 +601,9 @@ IMPLEMT_INFERFUNC(FractionalMaxPoolGrad, FractionalMaxPoolGradInfer) {
 }
 
 INFER_FUNC_REG(FractionalMaxPoolGrad, FractionalMaxPoolGradInfer);
-//-------------------FractionalMaxPoolGrad END---------------------
+// ------------------FractionalMaxPoolGrad END---------------------
 
-//-------------------MaxPool3DGradWithArgMax---------------------
+// ------------------MaxPool3DGradWithArgMax---------------------
 CUST_IMPLEMT_VERIFIER(MaxPool3DGradWithArgmax, MaxPool3DGradWithArgmaxVerify) {
   const size_t DIM_SIZE1 = 1;
   const size_t DIM_SIZE3 = 3;
@@ -700,9 +717,9 @@ CUST_IMPLEMT_INFERFUNC(MaxPool3DGradWithArgmax, MaxPool3DGradWithArgmaxInferShap
 }
 CUST_INFER_FUNC_REG(MaxPool3DGradWithArgmax, MaxPool3DGradWithArgmaxInferShape);
 CUST_VERIFY_FUNC_REG(MaxPool3DGradWithArgmax, MaxPool3DGradWithArgmaxVerify);
-//-------------------MaxPool3DGradWithArgMax---------------------
+// ------------------MaxPool3DGradWithArgMax---------------------
 
-//-------------------NthElement---------------------
+// ------------------NthElement---------------------
 IMPLEMT_INFERFUNC(NthElement, NthElementInfer) {
   std::vector<std::string> input_infer_depends = {"n"};
   PREPARE_DYNAMIC_SHAPE(input_infer_depends);
@@ -752,20 +769,17 @@ IMPLEMT_INFERFUNC(NthElement, NthElementInfer) {
 }
 
 INFER_FUNC_REG(NthElement, NthElementInfer);
-//-------------------NthElement END---------------------
+// ------------------NthElement END---------------------
 
-//-------------------MaxUnpool2d---------------------
-graphStatus MaxUnpool2dVerify(const Operator &op, std::vector<int64_t> &ksize, std::vector<int64_t> &strides,
-                              std::vector<int64_t> &pads, std::string &format) {
-  RETURN_IF_FAILURE(op.GetAttr("ksize", ksize));
-  RETURN_IF_FAILURE(op.GetAttr("strides", strides));
-  RETURN_IF_FAILURE(op.GetAttr("pads", pads));
-  RETURN_IF_FAILURE(op.GetAttr("data_format", format));
+// ------------------MaxUnpool2d---------------------
+graphStatus MaxUnpool2dVerify(const Operator &op, const std::vector<int64_t> &ksize,
+                              const std::vector<int64_t> &strides, const std::vector<int64_t> &pads,
+                              const std::string &format) {
   if (format != "NCHW" && format != "NHWC") {
     OP_LOGE(TbeGetName(op).c_str(), "Format '%s' not supported.", format.c_str());
     return GRAPH_FAILED;
   }
-  std::unordered_map<std::string, std::vector<int64_t> &> m{
+  std::unordered_map<std::string, const std::vector<int64_t> &> m{
     {"ksize", ksize},
     {"strides", pads},
     {"pads", pads},
@@ -785,6 +799,10 @@ CUST_IMPLEMT_INFERFUNC(MaxUnpool2D, MaxUnpool2DInfer) {
   std::vector<int64_t> pads;
   std::vector<int64_t> output_shape;
   std::string format;
+  RETURN_IF_FAILURE(op.GetAttr("ksize", ksize));
+  RETURN_IF_FAILURE(op.GetAttr("strides", strides));
+  RETURN_IF_FAILURE(op.GetAttr("pads", pads));
+  RETURN_IF_FAILURE(op.GetAttr("data_format", format));
   RETURN_IF_FAILURE(MaxUnpool2dVerify(op, ksize, strides, pads, format));
 
   auto x_desc = op.GetInputDescByName("x");
@@ -809,20 +827,17 @@ CUST_IMPLEMT_INFERFUNC(MaxUnpool2D, MaxUnpool2DInfer) {
 }
 
 CUST_INFER_FUNC_REG(MaxUnpool2D, MaxUnpool2DInfer);
-//-------------------MaxUnpool2D END---------------------
+// ------------------MaxUnpool2D END---------------------
 
-//-------------------MaxUnpool3D---------------------
-graphStatus MaxUnpool3dVerify(const Operator &op, std::vector<int64_t> &ksize, std::vector<int64_t> &strides,
-                              std::vector<int64_t> &pads, std::string &format) {
-  RETURN_IF_FAILURE(op.GetAttr("ksize", ksize));
-  RETURN_IF_FAILURE(op.GetAttr("strides", strides));
-  RETURN_IF_FAILURE(op.GetAttr("pads", pads));
-  RETURN_IF_FAILURE(op.GetAttr("data_format", format));
+// ------------------MaxUnpool3D---------------------
+graphStatus MaxUnpool3dVerify(const Operator &op, const std::vector<int64_t> &ksize,
+                              const std::vector<int64_t> &strides, const std::vector<int64_t> &pads,
+                              const std::string &format) {
   if (format != "NCDHW" && format != "NDHWC") {
     OP_LOGE(TbeGetName(op).c_str(), "Format '%s' not supported.", format.c_str());
     return GRAPH_FAILED;
   }
-  std::unordered_map<std::string, std::vector<int64_t> &> m{
+  std::unordered_map<std::string, const std::vector<int64_t> &> m{
     {"ksize", ksize},
     {"strides", pads},
     {"pads", pads},
@@ -842,6 +857,10 @@ CUST_IMPLEMT_INFERFUNC(MaxUnpool3D, MaxUnpool3DInfer) {
   std::vector<int64_t> pads;
   std::vector<int64_t> output_shape;
   std::string format;
+  RETURN_IF_FAILURE(op.GetAttr("ksize", ksize));
+  RETURN_IF_FAILURE(op.GetAttr("strides", strides));
+  RETURN_IF_FAILURE(op.GetAttr("pads", pads));
+  RETURN_IF_FAILURE(op.GetAttr("data_format", format));
   RETURN_IF_FAILURE(MaxUnpool3dVerify(op, ksize, strides, pads, format));
 
   auto x_desc = op.GetInputDescByName("x");
@@ -868,7 +887,7 @@ CUST_IMPLEMT_INFERFUNC(MaxUnpool3D, MaxUnpool3DInfer) {
 }
 
 CUST_INFER_FUNC_REG(MaxUnpool3D, MaxUnpool3DInfer);
-//-------------------MaxUnpool3D END---------------------
+// ------------------MaxUnpool3D END---------------------
 
 // -----------------FractionalMaxPool3DWithFixedKsize start----------------
 IMPLEMT_COMMON_INFERFUNC(FractionalMaxPool3DWithFixedKsizeInferShape) {

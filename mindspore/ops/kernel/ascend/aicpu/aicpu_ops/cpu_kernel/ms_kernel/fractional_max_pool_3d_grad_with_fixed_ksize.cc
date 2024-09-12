@@ -165,7 +165,7 @@ uint32_t FractionalMaxPool3DGradWithFixedKsizeCpuKernel::FractionalMaxPool3DGrad
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > inputC) {
-      max_core_num = inputC;
+      max_core_num = IntegerCast<uint32_t>(ctx, inputC);
     }
     if (max_core_num == 0) {
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num should not be 0.");
@@ -194,7 +194,7 @@ uint32_t FractionalMaxPool3DGradWithFixedKsizeCpuKernel::FractionalMaxPool3DGrad
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > inputN) {
-      max_core_num = inputN;
+      max_core_num = IntegerCast<uint32_t>(ctx, inputN);
     }
     if (max_core_num == 0) {
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num should not be 0.");

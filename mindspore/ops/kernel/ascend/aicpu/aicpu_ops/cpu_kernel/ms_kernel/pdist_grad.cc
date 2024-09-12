@@ -65,7 +65,7 @@ struct Grad {
 
   struct t_grad {
     static inline float backward(float diff, float grad, float dist, float p) {
-      return dist == 0.0f ? 0.0f : grad * diff / dist;
+      return FloatEqual(dist, 0.0f) ? 0.0f : grad * diff / dist;
     }
 
     static inline Eigen::half backward(Eigen::half diff, Eigen::half grad, Eigen::half dist, float p) {
@@ -119,17 +119,16 @@ struct Grad {
     T zero = T{0};
     auto shard_fill = [&](int64_t start, int64_t end) { std::fill(y + start, y + end, zero); };
     SWITCH_PARALLEL(shard_fill, data_num, 1);
-    if (p == 0.0) {
+    if (FloatEqual(p, 0.f)) {
       return KERNEL_STATUS_OK;
-    } else if (p == 1.0) {
+    } else if (FloatEqual(p, 1.f)) {
       return ParallelForPdistGrad<o_grad>(grad, x, dist, y, p, ctx);
-    } else if (p == 2.0) {
+    } else if (FloatEqual(p, 2.f)) {
       return ParallelForPdistGrad<t_grad>(grad, x, dist, y, p, ctx);
     } else if (std::isinf(p)) {
       return ParallelForPdistGrad<i_grad>(grad, x, dist, y, p, ctx);
-    } else {
-      return ParallelForPdistGrad<p_grad>(grad, x, dist, y, p, ctx);
     }
+    return ParallelForPdistGrad<p_grad>(grad, x, dist, y, p, ctx);
   }
 };  // Grad
 

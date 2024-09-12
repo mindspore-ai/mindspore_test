@@ -21,6 +21,7 @@
 #include <cmath>
 #include <string>
 #include "cpu_context.h"
+#include "utils/kernel_util.h"
 
 namespace aicpu {
 // Defines functions for different types of sampling kernels.
@@ -125,7 +126,7 @@ struct GaussianKernelFunc {
 struct BoxKernelFunc {
   float operator()(float x) const {
     x = std::abs(x);
-    return x < 0.5f ? 1. : x == 0.5f ? 0.5f : 0.0f;
+    return x < 0.5f ? 1. : FloatEqual(x, 0.5f) ? 0.5f : 0.0f;
   }
   float Radius() const { return 1.f; }
 };

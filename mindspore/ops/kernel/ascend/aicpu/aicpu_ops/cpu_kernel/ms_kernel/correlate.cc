@@ -123,8 +123,11 @@ uint32_t CorrelateCpuKernel::CorrelateCompute(CpuKernelContext &ctx) {
   CUST_KERNEL_CHECK_NULLPTR(ctx, casted_a_array, KERNEL_STATUS_PARAM_INVALID,
                             "[Correlate] Malloc memory [casted_a_array] failed!")
   T_out *casted_v_array = static_cast<T_out *>(malloc(sizeof(T_out) * v_size));
-  CUST_KERNEL_CHECK_NULLPTR(ctx, casted_v_array, KERNEL_STATUS_PARAM_INVALID,
-                            "[Correlate] Malloc memory [casted_v_array] failed!")
+  if (casted_v_array == nullptr) {
+    free(casted_a_array);
+    CUST_KERNEL_LOG_ERROR(ctx, "[Correlate] Malloc memory [casted_v_array] failed!");
+    return KERNEL_STATUS_PARAM_INVALID;
+  }
   for (int64_t i = 0; i < a_size; i++) {
     casted_a_array[i] = static_cast<T_out>(a_array[i]);
   }
@@ -143,8 +146,12 @@ uint32_t CorrelateCpuKernel::CorrelateCompute(CpuKernelContext &ctx) {
     out_size = long_size + short_size - 1;
   }
   T_out *long_array = static_cast<T_out *>(malloc(sizeof(T_out) * padded_long_size));
-  CUST_KERNEL_CHECK_NULLPTR(ctx, long_array, KERNEL_STATUS_PARAM_INVALID,
-                            "[Correlate] Malloc memory [long_array] failed!")
+  if (long_array == nullptr) {
+    free(casted_a_array);
+    free(casted_v_array);
+    CUST_KERNEL_LOG_ERROR(ctx, "[Correlate] Malloc memory [long_array] failed!");
+    return KERNEL_STATUS_PARAM_INVALID;
+  }
 
   T_out *short_array;
   if (a_ge_v) {
@@ -229,8 +236,11 @@ uint32_t CorrelateCpuKernel::CorrelateComputeComplex(CpuKernelContext &ctx) {
     out_size = long_size + short_size - 1;
   }
   T *long_array = static_cast<T *>(malloc(sizeof(T) * padded_long_size));
-  CUST_KERNEL_CHECK_NULLPTR(ctx, long_array, KERNEL_STATUS_PARAM_INVALID,
-                            "[Correlate] Malloc memory [long_array] failed!")
+  if (long_array == nullptr) {
+    free(conj_v_array);
+    CUST_KERNEL_LOG_ERROR(ctx, "[Correlate] Malloc memory [long_array] failed!");
+    return KERNEL_STATUS_PARAM_INVALID;
+  }
   T *short_array;
   if (a_ge_v) {
     short_array = conj_v_array;

@@ -24,6 +24,7 @@
 #include "inc/kernel_log.h"
 #include "context/common/status.h"
 #include "unsupported/Eigen/CXX11/Tensor"
+#include "utils/kernel_util.h"
 
 namespace {
 const char *kDropout2d = "Dropout2D";
@@ -65,12 +66,12 @@ static uint32_t CalDropout2d(CpuKernelContext &ctx, float p, std::vector<void *>
   if (p > 1 || p < 0) {
     CUST_KERNEL_LOG_ERROR(ctx, "dropout probability must be between 0 and 1, but got %f", p);
     return KERNEL_STATUS_PARAM_INVALID;
-  } else if (p == 0) {
+  } else if (FloatEqual(p, 0.f)) {
     auto ret = memcpy_s(output, data_num * sizeof(T), input, data_num * sizeof(T));
     CUST_KERNEL_CHECK_FALSE(ctx, (ret == EOK), KERNEL_STATUS_PARAM_INVALID, "Dropout2d memcpy_s failed.");
     std::fill(&mask[0], &mask[data_num], true);
     return KERNEL_STATUS_OK;
-  } else if (p == 1) {
+  } else if (FloatEqual(p, 1.f)) {
     auto ret = memset_s(output, data_num * sizeof(T), 0x00, data_num * sizeof(T));
     CUST_KERNEL_CHECK_FALSE(ctx, (ret == EOK), KERNEL_STATUS_PARAM_INVALID, "Dropout2d memset_s failed.");
     std::fill(&mask[0], &mask[data_num], false);

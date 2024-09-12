@@ -152,7 +152,7 @@ uint32_t ComputeGradSpansCore(CpuKernelContext &context, const Spans *spans, con
       int input_index = starts_vec(output_index);
       for (int j = 0; j < spans->span_size; ++j, ++input_index) {
         const float weight = weights_vec(output_index * spans->span_size + j);
-        if (weight != 0.0f && input_index < forward_input_size) {
+        if (!FloatEqual(weight, 0.0f) && input_index < forward_input_size) {
           grad_components[input_index].push_back(GradComponent{output_index, weight});
         }
       }

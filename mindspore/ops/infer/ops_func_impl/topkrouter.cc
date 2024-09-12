@@ -29,13 +29,10 @@ namespace ops {
 BaseShapePtr TopKRouterFuncImpl::InferShape(const PrimitivePtr &primitive,
                                             const std::vector<abstract::AbstractBasePtr> &input_args) const {
   // inputs (x, capacity, expert_num)
-  const int64_t InputNumber = 3;
-  MS_EXCEPTION_IF_NULL(primitive);
+  constexpr int64_t kInputNumber = 3;
   auto prim_name = primitive->name();
   auto input1_shape_ptr = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(input1_shape_ptr);
   auto input3_shape_ptr = input_args[kInputIndex2]->GetShape();
-  MS_EXCEPTION_IF_NULL(input3_shape_ptr);
   if (input1_shape_ptr->IsDynamic() || input3_shape_ptr->IsDynamic() || !IsValueKnown(input_args[kInputIndex2])) {
     MS_EXCEPTION(ValueError) << "For TopKRouter ops the input x and expert_num must be static shape";
   }
@@ -46,7 +43,7 @@ BaseShapePtr TopKRouterFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   // check x shape
   auto x_rank = SizeToLong(input_shape.size());
-  (void)CheckAndConvertUtils::CheckInteger("rank of 'x'", x_rank, kEqual, InputNumber, prim_name);
+  (void)CheckAndConvertUtils::CheckInteger("rank of 'x'", x_rank, kEqual, kInputNumber, prim_name);
 
   abstract::ShapePtr combine_shape_ptr;
   ShapeVector combine_shape = {input_shape};
@@ -69,7 +66,6 @@ BaseShapePtr TopKRouterFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr TopKRouterFuncImpl::InferType(const PrimitivePtr &primitive,
                                       const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   const std::set<TypePtr> valid_types = {kInt32, kInt64};
   std::set<TypePtr> scala_valid_types{kInt64};

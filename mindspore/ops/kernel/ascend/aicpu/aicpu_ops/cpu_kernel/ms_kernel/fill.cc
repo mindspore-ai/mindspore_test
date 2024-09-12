@@ -153,7 +153,7 @@ void FillCpuKernel::FillOutput(CpuKernelContext &ctx, const Tensor *value_tensor
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto shared_fill = [&](int64_t start, int64_t end) { SpecialFillOutput<T>(start, end, output_data, value); };

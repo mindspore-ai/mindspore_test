@@ -72,7 +72,7 @@ void GeqrfCpuKernel::Larfg(int n, int vm, int vn, double **A, T *tau) {
     xnorm = xnorm + A[i][vn] * A[i][vn];
   }
   xnorm = sqrt(xnorm);
-  if (xnorm == zero) {
+  if (FloatEqual(xnorm, zero)) {
     *tau = zero;
     return;
   } else {

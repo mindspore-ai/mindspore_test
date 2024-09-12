@@ -102,7 +102,7 @@ uint32_t NoBcastComputeParallel(CpuKernelContext &ctx, const BcastShapeType &typ
   }
 
   if (max_core_num > data_num) {
-    max_core_num = data_num;
+    max_core_num = IntegerCast<uint32_t>(ctx, data_num);
   }
 
   auto sharder_heaviside = [&](int64_t start, int64_t end) {
@@ -204,7 +204,7 @@ uint32_t HeavisideCpuKernel::BcastCompute(CpuKernelContext &ctx, const Bcast &bc
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_heaviside = [&](int64_t start, int64_t end) {

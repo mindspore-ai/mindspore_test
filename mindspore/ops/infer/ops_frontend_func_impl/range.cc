@@ -68,7 +68,6 @@ ValuePtr RangeImpl(const TypeId dtype, const std::vector<AbstractBasePtr> &input
 
     // make tensor
     auto tensor = std::make_shared<tensor::Tensor>(dtype, out_shape);
-    MS_EXCEPTION_IF_NULL(tensor);
 
     // assign value
     auto output = static_cast<T *>(tensor->data_c());

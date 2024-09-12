@@ -80,7 +80,7 @@ uint32_t LogitCpuKernel::LogitCompute(CpuKernelContext &ctx) {
       max_core_num = std::min(max_core_num, 4U);
     }
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     auto shared_less = [&](size_t start, size_t end) {
       T one = T(1);
