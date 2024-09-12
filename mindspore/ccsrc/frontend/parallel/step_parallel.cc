@@ -2645,6 +2645,12 @@ static LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph) {
 
   // return -> make_tuple
   if (current_prim->name() == MAKE_TUPLE) {
+    // functional parallelism return multiple result, including label, which donot need grad
+    if (std::find_if(pre_cnode->inputs().begin(), pre_cnode->inputs().end(), [](const auto &input) {
+          return IsPrimitiveCNode(input, prim::kPrimStopGradient);
+        }) != pre_cnode->inputs().end()) {
+      return loss_node_info;
+    }
     loss_node_info.has_make_tuple = true;
     loss_node_info.dout_index = -1;
     loss_node_info.loss_node = pre_cnode;
@@ -2902,9 +2908,10 @@ static std::vector<std::pair<CNodePtr, LossNodeInfo>> GetSensLossPairs(const Fun
     }
 
     if (loss_node_info.has_make_tuple) {
-      auto sens_cnode_input = sens_cnode->input(kIndex1)->cast<CNodePtr>();
+      auto sens_cnode_input = sens_cnode->input(kIndex1);
+      MS_EXCEPTION_IF_NULL(sens_cnode_input);
       if (IsPrimitiveCNode(sens_cnode_input, prim::kPrimMakeTuple)) {
-        sens_cnode = sens_cnode_input;
+        sens_cnode = sens_cnode_input->cast<CNodePtr>();
         MS_LOG(INFO) << "Change sens cnode to its input, which is primitive MakeTuple";
       } else {
         MS_LOG_WITH_NODE(EXCEPTION, sens_cnode_input)
