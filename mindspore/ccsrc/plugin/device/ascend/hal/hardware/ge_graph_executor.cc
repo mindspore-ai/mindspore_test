@@ -438,10 +438,8 @@ void SetDynamicOutputsForKernel(const std::vector<GeTensor> &ge_outputs,
     if (kernel_output == nullptr) {
       continue;
     }
-    std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad,
-                                         TypeId::kObjectTypeIOMonad};
-    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
-                    [&kernel_output](const TypeId type_id) { return type_id == kernel_output->dtype_id(); })) {
+
+    if (common::AnfAlgo::IsMonadType(kernel_output->dtype_id())) {
       continue;
     }
 
@@ -1019,10 +1017,7 @@ std::vector<GeTensor> GeGraphExecutor::CreateInputGeTensorList(const std::vector
       continue;
     }
     // remove monad
-    std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad,
-                                         TypeId::kObjectTypeIOMonad};
-    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
-                    [&tensor](const TypeId type_id) { return type_id == tensor->dtype_id(); })) {
+    if (common::AnfAlgo::IsMonadType(tensor->dtype_id())) {
       continue;
     }
 
@@ -1079,10 +1074,7 @@ std::vector<GeTensor> GeGraphExecutor::CreateOutputGeTensorList(const std::vecto
       continue;
     }
     // remove monad
-    std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad,
-                                         TypeId::kObjectTypeIOMonad};
-    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
-                    [&tensor](const TypeId type_id) { return type_id == tensor->dtype_id(); })) {
+    if (common::AnfAlgo::IsMonadType(tensor->dtype_id())) {
       continue;
     }
     if (index >= ge_outputs.size()) {

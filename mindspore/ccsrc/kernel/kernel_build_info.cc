@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include "utils/log_adapter.h"
 #include "include/common/debug/anf_dump_utils.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace kernel {
@@ -222,11 +223,9 @@ size_t KernelBuildInfo::GetInputNum() const { return inputs_format_.size(); }
 size_t KernelBuildInfo::GetOutputNum() const { return outputs_format_.size(); }
 
 size_t KernelBuildInfo::GetOutputNumWithoutMonad() const {
-  std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad, TypeId::kObjectTypeIOMonad};
   size_t count = 0;
   for (auto &out_type_id : outputs_device_type_) {
-    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
-                    [&out_type_id](const TypeId type_id) { return type_id == out_type_id; })) {
+    if (common::AnfAlgo::IsMonadType(out_type_id)) {
       continue;
     }
     ++count;
@@ -235,11 +234,9 @@ size_t KernelBuildInfo::GetOutputNumWithoutMonad() const {
 }
 
 size_t KernelBuildInfo::GetInputNumWithoutMonad() const {
-  std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad, TypeId::kObjectTypeIOMonad};
   size_t count = 0;
   for (auto &in_type_id : inputs_device_type_) {
-    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
-                    [&in_type_id](const TypeId type_id) { return type_id == in_type_id; })) {
+    if (common::AnfAlgo::IsMonadType(in_type_id)) {
       continue;
     }
     ++count;

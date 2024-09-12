@@ -72,6 +72,8 @@ void KernelActor::Init() {
   real_input_num_ = common::AnfAlgo::GetInputTensorNum(kernel_);
   kernel_info_ = dynamic_cast<KernelInfo *>(kernel_->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info_);
+  // monad
+  InitIsMonadInput();
   kernel_mod_ = kernel_info_->MutableKernelMod();
   MS_EXCEPTION_IF_NULL(kernel_mod_);
   is_dynamic_value_ = common::AnfAlgo::IsDynamicValue(kernel_);
@@ -147,6 +149,17 @@ void KernelActor::Init() {
   if (multi_stream_safe_value != nullptr) {
     is_multi_stream_safe_ = GetValue<bool>(multi_stream_safe_value);
     MS_LOG(DEBUG) << "cnode : " << cnode->DebugString() << " is thread safe.";
+  }
+}
+
+void KernelActor::InitIsMonadInput() {
+  auto build_info = kernel_info_->GetMutableSelectKernelBuildInfo();
+  MS_EXCEPTION_IF_NULL(build_info);
+  is_monad_input_.resize(real_input_num_, false);
+  for (size_t i = 0; i < real_input_num_; ++i) {
+    if (common::AnfAlgo::IsMonadType(build_info->GetInputDeviceType(i))) {
+      is_monad_input_[i] = true;
+    }
   }
 }
 
@@ -611,6 +624,10 @@ void KernelActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
 
 void KernelActor::SetMemInfoForRdr() {
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
+    if (is_monad_input_[i]) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(input_device_tensors_[i]);
     mem_info_.inputs_[i]->addr = input_device_tensors_[i]->GetMutablePtr();
     mem_info_.inputs_[i]->size = input_device_tensors_[i]->GetSize();
   }

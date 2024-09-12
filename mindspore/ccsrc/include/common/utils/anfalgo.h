@@ -333,6 +333,7 @@ class COMMON_EXPORT AnfAlgo {
   static std::vector<ValuePtr> TransformVectorRefToMultiValue(const VectorRef &base_ref);
   static bool HasIncorporateCallNode(const CNodePtr &cnode);
   static bool IsDynamicGraph(const FuncGraphPtr &func_graph);
+  static bool IsMonadType(const TypeId &type_id);
 };
 }  // namespace common
 }  // namespace mindspore

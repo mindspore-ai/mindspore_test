@@ -60,6 +60,8 @@ using complex128 = std::complex<double>;
 
 const PrimitiveSet expand_prims = {prim::kPrimMakeTuple};
 const std::set<std::string> kNodeTupleOutSet = {kMakeTupleOpName, kGetNextOpName};
+const std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad,
+                                           TypeId::kObjectTypeIOMonad};
 
 void GetRealOutputRecursively(const AnfNodePtr &node, size_t output_index, std::vector<KernelWithIndex> *inputs) {
   MS_EXCEPTION_IF_NULL(node);
@@ -2732,6 +2734,14 @@ bool AnfAlgo::IsDynamicGraph(const FuncGraphPtr &func_graph) {
   }
   if (pyexecute_node != nullptr) {
     MS_LOG(INFO) << "Func graph:" << func_graph->ToString() << " has pyexecute node:" << pyexecute_node->DebugString();
+    return true;
+  }
+  return false;
+}
+
+bool AnfAlgo::IsMonadType(const TypeId &type_id) {
+  if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
+                  [&type_id](const TypeId m_type_id) { return type_id == m_type_id; })) {
     return true;
   }
   return false;
