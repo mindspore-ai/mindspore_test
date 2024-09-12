@@ -41,9 +41,53 @@ int NanToNumCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     MS_LOG(WARNING) << kernel_name_ << " reinit failed.";
     return ret;
   }
-  nan_value_ = inputs[kNanValueIdx]->GetValueWithCheck<float>();
-  posinf_value_ = inputs[kPosinfValueIdx]->GetValueWithCheck<float>();
-  neginf_value_ = inputs[kNeginfValueIdx]->GetValueWithCheck<float>();
+  const float DOUBLE_MAX_VALUE = 1.7976931348623157e+308;
+  const float DOUBLE_MIN_VALUE = -1.7976931348623157e+308;
+  const float FLOAT32_MAX_VALUE = 3.4028235e+38;
+  const float FLOAT32_MIN_VALUE = -3.4028235e+38;
+  const float FLOAT16_MAX_VALUE = 65504.0;
+  const float FLOAT16_MIN_VALUE = -65504.0;
+  const float BFLOAT16_MAX_VALUE = 3.3895314e+38;
+  const float BFLOAT16_MIN_VALUE = -3.3895314e+38;
+  const float DEFAULT_NAN = 0.0;
+
+  auto nan_opt = inputs[kNanValueIdx]->GetOptionalValueWithCheck<float>();
+  nan_value_ = nan_opt.has_value() ? nan_opt.value() : DEFAULT_NAN;
+
+  auto posinf_opt = inputs[kPosinfValueIdx]->GetOptionalValueWithCheck<float>();
+  auto neginf_opt = inputs[kNeginfValueIdx]->GetOptionalValueWithCheck<float>();
+
+  bool posinf_has_value = posinf_opt.has_value();
+  bool neginf_has_value = neginf_opt.has_value();
+
+  if (posinf_has_value && neginf_has_value) {
+    posinf_value_ = posinf_opt.value();
+    neginf_value_ = neginf_opt.value();
+  } else {
+    auto input_type = inputs[kIndex0]->dtype_id();
+    switch (input_type) {
+      case kNumberTypeFloat64:
+        posinf_value_ = posinf_has_value ? posinf_opt.value() : DOUBLE_MAX_VALUE;
+        neginf_value_ = neginf_has_value ? neginf_opt.value() : DOUBLE_MIN_VALUE;
+        break;
+      case kNumberTypeFloat32:
+        posinf_value_ = posinf_has_value ? posinf_opt.value() : FLOAT32_MAX_VALUE;
+        neginf_value_ = neginf_has_value ? neginf_opt.value() : FLOAT32_MIN_VALUE;
+        break;
+      case kNumberTypeFloat16:
+        posinf_value_ = posinf_has_value ? posinf_opt.value() : FLOAT16_MAX_VALUE;
+        neginf_value_ = neginf_has_value ? neginf_opt.value() : FLOAT16_MIN_VALUE;
+        break;
+      case kNumberTypeBFloat16:
+        posinf_value_ = posinf_has_value ? posinf_opt.value() : BFLOAT16_MAX_VALUE;
+        neginf_value_ = neginf_has_value ? neginf_opt.value() : BFLOAT16_MIN_VALUE;
+        break;
+      default:
+        posinf_value_ = posinf_has_value ? posinf_opt.value() : FLOAT32_MAX_VALUE;
+        neginf_value_ = neginf_has_value ? neginf_opt.value() : FLOAT32_MIN_VALUE;
+        break;
+    }
+  }
   return 0;
 }
 
@@ -53,15 +97,15 @@ bool NanToNumCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
                                         const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kNanToNumInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kNanToNumOutputsNum, kernel_name_);
-  auto input = static_cast<T *>(inputs[0]->device_ptr());
+  auto input = static_cast<T *>(inputs[kIndex0]->device_ptr());
   MS_ERROR_IF_NULL_W_RET_VAL(input, false);
-  auto output = static_cast<T *>(outputs[0]->device_ptr());
+  auto output = static_cast<T *>(outputs[kIndex0]->device_ptr());
   MS_ERROR_IF_NULL_W_RET_VAL(input, false);
 
   T posinf_value = static_cast<T>(posinf_value_);
   T neginf_value = static_cast<T>(neginf_value_);
   T nan_value = static_cast<T>(nan_value_);
-  size_t total = inputs[0]->size() / sizeof(T);
+  size_t total = inputs[kIndex0]->size() / sizeof(T);
   auto task = [&input, &output, &posinf_value, &neginf_value, &nan_value](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       if (input[i] > static_cast<T>(0) && isinf(input[i])) {
@@ -84,16 +128,44 @@ const std::vector<std::pair<KernelAttr, NanToNumCpuKernelMod::KernelRunFunc>> &N
   static const std::vector<std::pair<KernelAttr, NanToNumCpuKernelMod::KernelRunFunc>> func_list = {
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat16)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
+       .AddOutputAttr(kNumberTypeFloat16),
+     &NanToNumCpuKernelMod::LaunchKernel<float16>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat16)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat16),
+     &NanToNumCpuKernelMod::LaunchKernel<float16>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat16)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
        .AddOutputAttr(kNumberTypeFloat16),
      &NanToNumCpuKernelMod::LaunchKernel<float16>},
     {KernelAttr()
        .AddInputAttr(kNumberTypeFloat32)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
-       .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat16)
+       .AddOutputAttr(kNumberTypeFloat32),
+     &NanToNumCpuKernelMod::LaunchKernel<float>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+       .AddOutputAttr(kNumberTypeFloat32),
+     &NanToNumCpuKernelMod::LaunchKernel<float>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeFloat32)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
+       .AddOptionalInputAttr(kObjectTypeNumber, kNumberTypeFloat64)
        .AddOutputAttr(kNumberTypeFloat32),
      &NanToNumCpuKernelMod::LaunchKernel<float>}};
   return func_list;

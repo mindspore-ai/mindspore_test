@@ -24,7 +24,14 @@ namespace mindspore {
 namespace ops {
 OP_FUNC_IMPL_TEST_DECLARE(NanToNum, EltwiseOpParams);
 
-OP_FUNC_IMPL_TEST_CASES(NanToNum, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32},
-                                                  EltwiseOpParams{{-1, 2, 3}, kFloat16, {-1, 2, 3}, kFloat16}));
+OP_FUNC_IMPL_TEST_CASES(NanToNum, testing::Values(EltwiseOpParams{{2, 3}, kBool, {2, 3}, kBool},
+                                                  EltwiseOpParams{{2, 3}, kUInt8, {2, 3}, kUInt8},
+                                                  EltwiseOpParams{{2, 3}, kInt8, {2, 3}, kInt8},
+                                                  EltwiseOpParams{{2, 3}, kInt16, {2, 3}, kInt16},
+                                                  EltwiseOpParams{{-2}, kInt32, {-2}, kInt32},
+                                                  EltwiseOpParams{{2, 3}, kInt64, {2, 3}, kInt64},
+                                                  EltwiseOpParams{{2, 3}, kFloat16, {2, 3}, kFloat16},
+                                                  EltwiseOpParams{{-1, 3}, kFloat32, {-1, 3}, kFloat32},
+                                                  EltwiseOpParams{{-1, -1}, kFloat64, {-1, -1}, kFloat64}));
 }  // namespace ops
 }  // namespace mindspore

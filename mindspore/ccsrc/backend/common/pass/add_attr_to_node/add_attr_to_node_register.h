@@ -39,7 +39,6 @@ const AnfNodePtr Im2ColFusionProcess(const FuncGraphPtr &, const AnfNodePtr &);
 const AnfNodePtr IOUFusionProcess(const FuncGraphPtr &, const AnfNodePtr &);
 const AnfNodePtr LogFusionProcess(const FuncGraphPtr &, const AnfNodePtr &);
 const AnfNodePtr MaxPoolWithArgmaxV2FusionProcess(const FuncGraphPtr &, const AnfNodePtr &);
-const AnfNodePtr NanToNumFusionProcess(const FuncGraphPtr &, const AnfNodePtr &);
 const AnfNodePtr ParallelConcatFusionProcess(const FuncGraphPtr &, const AnfNodePtr &);
 const AnfNodePtr RaggedTensorToSparseFusionProcess(const FuncGraphPtr &, const AnfNodePtr &);
 const AnfNodePtr ResizeV2FusionProcess(const FuncGraphPtr &, const AnfNodePtr &);

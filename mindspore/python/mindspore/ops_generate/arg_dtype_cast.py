@@ -238,6 +238,8 @@ def type_it(op_name, arg_name, data, src_type, dst_type):
     """
     cast operator argument data type.
     """
+    if isinstance(data, type(None)):
+        return data
     if not isinstance(src_type, tuple):
         src_type = int(src_type)
     else:

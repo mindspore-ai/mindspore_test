@@ -39,7 +39,6 @@ AddAttrToNodeImplRegistry::AddAttrToNodeImplRegistry() {
   Register(prim::kPrimIOU->name(), IOUFusionProcess);
   Register(prim::kPrimLog->name(), LogFusionProcess);
   Register(prim::kPrimMaxPoolWithArgmaxV2->name(), MaxPoolWithArgmaxV2FusionProcess);
-  Register(prim::kPrimNanToNum->name(), NanToNumFusionProcess);
   Register(prim::kPrimParallelConcat->name(), ParallelConcatFusionProcess);
   Register(prim::kPrimRaggedTensorToSparse->name(), RaggedTensorToSparseFusionProcess);
   Register(prim::kPrimResizeV2->name(), ResizeV2FusionProcess);
