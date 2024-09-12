@@ -624,8 +624,6 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
         device_context->GetKernelExecutor(false)->OptimizeGraph(kernel_graph);
         kernel_graph->SetInputNodes();
 #ifdef ENABLE_DUMP_IR
-        // auto context_ptr = MsContext::GetInstance();
-        // MS_EXCEPTION_IF_NULL(context_ptr);
         if (context_ptr->CanDump(kIntroductory)) {
           std::string file_name =
             "anf_graph_before_convert_to_ge_node_" + std::to_string(kernel_graph->graph_id()) + ".ir";
@@ -649,7 +647,6 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
                                   profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
-  // return graph_id;
   return CompileGraph(kernel_graph, io_nodes, device_context, actual_run_mode, run_in_pynative);
 }
 

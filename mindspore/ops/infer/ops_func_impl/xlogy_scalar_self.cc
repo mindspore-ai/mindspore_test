@@ -53,7 +53,6 @@ TypePtrList XLogYScalarSelfFuncImpl::InferType(const PrimitivePtr &primitive, co
   const auto &y_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(y_tensor);
   auto x2_type = y_tensor->Dtype();
-
   if (IsFloatType(x2_type)) {
     return {x2_type};
   }

@@ -227,7 +227,6 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
                     << node->fullname_with_scope();
       return nullptr;
     }
-
   } else {
 #ifndef ENABLE_INTERNAL_KERNELS
     return nullptr;
