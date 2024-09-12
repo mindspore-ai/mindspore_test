@@ -212,11 +212,17 @@ Status BucketBatchByLengthOp::GetNextRowPullMode(TensorRow *const row) {
 
   eoe_received_ = true;
   if (!drop_remainder_) {
+    // output the incomplete batches
     for (int i = 0; i < bucket_boundaries_.size(); i++) {
       if (!buckets_[i]->empty()) {
         RETURN_IF_NOT_OK(PadAndBatchBucket(i, row));
         return Status::OK();
       }
+    }
+  } else {
+    // drop the incomplete batches
+    for (const auto &bucket : buckets_) {
+      bucket->clear();
     }
   }
   eoe_received_ = false;

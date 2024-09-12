@@ -572,7 +572,8 @@ def test_bucket_batch_invalid_column():
         assert "BucketBatchByLength: Couldn't find the specified column in the dataset" in str(info.value)
 
 
-def test_bucket_batch_with_pull_mode():
+@pytest.mark.parametrize("drop_remainder", (True, False))
+def test_bucket_batch_with_pull_mode(drop_remainder):
     """
     Feature: bucket_batch_by_length op
     Description: Test bucket_batch_by_length op to support pull mode
@@ -584,22 +585,28 @@ def test_bucket_batch_with_pull_mode():
 
     column_names = ["col1"]
     bucket_boundaries = [1, 2, 3]
-    bucket_batch_sizes = [3, 3, 2, 2]
-    element_length_function = (lambda x: 1)
+    bucket_batch_sizes = [3, 3, 3, 3]
+    element_length_function = (lambda x: x[0] % 4)
 
     dataset = dataset.bucket_batch_by_length(column_names, bucket_boundaries,
-                                             bucket_batch_sizes, element_length_function)
+                                             bucket_batch_sizes, element_length_function,
+                                             drop_remainder=drop_remainder)
 
-    expected_output = [[[0], [1], [2]],
-                       [[3], [4], [5]],
-                       [[6], [7], [8]],
-                       [[9]]]
+    expected_output = [[[0], [4], [8]],
+                       [[1], [5], [9]]]
+    if not drop_remainder:
+        # append the remainder
+        expected_output += [[[2], [6]], [[3], [7]]]
 
-    output = []
-    for data in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
-        output.append(data["col1"].tolist())
+    # iterate at least 2 epochs to check if the remainder is dropped
+    num_epochs = 2
+    iterator = dataset.create_dict_iterator(num_epochs=num_epochs, output_numpy=True)
+    for _ in range(num_epochs):
+        output = []
+        for data in iterator:
+            output.append(data["col1"].tolist())
+        assert output == expected_output
 
-    assert output == expected_output
     ds.config.set_debug_mode(original_debug_mode)
 
 
@@ -618,4 +625,4 @@ if __name__ == '__main__':
     test_bucket_batch_three_columns()
     test_bucket_batch_get_dataset_size()
     test_bucket_batch_invalid_column()
-    test_bucket_batch_with_pull_mode()
+    test_bucket_batch_with_pull_mode(drop_remainder=True)
