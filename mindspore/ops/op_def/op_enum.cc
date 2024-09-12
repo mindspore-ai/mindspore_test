@@ -188,6 +188,7 @@ REG_STRING_TO_ENUM_COMMON(fas_input_layout_mode, StrToEnumMap{{"BSH", FASInputLa
                                                               {"SBH", FASInputLayoutMode::SBH},
                                                               {"BSND", FASInputLayoutMode::BSND},
                                                               {"TND", FASInputLayoutMode::TND},
+                                                              {"TH", FASInputLayoutMode::TH},
                                                               {"NSD", FASInputLayoutMode::NSD},
                                                               {"SH", FASInputLayoutMode::SH}})
 
@@ -196,6 +197,11 @@ REG_STRING_TO_ENUM_COMMON(driver_name, StrToEnumMap{{"GELS", DriverName::GELS},
                                                     {"GELSY", DriverName::GELSY},
                                                     {"GELSD", DriverName::GELSD},
                                                     {"GELSS", DriverName::GELSS}})
+
+// PagedAttentionKVCacheQuantMode
+REG_STRING_TO_ENUM_COMMON(kv_cache_quant_mode, StrToEnumMap{{"DEFAULT", PagedAttentionKVCacheQuantMode::DEFAULT},
+                                                            {"PERTOKEN", PagedAttentionKVCacheQuantMode::PERTOKEN}})
+
 // ErrorMode
 REG_STRING_TO_ENUM_SPECIAL(error_mode, StrToEnumMap{{"CYCLE", ErrorMode::CYCLE}, {"SPECIFIC", ErrorMode::SPECIFIC}});
 

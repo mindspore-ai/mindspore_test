@@ -274,6 +274,11 @@ Status FlashAttentionScoreInfo::InitExpectedStrategies() {
       expect_strategies_[ops::kFlashAttentionScoreInputKeyIndex] = {batch_split_num_, n2_split_num_, 1};
       expect_strategies_[ops::kFlashAttentionScoreInputValueIndex] = {batch_split_num_, n2_split_num_, 1};
       break;
+    case FASInputLayoutMode::TH:
+      expect_strategies_[ops::kFlashAttentionScoreInputQueryIndex] = {batch_split_num_ * s1_split_num_, n1_split_num_};
+      expect_strategies_[ops::kFlashAttentionScoreInputKeyIndex] = {batch_split_num_, n2_split_num_};
+      expect_strategies_[ops::kFlashAttentionScoreInputValueIndex] = {batch_split_num_, n2_split_num_};
+      break;
     default:
       MS_LOG(ERROR) << name_ << "Not support layout: " << input_layout_;
       return FAILED;
@@ -351,6 +356,11 @@ Status FlashAttentionScoreInfo::InitQKVTensorMap() {
       inputs_tensor_map_[ops::kFlashAttentionScoreInputQueryIndex] = {dev_matrix_batch_dim_, dev_matrix_n1_dim_, -1};
       inputs_tensor_map_[ops::kFlashAttentionScoreInputKeyIndex] = {dev_matrix_batch_dim_, kv_head_num_map, -1};
       inputs_tensor_map_[ops::kFlashAttentionScoreInputValueIndex] = {dev_matrix_batch_dim_, kv_head_num_map, -1};
+      break;
+    case FASInputLayoutMode::TH:
+      inputs_tensor_map_[ops::kFlashAttentionScoreInputQueryIndex] = {dev_matrix_batch_dim_, dev_matrix_n1_dim_};
+      inputs_tensor_map_[ops::kFlashAttentionScoreInputKeyIndex] = {dev_matrix_batch_dim_, kv_head_num_map};
+      inputs_tensor_map_[ops::kFlashAttentionScoreInputValueIndex] = {dev_matrix_batch_dim_, kv_head_num_map};
       break;
     default:
       MS_LOG(ERROR) << name_ << "Not support layout: " << input_layout_;
@@ -462,6 +472,11 @@ Status FlashAttentionScoreInfo::InitSplittableInputs() {
       splittable_inputs_[ops::kFlashAttentionScoreInputKeyIndex] = {batch_group, n2_group, 0};
       splittable_inputs_[ops::kFlashAttentionScoreInputValueIndex] = {batch_group, n2_group, 0};
       break;
+    case FASInputLayoutMode::TH:
+      splittable_inputs_[ops::kFlashAttentionScoreInputQueryIndex] = {batch_group, n1_group};
+      splittable_inputs_[ops::kFlashAttentionScoreInputKeyIndex] = {batch_group, n2_group};
+      splittable_inputs_[ops::kFlashAttentionScoreInputValueIndex] = {batch_group, n2_group};
+      break;
     default:
       MS_LOG(ERROR) << name_ << "Not support layout: " << input_layout_;
       return FAILED;
@@ -519,6 +534,11 @@ Status FlashAttentionScoreInfo::InitQKVHeadAndSeqDimFromInputLayout() {
       qkv_seq_dim_ = kSizeZero;
       qkv_head_dim_ = kSizeOne;
       break;
+    case FASInputLayoutMode::TH:
+      qkv_batch_dim_ = kSizeZero;
+      qkv_seq_dim_ = kSizeZero;
+      qkv_head_dim_ = kSizeOne;
+      break;
     default:
       MS_LOG(ERROR) << name_ << ": Not support layout in parallel currently.";
       return FAILED;
@@ -536,7 +556,7 @@ Status FlashAttentionScoreInfo::CheckInputLayout() {
 
   auto query_shape = inputs_shape_[ops::kFlashAttentionScoreInputQueryIndex];
   auto key_shape = inputs_shape_[ops::kFlashAttentionScoreInputKeyIndex];
-  if (s1_split_num_ > 1 && input_layout_ == FASInputLayoutMode::TND &&
+  if (s1_split_num_ > 1 && is_flatten_batch_seq_ &&
       (sparse_mode_ != ops::kSparseRightDownCausal || query_shape[0] != key_shape[0])) {
     MS_LOG(ERROR)
       << name_
@@ -563,7 +583,7 @@ Status FlashAttentionScoreInfo::InferOutputLayout() {
   // Construct layout for softmax_max and softmax_sum
   std::vector<Shape> softmax_max_sum_tensor_map;
   Shape softmax_max_sum_tensor_shape;
-  if (input_layout_ == FASInputLayoutMode::TND) {
+  if (is_flatten_batch_seq_) {
     softmax_max_tensor_layout_ = query_layout;
     softmax_sum_tensor_layout_ = query_layout;
   } else {
@@ -717,8 +737,7 @@ void FlashAttentionScoreInfo::CheckDynamicShape() {
   }
 }
 
-Status FlashAttentionScoreInfo::GetAttrs() {
-  InitIsInputPassed();
+void FlashAttentionScoreInfo::InitFromInput() {
   head_num_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputHeadNumIndex + 1);
   keep_prob_ = GetInputValueFromCNode<float>(cnode_, ops::kFlashAttentionScoreInputKeepProbIndex + 1);
   scale_value_ = GetInputValueFromCNode<float>(cnode_, ops::kFlashAttentionScoreInputScaleValueIndex + 1);
@@ -726,11 +745,18 @@ Status FlashAttentionScoreInfo::GetAttrs() {
   next_tokens_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputNextTokensIndex + 1);
   input_layout_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputLayoutIndex + 1);
   sparse_mode_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputSparseModeIndex + 1);
+  is_flatten_batch_seq_ = (input_layout_ == FASInputLayoutMode::TND) || (input_layout_ == FASInputLayoutMode::TH);
+}
+
+Status FlashAttentionScoreInfo::GetAttrs() {
+  InitIsInputPassed();
+  InitFromInput();
+
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   enable_load_balance_ = ms_context->get_param<bool>(MS_CTX_ENABLE_FLASH_ATTENTION_LOAD_BALANCE);
 
-  if (input_layout_ == FASInputLayoutMode::TND && enable_load_balance_) {
+  if (is_flatten_batch_seq_ && enable_load_balance_) {
     MS_LOG(WARNING) << name_ << ": Load balancing is not supported in the layout 'TND' and will be disabled.";
     enable_load_balance_ = false;
   }
@@ -834,7 +860,7 @@ Status FlashAttentionScoreInfo::CheckStrategy(const StrategyPtr &strategy) {
     return FAILED;
   }
 
-  if (input_layout_ == FASInputLayoutMode::TND) {
+  if (is_flatten_batch_seq_) {
     if (query_strategy[qkv_seq_dim_] != key_strategy[qkv_seq_dim_]) {
       MS_LOG(ERROR)
         << name_ << ": The split num of seq-dim between query and key must be the same when layout is 'TND'. But got "
@@ -850,7 +876,7 @@ Status FlashAttentionScoreInfo::CheckStrategy(const StrategyPtr &strategy) {
     }
   }
 
-  if (input_layout_ == FASInputLayoutMode::TND) {
+  if (is_flatten_batch_seq_) {
     batch_split_num_ = key_strategy[qkv_batch_dim_];
     s1_split_num_ = query_strategy[qkv_batch_dim_] / batch_split_num_;
   } else {
@@ -870,7 +896,7 @@ Status FlashAttentionScoreInfo::CheckStrategy(const StrategyPtr &strategy) {
     return FAILED;
   }
 
-  if (s1_split_num_ > 1 && input_layout_ == FASInputLayoutMode::TND) {
+  if (s1_split_num_ > 1 && is_flatten_batch_seq_) {
     MS_LOG(ERROR)
       << name_
       << ": Currently, input_layout is TND, and the seq dimension of query is segmented. Please use Layout to "
@@ -925,6 +951,7 @@ Status FlashAttentionScoreInfo::InferDevMatrixShape() {
     case FASInputLayoutMode::BSH:
     case FASInputLayoutMode::BSND:
     case FASInputLayoutMode::TND:
+    case FASInputLayoutMode::TH:
       dev_matrix_shape_ = {batch_split_num_, s1_split_num_, n1_split_num_};
       dev_matrix_batch_dim_ = kIndex2;
       dev_matrix_s1_dim_ = kIndex1;
@@ -961,7 +988,7 @@ Status FlashAttentionScoreInfo::InferSplitNumAndDevMatrixShapeByLayout() {
   auto key_seq_map = key_layout.tensor_map_before().at(qkv_seq_dim_);
 
   auto dev_matrix_shape = dev_matrix_shape_;
-  if (input_layout_ == FASInputLayoutMode::TND) {
+  if (is_flatten_batch_seq_) {
     if (query_batch_map.size() == kSizeOne) {
       dev_matrix_batch_dim_ = query_batch_map[0];
       dev_matrix_s1_dim_ = MAP_NONE;
@@ -1010,7 +1037,7 @@ Status FlashAttentionScoreInfo::InferTensorMap() {
   if (InitInputsTensorMap() != SUCCESS) {
     return FAILED;
   }
-  if (input_layout_ == FASInputLayoutMode::TND) {
+  if (is_flatten_batch_seq_) {
     outputs_tensor_map_.push_back({inputs_tensor_map_[0]});  // softmax_max
     outputs_tensor_map_.push_back({inputs_tensor_map_[0]});  // softmax_sum
   } else {
@@ -1264,7 +1291,7 @@ void FlashAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
   for (auto &cnode : cnodes_) {
     SetValueInputToCNode<int64_t>(cnode, ops::kFlashAttentionScoreInputHeadNumIndex + 1, head_num_ / n1_split_num_);
     if (s1_split_num_ > 1 && !enable_load_balance_ && need_update_op_attrs_mode_) {
-      if (input_layout_ == FASInputLayoutMode::TND) {
+      if (is_flatten_batch_seq_) {
         if (ReplaceActualSeqLenForSplitSeqInTnd(cnode) != SUCCESS) {
           MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": Replace actual_seq_qlen and actual_seq_kvlen failed.";
         }

@@ -166,7 +166,7 @@ int InternalKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   }
 
   if (op_type_ == "PagedAttention" || op_type_ == "MatMul" || op_type_ == "QuantBatchMatmul" ||
-      op_type_ == "QuantLinearSparse") {
+      op_type_ == "QuantLinearSparse" || op_type_ == "FlashAttentionScore") {
     MS_LOG(INFO) << "Create and update op param for Internal Op: " << op_type_;
     auto param = CreateOpParam(inputs, outputs);
     impl_->UpdateParam(param);

@@ -44,6 +44,7 @@ struct PagedAttentionMaskShapeParams {
  ValuePtr num_head;
  ValuePtr scale_value;
  ValuePtr kv_head;
+ ValuePtr kv_cache_quant_mode;
 };
 
 class TestPagedAttentionMask : public TestOps, public testing::WithParamInterface<PagedAttentionMaskShapeParams> {};
@@ -64,17 +65,18 @@ TEST_P(TestPagedAttentionMask, DynShape) {
   auto num_head = param.num_head->ToAbstract();
   auto scale_value = param.scale_value->ToAbstract();
   auto kv_head = param.kv_head->ToAbstract();
+  auto kv_cache_quant_mode = param.kv_cache_quant_mode->ToAbstract();
 
  PagedAttentionMaskFuncImpl func_impl;
  auto prim = std::make_shared<Primitive>("PagedAttentionMask");
 
   auto out_dtype =
     func_impl.InferType(prim, {query, key_cache, value_cache, block_tables, context_lens, alibi_mask, antiquant_scale,
-                               antiquant_offset, num_head, scale_value, kv_head});
+                               antiquant_offset, num_head, scale_value, kv_head, kv_cache_quant_mode});
   ASSERT_TRUE(*out_dtype == *expect_type);
   auto out_shape =
     func_impl.InferShape(prim, {query, key_cache, value_cache, block_tables, context_lens, alibi_mask, antiquant_scale,
-                                antiquant_offset, num_head, scale_value, kv_head});
+                                antiquant_offset, num_head, scale_value, kv_head, kv_cache_quant_mode});
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
@@ -89,7 +91,8 @@ INSTANTIATE_TEST_CASE_P(
                                   {2, 40, 1, 1024}, kFloat16,
                                   CreateScalar<int>(40),
                                   CreateScalar<float>(1.0),
-                                  CreateScalar<int>(40)},
+                                  CreateScalar<int>(40),
+                                  CreateScalar<int>(0)},
     PagedAttentionMaskShapeParams{{-1, 40, 128}, kFloat16,
                                   {256, 16, 40, 128}, kFloat16,
                                   {256, 16, 40, 128}, kFloat16,
@@ -98,7 +101,8 @@ INSTANTIATE_TEST_CASE_P(
                                   {-1, 40, 1, 1024}, kFloat16,
                                   CreateScalar<int>(40),
                                   CreateScalar<float>(1.0),
-                                  CreateScalar<int>(40)}
+                                  CreateScalar<int>(40),
+                                  CreateScalar<int>(0)}
   ));
 }  // namespace ops
 }  // namespace mindspore

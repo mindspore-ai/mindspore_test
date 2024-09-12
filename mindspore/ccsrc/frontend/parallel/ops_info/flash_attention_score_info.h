@@ -116,6 +116,7 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   Status ComputeReplaceGraphForLoadBalance(const CNodePtr &cnode);
   Status ReplaceActualSeqLenForSplitSeqInTnd(const CNodePtr &cnode);
   void CheckDynamicShape();
+  void InitFromInput();
   int64_t head_num_ = 1;
   float keep_prob_ = 1.0;
   float scale_value_ = 1.0;
@@ -150,6 +151,7 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   int64_t q_seq_len_;
   int64_t kv_seq_len_;
   bool dynamic_seq_flag_ = false;
+  bool is_flatten_batch_seq_ = false;
   std::vector<bool> is_input_passed_;
   size_t real_input_size_ = 0;
   std::vector<Shape> splittable_inputs_;

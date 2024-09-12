@@ -17,6 +17,7 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FLASH_ATTENTION_SCORE_H_
 
 #include <vector>
+#include <set>
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 

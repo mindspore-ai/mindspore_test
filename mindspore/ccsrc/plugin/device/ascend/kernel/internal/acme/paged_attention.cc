@@ -27,8 +27,6 @@ namespace kernel {
 bool AcmePagedAttention::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto &enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-  enable_custom_pa_ = (std::find(enable_op_list.begin(), enable_op_list.end(), kernel_name_) != enable_op_list.end());
   auto &llm_manager = LLMManager::GetInstance();
   llm_manager.add_force_resize_kernel(kernel_name_);
   MS_LOG(INFO) << "Force op '" << kernel_name_ << "' to be resized to update op param 'seq_len'";
@@ -49,11 +47,9 @@ acme::AcmeOpPtr AcmePagedAttention::CreateKernel(const acme::InputsImmutableInfo
   param.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex11]->GetValueWithCheck<int64_t>());
   param.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeNone;
 
-  if (!enable_custom_pa_) {
-    GetSeqLenFromGraphInputOrEnv(kernel_name_, "batch_valid_length", "MS_INTERNAL_KV_SEQ_LEN", &kv_seq_len_);
-    for (const auto &item : kv_seq_len_) {
-      (void)param.kv_seq_len.emplace_back(item);
-    }
+  GetSeqLenFromGraphInputOrEnv(kernel_name_, "batch_valid_length", "MS_INTERNAL_KV_SEQ_LEN", &kv_seq_len_);
+  for (const auto &item : kv_seq_len_) {
+    (void)param.kv_seq_len.emplace_back(item);
   }
 
   GetSeqLenFromGraphInputOrEnv(kernel_name_, "q_seq_lens", "MS_INTERNAL_Q_SEQ_LEN", &q_seq_len_);
@@ -68,6 +64,10 @@ acme::AcmeOpPtr AcmePagedAttention::CreateKernel(const acme::InputsImmutableInfo
       param.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeLookAhead;
     }
   }
+
+  auto kv_cache_quant_mode = ms_inputs[kIndex12]->GetValueWithCheck<int64_t>();
+  param.kv_cache_quant_mode = kv_cache_quant_mode;
+
   return acme::CreatePagedAttentionOp(inputs_ii, outputs_ii, param, acme::kAcmePagedAttentionOpName);
 }
 

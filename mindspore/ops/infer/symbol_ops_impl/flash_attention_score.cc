@@ -30,11 +30,15 @@ SymbolPtr FlashAttentionScoreShapeBuilder(OperationBuilder *b) {
     // does not support dynamic rank.
     return nullptr;
   }
-  auto MakeOutShape = [&query_shape](size_t batch_index, size_t seq_index, const SymbolPtr &head_num) {
+  auto MakeOutShape = [&query_shape](size_t batch_index, size_t seq_index, const SymbolPtr &head_num,
+                                     bool enable_flatten = false) {
     SymbolPtr shape;
     auto batch = query_shape->item(batch_index);
     auto seq = query_shape->item(seq_index);
-    if (head_num != nullptr) {
+    if (enable_flatten && head_num != nullptr) {
+      int64_t head_num_value = GetValue<int64_t>(head_num->ToValue());
+      shape = ListSymbol::Make(SymbolPtrList{batch, IntSymbol::Make(head_num_value * kFASLastDim)});
+    } else if (head_num != nullptr) {
       shape = ListSymbol::Make(SymbolPtrList{batch, head_num, seq, IntSymbol::Make(kFASLastDim)});
     } else {
       shape = ListSymbol::Make(SymbolPtrList{batch, seq, IntSymbol::Make(kFASLastDim)});
@@ -54,6 +58,8 @@ SymbolPtr FlashAttentionScoreShapeBuilder(OperationBuilder *b) {
   switch (static_cast<FASInputLayoutMode>(input_layout->value())) {
     case FASInputLayoutMode::TND:
       return MakeOutShape(kIndex0, kIndex1, nullptr);
+    case FASInputLayoutMode::TH:
+      return MakeOutShape(kIndex0, kIndex1, head_num, true);
     case FASInputLayoutMode::SBH:
       return MakeOutShape(kIndex1, kIndex0, head_num);
     case FASInputLayoutMode::BNSD:
