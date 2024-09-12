@@ -191,7 +191,7 @@ Status StrategyCheckpoint::SaveGroupInfo(const GroupInfoMap &group_info_map, con
   return SUCCESS;
 }
 
-Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map) {
+Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map) {
   if (strategy_map == nullptr) {
     MS_LOG(EXCEPTION) << "Failure:strategy_map is nullptr";
   }
@@ -208,15 +208,15 @@ Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map) {
   input >> stra_ckpt_info_j;
   strategy_json_info_.FromJson(stra_ckpt_info_j);
   *strategy_map = strategy_json_info_.strategy_map();
+  *out_strategy_map = strategy_json_info_.out_strategy_map();
   return SUCCESS;
 }
 
-Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
-                                              const ManualShapeMap &manual_shape_map) {
+Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map) {
   if (!CheckPath(auto_op_strategy_file_)) {
     MS_LOG(EXCEPTION) << "CheckPoint file is invalid";
   }
-  strategy_json_info_.Init(strategy_map, tensor_info_map, manual_shape_map, ++current_stage_);
+  strategy_json_info_.Init(strategy_map, out_strategy_map, ++current_stage_);
   auto stra_ckpt_info_j = strategy_json_info_.to_json();
   std::fstream output(auto_op_strategy_file_, std::ios::out);
   stra_ckpt_info_j >> output;

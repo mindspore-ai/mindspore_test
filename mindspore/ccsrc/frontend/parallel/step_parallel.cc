@@ -47,6 +47,7 @@
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
+#include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "frontend/parallel/graph_util/grad_accumulation_utils.h"
 #include "frontend/parallel/node_check.h"
 #include "frontend/parallel/silent_check/silent_check.h"
@@ -3775,7 +3776,61 @@ static void ParallelPartProcess(const std::vector<AnfNodePtr> &all_nodes, const 
   return;
 }
 
+Status LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
+  StrategyMap stra_map;
+  StrategyMap out_stra_map;
+  if ((StrategyCheckpoint::GetInstance().LoadAutoOpStrategy(&stra_map, &out_stra_map) != SUCCESS)) {
+    return FAILED;
+  }
+  MS_LOG(INFO) << "Load strategies map from json successfully";
+  SetStridedSliceSplitStrategy(all_nodes);
+  for (auto &node : all_nodes) {
+    auto cnode = node->cast<CNodePtr>();
+    if (!CheckExtractInformation(cnode) || IsPrimitiveCNode(node, prim::kPrimSend)) {
+      continue;
+    }
+    SetVirtualDatasetStrategy(cnode);
+
+    OperatorInfoPtr operator_info = CreateOperatorInfo(cnode);
+    MS_EXCEPTION_IF_NULL(operator_info);
+
+    ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
+    PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+
+    if (prim->name() == RESHAPE) {
+      cnode->set_user_data<OperatorInfo>(operator_info);
+      continue;
+    }
+
+    std::string strategy_key_name = cnode->fullname_with_scope();
+    if (stra_map.find(strategy_key_name) == stra_map.end()) {
+      MS_LOG(INFO) << "Not found strategy for " << strategy_key_name;
+      return FAILED;
+    }
+    StrategyPtr s_strategy = stra_map[strategy_key_name];
+    operator_info->SetSelectedStrategy(s_strategy, 0);
+
+    StrategyPtr o_strategy = nullptr;
+    if (out_stra_map.find(strategy_key_name) != out_stra_map.end()) {
+      o_strategy = out_stra_map[strategy_key_name];
+      operator_info->set_out_strategy(o_strategy);
+    }
+    Status initRet = operator_info->InitSelectedStrategy(s_strategy, o_strategy);
+    if (initRet == SUCCESS) {
+      MS_LOG(INFO) << "Init selected strategy succeeded.";
+    } else {
+      MS_LOG(INFO) << "Init selected strategy failed.";
+      return initRet;
+    }
+    cnode->set_user_data<OperatorInfo>(operator_info);
+  }
+  MS_LOG(INFO) << "End load strategies from file";
+  return SUCCESS;
+}
+
 bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) {
+  MSLogTime msTime;
+  msTime.Start();
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
     return false;
@@ -3784,6 +3839,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   MS_EXCEPTION_IF_NULL(root);
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
   std::string parallel_mode = ParallelContext::GetInstance()->parallel_mode();
+  bool load_strategy_on = StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn();
   HandleDataParallel();
   FuncGraphManagerPtr manager;
   pipeline::ResourceBasePtr res;
@@ -3816,8 +3872,6 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     return changes;
   }
 
-  MSLogTime msTime;
-  msTime.Start();
   DumpGraph(root, std::string(STEP_PARALLEL_BEGIN));
   RecordFlopsOriginShape(manager);
   AnfNodePtr ret = root->get_return();
@@ -3828,8 +3882,12 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   if (merged) {
     all_nodes = TopoSort(ret, SuccDeeperSimple);
   }
-  if (pipeline_stages <= 1 && parallel_mode != kAutoParallel && ParallelInit() != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Parallel init failed";
+  if (pipeline_stages <= 1) {
+    if (parallel_mode != kAutoParallel || load_strategy_on) {
+      if (ParallelInit() != SUCCESS) {
+        MS_LOG(EXCEPTION) << "Parallel init failed";
+      }
+    }
   }
 
   // Insert TupleToTensor for FA if actual_seq_len input is tuple type.
@@ -3856,7 +3914,21 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     ExtractInformation(all_nodes);
   }
 
-  if (CheckShardingPropagation() && !StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
+  if (load_strategy_on) {
+    TOTAL_OPS = 0;
+    ExceptionIfHasCommunicationOp(all_nodes);
+
+    if (IsInsertVirtualOutput(root)) {
+      InsertVirtualOutput(root, all_nodes);
+      AnfNodePtr ret_after = root->get_return();
+      MS_EXCEPTION_IF_NULL(ret_after);
+      all_nodes = TopoSort(ret_after, SuccDeeperSimple);
+    }
+
+    if (LoadStrategyFromFile(all_nodes) == SUCCESS) {
+      MS_LOG(INFO) << "Load strategies successfully.";
+    }
+  } else if (CheckShardingPropagation()) {
     // To create opInfo for step parallel generated op
     ExtractInformation(all_nodes);
   }

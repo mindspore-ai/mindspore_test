@@ -37,9 +37,13 @@ Status StrategyCheckpoint::LoadGroupInfo(const std::string &file,
 
 Status StrategyCheckpoint::SaveGroupInfo(const GroupInfoMap &group_info_map,
                                          const RankList &restore_rank_list) { return SUCCESS; }
-Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map) { return SUCCESS; }
 
-Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const TensorInfoMap &tensor_info_map,
-                                              const ManualShapeMap &manual_shape_map) { return SUCCESS; }
+Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map) {
+  return SUCCESS;
+}
+
+Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, const StrategyMap &out_strategy_map) {
+  return SUCCESS;
+}
 }  // namespace parallel
 }  // namespace mindspore

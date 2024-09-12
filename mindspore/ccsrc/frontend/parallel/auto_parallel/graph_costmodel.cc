@@ -197,6 +197,15 @@ void CheckConfiguredPrevEdgeConsistency(const EdgePtr &edge,
   }
 }
 
+bool CheckStandAlone(const OperatorInfoPtr &op1, const OperatorInfoPtr &op2) {
+  if (op1->IsStandAlone() || op2->IsStandAlone()) {
+    MS_LOG(INFO) << "StandAlone in edge " << op1->name() << " - " << op2->name()
+                 << " doesn't propagate strategy, continue.";
+    return true;
+  }
+  return false;
+}
+
 void BFSPreNode(
   const std::shared_ptr<Edge> &edge, std::map<OperatorInfoPtr, bool> *visited, int64_t curr_depth,
   const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops, const OperatorInfoPtr &curr_op,
@@ -206,7 +215,11 @@ void BFSPreNode(
   MS_EXCEPTION_IF_NULL(curr_op);
   MS_EXCEPTION_IF_NULL(next_level);
   const auto &prev_op = edge->prev_operator();
+  MS_EXCEPTION_IF_NULL(prev_op);
   bool is_has_stra_op = visited->at(prev_op) || configured_ops.find(prev_op) != configured_ops.end();
+  if (CheckStandAlone(prev_op, curr_op)) {
+    return;
+  }
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
     MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
   }
@@ -272,7 +285,11 @@ void BFSNextNode(
   MS_EXCEPTION_IF_NULL(curr_op);
   MS_EXCEPTION_IF_NULL(next_level);
   const auto &next_op = edge->next_operator();
+  MS_EXCEPTION_IF_NULL(next_op);
   bool is_has_stra_op = visited->at(next_op) || configured_ops.find(next_op) != configured_ops.end();
+  if (CheckStandAlone(curr_op, next_op)) {
+    return;
+  }
   if (edge->InitEdgeCost() != SUCCESS && !is_has_stra_op) {
     MS_LOG(EXCEPTION) << "Edge cost initialization failed.";
   }
@@ -287,7 +304,6 @@ void BFSNextNode(
     return;
   }
   if (curr_op->IsReshape()) {
-    MS_EXCEPTION_IF_NULL(next_op);
     if (next_op->IsVirtualOutput() || next_op->IsConcat()) {
       MS_LOG(INFO) << "virtualoutput or concat after reshape, no need set strategy.";
       visited->at(next_op) = true;
