@@ -236,6 +236,8 @@ class FuncGraphBuilder {
 
   AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) const;
 
+  void UpdateParameterFuncGraph(const AnfNodePtr &node);
+
   FuncGraphPtr graph_{nullptr};
   bool has_set_output_{false};
   HashMap<AbstractWrapperPtr, AnfNodePtr> key_to_node_;
