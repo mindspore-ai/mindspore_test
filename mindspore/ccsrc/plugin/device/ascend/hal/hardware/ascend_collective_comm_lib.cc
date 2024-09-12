@@ -254,7 +254,11 @@ bool AscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_
                                                        const std::vector<uint32_t> &group_ranks,
                                                        uint32_t local_group_rank, uint32_t local_group_size) {
   HCCL_GROUP_CHECK_EMPTY(group_name);
-  CHECK_RET((groups_.count(group_name) == 0), true, "The HCCL group " + group_name + " has already existed.");
+  if (groups_.count(group_name) != 0) {
+    // If this group name has already existed, return true instead of throwing exception.
+    MS_LOG(INFO) << "The HCCL group " << group_name << " has already existed.";
+    return true;
+  }
 
   AscendCommunicationGroupPtr group = std::make_shared<AscendCommunicationGroup>(
     group_name, group_ranks, global_rank_id_, local_group_rank, local_group_size);
