@@ -163,7 +163,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
         >>> net = LeNet5()
         >>> save_checkpoint(net, './test_net.ckpt')
         >>> target_modules = ['', 'fc1|fc2']
-        >>> obfuscate_ckpt(net, target_modules, './', './')
+        >>> obfuscate_ckpt(net, './', target_modules=target_modules, saved_path='./')
     """
     def _gen_obfuscate_tensor(tensor_shape, tensor_type='rearrange'):
         obf_tensor = None
@@ -406,12 +406,11 @@ def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_
         >>> save_checkpoint(net, './test_net.ckpt')
         >>> target_modules = ['', 'fc1|fc2']
         >>> # obfuscate ckpt files
-        >>> obfuscate_ckpt(net, target_modules, './', './')
+        >>> obfuscate_ckpt(net, './', target_modules=target_modules, saved_path='./')
         >>> # load obf ckpt into network
         >>> new_net = LeNet5()
         >>> load_checkpoint('./test_net_obf.ckpt', new_net)
-        >>> obf_ratios = Tensor(np.load('./obf_ratios.npy'), mstype.float16)
-        >>> obf_net = load_obf_params_into_net(new_net, target_modules, obf_ratios)
+        >>> obf_net = load_obf_params_into_net(new_net, target_modules)
     """
     if not isinstance(network, nn.Cell):
         raise TypeError("network must be nn.Cell, but got {}.".format(type(network)))
