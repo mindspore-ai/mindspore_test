@@ -127,11 +127,10 @@ class AscendMsprofExporter:
     def run_cmd(cls, cmd, timeout=300):
         """run shell command"""
         try:
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True)
+            with Popen(cmd, stdout=PIPE, stderr=PIPE, text=True) as proc:
+                outs, errs = proc.communicate(timeout=timeout)
         except (FileNotFoundError, PermissionError, CalledProcessError) as exc:
             raise RuntimeError(exc) from exc
-        try:
-            outs, errs = proc.communicate(timeout=timeout)
         except TimeoutExpired as err:
             proc.kill()
             msg = "The possible cause is that too much data is collected " \

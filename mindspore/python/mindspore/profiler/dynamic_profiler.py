@@ -624,6 +624,10 @@ else:
             if self._shm and self._is_create_process:
                 try:
                     self._shm.close()
+                    if self._memory_mapped_file and not self._memory_mapped_file.closed:
+                        self._memory_mapped_file.close()
+                    elif self.fd:
+                        os.close(self.fd)
                     PathManager.remove_file_safety(self._shm_path)
                     logger.info("Rank %s unlink shm", self._rank_id)
                 except FileNotFoundError:
@@ -637,10 +641,10 @@ else:
             while try_times:
                 try:
                     # Step 1: try to open fd, first time fd not exists.
-                    fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
-                                 stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
-                    f = os.fdopen(fd, 'rb')
-                    self._shm = mmap.mmap(f.fileno(), length=DynamicProfilerArgs.SIZE)
+                    self.fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
+                                      stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
+                    self._memory_mapped_file = os.fdopen(self.fd, 'rb')
+                    self._shm = mmap.mmap(self._memory_mapped_file.fileno(), length=DynamicProfilerArgs.SIZE)
                     self._is_create_process = False
                     logger.info("Rank %d shared memory is connected.", self._rank_id)
                     break
@@ -659,10 +663,10 @@ else:
                             f.write(byte_data)
 
                         # create mmap
-                        fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
-                                     stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
-                        f = os.fdopen(fd, 'rb')
-                        self._shm = mmap.mmap(f.fileno(), length=DynamicProfilerArgs.SIZE)
+                        self.fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
+                                          stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
+                        self._memory_mapped_file = os.fdopen(self.fd, 'rb')
+                        self._shm = mmap.mmap(self._memory_mapped_file.fileno(), length=DynamicProfilerArgs.SIZE)
                         self._is_create_process = True
                         logger.info("Rank %d shared memory is created.", self._rank_id)
                         break
