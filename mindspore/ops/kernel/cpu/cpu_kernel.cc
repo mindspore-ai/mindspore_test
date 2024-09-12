@@ -24,7 +24,6 @@
 #include <numeric>
 #include "kernel/oplib/oplib.h"
 #include "utils/profile.h"
-#include "runtime/graph_scheduler/actor/actor_common.h"
 #include "kernel/common_utils.h"
 
 namespace mindspore {
@@ -188,7 +187,7 @@ ActorThreadPool *GetActorMgrInnerThreadPool() {
   if (thread_pool == nullptr) {
     size_t actor_thread_num = 0;
     size_t actor_and_kernel_thread_num = 0;
-    runtime::ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
+    mindspore::ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
     size_t actor_queue_size = 81920;
     (void)actor_manager->Initialize(true, actor_thread_num, actor_and_kernel_thread_num, actor_queue_size);
     thread_pool = actor_manager->GetActorThreadPool();

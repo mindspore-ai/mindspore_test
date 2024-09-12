@@ -171,12 +171,10 @@ class GeDeviceResManager : public DeviceResManager {
   // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODEF
   void SetCPUMemManager();
 
-  std::vector<device::DeviceMemPtr> GetMemUceInfo(int32_t device_id) override;
+  bool GetMemUceInfo(int32_t device_id) override;
   void UceMemRepair(int32_t device_id) override;
   void StopDevice(int32_t device_id) override;
   std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
-
-  void ThrowUCEError() override;  // test api, remove later.
 
  private:
   friend class GeGraphExecutor;

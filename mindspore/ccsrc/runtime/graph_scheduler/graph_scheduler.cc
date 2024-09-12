@@ -49,6 +49,7 @@
 #include "utils/ms_context.h"
 #include "utils/profile.h"
 #include "utils/phase.h"
+#include "kernel/common_utils.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
@@ -536,7 +537,7 @@ void GraphScheduler::Initialize() {
   // Create the thread pool of actor runtime and Set the OMP_NUM_THREADS env.
   size_t actor_thread_num = 0;
   size_t actor_and_kernel_thread_num = 0;
-  ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
+  mindspore::ComputeThreadNums(&actor_thread_num, &actor_and_kernel_thread_num);
   auto actor_manager = ActorMgr::GetActorMgrRef();
   MS_EXCEPTION_IF_NULL(actor_manager);
   size_t actor_queue_size = 81920;
@@ -828,7 +829,7 @@ void GraphScheduler::Schedule(const ActorSet *actor_set) {
   }
 
   // Check whether UCE is enabled.
-  UCEException::GetInstance().check_uce_env();
+  UCEException::GetInstance().CheckUceEnv();
 #ifdef ENABLE_RPC_ACTOR
   // Build physical connections in 'RpcNodeScheduler::Schedule()' method. This costs some time.
   MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
@@ -870,11 +871,11 @@ void GraphScheduler::RefreshContextAndThreadPool(ActorSet *const actor_set, Acto
 }
 
 void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
-  if (UCEException::GetInstance().is_enable_uce()) {
+  if (UCEException::GetInstance().enable_uce()) {
     if (UCEException::GetInstance().get_uce_flag()) {
       MS_LOG(INFO) << "Restart from step after a uce error occurs.";
     } else if (UCEException::GetInstance().get_force_stop_flag()) {
-      MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
+      MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
     }
   }
   // Some exception could happen after one step is completed, need to check exception at the beginning to avoid thread
@@ -888,15 +889,22 @@ void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
 }
 
 void ProcessUceError(ActorSet *const actor_set) {
-  if (!UCEException::GetInstance().is_enable_uce()) {
+  if (!UCEException::GetInstance().enable_uce()) {
     return;
   }
 
   if (UCEException::GetInstance().get_has_throw_error()) {
     MS_LOG(WARNING) << "There is a UCE error or ForceStop error, reset the actor state.";
-    for (auto kernel_actor : actor_set->kernel_actors_) {
+    for (auto &kernel_actor : actor_set->kernel_actors_) {
       for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
         output_device_tensor->ResetRefCount();
+      }
+    }
+    for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
+      for (auto &kernel_actor : super_kernel_actor->kernel_actors()) {
+        for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
+          output_device_tensor->ResetRefCount();
+        }
       }
     }
     actor_set->loop_count_actor_->ResetState();
@@ -906,10 +914,10 @@ void ProcessUceError(ActorSet *const actor_set) {
   }
 
   if (UCEException::GetInstance().get_uce_flag()) {
-    MS_EXCEPTION(UCEError) << "UCEError occurs when execute.";
+    MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
   } else if (UCEException::GetInstance().get_force_stop_flag()) {
     actor_set->is_execution_failed_ = false;
-    MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
+    MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
   }
 }
 

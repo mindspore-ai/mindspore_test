@@ -18,15 +18,17 @@
 #define MINDSPORE_CCSRC_TRANSFORM_SYMBOL_SYMBOL_UTILS_H_
 #include <string>
 #include "utils/log_adapter.h"
-#include "acl/acl.h"
 #ifndef BUILD_LITE
+#include "acl/acl.h"
 #include "utils/ms_exception.h"
+extern "C" int (*aclrt_get_last_error)(int);
 #ifndef ACL_ERROR_RT_DEVICE_MEM_ERROR
 #define ACL_ERROR_RT_DEVICE_MEM_ERROR 507053
 #endif
 #ifndef ACL_ERROR_RT_DEVICE_TASK_ABORT
 #define ACL_ERROR_RT_DEVICE_TASK_ABORT 107022
 #endif
+const int thread_level = 0;
 #endif
 
 template <typename Function, typename... Args>
@@ -38,12 +40,19 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
 #ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f), Args...>, int>) {
     auto ret = f(args...);
-    if (mindspore::UCEException::GetInstance().is_enable_uce()) {
-      if (ret == ACL_ERROR_RT_DEVICE_MEM_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
-        mindspore::UCEException::GetInstance().set_uce_flag(true);
-      }
-      if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
-        mindspore::UCEException::GetInstance().set_force_stop_flag(true);
+    if (mindspore::UCEException::GetInstance().enable_uce()) {
+      if (ret != ACL_ERROR_NONE && aclrt_get_last_error != nullptr) {
+        auto error_code = aclrt_get_last_error(thread_level);
+        MS_LOG(INFO) << "Call ascend api <" << func_name << "> in <" << call_f << "> at " << file << ":" << line
+                     << " failed, error code [" << error_code << "].";
+        if (error_code == ACL_ERROR_RT_DEVICE_MEM_ERROR &&
+            !mindspore::UCEException::GetInstance().get_has_throw_error()) {
+          mindspore::UCEException::GetInstance().set_uce_flag(true);
+          MS_LOG(EXCEPTION) << "UCEError error occurs when execute.";
+        }
+        if (error_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+          mindspore::UCEException::GetInstance().set_force_stop_flag(true);
+        }
       }
     }
     return ret;
@@ -64,12 +73,19 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
 #ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f)>, int>) {
     auto ret = f();
-    if (mindspore::UCEException::GetInstance().is_enable_uce()) {
-      if (ret == ACL_ERROR_RT_DEVICE_MEM_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
-        mindspore::UCEException::GetInstance().set_uce_flag(true);
-      }
-      if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
-        mindspore::UCEException::GetInstance().set_force_stop_flag(true);
+    if (mindspore::UCEException::GetInstance().enable_uce()) {
+      if (ret != ACL_ERROR_NONE && aclrt_get_last_error != nullptr) {
+        auto error_code = aclrt_get_last_error(thread_level);
+        MS_LOG(INFO) << "Call ascend api <" << func_name << "> in <" << call_f << "> at " << file << ":" << line
+                     << " failed, error code [" << error_code << "].";
+        if (error_code == ACL_ERROR_RT_DEVICE_MEM_ERROR &&
+            !mindspore::UCEException::GetInstance().get_has_throw_error()) {
+          mindspore::UCEException::GetInstance().set_uce_flag(true);
+          MS_LOG(EXCEPTION) << "UCEError error occurs when execute.";
+        }
+        if (error_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+          mindspore::UCEException::GetInstance().set_force_stop_flag(true);
+        }
       }
     }
     return ret;

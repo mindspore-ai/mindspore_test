@@ -307,6 +307,9 @@ inline void GetRawAddress(const std::vector<AddressPtr> &addrs, std::vector<void
     }                                                                                                       \
   } while (0)
 }  // namespace kernel
+
+BACKEND_EXPORT void ComputeThreadNums(size_t *actor_thread_num, size_t *actor_and_kernel_thread_num);
+
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_KERNEL_COMMON_UTILS_H_
