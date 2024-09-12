@@ -277,6 +277,7 @@ def test_cv_file_reader_file_list():
         count = count + 1
         logger.info("#item{}: {}".format(index, x))
     assert count == 10
+    reader.close()
 
     remove_multi_files(mindrecord_file_name, FILES_NUM)
 
@@ -1279,6 +1280,7 @@ def test_file_writer_schema_len(file_name=None, remove_file=True):
     reader = FileReader(file_name)
     assert cv_schema_json == reader.schema()
     assert reader.len() == 0
+    reader.close()
     if remove_file:
         remove_one_file(file_name)
         remove_one_file(file_name + ".db")
@@ -1298,6 +1300,7 @@ def test_file_writer_schema_len(file_name=None, remove_file=True):
     reader = FileReader(file_name)
     assert cv_schema_json == reader.schema()
     assert reader.len() == 10
+    reader.close()
     if remove_file:
         remove_one_file(file_name)
         remove_one_file(file_name + ".db")
@@ -1315,6 +1318,7 @@ def test_file_writer_schema_len(file_name=None, remove_file=True):
     reader = FileReader(file_name + "0")
     assert cv_schema_json == reader.schema()
     assert reader.len() == 0
+    reader.close()
     if remove_file:
         remove_multi_files(file_name, FILES_NUM)
 
@@ -1332,6 +1336,7 @@ def test_file_writer_schema_len(file_name=None, remove_file=True):
     reader = FileReader(file_name + "0")
     assert cv_schema_json == reader.schema()
     assert reader.len() == 10
+    reader.close()
     if remove_file:
         remove_multi_files(file_name, FILES_NUM)
 
@@ -1359,6 +1364,7 @@ def test_file_writer_parallel(file_name=None, remove_file=True):
     writer.commit()
     reader = FileReader(file_name)
     assert reader.len() == 50
+    reader.close()
     if remove_file:
         remove_one_file(file_name)
         remove_one_file(file_name + ".db")
@@ -1390,6 +1396,7 @@ def test_file_writer_parallel(file_name=None, remove_file=True):
     reader = FileReader([file_name + '0',
                          file_name + '1'])
     assert reader.len() == 100
+    reader.close()
     if remove_file:
         remove_multi_files(file_name, 2)
 
@@ -1407,6 +1414,7 @@ def test_file_writer_parallel(file_name=None, remove_file=True):
     reader = FileReader([file_name + '0',
                          file_name + '1'])
     assert reader.len() == 4
+    reader.close()
     if remove_file:
         remove_multi_files(file_name, 2)
 
@@ -1437,6 +1445,7 @@ def test_file_writer_parallel(file_name=None, remove_file=True):
                          file_name + '2',
                          file_name + '3'])
     assert reader.len() == 0
+    reader.close()
     if remove_file:
         remove_multi_files(file_name, FILES_NUM)
 
@@ -1748,6 +1757,7 @@ def file_writer_encode_and_integrity_check(file_name=None, remove_file=True, enc
     writer.commit()
     reader = FileReader(file_name_no_encode_no_hash)
     assert reader.len() == 50
+    reader.close()
 
     set_enc_key(encode)
     set_enc_mode(enc_mode)
@@ -1779,6 +1789,7 @@ def file_writer_encode_and_integrity_check(file_name=None, remove_file=True, enc
     # FileReader open the file
     reader = FileReader(file_name)
     assert reader.len() == 50
+    reader.close()
 
     # check the .decrypt_mindrecord dir permission
     if encode is not None:
@@ -1817,6 +1828,7 @@ def file_writer_encode_and_integrity_check(file_name=None, remove_file=True, enc
     # test read
     reader = FileReader(file_name)
     assert reader.len() == 55
+    reader.close()
 
     # test mindpage
     reader = MindPage(file_name)
