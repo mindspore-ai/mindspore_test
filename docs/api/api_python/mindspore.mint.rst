@@ -203,7 +203,6 @@ BLAS和LAPACK运算
     mindspore.mint.cumsum
     mindspore.mint.flatten
     mindspore.mint.flip
-    mindspore.mint.histc
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
 
