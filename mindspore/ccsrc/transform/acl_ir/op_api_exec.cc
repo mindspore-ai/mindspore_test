@@ -81,7 +81,7 @@ ReleaseExecutor OpApiDefaultResource::release_executor_func() {
   }
   auto release_executor_func = GetOpApiFunc("aclDestroyAclOpExecutor");
   if (release_executor_func == nullptr) {
-    MS_LOG(EXCEPTION) << "aclDestroyAclOpExecutor not in " << GetOpApiLibName() << ", please check!";
+    return nullptr;
   }
   release_executor_func_ = reinterpret_cast<ReleaseExecutorCast>(release_executor_func);
   return release_executor_func_;
