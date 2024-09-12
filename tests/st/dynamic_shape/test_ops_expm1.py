@@ -76,7 +76,7 @@ def test_expm1_vmap(mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=mode)
-    x = Tensor(np.array([[[0.0, 1.0], [2.0, -1]]]))
+    x = Tensor(np.array([[[0.0, 1.0], [2.0, -1]]]), ms.float32)
     nest_vmap = ops.vmap(ops.vmap(expm1_forward_func, in_axes=0), in_axes=0)
     output = nest_vmap(x)
     expect = [[[0., 1.718282], [6.389056, -0.63212055]]]
