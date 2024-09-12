@@ -263,7 +263,7 @@ class ConvertMode(IntEnum):
 
         mode = c_values.get(mode)
         if mode is None:
-            raise RuntimeError("Unsupported ConvertMode, see https://www.mindspore.cn/docs/zh-CN/master/api_python/"
+            raise RuntimeError("Unsupported ConvertMode, see https://www.mindspore.cn/docs/en/master/api_python/"
                                "dataset_vision/mindspore.dataset.vision.ConvertColor.html for more details.")
         return mode
 
