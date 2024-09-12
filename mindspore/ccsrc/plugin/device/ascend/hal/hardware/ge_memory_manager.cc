@@ -33,6 +33,9 @@ void GEMemoryManager::InitGEMemory(const transform::RunOptions &run_options, siz
   if (graph_memory_.find(graph_name) != graph_memory_.end()) {
     MS_LOG(EXCEPTION) << "Graph " << graph_name << " has been initialized.";
   }
+  MS_LOG(INFO) << "GE graph name: " << graph_name << ", workspace memory size: " << workspace_memory_size
+               << ", fixed memory size: " << fixed_memory_size << ", const memory size: " << const_memory_size
+               << ", stream id: " << stream_id;
   if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
     std::cout << "[MS_RUNTIME_PROF] GE graph name: " << graph_name
               << ", workspace memory size: " << workspace_memory_size << ", fixed memory size: " << fixed_memory_size
@@ -73,6 +76,9 @@ void GEMemoryManager::AllocGEMemory(GEAllocFunc alloc_func, GEUpdateMemoryFunc u
   }
   for (auto ptr : need_alloc_ptrs) {
     ptr->memory_ptr = alloc_func(ptr->memory_size);
+    if (ptr->memory_ptr == nullptr) {
+      MS_LOG(EXCEPTION) << "Out of memory, Alloc GE memory failed, size: " << ptr->memory_size;
+    }
     ptr->has_alloc = true;
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "AllocGEMemory", "", "");
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "AllocGEMemory", ptr->memory_size,
