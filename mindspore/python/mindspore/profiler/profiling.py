@@ -751,6 +751,10 @@ class Profiler:
         ProfilerInfo.set_profiling_start_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         ProfilerInfo.set_system_cnt(c_expression.get_clock_syscnt())
         ProfilerInfo.set_system_time(int(c_expression.get_clock_time())) # ns
+        if context.get_context("mode") == context.GRAPH_MODE:
+            jit_config = context.get_jit_config()
+            jit_level = jit_config.get("jit_level", "")
+            ProfilerInfo.set_jit_level(jit_level)
         if self._profile_framework:
             _framework_profiler_enable_mi()
 

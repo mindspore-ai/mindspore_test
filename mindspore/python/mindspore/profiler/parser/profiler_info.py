@@ -32,6 +32,7 @@ class ProfilerInfo:
     _file_name = "profiler_info_{}.json"
     _file_path = ""
     _profiler_info_dict = dict()
+    JIT_LEVEL = "jit_level"
 
     @staticmethod
     def init_info(context_mode, rank_id):
@@ -135,6 +136,11 @@ class ProfilerInfo:
     def set_profiling_options(profiling_options):
         """Set profiling options to profiler info dict"""
         ProfilerInfo._profiler_info_dict["profiling_options"] = profiling_options
+
+    @staticmethod
+    def set_jit_level(jit_level):
+        """Set jit_level to profiler info dict"""
+        ProfilerInfo._profiler_info_dict[ProfilerInfo.JIT_LEVEL] = jit_level
 
     @staticmethod
     def set_data_simplification(data_simplification):
