@@ -127,15 +127,16 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
     return debug_info_ss.str();
   }
   // Read the lines one by one.
-  char line[200];
+  constexpr auto kLinesize = 200;
+  char line[kLinesize];
   int line_num = 0;
-  file_out = fgets(line, 200, file);
+  file_out = fgets(line, kLinesize, file);
   line[strcspn(line, "\n")] = '\0';
   while (line_num != line_ - 1 && file_out != NULL) {
     if (tip == kSourceSectionTipNextLineHere && line_num >= start_line - 1) {
       section_debug_info_ss << line << "\n";
     }
-    file_out = fgets(line, 200, file);
+    file_out = fgets(line, kLinesize, file);
     line[strcspn(line, "\n")] = '\0';
     ++line_num;
   }
