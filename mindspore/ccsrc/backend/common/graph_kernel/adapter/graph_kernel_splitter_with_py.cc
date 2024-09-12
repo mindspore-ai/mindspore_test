@@ -90,6 +90,12 @@ class SplitNodesDecoder {
       inputs.push_back((*node_map)[inp]);
     }
     CNodePtr cp_node = func_graph->NewCNode(inputs);
+    auto mng = func_graph->manager();
+    MS_EXCEPTION_IF_NULL(mng);
+    auto &users = mng->node_users();
+    for (size_t i = 1; i < inputs.size(); ++i) {
+      users[inputs[i]].insert(std::make_pair(cp_node, i));
+    }
     func_graph->AddNode(cp_node);
     ScopePtr scope = (orig_node->scope() != kDefaultScope) ? orig_node->scope() : kDefaultScope;
     cp_node->set_scope(scope);
