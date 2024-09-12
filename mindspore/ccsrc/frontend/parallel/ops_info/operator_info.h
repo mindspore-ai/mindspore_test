@@ -391,6 +391,7 @@ class OperatorInfo {
   bool IsReshape() const;
   bool IsVirtualOutput() const;
   bool IsConcat() const;
+  bool IsStandAlone() const;
   bool IsTmpIdentity() const;
 
   void set_swc_index(int64_t swc, int64_t depth);
@@ -414,6 +415,7 @@ class OperatorInfo {
     cnode_ = cnode;
     cnodes_.push_back(cnode);
   }
+  void clear_cnodes() { cnodes_.clear(); }
   void set_new_shape(const std::vector<NewShapes> &shape) {
     inputs_shape_new_ = shape[0];
     outputs_shape_new_ = shape[1];

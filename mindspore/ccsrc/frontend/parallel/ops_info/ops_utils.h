@@ -179,6 +179,7 @@ constexpr char PARAM_NAME[] = "name";
 constexpr char RESHAPEINFO[] = "ReshapeInfo";
 constexpr char VIRTUALOUTPUTINFO[] = "VirtualOutputInfo";
 constexpr char CONCATINFO[] = "ConcatInfo";
+constexpr char STAND_ALONE_INFO[] = "StandAloneInfo";
 constexpr char GETNEXTINFO[] = "GetNextInfo";
 constexpr char VIRTUALDATASETINFO[] = "VirtualDatasetInfo";
 constexpr char FUNC_PARAM[] = "func_param";

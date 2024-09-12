@@ -87,6 +87,36 @@ def compile_graph_two_input(net, device_num, x, y):
     net.set_train()
     _cell_graph_executor.compile(net, x, y)
 
+def test_standalone():
+    """
+    Feature: Sharding propagation for standalone.
+    Description: Mul->ReLU->TensortoScalar(changed to standalone)
+    Expectation: compile done without error.
+    """
+    device_num = 8
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = P.ReLU()
+            self.tensor2scalar = P._sequence_ops.TensorToScalar()
+
+        def construct(self, x):
+            y = self.relu(x)
+            y = self.tensor2scalar(y.long().max())
+            return y
+
+    x = Tensor(np.ones([128, 96]), dtype=ms.float32)
+    net = GradWrap(Net())
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+    net.set_train()
+    _cell_graph_executor.compile(net, x, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        if re.search('StandAlone', k) is not None:
+            assert v == [[1, 1]]  # default strategy for StandAlone
 
 def test_reshape_reshape():
     """
