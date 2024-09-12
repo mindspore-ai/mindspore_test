@@ -179,6 +179,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {BUILD_SET_UNPACK, &GraphBuilder::DoBuildWithUnpack},
   {BUILD_MAP_UNPACK, &GraphBuilder::DoBuildMapWithUnpack},
   {BUILD_MAP_UNPACK_WITH_CALL, &GraphBuilder::DoBuildMapWithUnpack},
+  {LOAD_NAME, &GraphBuilder::DoLoadName},
 };
 
 bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
@@ -1056,6 +1057,14 @@ ValueNode *GraphBuilder::DoMixedPrecisionAttrAccess(const Instr &instr, ValueNod
     }
   }
   return nullptr;
+}
+
+bool GraphBuilder::DoLoadName(const mindspore::pijit::Instr &instr) {
+  if (instr.name() == "__name__") {
+    this->graph_->FoundInnerClass();
+  }
+
+  return false;
 }
 
 bool GraphBuilder::DoAttrAccess(const Instr &instr) {

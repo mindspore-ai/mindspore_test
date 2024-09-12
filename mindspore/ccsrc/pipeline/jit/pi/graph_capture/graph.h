@@ -168,8 +168,9 @@ class Graph {
   void SetGuard(const std::shared_ptr<OptCode> &guard) { guard_ = guard; }
 
   // (chaiyouheng): restore graph status at loop begin, clear trace values and operations and guards
-  bool RestoreLoopStatus() { return false; }
+  bool RestoreLoopStatus() const { return false; }
   bool IsBreakAtLoop() const;
+  bool ShouldNeverCompile() const;
   bool IsBreakAtLoopAfterUnrolling() const;
   const std::vector<ValueNode *> &GetTracedNodes() const { return traced_nodes_; }
   std::vector<ValueNode *> &GetTracedNodes() { return traced_nodes_; }
@@ -189,6 +190,7 @@ class Graph {
 
   // collect alive node, clear the bit if alive local is unbound
   static std::vector<ValueNode *> CollectAliveNode(const FrameStates &, BitMap *, std::vector<int> * = nullptr);
+  void FoundInnerClass() { found_inner_class = true; }
 
  private:
   std::unique_ptr<CFG> cfg_;
@@ -225,6 +227,7 @@ class Graph {
   int prune_branch_count_;
   Graph *parent_{nullptr};
   std::shared_ptr<SideEffect> side_effect_;
+  bool found_inner_class = false;
 };
 }  // namespace pijit
 }  // namespace mindspore

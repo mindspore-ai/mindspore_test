@@ -506,7 +506,7 @@ static void GraphCapture(JitCompileResults *jcr) {
   if (HandleUnsupportedSyntax(jcr, g)) {
     return;
   }
-  if (g->GetGraph()->IsBreakAtLoop() && !g->GetGraph()->RestoreLoopStatus()) {
+  if (g->GetGraph()->ShouldNeverCompile()) {
     jcr->set_stat(JitCompileResults::NEVER_COMPILE);
     return;
   }
