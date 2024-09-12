@@ -234,17 +234,40 @@ class TensorDump(Primitive):
     """
     Save the Tensor as an npy file in numpy format.
 
-    The file name will automatically have a prefix added based on the execution order. For example, if `file` is `a`,
-    the first saved file will be named `0_a.npy`, and the second one will be named `1_a.npy`, and so on.
-    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    to solve operator execution failure when outputting big tensor or outputting tensor intensively.
-
     .. warning::
         - If a large amount of data is stored within a short period, it may lead to memory overflow on the device side.
           Consider slicing the data to reduce the data scale.
         - Since data saving is processed asynchronously, when the amount of data is too large or the main process exits
           too quickly, data loss may occur. You need to actively control the destruction time of the main process,
           such as using sleep.
+
+    Args:
+        input_output (str, available): Used to control Tensordump behavior.
+            Available value is one of ['in', 'out', 'all']. Default value is ``out``.
+
+            In case of OpA --> RedistributionOps --> OpB,
+            The dump data of OpA's output is not equal to OpB's input (Due to the redistribution operators).
+            So the parameter input_output is to handle this situation.
+
+            Assuming OpA's output is used as both Tensordump's input parameter and OpB's input parameter.
+            Different requirements of saving dump data can be achieved by configuring parameter input_output:
+
+            - If the input_output is 'out', the dump data contains only OpA's output slice.
+            - If the input_output is 'all', the dump data contains both OpA's output slice and OpB's input slice.
+            - If the input_output is 'in', the dump data contains only OpB's input slice.
+
+            For input_output is 'all' or 'in', the input slice npy file format is:
+            id_fileName_cNodeID_dumpMode_rankID.npy.
+
+            For input_output is 'out' or 'all' the output slice npy file format is:
+            id_fileName.npy.
+
+            - id: An auto increment ID.
+            - fileName: Value of the parameter file
+              (if parameter file_name is a user-specified path, the value of fileName is the last level of the path).
+            - cNodeID: The node ID of the Tensordump node in the step_parallel_end.ir file.
+            - dumpMode: Value of the parameter input_output.
+            - rankID: Logical device id.
 
     Inputs:
         - **file** (str) - The path of the file to be saved.
