@@ -1,0 +1,16 @@
+#operator logsigmoid_grad
+logsigmoid_grad:
+  args:
+    dy:
+      dtype: tensor
+    input:
+      dtype: tensor
+    buffer:
+      dtype: tensor
+  returns:
+    grad_input:
+      dtype: tensor
+  class:
+    name: LogSigmoidGrad
+  dispatch:
+    enable: True

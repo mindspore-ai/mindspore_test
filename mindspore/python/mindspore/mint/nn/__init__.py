@@ -116,7 +116,7 @@ from mindspore.mint.nn.layer.normalization import LayerNorm
 # 45
 
 # 46
-from mindspore.mint.nn.layer.activation import SiLU
+from mindspore.mint.nn.layer.activation import SiLU, LogSigmoid
 
 # 47
 
@@ -703,6 +703,10 @@ __all__ = [
     # 258
     'MSELoss',
     # 259
+
+    # 556
+    'LogSigmoid',
+
     # 674
     'BatchNorm1d',
     # 675

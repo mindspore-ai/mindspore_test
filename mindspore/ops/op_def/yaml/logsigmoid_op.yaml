@@ -1,0 +1,16 @@
+#operator logsigmoid
+logsigmoid:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+    buffer:
+      dtype: tensor
+  class:
+    name: LogSigmoid
+  function:
+    disable: True
+  dispatch:
+    enable: True

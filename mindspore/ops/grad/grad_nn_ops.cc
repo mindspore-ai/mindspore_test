@@ -1924,6 +1924,15 @@ REG_BPROP_BUILDER("SigmoidGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dy, dgrad};
 });
 
+REG_BPROP_BUILDER("LogSigmoid").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto buffer = ib->TupleGetItem(out, kIndex1);
+  auto dy = ib->TupleGetItem(dout, kIndex0);
+  return {ib->Emit("LogSigmoidGrad", {dy, input, buffer})};
+});
+
 REG_BPROP_BUILDER("LogSoftmax").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto axis = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
