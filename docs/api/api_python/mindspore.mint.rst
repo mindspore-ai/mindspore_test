@@ -48,6 +48,8 @@ Tensor
     mindspore.mint.narrow
     mindspore.mint.nonzero
     mindspore.mint.tile
+    mindspore.mint.tril
+    mindspore.mint.triu
     mindspore.mint.stack
     mindspore.mint.where
 

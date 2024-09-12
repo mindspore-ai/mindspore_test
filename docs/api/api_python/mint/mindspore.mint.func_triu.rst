@@ -1,7 +1,7 @@
-mindspore.ops.triu
+mindspore.mint.triu
 ===================
 
-.. py:function:: mindspore.ops.triu(input, diagonal=0)
+.. py:function:: mindspore.mint.triu(input, diagonal=0)
 
     返回输入Tensor `input` 的上三角形部分(包含对角线和下面的元素)，并将其他元素设置为0。
 
