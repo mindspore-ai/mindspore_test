@@ -101,11 +101,10 @@ class ProfilerInfoParser:
     def __run_cmd(cls, cmd):
         """run shell command"""
         try:
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True)
+            with Popen(cmd, stdout=PIPE, stderr=PIPE, text=True) as proc:
+                outs, errs = proc.communicate(timeout=cls._time_out)
         except (FileNotFoundError, PermissionError, CalledProcessError) as exc:
             raise RuntimeError(exc) from exc
-        try:
-            outs, errs = proc.communicate(timeout=cls._time_out)
         except TimeoutExpired as err:
             proc.kill()
             msg = "The possible cause is that too much data is collected " \
