@@ -860,8 +860,8 @@ class LayerNormExt(Cell):
             self.weight = None
             self.bias = None
 
-    def construct(self, input_x):
-        y = ops.layer_norm(input_x, self.normalized_shape, self.weight,
+    def construct(self, input):
+        y = ops.layer_norm(input, self.normalized_shape, self.weight,
                            self.bias, self.eps)
         return y
 
