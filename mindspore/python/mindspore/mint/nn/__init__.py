@@ -116,6 +116,7 @@ from mindspore.mint.nn.layer.normalization import LayerNorm
 # 45
 
 # 46
+from mindspore.mint.nn.layer.activation import SiLU
 
 # 47
 
@@ -573,6 +574,7 @@ __all__ = [
     # 45
 
     # 46
+    'SiLU',
 
     # 47
 

@@ -20,8 +20,11 @@ The high-level components(Cells) used to construct the neural network.
 from __future__ import absolute_import
 
 from mindspore.mint.nn.layer import normalization
+from mindspore.mint.nn.layer import activation
 from mindspore.mint.nn.layer.normalization import *
+from mindspore.mint.nn.layer.activation import *
 
 
 __all__ = []
 __all__.extend(normalization.__all__)
+__all__.extend(activation.__all__)
