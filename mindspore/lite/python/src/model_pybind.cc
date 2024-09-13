@@ -120,20 +120,34 @@ Status PyModelUpdateWeights(Model *model, const std::vector<std::vector<MSTensor
 Status PyModelBuild(Model *model, const std::string &model_path, ModelType model_type,
                     const std::shared_ptr<Context> &model_context, char *key, size_t key_len,
                     const std::string &dec_mode, size_t num_parallel) {
-  CryptoInfo cryptoInfo{Key(key, key_len), dec_mode, num_parallel};
-  Status ret = model->Build(model_path, model_type, model_context, cryptoInfo);
-  if (ret != kSuccess) {
-    auto sec_ret = memset_s(cryptoInfo.key.key, key_len, 0, key_len);
-    if (sec_ret != EOK) {
-      MS_LOG(WARNING) << "memcpy_s failed, src_len = " << key_len << ", dst_len = " << key_len << ", ret = " << sec_ret;
+  size_t decrypt_len;
+  auto decrypt_data = Decrypt(&decrypt_len, model_path, reinterpret_cast<unsigned char *>(key), key_len, dec_mode);
+  if (decrypt_data == nullptr) {
+    MS_LOG(ERROR) << "Decrypt failed!";
+    return kLiteFileError;
+  }
+  try {
+    CryptoInfo cryptoInfo = CryptoInfo(key, key_len, dec_mode, num_parallel);
+    Status ret =
+      model->impl()->Build(decrypt_data.get(), decrypt_len, model_type, model_context, model_path, cryptoInfo);
+    if (ret != kSuccess) {
+      auto sec_ret = memset_s(key, key_len, 0, key_len);
+      if (sec_ret != EOK) {
+        MS_LOG(ERROR) << "memcpy_s failed, src_len = " << key_len << ", dst_len = " << key_len << ", ret = " << sec_ret;
+        return kLiteMemoryFailed;
+      }
+      return ret;
     }
-    return ret;
+    auto sec_ret = memset_s(key, key_len, 0, key_len);
+    if (sec_ret != EOK) {
+      MS_LOG(ERROR) << "memcpy_s failed, src_len = " << key_len << ", dst_len = " << key_len << ", ret = " << sec_ret;
+      return kLiteMemoryFailed;
+    }
+    return kSuccess;
+  } catch (const std::exception &exe) {
+    MS_LOG(ERROR) << "Catch exception: " << exe.what();
+    return kCoreFailed;
   }
-  auto sec_ret = memset_s(cryptoInfo.key.key, key_len, 0, key_len);
-  if (sec_ret != EOK) {
-    MS_LOG(WARNING) << "memcpy_s failed, src_len = " << key_len << ", dst_len = " << key_len << ", ret = " << sec_ret;
-  }
-  return ret;
 }
 
 void ModelPyBind(const py::module &m) {

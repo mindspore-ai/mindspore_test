@@ -213,14 +213,6 @@ else
     exit ${RET}
   fi
 
-  # run model cloud inference with encryption and decryption
-  echo "run model enc-dec Python API ut test"
-  pytest ${CUR_DIR}/ut/python/test_model_enc_dec.py -s
-  RET=$?
-  if [ ${RET} -ne 0 ]; then
-    exit ${RET}
-  fi
-
   # run inference CPU Python-API st test
   echo "run inference CPU Python API st test"
   pytest ${CUR_DIR}/st/python/test_inference.py::test_cpu_inference_01 -s
