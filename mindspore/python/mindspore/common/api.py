@@ -809,6 +809,15 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
 
     This allows the MindSpore runtime to apply optimizations based on graph.
 
+    Note:
+        - If `input_signature` is specified, each input of `fn` must be a Tensor. And the input arguments for `fn`
+          will not accept `**kwargs`.
+        - It is not supported to run a function with decoration @jit(mode=“PIJit”)
+          in static graph mode, in which case the decoration @jit(mode=“PIJit”) is considered invalid.
+        - Calls to functions with decorated @jit(mode=“PIJit”) inside functions
+          decorated with @jit(mode=“PIJit”) are not supported,
+          and the decoration @jit(mode=“PIJit”) is considered invalid.
+
     Args:
         fn (Function): The Python function that will be run as a graph. Default: ``None`` .
         mode (str): The type of jit used, the value of mode should be ``PIJit`` or ``PSJit``. Default: ``PSJit`` .
@@ -838,10 +847,6 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
             But it may be wrong if the free variables were changed. ``False`` : It would be recompiled when
             it was created again.
             Default: ``False`` .
-
-    Note:
-        If `input_signature` is specified, each input of `fn` must be a Tensor. And the input arguments for `fn`
-        will not accept `**kwargs`.
 
     Returns:
         Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is
