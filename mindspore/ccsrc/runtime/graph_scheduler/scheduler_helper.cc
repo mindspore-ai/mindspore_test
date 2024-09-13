@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1157,7 +1157,6 @@ void SchedulerHelper::CheckActorValid(const ActorSet *actor_set) {
         MS_EXCEPTION_IF_NULL(kernel_actor);
         auto &kernel = kernel_actor->kernel();
         MS_EXCEPTION_IF_NULL(kernel);
-        // expect_input_num = common::AnfAlgo::GetInputTensorNum(kernel);
         auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
         MS_EXCEPTION_IF_NULL(kernel_info);
         auto build_info = kernel_info->select_kernel_build_info();
