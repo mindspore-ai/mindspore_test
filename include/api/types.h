@@ -74,6 +74,8 @@ struct CryptoInfo {
   Key key;
   std::string mode = "AES-GCM";
   size_t parallel_num = 0;
+  CryptoInfo() : parallel_num(0) {}
+  explicit CryptoInfo(const char *dec_key, size_t key_len, const std::string dec_mode, size_t parallel_num);
 };
 
 class Allocator;

@@ -124,6 +124,12 @@ Key::Key(const char *dec_key, size_t key_len) {
   len = key_len;
 }
 
+CryptoInfo::CryptoInfo(const char *dec_key, size_t key_len, const std::string dec_mode, size_t parallel_num) {
+  key = Key(dec_key, key_len);
+  mode = dec_mode;
+  parallel_num = parallel_num;
+}
+
 Status Serialization::Load(const void *model_data, size_t data_size, ModelType model_type, Graph *graph,
                            const Key &dec_key, const std::vector<char> &dec_mode) {
   MS_CHECK_TRUE_RET(model_data != nullptr, kLiteNullptr);
