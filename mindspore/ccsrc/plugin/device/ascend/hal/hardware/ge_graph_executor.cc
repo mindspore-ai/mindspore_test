@@ -1259,11 +1259,6 @@ FuncGraphPtr GeGraphExecutor::BuildDFGraph(const FuncGraphPtr &anf_graph,
   }
 #endif
 
-  if (export_air) {
-    // export air can't use session->AddGraph, it will cause atc error.
-    return anf_graph;
-  }
-
   return anf_graph;
 }
 
