@@ -20,11 +20,13 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <unordered_map>
 #include "frontend/optimizer/irpass.h"
 #include "mindspore/core/ops/sequence_ops.h"
 #include "mindspore/core/ops/framework_ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
+#include "frontend/optimizer/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/func_graph.h"
 
@@ -33,18 +35,12 @@ namespace opt {
 namespace irpass {
 constexpr auto kHandledNotRecomputeNodeFlag = "handled_not_recompute_node";
 constexpr auto kPrimalFgCallerUserDataKey = "primal_fg_caller";
-bool EnableCellReuse();
-
 bool HasBpropGetter(const OptimizerPtr &opt, const AnfNodePtr &k_fg_caller);
-
-AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &bprop_getter);
-
-bool AddRecomputeNodes(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 
 class RemoveNotRecomputeNode : public AnfVisitor {
  public:
   AnfNodePtr operator()(const OptimizerPtr &opt, const AnfNodePtr &node) override {
-    if (!EnableCellReuse()) {
+    if (!RecomputeBeforeInline()) {
       return nullptr;
     }
     Reset();
@@ -208,6 +204,24 @@ class RemoveNotRecomputeNode : public AnfVisitor {
  private:
   FuncGraphPtr k_fg_{nullptr};
   FuncGraphPtr primal_fg_{nullptr};
+};
+
+class Recomputation {
+ public:
+  Recomputation() = default;
+  virtual ~Recomputation() = default;
+  bool operator()(const FuncGraphPtr &root, const OptimizerPtr &opt);
+
+ private:
+  void AddDependNodes(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg, const CNodePtr &k_fg_caller_cnode);
+  CNodePtr MoveKCallerToBprop(const FuncGraphManagerPtr &manager, const FuncGraphPtr &bprop_fg, const CNodePtr &node,
+                              const AnfNodePtr &depend_nodes,
+                              std::unordered_map<CNodePtr, CNodePtr> *origin_to_new_nodes);
+  void CopyOriginalInputs(const FuncGraphPtr &bprop_fg, const CNodePtr &node, const AnfNodePtr &depend_nodes,
+                          std::vector<AnfNodePtr> *new_inputs);
+
+  mindspore::HashMap<FuncGraphPtr, AnfNodePtr> bprop_to_umonad_fv_;
+  mindspore::HashMap<FuncGraphPtr, AnfNodePtr> bprop_to_iomonad_fv_;
 };
 }  // namespace irpass
 }  // namespace opt

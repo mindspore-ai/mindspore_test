@@ -230,6 +230,15 @@ Value Range:
 """
 DUMP_VALIDATE_BEFORE_RESET_ID = ''
 
+"""
+Name: ENABLE_RECOMPUTE_BEFORE_INLINE
+Function: Whether to do recomputation before fprop and bprop being inlined.
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+ENABLE_RECOMPUTE_BEFORE_INLINE = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -255,4 +264,5 @@ __all__ = [
     "DUMP_IR_DDE_DETAIL",
     "COMBINE_LIKE_GRAPHS",
     "DUMP_VALIDATE_BEFORE_RESET_ID",
+    "ENABLE_RECOMPUTE_BEFORE_INLINE",
 ]

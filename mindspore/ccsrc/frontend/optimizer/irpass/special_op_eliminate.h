@@ -300,8 +300,7 @@ class ResetDeferInline : public AnfVisitor {
       fg->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, false);
       auto context = MsContext::GetInstance();
       MS_EXCEPTION_IF_NULL(context);
-      const auto cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
-      if (cell_reuse) {
+      if (RecomputeBeforeInline()) {
         fg->erase_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH);
         fg->erase_flag(FUNC_GRAPH_NOT_RECOMPUTE_K_GRAPH);
         fg->erase_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE);

@@ -20,43 +20,13 @@
 #include <vector>
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
+#include "frontend/optimizer/utils.h"
 #include "ir/func_graph.h"
 
 namespace mindspore {
 namespace opt {
 namespace irpass {
 namespace internal {
-AnfNodePtr GetBpropGetter(const FuncGraphManagerPtr &manager, const CNodePtr &node) {
-  const auto &user_nodes = manager->node_users()[node];
-  for (const auto &iter : user_nodes) {
-    if (IsPrimitiveCNode(iter.first, prim::kPrimTupleGetItem)) {
-      auto idx = GetValueNode<Int64ImmPtr>(iter.first->cast<CNodePtr>()->input(kInputNodeOutputIndexInTupleGetItem));
-      if (idx != nullptr && idx->value() == 1) {
-        return iter.first;
-      }
-    }
-  }
-  return nullptr;
-}
-
-AnfNodePtr GetBpropUser(const FuncGraphManagerPtr &manager, const AnfNodePtr &bprop_getter) {
-  MS_EXCEPTION_IF_NULL(manager);
-  const auto &node_users = manager->node_users();
-  auto iter = node_users.find(bprop_getter);
-  if (iter == node_users.end()) {
-    return nullptr;
-  }
-  if (iter->second.size() != 1) {
-    MS_LOG(EXCEPTION) << "The number of bprop caller should be 1, but got " << iter->second.size()
-                      << ", bprop_getter: " << bprop_getter->DebugString();
-  }
-  auto user_node_idx = iter->second.begin();
-  if (user_node_idx->second != 0) {
-    MS_LOG(EXCEPTION) << "The bprop_getter should be used in input 0, but got " << user_node_idx->second;
-  }
-  return user_node_idx->first;
-}
-
 bool IsMemSideEffectNode(const AnfNodePtr &node) {
   auto prim = GetCNodePrimitive(node);
   if (prim == nullptr) {
@@ -195,7 +165,7 @@ bool AddForwardMonadDepend(const FuncGraphPtr &root, const opt::OptimizerPtr &op
         continue;
       }
       // Only handle the fprop which has bprop getter.
-      auto bprop_getter = internal::GetBpropGetter(manager, k_graph_caller);
+      auto bprop_getter = GetBpropGetter(manager, k_graph_caller);
       if (bprop_getter == nullptr) {
         continue;
       }
@@ -209,7 +179,7 @@ bool AddForwardMonadDepend(const FuncGraphPtr &root, const opt::OptimizerPtr &op
       } else if (bprop_getter_abs->func_graph() != bprop_graph) {
         MS_LOG(INTERNAL_EXCEPTION) << "The bprop graphs are not same for the k graph: " << top_k_graph->ToString();
       }
-      auto bprop_user = internal::GetBpropUser(manager, bprop_getter);
+      auto bprop_user = GetBpropCaller(manager, bprop_getter);
       if (bprop_user == nullptr) {
         continue;
       }

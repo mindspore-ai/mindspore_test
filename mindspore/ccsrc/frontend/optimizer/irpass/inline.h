@@ -27,6 +27,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
+#include "frontend/optimizer/utils.h"
 #include "ir/func_graph.h"
 #include "ir/func_graph_cloner.h"
 #include "ir/tensor.h"
@@ -96,9 +97,8 @@ class ReplaceApplicator : public AnfVisitor {
     // 2. The k graph whose primal is set non-recomputed when enable graph reuse.
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
-    const auto cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
     return fg->has_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE) ||
-           (cell_reuse &&
+           (RecomputeBeforeInline() &&
             (fg->has_flag(FUNC_GRAPH_NOT_RECOMPUTE_K_GRAPH) || fg->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)));
   }
 };
@@ -204,9 +204,8 @@ class InlinerBase : public AnfVisitor {
     // 2. The k graph whose primal is set non-recomputed when enable graph reuse.
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
-    const auto cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
     if (fg->has_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE) ||
-        (cell_reuse &&
+        (RecomputeBeforeInline() &&
          (fg->has_flag(FUNC_GRAPH_NOT_RECOMPUTE_K_GRAPH) || fg->has_flag(FUNC_GRAPH_RECOMPUTE_K_GRAPH)))) {
       return false;
     }
