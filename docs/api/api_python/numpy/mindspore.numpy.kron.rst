@@ -11,8 +11,8 @@ mindspore.numpy.kron
         不支持bool值。
 
     参数：
-        - **a** (Union[int, float, list, tuple, Tensor]) – 输入值。
-        - **b** (Union[int, float, list, tuple, Tensor]) – 输入值。
+        - **a** (Union[int, float, list, tuple, Tensor]) - 输入值。
+        - **b** (Union[int, float, list, tuple, Tensor]) - 输入值。
 
     返回：
         Tensor。
