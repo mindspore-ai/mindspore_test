@@ -106,7 +106,7 @@ std::vector<CNodePtr> FindFWFlashAttentionScore(const FuncGraphManagerPtr &manag
   return result;
 }
 
-CNodePtr NewReshapeNode(const AnfNodePtr &input_node, const ShapeVector &output_shape, const TypeId &output_type) {
+CNodePtr NewReshapeNode(const AnfNodePtr &input_node, const ShapeVector &output_shape) {
   MS_EXCEPTION_IF_NULL(input_node);
   std::vector<AnfNodePtr> reshape_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimReshape->name())),
                                             input_node, NewValueNode(MakeValue(output_shape))};
@@ -558,7 +558,7 @@ void GenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actual_
 
   auto node_w_tile = NewTileNode(node_get_tuple_w, parallel::CreateTuple({s_shape[0], 1}));
 
-  auto node_reshape = NewReshapeNode(node_get_tuple_h, {s_shape[0], 1}, TypeId::kNumberTypeInt64);
+  auto node_reshape = NewReshapeNode(node_get_tuple_h, {s_shape[0], 1});
 
   auto node_h_tile = NewTileNode(node_reshape, parallel::CreateTuple({1, s_shape[1]}));
 
@@ -609,10 +609,10 @@ void DynGenerateEodMask(int index, int64_t rank_id, int64_t sp_num, int64_t actu
   }
   auto zeros_node = NewValueNode(MakeValue(const_tensor));
   auto const_seq = NewConcatNode(
-    NewMakeTupleNode({NewReshapeNode(NewScalartoTensorNode(NewScalarMulNode(fa_s1, NewValueNode<int64_t>(sp_num)),
-                                                           TypeId::kNumberTypeInt64),
-                                     {1}, TypeId::kNumberTypeInt64),
-                      zeros_node}),
+    NewMakeTupleNode(
+      {NewReshapeNode(
+         NewScalartoTensorNode(NewScalarMulNode(fa_s1, NewValueNode<int64_t>(sp_num)), TypeId::kNumberTypeInt64), {1}),
+       zeros_node}),
     0);
   auto node_add = NewAddNode(node_sub, const_seq);
 
@@ -982,10 +982,9 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
 }
 
 void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePtr *acc_attention,
-                           const CNodePtr &softmax_max, const CNodePtr &softmax_sum, CNodePtr attention_output,
+                           const CNodePtr &softmax_max, const CNodePtr &softmax_sum, const CNodePtr &attention_output,
                            int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t input_layout,
-                           int fa_index, int index, bool is_last_update = false,
-                           TypeId output_type_id = TypeId::kNumberTypeFloat16) {
+                           int fa_index, int index, TypeId output_type_id, bool is_last_update = false) {
   auto temp_max = NewMaxNode(*history_max, softmax_max);
   auto m_h_sub_temp = NewSubNode(*history_max, temp_max);
   auto m_i_sub_temp = NewSubNode(softmax_max, temp_max);
@@ -1003,7 +1002,7 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
   }
   auto e_m_h_div_concat = NewTileNode(e_m_h_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
   if (input_layout == FASInputLayoutMode::BSH) {
-    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, fa_s1, fa_h1}, output_type_id);
+    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, fa_s1, fa_h1});
   }
 
   auto e_m_i_div_split = NewSplitNode(e_m_i_div, 3, 8);
@@ -1013,7 +1012,7 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
   }
   auto e_m_i_div_concat = NewTileNode(e_m_i_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
   if (input_layout == FASInputLayoutMode::BSH) {
-    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, fa_s1, fa_h1}, output_type_id);
+    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, fa_s1, fa_h1});
   }
   auto weighted_history = NewMulNode(e_m_h_div_concat, *acc_attention);
   auto weighted_attention = NewMulNode(e_m_i_div_concat, attention_output);
@@ -1090,10 +1089,10 @@ void DynUpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNod
 }
 
 CNodePtr ConstructSendOMLTensor(const AnfNodePtr &send_softmax_max, const AnfNodePtr &send_softmax_sum,
-                                const AnfNodePtr &send_attn_out) {
-  auto send_softmax_max_fp16 = NewCastNode(send_softmax_max, TypeId::kNumberTypeFloat16);
-  auto send_softmax_sum_fp16 = NewCastNode(send_softmax_sum, TypeId::kNumberTypeFloat16);
-  std::vector<AnfNodePtr> oml_nodes = {send_attn_out, send_softmax_max_fp16, send_softmax_sum_fp16};
+                                const AnfNodePtr &send_attn_out, TypeId output_type_id) {
+  auto send_softmax_max_cast = NewCastNode(send_softmax_max, output_type_id);
+  auto send_softmax_sum_cast = NewCastNode(send_softmax_sum, output_type_id);
+  std::vector<AnfNodePtr> oml_nodes = {send_attn_out, send_softmax_max_cast, send_softmax_sum_cast};
   auto oml_tuple = NewMakeTupleNode(oml_nodes);
   return NewConcatNode(oml_tuple, kIndex3);
 }
@@ -1159,24 +1158,24 @@ int64_t GetSendRecvTag(int64_t src, int64_t dest, TagType data_type) {
 
 CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_t sp_num, const AnfNodePtr &query_node,
                                const std::vector<CNodePtr> &send_kv_node, RankList spRankList,
-                               const std::string &qkv_group, const AnfNodePtr &pre_node, Shape q_shape,
-                               Shape kv_shape) {
+                               const std::string &qkv_group, const AnfNodePtr &pre_node, Shape q_shape, Shape kv_shape,
+                               TypeId output_type_id) {
   if (step < (sp_num / kIndex2)) {  // [0, sp-1]
     auto send_qkv_dst_rank = GetSendQKVDstRank(pos, step, sp_num);
     if (pos + step + 1 >= sp_num) {  // send q
       if (inner_step == 0) {
         return NewSendNode(CreateDepend(query_node, pre_node), GetSendRecvTag(pos, send_qkv_dst_rank, TagType::query),
-                           spRankList[send_qkv_dst_rank], q_shape, TypeId::kNumberTypeFloat16, qkv_group);
+                           spRankList[send_qkv_dst_rank], q_shape, output_type_id, qkv_group);
       }
     } else {  // send kv
       auto data_type = (inner_step == 0 ? TagType::kv_b : TagType::kv_a);
       auto tmp_node = send_kv_node[(inner_step + 1) % 2];
       if (step < ((sp_num / kIndex2) - kIndex1)) {  // [0, sp-3]
         return NewSendNode(CreateDepend(tmp_node, pre_node), GetSendRecvTag(pos, send_qkv_dst_rank, data_type),
-                           spRankList[send_qkv_dst_rank], kv_shape, TypeId::kNumberTypeFloat16, qkv_group);
+                           spRankList[send_qkv_dst_rank], kv_shape, output_type_id, qkv_group);
       } else if (inner_step == 0) {
         return NewSendNode(CreateDepend(tmp_node, pre_node), GetSendRecvTag(pos, send_qkv_dst_rank, data_type),
-                           spRankList[send_qkv_dst_rank], kv_shape, TypeId::kNumberTypeFloat16, qkv_group);
+                           spRankList[send_qkv_dst_rank], kv_shape, output_type_id, qkv_group);
       }
     }
   }
@@ -1184,24 +1183,24 @@ CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_
 }
 
 CNodePtr GetCurrentRecvQKVNode(size_t pos, size_t step, size_t inner_step, size_t sp_num, RankList spRankList,
-                               Shape q_shape, Shape kv_shape, const std::string &qkv_group,
-                               const AnfNodePtr &pre_node) {
+                               Shape q_shape, Shape kv_shape, const std::string &qkv_group, const AnfNodePtr &pre_node,
+                               TypeId output_type_id) {
   if (step < (sp_num / kIndex2)) {  // [0, sp-1]
     auto recv_qkv_src_rank = GetRecvQKVSrcRank(pos, step, sp_num);
     if (pos < step + kIndex1) {
       if (inner_step == kIndex0) {  // recv q
         return NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, TagType::query),
-                              spRankList[recv_qkv_src_rank], q_shape, TypeId::kNumberTypeFloat16, qkv_group);
+                              spRankList[recv_qkv_src_rank], q_shape, output_type_id, qkv_group);
       }
     } else {  // recv kv
       auto data_type = inner_step == kIndex0 ? TagType::kv_b : TagType::kv_a;
       if (step < (sp_num / kIndex2) - kIndex1) {
         return NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, data_type),
-                              spRankList[recv_qkv_src_rank], kv_shape, TypeId::kNumberTypeFloat16, qkv_group);
+                              spRankList[recv_qkv_src_rank], kv_shape, output_type_id, qkv_group);
       } else {
         if (inner_step == 0) {
           return NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, data_type),
-                                spRankList[recv_qkv_src_rank], kv_shape, TypeId::kNumberTypeFloat16, qkv_group);
+                                spRankList[recv_qkv_src_rank], kv_shape, output_type_id, qkv_group);
         }
       }
     }
@@ -1212,7 +1211,7 @@ CNodePtr GetCurrentRecvQKVNode(size_t pos, size_t step, size_t inner_step, size_
 CNodePtr GetCurrentSendOMLNode(size_t pos, size_t step, size_t inner_step, size_t sp_num, RankList spRankList,
                                const AnfNodePtr &send_softmax_max, const AnfNodePtr &send_softmax_sum,
                                const AnfNodePtr &send_attn_out, const std::string &send_group,
-                               const AnfNodePtr &pre_node, Shape q_shape) {
+                               const AnfNodePtr &pre_node, Shape q_shape, TypeId output_type_id) {
   auto recv_oml_shape = q_shape;
   recv_oml_shape[kIndex3] = recv_oml_shape[kIndex3] + kIndex16;
   if (step > kIndex0 && step < (sp_num / kIndex2) + kIndex1) {
@@ -1222,16 +1221,18 @@ CNodePtr GetCurrentSendOMLNode(size_t pos, size_t step, size_t inner_step, size_
         if (step < (sp_num / kIndex2)) {
           if (inner_step == kIndex1) {
             return NewSendNode(
-              CreateDepend(ConstructSendOMLTensor(send_softmax_max, send_softmax_sum, send_attn_out), pre_node),
+              CreateDepend(ConstructSendOMLTensor(send_softmax_max, send_softmax_sum, send_attn_out, output_type_id),
+                           pre_node),
               GetSendRecvTag(pos, send_oml_dst_rank, TagType::oml), spRankList[send_oml_dst_rank], recv_oml_shape,
-              TypeId::kNumberTypeFloat16, send_group);
+              output_type_id, send_group);
           }
         } else {
           if (inner_step == kIndex0) {
             return NewSendNode(
-              CreateDepend(ConstructSendOMLTensor(send_softmax_max, send_softmax_sum, send_attn_out), pre_node),
+              CreateDepend(ConstructSendOMLTensor(send_softmax_max, send_softmax_sum, send_attn_out, output_type_id),
+                           pre_node),
               GetSendRecvTag(pos, send_oml_dst_rank, TagType::oml), spRankList[send_oml_dst_rank], recv_oml_shape,
-              TypeId::kNumberTypeFloat16, send_group);
+              output_type_id, send_group);
           }
         }
       }
@@ -1241,7 +1242,8 @@ CNodePtr GetCurrentSendOMLNode(size_t pos, size_t step, size_t inner_step, size_
 }
 
 CNodePtr GetCurrentRecvOMLNode(size_t pos, size_t step, size_t inner_step, size_t sp_num, RankList spRankList,
-                               Shape q_shape, const std::string &recv_group, const AnfNodePtr &pre_node) {
+                               Shape q_shape, const std::string &recv_group, const AnfNodePtr &pre_node,
+                               TypeId output_type_id) {
   if (step <= kIndex0 || step >= (sp_num / kIndex2) + kIndex1) {
     return nullptr;
   }
@@ -1253,15 +1255,14 @@ CNodePtr GetCurrentRecvOMLNode(size_t pos, size_t step, size_t inner_step, size_
           auto recv_oml_shape = q_shape;
           recv_oml_shape[kIndex3] = recv_oml_shape[kIndex3] + kIndex16;
           return NewReceiveNode(pre_node, GetSendRecvTag(recv_oml_src_rank, pos, TagType::oml),
-                                spRankList[recv_oml_src_rank], recv_oml_shape, TypeId::kNumberTypeFloat16, recv_group);
+                                spRankList[recv_oml_src_rank], recv_oml_shape, output_type_id, recv_group);
         }
       } else {
         if (inner_step == 0) {
           auto recv_oml_q_shape = q_shape;
           recv_oml_q_shape[kIndex3] = recv_oml_q_shape[kIndex3] + kIndex16;
           return NewReceiveNode(pre_node, GetSendRecvTag(recv_oml_src_rank, pos, TagType::oml),
-                                spRankList[recv_oml_src_rank], recv_oml_q_shape, TypeId::kNumberTypeFloat16,
-                                recv_group);
+                                spRankList[recv_oml_src_rank], recv_oml_q_shape, output_type_id, recv_group);
         }
       }
     }
@@ -1272,14 +1273,14 @@ CNodePtr GetCurrentRecvOMLNode(size_t pos, size_t step, size_t inner_step, size_
 void ChangeQKVToBNSD(AnfNodePtr *query_node, AnfNodePtr *key_node, AnfNodePtr *value_node, Shape *q_shape,
                      Shape *kv_shape, int64_t fa_b, int64_t fa_s1, int64_t fa_h1, int64_t fa_s2, int64_t fa_h2,
                      int64_t fa_d, int64_t fa_n1) {
-  (*query_node) = NewReshapeNode((*query_node), {fa_b, fa_s1, fa_n1, fa_d}, TypeId::kNumberTypeFloat16);
+  (*query_node) = NewReshapeNode((*query_node), {fa_b, fa_s1, fa_n1, fa_d});
   AnfNodePtr tmp_tup = parallel::CreateTuple({0, 2, 1, 3});
   (*query_node) = NewTransposeNode((*query_node), tmp_tup);
 
-  (*key_node) = NewReshapeNode((*key_node), {fa_b, fa_s2, fa_h2 / fa_d, fa_d}, TypeId::kNumberTypeFloat16);
+  (*key_node) = NewReshapeNode((*key_node), {fa_b, fa_s2, fa_h2 / fa_d, fa_d});
   (*key_node) = NewTransposeNode((*key_node), tmp_tup);
 
-  (*value_node) = NewReshapeNode((*value_node), {fa_b, fa_s2, fa_h2 / fa_d, fa_d}, TypeId::kNumberTypeFloat16);
+  (*value_node) = NewReshapeNode((*value_node), {fa_b, fa_s2, fa_h2 / fa_d, fa_d});
   (*value_node) = NewTransposeNode((*value_node), tmp_tup);
   (*q_shape) = {fa_b, fa_n1, fa_s1, fa_d};
   (*kv_shape) = {fa_b, fa_h2 / fa_d, fa_s2, fa_d};
@@ -1422,14 +1423,15 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
                         const std::vector<CNodePtr> &send_kv_node, RankList spRankList,
                         const AnfNodePtr &send_softmax_max, const AnfNodePtr &send_softmax_sum,
                         const AnfNodePtr &send_attn_out, Shape q_shape, Shape kv_shape,
-                        const std::string &flash_index_str, AnfNodePtr *cur_q) {
+                        const std::string &flash_index_str, AnfNodePtr *cur_q, TypeId output_type_id) {
   std::stringstream comm_order;
   if (rank_ring_index % kIndex2 == 0) {  // send first
-    auto cur_send_qkv_node = GetCurrentSendQKVNode(pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
-                                                   g_device_manager->world_group(), *cur_q, q_shape, kv_shape);
+    auto cur_send_qkv_node =
+      GetCurrentSendQKVNode(pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
+                            g_device_manager->world_group(), *cur_q, q_shape, kv_shape, output_type_id);
     auto depend_node = (cur_send_qkv_node == nullptr ? *cur_q : cur_send_qkv_node);
     auto cur_recv_qkv_node = GetCurrentRecvQKVNode(pos, step, inner_step, sp_num, spRankList, q_shape, kv_shape,
-                                                   g_device_manager->world_group(), depend_node);
+                                                   g_device_manager->world_group(), depend_node, output_type_id);
     (*latest_send_qkv) = cur_send_qkv_node;
     (*latest_recv_qkv) = cur_recv_qkv_node;
 
@@ -1442,9 +1444,9 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
     }
     auto cur_send_oml_node =
       GetCurrentSendOMLNode(pos, step, inner_step, sp_num, spRankList, send_softmax_max, send_softmax_sum,
-                            send_attn_out, g_device_manager->world_group(), depend_node, q_shape);
+                            send_attn_out, g_device_manager->world_group(), depend_node, q_shape, output_type_id);
     auto cur_recv_oml_node = GetCurrentRecvOMLNode(pos, step, inner_step, sp_num, spRankList, q_shape,
-                                                   g_device_manager->world_group(), depend_node);
+                                                   g_device_manager->world_group(), depend_node, output_type_id);
     (*latest_recv_oml) = cur_recv_oml_node;
     (*latest_send_oml) = cur_send_oml_node;
     *cur_q = CreateDepends(*cur_q, {cur_send_qkv_node, cur_recv_qkv_node, cur_send_oml_node, cur_recv_oml_node});
@@ -1462,10 +1464,11 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
     }
   } else {  // recv first
     auto cur_recv_qkv_node = GetCurrentRecvQKVNode(pos, step, inner_step, sp_num, spRankList, q_shape, kv_shape,
-                                                   g_device_manager->world_group(), *cur_q);
+                                                   g_device_manager->world_group(), *cur_q, output_type_id);
     auto depend_node = (cur_recv_qkv_node == nullptr ? *cur_q : cur_recv_qkv_node);
-    auto cur_send_qkv_node = GetCurrentSendQKVNode(pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
-                                                   g_device_manager->world_group(), depend_node, q_shape, kv_shape);
+    auto cur_send_qkv_node =
+      GetCurrentSendQKVNode(pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
+                            g_device_manager->world_group(), depend_node, q_shape, kv_shape, output_type_id);
     (*latest_send_qkv) = cur_send_qkv_node;
     (*latest_recv_qkv) = cur_recv_qkv_node;
 
@@ -1478,9 +1481,9 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
     }
     auto cur_send_oml_node =
       GetCurrentSendOMLNode(pos, step, inner_step, sp_num, spRankList, send_softmax_max, send_softmax_sum,
-                            send_attn_out, g_device_manager->world_group(), depend_node, q_shape);
+                            send_attn_out, g_device_manager->world_group(), depend_node, q_shape, output_type_id);
     auto cur_recv_oml_node = GetCurrentRecvOMLNode(pos, step, inner_step, sp_num, spRankList, q_shape,
-                                                   g_device_manager->world_group(), depend_node);
+                                                   g_device_manager->world_group(), depend_node, output_type_id);
     (*latest_send_oml) = cur_send_oml_node;
     (*latest_recv_oml) = cur_recv_oml_node;
     *cur_q = CreateDepends(*cur_q, {cur_recv_qkv_node, cur_send_qkv_node, cur_send_oml_node, cur_recv_oml_node});
@@ -1510,7 +1513,7 @@ void HandleFAResult(size_t actual_step, CNodePtr *acc_attention, CNodePtr *histo
                     CNodePtr *send_softmax_max, CNodePtr *send_softmax_sum, CNodePtr *send_attn_out,
                     CNodePtr *latest_send_oml, CNodePtr *latest_recv_oml, CNodePtr *latest_fa_op, int64_t fa_b,
                     int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t fa_index, Shape q_shape, size_t pos,
-                    size_t sp_num, int64_t inner_step) {
+                    size_t sp_num, int64_t inner_step, TypeId output_type_id) {
   if (actual_step == 0) {  // first step
     *acc_attention = *cur_attn_out;
     *history_max = *cur_softmax_max;
@@ -1522,12 +1525,12 @@ void HandleFAResult(size_t actual_step, CNodePtr *acc_attention, CNodePtr *histo
       *cur_attn_out = CreateDepend(*cur_attn_out, *latest_send_oml);
     }
     UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum, *cur_attn_out,
-                          fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step);
+                          fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id);
     *latest_fa_op = *acc_attention;
     if ((*latest_recv_oml) != nullptr) {
       DismantleRecvOMLTensor(*latest_recv_oml, cur_attn_out, cur_softmax_max, cur_softmax_sum, q_shape);
       UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum, *cur_attn_out,
-                            fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step);
+                            fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id);
       *latest_fa_op = *acc_attention;
     }
   } else {
@@ -1536,7 +1539,7 @@ void HandleFAResult(size_t actual_step, CNodePtr *acc_attention, CNodePtr *histo
         if (inner_step == 0) {
           UpdateAttentionOutput(send_softmax_max, send_softmax_sum, send_attn_out, *cur_softmax_max, *cur_softmax_sum,
                                 *cur_attn_out, fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index,
-                                actual_step);
+                                actual_step, output_type_id);
           *latest_fa_op = *send_attn_out;
         } else {
           *send_attn_out = *cur_attn_out;
@@ -1545,19 +1548,19 @@ void HandleFAResult(size_t actual_step, CNodePtr *acc_attention, CNodePtr *histo
         }
       } else {
         UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum,
-                              *cur_attn_out, fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index,
-                              actual_step);
+                              *cur_attn_out, fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step,
+                              output_type_id);
         *latest_fa_op = *acc_attention;
       }
     } else {
       UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum, *cur_attn_out,
-                            fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step);
+                            fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id);
       *latest_fa_op = *acc_attention;
       if ((*latest_recv_oml) != nullptr) {
         DismantleRecvOMLTensor(*latest_recv_oml, cur_attn_out, cur_softmax_max, cur_softmax_sum, q_shape);
         UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum,
-                              *cur_attn_out, fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index,
-                              actual_step);
+                              *cur_attn_out, fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step,
+                              output_type_id);
         *latest_fa_op = *acc_attention;
       }
     }
@@ -1660,6 +1663,7 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
   auto query_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputQueryIndex + 1);
   auto key_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex + 1);
   auto value_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex + 1);
+  auto output_type_id = common::AnfAlgo::GetOutputInferDataType(fa_score_node, kIndex3);
 
   auto input_layout = flash_score_info_ptr->input_layout();
   int64_t fa_b, fa_s1, fa_h1, fa_s2, fa_h2, fa_n1, fa_d;
@@ -1702,7 +1706,8 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
       std::string ss_result = GetFlashIndexString(fa_index, actual_step);
       GetCurrentCommNode(rank_ring_index, &latest_send_qkv, &latest_recv_qkv, &latest_send_oml, &latest_recv_oml,
                          &comm_order_str, pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
-                         send_softmax_max, send_softmax_sum, send_attn_out, q_shape, kv_shape, ss_result, &cur_q);
+                         send_softmax_max, send_softmax_sum, send_attn_out, q_shape, kv_shape, ss_result, &cur_q,
+                         output_type_id);
       if (latest_recv_qkv != nullptr) {
         recv_qkv_tensor = latest_recv_qkv;
       }
@@ -1726,15 +1731,15 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
       HandleFAResult(actual_step, &acc_attention, &history_max, &history_sum, &cur_attn_out, &cur_softmax_max,
                      &cur_softmax_sum, &send_softmax_max, &send_softmax_sum, &send_attn_out, &latest_send_oml,
                      &latest_recv_oml, &latest_fa_op, fa_b, fa_s1, fa_n1, fa_h1, fa_index, q_shape, pos, sp_num,
-                     inner_step);
+                     inner_step, output_type_id);
     }
   }
   acc_attention = CreateDepends(acc_attention, {latest_send_qkv, latest_recv_qkv, latest_send_oml, latest_recv_oml});
-  acc_attention = NewCastNode(acc_attention, TypeId::kNumberTypeFloat16);
+  acc_attention = NewCastNode(acc_attention, output_type_id);
   if (input_layout == FASInputLayoutMode::BSH) {
     auto tmp_tup1 = parallel::CreateTuple({0, 2, 1, 3});
     acc_attention = NewTransposeNode(acc_attention, tmp_tup1);
-    acc_attention = NewReshapeNode(acc_attention, {fa_b, fa_s1, fa_h1}, TypeId::kNumberTypeFloat16);
+    acc_attention = NewReshapeNode(acc_attention, {fa_b, fa_s1, fa_h1});
   }
   auto softmax_out = NewTupleGetItemNode(local_fa_node, 2);
   std::vector<AnfNodePtr> output_tuple = {history_max, history_sum, softmax_out, acc_attention};
@@ -1780,6 +1785,7 @@ CNodePtr DynCreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
   auto query_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputQueryIndex + 1);
   auto key_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex + 1);
   auto value_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex + 1);
+  auto output_type_id = common::AnfAlgo::GetOutputInferDataType(fa_score_node, kIndex3);
 
   CNodePtr q_dynshape_node, kv_dynshape_node;
   q_dynshape_node = NewDynshapeNode(fa_score_node->input(kIndex0 + 1));
@@ -1833,7 +1839,8 @@ CNodePtr DynCreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
       std::string comm_order_str, ss_result = GetFlashIndexString(fa_index, actual_step);
       GetCurrentCommNode(rank_ring_index, &latest_send_qkv, &latest_recv_qkv, &latest_send_oml, &latest_recv_oml,
                          &comm_order_str, pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
-                         send_softmax_max, send_softmax_sum, send_attn_out, q_shape, kv_shape, ss_result, &cur_q);
+                         send_softmax_max, send_softmax_sum, send_attn_out, q_shape, kv_shape, ss_result, &cur_q,
+                         output_type_id);
       if (latest_recv_qkv != nullptr) {
         recv_qkv_tensor = latest_recv_qkv;
       }
@@ -2008,7 +2015,7 @@ CNodePtr CreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr &m
       history_sum = softmax_sum->cast<CNodePtr>();
     } else {
       UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
-                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i);
+                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i, output_type_id);
     }
   }
   acc_attention = NewCastNode(acc_attention, output_type_id);
@@ -2222,7 +2229,7 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
       history_sum = softmax_sum->cast<CNodePtr>();
     } else {
       UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
-                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i, (i == sp_num - 1), output_type_id);
+                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i, output_type_id, (i == sp_num - 1));
       last_fa_node = acc_attention;
     }
   }
