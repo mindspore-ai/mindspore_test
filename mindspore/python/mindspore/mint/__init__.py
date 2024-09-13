@@ -14,8 +14,9 @@
 # ============================================================================
 """mint module."""
 from __future__ import absolute_import
-from mindspore.common._register_for_tensor import tensor_operator_registry_for_mint
 import mindspore.ops as ops
+from mindspore.common._register_for_tensor import tensor_operator_registry_for_mint
+from mindspore.common.tensor import Tensor
 from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
 from mindspore.mint.nn.functional import sigmoid
@@ -579,6 +580,44 @@ def cummax(input, dim):
          [2 1 2 0]]
     """
     return ops.auto_generate.cummax(input, dim)
+
+
+def item(input):
+    r"""
+    Returns the value of this tensor as a standard Python number.
+
+    Note:
+        This only works for tensors with one element.
+
+    Args:
+        input (Tensor[Number]): The input tensor. The dtype of the tensor to be reduced is number.
+            :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+
+    Returns:
+        number.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        RuntimeError: If the number of `input` elements is not 1.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor(np.array([1]).astype(np.float32))
+        >>> result = mint.item(x)
+        >>> print(result)
+        1.0
+    """
+    if not isinstance(input, Tensor):
+        raise TypeError(f"the input must be a Tensor, but got {type(input)}")
+    if input.size == 1:
+        return input.asnumpy().item()
+    else:
+        raise RuntimeError("a Tensor with {} elements cannot be converted to Scalar".format(input.size))
 
 
 def mean(input, dim=None, keepdim=False, *, dtype=None):
@@ -1274,11 +1313,12 @@ setattr(tensor_operator_registry_for_mint, 'ceil', ceil)
 setattr(tensor_operator_registry_for_mint, 'clamp', clamp)
 setattr(tensor_operator_registry_for_mint, 'cos', cos)
 setattr(tensor_operator_registry_for_mint, 'flatten', flatten)
-setattr(tensor_operator_registry_for_mint, 'log', log)
+setattr(tensor_operator_registry_for_mint, 'item', item)
 setattr(tensor_operator_registry_for_mint, 'max', max)
 setattr(tensor_operator_registry_for_mint, 'mean', mean)
 setattr(tensor_operator_registry_for_mint, 'min', min)
 setattr(tensor_operator_registry_for_mint, 'repeat_interleave', repeat_interleave)
+setattr(tensor_operator_registry_for_mint, 'ne', ne)
 setattr(tensor_operator_registry_for_mint, 'round', round)
 setattr(tensor_operator_registry_for_mint, 'sin', sin)
 setattr(tensor_operator_registry_for_mint, 'split', split)

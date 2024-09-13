@@ -387,6 +387,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __abs__(self):
         return tensor_operator_registry.get('abs')(self)
 
+    @add_mint
     def __add__(self, other):
         return tensor_operator_registry.get('__add__')(self, other)
 
@@ -948,6 +949,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('chunk')(self, chunks, axis)
 
+    @item_mint
     def item(self, index=None):
         """
         Get the item at the specified index of the tensor.
@@ -1303,6 +1305,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('addcmul')(self, tensor1, tensor2, value)
 
+    @add_mint
     def add(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.add`.
@@ -1587,6 +1590,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('square')(self)
 
+    @sub_mint
     def sub(self, y):
         r"""
         For details, please refer to :func:`mindspore.ops.sub`.
@@ -1832,7 +1836,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('pow')(self, exponent)
 
-    @log_mint
     def log(self):
         """
         For details, please refer to :func:`mindspore.ops.log`.
@@ -1851,6 +1854,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('log2')(self)
 
+    @mean_mint
     def mean(self, axis=None, keep_dims=False):
         """
         For details, please refer to :func:`mindspore.ops.mean`.
@@ -2100,6 +2104,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('remainder')(self, divisor)
 
+    @flatten_mint
     def flatten(self, order='C', *, start_dim=0, end_dim=-1):
         r"""
         For details, please refer to :func:`mindspore.ops.flatten`.
@@ -2441,6 +2446,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             logger.warning(f"'non_blocking' == True has no effect")
         return tensor_operator_registry.get("copy_")(self, src)
 
+    @max_mint
     def max(self, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
         """
         Return the maximum of a tensor or maximum along an axis.
@@ -2509,6 +2515,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return values
         return values, indices
 
+    @min_mint
     def min(self, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
         """
         Return the minimum of a tensor or minimum along an axis.
@@ -3540,6 +3547,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                 repeated_subs.append(tensor_operator_registry.get('repeat_elements')(sub, rep, axis))
         return tensor_operator_registry.get('concatenate')(repeated_subs, axis)
 
+    @repeat_interleave_mint
     def repeat_interleave(self, repeats, dim=None):
         """
         For details, please refer to :func:`mindspore.ops.repeat_interleave`.
@@ -3774,6 +3782,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("xdivy")(self, y)
 
+    @split_mint
     def split(self, split_size_or_sections, axis=0):
         """
         For details, please refer to :func:`mindspore.ops.split`.
@@ -4073,6 +4082,27 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('int')(self, mstype.int32)
 
+    def byte(self):
+        r"""
+        Converts input tensor dtype to `uint8`.
+
+        Returns:
+            Tensor, converted to the `uint8` dtype.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> input_x = Tensor(np.ones([2,2]), mindspore.float32)
+            >>> output = input_x.byte()
+            >>> print(output.dtype)
+            uint8
+        """
+        return tensor_operator_registry.get('byte')(self, mstype.uint8)
+
     def long(self):
         r"""
         Converts input tensor dtype to `int64`. If the value in tensor is float or half, the decimal will be discarded.
@@ -4283,6 +4313,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('isinf')(self)
 
+    @isnan_mint
     def isnan(self):
         r"""
         For details, please refer to :func:`mindspore.ops.isnan`.
