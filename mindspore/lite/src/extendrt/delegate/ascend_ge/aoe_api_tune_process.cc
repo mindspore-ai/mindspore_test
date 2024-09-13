@@ -24,7 +24,7 @@
 #include "mindspore/lite/src/common/common.h"
 #include "mindspore/lite/src/extendrt/cxx_api/dlutils.h"
 #include "mindspore/ccsrc/utils/dlopen_macro.h"
-#include "mindspore/ccsrc/cxx_api/acl_utils.h"
+#include "cxx_api/acl_utils.h"
 
 namespace mindspore {
 namespace {

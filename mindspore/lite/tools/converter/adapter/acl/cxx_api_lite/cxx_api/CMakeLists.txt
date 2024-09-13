@@ -37,8 +37,8 @@ if(WIN32)
 endif()
 
 # build mindspore_shared_lib
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
+include_directories(${TOP_DIR}/mindspore/ccsrc)
+include_directories(${TOP_DIR}/mindspore/ccsrc/minddata/dataset)
 
 if(ENABLE_D OR ENABLE_ACL)
     # build 910 and 310 code into one distro, files needed for 310 mode
@@ -109,8 +109,8 @@ endif()
 
 if(BUILD_LITE)
     list(APPEND MSLIB_SRC
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../../mindspore/ccsrc/utils/config_manager.cc"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../../mindspore/ccsrc/plugin/device/ascend/hal/common/ascend_utils.cc"
+        "${TOP_DIR}/mindspore/ccsrc/utils/config_manager.cc"
+        "${TOP_DIR}/mindspore/ccsrc/plugin/device/ascend/hal/common/ascend_utils.cc"
         "${CMAKE_CURRENT_SOURCE_DIR}/model/aoe/auto_tune_process.cc")
     file(GLOB_RECURSE ACL_REMOVE_SRC ${CMAKE_CURRENT_SOURCE_DIR}
             "model/acl/acl_vm/*.cc"

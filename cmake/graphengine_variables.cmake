@@ -7,7 +7,7 @@ else()
     set(GRAPHENGINE_PATH "${CMAKE_SOURCE_DIR}/graphengine/910")
 endif()
 
-if(ENABLE_TESTCASES OR ENABLE_CPP_ST OR ENABLE_C_ST)
+if(ENABLE_TESTCASES)
     message("Note: compile ut & st with include file to mock: ${GRAPHENGINE_PATH}/third_party/fwkacllib/inc/runtime")
     include_directories(${GRAPHENGINE_PATH}/third_party/fwkacllib/inc)
     include_directories(${GRAPHENGINE_PATH}/third_party/fwkacllib/inc/runtime)

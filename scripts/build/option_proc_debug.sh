@@ -34,8 +34,6 @@ build_option_proc_t()
     export RUN_TESTCASES="on"
   elif [[ "X$OPTARG" == "Xoff" ]]; then
     export RUN_TESTCASES="off"
-  elif [[ "X$OPTARG" == "Xst" ]]; then
-    export RUN_CPP_ST_TESTS="on"
   else
     echo "Invalid value ${OPTARG} for option -t"
     usage

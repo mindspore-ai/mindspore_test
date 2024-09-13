@@ -82,7 +82,7 @@ if(ENABLE_MINDDATA)
     include(${CMAKE_SOURCE_DIR}/cmake/external_libs/jpeg_turbo.cmake)
 endif()
 
-if(ENABLE_TESTCASES OR ENABLE_CPP_ST)
+if(ENABLE_TESTCASES)
     include(${CMAKE_SOURCE_DIR}/cmake/external_libs/gtest.cmake)
     include(${CMAKE_SOURCE_DIR}/cmake/external_libs/mockcpp.cmake)
 endif()
