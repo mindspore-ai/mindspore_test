@@ -339,6 +339,10 @@ from mindspore.ops.function.array_func import tril_ext as tril
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
 
+# 610
+from mindspore.ops.function.math_func import nan_to_num
+
+
 def add(input, other, *, alpha=1):
     r"""
     Adds scaled other value to input Tensor.
@@ -1447,6 +1451,8 @@ __all__ = [
     # 538
     'histc',
 
+    # 610
+    'nan_to_num',
 ]
 __all__.extend(functional.__all__)
 __all__.extend(nn.__all__)

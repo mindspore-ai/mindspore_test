@@ -42,7 +42,7 @@ from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
 from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
-                                         cosh,
+                                         cosh, nan_to_num,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
@@ -3635,66 +3635,6 @@ def is_complex(input):
     if not isinstance(input, (Tensor, Tensor_)):
         raise TypeError("The input must be Tensor!")
     return input.dtype in mstype.complex_type
-
-
-def nan_to_num(input, nan=0.0, posinf=None, neginf=None):
-    """
-    Replace the `NaN`, positive infinity and negative infinity values in 'input' with the
-    specified values in `nan`, `posinf` and `neginf` respectively.
-
-    Args:
-        input (Tensor): The shape of tensor is :math:`(input_1, input_2, ..., input_R)`.
-            With float32 or float16 data type.
-        nan (float): The replace value of 'NaN'. Default value is 0.0.
-        posinf (float): the value to replace positive infinity values with. Default: ``None``,
-            replacing positive infinity with the maximum value supported by the data type of `input`.
-        neginf (float): the value to replace negative infinity values with. Default: ``None``,
-            replacing negative infinity with the minimum value supported by the data type of `input`.
-
-    Returns:
-        Tensor, has the same shape and dtype as the `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not float16 or float32.
-
-    Supported Platforms:
-        ``Ascend`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([float('nan'), float('inf'), -float('inf'), 5.0]), mindspore.float32)
-        >>> output = ops.nan_to_num(input, 1.0, 2.0, 3.0)
-        >>> print(output)
-        [1.  2.  3.  5.0]
-    """
-    if not isinstance(input, (Tensor, Tensor_)):
-        raise TypeError("the input x must be Tensor!")
-    if nan is not None:
-        if not isinstance(nan, float):
-            raise TypeError("the parameter nan's dtype must be float.")
-    else:
-        nan = 0.0
-    if posinf is not None:
-        if not isinstance(posinf, float):
-            raise TypeError("the parameter posinf's dtype must be float.")
-    else:
-        if input.dtype == mstype.float16:
-            posinf = (float)(np.finfo(np.float16).max)
-        elif input.dtype == mstype.float32:
-            posinf = (float)(np.finfo(np.float32).max)
-    if neginf is not None:
-        if not isinstance(neginf, float):
-            raise TypeError("the parameter neginf's dtype must be float.")
-    else:
-        if input.dtype == mstype.float16:
-            neginf = (float)(np.finfo(np.float16).min)
-        elif input.dtype == mstype.float32:
-            neginf = (float)(np.finfo(np.float32).min)
-    _nan_to_num = _get_cache_prim(NanToNum)(nan=nan, posinf=posinf, neginf=neginf)
-    return _nan_to_num(input)
 
 
 def fmax(input, other):

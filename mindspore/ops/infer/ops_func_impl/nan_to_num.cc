@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,36 @@
  */
 
 #include "infer/ops_func_impl/nan_to_num.h"
-#include <map>
-#include <set>
+#include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/check_convert_utils.h"
-#include "utils/log_adapter.h"
 
-namespace mindspore {
-namespace ops {
+namespace mindspore::ops {
 BaseShapePtr NanToNumFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
   auto input_shape = input_args[kInputIndex0]->GetShape();
   return input_shape->Clone();
 }
-
-TypePtr NanToNumFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr NanToNumFuncImpl::InferType(const PrimitivePtr &primitive,
+                                    const std::vector<AbstractBasePtr> &input_args) const {
   const auto &input_type = input_args[kInputIndex0]->GetType();
-  const std::set<TypePtr> x_valid_types = {kFloat16, kFloat32};
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("x", input_type, x_valid_types, prim->name());
-  return input_type->Clone();
+  if (input_type->type_id() == kNumberTypeFloat64) {
+    MS_EXCEPTION(TypeError) << "For NanToNum, the dtype of 'input' must not be float64.";
+  }
+  return input_type;
 }
-}  // namespace ops
-}  // namespace mindspore
+TypePtrList NanToNumFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+
+  if (x_tensor->data_type() == kNumberTypeFloat64) {
+    MS_EXCEPTION(TypeError) << "For NanToNum, the dtype of 'input' must not be float64.";
+  }
+  return {x_tensor->Dtype()};
+}
+ShapeArray NanToNumFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  return {x_tensor->shape()};
+}
+REGISTER_SIMPLE_INFER(kNameNanToNum, NanToNumFuncImpl)
+}  // namespace mindspore::ops

@@ -188,6 +188,12 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
      "transpose_a",
      "transpose_b",
    }},
+  {"NanToNum",
+   {
+     "nan",
+     "posinf",
+     "neginf",
+   }},
   {"BatchMatMul",
    {
      "transpose_a",

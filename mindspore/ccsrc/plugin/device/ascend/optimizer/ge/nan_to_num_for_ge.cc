@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include "plugin/device/ascend/optimizer/ge/nan_to_num_for_ge.h"
 #include <limits>
-#include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
+#include <vector>
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include "op_def/array_ops.h"
+#include "include/common/utils/anfalgo.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {
 namespace opt {
-const AnfNodePtr NanToNumFusionProcess(const FuncGraphPtr &graph, const AnfNodePtr &node) {
+
+const BaseRef NanToNumForGe::DefinePattern() const {
+  VarPtr Xs = std::make_shared<SeqVar>();
+  MS_EXCEPTION_IF_NULL(Xs);
+  return VectorRef({prim::kPrimNanToNum, Xs});
+}
+
+const AnfNodePtr NanToNumForGe::Process(const FuncGraphPtr &graph, const AnfNodePtr &node, const EquivPtr &) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(node);
 
@@ -38,6 +53,9 @@ const AnfNodePtr NanToNumFusionProcess(const FuncGraphPtr &graph, const AnfNodeP
 
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+
+  const float BFLOAT16_MAX_VALUE = 3.3895314e+38;
+  const float BFLOAT16_MIN_VALUE = -3.3895314e+38;
 
   size_t idx0 = ops::GetInputIndexByName(common::AnfAlgo::GetCNodeName(cnode), "nan");
   if (idx0 != SIZE_MAX) {
@@ -58,6 +76,9 @@ const AnfNodePtr NanToNumFusionProcess(const FuncGraphPtr &graph, const AnfNodeP
 
   size_t idx1 = ops::GetInputIndexByName(common::AnfAlgo::GetCNodeName(cnode), "posinf");
   ValuePtr posinf = MakeValue(std::numeric_limits<float>::max());
+  if (dtype_id == kNumberTypeBFloat16) {
+    posinf = MakeValue(BFLOAT16_MAX_VALUE);
+  }
   if (dtype_id == kNumberTypeFloat16) {
     posinf = MakeValue(static_cast<float>(std::numeric_limits<float16>::max()));
   }
@@ -79,6 +100,9 @@ const AnfNodePtr NanToNumFusionProcess(const FuncGraphPtr &graph, const AnfNodeP
 
   size_t idx2 = ops::GetInputIndexByName(common::AnfAlgo::GetCNodeName(cnode), "neginf");
   ValuePtr neginf = MakeValue(std::numeric_limits<float>::lowest());
+  if (dtype_id == kNumberTypeBFloat16) {
+    neginf = MakeValue(BFLOAT16_MIN_VALUE);
+  }
   if (dtype_id == kNumberTypeFloat16) {
     neginf = MakeValue(static_cast<float>(std::numeric_limits<float16>::lowest()));
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NAN_TO_NUM_H_
 
 #include <vector>
-#include "mindapi/base/macros.h"
-#include "infer/ops_func_impl/eltwise_op.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
-namespace mindspore {
-namespace ops {
+namespace mindspore::ops {
 class OPS_API NanToNumFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  // simply infer
+  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
 };
-}  // namespace ops
-}  // namespace mindspore
+}  // namespace mindspore::ops
 
 #endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NAN_TO_NUM_H_
