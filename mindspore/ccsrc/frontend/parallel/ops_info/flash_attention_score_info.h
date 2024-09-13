@@ -48,6 +48,7 @@ class FlashAttentionScoreInfo : public OperatorInfo {
 
   int64_t input_layout() { return input_layout_; }
   int64_t s1_split_num() { return s1_split_num_; }
+  int64_t n1_split_num() { return n1_split_num_; }
   bool kv_split() { return kv_split_; }
   int64_t head_num() { return head_num_; }
   bool real_shift_have_s1_dim() { return real_shift_have_s1_dim_; }
