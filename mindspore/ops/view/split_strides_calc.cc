@@ -25,7 +25,7 @@ constexpr size_t kSplitInputsNum = 3;
 
 namespace mindspore::ops {
 void SplitInputsCheck(const int64_t &output_num, const int64_t &axis, const std::vector<int64_t> &tensor_shape) {
-  if (output_num < 0) {
+  if (output_num <= 0) {
     MS_EXCEPTION(ValueError) << "For 'Split', output_num must be positive, but got " << output_num << ".";
     return;
   }
