@@ -23,7 +23,7 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.common.parameter import Parameter
 from mindspore.common.parameter import _get_unique_parameter_key
-from mindspore.common.initializer import initializer
+from mindspore.common.initializer import initializer, Normal
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.context import ParallelMode
 from mindspore.parallel._utils import _get_parallel_mode, _get_full_batch

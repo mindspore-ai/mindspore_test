@@ -22,6 +22,7 @@
 #include <memory>
 #include <functional>
 
+#include "ir/dtype/type.h"
 #include "ir/tensor.h"
 #include "transform/acl_ir/acl_helper.h"
 #include "transform/acl_ir/op_api_convert.h"
@@ -31,6 +32,11 @@ namespace mindspore {
 namespace kernel {
 void UpsampleNearest2DAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
+  auto input_dtype_id = inputs[0]->dtype_id();
+  if (input_dtype_id == TypeId::kNumberTypeFloat64 || input_dtype_id == TypeId::kNumberTypeDouble) {
+    MS_EXCEPTION(ValueError) << "For " << primitive_->name()
+                             << ", input's type should not be float64, which is not supported.";
+  }
   auto output_shape = outputs[kIndex0]->GetShapeVector();
   output_size_.clear();
   output_size_.assign(output_shape.begin() + kIndex2, output_shape.end());

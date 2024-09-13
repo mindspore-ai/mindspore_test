@@ -33,21 +33,21 @@ def set_mode(mode):
 
 
 @test_utils.run_with_cell
-def upsample_bilinear2d_forward_func(x, size=None, scale_factor=None, align_corners=False):
-    return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "bilinear", align_corners)
+def upsample_bicubic2d_forward_func(x, size=None, scale_factor=None, align_corners=False):
+    return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "bicubic", align_corners)
 
 
 @test_utils.run_with_cell
-def upsample_bilinear2d_backward_func(x, size=None, scale_factor=None, align_corners=False):
-    return ms.grad(upsample_bilinear2d_forward_func, (0,))(x, size, scale_factor, align_corners)
+def upsample_bicubic2d_backward_func(x, size=None, scale_factor=None, align_corners=False):
+    return ms.grad(upsample_bicubic2d_forward_func, (0,))(x, size, scale_factor, align_corners)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["GRAPH_MODE_O0", "PYNATIVE_MODE"])
-def test_upsample_bilinear_2d(mode):
+def test_upsample_bicubic_2d(mode):
     """
     Feature: test ops.
-    Description: test op UpsampleBillinear2D.
+    Description: test op UpsampleBicubic2D.
     Expectation: success.
     """
     set_mode(mode)
@@ -60,21 +60,21 @@ def test_upsample_bilinear_2d(mode):
         [
             [
                 [
-                    [0.1000, 0.1500, 0.2000, 0.2500, 0.3000],
-                    [0.2000, 0.2500, 0.3000, 0.3500, 0.4000],
-                    [0.3000, 0.3500, 0.4000, 0.4500, 0.5000],
-                    [0.4000, 0.4500, 0.5000, 0.5500, 0.6000],
+                    [0.1000, 0.1406, 0.2000, 0.2594, 0.3000],
+                    [0.1944, 0.2351, 0.2944, 0.3538, 0.3944],
+                    [0.3056, 0.3462, 0.4056, 0.4649, 0.5056],
+                    [0.4000, 0.4406, 0.5000, 0.5594, 0.6000],
                 ],
                 [
-                    [0.7000, 0.7500, 0.8000, 0.8500, 0.9000],
-                    [0.8000, 0.8500, 0.9000, 0.9500, 1.0000],
-                    [0.9000, 0.9500, 1.0000, 1.0500, 1.1000],
-                    [1.0000, 1.0500, 1.1000, 1.1500, 1.2000],
+                    [0.7000, 0.7406, 0.8000, 0.8594, 0.9000],
+                    [0.7944, 0.8351, 0.8944, 0.9538, 0.9944],
+                    [0.9056, 0.9462, 1.0056, 1.0649, 1.1056],
+                    [1.0000, 1.0406, 1.1000, 1.1594, 1.2000],
                 ],
             ]
         ]
     ).astype(np.float32)
-    out = upsample_bilinear2d_forward_func(input_tensor, (4, 5), None, True)
+    out = upsample_bicubic2d_forward_func(input_tensor, (4, 5), None, True)
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
@@ -82,23 +82,23 @@ def test_upsample_bilinear_2d(mode):
     expected = np.array(
         [
             [
-                [[3.0000, 4.0000, 3.0000], [3.0000, 4.0000, 3.0000]],
-                [[3.0000, 4.0000, 3.0000], [3.0000, 4.0000, 3.0000]],
+                [[2.8125, 4.3750, 2.8125], [2.8125, 4.3750, 2.8125]],
+                [[2.8125, 4.3750, 2.8125], [2.8125, 4.3750, 2.8125]],
             ]
         ]
     ).astype(np.float32)
-    out = upsample_bilinear2d_backward_func(input_tensor, (4, 5), None, True)
+    out = upsample_bicubic2d_backward_func(input_tensor, (4, 5), None, True)
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_upsample_bilinear_2d_size_dynamic():
+def test_upsample_bicubic_2d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
-    Description: test op UpsampleBilinear2D and UpsampleBilinear2DGrad.
-    Expectation: expect UpsampleBilinear2D and UpsampleBilinear2DGrad result.
+    Description: test op UpsampleBicubic2D and UpsampleBicubic2DGrad.
+    Expectation: expect UpsampleBicubic2D and UpsampleBicubic2DGrad result.
     """
     ms.context.set_context(
         runtime_num_threads=1
@@ -106,12 +106,12 @@ def test_upsample_bilinear_2d_size_dynamic():
     input_case1 = Tensor(np.random.randn(2, 5, 60, 30), dtype=ms.float32)
     input_case2 = Tensor(np.random.randn(4, 3, 15, 10), dtype=ms.float32)
     TEST_OP(
-        upsample_bilinear2d_forward_func,
+        upsample_bicubic2d_forward_func,
         [
             [input_case1, (100, 200), None, True],
             [input_case2, (40, 80), None, False],
         ],
-        'upsample_bilinear2d',
-        disable_input_check=True,
-        disable_mode=["GRAPH_MODE"]
+        'upsample_bicubic2d',
+        disable_mode=["GRAPH_MODE"],
+        disable_input_check=True
     )

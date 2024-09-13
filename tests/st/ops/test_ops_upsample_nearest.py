@@ -24,6 +24,15 @@ from mindspore import context, ops
 from mindspore.common.api import _pynative_executor
 
 
+def set_mode(mode):
+    if mode == "GRAPH_MODE_O0":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    elif mode == "GRAPH_MODE":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O2"})
+    else:
+        context.set_context(mode=context.PYNATIVE_MODE)
+
+
 @test_utils.run_with_cell
 def upsample_nearest_forward_func(x, size=None, scale_factor=None):
     return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "nearest")
@@ -41,14 +50,14 @@ def upsample_nearest3d_grad(gradOut, input_size, output_size, scale_factor):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", ["GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_upsample_nearest(mode):
     """
     Feature: UpsampleNearest1D/2D/3D
     Description: Test cases for UpsampleNearest1D/2D/3D with output_size.
     Expectation: The result match expected output.
     """
-    context.set_context(mode=mode)
+    set_mode(mode)
     input_tensor = Tensor(
         np.array([[[0.1, 0.3, 0.5, 0.7], [0.9, 1.1, 1.3, 1.5]]]).astype(np.float32)
     )
@@ -76,7 +85,7 @@ def test_upsample_nearest(mode):
 
     expected = np.array([[[3.0, 2.0, 2.0, 2.0],
                           [3.0, 2.0, 2.0, 2.0]]]).astype(np.float32)
-    out = upsample_nearest_backward_func(input_tensor, None, [2.3, ])
+    out = upsample_nearest_backward_func(input_tensor, None, [2.3,])
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
@@ -220,7 +229,10 @@ def test_upsample_nearest_1d_size_dynamic():
             [input_case1, (100,), None],
             [input_case2, (40,), None],
         ],
-        '', disable_yaml_check=True, disable_input_check=True
+        '',
+        disable_yaml_check=True,
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )
 
 
@@ -242,7 +254,10 @@ def test_upsample_nearest_1d_scale_factor_dynamic():
             [input_case1, None, (1.5,)],
             [input_case2, None, (2.1,)],
         ],
-        '', disable_yaml_check=True, disable_input_check=True
+        '',
+        disable_yaml_check=True,
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )
 
 
@@ -264,7 +279,10 @@ def test_upsample_nearest_2d_size_dynamic():
             [input_case1, (100, 80), None],
             [input_case2, (40, 60), None],
         ],
-        '', disable_yaml_check=True, disable_input_check=True
+        '',
+        disable_yaml_check=True,
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )
 
 
@@ -286,7 +304,10 @@ def test_upsample_nearest_2d_scale_factor_dynamic():
             [input_case1, None, (1.5, 1.7)],
             [input_case2, None, (2.1, 2.8)],
         ],
-        '', disable_yaml_check=True, disable_input_check=True
+        '',
+        disable_yaml_check=True,
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )
 
 
@@ -309,7 +330,9 @@ def test_upsample_nearest_3d_size_dynamic():
             [input_case1, (100, 200, 300), None],
             [input_case2, (40, 80, 80), None],
         ],
-        '', disable_yaml_check=True, disable_input_check=True
+        '',
+        disable_yaml_check=True,
+        disable_input_check=True
     )
 
 
@@ -332,7 +355,9 @@ def test_upsample_nearest_3d_scale_factor_dynamic():
             [input_case1, None, (1.5, 1.6, 1.7)],
             [input_case2, None, (2.1, 2.5, 3.5)],
         ],
-        '', disable_yaml_check=True, disable_input_check=True
+        '',
+        disable_yaml_check=True,
+        disable_input_check=True
     )
 
 
@@ -386,14 +411,14 @@ def test_upsample_nearest_3d_error(mode):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", ["GRAPH_MODE", "GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_vmap_upsample_nearest3d(mode):
     """
     Feature:  UpsampleNearest3D GPU op vmap feature.
     Description: test the vmap feature of UpsampleNearest3D.
     Expectation: success.
     """
-    context.set_context(mode=mode)
+    set_mode(mode)
     # 3 batches
     input_tensor = Tensor(
         np.arange(0, 4.8, 0.1).reshape([3, 1, 1, 2, 2, 4]).astype(np.float32)
@@ -438,14 +463,14 @@ def test_vmap_upsample_nearest3d(mode):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", ["GRAPH_MODE", "GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_vmap_upsample_nearest3d_grad(mode):
     """
     Feature:  UpsampleNearest3DGrad GPU op vmap feature.
     Description: test the vmap feature of UpsampleNearest3DGrad.
     Expectation: success.
     """
-    context.set_context(mode=mode)
+    set_mode(mode)
     # 3 batches
     input_size = (1, 1, 2, 2, 2)
     gradOut = Tensor(

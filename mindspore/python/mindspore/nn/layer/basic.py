@@ -510,8 +510,8 @@ class UpsampleExt(Cell):
         self.align_corners = align_corners
         self.recompute_scale_factor = recompute_scale_factor
 
-    def construct(self, x):
-        out = interpolate_ext(x, self.size, self.scale_factor, self.mode,
+    def construct(self, input):
+        out = interpolate_ext(input, self.size, self.scale_factor, self.mode,
                               self.align_corners, self.recompute_scale_factor)
         return out
 

@@ -26,9 +26,16 @@ namespace mindspore {
 namespace ops {
 class OPS_API UpsampleForwardBaseFuncImpl : public OpFuncImpl {
  public:
+  UpsampleForwardBaseFuncImpl() = default;
+  ~UpsampleForwardBaseFuncImpl() override = default;
+
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+
+  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
 
  protected:
   virtual size_t GetImageRank() const noexcept = 0;

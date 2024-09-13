@@ -24,6 +24,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
 tensor::BaseTensorPtr UpsampleNearest3DAscendCall(const std::shared_ptr<OpRunner> &op,
                                                   const device::DeviceContext *device_context,
                                                   const BaseTensorPtr &input_tensor,
@@ -49,10 +50,10 @@ tensor::BaseTensorPtr UpsampleNearest3DAscendCustomize(const std::shared_ptr<OpR
 
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors);
 
-  const ShapeVector &osize = op->output_abs()->GetShape()->GetShapeVector();
+  const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
 
-  std::vector<pyfloat> scales{0., 0., 0.};
+  std::vector<pyfloat> scales(kDim3, DEFAULT_SCALE_VALUE);
   if (scale_factors.has_value()) {
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());
   }

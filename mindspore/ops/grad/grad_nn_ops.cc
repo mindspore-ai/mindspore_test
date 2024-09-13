@@ -1601,6 +1601,17 @@ REG_BPROP_BUILDER("UpsampleBilinear2D").SetUnusedInputs({i4}).SetBody(BODYFUNC(i
   return {dx, ib->OutZeros(output_size), ib->OutZeros(scales), ib->OutZeros(align_corners)};
 });
 
+REG_BPROP_BUILDER("UpsampleBicubic2D").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto x_shape = ib->Shape(x);
+  auto output_size = ib->GetInput(kIndex1);
+  auto scales = ib->GetInput(kIndex2);
+  auto align_corners = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto dx = ib->UpsampleBicubic2DGrad(dout, x_shape, output_size, scales, align_corners);
+  return {dx, ib->OutZeros(output_size), ib->OutZeros(scales), ib->OutZeros(align_corners)};
+});
+
 REG_BPROP_BUILDER("UpsampleNearest3D").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto x_shape = ib->Shape(x);

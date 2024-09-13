@@ -17,6 +17,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
+#include "infer/ops_func_impl/upsample_bicubic2d_grad.h"
 #include "infer/ops_func_impl/upsample_bilinear2d_grad.h"
 #include "infer/ops_func_impl/upsample_linear1d_grad.h"
 #include "infer/ops_func_impl/upsample_nearest1d_grad.h"
@@ -44,6 +45,7 @@ struct UpsampleBackwardParams {
 };
 
 static std::map<std::string, OpFuncImplPtr> upsample_backward_func_impl = {
+  {kNameUpsampleBicubic2DGrad, std::make_shared<UpsampleBicubic2DGradFuncImpl>()},
   {kNameUpsampleBilinear2DGrad, std::make_shared<UpsampleBilinear2DGradFuncImpl>()},
   {kNameUpsampleLinear1DGrad, std::make_shared<UpsampleLinear1DGradFuncImpl>()},
   {kNameUpsampleNearest1DGrad, std::make_shared<UpsampleNearest1DGradFuncImpl>()},
@@ -70,7 +72,7 @@ TEST_P(TestUpsampleBackward, dyn_shape) {
   std::vector<AbstractBasePtr> input_args{dout, input_size, output_size, scales};
 
   static std::set<std::string> white_list{kNameUpsampleLinear1DGrad, kNameUpsampleBilinear2DGrad,
-                                          kNameUpsampleTrilinear3DGrad};
+                                          kNameUpsampleBicubic2DGrad, kNameUpsampleTrilinear3DGrad};
   if (white_list.find(upsample_mode) != white_list.end()) {
     auto align_corners = CreateScalar<bool>(true)->ToAbstract();
     input_args.push_back(align_corners);
@@ -81,10 +83,15 @@ TEST_P(TestUpsampleBackward, dyn_shape) {
   auto op_impl = op_itr->second;
   ASSERT_NE(op_impl, nullptr);
 
-  auto prim = std::make_shared<Primitive>(upsample_mode);
+  // Abstract Infer
   auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
-  auto inferred_shape = op_impl->InferShape(prim, input_args);
-  ShapeCompare(inferred_shape, expect_shape);
+  DoFuncImplInferAndCompare(op_impl, upsample_mode, input_args, {expect_shape},
+                            {std::make_shared<TensorType>(kFloat32)});
+
+  // Simple Infer
+  ValuePtrList input_values{std::make_shared<tensor::BaseTensor>(kNumberTypeFloat32, param.dout_shape)};
+  std::transform(input_args.begin() + kIndex1, input_args.end(), std::back_inserter(input_values),
+                 [](const AbstractBasePtr &abstract) { return abstract->GetValue(); });
 }
 
 namespace {
@@ -117,6 +124,8 @@ INSTANTIATE_TEST_CASE_P(TestUpsampleNearest1DGradGroup, TestUpsampleBackward,
 INSTANTIATE_TEST_CASE_P(TestUpsampleLinear1DGradGroup, TestUpsampleBackward,
                         testing::Combine(testing::ValuesIn({kNameUpsampleLinear1DGrad}), Upsample1DDynTestCase));
 
+INSTANTIATE_TEST_CASE_P(TestUpsampleBicubic2DGradGroup, TestUpsampleBackward,
+                        testing::Combine(testing::ValuesIn({kNameUpsampleBicubic2DGrad}), Upsample2DDynTestCase));
 INSTANTIATE_TEST_CASE_P(TestUpsampleBilinear2DGradGroup, TestUpsampleBackward,
                         testing::Combine(testing::ValuesIn({kNameUpsampleBilinear2DGrad}), Upsample2DDynTestCase));
 INSTANTIATE_TEST_CASE_P(TestUpsampleNearest2DGradGroup, TestUpsampleBackward,

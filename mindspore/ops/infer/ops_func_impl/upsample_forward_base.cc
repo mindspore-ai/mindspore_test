@@ -27,9 +27,20 @@ BaseShapePtr UpsampleForwardBaseFuncImpl::InferShape(const PrimitivePtr &primiti
 
 TypePtr UpsampleForwardBaseFuncImpl::InferType(const PrimitivePtr &primitive,
                                                const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args.at(0));
-  auto input_type = input_args[0]->GetType();
-  return input_type;
+  return input_args[0]->GetType();
+}
+
+ShapeArray UpsampleForwardBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                   const ValuePtrList &input_values) const {
+  const size_t image_rank = GetImageRank();
+  return UpsampleForwardInferShape(primitive, input_values, image_rank);
+}
+
+TypePtrList UpsampleForwardBaseFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                   const ValuePtrList &input_values) const {
+  const auto &input = input_values[0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input);
+  return {input->Dtype()};
 }
 }  // namespace ops
 }  // namespace mindspore

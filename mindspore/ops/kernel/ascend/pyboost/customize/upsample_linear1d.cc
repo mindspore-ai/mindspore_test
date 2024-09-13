@@ -56,15 +56,18 @@ tensor::BaseTensorPtr UpsampleLinear1DAscendCustomize(const std::shared_ptr<OpRu
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors, align_corners);
 
   // get output_size, scale_factors and align_corners
-  const ShapeVector &osize = op->output_abs()->GetShape()->GetShapeVector();
+  const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
+
+  auto align_corners_val = GetValue<bool>(align_corners);
+  if (!align_corners_val && scale_factors.has_value()) {
+    MS_LOG(EXCEPTION) << "For UpsampleLinear1D with align_corners false, scales was not supported.";
+  }
 
   std::vector<pyfloat> scales{DEFAULT_SCALE_VALUE};
   if (scale_factors.has_value()) {
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());
   }
-
-  auto align_corners_val = GetValue<bool>(align_corners);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());

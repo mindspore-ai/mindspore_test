@@ -15,6 +15,7 @@
  */
 
 #include "kernel/ascend/pyboost/customize/upsample_bilinear2d.h"
+#include "include/common/utils/utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
@@ -24,6 +25,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
 tensor::BaseTensorPtr UpsampleBilinear2DAscendCall(const std::shared_ptr<OpRunner> &op,
                                                    const device::DeviceContext *device_context,
                                                    const BaseTensorPtr &input_tensor,
@@ -50,10 +52,10 @@ tensor::BaseTensorPtr UpsampleBilinear2DAscendCustomize(const std::shared_ptr<Op
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors, align_corners);
 
   // get output_size, scale_factors and align_corners
-  const ShapeVector &osize = op->output_abs()->GetShape()->GetShapeVector();
+  const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
 
-  std::vector<pyfloat> scales{0., 0.};
+  std::vector<pyfloat> scales(kDim2, DEFAULT_SCALE_VALUE);
   if (scale_factors.has_value()) {
     MS_EXCEPTION(RuntimeError) << "For UpsampleBilinear2D, scale_factors is not supported now.";
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());

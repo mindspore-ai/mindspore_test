@@ -47,7 +47,10 @@ from mindspore.ops.auto_generate import group_norm_op, rms_norm, layer_norm_ext_
 from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
                                          replication_pad_1d_op, replication_pad_2d_op, replication_pad_3d_op,
-                                         constant_pad_nd_op, dropout_ext_op, reverse_v2_impl, avg_pool2d_op)
+                                         constant_pad_nd_op, dropout_ext_op, reverse_v2_impl, avg_pool2d_op,
+                                         upsample_nearest1d_op, upsample_nearest2d_op, upsample_nearest3d_op,
+                                         upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
+                                         upsample_trilinear3d_impl, fill_scalar_op, floor_op)
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, ConstantPadND, MaxPoolWithIndices, \
     MaxPoolWithMask
 from mindspore.common.generator import default_generator
@@ -2547,14 +2550,7 @@ def _interploate_ext_make_tuple(input, value):
     if F.isconstant(value) and F.isconstant(rank):
         out = tuple([value for _ in range(rank)])
     else:
-        s = tuple_to_tensor_((rank,), mstype.int32)
-        v = None
-        if isinstance(value, int):
-            v = F.scalar_to_tensor(value, mstype.int64)
-        else:
-            v = F.scalar_to_tensor(value, mstype.float32)
-        t = fillv2_(s, v)
-        out = tensor_to_tuple_(t)
+        out = tensor_to_tuple_(fill_scalar_op((rank,), value, None))
     return out
 
 
@@ -2569,11 +2565,9 @@ def _interpolate_ext_scale_factor_convert_size(input, scale_factor):
         size = tuple([floor(shape[i + 2] * scale_factor[i])
                       for i in range(tuple_len)])
     else:
-        x = tuple_to_tensor_(shape[2:], mstype.int64)
-        y = tuple_to_tensor_(scale_factor, mstype.float32)
-        t = x * y
-        t = ops.TruncateDiv()(t, Tensor(1))
-        t = ops.cast(t, mstype.int64)
+        x = tuple_to_tensor_(shape[2:], mstype.float32)
+        y = tuple_to_tensor_(tuple(scale_factor), mstype.float32)
+        t = ops.cast(floor_op(x * y), mstype.int64)
         size = tensor_to_tuple_(t)
     return size
 
@@ -2587,9 +2581,15 @@ def interpolate_ext(input,
     r"""
     Samples the input Tensor to the given size or scale_factor by using one of the interpolate algorithms.
 
+    .. warnings:
+        This is an experimental API that is subject to change or deletion.
+
     .. note::
-        - In 'linear' mode, backpropagation does not support scenarios where `scale_factor` is not None
-          and `align_corners` is False.
+        - In 'linear' mode, the scenarios, where `scale_factor` is not None and `align_corners` is False,
+          is not supported.
+        - In 'nearest' mode, there may exist precision problem in the scenarios, where input is 3-D/4-D Tensor
+          and the image is scaled by scale_factor.
+        - `mode` and `scale_factor` should be constants.
 
     Args:
         input (Tensor): Tensor to be resized.
@@ -2604,10 +2604,8 @@ def interpolate_ext(input,
             after removing the first two dimensions N, C.
             One and only one of size and scale_factor can be set to None. Default: ``None`` .
         mode (str): The sampling algorithm.
-            One of 'nearest', 'linear' (3D only), 'bilinear' (4D only), 'trilinear' (5D only), 'bicubic' (4D only),
-            'area', 'nearest-exact'(matches Scikit-Image and PIL nearest neighbours interpolation algorithms and fixes
-            knows issues with `nearest`, 3D and 4D). Default: ``"nearest"`` .
-
+            One of 'nearest', 'linear' (3D only), 'bilinear' (4D only), 'trilinear' (5D only), and 'bicubic' (4D only).
+            Default: ``"nearest"`` .
         align_corners (bool): Whether to use corner alignment for coordinate mapping. Assuming a transformation is
             applied to the input Tensor along the x-axis, the specific calculation formula is as follows:
 
@@ -2629,39 +2627,24 @@ def interpolate_ext(input,
             and finally scaled using the value of `size`.
             If False, the value of `size` or `scale_factor` will be used for direct interpolation. Default: ``None`` .
 
-    .. note::
-        The 'nearest-exact' mode is the same as the nearest-neighbor interpolation algorithm used in
-        scikit-image and PIL. The 'nearest' mode produces the same results as the INTER_NEAREST interpolation
-        algorithm used in OpenCV.
-
     Args Support List and Supported Platforms:
 
     +---------------+-----------+---------------+--------------+----------------+
     | mode          | input.dim | align_corners | scale_factor | device         |
     +===============+===========+===============+==============+================+
-    | nearest       | 3         | \-            | √            | Ascend,GPU,CPU |
+    | nearest       | 3         | \-            | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    |               | 4         | \-            | √            | Ascend,GPU,CPU |
+    |               | 4         | \-            | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    |               | 5         | \-            | √            | Ascend,GPU,CPU |
+    |               | 5         | \-            | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | linear        | 3         | √             | √            | Ascend,GPU,CPU |
+    | linear        | 3         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | bilinear      | 4         | √             | ×            | Ascend,GPU,CPU |
+    | bilinear      | 4         | √             | ×            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | bicubic       | 4         | √             | ×            | Ascend,GPU,CPU |
+    | bicubic       | 4         | √             | ×            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
-    | area          | 3         | \-            | √            | Ascend,GPU,CPU |
-    +---------------+-----------+---------------+--------------+----------------+
-    |               | 4         | \-            | √            | Ascend,GPU,CPU |
-    +---------------+-----------+---------------+--------------+----------------+
-    |               | 5         | \-            | √            | Ascend,GPU,CPU |
-    +---------------+-----------+---------------+--------------+----------------+
-    | nearest-exact | 3         | \-            | ×            | Ascend,CPU     |
-    +---------------+-----------+---------------+--------------+----------------+
-    |               | 4         | \-            | ×            | Ascend,CPU     |
-    +---------------+-----------+---------------+--------------+----------------+
-    | trilinear     | 5         | √             | √            | Ascend,GPU,CPU |
+    | trilinear     | 5         | √             | √            | Ascend         |
     +---------------+-----------+---------------+--------------+----------------+
 
     - `-` indicates that there is no such parameter.
@@ -2669,7 +2652,21 @@ def interpolate_ext(input,
     - `√` indicates that this parameter is supported.
 
     Returns:
-        Tensor, resized, whose dimensions and dtype are the same as `input`.
+        Tensor, sampled, whose dimensions and dtype are the same as `input`.
+
+    Shape:
+        - Input: :math:`(N, C, W_{in})`, :math:`(N, C, H_{in}, W_{in})` or :math:`(N, C, D_{in}, H_{in}, W_{in})`
+        - Output: :math:`(N, C, W_{out})`, :math:`(N, C, H_{out}, W_{out})`
+          or :math:`(N, C, D_{out}, H_{out}, W_{out})`, where
+
+    .. math::
+        D_{out} = \left\lfloor D_{in} \times \text{scale\_factor} \right\rfloor
+
+    .. math::
+        H_{out} = \left\lfloor H_{in} \times \text{scale\_factor} \right\rfloor
+
+    .. math::
+        W_{out} = \left\lfloor W_{in} \times \text{scale\_factor} \right\rfloor
 
     Raises:
         TypeError: `input` is not a Tensor.
@@ -2684,7 +2681,7 @@ def interpolate_ext(input,
         ValueError: `align_corners` is not in the corresponding list of supported values.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
         >>> import mindspore
@@ -2699,62 +2696,28 @@ def interpolate_ext(input,
     def run_nearest(x, size, align_corners=None, scale_factor=None):
         x_rank = F.rank(x)
         if x_rank == 3:
-            x = _get_cache_prim(ops.auto_generate.UpsampleNearest1D)()(
-                x, size, scale_factor)
+            out = upsample_nearest1d_op(x, size, scale_factor)
         elif x_rank == 4:
-            x = _get_cache_prim(ops.auto_generate.UpsampleNearest2D)()(
-                x, size, scale_factor)
+            out = upsample_nearest2d_op(x, size, scale_factor)
         else:
-            x = _get_cache_prim(P.UpsampleNearest3D)()(x, size, scale_factor)
-        return x
+            out = upsample_nearest3d_op(x, size, scale_factor)
+        return out
 
     def run_linear(x, size, align_corners=None, scale_factor=None):
-        out = _get_cache_prim(
-            ops.auto_generate.UpsampleLinear1D)()(x, size, scale_factor, align_corners)
+        out = upsample_linear1d_op(x, size, scale_factor, align_corners)
         return out
 
     def run_bilinear(x, size, align_corners=None, scale_factor=None):
-        out = _get_cache_prim(
-            ops.auto_generate.UpsampleBilinear2D)()(x, size, scale_factor, align_corners)
+        out = upsample_bilinear2d_op(x, size, scale_factor, align_corners)
         return out
 
     def run_trilinear(x, size, align_corners=None, scale_factor=None):
-        resize = _get_cache_prim(P.nn_ops.UpsampleTrilinear3D)(align_corners)
-        return resize(x, size, scale_factor)
+        out = upsample_trilinear3d_impl(x, size, scale_factor, align_corners)
+        return out
 
     def run_bicubic(x, size, align_corners=None, scale_factor=None):
-        resize = _get_cache_prim(P.image_ops.ResizeBicubic)(
-            align_corners=align_corners, half_pixel_centers=not align_corners)
-        x = resize(x, size)
-        return x
-
-    def run_area(x, size, align_corners=None, scale_factor=None):
-        x_rank = F.rank(x)
-        if x_rank == 3:
-            x = F.adaptive_avg_pool1d(x, size[0])
-        elif x_rank == 4:
-            x = F.adaptive_avg_pool2d(x, tuple(size))
-        else:
-            x = F.adaptive_avg_pool3d(x, tuple(size))
-        return x
-
-    def run_nearest_exact(x, size, align_corners=None, scale_factor=None):
-        x_rank = F.rank(x)
-        if x_rank == 3:
-            size = size[:1] + (1,)
-            # For impl of nearest 3D use 4D.
-            x = x.unsqueeze(-1)
-            resize = _get_cache_prim(P.ResizeNearestNeighborV2)(
-                align_corners=False,
-                half_pixel_centers=True)
-            x = resize(x, size)
-            x = _get_cache_prim(P.Squeeze)(-1)(x)
-        if x_rank == 4:
-            resize = _get_cache_prim(P.ResizeNearestNeighborV2)(
-                align_corners=False,
-                half_pixel_centers=True)
-            x = resize(x, size)
-        return x
+        out = upsample_bicubic2d_op(x, size, scale_factor, align_corners)
+        return out
 
     resize_funcs = {
         "nearest": run_nearest,
@@ -2762,8 +2725,6 @@ def interpolate_ext(input,
         "bilinear": run_bilinear,
         "bicubic": run_bicubic,
         "trilinear": run_trilinear,
-        "area": run_area,
-        "nearest-exact": run_nearest_exact,
     }
 
     # mode check

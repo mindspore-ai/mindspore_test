@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/upsample_nearest2d_grad.h"
+#include "kernel/ascend/pyboost/customize/upsample_bicubic2d_grad.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "mindapi/base/types.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
@@ -24,28 +24,29 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
-tensor::BaseTensorPtr UpsampleNearest2DGradAscendCall(
+constexpr pyfloat DEFAULT_SCALE_VALUE = -1.;
+tensor::BaseTensorPtr UpsampleBicubic2DGradAscendCall(
   const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context, const BaseTensorPtr &grad_out,
   const std::vector<int64_t> &input_size, const std::vector<int64_t> &output_size, const std::vector<pyfloat> &scales,
-  const std::vector<tensor::BaseTensorPtr> &outputs) {
+  const bool &align_corners, const std::vector<tensor::BaseTensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
-  double scales_h = scales[0];
-  double scales_w = scales[0];
-  LAUNCH_ACLNN(aclnnUpsampleNearest2dBackward, device_context, op->stream_id(), grad_out, output_size, input_size,
-               scales_h, scales_w, outputs[0]);
+  double scales_h = scales.at(0);
+  double scales_w = scales.at(1);
+  LAUNCH_ACLNN(aclnnUpsampleBicubic2dBackward, device_context, op->stream_id(), grad_out, output_size, input_size,
+               align_corners, scales_h, scales_w, outputs[0]);
   MS_LOG(DEBUG) << "Call end";
   return outputs[0];
 }
 }  // namespace
 
-tensor::BaseTensorPtr UpsampleNearest2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
+tensor::BaseTensorPtr UpsampleBicubic2DGradAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                            const BaseTensorPtr &gradout_tensor,
                                                            const ValueTuplePtr &input_size,
                                                            const std::optional<ValueTuplePtr> &output_size,
-                                                           const std::optional<ValueTuplePtr> &scale_factors) {
-  MS_LOG(DEBUG) << "UpsampleNearest2DGradAscendCustomize start";
-  OpRunner::InferOpOutput(op, gradout_tensor, input_size, output_size, scale_factors);
+                                                           const std::optional<ValueTuplePtr> &scale_factors,
+                                                           const BoolImmPtr &align_corners) {
+  MS_LOG(DEBUG) << "UpsampleBicubic2DGradAscendCustomize start";
+  OpRunner::InferOpOutput(op, gradout_tensor, input_size, output_size, scale_factors, align_corners);
 
   auto input_size_vector = ConvertValueTupleToVector<int64_t>(input_size);
 
@@ -54,27 +55,30 @@ tensor::BaseTensorPtr UpsampleNearest2DGradAscendCustomize(const std::shared_ptr
   if (output_size.has_value()) {
     output_size_vector = ConvertValueTupleToVector<int64_t>(output_size.value());
   } else if (scale_factors.has_value()) {
+    MS_EXCEPTION(RuntimeError) << "For UpsampleBicubic2DGrad, scale_factors is not supported now.";
     scales = ConvertValueTupleToVector<pyfloat>(scale_factors.value());
     for (size_t i = 0; i < scales.size(); ++i) {
       output_size_vector.push_back(static_cast<int64_t>(input_size_vector[i + kDim2]) * scales[i]);
     }
   }
 
+  auto align_corners_val = GetValue<bool>(align_corners);
+
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), gradout_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async
-  PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, gradout_tensor, input_size_vector, output_size_vector, scales]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
+    [op, gradout_tensor, input_size_vector, output_size_vector, scales, align_corners_val]() {
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
       // Malloc for input tensors
       PyBoostUtils::MallocOpInputs(device_context, gradout_tensor);
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
-      // Call aclnnUpsampleNearest2DGrad
-      UpsampleNearest2DGradAscendCall(op, device_context, gradout_tensor, input_size_vector, output_size_vector, scales,
-                                      outputs);
+      // Call aclnnUpsampleBicubic2dBackward
+      UpsampleBicubic2DGradAscendCall(op, device_context, gradout_tensor, input_size_vector, output_size_vector, scales,
+                                      align_corners_val, outputs);
     }));
   return op->output(0);
 }
