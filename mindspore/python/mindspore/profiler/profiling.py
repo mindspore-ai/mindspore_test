@@ -269,7 +269,14 @@ class Profiler:
         with_stack (bool, optional): (Ascend) Whether to collect frame host call stack data on the Python side. This
             data is presented in the form of a flame graph in the timeline. When using this parameter, the parameter
             op_time must be set to True. Default value: ``False`` .
-
+        analyse_only (bool, optional): (Ascend/GPU) Whether to parse only performance data and not collect performance
+            data. This parameter is experimental parameter and does not need to be set by the user.
+            Default value: ``False`` .
+        rank_id (int, optional): (Ascend/GPU) Set the rank id during parsing. This parameter is
+            experimental parameter and does not need to be set by the user. Default value: ``0`` .
+        env_enable (bool, optional): (Ascend/GPU) Whether to enable the collection of environment variables.
+            This parameter is experimental parameter and does not need to be set by the user.
+            Default value: ``False`` .
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
             MindSpore cannot parse the generated ascend_job_id directory structure.
