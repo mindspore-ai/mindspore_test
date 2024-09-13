@@ -302,6 +302,7 @@ Dropout层
     mindspore.nn.LARS
     mindspore.nn.LazyAdam
     mindspore.nn.Momentum
+    mindspore.nn.OptTFTWrapper
     mindspore.nn.ProximalAdagrad
     mindspore.nn.RMSProp
     mindspore.nn.Rprop

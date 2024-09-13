@@ -57,7 +57,8 @@ TensorReportUtils &TensorReportUtils::GetInstance() {
         auto libPath = tftCommPrefix + lPath;
         void *handle = dlopen(libPath.c_str(), RTLD_LAZY);
         if (!handle) {
-          MS_LOG(WARNING) << "dlopen failed: so path is: " << libPath << "; dlopen error:" << dlerror();
+          MS_LOG(WARNING) << "MindIO feature is switched on, but can't find MindIO install library: " << libPath
+                          << "; Please check if MindIO package installed correctly!";
           return;
         }
       }
@@ -70,6 +71,9 @@ TensorReportUtils &TensorReportUtils::GetInstance() {
         if (startFunc) {
           MS_LOG(INFO) << "Found TFT optimizer status updating function.";
           instance.SetTFTCallBack(startFunc);
+        } else {
+          MS_LOG(WARNING) << "MindIO feature is switched on, but can't find report function: "
+                             "MindioTtpSetOptimStatusUpdating; Please check if MindIO package installed correctly!";
         }
       }
     }

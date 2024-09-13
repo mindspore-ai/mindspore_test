@@ -157,13 +157,15 @@ def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
         - None, if not found available checkpoint, return None.
 
     Examples:
+        >>> import mindspore as ms
+        >>> from mindspore.communication import init
         >>> from mindspore import get_ckpt_path_with_strategy
         >>> ms.set_context(mode=ms.GRAPH_MODE)
         >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)
         >>> init()
         >>> ckpt_file= "./rank_5/iteration-1_40.ckpt"
         >>> strategy_file = "./src_pipeline_strategys/src_strategy_5.ckpt"
-        >>> ckpt_file_new = get_ckpt_path_with_strategy(ckpt_file, stragegy_file)
+        >>> ckpt_file_new = get_ckpt_path_with_strategy(ckpt_file, strategy_file)
         >>> print(ckpt_file_new)
     """
     dp = _get_cur_rank_dp(cur_strategy_path)
@@ -593,11 +595,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     global_step_num = kwargs.get('global_step_num', None)
     _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, map_param_inc, global_step_num)
 
-    tft_env = os.getenv("MS_ENABLE_TFT", "")
-    mode = context.get_context("mode")
-    device_target = context.get_context("device_target")
-    tft_enable = ("TTP:1" in tft_env) and (device_target == "Ascend") and (mode == context.GRAPH_MODE)
-    if tft_enable:
+    if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
         with mindspore.hal.StreamCtx(s1):
             save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
@@ -606,6 +604,8 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
 
     if append_dict:
+        if "__exception_save__" in append_dict:
+            del append_dict["__exception_save__"]
         append_info_list = []
         for k_name, value in append_dict.items():
             if isinstance(value, Generator):
@@ -779,10 +779,6 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             random_byte = _executor._graph_executor.get_random_status(phase)
             param_list.append({"name": "random_op", "data": random_byte})
             append_dict.pop("random_op")
-    tft_env = os.getenv("MS_ENABLE_TFT", "")
-    mode = context.get_context("mode")
-    device_target = context.get_context("device_target")
-    tft_enable = ("TTP:1" in tft_env) and (device_target == "Ascend") and (mode == context.GRAPH_MODE)
     for (key, value) in param_dict.items():
         each_param = {"name": key}
         if isinstance(value, MapParameter):
@@ -806,13 +802,13 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             param_data.append(value.key)
         else:
             param_data = value.data
-            if tft_enable:
+            if append_dict and "__exception_save__" in append_dict:
                 param_data = Tensor(Tensor_.move_to(value, "CPU", False))
 
             # in automatic model parallel scenario, some parameters were split to all the devices,
             # which should be combined before saving
             if key in parameter_layout_dict:
-                if not tft_enable:
+                if not append_dict or "__exception_save__" not in append_dict:
                     param_data = Tensor(value.data)
                 param_data = _get_merged_param_data(save_obj, parameter_layout_dict, key, param_data,
                                                     integrated_save)

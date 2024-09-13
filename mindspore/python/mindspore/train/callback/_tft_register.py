@@ -53,6 +53,7 @@ def _save_checkpoint_on_failure(step, save_info, args, cb_ctx):
     append_dict["step_num"] = step
     append_dict["cur_rank"] = cur_rank
     append_dict["batch_num"] = batch_num
+    append_dict["__exception_save__"] = True
 
     if cb_params.optimizer is not None:
         append_dict["global_step"] = cb_params.optimizer.global_step

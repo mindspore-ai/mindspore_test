@@ -24,24 +24,24 @@ from mindspore import ops, context
 
 class OptTFTWrapper(Optimizer):
     r"""
-    Implements TFT optimizer wrapper, this wrapper is used to report status before optimizer updating.
+    Implements TFT optimizer wrapper, this wrapper is used to report status to MindIO TFT before optimizer updating.
 
     Note:
-        This optimizer is depend on mindio TFT feature. Currently only support ascend ge mode and
-        sink_size must be less than 1
+        This optimizer is depend on MindIO TFT feature. Currently only support ascend graph mode and
+        sink_size must be less than 1.
 
     Args:
         opt (Optimizer): Must be sub-class of Optimizer.
 
     Inputs:
-        - **gradients** (tuple[Tensor]) - The gradients of `params`, the shape is the same as `params`.
+        - **gradients** (tuple[Tensor]) - The gradients of opt's `params`, the shape is the same as opt's `params`.
 
     Outputs:
-        Tensor[bool], the value is ``True`` .
+        Tensor, result of executing optimizer 'opt'.
 
     Raises:
         TypeError: If the parameter opt is not an subclass of Optimizer.
-        ValueError: If the platform is not ascend ge mode, or customer doesn't switch on TFT feature.
+        ValueError: If the platform is not Ascend graph mode, or customer doesn't switch on TFT feature.
 
     Supported Platforms:
         ``Ascend``
