@@ -151,6 +151,7 @@ from mindspore.parallel._auto_parallel_context import _AutoParallelContext
 from mindspore.common.api import ms_memory_recycle
 from mindspore.context import _Context
 
+
 def _get_after_grad_code():
     """Get the code object of 'after_grad'"""
     name = "after_grad"
@@ -164,6 +165,7 @@ def _get_after_grad_code():
     if not codes:
         raise RuntimeError("check GradOperation, can't find the code of 'after_grad'")
     return codes
+
 
 def _get_dataset_forbidden_code():
     """Get the forbidden function which should be broken in graph"""
@@ -257,12 +259,14 @@ def _get_dataset_forbidden_code():
                   TrivialAugmentWide.parse, VUniformAugment.parse, VVerticalFlip])
     return codes
 
+
 def _get_math_code():
     """Get the math builtin function which should be guarded in graph"""
     codes = []
     for i in dir(math):
         codes.append(getattr(math, i))
     return codes
+
 
 def _get_psjit_code():
     """Get the code object of 'staging_specialize'"""

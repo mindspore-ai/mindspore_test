@@ -129,13 +129,6 @@ def _get_skip_files():
             continue
         files.append(_filter(spec.origin))
 
-    # # find start with '_' files
-    # prefix = _filter(mindspore.__file__)
-    # files += [os.path.join(prefix, *m.split('.')[1:]) for m in SKIP_RULES["mindspore"]]
-    # for i in glob.glob(prefix + "**/_*") + glob.glob(prefix + "_*"):
-    #     if i.endswith(("_", ".so", "_.py", ".pyc", ".pyi", ".pyd")):
-    #         continue
-    #     files.append(i)
     return tuple(files)
 
 
