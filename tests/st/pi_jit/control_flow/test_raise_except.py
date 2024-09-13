@@ -450,3 +450,41 @@ def test_except_case_14():
     assert got == 2
     jcr = get_code_extra(func)
     assert jcr["break_count_"] == 0
+
+
+@arg_mark(
+    plat_marks=["cpu_linux"],
+    level_mark="level0",
+    card_mark="onecard",
+    essential_mark="essential",
+)
+def test_except_case_15():
+    """
+    Feature: Test with
+    Description: Test with process exception
+    Expectation: no exception raise.
+    """
+
+    class MyFile:
+        def __init__(self):
+            pass
+
+        def __enter__(self):
+            pass
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if exc_type == ArithmeticError:
+                return True
+            return False
+
+    def func():
+        i = 1
+        with MyFile():
+            i =2
+            raise ArithmeticError
+        return i
+
+    got = jit(fn=func, mode="PIJit")()
+    assert got == 2
+    jcr = get_code_extra(func)
+    assert jcr["break_count_"] == 1
