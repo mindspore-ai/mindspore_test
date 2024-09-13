@@ -553,12 +553,9 @@ def test_dynamic_rank_setitem_tuple_with_basic_index():
         def construct(self, x, axis):
             x = ops.reduce_sum(x, axis)
             x_shape = x.shape[0]
-            x[1:x_shape:2, 1:x_shape:2, ..., x_shape -
-                                             3, None] = Tensor([1], mstype.float32)
-            x[..., 1:x_shape:1, 1:x_shape:1, x_shape -
-                                             2, None] = Tensor([1], mstype.float32)
-            x[1:x_shape:2, 1:x_shape:2, x_shape - 2,
-            None, ...] = Tensor([1], mstype.float32)
+            x[1:x_shape:2, 1:x_shape:2, ..., x_shape - 3, None] = Tensor([1], mstype.float32)
+            x[..., 1:x_shape:1, 1:x_shape:1, x_shape - 2, None] = Tensor([1], mstype.float32)
+            x[1:x_shape:2, 1:x_shape:2, x_shape - 2, None, ...] = Tensor([1], mstype.float32)
             return x
 
     class NpSetItem():
@@ -582,7 +579,7 @@ def test_dynamic_rank_setitem_tuple_with_basic_index():
 
 
 @pytest.mark.skip(reason="Need to be fixed.")
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_setitem_tuple_with_mix_index():
     """

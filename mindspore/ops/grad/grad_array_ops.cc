@@ -88,6 +88,10 @@ NodePtr MinOrMaxOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &out, c
   auto x_zeros = ib->Zeros(x);
   auto mask_sum = ib->SumExt(mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
   auto grad_div_mask_sum = ib->Div(dout, ib->Cast(mask_sum, ib->GetDtype(dout)));
+  if (ib->GetDtypeId(grad_div_mask_sum) != ib->GetDtypeId(x_zeros)) {
+    grad_div_mask_sum =
+      ib->Cast(ib->SumExt(grad_div_mask_sum, ib->EmitValue(kNone), ib->Value(false)), ib->GetDtype(x_zeros));
+  }
   auto dx = ib->MaskedFill(x_zeros, mask, grad_div_mask_sum);
   return {dx};
 }

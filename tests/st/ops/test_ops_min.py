@@ -14,9 +14,10 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import Tensor, context
+from mindspore import Tensor, context, ParameterTuple
 from mindspore.ops.function.array_func import min_ext as min_
-from mindspore import ops
+from mindspore.ops.composite import GradOperation
+from mindspore import ops, nn
 from mindspore.common import dtype as mstype
 
 from tests.st.utils.test_utils import to_cell_obj, compare
@@ -58,7 +59,7 @@ def min_max_case(op_func, np_func, data_dtype=np.float32, has_nan=False, save_gr
     # backward:
     if save_graphs:
         context.set_context(save_graphs=True, save_graphs_path="graph_backward")
-    output_grad = ops.grad(net)(*input_args)
+    output_grad = ops.grad(net)(*input_args)  # pylint: disable=not-callable
     if is_bfloat16:
         output_grad = output_grad.float()
     expect_grad = np_backward_func(x_np, expect, np.ones_like(expect))
@@ -176,3 +177,50 @@ def test_min_control_flow(mode, data_dtype):
     """
     context.set_context(mode=mode)
     min_max_case(min_, np_min, data_dtype=data_dtype)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_min_grad_dynamic_rank():
+    """
+    Feature: Test min op.
+    Description: Test min grad in cell.
+    Expectation: the result match with expected result.
+    """
+    class _Grad(nn.Cell):
+        def __init__(self, grad, network, wrt_params=False, real_inputs_count=None):
+            super().__init__()
+            self.network = network
+            self.grad = grad
+            self.sens_param = self.grad.sens_param
+            self.wrt_params = wrt_params
+            self.real_inputs_count = real_inputs_count
+            if self.wrt_params:
+                self.params = ParameterTuple(self.network.trainable_params())
+
+        def construct(self, *inputs):
+            if self.real_inputs_count is None or self.sens_param is False:
+                if self.wrt_params:
+                    return self.grad(self.network, self.params)(*inputs)
+                return self.grad(self.network)(*inputs)
+
+            real_inputs = inputs[:self.real_inputs_count]
+            sense_param_inputs = inputs[self.real_inputs_count:]
+            if self.wrt_params:
+                return self.grad(self.network, self.params)(*real_inputs, sense_param_inputs)
+            return self.grad(self.network)(*real_inputs, sense_param_inputs)
+
+    class GradOfFirstInput(_Grad):
+        def __init__(self, network, sens_param=True, real_inputs_count=None):
+            super().__init__(grad=GradOperation(sens_param=sens_param),
+                             network=network, real_inputs_count=real_inputs_count)
+
+    class Net(nn.Cell):
+        def construct(self, x):
+            return x.min()
+
+    net = Net()
+    grad_net = GradOfFirstInput(net)
+    grad_net.set_train()
+    input_value = Tensor(np.ones((5)).astype(np.int64))
+    dout = Tensor(np.array(1).astype(np.int64))
+    assert np.all(grad_net(input_value, dout).asnumpy() == [0, 0, 0, 0, 0])

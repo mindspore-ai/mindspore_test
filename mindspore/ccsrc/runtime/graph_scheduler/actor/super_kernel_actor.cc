@@ -326,7 +326,7 @@ void SuperKernelActor::CorrectRefCount(size_t input_index, DeviceTensor *device_
 
   const auto &input_use_cnt = input_params_use_cnt_.at(input_index);
   if (input_use_cnt == 0) {
-    if (device_tensor->dynamic_ref_count() == INT32_MAX) {
+    if (device_tensor->original_ref_count() != SIZE_MAX) {
       // No user for this input in graph.
       MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
     }

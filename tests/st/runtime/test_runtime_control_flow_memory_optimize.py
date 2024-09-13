@@ -15,8 +15,8 @@
 import numpy as np
 import mindspore
 from mindspore import context, ops, nn, Tensor
+from tests.mark_utils import arg_mark
 context.set_context(mode=context.GRAPH_MODE)
-context.set_context(save_graphs=True, save_graphs_path='./log/')
 context.set_context(jit_config={"jit_level": "O0"})
 
 
@@ -35,6 +35,7 @@ class Net(nn.Cell):
         return c
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_free_by_entrance_actor():
     """
     Feature: eliminate nopnode.
@@ -66,6 +67,7 @@ class NetStack(nn.Cell):
         return self.reshape(z, y.shape)
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_free_by_stack_actor():
     """
     Feature: eliminate nopnode.
@@ -102,6 +104,7 @@ class NetGather1(nn.Cell):
         return c, d
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_free_by_gather_actor_1():
     """
     Feature: eliminate nopnode.
@@ -138,6 +141,7 @@ class NetGather2(nn.Cell):
         return c, d, g
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_free_by_gather_actor_2():
     """
     Feature: eliminate nopnode.
@@ -175,6 +179,7 @@ class NetGather3(nn.Cell):
         return c, d, g
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_free_by_gather_actor_3():
     """
     Feature: eliminate nopnode.
@@ -212,6 +217,7 @@ class NetGather4(nn.Cell):
         return c, d, e
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_free_by_gather_actor_4():
     """
     Feature: eliminate nopnode.
