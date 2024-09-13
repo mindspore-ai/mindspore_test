@@ -76,9 +76,10 @@ class AddLayernormV3Fusion : public AddLayernormFusionBase {
   }
 };
 
+constexpr const size_t kGammaIndex2 = 2;
 class AddLayernormExtFusion : public AddLayernormFusionBase {
  public:
-  AddLayernormExtFusion() : AddLayernormFusionBase("add_layer_norm_ext_fusion", 2) {}
+  AddLayernormExtFusion() : AddLayernormFusionBase("add_layer_norm_ext_fusion", kGammaIndex2) {}
   ~AddLayernormExtFusion() override = default;
   const BaseRef DefinePattern() const override {
     VectorRef add_layer_norm = VectorRef(
