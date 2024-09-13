@@ -10,18 +10,18 @@ mindspore.numpy.take
         不支持Numpy的 ``out`` 参数。不支持 ``mode = 'raise'`` ，默认 ``mode`` 为 ``'clip'`` 。
 
     参数：
-        - **a** (Tensor) – 源数组，shape为 ``(Ni…, M, Nk…)`` 。
-        - **indices** (Tensor) – shape为 ``(Nj...)`` 的索引，表示要提取的值。
-        - **axis** (int, 可选) – 用于选择值的轴。默认情况下，使用展平后的输入数组。默认值： ``None`` 。
-        - **mode** ('raise', 'wrap', 'clip', 可选) – 指定超出范围的索引的行为。默认值： ``'clip'`` 。
+        - **a** (Tensor) - 源数组，shape为 ``(Ni…, M, Nk…)`` 。
+        - **indices** (Tensor) - shape为 ``(Nj...)`` 的索引，表示要提取的值。
+        - **axis** (int, 可选) - 用于选择值的轴。默认情况下，使用展平后的输入数组。默认值： ``None`` 。
+        - **mode** ('raise', 'wrap', 'clip', 可选) - 指定超出范围的索引的行为。默认值： ``'clip'`` 。
         
-          - 'raise' – 抛出错误；
-          - 'wrap' – 循环；
-          - 'clip' – 限制在范围内。'clip'模式意味着所有过大的索引都将被替换为该轴最后一个元素的索引。请注意，这将禁止使用负数进行索引。
+          - 'raise' - 抛出错误；
+          - 'wrap' - 循环；
+          - 'clip' - 限制在范围内。'clip'模式意味着所有过大的索引都将被替换为该轴最后一个元素的索引。请注意，这将禁止使用负数进行索引。
 
     返回：
         Tensor，索引结果。
 
     异常：
-        - **ValueError** – 如果 ``axis`` 超出范围。
-        - **TypeError** – 如果输入不是Tensor。
+        - **ValueError** - 如果 ``axis`` 超出范围。
+        - **TypeError** - 如果输入不是Tensor。

@@ -7,7 +7,7 @@ mindspore.ops.SparseSlice
 
     输入：
         - **indices** (Tensor) - 稀疏Tensor的索引，是一个二维Tensor，shape为 :math:`(N, R)` 。支持的数据类型为int64，其每一个值都必须是非负整数。
-        - **values** (Tensor)- 稀疏Tensor `indices` 对应位置的值，是一个一维Tensor，shape为 :math:`(N,)` 。
+        - **values** (Tensor) - 稀疏Tensor `indices` 对应位置的值，是一个一维Tensor，shape为 :math:`(N,)` 。
         - **shape** (Tensor) -  稀疏Tensor的shape，是一个一维Tensor，shape为 :math:`(R,)` ，数据类型为int64。
         - **start** (Tensor) - 切片操作起始位置，是一个一维Tensor，shape为 :math:`(R,)` ，数据类型为int64。
         - **size** (Tensor) - 切片的尺寸，是一个一维Tensor，shape为 :math:`(R,)` ，数据类型为int64。

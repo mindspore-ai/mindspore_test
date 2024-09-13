@@ -1458,7 +1458,7 @@ def amin(a, axis=None, keepdims=False, initial=None, where=True):
 
     Args:
         a (Tensor): Input data.
-        axis (None or int or tuple of integers, optional): Default: ``None`` . Axis or
+        axis (Union[int, tuple(int), None], optional): Default: ``None`` . Axis or
             axes along which to operate. By default, flattened input is used. If
             this is a tuple of integers, the minimum is selected over multiple axes,
             instead of a single axis or all the axes as before.
@@ -5200,8 +5200,8 @@ def polymul(a1, a2):
         Numpy object poly1d is currently not supported.
 
     Args:
-        a1 (Union[int, float, bool, list, tuple, Tensor): Input polynomial.
-        a2 (Union[int, float, bool, list, tuple, Tensor): Input polynomial.
+        a1 (Union[int, float, bool, list, tuple, Tensor]): Input polynomial.
+        a2 (Union[int, float, bool, list, tuple, Tensor]): Input polynomial.
 
     Returns:
         Tensor, a new polynomial representing the derivative.
@@ -5233,7 +5233,7 @@ def polyint(p, m=1, k=None):
         p (Union[int, float, bool, list, tuple, Tensor]): Polynomial to integrate. A
             sequence is interpreted as polynomial coefficients.
         m (int, optional): Defaults to 1, Order of the antiderivative.
-        k (Union[int, list of int]y, optinoal): Integration constants. They are given
+        k (Union[int, list[int]], optinoal): Integration constants. They are given
             in the order of integration: those corresponding to highest-order terms
             come first. If None (default), all constants are assumed to be zero. If
             ``m = 1``, a single scalar can be given instead of a list.
@@ -5581,7 +5581,7 @@ def norm(x, ord=None, axis=None, keepdims=False): # pylint: disable=redefined-bu
             the 2-norm of ``x.ravel`` will be returned.
         ord (Union[None, 'fro', 'nuc', inf, -inf, int, float], optional): Order of the norm.
             inf means numpy’s inf object. Default: ``None`` .
-        axis (Union[None, int, 2-tuple of integers], optional): If `axis` is an integer, it
+        axis (Union[int, 2-tuple(int), None], optional): If `axis` is an integer, it
             specifies the axis of `x` along which to compute the vector norms. If `axis` is
             a 2-tuple, it specifies the axes that hold 2-D matrices, and the matrix norms of
             these matrices are computed. If `axis` is None then either a vector norm (when x

@@ -311,7 +311,7 @@ def zeros(shape, dtype=mstype.float32):
     Args:
         shape (Union[int, tuple, list]): the shape of the new tensor.
         dtype (Union[:class:`mindspore.dtype`, str], optional): Designated tensor dtype.
-            Default is :class:`mstype.float32`.
+            Default is mstype.float32.
 
     Returns:
         Tensor, with the designated `shape` and `dtype`, filled with zeros.
@@ -1069,7 +1069,7 @@ def ones_like(a, dtype=None, shape=None):
             attributes of the returned array.
         dtype (:class:`mindspore.dtype`, optional): Overrides the data type of the
             result. Default: ``None``.
-        shape (int or sequence of ints, optional): Overrides the shape
+        shape (int, sequence of ints, optional): Overrides the shape
             of the result. Default: ``None``.
 
     Returns:
@@ -1107,7 +1107,7 @@ def zeros_like(a, dtype=None, shape=None):
             attributes of the returned array.
         dtype (:class:`mindspore.dtype`, optional): Overrides the data type of the
             result.
-        shape (int or sequence of ints, optional): Overrides the shape
+        shape (int, sequence of ints, optional): Overrides the shape
             of the result.
 
     Returns:
@@ -1146,7 +1146,7 @@ def full_like(a, fill_value, dtype=None, shape=None):
         fill_value (scalar): Fill value.
         dtype (:class:`mindspore.dtype`, optional): Overrides the data type of the
             result.
-        shape (int or sequence of ints, optional): Overrides the shape
+        shape (int, sequence of ints, optional): Overrides the shape
             of the result.
 
     Returns:

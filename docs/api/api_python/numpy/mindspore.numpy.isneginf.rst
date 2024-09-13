@@ -9,10 +9,10 @@ mindspore.numpy.isneginf
         不支持Numpy的 ``out`` 参数。目前仅支持 ``np.float32`` 。
 
     参数：
-        - **x** (Tensor) – 输入值。
+        - **x** (Tensor) - 输入值。
 
     返回：
         Tensor或标量，当 ``x`` 为负无穷大时为True，否则为False。如果 ``x`` 是标量，则返回标量。
 
     异常：
-        - **TypeError** – 如果输入不是Tensor。
+        - **TypeError** - 如果输入不是Tensor。

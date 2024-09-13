@@ -10,10 +10,10 @@ mindspore.numpy.array_equiv
         在MindSpore中，会返回一个bool tensor，因为在图模式下，该值无法在编译时追踪和计算。
 
     参数：
-        - **a1/a2** (Union[int, float, bool, list, tuple, Tensor]) – 输入数组。
+        - **a1/a2** (Union[int, float, bool, list, tuple, Tensor]) - 输入数组。
 
     返回：
         Scalar bool tensor，如果输入等效，值为 ``True`` ，否则为 ``False`` 。
 
     异常：
-        - **TypeError** – 如果输入参数非上述给定的类型。
+        - **TypeError** - 如果输入参数非上述给定的类型。

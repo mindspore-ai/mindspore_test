@@ -1863,11 +1863,11 @@ def take(a, indices, axis=None, mode='clip'):
         mode ('raise', 'wrap', 'clip', optional): Specifies how out-of-bounds
             indices will behave. Default: ``'clip'`` .
 
-            'raise' – raise an error;
+            'raise' - raise an error;
 
-            'wrap' – wrap around;
+            'wrap' - wrap around;
 
-            'clip' – clip to the range. 'clip' mode means that all indices that are
+            'clip' - clip to the range. 'clip' mode means that all indices that are
             too large are replaced by the index that addresses the last element
             along that axis. Note that this disables indexing with negative numbers.
 
@@ -2139,11 +2139,11 @@ def choose(a, choices, mode='clip'):
         mode ('raise', 'wrap', 'clip', optional): Specifies how indices outside
             ``[0, n-1]`` will be treated:
 
-            'raise' – raise an error;
+            'raise' - raise an error;
 
-            'wrap' – wrap around;
+            'wrap' - wrap around;
 
-            'clip' – clip to the range. 'clip' mode means that all indices that are
+            'clip' - clip to the range. 'clip' mode means that all indices that are
             too large are replaced by the index that addresses the last element
             along that axis. Note that this disables indexing with negative numbers.
 

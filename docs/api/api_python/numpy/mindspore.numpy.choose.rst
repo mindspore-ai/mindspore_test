@@ -13,16 +13,16 @@ mindspore.numpy.choose
         不支持Numpy的 ``out`` 参数。不支持 ``mode = 'raise'`` ，默认 ``mode`` 为 ``'clip'`` 。
 
     参数：
-        - **a** (int array) – 该数组必须包含 ``[0, n-1]`` 范围内的整数，其中 ``n`` 是选择数组的数量，除非使用 ``mode=wrap`` 或 ``mode=clip`` ，在这些情况下，任何整数都可以。
-        - **choices** (数组的序列) – 选择数组。 ``a`` 和所有 ``choices`` 必须可以广播为相同的shape。如果 ``choices`` 本身是一个数组，则其最外层维度（即 ``choices.shape[0]`` 对应的维度）定义为“sequence”。
-        - **mode** ('raise', 'wrap', 'clip', 可选) – 指定如何处理超出 ``[0, n-1]`` 范围的索引：
+        - **a** (int array) - 该数组必须包含 ``[0, n-1]`` 范围内的整数，其中 ``n`` 是选择数组的数量，除非使用 ``mode=wrap`` 或 ``mode=clip`` ，在这些情况下，任何整数都可以。
+        - **choices** (数组的序列) - 选择数组。 ``a`` 和所有 ``choices`` 必须可以广播为相同的shape。如果 ``choices`` 本身是一个数组，则其最外层维度（即 ``choices.shape[0]`` 对应的维度）定义为“sequence”。
+        - **mode** ('raise', 'wrap', 'clip', 可选) - 指定如何处理超出 ``[0, n-1]`` 范围的索引：
         
-          - 'raise' – 抛出错误；
-          - 'wrap' – 循环；
-          - 'clip' – 限制在范围内。'clip'模式意味着所有过大的索引都将被替换为该轴最后一个元素的索引。请注意，这将禁止使用负数进行索引。
+          - 'raise' - 抛出错误；
+          - 'wrap' - 循环；
+          - 'clip' - 限制在范围内。'clip'模式意味着所有过大的索引都将被替换为该轴最后一个元素的索引。请注意，这将禁止使用负数进行索引。
 
     返回：
         Tensor，合并的结果。
 
     异常：
-        - **ValueError** – 如果 ``a`` 与任一 ``choices`` 不能被广播。
+        - **ValueError** - 如果 ``a`` 与任一 ``choices`` 不能被广播。

@@ -10,10 +10,10 @@ mindspore.numpy.atleast_1d
         在图模式下，返回的不是Tensor列表，而是Tensor的tuple。
 
     参数：
-        - **\*arys** (Tensor) – 一个或多个输入Tensor。
+        - **\*arys** (Tensor) - 一个或多个输入Tensor。
 
     返回：
         Tensor或Tensor列表，每个Tensor满足 :math:`a.ndim >= 1` 。
 
     异常：
-        - **TypeError** – 如果输入不是Tensor。
+        - **TypeError** - 如果输入不是Tensor。

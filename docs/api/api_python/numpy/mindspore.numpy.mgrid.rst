@@ -13,4 +13,4 @@ mindspore.numpy.mgrid
         元素为Tensor或Tensor的Tuple，返回 ``meshgrid`` 网格点坐标数组。
 
     异常：
-        - **TypeError** – 如果切片索引不是整数。
+        - **TypeError** - 如果切片索引不是整数。
