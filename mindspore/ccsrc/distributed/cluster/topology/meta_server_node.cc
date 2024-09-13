@@ -31,6 +31,7 @@
 #include "distributed/recovery/file_configuration.h"
 #include "distributed/cluster/topology/meta_server_node.h"
 #include "utils/convert_utils_base.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 namespace distributed {
@@ -703,7 +704,13 @@ bool MetaServerNode::ReassignNodeRankFromRanktablefile() {
   if (!rank_table_file_path.empty()) {
     MS_LOG(INFO) << "Start reassigning rank ids for nodes according to rank table file, json file path: "
                  << rank_table_file_path;
-    std::ifstream jsonFile(rank_table_file_path, std::ifstream::in);
+
+    auto realpath = FileUtils::GetRealPath(rank_table_file_path.c_str());
+    if (!realpath.has_value()) {
+      MS_LOG(WARNING) << "Failed to get real path. Won't reassign rank id based on rank table file.";
+      return false;
+    }
+    std::ifstream jsonFile(realpath.value(), std::ifstream::in);
     if (!jsonFile.is_open()) {
       MS_LOG(WARNING)
         << "Failed to open rank table file. Won't reassign rank id based on rank table file. This may be because the "
@@ -765,7 +772,7 @@ bool MetaServerNode::ReassignNodeRankFromRanktablefile() {
                             << ", role: " << role << ", with host ip: " << node_info->host_ip
                             << ", device id: " << node_info->device_id << ", old rank id: " << node_info->rank_id
                             << ", new rank id: " << new_rank;
-            node_info->rank_id = std::stoi(new_rank);
+            node_info->rank_id = std::stoul(new_rank);
             (void)metadata_.insert(std::make_pair(role + node_info->node_id, std::to_string(node_info->rank_id)));
           }
         }
