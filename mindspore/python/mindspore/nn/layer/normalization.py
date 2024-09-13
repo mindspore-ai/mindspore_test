@@ -785,7 +785,7 @@ class LayerNormExt(Cell):
 
     Unlike Batch Normalization, Layer Normalization performs exactly the same computation at training and
     testing time. It is applied across all channels and pixel but only one batch size.
-    :math:`\gamma` and :math:`\beta` are trainable scale and shift.
+    :math:`\gamma` is the scale value learned through training and :math:`\beta` is the shift value.
     It can be described using the following formula:
 
     .. math::
