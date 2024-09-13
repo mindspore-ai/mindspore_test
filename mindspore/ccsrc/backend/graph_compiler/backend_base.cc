@@ -729,7 +729,7 @@ bool MindRTBackendBase::LoadBackendInfo() {
       output_node_ = context.FindFrontNodeByFrontName(control_node_json[kOutputNodeId]);
     }
     device_name_ = control_node_json[kDeviceName];
-    device_id_ = control_node_json[kDeviceId].get<int32_t>();
+    device_id_ = control_node_json[kDeviceId].get<uint32_t>();
     ms_execution_mode_ = control_node_json[kMsExcutionMode].get<int>();
     json_stream.close();
     if (CompileCacheEnable()) {
