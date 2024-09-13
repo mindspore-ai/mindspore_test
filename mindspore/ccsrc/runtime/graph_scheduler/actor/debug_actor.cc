@@ -36,9 +36,18 @@
 #include "include/backend/debug/profiler/profiling.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "debug/data_dump/overflow_counter.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace runtime {
+// Get kernel names with dump flag.
+void GetSetDumpNames(const AnfNodePtr &node, std::vector<std::string> *set_dump_names) {
+  auto dump_flag = common::AnfAlgo::GetDumpFlag(node);
+  if (dump_flag.has_value() && dump_flag.value().compare("true") == 0) {
+    (*set_dump_names).push_back(node->fullname_with_scope());
+  }
+}
+
 void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk) {
   std::vector<std::string> all_kernel_names;
   std::vector<std::string> set_dump_names;
@@ -46,9 +55,12 @@ void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &
     auto all_kernels = graph->execution_order();
     std::for_each(all_kernels.begin(), all_kernels.end(), [&](const auto &k) {
       all_kernel_names.push_back(k->fullname_with_scope());
-      auto dump_flag = common::AnfAlgo::GetDumpFlag(k);
-      if (dump_flag.has_value() && dump_flag.value().compare("true") == 0) {
-        set_dump_names.push_back(k->fullname_with_scope());
+      GetSetDumpNames(k, &set_dump_names);
+      if (IsPrimitiveCNode(k, prim::kPrimGEGraphOp)) {
+        auto inline_subgraph = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(k, kAttrKernelGraph);
+        auto all_kernels = inline_subgraph->execution_order();
+        std::for_each(all_kernels.begin(), all_kernels.end(),
+                      [&](const auto &k) { GetSetDumpNames(k, &set_dump_names); });
       }
     });
   }
