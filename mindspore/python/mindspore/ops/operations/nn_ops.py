@@ -3074,9 +3074,9 @@ class LSTM(Primitive):
     Args:
         input_size (int): Number of features of input.
         hidden_size (int):  Number of features of hidden layer.
-        num_layers (int): Number of layers of stacked LSTM.
-        has_bias (bool): Whether the cell has bias `b_ih` and `b_hh`.
-        bidirectional (bool): Specifies whether it is a bidirectional LSTM.
+        num_layers (int): Number of layers of stacked LSTM, , which is only support `1` on CPU.
+        has_bias (bool): Whether the cell has bias `b_ih` and `b_hh` , which is only support `False` on CPU.
+        bidirectional (bool): Specifies whether it is a bidirectional LSTM, , which is only support `False` on CPU.
         dropout (float): If not 0, append `Dropout` layer on the outputs of each
             LSTM layer except the last layer. The range of dropout is [0.0, 1.0].
         proj_size (int): If `proj_size` > 0, a projection of the corresponding size will be used,
