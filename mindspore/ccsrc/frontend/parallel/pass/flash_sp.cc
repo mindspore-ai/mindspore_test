@@ -984,7 +984,8 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
 void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePtr *acc_attention,
                            const CNodePtr &softmax_max, const CNodePtr &softmax_sum, CNodePtr attention_output,
                            int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t input_layout,
-                           int fa_index, int index, bool is_last_update = false) {
+                           int fa_index, int index, bool is_last_update = false,
+                           TypeId output_type_id = TypeId::kNumberTypeFloat16) {
   auto temp_max = NewMaxNode(*history_max, softmax_max);
   auto m_h_sub_temp = NewSubNode(*history_max, temp_max);
   auto m_i_sub_temp = NewSubNode(softmax_max, temp_max);
@@ -996,23 +997,23 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
   auto e_m_h_div = NewDivNode(e_l_h, l);
   auto e_m_i_div = NewDivNode(e_l_i, l);
   auto e_m_h_div_split = NewSplitNode(e_m_h_div, 3, 8);
-  auto e_m_h_div_item = NewCastNode(NewTupleGetItemNode(e_m_h_div_split, 0), TypeId::kNumberTypeFloat16);
+  auto e_m_h_div_item = NewCastNode(NewTupleGetItemNode(e_m_h_div_split, 0), output_type_id);
   if (input_layout == FASInputLayoutMode::BSH) {
     e_m_h_div_item = NewTransposeNode(e_m_h_div_item, parallel::CreateTuple({0, 2, 1, 3}));
   }
   auto e_m_h_div_concat = NewTileNode(e_m_h_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
   if (input_layout == FASInputLayoutMode::BSH) {
-    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, fa_s1, fa_h1}, TypeId::kNumberTypeFloat16);
+    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, fa_s1, fa_h1}, output_type_id);
   }
 
   auto e_m_i_div_split = NewSplitNode(e_m_i_div, 3, 8);
-  auto e_m_i_div_item = NewCastNode(NewTupleGetItemNode(e_m_i_div_split, 0), TypeId::kNumberTypeFloat16);
+  auto e_m_i_div_item = NewCastNode(NewTupleGetItemNode(e_m_i_div_split, 0), output_type_id);
   if (input_layout == FASInputLayoutMode::BSH) {
     e_m_i_div_item = NewTransposeNode(e_m_i_div_item, parallel::CreateTuple({0, 2, 1, 3}));
   }
   auto e_m_i_div_concat = NewTileNode(e_m_i_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
   if (input_layout == FASInputLayoutMode::BSH) {
-    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, fa_s1, fa_h1}, TypeId::kNumberTypeFloat16);
+    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, fa_s1, fa_h1}, output_type_id);
   }
   auto weighted_history = NewMulNode(e_m_h_div_concat, *acc_attention);
   auto weighted_attention = NewMulNode(e_m_i_div_concat, attention_output);
@@ -2221,7 +2222,7 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
       history_sum = softmax_sum->cast<CNodePtr>();
     } else {
       UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
-                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i, (i == sp_num - 1));
+                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i, (i == sp_num - 1), output_type_id);
       last_fa_node = acc_attention;
     }
   }
