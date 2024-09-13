@@ -88,6 +88,7 @@ class LeNet5(nn.Cell):
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_normal_inputs():
     """
     Feature: Test weight obfuscation.
@@ -106,14 +107,14 @@ def test_normal_inputs():
     if os.path.exists('./obf_files'):
         shutil.rmtree('./obf_files')
     os.mkdir('./obf_files')
-    obf_ratios = obfuscate_ckpt(net, ckpt_files='./', target_modules=obf_target_modules, saved_path='./obf_files')
+    obf_metadata = obfuscate_ckpt(net, ckpt_files='./', target_modules=obf_target_modules, saved_path='./obf_files')
 
     # load obf ckpt files
     new_net = LeNet5()
     load_checkpoint('./obf_files/test_net_obf.ckpt', new_net)
-    obf_ratios = Tensor(obf_ratios)
-    obf_net = load_obf_params_into_net(new_net, obf_target_modules, obf_ratios=obf_ratios)
-    obf_predict_result = obf_net(input_x, obf_ratios)
+    obf_metadata['obf_metadata'] = Tensor(obf_metadata['obf_metadata'])
+    obf_net = load_obf_params_into_net(new_net, obf_target_modules)
+    obf_predict_result = obf_net(input_x, obf_metadata)
 
     # compare original predict result and obf net predict result
     assert np.allclose(original_predict_result.numpy(), obf_predict_result.numpy(), rtol=0.01)
