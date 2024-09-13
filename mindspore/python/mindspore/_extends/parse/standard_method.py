@@ -3836,6 +3836,20 @@ def addmm(x, mat1, mat2, *, beta=1, alpha=1):
     return F.addmm(x, mat1, mat2, beta=beta, alpha=alpha)
 
 
+def addmm_(self, mat1, mat2, *, beta=1, alpha=1):
+    r"""
+    For details, please refer to :func:`mindspore.ops.addmm`.
+
+    .. note::
+        The output results are directly updated in the Tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    """
+    return tensor_operator_registry.get('inplace_addmm')(self, mat1, mat2, beta=beta, alpha=alpha)
+
+
 def addmv(x, mat, vec, beta=1, alpha=1):
     r"""
     Multiplies matrix `mat` and vector `vec`. The vector `x` is added to the final result.

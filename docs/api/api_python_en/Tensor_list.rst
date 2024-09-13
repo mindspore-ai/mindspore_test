@@ -49,6 +49,7 @@
     mindspore.Tensor.addcdiv
     mindspore.Tensor.addcmul
     mindspore.Tensor.addmm
+    mindspore.Tensor.addmm_
     mindspore.Tensor.addmv
     mindspore.Tensor.addr
     mindspore.Tensor.adjoint

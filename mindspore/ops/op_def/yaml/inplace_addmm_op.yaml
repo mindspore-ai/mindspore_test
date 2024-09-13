@@ -1,0 +1,26 @@
+#operator inplace_addmm
+inplace_addmm:
+  args:
+    input:
+      dtype: tensor
+    mat1:
+      dtype: tensor
+    mat2:
+      dtype: tensor
+    beta:
+      dtype: number
+      default: 1
+    alpha:
+      dtype: number
+      default: 1
+  args_signature:
+    rw_write: input
+  labels:
+    side_effect_mem: True
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  dispatch:
+    enable: True
+    Ascend: InplaceAddmmAscend
