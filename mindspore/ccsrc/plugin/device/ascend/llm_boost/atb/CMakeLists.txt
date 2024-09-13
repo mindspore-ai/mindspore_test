@@ -20,11 +20,9 @@ file(GLOB_RECURSE MS_LLM_BOOST_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 set_property(SOURCE ${MS_LLM_BOOST_910B} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_LLM_BOOST)
 
-if(ENABLE_D OR ENABLE_ACL)
-    add_library(ms_atb_boost SHARED ${MS_LLM_BOOST_910B})
+add_library(ms_atb_boost SHARED ${MS_LLM_BOOST_910B})
 
-    target_link_libraries(ms_atb_boost PRIVATE mindspore_backend mindspore_core mindspore_common)
-    target_link_libraries(ms_atb_boost PRIVATE proto_input mindspore::protobuf)
-    target_link_libraries(ms_atb_boost PRIVATE securec d_collective)
-    target_link_libraries(ms_atb_boost PRIVATE mindspore::ssl mindspore::crypto)
-endif()
+target_link_libraries(ms_atb_boost PRIVATE mindspore_backend mindspore_core mindspore_common)
+target_link_libraries(ms_atb_boost PRIVATE proto_input mindspore::protobuf)
+target_link_libraries(ms_atb_boost PRIVATE securec d_collective)
+target_link_libraries(ms_atb_boost PRIVATE mindspore::ssl mindspore::crypto)

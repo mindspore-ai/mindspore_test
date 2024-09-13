@@ -114,19 +114,15 @@ endif()
 
 if(ENABLE_DEBUGGER)
     # debugger: link grpc
-    if(ENABLE_D)
-        target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore::grpc++)
-    endif()
+    target_link_libraries(mindspore_ascend PRIVATE -Wl,--no-as-needed mindspore::grpc++)
 endif()
 
-if(ENABLE_D)
-    find_library(GE_RUNNER ge_runner ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
-    find_library(GRAPH graph ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
-    target_link_libraries(mindspore_ascend PRIVATE ${GE_RUNNER} ${GRAPH})
-    if(ENABLE_CPU)
-        target_link_libraries(mindspore_ascend PRIVATE mindspore::event mindspore::event_pthreads
-            mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
-    endif()
+find_library(GE_RUNNER ge_runner ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
+find_library(GRAPH graph ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
+target_link_libraries(mindspore_ascend PRIVATE ${GE_RUNNER} ${GRAPH})
+if(ENABLE_CPU)
+    target_link_libraries(mindspore_ascend PRIVATE mindspore::event mindspore::event_pthreads
+        mindspore::event_openssl -Wl,--no-as-needed mindspore::event_core ps_cache)
 endif()
 
 MESSAGE("USE DAV LIB PATH: ${ASCEND_PATH}")
@@ -166,9 +162,7 @@ target_link_libraries(mindspore_ascend PRIVATE ${RUNTIME_LIB} ${TSDCLIENT} ${DAT
         ${ACL_DVPP_OP} ${ACL_DVPP_MPI})
 target_link_libraries(mindspore_ascend PRIVATE ${adump_server})
 
-if(ENABLE_D)
-    if(ENABLE_MPI)
-        set_target_properties(_ascend_mpi PROPERTIES INSTALL_RPATH
-            ${ORIGIN_PATH}:${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin/:${ASCEND_RPATH})
-    endif()
+if(ENABLE_MPI)
+    set_target_properties(_ascend_mpi PROPERTIES INSTALL_RPATH
+        ${ORIGIN_PATH}:${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin/:${ASCEND_RPATH})
 endif()
