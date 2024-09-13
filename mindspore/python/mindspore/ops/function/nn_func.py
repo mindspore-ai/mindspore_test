@@ -6517,7 +6517,7 @@ def binary_cross_entropy(logits, labels, weight=None, reduction='mean'):
             - ``'sum'``: the output elements will be summed.
 
     Returns:
-        Tensor or Scalar. Returns Tensor that has the same dtype and shape as `logits` if `reduction` is 'none'.
+        Tensor or Scalar. Returns Tensor that has the same dtype and shape as `logits` if `reduction` is ``'none'``.
         Otherwise, returns a scalar Tensor.
 
     Raises:

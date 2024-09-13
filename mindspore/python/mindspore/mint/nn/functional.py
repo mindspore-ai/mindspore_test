@@ -52,8 +52,6 @@ from mindspore.ops.function.nn_func import dropout_ext as dropout
 
 # 16
 from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
-# 17
-from mindspore.ops.function.nn_func import binary_cross_entropy
 # 18
 from mindspore.ops.auto_generate import prelu
 # 19
@@ -242,6 +240,76 @@ from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
 
 # 324
 from mindspore.ops.auto_generate import elu_ext as elu
+
+
+def binary_cross_entropy(input, target, weight=None, reduction='mean'):
+    r"""
+    Computes the binary cross entropy(Measure the difference information between two probability distributions) between
+    predictive value `input` and target value `target`.
+
+    Set `input` as :math:`x`, `target` as :math:`y`, output as :math:`\ell(x, y)`, the
+    weight of nth batch of binary cross entropy is :math:`w_n`.
+    Let,
+
+    .. math::
+        L = \{l_1,\dots,l_N\}^\top, \quad
+        l_n = - w_n \left[ y_n \cdot \log x_n + (1 - y_n) \cdot \log (1 - x_n) \right]
+
+    In which, :math:`L` indicates the loss of all `batch_size`, :math:`l` indicates the loss of one `batch_size`,
+    and :math:`n` indicates one `batch_size` in the :math:`1-N` range. Then,
+
+    .. math::
+        \ell(x, y) = \begin{cases}
+        L, & \text{if reduction} = \text{'none';}\\
+        \operatorname{mean}(L), & \text{if reduction} = \text{'mean';}\\
+        \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    .. warning::
+        - The value of `input` must range from `0` to `l`.
+
+    Args:
+        input (Tensor): The predictive value whose data type must be float16 or float32.
+        target (Tensor): The target value which has the same shape and data type as `input`.
+            And the data type is float16 or float32.
+        weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
+            Its shape must be able to broadcast to that of `input` and `target`.
+            And it must have the same shape and data type as `input`. Default: ``None`` . If set to ``None`` ,
+            the loss function
+            will not consider any sample weights, and each sample will be treated as having equal importance
+            when calculating the loss.
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the weighted mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Returns:
+        Tensor or Scalar. Returns Tensor that has the same dtype and shape as `input` if `reduction` is ``'none'``.
+        Otherwise, returns a scalar Tensor.
+
+    Raises:
+        TypeError: If `input`, `target` or `weight` is not a Tensor.
+        TypeError: If dtype of `input`, `target` or `weight` (if given) is neither float16 nor float32.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'`` or ``'sum'``.
+        ValueError: If shape of `target` is not the same as `input` or `weight` (if given).
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([0.2, 0.7, 0.1]), mindspore.float32)
+        >>> target = Tensor(np.array([0., 1., 0.]), mindspore.float32)
+        >>> weight = Tensor(np.array([1, 2, 2]), mindspore.float32)
+        >>> output = mint.nn.functional.binary_cross_entropy(input, target, weight)
+        >>> print(output)
+        0.38240486
+    """
+    return ops.function.binary_cross_entropy(input, target, weight, reduction)
 
 
 def binary_cross_entropy_with_logits(input, target, weight=None, reduction='mean', pos_weight=None):
