@@ -381,15 +381,6 @@ CNodePtr NewTileNode(const AnfNodePtr &tensor_node, const AnfNodePtr &tuple) {
   return tile_node;
 }
 
-CNodePtr NewStopGradientNode(const AnfNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  std::vector<AnfNodePtr> stop_gradient_inputs = {NewValueNode(std::make_shared<Primitive>("StopGradient")), node};
-  auto stop_gradient_node = node->func_graph()->NewCNode(stop_gradient_inputs);
-  MS_EXCEPTION_IF_NULL(stop_gradient_node);
-  stop_gradient_node->set_scope(node->scope());
-  return stop_gradient_node;
-}
-
 CNodePtr NewDynshapeNode(const AnfNodePtr &input_node) {
   MS_EXCEPTION_IF_NULL(input_node);
   std::vector<AnfNodePtr> dynshape_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimShape->name())),
@@ -993,7 +984,7 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
 void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePtr *acc_attention,
                            const CNodePtr &softmax_max, const CNodePtr &softmax_sum, CNodePtr attention_output,
                            int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t input_layout,
-                           int fa_index, int index) {
+                           int fa_index, int index, bool is_last_update = false) {
   auto temp_max = NewMaxNode(*history_max, softmax_max);
   auto m_h_sub_temp = NewSubNode(*history_max, temp_max);
   auto m_i_sub_temp = NewSubNode(softmax_max, temp_max);
@@ -1023,14 +1014,21 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
   if (input_layout == FASInputLayoutMode::BSH) {
     e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, fa_s1, fa_h1}, TypeId::kNumberTypeFloat16);
   }
-  auto weighted_history = NewStopGradientNode(NewMulNode(e_m_h_div_concat, *acc_attention));
+  auto weighted_history = NewMulNode(e_m_h_div_concat, *acc_attention);
   auto weighted_attention = NewMulNode(e_m_i_div_concat, attention_output);
+  if (is_last_update) {
+    weighted_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_MUL, MakeValue<int>(fa_index));
+  }
   (*acc_attention) = NewAddNode(weighted_history, weighted_attention);
   common::AnfAlgo::SetNodeAttr(kAttrAccumulatedAttention, MakeValue(1), *acc_attention);
   common::AnfAlgo::SetNodeAttr("FLASH_INDEX", MakeValue<std::string>(GetFlashIndexString(fa_index, index)),
                                *acc_attention);
   (*history_max) = temp_max;
   (*history_sum) = l;
+  if (is_last_update) {
+    (*history_max)->AddPrimalAttr(RING_ATTENTION_UPDATE_MAX, MakeValue<int>(fa_index));
+    (*history_sum)->AddPrimalAttr(RING_ATTENTION_UPDATE_SUM, MakeValue<int>(fa_index));
+  }
 }
 
 void DynUpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePtr *acc_attention,
@@ -2223,14 +2221,14 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
       history_sum = softmax_sum->cast<CNodePtr>();
     } else {
       UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
-                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i);
+                            fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i, (i == sp_num - 1));
       last_fa_node = acc_attention;
     }
   }
   acc_attention = CreateDepends(acc_attention, {last_send_node, last_recv_node});
-  acc_attention = NewCastNode(acc_attention, output_type_id);
   softmax_out = NewTupleGetItemNode(local_fa_node, kIndex2);
   std::vector<AnfNodePtr> output_tuple = {history_max, history_sum, softmax_out, acc_attention};
+  acc_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index));
   auto attention_results = NewMakeTupleNode(output_tuple);
   return attention_results;
 }

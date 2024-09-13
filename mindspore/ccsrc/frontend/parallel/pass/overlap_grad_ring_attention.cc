@@ -115,17 +115,45 @@ std::string GetFirstStr(std::string origin_str, int64_t sp_num) {
   return new_str;
 }
 
+void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *attention_out_map,
+                         std::map<int64_t, AnfNodePtr> *softmax_max_map, std::map<int64_t, AnfNodePtr> *softmax_sum_map,
+                         std::map<int64_t, AnfNodePtr> *dout_map) {
+  if (node != nullptr) {
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_MUL) && node->HasPrimalAttr("forward_unique_id")) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_MUL));
+      dout_map->insert({flash_index, node});
+    }
+
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_MAX)) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_MAX));
+      softmax_max_map->insert({flash_index, node});
+    }
+
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_SUM)) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_SUM));
+      softmax_sum_map->insert({flash_index, node});
+    }
+
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_ATTN)) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_ATTN));
+      attention_out_map->insert({flash_index, node});
+    }
+  }
+}
+
 void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<std::string, AnfNodePtr> *fwd_fas,
                     std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map,
                     std::map<std::string, AnfNodePtr> *grad_recv_map, std::map<std::string, AnfNodePtr> *grad_send_map,
-                    CNodePtr *loss_node) {
+                    CNodePtr *loss_node, std::map<int64_t, AnfNodePtr> *attention_out_map,
+                    std::map<int64_t, AnfNodePtr> *softmax_max_map, std::map<int64_t, AnfNodePtr> *softmax_sum_map,
+                    std::map<int64_t, AnfNodePtr> *dout_map) {
   auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
   for (auto &anf_node : *origin_nodes_topological) {
     CNodePtr node = anf_node->cast<CNodePtr>();
     if (node != nullptr && node->HasPrimalAttr(FLASH_LOSS_NODE) && pipeline_stages <= 1) {
       (*loss_node) = node;
     }
-
+    FindFAGradInputNode(node, attention_out_map, softmax_max_map, softmax_sum_map, dout_map);
     if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScore)) {
       if (!node->HasPrimalAttr(RING_ATTENTION_INDEX)) {
         continue;
@@ -398,21 +426,32 @@ std::shared_ptr<OperatorInfo> GetAttentionInfo(const std::map<std::string, AnfNo
   return operator_info;
 }
 
-void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map, const FuncGraphPtr &graph) {
+void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map, const FuncGraphPtr &graph,
+                       std::map<int64_t, AnfNodePtr> *attention_out_map, std::map<int64_t, AnfNodePtr> *softmax_max_map,
+                       std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *dout_map) {
   auto manager = graph->manager();
   for (auto it = (*grad_fa_map).rbegin(); it != (*grad_fa_map).rend(); ++it) {
     auto cur_grad_fa_node = it->second->cast<CNodePtr>();
-    auto sp_num = GetValue<int64_t>(cur_grad_fa_node->GetPrimalAttr("sp_num"));
-    auto first_str = GetFirstStr(it->first, sp_num);
-    if (first_str == it->first) {
-      continue;
+    size_t underscore_pos = (it->first).find('_');
+    if (underscore_pos == std::string::npos) {
+      MS_LOG(ERROR) << "Flash_Index ERROR";
     }
-    auto first_grad_first_fa_node = (*grad_fa_map).at(first_str)->cast<CNodePtr>();
-    manager->SetEdge(cur_grad_fa_node, 4, first_grad_first_fa_node->input(4));
-    manager->SetEdge(cur_grad_fa_node, 9, first_grad_first_fa_node->input(9));
-    manager->SetEdge(cur_grad_fa_node, 10, first_grad_first_fa_node->input(10));
-    manager->SetEdge(cur_grad_fa_node, 11, first_grad_first_fa_node->input(11));
-    manager->SetEdge(cur_grad_fa_node, 12, first_grad_first_fa_node->input(12));
+
+    std::string first_number_str = (it->first).substr(0, underscore_pos);
+    int first_number = std::stoi(first_number_str);
+    auto dout_node = dout_map->find(first_number)->second;
+    auto softmax_max_node = softmax_max_map->find(first_number)->second;
+    auto softmax_sum_node = softmax_sum_map->find(first_number)->second;
+    auto attention_out_node = attention_out_map->find(first_number)->second;
+    MS_EXCEPTION_IF_NULL(dout_node);
+    MS_EXCEPTION_IF_NULL(softmax_max_node);
+    MS_EXCEPTION_IF_NULL(softmax_sum_node);
+    MS_EXCEPTION_IF_NULL(attention_out_node);
+    manager->SetEdge(cur_grad_fa_node, 4, dout_node->cast<CNodePtr>()->input(2));
+    manager->SetEdge(cur_grad_fa_node, 9, softmax_max_node);
+    manager->SetEdge(cur_grad_fa_node, 10, softmax_sum_node);
+    manager->SetEdge(cur_grad_fa_node, 11, cur_grad_fa_node->input(7));
+    manager->SetEdge(cur_grad_fa_node, 12, attention_out_node);
   }
 }
 
@@ -444,6 +483,10 @@ void GradFirstStepCommKV(const std::string &cur_str, std::map<std::string, AnfNo
   auto kv_concat = NewConcatNode(kv_tuple, 0);
   AnfNodePtr send_node, recv_node;
   auto dout = (*grad_fa_node)->input(4);
+  auto sp_num = GetValue<int64_t>((*grad_fa_node)->GetPrimalAttr("sp_num"));
+  auto first_str = GetFirstStr(cur_str, sp_num);
+  auto fwd_last_fa_node = (*fa_map).at(first_str)->cast<CNodePtr>();
+  dout = CreateDepend(dout, fwd_last_fa_node, fwd_last_fa_node);
   if (pos % kIndex2 == kIndex0) {
     send_node = NewSendNode(CreateDepend(kv_concat, dout, kv_concat), 0, send_rank_id, neigh_shape, output_type_id,
                             g_device_manager->world_group());
@@ -639,11 +682,13 @@ void StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
   auto manager = graph->manager();
   std::map<std::string, AnfNodePtr> fa_map, grad_send_map, grad_recv_map;
   std::map<std::string, AnfNodePtr, FaGradCompareMethod> grad_fa_map;
+  std::map<int64_t, AnfNodePtr> attention_out_map, softmax_max_map, softmax_sum_map, dout_map;
   auto ret = graph->get_return();
   auto origin_nodes_topological = DeepScopedGraphSearch(ret);
   CNodePtr loss_node;
 
-  FindTargetNode(&origin_nodes_topological, &fa_map, &grad_fa_map, &grad_recv_map, &grad_send_map, &loss_node);
+  FindTargetNode(&origin_nodes_topological, &fa_map, &grad_fa_map, &grad_recv_map, &grad_send_map, &loss_node,
+                 &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
   if (grad_fa_map.empty() || fa_map.empty()) return;
 
   auto operator_info = GetAttentionInfo(fa_map);
@@ -656,7 +701,7 @@ void StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
   if (neigh_shape[kIndex0] != -1) {
     neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex2;
   }
-  ChangeFAGradInput(&grad_fa_map, graph);
+  ChangeFAGradInput(&grad_fa_map, graph, &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
 
   for (auto it = grad_fa_map.rbegin(); it != grad_fa_map.rend(); ++it) {
     auto grad_fa_node = it->second->cast<CNodePtr>();
