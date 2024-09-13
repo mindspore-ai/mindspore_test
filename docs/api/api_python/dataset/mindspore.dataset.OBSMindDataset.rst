@@ -5,6 +5,9 @@
 
     读取和解析存放在华为云OBS、Minio以及AWS S3等云存储上的MindRecord格式数据集。生成的数据集的列名和列类型取决于MindRecord文件中的保存的列名与类型。
 
+    .. note::
+        - 该接口会访问 `/cache` 目录做节点同步，需要用户确保有 `/cache` 目录的访问权限。
+
     参数：
         - **dataset_files** (list[str]) - 云存储上MindRecord格式数据集文件的路径列表，每个文件的路径格式为s3://bucketName/objectKey。
         - **server** (str) - 连接云存储的服务地址。可包含协议类型、域名、端口号。

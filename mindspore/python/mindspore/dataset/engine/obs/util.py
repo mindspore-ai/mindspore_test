@@ -47,6 +47,13 @@ def get_used_disk_per():
             os.makedirs(config.WORKING_PATH)
         except FileExistsError:
             pass
+        except PermissionError as e:
+            err_msg =\
+                str(e) + ". Suggestion: " \
+                "1) It is recommended to manually create the {} directory and add read/write permissions to it. " \
+                "2) If you can't create, we suggest you download MindRecord manually and "\
+                "read it using the MindDataset interface.".format(config.WORKING_PATH)
+            raise RuntimeError(err_msg)
 
     total, used, _ = shutil.disk_usage(config.WORKING_PATH)
     return used / total
