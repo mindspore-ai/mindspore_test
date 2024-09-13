@@ -190,7 +190,11 @@ EvalResultPtr StackFrame::Step(const AnalysisEnginePtr &engine) {
   auto &current_node = NextNode();
   MS_LOG(DEBUG) << "current_node: " << current_node->DebugString()
                 << ", current_context_: " << current_context_->ToString();
-  AnfNodeConfigPtr node_conf = engine->MakeConfig(current_node, current_context_, current_context_->func_graph());
+  auto current_context_fg = current_context_->func_graph();
+  if (current_context_fg == nullptr && common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
+    current_context_fg = engine->root_func_graph_backup();
+  }
+  AnfNodeConfigPtr node_conf = engine->MakeConfig(current_node, current_context_, current_context_fg);
   EvalResultPtr node_eval_result = nullptr;
   auto fg_evaluator = dyn_cast_ptr<BaseFuncGraphEvaluator>(evaluator());
   if (fg_evaluator == nullptr) {

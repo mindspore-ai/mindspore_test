@@ -613,9 +613,10 @@ AnalysisResult AnalysisEngine::Run(const FuncGraphPtr &func_graph, const Abstrac
     MS_EXCEPTION_IF_NULL(root_context);
     auto root_context_fg = root_context->func_graph();
     if (root_context_fg == nullptr && common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
-      MS_LOG(INFO) << "root_context_fg is NUll, use function graph for dummy_context.";
+      MS_LOG(INFO) << "root_context_fg is NULL, use function graph for dummy context.";
       root_context_fg = root_func_graph_backup();
     }
+    MS_EXCEPTION_IF_NULL(root_context_fg);
     AnfNodeConfigPtr output_conf = MakeConfig(root_context_fg->get_return(), root_context, root_context_fg);
     MS_LOG(DEBUG) << func_graph->ToString() << ": Run finished.";
 
