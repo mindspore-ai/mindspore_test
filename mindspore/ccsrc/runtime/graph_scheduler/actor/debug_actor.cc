@@ -58,6 +58,8 @@ void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &
   if (step_count_ == 1 && is_dataset_sink_ == 1) {
     step_count_num = 0;
   }
+  DumpJsonParser::GetInstance().UpdateDumpIter(step_count_num);
+  MS_LOG(INFO) << "UpdateDumpIter: " << step_count_num;
   if (!graphs.empty()) {
     auto graph = graphs[0];
     is_dataset_sink_ = graph->IsDatasetGraph();
