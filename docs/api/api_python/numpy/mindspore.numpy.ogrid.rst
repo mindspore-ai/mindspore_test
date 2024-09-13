@@ -10,4 +10,4 @@ mindspore.numpy.ogrid
         在graph模式下不受支持。与Numpy不同，如果 ``step`` 是一个带有实数分量的复数，则 ``step`` 被处理为等效于 ``int(abs(step))`` 。
 
     异常：
-        - **TypeError** – 如果切片索引不是整数。
+        - **TypeError** - 如果切片索引不是整数。

@@ -9,10 +9,10 @@ mindspore.numpy.ix\_
         不支持布尔掩码。
 
     参数：
-        - ***args** (Tensor) – 一维数组序列。
+        - ***args** (Tensor) - 一维数组序列。
 
     返回：
         元素为Tensor的Tuple。 ``N`` 个序列，每个序列有 ``N`` 个维度，其中 ``N`` 是输入序列的数量。这些序列共同构成一个开放式网格。
         
     异常：
-        - **TypeError** – 如果输入的数据类型不是 ``Tensor`` 。
+        - **TypeError** - 如果输入的数据类型不是 ``Tensor`` 。

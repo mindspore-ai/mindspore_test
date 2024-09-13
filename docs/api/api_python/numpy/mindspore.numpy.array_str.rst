@@ -10,10 +10,10 @@ mindspore.numpy.array_str
         不支持Numpy的 ``max_line_width`` 、 ``precision`` 和 ``suppress_small`` 参数。在图模式下不支持该函数。
 
     参数：
-        - **a** (Tensor) – 输入数据。
+        - **a** (Tensor) - 输入数据。
 
     返回：
         字符串。
 
     异常：
-        - **TypeError** – 如果输入不是Tensor。
+        - **TypeError** - 如果输入不是Tensor。

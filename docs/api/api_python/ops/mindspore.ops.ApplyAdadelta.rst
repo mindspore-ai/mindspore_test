@@ -33,7 +33,7 @@
         3个Tensor的元组，更新后的数据。
 
         - **var** (Tensor) - 与 `var` 相同的shape和数据类型。
-        - **accum** (Tensor)- 与 `accum` 相同的shape和数据类型。
+        - **accum** (Tensor) - 与 `accum` 相同的shape和数据类型。
         - **accum_update** (Tensor) - 与 `accum_update` 相同的shape和数据类型。
 
     异常：
