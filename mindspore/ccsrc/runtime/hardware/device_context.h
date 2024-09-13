@@ -53,6 +53,11 @@ using mindspore::kernel::KernelTensor;
 const size_t kDeviceContextsNumOne = 1;
 const size_t kDeviceContextsNumTwo = 2;
 
+constexpr auto RS_NORMAL = "RS_NORMAL";
+constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
+constexpr auto RS_UCE_LOWLEVEL = "RS_UCE_LOWLEVEL";
+constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
+
 struct DeviceContextKey {
   // device type name, such as 'GPU' 'Ascend' 'CPU'.
   std::string device_name_;
@@ -343,9 +348,9 @@ class BACKEND_EXPORT DeviceResManager {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   virtual std::vector<device::DeviceMemPtr> GetMemUceInfo(int32_t device_id) { return {}; }
-  virtual std::string GetUceProcessStrategy() const { return "RS_NORMAL"; }
   virtual void UceMemRepair(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce repair device is not supported."; }
   virtual void StopDevice(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce stop device is not supported."; }
+  virtual std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() { return {}; };
 
   virtual void ThrowUCEError() { MS_EXCEPTION(UCEError) << "UCEError"; }  // test api, remove later.
 

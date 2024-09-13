@@ -32,13 +32,13 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
 #ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f), Args...>, int>) {
     auto ret = f(args...);
-    if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
-      mindspore::UCEException::GetInstance().set_uce_flag(true);
-      MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
-    }
-    if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
-      mindspore::UCEException::GetInstance().set_force_stop_flag(true);
-      MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+    if (mindspore::UCEException::GetInstance().is_enable_uce()) {
+      if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
+        mindspore::UCEException::GetInstance().set_uce_flag(true);
+      }
+      if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+        mindspore::UCEException::GetInstance().set_force_stop_flag(true);
+      }
     }
     return ret;
   } else {
@@ -58,13 +58,13 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
 #ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f)>, int>) {
     auto ret = f();
-    if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
-      mindspore::UCEException::GetInstance().set_uce_flag(true);
-      MS_LOG(EXCEPTION) << "UCEError occurs when execute.";
-    }
-    if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
-      mindspore::UCEException::GetInstance().set_force_stop_flag(true);
-      MS_LOG(EXCEPTION) << "ForceStopError occurs when execute.";
+    if (mindspore::UCEException::GetInstance().is_enable_uce()) {
+      if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
+        mindspore::UCEException::GetInstance().set_uce_flag(true);
+      }
+      if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+        mindspore::UCEException::GetInstance().set_force_stop_flag(true);
+      }
     }
     return ret;
   } else {

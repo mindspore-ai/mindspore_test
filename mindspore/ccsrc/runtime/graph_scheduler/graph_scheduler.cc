@@ -827,6 +827,8 @@ void GraphScheduler::Schedule(const ActorSet *actor_set) {
     }
   }
 
+  // Check whether UCE is enabled.
+  UCEException::GetInstance().check_uce_env();
 #ifdef ENABLE_RPC_ACTOR
   // Build physical connections in 'RpcNodeScheduler::Schedule()' method. This costs some time.
   MS_EXCEPTION_IF_NULL(rpc_node_scheduler_);
@@ -867,6 +869,50 @@ void GraphScheduler::RefreshContextAndThreadPool(ActorSet *const actor_set, Acto
   }
 }
 
+void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
+  if (UCEException::GetInstance().is_enable_uce()) {
+    if (UCEException::GetInstance().get_uce_flag()) {
+      MS_LOG(INFO) << "Restart from step after a uce error occurs.";
+    } else if (UCEException::GetInstance().get_force_stop_flag()) {
+      MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
+    }
+  }
+  // Some exception could happen after one step is completed, need to check exception at the beginning to avoid thread
+  // hanging.
+  MsException::Instance().CheckException();
+  // Check the actor set state.
+  if (actor_set->is_execution_failed_) {
+    MS_LOG(EXCEPTION) << "#umsg#Model execution error:#umsg#An error occurred in the previous step of this model "
+                         "execution, and the current step cannot be executed.";
+  }
+}
+
+void ProcessUceError(ActorSet *const actor_set) {
+  if (!UCEException::GetInstance().is_enable_uce()) {
+    return;
+  }
+
+  if (UCEException::GetInstance().get_has_throw_error()) {
+    MS_LOG(WARNING) << "There is a UCE error or ForceStop error, reset the actor state.";
+    for (auto kernel_actor : actor_set->kernel_actors_) {
+      for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
+        output_device_tensor->ResetRefCount();
+      }
+    }
+    actor_set->loop_count_actor_->ResetState();
+    actor_set->output_actor_->ResetState();
+    actor_set->is_execution_failed_ = false;
+    MsException::Instance().ResetException();
+  }
+
+  if (UCEException::GetInstance().get_uce_flag()) {
+    MS_EXCEPTION(UCEError) << "UCEError occurs when execute.";
+  } else if (UCEException::GetInstance().get_force_stop_flag()) {
+    actor_set->is_execution_failed_ = false;
+    MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
+  }
+}
+
 void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vector<TensorPtr>> &input_tensors,
                          const VectorRef &args, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(actor_set);
@@ -875,20 +921,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   SignalGuard sg(IntHandler);
 #endif
 
-  if (UCEException::GetInstance().get_uce_flag()) {
-    MS_LOG(INFO) << "Restart from step after a uce error occurs.";
-  } else if (UCEException::GetInstance().get_force_stop_flag()) {
-    MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
-  } else {
-    // Some exception could happen after one step is completed, need to check exception at the beginning to avoid thread
-    // hanging.
-    MsException::Instance().CheckException();
-    // Check the actor set state.
-    if (actor_set->is_execution_failed_) {
-      MS_LOG(EXCEPTION) << "#umsg#Model execution error:#umsg#An error occurred in the previous step of this model "
-                           "execution, and the current step cannot be executed.";
-    }
-  }
+  CheckUceBeforeGraphRun(actor_set);
 
   // Create recorder actor in the running to support the profiler in callback scene.
 #ifndef ENABLE_SECURITY
@@ -958,25 +991,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     ResetTraceMemoryStatus();
 
     // Reset actor state and throw uce exception.
-    if (UCEException::GetInstance().get_has_throw_error()) {
-      MS_LOG(WARNING) << "There is a UCE error or ForceStop error, reset the actor state.";
-      for (auto kernel_actor : actor_set->kernel_actors_) {
-        for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
-          output_device_tensor->ResetRefCount();
-        }
-      }
-      actor_set->loop_count_actor_->ResetState();
-      actor_set->output_actor_->ResetState();
-      actor_set->is_execution_failed_ = false;
-      MsException::Instance().ResetException();
-    }
-
-    if (UCEException::GetInstance().get_uce_flag()) {
-      MS_EXCEPTION(UCEError) << "UCEError occurs when execute.";
-    } else if (UCEException::GetInstance().get_force_stop_flag()) {
-      actor_set->is_execution_failed_ = false;
-      MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
-    }
+    ProcessUceError(actor_set);
 
     // May set exception in the wait time, need throw the exception to avoid affecting the next execution.
     MsException::Instance().CheckException();

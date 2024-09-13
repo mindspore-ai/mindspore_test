@@ -46,11 +46,6 @@ struct MemUceInfo {
   size_t retSize = 0;
 };
 
-constexpr auto RS_NORMAL = "RS_NORMAL";
-constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
-constexpr auto RS_UCE_LOWLEVEL = "RS_UCE_LOWLEVEL";
-constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
-
 class GeHostAddress : public cpu::CPUDeviceAddress {
  public:
   GeHostAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,
@@ -176,9 +171,9 @@ class GeDeviceResManager : public DeviceResManager {
   void SetCPUMemManager();
 
   std::vector<device::DeviceMemPtr> GetMemUceInfo(int32_t device_id) override;
-  std::string GetUceProcessStrategy() const override;
   void UceMemRepair(int32_t device_id) override;
   void StopDevice(int32_t device_id) override;
+  std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() override;
 
   void ThrowUCEError() override;  // test api, remove later.
 

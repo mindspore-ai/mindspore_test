@@ -44,14 +44,12 @@
 #include "utils/file_utils.h"
 #include "graph/def_types.h"
 #include "runtime/device/move_to.h"
-#include "runtime/graph_scheduler/device_tensor_store.h"
 #include "acl/acl_rt.h"
 #include "runtime/device/tensor_array.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-using DeviceTensorStore = mindspore::runtime::DeviceTensorStore;
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {
@@ -727,78 +725,14 @@ std::vector<device::DeviceMemPtr> GeDeviceResManager::GetMemUceInfo(int32_t devi
   return mem_uce_device_list;
 }
 
-bool GetUceLevelWithMemPoolForKbk(const DeviceMemInfo &persistent_mem_blocks_info,
-                                  const DeviceMemInfo &common_mem_blocks_info, const MemUceInfo &mem_uce_info) {
-  for (auto iter = persistent_mem_blocks_info.begin(); iter != persistent_mem_blocks_info.end(); ++iter) {
-    auto persistent_block_start_addr = reinterpret_cast<char *>(iter->first);
-    auto block_info = iter->second.begin();
-    auto persistent_block_end_addr = persistent_block_start_addr + block_info->second;
-    for (size_t i = 0; i < mem_uce_info.info.size(); ++i) {
-      auto mem_uce_start_addr = reinterpret_cast<char *>(mem_uce_info.info[i].addr);
-      auto mem_uce_end_addr = mem_uce_start_addr + mem_uce_info.info[i].len;
-      if ((persistent_block_end_addr >= mem_uce_start_addr && persistent_block_start_addr < mem_uce_start_addr) ||
-          (mem_uce_end_addr >= persistent_block_start_addr && mem_uce_start_addr < persistent_block_start_addr)) {
-        MS_LOG(DEBUG) << "UCE process strategy is RS_UCE_LOWLEVEL.";
-        return true;
-      }
-    }
+std::vector<std::pair<device::DeviceMemPtr, size_t>> GeDeviceResManager::GetMemUceAddr() {
+  std::vector<std::pair<device::DeviceMemPtr, size_t>> mem_uce_addr;
+  for (size_t i = 0; i < mem_uce_info_.info.size(); ++i) {
+    std::pair<device::DeviceMemPtr, size_t> mem(mem_uce_info_.info[i].addr, mem_uce_info_.info[i].len);
+    mem_uce_addr.emplace_back(mem);
   }
-
-  for (auto iter = common_mem_blocks_info.begin(); iter != common_mem_blocks_info.end(); ++iter) {
-    auto common_block_start_addr = reinterpret_cast<char *>(iter->first);
-    auto block_info = iter->second.begin();
-    auto common_block_end_addr = common_block_start_addr + block_info->second;
-    for (size_t i = 0; i < mem_uce_info.info.size(); ++i) {
-      auto mem_uce_start_addr = reinterpret_cast<char *>(mem_uce_info.info[i].addr);
-      auto mem_uce_end_addr = mem_uce_start_addr + mem_uce_info.info[i].len;
-      if ((common_block_end_addr >= mem_uce_start_addr && common_block_start_addr < mem_uce_start_addr) ||
-          (mem_uce_end_addr >= common_block_start_addr && mem_uce_start_addr < common_block_start_addr)) {
-        MS_LOG(DEBUG) << "UCE process strategy is RS_UCE_LOWLEVEL.";
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_blocks_info,
-                                        const DeviceMemInfo &common_mem_blocks_info, const MemUceInfo &mem_uce_info) {
-  // Judge whether weights got uce error.
-  MS_LOG(INFO) << "Start to get UCE process strategy for kbk.";
-  const auto &device_tensors = DeviceTensorStore::GetInstance().GetAll();
-  for (auto iter = device_tensors.begin(); iter != device_tensors.end(); ++iter) {
-    auto device_tensor_list = iter->second;
-    for (const auto &device_tensor : device_tensor_list) {
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      auto device_tensor_start_addr = reinterpret_cast<char *>(const_cast<void *>(device_tensor->GetPtr()));
-      auto device_tensor_end_addr = device_tensor_start_addr + device_tensor->GetSize();
-      for (size_t i = 0; i < mem_uce_info.info.size(); ++i) {
-        auto mem_uce_start_addr = reinterpret_cast<char *>(mem_uce_info.info[i].addr);
-        auto mem_uce_end_addr = mem_uce_start_addr + mem_uce_info.info[i].len;
-        // Return RS_UCE_HIGHLEVEL if overlap of device tensor addr and mem uce addr.
-        if ((device_tensor_end_addr >= mem_uce_start_addr && device_tensor_start_addr < mem_uce_start_addr) ||
-            (mem_uce_end_addr >= device_tensor_start_addr && mem_uce_start_addr < device_tensor_start_addr)) {
-          MS_LOG(DEBUG) << "UCE process strategy is RS_UCE_HIGHLEVEL.";
-          return RS_UCE_HIGHLEVEL;
-        }
-      }
-    }
-  }
-
-  // Return RS_UCE_LOWLEVEL if overlap of memory pool addr and mem uce addr.
-  if (GetUceLevelWithMemPoolForKbk(persistent_mem_blocks_info, common_mem_blocks_info, mem_uce_info)) {
-    return RS_UCE_LOWLEVEL;
-  }
-
-  MS_LOG(DEBUG) << "UCE process strategy is RS_NORMAL.";
-
-  return RS_NORMAL;
-}
-
-std::string GeDeviceResManager::GetUceProcessStrategy() const {
-  auto persistent_mem_blocks_info = GetPersistentMemBlocksInfoStatistics();
-  auto common_mem_blocks_info = GetCommonMemBlocksInfoStatistics();
-  return GetUceProcessStrategyForKbk(persistent_mem_blocks_info, common_mem_blocks_info, mem_uce_info_);
+  MS_LOG(INFO) << "Get mem uce addr, size: " << mem_uce_addr.size();
+  return mem_uce_addr;
 }
 
 void GeDeviceResManager::UceMemRepair(int32_t device_id) {
