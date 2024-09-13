@@ -94,7 +94,7 @@ def min_mint(fn):
 
 def split_mint(split):
     def wrapper(self, *args, **kwargs):
-        if os.environ.get("MS_TENSOR_METHOD_BOOST") == '1':
+        if os.environ.get("MS_TENSOR_API_ENABLE_MINT") == '1':
             print("--> use mint")
             if len(args) > 1 and isinstance(args[1], int):
                 return tensor_operator_registry_for_mint.get('split')(self, args[0], args[1])
@@ -105,7 +105,7 @@ def split_mint(split):
 
 def sub_mint(sub):
     def wrapper(self, *args, **kwargs):
-        if os.environ.get("MS_TENSOR_METHOD_BOOST") == '1':
+        if os.environ.get("MS_TENSOR_API_ENABLE_MINT") == '1':
             print("--> use mint")
             if len(args) > 1 and isinstance(args[1], int):
                 return tensor_operator_registry_for_mint.get('sub')(self, args[0], args[1])
