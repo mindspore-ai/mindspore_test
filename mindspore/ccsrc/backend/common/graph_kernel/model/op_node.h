@@ -109,10 +109,21 @@ class ElemwiseOp : public PrimOp {
   DFormat InferFormat(const NodePtrList &inputs, const DAttrs &) override;
 };
 
+class CastOp : public ElemwiseOp {
+ public:
+  using ElemwiseOp::ElemwiseOp;
+
+  // Avoid calling the Python 'infervalue' to prevent pybind lock contention
+  NodePtr InferValue(const NodePtrList &inputs, const DAttrs &attrs) override { return nullptr; }
+};
+
 class BroadcastOp : public PrimOp {
  public:
   explicit BroadcastOp(const std::string &op) : PrimOp(op, ComputeType::BROADCAST) {}
   ~BroadcastOp() = default;
+
+  // Avoid calling the Python 'infervalue' to prevent pybind lock contention
+  NodePtr InferValue(const NodePtrList &inputs, const DAttrs &attrs) override { return nullptr; }
 };
 
 class TileOp : public BroadcastOp {
@@ -129,6 +140,8 @@ class ReduceOp : public PrimOp {
  protected:
   DFormat InferFormat(const NodePtrList &, const DAttrs &) override { return kOpFormat_DEFAULT; };
   void RectifyAbstract(const PrimitivePtr &, AbstractBasePtrList *input_abstract_ptr) override;
+  // Avoid calling the Python 'infervalue' to prevent pybind lock contention
+  NodePtr InferValue(const NodePtrList &inputs, const DAttrs &attrs) override { return nullptr; }
 };
 
 class ArgReduceOp : public ReduceOp {
