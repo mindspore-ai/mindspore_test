@@ -66,11 +66,7 @@ def construct_profiling_options():
         if os.getenv("MS_PROFILER_RUN_CONFIG"):
             return error_config
         os.environ["MS_PROFILER_RUN_CONFIG"] = json.dumps(error_config)
-        logger.error(
-            "The format of MS_PROFILER_OPTIONS is incorrect. "
-            "The MS_PROFILER_OPTIONS parameter configuration may refer to "
-            "'https://www.mindspore.cn/mindinsight/docs/zh-CN/master/performance_profiling_ascend.html'."
-        )
+        logger.error("The format of MS_PROFILER_OPTIONS is incorrect.")
         return error_config
     conbine_options = combine_profile_options(profiling_options)
     if conbine_options.get("start"):
