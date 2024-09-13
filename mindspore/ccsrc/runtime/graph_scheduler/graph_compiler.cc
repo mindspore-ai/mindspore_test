@@ -890,10 +890,6 @@ bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &fun
       MS_EXCEPTION_IF_NULL(profiler_manage_inst);
       profiler_manage_inst->SetNetDynamicShapeStatus();
     }
-    // need save somas info
-    // PROF_START(PreprocessBeforeRun);
-    // device_context->GetKernelExecutor(false)->PreprocessBeforeRun(graph);
-    // PROF_END(PreprocessBeforeRun);
     graph->UpdateInternalParameter();
     // Set device target for parameter affinity.
     AnfAlgo::SetParameterDeviceTarget(graph);

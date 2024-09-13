@@ -1000,7 +1000,7 @@ bool ControlNodeScheduler::CheckIsValidArgIndex(size_t index, const EntranceActo
                     << " in actor:" << entrance_actor->GetAID();
     return false;
   }
-  size_t relative_index = iter - func_graph->parameters().begin();
+  size_t relative_index = LongToSize(iter - func_graph->parameters().begin());
   if (relative_index >= partial_cnode->size() - kPartialInputStartPos) {
     MS_LOG(WARNING) << "Relative index:" << relative_index
                     << " is exceed the input size of partial:" << partial_cnode->DebugString();
@@ -1194,8 +1194,8 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForEntranceActor(const ActorSe
       const auto &data_arrow = control_actor->output_data_arrows()[i];
       MS_EXCEPTION_IF_NULL(data_arrow);
       const auto &to_aid = data_arrow->to_op_id_;
-      size_t from_index = data_arrow->from_output_index_;
-      size_t to_index = data_arrow->to_input_index_;
+      size_t from_index = IntToSize(data_arrow->from_output_index_);
+      size_t to_index = IntToSize(data_arrow->to_input_index_);
       const auto &actor = FetchActor(to_aid.Name());
       if (actor == nullptr || (actor->type() != KernelTransformType::kKernelActor &&
                                actor->type() != KernelTransformType::kSuperKernelActor)) {
