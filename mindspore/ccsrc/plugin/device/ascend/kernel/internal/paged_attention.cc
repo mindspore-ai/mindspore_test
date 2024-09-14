@@ -106,9 +106,10 @@ uint64_t InternalPagedAttention::GenTilingCacheKey(const std::vector<KernelTenso
   return TilingCacheMgr::GetInstance().GenTilingCacheKey(kernel_name_, inputs, q_seq_len_, kv_seq_len_);
 }
 
-MS_INTERNAL_KERNEL_FACTORY_REG(PagedAttention, InternalPagedAttention);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(PagedAttention, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_4, INDEX_3, INDEX_5,
-                                     INDEX_6, INDEX_7);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(PagedAttention, OUTPUT_NUM_1, INDEX_0);
+// MS_INTERNAL_KERNEL_FACTORY_REG(PagedAttention, InternalPagedAttention);
+// REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(PagedAttention, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_4, INDEX_3,
+// INDEX_5,
+//                                      INDEX_6, INDEX_7);
+// REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(PagedAttention, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore

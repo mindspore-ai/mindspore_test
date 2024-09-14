@@ -78,9 +78,9 @@ uint64_t AcmePagedAttentionMask::GenerateTilingKey(const std::vector<KernelTenso
   return AcmeTilingCache::GenerateKey(kernel_name_, inputs, q_seq_len_, kv_seq_len_);
 }
 
-// MS_ACME_KERNEL_FACTORY_REG(PagedAttentionMask, acme::kAcmePagedAttentionOpName, AcmePagedAttentionMask);
-// REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(PagedAttentionMask, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4,
-//                                      INDEX_5, INDEX_6, INDEX_7);
-// REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(PagedAttentionMask, OUTPUT_NUM_1, INDEX_0);
+MS_ACME_KERNEL_FACTORY_REG(PagedAttentionMask, acme::kAcmePagedAttentionOpName, AcmePagedAttentionMask);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(PagedAttentionMask, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4,
+                                     INDEX_5, INDEX_6, INDEX_7);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(PagedAttentionMask, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
