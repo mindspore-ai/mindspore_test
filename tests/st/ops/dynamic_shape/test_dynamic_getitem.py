@@ -403,7 +403,7 @@ def test_dynamic_rank_getitem_with_single_basic_index():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_tuple_with_basic_index():
     """
@@ -475,7 +475,7 @@ def test_dynamic_rank_getitem_with_tensor_index():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_tuple_with_multi_tensor_index():
     """
