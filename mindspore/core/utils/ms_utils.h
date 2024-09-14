@@ -95,8 +95,8 @@ MS_CORE_API std::string GetConfigValue(const std::string &config, const std::str
 MS_CORE_API bool IsEnableRuntimeConfig(const std::string &runtime_config);
 MS_CORE_API bool IsDisableRuntimeConfig(const std::string &runtime_config);
 MS_CORE_API std::string GetAllocConfigValue(const std::string &alloc_config);
-MS_CORE_API bool IsEnableAlllocConfig(const std::string &alloc_config);
-MS_CORE_API bool IsDisableAlllocConfig(const std::string &alloc_config);
+MS_CORE_API bool IsEnableAllocConfig(const std::string &alloc_config);
+MS_CORE_API bool IsDisableAllocConfig(const std::string &alloc_config);
 
 static inline std::string GetEnv(const std::string &envvar, const std::string &default_value = "") {
   const char *value = std::getenv(envvar.c_str());

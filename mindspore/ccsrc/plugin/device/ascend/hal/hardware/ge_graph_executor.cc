@@ -534,7 +534,7 @@ void UpdateTracker(const std::string &task_name, const std::string &node_name, c
 
 void UpdateFMTracker(size_t feature_memory_size, const std::string &graph_name) {
   device::tracker::CALL_MEMORY_TRACKER(AllocMemBlock, 0, feature_memory_size, "Ascend",
-                                       AscendMemAdapter::GetInstance().GetActualPeakMemory(), 0, 0, 0);
+                                       AscendMemAdapter::GetInstance()->GetActualPeakMemory(), 0, 0, 0);
   device::tracker::CALL_MEMORY_TRACKER(FreeMemBlock, 0, 0, 0);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "RunGeGraph", "RunGeGraph", graph_name);
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "RunGeGraph", feature_memory_size, 0,
@@ -1244,7 +1244,7 @@ size_t GeGraphExecutor::GetGraphFeatureMemory(const FuncGraphPtr &graph) const {
   auto max_static_memory_size = ResManager()->GetMaxUsedMemorySize();
   auto feature_memory_size = iter->second;
   auto total_memory_size = max_static_memory_size + feature_memory_size;
-  AscendMemAdapter::GetInstance().UpdateActualPeakMemory(total_memory_size);
+  AscendMemAdapter::GetInstance()->UpdateActualPeakMemory(total_memory_size);
   UpdateFMTracker(feature_memory_size, graph_name);
   return feature_memory_size;
 }
@@ -1295,8 +1295,8 @@ bool GeGraphExecutor::RunGraphRefMode(const FuncGraphPtr &graph, const std::vect
     auto feature_memory_size = iter->second;
     if (feature_memory_size != 0) {
       size_t total_memory_size = max_static_memory_size + feature_memory_size;
-      size_t max_hbm_memory_size = static_cast<size_t>(AscendMemAdapter::GetInstance().GetMsUsedHbmSize());
-      AscendMemAdapter::GetInstance().UpdateActualPeakMemory(total_memory_size);
+      size_t max_hbm_memory_size = static_cast<size_t>(AscendMemAdapter::GetInstance()->GetMsUsedHbmSize());
+      AscendMemAdapter::GetInstance()->UpdateActualPeakMemory(total_memory_size);
       UpdateFMTracker(feature_memory_size, graph_name);
       if (common::IsNeedMemoryStatistic()) {
         MS_LOG(WARNING) << "Now Memory Status, graph: " << graph_name
@@ -1594,7 +1594,7 @@ std::vector<GeTensor> GeGraphExecutor::GenerateOutputGeTensor(const KernelGraphP
                         << " address is nullptr, kernel graph: " << kernel_graph->ToString()
                         << ", addr memory size: " << output_device_addr->GetSize()
                         << "\n Maybe memory is not enough, memory statistics:"
-                        << AscendMemAdapter::GetInstance().DevMemStatistics();
+                        << AscendMemAdapter::GetInstance()->DevMemStatistics();
     }
     MS_LOG(INFO) << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update output "
                  << output_node->DebugString() << " out_idx " << index << " address to "
