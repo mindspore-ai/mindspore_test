@@ -159,7 +159,10 @@ class LstmGradInfer : public abstract::OpInferBase {
       num_directions = kNumberTwo;
     }
     int64_t hidden_size = GetValue<int64_t>(primitive->GetAttr(kHidden_size));
-    int64_t proj_size = GetValue<int64_t>(primitive->GetAttr(kProjection_size));
+    int64_t proj_size = 0;
+    if (primitive->HasAttr(kProjection_size)) {
+      proj_size = GetValue<int64_t>(primitive->GetAttr(kProjection_size));
+    }
     int64_t real_hidden_size = proj_size > 0 ? proj_size : hidden_size;
     if (!is_dynamic_shape_dhy) {
       (void)CheckAndConvertUtils::CheckInteger("h_shape[0]", dhy_shape[kIndex0], kEqual, num_layers * num_directions,
@@ -202,7 +205,10 @@ class LstmGradInfer : public abstract::OpInferBase {
     bool has_bias = GetValue<bool>(primitive->GetAttr(kHasBias));
     int64_t input_size = GetValue<int64_t>(primitive->GetAttr(kInput_size));
     int64_t hidden_size = GetValue<int64_t>(primitive->GetAttr(kHidden_size));
-    int64_t proj_size = GetValue<int64_t>(primitive->GetAttr(kProjection_size));
+    int64_t proj_size = 0;
+    if (primitive->HasAttr(kProjection_size)) {
+      proj_size = GetValue<int64_t>(primitive->GetAttr(kProjection_size));
+    }
     int64_t real_hidden_size = proj_size > 0 ? proj_size : hidden_size;
     int64_t gate_size = hidden_size * kNumberFour;
     for (int i = 0; i < num_layers; ++i) {
