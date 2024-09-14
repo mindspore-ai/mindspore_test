@@ -265,6 +265,12 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
   return kSuccess;
 }
 
+Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
+                    const std::shared_ptr<Context> &model_context, const CryptoInfo &cryptoInfo) {
+  MS_LOG(ERROR) << "This feature is not supported on this platform!";
+  return kLiteNotSupport;
+}
+
 Status Model::Build(GraphCell graph, const std::shared_ptr<Context> &model_context,
                     const std::shared_ptr<TrainCfg> &train_cfg) {
   std::stringstream err_msg;
