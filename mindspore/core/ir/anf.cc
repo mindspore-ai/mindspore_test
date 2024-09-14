@@ -732,6 +732,7 @@ ParamInfoPtr Parameter::param_info() const {
   if (!has_default()) {
     return nullptr;
   }
+  MS_EXCEPTION_IF_NULL(default_param());
   auto tensor = default_param()->cast_ptr<tensor::MetaTensor>();
   if (tensor == nullptr || !tensor->is_parameter()) {
     return nullptr;
