@@ -372,7 +372,7 @@ class Splitter {
     if (!split_schemer_->Split(ori_sub_func_graph)) {
       return false;
     }
-    if (rebuild_plan_ == "0") {
+    if (rebuild_plan_ == "0" || rebuild_plan_ == "1") {
       return RebuildGraphWithAreaGraph();
     }
     return RebuildGraph();
@@ -473,7 +473,7 @@ class Splitter {
         return node_idx_map[a] < node_idx_map[b];
       });
       auto ParameterToInput = [&params, &cnode](const AnfNodePtr &p) {
-        size_t j = std::find(params.begin(), params.end(), p) - params.begin();
+        size_t j = IntToSize(std::find(params.begin(), params.end(), p) - params.begin());
         return j == params.size() ? nullptr : cnode->input(j + 1);
       };
       AnfNodePtrList new_inputs{cnode->inputs()[0]};
@@ -665,7 +665,7 @@ class Splitter {
   std::vector<AnfNodePtr> maingraph_nodes_;    // The nodes in main graph finally, include "call" and inlined node
   SplitSchemerPtr split_schemer_;
   mindspore::HashMap<ParameterPtr, AnfNodePtr> param_to_main_graph_node_map_;
-  std::string rebuild_plan_;
+  std::string rebuild_plan_;  // empty for now, "0" for old, "1" for old with sort
 };
 
 class CppCostModelSplitSchemer : public CommonSplitSchemer {
