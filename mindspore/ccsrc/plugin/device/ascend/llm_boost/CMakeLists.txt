@@ -3,11 +3,9 @@ if("${ENABLE_HIDDEN}" STREQUAL "OFF")
     string(REPLACE " -fvisibility=hidden" " -fvisibility=default" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-if(ENABLE_D OR ENABLE_ACL)
-    file(GLOB_RECURSE _PREACTIVATE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+file(GLOB_RECURSE _PREACTIVATE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "*.cc"
     )
-endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -Wno-user-defined-warnings -Wno-inconsistent-missing-override \
@@ -21,8 +19,5 @@ file(GLOB_RECURSE MS_LLM_BOOST_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 set_property(SOURCE ${_PREACTIVATE_SRC_LIST} ${MS_LLM_BOOST_910B} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_LLM_BOOST)
 
-if(ENABLE_D OR ENABLE_ACL)
-    add_library(_mindspore_plugin_device_ascend_llm_boost_910b_obj OBJECT ${MS_LLM_BOOST_910B})
-
-    add_subdirectory(atb)
-endif()
+add_library(_mindspore_plugin_device_ascend_llm_boost_910b_obj OBJECT ${MS_LLM_BOOST_910B})
+add_subdirectory(atb)

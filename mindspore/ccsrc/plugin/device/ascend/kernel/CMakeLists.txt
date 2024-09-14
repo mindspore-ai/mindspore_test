@@ -33,7 +33,7 @@ if(ENABLE_SECURITY)
     list(REMOVE_ITEM D_SRC_LIST "rts/profiling_kernel_mod.cc")
 endif()
 
-if(ENABLE_AKG AND ${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ENABLE_D)
+if(ENABLE_AKG AND ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     file(GLOB_RECURSE AKG_D_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "akg/*.cc")
 endif()
 
@@ -73,9 +73,8 @@ endif()
 
 set_property(SOURCE ${D_SRC_LIST} ${AKG_D_SRC_LIST} ${SRC_IN_910B}
     PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
-if(ENABLE_D)
-    add_library(_mindspore_plugin_device_ascend_kernel_910b_obj OBJECT ${SRC_IN_910B})
-endif()
+
+add_library(_mindspore_plugin_device_ascend_kernel_910b_obj OBJECT ${SRC_IN_910B})
 
 add_subdirectory(aicore)
 
