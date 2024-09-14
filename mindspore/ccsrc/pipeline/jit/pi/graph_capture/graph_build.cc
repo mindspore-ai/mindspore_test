@@ -4597,8 +4597,12 @@ std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(con
 void MindGraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info,
                                         const std::vector<ValueNode *> &args, StopTraceReason *stop_reason) {
   // Need to add unpack call when handling kwargs.
-  if (call_node->GetOpcode() == CALL_FUNCTION_KW || call_node->GetOpcode() == CALL_FUNCTION_EX) {
-    auto res = FGBuilder()->AddNodeWithKwargs(callable_info, HandleInputArgs(args));
+  if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
+    auto res = FGBuilder()->AddNodeCallFunctionKw(callable_info, HandleInputArgs(args));
+    UpdateNodeInfo(res, call_node, stop_reason);
+    return;
+  } else if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
+    auto res = FGBuilder()->AddNodeCallFunctionEx(callable_info, HandleInputArgs(args));
     UpdateNodeInfo(res, call_node, stop_reason);
     return;
   }

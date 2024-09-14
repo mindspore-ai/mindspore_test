@@ -587,8 +587,9 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
   return AddNode(callable_value, inputs_abstract_wrapper);
 }
 
-AbstractWrapperPtr FuncGraphBuilder::AddNodeWithKwargs(const py::object &callable_obj,
-                                                       const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const py::object &callable_obj,
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+  MS_LOG(INFO) << "Add node with ast, byte code is CallFunctionKw.";
   auto key_abstract = inputs_abstract_wrapper.back()->abstract();
   if (key_abstract == nullptr || !key_abstract->isa<abstract::AbstractTuple>()) {
     MS_LOG(INFO) << "Key abstract should be tuple but got: " << key_abstract->ToString();
@@ -601,7 +602,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithKwargs(const py::object &callabl
     return nullptr;
   }
   size_t dict_len = key_tuple_abstract->size();
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() - dict_len - 1 >= 0, "kwargs length check error");
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len - 1, "kwargs length check error");
   size_t arg_len = inputs_abstract_wrapper.size() - dict_len - 1;
 
   auto fg = std::make_shared<FuncGraph>();
@@ -624,6 +625,37 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeWithKwargs(const py::object &callabl
 
   AbstractWrapperPtrList new_abstract_wrapper(inputs_abstract_wrapper.begin(), inputs_abstract_wrapper.end() - 1);
   return AddNode(fg, new_abstract_wrapper);
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionEx(const py::object &callable_obj,
+                                                           const AbstractWrapperPtrList &inputs_abstract_wrapper) {
+  MS_LOG(INFO) << "Add node with ast, byte code is CallFunctionEx.";
+  auto fg = std::make_shared<FuncGraph>();
+  std::vector<AnfNodePtr> unpack_call_node_inputs = {NewValueNode(prim::kPrimDoUnpackCall),
+                                                     NewValueNode(ConvertPyObjToValue(callable_obj))};
+  auto first_input_abs = inputs_abstract_wrapper[0]->abstract();
+  MS_EXCEPTION_IF_NULL(first_input_abs);
+  // First input may be self, need to put into tuple for unpack.
+  if (!first_input_abs->isa<abstract::AbstractSequence>() && !first_input_abs->isa<abstract::AbstractDictionary>()) {
+    std::vector<AnfNodePtr> self_tuple_node_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+    (void)self_tuple_node_inputs.emplace_back(fg->add_parameter());
+    (void)unpack_call_node_inputs.emplace_back(fg->NewCNodeInOrder(self_tuple_node_inputs));
+  } else {
+    (void)unpack_call_node_inputs.emplace_back(fg->add_parameter());
+  }
+  for (size_t i = 1; i < inputs_abstract_wrapper.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(inputs_abstract_wrapper[i]);
+    auto cur_abstract = inputs_abstract_wrapper[i]->abstract();
+    MS_EXCEPTION_IF_NULL(cur_abstract);
+    if (!cur_abstract->isa<abstract::AbstractSequence>() && !cur_abstract->isa<abstract::AbstractDictionary>()) {
+      MS_LOG(INFO) << "Input abstract should be sequence or dict, but got: " << cur_abstract->ToString();
+      return nullptr;
+    }
+    (void)unpack_call_node_inputs.emplace_back(fg->add_parameter());
+  }
+  auto unpack_call_node = fg->NewCNodeInOrder(unpack_call_node_inputs);
+  fg->set_output(unpack_call_node);
+  return AddNode(fg, inputs_abstract_wrapper);
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddAttrPythonObject(const py::object &object) {

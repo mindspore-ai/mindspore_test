@@ -859,6 +859,27 @@ def test_function_parse_by_ast_2():
     assert jcr["break_count_"] == 0
 
 
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_parse_by_ast_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(mode="PIJit")
+        def construct(self, x, axis):
+            return x.permute(*axis)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a = Tensor([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]], mindspore.float32)
+    axis = (0, 2, 1)
+    net = Net()
+    net(a, axis)
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_constant_flod_for_variable():
     """
