@@ -477,7 +477,7 @@ if sys.version_info >= (3, 8):
             ...     model.train(10, data, callbacks=[dynprof_cb])
         """
 
-        def __init__(self, cfg_path, output_path=None, poll_interval=2, **kwargs):
+        def __init__(self, cfg_path, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
             super().__init__(cfg_path, output_path, poll_interval, **kwargs)
 
         def _get_prof_args(self):
@@ -588,7 +588,7 @@ else:
             ...     model.train(10, data, callbacks=[dynprof_cb])
         """
 
-        def __init__(self, cfg_path, output_path=None, poll_interval=2, **kwargs):
+        def __init__(self, cfg_path, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
             self._cfg_path = cfg_path
             self._shm_name = f"DynamicProfileShm{datetime.now().strftime('%Y%m%d%H')}"
             self._shm_dir = os.path.join(self._cfg_path, "shm")
