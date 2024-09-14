@@ -19,15 +19,12 @@
 #include <memory>
 #include "kernel/kernel.h"
 #include "utils/llm_manager.h"
-#include "utils/ms_context.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
 bool AcmePagedAttentionMask::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
   auto &llm_manager = LLMManager::GetInstance();
   llm_manager.add_force_resize_kernel(kernel_name_);
   MS_LOG(INFO) << "Force op '" << kernel_name_ << "' to be resized to update op param 'seq_len'";
@@ -75,5 +72,10 @@ uint64_t AcmePagedAttentionMask::GenerateTilingKey(const std::vector<KernelTenso
   // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
   return AcmeTilingCache::GenerateKey(kernel_name_, inputs, q_seq_len_, kv_seq_len_);
 }
+
+MS_ACME_KERNEL_FACTORY_REG(PagedAttentionMask, acme::kAcmePagedAttentionOpName, AcmePagedAttentionMask);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(PagedAttentionMask, INPUT_NUM_8, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4,
+                                     INDEX_5, INDEX_6, INDEX_7);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(PagedAttentionMask, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
