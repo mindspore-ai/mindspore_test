@@ -65,7 +65,7 @@ MemBufAllocator::~MemBufAllocator() {
 }
 
 void MemBufAllocator::ReleaseDeviceRes() {
-  MS_LOG(INFO) << "Release device resource for allocator : " << BriefInfo()
+  MS_LOG(INFO) << "Release device resource for allocator, " << BriefInfo()
                << ", mem_blocks_ size : " << mem_blocks_.size() << ".";
   for (auto &mem_block : mem_blocks_) {
     (void)mem_block_cleaner_(mem_block);
@@ -323,6 +323,7 @@ AbstractDynamicMemPool::AbstractDynamicMemPool() {}
 
 void AbstractDynamicMemPool::ReleaseDeviceRes() {
   LockGuard lock(lock_);
+  DumpDynamicMemPoolStateInfo();
   for (const auto &iter : stream_pair_mem_bufs_) {
     auto size = iter.second.size();
     MS_LOG(INFO) << "Event referred stream_pair_mem_bufs_[" << iter.first.first << "-" << iter.first.second
@@ -803,7 +804,8 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo() { MS_LOG(INFO) << Dyn
 
 std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
   std::stringstream ss;
-  ss << "The dynamic memory pool stat : " << mem_stat_.ToReadableString() << "\n";
+  // Classify mem buf and stat mem buf state info.
+  size_t mem_buf_used_stat[kAllocatorTypeNum] = {0};
   struct AddrComparator {
     bool operator()(MemBuf *const &left, MemBuf *const &right) const { return left->addr_ < right->addr_; }
   };
@@ -811,10 +813,10 @@ std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
   for (const auto &addr_mem_buf_allocator : addr_mem_buf_allocators_) {
     const auto allocator = addr_mem_buf_allocator.second.second;
     const auto mem_buf = addr_mem_buf_allocator.second.first;
+    mem_buf_used_stat[static_cast<int>(mem_buf->alloc_type_)] += mem_buf->size_;
     auto &mem_bufs = allocator_mem_bufs[allocator];
     (void)mem_bufs.insert(mem_buf);
   }
-
   for (const auto &[allocator, mem_bufs] : allocator_mem_bufs) {
     ss << "\tIn used mem buf info for " << allocator->BriefInfo() << ", mem_bufs size : " << mem_bufs.size() << "\n";
   }
@@ -824,12 +826,19 @@ std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
        << "\n";
     ss << stream_id_allocator.second->DumpStateInfo();
   }
+
+  ss << "The dynamic memory pool stat info : " << mem_stat_.ToReadableString()
+     << ", actual peak used mem:" << ActualPeakStatistics() / kMBToByte
+     << ". Weight used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kWeight)] / kMBToByte
+     << "M, constant value used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kConstantValue)] / kMBToByte
+     << "M, kernel output used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kKernelOutput)] / kMBToByte
+     << "M, other used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kOther)] / kMBToByte << "M.\n";
   return ss.str();
 }
 
 void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
   std::stringstream ss;
-  ss << "The dynamic memory pool stat : " << mem_stat_.ToReadableString() << "\n";
+  ss << "The dynamic memory pool stat info : " << mem_stat_.ToReadableString() << "\n";
 
   struct AddrComparator {
     bool operator()(MemBuf *const &left, MemBuf *const &right) const { return left->addr_ < right->addr_; }
@@ -877,11 +886,14 @@ const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree(
     total_real_free_size += real_free_size;
   }
 
+  size_t not_free_size =
+    total_eager_free_size > total_real_free_size ? (total_eager_free_size - total_real_free_size) : 0;
   if (total_real_free_size >= kGBToByte) {
-    size_t not_free_size =
-      total_eager_free_size > total_real_free_size ? (total_eager_free_size - total_real_free_size) : 0;
     MS_LOG(WARNING) << "Eager free count : " << eager_free_count_ << ", free memory : " << total_eager_free_size
                     << ", real free : " << total_real_free_size << ", not free : " << not_free_size << ".";
+  } else {
+    MS_LOG(INFO) << "Eager free count : " << eager_free_count_ << ", free memory : " << total_eager_free_size
+                 << ", real free : " << total_real_free_size << ", not free : " << not_free_size << ".";
   }
 
   mem_stat_.eager_free_size_ += total_eager_free_size;

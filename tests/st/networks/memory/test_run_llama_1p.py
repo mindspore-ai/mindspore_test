@@ -33,7 +33,7 @@ def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
     for line in open(log_path):
         print(line, end='', flush=True)
 
-    eager_free_para = "Eager free"
+    eager_free_para = "Eager free count :"
     eager_free_output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (eager_free_para, log_path)],
         shell=True)

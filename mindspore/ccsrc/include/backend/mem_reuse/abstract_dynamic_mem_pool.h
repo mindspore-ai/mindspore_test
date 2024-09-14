@@ -238,12 +238,12 @@ struct MemStat {
 
   std::string ToReadableString() const {
     JsonBuilder builder;
-    builder.Append("used_size_", Format(used_size_));
-    builder.Append("peak_size_", Format(peak_size_));
-    builder.Append("alloc_size_", Format(alloc_size_));
-    builder.Append("idle_size_", Format(IdleSize()));
-    builder.Append("used_by_event_size_", Format(used_by_event_size_));
-    builder.Append("eager_free_size_", Format(eager_free_size_));
+    builder.Append("in used mem", Format(used_size_));
+    builder.Append("peak used mem", Format(peak_size_));
+    builder.Append("alloc mem", Format(alloc_size_));
+    builder.Append("idle mem", Format(IdleSize()));
+    builder.Append("used by event mem", Format(used_by_event_size_));
+    builder.Append("eager free mem", Format(eager_free_size_));
     return builder.ToString();
   }
 
