@@ -19,12 +19,14 @@
 #include <string>
 #include "ops/other_ops.h"
 #include "ops/array_ops.h"
+#include "ops/framework_ops.h"
 #include "utils/trace_base.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/backend/optimizer/helper.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "plugin/device/ascend/optimizer/optimizer_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -339,6 +341,7 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
   auto ms_context = MsContext::GetInstance();
   bool is_kbk = ms_context->IsKByKExecutorMode() || ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK) == false;
   AnfNodePtr ret_node = nullptr;
+
   if (is_kbk) {
     int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
     int64_t concat_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrConcatDim);
@@ -347,18 +350,34 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
       auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
       auto concat_dim0 = CreateConcatNodeWithDim0(kernel_graph, all_to_all, split);
       all_to_all_input = concat_dim0;
+      OptimizerUtils::MoveContrlDepend(graph, all_to_all->input(1), concat_dim0);
     }
     auto new_ata = CreateAllToAllNode(kernel_graph, all_to_all, all_to_all_input);
+    OptimizerUtils::MoveContrlDepend(graph, node, new_ata);
+    auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_ata);
+    auto pre_node = new_ata;
+    if (!moved_depends.empty()) {
+      pre_node = moved_depends[0];
+    }
     ret_node = new_ata;
     if (concat_dim != 0) {
-      auto split_dim0 = CreateSplitNodeWithDim0(kernel_graph, all_to_all, new_ata);
+      auto split_dim0 = CreateSplitNodeWithDim0(kernel_graph, all_to_all, pre_node);
       auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, split_dim0);
+      OptimizerUtils::ReplaceDataDepend(kernel_graph, moved_depends, concat);
       ret_node = concat;
     }
   } else {
     auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
+    OptimizerUtils::MoveContrlDepend(graph, all_to_all->input(1), split);
     auto new_ata = CreateAllToAllvNode(kernel_graph, all_to_all, split);
-    auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, new_ata);
+    OptimizerUtils::MoveContrlDepend(graph, node, new_ata);
+    auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_ata);
+    auto pre_node = new_ata;
+    if (!moved_depends.empty()) {
+      pre_node = moved_depends[0];
+    }
+    auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, pre_node);
+    OptimizerUtils::ReplaceDataDepend(graph, moved_depends, concat);
     ret_node = concat;
   }
   return ret_node;

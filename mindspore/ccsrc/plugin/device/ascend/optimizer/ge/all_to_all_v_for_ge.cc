@@ -27,6 +27,7 @@
 #include "ops/array_ops.h"
 #include "ops/other_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "plugin/device/ascend/optimizer/optimizer_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -289,19 +290,28 @@ const AnfNodePtr AllToAllvForGE::Process(const FuncGraphPtr &graph, const AnfNod
   concat_node->set_scope(node->scope());
   // get the outputs shapes of origin node to restore outputs of new node
   auto origin_output_shapes = GetAllToAllvOutputShapes(all_to_all_v);
+  OptimizerUtils::MoveContrlDepend(graph, all_to_all_v->input(1), concat_node);
   auto new_atav_node = CreateAllToAllvForGENode(graph, concat_node, all_to_all_v, origin_output_shapes);
   // skip post processes if AllToAllv has no output
   if (origin_output_shapes.empty()) {
     common::AnfAlgo::SetNodeAttr(kAttrIsInsertedByGE, MakeValue(true), new_atav_node);
     return new_atav_node;
   }
-  auto split_node = CreateSplitNode(graph, new_atav_node, origin_output_shapes);
+
+  OptimizerUtils::MoveContrlDepend(graph, node, new_atav_node);
+  auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_atav_node);
+  auto pre_node = new_atav_node;
+  if (!moved_depends.empty()) {
+    pre_node = moved_depends[0];
+  }
+  auto split_node = CreateSplitNode(graph, pre_node, origin_output_shapes);
   split_node->set_scope(node->scope());
   AnfNodePtrList split_outputs;
   CreateMultipleOutputsOfAnfNode(graph, split_node, origin_output_shapes.size(), &split_outputs);
   auto reshape_nodes = CreateReshapeNodes(graph, split_outputs, origin_output_shapes);
   auto maketuple_node = CreateMakeTupleNode(graph, reshape_nodes);
   maketuple_node->set_scope(node->scope());
+  OptimizerUtils::ReplaceDataDepend(graph, moved_depends, maketuple_node);
   return maketuple_node;
 }
 }  // namespace opt
