@@ -411,7 +411,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def __iadd__(self, other):
         return self.__add__(other)
-
+    
+    @sub_mint
     def __sub__(self, other):
         return tensor_operator_registry.get('__sub__')(self, other)
 
@@ -1064,7 +1065,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             self.init_data()
         return Tensor_.asnumpy(self)
 
-    def numpy(self):
+    def numpy(self, *, force=False):
         """
         Alias for :func:`mindspore.Tensor.asnumpy`.
         """

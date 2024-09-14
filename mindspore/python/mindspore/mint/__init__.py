@@ -1309,6 +1309,7 @@ __all__ = [
 setattr(tensor_operator_registry_for_mint, 'add', add)
 setattr(tensor_operator_registry_for_mint, 'all', all)
 setattr(tensor_operator_registry_for_mint, 'any', any)
+setattr(tensor_operator_registry_for_mint, 'log', log)
 setattr(tensor_operator_registry_for_mint, 'ceil', ceil)
 setattr(tensor_operator_registry_for_mint, 'clamp', clamp)
 setattr(tensor_operator_registry_for_mint, 'cos', cos)

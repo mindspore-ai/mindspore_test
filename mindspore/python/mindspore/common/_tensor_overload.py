@@ -25,8 +25,7 @@ def repeat_interleave_mint(orig_fn):
     For details, please refer to :func:`mindspore.ops.repeat_interleave_ext`.
     """
     def wrapper(self, *args, **kwargs):
-        if os.environ.get("MS_TENSOR_API_ENABLE_MINT") == "1":
-            print("--> repeat interleave use mint.")
+        if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('repeat_interleave')(self, *args, **kwargs)
         return orig_fn(self, *args, **kwargs)
     return wrapper
@@ -36,26 +35,25 @@ def isnan_mint(orig_fn):
     isnan warpper.
     """
     def wrapper(self, *args, **kwargs):
-        if os.environ.get("MS_TENSOR_API_ENABLE_MINT") == "1":
-            print("--> isnan use mint.")
+        if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('ne')(self, self, **kwargs)
         return orig_fn(self, *args, **kwargs)
     return wrapper
 
-
 def add_mint(add):
     def wrapper(self, other, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
-            if "alpha" not in kwargs:
-                kwargs["alpha"] = 1
             return tensor_operator_registry_for_mint.get('add')(self, other, **kwargs)
         return add(self, other, **kwargs)
     return wrapper
 
-
 def flatten_mint(flatten):
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
+            if len(arg) > 0:
+                kwargs["start_dim"] = args[0]
+                if len(args) > 1:
+                    kwargs["end_dim"] = args[1]
             if "start_dim" not in kwargs:
                 kwargs["start_dim"] = 0
             if "end_dim" not in kwargs:
@@ -94,22 +92,14 @@ def min_mint(fn):
 
 def split_mint(split):
     def wrapper(self, *args, **kwargs):
-        if os.environ.get("MS_TENSOR_API_ENABLE_MINT") == '1':
-            print("--> use mint")
-            if len(args) > 1 and isinstance(args[1], int):
-                return tensor_operator_registry_for_mint.get('split')(self, args[0], args[1])
-            else:
-                return tensor_operator_registry_for_mint.get('split')(self, *args, **kwargs)
+        if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
+            return tensor_operator_registry_for_mint.get('split')(self, *args, **kwargs)
         return split(self, *args, **kwargs)
     return wrapper
 
 def sub_mint(sub):
     def wrapper(self, *args, **kwargs):
-        if os.environ.get("MS_TENSOR_API_ENABLE_MINT") == '1':
-            print("--> use mint")
-            if len(args) > 1 and isinstance(args[1], int):
-                return tensor_operator_registry_for_mint.get('sub')(self, args[0], args[1])
-            else:
-                return tensor_operator_registry_for_mint.get('sub')(self, *args, **kwargs)
+        if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
+            return tensor_operator_registry_for_mint.get('sub')(self, *args, **kwargs)
         return sub(self, *args, **kwargs)
     return wrapper
