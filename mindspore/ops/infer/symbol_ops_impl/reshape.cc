@@ -108,7 +108,6 @@ SymbolPtr Reshape::Eval() {
   OperationEmitter e(&inner_ops_);
   SetEmitter(&e);
 
-  // auto unknown_dim_symbol = ProductOutShape(out_symbols);
   auto unknown_dim_idx = FindUnknownDim(out_symbols);
   SymbolPtrList result = shape->symbols();
   if (unknown_dim_idx == out_symbols.size()) {
@@ -142,31 +141,13 @@ SymbolPtr Reshape::Eval() {
     input_const_dims /= g;
     output_const_dims /= g;
   }
-  if (input_unknown_dims == nullptr && output_unknown_dims == nullptr) {
-    if (input_const_dims % output_const_dims != 0) {
-      MS_EXCEPTION(ValueError) << "For 'Reshape', the input " << data->ToString() << " can not be reshape to "
-                               << shape->ToString();
-    }
-    result[unknown_dim_idx] = GenInt(input_const_dims / output_const_dims);
-    return GenList(std::move(result));
-  }
-
-  // Reshape (const1, s1) to (const2, s2, U), the `U = (const1 * s1) / (const2 * s2)`
-  // if `const1 % const2 == 0`, then simplify to `U = (const1/const2) * s1 / s2`
-  if (input_const_dims % output_const_dims == 0) {
-    auto c = GenInt(input_const_dims / output_const_dims);
-    auto c_s1 = input_unknown_dims != nullptr ? Emit(std::make_shared<ScalarMul>(input_unknown_dims, c)) : c;
-    auto u = output_unknown_dims != nullptr ? Emit(std::make_shared<ScalarDiv>(c_s1, output_unknown_dims)) : c_s1;
-    result[unknown_dim_idx] = u;
-  } else {
-    auto tmp1 = input_unknown_dims != nullptr
-                  ? Emit(std::make_shared<ScalarMul>(input_unknown_dims, GenInt(input_const_dims)))
-                  : GenInt(input_const_dims);
-    auto tmp2 = output_unknown_dims != nullptr
-                  ? Emit(std::make_shared<ScalarMul>(output_unknown_dims, GenInt(output_const_dims)))
-                  : GenInt(output_const_dims);
-    result[unknown_dim_idx] = Emit(std::make_shared<ScalarDiv>(tmp1, tmp2));
-  }
+  auto tmp1 = input_unknown_dims != nullptr
+                ? Emit(std::make_shared<ScalarMul>(input_unknown_dims, GenInt(input_const_dims)))
+                : GenInt(input_const_dims);
+  auto tmp2 = output_unknown_dims != nullptr
+                ? Emit(std::make_shared<ScalarMul>(output_unknown_dims, GenInt(output_const_dims)))
+                : GenInt(output_const_dims);
+  result[unknown_dim_idx] = Emit(std::make_shared<ScalarDiv>(tmp1, tmp2));
   return GenList(std::move(result));
 }
 

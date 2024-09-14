@@ -118,7 +118,6 @@ int KernelPacketKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
       }
       inputs_cache_[i]->user_data()->set<std::pair<ValuePtr, bool>>(
         "variable_host_value", std::make_shared<std::pair<ValuePtr, bool>>(host_value_cache_[i], true));
-      // inputs_cache_[i]->SetInnerHostValue(host_value_cache_[i];);
       inner_inputs[i] = inputs_cache_[i].get();
     } else {
       // const value is moved to parameter, this branch may be dead code.
