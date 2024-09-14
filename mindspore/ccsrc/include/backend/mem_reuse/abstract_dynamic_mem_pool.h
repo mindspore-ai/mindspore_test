@@ -373,6 +373,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) override;
   bool WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) override;
   bool SyncAllEvents() override;
+  bool DoSyncAllEvents();
 
   void SetMemAllocUintSize(size_t common_size, size_t persist_size = kDynamicMemAllocUnitSize) override {
     common_unit_size_ = common_size;

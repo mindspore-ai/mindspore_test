@@ -390,7 +390,12 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
       if (mem_buf == nullptr) {
         mem_buf = allocator->MallocExpandBlock(align_size);
         if (mem_buf == nullptr) {
-          return std::make_pair(nullptr, nullptr);
+          MS_LOG(INFO) << "Alloc tensor mem failed and try to sync all events to release memory.";
+          (void)DoSyncAllEvents();
+          mem_buf = allocator->Malloc(align_size);
+          if (mem_buf == nullptr) {
+            return std::make_pair(nullptr, nullptr);
+          }
         }
       }
     }
@@ -595,6 +600,12 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
   std::function<MemBlock *(size_t)> mem_block_expander = [&, is_persistent = is_persistent,
                                                           stream_id = stream_id](size_t size) {
     size_t block_size = CalMemBlockAllocSize(size, is_persistent);
+    MemBlock *mem_block = nullptr;
+    if (block_size == 0) {
+      MS_LOG(INFO) << "Malloc mem block failed, is enable eager free : " << IsEnableEagerFree()
+                   << ", is enable vmm : " << IsEnableVmm() << ", size : " << size << ", block size is  0.";
+      return mem_block;
+    }
     DeviceMemPtr addr = nullptr;
     size_t alloc_size;
     MS_LOG(INFO) << "Malloc mem block, is enable eager free : " << IsEnableEagerFree()
@@ -612,7 +623,6 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
                         << ".";
       }
     }
-    MemBlock *mem_block = nullptr;
     if (alloc_size == 0) {
       return mem_block;
     }
@@ -718,6 +728,10 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memor
 bool AbstractDynamicMemPool::SyncAllEvents() {
   MS_LOG(DEBUG) << "Sync all events, stream_pair_addresses_ size : " << stream_pair_mem_bufs_.size() << ".";
   LockGuard lock(lock_);
+  return DoSyncAllEvents();
+}
+
+bool AbstractDynamicMemPool::DoSyncAllEvents() {
   if (stream_pair_mem_bufs_.empty()) {
     return false;
   }

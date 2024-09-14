@@ -71,7 +71,7 @@ DeviceMemPtr EnhancedDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
                                  ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(), stream_id);
   }
 
-  MS_LOG(DEBUG) << "Allocate tensor mem, return : " << device_addr << ", stat : " << mem_stat_.ToJson() << ".";
+  MS_LOG(DEBUG) << "Allocate tensor mem, return : " << mem_buf->ToJson() << ", stat : " << mem_stat_.ToJson() << ".";
   return device_addr;
 }
 
