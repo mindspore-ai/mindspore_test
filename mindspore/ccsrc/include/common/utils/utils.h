@@ -363,6 +363,7 @@ constexpr auto kAttrAnyOutputName = "is_any_output";
 constexpr auto kAttrForFormatChange = "for_format_change";
 constexpr auto kAttrReplaceRealKernelInBackend = "replace_real_kernel_in_backend";
 constexpr auto kAttrRefNodeMonadOutputIdx = "ref_node_monad_output_idx";
+constexpr auto kAttrRefNodeMonadInputIdx = "ref_node_monad_input_idx";
 constexpr auto kAttrRandomOpSnapShot = "random_op_snapshot";
 constexpr auto kAttrTbeOpAtomicDtypes = "tbe_op_atomic_dtypes";
 constexpr auto kAttrTbeOpAtomicInt64Values = "tbe_op_atomic_int64_values";

@@ -211,6 +211,21 @@ void SchedulerHelper::AddMonadDeviceTensorStore(AbstractActor *const to_actor, c
     }
   }
 
+  // set in GEGraphOp in graph_compiler, for copy parameter in heterogeneous
+  if (common::AnfAlgo::HasNodeAttr(kAttrRefNodeMonadInputIdx, kernel)) {
+    auto input_idxes = common::AnfAlgo::GetNodeAttr<std::vector<uint32_t>>(kernel, kAttrRefNodeMonadInputIdx);
+    for (auto idx : input_idxes) {
+      KernelWithIndex from_kernel_with_output_idx = common::AnfAlgo::GetPrevNodeOutput(kernel, idx, false);
+      auto front_node = AnfAlgo::FetchFrontNodeByBackendNode(from_kernel_with_output_idx.first, *graph);
+      MS_EXCEPTION_IF_NULL(front_node);
+      if (IsPersistentDeviceTensor(front_node)) {
+        MS_LOG(INFO) << to_actor->GetAID().Name() << ", kernel:" << kernel->fullname_with_scope()
+                     << " add input node monad device tensor store:" << front_node->fullname_with_scope();
+        (void)to_actor->auto_monad_device_tensor_stores_.insert(front_node);
+      }
+    }
+  }
+
   // Input node monad device tensor store.
   if (!common::AnfAlgo::HasMonadInput(kernel)) {
     return;

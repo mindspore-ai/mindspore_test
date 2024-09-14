@@ -508,15 +508,25 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
   auto new_kernel_graph = session_->NewKernelGraph();
   new_kernel_graph->set_device_target(device_target);
 
+  auto kg_mng = kernel_graph->manager();
+  if (kg_mng == nullptr) {
+    kg_mng = MakeManager({kernel_graph});
+    kernel_graph->set_manager(kg_mng);
+  }
+  MS_EXCEPTION_IF_NULL(kg_mng);
+
   // add GEGraphOp
   std::vector<AnfNodePtr> call_inline_inputs = {
     NewValueNode(std::make_shared<Primitive>(prim::kPrimGEGraphOp->name()))};
 
   auto graph_parameters = kernel_graph->parameters();
-
   auto graph_inputs = kernel_graph->input_nodes();
+
   auto new_graph_inputs = new_kernel_graph->MutableInputs();
   MS_EXCEPTION_IF_NULL(new_graph_inputs);
+  // the weight index that will update through rungraph
+  std::vector<uint32_t> need_update_inputs_index;
+  size_t index = 0;
   // exclude tuple parameters, and keep the order
   for (auto &input : graph_parameters) {
     MS_EXCEPTION_IF_NULL(input);
@@ -556,6 +566,21 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
     call_inline_inputs.emplace_back(new_node);
     new_graph_inputs->push_back(new_node);
     MS_LOG(DEBUG) << "Create new node: " << new_node->DebugString() << " for old node: " << input->DebugString();
+    // for need_update_inputs_index, for parameter copy in heterogeneous
+    if (!common::AnfAlgo::IsParameterWeight(input->cast<ParameterPtr>())) {
+      ++index;
+      continue;
+    }
+
+    auto user_nodes = kg_mng->node_users()[input];
+    for (const auto &user : user_nodes) {
+      auto user_node = user.first;
+      if (AnfUtils::IsRealKernel(user_node) && common::AnfAlgo::HasMonadInput(user_node)) {
+        need_update_inputs_index.push_back(index);
+        break;
+      }
+    }
+    ++index;
   }
   if (call_inline_inputs.size() - 1 != graph_inputs.size()) {
     MS_LOG(EXCEPTION) << "The input size of GeGraphOp [" << call_inline_inputs.size() - 1
@@ -578,6 +603,9 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
     }
     new_kernel_graph->FrontBackendMapAdd(iter->second, iter->first);
   }
+
+  common::AnfAlgo::SetNodeAttr(kAttrRefNodeMonadInputIdx, MakeValue<std::vector<uint32_t>>(need_update_inputs_index),
+                               call_inline);
 
   kernel_graph->set_flag(kFlagGeKernel, true);
   new_kernel_graph->SetInputNodes();
