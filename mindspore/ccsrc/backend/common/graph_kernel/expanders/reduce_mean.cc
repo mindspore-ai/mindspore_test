@@ -59,7 +59,11 @@ class ReduceMean : public OpDesc {
   }
 
   NodePtrList Expand(const NodePtrList &inputs) override {
-    const auto &x = inputs[0];
+    auto x = inputs[0];
+    auto dtype = x->type;
+    if (dtype != kNumberTypeFloat32) {
+      x = gb.Cast(x, kNumberTypeFloat32);
+    }
     int64_t sz = 1;
     for (size_t i = 0; i < x->shape.size(); ++i) {
       if (std::find(axis_.begin(), axis_.end(), SizeToLong(i)) != axis_.end()) {
@@ -68,6 +72,9 @@ class ReduceMean : public OpDesc {
     }
     auto sum_x = gb.ReduceSum(x, axis_, GetValue<bool>(attrs_["keep_dims"]));
     auto result = gb.Div(sum_x, gb.Tensor(sz, x->type));
+    if (dtype != kNumberTypeFloat32) {
+      result = gb.Cast(result, dtype);
+    }
     return {result};
   }
 
