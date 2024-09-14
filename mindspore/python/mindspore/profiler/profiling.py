@@ -49,7 +49,7 @@ from mindspore.profiler.parser.minddata_parser import MinddataParser
 from mindspore.profiler.parser.minddata_analyzer import MinddataProfilingAnalyzer
 from mindspore.profiler.parser.minddata_pipeline_parser import \
     MinddataPipelineParser
-from mindspore.profiler.parser.step_trace_parser import GpuStepTraceParser, AscendStepTraceParser
+from mindspore.profiler.parser.step_trace_parser import GpuStepTraceParser
 from mindspore.profiler.parser.profiler_info import ProfilerInfo
 from mindspore.common.api import _pynative_executor
 from mindspore.profiler.parser.ascend_msprof_exporter import AscendMsprofExporter
@@ -1629,15 +1629,13 @@ class Profiler:
             raise RuntimeError("Currently, the CPU platform does not support Pynative mode to collect performance "
                                "data.")
 
-    def _analyse_step_trace(self, source_path=None, framework_parser=None, is_training_mode_flag=True,
-                            is_gpu_kernel_async_launch_flag=False):
+    def _analyse_step_trace(self, is_training_mode_flag=True, is_gpu_kernel_async_launch_flag=False):
         """
         Analyse step trace data and save the result.
 
         Args:
-            source_path (str): The directory that contains the step trace original data.
-            framework_parser (FrameworkParser): The framework parse instance.
             is_training_mode_flag (bool): Whether in training mode or not.
+            is_gpu_kernel_async_launch_flag (bool): Whether gpu kernel launches are asynchronous
         """
         logger.info("Begin to parse step trace.")
         # construct output path
@@ -1667,30 +1665,6 @@ class Profiler:
                 parser.show()
                 logger.info("Finish saving the intermediate result: %s", step_trace_intermediate_file_path)
                 logger.info("The point info is: %s", point_info)
-
-                return point_info, is_training_mode_flag
-            return {}, is_training_mode_flag
-
-        # whether keep the first step
-        skip_first_step_flag = framework_parser.check_op_name(INIT_OP_NAME)
-        # recognize inference or training mode
-        is_training_mode_flag = framework_parser.check_op_name("Gradients")
-        # parser the step trace files and save the result to disk
-        source_path = validate_and_normalize_path(source_path)
-        parser = AscendStepTraceParser(input_dir=source_path,
-                                       output_file_path=step_trace_intermediate_file_path,
-                                       skip_first_step=skip_first_step_flag,
-                                       is_training_mode=is_training_mode_flag)
-        parser.set_task_id_op_name_dict(framework_parser.to_task_id_full_op_name_dict())
-        parser.parse_and_save()
-        point_info = parser.record_point_info(point_info_file_path)
-
-        # print parser result
-        parser.show()
-        logger.info("Finish saving the intermediate result: %s", step_trace_intermediate_file_path)
-        logger.info("The point info is: %s", point_info)
-
-        return point_info, is_training_mode_flag
 
     def _generate_timeline(self, reduce_op_type):
         """Used for gpu, generate timeline info, write to json format file."""
