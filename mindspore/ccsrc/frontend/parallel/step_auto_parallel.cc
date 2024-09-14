@@ -328,13 +328,34 @@ void InitCostGraph() {
   ignore_candidate_.clear();
 }
 
+void CheckStrategyUsedDevices(const OperatorInfoPtr &operator_info) {
+  const auto fully_use_devices = CostModelContext::GetInstance()->fully_use_device();
+  if (fully_use_devices) {
+    // If configured to fully use devices, then checking for the user-specified strategy
+    int64_t used_devices = operator_info->used_devices();
+    MS_EXCEPTION_IF_NULL(g_device_manager);
+    auto total_device_num = g_device_manager->GetDeviceListByStageId(0).size();
+
+    // 'used_devices == -1' means that 'used_devices_' is not set
+    // 'used_devices == 1' means that ALL-1 strategy, which is valid in auto-parallel
+    if (used_devices == -1 || (used_devices != 1 && LongToSize(used_devices) != total_device_num)) {
+      MS_LOG_WITH_NODE(EXCEPTION, operator_info->cnode())
+        << "In current configuration 'fully_use_devices' = True, "
+        << "but the specified strategy uses device: " << used_devices << ", total devices: " << total_device_num
+        << ", try to set 'set_algo_parameters(fully_use_devices=False)' "
+           "in package 'mindspore.parallel'.";
+    }
+  }
+}
+
 void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> attrs) {
-  StrategyPtr strategyPtr;
+  auto cnode = operator_info->cnode();
   std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
   std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
   if (ExtractUserConfigLayout(attrs, operator_info->inputs_shape(), operator_info->outputs_shape(), &in_tensor_layouts,
                               &out_tensor_layouts) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Failure:operator " << operator_info->name() << " extract configured layout failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << operator_info->name()
+                                       << " extract configured layout failed";
   }
   Strategies in_strategy;
   (void)std::transform(in_tensor_layouts.begin(), in_tensor_layouts.end(), std::back_inserter(in_strategy),
@@ -342,7 +363,12 @@ void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::
   MS_LOG(INFO) << "Converted strategies from in_tensor_layouts: " << in_strategy;
   StrategyPtr in_strategy_ptr = NewStrategy(0, in_strategy);
   operator_info->set_strategy(in_strategy_ptr);
-  operator_info->SetCostUnderStrategy(in_strategy_ptr);
+  // Set cost for this configured strategy
+  if (operator_info->SetCostUnderStrategy(in_strategy_ptr) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << operator_info->name()
+                                       << " SetCostUnderStrategy failed";
+  }
+  CheckStrategyUsedDevices(operator_info);
   operator_info->set_config_by_layout(true);
   (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
   if (OutLayoutFound(attrs)) {
@@ -392,24 +418,7 @@ void SetStrategyToOperator(const OperatorInfoPtr &operator_info, const Primitive
   if (operator_info->SetCostUnderStrategy(strategyPtr) != SUCCESS) {
     MS_LOG(EXCEPTION) << "Failure: operator " << prim->name() << " SetCostUnderStrategy failed";
   }
-
-  const auto fully_use_devices = CostModelContext::GetInstance()->fully_use_device();
-  if (fully_use_devices) {
-    // If configured to fully use devices, then checking for the user-specified strategy
-    int64_t used_devices = operator_info->used_devices();
-    MS_EXCEPTION_IF_NULL(g_device_manager);
-    auto total_device_num = g_device_manager->GetDeviceListByStageId(0).size();
-
-    // 'used_devices == -1' means that 'used_devices_' is not set
-    // 'used_devices == 1' means that ALL-1 strategy, which is valid in auto-parallel
-    if (used_devices == -1 || (used_devices != 1 && LongToSize(used_devices) != total_device_num)) {
-      MS_LOG(EXCEPTION) << "In current configuration 'fully_use_devices' = True, "
-                        << "but the specified strategy uses device: " << used_devices
-                        << ", total devices: " << total_device_num
-                        << ", try to set 'set_algo_parameters(fully_use_devices=False)' "
-                           "in package 'mindspore.parallel'.";
-    }
-  }
+  CheckStrategyUsedDevices(operator_info);
   (void)configured_stra_ops_.emplace(operator_info, strategyPtr);
 }
 

@@ -182,7 +182,6 @@ def test_parameter_plan_with_layout_4x1():
     check_layout_config(para2, file2, in_strategy2)
 
 
-@pytest.mark.skip(reason="IR content check based on string is unreasonable")
 def test_reshard_with_layout_in_attrs():
     """
     Feature: Reshard input must be type Layout.
@@ -192,7 +191,7 @@ def test_reshard_with_layout_in_attrs():
     net, x, ir_graph_path = before_test("test_reshard_with_layout_in_attrs")
     compile_net(net, x, layout1, layout2)
     file = f"{ir_graph_path}/rank_0/step_parallel_begin_*"
-    para1 = "x4_reshard) = PrimFunc_AShardIdentity"
+    para1 = "PrimFunc_AShardIdentity"
     in_layout1 = (
         "in_layout: ({'device_matrix': (2, 2), 'tensor_map': (1, -1), 'interleaved_parallel': false, "
         "'alias_name': (dp, mp)})"
@@ -201,7 +200,7 @@ def test_reshard_with_layout_in_attrs():
         "out_layout: ({'device_matrix': (2, 2), 'tensor_map': (1, -1), 'interleaved_parallel': false, "
         "'alias_name': (dp, mp)})"
     )
-    para2 = "y_reshard) = PrimFunc_AShardIdentity"
+    para2 = "PrimFunc_AShardIdentity"
     in_layout2 = (
         "in_layout: ({'device_matrix': (2, 2), 'tensor_map': (-1, 0), 'interleaved_parallel': false, "
         "'alias_name': (dp, mp)})"
@@ -226,6 +225,7 @@ def test_reshard_with_layout_propagation():
     para1 = "PrimFunc_MatMul(%87, %88"
     matmul_strategy = "in_strategy: ((1, 2), (2, 1))"
     check_layout_config(para1, file, matmul_strategy)
+
 
 def test_reshard_with_tuple_as_input():
     """
