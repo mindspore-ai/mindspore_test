@@ -1375,11 +1375,12 @@ static int FindTryBlockEnd(int start, const CFG *cfg) {
   if (list.size() < static_cast<unsigned int>(finallyOrElseBci)) {
     return list.back()->bci();
   }
+  constexpr auto preced2 = 2;
   int precedFinallyOrElseOp = list[finallyOrElseBci - 1]->op();
-  int precedFinallyOrElseOp2 = list[finallyOrElseBci - 2]->op();
+  int precedFinallyOrElseOp2 = list[finallyOrElseBci - preced2]->op();
   if (precedFinallyOrElseOp == RERAISE && precedFinallyOrElseOp2 == JUMP_FORWARD) {
     // try/except/else 无finally的场景
-    return list[finallyOrElseBci - 2]->extra_jump()->bci();
+    return list[finallyOrElseBci - preced2]->extra_jump()->bci();
   } else if (precedFinallyOrElseOp == RERAISE) {
     // try/except/else/finally
     return finallyOrElseBci;
