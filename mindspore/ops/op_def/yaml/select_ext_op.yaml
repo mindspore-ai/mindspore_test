@@ -1,0 +1,17 @@
+#operator select_ext
+select_ext:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: int
+        index:
+            dtype: int
+    returns:
+        output:
+            dtype: tensor
+    view: True
+    class:
+        name: SelectExt
+    dispatch:
+        enable: True

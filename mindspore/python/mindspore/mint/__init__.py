@@ -328,10 +328,14 @@ from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 # 289
 from mindspore.ops.auto_generate import sign
 
+from mindspore.ops.auto_generate import select_ext as select
+
 # 301
 from mindspore.ops.function.math_func import tan
 
 from mindspore.ops.auto_generate import trace_ext as trace
+
+from mindspore.ops.function.array_func import reshape
 
 # 304
 from mindspore.ops.function.array_func import tril_ext as tril
@@ -1309,6 +1313,7 @@ __all__ = [
     'masked_select',
 
     # 86
+    'select',
 
     # 87
 
@@ -1443,6 +1448,7 @@ __all__ = [
     # 301
     'tan',
     'trace',
+    'reshape',
     # 304
     'tril',
 
