@@ -131,6 +131,17 @@ bool Graph::IsBreakAtLoop() const {
   return res != break_bci;
 }
 
+/**
+ * Should Never Compile
+ */
+bool Graph::ShouldNeverCompile() const {
+  if (this->IsBreakAtLoop() && !this->RestoreLoopStatus()) {
+    return true;
+  }
+
+  return found_inner_class;
+}
+
 bool Graph::IsBreakAtLoopAfterUnrolling() const {
   if (!Config().GetBoolConfig(GraphJitConfig::kLoopUnrolling)) {
     return false;
