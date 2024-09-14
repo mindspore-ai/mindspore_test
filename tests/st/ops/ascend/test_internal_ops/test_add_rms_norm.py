@@ -34,7 +34,7 @@ class Add_RmsNorm(nn.Cell):
         self.t_scale = Parameter(Tensor(np.ones((1,)).astype(
             np.float16), dtype=ms.float16) * 2)
         self.t_zp = Parameter(Tensor(np.ones((1,)).astype(
-            np.int8), dtype=ms.int8) * 2)
+            np.float16), dtype=ms.float16) * 2)
 
     def construct(self, x1, x2, gamma):
         res = x1 + x2
