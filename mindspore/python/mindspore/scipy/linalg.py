@@ -910,10 +910,10 @@ def lstsq(A, B, rcond=None, driver=None):
         >>> from mindspore.scipy.linalg import lstsq
         >>> a = Tensor(onp.array([[3, 0, 0, 0], [2, 1, 0, 0], [1, 0, 1, 0], [1, 1, 1, 1]], onp.float32))
         >>> b = Tensor(onp.array([3, 1, 3, 4], onp.float32))
-        >>> x = lstsq(a, b)
-        >>> print(x)
+        >>> solution, residual, rank, singular_value = lstsq(a, b)
+        >>> print(solution)
         [ 1. -1.  2.  2.]
-        >>> print(a @ x)  # Check the result
+        >>> print(a @ solution)  # Check the result
         [3. 1. 3. 4.]
     """
     return ops.auto_generate.lstsq_v2_op(A, B, driver)
