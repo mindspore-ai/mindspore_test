@@ -28,6 +28,7 @@
 #include "op_def/other_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
+#include "plugin/device/ascend/optimizer/optimizer_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -305,6 +306,7 @@ const AnfNodePtr AlltoAllVUnifyMindIR::Process(const FuncGraphPtr &graph, const 
     auto concat_node = CreateConcatNode(kernel_graph, flatten_reshape_nodes);
     concat_node->set_scope(node->scope());
     atav_input = concat_node;
+    OptimizerUtils::MoveContrlDepend(graph, all_to_all_v->input(1), concat_node);
   }
   // get the outputs shapes of origin node to restore outputs of new node
   auto origin_output_shapes = GetAlltoAllVOutputShapes(all_to_all_v);
@@ -314,16 +316,28 @@ const AnfNodePtr AlltoAllVUnifyMindIR::Process(const FuncGraphPtr &graph, const 
     return new_atav_node;
   }
   AnfNodePtrList reshape_inputs;
+  std::vector<CNodePtr> moved_depends;
   if (origin_output_shapes.size() == 1) {
     (void)reshape_inputs.emplace_back(new_atav_node);
   } else {
-    auto split_node = CreateSplitNode(kernel_graph, new_atav_node, origin_output_shapes);
+    OptimizerUtils::MoveContrlDepend(graph, node, new_atav_node);
+    moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_atav_node);
+    auto pre_node = new_atav_node;
+    if (!moved_depends.empty()) {
+      pre_node = moved_depends[0];
+    }
+    auto split_node = CreateSplitNode(kernel_graph, pre_node, origin_output_shapes);
     split_node->set_scope(node->scope());
     CreateMultipleOutputsOfAnfNode(graph, split_node, origin_output_shapes.size(), &reshape_inputs);
   }
   auto reshape_nodes = CreateReshapeNodes(graph, reshape_inputs, origin_output_shapes);
   auto maketuple_node = CreateMakeTupleNode(graph, reshape_nodes);
   maketuple_node->set_scope(node->scope());
+
+  if (origin_output_shapes.size() != 1) {
+    OptimizerUtils::ReplaceDataDepend(graph, moved_depends, maketuple_node);
+  }
+
   return maketuple_node;
 }
 }  // namespace opt

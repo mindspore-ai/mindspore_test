@@ -14,6 +14,7 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./heterogeneous/*.cc"
         "./ge_backend_optimization.cc"
         "./ge_optimization.cc"
+        "./optimizer_utils.cc"
         "./get_value_helper.cc"
         "./backend_common_unify_mindir.cc"
         "./format_type/insert_cast.cc"
