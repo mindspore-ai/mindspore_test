@@ -29,8 +29,10 @@ from mindspore.ops.vm_impl_registry import get_vm_impl_fn, vm_impl_registry
 from mindspore.ops.op_info_register import op_info_register, custom_info_register, AkgGpuRegOp, AkgAscendRegOp, \
     AiCPURegOp, TBERegOp, CpuRegOp, CustomRegOp, DataType
 from mindspore.ops.primitive import constexpr
-from mindspore.ops import composite, operations, functional, function, auto_generate    # pylint: disable=import-self
+from mindspore.ops import composite, operations, functional, function
 from mindspore.ops import signature
+from mindspore.ops.auto_generate import cpp_create_prim_instance_helper, gen_arg_dtype_cast, gen_arg_handler, \
+    gen_extend_func, gen_ops_def, gen_ops_prim, pyboost_inner_prim
 from mindspore.ops.composite import *
 from mindspore.ops.operations import *
 from mindspore.ops.function import *
@@ -43,7 +45,9 @@ __primitive__ = [
 __all__ = ["get_vm_impl_fn", "vm_impl_registry",
            "op_info_register", "custom_info_register", "AkgGpuRegOp", "AkgAscendRegOp", "AiCPURegOp", "TBERegOp",
            "CpuRegOp", "CustomRegOp", "DataType",
-           "constexpr", "reshard"]
+           "constexpr", "reshard",
+           "cpp_create_prim_instance_helper", "gen_arg_dtype_cast", "gen_arg_handler", "gen_extend_func", "gen_ops_def",
+           "gen_ops_prim", "pyboost_inner_prim"]
 __all__.extend(__primitive__)
 __all__.extend(composite.__all__)
 __all__.extend(operations.__all__)
