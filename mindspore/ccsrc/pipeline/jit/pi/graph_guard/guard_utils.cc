@@ -2237,7 +2237,15 @@ class ReprGuard : public GuardItem {
 
   bool operator==(const GuardItem &obj) const override {
     if (GuardItem::operator==(obj)) {
-      return refRepr_ == (static_cast<const ReprGuard &>(obj)).refRepr_;
+      int ret = PyUnicode_Compare(refRepr_, static_cast<const ReprGuard &>(obj).refRepr_);
+      if (ret == 0) {
+        return true;
+      } else if (ret == -1 && PyErr_Occurred()) {
+        // This function returns -1 upon failure, so one should call PyErr_Occurred() to check for errors.
+        // Refer to: https://docs.python.org/3/c-api/unicode.html
+        MS_LOG(INFO) << "Python error occurs when comparing two ReprGuards";
+        PyErr_Clear();
+      }
     }
     return false;
   }
