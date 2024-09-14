@@ -12,7 +12,7 @@ mindspore.ops.LSTM
         - **hidden_size** (int) - 隐藏状态大小。
         - **num_layers** (int) - LSTM的网络层数，当前CPU只支持 `1`。
         - **has_bias** (bool) - Cell是否有偏置 `b_ih` 和 `b_hh` ，当前CPU只支持 `False`。
-        - **bidirectional** (bool) - 是否为双向LSTM，当前CPU只支持 `True`。
+        - **bidirectional** (bool) - 是否为双向LSTM，当前CPU只支持 `False`。
         - **dropout** (float) - 指的是除第一层外每层输入时的dropout概率。dropout的范围为[0.0, 1.0]。
         - **proj_size** (int) - 如果大于0，则会使用对应大小的投影，当前只支持CPU后端。默认值: ``0``。
 
