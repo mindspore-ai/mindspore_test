@@ -248,6 +248,7 @@ class KernelActor : public DebugAwareActor {
   void InitOutputInfo();
   void InitWorkspaceInfo();
   void InitShapeDependInfo();
+  void InitIsMonadInput();
 
   // Fetch the device tensor for launch.
   void FetchInputDeviceTensor(OpContext<DeviceTensor> *const context);
@@ -306,6 +307,7 @@ class KernelActor : public DebugAwareActor {
   bool skip_launch_shape_related_op_{false};
 
   bool is_output_kernel_{false};
+  std::vector<bool> is_monad_input_;
 };
 
 using KernelActorPtr = std::shared_ptr<KernelActor>;
