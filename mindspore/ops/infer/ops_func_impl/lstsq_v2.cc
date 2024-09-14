@@ -131,7 +131,7 @@ BaseShapePtr LstsqV2FuncImpl::InferShape(const PrimitivePtr &primitive,
   } else {
     output_singular_shape_vec.emplace_back(0);
   }
-  if (expected_b_dim == 2) {
+  if (expected_b_dim == kIndex2) {
     output_solusion_shape_vec.emplace_back(k);
   }
 

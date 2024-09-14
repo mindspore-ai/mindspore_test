@@ -73,7 +73,7 @@ int LstsqV2GradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   auto b_shape = inputs.at(kIndexB)->GetShapeVector();
   size_t a_dims = a_shape.size();
   size_t b_dims = b_shape.size();
-  size_t batch_dims = a_dims - 2;
+  size_t batch_dims = a_dims - kMatrixSize;
   batch_ = 1;
   ga_size_ = 1;
   gb_size_ = 1;
@@ -86,9 +86,9 @@ int LstsqV2GradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     gb_size_ *= LongToSize(b_shape[idx]);
   }
 
-  m_ = LongToSize(a_shape[a_dims - 2]);
-  n_ = LongToSize(a_shape[a_dims - 1]);
-  k_ = a_dims == b_dims ? LongToSize(b_shape[b_dims - 1]) : 1;
+  m_ = LongToSize(a_shape[a_dims - kMatrixSize]);
+  n_ = LongToSize(a_shape[a_dims - kVectorSize]);
+  k_ = a_dims == b_dims ? LongToSize(b_shape[b_dims - kVectorSize]) : 1;
   a_mat_size_ = m_ * n_;
   b_mat_size_ = m_ * k_;
   ga_size_ *= a_mat_size_;

@@ -209,7 +209,7 @@ uint32_t FFTBaseCpuKernel::FFTBaseComputeC2C(CpuKernelContext &ctx) {
   int64_t dim = reinterpret_cast<int64_t *>(ctx.Input(dim_index)->GetData())[0];
   dim = dim < 0 ? x_rank + dim : dim;
   if (n_is_none) {
-    n = op_name == kHFFT ? (tensor_shape[dim] - 1) * 2 : tensor_shape[dim];
+    n = op_name == kHFFT ? (tensor_shape[dim] - 1) * kOnesideDivisor : tensor_shape[dim];
   }
 
   NormMode norm;

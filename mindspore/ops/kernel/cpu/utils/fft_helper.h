@@ -25,6 +25,7 @@
 #include <functional>
 #include "mindapi/base/types.h"
 #include "pocketfft_hdronly.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace kernel {
@@ -119,9 +120,9 @@ void PocketFFTC2R(std::complex<T> *calculate_input, T *output_ptr, bool forward,
   size_t tmp_in = sizeof(std::complex<T>);
   size_t tmp_out = sizeof(T);
   for (int i = shape.size() - 1; i >= 0; --i) {
-    stride_in[i] = tmp_in;
+    stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
-    stride_out[i] = tmp_out;
+    stride_out[i] = SizeToLong(tmp_out);
     tmp_out *= shape[i];
   }
   pocketfft::shape_t axes;
@@ -137,14 +138,15 @@ void PocketFFTR2C(T *calculate_input, std::complex<T> *output_ptr, bool forward,
   pocketfft::shape_t shape(calculate_shape.begin(), calculate_shape.end());
   pocketfft::stride_t stride_in(shape.size());
   pocketfft::stride_t stride_out(shape.size());
+  const int64_t kNum2 = 2;
   size_t tmp_in = sizeof(T);
   size_t tmp_out = sizeof(std::complex<T>);
   for (int i = shape.size() - 1; i >= 0; --i) {
-    stride_in[i] = tmp_in;
+    stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
-    stride_out[i] = tmp_out;
-    if (i == dim.back()) {
-      tmp_out *= shape[i] / 2 + 1;
+    stride_out[i] = SizeToLong(tmp_out);
+    if (static_cast<int64_t>(i) == dim.back()) {
+      tmp_out *= shape[i] / kNum2 + 1;
     } else {
       tmp_out *= shape[i];
     }
@@ -165,9 +167,9 @@ void PocketFFTC2C(std::complex<T> *calculate_input, std::complex<T> *output_ptr,
   size_t tmp_in = sizeof(std::complex<T>);
   size_t tmp_out = sizeof(std::complex<T>);
   for (int i = shape.size() - 1; i >= 0; --i) {
-    stride_in[i] = tmp_in;
+    stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
-    stride_out[i] = tmp_out;
+    stride_out[i] = SizeToLong(tmp_out);
     tmp_out *= shape[i];
   }
   pocketfft::shape_t axes;
@@ -186,9 +188,9 @@ void PocketFFTDCT(T *calculate_input, T *output_ptr, int dct_type, T fct, const 
   size_t tmp_in = sizeof(T);
   size_t tmp_out = sizeof(T);
   for (int i = shape.size() - 1; i >= 0; --i) {
-    stride_in[i] = tmp_in;
+    stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
-    stride_out[i] = tmp_out;
+    stride_out[i] = SizeToLong(tmp_out);
     tmp_out *= shape[i];
   }
   pocketfft::shape_t axes;

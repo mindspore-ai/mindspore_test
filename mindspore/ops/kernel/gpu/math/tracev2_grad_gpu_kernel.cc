@@ -139,9 +139,9 @@ bool TraceV2GradGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &in
   int32_t idx = 0;
   for (int64_t i = 0; i < din_rank; i++) {
     if (i == *axis1_h) {
-      input_perm.emplace_back(static_cast<int32_t>(din_rank) - 2);
+      input_perm.emplace_back(static_cast<int32_t>(din_rank) - kIndex2);
     } else if (i == *axis2_h) {
-      input_perm.emplace_back(static_cast<int32_t>(din_rank) - 1);
+      input_perm.emplace_back(static_cast<int32_t>(din_rank) - kIndex1);
     } else {
       input_perm.emplace_back(idx);
       idx++;

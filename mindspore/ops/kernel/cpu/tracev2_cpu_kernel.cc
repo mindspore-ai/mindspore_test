@@ -34,6 +34,7 @@ constexpr size_t kIndexAxis2 = 3;
 constexpr size_t kIndexDtype = 4;
 constexpr size_t kIndexOut = 0;
 constexpr size_t kIndexTransX = 0;
+constexpr int64_t kRank2 = 2;
 }  // namespace
 
 bool TraceV2CpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
@@ -55,7 +56,7 @@ int TraceV2CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   }
   std::vector<int64_t> x_shape = inputs[kIndex0]->GetShapeVector();
   int64_t x_rank = static_cast<int64_t>(x_shape.size());
-  if (x_rank < 2) {
+  if (x_rank < kRank2) {
     MS_LOG(WARNING) << "For '" << kernel_name_
                     << "', the dim of input 'x' should greateer or equal to 2, but got 'x' at" << x_rank
                     << "-dimention";

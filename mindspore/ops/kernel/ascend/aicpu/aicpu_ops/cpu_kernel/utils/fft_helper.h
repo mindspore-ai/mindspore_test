@@ -136,6 +136,7 @@ void PocketFFTR2C(T *calculate_input, std::complex<T> *output_ptr, bool forward,
   pocketfft::shape_t shape(calculate_shape.begin(), calculate_shape.end());
   pocketfft::stride_t stride_in(shape.size());
   pocketfft::stride_t stride_out(shape.size());
+  const int64_t kNum2 = 2;
   size_t tmp_in = sizeof(T);
   size_t tmp_out = sizeof(std::complex<T>);
   for (int i = shape.size() - 1; i >= 0; --i) {
@@ -143,7 +144,7 @@ void PocketFFTR2C(T *calculate_input, std::complex<T> *output_ptr, bool forward,
     tmp_in *= shape[i];
     stride_out[i] = tmp_out;
     if (i == dim.back()) {
-      tmp_out *= shape[i] / 2 + 1;
+      tmp_out *= shape[i] / kNum2 + 1;
     } else {
       tmp_out *= shape[i];
     }

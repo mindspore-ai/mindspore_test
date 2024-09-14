@@ -126,8 +126,6 @@ bool FFTOrthoCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
 std::vector<std::pair<KernelAttr, FFTOrthoCpuKernelMod::FFTOrthoFunc>> FFTOrthoCpuKernelMod::func_list_ = {
   {ONE_DIM_CPU_REG(kNumberTypeFloat32, kNumberTypeFloat32, float)},
   {ONE_DIM_CPU_REG(kNumberTypeFloat64, kNumberTypeFloat64, double)}};
-//  {ONE_DIM_CPU_REG(kNumberTypeComplex64, kNumberTypeComplex64, complex64)},
-//  {ONE_DIM_CPU_REG(kNumberTypeComplex128, kNumberTypeComplex128, complex128)}};
 
 std::vector<KernelAttr> FFTOrthoCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;

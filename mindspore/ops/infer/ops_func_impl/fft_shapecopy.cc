@@ -57,7 +57,6 @@ int32_t FFTShapeCopyFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   auto check_status = OP_CHECK_SUCCESS;
   const auto &input_x_shape = input_args[kIndex0]->GetShape();
   auto x_shape_vec = input_x_shape->GetShapeVector();
-
   if (MS_UNLIKELY(IsDynamicRank(x_shape_vec))) {
     check_status = OP_CHECK_RETRY;
   }

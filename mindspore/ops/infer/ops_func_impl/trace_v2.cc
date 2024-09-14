@@ -33,13 +33,14 @@ BaseShapePtr TraceV2FuncImpl::InferShape(const PrimitivePtr &primitive,
   auto base_shape = input_args[kInputIndex0]->GetShape();
   MS_EXCEPTION_IF_NULL(base_shape);
   const auto &shape = base_shape->GetShapeVector();
-  int64_t x_rank = shape.size();
+  int64_t x_rank = static_cast<int64_t>(shape.size());
   if (IsDynamicRank(shape)) {
     ShapeVector out_shape = {abstract::Shape::kShapeRankAny};
     auto out_shape_ptr = std::make_shared<abstract::Shape>(out_shape);
     return out_shape_ptr;
   }
-  if (x_rank < 2) {
+  constexpr int64_t kMatrixRank = 2;
+  if (x_rank < kMatrixRank) {
     MS_LOG(EXCEPTION) << "For Primitive[Tracev2], the dim of input 'x' should greater or equal to 2, but got 'x' at "
                       << x_rank << "-dimention";
   }

@@ -31,6 +31,14 @@ constexpr size_t kIndexAxis1 = 3;
 constexpr size_t kIndexAxis2 = 4;
 constexpr size_t kIndexDin = 0;
 constexpr size_t kMaxDim = 8;
+constexpr uint32_t kIndex0 = 0;
+constexpr uint32_t kIndex1 = 1;
+constexpr uint32_t kIndex2 = 2;
+constexpr uint32_t kIndex3 = 3;
+constexpr uint32_t kIndex4 = 4;
+constexpr uint32_t kIndex5 = 5;
+constexpr uint32_t kIndex6 = 6;
+constexpr uint32_t kIndex7 = 7;
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
 using float16 = Eigen::half;
@@ -115,9 +123,9 @@ void transpose_step(T *in_addr, T *out_addr, int64_t *shape_out, int64_t in_rank
       perm_vec.emplace_back(idx);
       idx += 1;
     } else if (i == axis1) {
-      perm_vec.emplace_back(in_rank - 2);
+      perm_vec.emplace_back(in_rank - kIndex2);
     } else {
-      perm_vec.emplace_back(in_rank - 1);
+      perm_vec.emplace_back(in_rank - kIndex1);
     }
   }
   shape_in.emplace_back(shape_out[axis1]);
@@ -129,12 +137,12 @@ void transpose_step(T *in_addr, T *out_addr, int64_t *shape_out, int64_t in_rank
   }
   using Eigen_Tensor = Eigen::TensorMap<Eigen::Tensor<T, kMaxDim, Eigen::RowMajor>, Eigen::Aligned>;
 
-  Eigen_Tensor trans_input(in_addr, trans_in_shape.at(0), trans_in_shape.at(1), trans_in_shape.at(2),
-                           trans_in_shape.at(3), trans_in_shape.at(4), trans_in_shape.at(5), trans_in_shape.at(6),
-                           trans_in_shape.at(7));
-  Eigen_Tensor trans_output(out_addr, trans_out_shape.at(0), trans_out_shape.at(1), trans_out_shape.at(2),
-                            trans_out_shape.at(3), trans_out_shape.at(4), trans_out_shape.at(5), trans_out_shape.at(6),
-                            trans_out_shape.at(7));
+  Eigen_Tensor trans_input(in_addr, trans_in_shape.at(kIndex0), trans_in_shape.at(kIndex1), trans_in_shape.at(kIndex2),
+                           trans_in_shape.at(kIndex3), trans_in_shape.at(kIndex4), trans_in_shape.at(kIndex5),
+                           trans_in_shape.at(kIndex6), trans_in_shape.at(kIndex7));
+  Eigen_Tensor trans_output(out_addr, trans_out_shape.at(kIndex0), trans_out_shape.at(kIndex1),
+                            trans_out_shape.at(kIndex2), trans_out_shape.at(kIndex3), trans_out_shape.at(kIndex4),
+                            trans_out_shape.at(kIndex5), trans_out_shape.at(kIndex6), trans_out_shape.at(kIndex7));
   Eigen::array<Eigen::DenseIndex, kMaxDim> perm_compute;
   for (size_t j = 0; j < kMaxDim; ++j) {
     if (j < trans_offset) {
@@ -160,10 +168,10 @@ uint32_t TraceV2GradCpuKernel::TraceV2GradCompute(CpuKernelContext &ctx) {
 
   std::vector<int64_t> dout_shape = ctx.Input(kIndexDOut)->GetTensorShape()->GetDimSizes();
   int64_t dout_rank = static_cast<int64_t>(dout_shape.size());
-  int64_t din_rank = dout_rank + 2;
+  int64_t din_rank = dout_rank + kIndex2;
   axis1 = axis1 < 0 ? axis1 + din_rank : axis1;
   axis2 = axis2 < 0 ? axis2 + din_rank : axis2;
-  if (dout_rank == 1 && dout_shape[0] < 2) din_rank = 2;
+  if (dout_rank == kIndex1 && dout_shape[0] < kIndex2) din_rank = kIndex2;
   int64_t mat_size = input_shape[axis1] * input_shape[axis2];
   int64_t mat_row_size = input_shape[axis2];
   int64_t mat_col_size = input_shape[axis1];

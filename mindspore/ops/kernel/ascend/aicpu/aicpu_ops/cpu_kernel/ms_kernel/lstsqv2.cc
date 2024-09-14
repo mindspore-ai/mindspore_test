@@ -178,13 +178,9 @@ uint32_t LstsqV2CpuKernel::LstsqV2Compute(CpuKernelContext &ctx) {
   bool driver_is_none = (ctx.Input(kIndexDriver) == nullptr) ||
                         (CpuKernelUtils::GetTensorName(ctx.Input(kIndexDriver)) != kInputDriverName);
 
-  int64_t driver;
+  int64_t driver = kDriverGELSY;
 
-  if (driver_is_none) {
-    driver = kDriverGELSY;
-  } else {
-    driver = reinterpret_cast<int64_t *>(ctx.Input(kIndexDriver)->GetData())[0];
-  }
+  if (!driver_is_none) driver = reinterpret_cast<int64_t *>(ctx.Input(kIndexDriver)->GetData())[0];
   T1 *temp_addr = static_cast<T1 *>(malloc(sizeof(T1) * b_mat_size));
   CUST_KERNEL_CHECK_NULLPTR(ctx, temp_addr, KERNEL_STATUS_INNER_ERROR, "[LstsqV2] Malloc memory [temp_addr] failed!")
   // calculate rank and singular value with A batch dim

@@ -27,9 +27,9 @@
 namespace mindspore {
 namespace ops {
 BaseShapePtr FFTInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  const int64_t kNum = 2;
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
-
   // When input is a dynamic rank, it needs to be processed in the kernel
   if (IsDynamicRank(input_shape)) {
     ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
@@ -54,14 +54,14 @@ BaseShapePtr FFTInferShape(const PrimitivePtr &primitive, const std::vector<Abst
 
       y_shape[tmp_pos] = n;
       if (primitive->name() == prim::kPrimIHFFT->name() || primitive->name() == prim::kPrimRFFT->name()) {
-        y_shape[tmp_pos] = n / 2 + 1;
+        y_shape[tmp_pos] = n / kNum + 1;
       }
     }
   } else {
     if (primitive->name() == prim::kPrimHFFT->name() || primitive->name() == prim::kPrimIRFFT->name()) {
-      y_shape[tmp_pos] = (y_shape[tmp_pos] - 1) * 2;
+      y_shape[tmp_pos] = (y_shape[tmp_pos] - 1) * kNum;
     } else if (primitive->name() == prim::kPrimIHFFT->name() || primitive->name() == prim::kPrimRFFT->name()) {
-      y_shape[tmp_pos] = y_shape[tmp_pos] / 2 + 1;
+      y_shape[tmp_pos] = y_shape[tmp_pos] / kNum + 1;
     }
   }
 
@@ -121,7 +121,7 @@ void FFTNGetAttr(const std::vector<AbstractBasePtr> &input_args, std::vector<int
       dim->clear();
       *dim = dim_opt.value().ToVector();
       for (size_t i = 0; i < dim->size(); i++) {
-        (*dim)[i] = (*dim)[i] < 0 ? x_rank + (*dim)[i] : (*dim)[i];
+        (*dim)[i] = (*dim)[i] < 0 ? SizeToLong(x_rank) + (*dim)[i] : (*dim)[i];
       }
     }
   }
@@ -145,9 +145,9 @@ void FFTNGetAttr(const std::vector<AbstractBasePtr> &input_args, std::vector<int
 }
 
 BaseShapePtr FFTNInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  const int64_t kNum = 2;
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
-
   if (IsDynamicRank(input_shape)) {
     ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
     return std::make_shared<abstract::TensorShape>(dyn_output);
@@ -199,14 +199,14 @@ BaseShapePtr FFTNInferShape(const PrimitivePtr &primitive, const std::vector<Abs
   }
 
   if (is_double_shape_prim && s_is_none) {
-    y_shape[dim.back()] = (y_shape[dim.back()] - 1) * 2;
+    y_shape[dim.back()] = (y_shape[dim.back()] - 1) * kNum;
   }
 
   if (is_half_shape_prim && s_is_none) {
-    y_shape[dim.back()] = y_shape[dim.back()] / 2 + 1;
+    y_shape[dim.back()] = y_shape[dim.back()] / kNum + 1;
   }
   if (is_half_shape_prim && !s_is_none) {
-    y_shape[dim.back()] = s.back() / 2 + 1;
+    y_shape[dim.back()] = s.back() / kNum + 1;
   }
   return std::make_shared<abstract::TensorShape>(y_shape);
 }
@@ -247,7 +247,7 @@ BaseShapePtr DCTNInferShape(const PrimitivePtr &primitive, const std::vector<Abs
     } else {
       dim = dim_opt.value().ToVector();
       for (size_t i = 0; i < dim.size(); i++) {
-        dim[i] = dim[i] < 0 ? x_rank + dim[i] : dim[i];
+        dim[i] = dim[i] < 0 ? SizeToLong(x_rank) + dim[i] : dim[i];
       }
     }
   } else {
