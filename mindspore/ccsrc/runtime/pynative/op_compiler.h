@@ -32,6 +32,8 @@
 namespace mindspore {
 using device::DeviceContext;
 using session::KernelWithIndex;
+using GetGraphInfoFunc = std::function<std::string(const pynative::BaseOpRunInfo &op_info, const PrimitivePtr &op_prim,
+                                                   const std::string &graph_info)>;
 namespace pynative {
 constexpr size_t kAlignSize = 64;
 struct OpCompilerInfo {
@@ -96,6 +98,7 @@ class BACKEND_EXPORT OpCompiler {
   bool IsInvalidInferResultOp(const std::string &op_name) const;
 
   static void UpdateRefNodeOutputDeviceAddress(const KernelGraphPtr &graph);
+  void set_get_graph_info_func(const GetGraphInfoFunc &func) { get_graph_info_func_ = func; }
 
  private:
   OpCompiler();
@@ -107,6 +110,7 @@ class BACKEND_EXPORT OpCompiler {
   // All operators shared the same session.
   session::SessionPtr session_;
   mindspore::HashMap<mindspore::GraphInfo, OpCompilerInfoPtr> op_compiler_infos_;
+  GetGraphInfoFunc get_graph_info_func_{nullptr};
 };
 }  // namespace pynative
 using OpCompilerInfoPtr = pynative::OpCompilerInfoPtr;

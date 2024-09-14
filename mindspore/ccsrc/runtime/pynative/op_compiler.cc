@@ -28,9 +28,6 @@
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/device/device_address_utils.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
-#ifdef ENABLE_D
-#include "transform/acl_ir/acl_adapter_info.h"
-#endif
 
 namespace mindspore {
 using runtime::DeviceAddressUtils;
@@ -262,61 +259,6 @@ void OpCompiler::KernelBuild(const OpCompilerInfoPtr &op_compiler_info, const De
   SetIgnoreSyncHostToDeviceList(op_compiler_info->simple_graph_, device_context);
 }
 
-#ifdef ENABLE_D
-std::string GetGraphInfoForAscendSpecial(const pynative::BaseOpRunInfo &op_info, const PrimitivePtr &op_prim,
-                                         const std::string &graph_info) {
-  std::string ascend_special_info = graph_info;
-  MS_EXCEPTION_IF_NULL(op_prim);
-  auto op_name = op_prim->name();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice &&
-      transform::AclAdapterManager::GetInstance().CheckAclAdapter(op_name)) {
-    auto acl_info = transform::AclAdapterManager::GetInstance().GetOpInfo(op_name);
-    if (!acl_info.input_selector().empty() || acl_info.output_selector() != nullptr) {
-      if (op_info.expanded_input_values.size() == 0) {
-        return ascend_special_info;
-      }
-      TypeId first_dtype = TypeId::kTypeUnknown;
-      std::vector<ShapeVector> input_shapes;
-      (void)std::transform(op_info.expanded_input_values.begin(), op_info.expanded_input_values.end(),
-                           std::back_inserter(input_shapes), [&first_dtype](const ValuePtr &value) -> ShapeVector {
-                             auto tensor = value->cast<tensor::BaseTensorPtr>();
-                             if (tensor != nullptr) {
-                               if (first_dtype == TypeId::kTypeUnknown) {
-                                 first_dtype = tensor->data_type();
-                               }
-                               return tensor->shape();
-                             }
-                             return {};
-                           });
-
-      auto in_func_map = acl_info.input_selector();
-      for (auto [index, in_func] : in_func_map) {
-        MS_EXCEPTION_IF_NULL(in_func);
-        auto tensor = op_info.expanded_input_values[index]->cast<tensor::BaseTensorPtr>();
-        MS_EXCEPTION_IF_NULL(tensor);
-        ascend_special_info += in_func(tensor->data_type(), input_shapes);
-      }
-
-      auto out_func = acl_info.output_selector();
-      if (out_func != nullptr) {
-        auto tensor = op_info.expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
-        MS_EXCEPTION_IF_NULL(tensor);
-        auto out_format = out_func(tensor->data_type(), input_shapes);
-        ascend_special_info += out_format;
-      }
-      MS_EXCEPTION_IF_NULL(out_func);
-      auto tensor = op_info.expanded_input_values[0]->cast<tensor::BaseTensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      auto out_format = out_func(tensor->data_type(), input_shapes);
-      ascend_special_info += out_format;
-    }
-  }
-  return ascend_special_info;
-}
-#endif
-
 inline std::set<int64_t> GetDependList(const pynative::BaseOpRunInfo &op_info, const PrimitivePtr &op_prim) {
   auto depend_list = ops::GetInputDependValueList(op_prim);
   if (!op_info.dyn_input_sizes.empty()) {
@@ -421,10 +363,10 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
     (void)graph_info.append("r_").append(std::to_string(op_info.py_prim_id_)).append("_");
   }
 
-#ifdef ENABLE_D
-  // Ascend special info.
-  graph_info = GetGraphInfoForAscendSpecial(op_info, op_prim, graph_info);
-#endif
+  if (get_graph_info_func_) {
+    MS_LOG(INFO) << "Call reg get graph info func.";
+    graph_info = get_graph_info_func_(op_info, op_prim, graph_info);
+  }
 
   return graph_info;
 }
