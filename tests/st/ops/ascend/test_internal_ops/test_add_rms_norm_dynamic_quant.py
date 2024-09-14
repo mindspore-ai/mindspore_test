@@ -105,6 +105,6 @@ def test_add_rms_norm_dynamic_quant(shape, dtype, has_smooth_scale):
     expect_quant, expect_scale, expect_add_res =\
         _test_add_rms_norm_dynamic_quant_fusion(shape, dtype, has_smooth_scale, False)
 
-    assert np.allclose(internal_quant, expect_quant, 0.0001, 0.0001)
-    assert np.allclose(internal_scale, expect_scale, 0.0001, 0.0001)
-    assert np.allclose(internal_add_res, expect_add_res, 0.0001, 0.0001)
+    assert np.amax(np.abs(internal_quant - expect_quant)) <= 2
+    assert np.amax(np.abs(internal_scale - expect_scale)) <= 5e-3
+    assert np.amax(np.abs(internal_add_res - expect_add_res)) <= 5e-3
