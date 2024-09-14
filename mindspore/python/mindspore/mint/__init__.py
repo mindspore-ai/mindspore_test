@@ -614,10 +614,9 @@ def item(input):
     """
     if not isinstance(input, Tensor):
         raise TypeError(f"the input must be a Tensor, but got {type(input)}")
-    if input.size == 1:
-        return input.asnumpy().item()
-    else:
+    if input.size != 1:
         raise RuntimeError("a Tensor with {} elements cannot be converted to Scalar".format(input.size))
+    return input.asnumpy().item()
 
 
 def mean(input, dim=None, keepdim=False, *, dtype=None):

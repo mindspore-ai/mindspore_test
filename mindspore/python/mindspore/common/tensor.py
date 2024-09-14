@@ -31,7 +31,8 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import *
+from mindspore.common._tensor_overload import (repeat_interleave_mint, add_mint, item_mint, isnan_mint, flatten_mint,
+                                               max_mint, mean_mint, min_mint, split_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -411,7 +412,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def __iadd__(self, other):
         return self.__add__(other)
-    
+
     @sub_mint
     def __sub__(self, other):
         return tensor_operator_registry.get('__sub__')(self, other)

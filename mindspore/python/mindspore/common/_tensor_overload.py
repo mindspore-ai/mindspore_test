@@ -21,7 +21,7 @@ from mindspore.common._register_for_tensor import tensor_operator_registry_for_m
 
 def repeat_interleave_mint(orig_fn):
     """
-    repeat_interleave warpper.
+    repeat_interleave wrapper.
     For details, please refer to :func:`mindspore.ops.repeat_interleave_ext`.
     """
     def wrapper(self, *args, **kwargs):
@@ -32,7 +32,7 @@ def repeat_interleave_mint(orig_fn):
 
 def isnan_mint(orig_fn):
     """
-    isnan warpper.
+    isnan wrapper.
     """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
@@ -41,6 +41,9 @@ def isnan_mint(orig_fn):
     return wrapper
 
 def add_mint(add):
+    """
+    add wrapper
+    """
     def wrapper(self, other, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('add')(self, other, **kwargs)
@@ -48,9 +51,12 @@ def add_mint(add):
     return wrapper
 
 def flatten_mint(flatten):
+    """
+    flatten wrapper
+    """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
-            if len(arg) > 0:
+            if len(args) > 0:
                 kwargs["start_dim"] = args[0]
                 if len(args) > 1:
                     kwargs["end_dim"] = args[1]
@@ -63,6 +69,9 @@ def flatten_mint(flatten):
     return wrapper
 
 def item_mint(fn):
+    """
+    item wrapper
+    """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('item')(self, *args, **kwargs)
@@ -70,6 +79,9 @@ def item_mint(fn):
     return wrapper
 
 def max_mint(fn):
+    """
+    max wrapper
+    """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('max')(self, *args, **kwargs)
@@ -77,6 +89,9 @@ def max_mint(fn):
     return wrapper
 
 def mean_mint(fn):
+    """
+    mean wrapper
+    """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('mean')(self, *args, **kwargs)
@@ -84,6 +99,9 @@ def mean_mint(fn):
     return wrapper
 
 def min_mint(fn):
+    """
+    min wrapper
+    """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('min')(self, *args, **kwargs)
@@ -91,6 +109,9 @@ def min_mint(fn):
     return wrapper
 
 def split_mint(split):
+    """
+    split wrapper
+    """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('split')(self, *args, **kwargs)
@@ -98,6 +119,9 @@ def split_mint(split):
     return wrapper
 
 def sub_mint(sub):
+    """
+    sub wrapper
+    """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
             return tensor_operator_registry_for_mint.get('sub')(self, *args, **kwargs)
