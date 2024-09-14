@@ -46,7 +46,9 @@ mindspore.Profiler
           - None: 不记录host信息。
         - **with_stack** (bool, 可选) - （Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
         - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
-
+        - **analyse_only** (bool, 可选) - (Ascend/GPU) 表示是否只解析性能数据，不采集性能数据。该参数为实验性参数，用户不需要设置。默认值： ``False`` 。
+        - **rank_id** (int, 可选) - (Ascend/GPU) 设置解析时的rank id。该参数为实验性参数，用户不需要设置。默认值： ``0`` 。
+        - **env_enable** (bool, 可选) - (Ascend/GPU) 表示是否使能环境变量采集方式。该参数为实验性参数，用户不需要设置。默认值： ``False`` 。
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，生成的ascend_job_id目录结构MindSpore无法解析。
 
