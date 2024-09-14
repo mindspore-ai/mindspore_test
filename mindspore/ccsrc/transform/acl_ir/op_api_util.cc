@@ -129,7 +129,9 @@ void OpApiUtil::GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std:
   for (size_t i = 0; i < input_num; ++i) {
     auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, i);
     std::string input_format = AnfAlgo::GetOutputFormat(kernel_with_index.first, kernel_with_index.second);
-    if (!AclHelper::CheckDefaultSupportFormat(input_format)) {
+    if (kernel_type == KernelType::GE_KERNEL) {
+      (*input_formats)[i] = input_format;
+    } else if (!AclHelper::CheckDefaultSupportFormat(input_format)) {
       (void)special_inputs.emplace_back(i);
     }
   }
