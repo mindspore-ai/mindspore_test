@@ -88,7 +88,7 @@ def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
         os.remove(log_path)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_somas():
     """
     Feature: Trainer.train()
