@@ -7984,7 +7984,7 @@ def kaiser_window(window_length, periodic=True, beta=12.0, *, dtype=None):
         Tensor, a Kaiser window.
 
     Raises:
-        TypeError: If `window_length` or `beta` is not an integer.
+        TypeError: If `window_length` is not an integer.
         TypeError: If `periodic` is not a variable of Boolean type.
         ValueError: If `window_length` is negative.
 
