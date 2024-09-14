@@ -40,6 +40,7 @@ void SwitchActor::FetchInput(OpContext<DeviceTensor> *const context) {
   // Call the base class interface to get input data and input partial.
   ControlActor::FetchInput(context);
 
+  MS_LOG(INFO) << "Sync stream in the condition switch.";
   ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
   size_t index = GetIndex(context);
   if (common::IsNeedProfileMemory()) {

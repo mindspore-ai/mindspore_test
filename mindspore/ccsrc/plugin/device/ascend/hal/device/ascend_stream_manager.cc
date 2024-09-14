@@ -268,6 +268,7 @@ bool AscendStreamMng::SyncStream(size_t stream_id) const {
 
 bool AscendStreamMng::SyncStream(aclrtStream stream) const {
   MS_EXCEPTION_IF_NULL(stream);
+  MS_LOG(DEBUG) << "Sync stream: " << stream;
   auto RET = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream, -1);
   if (RET != ACL_ERROR_NONE && RET != ACL_ERROR_RT_AICORE_OVER_FLOW) {  // o for switch stream
     MS_LOG(ERROR) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";

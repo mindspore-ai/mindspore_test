@@ -108,6 +108,8 @@ void ConditionSwitchActor::Run(OpContext<DeviceTensor> *const context) {
       MS_LOG(INFO) << "Run failed and early stop.";
       return;
     }
+    MS_LOG(INFO) << "Sync stream in the condition switch.";
+    ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kPreLaunch, GetAID().Name());
     FetchInput(context);
     MS_EXCEPTION_IF_NULL(input_device_tensors_[0]);
     MS_EXCEPTION_IF_NULL(input_device_tensors_[0]->kernel_tensor());

@@ -50,6 +50,7 @@ class DataPrepareActor : public DebugAwareActor {
         real_strategy_(GraphExecutionStrategy::kPipeline),
         host_data_source_actor_(host_data_source_actor),
         host_tensor_queue_(host_tensor_queue),
+        has_continuous_memory_(false),
         first_step_(true),
         has_parameter_input_(false) {}
   ~DataPrepareActor() override = default;

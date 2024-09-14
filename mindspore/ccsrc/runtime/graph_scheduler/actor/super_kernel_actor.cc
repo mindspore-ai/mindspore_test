@@ -267,14 +267,8 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
     already_fetch_persistent_device_tensor_ = IsTwoPhaseInfer();
   }
 
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    for (auto &device_addr : input_device_tensors_) {
-      if (device_addr == nullptr || !device_addr->IsPtrValid()) {
-        continue;
-      }
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(UseMemBlock, GetAID().Name(), device_addr->GetPtr());
-    }
-  }
+  TrackInputMemory();
+
   if (memory_alloc_list_.size() > 0) {
     for (auto &device_tensor : memory_alloc_list_) {
       MS_EXCEPTION_IF_NULL(device_tensor);
@@ -1266,6 +1260,19 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   UpdateRefCount(input_copy_device_address.get(), false);
   kernel_actor->SetInputDeviceTensor(input_copy_device_address.get(), input_index);
   kernel_actor->memory_free_list_[input_index] = input_copy_device_address.get();
+}
+
+void SuperKernelActor::TrackInputMemory() {
+  if (!device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    return;
+  }
+
+  for (auto &device_addr : input_device_tensors_) {
+    if (device_addr == nullptr || !device_addr->IsPtrValid()) {
+      continue;
+    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(UseMemBlock, GetAID().Name(), device_addr->GetPtr());
+  }
 }
 }  // namespace runtime
 }  // namespace mindspore
