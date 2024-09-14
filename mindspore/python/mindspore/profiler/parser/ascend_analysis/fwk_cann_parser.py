@@ -24,7 +24,7 @@ from mindspore.profiler.parser.ascend_analysis.fwk_file_parser import FwkFilePar
 from mindspore.profiler.parser.ascend_analysis.trace_event_manager import TraceEventManager
 from mindspore.profiler.parser.ascend_analysis.msprof_timeline_parser import MsprofTimelineParser
 from mindspore.profiler.parser.ascend_analysis.profiler_info_parser import ProfilerInfoParser
-
+from mindspore.profiler.parser.profiler_info import ProfilerInfo
 
 class FwkCANNParser:
     """The top-level trace view parser."""
@@ -74,14 +74,14 @@ class FwkCANNParser:
 
         if self._fwk_launch_op and acl_to_npu_by_tid and self._fwk_launch_op.keys() != acl_to_npu_by_tid.keys():
             logger.warning("Failed to create link between mindspore operator and kernels.")
-
+        is_not_O2 = bool(ProfilerInfo.get_profiler_info().get(ProfilerInfo.JIT_LEVEL, "") != "O2")
         for device_tid in acl_to_npu_by_tid:
             host_data_sorted = sorted(self._fwk_launch_op.get(device_tid, []), key=lambda x: x.ts)
             op_idx = 0
 
             for ts, device_data_list in sorted(acl_to_npu_by_tid.get(device_tid).items(), key=lambda x: x[0]):
                 op_idx, status = FwkCANNParser.__find_launch_op(ts, host_data_sorted, op_idx)
-                if not status:
+                if not status and is_not_O2:
                     logger.warning("There are %s device ops have no flows were found. The CANN ts is %s.",
                                    len(device_data_list), ts)
 
