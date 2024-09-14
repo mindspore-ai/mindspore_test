@@ -14,7 +14,7 @@
 # ============================================================================
 """Defines other operators with functional form."""
 from mindspore.ops import operations as P
-
+from mindspore.ops.auto_generate import rotary_position_embedding
 
 partial_ = P.Partial()
 depend_ = P.Depend()
@@ -109,6 +109,7 @@ def depend(value, expr):
 
 __all__ = [
     'depend',
-    'partial'
+    'partial',
+    'rotary_position_embedding'
 ]
 __all__.sort()

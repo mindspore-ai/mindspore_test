@@ -18,6 +18,8 @@
 #include <vector>
 #include <string>
 #include "transform/graph_ir/op_declare/op_declare_macro.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+
 namespace mindspore::transform {
 // ApplyRotaryPosEmb
 INPUT_MAP(ApplyRotaryPosEmb) = {
@@ -370,4 +372,19 @@ OUTPUT_MAP(EmbeddingFeatureMappingInsert) = EMPTY_OUTPUT_MAP;
 REG_ADPT_DESC(EmbeddingFeatureMappingInsert, ops::kNameEmbeddingFeatureMappingInsert,
               ADPT_DESC(EmbeddingFeatureMappingInsert))
 
+// RotaryPositionEmbedding
+INPUT_MAP(RotaryPositionEmbedding) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(cos)}, {3, INPUT_DESC(sin)}};
+ATTR_MAP(RotaryPositionEmbedding) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(RotaryPositionEmbedding) = {{kIndex4, ATTR_DESC(mode, AnyTraits<int64_t>())}};
+OUTPUT_MAP(RotaryPositionEmbedding) = {{0, OUTPUT_DESC(y)}};
+REG_ADPT_DESC(RotaryPositionEmbedding, prim::kPrimRotaryPositionEmbedding->name(), ADPT_DESC(RotaryPositionEmbedding))
+
+// RotaryPositionEmbeddingGrad
+INPUT_MAP(RotaryPositionEmbeddingGrad) = {
+  {1, INPUT_DESC(dy)}, {2, INPUT_DESC(cos)}, {3, INPUT_DESC(sin)}, {4, INPUT_DESC(x)}};
+ATTR_MAP(RotaryPositionEmbeddingGrad) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(RotaryPositionEmbeddingGrad) = {{5, ATTR_DESC(mode, AnyTraits<int64_t>())}};
+OUTPUT_MAP(RotaryPositionEmbeddingGrad) = {{0, OUTPUT_DESC(dx)}, {1, OUTPUT_DESC(dcos)}, {2, OUTPUT_DESC(dsin)}};
+REG_ADPT_DESC(RotaryPositionEmbeddingGrad, prim::kPrimRotaryPositionEmbeddingGrad->name(),
+              ADPT_DESC(RotaryPositionEmbeddingGrad))
 }  // namespace mindspore::transform

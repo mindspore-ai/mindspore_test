@@ -749,6 +749,7 @@ from .fft_func import (
 from .other_func import (
     depend,
     partial,
+    rotary_position_embedding,
 )
 from .reshard_func import (
     reshard,

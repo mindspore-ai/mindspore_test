@@ -1,0 +1,26 @@
+#operator RotaryPositionEmbeddingGrad
+rotary_position_embedding_grad:
+  args:
+    dy:
+      dtype: tensor
+    cos:
+      dtype: tensor
+    sin:
+      dtype: tensor
+    dx:
+      dtype: tensor
+      default: None
+    mode:
+      dtype: int
+      default: 0
+  returns:
+    dx:
+      dtype: tensor
+    dcos:
+      dtype: tensor
+    dsin:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
