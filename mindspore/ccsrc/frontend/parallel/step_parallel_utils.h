@@ -185,10 +185,6 @@ bool IsCellReuseForwardGraph(const FuncGraphPtr &graph);
 FuncGraphPtr GetCellReuseBackwardGraph(const FuncGraphPtr &forward_graph);
 bool IsCommunicationOp(const PrimitivePtr &prim);
 std::vector<std::pair<AnfNodePtr, int>> NextNodeUsers(const AnfNodePtr &node);
-void ConvertInterleaveAllGatherToConcat(const FuncGraphPtr &func_graph, const CNodePtr &virtual_converter_end,
-                                        const std::vector<std::vector<std::vector<int64_t>>> &ag_group_ranks_vectors);
-void SplitNotParallelCareOpsInterleaved(const FuncGraphPtr &root);
-void EraseVirtualConverter(const FuncGraphPtr &root);
 
 inline void SetReserved(const FuncGraphPtr &root) {
   // Keep all func graph for parallel before save result.
