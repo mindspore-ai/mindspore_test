@@ -56,7 +56,7 @@ def flatten_mint(flatten):
     """
     def wrapper(self, *args, **kwargs):
         if os.environ.get('MS_TENSOR_API_ENABLE_MINT') == '1':
-            if len(args) > 0:
+            if args:
                 kwargs["start_dim"] = args[0]
                 if len(args) > 1:
                     kwargs["end_dim"] = args[1]
