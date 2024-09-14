@@ -19,41 +19,9 @@ import os
 import glob
 import hashlib
 import pathlib
+import re
 import stat
 import yaml
-
-
-py_licence_str = f"""# Copyright 2023 Huawei Technologies Co., Ltd
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ============================================================================
-"""
-
-cc_license_str = f"""/**
- * Copyright 2023 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */"""
 
 
 def convert_dtype_str(dtype_str):
@@ -216,3 +184,111 @@ def save_file(save_path, file_name, content):
     tmp_file_path = os.path.join(save_path, f"tmp_{file_name}")
     write_file(tmp_file_path, content)
     check_change_and_replace_file(dst_file_path, tmp_file_path)
+
+
+def normalize_func_description_format(description):
+    """
+    Process description.
+    """
+    if not description:
+        return description
+    lines = description.split("\n")
+    if len(lines) == 1:
+        return description
+
+    # Add line indentation to other lines after the first line
+    for i in range(1, len(lines)):
+        indent = "    " if lines[i] else ""
+        lines[i] = indent + lines[i]
+
+    # Remove trailing blank lines
+    lines = lines if lines[-1] != "" else lines[:-1]
+    description = "\n".join(lines)
+    return description
+
+
+def get_op_description(operator_name, doc_dict):
+    """
+    Generate ops api description.
+    """
+    op_description = f"    r\"\"\"\n" \
+                     f"    \n" \
+                     f"    \"\"\"\n"
+    if doc_dict is None:
+        print(f"Description is None, op_name: {operator_name}")
+        return op_description
+
+    description = doc_dict.get(operator_name)
+    if description is None:
+        print(f"Description is None, op_name: {operator_name}")
+        return op_description
+
+    description = description.get("description")
+    if description is None:
+        print(f"Description is None, op_name: {operator_name}")
+        return op_description
+
+    op_description = f"    r\"\"\"\n" \
+                     f"    {normalize_func_description_format(description)}\n" \
+                     f"    \"\"\"\n"
+    return op_description
+
+
+def get_same_dtype_groups(args_signature, args_name):
+    """
+    Get same dtype groups
+    """
+    same_dtype_groups = {}
+    dtype_count = 0
+
+    if not args_signature:
+        return same_dtype_groups, dtype_count
+
+    dtype_group = args_signature.dtype_group
+    if not args_signature.dtype_group:
+        return same_dtype_groups, dtype_count
+
+    args_list = []
+    match = re.findall(r'\((.*?)\)', dtype_group)
+    for item in match:
+        args_list.append(item.replace(' ', '').split(","))
+    for arg_name in args_name:
+        if arg_name in same_dtype_groups:
+            continue
+        is_match = False
+        for group in args_list:
+            if arg_name in group:
+                is_match = True
+                for item in group:
+                    same_dtype_groups[item] = dtype_count
+                break
+        if not is_match:
+            same_dtype_groups[arg_name] = dtype_count
+        dtype_count = dtype_count + 1
+    return same_dtype_groups, dtype_count
+
+
+def init_args_signature_rw(args_signature):
+    """
+    Extracts read, write, and reference argument lists from signature data.
+
+    Args:
+        args_signature (object): Contains 'rw_write', 'rw_read', 'rw_ref' attributes as comma-separated strings.
+
+    Returns:
+        tuple: Lists of read-only, reference, and write-only argument names.
+    """
+    write_list = []
+    read_list = []
+    ref_list = []
+    if args_signature:
+        if args_signature.rw_write:
+            write_list.extend(args_signature.rw_write.replace(' ', '').split(","))
+
+        if args_signature.rw_read:
+            read_list.extend(args_signature.rw_read.replace(' ', '').split(","))
+
+        if args_signature.rw_ref:
+            ref_list.extend(args_signature.rw_ref.replace(' ', '').split(","))
+
+    return read_list, ref_list, write_list

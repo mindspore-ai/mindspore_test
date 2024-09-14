@@ -15,8 +15,6 @@
 
 """Op Proto module for defining operator prototypes and their arguments."""
 
-from pyboost_utils import convert_python_func_name_to_c
-
 
 class OpArg:
     """
@@ -139,7 +137,9 @@ class OpProto:
                  op_dispatch,
                  op_args_signature,
                  op_returns,
-                 op_view=False):
+                 op_view=False,
+                 op_labels=None,
+                 op_deprecated=None):
         self.op_name = op_name
         self.op_args = op_args
         self.op_function = op_function
@@ -148,6 +148,8 @@ class OpProto:
         self.op_args_signature = op_args_signature
         self.op_returns = op_returns
         self.op_view = op_view
+        self.op_labels = op_labels
+        self.op_deprecated = op_deprecated
 
     @staticmethod
     def load_from_yaml(op_name, op_data):
@@ -170,14 +172,18 @@ class OpProto:
         # get op class
         op_class = get_op_class(op_name, op_data)
         # get op function
-        op_function = get_op_function(op_data)
+        op_function = get_op_function(op_name, op_data)
         # get op dispatch
         op_dispatch = get_op_dispatch(op_data)
         # get op view
         op_view = op_data.get('view', False)
+        # get op labels
+        op_labels = op_data.get('labels', None)
+        # get op deprecated
+        op_deprecated = op_data.get('deprecated', None)
         op_proto = OpProto(op_name=op_name, op_args=op_args, op_returns=op_returns, op_function=op_function,
                            op_class=op_class, op_dispatch=op_dispatch, op_args_signature=op_args_signature,
-                           op_view=op_view)
+                           op_view=op_view, op_labels=op_labels, op_deprecated=op_deprecated)
         return op_proto
 
 
@@ -320,11 +326,12 @@ def get_op_class(op_name, op_data) -> OpClass:
     return OpClass(disable=is_disable, name=class_name)
 
 
-def get_op_function(op_data) -> OpFunction:
+def get_op_function(op_name, op_data) -> OpFunction:
     """
     Retrieves the function information for the operator from the operation data.
 
     Args:
+        op_name (str): default operation function name.
         op_data (dict): A dictionary containing the operation data.
 
     Returns:
@@ -332,5 +339,8 @@ def get_op_function(op_data) -> OpFunction:
     """
     op_function = op_data.get('function', {})
     is_disable = op_function.get('disable', False)
-    function_name = op_function.get('name', '')
+    function_name = op_function.get('name', op_name)
     return OpFunction(disable=is_disable, name=function_name)
+
+def convert_python_func_name_to_c(func_name: str) -> str:
+    return ''.join(word.capitalize() for word in func_name.split('_'))

@@ -43,7 +43,7 @@ class OpHeaderFileGenerator(BaseGenerator):
         self.extern_template = Template("OPS_API extern OpDef g${op_name};\n")
         self.GEN_OPS_DEF_HEADER_TEMPLATE = template.GEN_OPS_DEF_HEADER_TEMPLATE
 
-    def generate(self, work_path, op_protos, extra_ops=None):
+    def generate(self, work_path, op_protos):
         """
         Generates the operator definition header file and saves it to the specified path.
 
@@ -54,14 +54,16 @@ class OpHeaderFileGenerator(BaseGenerator):
         Args:
             work_path (str): The directory path where the generated header file will be saved.
             op_protos (list): A list of operator prototypes containing information about the operators.
-            extra_ops (list, optional): A list of additional operator class names to include in the header file.
 
         Returns:
             None
         """
         extern_str = ''
+        extra_ops = []
         for op_proto in op_protos:
             extern_str += self.extern_template.replace(op_name=op_proto.op_class.name)
+            if op_proto.op_view:
+                extra_ops.append(op_proto.op_class.name + "View")
         for class_name in extra_ops or []:
             extern_str += self.extern_template.replace(op_name=class_name)
 

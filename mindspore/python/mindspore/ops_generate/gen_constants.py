@@ -78,3 +78,82 @@ MS_OPS_VIEW_PATH = "mindspore/ops/view"
 # kernel
 MS_OPS_KERNEL_PATH = "mindspore/ops/kernel"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
+
+MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
+
+
+OP_NAME_OP_DEF = """
+#ifndef MINDSPORE_CORE_OP_NAME_H_
+#define MINDSPORE_CORE_OP_NAME_H_
+
+namespace mindspore::ops {
+$ops_namespace_body
+}  // namespace mindspore::ops
+
+#endif  // MINDSPORE_CORE_OP_NAME_H_
+"""
+
+OP_PRIM_OP_DEF = """
+#ifndef MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_H_
+#define MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_H_
+
+#include <memory>
+#include "ir/anf.h"
+#include "ir/primitive.h"
+#include "$auto_gen_path/gen_ops_name.h"
+#include "mindapi/base/macros.h"
+
+namespace mindspore::prim {
+$ops_prim_gen
+}  // namespace mindspore::prim
+#endif  // MINDSPORE_CORE_OPS_GEN_OPS_PRIMITIVE_H_
+"""
+
+LITE_OPS_CC = """
+#include "$auto_gen_path/gen_lite_ops.h"
+#include "mindapi/helper.h"
+#include "ops/primitive_c.h"
+#include "ops/base_operator.h"
+#include "abstract/abstract_value.h"
+
+namespace mindspore::ops {
+$ops_namespace_body
+
+}  // namespace mindspore::ops
+    """
+
+LITE_OPS_H = """
+#ifndef MINDSPORE_CORE_OPS_GEN_LITE_OPS_H_
+#define MINDSPORE_CORE_OPS_GEN_LITE_OPS_H_
+
+#include <vector>
+#include "ops/base_operator.h"
+#include "$auto_gen_path/gen_ops_name.h"
+
+namespace mindspore::ops {
+$ops_namespace_body
+
+}  // namespace mindspore::ops
+#endif  // MINDSPORE_CORE_OPS_GEN_LITE_OPS_H_
+"""
+
+CC_OPS_DEF = """
+
+#include "$auto_generate_path/gen_ops_def.h"
+#include "ir/signature.h"
+$gen_include
+
+namespace mindspore::ops {$gen_cc_code
+}  // namespace mindspore::ops
+"""
+
+ACLNN_REG_CODE = """
+#include "$ops_gen_kernel_path/ascend/opapi/aclnn_kernel_mod.h"
+
+namespace mindspore {
+namespace kernel {
+
+$aclnn_reg_code
+}  // namespace kernel
+}  // namespace mindspore
+"""
