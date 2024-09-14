@@ -435,7 +435,8 @@ int64_t GetRecvQKVSrcRank(size_t rank, size_t step, size_t sp_size) { return (ra
 
 CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_t sp_num, const AnfNodePtr &query_node,
                                const std::vector<AnfNodePtr> &send_kv_nodes, const RankList &spRankList,
-                               const std::string &qkv_group, const CNodePtr &pre_node, Shape q_shape, Shape kv_shape) {
+                               const std::string &qkv_group, const CNodePtr &pre_node, Shape q_shape, Shape kv_shape,
+                               TypeId output_type_id) {
   CNodePtr cur_send_qkv_node;
   if (step < (sp_num / kIndex2)) {  // [0, sp-1]
     auto send_qkv_dst_rank = GetSendQKVDstRank(pos, step, sp_num);
@@ -443,7 +444,7 @@ CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_
       if (inner_step == 0) {
         cur_send_qkv_node = NewSendNode(CreateDepend(query_node, pre_node, pre_node),
                                         GetSendRecvTag(pos, send_qkv_dst_rank, TagType::query),
-                                        spRankList[send_qkv_dst_rank], q_shape, TypeId::kNumberTypeFloat16, qkv_group);
+                                        spRankList[send_qkv_dst_rank], q_shape, output_type_id, qkv_group);
       }
     } else {                                                             // send kv
       auto kv_type = (inner_step == 0 ? TagType::kv_a : TagType::kv_b);  // grad should send kv_a first
@@ -451,30 +452,28 @@ CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_
       send_kv_node = CreateDepend(send_kv_node, pre_node, pre_node);
       auto tag = GetSendRecvTag(pos, send_qkv_dst_rank, kv_type);
       auto dest_rank = spRankList[send_qkv_dst_rank];
-      cur_send_qkv_node = NewSendNode(send_kv_node, tag, dest_rank, kv_shape, TypeId::kNumberTypeFloat16, qkv_group);
+      cur_send_qkv_node = NewSendNode(send_kv_node, tag, dest_rank, kv_shape, output_type_id, qkv_group);
     }
   }
   return cur_send_qkv_node;
 }
 
 CNodePtr GetCurrentRecvQKVNode(size_t pos, size_t step, size_t inner_step, size_t sp_num, const RankList &spRankList,
-                               Shape q_shape, Shape kv_shape, const std::string &qkv_group,
-                               const AnfNodePtr &pre_node) {
+                               Shape q_shape, Shape kv_shape, const std::string &qkv_group, const AnfNodePtr &pre_node,
+                               TypeId output_type_id) {
   CNodePtr cur_recv_qkv_node;
   if (step < (sp_num / kIndex2)) {  // [0, sp-1]
     auto recv_qkv_src_rank = GetRecvQKVSrcRank(pos, step, sp_num);
     if (pos < step + kIndex1) {
       if (inner_step == kIndex0) {  // recv q
-        cur_recv_qkv_node =
-          NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, TagType::query),
-                         spRankList[recv_qkv_src_rank], q_shape, TypeId::kNumberTypeFloat16, qkv_group);
+        cur_recv_qkv_node = NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, TagType::query),
+                                           spRankList[recv_qkv_src_rank], q_shape, output_type_id, qkv_group);
         cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(TagType::query));
       }
     } else {  // recv kv
       auto kv_type = inner_step == kIndex0 ? TagType::kv_a : TagType::kv_b;
-      cur_recv_qkv_node =
-        NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, kv_type), spRankList[recv_qkv_src_rank],
-                       kv_shape, TypeId::kNumberTypeFloat16, qkv_group);
+      cur_recv_qkv_node = NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, kv_type),
+                                         spRankList[recv_qkv_src_rank], kv_shape, output_type_id, qkv_group);
       cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(kv_type));
     }
   }
@@ -557,8 +556,8 @@ void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
                     const CNodePtr &grad_last_comm_node, const CNodePtr &pre_grad_comm_node,
                     const CNodePtr &pre_grad_fa_node, const AnfNodePtr &query_node,
                     const std::vector<AnfNodePtr> &send_kv_nodes, int64_t outer_step, int64_t inner_step,
-                    int64_t sp_num, CNodePtr *pre_grad_send_qkv_node, CNodePtr *pre_grad_recv_qkv_node,
-                    CNodePtr *cur_send_qkv_node, CNodePtr *cur_recv_qkv_node) {
+                    int64_t sp_num, TypeId output_type_id, CNodePtr *pre_grad_send_qkv_node,
+                    CNodePtr *pre_grad_recv_qkv_node, CNodePtr *cur_send_qkv_node, CNodePtr *cur_recv_qkv_node) {
   auto manager = graph->manager();
   int64_t pos = GetPosInSpDevice(fa_info);
   auto spRankList = fa_info->GetSPRankList();
@@ -572,7 +571,7 @@ void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
   if (rank_ring_index % kIndex2 == 0) {  // send first
     *cur_send_qkv_node =
       GetCurrentSendQKVNode(pos, grad_qkv_step, inner_step, sp_num, query_node, send_kv_nodes, spRankList,
-                            g_device_manager->world_group(), depend_node, q_shape, kv_shape);
+                            g_device_manager->world_group(), depend_node, q_shape, kv_shape, output_type_id);
     if (*cur_send_qkv_node != nullptr) {
       auto cur_send_qkv_node_input = (*cur_send_qkv_node)->input(1);
       manager->SetEdge(*cur_send_qkv_node, 1,
@@ -580,7 +579,7 @@ void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
       depend_node = *cur_send_qkv_node;
     }
     *cur_recv_qkv_node = GetCurrentRecvQKVNode(pos, grad_qkv_step, inner_step, sp_num, spRankList, q_shape, kv_shape,
-                                               g_device_manager->world_group(), depend_node);
+                                               g_device_manager->world_group(), depend_node, output_type_id);
     if (*cur_recv_qkv_node != nullptr) {
       auto cur_recv_qkv_node_input = (*cur_recv_qkv_node)->input(1);
       cur_recv_qkv_node_input = CreateDepend(cur_recv_qkv_node_input, depend_node, depend_node);
@@ -589,7 +588,7 @@ void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
     }
   } else {
     *cur_recv_qkv_node = GetCurrentRecvQKVNode(pos, grad_qkv_step, inner_step, sp_num, spRankList, q_shape, kv_shape,
-                                               g_device_manager->world_group(), depend_node);
+                                               g_device_manager->world_group(), depend_node, output_type_id);
     if (*cur_recv_qkv_node != nullptr) {
       auto cur_recv_qkv_node_input = (*cur_recv_qkv_node)->input(1);
       cur_recv_qkv_node_input = CreateDepend(cur_recv_qkv_node_input, depend_node, depend_node);
@@ -599,7 +598,7 @@ void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
     }
     *cur_send_qkv_node =
       GetCurrentSendQKVNode(pos, grad_qkv_step, inner_step, sp_num, query_node, send_kv_nodes, spRankList,
-                            g_device_manager->world_group(), depend_node, q_shape, kv_shape);
+                            g_device_manager->world_group(), depend_node, q_shape, kv_shape, output_type_id);
   }
   // if cur step receive nothing, use query which receive at latest step twice
   *pre_grad_recv_qkv_node = *cur_recv_qkv_node == nullptr ? *pre_grad_recv_qkv_node : *cur_recv_qkv_node;
@@ -665,6 +664,7 @@ void OverlapGradFlashSP(const FuncGraphPtr &graph) {
   for (auto it = grad_fa_map.begin(); it != grad_fa_map.end(); ++it) {
     CNodePtr grad_fa_node = it->second->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(grad_fa_node);
+    auto output_type_id = common::AnfAlgo::GetOutputInferDataType(grad_fa_node, 0);
     std::map<int64_t, CNodePtr> grad_comm_map;
     GetGradNode(&grad_send_qkv_map, &grad_recv_qkv_map, &grad_send_oml_map, &grad_recv_oml_map, &grad_comm_map,
                 it->first);
@@ -720,8 +720,8 @@ void OverlapGradFlashSP(const FuncGraphPtr &graph) {
       // create kv comm node when is not last outer_step
       if (outer_step != 0) {
         CreateCommNode(graph, fa_info, grad_last_comm_node, pre_grad_comm_node, pre_grad_fa_node, send_query_node,
-                       send_kv_nodes, outer_step, inner_step, sp_num, &pre_grad_send_qkv_node, &pre_grad_recv_qkv_node,
-                       &cur_send_qkv_node, &cur_recv_qkv_node);
+                       send_kv_nodes, outer_step, inner_step, sp_num, output_type_id, &pre_grad_send_qkv_node,
+                       &pre_grad_recv_qkv_node, &cur_send_qkv_node, &cur_recv_qkv_node);
       }
     }
     // no need create send/recv kv
