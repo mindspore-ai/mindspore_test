@@ -148,9 +148,12 @@ class AnfNodeConfig final : public Config {
   std::string ToString() const override {
     std::ostringstream buffer;
     constexpr int recursive_level = 2;
-    buffer << "Node: " << node_ << "/" << node_->DebugString(recursive_level) << "-uid(" << node_->UniqueId()
-           << "), Context: " << context_ << "/" << context_->ToString() << ", FuncGraph: " << func_graph_ << "/"
-           << func_graph_->ToString();
+    buffer << "Node: " << node_ << "/"
+           << (node_ == nullptr
+                 ? "null"
+                 : node_->DebugString(recursive_level) + std::string("-uid(") + node_->UniqueId() + std::string(")"))
+           << ", Context: " << context_ << "/" << (context_ == nullptr ? "null" : context_->ToString())
+           << ", FuncGraph: " << func_graph_ << "/" << (func_graph_ == nullptr ? "null" : func_graph_->ToString());
     return buffer.str();
   }
 
