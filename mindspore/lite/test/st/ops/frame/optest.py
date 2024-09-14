@@ -158,7 +158,8 @@ class OpTest:
             input_dtypes = gold_config["input_dtypes"]
             assert len(input_shapes) == len(input_dtypes)
             input_length = len(input_shapes)
-
+            seed = 0
+            np.random.seed(seed)
             # 判断非负输入的算子
             if self.model_configs.op_configs_["op_name"] in conf.non_negative_op:
                 for i in range(input_length):
