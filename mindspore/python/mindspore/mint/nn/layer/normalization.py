@@ -195,20 +195,20 @@ class BatchNorm1d(_BatchNorm):
             cell tracks the running mean and variance, and when set to ``False``,
             this cell does not track such statistics. And this cell always uses batch statistics
             in both training and eval modes. Default: ``True`` .
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
         - **input** (Tensor) - The input with shape :math:`(N, C)` or :math:`(N, C, L)`,
           where :math:`N` means batch, :math:`C` means the number of feature or the number of channel,
           and :math:`L` is the length of sequence.
 
-    Returns:
+    Outputs:
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        **TypeError** - `num_features` is not a int number.
-        **TypeError** - `eps` is not a float.
-        **TypeError** - `num_features` is less than 1.
+        TypeError: If `num_features` is not a int number.
+        TypeError: If `eps` is not a float.
+        TypeError: If `num_features` is less than 1.
 
     Supported Platforms:
         ``Ascend``
@@ -264,18 +264,18 @@ class BatchNorm2d(_BatchNorm):
             cell tracks the running mean and variance, and when set to ``False``,
             this cell does not track such statistics. And this cell always uses batch statistics
             in both training and eval modes. Default: ``True`` .
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
         - **input** (Tensor) - The input with shape :math:`(N, C, H, W)`.
 
-    Returns:
+    Outputs:
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        **TypeError** - `num_features` is not a int number.
-        **TypeError** - `eps` is not a float.
-        **TypeError** - `num_features` is less than 1.
+        TypeError: If `num_features` is not a int number.
+        TypeError: If `eps` is not a float.
+        TypeError: If `num_features` is less than 1.
 
     Supported Platforms:
         ``Ascend``
@@ -334,18 +334,18 @@ class BatchNorm3d(_BatchNorm):
             cell tracks the running mean and variance, and when set to ``False``,
             this cell does not track such statistics. And this cell always uses batch statistics
             in both training and eval modes. Default: ``True`` .
-        dtype (:class:`mindspore.dtype`): Dtype of Parameters. Default: ``None`` .
+        dtype (:class:`mindspore.dtype`, optional): Dtype of Parameters. Default: ``None`` .
 
     Inputs:
         - **input** (Tensor) - The input with shape :math:`(N, C, D, H, W)`.
 
-    Returns:
+    Outputs:
         Tensor, has the same type and shape as `input`.
 
     Raises:
-        **TypeError** - `num_features` is not a int number.
-        **TypeError** - `eps` is not a float.
-        **TypeError** - `num_features` is less than 1.
+        TypeError: If `num_features` is not a int number.
+        TypeError: If `eps` is not a float.
+        TypeError: If `num_features` is less than 1.
 
     Supported Platforms:
         ``Ascend``
