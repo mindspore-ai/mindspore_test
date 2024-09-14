@@ -1,4 +1,4 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2021-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 import glob
 import tempfile
 import numpy as np
-import csv
 
 import mindspore
 import mindspore.context as context
@@ -153,28 +152,3 @@ def test_shape():
         model.train(1, dataset, dataset_sink_mode=True)
         profiler.analyse()
         assert len(glob.glob(f"{tmpdir}/profiler*/dynamic_shape_*.json")) == 1
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_collect_custom_aicpu():
-    """
-    Feature: Profiling can collect custom aicpu operators
-    Description: Test profiling can collect custom aicpu operators on ascend
-    Expectation: The file aicpu_intermediate_*.csv generated successfully and s1 == s2
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_level="O2")
-    with tempfile.TemporaryDirectory() as tmpdir:
-        profiler = Profiler(output_path=tmpdir)
-        net = Net1()
-        net(Tensor(np.random.random((6,)), mstype.float64))
-        profiler.analyse()
-        aicpu_intermediate_file_list = glob.glob(f"{tmpdir}/profiler/aicpu_intermediate_*.csv")
-        assert len(aicpu_intermediate_file_list) == 1
-        s1 = {'Cast', 'Select', 'Xlogy'}
-        s2 = set()
-        with open(aicpu_intermediate_file_list[0], 'r') as fr:
-            reader = csv.DictReader(fr)
-            for row in reader:
-                s2.add(row.get('kernel_type'))
-        assert s1 == s2

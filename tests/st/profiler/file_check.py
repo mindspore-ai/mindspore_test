@@ -84,22 +84,26 @@ class FileChecker:
             Given a CSV file with the following content:
             Op Name                        Op Type
             aclnnAdd_AddAiCore_Add         Add
+            aclnnMul_MulAiCore_Mul         Mul
 
             Use the following call to match patterns:
-            FileChecker.check_csv_items(csv_path, {"Op Name": "*Add*", "Op Type": "Add"}, fuzzy_match=True)
-            This will match because "Op Name" contains "Add" and "Op Type" is "Add"
+            FileChecker.check_csv_items(csv_path, {"Op Name": ["*Add*", "*Mul*"], "Op Type": "Add"}, fuzzy_match=True)
+            This will match because "Op Name" contains "Add" and "Mul", and "Op Type" contains "Add"
         """
         try:
             cls.check_file_exists(csv_path)
             cls.check_csv_headers(csv_path, list(item_pattern.keys()))
             reader = csv.DictReader(open(csv_path, 'r', newline='', encoding='utf-8'))
-            for column, pattern in item_pattern.items():
+            csv_data = list(reader)
+            for column, patterns in item_pattern.items():
+                patterns = [patterns] if not isinstance(patterns, list) else patterns
                 if fuzzy_match:
-                    regex_pattern = re.compile(re.escape(pattern).replace(r'\*', '.*'), re.IGNORECASE)
-                    found_match = any(regex_pattern.search(row[column]) for row in reader)
+                    regex_patterns = [re.compile(re.escape(pattern).replace(r'\*', '.*'), re.IGNORECASE)
+                                      for pattern in patterns]
+                    found_match = all(any(rp.search(row[column]) for row in csv_data) for rp in regex_patterns)
                 else:
-                    found_match = any(row[column] == pattern for row in reader)
-                assert found_match, f"No value in column '{column}' matches pattern '{pattern}'"
+                    found_match = all(any(row[column] == pattern for row in csv_data) for pattern in patterns)
+                assert found_match, f"No value in column '{column}' matches patterns '{patterns}'"
         except (IOError, OSError) as e:
             assert False, f"Failed to read CSV file, ERROR: {e}"
 

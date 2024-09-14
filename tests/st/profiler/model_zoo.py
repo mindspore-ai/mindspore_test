@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import numpy as np
 import mindspore.common.dtype as mstype
 from mindspore.ops import operations as P
 from mindspore import nn, Parameter, Tensor
 from mindspore.common.initializer import initializer
 from mindspore.common.initializer import TruncatedNormal
+from mindspore.communication.management import  HCCL_WORLD_COMM_GROUP
 
 
 class TinyAddNet(nn.Cell):
@@ -150,3 +152,56 @@ class TinyTransformer(nn.Cell):
 
     def construct(self, src, tgt):
         return self.model(src, tgt)
+
+
+class CustomAICpuNet(nn.Cell):
+    """custom ai cpu net"""
+    def __init__(self):
+        super(CustomAICpuNet, self).__init__()
+        self.select = P.Select()
+        self.reshape = P.Reshape()
+        self.xlogy = P.Xlogy()
+        self.tril = P.Tril(10)
+        self.cast = P.Cast()
+        self.expand_dims = P.ExpandDims()
+        self.dense = nn.Dense(1, 3, activation='relu')
+        self.flatten = nn.Flatten()
+
+    def construct(self, a):
+        shape = (2, 3)
+        b = Tensor(np.array([4, 4, 5, 5, 6, 6]), mstype.float64)
+        input_cond = Tensor([True, False, True, False, True, False])
+        a = self.select(input_cond, a, b)
+        a = self.reshape(a, shape)
+        b = self.reshape(b, shape)
+        a = self.tril(a)
+
+        output = self.xlogy(a, b)
+        output = self.expand_dims(output, -1)
+        output = self.cast(output, mstype.float32)
+        output = self.dense(output)
+        output = self.flatten(output)
+        return output
+
+
+class AllReduceNet(nn.Cell):
+    def __init__(self):
+        super(AllReduceNet, self).__init__()
+        x = np.ones([3, 1, 3, 3]).astype(np.float32) * 0.01
+        self.x1 = Parameter(initializer(Tensor(x), x.shape), name='x1')
+        self.x2 = Parameter(initializer(Tensor(x), x.shape), name='x2')
+        # self.x3 = Parameter(initializer(Tensor(x), x.shape), name='x3')
+
+        self.op0 = "sum"
+        self.op1 = "sum"
+        self.op2 = "sum"
+
+        self.all_reduce1 = P.AllReduce(self.op0, group=HCCL_WORLD_COMM_GROUP)
+        self.all_reduce2 = P.AllReduce(self.op1, group=HCCL_WORLD_COMM_GROUP)
+        self.all_reduce3 = P.AllReduce(self.op2, group=HCCL_WORLD_COMM_GROUP)
+
+    def construct(self):
+        x3 = self.x1 + self.x2
+        return (self.all_reduce1(self.x1),
+                self.all_reduce2(self.x2),
+                self.all_reduce3(x3))

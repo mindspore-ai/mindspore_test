@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Huawei Technologies Co., Ltd
+# Copyright 2022-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 import os
-import sys
 import shutil
 from tests.mark_utils import arg_mark
 
@@ -108,51 +107,6 @@ class TestEnvEnableProfiler:
     def teardown():
         """Run after each test case end."""
         cleanup()
-
-    @arg_mark(plat_marks=['cpu_linux'], level_mark='level3', card_mark='onecard', essential_mark='essential')
-    def test_cpu_profiler(self):
-        if sys.platform != 'linux':
-            return
-        status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "data_process":true}';
-               python ./run_net.py --target=CPU --mode=0;
-            """
-        )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "CPU")
-        assert status == 0
-
-    @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-    def test_gpu_profiler(self):
-        root_status = os.system("whoami | grep root")
-        cuda_status = os.system("nvcc -V | grep 'release 10'")
-        if root_status and not cuda_status:
-            return
-        status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_framework":"all", "profile_memory":true, "sync_enable":true, "data_process":true}';
-               python ./run_net.py --target=GPU --mode=0;
-            """
-        )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "GPU", "all")
-        assert status == 0
-
-    @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-    def test_gpu_profiler_pynative(self):
-        """
-        Feature: profiler support GPU pynative mode.
-        Description: profiling l2 GPU pynative mode data, analyze performance issues.
-        Expectation: No exception.
-        """
-        root_status = os.system("whoami | grep root")
-        cuda_status = os.system("nvcc -V | grep 'release 10'")
-        if root_status and not cuda_status:
-            return
-        status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_framework":"all", "sync_enable":true, "data_process":true}';
-               python ./run_net.py --target=GPU --mode=1;
-            """
-        )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "GPU", "all")
-        assert status == 0
 
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_ascend_profiler(self):

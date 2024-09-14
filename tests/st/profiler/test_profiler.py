@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ import shutil
 import tempfile
 from collections import defaultdict
 import json
-import sys
 import csv
 import pytest
 
@@ -123,68 +122,6 @@ def create_dataset(data_path, batch_size=32, repeat_size=1, num_parallel_workers
     return mnist_ds
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level3', card_mark='onecard', essential_mark='essential')
-def test_cpu_profiler():
-    """
-    Feature: profiler support cpu mode.
-    Description: profiling op time and timeline.
-    Expectation: No exception.
-    """
-    if sys.platform != 'linux':
-        return
-    device_id = 0
-    data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
-    profiler_path = os.path.join(data_path, 'profiler/')
-    try:
-        _train_with_profiler(data_path=data_path, device_target="CPU", profile_memory=False)
-        _check_cpu_profiling_file(profiler_path, device_id)
-    finally:
-        if os.path.exists(data_path):
-            shutil.rmtree(data_path)
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_gpu_profiler():
-    """
-    Feature: profiler support GPU  mode.
-    Description: profiling op time and timeline.
-    Expectation: No exception.
-    """
-    device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
-    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
-    data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
-    profiler_path = os.path.join(data_path, 'profiler/')
-    try:
-        _train_with_profiler(data_path=data_path, device_target="GPU", profile_memory=False,
-                             context_mode=context.GRAPH_MODE)
-        _check_gpu_profiling_file(profiler_path, device_id)
-        _check_host_profiling_file(profiler_path, rank_id)
-    finally:
-        if os.path.exists(data_path):
-            shutil.rmtree(data_path)
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_gpu_profiler_pynative():
-    """
-    Feature: profiler support GPU pynative mode.
-    Description: profiling l2 GPU pynative mode data, analyze performance issues.
-    Expectation: No exception.
-    """
-    device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
-    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
-    data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
-    profiler_path = os.path.join(data_path, 'profiler/')
-    try:
-        _train_with_profiler(data_path=data_path, device_target="GPU", profile_memory=False,
-                             context_mode=context.PYNATIVE_MODE)
-        _check_gpu_profiling_file(profiler_path, device_id)
-        _check_host_profiling_file(profiler_path, rank_id)
-    finally:
-        if os.path.exists(data_path):
-            shutil.rmtree(data_path)
-
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ascend_profiler():
     """
@@ -274,21 +211,6 @@ def _train_with_profiler(device_target, profile_memory, data_path, context_mode=
     profiler.analyse()
     if device_target != 'Ascend':
         profiler.op_analyse(op_name="Conv2D")
-
-
-def _check_gpu_profiling_file(profiler_path, device_id):
-    op_detail_file = profiler_path + f'gpu_op_detail_info_{device_id}.csv'
-    op_type_file = profiler_path + f'gpu_op_type_info_{device_id}.csv'
-    activity_file = profiler_path + f'gpu_activity_data_{device_id}.csv'
-    timeline_file = profiler_path + f'gpu_timeline_display_{device_id}.json'
-    getnext_file = profiler_path + f'minddata_getnext_profiling_{device_id}.txt'
-    pipeline_file = profiler_path + f'minddata_pipeline_raw_{device_id}.csv'
-    framework_file = profiler_path + f'gpu_framework_{device_id}.txt'
-
-    gpu_profiler_files = (op_detail_file, op_type_file, activity_file,
-                          timeline_file, getnext_file, pipeline_file, framework_file)
-    for file in gpu_profiler_files:
-        assert os.path.isfile(file)
 
 
 def _check_d_profiling_step_trace_on_multisubgraph(profiler_path, rank_id):
