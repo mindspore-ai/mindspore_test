@@ -29,6 +29,7 @@ class GraphKernelCommonTestSuite : public UT::Common {
   GraphKernelCommonTestSuite(){};
   virtual ~GraphKernelCommonTestSuite() = default;
 
+  void TearDown() override { SetGraphKernelFlags(""); }
   size_t pass_stage_ = 0;
   void RunPass(const FuncGraphPtr &graph, const std::vector<opt::PassPtr> &passes);
 
