@@ -922,6 +922,9 @@ ValuePtr ShallowCopyTensorValue(const ValuePtr &value) {
     auto tensor_value = value->cast<tensor::BaseTensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor_value);
     auto shallow_tensor = std::make_shared<tensor::Tensor>(*tensor_value);
+    if (tensor_value->is_parameter()) {
+      shallow_tensor->set_param_info(tensor_value->param_info());
+    }
     return shallow_tensor;
   } else if (value->isa<ValueSequence>()) {
     std::vector<ValuePtr> values;
