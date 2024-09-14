@@ -23,6 +23,7 @@ from mindspore.common.api import jit
 import mindspore.mint.nn.functional as Func
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.ops import operations as P
+from mindspore.ops import composite as C
 from mindspore.ops import GradOperation
 from tests.mindspore_test_framework.utils.bprop_util import bprop
 from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputs, GradOfAllInputsAndParams
@@ -166,6 +167,47 @@ def test_jit_network_with_dict_output():
     ms_grad = GradOfFirstInput(ms_net, True)
     grad_out = ms_grad(Tensor(x), out)
     assert np.allclose(x, grad_out.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_jit_network_with_list_output():
+    """
+    Feature: Test list in jit
+    Description: Net out is list in jit
+    Expectation: Success
+    """
+    class GradCell(nn.Cell):
+        def __init__(self, network, get_all=False, get_by_list=False, sens_param=False):
+            super().__init__()
+            self.network = network
+            self.grad = C.GradOperation(get_all, get_by_list, sens_param)
+
+        def construct(self, *inputs):
+            grads = self.grad(self.network)(*inputs)
+            return grads
+
+    class ListNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.tensor_add = P.Add()
+        @jit
+        def construct(self, x):
+            t = (l * l for l in range(10) if l > 5)
+            return t
+
+    input_x = Tensor(np.full((2, 3), 50).astype(np.float32))
+    input_y = Tensor(np.full((2, 3), 5).astype(np.float32))
+    output_x = [36, 49, 64, 81]
+    output_y = np.array([0, 0, 0])
+    list_net = ListNet()
+    output_net = list_net(input_x)
+    assert output_net == output_x
+    grad_net = GradCell(list_net)
+    output_grad = grad_net(input_y)
+    assert np.allclose(output_grad.asnumpy(), output_y, 0.0001, 0.0001)
 
 
 @arg_mark(plat_marks=['cpu_linux'],

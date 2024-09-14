@@ -87,6 +87,7 @@ def hypermap_dynamic_tuple(func, *inputs):
         i = i + 1
     return ret
 
+
 def hypermap_dynamic_list(func, *inputs):
     """Make hypermap for dynamic shape list."""
     iter_len = len(inputs[0])
