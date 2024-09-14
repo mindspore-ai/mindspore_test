@@ -565,6 +565,7 @@ def get_bprop_mirror_operator(self):
         param_name = self.get_attr_dict()['mirror_user_id']
 
     dev_num_r = 1.0
+    dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
     if dev_num > 1:
         dev_num_r = 1.0 / dev_num
         all_reduce = AllReduce(group=group)
@@ -574,7 +575,6 @@ def get_bprop_mirror_operator(self):
         ln_print = P.Print()
         reduce_sum = P.ReduceSum(keep_dims=False)
         square = P.Square()
-        dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
 
         fusion = self.get_attr_dict()["fusion"]
         all_reduce.add_prim_attr("fusion", fusion)
