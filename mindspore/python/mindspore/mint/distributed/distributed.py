@@ -21,7 +21,7 @@ from mindspore.communication._comm_helper import Backend, _get_rank_helper, _get
     MCCL_WORLD_COMM_GROUP, DEVICE_TO_BACKEND, _get_local_rank_helper, _get_local_size_helper, GlobalComm
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.common.tensor import Tensor
-from mindspore.communication import init, release
+from mindspore.communication import init, release, get_group_size
 
 
 
@@ -93,8 +93,8 @@ def init_process_group(
     #init hccl & create world group
     init("hccl")
 
-    if world_size == -1 or world_size != get_world_size():
-        raise ValueError("world_size is wrong, please using default value or setting: ", get_world_size())
+    if world_size == -1 or world_size != get_group_size():
+        raise ValueError("world_size is wrong, please using default value or setting: ", get_group_size())
 
 def destroy_process_group(group = None):
     """
