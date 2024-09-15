@@ -93,7 +93,7 @@ def init_process_group(
     #init hccl & create world group
     init("hccl")
 
-    if world_size == -1 or world_size != get_group_size():
+    if world_size != -1 and world_size != get_group_size():
         raise ValueError("world_size is wrong, please using default value or setting: ", get_group_size())
 
 def destroy_process_group(group = None):
