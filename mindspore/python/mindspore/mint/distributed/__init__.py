@@ -23,8 +23,9 @@ Please see the `msrun start up
 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
 for more details.
 """
-from mindspore.distributed.distributed import init_process_group, destroy_process_group
-from mindspore.communication.management import get_rank, P2POp
+from mindspore.mint.distributed.distributed import init_process_group, destroy_process_group
+from mindspore.communication.management import get_rank
+from mindspore.communication.comm_func import P2POp
 from mindspore.communication.management import get_group_size as get_world_size
 
 

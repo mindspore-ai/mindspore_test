@@ -95,11 +95,10 @@ def init_process_group(
 
     #create default group
     group_name  = GlobalComm.WORLD_COMM_GROUP
-    if world_size = -1:
+    if world_size == -1:
         world_size = get_world_size()
-    else:
-        if world_size != get_world_size()
-            raise ValueError("world_size is wrong, please using default value or setting: ", get_world_size())
+    elif world_size != get_world_size():
+        raise ValueError("world_size is wrong, please using default value or setting: ", get_world_size())
     rank_ids = list(range(0, world_size, 1))
     _create_group_helper(GlobalComm.WORLD_COMM_GROUP, rank_ids)
 
