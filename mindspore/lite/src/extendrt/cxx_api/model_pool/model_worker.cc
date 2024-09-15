@@ -103,9 +103,12 @@ void ModelWorker::Run() {
     predict_task_queue_->ActiveTask(task);
   }
   MS_LOG(INFO) << "task queue all tasks completed.";
-  model_->Finalize();
-  delete model_;
-  model_ = nullptr;
+  if (model_ != nullptr) {
+    model_->Finalize();
+    delete model_;
+    model_ = nullptr;
+  }
+
   model_is_nullptr_ = true;
   MS_LOG(INFO) << "delete model.";
 }
