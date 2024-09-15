@@ -17,7 +17,7 @@ import os
 from mindspore import context
 from mindspore import log as logger
 from mindspore.communication._comm_helper import Backend, _get_rank_helper, _get_size_helper, \
-    _create_group_helper, _destroy_group_helper
+    _create_group_helper, _destroy_group_helper, GlobalComm
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.common.tensor import Tensor
 from mindspore.communication import init, release, get_group_size
@@ -90,6 +90,8 @@ def init_process_group(
         logging.warning("pg_option is ignore, setting is invalid")
     if device_id != None:
         logging.warning("device_id is ignore, setting is invalid")
+    if rank != -1:
+        logging.warning("rank is ignore, setting is invalid")
     if backend != "hccl":
         raise ValueError("Only support hccl now, please setting backend to hccl or using default value")
 
@@ -136,7 +138,7 @@ def destroy_process_group(group = None):
         >>> destroy_process_group()
     """
 
-    if group == "hccl_world_group" or group == None:
+    if group == GlobalComm.WORLD_COMM_GROUP or group == None:
         release()
     elif not isinstance(group, str):
         raise TypeError("For 'destroy_group', the argument 'group' must be type of string, "
