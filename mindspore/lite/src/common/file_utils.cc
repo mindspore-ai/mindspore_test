@@ -58,7 +58,7 @@ inline int Mkdir(const std::string &file_path) {
 #ifdef _WIN32
   return _mkdir(file_path.c_str());
 #else
-  return mkdir(file_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  return mkdir(file_path.c_str(), S_IRWXU);
 #endif
 }
 }  // namespace

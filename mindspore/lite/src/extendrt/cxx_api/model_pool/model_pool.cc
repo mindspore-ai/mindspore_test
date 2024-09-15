@@ -41,7 +41,10 @@ constexpr int kNumPhysicalCoreThreshold = 16;
 constexpr int kDefaultWorkerNumPerPhysicalCpu = 2;
 constexpr int kDefaultThreadsNum = 8;
 constexpr int kInvalidNumaId = -1;
-constexpr int kNumDefaultInterOpParallel = 4;
+// kNumDefaultInterOpParallel set to 1 because fp16 ops in parallel mode is abnormal,
+// and parallel mode is no significant performance benefits.
+// This parameter changes the value of inter_op_parallel_num_ in control_actor_creator.cc
+constexpr int kNumDefaultInterOpParallel = 1;
 constexpr int kNumCoreNumTimes = 5;
 constexpr int kDefaultThreadNumTimes = 2;
 }  // namespace
