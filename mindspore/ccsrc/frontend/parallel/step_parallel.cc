@@ -48,6 +48,7 @@
 #include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "frontend/parallel/graph_util/grad_accumulation_utils.h"
+#include "frontend/parallel/interleaved_parallel/interleaved_parallel.h"
 #include "frontend/parallel/node_check.h"
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/ops_info/matmul_info.h"
