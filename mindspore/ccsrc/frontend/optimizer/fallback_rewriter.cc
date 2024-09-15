@@ -323,14 +323,6 @@ class BeforeOptARewriter : public BaseRewriter {
     return std::make_pair(cur_node, cur_abs);
   }
 
-  static std::string GetStringValue(const AnfNodePtr &node) {
-    auto str = GetValueNode<StringImmPtr>(node);
-    if (str == nullptr) {
-      return "";
-    }
-    return str->value();
-  }
-
   static CNodePtr NewTupleGetCNode(const AnfNodePtr &cnode, const AnfNodePtr &data_node,
                                    const std::vector<AbstractElementPair> &elements, const AnfNodePtr &name_node) {
     int64_t index = GetElementIndex(elements, name_node);
@@ -1229,7 +1221,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   // x.extend(y) --> PyExecute(_jit_fallback_list_inplace_extend(x, y))
   AnfNodePtr ConvertListInplaceExtend(const CNodePtr &node) const {
-    if (!fallback::EnableFallbackListDictInplace()) {
+    if (!fallback::EnableFallbackListDictInplace() || not_convert_jit_) {
       return nullptr;
     }
 
@@ -1282,7 +1274,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   // x.insert(index, y) --> PyExecute(_jit_fallback_list_inplace_insert(x, index, y))
   AnfNodePtr ConvertDictInplaceSetItem(const CNodePtr &node) const {
-    if (!fallback::EnableFallbackListDictInplace()) {
+    if (!fallback::EnableFallbackListDictInplace() || not_convert_jit_) {
       return nullptr;
     }
 
@@ -1333,7 +1325,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   // x.pop(index) --> PyExecute(_jit_fallback_list_inplace_pop(x, index, y))
   AnfNodePtr ConvertListInplacePop(const CNodePtr &node) const {
-    if (!fallback::EnableFallbackListDictInplace()) {
+    if (!fallback::EnableFallbackListDictInplace() || not_convert_jit_) {
       return nullptr;
     }
 
@@ -1386,7 +1378,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   // x.reverse() --> PyExecute(_jit_fallback_list_inplace_reverse(x))
   AnfNodePtr ConvertListInplaceReverse(const CNodePtr &node) const {
-    if (!fallback::EnableFallbackListDictInplace()) {
+    if (!fallback::EnableFallbackListDictInplace() || not_convert_jit_) {
       return nullptr;
     }
 
@@ -1435,7 +1427,7 @@ class AfterOptARewriter : public BaseRewriter {
   // x.clear() --> PyExecute(_jit_fallback_list_inplace_clear(x))
   AnfNodePtr ConvertListInplaceClear(const CNodePtr &node) const {
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
-    if (!allow_fallback_runtime) {
+    if (!allow_fallback_runtime || not_convert_jit_) {
       return nullptr;
     }
     static const auto allow_inplace_ops = common::GetCompileConfig("FALLBACK_SUPPORT_LIST_DICT_INPLACE") == "1";
@@ -1475,7 +1467,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   // data[key] = target --> PyExecute(_jit_fallback_dict_inplace_setitem(data, key, target))
   AnfNodePtr ConvertListInplaceInsert(const CNodePtr &node) const {
-    if (!fallback::EnableFallbackListDictInplace()) {
+    if (!fallback::EnableFallbackListDictInplace() || not_convert_jit_) {
       return nullptr;
     }
 
@@ -1615,8 +1607,13 @@ class AfterOptARewriter : public BaseRewriter {
 
   // ScalarCast(x, dtype) --> PyExecute(string, keys, values)
   AnfNodePtr ConvertScalarCast(const CNodePtr &cnode) const {
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                         "the ScalarCast operator is not supported.\n";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
-    if (!allow_fallback_runtime) {
+    if (!allow_fallback_runtime || not_convert_jit_) {
       MS_LOG(WARNING) << "When using the ScalarCast statement with some syntaxes that is not supported in graph mode, "
                       << "it is best to set jit_syntax_level to LAX.\n";
       return nullptr;
@@ -1666,6 +1663,11 @@ class AfterOptARewriter : public BaseRewriter {
   }
 
   AnfNodePtr ConvertMakeSlice(const CNodePtr &cnode) const {
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                         "the MakeSlice operator is not supported.\n";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
       MS_LOG(WARNING) << "When using the MakeSlice statement with some syntaxes that is not supported in graph mode, "
@@ -1736,6 +1738,11 @@ class AfterOptARewriter : public BaseRewriter {
   }
 
   AnfNodePtr ConvertIsInstance(const CNodePtr &cnode) const {
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                         "the IsInstance operator is not supported.\n";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
       MS_LOG(WARNING) << "When using the isinstance statement, it is best to set jit_syntax_level to LAX, "
@@ -1761,6 +1768,11 @@ class AfterOptARewriter : public BaseRewriter {
   // B = PyExecute("".join(__inner_str_list__)", ("__inner_str_list__",), (A,)).
   // replace(B --> JoinedStr)
   AnfNodePtr ConvertJoinedStr(const CNodePtr &cnode) const {
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                         "the JoinedStr operator is not supported.\n";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
       MS_LOG(WARNING) << "When using the JoinedStr statement, it is best to set jit_syntax_level to LAX, "
@@ -1816,6 +1828,11 @@ class AfterOptARewriter : public BaseRewriter {
     if (!CheckInputsHasAnyType(cnode) && !HasPyExecuteInput(cnode)) {
       return nullptr;
     }
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                         "the scenarios where the input of print operator has unsupported syntax are not supported.\n";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
       MS_LOG(WARNING) << "When using the print statement with some syntaxes that is not supported in graph mode, "
@@ -1846,6 +1863,11 @@ class AfterOptARewriter : public BaseRewriter {
   //        , (__inner_str__, __format_list_str__, __format_kwargs__str__), (str, B, A));
   // Replace(C -> Format).
   AnfNodePtr ConvertFormat(const CNodePtr &cnode) const {
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                         "the Format operator is not supported.\n";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
       MS_LOG(WARNING) << "When using the format statement with some syntaxes that is not supported in graph mode, "
@@ -1910,6 +1932,12 @@ class AfterOptARewriter : public BaseRewriter {
     if (!CheckInputsHasAnyType(cnode) && !HasPyExecuteInput(cnode)) {
       return nullptr;
     }
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                      << "the scenarios where the input of MakeRange operator has unsupported syntax are not "
+                      << "supported.\n";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
       MS_LOG(WARNING) << "When using the range statement with some syntaxes that is not supported in graph mode, "
@@ -1922,6 +1950,11 @@ class AfterOptARewriter : public BaseRewriter {
   }
 
   AnfNodePtr ConvertIsAndIsNot(const CNodePtr &cnode, bool is) const {
+    if (not_convert_jit_) {
+      MS_LOG(WARNING) << "If the forward graph is in graph mode and the grad graph is in pynative mode, "
+                      << "the 'is' or 'is not' operator is not supported.\n ";
+      return nullptr;
+    }
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     if (!allow_fallback_runtime) {
       MS_LOG(WARNING) << "When using the is/is_not statement with some syntaxes that is not supported in graph mode, "
@@ -2302,7 +2335,13 @@ class AfterOptARewriter : public BaseRewriter {
       if (location_info.empty()) {
         value_node->set_debug_info(cnode->debug_info());
       }
-      auto new_input = GetPyExecuteFromValue(cur_func, value_node, value, false);
+      auto new_input = input;
+      // Do not convert to PyExecute if the forward is in the graph mode, and the grad is in the pynative mode.
+      // Except for the None node, because the backend does not support the None node,
+      // and the None node does not have a gradient, there is no problem with converting to PyExecute.
+      if (IsValueNode<None>(value_node) || !not_convert_jit_) {
+        new_input = GetPyExecuteFromValue(cur_func, value_node, value, false);
+      }
       if (new_input == input) {
         continue;
       }
@@ -2314,7 +2353,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   AnfNodePtr ConvertSequenceOps(const CNodePtr &cnode) const {
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
-    if (!allow_fallback_runtime) {
+    if (!allow_fallback_runtime || not_convert_jit_) {
       return nullptr;
     }
     MS_EXCEPTION_IF_NULL(cnode);

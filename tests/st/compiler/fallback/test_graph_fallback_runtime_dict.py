@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Huawei Technologies Co., Ltd
+# Copyright 2022-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -205,7 +205,7 @@ def test_multiple_return_contains_dict_2_grad():
         x = {'a': a, 'b': 2}
         return a, (x, (1, 2))
 
-    out = ops.grad(dict_net_2)(ms.Tensor([1]))
+    out = ops.grad(dict_net_2)(ms.Tensor([1]))  # pylint: disable=not-callable
     assert out == 2
 
 
@@ -318,7 +318,7 @@ def test_net_dict_1_grad():
 
     net = DictLeNetNet()
     x = ms.Tensor(np.random.rand(64, 1, 32, 32).astype(np.float32))
-    outputs = ops.grad(net)(x)
+    outputs = ops.grad(net)(x)  # pylint: disable=not-callable
     assert np.all(outputs.asnumpy() == np.zeros((64, 1, 32, 32)))
 
 
@@ -442,9 +442,9 @@ def test_net_dict_2_grad():
 
     x = ms.Tensor(np.random.rand(64, 1, 32, 32).astype(np.float32))
     net = LeNet()
-    outputs1 = ops.grad(net)(x)
+    outputs1 = ops.grad(net)(x)  # pylint: disable=not-callable
     dict_lenet = DictLeNet()
-    outputs2 = ops.grad(dict_lenet)(x)
+    outputs2 = ops.grad(dict_lenet)(x)  # pylint: disable=not-callable
     assert np.allclose(outputs1.asnumpy(), outputs2.asnumpy())
 
 
@@ -904,7 +904,7 @@ def test_get_item_with_string_input_grad():
         return a[input_str]
 
     x = Tensor(2)
-    out = ops.grad(dict_net, grad_position=(0, 1))(x, "a")
+    out = ops.grad(dict_net, grad_position=(0, 1))(x, "a")  # pylint: disable=not-callable
     assert out == Tensor(1)
 
 
@@ -940,7 +940,7 @@ def test_return_dict_with_string_input_grad():
         return {input_str: x}
 
     x = Tensor(2)
-    out = ops.grad(dict_net, grad_position=(0, 1))(x, "a")
+    out = ops.grad(dict_net, grad_position=(0, 1))(x, "a")  # pylint: disable=not-callable
     assert out == Tensor(1)
 
 
@@ -1061,7 +1061,7 @@ def test_pynative_jit_dict_grad():
         return x
 
     ms.set_context(mode=ms.PYNATIVE_MODE)
-    out = ops.grad(dict_net)(ms.Tensor([1]))
+    out = ops.grad(dict_net)(ms.Tensor([1]))  # pylint: disable=not-callable
     assert out == 1
     ms.set_context(mode=ms.GRAPH_MODE)
 
@@ -1087,6 +1087,8 @@ def test_pynative_jit_dict_grad_2():
     ms.set_context(mode=ms.GRAPH_MODE)
 
 
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
 def test_jitclass_grad():
     """
     Feature: Support grad with custom class in jit in pynative mode.
@@ -1097,7 +1099,7 @@ def test_jitclass_grad():
         def __init__(self, net, grad_position=0):
             super().__init__()
             self.grad = ops.grad
-            self.grad_net = self.grad(net, grad_position=grad_position)
+            self.grad_net = self.grad(net, grad_position=grad_position)  # pylint: disable=not-callable
 
         def construct(self, *x):
             return self.grad_net(*x)

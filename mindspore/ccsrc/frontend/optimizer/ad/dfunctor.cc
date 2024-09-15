@@ -646,9 +646,18 @@ AnfNodePtr DFunctor::MapPrimitiveToK(const CNodePtr &primitive_user, size_t inde
     need_cut_ = true;
   }
   if (prim->Hash() == prim::kPrimPyExecute->Hash() && prim->name() == prim::kPrimPyExecute->name()) {
-    MS_LOG(WARNING) << "The gradient will be stopped from propagating at the PyExecute node created at the location: "
-                    << trace::GetDebugInfoStr(primitive_user->debug_info());
-    need_cut_ = true;
+    // Except for the None node
+    constexpr size_t script_index = 1;
+    auto script_node = primitive_user->input(script_index);
+    std::string script = "";
+    if (IsValueNode<StringImm>(script_node)) {
+      script = GetValueNode<StringImmPtr>(script_node)->value();
+    }
+    if (script != "None") {
+      MS_LOG(WARNING) << "The gradient will be stopped from propagating at the PyExecute node created at the location: "
+                      << trace::GetDebugInfoStr(primitive_user->debug_info());
+      need_cut_ = true;
+    }
   }
 
   auto k_prim = g_k_prims.KPrimitive(primitive_user, value_node, resources_);
