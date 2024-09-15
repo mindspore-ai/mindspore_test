@@ -71,7 +71,7 @@ bool MindirModelLoader::ConvertModel(const mind_ir::ModelProto &model_proto) {
         "MindirModelLoader: Import model failed, convert root graph error, please check the correctness of the file.");
     } else {
       // no subgraph, add graph to subgraph
-      auto *sub_graph = new LiteGraph::SubGraph();
+      auto *sub_graph = new (std::nothrow) LiteGraph::SubGraph();
       sub_graph->name_ = model_proto.graph().name();
       MS_CHECK_TRUE_MSG(
         ConvertGraph(model_proto.graph(), sub_graph, true), false,
@@ -82,7 +82,7 @@ bool MindirModelLoader::ConvertModel(const mind_ir::ModelProto &model_proto) {
 
   for (int i = 0; i < model_proto.functions_size(); i++) {
     auto sub_graph_proto = model_proto.functions(i);
-    auto *sub_graph = new LiteGraph::SubGraph();
+    auto *sub_graph = new (std::nothrow) LiteGraph::SubGraph();
     if (sub_graph == nullptr) {
       MS_LOG(ERROR) << "MindirModelLoader: Import model failed, new sub graph failed.";
       return mindspore::lite::RET_ERROR;
@@ -210,7 +210,7 @@ bool MindirModelLoader::ConvertNodes(const mind_ir::GraphProto &graph_proto, Lit
       }
       continue;
     }
-    auto *node = new LiteGraph::Node();
+    auto *node = new (std::nothrow) LiteGraph::Node();
     if (node == nullptr) {
       MS_LOG(ERROR) << "MindirModelLoader: Convert nodes failed, new node failed.";
       return false;
