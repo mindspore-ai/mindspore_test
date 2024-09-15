@@ -39,6 +39,8 @@ def init_process_group(
 
     Note:
         This method isn't supported in GPU and CPU versions of MindSpore.
+        In Ascend hardware platforms, this API should be set before the definition of any Tensor and Parameter,
+        and the instantiation and execution of any operation and net.
 
     Args:
         backend (str, optional): The backend to ues. default is hccl and now only support hccl.
@@ -53,7 +55,9 @@ def init_process_group(
     Raises:
         ValueError: If `backend` is not hccl.
         ValueError: If `world_size` is not equal to -1 or process group number.
-        RuntimeError: If HCCL is not available or MindSpore is GPU/CPU version.
+        RuntimeError: If device target is invalid, or backend is invalid, or distributed initialization fails,
+                      or the environment variables RANK_ID/MINDSPORE_HCCL_CONFIG_PATH
+                      have not been exported when backend is HCCL.
 
     Supported Platforms:
         ``Ascend``
@@ -90,7 +94,7 @@ def init_process_group(
         raise ValueError("Only support hccl now, please setting backend to hccl or using default value")
 
     #init hccl & create world group
-    init("hccl")
+    init(backend)
 
     if world_size != -1 and world_size != get_group_size():
         raise ValueError("world_size is wrong, please using default value or setting: ", get_group_size())
