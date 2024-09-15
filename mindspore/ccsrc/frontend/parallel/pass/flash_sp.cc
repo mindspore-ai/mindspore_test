@@ -2648,17 +2648,14 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
     MS_LOG(INFO) << "No RA/FlashSP Send/Recv grad is found to be attached.";
     return false;
   }
-  if (index_fa_input_bprop_getitem_map.size() != index_make_tuple_input_map.size()) {
-    MS_LOG(EXCEPTION)
-      << "The number of send/recv grad op tuple mismatch the number of FA input grad op which should be attached."
-      << " FA input grad op found:" << index_fa_input_bprop_getitem_map.size()
-      << ", send/recv grad op tuple found:" << index_make_tuple_input_map.size();
-  }
   for (auto &index_fa_bprop_getitem : index_fa_input_bprop_getitem_map) {
     auto index = index_fa_bprop_getitem.first;
     auto fa_bprop_getitem = index_fa_bprop_getitem.second;
-    auto make_tuple_input = index_make_tuple_input_map.at(index);
-    auto make_tuple = grad_graph->NewCNode(make_tuple_input);
+    auto make_tuple_input_it = index_make_tuple_input_map.find(index);
+    if (make_tuple_input_it == index_make_tuple_input_map.end()) {
+      continue;
+    }
+    auto make_tuple = grad_graph->NewCNode(make_tuple_input_it->second);
     MS_EXCEPTION_IF_NULL(make_tuple);
     std::vector<AnfNodePtr> attach_node_input = {NewValueNode(prim::kPrimDepend), fa_bprop_getitem, make_tuple};
     auto attach_node = grad_graph->NewCNode(attach_node_input);
