@@ -24,11 +24,8 @@ add_layernorm_v2:
       dtype: tensor
     x:
       dtype: tensor
-  function:
-    disable: True
   class:
     name: AddLayerNormV2
-    disable: True
   dispatch:
     enable: True
     Ascend: AddLayerNormAscend

@@ -488,6 +488,7 @@ from .nn_func import (
     upsample,
     kl_div,
     layer_norm,
+    add_layer_norm,
     log_softmax,
     lrn,
     mish,
