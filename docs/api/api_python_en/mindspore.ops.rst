@@ -21,6 +21,7 @@ Neural Network
     mindspore.ops.adaptive_avg_pool3d
     mindspore.ops.adaptive_max_pool1d
     mindspore.ops.adaptive_max_pool2d
+    mindspore.ops.add_layer_norm
     mindspore.ops.avg_pool1d
     mindspore.ops.avg_pool2d
     mindspore.ops.avg_pool3d
@@ -52,6 +53,7 @@ Neural Network
     mindspore.ops.max_unpool2d
     mindspore.ops.max_unpool3d
     mindspore.ops.rms_norm
+    mindspore.ops.rotary_position_embedding
     mindspore.ops.unfold
 
 
