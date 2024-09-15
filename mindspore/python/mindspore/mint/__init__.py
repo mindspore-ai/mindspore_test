@@ -151,7 +151,7 @@ from mindspore.ops.function.random_func import normal_ext as normal
 # 55
 
 # 56
-
+from mindspore.ops.function.math_func import norm_ext as norm
 # 57
 from mindspore.ops.functional import broadcast_to
 # 58
@@ -1306,7 +1306,7 @@ __all__ = [
     # 55
     'cross',
     # 56
-
+    'norm',
     # 57
     'broadcast_to',
     # 58

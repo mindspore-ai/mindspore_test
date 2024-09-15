@@ -44,12 +44,11 @@ void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPt
     ord_scalar = ord.value();
   }
   const auto keepdim_imm = GetValue<bool>(keepdim);
-  TypeId out_dtype = op->output_abs()->GetType()->cast<TensorTypePtr>()->element()->type_id();
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, input_x_tensor, ord_scalar, dim_vector, keepdim_imm, out_dtype]() {
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, input_x_tensor, ord_scalar, dim_vector, keepdim_imm]() {
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
       // Malloc for input tensors
@@ -57,8 +56,8 @@ void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPt
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-      LAUNCH_ACLNN(aclnnLinalgVectorNorm, device_context, op->stream_id(), input_x_tensor, ord_scalar, dim_vector,
-                   keepdim_imm, out_dtype, outputs[kIndex0]);
+      LAUNCH_ACLNN(aclnnNorm, device_context, op->stream_id(), input_x_tensor, ord_scalar, dim_vector, keepdim_imm,
+                   outputs[kIndex0]);
       MS_LOG(DEBUG) << "Launch Norm end";
     }));
 }

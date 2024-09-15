@@ -2606,7 +2606,7 @@ REG_BPROP_BUILDER("NextAfter").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {ib->Cast(dx1, dout_type), ib->Cast(dx2, dout_type)};
 });
 
-REG_BPROP_BUILDER("Norm").SetUnusedInputs({i1, i2, i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Norm").SetUnusedInputs({i2, i3, i4}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto ord = ib->GetInput(kIndex1);
   auto dim = ib->GetInput(kIndex2);
@@ -2614,8 +2614,82 @@ REG_BPROP_BUILDER("Norm").SetUnusedInputs({i1, i2, i3, i4}).SetBody(BODYFUNC(ib)
   auto dtype = ib->GetInput(kIndex4);
   auto out = ib->GetInput(kIndex5);
   auto dout = ib->GetInput(kIndex6);
-  auto scale_v = ib->RealDiv(dout, out);
-  return {ib->Mul(input, scale_v), ib->OutZeros(ord), ib->OutZeros(dim), ib->OutZeros(keepdim), ib->OutZeros(dtype)};
+  auto ord_type = ord->abstract()->BuildType();
+  if (ord_type->isa<TypeNone>()) {
+    auto scale_v = ib->RealDiv(dout, out);
+    return {ib->Mul(input, scale_v), ib->OutZeros(ord), ib->OutZeros(dim), ib->OutZeros(keepdim), ib->OutZeros(dtype)};
+  }
+  NodePtr grad_input = nullptr;
+  float ord_value = GetValue<float>(ord->BuildValue());
+  if (ord_value == 0.0) {
+    grad_input = ib->OutZeros(input);
+  }
+  if (ord_value == 1.0) {
+    grad_input = ib->Mul(dout, (ib->Sign(input)));
+  }
+  if (ord_value == 2.0) {
+    auto scale_v = ib->RealDiv(dout, out);
+    grad_input = ib->Mul(input, scale_v);
+  } else {
+    auto input_abs = ib->Abs(input);
+    auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(ord_value - 2, ib->GetDtype(input_abs))), input);
+    auto scale_v = ib->RealDiv(dout, ib->Pow(out, ib->Tensor(ord_value - 1, ib->GetDtype(out))));
+    auto equal_zero = ib->Equal(input_scaled, ib->Tensor(0, ib->GetDtype(input_scaled)));
+    scale_v = ib->MaskedFill(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
+    grad_input = ib->Mul(input_scaled, scale_v);
+  }
+  return {grad_input, ib->OutZeros(ord), ib->OutZeros(dim), ib->OutZeros(keepdim), ib->OutZeros(dtype)};
+});
+
+REG_BPROP_BUILDER("LpNormV2").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto p = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto keepdim = ib->GetInput(kIndex3);
+  auto epsilon = ib->GetInput(kIndex4);
+  auto out = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(kIndex6);
+  auto input_abs = ib->Abs(input);
+  auto input_sgn = ib->Sign(input);
+  auto tensor_zero = ib->Tensor(0, input->dtype());
+  NodePtr grad_input = nullptr;
+  float p_value = GetValue<float>(p->BuildValue());
+  if (p_value == 0.0) {
+    grad_input = ib->OutZeros(input);
+  }
+  if (p_value == 1.0) {
+    grad_input = ib->Mul(dout, input_sgn);
+  }
+  if (p_value == 2.0) {
+    auto scale_v = ib->RealDiv(dout, out);
+    grad_input = ib->Mul(input, scale_v);
+  }
+  if (p_value < 2.0) {
+    auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(p_value - 1, ib->GetDtype(input_abs))), input_sgn);
+    auto scale_v = ib->RealDiv(dout, ib->Pow(out, ib->Tensor(p_value - 1, ib->GetDtype(out))));
+    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
+    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    grad_input = ib->Mul(input_scaled, scale_v);
+  }
+  if (std::isinf(p_value)) {
+    auto input_nan = ib->Emit("IsNan", {input});
+    auto out_nan = ib->Emit("IsNan", {out});
+    auto input_and_out_nan = ib->LogicalAnd(input_nan, out_nan);
+    auto equal_max = ib->Cast(ib->LogicalOr(ib->Equal(input_abs, out), input_and_out_nan), input->dtype());
+    auto input_scaled = ib->Mul(input_sgn, equal_max);
+    auto max_cnt = ib->SumExt(ib->NotEqual(equal_max, tensor_zero), dim, ib->Value(false), ib->EmitValue(kNone));
+    auto scale_v = ib->RealDiv(dout, max_cnt);
+    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
+    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    grad_input = ib->Mul(input_scaled, scale_v);
+  } else {
+    auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(p_value - 2, ib->GetDtype(input_abs))), input);
+    auto scale_v = ib->RealDiv(dout, ib->Pow(out, ib->Tensor(p_value - 1, ib->GetDtype(out))));
+    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
+    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    grad_input = ib->Mul(input_scaled, scale_v);
+  }
+  return {grad_input, ib->OutZeros(p), ib->OutZeros(dim), ib->OutZeros(keepdim), ib->OutZeros(epsilon)};
 });
 
 REG_BPROP_BUILDER("Lerp").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {

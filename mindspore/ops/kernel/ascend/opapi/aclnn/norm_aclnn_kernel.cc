@@ -43,15 +43,14 @@ void NormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
     dim_ = std::vector<int64_t>{};
   }
   keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
-  dtype_ = outputs[kIndex0]->dtype_id();
 
-  GetWorkspaceForResize(inputs[kIndex0], ord_scalar_, dim_, keepdim_, dtype_, outputs[kIndex0]);
+  GetWorkspaceForResize(inputs[kIndex0], ord_scalar_, dim_, keepdim_, outputs[kIndex0]);
 }
 
 bool NormAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                         const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], ord_scalar_, dim_, keepdim_, dtype_, outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], ord_scalar_, dim_, keepdim_, outputs[kIndex0]);
   return true;
 }
 
