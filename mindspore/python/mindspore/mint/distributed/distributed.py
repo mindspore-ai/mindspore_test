@@ -90,17 +90,11 @@ def init_process_group(
     if backend != "hccl":
         raise ValueError("Only support hccl now, please setting backend to hccl or using default value")
 
-    #init hccl
+    #init hccl & create world group
     init("hccl")
 
-    #create default group
-    group_name  = GlobalComm.WORLD_COMM_GROUP
-    if world_size == -1:
-        world_size = get_world_size()
-    elif world_size != get_world_size():
+    if world_size == -1 or world_size != get_world_size():
         raise ValueError("world_size is wrong, please using default value or setting: ", get_world_size())
-    rank_ids = list(range(0, world_size, 1))
-    _create_group_helper(GlobalComm.WORLD_COMM_GROUP, rank_ids)
 
 def destroy_process_group(group = None):
     """
@@ -138,10 +132,11 @@ def destroy_process_group(group = None):
         >>> init_process_group()
         >>> destroy_process_group()
     """
-    if not isinstance(group, str):
-        raise TypeError("For 'destroy_group', the argument 'group' must be type of string, "
-                        "but got 'group' type : {}.".format(type(group)))
+
     if group == "hccl_world_group" or group == None:
         release()
+    elif not isinstance(group, str):
+        raise TypeError("For 'destroy_group', the argument 'group' must be type of string, "
+                        "but got 'group' type : {}.".format(type(group)))
     else:
         _destroy_group_helper(group)
