@@ -17,8 +17,7 @@ import os
 from mindspore import context
 from mindspore import log as logger
 from mindspore.communication._comm_helper import Backend, _get_rank_helper, _get_size_helper, \
-    _create_group_helper, _destroy_group_helper, HCCL_WORLD_COMM_GROUP, NCCL_WORLD_COMM_GROUP, \
-    MCCL_WORLD_COMM_GROUP, DEVICE_TO_BACKEND, _get_local_rank_helper, _get_local_size_helper, GlobalComm
+    _create_group_helper, _destroy_group_helper
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.common.tensor import Tensor
 from mindspore.communication import init, release, get_group_size
