@@ -17,8 +17,8 @@ from mindspore import log as logger
 from mindspore.communication._comm_helper import _destroy_group_helper, GlobalComm
 from mindspore.communication import init, release, get_group_size
 
-def init_process_group(backend = "hccl", init_method = None, timeout = None, world_size = -1, rank = -1, store = None,
-                      pg_option = None, device_id = None):
+def init_process_group(backend="hccl", init_method=None, timeout=None, world_size=-1, rank=-1, store=None,
+ pg_option=None, device_id=None):
     """
     Init collective communication lib. And create a default collective communication group.
 

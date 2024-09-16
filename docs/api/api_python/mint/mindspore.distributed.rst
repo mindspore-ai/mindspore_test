@@ -25,8 +25,8 @@ mindspore.communication
         - **device_id** (int, 无效参数) - 设置当前进程使用的NPU卡卡号。这个参数主要对标PT，但实际无效且设置不生效。
 
     异常：
-        - **TypeError** - 参数 `backend`的值不是hccl。
-        - **TypeError** - 参数 `world_size`的值非-1，且与实际通讯集群数不一致。
+        - **TypeError** - 参数 `backend` 的值不是hccl。
+        - **TypeError** - 参数 `world_size` 的值非-1，且与实际通讯集群数不一致。
         - **RuntimeError** - 1）硬件设备类型无效；2）后台服务无效；3）分布式计算初始化失败；4）后端是HCCL的情况下，未设置环境变量 RANK_ID 或 MINDSPORE_HCCL_CONFIG_PATH 的情况下初始化HCCL服务。
 
     样例：
