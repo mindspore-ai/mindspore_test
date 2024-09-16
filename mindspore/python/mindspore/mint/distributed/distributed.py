@@ -13,27 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """Communication management API"""
-import os
-from mindspore import context
 from mindspore import log as logger
-from mindspore.communication._comm_helper import Backend, _get_rank_helper, _get_size_helper, \
-    _create_group_helper, _destroy_group_helper, GlobalComm
-from mindspore.ops._primitive_cache import _get_cache_prim
-from mindspore.common.tensor import Tensor
+from mindspore.communication._comm_helper import _destroy_group_helper, GlobalComm
 from mindspore.communication import init, release, get_group_size
 
-
-
-def init_process_group(
-    backend = "hccl",
-    init_method = None,
-    timeout = None,
-    world_size = -1,
-    rank = -1,
-    store = None,
-    pg_option = None,
-    device_id = None
-):
+def init_process_group(backend = "hccl", init_method = None, timeout = None, world_size = -1, rank = -1, store = None,
+                      pg_option = None, device_id = None):
     """
     Init collective communication lib. And create a default collective communication group.
 
@@ -44,13 +29,22 @@ def init_process_group(
 
     Args:
         backend (str, optional): The backend to ues. default is hccl and now only support hccl.
-        init_method (str, invalid): URL specifying how to init collective communication group. Provides paramters consistent with pytorch, but is not currently support, setting is invalid.
-        tineout (timedelta, invalid): Timeout for API executed. Provides paramters consistent with pytorch, but is not currently support, setting is invalid.
+        init_method (str, invalid): URL specifying how to init collective communication group. Provides parameters
+                                    consistent with pytorch, but is not currently support, setting is invalid.
+        tineout (timedelta, invalid): Timeout for API executed. Provides parameters consistent with pytorch, but is not
+                                      currently support, setting is invalid.
         world_size (int, optional): Number of the processes participating in the job.
-        rank (int, invalid): Rank of the current process. Provides paramters consistent with pytorch, but is not currently support, setting is invalid.
-        store (Store, invalid): Key/Value store accessible to all workers, used to exchange connection/address infomation. Provides paramters consistent with pytorch, but is not currently support, setting is invalid.
-        pg_option (ProcessGroupOptions, invalid): process group options specifying what additional options need to be passed in during the construction of specific process group. rovides paramters consistent with pytorch, but is not currently support, setting is invalid.
-        device_id (int, invalid): the device id to exeute. rovides paramters consistent with pytorch, but is not currently support, setting is invalid. 
+        rank (int, invalid): Rank of the current process. Provides parameters consistent with pytorch, but is not
+                             currently support, setting is invalid.
+        store (Store, invalid): Key/Value store accessible to all workers, used to exchange connection/address
+                                information. Provides parameters consistent with pytorch, but is not currently support,
+                                setting is invalid.
+        pg_option (ProcessGroupOptions, invalid): process group options specifying what additional options need to be
+                                                  passed in during the construction of specific process group. Provides
+                                                  parameters consistent with pytorch, but is not currently support,
+                                                  setting is invalid.
+        device_id (int, invalid): the device id to exeute. Provides parameters consistent with pytorch, but is not
+                                  currently support, setting is invalid.
 
     Raises:
         ValueError: If `backend` is not hccl.
@@ -77,21 +71,21 @@ def init_process_group(
         >>> from mindspore import ops
         >>> from mindspore.distributed import init_process_group, destroy_process_group
         >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
-        >>> init_process_group() 
+        >>> init_process_group()
         >>> destroy_process_group()
     """
-    if init_method != None:
-        logging.warning("init_method is ignored, setting is invalid")
-    if timeout != None:
-        logging.warning("timeout is ignored, setting is invalid")
-    if store != None:
-        logging.warning("store is ignored, setting is invalid")
-    if pg_option != None:
-        logging.warning("pg_option is ignored, setting is invalid")
-    if device_id != None:
-        logging.warning("device_id is ignored, setting is invalid")
+    if init_method is not None:
+        logger.warning("init_method is ignored, setting is invalid")
+    if timeout is not None:
+        logger.warning("timeout is ignored, setting is invalid")
+    if store is not None:
+        logger.warning("store is ignored, setting is invalid")
+    if pg_option is not None:
+        logger.warning("pg_option is ignored, setting is invalid")
+    if device_id is not None:
+        logger.warning("device_id is ignored, setting is invalid")
     if rank != -1:
-        logging.warning("rank is ignored, setting is invalid")
+        logger.warning("rank is ignored, setting is invalid")
     if backend != "hccl":
         raise ValueError("Only support hccl now, please setting backend to hccl or using default value")
 
@@ -101,7 +95,7 @@ def init_process_group(
     if world_size != -1 and world_size != get_group_size():
         raise ValueError("world_size is wrong, please using default value or setting: ", get_group_size())
 
-def destroy_process_group(group = None):
+def destroy_process_group(group=None):
     """
     Destroy the user collective communication group.
     If group is None or "hccl_world_group", Destroy all group and release collective communication lib.
@@ -138,7 +132,7 @@ def destroy_process_group(group = None):
         >>> destroy_process_group()
     """
 
-    if group == GlobalComm.WORLD_COMM_GROUP or group == None:
+    if group == GlobalComm.WORLD_COMM_GROUP or group is None:
         release()
     elif not isinstance(group, str):
         raise TypeError("For 'destroy_group', the argument 'group' must be type of string, "

@@ -32,7 +32,7 @@ mindspore.communication
     样例：
 
     .. note::
-        .. include:: ops/mindspore.ops.comm_note.rst
+        .. include:: ../ops/mindspore.ops.comm_note.rst
 
 .. py:function:: mindspore.distributed.destroy_process_group(group=None)
     
@@ -52,7 +52,7 @@ mindspore.communication
     样例：
 
     .. note::
-        .. include:: ops/mindspore.ops.comm_note.rst
+        .. include:: ../ops/mindspore.ops.comm_note.rst
 
 .. py:function:: mindspore.distributed.get_rank(group=GlobalComm.WORLD_COMM_GROUP)
 
@@ -75,7 +75,7 @@ mindspore.communication
     样例：
 
     .. note::
-        .. include:: ops/mindspore.ops.comm_note.rst
+        .. include:: ../ops/mindspore.ops.comm_note.rst
 
 .. py:function:: mindspore.distributed.get_world_size(group=GlobalComm.WORLD_COMM_GROUP)
 
@@ -98,7 +98,7 @@ mindspore.communication
     样例：
 
     .. note::
-        .. include:: ops/mindspore.ops.comm_note.rst
+        .. include:: ../ops/mindspore.ops.comm_note.rst
 
 .. py:function:: mindspore.mint.distributed.P2POp(op, tensor, peer, group=None, tag=0, *, recv_dtype=None)
 
