@@ -1,0 +1,15 @@
+#operator transpose_ext
+transpose_ext:
+  args:
+    input:
+      dtype: tensor
+    dim0:
+      dtype: int
+    dim1:
+      dtype: int
+  returns:
+    output:
+      dtype: tensor
+  view: True
+  dispatch:
+    enable: True
