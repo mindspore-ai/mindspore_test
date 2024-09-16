@@ -81,17 +81,17 @@ def init_process_group(
         >>> destroy_process_group()
     """
     if init_method != None:
-        logging.warning("init_method is ignore, setting is invalid")
+        logging.warning("init_method is ignored, setting is invalid")
     if timeout != None:
-        logging.warning("timeout is ignore, setting is invalid")
+        logging.warning("timeout is ignored, setting is invalid")
     if store != None:
-        logging.warning("store is ignore, setting is invalid")
+        logging.warning("store is ignored, setting is invalid")
     if pg_option != None:
-        logging.warning("pg_option is ignore, setting is invalid")
+        logging.warning("pg_option is ignored, setting is invalid")
     if device_id != None:
-        logging.warning("device_id is ignore, setting is invalid")
+        logging.warning("device_id is ignored, setting is invalid")
     if rank != -1:
-        logging.warning("rank is ignore, setting is invalid")
+        logging.warning("rank is ignored, setting is invalid")
     if backend != "hccl":
         raise ValueError("Only support hccl now, please setting backend to hccl or using default value")
 

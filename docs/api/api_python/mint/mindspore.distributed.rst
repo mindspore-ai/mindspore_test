@@ -145,7 +145,7 @@ mindspore.communication
         - 仅支持PyNative模式，目前不支持Graph模式。
 
     参数：
-        - **p2p_op_list** (P2POp) - 包含 `P2POp` 类型对象的列表。 `P2POp` 指的是 :class:`mindspore.communication.comm_func.P2POp`。
+        - **p2p_op_list** (P2POp) - 包含 `P2POp` 类型对象的列表。 `P2POp` 指的是 :class:`mindspore.mint.distributed.P2POp`。
 
     返回：
         Tuple(Tensor)。根据 `p2p_op_list` 中的 `P2POp` 的发送/接收顺序，得到的接收张量元组。
