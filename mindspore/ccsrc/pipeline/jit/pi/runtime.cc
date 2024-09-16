@@ -1170,7 +1170,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   for (auto item : cache) {
     Py_XDECREF(item.second);
   }
-  MS_LOG(DEBUG) << __FUNCTION__ << (c->code() != nullptr ? " success !" : " failed !");
+  MS_LOG(INFO) << "Check guard" << (c->code() != nullptr ? " success!" : " failed!");
   return c->code() != nullptr;
 }
 

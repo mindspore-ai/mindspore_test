@@ -407,7 +407,7 @@ static GuardItemPtr GuardOnGDeduce(TracePtr var, PyObject *obj, const std::map<s
       item = GuardRepr(var);
     }
   } else if (py::isinstance<mindspore::Cell>(obj)) {
-    item = GuardRepr(var);
+    item = GuardEqual(var, false, 0);
   } else if (py::isinstance<mindspore::ParamInfo>(obj)) {
     item = GuardEqual(var, true, INT_MAX);
   } else {

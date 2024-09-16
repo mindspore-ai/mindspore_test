@@ -1647,82 +1647,41 @@ class PrimitiveData : public ItemData {
 class CellData : public ItemData {
  public:
   CellData(PyObject *obj, bool needSpecialize, int recurseDepth)
-      : ItemData(ItemType::Cell, needSpecialize, recurseDepth) {
-    auto pyObj = py::cast<py::object>(obj);
-    auto cell = pyObj.cast<mindspore::CellPtr>();
-    PyObject *ns = PyObject_GetAttrString(obj, "__dict__");
-    if (!ns) {
-      return;
+      : ItemData(ItemType::Cell, needSpecialize, recurseDepth), cell_(obj) {
+    auto cell = py::reinterpret_borrow<py::object>(obj);
+    type_ = py::getattr(cell.get_type(), "__name__").cast<std::string>();
+    if (py::hasattr(cell, "training")) {
+      training_ = py::getattr(cell, "training").cast<bool>();
     }
-    PyObject *items = PyMapping_Items(ns);
-    if (!items) {
-      return;
+    if (py::hasattr(cell, "requires_grad")) {
+      requires_grad_ = py::getattr(cell, "requires_grad").cast<bool>();
     }
-    for (Py_ssize_t pos = 0; pos < PyList_GET_SIZE(items); pos++) {
-      PyObject *it = PySequence_Fast(PyList_GET_ITEM(items, pos), "items() returned non-iterable");
-      if (!it || PySequence_Fast_GET_SIZE(it) != 2) {
-        if (it) {
-          Py_DECREF(it);
-        }
-        continue;
-      }
-      PyObject *key = PySequence_Fast_GET_ITEM(it, 0);
-      PyObject *val = PySequence_Fast_GET_ITEM(it, 1);
-      ItemDataPtr k;
-      ItemDataPtr v;
-      if (recurseDepth > 0 || needSpecialize) {
-        k = CreateItem(key, needSpecialize, recurseDepth);
-        v = CreateItem(val, needSpecialize, recurseDepth);
-      } else {
-        k =
-          CreateItem((key == NULL || key == Py_None) ? NULL : reinterpret_cast<PyObject *>(Py_TYPE(key)), false, false);
-        v =
-          CreateItem((val == NULL || val == Py_None) ? NULL : reinterpret_cast<PyObject *>(Py_TYPE(val)), false, false);
-      }
-      listK_.push_back(k);
-      listV_.push_back(v);
-      Py_DECREF(it);
-    }
-    Py_DECREF(items);
-    Py_DECREF(ns);
   }
 
   bool operator==(const ItemData &obj) const override {
     if (ItemData::operator==(obj)) {
-      const CellData &other = static_cast<const CellData &>(obj);
-      for (size_t i = 0; i < listK_.size(); ++i) {
-        if (i < other.listK_.size() && *(listK_[i]) == *(other.listK_[i]) && *(listV_[i]) == *(other.listV_[i])) {
-          continue;
-        } else {
-          return false;
-        }
-      }
-      return true;
+      const auto &other = static_cast<const CellData &>(obj);
+      return cell_ == other.cell_ && training_ == other.training_ && requires_grad_ == other.requires_grad_;
     }
     return false;
   }
 
   std::string ToString() override {
     std::string cell;
-    for (size_t i = 0; i < listK_.size(); ++i) {
-      cell += DESC_ITEM(listK_[i], listV_[i]);
-    }
+    cell += DESC(type_);
+    cell += DESC_STRING(training_);
+    cell += DESC_STRING(requires_grad_);
     return DESC(cell) + DESC_END;
   }
 
  protected:
-  void SubInfo(InfoPack *info) override {
-    (*info) << uint64_t(listK_.size());
-    for (auto item : listK_) {
-      (*info) << item->Info();
-    }
-    (*info) << uint64_t(listV_.size());
-    for (auto item : listV_) {
-      (*info) << item->Info();
-    }
-  }
-  std::vector<ItemDataPtr> listK_;
-  std::vector<ItemDataPtr> listV_;
+  void SubInfo(InfoPack *info) override { (*info) << cell_ << training_ << requires_grad_; }
+
+ private:
+  PyObject *cell_;
+  std::string type_;  // Only used in ToString(), no need to compare.
+  bool training_ = false;
+  bool requires_grad_ = false;
 };
 
 class UnknownData : public ItemData {
@@ -1933,7 +1892,7 @@ class EqGuard : public GuardItem {
     GuardItemPerfStart(perf, kGuardItemTotalStage);
     PyObject *obj = GetObjectFromTrace(frame, var_, cache, perf);
     GuardItemPerfStage(perf, this, kGuardItemRetrieveStage);
-    bool ret = obj == last_ || Check(obj);
+    bool ret = Check(obj);
     GuardItemPerfStage(perf, this, kGuardItemCompareStage);
     if (obj != NULL) {
       Py_DECREF(obj);
@@ -1942,15 +1901,22 @@ class EqGuard : public GuardItem {
   }
 
   virtual bool Check(PyObject *obj) {
+    if (obj != nullptr && py::isinstance<mindspore::Cell>(obj)) {
+      return obj == last_ && CheckData(obj);
+    }
+    return obj == last_ || CheckData(obj);
+  }
+
+  bool CheckData(PyObject *obj) {
     ItemDataPtr other = CreateItem(obj, specialized_, recurse_);
     return *dp_ == *other;
   }
 
   virtual std::string ToString() {
-    if (strGuard_.size() > 0) {
+    if (!strGuard_.empty()) {
       return strGuard_;
     }
-    strGuard_ = var_->ToString() + "==" + dp_->ToString();
+    strGuard_ = std::string("EqGuard(") + var_->ToString() + " == " + dp_->ToString() + ")";
     strGuard_ = std::regex_replace(strGuard_, std::regex("(\n)"), "");
     return strGuard_;
   }
