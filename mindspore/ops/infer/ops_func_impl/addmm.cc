@@ -35,7 +35,6 @@ namespace ops {
 
 BaseShapePtr AddmmFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto x_shp = input_args[kIndex1]->GetShape()->GetShapeVector();
   auto y_shp = input_args[kIndex2]->GetShape()->GetShapeVector();
   if (IsDynamicRank(x_shp) || IsDynamicRank(y_shp)) {
@@ -69,7 +68,6 @@ BaseShapePtr AddmmFuncImpl::InferShape(const PrimitivePtr &primitive,
   return std::make_shared<abstract::Shape>(ret_shape);
 }
 TypePtr AddmmFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(prim);
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   std::map<std::string, TypePtr> types;
   (void)types.emplace("mat1", input_args[kIndex1]->GetType());

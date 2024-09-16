@@ -125,7 +125,6 @@ void CheckBatchMatmulInputWhetherCanBeBroadcast(const std::string &name, const S
 
 BaseShapePtr BatchMatMulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto constexpr kBatchMatmulInputNum = 4;
   (void)CheckAndConvertUtils::CheckInteger("input num", SizeToLong(input_args.size()), kEqual, kBatchMatmulInputNum,
                                            primitive->name());
@@ -198,7 +197,9 @@ TypePtr BatchMatMulFuncImpl::InferType(const PrimitivePtr &prim, const std::vect
       MS_EXCEPTION(ValueError) << "For '" << prim->name() << "', MatMul cast_type must be a 'Type', but got: '"
                                << out_type << "'.";
     }
-    x_type = std::make_shared<TensorType>(out_type->cast<TypePtr>());
+    auto out_type_ptr = out_type->cast<TypePtr>();
+    MS_EXCEPTION_IF_NULL(out_type_ptr);
+    x_type = std::make_shared<TensorType>(out_type_ptr);
   }
   return x_type;
 }
@@ -216,6 +217,7 @@ TypePtrList BatchMatMulFuncImpl::InferType(const PrimitivePtr &primitive, const 
       MS_EXCEPTION(ValueError) << "BatchMatMul cast_type must be a `Type`";
     }
     ret_type = out_type->cast<TypePtr>();
+    MS_EXCEPTION_IF_NULL(ret_type);
   }
   const auto x_type = x_tensor->Dtype();
   const auto y_type = y_tensor->Dtype();

@@ -86,15 +86,16 @@ BaseShapePtr DenseFuncImpl::InferShape(const PrimitivePtr &primitive,
     }
   }
 
-  auto x_col = x_shp[x_shp.size() - 1];
-  auto w_row = w_shp[1];
-  if (x_col != -1 && w_row != -1 && x_col != w_row && x_col >= 0 && w_row >= 0) {
+  auto x_col = x_shp[x_shp.size() - kDim1];
+  auto w_row = w_shp[kDim1];
+  if (x_col != abstract::Shape::kShapeDimAny && w_row != abstract::Shape::kShapeDimAny && x_col != w_row &&
+      x_col >= 0 && w_row >= 0) {
     MS_EXCEPTION(ValueError) << "Dense shape error, got x_col: " << x_col << ", w_row: " << w_row
                              << ". In Dense x_col and w_row should be equal." << kDimW;
   }
 
-  ret_shape.assign(x_shp.begin(), x_shp.end() - 1);
-  ret_shape.push_back(w_shp[0]);
+  ret_shape.assign(x_shp.begin(), x_shp.end() - kDim1);
+  ret_shape.push_back(w_shp[kDim0]);
   return std::make_shared<abstract::Shape>(ret_shape);
 }
 
@@ -190,15 +191,16 @@ ShapeArray DenseFuncImpl::InferShape(const PrimitivePtr &primitive, const ValueP
     }
   }
 
-  auto x_col = x_shp[x_shp.size() - 1];
-  auto w_row = w_shp[1];
-  if (x_col != -1 && w_row != -1 && x_col != w_row && x_col >= 0 && w_row >= 0) {
+  auto x_col = x_shp[x_shp.size() - kDim1];
+  auto w_row = w_shp[kDim1];
+  if (x_col != abstract::Shape::kShapeDimAny && w_row != abstract::Shape::kShapeDimAny && x_col != w_row &&
+      x_col >= 0 && w_row >= 0) {
     MS_EXCEPTION(ValueError) << "Dense shape error, got x_col: " << x_col << ", w_row: " << w_row
                              << ". In Dense x_col and w_row should be equal." << kDimW;
   }
 
-  ret_shape.assign(x_shp.begin(), x_shp.end() - 1);
-  ret_shape.push_back(w_shp[0]);
+  ret_shape.assign(x_shp.begin(), x_shp.end() - kDim1);
+  ret_shape.push_back(w_shp[kDim0]);
   return {ret_shape};
 }
 REGISTER_SIMPLE_INFER(kNameDense, DenseFuncImpl)

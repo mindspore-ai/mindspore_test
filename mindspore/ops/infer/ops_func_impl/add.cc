@@ -23,7 +23,6 @@
 
 namespace mindspore::ops {
 TypePtr AddFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]->GetType());
   std::map<std::string, TypePtr> types;
   (void)types.emplace("x", input_args[kInputIndex0]->GetType());
   (void)types.emplace("y", input_args[kInputIndex1]->GetType());

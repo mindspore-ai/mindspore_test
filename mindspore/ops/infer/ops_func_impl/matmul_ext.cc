@@ -140,7 +140,6 @@ void MatMulMakeShape(ShapeVector *output, const ShapeVector xshp, const ShapeVec
 }
 BaseShapePtr MatMulExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto constexpr kMatMulExtInputNum = 2;
   (void)CheckAndConvertUtils::CheckInteger("input num", SizeToLong(input_args.size()), kEqual, kMatMulExtInputNum,
                                            primitive->name());

@@ -31,9 +31,9 @@ BaseShapePtr MatMulFuncImpl::InferShape(const PrimitivePtr &primitive,
   const std::string op_name = primitive->name();
   (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kGreaterEqual,
                                            kMatMulInputNum, op_name);
-  auto x = CheckAndConvertUtils::CheckArgsType(op_name, input_args, 0, kObjectTypeTensorType);
+  auto x = CheckAndConvertUtils::CheckArgsType(op_name, input_args, kIndex0, kObjectTypeTensorType);
 
-  auto y = CheckAndConvertUtils::CheckArgsType(op_name, input_args, 1, kObjectTypeTensorType);
+  auto y = CheckAndConvertUtils::CheckArgsType(op_name, input_args, kIndex1, kObjectTypeTensorType);
   const auto &x_shp = x->GetShape()->GetShapeVector();
   const auto &y_shp = y->GetShape()->GetShapeVector();
 
@@ -42,8 +42,8 @@ BaseShapePtr MatMulFuncImpl::InferShape(const PrimitivePtr &primitive,
     return std::make_shared<abstract::Shape>(ret_shape);
   }
 
-  auto transpose_a_op = GetScalarValue<bool>(input_args[2]->GetValue());
-  auto transpose_b_op = GetScalarValue<bool>(input_args[3]->GetValue());
+  auto transpose_a_op = GetScalarValue<bool>(input_args[kIndex2]->GetValue());
+  auto transpose_b_op = GetScalarValue<bool>(input_args[kIndex3]->GetValue());
 
   if (!transpose_a_op.has_value()) {
     return x->GetShape()->Clone();
@@ -56,7 +56,7 @@ BaseShapePtr MatMulFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto transpose_a = transpose_a_op.value();
   auto transpose_b = transpose_b_op.value();
 
-  if (x_shp.size() == 1 && y_shp.size() == 1 && x_shp[0] == 0 && y_shp[0] == 0) {
+  if (x_shp.size() == 1 && y_shp.size() == 1 && x_shp[kDim0] == 0 && y_shp[kDim0] == 0) {
     ShapeVector ret_shape;
     return std::make_shared<abstract::Shape>(ret_shape);
   }
@@ -71,8 +71,8 @@ BaseShapePtr MatMulFuncImpl::InferShape2D(const ShapeVector &x_shp, const ShapeV
   if (x_shp.size() != SHAPE_SIZE || y_shp.size() != SHAPE_SIZE) {
     MS_EXCEPTION(ValueError) << "MatMul inputs should have the same dimension size and equal to 2.";
   }
-  auto x_col = x_shp[(transpose_a ? 0 : 1)];
-  auto y_row = y_shp[(transpose_b ? 1 : 0)];
+  auto x_col = x_shp[(transpose_a ? kDim0 : kDim1)];
+  auto y_row = y_shp[(transpose_b ? kDim1 : kDim0)];
   if (x_col != y_row && x_col >= 0 && y_row >= 0) {
     MS_EXCEPTION(ValueError) << "For 'MatMul' the input dimensions must be equal, but got 'x1_col': " << x_col
                              << " and 'x2_row': " << y_row << ".";
@@ -82,8 +82,8 @@ BaseShapePtr MatMulFuncImpl::InferShape2D(const ShapeVector &x_shp, const ShapeV
   auto make_shape = [&transpose_a, &transpose_b](ShapeVector &output, const ShapeVector xshp,
                                                  const ShapeVector yshp) -> void {
     if (!xshp.empty() && !yshp.empty()) {
-      output.push_back(xshp[(transpose_a ? 1 : 0)]);
-      output.push_back(yshp[(transpose_b ? 0 : 1)]);
+      output.push_back(xshp[(transpose_a ? kDim1 : kDim0)]);
+      output.push_back(yshp[(transpose_b ? kDim0 : kDim1)]);
     }
     return;
   };
@@ -117,6 +117,7 @@ TypePtr MatMulFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
       MS_EXCEPTION(ValueError) << "MatMul cast_type must be a `Type`";
     }
     x_type = out_type->cast<TypePtr>();
+    MS_EXCEPTION_IF_NULL(x_type);
   }
 
   auto context_ptr = MsContext::GetInstance();
@@ -148,6 +149,7 @@ TypePtrList MatMulFuncImpl::InferType(const PrimitivePtr &primitive, const Value
       MS_EXCEPTION(ValueError) << "MatMul cast_type must be a `Type`";
     }
     ret_type = out_type->cast<TypePtr>();
+    MS_EXCEPTION_IF_NULL(ret_type);
   }
   const auto x_type = x_tensor->Dtype();
   const auto y_type = y_tensor->Dtype();
@@ -181,7 +183,7 @@ ShapeArray MatMulFuncImpl::InferShape(const PrimitivePtr &primitive, const Value
   auto transpose_a = transpose_a_op.value();
   auto transpose_b = transpose_b_op.value();
 
-  if (x_shp.size() == 1 && y_shp.size() == 1 && x_shp[0] == 0 && y_shp[0] == 0) {
+  if (x_shp.size() == 1 && y_shp.size() == 1 && x_shp[kDim0] == 0 && y_shp[kDim0] == 0) {
     ShapeVector ret_shape;
     return {ret_shape};
   }
@@ -191,8 +193,8 @@ ShapeArray MatMulFuncImpl::InferShape(const PrimitivePtr &primitive, const Value
   if (x_shp.size() != SHAPE_SIZE || y_shp.size() != SHAPE_SIZE) {
     MS_EXCEPTION(ValueError) << "MatMul inputs should have the same dimension size and equal to 2.";
   }
-  auto x_col = x_shp[(transpose_a ? 0 : 1)];
-  auto y_row = y_shp[(transpose_b ? 1 : 0)];
+  auto x_col = x_shp[(transpose_a ? kDim0 : kDim1)];
+  auto y_row = y_shp[(transpose_b ? kDim1 : kDim0)];
   if (x_col != y_row && x_col >= 0 && y_row >= 0) {
     MS_EXCEPTION(ValueError) << "For 'MatMul' the input dimensions must be equal, but got 'x1_col': " << x_col
                              << " and 'x2_row': " << y_row << ".";
@@ -200,8 +202,8 @@ ShapeArray MatMulFuncImpl::InferShape(const PrimitivePtr &primitive, const Value
 
   ShapeVector ret_shape;
   if (!x_shp.empty() && !y_shp.empty()) {
-    ret_shape.push_back(x_shp[(transpose_a ? 1 : 0)]);
-    ret_shape.push_back(y_shp[(transpose_b ? 0 : 1)]);
+    ret_shape.push_back(x_shp[(transpose_a ? kDim1 : kDim0)]);
+    ret_shape.push_back(y_shp[(transpose_b ? kDim0 : kDim1)]);
   }
   return {ret_shape};
 }

@@ -28,9 +28,7 @@ namespace ops {
 BaseShapePtr GeLUGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto base_shape = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(base_shape);
   const auto &x_shape = base_shape->GetShapeVector();
 
   return std::make_shared<abstract::TensorShape>(x_shape);
@@ -40,8 +38,7 @@ TypePtr GeLUGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(x_type);
-  return x_type->Clone();
+  return x_type;
 }
 }  // namespace ops
 }  // namespace mindspore
