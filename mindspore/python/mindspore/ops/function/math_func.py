@@ -4211,7 +4211,7 @@ def logaddexp(input, other):
 
     Args:
         input (Tensor): Input Tensor. The dtype of `input` must be float.
-        other (Tensor): Input Tensor. The dtype of `input` must be float.
+        other (Tensor): Input Tensor. The dtype of `other` must be float.
             If the shape of `input` is not equal to the shape of `other`,
             they must be broadcastable to a common shape (which becomes the shape of the output).
 
@@ -4240,7 +4240,7 @@ def logaddexp(input, other):
     if not isinstance(other, (Tensor, Tensor_)):
         raise TypeError(f"For logaddexp, the other must be a Tensor, but got {type(other)}.")
     if not ops.is_floating_point(input) or not ops.is_floating_point(other):
-        raise TypeError(f"For logaddexp2, the dtype of 'input' and 'other' must be float,"
+        raise TypeError(f"For logaddexp, the dtype of 'input' and 'other' must be float,"
                         f"but got {input.dtype} and {other.dtype}.")
     m = maximum(input, other)
     abs_val = abs(input - other)

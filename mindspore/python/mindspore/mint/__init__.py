@@ -335,6 +335,7 @@ from mindspore.ops.auto_generate import select_ext as select
 # 301
 from mindspore.ops.function.math_func import tan
 
+# 303
 from mindspore.ops.auto_generate import trace_ext as trace
 
 from mindspore.ops.function.array_func import reshape
@@ -344,6 +345,9 @@ from mindspore.ops.function.array_func import tril_ext as tril
 
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
+
+# 553
+from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
 
 # 610
 from mindspore.ops.function.math_func import nan_to_num
@@ -1494,6 +1498,7 @@ __all__ = [
     'sign',
     # 301
     'tan',
+    # 303
     'trace',
     'reshape',
     # 304
@@ -1503,6 +1508,9 @@ __all__ = [
 
     # 538
     'histc',
+
+    # 553
+    'logaddexp',
 
     # 610
     'nan_to_num',

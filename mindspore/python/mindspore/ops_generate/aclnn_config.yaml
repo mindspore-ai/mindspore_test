@@ -323,3 +323,6 @@ TrilExt: 'aclnnTril'
 
 # 538
 HistcExt: 'aclnnHistc'
+
+# 553
+LogAddExp: 'aclnnLogAddExp'

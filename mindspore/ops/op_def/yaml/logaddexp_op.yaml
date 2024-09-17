@@ -1,0 +1,18 @@
+#operator logaddexp
+logaddexp:
+    args:
+        input:
+            dtype: tensor
+        other:
+            dtype: tensor
+    args_signature:
+        dtype_group: (input, other)
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: LogAddExp
+    function:
+        name: logaddexp_ext
+    dispatch:
+        enable: True

@@ -108,6 +108,7 @@ Pointwise Operations
     mindspore.mint.floor
     mindspore.mint.log
     mindspore.mint.log1p
+    mindspore.mint.logaddexp
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
