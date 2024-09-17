@@ -70,10 +70,16 @@ class AclStreamAssign {
   void GenKernelIoExecInfoMap(const NotNull<KernelGraphPtr> &kernel_graph,
                               mindspore::HashMap<CNodePtr, NodeIoExecInfoPtr> *kernel_io_exec_info_map) const;
 
+  std::pair<CNodePtr, CNodePtr> CreateSendRecvEventsPair(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                         size_t send_stream_id, size_t wait_stream_id);
+
   void UpdateEventsToExecutionOrder(const NotNull<KernelGraphPtr> &kernel_graph,
                                     const mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> &send_after_node,
                                     const mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> &recv_before_node,
                                     const mindspore::HashMap<AnfNodePtr, std::set<size_t>> &producer_streams);
+
+  void UpdateGPTOEventsToExecutionOrder(const NotNull<KernelGraphPtr> &kernel_graph,
+                                        const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events);
 
   void GenEventsForParallelOp(const NotNull<KernelGraphPtr> &kernel_graph,
                               mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> *kernel_send,

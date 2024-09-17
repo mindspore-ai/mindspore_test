@@ -27,6 +27,7 @@
 #include <string>
 #include <set>
 #include <queue>
+#include <tuple>
 
 #include "ir/anf.h"
 #include "ir/manager.h"
@@ -36,14 +37,14 @@
 namespace mindspore {
 namespace gpto {  // Graph Parallel Topology Optimizer
 // Preliminary definitions
-using Time = uint64_t;   // size_t;
-using Memory = int64_t;  // maintain memory as signed integer, since memory impact of some operators may be negative
+using Time = uint64_t;  // size_t;
+using Memory = uint64_t;
 using GptoTaskId = size_t;
 using PeId = size_t;
 enum GptoTaskType { kNone = 0, kComp, kComm, kCube };
 enum GptoTensorType { kSimple = 0, kWorkspace, kGraphOutput, kGraphInput };
 enum class PEsSort { kSortByLoad = 0, kSortByValidStart, kNumPEsSort };
-enum GPTO_MODE { kSingle = 1, kCompComm = 2, kMulti = 3 };
+enum GPTO_MODE { kSingle = 1, kCompComm = 2, kMulti = 3, kNumModes = 4 };
 enum TaskSort {
   kSortByCostMax = 0,
   kSortByCostMin,
@@ -62,12 +63,21 @@ enum TaskSort {
   kSortByPredCommDepth,
   kSortByPredCube,
   kSortByGreedyHeight,
+  kSortBySValue,
+  kSortByAValue,
+  kSortByMValue,
+  kSortByWeightedSValue,
+  kSortByWeightedAValue,
+  kSortByWeightedMValue,
+  kSortByCostSValue,
+  kSortByCostAValue,
+  kSortByCostMValue,
+  kSortByReversePostOrder,
   kNumTaskSort
 };
 
 // Namespace variables
-inline Memory SOFT_MEMORY_LIMIT;
-inline Memory HARD_MEMORY_LIMIT;  // preset value to capture max device size
+inline Memory MEMORY_LIMIT;
 inline Memory PARAMETER_SIZE = 0;
 inline GPTO_MODE gpto_mode = kCompComm;
 
@@ -119,12 +129,24 @@ class GptoTask {
     pred_cube_ = 0;
     name_ = name;
     initial_mem_impact_ = 0;
-    current_mem_impact_ = 0;
+    minus_mem_impact_ = 0;
     workspace_memory_ = 0;
     lower_bound_ = 0;
     subgraph_id_ = SIZE_MAX;
+    subgraph_id_parent_ = SIZE_MAX;
     condition_switch_ = false;
     condition_gather_ = false;
+    position_ = 0;
+    s_value_ = 0;
+    a_value_ = 0.0;
+    m_value_ = 0;
+    weighted_s_value_ = 0;
+    weighted_a_value_ = 0.0;
+    weighted_m_value_ = 0;
+    cost_s_value_ = 0;
+    cost_a_value_ = 0.0;
+    cost_m_value_ = 0;
+    post_order_time_ = 0;
   }
 
   GptoTask(const GptoTask &t) {
@@ -144,13 +166,24 @@ class GptoTask {
     pred_cube_ = t.pred_cube_;
     name_ = t.name_;
     initial_mem_impact_ = t.initial_mem_impact_;
-    current_mem_impact_ = t.current_mem_impact_;
+    minus_mem_impact_ = t.minus_mem_impact_;
     workspace_memory_ = t.workspace_memory_;
     lower_bound_ = t.lower_bound_;
     subgraph_id_ = t.subgraph_id_;
+    subgraph_id_parent_ = t.subgraph_id_parent_;
     condition_switch_ = t.condition_switch_;
     condition_gather_ = t.condition_gather_;
-
+    post_order_time_ = t.post_order_time_;
+    position_ = t.position_;
+    s_value_ = t.s_value_;
+    a_value_ = t.a_value_;
+    m_value_ = t.m_value_;
+    weighted_s_value_ = t.weighted_s_value_;
+    weighted_a_value_ = t.weighted_a_value_;
+    weighted_m_value_ = t.weighted_m_value_;
+    cost_s_value_ = t.cost_s_value_;
+    cost_a_value_ = t.cost_a_value_;
+    cost_m_value_ = t.cost_m_value_;
     parents_ = t.parents_;
     children_ = t.children_;
     in_tensors_ = t.in_tensors_;
@@ -174,16 +207,29 @@ class GptoTask {
   size_t pred_cube() const { return pred_cube_; }
   std::string name() const { return name_; }
   Memory initial_mem_impact() const { return initial_mem_impact_; }
-  Memory current_mem_impact() const { return current_mem_impact_; }
+  Memory minus_mem_impact() const { return minus_mem_impact_; }
   Memory workspace_memory() const { return workspace_memory_; }
   Time lower_bound() const { return lower_bound_; }
   size_t subgraph_id() const { return subgraph_id_; }
+  size_t subgraph_id_parent() const { return subgraph_id_parent_; }
   bool condition_switch() const { return condition_switch_; }
   bool condition_gather() const { return condition_gather_; }
+  size_t post_order_time() const { return post_order_time_; }
+
+  size_t position() const { return position_; }
+  size_t s_value() const { return s_value_; }
+  double a_value() const { return a_value_; }
+  size_t m_value() const { return m_value_; }
+  Memory sw_value() const { return weighted_s_value_; }
+  double aw_value() const { return weighted_a_value_; }
+  Memory mw_value() const { return weighted_m_value_; }
+  Time sc_value() const { return cost_s_value_; }
+  double ac_value() const { return cost_a_value_; }
+  Time mc_value() const { return cost_m_value_; }
 
   std::set<std::weak_ptr<GptoTask>, SortByIdWeak> &parents() { return parents_; }
   std::set<std::shared_ptr<GptoTask>, SortByIdShared> &children() { return children_; }
-  std::vector<std::shared_ptr<GptoTensor>> &in_tensors() { return in_tensors_; }
+  std::set<std::shared_ptr<GptoTensor>> &in_tensors() { return in_tensors_; }
   std::vector<std::shared_ptr<GptoTensor>> &out_tensors() { return out_tensors_; }
   std::vector<std::shared_ptr<GptoTensor>> &workspace_tensors() { return workspace_tensors_; }
 
@@ -203,19 +249,30 @@ class GptoTask {
   void set_pred_cube(size_t pred_cube) { pred_cube_ = pred_cube; }
   void set_name(std::string name) { name_ = name; }
   void set_initial_mem_impact(Memory mem_add) { initial_mem_impact_ = mem_add; }
-  void set_current_mem_impact(Memory mem_add) { current_mem_impact_ = mem_add; }
+  void set_minus_mem_impact(Memory mem_add) { minus_mem_impact_ = mem_add; }
   void set_workspace_memory(Memory workspace_memory) { workspace_memory_ = workspace_memory; }
   void set_lower_bound(Time lb) { lower_bound_ = lb; }
   void set_subgraph_id(size_t id) { subgraph_id_ = id; }
+  void set_subgraph_id_parent(size_t id_parent) { subgraph_id_parent_ = id_parent; }
   void set_condition_switch(bool cond) { condition_switch_ = cond; }
   void set_condition_gather(bool cond) { condition_gather_ = cond; }
+  void set_post_order_time(size_t post) { post_order_time_ = post; }
+  void set_position(size_t pos) { position_ = pos; }
+  void set_s_value(size_t s) { s_value_ = s; }
+  void set_a_value(double a) { a_value_ = a; }
+  void set_m_value(size_t m) { m_value_ = m; }
+  void set_sw_value(Memory sw) { weighted_s_value_ = sw; }
+  void set_aw_value(double aw) { weighted_a_value_ = aw; }
+  void set_mw_value(Memory mw) { weighted_m_value_ = mw; }
+  void set_sc_value(Time sc) { cost_s_value_ = sc; }
+  void set_ac_value(double ac) { cost_a_value_ = ac; }
+  void set_mc_value(Time mc) { cost_m_value_ = mc; }
 
   void AddParent(std::weak_ptr<GptoTask> parent) { parents_.insert(parent); }
   void RemoveParent(std::weak_ptr<GptoTask> parent) { parents_.erase(parent); }
   void ClearParents() { parents_.clear(); }
 
   void AddChild(std::shared_ptr<GptoTask> child) { children_.insert(child); }
-
   void RemoveChild(std::shared_ptr<GptoTask> child) { children_.erase(child); }
   void ClearChildren() { children_.clear(); }
 
@@ -233,6 +290,10 @@ class GptoTask {
     start_ = SIZE_MAX;
     end_ = 0;
   }
+  std::unordered_map<std::shared_ptr<GptoTask>, Memory> &in_weights() { return in_weights_; }
+  Memory &in_weights_sum() { return in_weights_sum_; }
+  void set_in_weights(std::unordered_map<std::shared_ptr<GptoTask>, Memory> in_weights) { in_weights_ = in_weights; }
+  void set_in_weights_sum(Memory in_weights_sum) { in_weights_sum_ = in_weights_sum; }
 
  private:
   GptoTaskId id_;
@@ -252,19 +313,33 @@ class GptoTask {
   size_t pred_cube_;
   std::string name_;
   Memory initial_mem_impact_;
-  Memory current_mem_impact_;
+  Memory minus_mem_impact_;
   Memory workspace_memory_;
   Time lower_bound_;
 
   size_t subgraph_id_;
+  size_t subgraph_id_parent_;
   bool condition_switch_;
   bool condition_gather_;
+  size_t position_;
+  size_t s_value_;
+  double a_value_;
+  size_t m_value_;
+  Memory weighted_s_value_;
+  double weighted_a_value_;
+  Memory weighted_m_value_;
+  Time cost_s_value_;
+  double cost_a_value_;
+  Time cost_m_value_;
+  size_t post_order_time_;
 
   std::set<std::weak_ptr<GptoTask>, SortByIdWeak> parents_;
   std::set<std::shared_ptr<GptoTask>, SortByIdShared> children_;
-  std::vector<std::shared_ptr<GptoTensor>> in_tensors_;
+  std::set<std::shared_ptr<GptoTensor>> in_tensors_;
   std::vector<std::shared_ptr<GptoTensor>> out_tensors_;
   std::vector<std::shared_ptr<GptoTensor>> workspace_tensors_;
+  std::unordered_map<std::shared_ptr<GptoTask>, Memory> in_weights_;
+  Memory in_weights_sum_;
 };
 using GptoTaskPtr = std::shared_ptr<GptoTask>;
 using TaskSortFunction = bool (*)(GptoTaskPtr const &, GptoTaskPtr const &);
@@ -285,6 +360,8 @@ class GptoTensor {
   std::weak_ptr<GptoTask> source_;
   GptoTensorType type_;
   std::set<std::weak_ptr<GptoTask>, GptoTask::SortByIdWeak> consumers_;
+  Time lifetime_end_;
+  std::weak_ptr<GptoTask> last_consumer_;
 
  public:
   GptoTensor(const size_t id, const Memory original_weight, const Memory weight, const std::weak_ptr<GptoTask> source,
@@ -313,10 +390,14 @@ class GptoTensor {
   const std::weak_ptr<GptoTask> &source() { return source_; }
   const GptoTensorType &type() const { return type_; }
   std::set<std::weak_ptr<GptoTask>, GptoTask::SortByIdWeak> &consumers() { return consumers_; }
+  const Time &lifetime_end() const { return lifetime_end_; }
+  const std::weak_ptr<GptoTask> &last_consumer() { return last_consumer_; }
 
   void set_type(GptoTensorType type) { type_ = type; }
   void set_original_weight(Memory original_weight) { original_weight_ = original_weight; }
   void set_weight(Memory weight) { weight_ = weight; }
+  void set_lifetime_end(Time le) { lifetime_end_ = le; }
+  void set_last_consumer(std::weak_ptr<GptoTask> lc) { last_consumer_ = lc; }
 };
 using GptoTensorPtr = std::shared_ptr<GptoTensor>;
 
@@ -328,6 +409,7 @@ struct Interval {  // Information extracted by scheduling
   GptoTaskPtr task;
   Time start;
   Time end;
+  PeId pid;
 };
 
 // Sorting for scheduling to dependencies (events)
@@ -384,6 +466,16 @@ bool SortByPredComm(const GptoTaskPtr &, const GptoTaskPtr &);
 bool SortByPredCommDepth(const GptoTaskPtr &, const GptoTaskPtr &);
 bool SortByPredCube(const GptoTaskPtr &, const GptoTaskPtr &);
 bool SortByGreedyHeight(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortBySValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByAValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByMValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByWeightedSValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByWeightedAValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByWeightedMValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByCostSValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByCostAValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByCostMValue(const GptoTaskPtr &, const GptoTaskPtr &);
+bool SortByReversePostOrder(const GptoTaskPtr &, const GptoTaskPtr &);
 
 // Scheduling to dependencies (events) functions
 bool Overlap(const Time &, const Time &, const Time &, const Time &);
@@ -412,45 +504,60 @@ void GraphOutputProcess(const KernelGraphPtr &, std::unordered_map<CNodePtr, Gpt
 void RefNodeProcess(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPtr> *);
 
 // Scheduling main functions
-void PrintBestSolutionStats(const SchedulingOutput &, const std::vector<GptoTaskPtr> &,
-                            const std::unordered_map<GptoTaskType, int32_t> &, const std::string &);
-void UpdateBestSolution(SchedulingOutput *, const SchedulingOutput &, const std::vector<GptoTaskPtr> &, std::string *,
-                        std::unordered_map<GptoTaskPtr, Time> *, std::unordered_map<GptoTaskPtr, Time> *, size_t);
-SchedulingOutput Process(const SchedulingInput &);
 SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPtr> *);
-SchedulingOutput ProcessCore(const std::vector<GptoTaskPtr> &, const std::unordered_map<GptoTaskType, int32_t> &,
-                             const TaskSortFunction &, bool);
-GptoTaskPtr SelectTaskToSchedule(Memory, std::set<GptoTaskPtr, TaskSortFunction> *,
-                                 std::unordered_map<GptoTaskType, Memory> *);
-std::pair<PeId, Time> SelectPEandTime(const GptoTask &, Time, std::set<ProcessingElement, SortByLoad> *);
-std::pair<PeId, Time> SelectPEandTimeAvailableStart(const GptoTask &, Time, std::vector<ProcessingElement> *);
-void UpdateMemoryImpactAndCandidates(
-  std::set<GptoTaskPtr, TaskSortFunction> *, const GptoTaskPtr &,
-  std::unordered_map<size_t, std::set<std::weak_ptr<GptoTask>>, GptoTask::SortByIdWeak> *,
-  std::unordered_map<GptoTaskId, size_t> *, std::unordered_map<GptoTaskId, Time> *, Time *, Time *,
-  std::unordered_set<GptoTaskPtr> *);
+SchedulingOutput MemAwareScheduler(const SchedulingInput &);
+SchedulingOutput MemAwareSchedulerCore(const std::vector<GptoTaskPtr> &, const std::map<GptoTaskType, int32_t> &,
+                                       const TaskSortFunction &, bool);
+std::tuple<GptoTaskPtr, Time, PeId> ScheduleTaskLoad(
+  std::set<GptoTaskPtr, TaskSortFunction> *,
+  std::unordered_map<GptoTaskType, std::set<ProcessingElement, SortByLoad>> *, std::unordered_map<GptoTaskId, Time> *,
+  std::map<Time, Memory> *, size_t *);
+std::tuple<GptoTaskPtr, Time, PeId> ScheduleTaskStart(
+  std::set<GptoTaskPtr, TaskSortFunction> *, std::unordered_map<GptoTaskType, std::vector<ProcessingElement>> *,
+  std::unordered_map<GptoTaskId, Time> *, std::map<Time, Memory> *, size_t *);
+void AddMemory(const GptoTaskPtr &, const Time &, std::map<Time, Memory> *);
+void SubtractMemory(const GptoTaskPtr &,
+                    std::unordered_map<size_t, std::set<std::weak_ptr<GptoTask>, GptoTask::SortByIdWeak>> *,
+                    std::map<Time, Memory> *);
+bool MemoryViolated(const GptoTaskPtr &, const Time &, std::map<Time, Memory> *, size_t *, bool *);
+bool MemoryViolatedCore(const GptoTaskPtr &, const Time &, std::map<Time, Memory> *);
+void UpdateCandidates(std::set<GptoTaskPtr, TaskSortFunction> *, const GptoTaskPtr &,
+                      std::unordered_map<GptoTaskId, size_t> *, std::unordered_map<GptoTaskId, Time> *, Time *, Time *,
+                      std::unordered_set<GptoTaskPtr> *, const TaskSortFunction &, const size_t &);
 
+void PrintBestSolutionStats(const SchedulingOutput &, const std::vector<GptoTaskPtr> &,
+                            const std::map<GptoTaskType, int32_t> &, const std::string &,
+                            const std::pair<std::string, Memory> &);
+void UpdateBestSolution(SchedulingOutput *, const SchedulingOutput &, const std::vector<GptoTaskPtr> &, std::string *,
+                        std::unordered_map<GptoTaskPtr, Time> *, std::unordered_map<GptoTaskPtr, Time> *, size_t,
+                        size_t);
+void UpdateBestMemorySolution(const std::string &, const SchedulingOutput &, std::pair<std::string, Memory> *, size_t,
+                              size_t);
 // Scheduling auxiliary functions
 void InitializeTasks(const std::vector<GptoTaskPtr> &, std::unordered_map<GptoTaskId, Time> *,
                      std::unordered_map<GptoTaskId, size_t> *, std::set<GptoTaskPtr, TaskSortFunction> *,
-                     std::unordered_set<GptoTaskPtr> *);
+                     std::unordered_set<GptoTaskPtr> *,
+                     std::unordered_map<size_t, std::set<std::weak_ptr<GptoTask>, GptoTask::SortByIdWeak>> *);
 void InsertEdges(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPtr> *);
-void InitializeProcessingElement(const std::unordered_map<GptoTaskType, int32_t> &, size_t *,
-                                 std::unordered_map<GptoTaskType, const std::set<ProcessingElement, SortByLoad>> *,
-                                 std::unordered_map<GptoTaskType, const std::vector<ProcessingElement>> *, bool);
-void PushTasksToVisit(std::queue<GptoTaskPtr> *, std::unordered_map<size_t, size_t> *, const GptoTaskPtr &, GptoTaskPtr,
-                      size_t);
+std::map<GptoTaskType, int32_t> GetPEs();
+void InitializeProcessingElements(const std::map<GptoTaskType, int32_t> &,
+                                  std::unordered_map<GptoTaskType, const std::set<ProcessingElement, SortByLoad>> *,
+                                  std::unordered_map<GptoTaskType, const std::vector<ProcessingElement>> *, bool);
+void PushTasksToVisit(std::queue<GptoTaskPtr> *, std::unordered_map<size_t, size_t> *, std::weak_ptr<GptoTask> &,
+                      GptoTaskPtr, size_t);
 void InitializeTaskInlineCondition(const CNodePtr &, GptoTaskPtr *,
                                    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *,
                                    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *);
 void UpdateTasksInlineCondition(std::unordered_map<CNodePtr, GptoTaskPtr> *,
                                 std::map<GptoTaskPtr, GptoTaskPtr, TaskDepthSort> *);
+void UpdateExecutionOrder(const KernelGraphPtr &, const SchedulingOutput &);
 
 // Compute auxiliary values for task sorting criteria
 void ComputeBottomLevelAndWeightedLength(const std::vector<GptoTaskPtr> &);
 void ComputeDepthAndTopLevel(const std::vector<GptoTaskPtr> &);
 void ComputePredComm(const std::vector<GptoTaskPtr> &);
 void ComputePredCube(const std::vector<GptoTaskPtr> &);
+void ComputePostOrder(const std::vector<GptoTaskPtr> &);
 
 // Memory-aware scheduling
 void ComputeInitialMemoryImpact(const std::vector<GptoTaskPtr> &);
@@ -467,22 +574,85 @@ Memory CalculateTaskLowerBound(const GptoTaskPtr &, const std::set<GptoTensorPtr
 
 // Makespan lower bounds
 Time LowerBoundBottomLevel(const std::vector<GptoTaskPtr> &);
-Time LowerBoundPEs(const std::vector<GptoTaskPtr> &, const std::unordered_map<GptoTaskType, int32_t> &);
+Time LowerBoundPEs(const std::vector<GptoTaskPtr> &, const std::map<GptoTaskType, int32_t> &);
 
 // Verification functions
 bool VerifyDAG(const std::vector<GptoTaskPtr> &);
 bool VerifyScheduling(const std::vector<GptoTaskPtr> &);
+bool VerifyMemory(const std::vector<GptoTaskPtr> &, std::map<Time, Memory> *);
 
 // Printing log files
-[[maybe_unused]] void LogSchedulingOutput(const SchedulingOutput &, const std::unordered_map<CNodePtr, GptoTaskPtr> &,
+[[maybe_unused]] void LogSchedulingOutput(const SchedulingInput &, const SchedulingOutput &,
+                                          const std::unordered_map<CNodePtr, GptoTaskPtr> &,
                                           const std::vector<std::pair<CNodePtr, CNodePtr>> &, const KernelGraphPtr &,
-                                          const std::set<GptoTensorPtr, GptoTensorIdSort> &, const Time, const Memory,
+                                          const std::set<GptoTensorPtr, GptoTensorIdSort> &, const Memory,
                                           const std::string &);
 [[maybe_unused]] void LogBaseline(const SchedulingInput &, std::unordered_map<CNodePtr, GptoTaskPtr> *,
                                   const KernelGraphPtr &, const std::string &);
 
 // Debug context function
 std::pair<bool, std::string> GetDebugConfig();
+
+// SAM sorting
+void InitializeInTensorsWeight(const GptoTaskPtr &);
+
+void InitializeS(const GptoTaskPtr &, const size_t &);
+void InitializeSW(const GptoTaskPtr &, const size_t &);
+void InitializeSC(const GptoTaskPtr &, const size_t &);
+
+void InitializeA(const GptoTaskPtr &, const size_t &);
+void InitializeAW(const GptoTaskPtr &, const size_t &);
+void InitializeAC(const GptoTaskPtr &, const size_t &);
+
+void InitializeM(const GptoTaskPtr &, const size_t &);
+void InitializeMW(const GptoTaskPtr &, const size_t &);
+void InitializeMC(const GptoTaskPtr &, const size_t &);
+
+void UpdateS(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+void UpdateSW(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+void UpdateSC(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+
+void UpdateA(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+void UpdateAW(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+void UpdateAC(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+
+void UpdateM(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+void UpdateMW(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+void UpdateMC(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+
+bool VerifyS(const std::vector<GptoTaskPtr> &);
+bool VerifySW(const std::vector<GptoTaskPtr> &);
+bool VerifySC(const std::vector<GptoTaskPtr> &);
+
+bool VerifyA(const std::vector<GptoTaskPtr> &);
+bool VerifyAW(const std::vector<GptoTaskPtr> &);
+bool VerifyAC(const std::vector<GptoTaskPtr> &);
+
+bool VerifyM(const std::vector<GptoTaskPtr> &);
+bool VerifyMW(const std::vector<GptoTaskPtr> &);
+bool VerifyMC(const std::vector<GptoTaskPtr> &);
+
+using UpdateFunctionSAM = void (*)(const GptoTaskPtr &, [[maybe_unused]] const size_t &);
+using InitializeFunctionSAM = void (*)(const GptoTaskPtr &, const size_t &);
+using VerifyFunctionSAM = bool (*)(const std::vector<GptoTaskPtr> &);
+
+inline std::unordered_map<TaskSortFunction, UpdateFunctionSAM> UPDATE_SAM = {
+  {SortBySValue, UpdateS},          {SortByAValue, UpdateA},          {SortByMValue, UpdateM},
+  {SortByWeightedSValue, UpdateSW}, {SortByWeightedAValue, UpdateAW}, {SortByWeightedMValue, UpdateMW},
+  {SortByCostSValue, UpdateSC},     {SortByCostAValue, UpdateAC},     {SortByCostMValue, UpdateMC},
+};
+
+inline std::unordered_map<TaskSortFunction, InitializeFunctionSAM> INIT_SAM = {
+  {SortBySValue, InitializeS},          {SortByAValue, InitializeA},          {SortByMValue, InitializeM},
+  {SortByWeightedSValue, InitializeSW}, {SortByWeightedAValue, InitializeAW}, {SortByWeightedMValue, InitializeMW},
+  {SortByCostSValue, InitializeSC},     {SortByCostAValue, InitializeAC},     {SortByCostMValue, InitializeMC},
+};
+
+inline std::unordered_map<TaskSortFunction, VerifyFunctionSAM> VERIFY_SAM = {
+  {SortBySValue, VerifyS},          {SortByAValue, VerifyA},          {SortByMValue, VerifyM},
+  {SortByWeightedSValue, VerifySW}, {SortByWeightedAValue, VerifyAW}, {SortByWeightedMValue, VerifyMW},
+  {SortByCostSValue, VerifySC},     {SortByCostAValue, VerifyAC},     {SortByCostMValue, VerifyMC},
+};
 
 // Integration function
 void GPTO(const KernelGraphPtr &, std::vector<std::pair<CNodePtr, CNodePtr>> *);
