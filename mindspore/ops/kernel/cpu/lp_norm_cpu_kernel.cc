@@ -57,16 +57,16 @@ std::vector<size_t> CalPhysicalIndexes(const std::vector<size_t> &input_shape,
 }
 #if defined(__aarch64__) && !defined(__APPLE__)
 void disable_ftz() {
-    uint32_t fpcr;
-    asm volatile ("mrs %0, fpcr" : "=r"(fpcr));
-    fpcr &= ~(1 << 24);
-    asm volatile ("msr fpcr, %0" : : "r"(fpcr));
+  uint32_t fpcr;
+  asm volatile("mrs %0, fpcr" : "=r"(fpcr));
+  fpcr &= ~(1 << 24);
+  asm volatile("msr fpcr, %0" : : "r"(fpcr));
 }
 void enable_ftz() {
-    uint32_t fpcr;
-    asm volatile ("mrs %0, fpcr" : "=r"(fpcr));
-    fpcr |= (1 << 24);
-    asm volatile ("msr fpcr, %0" : : "r"(fpcr));
+  uint32_t fpcr;
+  asm volatile("mrs %0, fpcr" : "=r"(fpcr));
+  fpcr |= (1 << 24);
+  asm volatile("msr fpcr, %0" : : "r"(fpcr));
 }
 #endif
 }  // namespace
@@ -155,6 +155,11 @@ bool LpNormCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
   auto output = GetDeviceAddress<T>(outputs, kIndex0);
   auto template_one = static_cast<T>(1);
   auto template_zero = static_cast<T>(0);
+  if (is_null_input_) {
+    MS_EXCEPTION_IF_NULL(output);
+    *output = template_zero;  // outputs 0.0 when input is empty tensor.
+    return true;
+  }
   if (is_scalar_input_) {
     MS_EXCEPTION_IF_NULL(output);
     *output = is_p_zero_ ? template_one : std::abs(input[0]);
@@ -191,12 +196,12 @@ bool LpNormCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
     }
   };
 #ifdef PLATFORM_86
-    // Small value should be reserved, or else the value scaling brought by 'pow' will cause precision loss
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
+  // Small value should be reserved, or else the value scaling brought by 'pow' will cause precision loss
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
+  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
 #endif
 #if defined(__aarch64__) && !defined(__APPLE__)
-    disable_ftz();
+  disable_ftz();
 #endif
   if (is_parallel) {
     ParallelLaunch(reduce_task, input_elements_, 0, this, pool_);
@@ -214,11 +219,11 @@ bool LpNormCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
     combine_task(0, input_elements_ / reduce_size_);
   }
 #ifdef PLATFORM_86
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+  _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 #endif
 #if defined(__aarch64__) && !defined(__APPLE__)
-    enable_ftz();
+  enable_ftz();
 #endif
   return true;
 }

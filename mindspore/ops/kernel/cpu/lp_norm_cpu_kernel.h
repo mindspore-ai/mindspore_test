@@ -34,7 +34,7 @@ class LpNormCpuKernelMod : public NativeCpuKernelMod {
 
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &outputs) override {
-    return is_null_input_ ? true : kernel_func_(this, inputs, outputs);
+    return kernel_func_(this, inputs, outputs);
   }
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
