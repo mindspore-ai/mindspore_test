@@ -103,7 +103,7 @@ inline NodePtr SelectScalar(BpropBuilder *ib, const NodePtr &cond, const NodePtr
 }
 
 NodePtr MaybeMultiply(BpropBuilder *ib, const TypePtr &input_type, const NodePtr &t, const NodePtr &s,
-                             const std::string &arg_name) {
+                      const std::string &arg_name) {
   bool is_one = false;
   auto s_ptr = s->BuildValue();
   MS_EXCEPTION_IF_NULL(s_ptr);
@@ -2146,8 +2146,8 @@ REG_BPROP_BUILDER("TraceExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   }
   if (IsDynamicShape(shape) || IsDynamicRank(shape)) {
     auto shapes = ib->ShapeCalc(g_trace_ext_shapecalc, {x});
-    eye = ib->Emit(
-      "Eye", {ib->TupleGetItem(shapes[0], 0), ib->TupleGetItem(shapes[0], 1), ib->Value<int64_t>(eye_dtype_id)});
+    eye = ib->Emit("Eye",
+                   {ib->TupleGetItem(shapes[0], 0), ib->TupleGetItem(shapes[0], 1), ib->Value<int64_t>(eye_dtype_id)});
   } else {
     eye = ib->Emit("Eye", {ib->Value(shape[0]), ib->Value(shape[1]), ib->Value<int64_t>(eye_dtype_id)});
   }
@@ -2171,6 +2171,14 @@ REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Bernoulli").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+
+REG_BPROP_BUILDER("BernoulliExt").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto seed = ib->GetInput(kIndex1);
+  auto offset = ib->GetInput(kIndex2);
+  auto dx = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
+  return {dx, ib->OutZeros(seed), ib->OutZeros(offset)};
+});
 
 REG_BPROP_BUILDER("ReduceSum").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);

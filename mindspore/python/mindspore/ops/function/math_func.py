@@ -26,14 +26,15 @@ import mindspore as ms
 from mindspore import log as logger
 import mindspore.ops as ops
 from mindspore.common import dtype as mstype
+from mindspore.common.generator import default_generator
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
-from mindspore.ops.auto_generate import Cummin, BatchMatMul, lin_space_ext_op, Norm, BitwiseAndScalar, BitwiseAndTensor,\
-    BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor, RemainderTensorScalar,\
-    RemainderScalarTensor
+from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, Norm, BitwiseAndScalar,\
+    BitwiseAndTensor, BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor,\
+    RemainderTensorScalar, RemainderScalarTensor
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
@@ -142,6 +143,7 @@ transpose_ = P.Transpose()
 xdivy_ = P.Xdivy()
 tensor_div_ = P.Div()
 tensor_divmod_ = DivMod()
+generator_step_ = Tensor(10, mstype.int64)
 
 #####################################
 # Private Operation Functions.
@@ -159,6 +161,7 @@ atan2_ = P.Atan2()
 atan_ = P.Atan()
 atanh_ = P.Atanh()
 batch_matmul_ = BatchMatMul()
+bernoulli_ext_ = BernoulliExt()
 bessel_i0_ = BesselI0()
 bessel_i0e_ = P.BesselI0e()
 bessel_i1_ = BesselI1()
@@ -5153,7 +5156,7 @@ def bernoulli(input, p=0.5, seed=None):
             positive integer. Default: ``None`` , means using the current timestamp.
 
     Returns:
-        output (Tensor), with the same shape and type as `input` .
+        output (Tensor), with the same shape and type as `input`.
 
     Raises:
         TypeError: If dtype of `input` is not one of: int8, uint8, int16, int32, int64, bool, float32, float64.
@@ -5187,6 +5190,61 @@ def bernoulli(input, p=0.5, seed=None):
     if not isinstance(p, Tensor):
         p = Tensor([p])
     return bernoulli_(input, p)
+
+
+def bernoulli_ext(input, *, generator=None):
+    r"""
+    Sample from the Bernoulli distribution and randomly set the i^{th} element of the `output` to (0 or 1) according to
+    the i^{th} probability value given in the `input`.
+
+    .. math::
+        output_{i} \sim Bernoulli(p=input_{i})
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor of Bernoulli distribution, where the i^{th} element 'input_{i}' represents the
+            probability that the corresponding output element 'output_{i}' is set to '1', therefore each element in
+            'input' have to be in the range '[0,1]'. Supported dtype: float16, float32, float64, bfloat16
+            (only supported by Atlas A2 training series products).
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+
+    Returns:
+        output (Tensor): The output tensor, with the same shape and dtype as `input`.
+
+    Raises:
+        TypeError: If dtype of `input` is not one of: float16, float32, float64, bfloat16.
+        ValueError: If any element of the `input` is not in the range [0, 1].
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> input_x = Tensor(np.ones((3, 3)), mindspore.float32)
+        >>> output = ops.bernoulli_ext(input_x)
+        >>> print(output)
+        [[ 1. 1. 1.]
+         [ 1. 1. 1.]
+         [ 1. 1. 1.]]
+        >>> input_x = Tensor(np.zeros((3, 3)), mindspore.float32)
+        >>> output = ops.bernoulli_ext(input_x)
+        >>> print(output)
+        [[ 0. 0. 0.]
+         [ 0. 0. 0.]
+         [ 0. 0. 0.]]
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return bernoulli_ext_(input, seed, offset)
 
 
 def bessel_i1(x):
