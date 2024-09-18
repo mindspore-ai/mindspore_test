@@ -81,8 +81,7 @@ def test_silu_net(mode):
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.env_onecard
-def test_mint_group_norm_dyn():
+def test_mint_silu_dyn():
     """
     Feature: Dynamic shape of SiLU.
     Description: test SiLU with dynamic rank/shape.
