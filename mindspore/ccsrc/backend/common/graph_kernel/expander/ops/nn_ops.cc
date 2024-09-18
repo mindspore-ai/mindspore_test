@@ -58,6 +58,9 @@ NodePtrList ComputeAdamApplyOneWithDecay(const DefaultIrBuilder *ib) {
 REG_EXPANDER_FUNC("AdamApplyOneWithDecay").SetBody(BODYFUNC(ib) { return ComputeAdamApplyOneWithDecay(ib); });
 
 REG_EXPANDER_FUNC("AdamApplyOneWithDecayAssign").SetBody(BODYFUNC(ib) {
+  if (!CheckAllFormatsSame(ib)) {
+    return {};
+  }
   auto compute_res = ComputeAdamApplyOneWithDecay(ib);
   auto origin_v = ib->input(kIndex1);
   auto origin_m = ib->input(kIndex2);

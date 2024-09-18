@@ -172,14 +172,19 @@ void ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
     primitive->AddAttr(arg_name, value);
     return;
   }
-  auto value_vector = CheckAndConvertUtils::CheckTensorIntValue(arg_name, value, primitive->name());
   auto tensor = value->cast<tensor::BaseTensorPtr>();
-  auto tensor_shape = tensor->shape_c();
-  MS_LOG(DEBUG) << cnode->ToString() << " 's input[" << input_index << "] is tensor.";
-  if (tensor_shape.empty()) {
-    primitive->AddAttr(arg_name, MakeValue(value_vector[0]));
+  if (tensor->Dtype()->type_id() == kNumberTypeBool) {
+    auto tensor_data = GetArrayValue<bool>(value).value().ToVector();
+    primitive->AddAttr(arg_name, MakeValue<bool>(tensor_data[0]));
   } else {
-    primitive->AddAttr(arg_name, MakeValue(value_vector));
+    auto value_vector = CheckAndConvertUtils::CheckTensorIntValue(arg_name, value, primitive->name());
+    auto tensor_shape = tensor->shape_c();
+    MS_LOG(DEBUG) << cnode->ToString() << " 's input[" << input_index << "] is tensor.";
+    if (tensor_shape.empty()) {
+      primitive->AddAttr(arg_name, MakeValue(value_vector[0]));
+    } else {
+      primitive->AddAttr(arg_name, MakeValue(value_vector));
+    }
   }
 }
 
