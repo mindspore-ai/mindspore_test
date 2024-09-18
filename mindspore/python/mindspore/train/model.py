@@ -56,7 +56,6 @@ from mindspore.dataset.core.config import get_debug_mode
 from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_training_dataset
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
-from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
 
 
 def _transfer_tensor_to_tuple(inputs):
@@ -147,29 +146,20 @@ def _handle_tft(func):
                     logger.info("uce wrapper caught RuntimeError")
                     if not uce_env:
                         logger.info("uce wrapper caught RuntimeError uce not enable")
-                        tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
+                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                         raise e
                     e_str = str(e)
                     logger.info("uce wrapper caught RuntimeError e_str:{}".format(e_str))
                     if "UCEError" in e_str:
-                        err_strategy = _get_uce_process_strategy(_get_uce_mem_info(obj.device_id))
-                        if err_strategy == "RS_UCE_HIGHLEVEL":
-                            logger.info("uce wrapper caught UCEError HIGHLEVEL")
-                            tft.tft_report_error(tft.ReportState.RS_UCE_HIGHLEVEL.value)
-                        elif err_strategy == "RS_UCE_LOWLEVEL":
-                            logger.info("uce wrapper caught UCEError LOWLEVEL")
-                            tft.tft_report_error(tft.ReportState.RS_UCE_LOWLEVEL.value)
-                        else:
-                            logger.info("uce wrapper caught RuntimeError OTHER strategy")
-                            tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
-                            raise e
+                        logger.info("uce wrapper report UCEError")
+                        tft.tft_report_error(tft.ReportState.RS_UCE.value)
                     elif "ForceStopError" in e_str:
                         logger.info("uce wrapper caught RuntimeError ForceStopError")
                         force_stop_err = tft.ReportState.RS_NORMAL.value
                         tft.tft_report_error(force_stop_err)
                     else:
                         logger.info("uce wrapper caught RuntimeError rankid: {} OTHER ERROR")
-                        tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
+                        tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                         raise e
                     ret = tft.tft_wait_next_action()
                     if ret == tft.Action.EXIT.value:
@@ -178,7 +168,7 @@ def _handle_tft(func):
                     logger.info("uce wrapper caught repair finish REPAIR STEP: {} batch_num: \
 {}".format(repair_step, self.batch_num))
                     initial_epoch = int(repair_step/self.batch_num)
-                    initial_step = repair_step%self.batch_num
+                    initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
                     kwargs["initial_step"] = initial_step
                     logger.info("uce wrapper repair complete  \
@@ -186,11 +176,27 @@ initial_epoch: {}, initial_step: {} ".format(kwargs["initial_epoch"], kwargs["in
                     continue
                 except BaseException as e:
                     logger.info("uce wrapper caught BaseException error")
-                    tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
+                    tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
                     raise e
         else:
             return func(self, *args, **kwargs)
     return wrapper
+
+def _check_tft():
+    """Check if TFT is supported"""
+    tft_env = os.getenv("MS_ENABLE_TFT")
+    device_target = context.get_context("device_target")
+    if tft_env and device_target == "Ascend":
+        from mindspore._c_expression import MSContext
+        ascend_target = MSContext.get_instance().get_ascend_soc_version()
+        if ascend_target == 'ascend910':
+            raise ValueError("TFT is not supported when using ascend910")
+        ms_mode = context.get_context("mode")
+        if ms_mode != mindspore.GRAPH_MODE:
+            raise ValueError("TFT is only supported in GRAPH_MODE")
+        jit_level = context.get_context("jit_level")
+        if jit_level == "O2":
+            raise ValueError("TFT is not supported when using jit_level == O2")
 
 
 
@@ -828,7 +834,6 @@ class Model:
 
     @_handle_tft
     @_save_final_ckpt
-    @_handle_tft
     def _train(self, epoch, train_dataset, callbacks=None, dataset_sink_mode=True, sink_size=-1, initial_epoch=0,
                valid_dataset=None, valid_frequency=1, valid_dataset_sink_mode=True, initial_step=0):
         """
@@ -853,7 +858,9 @@ class Model:
         if self._parameter_broadcast:
             self._train_network.set_broadcast_flag()
         if initial_step != 0:
-            train_dataset.set_init_skip(initial_step)
+            train_dataset.set_init_step(initial_step)
+        elif dataset_sink_mode and sink_size == 1:
+            train_dataset.set_init_step(initial_epoch)
 
         cb_params = _InternalCallbackParam()
         cb_params.train_network = self._train_network
@@ -900,14 +907,14 @@ class Model:
                                     valid_infos, initial_step)
             else:
                 self._train_dataset_sink_process(epoch, train_dataset, list_callback,
-                                                 cb_params, sink_size, initial_epoch, valid_infos)
+                                                 cb_params, sink_size, initial_epoch, valid_infos, initial_step)
 
     @staticmethod
     def _should_eval(epoch, validation_freq):
         return epoch % validation_freq == 0 if isinstance(validation_freq, int) else epoch in validation_freq
 
     def _train_dataset_sink_process(self, epoch, train_dataset, list_callback=None, cb_params=None,
-                                    sink_size=-1, initial_epoch=0, valid_infos=None):
+                                    sink_size=-1, initial_epoch=0, valid_infos=None, initial_step=None):
         """
         Training process. The data would be passed to network through dataset channel.
 
@@ -938,7 +945,18 @@ class Model:
 
         cb_params.sink_size = sink_size
         cb_params.cur_step_num = 0
+        if initial_step:
+            if sink_size != -1:
+                cb_params.cur_step_num = initial_epoch * sink_size + initial_step
+            else:
+                cb_params.cur_step_num = initial_epoch * dataset_size + initial_step
+
         cb_params.dataset_sink_mode = True
+
+        if sink_size != 1:
+            cb_params.cur_step_num = initial_epoch * sink_size + initial_step
+        else:
+            cb_params.cur_step_num = initial_epoch * dataset_size + initial_step
 
         run_context = RunContext(cb_params)
         list_callback.on_train_begin(run_context)
@@ -1300,9 +1318,10 @@ class Model:
             ...                  loss_scale_manager=loss_scale_manager)
             >>> model.train(2, dataset)
         """
+        _check_tft()
+        device_target = context.get_context("device_target")
         # prepare dataset for obfuscated model
         train_dataset = self._prepare_obf_dataset(train_dataset)
-        device_target = context.get_context("device_target")
         if _is_ps_mode() and not _cache_enable() and (device_target in ["Ascend", "CPU"]) and dataset_sink_mode:
             logger.info("For PS mode, reset datasink mode to False when using Ascend or CPU backend.")
             dataset_sink_mode = False
