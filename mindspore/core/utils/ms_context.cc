@@ -627,6 +627,7 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_NEED_CKPT, false);
   set_param<bool>(MS_CTX_RECOMPUTE_ALLGATHER_OVERLAP_FAGRAD, false);
   set_param<bool>(MS_CTX_ENABLE_FLASH_ATTENTION_LOAD_BALANCE, false);
+  set_param<bool>(MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER, false);
 }
 
 void MsContext::InitStringTypeDefaultValue() {

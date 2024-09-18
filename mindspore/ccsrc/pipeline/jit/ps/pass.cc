@@ -66,6 +66,7 @@
 #include "frontend/parallel/pass/remove_cast_before_assign_add.h"
 #include "frontend/parallel/pass/bias_add_comm_swap.h"
 #include "frontend/parallel/pass/matmul_add_comm_reduction.h"
+#include "frontend/parallel/pass/allreduce_slice_to_reducescatter.h"
 #include "frontend/parallel/pass/comp_comm_scheduling.h"
 #include "frontend/parallel/pass/overlap_opt_shard_in_pipeline.h"
 #include "frontend/parallel/pass/slice_activation_in_cell_share_recompute.h"
@@ -423,9 +424,8 @@ bool FlashSPFrontPass(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &o
   return result;
 }
 
-OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
-  opt::OptPassConfig a_1 = GetOptPassA1(irpass);
-  opt::OptPassConfig a_2 = opt::OptPassConfig(
+opt::OptPassConfig GetOptPassA2(const opt::irpass::OptimizeIRPassLib &irpass) {
+  return opt::OptPassConfig(
     {
       irpass.switch_simplify_,
       irpass.specialize_transform_,
@@ -446,12 +446,10 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
       irpass.all_reduce_const_elim_,
     },
     false, true);
+}
 
-  opt::OptPassConfig before_grad = opt::OptPassConfig({irpass.j_node_and_user_rematch_});
-
-  opt::OptPassConfig a_after_grad = opt::OptPassConfig({irpass.inline_without_move_, irpass.stack_unstack_eliminate_});
-
-  opt::OptPassConfig a_3 = opt::OptPassConfig(
+opt::OptPassConfig GetOptPassA3(const opt::irpass::OptimizeIRPassLib &irpass) {
+  return opt::OptPassConfig(
     {
       irpass.same_eliminate_,
       irpass.check_bprop_eliminate_,
@@ -463,6 +461,15 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
       irpass.split_environ_get_set_with_tuple_value_,
     },
     false, true);
+}
+
+OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
+  opt::OptPassConfig a_1 = GetOptPassA1(irpass);
+  opt::OptPassConfig a_2 = GetOptPassA2(irpass);
+
+  opt::OptPassConfig before_grad = opt::OptPassConfig({irpass.j_node_and_user_rematch_});
+  opt::OptPassConfig a_after_grad = opt::OptPassConfig({irpass.inline_without_move_, irpass.stack_unstack_eliminate_});
+  opt::OptPassConfig a_3 = GetOptPassA3(irpass);
   opt::OptPassConfig accelerated_algorithm = opt::OptPassConfig({irpass.less_batch_normalization_});
   opt::OptPassConfig virtual_dataset = opt::OptPassConfig({irpass.virtual_dataset_eliminate_});
   opt::OptPassConfig after_resolve_pass = opt::OptPassConfig({irpass.replace_old_param_});
@@ -478,7 +485,6 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
   opt::OptPassConfig get_grad = opt::OptPassConfig({irpass.get_grad_eliminate_});
   opt::OptPassConfig cell_reuse_handle_not_recompute_node_pass =
     opt::OptPassConfig({irpass.remove_not_recompute_node_}, false, true);
-
   opt::OptPassConfig c_1 = opt::OptPassConfig({
     irpass.switch_call_monad_eliminater_,
     irpass.partial_eliminate_,
@@ -488,45 +494,47 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
     c_1.set_disabled(true);
   }
   // Before adjusting map_a, check GetA1A2() and GetOptPynativeGradEpiloguePhases().
-  OptPassGroupMap map_a({{"expand_dump_flag", opt::OptPassConfig(opt::irpass::ExpandDumpFlag())},
-                         {"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
-                         {"a_1", a_1},
-                         {"recompute_prepare", recompute_prepare},
-                         {"updatestate_depend_eliminate", updatestate_depend_eliminate},
-                         {"updatestate_assign_eliminate", updatestate_assign_eliminate},
-                         {"updatestate_loads_eliminate", updatestate_loads_eliminate},
-                         {"c_1", c_1},
-                         {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
-                         {"a_2", a_2},
-                         {"accelerated_algorithm", accelerated_algorithm},
-                         {"shard", opt::OptPassConfig(parallel::Shard)},
-                         {"meta_shard_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaShardFg())},
-                         {"shard_inline", opt::OptPassConfig({irpass.inline_})},
-                         {"auto_parallel", opt::OptPassConfig(parallel::StepAutoParallel)},
-                         {"parallel", opt::OptPassConfig(parallel::StepParallel)},
-                         {"flash_sp", opt::OptPassConfig(FlashSPFrontPass)},
-                         {"merge_comm", opt::OptPassConfig(parallel::MergeComm)},
-                         {"allreduce_fusion", opt::OptPassConfig(parallel::StepAllreduceFusion)},
-                         {"matmul_add_comm_reduction", opt::OptPassConfig(parallel::MatmulAddCommReduction)},
-                         {"virtual_shard_identity", opt::OptPassConfig({irpass.virtual_shard_identity_})},
-                         {"virtual_dataset", virtual_dataset},
-                         {"get_grad_eliminate_", get_grad},
-                         {"virtual_output", opt::OptPassConfig({irpass.virtual_output_eliminate_})},
-                         {"merge_forward", opt::OptPassConfig(ad::MergeForward)},
-                         {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
-                         {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
-                         {"before_grad", before_grad},
-                         {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
-                         {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
-                         {"after_resolve", after_resolve_pass},
-                         {"a_after_grad", a_after_grad},
-                         {"renormalize", opt::OptPassConfig::Renormalize()},
-                         {"real_op_eliminate", opt::OptPassConfig({irpass.real_op_eliminate_})},
-                         {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
-                         {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
-                         {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},
-                         {"cse", opt::OptPassConfig(opt::CSEPass(false))},
-                         {"a_3", a_3}});
+  OptPassGroupMap map_a(
+    {{"expand_dump_flag", opt::OptPassConfig(opt::irpass::ExpandDumpFlag())},
+     {"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
+     {"a_1", a_1},
+     {"recompute_prepare", recompute_prepare},
+     {"updatestate_depend_eliminate", updatestate_depend_eliminate},
+     {"updatestate_assign_eliminate", updatestate_assign_eliminate},
+     {"updatestate_loads_eliminate", updatestate_loads_eliminate},
+     {"c_1", c_1},
+     {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
+     {"a_2", a_2},
+     {"accelerated_algorithm", accelerated_algorithm},
+     {"shard", opt::OptPassConfig(parallel::Shard)},
+     {"meta_shard_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaShardFg())},
+     {"shard_inline", opt::OptPassConfig({irpass.inline_})},
+     {"auto_parallel", opt::OptPassConfig(parallel::StepAutoParallel)},
+     {"parallel", opt::OptPassConfig(parallel::StepParallel)},
+     {"flash_sp", opt::OptPassConfig(FlashSPFrontPass)},
+     {"merge_comm", opt::OptPassConfig(parallel::MergeComm)},
+     {"allreduce_fusion", opt::OptPassConfig(parallel::StepAllreduceFusion)},
+     {"matmul_add_comm_reduction", opt::OptPassConfig(parallel::MatmulAddCommReduction)},
+     {"allreduce_slice_to_reducescatter", opt::OptPassConfig(parallel::AllReduceSliceToReduceScatter)},
+     {"virtual_shard_identity", opt::OptPassConfig({irpass.virtual_shard_identity_})},
+     {"virtual_dataset", virtual_dataset},
+     {"get_grad_eliminate_", get_grad},
+     {"virtual_output", opt::OptPassConfig({irpass.virtual_output_eliminate_})},
+     {"merge_forward", opt::OptPassConfig(ad::MergeForward)},
+     {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
+     {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
+     {"before_grad", before_grad},
+     {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
+     {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
+     {"after_resolve", after_resolve_pass},
+     {"a_after_grad", a_after_grad},
+     {"renormalize", opt::OptPassConfig::Renormalize()},
+     {"real_op_eliminate", opt::OptPassConfig({irpass.real_op_eliminate_})},
+     {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
+     {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
+     {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},
+     {"cse", opt::OptPassConfig(opt::CSEPass(false))},
+     {"a_3", a_3}});
   AddParallelRenormalize(&map_a);
   return map_a;
 }
