@@ -54,6 +54,7 @@
 #include "mindspore/ccsrc/frontend/parallel/graph_util/generate_graph.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
+#include "mindspore/ops/infer/ops_func_impl/flash_attention_score_grad.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/flash_attention_score_info.h"
 #include "frontend/parallel/pass/flash_sp.h"
 #include "frontend/parallel/parameter_manager.h"
@@ -67,8 +68,12 @@ struct FaGradCompareMethod {
     a_stream >> a_1 >> underline >> a_2;
     b_stream >> b_1 >> underline >> b_2;
 
-    if (a_1 < b_1) return true;
-    if (a_1 > b_1) return false;
+    if (a_1 < b_1) {
+      return true;
+    }
+    if (a_1 > b_1) {
+      return false;
+    }
 
     return a_2 < b_2;
   }
@@ -160,11 +165,6 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
       }
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(RING_ATTENTION_INDEX));
       fwd_fas->insert({flash_index, node});
-    }
-
-    if (!IsPrimitiveCNode(node, prim::kPrimReceive) && !IsPrimitiveCNode(node, prim::kPrimSend) &&
-        !IsPrimitiveCNode(node, prim::kPrimFlashAttentionScoreGrad)) {
-      continue;
     }
 
     if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScoreGrad)) {
@@ -302,7 +302,7 @@ CNodePtr NewConcatNode(const AnfNodePtr &input_node, size_t concat_dim) {
   std::vector<TypeId> dtypes = {common::AnfAlgo::GetOutputInferDataType(input_node, 0)};
   auto shape = common::AnfAlgo::GetOutputInferShape(input_node, 0);
   if (shape[concat_dim] > 0) {
-    shape[concat_dim] *= 2;
+    shape[concat_dim] *= kIndex2;
   }
   std::vector<ShapeVector> shapes(1, shape);
   common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, concat.get());
@@ -447,11 +447,16 @@ void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *g
     MS_EXCEPTION_IF_NULL(softmax_max_node);
     MS_EXCEPTION_IF_NULL(softmax_sum_node);
     MS_EXCEPTION_IF_NULL(attention_out_node);
-    manager->SetEdge(cur_grad_fa_node, 4, dout_node->cast<CNodePtr>()->input(2));
-    manager->SetEdge(cur_grad_fa_node, 9, softmax_max_node);
-    manager->SetEdge(cur_grad_fa_node, 10, softmax_sum_node);
-    manager->SetEdge(cur_grad_fa_node, 11, cur_grad_fa_node->input(7));
-    manager->SetEdge(cur_grad_fa_node, 12, attention_out_node);
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputDyIndex + kIndex1,
+                     dout_node->cast<CNodePtr>()->input(kIndex2));
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxMaxIndex + kIndex1,
+                     softmax_max_node);
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxSumIndex + kIndex1,
+                     softmax_sum_node);
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxOutIndex + kIndex1,
+                     cur_grad_fa_node->input(kIndex7));
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputAttentionInIndex + kIndex1,
+                     attention_out_node);
   }
 }
 
@@ -476,8 +481,8 @@ void GradFirstStepCommKV(const std::string &cur_str, std::map<std::string, AnfNo
   auto fwd_fa_node = (*fa_map).at(cur_str)->cast<CNodePtr>();
   auto key_node = fwd_fa_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex + 1);
   auto value_node = fwd_fa_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex + 1);
-  manager->SetEdge((*grad_fa_node), 2, key_node);
-  manager->SetEdge((*grad_fa_node), 3, value_node);
+  manager->SetEdge((*grad_fa_node), kIndex2, key_node);
+  manager->SetEdge((*grad_fa_node), kIndex3, value_node);
   std::vector<AnfNodePtr> kv_nodes = {key_node, value_node};
   auto kv_tuple = NewMakeTupleNode(kv_nodes);
   auto kv_concat = NewConcatNode(kv_tuple, 0);
@@ -510,10 +515,10 @@ void GetCommInfo(int64_t *send_rank_id, int64_t *recv_rank_id, std::shared_ptr<O
 
   auto rankList = flash_score_info_ptr->GetSPRankList();
   (*pos) = -1;
-  size_t dev_rank_id = g_device_manager->global_rank();
+  int64_t dev_rank_id = g_device_manager->global_rank();
   for (size_t i = 0; i < rankList.size(); ++i) {
-    if (dev_rank_id == LongToSize(rankList[i])) {
-      (*pos) = i;
+    if (dev_rank_id == rankList[i]) {
+      (*pos) = SizeToLong(i);
     }
   }
   (*recv_rank_id) = rankList[((*pos) + 1) % rankList.size()];
@@ -689,7 +694,10 @@ void StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
 
   FindTargetNode(&origin_nodes_topological, &fa_map, &grad_fa_map, &grad_recv_map, &grad_send_map, &loss_node,
                  &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
-  if (grad_fa_map.empty() || fa_map.empty()) return;
+  if (grad_fa_map.empty() || fa_map.empty() || grad_fa_map.size() != fa_map.size() || grad_recv_map.empty() ||
+      grad_send_map.empty()) {
+    return;
+  }
 
   auto operator_info = GetAttentionInfo(fa_map);
   int64_t pos, recv_rank_id, send_rank_id;
