@@ -140,7 +140,7 @@ def destroy_process_group(group=None):
     if group == GlobalComm.WORLD_COMM_GROUP or group is None:
         release()
     elif not isinstance(group, str):
-        raise TypeError("For 'destroy_group', the argument 'group' must be type of string, "
+        raise TypeError("For 'destroy_group', the argument 'group' must be type of string or None, "
                         "but got 'group' type : {}.".format(type(group)))
     else:
         _destroy_group_helper(group)
