@@ -37,7 +37,7 @@ def init_process_group(backend="hccl",
         backend (str, optional): The backend to ues. default is hccl and now only support hccl.
         init_method (str, invalid): URL specifying how to init collective communication group. Provides parameters
                                     consistent with pytorch, but is not currently support, setting is invalid.
-        tineout (timedelta, invalid): Timeout for API executed. Provides parameters consistent with pytorch, but is not
+        timeout (timedelta, invalid): Timeout for API executed. Provides parameters consistent with pytorch, but is not
                                       currently support, setting is invalid.
         world_size (int, optional): Number of the processes participating in the job.
         rank (int, invalid): Rank of the current process. Provides parameters consistent with pytorch, but is not
