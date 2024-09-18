@@ -19,6 +19,7 @@
 #include <utility>
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_mul.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_div.h"
+#include "mindspore/core/include/utils/ordered_set.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
@@ -60,8 +61,8 @@ size_t Reshape::FindUnknownDim(const SymbolPtrList &symbols) {
 }
 
 void Reshape::RemoveSameSymbol(SymbolPtrList *inp_symbols, SymbolPtrList *out_symbols) {
-  std::set<SymbolPtr> input(inp_symbols->begin(), inp_symbols->end());
-  std::set<SymbolPtr> output(out_symbols->begin(), out_symbols->end());
+  OrderedSet<SymbolPtr> input(*inp_symbols);
+  OrderedSet<SymbolPtr> output(*out_symbols);
   for (auto it1 = input.begin(); it1 != input.end();) {
     bool removed = false;
     for (auto it2 = output.begin(); it2 != output.end();) {

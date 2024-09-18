@@ -29,6 +29,9 @@ REG_SYMBOL_OP_BUILDER("Cast").SetShapeDepend({DependOn::kShape}).SetShapeFunc(Tr
 REG_SYMBOL_OP_BUILDER("ClampScalar")
   .SetShapeDepend({DependOn::kShape, DependOn::kNone, DependOn::kNone})
   .SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("ClampTensor")
+  .SetShapeDepend({DependOn::kShape, DependOn::kNone, DependOn::kNone})
+  .SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Conv2DBackpropFilter")
   .SetShapeDepend({DependOn::kNone, DependOn::kNone, DependOn::kValue})
   .SetShapeFunc(TransValueToShape);

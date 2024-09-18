@@ -88,6 +88,7 @@ REG_SYMBOL_OP_BUILDER("Add").SetShapeDependN<DependOn::kShape, 2>().SetShapeFunc
 REG_SYMBOL_OP_BUILDER("AddExt").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Div").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Equal").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
+REG_SYMBOL_OP_BUILDER("FloorDiv").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Greater").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("GreaterEqual").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();
 REG_SYMBOL_OP_BUILDER("Less").SetShapeDependN<DependOn::kShape, 2>().SetShapeFuncWith<ElemwiseBinop>();

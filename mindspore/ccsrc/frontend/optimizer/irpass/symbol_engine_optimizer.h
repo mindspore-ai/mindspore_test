@@ -92,13 +92,6 @@ class FoldConstSymbol : public AnfVisitor {
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override;
 };
 
-class ShapeOpCse {
- public:
-  ShapeOpCse() = default;
-  ~ShapeOpCse() = default;
-  bool operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer);
-};
-
 /**
  * Eliminate the unnecessary Reshape-Shape pattern.
  *
