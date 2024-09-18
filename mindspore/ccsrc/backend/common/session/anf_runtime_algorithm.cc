@@ -927,8 +927,9 @@ std::tuple<abstract::BaseShapePtr, TypePtr, ValuePtr> AnfRuntimeAlgorithm::GetAb
 bool AnfRuntimeAlgorithm::ExistOutputKernelTensor(const AnfNodePtr &node, size_t output_idx) {
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
-  MS_EXCEPTION_IF_NULL(kernel_info);
-
+  if (kernel_info == nullptr) {
+    MS_LOG(EXCEPTION) << "Kernel info is null for node:" << node->DebugString() << ", node address:" << node << " .";
+  }
   return kernel_info->OutputAddrExist(output_idx) || kernel_info->OutputKernelTensorExist(output_idx);
 }
 

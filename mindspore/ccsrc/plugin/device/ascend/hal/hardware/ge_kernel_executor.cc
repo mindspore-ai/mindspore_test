@@ -286,7 +286,7 @@ void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph
       graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), depend});
     MS_EXCEPTION_IF_NULL(tensor_move);
     tensor_move->set_abstract(value_node->abstract());
-    common::AnfAlgo::SetNodeAttr(kAttrKernelGraphBoundary, MakeValue(sub_graph), tensor_move);
+    common::AnfAlgo::SetNodeAttr(kAttrKernelGraphBoundary, MakeValue(sub_graph->ToString()), tensor_move);
     // select kernel
     SelectKernelInfo(graph, tensor_move);
     (*last_call) = tensor_move;
