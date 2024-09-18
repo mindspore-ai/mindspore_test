@@ -25,8 +25,10 @@
 namespace mindspore {
 namespace ops {
 #define IsNoneOrAnyValue(value_ptr) ((value_ptr->isa<None>()) || (value_ptr->ContainsValueAny()))
+
 BaseShapePtr RFFTFreqFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
+  const int64_t kNum = 2;
   ShapeVector out_shape = {};
   auto n_opt = input_args[kInputIndex0]->GetValue();
   MS_EXCEPTION_IF_NULL(n_opt);
@@ -37,7 +39,7 @@ BaseShapePtr RFFTFreqFuncImpl::InferShape(const PrimitivePtr &primitive,
   } else {
     auto n_value = GetScalarValue<int64_t>(n_opt);
     if (n_value.has_value()) {
-      (void)out_shape.emplace_back(n_value.value() / 2 + 1);
+      (void)out_shape.emplace_back(n_value.value() / kNum + 1);
     }
   }
   return std::make_shared<abstract::TensorShape>(out_shape);

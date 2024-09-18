@@ -25,6 +25,7 @@
 namespace mindspore {
 namespace ops {
 #define IsNoneOrAnyValue(value_ptr) ((value_ptr->isa<None>()) || (value_ptr->ContainsValueAny()))
+
 BaseShapePtr FFTFreqFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
   ShapeVector out_shape = {};

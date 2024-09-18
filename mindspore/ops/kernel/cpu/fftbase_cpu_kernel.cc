@@ -22,6 +22,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
+const int64_t kNum2 = 2;
 constexpr int kOnesideDivisor = 2;
 using complex64 = std::complex<float>;
 using complex128 = std::complex<double>;
@@ -67,7 +68,7 @@ int FFTBaseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   if (n_opt.has_value()) {
     n_ = n_opt.value();
   } else if (kernel_name_ == prim::kPrimHFFT->name()) {
-    n_ = (tensor_shape_[dim_] - 1) * 2;
+    n_ = (tensor_shape_[dim_] - 1) * kNum2;
   } else {
     n_ = tensor_shape_[dim_];
     if (kernel_name_ == prim::kPrimIRFFT->name() || kernel_name_ == prim::kPrimHFFT->name()) {

@@ -77,9 +77,9 @@ int LstsqV2CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
     b_batch_shape_.emplace_back(b_shape[idx]);
     broadcast_batch_shape_.emplace_back(broadcast_dim);
   }
-  m_ = a_shape[a_dims - 2];
-  n_ = a_shape[a_dims - 1];
-  k_ = a_dims == b_dims ? b_shape[b_dims - 1] : 1;
+  m_ = a_shape[a_dims - kMatrixSize];
+  n_ = a_shape[a_dims - kVectorSize];
+  k_ = a_dims == b_dims ? b_shape[b_dims - kVectorSize] : 1;
   a_mat_size_ = m_ * n_;
   b_mat_size_ = m_ * k_;
   solution_mat_size_ = n_ * k_;

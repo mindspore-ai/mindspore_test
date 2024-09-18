@@ -34,6 +34,16 @@ constexpr size_t kIndexAxis2 = 3;
 constexpr size_t kIndexDtype = 4;
 constexpr size_t kIndexOut = 0;
 constexpr size_t kMaxDim = 8;
+constexpr size_t kMatrixSize = 2;
+constexpr int64_t kRank2 = 2;
+constexpr uint32_t kIndex0 = 0;
+constexpr uint32_t kIndex1 = 1;
+constexpr uint32_t kIndex2 = 2;
+constexpr uint32_t kIndex3 = 3;
+constexpr uint32_t kIndex4 = 4;
+constexpr uint32_t kIndex5 = 5;
+constexpr uint32_t kIndex6 = 6;
+constexpr uint32_t kIndex7 = 7;
 const char *kTraceV2 = "TraceV2";
 }  // namespace
 
@@ -114,12 +124,12 @@ void transpose_step(T *in_addr, T *out_addr, std::vector<int64_t> shape_in, int6
   }
   using Eigen_Tensor = Eigen::TensorMap<Eigen::Tensor<T, kMaxDim, Eigen::RowMajor>, Eigen::Aligned>;
 
-  Eigen_Tensor trans_input(in_addr, trans_in_shape.at(0), trans_in_shape.at(1), trans_in_shape.at(2),
-                           trans_in_shape.at(3), trans_in_shape.at(4), trans_in_shape.at(5), trans_in_shape.at(6),
-                           trans_in_shape.at(7));
-  Eigen_Tensor trans_output(out_addr, trans_out_shape.at(0), trans_out_shape.at(1), trans_out_shape.at(2),
-                            trans_out_shape.at(3), trans_out_shape.at(4), trans_out_shape.at(5), trans_out_shape.at(6),
-                            trans_out_shape.at(7));
+  Eigen_Tensor trans_input(in_addr, trans_in_shape.at(kIndex0), trans_in_shape.at(kIndex1), trans_in_shape.at(kIndex2),
+                           trans_in_shape.at(kIndex3), trans_in_shape.at(kIndex4), trans_in_shape.at(kIndex5),
+                           trans_in_shape.at(kIndex6), trans_in_shape.at(kIndex7));
+  Eigen_Tensor trans_output(out_addr, trans_out_shape.at(kIndex0), trans_out_shape.at(kIndex1),
+                            trans_out_shape.at(kIndex2), trans_out_shape.at(kIndex3), trans_out_shape.at(kIndex4),
+                            trans_out_shape.at(kIndex5), trans_out_shape.at(kIndex6), trans_out_shape.at(kIndex7));
   Eigen::array<Eigen::DenseIndex, kMaxDim> perm_compute;
   for (size_t j = 0; j < kMaxDim; ++j) {
     if (j < trans_offset) {
@@ -144,7 +154,7 @@ uint32_t TraceV2CpuKernel::TraceV2Compute(CpuKernelContext &ctx) {
 
   std::vector<int64_t> shape_in = ctx.Input(kIndexIn)->GetTensorShape()->GetDimSizes();
   int64_t in_rank = static_cast<int64_t>(shape_in.size());
-  if (in_rank < 2) {
+  if (in_rank < kRank2) {
     CUST_KERNEL_LOG_ERROR(ctx, "For [%s], dim of matrix a must greater or equal to 2, but got a at[%lld]-dimensional.",
                           kTraceV2, in_rank);
     return KERNEL_STATUS_PARAM_INVALID;
