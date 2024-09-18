@@ -171,6 +171,20 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   }
   auto next_comm_node_a_input_node = next_comm_node_a->input(kIndex1)->cast<CNodePtr>();
   auto comm_node_b_input_node = comm_node_b->input(kIndex1)->cast<CNodePtr>();
+
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  const bool not_o2 = context->GetJitLevel() != kAttrJitLevelO2;
+  AnfNodePtr comm_node_a_user = nullptr;
+  if (not_o2) {
+    for (const auto &pair : manager->node_users()[comm_node_a]) {
+      comm_node_a_user = pair.first;
+      if (IsPrimitiveCNode(pair.first, prim::kPrimMatMul)) {
+        break;
+      }
+    }
+  }
+
   // comm_node_b_input -> depend -> comm_node_a_output
   if (IsPrimitiveCNode(comm_node_a->input(kIndex1), prim::kPrimMatMul)) {
     auto comm_id = comm_node_a->UniqueId();
@@ -198,6 +212,33 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   depend_node2->AddAttr("micro_interleaved_depend2", MakeValue(true));
   depend_node2->set_abstract(comm_node_b->abstract()->Clone());
   (void)manager->Replace(comm_node_b, depend_node2);
+
+  if (not_o2) {
+    if (comm_node_a_user != nullptr) {
+      std::vector<AnfNodePtr> depend5_inputs{NewValueNode(prim::kPrimDepend), comm_node_b, comm_node_a_user};
+      auto depend_node5 = comm_node_b->func_graph()->NewCNode(depend5_inputs);
+      MS_EXCEPTION_IF_NULL(depend_node5);
+      depend_node5->set_abstract(comm_node_b->abstract()->Clone());
+      depend_node5->AddAttr("micro_interleaved_depend5", MakeValue(true));
+      (void)manager->Replace(comm_node_b, depend_node5);
+    }
+
+    std::vector<AnfNodePtr> depend4_inputs{NewValueNode(prim::kPrimDepend), comm_node_a, comm_node_b};
+    auto depend_node4 = next_comm_node_a_input_node->func_graph()->NewCNode(depend4_inputs);
+    MS_EXCEPTION_IF_NULL(depend_node4);
+    depend_node4->AddAttr("micro_interleaved_depend4", MakeValue(true));
+    depend_node4->set_abstract(comm_node_a->abstract()->Clone());
+    (void)manager->Replace(comm_node_a, depend_node4);
+
+    auto comm_bode_b_input_input = comm_node_b_input_node->input(1);
+    MS_EXCEPTION_IF_NULL(comm_bode_b_input_input);
+    std::vector<AnfNodePtr> depend3_inputs{NewValueNode(prim::kPrimDepend), comm_bode_b_input_input, comm_node_a};
+    auto depend_node3 = comm_bode_b_input_input->func_graph()->NewCNode(depend3_inputs);
+    MS_EXCEPTION_IF_NULL(depend_node3);
+    depend_node3->set_abstract(comm_bode_b_input_input->abstract()->Clone());
+    depend_node3->AddAttr("micro_interleaved_depend3", MakeValue(true));
+    (void)manager->Replace(comm_bode_b_input_input, depend_node3);
+  }
 }
 
 void InsertInterleavedNodesDepend(const FuncGraphManagerPtr &manager,
