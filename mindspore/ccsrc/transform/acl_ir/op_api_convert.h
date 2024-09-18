@@ -112,6 +112,7 @@ inline void *GetOpApiFunc(const char *api_name) {
     }
   }
   MS_LOG(WARNING) << "Dlsym " << api_name << " failed!";
+  (void)opapi_cache.emplace(string(api_name), nullptr);
   return nullptr;
 }
 
