@@ -103,7 +103,7 @@ inline NodePtr SelectScalar(BpropBuilder *ib, const NodePtr &cond, const NodePtr
 }
 
 NodePtr MaybeMultiply(BpropBuilder *ib, const TypePtr &input_type, const NodePtr &t, const NodePtr &s,
-                             const std::string &arg_name) {
+                      const std::string &arg_name) {
   bool is_one = false;
   auto s_ptr = s->BuildValue();
   MS_EXCEPTION_IF_NULL(s_ptr);
@@ -1279,6 +1279,17 @@ REG_BPROP_BUILDER("Log1p").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("LogAddExp").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto exp_x_y_1p = ib->Add(ib->Exp(ib->Sub(x, y)), ib->Tensor(1, ib->GetDtype(x)));
+  auto exp_y_x_1p = ib->Add(ib->Exp(ib->Sub(y, x)), ib->Tensor(1, ib->GetDtype(x)));
+  auto dx = ib->Div(dout, exp_y_x_1p);
+  auto dy = ib->Div(dout, exp_x_y_1p);
+  return BinopGradCommon(ib, x, y, dx, dy);
+});
+
 REG_BPROP_BUILDER("Erf").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
@@ -2146,8 +2157,8 @@ REG_BPROP_BUILDER("TraceExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   }
   if (IsDynamicShape(shape) || IsDynamicRank(shape)) {
     auto shapes = ib->ShapeCalc(g_trace_ext_shapecalc, {x});
-    eye = ib->Emit(
-      "Eye", {ib->TupleGetItem(shapes[0], 0), ib->TupleGetItem(shapes[0], 1), ib->Value<int64_t>(eye_dtype_id)});
+    eye = ib->Emit("Eye",
+                   {ib->TupleGetItem(shapes[0], 0), ib->TupleGetItem(shapes[0], 1), ib->Value<int64_t>(eye_dtype_id)});
   } else {
     eye = ib->Emit("Eye", {ib->Value(shape[0]), ib->Value(shape[1]), ib->Value<int64_t>(eye_dtype_id)});
   }

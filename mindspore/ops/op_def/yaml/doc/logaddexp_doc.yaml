@@ -1,0 +1,34 @@
+logaddexp:
+    description: |
+        Computes the logarithm of the sum of exponentiations of the inputs.
+        This function is useful in statistics where the calculated probabilities of events may be
+        so small as to exceed the range of normal floating point numbers.
+
+        .. math::
+
+            out_i = \log(exp(input_i) + \exp(other_i))
+
+        Args:
+            input (Tensor): Input Tensor. The dtype of `input` must be float.
+            other (Tensor): Input Tensor. The dtype of `other` must be float.
+                If the shape of `input` is not equal to the shape of `other`,
+                they must be broadcastable to a common shape (which becomes the shape of the output).
+
+        Returns:
+            Tensor, with the same dtype as `input` and `other`.
+
+        Raises:
+            TypeError: If `input` or `other` is not a Tensor.
+            TypeError: The dtype of `input` or `other` is not float.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x1 = Tensor(np.array([1, 2, 3]).astype(np.float16))
+            >>> x2 = Tensor(np.array(2).astype(np.float16))
+            >>> output = ops.logaddexp_ext(x1, x2)
+            >>> print(output)
+            [2.312 2.693 3.312]
