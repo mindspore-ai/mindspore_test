@@ -42,8 +42,8 @@ Event
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.hal.Event
     mindspore.hal.CommHandle
+    mindspore.hal.Event
 
 Memory
 ------------

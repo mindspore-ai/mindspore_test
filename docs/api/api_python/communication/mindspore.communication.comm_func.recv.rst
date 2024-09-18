@@ -3,7 +3,7 @@ mindspore.communication.comm_func.recv
 
 .. py:function:: mindspore.communication.comm_func.recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0)
 
-    发送张量到指定线程。
+    同步发送张量到指定线程。
 
     .. note::
         Send 和 Receive 算子需组合使用，且有同一个 `tag`。

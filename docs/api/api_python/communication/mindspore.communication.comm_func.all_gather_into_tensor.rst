@@ -1,7 +1,7 @@
 mindspore.communication.comm_func.all_gather_into_tensor
 ========================================================
 
-.. py:function:: mindspore.communication.comm_func.all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP)
+.. py:function:: mindspore.communication.comm_func.all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=False)
 
     汇聚指定的通信组中的Tensor，并返回汇聚后的张量。
 
@@ -14,7 +14,7 @@ mindspore.communication.comm_func.all_gather_into_tensor
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：
-        Tuple(Tensor, CommHandle), 如果组中的device数量为N，则输出Tensor的shape为 :math:`(N, x_1, x_2, ..., x_R)` 。
+        Tuple(Tensor, CommHandle)，如果组中的device数量为N，则输出Tensor的shape为 :math:`(N, x_1, x_2, ..., x_R)` 。
         若 `async_op` 是True，CommHandle是一个异步工作句柄。若 `async_op` 是False，CommHandle将返回None。
 
     异常：

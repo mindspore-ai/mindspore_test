@@ -1,7 +1,7 @@
 mindspore.communication.comm_func.all_reduce
 ============================================
 
-.. py:function:: mindspore.communication.comm_func.all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP)
+.. py:function:: mindspore.communication.comm_func.all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async_op=False)
 
     使用指定方式对通信组内的所有设备的Tensor数据进行规约操作，所有设备都得到相同的结果，返回规约操作后的张量。
 
@@ -15,7 +15,7 @@ mindspore.communication.comm_func.all_reduce
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：
-        Tuple(Tensor, CommHandle), 输出shape与输入相同，即 :math:`(x_1, x_2, ..., x_R)` 。其内容取决于操作。
+        Tuple(Tensor, CommHandle)，输出shape与输入相同，即 :math:`(x_1, x_2, ..., x_R)` 。其内容取决于操作。
         若 `async_op` 是True，CommHandle是一个异步工作句柄。若 `async_op` 是False，CommHandle将返回None。
     异常：
         - **TypeError** - 首个输入的数据类型不为Tensor，`op` 或 `group` 不是str。

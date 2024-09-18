@@ -1,7 +1,7 @@
 mindspore.communication.comm_func.reduce_scatter_tensor
 =======================================================
 
-.. py:function:: mindspore.communication.comm_func.reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP)
+.. py:function:: mindspore.communication.comm_func.reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async_op=False)
 
     规约并且分发指定通信组中的张量，返回分发后的张量。
 
@@ -15,7 +15,7 @@ mindspore.communication.comm_func.reduce_scatter_tensor
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：
-        Tuple(Tensor, CommHandle), 输出Tensor数据类型与 `input_x` 一致，shape为 :math:`(N/rank\_size, *)` 。
+        Tuple(Tensor, CommHandle)，输出Tensor数据类型与 `input_x` 一致，shape为 :math:`(N/rank\_size, *)` 。
         若 `async_op` 是True，CommHandle是一个异步工作句柄。若 `async_op` 是False，CommHandle将返回None。
 
     异常：
