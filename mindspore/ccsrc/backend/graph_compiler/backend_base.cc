@@ -1318,6 +1318,11 @@ void MindRTBackendBase::CompileGraphFromSegment(const GraphSegmentPtr &segment, 
       }
     }
 
+    if (device_context->graph_executor_ == nullptr) {
+      // only can use kernel mode for this device context
+      seg_run_mode = device::RunMode::kKernelMode;
+    }
+
     GraphId graph_id;
     if (root_graph_->has_flag(kFlagEnableRunGraphBySingleOp)) {
       graph_id = graph_compiler_->CompileDynamicGraph(segment, outputs, device_context);
