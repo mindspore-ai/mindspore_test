@@ -221,6 +221,9 @@ double CostRedis(const Graph::NodeType &node,
           bool is_search_forward = false;
           cost_redis += CalculateCostIfAdjacent(adjacent, node_name_to_strategy, mode, i_strategy, i_node,
                                                 output_tensor, is_search_forward, loop);
+          if (adjacent) {
+            break;
+          }
         }
       }
     }
