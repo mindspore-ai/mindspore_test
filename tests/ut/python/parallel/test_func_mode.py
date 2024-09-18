@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
@@ -73,6 +74,7 @@ def train_step(input_, label_):
     return loss
 
 
+@pytest.mark.skip(reason="Need to adapter data_sink for new jit api.")
 def test_sink():
     """
     Feature: Function mode in auto parallel

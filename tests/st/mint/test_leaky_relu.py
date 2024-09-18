@@ -61,9 +61,9 @@ def test_leaky_relu_std(mode):
         output_forward = leaky_relu_forward_func(ms.Tensor(x), negative_slope)
         output_grad = leaky_relu_backward_func(ms.Tensor(x), negative_slope)
     else:
-        output_forward = (jit(leaky_relu_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x),
+        output_forward = (jit(leaky_relu_forward_func, jit_level="O0"))(ms.Tensor(x),
                                                                                               negative_slope)
-        output_grad = (jit(leaky_relu_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x),
+        output_grad = (jit(leaky_relu_backward_func, jit_level="O0"))(ms.Tensor(x),
                                                                                             negative_slope)
 
     assert np.allclose(output_forward.asnumpy(), expect_forward)

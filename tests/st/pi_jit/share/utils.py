@@ -3,6 +3,7 @@ from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore import ops
 from mindspore._c_expression import get_code_extra
+from mindspore.common._pijit_context import PIJitCaptureContext
 
 
 def get_empty_tensor(dtype=mstype.float32):
@@ -105,3 +106,10 @@ def assert_executed_by_graph_mode(func):
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0
     assert len(jcr['code']['phase_']) > 0
+
+
+def pi_jit_with_config(function=None, jit_config=None):
+    wrap_func = PIJitCaptureContext(jit_config)
+    if function is not None:
+        return wrap_func(function)
+    return wrap_func

@@ -89,10 +89,10 @@ def test_ops_lstsq_forward(mode):
         context.set_context(mode=ms.PYNATIVE_MODE)
         outs = lstsq_forward_func(Tensor(A), Tensor(B))
     elif mode == 'KBK':
-        outs = (jit(lstsq_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        outs = (jit(lstsq_forward_func, jit_level="O0"))(
             ms.Tensor(A), ms.Tensor(B))
     else:
-        outs = (jit(lstsq_forward_func, jit_config=JitConfig(jit_level="O2")))(
+        outs = (jit(lstsq_forward_func, jit_level="O2"))(
             ms.Tensor(A), ms.Tensor(B))
     for i in range(4):
         np.testing.assert_allclose(
@@ -120,10 +120,10 @@ def test_ops_lstsq_backward(mode):
         context.set_context(mode=ms.PYNATIVE_MODE)
         grads = lstsq_backward_func(Tensor(A), Tensor(B))
     elif mode == 'KBK':
-        grads = (jit(lstsq_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        grads = (jit(lstsq_backward_func, jit_level="O0"))(
             Tensor(A), Tensor(B))
     else:
-        grads = (jit(lstsq_backward_func, jit_config=JitConfig(jit_level="O2")))(
+        grads = (jit(lstsq_backward_func, jit_level="O2"))(
             Tensor(A), Tensor(B))
     for i in range(2):
         np.testing.assert_allclose(

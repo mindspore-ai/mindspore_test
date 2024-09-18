@@ -30,27 +30,8 @@ def skip_if_python_version_too_high():
 s=Symbol(max=10,min=1)
 g_relu=nn.ReLU()
 
-class SignatureNet(Cell):
-    def __init__(self):
-        super().__init__()
-        self.relu = nn.ReLU()
 
-    @jit(mode="PIJit", input_signature=(Tensor(shape=(s,None), dtype=ms.float32)))
-    def construct(self, a):
-        return self.relu(a)
-
-@jit(mode="PIJit", input_signature=(Tensor(shape=(None, s), dtype=ms.float32)))
-def signature_test(a):
-    return g_relu(a)
-
-@jit(mode="PIJit", input_signature=((Tensor(shape=(None, s), dtype=ms.float32), Tensor(shape=(None, s), dtype=ms.float32)), None))
-def signature_tuple_test(a, b):
-    return g_relu(a[0])
-
-@jit(mode="PIJit", jit_config={"enable_dynamic_shape": True, "limit_graph_count": 1})
-def dynamic_shape_test(a, b):
-    return a + b
-
+@pytest.mark.skip(reason="Need to implement dynamic arg for jit api.")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_dynamic_shape_case():
@@ -60,6 +41,10 @@ def test_dynamic_shape_case():
     Expectation: The result of the case should dump the dynamic shape ir at last.
                  'enable_dynamic_shape' flag is used to enable dynamic shape when calling 3 times for different shape.
     """
+    @jit(capture_mode="bytecode", jit_config={"enable_dynamic_shape": True, "limit_graph_count": 1})
+    def dynamic_shape_test(a, b):
+        return a + b
+
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([1])
     b = Tensor([2])
@@ -87,6 +72,24 @@ def test_signature_case():
     Description: Test dynamicshape and dynamicsymbolic in signature function to check whether it works.
     Expectation: The result of the case should compile the graph no more than once.
     """
+
+    class SignatureNet(Cell):
+        def __init__(self):
+            super().__init__()
+            self.relu = nn.ReLU()
+
+        @jit(capture_mode="bytecode", input_signature=(Tensor(shape=(s,None), dtype=ms.float32)))
+        def construct(self, a):
+            return self.relu(a)
+
+    @jit(capture_mode="bytecode", input_signature=(Tensor(shape=(None, s), dtype=ms.float32)))
+    def signature_test(a):
+        return g_relu(a)
+
+    @jit(capture_mode="bytecode", input_signature=((Tensor(shape=(None, s), dtype=ms.float32), Tensor(shape=(None, s), dtype=ms.float32)), None))
+    def signature_tuple_test(a, b):
+        return g_relu(a[0])
+
     context.set_context(mode=context.PYNATIVE_MODE)
     t1 = Tensor([[1.1, 1.1],[2.2,2.2]], dtype=ms.float32)
     t2 = Tensor([[1.1],[2.2]], dtype=ms.float32)

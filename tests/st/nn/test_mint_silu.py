@@ -69,11 +69,11 @@ def test_silu_net(mode):
         output = SiLU_forward(x)
         out_grad = SiLU_grad(x)
     elif mode == 'KBK':
-        output = (jit(SiLU_forward, jit_config=JitConfig(jit_level="O0")))(x)
-        out_grad = (jit(SiLU_grad, jit_config=JitConfig(jit_level="O0")))(x)
+        output = (jit(SiLU_forward, jit_level="O0"))(x)
+        out_grad = (jit(SiLU_grad, jit_level="O0"))(x)
     else:
-        output = (jit(SiLU_forward, jit_config=JitConfig(jit_level="O2")))(x)
-        out_grad = (jit(SiLU_grad, jit_config=JitConfig(jit_level="O2")))(x)
+        output = (jit(SiLU_forward, jit_level="O2"))(x)
+        out_grad = (jit(SiLU_grad, jit_level="O2"))(x)
 
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-3)
     np.testing.assert_allclose(out_grad.asnumpy(), expect_output_grad, rtol=1e-3)

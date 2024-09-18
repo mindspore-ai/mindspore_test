@@ -23,7 +23,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
@@ -115,7 +115,7 @@ void OptStrategy::MakeGCStrategy(OptCodeHubPtr hub, int limit_size, int limit_co
       }
     }
     if (limit_size > 0) {
-      auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+      auto graph_executor = pipeline::GetExecutor();
       OptCodeSet toDel;
       if (enable_dynamicshape) {
         ShrinkCodeSet(&set, except);

@@ -15,7 +15,7 @@
 """run no grad test"""
 import sys
 import pytest
-from .share.utils import match_array
+from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 import mindspore
 from mindspore import nn, ops, jit, Tensor, _no_grad, context, Parameter
@@ -65,7 +65,7 @@ def test_network_func(input):
     """
     model_py = GradNet()
 
-    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def test_network(x):
         grad_fn = ops.grad(model_py)
         gradients = grad_fn(x)

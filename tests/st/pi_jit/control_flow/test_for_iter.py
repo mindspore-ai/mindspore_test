@@ -20,6 +20,8 @@ import sys
 from mindspore import jit, Tensor
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
+
 
 @pytest.fixture(autouse=True)
 def skip_if_python_version_too_high():
@@ -82,7 +84,7 @@ def test_for_iter_unrolling(func, param):
 
     config = {"loop_unrolling": True}
     excepted = func(param)
-    result = jit(fn=func, mode="PIJit", jit_config=config)(param)
+    result = pi_jit_with_config(function=func, jit_config=config)(param)
     jcr = get_code_extra(func)
 
     assert jcr["stat"] == "GRAPH_CALLABLE"
@@ -101,7 +103,7 @@ def test_not_implement_for_iter(func, param):
     """
     config = {"loop_unrolling": True}
     excepted = func(param)
-    result = jit(fn=func, mode="PIJit", jit_config=config)(param)
+    result = pi_jit_with_config(function=func, jit_config=config)(param)
     jcr = get_code_extra(func)
 
     assert jcr["stat"] == "GRAPH_CALLABLE"

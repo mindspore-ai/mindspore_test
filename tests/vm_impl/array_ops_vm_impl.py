@@ -467,3 +467,15 @@ def vm_impl_zeros(self):
         return Tensor(np.zeros(shape, dtype))
 
     return vm_impl
+
+
+@vm_impl_getters.register("tuple_setitem")
+def vm_impl_tuple_setitem(self):
+    """Generate vm_impl function for tuple_setitem"""
+
+    def vm_impl(x, y, z):
+        x = list(x)
+        x[y] = z
+        return tuple(x)
+
+    return vm_impl

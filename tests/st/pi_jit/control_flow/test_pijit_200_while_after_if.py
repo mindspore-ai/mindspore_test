@@ -32,7 +32,7 @@ def test_while_after_if_tensor():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def control_flow_while_after_if():
         x = Tensor([1])
         y = Tensor([2])
@@ -57,7 +57,7 @@ def test_while_after_if_tensor_2():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def control_flow_while_after_if():
         x = Tensor([1])
         y = Tensor([2])
@@ -87,7 +87,7 @@ def test_while_after_if_numpy():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def control_flow_while_after_if():
         x = np.array([3, 2])
         y = Tensor(np.array([3, 2]))
@@ -113,7 +113,7 @@ def test_while_after_if_numpy_2():
     Expectation: No exception.
     """
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def control_flow_while_after_if():
         x = np.array([3, 2])
         y = [1, 2, 3, 4]

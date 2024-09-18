@@ -42,7 +42,7 @@
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/shape_ctx.h"
 #include "pipeline/jit/pi/capture_context.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "runtime/pynative/op_executor.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -702,7 +702,7 @@ static std::string CallGraphCompiler(JitCompileResults *jcr, PyFunctionObject *f
   ReleaseFunc rFunc = nullptr;
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kAutoCleanCache)) {
     rFunc = [phase]() {
-      auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+      auto graph_executor = pipeline::GetExecutor();
       if (graph_executor->HasCompiled(phase)) {
         py::str p(phase);
         py::set s;
@@ -766,7 +766,7 @@ static void GraphCompile(JitCompileResults *jcr, const PyFrameWrapper &frame) {
   }
 
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kReuseGraph)) {
-    auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+    auto graph_executor = pipeline::GetExecutor();
     FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(phase);
     std::string key = GraphToString(ms_func_graph);
     auto pcode = OptCodeHub::Filter(key, [jcr, graph_executor, ms_func_graph](OptCodePtr code) {
@@ -1033,7 +1033,7 @@ static bool CheckAbstract(abstract::AbstractBasePtr abs, bool incontainer) {
 }
 
 static bool CheckValidReturn(const JitCompileResults *c) {
-  auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+  auto graph_executor = pipeline::GetExecutor();
   FuncGraphPtr ms_func_graph = graph_executor->GetFuncGraph(c->code()->GetPhase());
   auto abs = ms_func_graph->output()->abstract();
   return CheckAbstract(abs, false);
@@ -1169,30 +1169,9 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   return c->code() != nullptr;
 }
 
-class JitSyntaxLevelScope {
- public:
-  explicit JitSyntaxLevelScope(bool enable) : enable_(enable) {
-    if (enable_) {
-      MS_LOG(INFO) << "Start run PIJit with one stage mode";
-      origin_jit_syntax_level_ = common::GetEnv("MS_DEV_JIT_SYNTAX_LEVEL");
-      common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", "0");
-    }
-  }
-  ~JitSyntaxLevelScope() {
-    if (enable_) {
-      common::SetEnv("MS_DEV_JIT_SYNTAX_LEVEL", origin_jit_syntax_level_.c_str());
-    }
-  }
-
- private:
-  std::string origin_jit_syntax_level_;
-  bool enable_;
-};
-
 static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
-  JitSyntaxLevelScope jit_syntax_level_scope(c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag));
   StaticAnalysisExceptionCleaner exception_cleaner;
   CaptureContext::DisableScope compiler_disable_scope;
 

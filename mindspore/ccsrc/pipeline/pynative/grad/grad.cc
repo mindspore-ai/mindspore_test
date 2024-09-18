@@ -30,7 +30,7 @@
 #include "pipeline/pynative/grad/ir/ir_grad.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
@@ -2322,7 +2322,7 @@ void GradExecutor::SetBpropGraphJitLevel(const py::object &obj) const {
     MS_LOG(EXCEPTION) << "JitConfig only support dict!";
   }
   auto jit_config_dict = jit_config.cast<py::dict>();
-  auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
+  pipeline::ExecutorPyPtr graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   graph_executor->SetJitConfig(jit_config_dict);
 }

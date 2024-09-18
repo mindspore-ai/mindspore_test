@@ -79,10 +79,10 @@ def test_lstsqv2_grad_like_forward(mode):
         grads = lstsqv2_grad_forward_func(
             ms.Tensor(Dout), ms.Tensor(A), ms.Tensor(B))
     elif mode == 'KBK':
-        grads = (jit(lstsqv2_grad_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        grads = (jit(lstsqv2_grad_forward_func, jit_level="O0"))(
             ms.Tensor(Dout), ms.Tensor(A), ms.Tensor(B))
     else:
-        grads = (jit(lstsqv2_grad_forward_func, jit_config=JitConfig(jit_level="O2")))(
+        grads = (jit(lstsqv2_grad_forward_func, jit_level="O2"))(
             ms.Tensor(Dout), ms.Tensor(A), ms.Tensor(B))
     for i in range(2):
         np.testing.assert_allclose(

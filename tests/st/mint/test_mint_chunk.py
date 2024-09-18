@@ -55,7 +55,7 @@ def test_chunk_foward_backward(mode):
         out = chunk_forward_func(x, chunks, dims)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(chunk_forward_func, jit_config=JitConfig(jit_level="O0")))(x, chunks, dims)
+        out = (jit(chunk_forward_func, jit_level="O0"))(x, chunks, dims)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         out = chunk_forward_func(x, chunks, dims)
@@ -71,7 +71,7 @@ def test_chunk_foward_backward(mode):
         grad = chunk_backward_func(x, chunks, 0)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        grad = (jit(chunk_backward_func, jit_config=JitConfig(jit_level="O0")))(x, chunks, 0)
+        grad = (jit(chunk_backward_func, jit_level="O0"))(x, chunks, 0)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         grad = chunk_backward_func(x, chunks, 0)

@@ -1832,9 +1832,6 @@ class Cell(Cell_):
         if not hasattr(self, "_func_graph_flags"):
             self._func_graph_flags = {}
         self._func_graph_flags.update({**flags})
-        if context._get_mode() == context.PYNATIVE_MODE and self._func_graph_flags.get("output_no_recompute"):
-            raise TypeError("Recompute is not supported in PyNative mode currently, you can use "
-                            "'context.set_context(mode=context.GRAPH_MODE)' or @jit to set graph mode.")
         self.__dict__.update({**flags})
         self._add_mixed_precision_flag(**flags)
         return self
@@ -2607,7 +2604,6 @@ class Cell(Cell_):
         if context.get_context("mode") == context.PYNATIVE_MODE:
             self._recompute_cell = recompute_registry.get()(self.construct)
             self._add_recompute_flag()
-            return
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
             self._mp_comm_recompute(kwargs.get('mp_comm_recompute', False))

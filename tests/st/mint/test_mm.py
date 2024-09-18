@@ -58,11 +58,11 @@ def test_ops(mode, dtype):
         res = mm_forward_func(ms.Tensor(input_x), ms.Tensor(mat2))
         res_grad = mm_backward_func(ms.Tensor(input_x), ms.Tensor(mat2))
     elif mode == 'KBK':
-        res = (jit(mm_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(input_x), ms.Tensor(mat2))
-        res_grad = (jit(mm_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res = (jit(mm_forward_func, jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res_grad = (jit(mm_backward_func, jit_level="O0"))(ms.Tensor(input_x), ms.Tensor(mat2))
     else:
-        res = (jit(mm_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(input_x), ms.Tensor(mat2))
-        res_grad = (jit(mm_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res = (jit(mm_forward_func, jit_level="O2"))(ms.Tensor(input_x), ms.Tensor(mat2))
+        res_grad = (jit(mm_backward_func, jit_level="O2"))(ms.Tensor(input_x), ms.Tensor(mat2))
     np.testing.assert_allclose(res.asnumpy(), expect_forward, rtol=1e-5)
     np.testing.assert_allclose(res_grad.asnumpy(), expect_grad.asnumpy(), rtol=1e-5)
 

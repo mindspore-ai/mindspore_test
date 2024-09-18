@@ -53,7 +53,7 @@ def test_scatter_forward_backward(mode):
         out = scatter_forward_func(input_x, dim, index, src)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(scatter_forward_func, jit_config=JitConfig(jit_level="O0")))(input_x, dim, index, src)
+        out = (jit(scatter_forward_func, jit_level="O0"))(input_x, dim, index, src)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         out = scatter_forward_func(input_x, dim, index, src)
@@ -74,7 +74,7 @@ def test_scatter_forward_backward(mode):
         out = scatter_forward_func(input_x, dim, index, src)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(scatter_forward_func, jit_config=JitConfig(jit_level="O0")))(input_x, dim, index, src)
+        out = (jit(scatter_forward_func, jit_level="O0"))(input_x, dim, index, src)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         out = scatter_forward_func(input_x, dim, index, src)
@@ -99,7 +99,7 @@ def test_scatter_forward_backward(mode):
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad, src_grad = \
-            (jit(scatter_backward_func, jit_config=JitConfig(jit_level="O0")))(input_x, dim, index, src)
+            (jit(scatter_backward_func, jit_level="O0"))(input_x, dim, index, src)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad, src_grad = scatter_backward_func(input_x, dim, index, src)
@@ -121,7 +121,7 @@ def test_scatter_forward_backward(mode):
         input_grad = scatter_backward_func(input_x, dim, index, src)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        input_grad = (jit(scatter_backward_func, jit_config=JitConfig(jit_level="O0")))(input_x, dim, index, src)
+        input_grad = (jit(scatter_backward_func, jit_level="O0"))(input_x, dim, index, src)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         input_grad = scatter_backward_func(input_x, dim, index, src)

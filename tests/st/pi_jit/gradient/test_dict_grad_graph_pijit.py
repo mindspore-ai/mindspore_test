@@ -35,7 +35,7 @@ def test_backward_return_dict():
             super(Net, self).__init__()
             self.relu = ops.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             result = self.relu(x)
             return result
@@ -74,7 +74,7 @@ def test_forward_contain_make_dict_and_dict_getitem():
             super(Net, self).__init__()
             self.relu = ops.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             y = {'a': x}
             z = y['a']
@@ -113,7 +113,7 @@ def test_forward_return_dict():
             super(Net, self).__init__()
             self.relu = ops.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             y = self.relu(x)
             result = {'a': y}
@@ -151,7 +151,7 @@ def test_forward_return_dict_backward_return_dict():
             super(Net, self).__init__()
             self.relu = ops.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             y = self.relu(x)
             result = {'a': y}
@@ -192,7 +192,7 @@ def test_forward_contain_make_dict_and_dict_getitem_backward_return_dict():
             super(Net, self).__init__()
             self.relu = ops.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             y = self.relu(x)
             result = {'a': y}
@@ -233,7 +233,7 @@ def test_forward_contain_make_dict_and_dict_setitem_backward_return_dict1():
             super(Net, self).__init__()
             self.relu = ops.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             y = self.relu(x)
             result = {'a': y}
@@ -275,7 +275,7 @@ def test_forward_contain_make_dict_and_dict_setitem_backward_return_dict2():
             super(Net, self).__init__()
             self.relu = ops.ReLU()
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             y = self.relu(x)
             result = {'a': y}

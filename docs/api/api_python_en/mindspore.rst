@@ -190,8 +190,6 @@ JIT
     mindspore.JitConfig
     mindspore.jit
     mindspore.jit_class
-    mindspore.ms_class
-    mindspore.ms_function
     mindspore.ms_memory_recycle
     mindspore.mutable
     mindspore.constexpr

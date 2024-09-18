@@ -10,25 +10,25 @@ def skip_if_python_version_too_high():
     if sys.version_info >= (3, 11):  
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def fallback_list_with_input_tuple(a):
     res = list(a)
     return res
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def fallback_list_with_input_dict(a):
     res = list(a)
     return res
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def fallback_list_with_input_numpy_array(a):
     res = list(a)
     return res
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def fallback_list_with_input_numpy_tensor(a, b):
     res = list(a)
     res2 = list(b)

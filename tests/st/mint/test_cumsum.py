@@ -64,8 +64,8 @@ def test_cumsum_normal(mode):
         output = cumsum_forward_func(ms.Tensor(x), dim1)
         output1 = cumsum_backward_func(ms.Tensor(x), dim2)
     else:
-        output = (jit(cumsum_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim1)
-        output1 = (jit(cumsum_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim2)
+        output = (jit(cumsum_forward_func, jit_level="O0"))(ms.Tensor(x), dim1)
+        output1 = (jit(cumsum_backward_func, jit_level="O0"))(ms.Tensor(x), dim2)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
     np.testing.assert_allclose(output1.asnumpy(), expect1, rtol=1e-4)
 
@@ -85,7 +85,7 @@ def test_cumsum_bfloat16(mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = cumsum_forward_func(ms.Tensor(x), dim1)
     else:
-        output = (jit(cumsum_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim1)
+        output = (jit(cumsum_forward_func, jit_level="O0"))(ms.Tensor(x), dim1)
     np.testing.assert_allclose(output.float().asnumpy(), expect, rtol=5e-3, atol=5e-3)
 
 

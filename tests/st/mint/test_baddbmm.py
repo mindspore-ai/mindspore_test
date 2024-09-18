@@ -82,13 +82,13 @@ def test_baddbmm_normal(mode):
         output_grad2, b1_grad2, b2_grad2 = baddbmm_backward_func(ms.Tensor(input2),
                                                                  ms.Tensor(batch1), ms.Tensor(batch2), beta, alpha)
     else:
-        output_forward = (jit(baddbmm_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward = (jit(baddbmm_forward_func, jit_level="O0"))(
             ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
-        output_forward2 = (jit(baddbmm_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward2 = (jit(baddbmm_forward_func, jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch1), ms.Tensor(batch2), beta, alpha)
-        output_grad, b1_grad, b2_grad = (jit(baddbmm_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_grad, b1_grad, b2_grad = (jit(baddbmm_backward_func, jit_level="O0"))(
             ms.Tensor(input1), ms.Tensor(batch1), ms.Tensor(batch2))
-        output_grad2, b1_grad2, b2_grad2 = (jit(baddbmm_backward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_grad2, b1_grad2, b2_grad2 = (jit(baddbmm_backward_func, jit_level="O0"))(
             ms.Tensor(input2), ms.Tensor(batch1), ms.Tensor(batch2), beta, alpha)
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, 3e-3, 3e-3)
     np.testing.assert_allclose(output_grad.asnumpy(), expect_grad, 3e-3, 3e-3)
@@ -122,7 +122,7 @@ def test_baddbmm_bfloat16(mode):
                                               ms.Tensor(batch1, dtype=ms.bfloat16),
                                               ms.Tensor(batch2, dtype=ms.bfloat16), beta, alpha)
     else:
-        output_forward = (jit(baddbmm_forward_func, jit_config=JitConfig(jit_level="O0")))(
+        output_forward = (jit(baddbmm_forward_func, jit_level="O0"))(
             ms.Tensor(input1, dtype=ms.bfloat16), ms.Tensor(batch1, dtype=ms.bfloat16),
             ms.Tensor(batch2, dtype=ms.bfloat16), beta, alpha)
     np.testing.assert_allclose(output_forward.float().asnumpy(), expect_forward, 0.125, 0.125)

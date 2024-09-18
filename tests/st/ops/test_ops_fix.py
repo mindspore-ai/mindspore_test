@@ -93,12 +93,12 @@ def test_ops_fix_normal_ascend_GE(context_mode):
     Expectation: expect correct result.
     """
     x = generate_random_input((2, 3, 4, 5), np.float32)
-    output = (jit(fix_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x))
+    output = (jit(fix_forward_func, jit_level="O2"))(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
 
     x = generate_random_input((2, 3, 4, 5), np.float32)
-    output = (jit(fix_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x))
+    output = (jit(fix_backward_func, jit_level="O2"))(ms.Tensor(x))
     expect = generate_expect_backward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)
 

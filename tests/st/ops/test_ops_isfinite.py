@@ -66,11 +66,11 @@ def test_isfinite_normal(mode):
         output = isfinite_forward_func(ms.Tensor(x))
         output1 = isfinite_backward_func(ms.Tensor(x1))
     elif mode == 'KBK':
-        output = (jit(isfinite_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output1 = (jit(isfinite_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x1))
+        output = (jit(isfinite_forward_func, jit_level="O0"))(ms.Tensor(x))
+        output1 = (jit(isfinite_backward_func, jit_level="O0"))(ms.Tensor(x1))
     else:
-        output = (jit(isfinite_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x))
-        output1 = (jit(isfinite_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x1))
+        output = (jit(isfinite_forward_func, jit_level="O2"))(ms.Tensor(x))
+        output1 = (jit(isfinite_backward_func, jit_level="O2"))(ms.Tensor(x1))
 
     expect = generate_expect_forward_output(x)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4)

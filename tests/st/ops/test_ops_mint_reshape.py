@@ -61,11 +61,11 @@ def test_ops_mint_reshape(mode):
             output = reshape_forward_func(ms.Tensor(x), shape)
             out_grad = reshape_backward_func(ms.Tensor(x), shape)
         elif mode == 'KBK':
-            output = (jit(reshape_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), shape)
-            out_grad = (jit(reshape_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), shape)
+            output = (jit(reshape_forward_func, jit_level="O0"))(ms.Tensor(x), shape)
+            out_grad = (jit(reshape_backward_func, jit_level="O0"))(ms.Tensor(x), shape)
         else:
-            output = (jit(reshape_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), shape)
-            out_grad = (jit(reshape_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), shape)
+            output = (jit(reshape_forward_func, jit_level="O2"))(ms.Tensor(x), shape)
+            out_grad = (jit(reshape_backward_func, jit_level="O2"))(ms.Tensor(x), shape)
         expect = generate_expect_forward_output(x, shape)
         np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
         np.testing.assert_allclose(out_grad.asnumpy(), 1, rtol=1e-3)

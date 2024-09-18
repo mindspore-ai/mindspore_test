@@ -52,10 +52,10 @@ def test_control_for_multi_if_break_nested_002():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net18()
-    jit(fn=Net18.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net18.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net18()
-    jit(fn=Net18.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net18.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -91,10 +91,10 @@ def test_control_for_multi_if_break_nested_003():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net19()
-    jit(fn=Net19.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net19.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net19()
-    jit(fn=Net19.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net19.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -135,10 +135,10 @@ def test_control_for_multi_if_break_concatenation():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net20()
-    jit(fn=Net20.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net20.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net20()
-    jit(fn=Net20.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net20.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -179,10 +179,10 @@ def test_control_for_multi_if_continue_concatenation():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net21()
-    jit(fn=Net21.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net21.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net21()
-    jit(fn=Net21.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net21.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -225,10 +225,10 @@ def test_control_while_for_if_combine_break_continue_001():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net22()
-    jit(fn=Net22.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net22.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net22()
-    jit(fn=Net22.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net22.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -271,10 +271,10 @@ def test_control_while_for_if_combine_break_continue_002():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net23()
-    jit(fn=Net23.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net23.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net23()
-    jit(fn=Net23.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net23.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -317,10 +317,10 @@ def test_control_while_for_if_combine_break_continue_003():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net24()
-    jit(fn=Net24.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net24.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net24()
-    jit(fn=Net24.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net24.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -365,10 +365,10 @@ def test_control_while_for_if_combine_break_continue_004():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net25()
-    jit(fn=Net25.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net25.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net25()
-    jit(fn=Net25.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net25.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -416,10 +416,10 @@ def test_control_while_for_if_combine_break_continue_005():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net26()
-    jit(fn=Net26.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net26.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net26()
-    jit(fn=Net26.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net26.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -456,10 +456,10 @@ def test_control_while_for_if_break_return_001():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net27()
-    jit(fn=Net27.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net27.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net27()
-    jit(fn=Net27.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net27.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -497,10 +497,10 @@ def test_control_while_for_if_break_return_002():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net28()
-    jit(fn=Net28.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net28.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net28()
-    jit(fn=Net28.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net28.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -531,10 +531,10 @@ def test_control_while_for_if_condition_define_in_init():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net29()
-    jit(fn=Net29.construct, mode="PSJit")(ps_net, z)
+    jit(function=Net29.construct, capture_mode="ast")(ps_net, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net29()
-    jit(fn=Net29.construct, mode="PIJit")(pi_net, z)
+    jit(function=Net29.construct, capture_mode="bytecode")(pi_net, z)
     match_array(ps_net(z), pi_net(z))
 
 
@@ -572,10 +572,10 @@ def test_control_while_for_if_break_parameter():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net30()
-    jit(fn=Net30.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net30.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net30()
-    jit(fn=Net30.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net30.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))
 
 
@@ -615,8 +615,8 @@ def test_control_while_for_if_break_plus_continue():
     z = Tensor(np.random.randn(4, 4, 4), ms.float32)
     context.set_context(mode=context.GRAPH_MODE)
     ps_net = Net31()
-    jit(fn=Net31.construct, mode="PSJit")(ps_net, x, y, z)
+    jit(function=Net31.construct, capture_mode="ast")(ps_net, x, y, z)
     context.set_context(mode=context.PYNATIVE_MODE)
     pi_net = Net31()
-    jit(fn=Net31.construct, mode="PIJit")(pi_net, x, y, z)
+    jit(function=Net31.construct, capture_mode="bytecode")(pi_net, x, y, z)
     match_array(ps_net(x, y, z), pi_net(x, y, z))

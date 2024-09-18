@@ -63,8 +63,8 @@ def test_inverse_std(mode):
         output_forward = inverse_forward_func(ms.Tensor(x))
         output_grad = inverse_backward_func(ms.Tensor(x))
     else:
-        output_forward = (jit(inverse_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(inverse_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output_forward = (jit(inverse_forward_func, jit_level="O0"))(ms.Tensor(x))
+        output_grad = (jit(inverse_backward_func, jit_level="O0"))(ms.Tensor(x))
 
     assert np.allclose(output_forward.asnumpy(), expect_forward, 1e-2, 1e-2)
     assert np.allclose(output_grad.asnumpy(), expect_grad, 5e-1, 5e-1)

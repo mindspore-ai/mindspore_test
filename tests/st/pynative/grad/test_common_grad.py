@@ -283,7 +283,6 @@ def test_jit_network_with_list_output():
     assert np.allclose(output_grad.asnumpy(), output_y, 0.0001, 0.0001)
 
 
-
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',

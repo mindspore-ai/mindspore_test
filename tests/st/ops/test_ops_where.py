@@ -192,9 +192,9 @@ def test_where_ext_normal(mode):
     if mode == 'pynative':
         ms_out = where_forward_func(cond, x, y)
     elif mode == 'KBK':
-        ms_out = (jit(where_forward_func, jit_config=JitConfig(jit_level="O0")))(cond, x, y)
+        ms_out = (jit(where_forward_func, jit_level="O0"))(cond, x, y)
     else:
-        ms_out = (jit(where_forward_func, jit_config=JitConfig(jit_level="O2")))(cond, x, y)
+        ms_out = (jit(where_forward_func, jit_level="O2"))(cond, x, y)
 
     expect = generate_expect_forward_output(cond.asnumpy(), x.asnumpy(), y.asnumpy())
     assert np.allclose(ms_out.asnumpy(), expect, rtol=1e-4)
@@ -207,9 +207,9 @@ def test_where_ext_normal(mode):
     if mode == 'pynative':
         ms_cond, ms_x, ms_y = where_backward_func(cond, x, y)
     elif mode == 'KBK':
-        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O0")))(cond, x, y)
+        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_level="O0"))(cond, x, y)
     else:
-        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O2")))(cond, x, y)
+        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_level="O2"))(cond, x, y)
     expect_cond, expect_x, expect_y = generate_expect_backward_output(cond.asnumpy())
     assert np.allclose(ms_cond.asnumpy(), expect_cond, rtol=1e-4)
     assert np.allclose(ms_x.asnumpy(), expect_x, rtol=1e-4)

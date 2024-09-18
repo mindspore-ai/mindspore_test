@@ -20,6 +20,7 @@
 #include <string>
 #include "kernel/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/composite/functional_overload.h"
 #include "pipeline/pynative/pynative_execute.h"
@@ -61,6 +62,7 @@
 
 namespace py = pybind11;
 using GraphExecutorPy = mindspore::pipeline::GraphExecutorPy;
+using JitExecutorPy = mindspore::pipeline::JitExecutorPy;
 using Pipeline = mindspore::pipeline::Pipeline;
 using PrimitivePy = mindspore::PrimitivePy;
 using MetaFuncGraph = mindspore::MetaFuncGraph;
@@ -304,6 +306,39 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("get_running_passes", &GraphExecutorPy::GetRunningPasses, "Get the running passes.")
     .def("set_max_call_depth", &GraphExecutorPy::set_max_call_depth, py::arg("max_call_depth") = py::int_(1000),
          "Get the running passes.");
+
+  MS_LOG(INFO) << "Start JitExecutorPy...";
+  (void)py::class_<JitExecutorPy, std::shared_ptr<JitExecutorPy>>(m, "JitExecutor_")
+    .def_static("get_instance", &JitExecutorPy::GetInstance, "Executor get_instance.")
+    .def("__call__", &JitExecutorPy::Run, py::arg("args"), py::arg("phase") = py::str(""), "Executor run function.")
+    .def("del_net_res", &JitExecutorPy::DelNetRes, py::arg("obj"), py::arg("network_id") = py::set(),
+         "Delete network resource.")
+    .def("compile", &JitExecutorPy::Compile, py::arg("obj"), py::arg("args"), py::arg("kwargs"),
+         py::arg("phase") = py::str(""), py::arg("use_vm") = py::bool_(false), "Compile obj by executor.")
+    .def("has_compiled", &JitExecutorPy::HasCompiled, py::arg("phase") = py::str(""),
+         "Get if the cell or function has been compiled.")
+    .def("set_enable_tuple_broaden", &JitExecutorPy::set_enable_tuple_broaden,
+         py::arg("enable_tuple_broaden") = py::bool_(false), "Set tuple broaden enable.")
+    .def("generate_arguments_key", &JitExecutorPy::GenerateArgumentsKey, "Generate unique key of argument.")
+    .def("clear_compile_arguments_resource", &JitExecutorPy::ClearCompileArgumentsResource,
+         "Clear resource when phase cached.")
+    .def("get_params", &JitExecutorPy::GetParams, py::arg("phase") = py::str(""), "Get Parameters from graph")
+    .def("set_jit_config", &JitExecutorPy::SetJitConfig, py::arg("jit_config") = py::dict(), "Set the jit config.")
+    .def("set_queue_name", &JitExecutorPy::set_queue_name, py::arg("queue_name") = py::str(""),
+         "Set queue name for the graph loaded from compile cache.")
+    .def("get_queue_name", &JitExecutorPy::get_queue_name,
+         "Get cached queue name for the graph loaded from compile cache.")
+    .def("set_compile_cache_dep_files", &JitExecutorPy::set_compile_cache_dep_files,
+         py::arg("compile_cache_dep_files") = py::list(), "Set the compilation cache dependent files.")
+    .def("set_weights_values", &JitExecutorPy::set_weights_values, py::arg("weights") = py::dict(),
+         "Set values of weights.")
+    .def("check_argument_consistency", &JitExecutorPy::CheckArgumentsConsistency, "Check equal of arguments.")
+    .def("get_func_graph_proto", &JitExecutorPy::GetFuncGraphProto, py::arg("phase") = py::str(""),
+         py::arg("type") = py::str("onnx_ir"), py::arg("incremental") = py::bool_(false),
+         "Get graph proto string by specifying ir type.")
+    .def("get_obfuscate_func_graph_proto", &JitExecutorPy::GetObfuscateFuncGraphProto, py::arg("phase") = py::str(""),
+         py::arg("incremental") = py::bool_(false), py::arg("obf_ratio") = py::float_(1.0),
+         py::arg("branch_control_input") = py::int_(0), "Get graph proto of dynamic-obfuscated model.");
 
   (void)m.def("disable_multi_thread", &mindspore::runtime::Pipeline::DisableMultiThreadAfterFork,
               "Disable multi thread");

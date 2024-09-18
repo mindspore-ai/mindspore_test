@@ -56,7 +56,7 @@ def test_split_ext_int_SDV1(context_mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         out = split_forward_func(x, 1280, 1)
     else:
-        out = (jit(split_forward_func, jit_config=JitConfig(jit_level="O0")))(x, 1280, 1)
+        out = (jit(split_forward_func, jit_level="O0"))(x, 1280, 1)
 
     expect_shape = (3, 1280, 8, 8)
     assert len(out) == 2
@@ -78,7 +78,7 @@ def test_split_ext_int_SD5B(context_mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         out = split_forward_func(x, 448, 1)
     else:
-        out = (jit(split_forward_func, jit_config=JitConfig(jit_level="O0")))(x, 448, 1)
+        out = (jit(split_forward_func, jit_level="O0"))(x, 448, 1)
 
     expect_shape = (64, 448, 64, 64)
     assert len(out) == 2
@@ -100,7 +100,7 @@ def test_split_ext_int_SDV2(context_mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         out = split_forward_func(x, 320, 1)
     else:
-        out = (jit(split_forward_func, jit_config=JitConfig(jit_level="O0")))(x, 320, 1)
+        out = (jit(split_forward_func, jit_level="O0"))(x, 320, 1)
 
     expect_shape = (3, 320, 64, 64)
     assert len(out) == 2
@@ -123,7 +123,7 @@ def test_split_ext_int_forward(context_mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         out = split_forward_func(x, 5, 0)
     else:
-        out = (jit(split_forward_func, jit_config=JitConfig(jit_level="O0")))(x, 5, 0)
+        out = (jit(split_forward_func, jit_level="O0"))(x, 5, 0)
 
     expect = [np.array(np.arange(10).reshape((5, 2)), dtype=np.float32),
               np.array(np.arange(10, 20).reshape((5, 2)), dtype=np.float32)]
@@ -145,7 +145,7 @@ def test_split_ext_int_backward(context_mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         grads = split_backward_func(x, 5, 0)
     else:
-        grads = (jit(split_backward_func, jit_config=JitConfig(jit_level="O0")))(x, 5, 0)
+        grads = (jit(split_backward_func, jit_level="O0"))(x, 5, 0)
 
     expect_shape = x.shape
     assert grads.asnumpy().shape == expect_shape
@@ -167,7 +167,7 @@ def test_f_split_ext_list_forward(context_mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         out = split_forward_func(x, split_size_or_sections, 0)
     else:
-        out = (jit(split_forward_func, jit_config=JitConfig(jit_level="O0")))(x, split_size_or_sections, 0)
+        out = (jit(split_forward_func, jit_level="O0"))(x, split_size_or_sections, 0)
 
     expect = [np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=np.float32),
               np.array([10, 11, 12, 13, 14, 15, 16, 17, 18, 19], dtype=np.float32)]
@@ -191,7 +191,7 @@ def test_f_split_ext_list_backward(context_mode):
         ms.set_context(mode=ms.PYNATIVE_MODE)
         grads = split_backward_func(x, split_size_or_sections, 0)
     else:
-        grads = (jit(split_backward_func, jit_config=JitConfig(jit_level="O0")))(x, split_size_or_sections, 0)
+        grads = (jit(split_backward_func, jit_level="O0"))(x, split_size_or_sections, 0)
 
     expect_shape = logits.shape
     assert grads.asnumpy().shape == expect_shape

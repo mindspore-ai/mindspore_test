@@ -71,11 +71,11 @@ def test_ops_argmin_ext(mode):
             output = argmin_ext_forward_func(ms.Tensor(x), dim, keepdim)
             out_grad = argmin_ext_backward_func(ms.Tensor(x), dim, keepdim)
         elif mode == 'KBK':
-            output = (jit(argmin_ext_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, keepdim)
-            out_grad = (jit(argmin_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, keepdim)
+            output = (jit(argmin_ext_forward_func, jit_level="O0"))(ms.Tensor(x), dim, keepdim)
+            out_grad = (jit(argmin_ext_backward_func, jit_level="O0"))(ms.Tensor(x), dim, keepdim)
         else:
-            output = (jit(argmin_ext_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), dim, keepdim)
-            out_grad = (jit(argmin_ext_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), dim, keepdim)
+            output = (jit(argmin_ext_forward_func, jit_level="O2"))(ms.Tensor(x), dim, keepdim)
+            out_grad = (jit(argmin_ext_backward_func, jit_level="O2"))(ms.Tensor(x), dim, keepdim)
         expect = generate_expect_forward_output(x, dim, keepdim)
         np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
         np.testing.assert_allclose(out_grad.asnumpy(), 0, rtol=1e-3)

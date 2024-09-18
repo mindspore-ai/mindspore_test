@@ -26,7 +26,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/pynative/pynative_execute.h"
@@ -177,8 +177,8 @@ void TraceRecorder::EndGraph(const py::list &file_names, const py::list &linenos
   }
 #endif
   // Run compile pipeline with func graph.
-  auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
-  (void)graph_executor->CompileInner(func_graph, args_, py::dict(), phase_, true, true);
+  auto graph_executor = pipeline::GetExecutor();
+  (void)graph_executor->CompileInner(func_graph, args_, py::dict(), phase_, true);
   MS_LOG(DEBUG) << "End compile pipeline.";
   graph_stack_.pop();
   Clear();
@@ -187,7 +187,7 @@ void TraceRecorder::EndGraph(const py::list &file_names, const py::list &linenos
 py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &args) {
   MS_LOG(DEBUG) << "Run graph, arg size: " << args.size() << ", args: " << py::str(py::cast<py::object>(args))
                 << ", phase: " << phase;
-  auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
+  auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::object res = graph_executor->Run(args, phase);
   if (IS_OUTPUT_ON(mindspore::kDebug)) {

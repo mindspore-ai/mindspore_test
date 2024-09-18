@@ -37,6 +37,7 @@ class OptimizeIRPassLib {
 
   SubstitutionPtr arithmetic_simplify_;
   SubstitutionPtr special_op_eliminate_;
+  SubstitutionPtr stop_gradient_eliminate_;
   SubstitutionPtr ad_related_special_op_eliminate_;
   SubstitutionPtr zero_like_fill_zero_;
   SubstitutionPtr mutable_op_eliminate_;
@@ -125,7 +126,7 @@ class OptimizeIRPassLib {
   SubstitutionPtr updatestate_useless_node_eliminater_;
   SubstitutionPtr updatestate_pure_node_eliminater_;
   SubstitutionPtr switch_call_monad_eliminater_;
-  SubstitutionPtr stopgrad_eliminater_;
+  SubstitutionPtr redundant_stopgrad_eliminater_;
   SubstitutionPtr load_eliminater_;
 
   // Incorporation

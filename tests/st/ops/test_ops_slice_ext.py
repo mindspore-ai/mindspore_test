@@ -66,9 +66,9 @@ def test_ops_slice_ext(context_mode):
         output_grad = slice_ext_backward_func(ms.Tensor(x), dim, start, end, step)
     else:
         output_forward = \
-            (jit(slice_ext_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_forward_func, jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
         output_grad = \
-            (jit(slice_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_backward_func, jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)
@@ -97,9 +97,9 @@ def test_ops_slice_ext_case01(context_mode):
         output_grad = slice_ext_backward_func(ms.Tensor(x), dim, start, end, step)
     else:
         output_forward = \
-            (jit(slice_ext_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_forward_func, jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
         output_grad = \
-            (jit(slice_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, start, end, step)
+            (jit(slice_ext_backward_func, jit_level="O0"))(ms.Tensor(x), dim, start, end, step)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-3)

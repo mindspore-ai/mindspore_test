@@ -17,8 +17,7 @@ import sys
 import pytest 
 from mindspore import Tensor
 from mindspore import context
-from mindspore.common.api import jit
-from ..share.utils import match_array, assert_executed_by_graph_mode
+from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 @pytest.fixture(autouse=True)  
@@ -45,7 +44,7 @@ def test_create_tensor():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-    actual = jit(fn, mode="PIJit", jit_config=cfg)()
+    actual = pi_jit_with_config(fn, jit_config=cfg)()
 
     match_array(actual.asnumpy(), expect.asnumpy())
     assert_executed_by_graph_mode(fn)
@@ -66,7 +65,7 @@ def test_create_tensor_list():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-    actual = jit(fn, mode="PIJit", jit_config=cfg)()
+    actual = pi_jit_with_config(fn, jit_config=cfg)()
 
     assert isinstance(actual, list)
     assert len(actual) == 2

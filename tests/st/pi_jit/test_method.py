@@ -16,7 +16,7 @@ class ExpandDimsTest():
         self.expandDims = ops.ExpandDims()
         self.axis = axis
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def test1(self, input_x):
         return self.expandDims(input_x, self.axis)
 

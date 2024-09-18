@@ -22,6 +22,7 @@
 #include <utility>
 #include <string>
 #include "pipeline/jit/ps/resource.h"
+#include "pipeline/jit/ps/pass.h"
 #include "backend/graph_compiler/segment_runner.h"
 #include "backend/graph_compiler/backend.h"
 
@@ -33,11 +34,17 @@ bool BootstrapAction(const ResourcePtr &resource);
 bool ParseAction(const ResourcePtr &resource);
 bool SymbolResolveAction(const ResourcePtr &resource);
 bool AutoMonadAction(const ResourcePtr &resource);
+bool GraphReusingAction(const ResourcePtr &resource);
 bool PreCConvAction(const ResourcePtr &resource);
 bool TypeInferenceAction(const ResourcePtr &resource);
 bool VmOptimizeAction(const ResourcePtr &resource);
+bool OrderEnforceAction(const ResourcePtr &resource);
+bool GetJitBpropGraph(const ResourcePtr &resource);
 bool TaskEmitAction(const ResourcePtr &resource);
 bool ExecuteAction(const ResourcePtr &resource);
+bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &passes);
+bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource);
+bool SilentCheckAction(const ResourcePtr &resource);
 #if defined(__linux__) && defined(WITH_BACKEND)
 bool StartPSSchedulerAction(const ResourcePtr &resource);
 bool DistributedSplitAction(const ResourcePtr &resource);

@@ -144,9 +144,9 @@ def test_ffn_forward_mode(mode):
     if mode == 'pynative':
         output = ffn_forward_func(x, w1, w2, expert_tokens, bias1, bias2)
     elif mode == 'KBK':
-        output = (jit(ffn_forward_func, jit_config=JitConfig(jit_level="O0")))(x, w1, w2, expert_tokens, bias1, bias2)
+        output = (jit(ffn_forward_func, jit_level="O0"))(x, w1, w2, expert_tokens, bias1, bias2)
     else:
-        output = (jit(ffn_forward_func, jit_config=JitConfig(jit_level="O2")))(x, w1, w2, expert_tokens, bias1, bias2)
+        output = (jit(ffn_forward_func, jit_level="O2"))(x, w1, w2, expert_tokens, bias1, bias2)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-1)
 
 

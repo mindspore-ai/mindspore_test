@@ -65,11 +65,11 @@ def test_square_normal(mode):
         output = square_forward_func(Tensor(x))
         output1 = square_backward_func(Tensor(x))
     elif mode == 'KBK':
-        output = (jit(square_forward_func, jit_config=JitConfig(jit_level="O0")))(Tensor(x))
-        output1 = (jit(square_backward_func, jit_config=JitConfig(jit_level="O0")))(Tensor(x))
+        output = (jit(square_forward_func, jit_level="O0"))(Tensor(x))
+        output1 = (jit(square_backward_func, jit_level="O0"))(Tensor(x))
     else:
-        output = (jit(square_forward_func, jit_config=JitConfig(jit_level="O2")))(Tensor(x))
-        output1 = (jit(square_backward_func, jit_config=JitConfig(jit_level="O2")))(Tensor(x))
+        output = (jit(square_forward_func, jit_level="O2"))(Tensor(x))
+        output1 = (jit(square_backward_func, jit_level="O2"))(Tensor(x))
 
     expect = generate_expect_forward_output(x)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4)

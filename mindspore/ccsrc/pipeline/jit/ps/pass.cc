@@ -198,6 +198,10 @@ bool RewriterAfterOptAPass(const ResourcePtr &resource) {
 REGISTER_PASS_FUNC_IMPL(RewriterAfterOptAPass)
 
 bool ConvertAfterRewriterPass(const ResourcePtr &resource) {
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return true;
+  }
   MS_EXCEPTION_IF_NULL(resource);
   FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -208,6 +212,10 @@ bool ConvertAfterRewriterPass(const ResourcePtr &resource) {
 REGISTER_PASS_FUNC_IMPL(ConvertAfterRewriterPass)
 
 bool OrderPyExecuteAfterRewriterPass(const ResourcePtr &resource) {
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return true;
+  }
   MS_EXCEPTION_IF_NULL(resource);
   FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -408,7 +416,7 @@ opt::OptPassConfig GetOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass) {
     irpass.updatestate_useless_node_eliminater_,
     irpass.updatestate_pure_node_eliminater_,
     irpass.load_eliminater_,
-    irpass.stopgrad_eliminater_,
+    irpass.redundant_stopgrad_eliminater_,
     irpass.partial_eliminate_,
     irpass.replace_applicator_,
     irpass.convert_tensor_eliminate_,
@@ -451,7 +459,7 @@ opt::OptPassConfig GetOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass) {
     irpass.updatestate_useless_node_eliminater_,
     irpass.updatestate_pure_node_eliminater_,
     irpass.load_eliminater_,
-    irpass.stopgrad_eliminater_,
+    irpass.redundant_stopgrad_eliminater_,
     irpass.print_const_string_wrapper_,
   });
 }
@@ -541,7 +549,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
   }
   // Before adjusting map_a, check GetA1A2() and GetOptPynativeGradEpiloguePhases().
   OptPassGroupMap map_a(
-    {{"expand_dump_flag", opt::OptPassConfig(opt::irpass::ExpandDumpFlag())},
+    {{kExpandDumpFlag, opt::OptPassConfig(opt::irpass::ExpandDumpFlag())},
      {"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", a_1},
@@ -589,6 +597,102 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
   return map_a;
 }
 
+opt::OptPassConfig GetJitOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass) {
+  return opt::OptPassConfig({
+    irpass.switch_defer_inline_,
+    irpass.switch_layer_defer_inline_,
+    irpass.switch_simplify_,
+
+    // Safe inlining
+    irpass.inline_,
+    irpass.updatestate_useless_node_eliminater_,
+    irpass.updatestate_pure_node_eliminater_,
+    irpass.load_eliminater_,
+    irpass.redundant_stopgrad_eliminater_,
+    irpass.partial_eliminate_,
+    irpass.replace_applicator_,
+    irpass.convert_tensor_eliminate_,
+
+    // Miscellaneous
+    irpass.list_to_tuple_eliminator_,
+    irpass.tuple_to_list_eliminator_,
+    irpass.tuple_list_get_item_eliminator_,
+    irpass.tuple_list_set_item_eliminator_,
+    irpass.make_slice_get_slice_eliminator_,
+    irpass.tuple_list_get_item_depend_reorder_,
+    irpass.tuple_list_convert_item_index_to_positive_,
+    irpass.dict_get_item_eliminator_,
+    irpass.dict_get_item_const_eliminator_,
+    irpass.dict_set_item_eliminator_,
+
+    irpass.environ_get_eliminate_,
+    irpass.environ_get_add_eliminate_,
+    irpass.environ_get_set_eliminate_,
+    irpass.environ_get_depend_swap_,
+    irpass.environ_add_const_eliminate_,
+
+    irpass.cast_eliminate_,
+    irpass.reshape_eliminate_,
+    irpass.reduce_eliminate_,
+    irpass.tile_eliminate_,
+    irpass.transpose_eliminate_,
+    irpass.minmaximum_grad_,
+
+    // Arithmetic simplifications
+    irpass.arithmetic_simplify_,
+    irpass.addn_zero_filter_,
+    irpass.accumulaten_eliminater_,
+
+    // a2
+    irpass.specialize_transform_,
+    irpass.merge_addn_,
+    irpass.compare_switch_simplify_,
+    irpass.addn_check_dump_,
+    irpass.depend_value_elim_,
+
+    // a3
+    irpass.same_eliminate_,
+    irpass.row_tensor_add_zeros_like_,
+    irpass.split_environ_get_set_with_tuple_value_,
+
+    // other
+    irpass.value_based_eliminate_,
+    irpass.print_const_string_wrapper_,
+    irpass.zero_like_fill_zero_,
+  });
+}
+
+OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
+  OptPassGroupMap map_a(
+    {{"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
+     {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
+     {"a_1", GetJitOptPassA1(irpass)},
+     {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
+     {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},
+     {"updatestate_loads_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater())},
+     {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
+     {"updatestate_useless_node_eliminater", opt::OptPassConfig({irpass.updatestate_useless_node_eliminater_})},
+     {"accelerated_algorithm", opt::OptPassConfig({irpass.less_batch_normalization_})},
+     {"meta_shard_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaShardFg())},
+     {"get_grad_eliminate_", opt::OptPassConfig({irpass.get_grad_eliminate_})},
+     {"merge_forward", opt::OptPassConfig(ad::MergeForward)},
+     {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
+     {"cell_reuse_handle_not_recompute_node_pass",
+      opt::OptPassConfig({irpass.remove_not_recompute_node_}, false, true)},
+     {"j_node_and_user_rematch", opt::OptPassConfig({irpass.j_node_and_user_rematch_})},
+     {"inplace_validation", opt::OptPassConfig(InplaceValidationWrapper)},
+     {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
+     {"inplace_validation_after_expand", opt::OptPassConfig(InplaceValidationAfterExpandWrapper)},
+     {"replace_old_param", opt::OptPassConfig({irpass.replace_old_param_})},
+     {"inline_without_move", opt::OptPassConfig({irpass.inline_without_move_})},
+     {"renormalize", opt::OptPassConfig::Renormalize()},
+     {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
+     {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
+     {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},
+     {"cse", opt::OptPassConfig(opt::CSEPass(false))}});
+  return map_a;
+}
+
 OptPassGroupMap GetA1A2(const opt::irpass::OptimizeIRPassLib &irpass) {
   auto opt_a = GetOptPassesA(irpass);
   constexpr auto a1_a2_len = 11;
@@ -607,7 +711,7 @@ OptPassGroupMap GetOptPassesAfterCconv(const opt::irpass::OptimizeIRPassLib &irp
     irpass.updatestate_pure_node_eliminater_,
     irpass.load_eliminater_,
     irpass.switch_call_monad_eliminater_,
-    irpass.stopgrad_eliminater_,
+    irpass.redundant_stopgrad_eliminater_,
     irpass.partial_eliminate_,
     irpass.slice_to_tuple_,
   });
@@ -621,6 +725,32 @@ OptPassGroupMap GetOptPassesAfterCconv(const opt::irpass::OptimizeIRPassLib &irp
                          {"updatestate_assign_eliminate", updatestate_assign_eliminate},
                          {"updatestate_loads_eliminate", updatestate_loads_eliminate},
                          {"cse", opt::OptPassConfig(opt::CSEPass(false))},
+                         {"renormalize", opt::OptPassConfig::Renormalize()}});
+
+  return map_a;
+}
+
+OptPassGroupMap GetJitOptPassesAfterCconv(const opt::irpass::OptimizeIRPassLib &irpass) {
+  opt::OptPassConfig c_1 = opt::OptPassConfig({
+    // Safe inlining,
+    irpass.inline_,
+    irpass.updatestate_useless_node_eliminater_,
+    irpass.updatestate_pure_node_eliminater_,
+    irpass.load_eliminater_,
+    irpass.switch_call_monad_eliminater_,
+    irpass.partial_eliminate_,
+  });
+  opt::OptPassConfig updatestate_depend_eliminate = opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater());
+  opt::OptPassConfig updatestate_assign_eliminate = opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater());
+  opt::OptPassConfig updatestate_loads_eliminate = opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater());
+
+  OptPassGroupMap map_a({{"c_1", c_1},
+                         {"parameter_eliminate", opt::OptPassConfig(opt::irpass::ParameterEliminator())},
+                         {"updatestate_depend_eliminate", updatestate_depend_eliminate},
+                         {"updatestate_assign_eliminate", updatestate_assign_eliminate},
+                         {"updatestate_loads_eliminate", updatestate_loads_eliminate},
+                         {"cse", opt::OptPassConfig(opt::CSEPass(false))},
+                         {"call_graph_tuple_transform", opt::OptPassConfig({irpass.call_graph_tuple_transform_})},
                          {"renormalize", opt::OptPassConfig::Renormalize()}});
 
   return map_a;
@@ -661,7 +791,7 @@ OptPassGroupMap GetOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
                                                irpass.updatestate_useless_node_eliminater_,
                                                irpass.updatestate_pure_node_eliminater_,
                                                irpass.load_eliminater_,
-                                               irpass.stopgrad_eliminater_,
+                                               irpass.redundant_stopgrad_eliminater_,
                                                irpass.special_op_eliminate_,
                                                irpass.environ_get_eliminate_,
                                                irpass.environ_get_add_eliminate_,
@@ -748,6 +878,29 @@ OptPassGroupMap GetSymbolEngineOptPass(const opt::irpass::OptimizeIRPassLib &irp
   return map;
 }
 
+OptPassGroupMap GetJitOptPassesB(const opt::irpass::OptimizeIRPassLib &irpass) {
+  opt::OptPassConfig frontend_op_eliminate = opt::OptPassConfig({
+    irpass.stop_gradient_eliminate_,
+    irpass.mutable_op_eliminate_,
+    irpass.convert_tensor_all_eliminate_,
+    irpass.check_bprop_eliminate_,
+    irpass.special_op_eliminate_,
+    irpass.row_tensor_eliminate_,
+  });
+
+  opt::OptPassConfig inline_after_opt_a = opt::OptPassConfig(
+    {
+      irpass.reset_defer_inline_,
+      irpass.inline_,
+      irpass.tuple_list_get_item_eliminator_,
+    },
+    false, true);
+
+  OptPassGroupMap opt_map(
+    {{"frontend_op_eliminate", frontend_op_eliminate}, {"inline_after_opt_a", inline_after_opt_a}});
+  return opt_map;
+}
+
 static mindspore::HashMap<std::string, std::shared_ptr<Optimizer>> g_pass_opts = {};
 
 void InitOpt(const ResourcePtr &resource) {
@@ -768,6 +921,10 @@ void InitOpt(const ResourcePtr &resource) {
       Optimizer::MakeOptimizer("opt_after_recompute", resource, GetAfterRecomputePass(irpass));
     g_pass_opts["symbol_engine_opt"] =
       Optimizer::MakeOptimizer("symbol_engine_opt", resource, GetSymbolEngineOptPass(irpass), true, true);
+    g_pass_opts["jit_opt_a"] = Optimizer::MakeOptimizer("jit_opt_a", resource, GetJitOptPassesA(irpass));
+    g_pass_opts["jit_opt_b"] = Optimizer::MakeOptimizer("jit_opt_b", resource, GetJitOptPassesB(irpass));
+    g_pass_opts["jit_opt_after_cconv"] =
+      Optimizer::MakeOptimizer("jit_opt_after_cconv", resource, GetJitOptPassesAfterCconv(irpass), false, true);
   }
 }
 }  // namespace
@@ -800,12 +957,15 @@ bool OptPassGroup(const ResourcePtr &resource, const std::string &name) {
 
 bool OptPassA1A2(const ResourcePtr &resource) { return OptPassGroup(resource, "a1a2"); }
 bool OptPassAGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_a"); }
+bool JitOptPassAGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "jit_opt_a"); }
 bool OptPassBGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_b"); }
 bool OptPassAfterCconvGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_after_cconv"); }
+bool JitOptPassAfterCconvGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "jit_opt_after_cconv"); }
 bool OptPassTransformGraphGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_trans_graph"); }
 bool ControlGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_control"); }
 bool PrepareGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_prepare"); }
 bool OptAfterRecomputeGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "opt_after_recompute"); }
+bool JitOptPassBGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "jit_opt_b"); }
 
 bool OptPassRNGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "renormal"); }
 bool SymEngOptGroup(const ResourcePtr &resource) { return OptPassGroup(resource, "symbol_engine_opt"); }
@@ -1151,12 +1311,40 @@ bool RemoveValueNodeDuplicationsPass(const ResourcePtr &resource) {
   return true;
 }
 
+bool RemoveValueNodeDuplicationsPassForJit(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  if (resource->func_graph() == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Remove value node duplications error.";
+  }
+  auto manager = resource->manager();
+  HashCache hash_cache;
+  HashValue hashes;
+  // Remove duplicated value nodes across all graphs in manager
+  for (auto &fg : manager->func_graphs()) {
+    auto value_nodes = fg->value_nodes();
+    for (const auto &value_pair : value_nodes) {
+      auto prim = GetValueNode<PrimitivePtr>(value_pair.first);
+      if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
+        continue;
+      }
+      TryToDoReplace(manager.get(), value_pair.first, &hash_cache, &hashes);
+    }
+  }
+  return true;
+}
+
 bool CconvPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   MS_EXCEPTION_IF_NULL(resource->func_graph());
   FuncGraphPtr func_graph = resource->func_graph();
   FuncGraphPtr new_fg = LiftingClone(func_graph);
   resource->set_func_graph(new_fg);
+  return true;
+}
+
+bool ExpandDumpFlagPass(const ResourcePtr &resource) {
+  auto expand_dump_flag_opt = opt::irpass::ExpandDumpFlag();
+  expand_dump_flag_opt(resource);
   return true;
 }
 
@@ -1389,27 +1577,27 @@ REGISTER_PASS_FUNC_IMPL(CommOpAddAttrs)
 REGISTER_PASS_FUNC_IMPL(AddCommOpReusePass)
 
 std::vector<PassItem> kVmPasses = {
-  {"py_interpret_to_execute", PyInterpretToExecutePass},
-  {"rewriter_before_opt_a", RewriterBeforeOptAPass},
+  {kPyInterpretToExecute, PyInterpretToExecutePass},
+  {kRewriterBeforeOptA, RewriterBeforeOptAPass},
   {"opt_a", OptPassAGroup},
-  {"py_interpret_to_execute_after_opt_a", PyInterpretToExecutePass},
+  {kPyInterpretToExecuteAfterOptA, PyInterpretToExecutePass},
   {"slice_cell_reuse_recomputed_activation", SliceReuseRecomputedActivationPass},
-  {"rewriter_after_opt_a", RewriterAfterOptAPass},
-  {"convert_after_rewriter", ConvertAfterRewriterPass},
-  {"order_py_execute_after_rewriter", OrderPyExecuteAfterRewriterPass},
+  {kRewriterAfterOptA, RewriterAfterOptAPass},
+  {kConvertAfterRewriter, ConvertAfterRewriterPass},
+  {kOrderPyExecuteAfterRewriter, OrderPyExecuteAfterRewriterPass},
   {"opt_b", OptPassBGroup},
   {"optimize_parallel_all_gather_comm", OptimizeParallelAllGatherCommPass},
   {"overlap_param_gather", OptimizeParamGatherPass},
-  {"cconv", CconvPass},
-  {"loop_unroll", LoopUnrollPass},
+  {kCconv, CconvPass},
+  {kLoopUnroll, LoopUnrollPass},
   {"opt_after_cconv", OptPassAfterCconvGroup},
-  {"remove_dup_value", RemoveValueNodeDuplicationsPass},
-  {"tuple_transform", OptPassTransformGraphGroup},
-  {"partial_unused_args_eliminate", PartialUnusedArgsEliminatePass},
+  {kRemoveDupValue, RemoveValueNodeDuplicationsPass},
+  {kTupleTransform, OptPassTransformGraphGroup},
+  {kPartialUnusedArgsEliminate, PartialUnusedArgsEliminatePass},
   {"add_cache_embedding", AddCacheEmbeddingPass},
   {"add_recomputation", AddRecomputationPass},
   {"cse_after_recomputation", OptAfterRecomputeGroup},
-  {"environ_conv", EnvironConversionPass},
+  {kEnvironConv, EnvironConversionPass},
   {"swap_dp_allreduce_reducescatter", SwapDpAllReduceReduceScatterPass},
   {"bias_add_comm_swap", BiasAddCommSwap},
   {"label_micro_interleaved_index", LabelMicroInterleavedIndexPass},
@@ -1445,10 +1633,10 @@ std::vector<PassItem> kVmPasses = {
 
 std::vector<PassItem> kPynativePasses = {{"opt_a", OptPassAGroup},
                                          {"opt_b", OptPassBGroup},
-                                         {"cconv", CconvPass},
+                                         {kCconv, CconvPass},
                                          {"transform_top", TransformTopGraphPass},
                                          {"transform_graph", OptPassTransformGraphGroup}};
 
-std::vector<PassItem> kInlinePasses = {{"rewriter_before_opt_a", RewriterBeforeOptAPass}, {"a1a2", OptPassA1A2}};
+std::vector<PassItem> kInlinePasses = {{kRewriterBeforeOptA, RewriterBeforeOptAPass}, {"a1a2", OptPassA1A2}};
 }  // namespace pipeline
 }  // namespace mindspore

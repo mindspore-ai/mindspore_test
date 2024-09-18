@@ -51,11 +51,11 @@ def test_ones_like_normal(mode):
         y = ones_like_forward_func(input_tensor, dtype)
         input_grad = ones_like_backward_func(input_tensor, dtype1)
     elif mode == 'KBK':
-        y = (jit(ones_like_forward_func, jit_config=JitConfig(jit_level="O0")))(input_tensor, dtype)
-        input_grad = (jit(ones_like_backward_func, jit_config=JitConfig(jit_level="O0")))(input_tensor, dtype1)
+        y = (jit(ones_like_forward_func, jit_level="O0"))(input_tensor, dtype)
+        input_grad = (jit(ones_like_backward_func, jit_level="O0"))(input_tensor, dtype1)
     else:
-        y = (jit(ones_like_forward_func, jit_config=JitConfig(jit_level="O2")))(input_tensor, dtype)
-        input_grad = (jit(ones_like_backward_func, jit_config=JitConfig(jit_level="O2")))(input_tensor, dtype1)
+        y = (jit(ones_like_forward_func, jit_level="O2"))(input_tensor, dtype)
+        input_grad = (jit(ones_like_backward_func, jit_level="O2"))(input_tensor, dtype1)
     np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
     np.testing.assert_allclose(input_grad.asnumpy(), expect_grad, rtol=1e-5)
 

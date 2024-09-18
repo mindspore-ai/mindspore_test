@@ -74,11 +74,11 @@ def test_median_dim_normal(mode):
             y = median_forward_func(input_tensor, axis, keepdim)
             grad = median_backward_func(input_tensor, axis, keepdim)
         elif mode == 'KBK':
-            y = (jit(median_forward_func, jit_config=JitConfig(jit_level="O0")))(input_tensor, axis, keepdim)
-            grad = (jit(median_backward_func, jit_config=JitConfig(jit_level="O0")))(input_tensor, axis, keepdim)
+            y = (jit(median_forward_func, jit_level="O0"))(input_tensor, axis, keepdim)
+            grad = (jit(median_backward_func, jit_level="O0"))(input_tensor, axis, keepdim)
         else:
-            y = (jit(median_forward_func, jit_config=JitConfig(jit_level="O2")))(input_tensor, axis, keepdim)
-            grad = (jit(median_backward_func, jit_config=JitConfig(jit_level="O2")))(input_tensor, axis, keepdim)
+            y = (jit(median_forward_func, jit_level="O2"))(input_tensor, axis, keepdim)
+            grad = (jit(median_backward_func, jit_level="O2"))(input_tensor, axis, keepdim)
         if isinstance(y, tuple):
             np.testing.assert_allclose(y[0].asnumpy(), expect_y, rtol=1e-5)
             np.testing.assert_allclose(y[1].asnumpy(), expect_indices, rtol=1e-5)

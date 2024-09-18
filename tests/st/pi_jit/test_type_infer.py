@@ -6,7 +6,7 @@ from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get
 from mindspore import Tensor, jit, context, ops
 import mindspore.common.dtype as mstype
 import numpy as np
-from .share.utils import match_array
+from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
 @pytest.fixture(autouse=True)  
@@ -50,7 +50,7 @@ class Obj:
         return 1
 
 
-@jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+@pi_jit_with_config(jit_config={"compile_by_trace": False}) # One-stage will fix it later
 def func(self, x):
     tpe = kw_inline_test()
     lst = list(tpe)
@@ -98,7 +98,7 @@ class UserDict:
         return self.item[k]
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def dict_test(self: dict, **kwvargs):
     seq = (("k2", 1), ("k3", 2))
     self.update()
@@ -126,7 +126,7 @@ def test_dict_update():
     assert a == b
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def test_creat_builtins_instance():
     """
     Feature: Builtin Instances Test
@@ -153,7 +153,7 @@ def test_creat_builtins_instance():
     return c, d, e, f, g, h, i, k, l, m, n, o, p, q
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def slice_test(x):
     # NOTE: mindspore can't resolve call 'slice' class
     a = x[slice(None)]
@@ -181,7 +181,7 @@ def test_slice():
     match_array(e, f, 0)
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def builtin_func_test(x, *args):
     a = len(x)
     b = abs(x)
@@ -224,7 +224,7 @@ def test_attr(intep):
     Description: For user defined tensor attribute and method attribute is PSJit unsupported
     Expectation: The results should match for both modes.
     """
-    @jit(mode="PIJit", jit_config={"interpret_captured_code": intep})
+    @pi_jit_with_config(jit_config={"interpret_captured_code": intep})
     def attr_access(x):
         return relu(x), x.astype.__self__, x.attr
 
@@ -310,11 +310,11 @@ def test_unpack_call(test_user_defined_dict):
     def forward1(*args, **kwargs):
         return forward2(*args, **kwargs)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def unpack_call():
         return forward1(*args, **kwargs)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def unpack_call2():
         return forward1(1, 2, k1=1, k2=2)
 
@@ -352,7 +352,7 @@ def test_super_call():
 
     instance = Test()
     exceted = super_call(instance)
-    result = jit(fn=super_call, mode="PIJit")(instance)
+    result = jit(function=super_call, capture_mode="bytecode")(instance)
 
     assert exceted == result
 
@@ -389,7 +389,7 @@ def test_mix_0(mode: int):
     Expectation: The results should match for both modes.
     """
 
-    @jit(mode="PIJit", jit_config={"kEnableEliminateUnusedOperation": True, "loop_unrolling": True})
+    @pi_jit_with_config(jit_config={"kEnableEliminateUnusedOperation": True, "loop_unrolling": True})
     def inner_func(mode):
         index = 1 if mode else 0
         x = [Tensor([1]), 1]

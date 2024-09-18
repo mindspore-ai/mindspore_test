@@ -17,7 +17,7 @@ def func_impl(a, b):
     return ops.MatMul()(a, b)
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def func_with_anotion(a, b):
     return func_impl(a, b)
 
