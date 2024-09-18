@@ -72,12 +72,13 @@ using ConstMap = mindspore::HashMap<std::string, inner::NodePtr>;
 class PatternTree {
  public:
   // pattern_str->ex."Pow(Exp(A),B)=Exp(Mul(A,B))"
-  explicit PatternTree(const std::string &pattern_str) { (void)BuildTree(pattern_str); }
+  explicit PatternTree(const std::string &pattern_str) : pattern_str_(pattern_str) { (void)BuildTree(pattern_str); }
   virtual ~PatternTree() = default;
 
   PatternNodePtr lhs_root() { return lhs_root_; }
   PatternNodePtr rhs_root() { return rhs_root_; }
   std::string GetRootOp() const { return lhs_root_ == nullptr ? "" : lhs_root_->op(); }
+  std::string GetPatternStr() const { return pattern_str_; }
   // build tree with expression string
   PatternNodePtr BuildTree(const std::string &pattern_str);
   // traverse pattern tree, return order is topological order
@@ -114,6 +115,7 @@ class PatternTree {
  private:
   PatternNodePtr lhs_root_ = nullptr;  // left side's root
   PatternNodePtr rhs_root_ = nullptr;  // right side's root
+  std::string pattern_str_;
 };
 
 std::string CutStr(const string &s, size_t start_pos = 0, size_t len = std::string::npos) {
@@ -201,6 +203,60 @@ std::string CleanStr(const std::string &s) {
   return res;
 }
 
+template <typename TM>
+bool CheckTensorValue(double expect, const inner::NodePtr &tensor) {
+  TM *data = static_cast<TM *>(std::static_pointer_cast<inner::ConstTensorNode>(tensor)->data()->data_c());
+  for (size_t elem = 0; elem < tensor->tensor_size(); elem++) {
+    if (*(data + elem) != static_cast<TM>(expect)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CheckNodeValue(double expect, const inner::NodePtr &node) {
+  switch (node->type) {
+    case TypeId::kNumberTypeUInt8: {
+      return CheckTensorValue<uint8_t>(expect, node);
+    }
+    case TypeId::kNumberTypeInt8: {
+      return CheckTensorValue<int8_t>(expect, node);
+    }
+    case TypeId::kNumberTypeInt16: {
+      return CheckTensorValue<int16_t>(expect, node);
+    }
+    case TypeId::kNumberTypeInt32: {
+      return CheckTensorValue<int32_t>(expect, node);
+    }
+    case TypeId::kNumberTypeInt64: {
+      return CheckTensorValue<int64_t>(expect, node);
+    }
+    case TypeId::kNumberTypeUInt16: {
+      return CheckTensorValue<uint16_t>(expect, node);
+    }
+    case TypeId::kNumberTypeUInt32: {
+      return CheckTensorValue<uint32_t>(expect, node);
+    }
+    case TypeId::kNumberTypeUInt64: {
+      return CheckTensorValue<uint64_t>(expect, node);
+    }
+    case TypeId::kNumberTypeFloat16: {
+      return CheckTensorValue<float16>(expect, node);
+    }
+    case TypeId::kNumberTypeFloat32: {
+      return CheckTensorValue<float>(expect, node);
+    }
+    case TypeId::kNumberTypeFloat64: {
+      return CheckTensorValue<double>(expect, node);
+    }
+    case TypeId::kNumberTypeBFloat16: {
+      return CheckTensorValue<bfloat16>(expect, node);
+    }
+    default:
+      return false;
+  }
+}
+
 bool CheckCurNode(const inner::NodePtr &tmp_node, const std::string &tmp_pattern_op,
                   const std::shared_ptr<ParaMap> &para_to_ref, const std::shared_ptr<ConstMap> &const_to_ref) {
   // put lite graph node's mapping to pattern node into "para_to_ref" and "const_to_ref"
@@ -219,9 +275,9 @@ bool CheckCurNode(const inner::NodePtr &tmp_node, const std::string &tmp_pattern
       if (tmp_node->NodeType() != inner::NType::Tensor) {
         return false;
       }
-      auto node_value_str = std::static_pointer_cast<inner::ConstTensorNode>(tmp_node)->ToString();
-      double node_value = std::stod(CleanStr(node_value_str));
       if (StartWith(tmp_pattern_op, "const")) {
+        auto node_value_str = std::static_pointer_cast<inner::ConstTensorNode>(tmp_node)->ToString();
+        double node_value = std::stod(CleanStr(node_value_str));
         if (const_to_ref->find(tmp_pattern_op) != const_to_ref->end()) {
           auto pattern_value_str =
             std::static_pointer_cast<inner::ConstTensorNode>((*const_to_ref)[tmp_pattern_op])->ToString();
@@ -234,9 +290,7 @@ bool CheckCurNode(const inner::NodePtr &tmp_node, const std::string &tmp_pattern
         }
       } else {
         double pattern_value = std::stod(tmp_pattern_op);
-        if (pattern_value != node_value) {
-          return false;
-        }
+        return CheckNodeValue(pattern_value, tmp_node);
       }
       break;
     }
@@ -904,7 +958,6 @@ bool OutsideRely(const inner::NodePtrList &nodes, const inner::NodePtr &root) {
 }
 
 struct Expression {
-  size_t id;
   std::string math_expr;
   std::function<PatternTreePtr(const std::string &)> func;
 };
@@ -913,102 +966,103 @@ struct Expression {
 
 static std::vector<Expression> expressions = {
   // add
-  {1, "Add(A,0)=A", EXPR_PATTERN(PatternTree)},
-  {2, "Add(Mul(A,C),Mul(A,B))=Mul(A,Add(B,C))", EXPR_PATTERN(PatternTree)},
-  {3, "Add(Add(A,const1),const2)=Add(A,Add(const1,const2))", EXPR_PATTERN(PatternTree)},
-  {4, "Add(A,Neg(A))=0", EXPR_PATTERN(PatternTree)},
-  {5, "Add(Add(A,B),Neg(A))=B", EXPR_PATTERN(PatternTree)},
-  {6, "Add(Add(A,B),Add(Neg(A),C))=Add(B,C)", EXPR_PATTERN(PatternTree)},
+  {"Add(A,0)=A", EXPR_PATTERN(PatternTree)},
+  {"Add(Mul(A,C),Mul(A,B))=Mul(A,Add(B,C))", EXPR_PATTERN(PatternTree)},
+  {"Add(Add(A,const1),const2)=Add(A,Add(const1,const2))", EXPR_PATTERN(PatternTree)},
+  {"Add(A,Neg(A))=0", EXPR_PATTERN(PatternTree)},
+  {"Add(Add(A,B),Neg(A))=B", EXPR_PATTERN(PatternTree)},
+  {"Add(Add(A,B),Add(Neg(A),C))=Add(B,C)", EXPR_PATTERN(PatternTree)},
   // sub
-  {7, "Sub(A,0)=A", EXPR_PATTERN(PatternTree)},
-  {8, "Sub(A,const1)=Add(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
-  {9, "Sub(Mul(A,C),Mul(A,B))=Mul(A,Sub(B,C))", EXPR_PATTERN(PatternTree)},
-  {10, "Sub(Mul(A,C),Mul(B,C))=Mul(Sub(A,B),C)", EXPR_PATTERN(PatternTree)},
+  {"Sub(A,0)=A", EXPR_PATTERN(PatternTree)},
+  {"Sub(A,const1)=Add(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
+  {"Sub(Mul(A,C),Mul(A,B))=Mul(A,Sub(B,C))", EXPR_PATTERN(PatternTree)},
+  {"Sub(Mul(A,C),Mul(B,C))=Mul(Sub(A,B),C)", EXPR_PATTERN(PatternTree)},
   // log
-  {11, "Log(Exp(A))=A", EXPR_PATTERN(PatternTree)},
-  {12, "Log(Pow(A,B))=Mul(B,Log(Abs(A)))", EXPR_PATTERN(PatternTree)},
-  {13, "Log(Sqrt(A))=Mul(0.5,Log(A))", EXPR_PATTERN(PatternTree)},
-  {14, "Log(Rsqrt(A))=Mul(-0.5,Log(A))", EXPR_PATTERN(PatternTree)},
+  {"Log(Exp(A))=A", EXPR_PATTERN(PatternTree)},
+  {"Log(Pow(A,B))=Mul(B,Log(Abs(A)))", EXPR_PATTERN(PatternTree)},
+  {"Log(Sqrt(A))=Mul(0.5,Log(A))", EXPR_PATTERN(PatternTree)},
+  {"Log(Rsqrt(A))=Mul(-0.5,Log(A))", EXPR_PATTERN(PatternTree)},
   // pow
-  {15, "Pow(A,1)=A", EXPR_PATTERN(PatternTree)},
-  {16, "Pow(Exp(A),B)=Exp(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {17, "Pow(A,2)=Mul(A,A)", EXPR_PATTERN(PatternTree)},
-  {18, "Pow(A,-1)=Reciprocal(A)", EXPR_PATTERN(PatternTree)},
+  {"Pow(A,1)=A", EXPR_PATTERN(PatternTree)},
+  {"Pow(Exp(A),B)=Exp(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Pow(A,2)=Mul(A,A)", EXPR_PATTERN(PatternTree)},
+  {"Pow(A,-1)=Reciprocal(A)", EXPR_PATTERN(PatternTree)},
   // sqrt
-  {19, "Sqrt(Mul(A,A))=Abs(A)", EXPR_PATTERN(PatternTree)},
-  {20, "Rsqrt(Pow(A,-2))=Abs(A)", EXPR_PATTERN(PatternTree)},
-  {21, "Rsqrt(RealDiv(1,A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
-  {22, "Rsqrt(Reciprocal(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  {"Sqrt(Mul(A,A))=Abs(A)", EXPR_PATTERN(PatternTree)},
+  {"Rsqrt(Pow(A,-2))=Abs(A)", EXPR_PATTERN(PatternTree)},
+  {"Rsqrt(RealDiv(1,A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  {"Rsqrt(Reciprocal(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
   // select
-  {23, "Select(A,B,B)=B", EXPR_PATTERN(PatternTree)},
+  {"Select(A,B,B)=B", EXPR_PATTERN(PatternTree)},
   // Neg
-  {24, "Neg(Neg(A))=A", EXPR_PATTERN(PatternTree)},
+  {"Neg(Neg(A))=A", EXPR_PATTERN(PatternTree)},
   // mul
-  {25, "Mul(Mul(A,const1),Mul(B,const2))=Mul(Mul(A,B),Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
-  {26, "Mul(Mul(A,const1),const2)=Mul(A,Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
-  {27, "Mul(Exp(A),Exp(B))=Exp(Add(A,B))", EXPR_PATTERN(PatternTree)},
-  {28, "Mul(Mul(Exp(A),C),Exp(B))=Mul(Exp(Add(A,B)),C)", EXPR_PATTERN(PatternTree)},
-  {29, "Mul(Mul(Exp(A),C),Mul(Exp(B),D))=Mul(Exp(Add(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
-  {30, "Mul(Sqrt(A),Sqrt(A))=A", EXPR_PATTERN(PatternTree)},
-  {31, "Mul(Mul(A,Sqrt(B)),Mul(C,Sqrt(B)))=Mul(Mul(A,B),C)", EXPR_PATTERN(PatternTree)},
-  {32, "Mul(Mul(A,Sqrt(B)),Sqrt(B))=Mul(A,B)", EXPR_PATTERN(PatternTree)},
-  {33, "Mul(Sqrt(A),Sqrt(B))=Sqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {34, "Mul(Rsqrt(A),Rsqrt(A))=Reciprocal(A)", EXPR_PATTERN(PatternTree)},
-  {35, "Mul(Mul(A,Rsqrt(B)),Rsqrt(B))=RealDiv(A,B)", EXPR_PATTERN(PatternTree)},
-  {36, "Mul(Mul(A,Rsqrt(B)),Mul(C,Rsqrt(B)))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
-  {37, "Mul(Rsqrt(A),Rsqrt(B))=Rsqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {38, "Mul(A,Rsqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
-  {39, "Mul(Abs(A),Abs(B))=Abs(Mul(A,B))", EXPR_PATTERN(PatternTree)},
-  {40, "Mul(Mul(Abs(A),C),Abs(B))=Mul(Abs(Mul(A,B)),C)", EXPR_PATTERN(PatternTree)},
-  {41, "Mul(Mul(Abs(A),C),Mul(Abs(B),D))=Mul(Abs(Mul(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
-  {42, "Mul(Neg(A),const1)=Mul(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
+  {"Mul(A,1)=A", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,const1),Mul(B,const2))=Mul(Mul(A,B),Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,const1),const2)=Mul(A,Mul(const1,const2))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Exp(A),Exp(B))=Exp(Add(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Exp(A),C),Exp(B))=Mul(Exp(Add(A,B)),C)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Exp(A),C),Mul(Exp(B),D))=Mul(Exp(Add(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Sqrt(A),Sqrt(A))=A", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Sqrt(B)),Mul(C,Sqrt(B)))=Mul(Mul(A,B),C)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Sqrt(B)),Sqrt(B))=Mul(A,B)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Sqrt(A),Sqrt(B))=Sqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Rsqrt(A),Rsqrt(A))=Reciprocal(A)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Rsqrt(B)),Rsqrt(B))=RealDiv(A,B)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(A,Rsqrt(B)),Mul(C,Rsqrt(B)))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Rsqrt(A),Rsqrt(B))=Rsqrt(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(A,Rsqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Abs(A),Abs(B))=Abs(Mul(A,B))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Abs(A),C),Abs(B))=Mul(Abs(Mul(A,B)),C)", EXPR_PATTERN(PatternTree)},
+  {"Mul(Mul(Abs(A),C),Mul(Abs(B),D))=Mul(Abs(Mul(A,B)),Mul(C,D))", EXPR_PATTERN(PatternTree)},
+  {"Mul(Neg(A),const1)=Mul(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
   // realdiv
-  {43, "RealDiv(A,1)=A", EXPR_PATTERN(PatternTree)},
-  {44, "RealDiv(Exp(A),Exp(B))=Exp(Sub(A,B))", EXPR_PATTERN(PatternTree)},
-  {45, "RealDiv(A,Exp(B))=Mul(A,Exp(Neg(B)))", EXPR_PATTERN(PatternTree)},
-  {46, "RealDiv(A,Pow(B,const1))=Mul(A,Pow(B,Neg(const1)))", EXPR_PATTERN(PatternTree)},
-  {47, "RealDiv(A,Sqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
-  {48, "RealDiv(A,Sqrt(B))=Mul(A,Rsqrt(B))", EXPR_PATTERN(PatternTree)},
-  {49, "RealDiv(A,Rsqrt(B))=Mul(A,Sqrt(B))", EXPR_PATTERN(PatternTree)},
-  {50, "RealDiv(A,const1)=Mul(A,Reciprocal(const1))", EXPR_PATTERN(FloatCheckPatternTree)},
-  {51, "RealDiv(RealDiv(A,B),RealDiv(C,D))=RealDiv(Mul(A,D),Mul(B,C))", EXPR_PATTERN(PatternTree)},
-  {52, "RealDiv(Neg(A),const1)=RealDiv(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
-  {53, "RealDiv(RealDiv(A,B),C)=RealDiv(A,Mul(B,C))", EXPR_PATTERN(PatternTree)},
-  {54, "RealDiv(A,RealDiv(B,C))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,1)=A", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(Exp(A),Exp(B))=Exp(Sub(A,B))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Exp(B))=Mul(A,Exp(Neg(B)))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Pow(B,const1))=Mul(A,Pow(B,Neg(const1)))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Sqrt(A))=Sqrt(A)", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Sqrt(B))=Mul(A,Rsqrt(B))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,Rsqrt(B))=Mul(A,Sqrt(B))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,const1)=Mul(A,Reciprocal(const1))", EXPR_PATTERN(FloatCheckPatternTree)},
+  {"RealDiv(RealDiv(A,B),RealDiv(C,D))=RealDiv(Mul(A,D),Mul(B,C))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(Neg(A),const1)=RealDiv(A,Neg(const1))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(RealDiv(A,B),C)=RealDiv(A,Mul(B,C))", EXPR_PATTERN(PatternTree)},
+  {"RealDiv(A,RealDiv(B,C))=RealDiv(Mul(A,C),B)", EXPR_PATTERN(PatternTree)},
   // reduce1, B, C, D are all axes input
-  {55, "ReduceSum(ReduceSum(A,B),C)=ReduceSum(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
-  {56, "ReduceMin(ReduceMin(A,B),C)=ReduceMin(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
-  {57, "ReduceMax(ReduceMax(A,B),C)=ReduceMax(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
+  {"ReduceSum(ReduceSum(A,B),C)=ReduceSum(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
+  {"ReduceMin(ReduceMin(A,B),C)=ReduceMin(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
+  {"ReduceMax(ReduceMax(A,B),C)=ReduceMax(A,D)", EXPR_PATTERN(ExtraReduce1PatternTree)},
   // reduce2, B is axes input
-  {58, "ReduceSum(Neg(A),B)=Neg(ReduceSum(A,B))", EXPR_PATTERN(ExtraReduce2PatternTree)},
-  {59, "ReduceSum(RealDiv(A,const1),B)=RealDiv(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
-  {60, "ReduceSum(Mul(A,const1),B)=Mul(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
-  {61, "CReal(Complex(A,B))=A", EXPR_PATTERN(PatternTree)},
-  {62, "CImag(Complex(A,B))=B", EXPR_PATTERN(PatternTree)},
+  {"ReduceSum(Neg(A),B)=Neg(ReduceSum(A,B))", EXPR_PATTERN(ExtraReduce2PatternTree)},
+  {"ReduceSum(RealDiv(A,const1),B)=RealDiv(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
+  {"ReduceSum(Mul(A,const1),B)=Mul(ReduceSum(A,B),const1)", EXPR_PATTERN(ExtraReduce2PatternTree)},
+  {"CReal(Complex(A,B))=A", EXPR_PATTERN(PatternTree)},
+  {"CImag(Complex(A,B))=B", EXPR_PATTERN(PatternTree)},
   // lite only
-  {63, "LayoutTransform(LayoutTransform(A))=A", EXPR_PATTERN(LayoutTransform1PatternTree)},
-  {64, "LayoutTransform(LayoutTransform(A))=LayoutTransform(A)", EXPR_PATTERN(LayoutTransform2PatternTree)},
+  {"LayoutTransform(LayoutTransform(A))=A", EXPR_PATTERN(LayoutTransform1PatternTree)},
+  {"LayoutTransform(LayoutTransform(A))=LayoutTransform(A)", EXPR_PATTERN(LayoutTransform2PatternTree)},
   // patterns that can be transformed to reshape
-  {65, "Transpose(Transpose(A,B),C)=A", EXPR_PATTERN(Transpose1PatternTree)},
-  {66, "Transpose(A,B)=Reshape(A,C)", EXPR_PATTERN(Transpose2PatternTree)},
-  {67, "Reshape(Reshape(A,B),C)=Reshape(A,C)", EXPR_PATTERN(ReshapePatternTree)},
-  {68, "Transpose(Transpose(Reshape(A,B),C),D)=Reshape(A,E)", EXPR_PATTERN(RTTPatternTree)},
-  {69, "StridedSlice(A,B,C,D)=Reshape(A,E)", EXPR_PATTERN(StridedSlicePatternTree)},
+  {"Transpose(Transpose(A,B),C)=A", EXPR_PATTERN(Transpose1PatternTree)},
+  {"Transpose(A,B)=Reshape(A,C)", EXPR_PATTERN(Transpose2PatternTree)},
+  {"Reshape(Reshape(A,B),C)=Reshape(A,C)", EXPR_PATTERN(ReshapePatternTree)},
+  {"Transpose(Transpose(Reshape(A,B),C),D)=Reshape(A,E)", EXPR_PATTERN(RTTPatternTree)},
+  {"StridedSlice(A,B,C,D)=Reshape(A,E)", EXPR_PATTERN(StridedSlicePatternTree)},
   // cmp + logical
-  {70, "LogicalNot(Greater(A,B))=LessEqual(A,B)", EXPR_PATTERN(PatternTree)},
-  {71, "LogicalNot(LessEqual(A,B))=Greater(A,B)", EXPR_PATTERN(PatternTree)},
-  {72, "LogicalNot(GreaterEqual(A,B))=Less(A,B)", EXPR_PATTERN(PatternTree)},
-  {73, "LogicalNot(Less(A,B))=GreaterEqual(A,B)", EXPR_PATTERN(PatternTree)},
-  {74, "LogicalNot(NotEqual(A,B))=Equal(A,B)", EXPR_PATTERN(PatternTree)},
-  {75, "LogicalNot(Equal(A,B))=NotEqual(A,B)", EXPR_PATTERN(PatternTree)},
+  {"LogicalNot(Greater(A,B))=LessEqual(A,B)", EXPR_PATTERN(PatternTree)},
+  {"LogicalNot(LessEqual(A,B))=Greater(A,B)", EXPR_PATTERN(PatternTree)},
+  {"LogicalNot(GreaterEqual(A,B))=Less(A,B)", EXPR_PATTERN(PatternTree)},
+  {"LogicalNot(Less(A,B))=GreaterEqual(A,B)", EXPR_PATTERN(PatternTree)},
+  {"LogicalNot(NotEqual(A,B))=Equal(A,B)", EXPR_PATTERN(PatternTree)},
+  {"LogicalNot(Equal(A,B))=NotEqual(A,B)", EXPR_PATTERN(PatternTree)},
   // reduce -> reshape
-  {76, "ReduceSum(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
-  {77, "ReduceMin(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
-  {78, "ReduceMax(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
-  {79, "Cast(A,B)=A", EXPR_PATTERN(CastPatternTree)},
-  {80, "Cast(A)=A", EXPR_PATTERN(CastPatternTree)},
+  {"ReduceSum(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
+  {"ReduceMin(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
+  {"ReduceMax(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
+  {"Cast(A,B)=A", EXPR_PATTERN(CastPatternTree)},
+  {"Cast(A)=A", EXPR_PATTERN(CastPatternTree)},
   // transpose
-  {81, "Transpose(Transpose(A,B),C)=Transpose(A,D)", EXPR_PATTERN(TransposeCombinePatternTree)},
+  {"Transpose(Transpose(A,B),C)=Transpose(A,D)", EXPR_PATTERN(TransposeCombinePatternTree)},
 };
 
 mindspore::HashMap<std::string, std::vector<PatternTreePtr>> GetExpressions() {
@@ -1017,16 +1071,17 @@ mindspore::HashMap<std::string, std::vector<PatternTreePtr>> GetExpressions() {
   mindspore::HashSet<std::string> enable_ids{flags.enable_simplify_exprs_only.begin(),
                                              flags.enable_simplify_exprs_only.end()};
   mindspore::HashSet<std::string> disable_ids{flags.disable_simplify_exprs.begin(), flags.disable_simplify_exprs.end()};
-  for (auto &e : expressions) {
+  for (size_t id = 0; id < expressions.size(); id++) {
     if (!enable_ids.empty()) {
-      if (enable_ids.count(std::to_string(e.id)) == 0) {
+      if (enable_ids.count(std::to_string(id)) == 0) {
         continue;
       }
     } else {
-      if (disable_ids.count(std::to_string(e.id)) > 0) {
+      if (disable_ids.count(std::to_string(id)) > 0) {
         continue;
       }
     }
+    auto e = expressions[id];
     PatternTreePtr pt = e.func(e.math_expr);
     expression_map[pt->GetRootOp()].push_back(pt);
   }
@@ -1067,6 +1122,7 @@ bool ArithmeticSimplify::DoArithmeticTrans(const inner::LiteGraphPtr &litegraph)
           // get the new node to replace
           inner::NodePtr alter_graph_node = cur_pattern->AlterGraph(para_to_ref, const_to_ref, *iter);
           (*iter)->ReplaceWith(alter_graph_node);
+          MS_LOG(DEBUG) << "Arithmetic simplify success with pattern: " << cur_pattern->GetPatternStr();
           changed = true;
           break;
         }
@@ -1090,6 +1146,7 @@ bool ArithmeticSimplify::DoConstantFold(const inner::LiteGraphPtr &litegraph) {
     auto this_op = std::static_pointer_cast<inner::PrimOp>(*iter);
     auto value = this_op->InferValue(this_op->inputs(), this_op->attrs());
     if (value != nullptr) {
+      MS_LOG(DEBUG) << "Constant fold success with op: " << this_op->ToString();
       (*iter)->ReplaceWith(value);
       ops_list = litegraph->GetOrderedNodes();
       iter = ops_list.begin();
@@ -1148,6 +1205,7 @@ bool ArithmeticSimplify::Run(const FuncGraphPtr &func_graph) {
       inner::LiteGraphPtr lg = GkUtils::AnfGraph2LiteGraph(sub_graph);
       bool find_pattern = true;
       bool change_anf_graph = false;
+      MS_LOG(DEBUG) << "Arithmetic simplify for node [" << node->fullname_with_scope() << "] begin";
       try {
         MS_LOG_TRY_CATCH_SCOPE;
         while (find_pattern) {
@@ -1178,6 +1236,7 @@ bool ArithmeticSimplify::Run(const FuncGraphPtr &func_graph) {
       (void)mng->Replace(node, new_node);
       mng->AddFuncGraph(new_funcgraph);
       do_simplify = true;
+      MS_LOG(DEBUG) << "Arithmetic simplify for node [" << node->fullname_with_scope() << "] committed";
     }
   }
   return do_simplify;
