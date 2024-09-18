@@ -25,10 +25,9 @@ for more details.
 """
 from mindspore.mint.distributed.distributed import init_process_group, destroy_process_group
 from mindspore.communication.management import get_rank
-from mindspore.communication.comm_func import P2POp, batch_isend_irecv
 from mindspore.communication.management import get_group_size as get_world_size
 
 
 __all__ = [
-    "init_process_group", "destroy_process_group", "get_rank", "get_world_size", "P2POp"
+    "init_process_group", "destroy_process_group", "get_rank", "get_world_size"
 ]
