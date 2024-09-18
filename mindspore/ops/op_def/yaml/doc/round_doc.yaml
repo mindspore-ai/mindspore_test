@@ -12,8 +12,8 @@ round:
         Inputs:
             - **input** (Tensor) - The input tensor.
             - **decimals** (int, optional) - Number of decimal places to round to (default: 0). If decimals is 
-                negative, it specifies the number of positions to the left of the decimal point. It supports 
-                converting the single-element tensor to an int.
+              negative, it specifies the number of positions to the left of the decimal point. It supports 
+              converting the single-element tensor to an int.
 
         Outputs:
             Tensor, has the same shape and type as the `input`.

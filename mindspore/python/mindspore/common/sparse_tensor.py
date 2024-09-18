@@ -646,6 +646,7 @@ class CSRTensor(CSRTensor_):
     [1., 2., 3., 4., 5., 6.], shape is (3, 5), then the dense representation of the sparse tensor will be:
 
     .. code-block::
+
         [[1., 0., 0., 2., 0.],
          [0., 3., 4., 0., 5.],
          [0., 0., 6., 0., 0.]]

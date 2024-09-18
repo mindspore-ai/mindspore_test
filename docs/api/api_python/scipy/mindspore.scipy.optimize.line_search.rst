@@ -1,7 +1,7 @@
 mindspore.scipy.optimize.line_search
 ====================================
 
-.. py:function:: mindspore.scipy.optimize.line_search(f, xk, pk, jac=None, gfk=None, old_fval=None, old_old_fval=None, c1=0.0001, c2=0.9, maxiter=20)
+.. py:function:: mindspore.scipy.optimize.line_search(f, xk, pk, jac=None, gfk=None, old_fval=None, old_old_fval=None, c1=1e-4, c2=0.9, maxiter=20)
 
     满足强Wolfe条件的非精确线搜索。
 

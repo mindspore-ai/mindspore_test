@@ -1,7 +1,7 @@
 mindspore.numpy.histogram_bin_edges
 ====================================
 
-.. py:function:: numpy.histogram_bin_edges(a, bins=10, range=None, weights=None) 
+.. py:function:: mindspore.numpy.histogram_bin_edges(a, bins=10, range=None, weights=None) 
 
     计算 ``histogram`` 函数需要使用的 ``bins`` 的边界值。
 

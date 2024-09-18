@@ -20,6 +20,9 @@ mindspore.ops.prelu
     .. note::
         通道数是输入的第二个维度值。当输入的维度小于2时，则没有通道维度并且通道数等于1。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **input** (Tensor) - 激活函数的输入Tensor。
         - **weight** (Tensor) - 权重Tensor。它的大小是1或者输入Tensor `input` 的通道数。

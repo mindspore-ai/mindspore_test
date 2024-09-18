@@ -1272,14 +1272,14 @@ def broadcast_to(array, shape):
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
-    Example:
+    Examples:
         >>> import mindspore.numpy as np
         >>> x = np.array([1, 2, 3])
         >>> output = np.broadcast_to(x, (3, 3))
         >>> print(output)
         [[1 2 3]
-        [1 2 3]
-        [1 2 3]]
+         [1 2 3]
+         [1 2 3]]
     """
     def _check(shape_a, shape):
         if not _check_can_broadcast_to(shape_a, shape):
@@ -1310,7 +1310,7 @@ def broadcast_arrays(*args):
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
-    Example:
+    Examples:
         >>> import mindspore.numpy as np
         >>> x = np.array([[1,2,3]])
         >>> y = np.array([[4],[5]])
@@ -1335,7 +1335,7 @@ def array_split(x, indices_or_sections, axis=0):
     Splits a tensor into multiple sub-tensors.
 
     Note:
-        Currently, array_split only supports :class:`mindspore.float32` on ``CPU``.
+        Currently, array_split only supports ``mindspore.float32`` on ``CPU``.
 
     The only difference between ``np.split`` and ``np.array_split`` is that
     ``np.array_split`` allows indices_or_sections to be an integer that does not
@@ -1662,21 +1662,21 @@ def flip(m, axis=None):
     Supported Platforms:
         ``GPU`` ``CPU``
 
-    Example:
+    Examples:
         >>> import mindspore.numpy as np
         >>> A = np.arange(8.0).reshape((2,2,2))
         >>> output = np.flip(A)
         >>> print(output)
         [[[7. 6.]
-        [5. 4.]]
-        [[3. 2.]
-        [1. 0.]]]
+          [5. 4.]]
+         [[3. 2.]
+          [1. 0.]]]
         >>> output = np.flip(A, (0, 2))
         >>> print(output)
         [[[5. 4.]
-        [7. 6.]]
-        [[1. 0.]
-        [3. 2.]]]
+          [7. 6.]]
+         [[1. 0.]
+          [3. 2.]]]
     """
     _check_input_tensor(m)
     ndim = F.rank(m)
@@ -1713,15 +1713,15 @@ def flipud(m):
     Supported Platforms:
         ``GPU`` ``CPU``
 
-    Example:
+    Examples:
         >>> import mindspore.numpy as np
         >>> A = np.arange(8.0).reshape((2,2,2))
         >>> output = np.flipud(A)
         >>> print(output)
         [[[4. 5.]
-        [6. 7.]]
-        [[0. 1.]
-        [2. 3.]]]
+          [6. 7.]]
+         [[0. 1.]
+          [2. 3.]]]
     """
     return flip(m, 0)
 
@@ -1743,15 +1743,15 @@ def fliplr(m):
     Supported Platforms:
         ``GPU`` ``CPU``
 
-    Example:
+    Examples:
         >>> import mindspore.numpy as np
         >>> A = np.arange(8.0).reshape((2,2,2))
         >>> output = np.fliplr(A)
         >>> print(output)
         [[[2. 3.]
-        [0. 1.]]
-        [[6. 7.]
-        [4. 5.]]]
+          [0. 1.]]
+         [[6. 7.]
+          [4. 5.]]]
     """
     return flip(m, 1)
 
@@ -1782,15 +1782,15 @@ def take_along_axis(arr, indices, axis):
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
-    Example:
+    Examples:
         >>> import mindspore.numpy as np
         >>> x = np.arange(12).reshape(3, 4)
         >>> indices = np.arange(3).reshape(1, 3)
         >>> output = np.take_along_axis(x, indices, 1)
         >>> print(output)
         [[ 0  1  2]
-        [ 4  5  6]
-        [ 8  9 10]]
+         [ 4  5  6]
+         [ 8  9 10]]
     """
     _check_input_tensor(arr, indices)
     if axis is None:

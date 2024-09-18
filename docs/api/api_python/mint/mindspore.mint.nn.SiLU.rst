@@ -1,7 +1,7 @@
-mindspore.nn.SiLU
+mindspore.mint.nn.SiLU
 =============================
 
-.. py:class:: mindspore.nn.SiLU
+.. py:class:: mindspore.mint.nn.SiLU
 
     逐元素计算SiLU激活函数。有时也被称作Swish函数。
 

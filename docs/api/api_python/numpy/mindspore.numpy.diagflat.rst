@@ -13,4 +13,4 @@ mindspore.numpy.diagflat
         2-D Tensor。
 
     异常：
-        - **ValueError** - 如果输入不是一个Tensor。
+        - **TypeError** - 如果输入不是一个Tensor。

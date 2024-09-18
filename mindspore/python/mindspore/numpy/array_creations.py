@@ -278,7 +278,7 @@ def ones(shape, dtype=mstype.float32):
     Args:
         shape (Union[int, tuple, list]): the shape of the new tensor.
         dtype (Union[:class:`mindspore.dtype`, str], optional): Designated tensor dtype.
-            Default is :class:`mstype.float32`.
+            Default is ``mstype.float32``.
 
     Returns:
         Tensor, with the designated `shape` and `dtype`, filled with ones.
@@ -433,7 +433,7 @@ def randn(*shape, dtype=mstype.float32):
         *shape (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g.,
             :math:`(2, 3)` or :math:`2`.
         dtype (Union[:class:`mindspore.dtype`, str], optional): Designated tensor dtype, it must
-            be float type. Default is :class:`mindspore.float32`.
+            be float type. Default is ``mindspore.float32``.
 
     Returns:
         Tensor, with the designated shape and dtype, filled with a sample (or samples)
@@ -474,7 +474,7 @@ def rand(*shape, dtype=mstype.float32):
         *shape (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g.,
             :math:`(2, 3)` or :math:`2`.
         dtype (Union[:class:`mindspore.dtype`, str], optional): Designated tensor dtype, it must
-            be float type. Default is :class:`mindspore.float32`.
+            be float type. Default is ``mindspore.float32``.
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random numbers from the
@@ -1586,7 +1586,7 @@ class NdGrid:
 
 class MGridClass(NdGrid):
     """
-    mgrid is an :class:`NdGrid` instance with ``sparse=False``.
+    mgrid is an `NdGrid` instance with ``sparse=False``.
 
     The dimension and number of the output arrays are equal to the number
     of indexing dimensions. If the step length is not a complex number,
@@ -2620,10 +2620,10 @@ def pad(arr, pad_width, mode="constant", stat_length=None, constant_values=0,
     Args:
         arr (Union[list, tuple, Tensor]): The array to pad.
         pad_width (Union[int, tuple, list]): Number of values padded to the edges of
-            each axis. :class:`((before_1, after_1), ... (before_N, after_N))` creates
-            unique pad widths for each axis. :class:`((before, after),)` yields same
-            before and after pad for each axis. :class:`(pad,)` or int is a shortcut
-            for :class:`before = after = pad width` for all axes.
+            each axis. ``((before_1, after_1), ... (before_N, after_N))`` creates
+            unique pad widths for each axis. ``((before, after),)`` yields same
+            before and after pad for each axis. ``(pad,)`` or int is a shortcut
+            for ``before = after = pad width`` for all axes.
         mode (string, optional):
             One of the following string values:
 
@@ -2642,26 +2642,26 @@ def pad(arr, pad_width, mode="constant", stat_length=None, constant_values=0,
               are used to pad the end and the end values are used to pad the beginning.
             - empty: Pads with undefined values.
             - <function>: The padding function, if used, should modify and return a new 1-d tensor.
-              It has the following signature: :class:`padding_func(tensor, iaxis_pad_width, iaxis, kwargs)`
+              It has the following signature: ``padding_func(tensor, iaxis_pad_width, iaxis, kwargs)``
         stat_length (Union[tuple, list, int], optional): Used in \'maximum\', \'mean\',
             \'median\', and \'minimum\'.  Number of values at edge of each axis used
-            to calculate the statistic value. :class:`((before_1, after_1), ... (before_N, after_N))`
-            creates unique statistic lengths for each axis. :class:`((before, after),)`
-            yields same before and after statistic lengths for each axis. :class:`(stat_length,)`
-            or int is a shortcut for :class:`before = after = statistic length` for all
+            to calculate the statistic value. ``((before_1, after_1), ... (before_N, after_N))``
+            creates unique statistic lengths for each axis. ``((before, after),)``
+            yields same before and after statistic lengths for each axis. ``(stat_length,)``
+            or int is a shortcut for ``before = after = statistic length`` for all
             axes. Default: ``None``, to use the entire axis.
         constant_values (Union[tuple, list, int], optional):
-            Used in :class:`constant mode`. The values to set the padded values for each
-            axis. :class:`((before_1, after_1), ... (before_N, after_N))` creates unique pad
-            constants for each axis. :class:`((before, after),)` yields same before and
-            after constants for each axis. :class:`(constant,)` or :class:`constant` is
-            a shortcut for :class:`before = after = constant` for all axes. Default: ``0`` .
+            Used in ``constant mode``. The values to set the padded values for each
+            axis. ``((before_1, after_1), ... (before_N, after_N))`` creates unique pad
+            constants for each axis. ``((before, after),)`` yields same before and
+            after constants for each axis. ``(constant,)`` or ``constant`` is
+            a shortcut for ``before = after = constant`` for all axes. Default: ``0`` .
         end_values (Union[tuple, list, int], optional): Used in 'linear_ramp'.  The values
             used for the ending value of the linear_ramp and that will form the edge of
-            the padded `arr`. :class:`((before_1, after_1), ... (before_N, after_N))`
-            unique end values for each axis. :class:`((before, after),)` yields same before
-            and after end values for each axis. :class:`(constant,)` or :class:`constant`
-            is a shortcut for :class:`before = after = constant` for all axes. Default: ``0`` .
+            the padded `arr`. ``((before_1, after_1), ... (before_N, after_N))``
+            unique end values for each axis. ``((before, after),)`` yields same before
+            and after end values for each axis. ``(constant,)`` or ``constant``
+            is a shortcut for ``before = after = constant`` for all axes. Default: ``0`` .
         reflect_type(string, optional) can choose between \'even\' and \'odd\'. Used in
             \'reflect\', and \'symmetric\'. The \'even\' style is the default with an
             unaltered reflection around the edge value. For the \'odd\' style, the extended
@@ -2677,7 +2677,7 @@ def pad(arr, pad_width, mode="constant", stat_length=None, constant_values=0,
         TypeError: If `arr`, `pad_width`, `stat_length`, `constant_values` or `end_values`
             have types not specified above.
         ValueError: If `mode` cannot be recognized, or if `pad_width`, `stat_length`,
-            `constant_values`, `end_values` cannot broadcast to :class:`(arr.ndim, 2)`,
+            `constant_values`, `end_values` cannot broadcast to ``(arr.ndim, 2)``,
             or if keyword arguments got unexpected inputs.
         NotImplementedError: If mode is function or \'median\'.
 
