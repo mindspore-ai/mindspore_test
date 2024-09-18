@@ -120,7 +120,8 @@ Status GraphRunner::AddGraph(const std::string &name) {
   }
 
   graph_manager_.AddSavedGraphs(std::to_string(wrap_ptr->id_));
-  if (!wrap_ptr->is_added_to_ge_session_) {
+  // export air can't use session->AddGraph, it will cause atc error.
+  if (!wrap_ptr->is_added_to_ge_session_ && !wrap_ptr->export_air_) {
     MS_LOG(INFO) << "Add the graph " << (*wrap_ptr).name_ << " to GE, it's id is: " << (*wrap_ptr).id_;
     MS_EXCEPTION_IF_NULL(sess_);
     auto ret = sess_->AddGraph(static_cast<uint32_t>(wrap_ptr->id_), *(wrap_ptr->graph_ptr_), wrap_ptr->options_);

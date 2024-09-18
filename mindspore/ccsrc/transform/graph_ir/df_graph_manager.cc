@@ -64,8 +64,8 @@ int DfGraphManager::GenerateId() {
   return graph_id_;
 }
 
-Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph_ptr, const OptionMap &options,
-                                const bool &is_cloud) {
+Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph_ptr,
+                                const DfGraphConfig &graph_config) {
   std::lock_guard<std::mutex> lg(lock_);
   if (name.empty()) {
     MS_LOG(ERROR) << "The graph name is null, add graph failed";
@@ -78,7 +78,7 @@ Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph
   }
 
   int id = GenerateId();
-  OptionMap new_options = options;
+  OptionMap new_options = graph_config.options_;
   auto ms_context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context_ptr);
   auto soc_version = ms_context_ptr->ascend_soc_version();
@@ -86,7 +86,7 @@ Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph
     (new_options)["ge.exec.precision_mode"] = ms_context_ptr->get_param<std::string>(MS_CTX_PRECISION_MODE);
     MS_LOG(INFO) << "Set precision_mode " << ms_context_ptr->get_param<std::string>(MS_CTX_PRECISION_MODE)
                  << " by user.";
-  } else if (is_cloud && !IsTwoPhaseInfer()) {
+  } else if (graph_config.is_cloud_ && !IsTwoPhaseInfer()) {
     if (soc_version == "ascend910b" || soc_version == "ascend910c") {
       (new_options)["ge.exec.precision_mode"] = "must_keep_origin_dtype";
       MS_LOG(INFO) << "Set precision_mode must_keep_origin_dtype, soc_version is " << soc_version << ".";
@@ -116,6 +116,7 @@ Status DfGraphManager::AddGraph(const std::string &name, const DfGraphPtr &graph
   }
 
   DfGraphWrapperPtr wrap_ptr = std::make_shared<DfGraphWrapper>(name, id, graph_ptr, new_options);
+  wrap_ptr->export_air_ = graph_config.export_air_;
   auto ret = graphs_.emplace(name, wrap_ptr);
   if (!ret.second) {
     MS_LOG(WARNING) << "The graph name:{ " << name << " }is already exists! The old graph will be overwritten!!";

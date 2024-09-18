@@ -123,10 +123,23 @@ struct DfGraphWrapper {
   DfGraphPtr graph_ptr_;
   OptionMap options_ = {};
   bool is_added_to_ge_session_ = false;
+  bool export_air_ = false;
   std::mutex mutex_;
 };
 
 using DfGraphWrapperPtr = std::shared_ptr<DfGraphWrapper>;
+
+struct DfGraphConfig {
+ public:
+  DfGraphConfig(const OptionMap &options = {}, const bool &is_cloud = false, const bool &need_aoe = false,
+                const bool &export_air = false)
+      : options_(options), is_cloud_(is_cloud), need_aoe_(need_aoe), export_air_(export_air) {}
+  ~DfGraphConfig() {}
+  OptionMap options_;
+  bool is_cloud_;
+  bool need_aoe_;
+  bool export_air_;
+};
 
 struct OutHandler {
   OperatorPtr op;

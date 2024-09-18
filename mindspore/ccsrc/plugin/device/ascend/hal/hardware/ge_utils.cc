@@ -248,7 +248,8 @@ bool AddDFGraph(const FuncGraphPtr &anf_graph, const transform::TensorOrderMap &
   GetComputeGraphReuseOptions(anf_graph, &options);
   UpdateTopoOrderOptions(graph_name, &options);
   MS_LOG(INFO) << "Set options of compute graph: " << graph_name << " to " << MapToString(options);
-  (void)transform::AddGraph(graph_name, transform::GetComputeGraph(converter), options, is_cloud, need_aoe);
+  (void)transform::AddGraph(graph_name, transform::GetComputeGraph(converter),
+                            transform::DfGraphConfig(options, is_cloud, need_aoe, export_air));
   if (IsEnableRefMode()) {
     (void)transform::AddGraph(init_graph, converter->GetInitGraph());
   } else {
