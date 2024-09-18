@@ -348,7 +348,7 @@ def pynative_hook_outermost_cell_record_grad():
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
 
-    if ms_net.grad_output_list or ms_net.grad_input_list:
+    if not ms_net.grad_output_list and not ms_net.grad_input_list:
         assert False
 
     # input grad

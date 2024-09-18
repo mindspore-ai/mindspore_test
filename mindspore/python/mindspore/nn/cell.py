@@ -32,7 +32,7 @@ from mindspore import context
 from mindspore._c_expression import init_pipeline, update_func_graph_hyper_params, Cell_, FuncGraph, MixedPrecisionType
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
-from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache
+from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, _no_grad
 from mindspore.common.api import _generate_branch_control_input, _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import Parameter, ParameterTuple
@@ -44,7 +44,6 @@ from mindspore.parallel.shard import Shard
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
-
 
 class Cell(Cell_):
     """
@@ -156,7 +155,6 @@ class Cell(Cell_):
         self._backward_hook = OrderedDict()
         self._cell_backward_hook = None
         self._is_recursion_hook = False
-        self._is_call_new_graph_before = False
 
         self.cell_type = None
         self.cast = Cast()
@@ -498,6 +496,8 @@ class Cell(Cell_):
             output = self._shard_fn(*inputs, **kwargs)
         elif self._recompute_cell is not None:
             output = self._recompute_cell(*inputs, **kwargs)
+        elif self.has_bprop and _pynative_executor.requires_grad():
+            output = self._call_custom_bprop(*inputs, **kwargs)
         else:
             output = self.construct(*inputs, **kwargs)
 
@@ -735,9 +735,9 @@ class Cell(Cell_):
             self._init_check()
             self._self_check()
 
-        if not (self.requires_grad or self._dynamic_shape_inputs or self.has_bprop or self.mixed_precision_type):
+        if not (self.requires_grad or self._dynamic_shape_inputs or self.mixed_precision_type):
             if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
-                    self._shard_fn or self._recompute_cell):
+                    self._shard_fn or self._recompute_cell or (self.has_bprop and _pynative_executor.requires_grad())):
                 return self.construct(*args, **kwargs)
 
             return self._run_construct(*args, **kwargs)
@@ -751,7 +751,7 @@ class Cell(Cell_):
         self._call_pre_process(*args, **kwargs)
 
         if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
-                self._shard_fn or self._recompute_cell):
+                self._shard_fn or self._recompute_cell or self.has_bprop):
             output = self.construct(*args, **kwargs)
         else:
             output = self._run_construct(*args, **kwargs)
@@ -765,15 +765,10 @@ class Cell(Cell_):
         Process cell info before call construct
         """
         if self.requires_grad:
-            self._is_call_new_graph_before = True
             _pynative_executor.set_grad_flag(True)
             _pynative_executor.new_graph(self, *args, **kwargs)
         elif self._dynamic_shape_inputs is not None:
             _pynative_executor.set_cell_use_dynamic_shape_process(True)
-
-        # bprop cell in middle
-        if self.has_bprop and not self._is_call_new_graph_before and _pynative_executor.grad_flag():
-            _pynative_executor.new_graph(self, *args, **kwargs)
 
         # Set mixed precision
         if self.mixed_precision_type is not None:
@@ -788,13 +783,18 @@ class Cell(Cell_):
         elif self._dynamic_shape_inputs is not None:
             _pynative_executor.set_cell_use_dynamic_shape_process(False)
 
-        # bprop cell in middle
-        if self.has_bprop and not self._is_call_new_graph_before and _pynative_executor.grad_flag():
-            _pynative_executor.end_graph(self, output, *args, **kwargs)
-
         # mixed precision reset
         if self.mixed_precision_type is not None:
             _pynative_executor.set_mixed_precision_type(MixedPrecisionType.NOTSET, False)
+
+    def _call_custom_bprop(self, *args, **kwargs):
+        """
+        Call custom bprop for cell bprop.
+        """
+        with _no_grad():
+            output = self.construct(*args, **kwargs)
+        _pynative_executor.call_custom_bprop(self, output, *args, **kwargs)
+        return output
 
     def _add_attr(self, name, value):
         if name and name[:2] != '__' and name not in Cell.IGNORE_LIST:
@@ -2453,6 +2453,11 @@ class Cell(Cell_):
                 outputs = self._recompute_cell(*outputs, **kwargs)
             else:
                 outputs = self._recompute_cell(outputs, **kwargs)
+        elif self.has_bprop:
+            if is_need_unwrap:
+                outputs = self._call_custom_bprop(*outputs, **kwargs)
+            else:
+                outputs = self._call_custom_bprop(outputs, **kwargs)
         else:
             if is_need_unwrap:
                 outputs = self.construct(*outputs, **kwargs)

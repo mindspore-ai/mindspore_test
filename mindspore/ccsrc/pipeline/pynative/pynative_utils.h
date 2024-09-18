@@ -168,6 +168,7 @@ struct DataConvert {
   static bool RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v,
                                            size_t input_index);
   static void TransformValueNodeBaseTensorToTensor(const ValueNodePtr &value_node);
+  static ValuePtr ValueListToValue(const ValuePtrList &values, const abstract::AbstractBasePtr &abs);
 };
 
 struct PyBoost {

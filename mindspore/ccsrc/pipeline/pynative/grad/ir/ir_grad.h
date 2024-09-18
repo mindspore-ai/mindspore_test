@@ -47,6 +47,7 @@ class IrGrad : public AutoGrad {
   bool KPynativeWithFProp(const GradParamPtr &grad_param) override;
   // Update top cell output, record last_node
   void UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) override;
+  void CallCustomBprop(const CustomContext &context) override;
   FuncGraphPtr Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
                       const GradAttr &grad_attr);
 

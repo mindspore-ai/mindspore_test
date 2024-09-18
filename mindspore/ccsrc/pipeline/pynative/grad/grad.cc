@@ -40,6 +40,7 @@
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "runtime/pynative/op_function/pyboost_grad_functions.h"
 #include "runtime/pynative/op_executor.h"
+#include "pipeline/pynative/grad/custom_function.h"
 
 namespace mindspore {
 namespace pynative {
@@ -61,7 +62,7 @@ void ParsePyArgsToInputArgsInfo(const InputArgsInfoPtr &input_args_info, const p
     pipeline::CheckArgsValid(obj, args);
   }
   // Only the top cell or custom bprop cell requires value conversion
-  if (is_top_cell || input_args_info->has_custom_bprop || is_bprop_need_get_forward_graph) {
+  if (is_top_cell || is_bprop_need_get_forward_graph) {
     input_args_info->obj_id = PyNativeAlgo::PyParser::GetIdByPyObj(obj);
     input_args_info->input_size = args.size();
     for (size_t i = 0; i < input_args_info->input_size; ++i) {
@@ -436,7 +437,7 @@ std::string GetInputArgsId(const py::args &args) {
   return input_args_id;
 }
 
-void SetCustomBpropInputs(const py::object &obj, const InputArgsInfoPtr &input_args_info) {
+void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *context) {
   if (py::hasattr(obj, kUsedBpropInputs)) {
     py::object object = py::getattr(obj, kUsedBpropInputs);
     if (!py::isinstance<py::tuple>(object) && !py::isinstance<py::list>(object)) {
@@ -450,17 +451,17 @@ void SetCustomBpropInputs(const py::object &obj, const InputArgsInfoPtr &input_a
       int used_index = GetValue<int64_t>(value);
       (void)used_inputs.insert(used_index);
     }
-    const size_t input_size = input_args_info->input_arg_value_vec.size();
+    const size_t input_size = context->inputs.size();
     for (size_t i = 0; i < input_size; ++i) {
-      const auto &input_value = input_args_info->input_arg_value_vec[i];
+      const auto &input_value = context->inputs[i];
       if (used_inputs.find(i) == used_inputs.end()) {
         auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(input_value);
-        input_args_info->input_arg_value_vec[i] = fake_value;
+        context->inputs[i] = fake_value;
       }
     }
     if (used_inputs.find(input_size) == used_inputs.end()) {
-      auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(input_args_info->out_value);
-      input_args_info->out_value = fake_value;
+      auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(context->output);
+      context->output = fake_value;
     }
   }
 
@@ -468,12 +469,14 @@ void SetCustomBpropInputs(const py::object &obj, const InputArgsInfoPtr &input_a
     py::object weights = py::getattr(obj, kInternalParams);
     if (py::isinstance<py::tuple>(weights) || py::isinstance<py::list>(weights)) {
       auto weights_tuple = py::cast<py::tuple>(weights);
+      context->weight_size = weights_tuple.size();
       for (size_t i = 0; i < weights_tuple.size(); ++i) {
         const auto value = PyNativeAlgo::DataConvert::PyObjToValue(weights_tuple[i]);
         auto tensor = value->cast<tensor::TensorPtr>();
         MS_EXCEPTION_IF_NULL(tensor);
-        (void)input_args_info->input_arg_value_vec.emplace_back(tensor);
-        (void)input_args_info->input_arg_id_vec.emplace_back(tensor->id());
+        (void)context->inputs.emplace_back(tensor);
+        (void)context->input_value_grad_type.emplace_back(
+          PyNativeAlgo::Common::SetValueGradInfo(tensor, InputType::kConstant));
       }
     }
   }
@@ -487,6 +490,37 @@ std::string PrintPyObjInfo(const py::object &obj, const std::string &str) {
   }
   buf << str << " run python function " << py::getattr(obj, "__name__").cast<std::string>();
   return buf.str();
+}
+
+bool CheckBpropWithJit(const py::function &bprop_func) {
+  py::object code_obj = py::getattr(bprop_func, "__code__");
+  py::object co_name = py::getattr(code_obj, "co_name");
+  if (std::string(py::str(co_name)) == "staging_specialize") {
+    MS_LOG(EXCEPTION) << "Decorating bprop with '@jit' is not supported.";
+  }
+  return true;
+}
+
+FrontendOpRunInfoPtr CustomContext2OpRunInfo(const autograd::CustomContext &context) {
+  auto op_run_info = std::make_shared<FrontendOpRunInfo>();
+  op_run_info->requires_grad = true;
+  op_run_info->base_op_run_info.op_name = prim::kPrimCellBackwardHook->name();
+  op_run_info->op_grad_info->op_prim = prim::kPrimCellBackwardHook;
+  op_run_info->op_grad_info->input_value = context.inputs;
+  op_run_info->op_grad_info->weight_size = context.weight_size;
+  op_run_info->op_grad_info->is_need_recompute = context.is_recompute;
+  op_run_info->input_size = context.inputs.size();
+  op_run_info->real_out = context.output;
+  op_run_info->base_op_run_info.abstract =
+    PyNativeAlgo::Common::SetAbstractValueToAnyValue(context.output->ToAbstract());
+  op_run_info->op_grad_info->input_value_grad_type.resize(op_run_info->input_size);
+  for (size_t i = 0; i < op_run_info->input_size; ++i) {
+    const auto &value = context.inputs[i];
+    (void)op_run_info->op_grad_info->input_abs.emplace_back(
+      PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract()));
+  }
+  op_run_info->op_grad_info->input_value_grad_type = context.input_value_grad_type;
+  return op_run_info;
 }
 }  // namespace
 
@@ -677,9 +711,6 @@ InputArgsInfoPtr GradExecutor::GetInputArgsInfo(const py::object &obj, const py:
   const auto &input_args_info = std::make_shared<InputArgsInfo>(input_args_info_stack_.empty(), IsHighOrderTopCell());
   ParsePyArgsToInputArgsInfo(input_args_info, obj, args, is_bprop_need_get_forward_graph);
 
-  if (input_args_info->has_custom_bprop) {
-    custom_bprop_cell_count_ += 1;
-  }
   // CheckAlready run first, grad_order_ will increase 1(highorder scenario)
   // If NetA.set_grad(), so come here first, CheckAlready run later, so grad_order_ need increase 1
   if (input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell) {
@@ -894,28 +925,6 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
   if (input_args_info->is_grad_topest_cell) {
     grad_flag_ = false;
   }
-
-  // If there is a custom bprop in the forward running process of the cell, need to do DoGradForCustomBprop;
-  // If the top cell is only for obtaining the forward graph, there is no need to do DoGradForCustomBprop.
-  bool need_do_custom_bprop_grad = false;
-  if (input_args_info->has_custom_bprop && custom_bprop_cell_count_ != 0) {
-    --custom_bprop_cell_count_;
-    need_do_custom_bprop_grad = custom_bprop_cell_count_ == 0;
-  }
-  if (!top_cell()->is_bprop_need_get_forward_graph() && need_do_custom_bprop_grad) {
-    GetCustomBpropPrim(obj, args, input_args_info);
-    runtime::Pipeline::Get().WaitAll();
-    input_args_info->out_value = PyNativeAlgo::DataConvert::PyObjToValue(out, false);
-    // Recompute need to regardless of non tensor inputs, maybe it is a middle cell and not call EndGraphImpl
-    if (input_args_info->is_need_recompute) {
-      input_args_info->out_value =
-        ConvertOutputValueToTensor(input_args_info->out_value, !top_cell()->jit_out_has_dict());
-    }
-    const auto &out_id = PyNativeAlgo::Common::GetIdByValue(input_args_info->out_value);
-    SetCustomBpropInputs(obj, input_args_info);
-    DoGradForCustomBprop(input_args_info, out_id);
-  }
-
   // Get top cell endgraph
   if (input_args_info->cell_id == top_cell()->cell_id()) {
     runtime::Pipeline::Get().WaitAll();
@@ -975,66 +984,6 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
   }
   top_input_args_info_ = input_args_info;
   forward()->ClearNodeAbsMap();
-}
-
-void GradExecutor::DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const {
-  MS_EXCEPTION_IF_NULL(input_args_info);
-  MS_EXCEPTION_IF_NULL(input_args_info->custom_bprop_prim);
-  auto op_run_info = std::make_shared<FrontendOpRunInfo>();
-  op_run_info->requires_grad = true;
-  op_run_info->base_op_run_info.op_name = input_args_info->custom_bprop_prim->name();
-  op_run_info->op_grad_info->op_prim = input_args_info->custom_bprop_prim;
-  op_run_info->op_grad_info->input_value = input_args_info->input_arg_value_vec;
-  op_run_info->op_grad_info->weight_size = op_run_info->op_grad_info->input_value.size() - input_args_info->input_size;
-  op_run_info->op_grad_info->is_need_recompute = input_args_info->is_need_recompute;
-  op_run_info->input_size = input_args_info->input_arg_value_vec.size();
-  op_run_info->input_value_id = input_args_info->input_arg_id_vec;
-  op_run_info->real_out = input_args_info->out_value;
-  op_run_info->out_value_id = out_id;
-  op_run_info->base_op_run_info.abstract =
-    PyNativeAlgo::Common::SetAbstractValueToAnyValue(input_args_info->out_value->ToAbstract());
-  op_run_info->op_grad_info->input_value_grad_type.resize(op_run_info->input_size);
-  for (size_t i = 0; i < op_run_info->input_size; ++i) {
-    const auto &value = input_args_info->input_arg_value_vec[i];
-    (void)op_run_info->op_grad_info->input_abs.emplace_back(
-      PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract()));
-    op_run_info->op_grad_info->input_value_grad_type[i] =
-      PyNativeAlgo::Common::SetValueGradInfo(value, InputType::kConstant);
-  }
-  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
-  DoOpGrad(op_run_info);
-  RecordForwardGraph(op_run_info);
-}
-
-void GradExecutor::GetCustomBpropPrim(const py::object &obj, const py::args &args,
-                                      const InputArgsInfoPtr &input_args_info) {
-  MS_EXCEPTION_IF_NULL(input_args_info);
-  MS_LOG(DEBUG) << "Do grad for custom bprop";
-  py::function bprop_func = py::getattr(obj, parse::CUSTOM_BPROP_NAME);
-  py::object code_obj = py::getattr(bprop_func, "__code__");
-  py::object co_name = py::getattr(code_obj, "co_name");
-  if (std::string(py::str(co_name)) == "staging_specialize") {
-    MS_LOG(EXCEPTION) << "Decorating bprop with '@jit' is not supported.";
-  }
-
-  auto fake_prim = std::make_shared<PrimitivePy>(prim::kPrimHookBackward->name());
-  MS_EXCEPTION_IF_NULL(input_args_info);
-  if (py::isinstance<Cell>(obj)) {
-    const auto &cell_ptr = obj.cast<CellPtr>();
-    input_args_info->is_need_recompute = cell_ptr->HasAttr(kNeedRecompute);
-    fake_prim->set_bprop_cls_name(cell_ptr->name());
-  }
-  if (input_args_info->input_arg_value_vec.empty()) {
-    for (size_t i = 0; i < args.size(); ++i) {
-      (void)input_args_info->input_arg_value_vec.emplace_back(PyNativeAlgo::DataConvert::PyObjToValue(args[i]));
-    }
-  }
-  fake_prim->SetHookFn(bprop_func, HookType::kCellCustomBprop);
-
-  (void)fake_prim->AddAttr("cell_id", MakeValue(input_args_info->cell_id));
-  (void)fake_prim->AddAttr(parse::CUSTOM_BPROP_NAME, MakeValue(true));
-
-  input_args_info->custom_bprop_prim = fake_prim;
 }
 
 void GradExecutor::ClearPreTopCell(const TopCellInfoPtr &new_top_cell, bool is_need_clear_device_mem) {
@@ -2220,6 +2169,50 @@ void GradExecutor::ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) co
   DoOpGrad(op_run_info);
 }
 
+void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, const py::args &args) {
+  MS_LOG(DEBUG) << "Begin CallCustomBprop";
+  autograd::CustomContext context;
+  if (!py::isinstance<Cell>(obj)) {
+    MS_LOG(EXCEPTION) << "For custom bprop, obj should be Cell";
+  }
+  const auto &cell_ptr = obj.cast<CellPtr>();
+  context.cell_name = cell_ptr->name();
+  context.is_recompute = cell_ptr->HasAttr(kNeedRecompute);
+  context.bprop_fn = py::getattr(obj, parse::CUSTOM_BPROP_NAME);
+  MS_LOG(DEBUG) << CheckBpropWithJit(context.bprop_fn);
+  context.inputs.reserve(args.size() + kSizeEight);
+  context.input_value_grad_type.reserve(args.size() + kSizeEight);
+  py::list list_inputs;
+  for (size_t i = 0; i < args.size(); ++i) {
+    auto input = PyNativeAlgo::DataConvert::PyObjToValue(args[i]);
+    (void)context.input_value_grad_type.emplace_back(
+      PyNativeAlgo::Common::SetValueGradInfo(input, InputType::kConstant));
+    (void)context.inputs.emplace_back(std::move(input));
+    list_inputs.append(args[i]);
+  }
+  context.original_inputs = list_inputs;
+  auto output = PyNativeAlgo::DataConvert::PyObjToValue(out);
+  if (context.is_recompute) {
+    output = ConvertOutputValueToTensor(output, !top_cell()->jit_out_has_dict());
+  }
+  (void)PyNativeAlgo::Common::SetValueGradInfo(output, InputType::kOpOutput);
+  context.output = std::move(output);
+  context.original_output = out;
+  SetCustomBpropInputs(obj, &context);
+  RecordCustomBprop(context);
+  forward()->WaitForwardTask();
+  if (forward()->enable_async()) {
+    auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
+    auto task = [auto_grad_cell_ptr, new_context = std::move(context)]() {
+      (void)auto_grad_cell_ptr->CallCustomBprop(new_context);
+    };
+    DispatchGradQueueTask(std::move(task));
+  } else {
+    (void)top_cell()->auto_grad_cell_ptr()->CallCustomBprop(std::move(context));
+  }
+  MS_LOG(DEBUG) << "End CallCustomBprop";
+}
+
 void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const FrontendOpRunInfoPtr &op_run_info,
                                      const CNodePtr &cnode) const {
   MS_EXCEPTION_IF_NULL(cnode);
@@ -2288,6 +2281,13 @@ void GradExecutor::RecordForwardGraph(const FrontendOpRunInfoPtr &op_run_info) c
       cnode->set_abstract(op_run_info->base_op_run_info.abstract);
     }
     SaveOutputNodeMap(op_run_info->out_value_id, op_run_info, cnode);
+  }
+}
+
+void GradExecutor::RecordCustomBprop(const autograd::CustomContext &context) const {
+  if (save_graphs_) {
+    auto op_run_info = CustomContext2OpRunInfo(context);
+    RecordForwardGraph(op_run_info);
   }
 }
 

@@ -238,6 +238,28 @@ class MEMul1WithUsedMap(nn.Cell):
         return (grads,)
 
 
+class BpropNet(nn.Cell):
+    def construct(self, x):
+        return x * x
+
+    def bprop(self, *args):
+        return (args[0] * args[-1],)
+
+
+class NestedBpropNet(nn.Cell):
+    def __init__(self):
+        super(NestedBpropNet, self).__init__()
+        self.sub_cell = BpropNet()
+        self.used_bprop_inputs = [0]
+
+    def construct(self, x):
+        out = self.sub_cell(x)
+        return out
+
+    def bprop(self, *args):
+        return (2 * args[0] * args[-1],)
+
+
 @arg_mark(plat_marks=['cpu_linux'],
           level_mark='level0',
           card_mark='onecard',
@@ -254,3 +276,21 @@ def test_bprop_used_map():
     grad_net = GradOfFirstInput(net)
     input_grad = grad_net(input1, output)
     assert np.allclose(input_grad.asnumpy(), np.array([2], dtype=np.float32), 0.0001, 0.0001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_bprop_nested():
+    """
+    Feature: Test custom bprop with used map
+    Description: Test custom bprop with used map
+    Expectation: Success
+    """
+    input1 = Tensor([5.0])
+    output = Tensor(np.ones(1).astype(dtype=np.float32))
+    net = NestedBpropNet()
+    grad_net = GradOfFirstInput(net)
+    input_grad = grad_net(input1, output)
+    assert np.allclose(input_grad.asnumpy(), np.array([10], dtype=np.float32), 0.0001, 0.0001)

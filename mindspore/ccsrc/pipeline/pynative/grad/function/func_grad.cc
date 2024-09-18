@@ -26,6 +26,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "runtime/pipeline/pipeline.h"
+#include "pipeline/pynative/grad/custom_function.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
@@ -445,6 +446,30 @@ bool FuncGrad::KPynativeWithFProp(const GradParamPtr &grad_param) {
   (void)variable_set_.insert(variable);
   SetFlattenTensorGradMetaData(flatten_outputs, variable);
   return true;
+}
+
+void FuncGrad::CallCustomBprop(const CustomContext &context) {
+  MS_LOG(DEBUG) << "Begin Call CallCustomBprop";
+  BackwardNodePtr custom_fn;
+  auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(context.inputs);
+  auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(context.output);
+  auto output_abstract = PyNativeAlgo::Common::SetAbstractValueToAnyValue(context.output->ToAbstract());
+  ConstructParameterNodes(flatten_inputs);
+  {
+    py::gil_scoped_acquire gil;
+    py::list bprop_inputs = context.original_inputs.cast<py::list>();
+    if (!context.is_recompute) {
+      bprop_inputs.append(context.original_output);
+    }
+    custom_fn = std::make_shared<CustomBackward>("CellCustomBackward", context.bprop_fn, bprop_inputs, output_abstract,
+                                                 context.is_recompute, flatten_outputs.size());
+  }
+  custom_fn->UpdateNextEdges(flatten_inputs);
+  auto variable = std::make_shared<FuncVariable>(custom_fn, false);
+  variable->set_is_custom_op_variable(true);
+  (void)variable_set_.insert(variable);
+  SetFlattenTensorGradMetaData(flatten_outputs, variable);
+  MS_LOG(DEBUG) << "End update next edge for custom bprop, " << variable->ToString();
 }
 
 BackwardNodePtr FuncGrad::BuildGraphBackwardNode(const GradParamPtr &grad_param, size_t flatten_output_size) {

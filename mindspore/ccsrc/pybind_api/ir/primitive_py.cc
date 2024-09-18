@@ -65,16 +65,6 @@ void SyncData(const py::object &arg) {
   }
 }
 
-bool ContainsWeights(const py::tuple &grads) {
-  if (grads.size() < kSizeTwo) {
-    return false;
-  }
-  if (!py::isinstance<py::tuple>(grads[0]) && !py::isinstance<py::dict>(grads[1])) {
-    return false;
-  }
-  return true;
-}
-
 struct RunPrimitivePyHookFunctionRegister {
   RunPrimitivePyHookFunctionRegister() {
     python_adapter::PyAdapterCallback::SetRunPrimitivePyHookFunctionHandler(
@@ -194,83 +184,6 @@ py::function PrimitivePy::GetTaylorRuleFunction() {
   return fn;
 }
 
-void check_bprop_input_grads(const py::tuple &py_args, const py::tuple &grads, const std::string &bprop_cls_name,
-                             int filter_args_size) {
-  if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_CHECK_BPROP_FLAG)) {
-    return;
-  }
-  if (grads.size() != py_args.size() - filter_args_size) {
-    MS_EXCEPTION(TypeError) << "For user defined method 'bprop' of net '" << bprop_cls_name
-                            << "', the number of return values(gradients) should be equal to the number of input "
-                               "arguments except 'out' and 'dout', which is: "
-                            << (py_args.size() - filter_args_size) << ", but got:" << grads.size() << ".";
-  }
-  for (size_t i = 0; i < grads.size(); i++) {
-    if (py::isinstance<tensor::Tensor>(py_args[i]) || IsStubTensor(py_args[i])) {
-      if (!py::isinstance<tensor::Tensor>(grads[i]) && !IsStubTensor(grads[i])) {
-        MS_EXCEPTION(TypeError) << "For user defined method 'bprop' of net '" << bprop_cls_name << "', the " << i
-                                << "th return value(gradient of the " << i << "th argument) should be Tensor, but got "
-                                << py::cast<std::string>(grads[i].attr("__class__").attr("__name__"))
-                                << ", and the value is " << py::cast<py::str>(grads[i]) << ".";
-      }
-
-      py::object arg_dtype = py_args[i].attr("dtype");
-      py::object grad_dtype = grads[i].attr("dtype");
-      py::tuple arg_shape = py_args[i].attr("shape");
-      py::tuple grad_shape = grads[i].attr("shape");
-      if (!grad_dtype.equal(arg_dtype)) {
-        MS_EXCEPTION(TypeError) << "For user defined method 'bprop' of net '" << bprop_cls_name << "', the " << i
-                                << "th return value(gradient of the " << i
-                                << "th argument) should have the same dtype as the " << i
-                                << "th argument, which is:" << py::cast<py::str>(arg_dtype)
-                                << ", but got: " << py::cast<py::str>(grad_dtype) << ".";
-      }
-      if (!grad_shape.equal(arg_shape)) {
-        MS_EXCEPTION(ValueError) << "For user defined method 'bprop' of net '" << bprop_cls_name << "', the " << i
-                                 << "th return value(gradient of the " << i
-                                 << "th argument) should have the same shape as the " << i
-                                 << "th argument, which is:" << py::cast<py::str>(arg_shape)
-                                 << ", but got: " << py::cast<py::str>(grad_shape) << ".";
-      }
-    }
-  }
-}
-
-py::tuple check_bprop_out(const py::object &grads_obj, const py::tuple &py_args, const std::string &bprop_cls_name) {
-  py::tuple grads;
-  if (py::isinstance<py::none>(grads_obj)) {
-    MS_EXCEPTION(TypeError) << "The python function output is none.";
-  } else if (!py::isinstance<py::tuple>(grads_obj)) {
-    MS_LOG(DEBUG) << "Wrap a tuple";
-    grads = py::make_tuple(grads_obj);
-  } else {
-    grads = py::cast<py::tuple>(grads_obj);
-  }
-  if (ContainsWeights(grads)) {
-    MS_LOG(DEBUG) << "Contain weights";
-    py::tuple input_grads = py::cast<py::tuple>(grads[0]);
-    py::dict weight_grads = py::cast<py::dict>(grads[1]);
-    check_bprop_input_grads(py_args, input_grads, bprop_cls_name, 1);
-    if (weight_grads.empty()) {
-      return input_grads;
-    }
-    py::tuple all_grads(input_grads.size() + weight_grads.size());
-    for (size_t i = 0; i < input_grads.size(); ++i) {
-      all_grads[i] = input_grads[i];
-    }
-    size_t i = 0;
-    for (auto weight_grad : weight_grads) {
-      all_grads[i + input_grads.size()] = weight_grad.second;
-      ++i;
-    }
-    return all_grads;
-  } else {
-    MS_LOG(DEBUG) << "Not contain weights";
-    check_bprop_input_grads(py_args, grads, bprop_cls_name, kSizeTwo);
-    return grads;
-  }
-}
-
 void PrimitivePy::AddBpropCutPrim(const PrimitivePyPtr &bprop_cut_prim) {
   MS_EXCEPTION_IF_NULL(bprop_cut_prim);
   (void)bprop_cut_prims_.emplace_back(bprop_cut_prim);
@@ -362,7 +275,7 @@ BaseRef PrimitivePy::RunCellCustomBpropFunction(const py::tuple &py_args) const 
     }
     py::object grads_obj = hook_fn_(*converted_args);
     MS_LOG(DEBUG) << "Get cell hook output " << ConvertPyObjToString(grads_obj);
-    grads = check_bprop_out(grads_obj, py_args, bprop_cls_name_);
+    grads = CheckBpropOut(grads_obj, py_args, bprop_cls_name_);
     py::object out = grads_obj;
     // If grads.size() > inp_args_size, that means exist weights.
     if (grads.size() > inp_args_size) {
@@ -391,7 +304,7 @@ BaseRef PrimitivePy::RunCustomOpBpropFunction(const py::tuple &ori_py_args) cons
   try {
     MS_LOG(DEBUG) << "Run custom op bprop start";
     py::object grads_obj = hook_fn_(*converted_args);
-    auto grads = check_bprop_out(grads_obj, py_args, bprop_cls_name_);
+    auto grads = CheckBpropOut(grads_obj, py_args, bprop_cls_name_);
     MS_LOG(DEBUG) << "Run custom op bprop end";
     return std::make_shared<PyObjectRef>(grads);
   } catch (std::exception &bt) {
