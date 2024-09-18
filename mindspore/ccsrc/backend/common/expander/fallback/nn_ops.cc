@@ -686,16 +686,7 @@ REG_FALLBACK_BUILDER("Scatter").SetBody(BODYFUNC(ib) {
   if (IsShapeNone(idx_shape)) {
     return {input};
   }
-  std::unordered_map<int64_t, std::string> reduce_to_string{
-    {Reduce::REDUCE_NONE, "none"}, {Reduce::ADD, "add"}, {Reduce::MULTIPLY, "mul"}};
-  auto reduce_val_int = GetValue<int64_t>(reduce_val);
-  const auto iter = reduce_to_string.find(reduce_val_int);
-  if (iter == reduce_to_string.end()) {
-    MS_EXCEPTION(ValueError) << "For `Scatter` op, fail to convert `reduce` val `" << reduce_val_int << "` to string!";
-  }
-  auto reduce_string = iter->second;
-  auto out = ib->Emit("TensorScatterElements", {input, index, src},
-                      {{"reduction", MakeValue<string>(reduce_string)}, {"axis", dim_val}});
+  auto out = ib->Emit("TensorScatterElements", {input, index, src, dim, reduce});
   return {out};
 });
 
@@ -720,17 +711,8 @@ REG_FALLBACK_BUILDER("ScatterValue").SetBody(BODYFUNC(ib) {
   } else {
     expand_shape = ib->Value(idx_shape);
   }
-  std::unordered_map<int64_t, std::string> reduce_to_string{
-    {Reduce::REDUCE_NONE, "none"}, {Reduce::ADD, "add"}, {Reduce::MULTIPLY, "mul"}};
-  auto reduce_val_int = GetValue<int64_t>(reduce_val);
-  const auto iter = reduce_to_string.find(reduce_val_int);
-  if (iter == reduce_to_string.end()) {
-    MS_EXCEPTION(ValueError) << "For `Scatter` op, fail to convert `reduce` val `" << reduce_val_int << "` to string!";
-  }
-  auto reduce_string = iter->second;
   auto src_tensor = ib->Emit("BroadcastTo", {ib->ScalarToTensor(src, input->dtype()), expand_shape});
-  auto out = ib->Emit("TensorScatterElements", {input, index, src_tensor},
-                      {{"reduction", MakeValue<string>(reduce_string)}, {"axis", dim_val}});
+  auto out = ib->Emit("TensorScatterElements", {input, index, src_tensor, dim, reduce});
   return {out};
 });
 

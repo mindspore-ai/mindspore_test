@@ -7093,7 +7093,7 @@ class CTCLossV2Grad(Primitive):
         zero_infinity (bool): Whether to set infinite loss and correlation gradient to zero. Default: ``False`` .
 
     Inputs:
-        - **grad_out** (Tenosr) - Gradient renewal codfficient, A tensor for shape (N), where N is batch size.
+        - **grad_out** (Tensor) - Gradient renewal codfficient, A tensor for shape (N), where N is batch size.
         - **log_probs** (Tensor) - A tensor of shape (T, N, C), where T is input length, N is batch size and C is number
           of classes (including blank).
         - **targets** (Tensor) - A tensor of shape (N, S), where S is max target length, means the target sequences.

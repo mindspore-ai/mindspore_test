@@ -57,7 +57,6 @@ from mindspore.ops.operations.array_ops import (
     ArgMaxWithValue,
     ArgMinWithValue
 )
-from mindspore.ops.operations.array_ops import TensorScatterElements
 from mindspore.common import Tensor
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
@@ -67,6 +66,7 @@ from mindspore.ops._utils.utils import ms_arrange
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select
+from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, slice_ext_op, gather_d_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
@@ -3346,9 +3346,7 @@ def tensor_scatter_elements(input_x, indices, updates, axis=0, reduction="none")
          [ 5  5 14]
          [ 7 15 11]]
     """
-    _tensor_scatter_elements = _get_cache_prim(
-        TensorScatterElements)(axis, reduction)
-    return _tensor_scatter_elements(input_x, indices, updates)
+    return tensor_scatter_elements_ext(input_x, indices, updates, axis, reduction)
 
 
 def scatter(input, axis, index, src):
@@ -3359,8 +3357,8 @@ def scatter(input, axis, index, src):
     Args:
         input (Tensor): The target tensor. The rank of `input` must be at least 1.
         axis (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input).
-        index (Tensor): The index to do update operation whose data type must be mindspore.int32 or
-            mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
+        index (Tensor): The index to do update operation whose data must be positive number with type of mindspore.int32
+            or mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
         src (Tensor, float): The tensor doing the update operation with `input` , has the same data type as
             `input`, and the shape of `src` should be equal to the shape of `index`. Also can be a float number to
             scatter.
@@ -3374,6 +3372,7 @@ def scatter(input, axis, index, src):
         ValueError: If the shape of `src` is not equal to the shape of `index` .
         ValueError: If the rank of `src` is not equal to the rank of `input` .
         TypeError: If the data type of `input` and `src` have different dtypes.
+        RuntimeError: If `index` has negative elements.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

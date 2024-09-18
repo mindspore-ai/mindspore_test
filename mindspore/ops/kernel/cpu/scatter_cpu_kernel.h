@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TENSOR_SCATTER_ELEMENTS_CPU_KERNEL_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TENSOR_SCATTER_ELEMENTS_CPU_KERNEL_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SCATTER_CPU_KERNEL_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SCATTER_CPU_KERNEL_H_
 
 #include <vector>
 #include <string>
@@ -23,19 +23,20 @@
 #include <map>
 #include <utility>
 #include "kernel/cpu/cpu_kernel.h"
+#include "mindapi/base/types.h"
 #include "plugin/factory/ms_factory.h"
+#include "include/common/utils/utils.h"
 
 namespace mindspore::kernel {
-constexpr auto kUnKnown = "UnKnown";
+constexpr auto kUnKnown = "Unknown";
+constexpr auto kScatter = "Scatter";
 constexpr auto kTensorScatterElements = "TensorScatterElements";
 
-class TensorScatterElementsCpuKernelMod : public NativeCpuKernelMod,
-                                          public MatchKernelHelper<TensorScatterElementsCpuKernelMod> {
+class ScatterCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<ScatterCpuKernelMod> {
  public:
-  TensorScatterElementsCpuKernelMod() = default;
-
-  explicit TensorScatterElementsCpuKernelMod(const std::string &kernel_type) : kernel_type_(kernel_type) {}
-  ~TensorScatterElementsCpuKernelMod() override = default;
+  ScatterCpuKernelMod() = default;
+  explicit ScatterCpuKernelMod(const std::string &kernel_type) : kernel_type_(kernel_type) {}
+  ~ScatterCpuKernelMod() override = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
@@ -46,31 +47,38 @@ class TensorScatterElementsCpuKernelMod : public NativeCpuKernelMod,
     return kernel_func_(this, inputs, workspace, outputs);
   }
 
-  const std::vector<std::pair<KernelAttr, KernelRunFunc>> &GetFuncList() const override;
-
   std::vector<KernelAttr> GetOpSupport() override { return OpSupport(); }
 
- protected:
+  const std::vector<std::pair<KernelAttr, KernelRunFunc>> &GetFuncList() const override;
+
+ private:
+  template <typename T, typename S, typename ReductionT>
+  bool Scatter(const ReductionT &reduction_func, T *output, const S *indices, const T *src);
+
   template <typename T, typename S>
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                     const std::vector<kernel::KernelTensor *> &outputs);
 
-  template <typename T, typename S, typename ReductionT>
-  bool Scatter(const ReductionT &reduction_func, T *output, const S *indices, const T *updates);
-
  private:
-  enum ReductionType { REDUCTION_ASSIGNMENT = 0, REDUCTION_ADD = 1, REDCUTION_INVALID_TYPE = 255 };
   std::string kernel_type_{kUnKnown};
   int input_axis_size_{0};
   size_t input_size_{1};
   size_t indices_total_num_{1};
   size_t input_dims_{0};
   int64_t axis_{0};
-  std::vector<int64_t> indices_shape_{};
   std::vector<size_t> output_stride_{};
   std::vector<size_t> indices_stride_{};
-  ReductionType reduction_type_{REDCUTION_INVALID_TYPE};
+  Reduce reduction_type_{Reduce::REDUCE_NONE};
+  std::string input_name_{"input"};
+  std::string axis_name_{"dim"};
+  std::string index_name_{"index"};
+  std::string src_name_{"src"};
+  size_t input_idx_ = kIndex0;
+  size_t axis_idx_ = kIndex1;
+  size_t index_idx_ = kIndex2;
+  size_t src_idx_ = kIndex3;
+  size_t reduce_idx_ = kIndex4;
 };
 }  // namespace mindspore::kernel
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_TENSOR_SCATTER_ELEMENTS_CPU_KERNEL_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_SCATTER_CPU_KERNEL_H_

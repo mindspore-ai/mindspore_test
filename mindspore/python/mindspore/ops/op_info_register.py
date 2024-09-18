@@ -82,7 +82,7 @@ class _CustomInstaller:
         for dir_name in dir_names:
             if not os.path.isdir(dir_name):
                 try:
-                    os.makedirs(dir_name, exist_ok=True)
+                    os.makedirs(dir_name, mode=0o700, exist_ok=True)
                 except OSError as err:
                     if err.errno == 17:  # File exists
                         pass

@@ -44,6 +44,7 @@ from ..auto_generate import (ExpandDims, Reshape, TensorShape, Transpose, Gather
                              Triu, BroadcastTo, StridedSlice, Select, TopkExt, SearchSorted)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
+from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
 
 class _ScatterOp(PrimitiveWithInfer):
     """
@@ -4887,7 +4888,7 @@ class SplitV(Primitive):
         self.init_prim_io_names(inputs=['input_x'], outputs=['output'])
 
 
-class TensorScatterElements(Primitive):
+class TensorScatterElements(TensorScatterElementsExt):
     """
     Write all elements in `updates` to the index specified by `indices` in `input_x` according to the reduction
     operation specified by `reduction`.
@@ -4946,16 +4947,7 @@ class TensorScatterElements(Primitive):
 
     @prim_attr_register
     def __init__(self, axis=0, reduction="none"):
-        """Initialize TensorScatterElements"""
-        validator.check_value_type("axis", axis, [int], self.name)
-        validator.check_value_type("reduction", reduction, [str], self.name)
-        validator.check_string(reduction, ["none", "add"], "reduction", self.name)
-        self.init_prim_io_names(inputs=['data', 'indices', 'updates'], outputs=['y'])
-        target = context.get_context("device_target")
-        if reduction != 'none' and target.lower() == "ascend":
-            raise ValueError(f"For '{self.name}', "
-                             f"Currently Ascend device_target only support `reduction`='none', "
-                             f"but got {reduction}")
+        super().__init__(axis, reduce=reduction)
 
 
 class ExtractVolumePatches(Primitive):

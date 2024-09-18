@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_ARRAYS_TENSOR_SCATTER_ELEMENTS_GPU_KERNEL_H
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_ARRAYS_TENSOR_SCATTER_ELEMENTS_GPU_KERNEL_H
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_ARRAYS_SCATTER_VALUE_GPU_KERNEL_H
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_ARRAYS_SCATTER_VALUE_GPU_KERNEL_H
 
 #include <vector>
 #include <algorithm>
@@ -23,20 +23,21 @@
 #include <map>
 #include <utility>
 #include <memory>
-#include "kernel/gpu/cuda_impl/cuda_ops/tensor_scatter_elements.cuh"
+#include "kernel/gpu/cuda_impl/cuda_ops/scatter_value.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "mindspore/ops/infer/tensor_scatter_elements.h"
 #include "mindspore/ccsrc/kernel/common_utils.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
 constexpr auto kUnKnown = "UnKnown";
-constexpr auto kTensorScatterElements = "TensorScatterElements";
-class TensorScatterElementsGpuKernelMod : public NativeGpuKernelMod {
+constexpr auto kScatterValue = "ScatterValue";
+
+class ScatterValueGpuKernelMod : public NativeGpuKernelMod {
  public:
-  TensorScatterElementsGpuKernelMod() {}
-  ~TensorScatterElementsGpuKernelMod() { FreeResource(); }
+  ScatterValueGpuKernelMod() {}
+  ~ScatterValueGpuKernelMod() { FreeResource(); }
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
@@ -48,33 +49,34 @@ class TensorScatterElementsGpuKernelMod : public NativeGpuKernelMod {
   }
 
  protected:
+  using ScatterValueFunc = std::function<bool(ScatterValueGpuKernelMod *, const std::vector<kernel::KernelTensor *> &,
+                                              const std::vector<kernel::KernelTensor *> &,
+                                              const std::vector<kernel::KernelTensor *> &, void *)>;
   void MallocResource();
   void FreeResource();
   std::vector<KernelAttr> GetOpSupport() override;
   void GetSize();
   int ShapeCheck();
   int AxisCheck();
+  void GetFuncList() const;
 
   template <typename T, typename S>
   bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs, void *stream_ptr);
-  using TensorScatterElementsFunc = std::function<bool(
-    TensorScatterElementsGpuKernelMod *, const std::vector<kernel::KernelTensor *> &,
-    const std::vector<kernel::KernelTensor *> &, const std::vector<kernel::KernelTensor *> &, void *)>;
 
  private:
-  TensorScatterElementsFunc kernel_func_;
-  TensorScatterElementsReductionType type_{REDCUTION_INVALID_TYPE};
-  static std::vector<std::pair<KernelAttr, TensorScatterElementsFunc>> func_list_;
+  ScatterValueFunc kernel_func_;
+  Reduce type_{Reduce::REDUCE_NONE};
+  static std::vector<std::pair<KernelAttr, ScatterValueFunc>> func_list_;
 
   bool sync_resource_ = false;
 
-  std::vector<size_t> updates_shape_;
-  std::vector<size_t> indices_shape_;
-  std::vector<size_t> input_shape_;
-  std::vector<size_t> output_shape_;
-  std::vector<size_t> indices_stride_;
-  std::vector<size_t> output_stride_;
+  std::vector<size_t> src_shape_{};
+  std::vector<size_t> indices_shape_{};
+  std::vector<size_t> input_shape_{};
+  std::vector<size_t> output_shape_{};
+  std::vector<size_t> indices_stride_{};
+  std::vector<size_t> output_stride_{};
 
   int64_t axis_{0};
   int input_axis_size_{0};
@@ -88,8 +90,18 @@ class TensorScatterElementsGpuKernelMod : public NativeGpuKernelMod {
 
   size_t *d_indices_stride_{nullptr};
   size_t *d_output_stride_{nullptr};
+
+  std::string input_name_{"input"};
+  std::string axis_name_{"dim"};
+  std::string index_name_{"index"};
+  std::string src_name_{"src"};
+  size_t input_idx_ = kIndex0;
+  size_t axis_idx_ = kIndex1;
+  size_t index_idx_ = kIndex2;
+  size_t src_idx_ = kIndex3;
+  size_t reduce_idx_ = kIndex4;
 };
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_ARRAYS_TENSOR_SCATTER_ELEMENTS_GPU_KERNEL_H
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_ARRAYS_SCATTER_VALUE_GPU_KERNEL_H
