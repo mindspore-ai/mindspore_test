@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ from mindspore.common.recompute import recompute
 from mindspore.common import generator
 from mindspore.common.generator import (
     Generator, default_generator, seed, manual_seed, initial_seed, get_rng_state, set_rng_state)
+from mindspore.ops.function.array_func import is_tensor, from_numpy
 
 # symbols from dtype
 __all__ = [
@@ -71,7 +72,7 @@ __all__.extend([
     "ms_function", "ms_class", 'jit', 'jit_class', '_no_grad',  # api
     "Parameter", "ParameterTuple",  # parameter
     "dtype",
-    "set_seed", "get_seed",  # random seed
+    "set_seed", "get_seed", "manual_seed", # random seed
     "set_dump",
     "ms_memory_recycle",
     "mutable", "JitConfig",
@@ -80,5 +81,6 @@ __all__.extend([
     "no_inline",
     "Symbol",
     "recompute",
+    "is_tensor", "from_numpy",
 ])
 __all__.extend(generator.__all__)

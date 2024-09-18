@@ -7061,6 +7061,26 @@ def one_hot_ext(tensor, num_classes):
     off_value = Tensor(0, dtype=tensor.dtype)
     return one_hot_ext_impl(tensor, num_classes, on_value, off_value, -1)
 
+def from_numpy(obj):
+    r"""
+    Convert numpy array to Tensor.
+    If the data is not C contiguous, the data will be copied to C contiguous to construct the tensor.
+    Otherwise, The tensor will be constructed using this numpy array without copy.
+
+    Args:
+        array (numpy.array): The input array.
+    Returns:
+        Tensor, has the same data type as input array.
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import ops
+        >>> x = np.array([1, 2])
+        >>> output = ops.from_numpy(x)
+        >>> print(output)
+        [1 2]
+    """
+    return Tensor.from_numpy(obj)
 
 __all__ = [
     'unique',
