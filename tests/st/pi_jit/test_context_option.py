@@ -16,16 +16,7 @@
 from mindspore import Tensor, jit
 import mindspore as ms
 from tests.mark_utils import arg_mark
-import sys  
-import pytest
 import os
-
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_initial_tensor_body_ref():

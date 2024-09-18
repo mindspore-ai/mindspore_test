@@ -1,6 +1,4 @@
-import sys
 import dis
-import sys  
 import pytest 
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get_code_extra
 from mindspore import Tensor, jit, context, ops
@@ -8,11 +6,6 @@ import mindspore.common.dtype as mstype
 import numpy as np
 from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 def kwf(*vargs, p=-1, **kwvargs):
     return (p, vargs, kwvargs)

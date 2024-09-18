@@ -13,17 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """run perf statistic test"""
-import sys  
 import pytest 
 from mindspore import Tensor, jit, context
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @pi_jit_with_config(jit_config={"perf_statistics": True})
 def perf_statistic_simple(a, b):

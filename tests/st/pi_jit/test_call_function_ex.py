@@ -21,12 +21,6 @@ from mindspore import Tensor, jit, JitConfig
 from mindspore._c_expression import update_pijit_default_config, get_code_extra
 
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
-
-
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
 if SYS_VER != (3, 7) and SYS_VER != (3, 9):
     pytest.skip(reason="not implement for python" + str(SYS_VER), allow_module_level=True)

@@ -13,19 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """run no grad test"""
-import sys
 import pytest
 from .share.utils import match_array, pi_jit_with_config
 from tests.mark_utils import arg_mark
 import mindspore
 from mindspore import nn, ops, jit, Tensor, _no_grad, context, Parameter
 from tests.st.pi_jit.share.utils import pi_jit_with_config
-
-
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 
 class GradNet(nn.Cell):

@@ -12,18 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
-import sys  
 import pytest 
 import numpy as np
 from mindspore import Tensor, jit, context
 from ..share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @jit(capture_mode="bytecode")
 def fallback_tuple_with_input_list(a):

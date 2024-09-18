@@ -13,19 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """Test call class to create instance"""
-import sys  
-import pytest
-
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import context
 from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
         
 cfg = {
     "compile_by_trace": True,

@@ -1,18 +1,11 @@
 import numpy as onp
-import sys  
 import pytest 
-
 from mindspore import jit, context, ops
 from mindspore.common import Parameter, Tensor, dtype
 from mindspore.nn import Cell
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class GradFactory:
     def __init__(self, shape, pos, weight):

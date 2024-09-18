@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """run whitelist test"""
-import sys
 import pytest
 import numpy as onp
 from mindspore import Tensor, jit, context
@@ -27,11 +26,6 @@ from mindspore._c_expression import get_code_extra
 from mindspore._c_expression.np_dtypes import np_version_valid
 import math
 from tests.device_utils import set_device
-
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 @pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_const_func(x, y):
