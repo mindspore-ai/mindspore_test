@@ -533,6 +533,7 @@ from .nn_func import (
     rrelu,
     conv3d,
     glu,
+    swiglu,
     multi_margin_loss,
     multilabel_margin_loss,
     multilabel_soft_margin_loss,

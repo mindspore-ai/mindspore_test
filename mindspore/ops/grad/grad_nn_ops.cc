@@ -1768,6 +1768,14 @@ REG_BPROP_BUILDER("SeLUExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("Swiglu").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto input_x = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->Emit("SwigluGrad", {dout, input_x, dim});
+  return {dx, ib->OutZeros(dim)};
+});
+
 REG_BPROP_BUILDER("ReLU6").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);

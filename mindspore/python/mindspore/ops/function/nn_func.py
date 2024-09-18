@@ -42,7 +42,7 @@ from mindspore.ops.operations.nn_ops import TripletMarginLoss
 from mindspore.ops.operations._sequence_ops import TupleToTensor, TensorToTuple, ListToTensor
 from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, relu, fast_gelu, silu, elu, sigmoid, relu6, \
-    softmax_impl
+    softmax_impl, swiglu
 from mindspore.ops.auto_generate import group_norm_op, rms_norm, layer_norm_ext_op, batch_norm_ext_op, mse_loss_ext
 from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op, add_layernorm_v2_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
@@ -8427,6 +8427,7 @@ __all__ = [
     'relu',
     'relu6',
     'rrelu',
+    'swiglu',
     'conv3d',
     'glu',
     'margin_ranking_loss',

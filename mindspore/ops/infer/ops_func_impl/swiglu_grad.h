@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SWIGLU_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SWIGLU_H_
-#include <memory>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SWIGLU_GRAD_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SWIGLU_GRAD_H_
+
 #include <vector>
+#include <memory>
+#include <set>
+#include <map>
+#include <string>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API SwigluFuncImpl : public OpFuncImpl {
+class OPS_API SwigluGradFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   bool GeneralInferRegistered() const override { return true; };
 };
-
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SWIGLU_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SWIGLU_GRAD_H_
