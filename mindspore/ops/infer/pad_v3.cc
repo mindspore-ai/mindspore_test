@@ -292,8 +292,8 @@ TypePtr PadV3InferType(const PrimitivePtr &prim, const std::vector<AbstractBaseP
   if (mode == kConstant) {
     return CheckAndConvertUtils::CheckTensorTypeSame(
       args,
-      {kInt, kInt8, kInt16, kInt32, kInt64, kUInt, kUInt8, kUInt16, kFloat, kFloat16, kFloat32, kFloat64, kComplex64,
-       kComplex128, kBool},
+      {kInt, kInt8, kInt16, kInt32, kInt64, kUInt, kUInt8, kUInt16, kFloat, kBFloat16, kFloat16, kFloat32, kFloat64,
+       kComplex64, kComplex128, kBool},
       prim->name());
   } else {
     return CheckAndConvertUtils::CheckTensorTypeSame(args,
