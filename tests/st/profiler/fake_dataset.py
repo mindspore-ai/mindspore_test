@@ -135,6 +135,7 @@ class FakeDataset:
         schema.add_column('tgt', de_type=mstype.float32, shape=[tgt_len, batch_size, d_model])
 
         # apply dataset operations
+        ds.config.set_num_parallel_workers(num_parallel_workers)
         nlp_dataset = ds.RandomDataset(
             schema=schema,
             total_rows=num_samples,

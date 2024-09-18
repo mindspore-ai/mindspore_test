@@ -154,6 +154,21 @@ class TinyTransformer(nn.Cell):
         return self.model(src, tgt)
 
 
+class DynamicShapeNet(nn.Cell):
+    def __init__(self):
+        super(DynamicShapeNet, self).__init__()
+        self.unique = P.Unique()
+        self.shape = P.Shape()
+        self.reshape = P.Reshape()
+        self.add = P.Add()
+
+    def construct(self, a, b):
+        val = self.add(a, b)
+        size = self.shape(val)
+        res = self.reshape(val, size)
+        return res
+
+
 class CustomAICpuNet(nn.Cell):
     """custom ai cpu net"""
     def __init__(self):
