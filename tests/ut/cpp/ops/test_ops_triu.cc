@@ -13,52 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <vector>
-#include <memory>
-#include "common/common_test.h"
-#include "ir/dtype/type.h"
-#include "abstract/dshape.h"
-#include "utils/tensor_construct_utils.h"
-#include "ir/primitive.h"
-#include "abstract/abstract_value.h"
-#include "include/backend/optimizer/helper.h"
-#include "ops/test_ops.h"
-#include "infer/ops_func_impl/triu.h"
-#include "ops/test_value_utils.h"
 
-namespace mindspore {
-namespace ops {
-struct TriuShapeParams {
-  ShapeVector x_shape;
-  TypePtr x_type;
-  ValuePtr diagonal;
-  ShapeVector out_shape;
-  TypePtr out_type;
-};
+#include "ops/utils/general_infer_utils.h"
 
-class TestTriu : public TestOps, public testing::WithParamInterface<TriuShapeParams> {};
-
-TEST_P(TestTriu, dyn_shape) {
-  const auto &param = GetParam();
-  auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
-  auto diagonal = param.diagonal->ToAbstract();
-  auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
-  auto expect_type = std::make_shared<TensorType>(param.out_type);
-  TriuFuncImpl triu_func_impl;
-  auto prim = std::make_shared<Primitive>("Triu");
-  auto out_dtype = triu_func_impl.InferType(prim, {x, diagonal});
-  ASSERT_TRUE(*out_dtype == *expect_type);
-  auto out_shape = triu_func_impl.InferShape(prim, {x, diagonal});
-  ASSERT_TRUE(*out_shape == *expect_shape);
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{2, 3, 4}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat16},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat16});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeBFloat16},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{2, 3, 4}}, {kNumberTypeBFloat16});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(0)}})
+    .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{2, 3, 4, 5}, kNumberTypeFloat64}, InferInfoParam{ShapeVector{}, kNumberTypeInt64}})
+    .FeedExpectedOutput({{2, 3, 4, 5}}, {kNumberTypeFloat64});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{-1, -1}, kNumberTypeUInt8}, InferInfoParam{ShapeVector{}, kNumberTypeInt64}})
+    .FeedExpectedOutput({{-1, -1}}, {kNumberTypeUInt8});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeBool}, InferInfoParam{ShapeVector{}, kNumberTypeInt64}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeBool});
+  return generator.Generate();
 }
+}  // namespace
 
-INSTANTIATE_TEST_CASE_P(
-  TestTriu, TestTriu,
-  testing::Values(TriuShapeParams{{3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), {3, 4, 5}, kFloat32},
-                  TriuShapeParams{{3, 4, 5}, kUInt8, CreateScalar<int64_t>(0), {3, 4, 5}, kUInt8},
-                  TriuShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(-2), {3, 4, 5}, kInt64},
-                  TriuShapeParams{{2, 3, 4, 5}, kInt32, CreateScalar<int64_t>(2), {2, 3, 4, 5}, kInt32},
-                  TriuShapeParams{{-1, -1, -1}, kBool, CreateScalar<int64_t>(1), {-1, -1, -1}, kBool},
-                  TriuShapeParams{{-2}, kFloat32, CreateScalar<int64_t>(2), {-2}, kFloat32}));
-}  // namespace ops
-}  // namespace mindspore
+INSTANTIATE_TEST_CASE_P(Triu, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace mindspore::ops

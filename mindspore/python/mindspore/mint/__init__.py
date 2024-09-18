@@ -343,6 +343,9 @@ from mindspore.ops.function.array_func import reshape
 # 304
 from mindspore.ops.function.array_func import tril_ext as tril
 
+# 305
+from mindspore.ops import triu
+
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
 
@@ -1505,6 +1508,7 @@ __all__ = [
     'tril',
 
     # 305
+    'triu',
 
     # 538
     'histc',

@@ -20,27 +20,23 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr TriuFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_shape_vec = input_args[kInputIndex0]->GetShape()->GetShapeVector();
-  if (MS_UNLIKELY(IsDynamicRank(input_shape_vec))) {
-    return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
+ShapeArray TriuFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto &x = input_infos[kInputIndex0];
+  ShapeVector x_shape = x->GetShape();
+  if (MS_LIKELY(x->IsDynamic())) {
+    return {x_shape};
   }
+  auto input_shape_rank = SizeToLong(x_shape.size());
   const int64_t kMinShapeSize = 2;
-  auto input_shape_rank = SizeToLong(input_shape_vec.size());
   MS_CHECK_VALUE(input_shape_rank >= kMinShapeSize,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("rank of input", input_shape_rank, kGreaterEqual,
                                                              kMinShapeSize, primitive));
-  return std::make_shared<abstract::Shape>(input_shape_vec);
+  return {x_shape};
 }
 
-TypePtr TriuFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kInputIndex0]->GetType();
-  if (!CheckAndConvertUtils::IsScalar(input_args[kInputIndex1])) {
-    MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', 'diagonal' must be a scalar type, but got type: "
-                            << input_args[kInputIndex1]->GetType()->ToString();
-  }
-  return input_type;
+std::vector<TypeId> TriuFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto type = input_infos[kInputIndex0]->GetType();
+  return {type};
 }
 }  // namespace ops
 }  // namespace mindspore
