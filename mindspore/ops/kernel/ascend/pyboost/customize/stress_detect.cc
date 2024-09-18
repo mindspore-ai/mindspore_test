@@ -29,7 +29,8 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
   runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,
                                            runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);
   uint64_t workspace_size = 2;
-  workspace_size = workspace_size * 1024 * 1024 * 1024;
+  constexpr uint64_t kSize = 1024;
+  workspace_size = workspace_size * kSize * kSize * kSize;
   void *workspace_addr = nullptr;
   auto workspace_device_address = runtime::DeviceAddressUtils::CreateWorkspaceAddressWithoutKernelTensor(
     device_context, device_context->device_res_manager_->DefaultStream(), workspace_size, true);
