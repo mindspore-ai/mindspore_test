@@ -429,6 +429,10 @@ class OBSMindDataset(GeneratorDataset):
 
     The columns of generated dataset depend on the source MindRecord files.
 
+    Note:
+        - This interface accesses the `/cache` directory for node synchronization and requires the user to ensure
+          access to the `/cache` directory.
+
     Args:
         dataset_files (list[str]): List of files in cloud storage to be read and file path is in
             the format of s3://bucketName/objectKey.
