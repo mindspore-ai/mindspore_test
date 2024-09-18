@@ -15,7 +15,7 @@
         - **input_x** (Tensor) - AllGather的输入，shape为 :math:`(x_1, x_2, ..., x_R)` 的Tensor。
 
     输出：
-        Tensor，如果组中的device数量为N，则输出的shape为 :math:`(N, x_1, x_2, ..., x_R)` 。
+        Tensor，如果组中的device数量为N，则输出的shape为 :math:`(N*x_1, x_2, ..., x_R)` 。
 
     异常：
         - **TypeError** - `group` 不是str。
