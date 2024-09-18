@@ -68,11 +68,11 @@ def test_LayerNorm_para_customed_dtype(mode):
         output = forward_layer_norm_net(x, normal_shape)
         out_grad = grad_layer_norm_net(x, normal_shape)
     elif mode == 'KBK':
-        output = (jit(forward_layer_norm_net, jit_config=JitConfig(jit_level="O0")))(x, normal_shape)
-        out_grad = (jit(grad_layer_norm_net, jit_config=JitConfig(jit_level="O0")))(x, normal_shape)
+        output = (jit(forward_layer_norm_net, jit_level="O0"))(x, normal_shape)
+        out_grad = (jit(grad_layer_norm_net, jit_level="O0"))(x, normal_shape)
     else:
-        output = (jit(forward_layer_norm_net, jit_config=JitConfig(jit_level="O2")))(x, normal_shape)
-        out_grad = (jit(grad_layer_norm_net, jit_config=JitConfig(jit_level="O2")))(x, normal_shape)
+        output = (jit(forward_layer_norm_net, jit_level="O2"))(x, normal_shape)
+        out_grad = (jit(grad_layer_norm_net, jit_level="O2"))(x, normal_shape)
 
     assert np.allclose(expect_output_shape, output.shape)
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-4, atol=1e-4)

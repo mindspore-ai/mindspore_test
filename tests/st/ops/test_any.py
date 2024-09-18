@@ -133,9 +133,9 @@ def test_any_forward_static_shape(mode):
     if mode == 'pynative':
         output = any_forward_func(ms.Tensor(x))
     elif mode == 'KBK':
-        output = (jit(any_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        output = (jit(any_forward_func, jit_level="O0"))(ms.Tensor(x))
     else:
-        output = (jit(any_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x))
+        output = (jit(any_forward_func, jit_level="O2"))(ms.Tensor(x))
 
     expect = generate_expect_forward_output(x)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4)

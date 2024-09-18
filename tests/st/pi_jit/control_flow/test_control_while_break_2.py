@@ -43,7 +43,7 @@ def test_control_flow_while_2elif_break_in_if():
     '''
     x = [1, 2, 3]
     context.set_context(mode=context.GRAPH_MODE)
-    jit(fn=CtrlWhile2ElifBreakInIf.construct, mode="PSJit")
+    jit(function=CtrlWhile2ElifBreakInIf.construct, capture_mode="ast")
     ps_net = CtrlWhile2ElifBreakInIf()
     ps_out = ps_net(Tensor(x, dtype.float32))
     pi_net = CtrlWhile2ElifBreakInIf()

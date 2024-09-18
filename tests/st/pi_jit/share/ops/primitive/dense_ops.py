@@ -65,12 +65,12 @@ class DenseFactory():
         elif self.dtype == np.float32:
             self.loss *= 10  # 累加次数达到200000+，ccb结论放宽精度标准
         ps_net = Dense()
-        ps_net = jit(ps_net.construct, mode="PSJit")
+        ps_net = jit(ps_net.construct, capture_mode="ast")
         ps_net(self.x_ms, self.w_ms, self.b_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = Dense()
-        pi_net = jit(pi_net.construct, mode="PIJit")
+        pi_net = jit(pi_net.construct, capture_mode="bytecode")
         pi_net(self.x_ms, self.w_ms, self.b_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
@@ -78,11 +78,11 @@ class DenseFactory():
 
     def grad_cmp(self):
         ps_net = Dense()
-        jit(ps_net.construct, mode="PSJit")(self.x_ms, self.w_ms, self.b_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.x_ms, self.w_ms, self.b_ms)
         context.set_context(mode=context.GRAPH_MODE)
         input_grad_psjit = self.grad_mindspore_impl(ps_net)
         pi_net = Dense()
-        jit(pi_net.construct, mode="PIJit")(self.x_ms, self.w_ms, self.b_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.x_ms, self.w_ms, self.b_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         input_grad_pijit = self.grad_mindspore_impl(pi_net)
         allclose_nparray(input_grad_pijit[0], input_grad_psjit[0], self.loss, self.loss)

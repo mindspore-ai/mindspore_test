@@ -91,7 +91,7 @@ class GradCell(nn.Cell):
         self.net = net
         self.grad_all = ops.GradOperation(get_all=True)
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return self.grad_all(self.net)(x)
 
@@ -135,7 +135,7 @@ class GradCellWithParameterTuple(nn.Cell):
         self.param2 = self.net.param2
         self.params = ParameterTuple([self.param1, self.param2])
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x):
         return self.grad(self.net, self.params)(x)
 

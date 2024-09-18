@@ -39,7 +39,7 @@ from mindspore import nn
 from mindspore import ops
 from mindspore import context
 from mindspore import tensor
-from mindspore.common.api import _MindsporeFunctionExecutor
+from mindspore.common.api import _JitExecutor
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common import mutable
@@ -283,8 +283,8 @@ def resolve_symbol(namespace, symbol):
         logger.debug("Resolve type is invalid, namespace: %s, symbol: %s",
                      namespace.__str__(), symbol)
 
-    if isinstance(resolve_, _MindsporeFunctionExecutor):
-        logger.debug("Resolve class _MindsporeFunctionExecutor, resolve fn instead.")
+    if isinstance(resolve_, _JitExecutor):
+        logger.debug("Resolve class _JitExecutor, resolve fn instead.")
         resolve_ = resolve_.fn
     logger.debug(f"Found '{symbol}' in {namespace.__str__()}, resolved: {resolve_} / {type(resolve_)}")
     return resolve_

@@ -19,7 +19,7 @@ import numpy as onp
 from mindspore import Tensor, jit, context
 from mindspore.nn import Cell
 import mindspore.nn as nn
-from .share.utils import match_array
+from tests.st.pi_jit.share.utils import pi_jit_with_config
 from tests.mark_utils import arg_mark
 from mindspore.communication._hccl_management import get_rank_size
 from mindspore.runtime.memory import memory_stats
@@ -33,7 +33,7 @@ def skip_if_python_version_too_high():
     if sys.version_info >= (3, 11):
         pytest.skip("Skipping tests on Python 3.11 and higher.")
 
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_const_func(x, y):
     """
     Feature: const function should be folded into const in graph
@@ -46,7 +46,7 @@ def whitelist_const_func(x, y):
     else:
         return x - y
 
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_builtin_func1(x, y):
     """
     Feature: builtin function should be guarded as a node in graph
@@ -59,7 +59,7 @@ def whitelist_builtin_func1(x, y):
     else:
         return x - y
 
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_builtin_func0(x, y):
     """
     Feature: builtin function should be guarded as a node in graph
@@ -72,7 +72,7 @@ def whitelist_builtin_func0(x, y):
     else:
         return x - y
 
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_forbidden_func(x, y):
     """
     Feature: forbidden function should be broken in graph

@@ -6,6 +6,8 @@ import mindspore.common.dtype as mstype
 from mindspore import Tensor, jit, context, Parameter
 from mindspore.ops import composite as C
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
+
 
 @pytest.fixture(autouse=True)  
 def skip_if_python_version_too_high():  
@@ -24,7 +26,7 @@ class Net(nn.Cell):
         self.forward_time += self.step_time
         print("2nd=>cur_time:", self.forward_time, " step:", self.step_time)
 
-    @jit(mode="PIJit", jit_config={"compile_by_trace": False})
+    @pi_jit_with_config(jit_config={"compile_by_trace": False})
     def construct(self, x):
         x = self.fc(x)
         self.inc_time()

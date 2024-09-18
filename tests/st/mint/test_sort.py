@@ -77,8 +77,8 @@ def test_sort_std(descending, mode):
             output, indices = sort_forward_func(x, dim, descending, False)
             ms_grad = sort_backward_func(x, dim, descending, False)
         else:
-            output, indices = (jit(sort_forward_func, jit_config=JitConfig(jit_level="O0")))(x, dim, descending, False)
-            ms_grad = (jit(sort_backward_func, jit_config=JitConfig(jit_level="O0")))(x, dim, descending, False)
+            output, indices = (jit(sort_forward_func, jit_level="O0"))(x, dim, descending, False)
+            ms_grad = (jit(sort_backward_func, jit_level="O0"))(x, dim, descending, False)
 
         np.testing.assert_array_equal(output.asnumpy(), expected_output)
         np.testing.assert_array_equal(indices.asnumpy(), expected_indices)

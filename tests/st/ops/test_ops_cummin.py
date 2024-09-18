@@ -63,9 +63,9 @@ def test_mint_cummin(mode, dtype):
         output_grad = cummin_backward_func(x, axis)
     elif mode == 'KBK':
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op_froward = ms.jit(cummin_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op_froward = ms.jit(cummin_forward_func, jit_level="O0")
         output = op_froward(x, axis)
-        op_backward = ms.jit(cummin_backward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op_backward = ms.jit(cummin_backward_func, jit_level="O0")
         output_grad = op_backward(x, axis)
     assert np.allclose(output[0].asnumpy(), expect_values)
     assert np.allclose(output[1].asnumpy(), expect_indices)

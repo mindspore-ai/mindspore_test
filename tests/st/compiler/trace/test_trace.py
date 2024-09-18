@@ -24,7 +24,6 @@ import mindspore as ms
 from mindspore.common.api import _pynative_executor
 from mindspore.common.jit_begin_end import _jit_begin as jit_begin
 from mindspore.common.jit_begin_end import _jit_end as jit_end
-from mindspore.common.jit_trace import _jit_trace as jit_trace
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -39,7 +38,7 @@ def test_trace_1():
             super(TraceNet, self).__init__()
             self.x = ms.Tensor(1)
 
-        @jit_trace
+        @ms.jit(capture_mode="trace")
         def construct(self, x, y):
             a = ms.Tensor(2)
             z = x + a
@@ -66,7 +65,7 @@ def test_trace_2():
             super(TraceNet, self).__init__()
             self.x = ms.Tensor(1)
 
-        @jit_trace
+        @ms.jit(capture_mode="trace")
         def construct(self, x, y):
             a = ms.Tensor(2)
             z = x + a
@@ -88,7 +87,7 @@ def test_trace_3():
     Description: JIT trace function
     Expectation: No exception
     """
-    @jit_trace
+    @ms.jit(capture_mode="trace")
     def foo(x, y, z):
         return x + y + z
 
@@ -105,7 +104,7 @@ def test_trace_4():
     Description: JIT trace function
     Expectation: No exception
     """
-    @jit_trace
+    @ms.jit(capture_mode="trace")
     def foo(inputs):
         x, y, z = inputs
         return x + y + z
@@ -124,7 +123,7 @@ def test_trace_5():
     Description: JIT trace function
     Expectation: No exception
     """
-    @jit_trace
+    @ms.jit(capture_mode="trace")
     def foo(inputs):
         x, y, z = inputs
         return x, y, z, x + y + z
@@ -143,7 +142,7 @@ def test_trace_6():
     Description: JIT trace function
     Expectation: No exception
     """
-    @jit_trace
+    @ms.jit(capture_mode="trace")
     def foo(inputs):
         x = ms.ops.addn(inputs)
         return x, inputs
@@ -162,7 +161,7 @@ def test_trace_7():
     Description: JIT trace function
     Expectation: No exception
     """
-    @jit_trace
+    @ms.jit(capture_mode="trace")
     def foo(inputs):
         x = ms.ops.addn(inputs)
         return x, inputs
@@ -193,7 +192,7 @@ def test_trace_tensor_tuple_index_0():
     Description: JIT trace function
     Expectation: No exception
     """
-    @jit_trace
+    @ms.jit(capture_mode="trace")
     def foo(x, index):
         return TensorGetItem()(x, index)
 
@@ -244,7 +243,7 @@ def test_trace_side_effect_1():
             super(TraceNet, self).__init__()
             self.x = ms.Tensor(1)
 
-        @jit_trace
+        @ms.jit(capture_mode="trace")
         def construct(self, x, y):
             a = ms.Tensor(2)
             ms.ops.Print()(a)
@@ -280,7 +279,7 @@ def test_trace_side_effect_2():
     Description: JIT trace function
     Expectation: No exception
     """
-    @jit_trace
+    @ms.jit(capture_mode="trace")
     def foo(inputs):
         x = ms.ops.addn(inputs)
         ms.ops.Print()('x: ', x)

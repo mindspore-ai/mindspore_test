@@ -54,7 +54,7 @@ def test_hypermap_specialize_param():
     net = Net()
     hypermap = C.HyperMap()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def hypermap_specialize_param():
         ret1 = hypermap(F.partial(net, factor1), (x, y))
         # List will be converted to Tuple in SimlifyDataStructurePass.

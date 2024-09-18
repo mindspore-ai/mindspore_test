@@ -63,20 +63,20 @@ class MSTestMethod():
         return self.id
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def call_class():
     net = StaticTestCall()
     res = net(2)
     return res
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def class_attribute():
     net = StaticTestAttribute()
     return net.a * net.b
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def class_attribute2():
     net = StaticTestAttribute()
     net.a = 3
@@ -84,7 +84,7 @@ def class_attribute2():
     return net.a * net.b
 
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def class_method():
     net = StaticTestMethod(1)
     return net.func()

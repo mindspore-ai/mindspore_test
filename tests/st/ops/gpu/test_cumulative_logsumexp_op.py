@@ -20,7 +20,7 @@ import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
-from mindspore.common.api import ms_function
+from mindspore.common.api import jit
 from mindspore.ops import operations as P
 
 
@@ -48,7 +48,7 @@ def cumulative_logsumexp(nptype, loss):
             self.x2 = Tensor(x2)
             self.axis2 = Tensor(axis2)
 
-        @ms_function
+        @jit
         def construct(self):
             return (P.CumulativeLogsumexp()(self.x0, self.axis0),
                     P.CumulativeLogsumexp()(self.x1, self.axis1),

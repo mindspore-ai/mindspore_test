@@ -230,19 +230,19 @@ def test_p_pow_input_num_exp_tensor():
             self.pow = op.Pow()
             self.input_np = input_np
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, exp):
             return self.pow(input_np, exp)
 
     input_np = 3.0
     exp = Tensor(2, dtype=ms.float32)
     pow_net = Net(input_np)
-    jit(pow_net.construct, mode="PSJit")(exp)
+    jit(pow_net.construct, capture_mode="ast")(exp)
     context.set_context(mode=context.GRAPH_MODE)
     psjit_out = pow_net(exp)
 
     pow_net = Net(input_np)
-    jit(pow_net.construct, mode="PIJit")(exp)
+    jit(pow_net.construct, capture_mode="bytecode")(exp)
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_out = pow_net(exp)
 
@@ -268,12 +268,12 @@ def test_p_pow_input_float_exp_tensor():
     input_np = True
     exp = Tensor(2, dtype=ms.float32)
     net = Net(input_np)
-    jit(net.construct, mode="PSJit")
+    jit(net.construct, capture_mode="ast")
     context.set_context(mode=context.GRAPH_MODE)
     psjit_out = net(exp)
 
     net = Net(input_np)
-    jit(net.construct, mode="PSJit")
+    jit(net.construct, capture_mode="ast")
     context.set_context(mode=context.GRAPH_MODE)
     pijit_out = net(exp)
 
@@ -299,11 +299,11 @@ def test_p_pow_input_bool_exp_tensor():
     input_np = True
     exp = Tensor(2, dtype=ms.float32)
     net = Net(input_np)
-    jit(net.construct, mode="PSJit")(exp)
+    jit(net.construct, capture_mode="ast")(exp)
     context.set_context(mode=context.GRAPH_MODE)
     psjit_out = net(exp)
     net = Net(input_np)
-    jit(net.construct, mode="PIJit")(exp)
+    jit(net.construct, capture_mode="bytecode")(exp)
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_out = net(exp)
 

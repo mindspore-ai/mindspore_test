@@ -36,7 +36,7 @@ def test_cat():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x: Tensor, y: Tensor):
         return ops.cat((x, y))
 
@@ -54,7 +54,7 @@ def test_cat_axis_0():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x: Tensor, y: Tensor):
         return ops.cat((x, y), axis=0)
 
@@ -72,7 +72,7 @@ def test_cat_axis_1():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y):
         return ops.cat((x, y), axis=1)
 
@@ -90,7 +90,7 @@ def test_cat_three_tensors_at_axis_0():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y, z):
         return ops.cat([x, y, z], axis=0)
 
@@ -109,7 +109,7 @@ def test_cat_three_tensors_at_axis_negative_1():
     Description: Test one stage basic operation.
     Expectation: No exception, no graph-break.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def fn(x, y, z):
         return ops.cat([x, y, z], axis=-1)
 

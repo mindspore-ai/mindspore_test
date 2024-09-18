@@ -68,9 +68,9 @@ def run_with_mode(fn):
 
         del kwargs['mode']
         if mode == "graph":
-            return (jit(fn, jit_config=JitConfig(jit_level="O2")))(*args, **kwargs)
+            return (jit(fn, jit_level="O2"))(*args, **kwargs)
         if mode == "kbk":
-            return (jit(fn, jit_config=JitConfig(jit_level="O0")))(*args, **kwargs)
+            return (jit(fn, jit_level="O0"))(*args, **kwargs)
         return fn(*args, **kwargs)
 
     setattr(wrapper, "__wrapped_with_mode__", True)

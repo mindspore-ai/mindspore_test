@@ -16,7 +16,7 @@ class Net(nn.Cell):
         self.sin = ops.Sin()
         self.cos = ops.Cos()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         out1 = self.sin(x) - self.cos(y)
         out2 = self.cos(x) - self.sin(y)

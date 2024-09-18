@@ -29,7 +29,7 @@ class Net(Cell):
         self.w = Parameter(Tensor([(- 1)], dtype.float32), name='w')
         self.b = Parameter(Tensor([(- 1)], dtype.float32), name='b')
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         for s in range(2):
             if s > y:

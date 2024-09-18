@@ -50,7 +50,7 @@ def test_store_subscr_side_effect_1():
         x[0] = Tensor([1, 2])
         x[1] = Tensor([1, 2])
         return x
-    jit(fn=func, mode="PIJit")([Tensor([1]), Tensor([1])])
+    jit(function=func, capture_mode="bytecode")([Tensor([1]), Tensor([1])])
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
     for i in dis.get_instructions(new_code):
@@ -73,7 +73,7 @@ def test_store_subscr_side_effect_2():
         x = [Tensor([1]), Tensor([1])]
         x[0] = Tensor([1, 2])
         return x
-    jit(fn=func, mode="PIJit")()
+    jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -88,7 +88,7 @@ def test_del_subscr_side_effect_3():
     def func(arg):
         del arg[0]
         return arg
-    jit(fn=func, mode="PIJit")([Tensor([1]), Tensor([1])])
+    jit(function=func, capture_mode="bytecode")([Tensor([1]), Tensor([1])])
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
 
@@ -111,7 +111,7 @@ def test_dict_pop_side_effect_4():
         d = {"a": Tensor([1, 2]), "b": Tensor([1, 2])}
         d.pop("b")
         return d
-    jit(fn=func, mode="PIJit")()
+    jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -126,7 +126,7 @@ def test_dict_pop_side_effect_5():
     def func(d):
         d.pop("b")
         return d
-    jit(fn=func, mode="PIJit")({"a": Tensor([1, 2]), "b": Tensor([1, 2])})
+    jit(function=func, capture_mode="bytecode")({"a": Tensor([1, 2]), "b": Tensor([1, 2])})
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -143,7 +143,7 @@ def test_store_global_side_effect_6():
         tmp = Tensor([1])
         tmp *= 2
         return tmp
-    jit(fn=func, mode="PIJit")()
+    jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
@@ -164,7 +164,7 @@ def test_del_global_side_effect_7():
         return tmp
 
     with pytest.raises(NameError, match="name 'tmp' is not defined"):
-        jit(fn=func, mode="PIJit")()
+        jit(function=func, capture_mode="bytecode")()
 
     context.set_context(mode=context.PYNATIVE_MODE)
 
@@ -184,7 +184,7 @@ def test_fix_bug_store_subscr_side_effect_1():
         return x
 
     net = NetAssign0002()
-    result = jit(fn=func, mode="PIJit")(net)
+    result = jit(function=func, capture_mode="bytecode")(net)
     jcr = get_code_extra(func)
 
     assert jcr["break_count_"] == 0
@@ -214,7 +214,7 @@ def test_modify_mix1(test_optimize):
         return y, res
 
     excepted = func(Tensor([1]))
-    result = jit(fn=func, mode="PIJit")(Tensor([1]))
+    result = jit(function=func, capture_mode="bytecode")(Tensor([1]))
 
     assert str(excepted) == str(result)
 
@@ -238,7 +238,7 @@ def test_modify_mix2():
     x1 = {'param' : Tensor([1]), 'remove' : 1}
     x2 = {**x1}
     excepted = func(x1)
-    result = jit(fn=func, mode="PIJit")(x2)
+    result = jit(function=func, capture_mode="bytecode")(x2)
 
     assert excepted == result
     assert x1 == x2
@@ -270,7 +270,7 @@ def test_global_modified_cross_module():
     magic_number_excepted = global_dict.pop('magic_number')
 
     del magic_number
-    result = jit(fn=func, mode="PIJit")(x)
+    result = jit(function=func, capture_mode="bytecode")(x)
     magic_number_result = global_dict.pop('magic_number')
 
     assert x == magic_number_excepted == magic_number_result
@@ -284,7 +284,7 @@ def test_object_consistency():
     Description: Test the modification of same object from multiple source
     Expectation: No exception
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def object_consistency(x, y):
         x.f = y.get
         y.test = x
@@ -313,7 +313,7 @@ def test_object_consistency2():
     Description: Test the modification of same object from multiple source
     Expectation: No exception
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(x, y):
         x.append(1)
         y.append(2)
@@ -339,7 +339,7 @@ def test_tensor_assign(assign_fn):
     Description: Test side-effect rollback. Test side-effect restore
     Expectation: No exception
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(x, y, assign, rand):
         a = x + y
         if rand:
@@ -378,7 +378,7 @@ def test_tensor_consistency(assign_fn):
     if assign_fn.__name__ == "<lambda>":
         pytest.skip("sub graph side-effect value can't return to top graph")
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def func(assign, x, y, x1, y1):
         a = x + y
         assign(x, y)

@@ -19,7 +19,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 import mindspore.ops.operations._grad_ops as P
 from mindspore import Tensor
-from mindspore.common.api import ms_function
+from mindspore.common.api import jit
 
 
 class SparseSegmentMeanGradNet(nn.Cell):
@@ -27,7 +27,7 @@ class SparseSegmentMeanGradNet(nn.Cell):
         super(SparseSegmentMeanGradNet, self).__init__()
         self.net = P.SparseSegmentMeanGrad()
 
-    @ms_function
+    @jit
     def construct(self, grad, indices, segment_ids, output_dim0):
         return self.net(grad, indices, segment_ids, output_dim0)
 

@@ -36,14 +36,14 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/parallel_context.h"
+#include "include/common/fallback.h"
 #include "abstract/abstract_value.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/graph_util/graph_splitter.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/shard/shard.h"
-#include "pipeline/jit/ps/pipeline.h"
-#include "pipeline/jit/ps/pass.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/static_analysis/auto_monad.h"
@@ -382,7 +382,7 @@ abstract::AnalysisResult AbstractAnalyzeWithResourceClean(const ValuePtr &func,
   auto engine = resource->engine();
   auto res = AbstractAnalyze(engine, infer_graph, args_abs, false, true);
 
-  GraphExecutorPy::GetInstance()->CleanCompileRes(resource);
+  JitExecutorPy::GetInstance()->CleanCompileRes(resource);
   return res;
 }
 
@@ -405,13 +405,11 @@ void SetMindIRLoadFlag(const ResourcePtr &resource) {
   auto manager = resource->manager();
   MS_EXCEPTION_IF_NULL(manager);
   FuncGraphPtr loaded_graph = nullptr;
-  size_t loaded_graph_num = 0;
   const auto &all_graphs = manager->func_graphs();
   for (auto &graph : all_graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->has_attr("is_load")) {
       loaded_graph = graph;
-      loaded_graph_num += 1;
       resource->set_is_load(true);
       return;
     }
@@ -1398,6 +1396,10 @@ bool GetJitBpropGraph(const ResourcePtr &resource) {
 bool RewriterAfterOptAPassAfterJitBprop(const ResourcePtr &resource) {
   // This function is only used to convert unsupported syntax into PyExecute nodes through Fallback,
   // when the forward graph is decorated with 'jit', and is derivative in pynative mode.
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return true;
+  }
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->not_convert_jit()) {

@@ -86,11 +86,11 @@ def test_ops_roll_normal(mode):
         dout3 = roll_backward_func(Tensor(x3), shifts3, dims3, Tensor(grad))
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        op = ms.jit(roll_forward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op = ms.jit(roll_forward_func, jit_level="O0")
         out1 = op(Tensor(x1), shifts1, dims1)
         out2 = op(Tensor(x2), shifts2, dims2)
         out3 = op(Tensor(x3), shifts3, dims3)
-        op = ms.jit(roll_backward_func, jit_config=ms.JitConfig(jit_level="O0"))
+        op = ms.jit(roll_backward_func, jit_level="O0")
         dout1 = op(Tensor(x1), shifts1, dims1, Tensor(grad))
         dout2 = op(Tensor(x2), shifts2, dims2, Tensor(grad))
         dout3 = op(Tensor(x3), shifts3, dims3, Tensor(grad))

@@ -19,7 +19,7 @@ class IfInFor(Cell):
         self.param = Parameter(Tensor(np.ones((1,), dtype=np.int32)), name="w1")
         self.shape = P.Shape()
 
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def construct(self, x, y):
         shape = self.shape(y)
         for _ in range(1):

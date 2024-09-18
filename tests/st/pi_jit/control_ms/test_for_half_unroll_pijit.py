@@ -39,7 +39,7 @@ def test_for_half_unroll_basic():
             super().__init__()
             self.array = (Tensor(np.array(10).astype(np.int32)), Tensor(np.array(5).astype(np.int32)))
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             output = x
             for i in self.array:
@@ -68,7 +68,7 @@ def test_for_half_unroll_if():
             super().__init__()
             self.array = (Tensor(np.array(10).astype(np.int32)), Tensor(np.array(5).astype(np.int32)))
 
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def construct(self, x):
             output = x
             for i in self.array:

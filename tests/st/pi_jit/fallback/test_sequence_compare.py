@@ -24,7 +24,7 @@ def test_sequence_compare_with_operation():
     Description: Sequence operations with nested or irregular inputs should be converted to PyExecute.
     Expectation: No exception.
     """
-    @jit(mode="PIJit")
+    @jit(capture_mode="bytecode")
     def foo(x, y):
         m = ((x, x+1), x+2)
         n = ((y, y-1), y+2)

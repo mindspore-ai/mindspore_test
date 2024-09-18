@@ -45,9 +45,9 @@ def test_ops_fftfreq_forward(mode):
     if mode == 'pynative':
         output = fftfreq_forward_func(n, d)
     elif mode == 'KBK':
-        output = (jit(fftfreq_forward_func, jit_config=JitConfig(jit_level="O0")))(n, d)
+        output = (jit(fftfreq_forward_func, jit_level="O0"))(n, d)
     else:
-        output = (jit(fftfreq_forward_func, jit_config=JitConfig(jit_level="O2")))(n, d)
+        output = (jit(fftfreq_forward_func, jit_level="O2"))(n, d)
     expect = generate_expect_forward_output(n, d)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 

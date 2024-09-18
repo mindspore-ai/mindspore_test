@@ -28,7 +28,7 @@ zero = Tensor([0], mstype.int32)
 one = Tensor([1], mstype.int32)
 five = Tensor([5], mstype.int32)
 
-@jit(mode="PIJit")
+@jit(capture_mode="bytecode")
 def fr(x):
     y = zero
     if x < 0:

@@ -73,7 +73,7 @@ def test_kvcachescatterupdate_forward_mode():
     updates = np.random.uniform(low=1, high=10, size=updates_shape).astype(np.float32)
 
     output = (jit(kvcachescatterupdate_forward_func,
-                  jit_config=JitConfig(jit_level="O2")))(Parameter(Tensor(var), "var"),
+                  jit_level="O2"))(Parameter(Tensor(var), "var"),
                                                          Tensor(indices), Tensor(updates), -1, 'update')
     expect_shape = [1, 5, 128, 4096]
     assert np.allclose(output.shape, expect_shape)
@@ -100,14 +100,12 @@ def test_scatter_value(mode):
         output = kvcachescatterupdate_forward_func(Tensor(var), Tensor(indices), Tensor(updates), -1, 'update')
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(kvcachescatterupdate_forward_func,
-                      jit_config=JitConfig(jit_level="O0")))(Parameter(Tensor(var), "var"),
-                                                             Tensor(indices), Tensor(updates), -1, 'update')
+        output = (jit(kvcachescatterupdate_forward_func, jit_level="O0"))(Parameter(Tensor(var), "var"),
+                                                                          Tensor(indices), Tensor(updates), -1, 'update')
     else:
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(kvcachescatterupdate_forward_func,
-                      jit_config=JitConfig(jit_level="O2")))(Parameter(Tensor(var), "var"),
-                                                             Tensor(indices), Tensor(updates), -1, 'update')
+        output = (jit(kvcachescatterupdate_forward_func, backend="GE"))(Parameter(Tensor(var), "var"),
+                                                                        Tensor(indices), Tensor(updates), -1, 'update')
     expect_value = expect_func(var, indices, updates, -1)
     assert np.allclose(output.asnumpy(), expect_value)
 

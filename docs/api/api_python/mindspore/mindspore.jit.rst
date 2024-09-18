@@ -1,33 +1,25 @@
 mindspore.jit
 =============
 
-.. py:function:: mindspore.jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=None, compile_once=False)
+.. py:function:: mindspore.jit(function: Optional[Callable] = None, *, capture_mode: str = "ast", jit_level: str = "O0", dynamic: bool = False, fullgraph: bool = False, backend: Union[str, Callable] = "default", **options)
 
     将Python函数编译为一张可调用的MindSpore图。
 
     MindSpore可以在运行时对图进行优化。
 
-    .. note::
-        - 如果指定了 `input_signature` ，则 `fn` 的每个输入都必须是Tensor。并且 `fn` 的输入参数将不会接受 `**kwargs` 参数。
-        - 不支持在静态图模式下，运行带装饰@jit(mode="PIJit")的函数，此时该装饰@jit(mode="PIJit")视为无效。
-        - 不支持在@jit(mode="PSJit")装饰的函数内部调用带装饰@jit(mode="PIJit")的函数，该装饰 @jit(mode="PIJi")视为无效。
-
     参数：
-        - **fn** (Function) - 要编译成图的Python函数。默认值： ``None`` 。
-        - **mode** (str) - 使用jit的类型，可选值有 ``"PSJit"`` 和 ``"PIJit"`` 。默认值： ``"PSJit"``。
+        - **function** (Function, 可选) - 要编译成图的Python函数。默认值：``None``。
+        - **capture_mode** (str, 可选) - 创建一张可调用的MindSpore图的方式，可选值有 ``"ast"`` 、 ``"bytecode"`` 和 ``"trace"`` 。默认值： ``"ast"``。
 
-          - `PSJit <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ ：解析python的ast以构建静态图。
-          - `PIJit <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/pynative.html#pijit>`_ ：在运行时解析python字节码以构建静态图。
+          - `ast <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ ：解析Python的ast以构建静态图。
+          - `bytecode <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/pynative.html#pijit>`_ ：在运行时解析Python字节码以构建静态图。这是一个实验特性，可能会被更改或者删除。
+          - `trace` ：追踪Python代码的执行以构建静态图。这是一个实验特性，可能会被更改或者删除。
 
-        - **input_signature** (Union[Tuple, List, Dict, Tensor]) - 输入的Tensor是用于描述输入参数的。Tensor的shape和dtype将被配置到函数中去。如果指定了 `input_signature`，则 `fn` 的输入参数不接受 `**kwargs` 类型，并且实际输入的shape和dtype需要与 `input_signature` 相匹配。否则，将会抛出TypeError异常。 `input_signature` 有两种模式：
-
-          - 全量配置模式：参数为Tuple、List或者Tensor，它们将被用作图编译时的完整编译参数。
-          - 增量配置模式：参数为Dict，它将被配置到图的部分输入上，替换图编译对应位置上的参数。
-
-          默认值： ``None`` 。
-        - **hash_args** (Union[Object, List or Tuple of Objects]) - `fn` 里面用到的自由变量，比如外部函数或类对象，再次调用时若 `hash_args` 出现变化会触发重新编译。默认值： ``None`` 。
-        - **jit_config** (JitConfig) - 编译时所使用的JitConfig配置项，详细可参考 :class:`mindspore.JitConfig`。默认值： ``None`` 。
-        - **compile_once** (bool) - ``True``: 函数多次重新创建只编译一次，如果函数里面的自由变量有变化，设置True是有正确性风险； ``False``: 函数重新创建会触发重新编译。默认值： ``False`` 。
+        - **jit_level** (str, 可选) - 控制编译优化的级别。可选值有 ``"O0"`` 、 ``"O1"`` 和 ``"O2"`` 。默认值： ``"O0"``。
+        - **dynamic** (bool, 可选) - 是否需要进行动态shape编译。当前为预留参数，暂不起作用。默认值： ``False``。
+        - **fullgraph** (bool, 可选) - 是否捕获整个函数来编译成图。如果为False，jit会尽可能地尝试兼容函数中的所有Python语法。如果为True，则需要整个函数都可以被捕获成图，否则（即有不支持的Python语法），会抛出一个异常。当前只对capture_mode为 ``"ast"`` 时生效。默认值： ``False``。
+        - **backend** (str, 可选) - 使用的编译后端。默认值： ``"default"`` 。
+        - **\*\*options** (dict) - 传给编译后端的选项字典。
 
     返回：
         函数，如果 `fn` 不是None，则返回一个已经将输入 `fn` 编译成图的可执行函数；如果 `fn` 为None，则返回一个装饰器。当这个装饰器使用单个 `fn` 参数进行调用时，等价于 `fn` 不是None的场景。

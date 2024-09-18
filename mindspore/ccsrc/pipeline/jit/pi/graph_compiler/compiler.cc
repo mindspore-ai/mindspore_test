@@ -23,13 +23,13 @@
 #include "pipeline/jit/pi/graph_compiler/func_graph_builder.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "pipeline/jit/ps/pipeline_jit.h"
 #include "pipeline/pynative/pynative_execute.h"
 
 namespace mindspore {
 namespace pijit {
 namespace {
-// Reference : method _generate_run_args of _MindsporeFunctionExecutor in api.py
+// Reference : method _generate_run_args of _JitExecutor in api.py
 // Parameters should be eliminated in the following case：
 // 1.Constant Tensor, reason : constant folding
 // 2.Constant Scalar(exclude those will be broaden), reason : constant folding
@@ -144,7 +144,7 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   MarkArgmentMutable(args_tuple);
   args_tuple = EliminateInvalidArgs(args_tuple, co_flags, enable_tuple_broaden);
   MS_LOG(INFO) << "Args for run: " << std::string(py::str(args_tuple));
-  auto graph_executor = pipeline::GraphExecutorPy::GetInstance();
+  auto graph_executor = pipeline::GetExecutor();
   MS_EXCEPTION_IF_NULL(graph_executor);
   py::object ret;
   int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
@@ -256,7 +256,6 @@ CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tu
                                     const std::string &phase, const CompileInfo &compile_info) {
   MS_EXCEPTION_IF_CHECK_FAIL(!phase.empty(),
                              "Phase name should not be empty for function " + compile_info.co_name_ + ".");
-
   CallableGraph callable = [compile_info, phase](PyObject *args, PyObject *kwargs) -> PyObject * {
     MS_EXCEPTION_IF_CHECK_FAIL(PyTuple_Check(args), "Excepted a Tuple Object for run args.");
     MS_EXCEPTION_IF_CHECK_FAIL(((kwargs == nullptr) || PyDict_Check(kwargs)),
@@ -266,8 +265,8 @@ CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tu
     return RunGraph(phase, tuple, compile_info.co_name_, compile_info.co_flags_, false);  // need adapt for optimizer
   };
 
-  auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
-  if (graph_executor->HasCompiled(phase)) {
+  auto jit_executor = pipeline::GetExecutor();
+  if (jit_executor->HasCompiled(phase)) {
     return callable;
   }
 
@@ -281,7 +280,7 @@ CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tu
     DumpIR("graph_before_compile.ir", func_graph);
   }
   MS_LOG(INFO) << "Args for compile: " << std::string(py::str(new_arg));
-  (void)graph_executor->CompileInner(func_graph, new_arg, kwargs, phase, true, true);
+  (void)jit_executor->CompileInner(func_graph, new_arg, kwargs, phase, true);
 
   return callable;
 }

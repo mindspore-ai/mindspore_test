@@ -40,7 +40,7 @@ def test_vmap_with_tuple_input():
         return x * y
 
     def foo(fn):
-        @jit(mode="PIJit")
+        @jit(capture_mode="bytecode")
         def wrapped(*args):
             def fn2(x, y):
                 return F.jvp(fn, x, y)

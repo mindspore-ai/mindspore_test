@@ -59,8 +59,8 @@ def test_bitwise_xor_forward_backward(mode):
         output2 = bitwise_xor_forward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(bitwise_xor_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        output2 = (jit(bitwise_xor_forward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        output = (jit(bitwise_xor_forward_func, jit_level="O0"))(x, y)
+        output2 = (jit(bitwise_xor_forward_func, jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         output = bitwise_xor_forward_func(x, y)
@@ -79,8 +79,8 @@ def test_bitwise_xor_forward_backward(mode):
         grad2 = bitwise_xor_backward_func(x, y2)
     elif mode == 'KBK':
         context.set_context(mode=ms.GRAPH_MODE)
-        grad = (jit(bitwise_xor_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y)
-        grad2 = (jit(bitwise_xor_backward_func, jit_config=JitConfig(jit_level="O0")))(x, y2)
+        grad = (jit(bitwise_xor_backward_func, jit_level="O0"))(x, y)
+        grad2 = (jit(bitwise_xor_backward_func, jit_level="O0"))(x, y2)
     else:
         context.set_context(mode=ms.GRAPH_MODE)
         grad = bitwise_xor_backward_func(x, y)

@@ -48,7 +48,7 @@ def test_yield_case_1():
             sum = sum + i
         return sum
 
-    fn = jit(fn=func2, mode="PIJit")
+    fn = jit(function=func2, capture_mode="bytecode")
     got = fn()
     expected = func2()
     assert got == expected
@@ -75,7 +75,7 @@ def test_yield_case_2():
             sum = sum + i
         return sum
 
-    fn = jit(fn=func2, mode="PIJit")
+    fn = jit(function=func2, capture_mode="bytecode")
     got = fn()
     expected = func2()
     assert got == expected
@@ -102,7 +102,7 @@ def test_yield_case_3():
             sum = sum + i
         return sum
 
-    fn = jit(fn=func2, mode="PIJit")
+    fn = jit(function=func2, capture_mode="bytecode")
     got = fn()
     expected = func2()
     assert got == expected
@@ -128,7 +128,7 @@ def test_yield_case_4():
             sum = sum + i
         return {"sum": sum}
 
-    fn = jit(fn=func2, mode="PIJit")
+    fn = jit(function=func2, capture_mode="bytecode")
     got = fn(iter([1, 2, 3]))
     expected = func2(iter([1, 2, 3]))
     assert got == expected

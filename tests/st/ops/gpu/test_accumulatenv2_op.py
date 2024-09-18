@@ -20,7 +20,7 @@ import mindspore
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
-from mindspore.common.api import ms_function
+from mindspore.common.api import jit
 from mindspore.ops import operations as P
 
 
@@ -29,7 +29,7 @@ class NetAccumulateNV2(nn.Cell):
         super(NetAccumulateNV2, self).__init__()
         self.accumulatenv2 = P.AccumulateNV2()
 
-    @ms_function
+    @jit
     def construct(self, *x):
         return self.accumulatenv2(x)
 

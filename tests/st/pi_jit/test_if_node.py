@@ -13,13 +13,14 @@
 # limitations under the License.
 # ============================================================================
 """test Control flow(if) implement"""
-import sys
 import sys  
 import pytest 
 import mindspore.context as context
 from mindspore import Tensor, jit
 from mindspore.common import dtype as mstype
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
+
 
 @pytest.fixture(autouse=True)  
 def skip_if_python_version_too_high():  
@@ -31,14 +32,14 @@ if SYS_VER != (3, 7) and SYS_VER != (3, 9):
     pytest.skip(reason="not implement for python" + str(SYS_VER), allow_module_level=True)
 
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def single_branch(x, y):
     if x > 0:
         x = x + y
 
     return x
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def repeat_single_branch(x, y):
     if x > 0:
         x = x + y
@@ -52,7 +53,7 @@ def repeat_single_branch(x, y):
 
     return x
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def nest_single_branch(x, y):
     if x > 0:
         x = x + y
@@ -62,7 +63,7 @@ def nest_single_branch(x, y):
 
     return x
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def full_branch(x, y):
     if x > 0:
         x = x + y
@@ -71,7 +72,7 @@ def full_branch(x, y):
 
     return x
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def repeat_full_branch(x, y):
     if x > 0:
         x = x + y
@@ -85,7 +86,7 @@ def repeat_full_branch(x, y):
 
     return x
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def nest_full_branch(x, y):
     if x > 0:
         x = x + y
@@ -102,7 +103,7 @@ def nest_full_branch(x, y):
 
     return x
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def multi_branch(x, y):
     if x > 0:
         x = x + y
@@ -113,7 +114,7 @@ def multi_branch(x, y):
 
     return x
 
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def return_branch_1(x, y):
     if x > 0:
         return x + y
@@ -121,7 +122,7 @@ def return_branch_1(x, y):
     return x
 
 # pylint: disable=R1705
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def return_branch_2(x, y):
     if x > 0:
         return x + y
@@ -131,7 +132,7 @@ def return_branch_2(x, y):
     return x
 
 # pylint: disable=R1705
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def return_branch_3(x, y):
     if x > 0:
         return x + y
@@ -141,7 +142,7 @@ def return_branch_3(x, y):
     return x
 
 # pylint: disable=R1705
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def return_branch_4(x, y):
     if x > 0:
         return x + y
@@ -149,7 +150,7 @@ def return_branch_4(x, y):
         return x
 
 # pylint: disable=R1705
-@jit(mode="PIJit", jit_config={"compile_without_capture": True})
+@pi_jit_with_config(jit_config={"compile_without_capture": True})
 def return_branch_5(x, y):
     if x > 0:
         if x > 5:

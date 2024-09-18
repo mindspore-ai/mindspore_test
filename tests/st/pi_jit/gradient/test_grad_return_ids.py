@@ -91,7 +91,7 @@ def grad_return_ids_pos0(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -103,7 +103,7 @@ def grad_return_ids_pos01(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -115,7 +115,7 @@ def grad_return_ids_weight_w(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -127,7 +127,7 @@ def grad_return_ids_weight_wb(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact.get_mindspore_grad()
     return jit_grad, pijit_grad
@@ -140,7 +140,7 @@ def grad_return_ids_pos_weight(class_name):
     context.set_context(mode=context.PYNATIVE_MODE)
     jit_grad = fact.get_mindspore_grad()
     jit_mode_pi_enable()
-    jit(class_name.construct, mode="PIJit")
+    jit(class_name.construct, capture_mode="bytecode")
     context.set_context(mode=context.PYNATIVE_MODE)
     pijit_grad = fact_pijit.get_mindspore_grad()
     return jit_grad, pijit_grad

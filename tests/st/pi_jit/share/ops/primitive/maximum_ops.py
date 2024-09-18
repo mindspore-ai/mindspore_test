@@ -57,22 +57,22 @@ class MaximumFactory():
 
     def forward_cmp(self):
         ps_net = Maximum()
-        jit(ps_net.construct, mode="PSJit")(self.left_input_ms, self.right_input_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.left_input_ms, self.right_input_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = Maximum()
-        jit(pi_net.construct, mode="PIJit")(self.left_input_ms, self.right_input_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.left_input_ms, self.right_input_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)
 
     def grad_cmp(self):
         ps_net = Maximum()
-        jit(ps_net.construct, mode="PSJit")(self.left_input_ms, self.right_input_ms)
+        jit(ps_net.construct, capture_mode="ast")(self.left_input_ms, self.right_input_ms)
         context.set_context(mode=context.GRAPH_MODE)
         output_grad_psjit = self.grad_mindspore_impl(ps_net)
         pi_net = Maximum()
-        jit(pi_net.construct, mode="PIJit")(self.left_input_ms, self.right_input_ms)
+        jit(pi_net.construct, capture_mode="bytecode")(self.left_input_ms, self.right_input_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         output_grad_pijit = self.grad_mindspore_impl(pi_net)
         allclose_nparray(output_grad_pijit[0], output_grad_psjit[0], self.loss, self.loss)

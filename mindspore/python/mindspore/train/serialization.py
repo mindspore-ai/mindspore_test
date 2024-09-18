@@ -54,7 +54,7 @@ from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
 from mindspore.common.api import _cell_graph_executor as _executor
-from mindspore.common.api import _MindsporeFunctionExecutor
+from mindspore.common.api import _JitExecutor
 from mindspore.common.api import _get_parameter_layout
 from mindspore.common.api import _generate_branch_control_input
 from mindspore.common.initializer import initializer, One
@@ -2456,14 +2456,13 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
         os.chmod(data_file_name, stat.S_IRUSR)
 
 
-def _msfunc_info(net, *inputs):
+def _msfunc_info(net, jit_executor, *inputs):
     """Get mindir stream and parameter dict of ms_function"""
     # pylint: disable=protected-access
     net_dict = OrderedDict()
-    _ms_func_executor = _MindsporeFunctionExecutor(net, time.time() * 1e9)
-    graph_id = _ms_func_executor.compile(net.__name__, *inputs)
-    mindir_stream = _executor._get_func_graph_proto(net, graph_id, 'mind_ir')
-    params = _ms_func_executor._graph_executor.get_params(graph_id)
+    graph_id = jit_executor.compile(net.__name__, *inputs)
+    mindir_stream = jit_executor._get_func_graph_proto(net, graph_id, 'mind_ir')
+    params = jit_executor._graph_executor.get_params(graph_id)
     for name, value in params.items():
         net_dict[name] = Parameter(value, name=name)
     return mindir_stream, net_dict
@@ -2482,7 +2481,7 @@ def _cell_info(net, incremental, *inputs):
     return mindir_stream, net_dict
 
 
-def _set_obfuscate_config(**kwargs):
+def _set_obfuscate_config(executor, **kwargs):
     """Set obfuscation config for executor."""
     logger.warning("Obfuscate model.")
     if 'enc_mode' in kwargs.keys():
@@ -2504,14 +2503,17 @@ def _set_obfuscate_config(**kwargs):
         clean_funcs()
         for func in customized_funcs:
             add_opaque_predicate(func.__name__, func)
-    _executor.obfuscate_config = {'obf_ratio': obf_ratio, 'obf_random_seed': obf_random_seed}
+    executor.obfuscate_config = {'obf_ratio': obf_ratio, 'obf_random_seed': obf_random_seed}
 
 
 def _save_mindir(net, file_name, *inputs, **kwargs):
     """Save MindIR format file."""
+    executor = _executor
+    if not isinstance(net, nn.Cell):
+        executor = _JitExecutor(net, time.time() * 1e9)
     # set obfuscate configs
     if 'obf_config' in kwargs.keys():
-        _set_obfuscate_config(**kwargs)
+        _set_obfuscate_config(executor, **kwargs)
         for item in inputs:
             if -1 in item.shape:
                 raise ValueError(
@@ -2521,7 +2523,7 @@ def _save_mindir(net, file_name, *inputs, **kwargs):
 
     model = mindir_model()
     if not isinstance(net, nn.Cell):
-        mindir_stream, net_dict = _msfunc_info(net, *inputs)
+        mindir_stream, net_dict = _msfunc_info(net, executor, *inputs)
     else:
         mindir_stream, net_dict = _cell_info(net, incremental, *inputs)
     model.ParseFromString(mindir_stream)

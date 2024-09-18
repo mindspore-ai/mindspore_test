@@ -19,11 +19,10 @@ import inspect
 import re
 from functools import wraps
 from mindspore import log as logger
-from mindspore.common.api import _convert_python_data, _PyNativeExecutor
 from mindspore.common.jit_context import JitContext, set_jit_context
 from mindspore._checkparam import is_stub_tensor
 from mindspore._c_expression import TraceRecorder as tr
-from mindspore._c_expression import GraphExecutor_
+from mindspore._c_expression import JitExecutor_
 
 
 class TraceJitContext(JitContext):
@@ -43,8 +42,7 @@ class TraceJitContext(JitContext):
 _compile_only = False
 _trace_jit_context = TraceJitContext()
 _trace_compile_cache = set()
-_graph_executor = GraphExecutor_.get_instance()
-_pynative_executor = _PyNativeExecutor()
+_jit_executor = JitExecutor_.get_instance()
 
 
 def _set_compile_only(compile_only=True):
@@ -189,7 +187,7 @@ def _jit_trace_begin(fn_name, *args):
         logger.debug(f'_jit_trace_begin, arg: {arg}, {type(arg)}')
 
     # Generate phase for compile pipeline.
-    key = _graph_executor.generate_arguments_key(None, args, dict(), False)
+    key = _jit_executor.generate_arguments_key(None, args, dict(), False)
 
     phase = fn_name + '.' + str(key)
     logger.debug(f'phase: {phase}')
@@ -198,6 +196,7 @@ def _jit_trace_begin(fn_name, *args):
         logger.debug('Had compiled, just run.')
         _trace_jit_context.compiled = True
         output = tr.get_instance().run_graph(phase, args)
+        from mindspore.common.api import _convert_python_data
         _trace_jit_context.result = _convert_python_data(output)
         logger.debug(f'jit trace result: {_trace_jit_context.result}')
         return False
@@ -259,6 +258,7 @@ def _jit_trace_end(*output_args):
             output = output_args[0] if len(output_args) == 1 else output_args
         else:
             output = tr.get_instance().run_graph(_trace_jit_context.phase, _trace_jit_context.args)
+            from mindspore.common.api import _convert_python_data
             output = _convert_python_data(output)
             logger.debug(f'jit trace result: {output}')
             logger.debug(f'python result: {output_args[0] if len(output_args) == 1 else output_args}')

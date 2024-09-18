@@ -26,8 +26,10 @@ import inspect
 import importlib
 import hashlib
 import contextlib
+import json
 from collections import OrderedDict, namedtuple
 from functools import wraps
+from typing import Optional, Callable, Union
 import numpy as np
 import mindspore as ms
 from mindspore import context
@@ -39,7 +41,7 @@ from mindspore.common.sparse_tensor import CSRTensor as PythonCSRTensor
 from mindspore.common.sparse_tensor import COOTensor as PythonCOOTensor
 from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
-from mindspore._c_expression import GraphExecutor_, Tensor, CSRTensor, RowTensor, COOTensor, \
+from mindspore._c_expression import GraphExecutor_, JitExecutor_, Tensor, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
     _ms_memory_recycle, _bind_device_ctx, StubNode
 from mindspore.parallel._ps_context import _is_role_sched
@@ -54,6 +56,7 @@ from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, upd
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
 from mindspore.common._pijit_context import PIJitCaptureContext
 from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
+from mindspore.common.jit_trace import _jit_trace
 
 # Store ms_function class compiled pipeline cache.
 ms_compile_cache = set()
@@ -125,7 +128,7 @@ def _ms_adapter_tensor_as_parameter_output(data):
        Pylint: disable=unidiomatic-typecheck.
     """
     return ms_adapter_registry.is_registered and isinstance(data, ms_adapter_registry.tensor) \
-        and hasattr(data, "__ms_parameter_output__") and getattr(data, "__ms_parameter_output__")
+           and hasattr(data, "__ms_parameter_output__") and getattr(data, "__ms_parameter_output__")
 
 
 def _convert_python_data(data):
@@ -578,11 +581,11 @@ def _get_hook_key(*args, **kwargs):
     return hook_key
 
 
-class _MindsporeFunctionExecutor:
+class _JitExecutor:
     """
     Represents a function compiled by graph compiler.
 
-    _MindsporeFunctionExecutor will compile the original function for every combination
+    _JitExecutor will compile the original function for every combination
     of argument types and shapes it is given (as well as their values, optionally).
 
     Args:
@@ -608,10 +611,14 @@ class _MindsporeFunctionExecutor:
             self.obj = obj
         self.shard_parent_obj = obj
         self.enable_tuple_broaden = False
-        self._graph_executor = GraphExecutor_.get_instance()
+        if os.getenv('MS_DEV_JIT_PIPELINE') == '0':
+            self._graph_executor = GraphExecutor_.get_instance()
+        else:
+            self._graph_executor = JitExecutor_.get_instance()
         self._create_time = ms_create_time
         self._compile_args = None
         self.jit_config_dict = jit_config.jit_config_dict if jit_config else None
+        self.obfuscate_config = None  # used for model's dynamic obfuscation
 
     @_wrap_func
     def __call__(self, *args, **kwargs):
@@ -704,7 +711,7 @@ class _MindsporeFunctionExecutor:
 
         update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, self.input_signature)
 
-        if phase in ms_compile_cache and not parameter_hook_updated():
+        if phase in ms_compile_cache and self._graph_executor.has_compiled(phase) and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
             self._graph_executor.clear_compile_arguments_resource()
@@ -833,6 +840,30 @@ class _MindsporeFunctionExecutor:
         """
         return _get_args_for_run(self, args_list, kwargs, self._compile_args)
 
+    def _get_branch_control_input(self):
+        if ('obf_ratio' not in self.obfuscate_config.keys()) or (
+                'obf_random_seed' not in self.obfuscate_config.keys()):
+            raise ValueError("'obf_ratio' and 'obf_random_seed' must be in obfuscate_config.")
+        obf_random_seed = self.obfuscate_config.get('obf_random_seed')
+        if obf_random_seed == 0:
+            branch_control_input = 0
+        else:
+            branch_control_input = _generate_branch_control_input(obf_random_seed)
+        return branch_control_input
+
+    def _get_func_graph_proto(self, obj, exec_id, ir_type="onnx_ir", use_prefix=False, incremental=False):
+        """Get graph proto from pipeline."""
+        if use_prefix:
+            exec_id = exec_id + '.' + obj.arguments_key
+        if self._graph_executor.has_compiled(exec_id) is False:
+            return None
+        if self.obfuscate_config is not None:
+            branch_control_input = self._get_branch_control_input()
+            return self._graph_executor.get_obfuscate_func_graph_proto(exec_id, incremental,
+                                                                       self.obfuscate_config['obf_ratio'],
+                                                                       branch_control_input)
+        return self._graph_executor.get_func_graph_proto(exec_id, ir_type, incremental)
+
 
 # The attributes used to identify a given object.
 attr_op = {"__str__": lambda x: x.__str__(),
@@ -859,50 +890,65 @@ def _get_jit_hash(hash_input):
     return _get_obj_id(hash_input)
 
 
-def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=None, compile_once=False):
+def _get_hash_obj(options):
+    hash_obj = None
+    if "hash_args" in options:
+        hash_obj = _get_jit_hash(options["hash_args"])
+        del options["hash_args"]
+    return hash_obj
+
+
+def _check_options(options):
+    deprecated_args = {'mode': 'capture_mode', 'input_signature': 'dynamic',
+                       'jit_config': 'jit_level, fullgraph or options', 'compile_once': ''}
+    for key in deprecated_args.keys():
+        if key in options:
+            log = f"For 'jit', the parameter '{key}' has been deprecated."
+            value = deprecated_args.get(key)
+            if value != '':
+                log += f" Please use the parameter '{value}' instead. For more details, please refer to " \
+                       f"https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.jit.html."
+            logger.warning(log)
+
+
+def jit(
+        function: Optional[Callable] = None,
+        *,
+        capture_mode: str = "ast",
+        jit_level: str = "O0",
+        dynamic: bool = False,
+        fullgraph: bool = False,
+        backend: Union[str, Callable] = "default",
+        **options):
     """
     Create a callable MindSpore graph from a Python function.
 
     This allows the MindSpore runtime to apply optimizations based on graph.
 
-    Note:
-        - If `input_signature` is specified, each input of `fn` must be a Tensor. And the input arguments for `fn`
-          will not accept `**kwargs`.
-        - It is not supported to run a function with decoration @jit(mode=“PIJit”)
-          in static graph mode, in which case the decoration @jit(mode=“PIJit”) is considered invalid.
-        - Calls to functions with decorated @jit(mode=“PIJit”) inside functions
-          decorated with @jit(mode=“PIJit”) are not supported,
-          and the decoration @jit(mode=“PIJit”) is considered invalid.
-
     Args:
-        fn (Function): The Python function that will be run as a graph. Default: ``None`` .
-        mode (str): The type of jit used, the value of mode should be ``PIJit`` or ``PSJit``. Default: ``PSJit`` .
+        function (Function, optional): The Python function that will be run as a graph. Default: None.
+        capture_mode (str, optional): The method to create a callable MindSpore graph. The value of capture_mode
+        should be ``ast`` , ``bytecode`` or ``trace`` . Default: ``ast`` .
 
-            - `PSJit <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_ :
-              Parse python ast to build graph.
-            - `PIJit <https://www.mindspore.cn/docs/en/master/model_train/program_form/pynative.html#pijit>`_ :
-              Parse python bytecode to build graph at runtime.
+            - `ast <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_ :
+              Parse Python ast to build graph.
+            - `bytecode <https://www.mindspore.cn/docs/en/master/model_train/program_form/pynative.html#pijit>`_ :
+              Parse Python bytecode to build graph at runtime. This is an experimental prototype that is subject to
+              change and/or deletion.
+            - `trace` : Trace the execution of Python code to build graph. This is an experimental prototype that is
+              subject to change and/or deletion.
 
-        input_signature (Union[Tuple, List, Dict, Tensor]): The Tensor which describes the input arguments. The
-            shape and dtype of the Tensor will be supplied to this function. If `input_signature` is specified, the
-            input parameters of `fn` cannot accept `**kwargs`, and the shape and dtype of actual inputs should keep the
-            same as `input_signature`. Otherwise, TypeError will be raised. There are two mode for `input_signature`:
-
-            - Full mode: Arguments is a Tuple, List or a Tensor, and they will be used as all compile inputs
-              for graph-compiling.
-            - Incremental mode: Argument is a Dict, and they will set to some of the graph inputs, which will be
-              substituted into the input at the corresponding position for graph-compiling.
-
-            Default: ``None`` .
-
-        hash_args (Union[Object, List or Tuple of Objects]): The local free variables used inside `fn`,
-            like functions or objects of class defined outside `fn`. Calling `fn` again with change of `hash_args`
-            will trigger recompilation. Default: ``None`` .
-        jit_config (JitConfig): Jit config for compile. Default: ``None`` .
-        compile_once(bool): ``True``: The function would be compiled once when it was created many times.
-            But it may be wrong if the free variables were changed. ``False`` : It would be recompiled when
-            it was created again.
-            Default: ``False`` .
+        jit_level (str, optional): Used to control the compilation optimization level. The value of jit_level
+            should be ``O0`` , ``O1`` or ``O2`` . Default: ``O0`` .
+        dynamic (bool, optional): Whether dynamic shape compilation should be performed. Currently, it is a
+            reserved parameter, so it does not work. Default: False.
+        fullgraph (bool, optional): Whether to capture the entire function into graph. If False, jit attempts to
+            be compatible with all Python syntax in the function as much as possible. If True, we require that the
+            entire function can be captured into graph. If this is not possible (that is, if there is Python syntax
+            not supported), then it will raise an exception. This currently only applies when capture_mode is ast.
+            Default: False.
+        backend (str, optional): The compilation backend to be used. Default: ``default`` .
+        **options (dict): A dictionary of options to pass to the compilation backend.
 
     Returns:
         Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is
@@ -921,12 +967,12 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
         >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
         >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
         ...
-        >>> # create a callable MindSpore graph by calling decorator @jit
+        >>> # create a callable MindSpore graph by calling jit
         >>> def tensor_add(x, y):
         ...     z = x + y
         ...     return z
         ...
-        >>> tensor_add_graph = jit(fn=tensor_add)
+        >>> tensor_add_graph = jit(function=tensor_add)
         >>> out = tensor_add_graph(x, y)
         ...
         >>> # create a callable MindSpore graph through decorator @jit
@@ -937,62 +983,31 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
         ...
         >>> out = tensor_add_with_dec(x, y)
         ...
-        >>> # create a callable MindSpore graph through decorator @jit with input_signature parameter
-        >>> @jit(input_signature=(Tensor(np.ones([1, 1, 3, 3]).astype(np.float32)),
-        ...                       Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))))
-        ... def tensor_add_with_sig(x, y):
+        >>> # create a callable MindSpore graph and capture the entire function into the graph
+        >>> @jit(fullgraph=True)
+        ... def tensor_add_fullgraph(x, y):
         ...     z = x + y
         ...     return z
         ...
-        >>> out = tensor_add_with_sig(x, y)
-        ...
-        >>> @jit(input_signature={"y": Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))})
-        ... def tensor_add_with_sig_1(x, y):
-        ...     z = x + y
-        ...     return z
-        ...
-        >>> out1 = tensor_add_with_sig_1(x, y)
-        ...
-        ... # Set hash_args as fn, otherwise cache of compiled closure_fn will not be reused.
-        ... # While fn differs during calling again, recompilation will be triggered.
-        >>> def func(x):
-        ...     return ops.exp(x)
-        ...
-        >>> def closure_fn(x, fn):
-        ...     @jit(hash_args=fn)
-        ...     def inner_fn(a):
-        ...         return fn(a)
-        ...     return inner_fn(x)
-        ...
-        >>> inputs = Tensor(np.ones([10, 10, 10]).astype(np.float32))
-        >>> for i in range(10):
-        ...     closure_fn(inputs, func)
-        ...
-        ... # Set compile_once = True, otherwise the train_step will be compiled again.
-        >>> def train(x):
-        ...     @jit(compile_once = True)
-        ...     def train_step(x):
-        ...         return ops.exp(x)
-        ...     for i in range(10):
-        ...         train_step(x)
-        ...
-        >>> inputs = Tensor(np.ones([10, 10, 10]).astype(np.float32))
-        >>> for i in range(10):
-        ...     train(inputs)
+        >>> out = tensor_add_fullgraph(x, y)
     """
 
-    def wrap_mindspore(func):
-        if not isinstance(compile_once, bool):
-            logger.warning(f"The parameter `compile_once` of jit should be a bool, "
-                           f"but got {type(compile_once)}.")
-        if hash_args:
-            hash_obj = _get_jit_hash(hash_args)
-        elif compile_once:
-            hash_obj = 0
-        else:
-            hash_obj = int(time.time() * 1e9)
+    capture_mode = Validator.check_string(capture_mode, ["ast", "bytecode", "trace"], "capture_mode", "jit")
+    jit_level = Validator.check_string(jit_level, ["O0", "O1", "O2"], "jit_level", "jit")
+    fullgraph = Validator.check_bool(fullgraph, "fullgraph", "jit")
+    jit_syntax_level = "LAX" if fullgraph is False else "STRICT"
+    hash_obj = _get_hash_obj(options)
+    _check_options(options)
+    options_str = json.dumps(options)
+    infer_boost = options['infer_boost'] if 'infer_boost' in options else "off"
+    exc_mode = options['exc_mode'] if 'exc_mode' in options else "auto"
+    jit_config = JitConfig(jit_level=jit_level, exc_mode=exc_mode, jit_syntax_level=jit_syntax_level,
+                           infer_boost=infer_boost,  backend=backend, options=options_str)
 
-        dyn_args = _process_dyn_args(func, input_signature)
+    def wrap_func(func):
+        nonlocal hash_obj
+        if hash_obj is None:
+            hash_obj = int(time.time() * 1e9)
 
         @wraps(func)
         def staging_specialize(*args, **kwargs):
@@ -1000,115 +1015,30 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
                 return func(*args, **kwargs)
 
             args, kwargs = _handle_func_args(func, *args, **kwargs)
-
             process_obj = None
             if args and not isinstance(args[0], PythonTensor) and hasattr(args[0], func.__name__):
                 process_obj = args[0]
-            # only the function or cell instance wrapped by shard will fall into this branch
-            if _is_pynative_parallel() and func.__name__ == _PYNATIVE_PARALLEL_FUNC_NAME:
-                process_obj = hash_args
             # Handle auto mixed precision strategy.
             if not hasattr(func, "amp_strategy"):
                 if isinstance(func, types.MethodType):
                     setattr(func.__func__, "amp_strategy", get_curr_amp_strategy())
                 else:
                     setattr(func, "amp_strategy", get_curr_amp_strategy())
-            out = _MindsporeFunctionExecutor(func, hash_obj, dyn_args, process_obj, jit_config)(*args, **kwargs)
+
+            ms_function_executor = _JitExecutor(func, hash_obj, None, process_obj, jit_config)
+            out = ms_function_executor(*args, **kwargs)
             return out
 
         return staging_specialize
 
-    wrap_func = wrap_mindspore
-    if mode == "PIJit":
-        wrap_func = PIJitCaptureContext(jit_config, input_signature)
+    if capture_mode == "bytecode":
+        wrap_func = PIJitCaptureContext(jit_config)
+    elif capture_mode == "trace":
+        return _jit_trace
 
-    if fn is not None:
-        return wrap_func(fn)
+    if function is not None:
+        return wrap_func(function)
     return wrap_func
-
-
-def ms_function(fn=None, input_signature=None, hash_args=None, jit_config=None):
-    """
-    Create a callable MindSpore graph from a Python function.
-
-    This allows the MindSpore runtime to apply optimizations based on graph.
-
-    Note:
-        - `ms_function` will be deprecated and removed in a future version. Please use :func:`mindspore.jit` instead.
-        - If `input_signature` is specified, each input of `fn` must be a Tensor. And the input arguments for `fn`
-          will not accept `**kwargs`.
-
-    Args:
-        fn (Function): The Python function that will be run as a graph. Default: ``None`` .
-        input_signature (Tensor): The Tensor which describes the input arguments. The shape and dtype of the Tensor
-            will be supplied to this function. The shape and dtype of actual inputs of `fn` should
-            keep the same as input_signature. Otherwise, TypeError will be raised. Default: ``None`` .
-        hash_args (Union[Object, List or Tuple of Objects]): The local free variables used inside `fn`,
-            like functions or objects of class defined outside `fn`. Calling `fn` again with change of `hash_args`
-            will trigger recompilation. Default: ``None`` .
-        jit_config (JitConfig): Jit config for compile. Default: ``None`` .
-
-    Returns:
-        Function, if `fn` is not None, returns a callable function that will execute the compiled function; If `fn` is
-        None, returns a decorator and when this decorator invokes with a single `fn` argument, the callable function is
-        equal to the case when `fn` is not None.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> from mindspore import ms_function
-        ...
-        >>> x = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
-        >>> y = Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))
-        ...
-        >>> # create a callable MindSpore graph by calling ms_function
-        >>> def tensor_add(x, y):
-        ...     z = x + y
-        ...     return z
-        ...
-        >>> tensor_add_graph = ms_function(fn=tensor_add)
-        >>> out = tensor_add_graph(x, y)
-        ...
-        >>> # create a callable MindSpore graph through decorator @ms_function
-        >>> @ms_function
-        ... def tensor_add_with_dec(x, y):
-        ...     z = x + y
-        ...     return z
-        ...
-        >>> out = tensor_add_with_dec(x, y)
-        ...
-        >>> # create a callable MindSpore graph through decorator @ms_function with input_signature parameter
-        >>> @ms_function(input_signature=(Tensor(np.ones([1, 1, 3, 3]).astype(np.float32)),
-        ...                               Tensor(np.ones([1, 1, 3, 3]).astype(np.float32))))
-        ... def tensor_add_with_sig(x, y):
-        ...     z = x + y
-        ...     return z
-        ...
-        >>> out = tensor_add_with_sig(x, y)
-        ...
-        ... # Set hash_args as fn, otherwise cache of compiled `closure_fn` will not be reused.
-        ... # While fn differs during calling again, recompilation will be triggered.
-        >>> def func(x):
-        ...     return ops.exp(x)
-        ...
-        >>> def closure_fn(x, fn):
-        ...     @ms_function(hash_args=fn)
-        ...     def inner_fn(a):
-        ...         return fn(a)
-        ...     return inner_fn(x)
-        ...
-        >>> inputs = Tensor(np.ones([10, 10, 10]).astype(np.float32))
-        >>> for i in range(10):
-        ...     closure_fn(inputs, func)
-    """
-
-    logger.warning("'mindspore.ms_function' will be deprecated and removed in a future version. "
-                   "Please use 'mindspore.jit' instead.")
-    return jit(fn=fn, input_signature=input_signature, hash_args=hash_args, jit_config=jit_config)
 
 
 def _core(fn=None, **flags):
@@ -1201,69 +1131,6 @@ def _no_recursive(callable_obj):
         raise TypeError(f"Decorator no_recursive is used for callable object, but got {callable_obj}.")
     _add_flags(callable_obj, no_recursive=True)
     return callable_obj
-
-
-def ms_class(cls):
-    """
-    Class decorator for user-defined classes.
-
-    This allows MindSpore to identify user-defined classes and thus obtain their attributes and methods.
-
-    Note:
-        `ms_class` will be deprecated and removed in a future version. Please use :func:`mindspore.jit_class` instead.
-
-    Args:
-        cls (Class): User-defined class.
-
-    Returns:
-        Class.
-
-    Raises:
-        TypeError: If ms_class is used for non-class types or nn.Cell.
-        AttributeError: If the private attributes or magic methods of the class decorated with ms_class is called.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore.nn as nn
-        >>> from mindspore import ms_class
-        ...
-        >>> @ms_class
-        ... class UserDefinedNet:
-        ...     def __init__(self):
-        ...         self.value = 10
-        ...
-        ...     def func(self, x):
-        ...         return 2 * x
-        ...
-        >>> class Net(nn.Cell):
-        ...     def __init__(self):
-        ...         super(Net, self).__init__()
-        ...         self.net = UserDefinedNet()
-        ...
-        ...     def construct(self, x):
-        ...         out = self.net.value + self.net.func(x)
-        ...         return out
-        ...
-        >>> net = Net()
-        >>> out = net(5)
-        >>> print(out)
-        20
-    """
-
-    logger.warning("'mindspore.ms_class' will be deprecated and removed in a future version. "
-                   "Please use 'mindspore.jit_class' instead.")
-
-    # Check if cls is of type class.
-    if not inspect.isclass(cls):
-        raise TypeError(f'Decorator ms_class can only be used for class type, but got {cls}.')
-    # Check if cls is nn.Cell.
-    if issubclass(cls, ms.nn.Cell):
-        raise TypeError(f"Decorator ms_class is used for user-defined classes and cannot be used for nn.Cell: {cls}.")
-    logger.info(f'Found ms_class: {cls}.')
-    setattr(cls, '__ms_class__', True)
-    return cls
 
 
 def jit_class(cls):
@@ -2063,6 +1930,8 @@ def ms_memory_recycle():
     """
     if ms_compile_cache:
         _cell_graph_executor.del_net_res(None, ms_compile_cache)
+        if os.getenv('MS_DEV_JIT_PIPELINE') != '0':
+            JitExecutor_.get_instance().del_net_res(None, ms_compile_cache)
         ms_compile_cache.clear()
     for cell_cache in cells_compile_cache.values():
         if cell_cache:

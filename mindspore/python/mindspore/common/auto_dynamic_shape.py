@@ -18,7 +18,7 @@
 
 import os
 from mindspore import log as logger
-from mindspore._c_expression import GraphExecutor_, Tensor
+from mindspore._c_expression import GraphExecutor_, JitExecutor_, Tensor
 from mindspore.common._utils import is_shape_unknown, is_dim_unknown
 from mindspore.common.parameter import Parameter
 
@@ -37,8 +37,6 @@ class _AutoDynamicShapeManager:
         self.generalize_shape_cache = []
         self.real_phase_and_compile_args_dict = {}
         self.generalize_phase_and_compile_args_dict = {}
-        self._graph_executor = GraphExecutor_.get_instance()
-
 
     def __del__(self):
         self.real_shape_cache = []
@@ -167,7 +165,8 @@ class _AutoDynamicShapeManager:
             else:
                 delete_cache = set()
                 delete_cache.add(delete_phase)
-                self._graph_executor.del_net_res(None, delete_cache)
+                GraphExecutor_.get_instance().del_net_res(None, delete_cache)
+                JitExecutor_.get_instance().del_net_res(None, delete_cache)
                 del self.generalize_phase_and_compile_args_dict[delete_phase]
 
             # step3: delete compile args

@@ -20,6 +20,8 @@ import types
 from mindspore import Tensor, jit
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
+from tests.st.pi_jit.share.utils import pi_jit_with_config
+
 
 @pytest.fixture(autouse=True)  
 def skip_if_python_version_too_high():  
@@ -53,8 +55,8 @@ def test_code_generator_with_complete_graph():
 
     x = Tensor(numpy.zeros((4, 4)))
     y = Tensor(numpy.random.rand(4, 4))
-    result = jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": False})(graph_test)(x, y)
-    excepted = jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": True})(code_test)(x, y)
+    result = pi_jit_with_config(jit_config={**cfg, "interpret_captured_code": False})(graph_test)(x, y)
+    excepted = pi_jit_with_config(jit_config={**cfg, "interpret_captured_code": True})(code_test)(x, y)
 
     graph_phase = get_code_extra(graph_test)["code"].get("phase_", None)
     non_code = get_code_extra(graph_test)["code"].get("compiled_code_", None)
@@ -87,7 +89,7 @@ def test_code_generator_with_exception():
     unknown_func = Tensor.shape.__set__ # a function with exception
 
     msg = None
-    wrapped = jit(code_test, mode="PIJit", jit_config = {**cfg, "interpret_captured_code":True})
+    wrapped = pi_jit_with_config(code_test, jit_config={**cfg, "interpret_captured_code": True})
     try:
         z = wrapped(x, y, unknown_func=unknown_func)
         print(z)

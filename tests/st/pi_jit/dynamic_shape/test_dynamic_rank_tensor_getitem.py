@@ -6,7 +6,8 @@ from mindspore.common import mutable
 import numpy as np
 from ..share.compare_base import comparebase
 from ..share.grad import GradOfAllInputs
-import sys  
+from tests.st.pi_jit.share.utils import pi_jit_with_config
+import sys
 import pytest 
 from tests.mark_utils import arg_mark
 
@@ -22,10 +23,10 @@ class IndexFactory:
 
     def compare_forward(self, *inputs):
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.ps_net.construct, mode="PSJit")(*inputs)
+        jit(function=self.ps_net.construct, capture_mode="ast")(*inputs)
         ps_out = self.ps_net(*inputs)
         context.set_context(mode=context.PYNATIVE_MODE)
-        jit(fn=self.pi_net.construct, mode="PIJit")(*inputs)
+        jit(function=self.pi_net.construct, capture_mode="bytecode")(*inputs)
         pi_out = self.pi_net(*inputs)
 
         # compare
@@ -38,14 +39,14 @@ class IndexFactory:
 
     def compare_forward_grad(self, *inputs, one_stage=True):
         context.set_context(mode=context.GRAPH_MODE)
-        jit(fn=self.ps_net.construct, mode="PSJit")(*inputs)
+        jit(function=self.ps_net.construct, capture_mode="ast")(*inputs)
         ps_out = self.ps_net(*inputs)
         grad_net = GradOfAllInputs(self.ps_net, False)
         ps_grads = grad_net(*inputs)
 
         context.set_context(mode=context.PYNATIVE_MODE)
         cfg = {"compile_by_trace": one_stage}
-        jit(fn=self.pi_net.construct, mode="PIJit", jit_config=cfg)(*inputs)
+        pi_jit_with_config(function=self.pi_net.construct, jit_config=cfg)(*inputs)
         pi_out = self.pi_net(*inputs)
         grad_net = GradOfAllInputs(self.pi_net, False)
         pi_grads = grad_net(*inputs)
