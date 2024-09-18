@@ -58,7 +58,7 @@ BaseShapePtr BmmFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr BmmFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kInputIndex0]->GetType();
-  return input_type->Clone();
+  return input_type;
 }
 }  // namespace ops
 }  // namespace mindspore

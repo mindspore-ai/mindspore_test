@@ -37,7 +37,6 @@ constexpr size_t kQbmmInputDtype = 8;
 }  // namespace
 BaseShapePtr QuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   auto x1_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kQbmmInputX1]->GetShape());
   auto x2_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kQbmmInputX2]->GetShape());
@@ -87,35 +86,29 @@ BaseShapePtr QuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr QuantBatchMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
   std::map<std::string, TypePtr> types;
-  MS_EXCEPTION_IF_NULL(input_args[kQbmmInputX1]);
   TypePtr x1_type = input_args[kQbmmInputX1]->GetType();
-  MS_EXCEPTION_IF_NULL(input_args[kQbmmInputX2]);
   TypePtr x2_type = input_args[kQbmmInputX2]->GetType();
   (void)types.emplace("x1", x1_type);
   (void)types.emplace("x2", x2_type);
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kInt8}, primitive->name());
 
   types.clear();
-  MS_EXCEPTION_IF_NULL(input_args[kQbmmInputScale]);
   TypePtr scale_type = input_args[kQbmmInputScale]->GetType();
   (void)types.emplace("scale", scale_type);
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kFloat32, kUInt64, kInt64, kBFloat16}, primitive->name());
 
-  MS_EXCEPTION_IF_NULL(input_args[kQbmmInputOffset]);
   if (!input_args[kQbmmInputOffset]->GetType()->isa<TypeNone>()) {
     types.clear();
     (void)types.emplace("offset", input_args[kQbmmInputOffset]->GetType());
     (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kFloat32}, primitive->name());
   }
 
-  MS_EXCEPTION_IF_NULL(input_args[kQbmmInputBias]);
   if (!input_args[kQbmmInputBias]->GetType()->isa<TypeNone>()) {
     types.clear();
     (void)types.emplace("bias", input_args[kQbmmInputBias]->GetType());
     (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kInt32, kBFloat16}, primitive->name());
   }
 
-  MS_EXCEPTION_IF_NULL(input_args[kQbmmInputPertokenScaleOptional]);
   if (!input_args[kQbmmInputPertokenScaleOptional]->GetType()->isa<TypeNone>()) {
     types.clear();
     (void)types.emplace("pertokenScaleOptional", input_args[kQbmmInputPertokenScaleOptional]->GetType());

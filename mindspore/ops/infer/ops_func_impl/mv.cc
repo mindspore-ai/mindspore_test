@@ -35,7 +35,6 @@ namespace ops {
 
 BaseShapePtr MvFuncImpl::InferShape(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto x_shp = input_args[kIndex0]->GetShape()->GetShapeVector();
   auto y_shp = input_args[kIndex1]->GetShape()->GetShapeVector();
   if (IsDynamicRank(x_shp) || IsDynamicRank(y_shp)) {

@@ -41,8 +41,6 @@ constexpr int kInt4ShapeMul = 2;
 
 BaseShapePtr WeightQuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                         const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-
   auto prim_name = primitive->name();
   auto x_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputX]->GetShape());
   auto weight_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputWeight]->GetShape());
@@ -77,7 +75,9 @@ BaseShapePtr WeightQuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &prim
   }
 
   bool dynamic_shape = IsDynamic(x_shp) || IsDynamic(weight_shp);
-  auto input_type = input_args[kInputWeight]->GetType()->cast<TensorTypePtr>()->element();
+  auto input_tensor_type = input_args[kInputWeight]->GetType()->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor_type);
+  auto input_type = input_tensor_type->element();
   if (!dynamic_shape) {
     CheckBatchMatmulInputSize(prim_name, "x", x_shp);
     CheckBatchMatmulInputSize(prim_name, "weight", weight_shp);
@@ -97,29 +97,25 @@ BaseShapePtr WeightQuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &prim
 TypePtr WeightQuantBatchMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   std::map<std::string, TypePtr> types;
-  MS_EXCEPTION_IF_NULL(input_args[kInputWeight]);
   (void)types.emplace("weight", input_args[kInputWeight]->GetType());
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kInt4, kInt8, kInt32}, primitive->name());
 
   types.clear();
-  MS_EXCEPTION_IF_NULL(input_args[kInputAntiquantScale]);
   TypePtr antiquant_scale_type = input_args[kInputAntiquantScale]->GetType();
   (void)types.emplace("antiquant_scale", antiquant_scale_type);
 
-  MS_EXCEPTION_IF_NULL(input_args[kInputAntiquantOffset]);
   if (!input_args[kInputAntiquantOffset]->GetType()->isa<TypeNone>()) {
     (void)types.emplace("antiquant_offset", input_args[kInputAntiquantOffset]->GetType());
   }
 
-  MS_EXCEPTION_IF_NULL(input_args[kInputBias]);
   if (!input_args[kInputBias]->GetType()->isa<TypeNone>()) {
     TypePtr bias_type = input_args[kInputBias]->GetType();
     (void)types.emplace("bias", bias_type);
   }
 
-  MS_EXCEPTION_IF_NULL(input_args[kInputX]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputX]->GetType()->cast<TensorTypePtr>());
-  auto input_type = input_args[kInputX]->GetType()->cast<TensorTypePtr>()->element();
+  auto input_tensor_type = input_args[kInputX]->GetType()->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor_type);
+  auto input_type = input_tensor_type->element();
   if (input_type->type_id() == TypeId::kNumberTypeFloat16) {
     (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kFloat16}, primitive->name());
   } else if (input_type->type_id() == TypeId::kNumberTypeBFloat16) {
@@ -128,18 +124,15 @@ TypePtr WeightQuantBatchMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
     MS_EXCEPTION(TypeError) << "WeightQuantBatchMatmul inputx type only support f16/bf16, but get " << input_type;
   }
 
-  MS_EXCEPTION_IF_NULL(input_args[kInputQuantScale]);
   if (input_args[kInputQuantScale]->GetType()->isa<TypeNone>()) {
     MS_LOG(INFO) << "WeightQuantBatchMatmulFuncImpl InferType is " << input_args[kInputX]->GetType();
     return input_args[kInputX]->GetType();
   } else {
     types.clear();
-    MS_EXCEPTION_IF_NULL(input_args[kInputQuantScale]);
     TypePtr quant_scale_type = input_args[kInputQuantScale]->GetType();
     (void)types.emplace("quant_scale", quant_scale_type);
     (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kUInt64, kFloat}, primitive->name());
 
-    MS_EXCEPTION_IF_NULL(input_args[kInputQuantOffset]);
     if (!input_args[kInputQuantOffset]->GetType()->isa<TypeNone>()) {
       types.clear();
       (void)types.emplace("quant_offset", input_args[kInputQuantOffset]->GetType());

@@ -29,21 +29,16 @@ namespace ops {
 BaseShapePtr GeLUFuncImpl::InferShape(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape);
-
   return x_shape->Clone();
 }
 
 TypePtr GeLUFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_type = input_args[kInputIndex0]->GetType();
   const std::set<TypePtr> valid_types = {kBFloat16, kFloat16, kFloat32, kFloat64};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, primitive->name());
   MS_EXCEPTION_IF_NULL(x_type);
-  return x_type->Clone();
+  return x_type;
 }
 TypePtrList GeLUFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();

@@ -35,7 +35,6 @@ namespace ops {
 
 BaseShapePtr BatchMatMulExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto constexpr kBatchMatmulExtInputNum = 2;
   (void)CheckAndConvertUtils::CheckInteger("input num", SizeToLong(input_args.size()), kEqual, kBatchMatmulExtInputNum,
                                            primitive->name());
@@ -90,7 +89,6 @@ BaseShapePtr BatchMatMulExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 TypePtr BatchMatMulExtFuncImpl::InferType(const PrimitivePtr &prim,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(prim);
   const std::set<TypePtr> valid_types = {kInt8,   kInt16,   kInt32,   kInt64,   kUInt8,     kUInt16,     kUInt32,
                                          kUInt64, kFloat16, kFloat32, kFloat64, kComplex64, kComplex128, kBFloat16};
   std::map<std::string, TypePtr> types;

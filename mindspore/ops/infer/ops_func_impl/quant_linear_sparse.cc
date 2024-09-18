@@ -31,11 +31,11 @@ constexpr size_t kQuantLinearSparseInputCompressIdx = 3;
 constexpr size_t kQuantLinearSparseInputBias = 4;
 
 BaseShapePtr QuantLinearSparseFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
+                                                   const std::vector<AbstractBasePtr> &input_args) const {
   auto x_shape = input_args[kQuantLinearSparseInputX]->GetShape();
   auto x_shape_vector = x_shape->GetShapeVector();
   auto x_rank = x_shape_vector.size();
-  if (x_rank != 2) {
+  if (x_rank != kDim2) {
     MS_LOG(EXCEPTION) << "For 'QuantLinearSparse', x's rank should be 2, but got " << x_rank;
   }
 
@@ -45,8 +45,7 @@ BaseShapePtr QuantLinearSparseFuncImpl::InferShape(const PrimitivePtr &primitive
   auto deqScale_shape = input_args[kQuantLinearSparseInputDeqScale]->GetShape();
   auto deqScale_shape_vector = deqScale_shape->GetShapeVector();
   auto deqScale_rank = deqScale_shape_vector.size();
-
-  if (deqScale_rank != 1) {
+  if (deqScale_rank != kDim1) {
     MS_LOG(EXCEPTION) << "For 'QuantLinearSparse', deqScale's rank should be 1, but got " << deqScale_rank;
   }
   auto n = deqScale_shape_vector[deqScale_rank - 1];
@@ -86,7 +85,7 @@ BaseShapePtr QuantLinearSparseFuncImpl::InferShape(const PrimitivePtr &primitive
 }
 
 TypePtr QuantLinearSparseFuncImpl::InferType(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
+                                             const std::vector<AbstractBasePtr> &input_args) const {
   std::map<std::string, TypePtr> types;
   MS_EXCEPTION_IF_NULL(input_args[kQuantLinearSparseInputX]);
   TypePtr x_type = input_args[kQuantLinearSparseInputX]->GetType();
