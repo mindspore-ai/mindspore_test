@@ -2183,6 +2183,14 @@ REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("Bernoulli").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("BernoulliExt").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto seed = ib->GetInput(kIndex1);
+  auto offset = ib->GetInput(kIndex2);
+  auto dx = ib->Emit("ZerosLikeExt", {x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
+  return {dx, ib->OutZeros(seed), ib->OutZeros(offset)};
+});
+
 REG_BPROP_BUILDER("ReduceSum").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);

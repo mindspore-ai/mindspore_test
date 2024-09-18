@@ -309,6 +309,9 @@ from mindspore.ops.function.math_func import arctan2_ext as arctan2
 # 177
 from mindspore.ops.function.math_func import round
 
+# 182
+from mindspore.ops.function.math_func import bernoulli_ext as bernoulli
+
 # 204
 from mindspore.ops.auto_generate import erfc
 # 207
@@ -1475,6 +1478,9 @@ __all__ = [
 
     # 177
     'round',
+
+    # 182
+    'bernoulli',
 
     # 207
     'expm1',

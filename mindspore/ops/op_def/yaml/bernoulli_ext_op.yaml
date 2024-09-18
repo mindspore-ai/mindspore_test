@@ -1,0 +1,17 @@
+#operator bernoulli_ext
+bernoulli_ext:
+    args:
+        input:
+            dtype: tensor
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: BernoulliExtAscend
