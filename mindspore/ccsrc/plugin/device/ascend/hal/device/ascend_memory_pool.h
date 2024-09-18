@@ -43,9 +43,6 @@ class AscendMemoryPool : public DynamicMemPoolBestFit {
 
   void ResetIdleMemBuf() const;
 
-  // The main program entry of memory alloc.
-  DeviceMemPtr AllocOverflowTensorMem(size_t size, bool from_persistent_mem = false);
-
   static AscendMemoryPool &GetInstance() {
     static AscendMemoryPool instance;
     return instance;

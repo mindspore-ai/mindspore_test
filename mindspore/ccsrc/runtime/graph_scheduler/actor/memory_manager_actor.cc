@@ -20,6 +20,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "mindrt/include/async/async.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace runtime {

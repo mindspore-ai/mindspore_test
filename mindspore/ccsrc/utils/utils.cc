@@ -309,7 +309,7 @@ bool IsEnableRefMode() {
 }
 
 bool IsMemoryPoolRecycle() {
-  static bool optimize_mem = !common::IsDisableAlllocConfig(common::kAllocMemoryRecycle);
+  static bool optimize_mem = !common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
   static bool enable_ref_mode = IsEnableRefMode();
   auto context_ptr = MsContext::GetInstance();
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);

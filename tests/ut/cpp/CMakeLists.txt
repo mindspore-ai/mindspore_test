@@ -178,6 +178,8 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_synchronizer.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_runtime_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_memory_adapter.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_two_pointer_mem_adapter.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_dynamic_mem_adapter.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_gmem_adapter.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_memory_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_address.cc"

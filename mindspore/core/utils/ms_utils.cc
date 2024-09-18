@@ -108,12 +108,12 @@ std::string GetAllocConfigValue(const std::string &alloc_config) {
   return value;
 }
 
-bool IsEnableAlllocConfig(const std::string &alloc_config) {
+bool IsEnableAllocConfig(const std::string &alloc_config) {
   const auto &value = GetAllocConfigValue(alloc_config);
   return ((value == "True") || (value == "true"));
 }
 
-bool IsDisableAlllocConfig(const std::string &alloc_config) {
+bool IsDisableAllocConfig(const std::string &alloc_config) {
   const auto &value = GetAllocConfigValue(alloc_config);
   return ((value == "False") || (value == "false"));
 }
