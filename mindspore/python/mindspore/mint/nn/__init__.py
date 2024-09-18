@@ -250,6 +250,10 @@ from mindspore.mint.nn.layer.normalization import BatchNorm2d
 # 676
 from mindspore.mint.nn.layer.normalization import BatchNorm3d
 
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
+
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
+
 
 class BCEWithLogitsLoss(Cell):
     r"""
@@ -675,8 +679,10 @@ __all__ = [
     # 95
 
     # 96
+    'AdaptiveAvgPool1d',
 
     # 97
+    'AdaptiveAvgPool2d',
 
     # 98
 

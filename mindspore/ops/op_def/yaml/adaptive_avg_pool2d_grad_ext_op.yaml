@@ -1,0 +1,15 @@
+#operator adaptive_avg_pool2d_grad_ext
+adaptive_avg_pool2d_grad_ext:
+  args:
+    grad_output:
+      dtype: tensor
+    x:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  class:
+      name: AdaptiveAvgPool2DGradExt
+  dispatch:
+    enable: True
+

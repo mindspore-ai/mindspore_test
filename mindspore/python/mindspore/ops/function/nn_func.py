@@ -53,6 +53,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, 
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
+from mindspore.ops.auto_generate import adaptive_avg_pool2d_ext_op
 
 abs_ = P.Abs()
 add_ = P.Add()
@@ -203,6 +204,92 @@ def adaptive_avg_pool2d(input, output_size):
     """
     adaptive_avgpool2d_ = _get_cache_prim(P.AdaptiveAvgPool2D)(output_size)
     return adaptive_avgpool2d_(input)
+
+
+def adaptive_avg_pool2d_ext(input, output_size):
+    r"""
+    Performs 2D adaptive average pooling on a multi-plane input signal.
+    That is, for any input size, the size of the specified output is H x W.
+    The number of output features is equal to the number of input features.
+
+    The input and output data format can be "NCHW" and "CHW". N is the batch size, C is the number of channels,
+    H is the feature height, and W is the feature width.
+
+    For adaptive average pooling for 2D:
+
+    ..  math::
+        \begin{align}
+        h_{start} &= floor(i * H_{in} / H_{out})\\
+        h_{end} &= ceil((i + 1) * H_{in} / H_{out})\\
+        w_{start} &= floor(j * W_{in} / W_{out})\\
+        w_{end} &= ceil((j + 1) * W_{in} / W_{out})\\
+        Output(i,j) &= \frac{\sum Input[h_{start}:h_{end}, w_{start}:w_{end}]}{(h_{end}- h_{start})
+        * (w_{end}- w_{start})}
+        \end{align}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input of adaptive_avg_pool2d, which is a 3D or 4D tensor,
+            with float16 or float32 data type.
+        output_size (Union[int, tuple]): The target output size. `output_size` can be a tuple :math:`(H, W)`,
+            or an int H for :math:`(H, H)`. :math:`H` and :math:`W` can be int or None.
+            If it is None, it means the output size is the same as the input size.
+
+    Returns:
+        Tensor, with the same type as the `input`.
+
+        Shape of the output is `input_shape[:len(input_shape) - len(out_shape)] + out_shape`.
+
+    .. math::
+
+        out\_shape = \begin{cases}
+        input\_shape[-2] + output\_size[1], & \text{if } output\_size text{ is (None, w);}\\
+        output\_size[0] + input\_shape[-1], & \text{if } output\_size text{ is (h, None);}\\
+        input\_shape[-2:], & \text{if } output\_size text{ is (None, None);}\\
+        (h, h), & \text{if } output\_size text{ is h;}\\
+        (h, w), & \text{if } output\_size text{ is (h, w)}
+        \end{cases}
+
+    Raises:
+        ValueError: If `output_size` is a tuple and the length of `output_size` is not 2.
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not float16, float32 or float64.
+        ValueError: If the dimension of `input` is less than or equal to the dimension of `output_size`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> # case 1: output_size=(3, 2)
+        >>> input = Tensor(np.array([[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+        ...                            [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]],
+        ...                            [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]]]), mindspore.float32)
+        >>> output = mint.nn.functional.adaptive_avg_pool2d(input, (3, 2))
+        >>> print(output)
+        [[[1.5 2.5]
+         [4.5 5.5]
+         [7.5 8.5]]
+        [[1.5 2.5]
+         [4.5 5.5]
+         [7.5 8.5]]
+        [[1.5 2.5]
+         [4.5 5.5]
+         [7.5 8.5]]]
+    """
+    output_size_ = None
+    if isinstance(output_size, int):
+        output_size_ = output_size
+    else:
+        origin_shape = shape_(input)
+        w_ = origin_shape[-2] if output_size[-2] is None else output_size[-2]
+        h_ = origin_shape[-1] if output_size[-1] is None else output_size[-1]
+        output_size_ = (w_, h_)
+    return adaptive_avg_pool2d_ext_op(input, output_size_)
 
 
 def adaptive_avg_pool3d(input, output_size):
@@ -8350,6 +8437,7 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
 __all__ = [
     'adaptive_avg_pool1d',
     'adaptive_avg_pool2d',
+    'adaptive_avg_pool2d_ext',
     'adaptive_avg_pool3d',
     'adaptive_max_pool1d',
     'adaptive_max_pool2d',

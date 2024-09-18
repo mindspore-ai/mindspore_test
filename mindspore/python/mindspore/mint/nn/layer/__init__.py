@@ -21,10 +21,13 @@ from __future__ import absolute_import
 
 from mindspore.mint.nn.layer import normalization
 from mindspore.mint.nn.layer import activation
+from mindspore.mint.nn.layer import pooling
 from mindspore.mint.nn.layer.normalization import *
 from mindspore.mint.nn.layer.activation import *
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d, AdaptiveAvgPool2d
 
 
 __all__ = []
 __all__.extend(normalization.__all__)
 __all__.extend(activation.__all__)
+__all__.extend(pooling.__all__)

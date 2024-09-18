@@ -448,6 +448,7 @@ from .math_func import (
 from .nn_func import (
     adaptive_avg_pool1d,
     adaptive_avg_pool2d,
+    adaptive_avg_pool2d_ext,
     adaptive_avg_pool3d,
     adaptive_max_pool1d,
     adaptive_max_pool2d,

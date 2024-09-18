@@ -2714,6 +2714,51 @@ REG_BPROP_BUILDER("AdaptiveAvgPool2D").SetUnusedInputs({i0, i1}).SetBody(BODYFUN
   return {dx};
 });
 
+DEF_PURE_SHAPE_CALC(g_adaptive_avg_pool1d_squeeze)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shape = inputs.at(0);
+    auto output_size = inputs.at(1);
+
+    MS_EXCEPTION_IF_CHECK_FAIL(output_size.size() == 1, "output_size should be a scalar.");
+    auto output_size_value = output_size[0];
+
+    output_size_value = output_size_value < 0 ? output_size_value + x_shape.size() : output_size_value;
+    ShapeVector squeeze_shape = x_shape;
+    MS_EXCEPTION_IF_CHECK_FAIL(squeeze_shape.size() > 2, "shape size should be greater than 2.");
+    squeeze_shape.erase(squeeze_shape.end() - 2);
+    return {squeeze_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    auto x = inputs.at(0);
+    auto output_size = inputs.at(1);
+    if (!unknown_inputs.empty() || IsDynamicRank(x) || IsDynamicRank(output_size)) {
+      return {-1};
+    }
+    auto size = SizeToLong(inputs.at(0).size());
+    return {size - 1};
+  });
+
+REG_BPROP_BUILDER("AdaptiveAvgPool1D").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto output_size = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+
+  auto dout_expand_dim = ib->ExpandDims(dout, -2);
+  auto x_expand_dim = ib->ExpandDims(x, -2);
+  auto dx = ib->Emit("AdaptiveAvgPool2DGradExt", {dout_expand_dim, x_expand_dim});
+  auto res_shape = ib->ShapeCalc(g_adaptive_avg_pool1d_squeeze, {dx, output_size}, {1});
+  auto dx_squeeze = ib->Reshape(dx, res_shape[0]);
+  return {dx_squeeze, ib->OutZeros(output_size)};
+});
+
+REG_BPROP_BUILDER("AdaptiveAvgPool2DExt").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto output_size = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->Emit("AdaptiveAvgPool2DGradExt", {dout, x});
+  return {dx, ib->OutZeros(output_size)};
+});
+
 REG_BPROP_BUILDER("FractionalMaxPool").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);

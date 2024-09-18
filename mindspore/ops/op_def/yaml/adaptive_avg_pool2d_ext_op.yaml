@@ -1,0 +1,19 @@
+#operator adaptive_avg_pool2d_ext
+adaptive_avg_pool2d_ext:
+  args:
+    input:
+      dtype: tensor
+    output_size:
+      dtype: tuple[int]
+      type_cast: int, list[int]
+      arg_handler: to_2d_paddings
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+      name: AdaptiveAvgPool2DExt
+  dispatch:
+    enable: True
+

@@ -1,0 +1,35 @@
+adaptive_avg_pool1d:
+    description: |
+        Performs 1D adaptive average pooling on a multi-plane input signal.
+        That is, for any input size, the size of the specified output is L.
+        The number of output features is equal to the number of input features.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input of adaptive_avg_pool1d, which is a 2D or 3D tensor,
+                with float16 or float32 data type.
+            output_size (int): The target output feature size. `output_size` is an integer.
+
+        Returns:
+            Tensor, with the same type as the `input`.
+
+            Shape of the output is `input_shape[:len(input_shape) - 1] + [output_size]`.
+
+        Raises:
+            ValueError: If `output_size` is not integer.
+            TypeError: If `input` is not a Tensor.
+            TypeError: If dtype of `input` is not float16, float32.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor, mint
+            >>> input = Tensor([[2,3],[3,4]],dtype=mindspore.float16)
+            >>> output = mint.nn.functional.adaptive_avg_pool1d(input, 3)
+            >>> print(output)
+            [[2.  2.5 3. ]
+            [3.  3.5 4. ]]
