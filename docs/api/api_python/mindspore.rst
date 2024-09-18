@@ -116,6 +116,7 @@ mindspore
     mindspore.save_mindir
     mindspore.transform_checkpoint_by_rank
     mindspore.transform_checkpoints
+    mindspore.unified_safetensors
 
 自动微分
 ----------------
