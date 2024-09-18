@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 ''' test context option '''
-import sys  
 import pytest 
 import numpy as np
 import mindspore.ops.functional as F
@@ -22,11 +21,6 @@ from mindspore.common import Tensor
 from mindspore.common.api import jit
 from mindspore import context
 from tests.mark_utils import arg_mark
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @pytest.mark.skip(reason="pynative mode has an incorrect result")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')

@@ -17,15 +17,10 @@ from mindspore import ops, numpy, Tensor
 from mindspore.nn import Cell
 from mindspore import jit
 from mindspore._c_expression import get_code_extra
-import sys
 import pytest
 from .share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 config = {
     "replace_nncell_by_construct": True,

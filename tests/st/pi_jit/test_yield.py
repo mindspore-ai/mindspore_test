@@ -21,12 +21,6 @@ from mindspore import Tensor, jit, JitConfig
 from mindspore._c_expression import update_pijit_default_config, get_code_extra
 
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
-
-
 @pytest.mark.skipif(sys.version_info[:2] == (3,7), reason="not support py37 setup loop bytecode")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_yield_case_1():

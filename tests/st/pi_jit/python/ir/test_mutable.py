@@ -13,19 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """test mutable"""
-import sys  
 import pytest 
 from mindspore.common import mutable
 import mindspore.common.dtype as mstype
 from mindspore import Tensor
 from mindspore import jit, context
 from tests.mark_utils import arg_mark
-
-
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 @pytest.mark.skip(reason="tmp skip")
