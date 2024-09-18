@@ -1,7 +1,7 @@
 mindspore.mint.nn.GroupNorm
 =================================
 
-.. py:class:: mindspore.mint.nn.GroupNorm(num_groups, num_channels, eps=1e-5, affine=True, dtype=None)
+.. py:class:: mindspore.mint.nn.GroupNorm(num_groups, num_channels, eps=1e-05, affine=True, dtype=None)
 
     在mini-batch输入上进行组归一化。
 
@@ -19,7 +19,7 @@ mindspore.mint.nn.GroupNorm
     参数：
         - **num_groups** (int) - 沿通道维度待划分的组数。
         - **num_channels** (int) - 输入的通道维度数。
-        - **eps** (float, 可选) - 添加到分母中的值，以确保数值稳定。默认值： ``1e-5`` 。
+        - **eps** (float, 可选) - 添加到分母中的值，以确保数值稳定。默认值： ``1e-05`` 。
         - **affine** (bool, 可选) - 当被设置为 ``True`` 时，参数 :math:`\gamma` 和 :math:`\beta` 是可学习的。默认值： ``True`` 。
         - **dtype** (:class:`mindspore.dtype`, 可选) - Parameter的类型。默认值： ``None`` 。
 
