@@ -5,7 +5,7 @@ mindspore.ops.Custom
 
     `Custom` 算子是MindSpore自定义算子的统一接口。用户可以利用该接口自行定义MindSpore内置算子库尚未包含的算子。
     根据输入函数的不同，你可以创建多个自定义算子，并且把它们用在神经网络中。
-    关于自定义算子的详细说明和介绍，包括参数的正确书写，见 `自定义算子教程 <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/operation/op_custom.html>`_ 。
+    关于自定义算子的详细说明和介绍，包括参数的正确书写，见 `自定义算子教程 <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/op_custom.html>`_ 。
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
@@ -15,7 +15,7 @@ mindspore.ops.Custom
 
         - "hybrid": ["GPU", "CPU"].
         - "akg": ["GPU", "CPU"].
-        - "aot": ["GPU", "CPU"，"ASCEND"].
+        - "aot": ["GPU", "CPU"，"Ascend"].
         - "pyfunc": ["CPU"].
         - "julia": ["CPU"].
 
@@ -75,15 +75,13 @@ mindspore.ops.Custom
 
                  例如：Custom(func="./reorganize.so:CustomReorganize", out_shape=[1], out_dtype=mstype.float32, "aot")
 
-               b) ASCEND平台
+               b) Ascend平台
 
-               在ASCEND平台使用Custom算子之前，用户首先需要基于Ascend C开发自定义算子并编译。算子开发可参考 `快速上手端到端算子开发 <https://www.hiascend.com/document/detail/zh/canncommercial/70RC1/operatordev/Ascendcopdevg/atlas_ascendc_10_0022.html>`_ ，自定义算子编译可使用工具 `Ascend C自定义算子离线编译 <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/operation/op_custom_ascendc.html>`_。
-               在入参 `func` 中传入算子的名字, 以自定义算子实现中命名为 `AddCustom` 为例,存在以下几种使用方式:
+               在Ascend平台使用Custom算子之前，用户首先需要基于Ascend C开发自定义算子并编译。完整的开发和使用流程可参考教程 `AOT类型自定义算子（Ascend平台） <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/operation/op_custom_ascendc.html>`_。
+               在入参 `func` 中传入算子的名字, 根据 `infer shape` 函数的实现方式，存在以下两种使用方式：
 
-               - 算子底层调用TBE： `func="AddCustom"`
-               - 算子底层调用AclNN： `func="aclnnAddCustom"`
-               - 算子的infer shape通过c++推导： `func="infer_shape.cc:aclnnAddCustom"`,其中 `infer_shape.cc` 为c++实现的shape推导。
-
+               - **python infer**：若算子的infer shape是python实现，即通过 `out_shape `参数传入infer shape函数，则指定 `func="CustomName"` 。
+               - **c++ infer**：若算子的infer shape通过c++实现，则在func中传入infer shape实现文件的路径并用 `:` 隔开算子名字，例如： `func="add_custom_infer.cc:AddCustom` 。
 
             2. 对于"julia"：
 
