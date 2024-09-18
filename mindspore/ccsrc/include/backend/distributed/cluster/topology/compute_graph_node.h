@@ -23,6 +23,7 @@
 #include <vector>
 #include <map>
 #include <shared_mutex>
+#include <limits>
 #include "include/backend/distributed/cluster/topology/common.h"
 #include "include/backend/distributed/rpc/tcp/tcp_client.h"
 #include "include/backend/distributed/cluster/topology/node_base.h"
@@ -36,11 +37,15 @@ class BACKEND_EXPORT ComputeGraphNode : public NodeBase {
  public:
   ComputeGraphNode(const std::string &node_id, const std::string &role)
       : NodeBase(node_id, role), client_ip_(""), authenticated_(false), enable_hb_(false) {
-    uint32_t device_id = UINT32_MAX;
-    if (!common::GetEnv("DEVICE_ID").empty()) {
-      device_id = std::stoi(common::GetEnv("DEVICE_ID"));
+    device_id_ = UINT32_MAX;
+    std::string env_device_id = common::GetEnv("DEVICE_ID");
+    if (!env_device_id.empty()) {
+      if (!common::IsStrNumeric(env_device_id) || std::stoull(env_device_id) > std::numeric_limits<uint32_t>::max()) {
+        MS_LOG(WARNING) << "Env 'Device_id' is not set due to invalid input value.";
+      } else {
+        device_id_ = static_cast<uint32_t>(std::stoul(env_device_id));
+      }
     }
-    device_id_ = device_id;
   }
   ~ComputeGraphNode() override;
 
