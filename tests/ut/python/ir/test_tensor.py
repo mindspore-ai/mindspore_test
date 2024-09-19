@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -550,3 +550,27 @@ def test_tensor_from_numpy():
     x = np.array([[1, 2], [3, 4]], order='F')
     b = Tensor.from_numpy(x)
     assert np.all(b.asnumpy() == np.array([[1, 2], [3, 4]]))
+
+def test_from_numpy():
+    """
+    Feature: mindspore.from_numpy
+    Description: Verify the result of mindspore.from_numpy
+    Expectation: success
+    """
+    numpy_types = [np.int8,
+                   np.int16,
+                   np.int32,
+                   np.int64,
+                   np.uint8,
+                   np.float16,
+                   np.double,
+                   np.float64,
+                   np.bool_]
+    for dtype in numpy_types:
+        np_array = np.array([1, 2, 3], dtype=dtype)
+        ms_tensor = ms.from_numpy(np_array)
+        assert ms.is_tensor(ms_tensor)
+        assert np.all(ms_tensor.asnumpy() == np_array)
+        # Test unsupported type.
+    with pytest.raises(TypeError):
+        ms.from_numpy([1, 2, 3])
