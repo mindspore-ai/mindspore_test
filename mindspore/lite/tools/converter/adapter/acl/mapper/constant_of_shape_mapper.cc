@@ -46,7 +46,17 @@ STATUS ConstantOfShapeMapper::Mapper(const CNodePtr &cnode) {
         value_param = opt::BuildFloatVecParameterNode(func_graph, values, cnode->fullname_with_scope() + "_values");
       }
       break;
-    case kNumberTypeBool:
+    case kNumberTypeBool: {
+      if (values.size() == 1) {
+        value_param =
+          opt::BuildBoolValueParameterNode(func_graph, values[0], cnode->fullname_with_scope() + "_value", true);
+      } else {
+        std::vector<uint8_t> dst_values;
+        std::transform(values.begin(), values.end(), std::back_inserter(dst_values),
+                       [](float ele) { return static_cast<uint8_t>(ele); });
+        value_param = opt::BuildBoolVecParameterNode(func_graph, dst_values, cnode->fullname_with_scope() + "_values");
+      }
+    } break;
     case kNumberTypeInt:
     case kNumberTypeInt32: {
       if (values.size() == 1) {

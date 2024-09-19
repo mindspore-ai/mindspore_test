@@ -57,31 +57,6 @@ STATUS ScatterNdUpdateMapper::Mapper(const CNodePtr &cnode) {
     MS_LOG(ERROR) << "make ScatterNdUpdate failed.";
     return RET_ERROR;
   }
-  TypeId type_id;
-  auto scale_input = cnode->inputs()[kNumCnodeInputIndex1];
-  if (opt::GetDataTypeFromAnfNode(scale_input, &type_id) != RET_OK) {
-    MS_LOG(ERROR) << "GetDataTypeFromAnfNode failed!";
-    return RET_ERROR;
-  }
-  if (type_id == kNumberTypeBool && cnode->input(kNumCnodeInputIndex1)->abstract() != nullptr) {
-    auto cast_fp16_node_1 = NewCNode(
-      cnode, prim::kPrimCast, {cnode->input(kNumCnodeInputIndex1), NewValueNode(TypeIdToType(kNumberTypeFloat16))},
-      cnode->input(kNumCnodeInputIndex1)->abstract()->Clone(), cnode->fullname_with_scope() + "_cast_fp16_1");
-    if (cast_fp16_node_1 == nullptr) {
-      MS_LOG(ERROR) << "Make CNode failed!";
-      return RET_ERROR;
-    }
-    cnode->set_input(kNumCnodeInputIndex1, cast_fp16_node_1);
-
-    auto cast_fp16_node_3 = NewCNode(
-      cnode, prim::kPrimCast, {cnode->input(kNumCnodeInputIndex3), NewValueNode(TypeIdToType(kNumberTypeFloat16))},
-      cnode->input(kNumCnodeInputIndex3)->abstract()->Clone(), cnode->fullname_with_scope() + "_cast_fp16_3");
-    if (cast_fp16_node_3 == nullptr) {
-      MS_LOG(ERROR) << "Make CNode failed!";
-      return RET_ERROR;
-    }
-    cnode->set_input(kNumCnodeInputIndex3, cast_fp16_node_3);
-  }
   dst_prim->SetAttrs(src_prim->attrs());
   value_node->set_value(dst_prim);
   return lite::RET_OK;

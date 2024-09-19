@@ -111,6 +111,12 @@ STATUS TransFilterFormat(const tensor::TensorPtr &tensor, schema::Format src_for
 ParameterPtr BuildParameterNode(const FuncGraphPtr &func_graph, const tensor::TensorPtr &tensor_info,
                                 const std::string &node_name, bool keep_origin_dtype = false);
 
+ParameterPtr BuildBoolValueParameterNode(const FuncGraphPtr &func_graph, const bool &data, const std::string &node_name,
+                                         bool empty_shape = false);
+
+ParameterPtr BuildBoolVecParameterNode(const FuncGraphPtr &func_graph, const std::vector<uint8_t> &data,
+                                       const std::string &node_name);
+
 ParameterPtr BuildIntValueParameterNode(const FuncGraphPtr &func_graph, const int32_t &data,
                                         const std::string &node_name, bool empty_shape = false);
 
