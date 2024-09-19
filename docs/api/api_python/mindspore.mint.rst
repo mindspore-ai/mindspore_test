@@ -61,6 +61,7 @@ Tensor
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.multinomial
     mindspore.mint.normal
     mindspore.mint.rand_like
     mindspore.mint.rand
