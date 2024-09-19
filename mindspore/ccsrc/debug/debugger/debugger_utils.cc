@@ -531,7 +531,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
   }
 }
 
-void PrepareInputDataViaCallback(const CNodePtr &cnode,
+void PrepareInputDataViaCallback(const CNodePtr &cnode, const DeviceContext *device_context,
                                  const std::vector<device::DeviceAddress *> &input_device_tensors,
                                  std::vector<TensorInfoForDump> *tensor_info_list) {
   auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
@@ -539,7 +539,10 @@ void PrepareInputDataViaCallback(const CNodePtr &cnode,
 
   std::vector<size_t> ignored_address;
   if (kernel_mod != nullptr) {
-    ignored_address = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+    MS_EXCEPTION_IF_NULL(device_context);
+    auto kernel_executor = device_context->GetKernelExecutor(false);
+    MS_EXCEPTION_IF_NULL(kernel_executor);
+    ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
   }
 
   for (size_t j = 0; j < input_device_tensors.size(); ++j) {
@@ -738,7 +741,7 @@ void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::Device
 
   std::vector<TensorInfoForDump> tensor_info_list;
   if (DumpJsonParser::GetInstance().InputNeedDump()) {
-    PrepareInputDataViaCallback(cnode, input_device_tensors, &tensor_info_list);
+    PrepareInputDataViaCallback(cnode, device_context, input_device_tensors, &tensor_info_list);
   }
   if (DumpJsonParser::GetInstance().OutputNeedDump()) {
     PrepareOutputDataViaCallback(cnode, output_device_tensors, &tensor_info_list);
