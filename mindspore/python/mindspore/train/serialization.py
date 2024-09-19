@@ -62,7 +62,7 @@ from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_paramet
 from mindspore.parallel._tensor import _load_tensor, _get_tensor_strategy, _get_tensor_slice_index
 from mindspore.parallel._tensor import _reshape_param_data, _reshape_param_data_with_weight
 from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode, \
-    _get_device_num
+    _get_device_num, _is_parallel_mode
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
     _restore_group_info_list
@@ -1680,7 +1680,7 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
     logger.info("Execute the process of loading parameters into net.")
     for _, param in net.parameters_and_names():
         param.from_ckpt = True
-    if not _is_in_auto_parallel_mode():
+    if not (_is_in_auto_parallel_mode() or _is_parallel_mode()):
         net.init_parameters_data()
     else:
         _init_parameter_data_in_parallel_mode(net, parameter_dict)

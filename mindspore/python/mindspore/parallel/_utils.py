@@ -22,6 +22,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.dtype import dtype_to_nptype
 from mindspore.common import dtype as mstype
 from mindspore.communication.management import get_group_size, get_rank
+from mindspore.communication._comm_helper import _is_initialized
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.common.seed import get_seed
 from mindspore._c_expression import GraphExecutor_
@@ -43,6 +44,14 @@ def _is_sharding_propagation():
 
 def _is_in_auto_parallel_mode():
     return _get_parallel_mode() in [ms.ParallelMode.SEMI_AUTO_PARALLEL, ms.ParallelMode.AUTO_PARALLEL]
+
+
+def _is_parallel_mode():
+    if not _is_initialized():
+        return False
+    if get_group_size() > 1 and _get_parallel_mode() == ms.ParallelMode.STAND_ALONE:
+        return True
+    return False
 
 
 def _is_in_data_parallel_mode():
