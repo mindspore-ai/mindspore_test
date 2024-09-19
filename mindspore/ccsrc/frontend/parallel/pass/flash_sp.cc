@@ -2543,11 +2543,12 @@ static CNodePtr GetForwardCnodeByFuncGraphCNode(const CNodePtr &cnode) {
   return output_tuple_cnode->input(kIndex1)->cast<CNodePtr>();
 }
 
-static CNodePtr GetLastInputFuncGraphCNode(const CNodePtr &cnode) {
+static CNodePtr GetLastInputFuncGraphCNode(const CNodePtr &cnode, const int input_index) {
   CNodePtr cnode_input_graph_node = cnode;
   MS_EXCEPTION_IF_NULL(cnode_input_graph_node);
+  // input_index decide the q, k, v
+  auto cnode_input_q_get = cnode_input_graph_node->input(input_index)->cast<CNodePtr>();
   while (1) {
-    auto cnode_input_q_get = cnode_input_graph_node->input(kIndex1)->cast<CNodePtr>();
     cnode_input_graph_node = GetFuncGraphCNodeByForwardGetItem(cnode_input_q_get);
     if (cnode_input_graph_node == nullptr) {
       MS_LOG(EXCEPTION) << "Can not find the input graph cnode for the node: " << cnode->DebugString();
@@ -2560,11 +2561,71 @@ static CNodePtr GetLastInputFuncGraphCNode(const CNodePtr &cnode) {
         !IsPrimitiveCNode(input_forward_cnode, prim::kPrimReceive) &&
         !IsPrimitiveCNode(input_forward_cnode, prim::kPrimSend)) {
       break;
+    } else {
+      // skip the Depend, Receive and Send, get the last input node.
+      cnode_input_q_get = cnode_input_graph_node->input(kIndex1)->cast<CNodePtr>();
     }
   }
   return cnode_input_graph_node;
 }
 
+std::vector<AnfNodePtr> GetLastFAInputCNodeVector(const CNodePtr cnode, const std::string &origin_index,
+                                                  const NodeUsersMap &node_users_map) {
+  std::vector<AnfNodePtr> fa_input_node_vector;
+  // q input
+  CNodePtr cnode_q_input_graph_node = GetLastInputFuncGraphCNode(cnode, kIndex1);
+  MS_EXCEPTION_IF_NULL(cnode_q_input_graph_node);
+  // find the getitem node of the fa input bprop graph.
+  auto fa_input1_bprop_get_item = GetDoutGetItemByFuncGraphNode(cnode_q_input_graph_node, node_users_map);
+  MS_EXCEPTION_IF_NULL(fa_input1_bprop_get_item);
+  fa_input_node_vector.push_back(fa_input1_bprop_get_item);
+  MS_LOG(INFO) << "Find the FA q input bprop getitem node to attach: " << fa_input1_bprop_get_item->DebugString()
+               << ". The RING_ATTENTION_INDEX/FLASH_INDEX:" << origin_index;
+
+  // k input
+  CNodePtr cnode_k_input_graph_node = GetLastInputFuncGraphCNode(cnode, kIndex2);
+  MS_EXCEPTION_IF_NULL(cnode_k_input_graph_node);
+  auto fa_input2_bprop_get_item = GetDoutGetItemByFuncGraphNode(cnode_k_input_graph_node, node_users_map);
+  MS_EXCEPTION_IF_NULL(fa_input2_bprop_get_item);
+  fa_input_node_vector.push_back(fa_input2_bprop_get_item);
+  MS_LOG(INFO) << "Find the FA k input bprop getitem node to attach: " << fa_input2_bprop_get_item->DebugString()
+               << ". The RING_ATTENTION_INDEX/FLASH_INDEX:" << origin_index;
+
+  // v input
+  CNodePtr cnode_v_input_graph_node = GetLastInputFuncGraphCNode(cnode, kIndex3);
+  MS_EXCEPTION_IF_NULL(cnode_v_input_graph_node);
+  auto fa_input3_bprop_get_item = GetDoutGetItemByFuncGraphNode(cnode_v_input_graph_node, node_users_map);
+  MS_EXCEPTION_IF_NULL(fa_input3_bprop_get_item);
+  fa_input_node_vector.push_back(fa_input3_bprop_get_item);
+  MS_LOG(INFO) << "Find the FA v input bprop getitem node to attach: " << fa_input3_bprop_get_item->DebugString()
+               << ". The RING_ATTENTION_INDEX/FLASH_INDEX:" << origin_index;
+  return fa_input_node_vector;
+}
+
+bool AttachCommTupleNodeToFA(const std::map<int, std::vector<AnfNodePtr>> &index_make_tuple_input_map,
+                             std::map<int, std::vector<AnfNodePtr>> *index_fa_input_bprop_getitem_map,
+                             const FuncGraphPtr &grad_graph, const FuncGraphManagerPtr &manager) {
+  for (auto &index_fa_bprop_getitem_vector : *index_fa_input_bprop_getitem_map) {
+    auto index = index_fa_bprop_getitem_vector.first;
+
+    auto make_tuple_input_it = index_make_tuple_input_map.find(index);
+    if (make_tuple_input_it == index_make_tuple_input_map.end()) {
+      continue;
+    }
+    auto make_tuple = grad_graph->NewCNode(make_tuple_input_it->second);
+    MS_EXCEPTION_IF_NULL(make_tuple);
+
+    auto fa_bprop_getitem_vector = index_fa_bprop_getitem_vector.second;
+    for (auto fa_bprop_getitem : fa_bprop_getitem_vector) {
+      std::vector<AnfNodePtr> attach_node_input = {NewValueNode(prim::kPrimDepend), fa_bprop_getitem, make_tuple};
+      auto attach_node = grad_graph->NewCNode(attach_node_input);
+      MS_EXCEPTION_IF_NULL(attach_node);
+      MS_LOG(INFO) << "Attach_node for RA/FlashSP Send/Recv grad node: " << attach_node->DebugString();
+      manager->Replace(fa_bprop_getitem, attach_node);
+    }
+  }
+  return true;
+}
 bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) {
   if (root->has_flag(FLASH_SP_SEND_RECV_HAS_ATTACHED)) {
     return false;
@@ -2580,7 +2641,7 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
   auto all_nodes = DeepScopedGraphSearch(ret_after);
   const auto &node_users_map = manager->node_users();
   FuncGraphPtr grad_graph;
-  std::map<int, AnfNodePtr> index_fa_input_bprop_getitem_map;
+  std::map<int, std::vector<AnfNodePtr>> index_fa_input_bprop_getitem_map;
   std::map<int, std::vector<AnfNodePtr>> index_make_tuple_input_map;
 
   for (auto &node : all_nodes) {
@@ -2605,19 +2666,15 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
       MS_LOG(INFO) << "Start to Handle the RA/FlashSP Send/Recv grad attaching for the forward FA node: "
                    << forward_cnode->DebugString();
       int fa_index = GetFaIndex(origin_index);
-      // find the last node of fa q input as the attaching node of send/receive tuple, skipping depend, send and
-      // receive.
-      CNodePtr cnode_input_graph_node = GetLastInputFuncGraphCNode(cnode);
-      MS_EXCEPTION_IF_NULL(cnode_input_graph_node);
-      // find the getitem node of the fa input bprop graph.
-      auto fa_input1_bprop_get_item = GetDoutGetItemByFuncGraphNode(cnode_input_graph_node, node_users_map);
-      MS_EXCEPTION_IF_NULL(fa_input1_bprop_get_item);
-      auto fa_input_forward_cnode = GetForwardCnodeByFuncGraphCNode(cnode_input_graph_node);
-      index_fa_input_bprop_getitem_map.insert({fa_index, fa_input1_bprop_get_item});
-      MS_LOG(INFO) << "Find the FA input bprop getitem node to attach: " << fa_input1_bprop_get_item->DebugString()
-                   << ", the corresponding forward FA node: " << forward_cnode->DebugString()
-                   << ", RING_ATTENTION_INDEX/FLASH_INDEX:" << origin_index
-                   << ", the corresponding attached op:" << fa_input_forward_cnode->DebugString();
+      // find the last node of fa q, k and v input as the attaching node of send/receive tuple, skipping depend, send
+      // and receive.
+      std::vector<AnfNodePtr> fa_input_node_vector = GetLastFAInputCNodeVector(cnode, origin_index, node_users_map);
+
+      MS_LOG(INFO) << "Find the FA input bprop getitem node vector to attach, the corresponding forward FA node: "
+                   << forward_cnode->DebugString() << ", RING_ATTENTION_INDEX/FLASH_INDEX:" << origin_index;
+      if (!fa_input_node_vector.empty()) {
+        index_fa_input_bprop_getitem_map.insert({fa_index, fa_input_node_vector});
+      }
       continue;
     }
     if (!IsPrimitiveCNode(forward_cnode, prim::kPrimReceive) && !IsPrimitiveCNode(forward_cnode, prim::kPrimSend)) {
@@ -2648,22 +2705,8 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
     MS_LOG(INFO) << "No RA/FlashSP Send/Recv grad is found to be attached.";
     return false;
   }
-  for (auto &index_fa_bprop_getitem : index_fa_input_bprop_getitem_map) {
-    auto index = index_fa_bprop_getitem.first;
-    auto fa_bprop_getitem = index_fa_bprop_getitem.second;
-    auto make_tuple_input_it = index_make_tuple_input_map.find(index);
-    if (make_tuple_input_it == index_make_tuple_input_map.end()) {
-      continue;
-    }
-    auto make_tuple = grad_graph->NewCNode(make_tuple_input_it->second);
-    MS_EXCEPTION_IF_NULL(make_tuple);
-    std::vector<AnfNodePtr> attach_node_input = {NewValueNode(prim::kPrimDepend), fa_bprop_getitem, make_tuple};
-    auto attach_node = grad_graph->NewCNode(attach_node_input);
-    MS_EXCEPTION_IF_NULL(attach_node);
-    MS_LOG(INFO) << "Attach_node for RA/FlashSP Send/Recv grad node: " << attach_node->DebugString();
-    manager->Replace(fa_bprop_getitem, attach_node);
-  }
-  return true;
+
+  return AttachCommTupleNodeToFA(index_make_tuple_input_map, &index_fa_input_bprop_getitem_map, grad_graph, manager);
 }
 }  // namespace parallel
 }  // namespace mindspore
