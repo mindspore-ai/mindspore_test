@@ -90,7 +90,6 @@ endforeach()
 
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_graph_ir_obj>)
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_acl_ir_obj>)
-list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_acl_declare_obj>)
 list(APPEND ASCEND_COMMON_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
 
 list(APPEND ASCEND_910B_OBJ_SRC ${ASCEND_COMMON_OBJECTS_SRC})

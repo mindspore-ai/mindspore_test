@@ -491,10 +491,6 @@ if(ENABLE_TEST OR ENABLE_TESTCASES)
     add_library(stub_backend_obj OBJECT ${STUB_BACKEND_SOURCE})
 endif()
 
-if(ENABLE_D)
-    list(APPEND BACKEND_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_transform_acl_declare_obj>)
-endif()
-
 set_property(SOURCE ${BACKEND_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_backend SHARED ${BACKEND_SUB_OBJECTS_SRC})
 
