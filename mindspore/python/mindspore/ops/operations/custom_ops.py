@@ -215,7 +215,7 @@ class Custom(ops.PrimitiveWithInfer):
     function if needed. Then these `Custom` objects can be directly used in neural networks.
     Detailed description and introduction of user-defined operators, including correct writing of parameters,
     please refer to `Custom Operators Tutorial
-    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom.html>`_ .
+    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/op_custom.html>`_ .
 
     .. warning::
         - This is an experimental API that is subject to change.
@@ -225,7 +225,7 @@ class Custom(ops.PrimitiveWithInfer):
 
         - "hybrid": supports ["GPU", "CPU"].
         - "akg": supports ["GPU", "CPU"].
-        - "aot": supports ["GPU", "CPU", "ASCEDN"].
+        - "aot": supports ["GPU", "CPU", "Ascend"].
         - "pyfunc": supports ["CPU"].
         - "julia": supports ["CPU"].
 
@@ -300,20 +300,18 @@ class Custom(ops.PrimitiveWithInfer):
                        (ex. Custom(func="./reorganize.so:CustomReorganize", out_shape=[1], out_dtype=mstype.float32,
                        "aot"))
 
-                 b) ASCEND platform
-                 Before using Custom operators on the ASCEND platform, users must first develop custom operators
-                 based on Ascend C and compile them. For operator development, you can refer to the tutorial on
-                 `Quick Start for End-to-End Operator Development
-                 <https://www.hiascend.com/document/detail/zh/canncommercial/70RC1/operatordev/Ascendcopdevg/atlas_ascendc_10_0022.html>`_,
-                 and for compiling custom operators, you can use the `Offline Compilation of Ascend C Custom Operators
-                 <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom_ascendc.html>` tool.
-                 When passing the operator's name into the func parameter, taking AddCustom as an example for the
-                 name given in the custom operator implementation, there are several ways to use it:
+                 b) Ascend platform.
+                 Before using Custom operators on the Ascend platform, users must first develop custom operators
+                 based on Ascend C and compile them. The complete development and usage process can refer to the
+                 tutorial `AOT-Type Custom Operators(Ascend) <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom_ascendc.html>`_.
+                 By passing the name of the operator through the input parameter `func`, there are two usage methods
+                 based on the implementation of the infer shape function:
 
-                 - Usin TBE: func="AddCustom"
-                 - Using AclNN: func="aclnnAddCustom"
-                 - Inferring the shape of the operator through C++ derivation: func="infer_shape.cc:aclnnAddCustom",
-                   where infer_shape.cc is the shape derivation implemented in C++.
+                 - Python infer: If the operator's infer shape is implemented in Python, that is, the infer shape
+                   function is passed through the `out_shape` parameter, specify `func="CustomName"` .
+                 - C++ infer: If the operator's infer shape is implemented through C++, then pass the path of the
+                   infer shape implementation file in `func` and separate the operator name with `:`,
+                   for example: `func="add_custom_infer.cc:AddCustom"` .
 
               2. for "julia":
 
