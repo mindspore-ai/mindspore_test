@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendMemoryManager : public MemoryManager {
+class BACKEND_EXPORT AscendMemoryManager : public MemoryManager {
  public:
   AscendMemoryManager() = default;
   ~AscendMemoryManager() override = default;
@@ -67,6 +67,8 @@ class AscendMemoryManager : public MemoryManager {
   GetPersistentMemBlocksInfoStatistics() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
+
+  DynamicMemPool *GetMemoryPool() override;
 
  protected:
   uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;

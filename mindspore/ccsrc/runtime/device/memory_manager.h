@@ -84,35 +84,35 @@ class BACKEND_EXPORT MemoryManager {
   bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
                    const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
                    const DeviceEventPtr &event) {
-    if (memory_pool_ == nullptr) {
-      MS_LOG(WARNING) << "memory_pool_ is nullptr.";
+    if (GetMemoryPool() == nullptr) {
+      MS_LOG(WARNING) << "memory pool is nullptr.";
       return false;
     }
-    return memory_pool_->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, event);
+    return GetMemoryPool()->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, event);
   }
   bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
-    if (memory_pool_ == nullptr) {
-      MS_LOG(WARNING) << "memory_pool_ is nullptr.";
+    if (GetMemoryPool() == nullptr) {
+      MS_LOG(WARNING) << "memory pool is nullptr.";
       return false;
     }
-    return memory_pool_->WaitEvent(task_id_on_stream, user_stream_id, memory_stream_id);
+    return GetMemoryPool()->WaitEvent(task_id_on_stream, user_stream_id, memory_stream_id);
   }
   bool WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) {
-    if (memory_pool_ == nullptr) {
-      MS_LOG(WARNING) << "memory_pool_ is nullptr.";
+    if (GetMemoryPool() == nullptr) {
+      MS_LOG(WARNING) << "memory pool is nullptr.";
       return false;
     }
-    return memory_pool_->WaitEvent(task_id_on_stream, memory_stream_id);
+    return GetMemoryPool()->WaitEvent(task_id_on_stream, memory_stream_id);
   }
   bool SyncAllEvents() {
-    if (memory_pool_ == nullptr) {
-      MS_LOG(WARNING) << "memory_pool_ is nullptr.";
+    if (GetMemoryPool() == nullptr) {
+      MS_LOG(WARNING) << "memory pool is nullptr.";
       return false;
     }
-    return memory_pool_->SyncAllEvents();
+    return GetMemoryPool()->SyncAllEvents();
   }
 
-  DynamicMemPool *memory_pool() { return memory_pool_; }
+  virtual DynamicMemPool *GetMemoryPool() = 0;
 
   // Relevant function to manage memory statistics
   virtual size_t GetTotalMemStatistics() const { return 0; }

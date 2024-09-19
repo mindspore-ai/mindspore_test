@@ -23,7 +23,7 @@
 namespace mindspore {
 namespace device {
 namespace gpu {
-class GPUMemoryManager : public MemoryManager {
+class BACKEND_EXPORT GPUMemoryManager : public MemoryManager {
  public:
   GPUMemoryManager() = default;
   virtual ~GPUMemoryManager() = default;
@@ -55,6 +55,8 @@ class GPUMemoryManager : public MemoryManager {
   GetPersistentMemBlocksInfoStatistics() const override;
   void ResetMaxMemoryReserved() override;
   void ResetMaxMemoryAllocated() override;
+
+  DynamicMemPool *GetMemoryPool() override;
 
  protected:
   uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;
