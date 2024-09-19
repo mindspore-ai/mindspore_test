@@ -164,6 +164,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->Add(std::make_shared<opt::AddLayernormFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::AddLayernormV3Fusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::AddLayernormExtFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::QbmmAddFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::InferenceSwiGLUFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::InferenceMatmulSplitFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::AddLayernormFusion>(), graphkernel::OptLevel_0);
@@ -179,7 +180,6 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->Add(std::make_shared<opt::MatmulElemAddFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::MatmulElemReluFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::MatmulElemGeluFusion>(), graphkernel::OptLevel_0);
-  pm->Add(std::make_shared<opt::QbmmAddFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::QbmmAllReduceAddFusion>(), graphkernel::OptLevel_0);
 #endif  // ENABLE_INTERNAL_KERNELS
 

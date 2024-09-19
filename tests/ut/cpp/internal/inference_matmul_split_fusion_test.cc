@@ -17,6 +17,7 @@
 #include "backend/graph_optimizer_test_framework.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "common/common_test.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_matmul_split_fusion.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -183,7 +184,7 @@ TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulSplitOut3) {
   auto trans_a = c.NewValueNode(MakeValue<bool>(false));
   auto trans_b = c.NewValueNode(MakeValue<bool>(true));
   auto dtype = c.NewValueNode(MakeValue<int64_t>(42));
-  auto matmul = c.NewCNode("QuantBatchMatmul", {reshape_0, weight, scale, none_, bias, trans_a, trans_b, dtype}, {});
+  auto matmul = c.NewCNode("QuantBatchMatmul", {reshape_0, weight, scale, none_, bias, none_, trans_a, trans_b, dtype}, {});
 
   auto tuple_1 = c.NewValueNode(MakeValue(std::vector<int64_t>{1, 32, 12288}));
   auto reshape_1 = c.NewCNode("Reshape", {matmul, tuple_1}, {});
@@ -220,7 +221,7 @@ TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulSplitOut2) {
   auto trans_a = c.NewValueNode(MakeValue<bool>(false));
   auto trans_b = c.NewValueNode(MakeValue<bool>(true));
   auto dtype = c.NewValueNode(MakeValue<int64_t>(42));
-  auto matmul = c.NewCNode("QuantBatchMatmul", {reshape_0, weight, scale, none_, bias, trans_a, trans_b, dtype}, {});
+  auto matmul = c.NewCNode("QuantBatchMatmul", {reshape_0, weight, scale, none_, bias, none_, trans_a, trans_b, dtype}, {});
 
   auto tuple_1 = c.NewValueNode(MakeValue(std::vector<int64_t>{1, 256, 22016}));
   auto reshape_1 = c.NewCNode("Reshape", {matmul, tuple_1}, {});
@@ -229,6 +230,110 @@ TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulSplitOut2) {
   auto split_with_size = c.NewCNode("SplitWithSize", {reshape_1, split_size, dim}, {});
   c.SetOutput(split_with_size);
 
+  test::RunPass(c.GetGraph(), {std::make_shared<opt::InferenceMatmulSplitFusion>()});
+  opt::CheckPattern checker;
+  checker.src_pattern_.AddVar("input").AddVar("weight").AddVar("dim").AddVar("bias").AddVar("scale").AddCNode(
+    "QuantbatchmatmulSplitOut2", {std::make_shared<Primitive>("QuantbatchmatmulSplitOut2"),
+                                  "input", "weight", "dim", "bias", "scale"});
+
+  EXPECT_TRUE(checker.build_pattern_map(c.GetGraph()->output()));
+}
+
+/// Feature: A backend pass: QbmmAddFusion + InferenceMatmulSplitFusion
+/// Description: Convert Reshape + QuantBatchMatmul + Add + Reshape + SplitWithSize to QuantbatchmatmulSplitOut3
+/// Expectation: After optimize, match QuantbatchmatmulSplitOut3.
+TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulAddSplitOut3) {
+  std::map<std::string, std::string> jit_config;
+  jit_config["infer_boost"] = "on";
+  PhaseManager::GetInstance().set_jit_config(jit_config);
+  test::ConstructGraph c;
+  auto input = c.NewTensorInput("input", kInt8, {1, 32, 4096});
+  auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{32, 4096}));
+  auto reshape_0 = c.NewCNode("Reshape", {input, tuple_0}, {});
+
+  auto weight = c.NewTensorInput("weight", kInt8, {12288, 4096});
+  auto scale = c.NewTensorInput("scale", kInt64, {12288});
+  auto bias = c.NewTensorInput("bias", kInt32, {12288});
+  auto none_ = c.NewValueNode(kNone);
+  auto trans_a = c.NewValueNode(MakeValue<bool>(false));
+  auto trans_b = c.NewValueNode(MakeValue<bool>(true));
+  auto dtype = c.NewValueNode(MakeValue<int64_t>(42));
+
+  auto input_2 = c.NewTensorInput("input_2", kInt64, {12288}); // scale: should have data
+  auto input_3 = c.NewTensorInput("input_3", kFloat16, {12288}); // bias: should have data
+  ShapeVector sv = {12288};
+  ParamInfoPtr param_info = std::make_shared<ParamInfo>(); // fake
+  tensor::TensorPtr tensor2 = std::make_shared<tensor::Tensor>(kNumberTypeInt64, sv);
+  tensor::TensorPtr tensor3 = std::make_shared<tensor::Tensor>(kNumberTypeFloat16, sv);
+  tensor2->set_param_info(param_info);
+  tensor3->set_param_info(param_info);
+  input_2->set_default_param(tensor2);
+  input_3->set_default_param(tensor3);
+  auto load2 = c.NewCNode("Load", {input_2, input_2}, {})->cast<AnfNodePtr>();
+  auto load3 = c.NewCNode("Load", {input_3, input_3}, {})->cast<AnfNodePtr>();
+  auto matmul = c.NewCNode("QuantBatchMatmul", {reshape_0, weight, load2, none_, none_, none_, trans_a, trans_b, dtype}, {});
+  auto add = c.NewCNode("Add", {matmul, load3}, {});
+
+  auto tuple_1 = c.NewValueNode(MakeValue(std::vector<int64_t>{1, 32, 12288}));
+  auto reshape_1 = c.NewCNode("Reshape", {add, tuple_1}, {});
+  auto split_size = c.NewValueNode(MakeValue(std::vector<int64_t>{4096, 4096, 4096}));
+  auto dim = c.NewValueNode(MakeValue<int64_t>(-1));
+  auto split_with_size = c.NewCNode("SplitWithSize", {reshape_1, split_size, dim}, {});
+  c.SetOutput(split_with_size);
+
+  test::RunPass(c.GetGraph(), {std::make_shared<opt::QbmmAddFusion>()});
+  test::RunPass(c.GetGraph(), {std::make_shared<opt::InferenceMatmulSplitFusion>()});
+  opt::CheckPattern checker;
+  checker.src_pattern_.AddVar("input").AddVar("weight").AddVar("dim").AddVar("bias").AddVar("scale").AddCNode(
+    "QuantbatchmatmulSplitOut3", {std::make_shared<Primitive>("QuantbatchmatmulSplitOut3"),
+                                  "input", "weight", "dim", "bias", "scale"});
+
+  EXPECT_TRUE(checker.build_pattern_map(c.GetGraph()->output()));
+}
+
+/// Feature: A backend pass: QbmmAddFusion + InferenceMatmulSplitFusion
+/// Description: Convert Reshape + QuantBatchMatmul + Add + Reshape + SplitWithSize to QuantbatchmatmulSplitOut2
+/// Expectation: After optimize, match QuantbatchmatmulSplitOut2.
+TEST_F(InferenceMatmulSplitFusionUT, TestQuantbatchmatmulAddSplitOut2) {
+  std::map<std::string, std::string> jit_config;
+  jit_config["infer_boost"] = "on";
+  PhaseManager::GetInstance().set_jit_config(jit_config);
+  test::ConstructGraph c;
+  auto input = c.NewTensorInput("input", kInt8, {1, 256, 4096});
+  auto tuple_0 = c.NewValueNode(MakeValue(std::vector<int64_t>{256, 4096}));
+  auto reshape_0 = c.NewCNode("Reshape", {input, tuple_0}, {});
+
+  auto weight = c.NewTensorInput("weight", kInt8, {22016, 4096});
+  auto scale = c.NewTensorInput("scale", kInt64, {22016});
+  auto bias = c.NewTensorInput("bias", kInt32, {22016});
+  auto none_ = c.NewValueNode(kNone);
+  auto trans_a = c.NewValueNode(MakeValue<bool>(false));
+  auto trans_b = c.NewValueNode(MakeValue<bool>(true));
+  auto dtype = c.NewValueNode(MakeValue<int64_t>(42));
+
+  auto input_2 = c.NewTensorInput("input_2", kInt64, {22016}); // scale: should have data
+  auto input_3 = c.NewTensorInput("input_3", kFloat16, {22016}); // bias: should have data
+  ShapeVector sv = {22016};
+  ParamInfoPtr param_info = std::make_shared<ParamInfo>(); // fake
+  tensor::TensorPtr tensor2 = std::make_shared<tensor::Tensor>(kNumberTypeInt64, sv);
+  tensor::TensorPtr tensor3 = std::make_shared<tensor::Tensor>(kNumberTypeFloat16, sv);
+  tensor2->set_param_info(param_info);
+  tensor3->set_param_info(param_info);
+  input_2->set_default_param(tensor2);
+  input_3->set_default_param(tensor3);
+  auto load2 = c.NewCNode("Load", {input_2, input_2}, {})->cast<AnfNodePtr>();
+  auto load3 = c.NewCNode("Load", {input_3, input_3}, {})->cast<AnfNodePtr>();
+  auto matmul = c.NewCNode("QuantBatchMatmul", {reshape_0, weight, load2, none_, none_, none_, trans_a, trans_b, dtype}, {});
+  auto add = c.NewCNode("Add", {matmul, load3}, {});
+
+  auto tuple_1 = c.NewValueNode(MakeValue(std::vector<int64_t>{1, 256, 22016}));
+  auto reshape_1 = c.NewCNode("Reshape", {add, tuple_1}, {});
+  auto split_size = c.NewValueNode(MakeValue(std::vector<int64_t>{11008, 11008}));
+  auto dim = c.NewValueNode(MakeValue<int64_t>(-1));
+  auto split_with_size = c.NewCNode("SplitWithSize", {reshape_1, split_size, dim}, {});
+  c.SetOutput(split_with_size);
+
+  test::RunPass(c.GetGraph(), {std::make_shared<opt::QbmmAddFusion>()});
   test::RunPass(c.GetGraph(), {std::make_shared<opt::InferenceMatmulSplitFusion>()});
   opt::CheckPattern checker;
   checker.src_pattern_.AddVar("input").AddVar("weight").AddVar("dim").AddVar("bias").AddVar("scale").AddCNode(

@@ -55,14 +55,14 @@ TEST_F(QbmmAddFusionUT, QbmmAddFusionTest) {
   auto tb = c.NewValueNode(MakeValue<bool>(false));
   auto dtype = c.NewValueNode(MakeValue<int64_t>(42));
   auto none_ = c.NewValueNode(kNone);
-  auto qbmm = c.NewCNode("QuantBatchMatmul", {input_0, input_1, load2, none_, none_, ta, tb, dtype}, {});
+  auto qbmm = c.NewCNode("QuantBatchMatmul", {input_0, input_1, load2, none_, none_, none_, ta, tb, dtype}, {});
   auto add = c.NewCNode("Add", {qbmm, load3}, {});
 
   c.SetOutput(add);
   test::RunPass(c.GetGraph(), {std::make_shared<opt::QbmmAddFusion>()});
   opt::CheckPattern checker;
-  checker.src_pattern_.AddVar("input_0").AddVar("input_1").AddVar("input_2").AddVar("input_3").AddVar("input_4").AddVar("input_5").AddVar("input_6").AddVar("input_7").AddCNode(
-    "qbmm_add", {std::make_shared<Primitive>("QuantBatchMatmul"), "input_0", "input_1", "input_2", "input_3", "input_4", "input_5", "input_6", "input_7"});
+  checker.src_pattern_.AddVar("input_0").AddVar("input_1").AddVar("input_2").AddVar("input_3").AddVar("input_4").AddVar("input_5").AddVar("input_6").AddVar("input_7").AddVar("input_8").AddCNode(
+    "qbmm_add", {std::make_shared<Primitive>("QuantBatchMatmul"), "input_0", "input_1", "input_2", "input_3", "input_4", "input_5", "input_6", "input_7", "input_8"});
 
   EXPECT_TRUE(checker.build_pattern_map(c.GetGraph()->output()));
 }
