@@ -58,6 +58,7 @@ using kernel::KernelBuildInfoPtr;
 using kernel::KernelMod;
 using kernel::KernelModPtr;
 constexpr char kDisableKernelBackoff[] = "MS_DISABLE_KERNEL_BACKOFF";
+constexpr char kMindsporeDumpConfig[] = "MINDSPORE_DUMP_CONFIG";
 
 namespace {
 constexpr size_t kReturnDataIndex = 1;
@@ -2461,16 +2462,14 @@ std::vector<size_t> AnfRuntimeAlgorithm::GetLaunchIgnoredInputAddressIdx(const A
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_mod = GetKernelMod(node);
   MS_EXCEPTION_IF_NULL(kernel_mod);
-  const auto &launch_ignored_input_idx = kernel_mod->GetLaunchIgnoredInputAddressIdx();
-  std::vector<size_t> ignored_input_addresses;
+  std::vector<size_t> launch_ignored_input_idx = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+  static bool is_enable_dump = !common::GetEnv(kMindsporeDumpConfig).empty();
+  if (!launch_ignored_input_idx.empty() || is_enable_dump) {
+    return launch_ignored_input_idx;
+  }
+
   auto input_num = common::AnfAlgo::GetInputTensorNum(node);
   for (size_t input_idx = 0; input_idx < input_num; ++input_idx) {
-    if (std::find(launch_ignored_input_idx.begin(), launch_ignored_input_idx.end(), input_idx) !=
-        launch_ignored_input_idx.end()) {
-      ignored_input_addresses.emplace_back(input_idx);
-      continue;
-    }
-
     auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, input_idx);
     auto node = kernel_with_index.first;
     MS_EXCEPTION_IF_NULL(node);
@@ -2504,9 +2503,9 @@ std::vector<size_t> AnfRuntimeAlgorithm::GetLaunchIgnoredInputAddressIdx(const A
         continue;
       }
     }
-    ignored_input_addresses.emplace_back(input_idx);
+    launch_ignored_input_idx.emplace_back(input_idx);
   }
 
-  return ignored_input_addresses;
+  return launch_ignored_input_idx;
 }
 }  // namespace mindspore::session

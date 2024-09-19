@@ -275,6 +275,7 @@ std::vector<size_t> AclKernelMod::GetLaunchIgnoredInputAddressIdx() const {
     {"Zeros", {0, 1}},
     {"StridedSlice", {1, 2, 3}},
     {"StridedSliceGrad", {1, 2, 3, 4}},
+    {"Print", {0}},
     {"UniformInt", {0}}};
   if (launch_ignored_input_addr_idx.count(kernel_name_) > 0) {
     return launch_ignored_input_addr_idx.at(kernel_name_);
