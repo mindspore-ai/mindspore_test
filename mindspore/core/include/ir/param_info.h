@@ -182,7 +182,7 @@ class ParamInfo {
   std::vector<std::string> alias_name_;
   std::vector<int64_t> tensor_map_;
   std::vector<int64_t> device_matrix_;
-  bool interleaved_parallel_;
+  bool interleaved_parallel_{false};
 
   // Used to identify parameters of quant int4 type
   bool is_quant_int4_{false};
