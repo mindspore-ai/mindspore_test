@@ -18,6 +18,8 @@ Tensor
     mindspore.CSRTensor
     mindspore.RowTensor
     mindspore.SparseTensor
+    mindspore.is_tensor
+    mindspore.from_numpys
 
 Parameter
 ^^^^^^^^^^
