@@ -318,7 +318,8 @@ void LoadAnfKernelInfoFromJson(const nlohmann::json &kernel_infos_json) {
                                                output_size_list.end()));
         context.PushFullnameIoSizeInfo(node->fullname_with_scope(), io_size);
       } else {
-        MS_LOG(EXCEPTION) << "Load node " << node->DebugString() << " kernel_io_size_info failed.";
+        MS_LOG(DEBUG) << "Load kernel info for node from json. Node:" << node->DebugString() << " , name:" << name
+                      << ", address:" << node << ".";
       }
     }
     LoadKernelInfoRuntimeCache(kernel_info_value, kernel_info);
@@ -414,8 +415,11 @@ nlohmann::json SaveValueSet(const HashSet<ValueNodePtr> &save_anfs) {
     const auto &name = GetAnfUniqueCacheName(i, false);
     // allow some value node not to be exported to mindir.
     if (name.empty()) {
+      MS_LOG(DEBUG) << "Value node has no name, node:" << i->DebugString() << ", address:" << i;
       continue;
     }
+    MS_LOG(DEBUG) << "Save value node to SaveValueSet, node:" << i->DebugString() << ", name:" << name
+                  << ", address:" << i.get();
     (void)(iter_json.emplace_back(name));
   }
   return iter_json;
@@ -2566,6 +2570,35 @@ void HandleSwitchInlineMaps(const nlohmann::json &graph_json, KernelGraph *graph
   }
 }
 
+void HandleAttrVauleNode(const nlohmann::json &graph_json, KernelGraph *graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto &context = CompileCacheContext::GetInstance();
+  MS_LOG(INFO) << "Handle graph " << graph->ToString() << " value node.";
+  try {
+    if (graph_json.contains(kGraphValueNodes)) {
+      const auto &graph_value_nodes_json = graph_json[kGraphValueNodes];
+      for (const auto &iter : graph_value_nodes_json) {
+        auto node = context.FindBackNodeByBackName(iter);
+        if (node == nullptr) {
+          continue;
+        } else {
+          auto value_node = node->cast<ValueNodePtr>();
+          MS_EXCEPTION_IF_NULL(value_node);
+          if (value_node->kernel_info() == nullptr && !IsValueNode<Primitive>(value_node)) {
+            MS_LOG(DEBUG) << "Kernel info for node is null. None primitive value node: " << value_node->DebugString()
+                          << ", name: " << iter << ", address: " << value_node.get() << " .";
+            continue;
+          }
+          graph->AddValueNodeToGraph(value_node);
+        }
+      }
+    }
+  } catch (std::exception &e) {
+    MS_LOG(EXCEPTION) << "Graph " << graph->ToString() << " has no json."
+                      << " Error info:" << e.what();
+  }
+}
+
 void HandleGraphComplexAttr(const mindspore::HashMap<GraphId, std::shared_ptr<KernelGraph>> &graphs,
                             const nlohmann::json &graph_json, KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
@@ -2639,16 +2672,7 @@ void HandleGraphComplexAttr(const mindspore::HashMap<GraphId, std::shared_ptr<Ke
     const auto &kernel_infos_json = graph_json[kNodesKernelInfo];
     LoadAnfKernelInfoFromJson(kernel_infos_json);
   }
-  if (graph_json.contains(kGraphValueNodes)) {
-    const auto &graph_value_nodes_json = graph_json[kGraphValueNodes];
-    for (const auto &iter : graph_value_nodes_json) {
-      auto node = context.FindBackNodeByBackName(iter);
-      MS_EXCEPTION_IF_NULL(node);
-      auto value_node = node->cast<ValueNodePtr>();
-      MS_EXCEPTION_IF_NULL(value_node);
-      graph->AddValueNodeToGraph(value_node);
-    }
-  }
+  HandleAttrVauleNode(graph_json, graph);
 #ifndef ENABLE_SECURITY
   if (graph_json.contains(kSummaryNodes)) {
     const auto &summary_nodes_json = graph_json[kSummaryNodes];
