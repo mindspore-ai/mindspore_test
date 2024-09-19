@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 #include "kernel/ascend/opapi/aclnn/tile_aclnn_kernel.h"
-#include <algorithm>
-#include <cstdint>
-#include <vector>
-#include <map>
-#include <memory>
-#include <functional>
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
 #include "transform/acl_ir/acl_helper.h"
