@@ -23,6 +23,7 @@ from mindspore.mint.nn.functional import sigmoid
 from mindspore.mint.nn import functional
 from mindspore.mint import linalg
 from mindspore.mint import special
+from mindspore.mint import distributed
 from mindspore.ops import erf, where
 from mindspore.ops.function.math_func import linspace_ext as linspace
 from mindspore.ops.function.math_func import median_ext as median
@@ -1554,3 +1555,4 @@ __all__.extend(nn.__all__)
 __all__.extend(optim.__all__)
 __all__.extend(linalg.__all__)
 __all__.extend(special.__all__)
+__all__.extend(distributed.__all__)
