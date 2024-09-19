@@ -95,8 +95,8 @@ class Net(nn.Cell):
 
 def test_functional_multi_out_semi_auto():
     """
-    Feature: pipeline parallel functional
-    Description:  test pipeline parallel functional
+    Feature: loss return tuple
+    Description:  functional style programming should support multi-out case
     Expectation: success
     """
     context.set_auto_parallel_context(device_num=8, global_rank=0)
