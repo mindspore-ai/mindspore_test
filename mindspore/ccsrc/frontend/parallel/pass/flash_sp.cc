@@ -78,7 +78,7 @@ FlashSPInfo::FlashSPInfo(CNodePtr fa_score_node) {
   auto rankList = flash_score_info_ptr->GetSPRankList();
   size_t pos = -1;
   for (size_t i = 0; i < rankList.size(); ++i) {
-    if (dev_rank_id_ == LongToSize(rankList[i])) {
+    if (dev_rank_id_ == rankList[i]) {
       pos = i;
     }
   }
@@ -1381,9 +1381,10 @@ void DynGetCurrentQKVMask(const AnfNodePtr &kv_a_concat, const AnfNodePtr &kv_b_
     (*cur_k) = key_node;
     (*cur_v) = value_node;
   } else {
-    (*cur_attn_mask) = dyn_make_mask_tensor(fa_s1, NewScalarDivNode(fa_s2, NewValueNode<int64_t>(2)), 0, false);
-    if (pos < (sp_num / 2)) {
-      if ((2 * pos < actual_step) && (actual_step < sp_num)) {  // recv_qkv_tensor is q, compute others oml
+    (*cur_attn_mask) = dyn_make_mask_tensor(fa_s1, NewScalarDivNode(fa_s2, NewValueNode<int64_t>(kIndex2)), 0, false);
+    if (pos < (sp_num / SizeToLong(kIndex2))) {
+      if ((SizeToLong(kIndex2) * pos < actual_step) &&
+          (actual_step < sp_num)) {  // recv_qkv_tensor is q, compute others oml
         (*cur_q) = recv_qkv_tensor;
         if (inner_step == 0) {
           (*cur_k) = kv_b_nodes[0];
@@ -1893,17 +1894,22 @@ void SetFAInputs(const AnfNodePtr &query_node, const AnfNodePtr &key_node, const
     actual_mask = eod_masks[pos_index];
   } else {
     if (index == 0) {
-      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] = CreatInt64Imm(3);
+      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
+        CreatInt64Imm(kIndex3);
       actual_mask = *first_actual_mask;
     } else {
-      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] = CreatInt64Imm(0);
+      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
+        CreatInt64Imm(kIndex0);
       actual_mask = (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputPaddingMaskIndex];
       if (index > pos) {
         actual_mask = *full_mask;
         (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputAttnMaskIndex] = actual_mask;
-        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] = CreatInt64Imm(4);
-        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputPreTokensIndex] = CreatInt64Imm(0);
-        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputNextTokensIndex] = CreatInt64Imm(0);
+        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
+          CreatInt64Imm(kIndex4);
+        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputPreTokensIndex] =
+          CreatInt64Imm(kIndex0);
+        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputNextTokensIndex] =
+          CreatInt64Imm(kIndex0);
       }
     }
   }
@@ -1953,7 +1959,8 @@ CNodePtr CreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr &m
     fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputActualSeqQlenIndex + 1);
 
   int64_t actual_shape_size = fsp_info->actual_seq_length_size();
-  int64_t sp_num = fsp_info->GetSPNum(), rank_id = fsp_info->GetRankId();
+  int64_t sp_num = SizeToLong(fsp_info->GetSPNum());
+  int64_t rank_id = SizeToLong(fsp_info->GetRankId());
   int64_t send_rank_id = fsp_info->GetSendRankId(), recv_rank_id = fsp_info->GetRecvRankId();
 
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
@@ -2040,7 +2047,8 @@ CNodePtr DynCreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr
     fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputActualSeqQlenIndex + 1);
 
   int64_t actual_shape_size = fsp_info->actual_seq_length_size();
-  int64_t sp_num = fsp_info->GetSPNum(), rank_id = fsp_info->GetRankId();
+  int64_t sp_num = SizeToLong(fsp_info->GetSPNum());
+  int64_t rank_id = SizeToLong(fsp_info->GetRankId());
   int64_t send_rank_id = fsp_info->GetSendRankId(), recv_rank_id = fsp_info->GetRecvRankId();
 
   std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
@@ -2388,7 +2396,7 @@ void CreateAndReplaceFlashSPFAScore(const FuncGraphManagerPtr &manager,
 bool CheckUserSettings(const FuncGraphPtr &fg, FSPInfo *fsp_info) {
   fsp_info->DisplayInfo();
 
-  int64_t sp_num = fsp_info->GetSPNum();
+  int64_t sp_num = SizeToLong(fsp_info->GetSPNum());
   if (sp_num <= 1) {
     MS_LOG(WARNING) << "FSP: To activate the pass, sp num " << sp_num << "should between larger than 1 ";
     return false;

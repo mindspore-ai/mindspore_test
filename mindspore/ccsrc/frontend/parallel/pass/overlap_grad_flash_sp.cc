@@ -112,10 +112,9 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
                     std::map<std::string, AnfNodePtr> *grad_recv_qkv_map,
                     std::map<std::string, AnfNodePtr> *grad_send_oml_map,
                     std::map<std::string, AnfNodePtr> *grad_recv_oml_map, CNodePtr *loss_node) {
-  auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
   for (auto &anf_node : *origin_nodes_topological) {
     CNodePtr node = anf_node->cast<CNodePtr>();
-    if (node != nullptr && node->HasPrimalAttr(FLASH_LOSS_NODE) && pipeline_stages <= 1) {
+    if (node != nullptr && node->HasPrimalAttr(FLASH_LOSS_NODE)) {
       (*loss_node) = node;
     }
 
@@ -244,7 +243,7 @@ CNodePtr NewConcatNode(const AnfNodePtr &input_node, size_t concat_dim) {
 
   std::vector<TypeId> dtypes = {common::AnfAlgo::GetOutputInferDataType(input_node, 0)};
   auto shape = common::AnfAlgo::GetOutputInferShape(input_node, 0);
-  shape[concat_dim] *= 2;
+  shape[concat_dim] *= kIndex2;
   std::vector<ShapeVector> shapes(1, shape);
   common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, concat.get());
   concat->set_scope(input_node->scope());
@@ -274,7 +273,6 @@ CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank
   common::AnfAlgo::SetNodeAttr(parallel::DTYPE, TypeIdToType(type_id), send_node);
 
   std::vector<TypeId> dtypes = {common::AnfAlgo::GetOutputInferDataType(send_data, 0)};
-  // auto shape = common::AnfAlgo::GetOutputInferShape(send_data, 0);
   std::vector<ShapeVector> shapes(1, shape);
   common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, send_node.get());
   send_node->set_scope(send_data->scope());
@@ -317,10 +315,10 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
 int64_t GetPosInSpDevice(std::shared_ptr<FlashAttentionScoreInfo> flash_score_info_ptr) {
   auto rankList = flash_score_info_ptr->GetSPRankList();
   int64_t pos = -1;
-  size_t dev_rank_id = g_device_manager->global_rank();
+  int64_t dev_rank_id = g_device_manager->global_rank();
   for (size_t i = 0; i < rankList.size(); ++i) {
-    if (dev_rank_id == LongToSize(rankList[i])) {
-      pos = i;
+    if (dev_rank_id == rankList[i]) {
+      pos = SizeToLong(i);
     }
   }
   return pos;
@@ -648,6 +646,10 @@ void OverlapGradFlashSP(const FuncGraphPtr &graph) {
   CNodePtr loss_node;
   FindTargetNode(&origin_nodes_topological, &fa_map, &grad_fa_map, &grad_send_qkv_map, &grad_recv_qkv_map,
                  &grad_send_oml_map, &grad_recv_oml_map, &loss_node);
+  auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
+  if (pipeline_stages > 1) {
+    loss_node = nullptr;
+  }
   if (grad_fa_map.empty() || fa_map.empty()) {
     return;
   }
