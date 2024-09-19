@@ -215,7 +215,7 @@ class Custom(ops.PrimitiveWithInfer):
     function if needed. Then these `Custom` objects can be directly used in neural networks.
     Detailed description and introduction of user-defined operators, including correct writing of parameters,
     please refer to `Custom Operators Tutorial
-    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom.html>`_ .
+    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/op_custom.html>`_ .
 
     .. warning::
         - This is an experimental API that is subject to change.
