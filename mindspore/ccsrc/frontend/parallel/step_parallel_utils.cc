@@ -2225,7 +2225,7 @@ CommInfo GetCommInfo() {
     device_num = UintToInt(world_rank_size);
     MS_LOG(INFO) << "Get device num from communication model, the device num is  " << device_num;
   }
-#if (!defined(_WIN32) && !defined(__APPLE__) && !(defined(ENABLE_TESTCASES) || defined(ENABLE_TEST)))
+#if (!defined(_WIN32) && !defined(__APPLE__) || defined(ENABLE_TEST))
   if (ParallelContext::GetInstance()->device_num_is_set() && world_rank_size != device_num &&
       !ParallelContext::GetInstance()->hccl_test_available()) {
     // hccl_test_available is used when we compile graphs in real ascend card environment, but with hccl_test.

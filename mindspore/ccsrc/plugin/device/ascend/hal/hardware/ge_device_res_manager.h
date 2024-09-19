@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,11 @@
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "include/transform/graph_ir/types.h"
-#include "plugin/device/ascend/hal/hardware/multi_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/dummy_ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
 #ifdef ENABLE_INTERNAL_KERNELS
-#include "plugin/device/ascend/hal/hardware/lowlatency_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/lowlatency_collective_comm_lib.h"
 #endif
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "runtime/device/kernel_runtime_manager.h"

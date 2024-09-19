@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/hardware/dummy_ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
 #include <algorithm>
 #include <numeric>
 #include <memory>
@@ -23,7 +23,7 @@
 #include "utils/ms_utils.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/hal/hardware/ascend_communication_group.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
 
 namespace mindspore {
 namespace device {

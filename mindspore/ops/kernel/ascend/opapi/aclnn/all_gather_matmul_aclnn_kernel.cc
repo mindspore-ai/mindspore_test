@@ -18,7 +18,7 @@
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "kernel/ascend/opapi/aclnn/all_gather_matmul_aclnn_kernel.h"
 namespace mindspore {
 namespace kernel {

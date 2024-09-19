@@ -3,10 +3,6 @@ if("${ENABLE_HIDDEN}" STREQUAL "OFF")
     string(REPLACE " -fvisibility=hidden" " -fvisibility=default" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-file(GLOB_RECURSE _PREACTIVATE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    "*.cc"
-)
-
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -Wno-user-defined-warnings -Wno-inconsistent-missing-override \
         -Wno-overloaded-virtual -Wno-unused-const-variable -Wno-pessimizing-move")
@@ -56,16 +52,8 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion_infer/matmul_elemwise_fusion.cc"
         "./enhancer/eliminate_maketuple_getitem.cc"
         )
-list(REMOVE_ITEM MS_OPTIMIZER_910B
-        "mindir/ascend_vm_op_adapter.cc"
-        "mindir/conv2d_unify_mindir.cc"
-        "ge/dropout_for_ge.cc"
-        "ge/convert_attr_to_input.cc"
-        "ge/convert_resize_nearest_neighbor_x_dtype.cc"
-        "ge/batchnorm_transform.cc"
-        )
 
-set_property(SOURCE ${_PREACTIVATE_SRC_LIST} ${MS_OPTIMIZER_910B} PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE ${MS_OPTIMIZER_910B} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_PRE_ACT)
 
 add_library(_mindspore_plugin_device_ascend_optimizer_910b_obj OBJECT ${MS_OPTIMIZER_910B})

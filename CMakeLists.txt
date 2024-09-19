@@ -143,10 +143,6 @@ endif()
 include(${CMAKE_SOURCE_DIR}/cmake/init.cmake)
 add_subdirectory(mindspore/core)
 add_subdirectory(mindspore/ops)
-if(ENABLE_D OR ENABLE_TESTCASES)
-    include(${CMAKE_SOURCE_DIR}/cmake/dependency_graphengine.cmake)
-endif()
-
 add_subdirectory_with_faster_option(mindspore/ccsrc)
 
 if(ENABLE_TESTCASES)

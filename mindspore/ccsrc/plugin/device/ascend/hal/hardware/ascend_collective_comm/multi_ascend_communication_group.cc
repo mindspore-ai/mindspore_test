@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/multi_ascend_communication_group.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_communication_group.h"
 
 namespace mindspore {
 namespace device {

@@ -17,7 +17,7 @@
 #include "kernel/ascend/pyboost/customize/comm_common.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
 #include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
 #include "plugin/device/ascend/hal/hardware/ge_summary.h"
 #include "plugin/device/ascend/hal/hardware/ge_memory_manager.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 
 namespace mindspore {
 namespace device {

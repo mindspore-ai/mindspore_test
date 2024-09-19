@@ -8,9 +8,6 @@ include_directories(${CMAKE_BINARY_DIR})
 
 set(MS_OPS_KERNEL_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel")
 
-# graphengine include directories
-include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
-
 set(SERVER_FLATBUFFER_OUTPUT "${CMAKE_BINARY_DIR}/schema")
 
 ## Function for setting NVCC flag and cuda arch list
@@ -319,23 +316,6 @@ if(ENABLE_DUMP_PROTO)
     list(APPEND MINDSPORE_PROTO_LIST ${PY_SRCS})
 endif()
 
-if(ENABLE_D)
-    include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
-    file(GLOB_RECURSE PROTO_IN "${MS_OPS_KERNEL_DIR}/ascend/aicpu/proto/*.proto")
-    ms_protobuf_generate(PROTOSRCS PROTOHDRS ${PROTO_IN})
-
-    file(GLOB_RECURSE PROTO_DUMP RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-            "plugin/device/ascend/hal/device/dump/proto/*.proto")
-    ms_protobuf_generate(DUMP_PROTOSRCS PROTOHDRS ${PROTO_DUMP})
-
-    ms_protobuf_generate(RANDOM_PROTOSRC RANDOM_PROTOHDR
-            "plugin/device/ascend/optimizer/ir_fission/random_status.proto")
-
-    list(APPEND MINDSPORE_PROTO_LIST ${PROTOSRCS})
-    list(APPEND MINDSPORE_PROTO_LIST ${PREDICT_PROTOSRCS})
-    list(APPEND MINDSPORE_PROTO_LIST ${DUMP_PROTOSRCS})
-    list(APPEND MINDSPORE_PROTO_LIST ${RANDOM_PROTOSRC})
-endif()
 # core/mindir.proto
 file(GLOB_RECURSE CORE_PROTO_IN ${CMAKE_SOURCE_DIR}/mindspore/core/proto/*.proto)
 ms_protobuf_generate(CORE_PROTO_SRC CORE_PROTO_HDR ${CORE_PROTO_IN})
@@ -485,7 +465,7 @@ foreach(number RANGE 1 ${CPU_KERNEL_OBJECT_COUNT})
     endif()
 endforeach()
 
-if(ENABLE_TEST OR ENABLE_TESTCASES)
+if(ENABLE_TESTCASES)
     include_directories(${CMAKE_BINARY_DIR})
     list(APPEND STUB_BACKEND_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/ps/ps_core_stub.cc)
     add_library(stub_backend_obj OBJECT ${STUB_BACKEND_SOURCE})
@@ -566,6 +546,7 @@ else()
     MESSAGE(FATAL_ERROR "other platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
+include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
 if(ENABLE_D)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/ascend)
     add_subdirectory(plugin/device/ascend)
@@ -633,7 +614,7 @@ if(ENABLE_MINDDATA)
     add_subdirectory(minddata/dataset)
 endif()
 
-if(ENABLE_TEST OR ENABLE_TESTCASES)
+if(ENABLE_TESTCASES)
     include_directories(${CMAKE_BINARY_DIR})
     list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/ge/ge_operator_stub.cc)
     list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/transform/util.cc)
@@ -651,16 +632,6 @@ if(ENABLE_TEST OR ENABLE_TESTCASES)
     target_link_libraries(_c_expression PUBLIC expression_)
 endif()
 
-if(NOT ENABLE_TESTCASES AND NOT (ENABLE_D OR ENABLE_CPU OR ENABLE_GPU))
-    include_directories(${CMAKE_BINARY_DIR})
-    list(APPEND EXPRESSION_STUB_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/cluster/cluster_stub.cc)
-    list(APPEND EXPRESSION_STUB_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/ps/ps_core_stub.cc)
-    list(APPEND EXPRESSION_STUB_SOURCE
-            ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/profiling/parallel_strategy_profiling_stub.cc)
-
-    add_library(expression_ STATIC ${EXPRESSION_STUB_SOURCE})
-    target_link_libraries(_c_expression PUBLIC expression_)
-endif()
 add_subdirectory(transform/graph_ir)
 add_subdirectory(transform/acl_ir)
 add_subdirectory(transform/symbol)

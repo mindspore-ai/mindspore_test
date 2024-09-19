@@ -107,6 +107,8 @@ target_link_libraries(mindspore_ascend PRIVATE mindspore::ssl mindspore::crypto)
 set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH
         ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${MS_KERNELS_INTERNAL_LIB_PATH}:${ASCEND_RPATH})
 
+include(${CMAKE_SOURCE_DIR}/cmake/dependency_graphengine.cmake)
+
 if(DVM_LIB)
     target_link_libraries(mindspore_ascend PRIVATE ${DVM_LIB})
 endif()

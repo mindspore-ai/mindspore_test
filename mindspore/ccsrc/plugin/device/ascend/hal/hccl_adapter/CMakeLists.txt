@@ -5,5 +5,5 @@ set_property(SOURCE ${HCCL_ADAPTER_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
 add_library(_mindspore_plugin_device_ascend_hal_hccl_adapter_obj OBJECT ${HCCL_ADAPTER_SRC_LIST})
 target_include_directories(_mindspore_plugin_device_ascend_hal_hccl_adapter_obj
         PRIVATE ${CMAKE_BINARY_DIR}/proto/ge)
-add_dependencies(_mindspore_plugin_device_ascend_hal_hccl_adapter_obj graph)
+add_dependencies(_mindspore_plugin_device_ascend_hal_hccl_adapter_obj ge_proto)
 add_subdirectory(plugin)
