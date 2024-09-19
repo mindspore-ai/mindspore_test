@@ -50,7 +50,7 @@ int GatherCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
   indices_shape_ = inputs[kIndexOne]->GetShapeVector();
   output_shape_ = outputs[kIndexZero]->GetShapeVector();
   batch_dims_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
-  batch_dims_ = batch_dims_ < 0 ? batch_dims_ + SizeToLong(input_shape_.size()) : batch_dims_;
+  batch_dims_ = batch_dims_ < 0 ? batch_dims_ + SizeToLong(indices_shape_.size()) : batch_dims_;
 
   is_null_input_ = input_shape_.empty() || indices_shape_.empty() || output_shape_.empty();
   if (is_null_input_) {

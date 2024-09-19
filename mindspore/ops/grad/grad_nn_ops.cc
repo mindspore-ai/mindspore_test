@@ -826,8 +826,8 @@ REG_BPROP_BUILDER("TopkExt").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
   auto dim_value = dim->BuildValue();
   MS_EXCEPTION_IF_CHECK_FAIL(dim_value != nullptr, "The input dim of 'Topk' must be constant.");
   MS_EXCEPTION_IF_CHECK_FAIL(!dim_value->isa<ValueAny>(), "The input dim of 'Topk' must be constant.");
-  auto out_grad = ib->Emit("TensorScatterElements", {zeros, indices, dout0},
-                           {{"reduction", MakeValue<string>("none")}, {"axis", dim_value}});
+  auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
+  auto out_grad = ib->Emit("TensorScatterElements", {zeros, indices, dout0, dim, reduce});
   return {out_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2)),
           ib->OutZeros(ib->GetInput(kIndex3)), ib->OutZeros(ib->GetInput(kIndex4))};
 });

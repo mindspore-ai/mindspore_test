@@ -2574,18 +2574,17 @@ REG_BPROP_BUILDER("TensorScatterElements").SetUnusedInputs({i0, i3}).SetBody(BOD
   auto x = ib->GetInput(kIndex0);
   auto indices = ib->GetInput(kIndex1);
   auto update = ib->GetInput(kIndex2);
-  auto dout = ib->GetInput(kIndex4);
-  auto axis = ib->GetAttr("axis");
+  auto axis = ib->GetInput(kIndex3);
+  auto reduce = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
   NodePtr x_grad = nullptr;
   if (x->need_compute_grad_out()) {
-    x_grad = ib->Emit("TensorScatterElements", {dout, indices, ib->ZerosLike(update)},
-                      {{"axis", axis}, {"reduction", ib->GetAttr("reduction")}});
+    x_grad = ib->Emit("TensorScatterElements", {dout, indices, ib->ZerosLike(update), axis, reduce});
   } else {
     x_grad = ib->OutZeros(x);
   }
-  auto update_grad =
-    update->need_compute_grad_out() ? ib->GatherD(dout, ib->EmitValue(axis), indices) : ib->OutZeros(update);
-  return {x_grad, ib->OutZeros(indices), update_grad};
+  auto update_grad = update->need_compute_grad_out() ? ib->GatherD(dout, axis, indices) : ib->OutZeros(update);
+  return {x_grad, ib->OutZeros(indices), update_grad, ib->OutZeros(axis), ib->OutZeros(reduce)};
 });
 
 REG_BPROP_BUILDER("ScatterAddWithAxis").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
@@ -2715,8 +2714,9 @@ REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
     auto dupdates_val = ib->Cast(ib->Emit("MaskedSelect", {dout, mask}), kFloat32);
     auto length = ib->TupleGetItem(ib->Shape(dupdates_val), LongToSize(0));
     auto scatter_indices = ib->Range(length);
-    dupdates = ib->Emit("TensorScatterElements", {dupdates, scatter_indices, dupdates_val},
-                        {{"reduction", MakeValue<string>("none")}, {"axis", MakeValue<int64_t>(0)}});
+    auto axis = ib->Value(0);
+    auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
+    dupdates = ib->Emit("TensorScatterElements", {dupdates, scatter_indices, dupdates_val, axis, reduce});
     // The operator test case pass on cpu or ascend backend. But it may fail once enabled on gpu backend for pynative
     // mode. Now it is not supported on gpu backend.
     dupdates = ib->Reshape(dupdates, ib->Shape(updates));
