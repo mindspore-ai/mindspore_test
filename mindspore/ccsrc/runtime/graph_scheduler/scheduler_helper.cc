@@ -682,6 +682,32 @@ void SchedulerHelper::ConvertDataArrowToControlArrow(AbstractActor *const from_a
   size_t old_ref_count = device_tensor->ref_count();
   // Ref count Initial value is 1.
   size_t new_ref_count = 1;
+
+  auto is_only_shape_depend = [&device_tensor, &from_actor, &to_actor](const auto &output_data_arrow) {
+    const auto &to_actor_tmp = FetchActor(output_data_arrow->to_op_id_.Name());
+    if (to_actor_tmp == nullptr || to_actor_tmp->type() != KernelTransformType::kKernelActor) {
+      return false;
+    }
+    const auto &to_kernel_actor = dynamic_cast<KernelActor *>(to_actor_tmp);
+    MS_EXCEPTION_IF_NULL(to_kernel_actor);
+    if (to_kernel_actor->kernel() == nullptr) {
+      return false;
+    }
+    const auto &only_depend_shape_attr =
+      common::AnfAlgo::GetCNodePrimitiveAttr(to_kernel_actor->kernel(), kAttrOnlyDependShape);
+    if (only_depend_shape_attr == nullptr) {
+      return false;
+    }
+    auto only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
+    if (IntToSize(output_data_arrow->to_input_index_) < only_depend_shape.size() &&
+        only_depend_shape[output_data_arrow->to_input_index_]) {
+      MS_LOG(INFO) << "Skip add ref count for allow null device address:" << device_tensor
+                   << " from actor:" << from_actor->GetAID() << " to actor:" << to_actor->GetAID();
+      return true;
+    }
+    return false;
+  };
+
   for (auto &output_data_arrow : from_actor->output_data_arrows_) {
     MS_EXCEPTION_IF_NULL(output_data_arrow);
     if (output_data_arrow->from_output_index_ != data_arrow->from_output_index_) {
@@ -692,25 +718,8 @@ void SchedulerHelper::ConvertDataArrowToControlArrow(AbstractActor *const from_a
       new_ref_count = SIZE_MAX;
       break;
     }
-    if (device_tensor->flag() == device::kDeviceAddressFlagNullptr) {
-      const auto &to_actor_tmp = FetchActor(output_data_arrow->to_op_id_.Name());
-      if (to_actor_tmp != nullptr && to_actor_tmp->type() == KernelTransformType::kKernelActor) {
-        const auto &to_kernel_actor = dynamic_cast<KernelActor *>(to_actor_tmp);
-        MS_EXCEPTION_IF_NULL(to_kernel_actor);
-        if (to_kernel_actor->kernel() != nullptr) {
-          const auto &only_depend_shape_attr =
-            common::AnfAlgo::GetCNodePrimitiveAttr(to_kernel_actor->kernel(), kAttrOnlyDependShape);
-          if (only_depend_shape_attr != nullptr) {
-            auto only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
-            if (IntToSize(output_data_arrow->to_input_index_) < only_depend_shape.size() &&
-                only_depend_shape[output_data_arrow->to_input_index_]) {
-              MS_LOG(INFO) << "Skip add ref count for allow null device address:" << device_tensor
-                           << " from actor:" << from_actor->GetAID() << " to actor:" << to_actor->GetAID();
-              continue;
-            }
-          }
-        }
-      }
+    if (device_tensor->flag() == device::kDeviceAddressFlagNullptr && is_only_shape_depend(output_data_arrow)) {
+      continue;
     }
     ++new_ref_count;
   }
