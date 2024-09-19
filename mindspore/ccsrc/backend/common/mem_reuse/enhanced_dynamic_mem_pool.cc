@@ -40,6 +40,8 @@ DeviceMemPtr EnhancedDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
   const auto [mem_buf, allocator] = AbstractDynamicMemPool::AllocMemBuf(align_size, from_persistent_mem, stream_id);
   if (mem_buf == nullptr) {
     MS_LOG(DEBUG) << "Allocate tensor mem, return nullptr.";
+    // Dump mem pool state info when alloc tensor failed.
+    DumpDynamicMemPoolStateInfo();
     return nullptr;
   }
 

@@ -267,8 +267,8 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
     size_t map_size = (remaining_size >= kDynamicMemAlignSize) ? size : candidate->size_;
     auto mapped_size = mem_mapper_(map_size, candidate->addr_);
     if (mapped_size != map_size) {
-      MS_LOG(WARNING) << "Mapped_size : " << mapped_size << " is not equal to required size : " << map_size
-                      << ", mem buf info : " << candidate->ToJson() << ".";
+      MS_LOG(INFO) << "Mapped_size : " << mapped_size << " is not equal to required size : " << map_size
+                   << ", mem buf info : " << candidate->ToJson() << ".";
       (void)eager_free_mem_bufs_.emplace(candidate);
       return nullptr;
     }
@@ -357,6 +357,8 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
   LockGuard lock(lock_);
   auto &&mem_buf_allocator = AllocMemBuf(align_size, from_persistent_mem, stream_id);
   if (mem_buf_allocator.first == nullptr) {
+    // Dump mem pool state info when alloc tensor failed.
+    DumpDynamicMemPoolStateInfo();
     return nullptr;
   }
 
