@@ -382,34 +382,13 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
 
   auto &&grad_param = CreateJitGradParam(op_run_info, grad_executor, primal_func_graph, jit_grad_graph);
   auto auto_grad_cell_ptr = grad_executor->top_cell()->auto_grad_cell_ptr();
-  if (PyNativeExecutor::forward_executor()->enable_async()) {
-    PyNativeExecutor::forward_executor()->WaitForwardTask();
-    auto task = [auto_grad_cell_ptr, grad_executor, grad_param, pre_top_cell, real_out = op_run_info->real_out,
-                 added_node, added_out_v, this]() {
-      grad_executor->dynamic_shape()->CheckNodeDynamic(grad_executor->top_cell(), grad_param->op_grad_info,
-                                                       grad_param->graph_cache_key);
-      // Update actual output
-      PyNativeAlgo::AutoGrad::UpdateGradOpInfo(grad_executor, grad_param->op_grad_info, pre_top_cell, true);
-      // Use real output for jit grad
-      grad_param->op_grad_info->out_value = real_out;
-      // Update op forward output in jit
-      UpdateAddCnodeFoward(grad_param->op_grad_info, grad_executor, added_node, added_out_v,
-                           grad_param->graph_cache_key);
-      // Link jit grad graph and single op
-      if (!auto_grad_cell_ptr->KPynativeWithFProp(grad_param)) {
-        MS_LOG(EXCEPTION) << "Failed to make adjoint for jit cnode";
-      }
-    };
-    grad_executor->DispatchGradQueueTask(std::move(task));
-  } else {
-    grad_executor->dynamic_shape()->CheckNodeDynamic(grad_executor->top_cell(), grad_param->op_grad_info,
-                                                     grad_param->graph_cache_key);
-    PyNativeAlgo::AutoGrad::UpdateGradOpInfo(grad_executor, grad_param->op_grad_info, pre_top_cell, true);
-    grad_param->op_grad_info->out_value = op_run_info->real_out;
-    UpdateAddCnodeFoward(grad_param->op_grad_info, grad_executor, added_node, added_out_v, grad_param->graph_cache_key);
-    if (!auto_grad_cell_ptr->KPynativeWithFProp(grad_param)) {
-      MS_LOG(EXCEPTION) << "Failed to make adjoint for jit cnode";
-    }
+  grad_executor->dynamic_shape()->CheckNodeDynamic(grad_executor->top_cell(), grad_param->op_grad_info,
+                                                   grad_param->graph_cache_key);
+  PyNativeAlgo::AutoGrad::UpdateGradOpInfo(grad_executor, grad_param->op_grad_info, pre_top_cell, true);
+  grad_param->op_grad_info->out_value = op_run_info->real_out;
+  UpdateAddCnodeFoward(grad_param->op_grad_info, grad_executor, added_node, added_out_v, grad_param->graph_cache_key);
+  if (!auto_grad_cell_ptr->KPynativeWithFProp(grad_param)) {
+    MS_LOG(EXCEPTION) << "Failed to make adjoint for jit cnode";
   }
   top_cell->set_need_do_final_opt(true);
   top_cell->set_has_call_graph(grad_executor->use_dynamic_shape_process());
