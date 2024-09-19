@@ -52,7 +52,7 @@ from mindspore.ops.auto_generate import cumsum_ext as cumsum
 from mindspore.ops.auto_generate import stack_ext as stack
 
 # 7
-
+from mindspore.ops.function.array_func import unsqueeze
 # 8
 
 # 9
@@ -1214,7 +1214,7 @@ __all__ = [
     # 10
     'ne',
     # 11
-
+    'unsqueeze',
     # 12
     "repeat_interleave",
     # 13
