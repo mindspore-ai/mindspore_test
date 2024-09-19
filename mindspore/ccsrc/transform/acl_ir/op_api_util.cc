@@ -38,7 +38,7 @@ typedef HcclResult (*HcclSetConfigFunc)(HcclConfig, HcclConfigValue);
 
 static const char k910BKey[] = "Ascend910B";
 static const char k310BKey[] = "Ascend310B";
-static const char k910CKey[] = "Ascend910C";
+static const char k910_93Key[] = "Ascend910_93";
 
 static const std::unordered_map<std::string, aclCubeMathType> kCubeMathType = {
   {"force_fp16", FORCE_FP16},
@@ -149,7 +149,7 @@ uint8_t AclUtil::KeepOriginDType() {
       version = soc_name_c;
     }
     if (version.find(k910BKey) != std::string::npos || version.find(k310BKey) != std::string::npos ||
-        version.find(k910CKey) != std::string::npos) {
+        version.find(k910_93Key) != std::string::npos) {
       need_keep_dtype = 1;
     }
   }

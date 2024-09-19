@@ -51,8 +51,8 @@ def _ascend_910a_target():
 
 
 @constexpr
-def _ascend_910bc_target():
-    return MSContext.get_instance().get_ascend_soc_version() in ["ascend910b", "ascend910c"]
+def _ascend_910b_target():
+    return MSContext.get_instance().get_ascend_soc_version() in ["ascend910b", "ascend910_93"]
 
 
 @constexpr
@@ -115,7 +115,7 @@ def _all_finite(inputs, check_overflow_mode, enable_allfinite):
     """all finite check"""
     if _ascend_target():
         if (_ascend_910a_target()) or \
-                (_ascend_910bc_target() and check_overflow_mode == "SATURATION_MODE"):
+                (_ascend_910b_target() and check_overflow_mode == "SATURATION_MODE"):
             status = Tensor([0] * 8, mstype.int32)
             status = ops.depend(status, inputs)
             get_status = _get_cache_prim(NPUGetFloatStatusV2)()(status)

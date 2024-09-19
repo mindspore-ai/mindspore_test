@@ -342,6 +342,13 @@ class AscendEnvChecker(EnvChecker):
 
     def check_custom_version(self):
         """custom op version check"""
+        custom_ascendc_soc_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                              "../lib/plugin/ascend/custom_ascendc_ops/op_impl/ai_core/tbe/kernel",
+                                              MSContext.get_instance().get_ascend_soc_version())
+        if not os.path.exists(custom_ascendc_soc_dir):
+            logger.warning(f"The path {custom_ascendc_soc_dir} of the custom ascend c operator does not exist.")
+            return False
+
         if not Path(self.fwk_version).is_file():
             return True
 

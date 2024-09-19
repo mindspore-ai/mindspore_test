@@ -199,7 +199,7 @@ Status AoeUtil::AoeOnlineGeGraph(const std::shared_ptr<::ge::Session> &ge_sessio
   MS_EXCEPTION_IF_NULL(ms_context);
   const auto &soc_version = ms_context->ascend_soc_version();
   ::ge::AscendString precision_mode = "allow_fp32_to_fp16";
-  if (soc_version == "ascend910b" || soc_version == "ascend910c") {
+  if (soc_version == "ascend910b" || soc_version == "ascend910_93") {
     precision_mode = "must_keep_origin_dtype";
   }
 

@@ -49,7 +49,7 @@ foreach(compute_unit ${ASCEND_COMPUTE_UNIT})
   endif()
 
   if(${ENABLE_BINARY_PACKAGE} AND NOT ${ENABLE_CROSS_COMPILE} AND EXISTS ${OPC_PATH}
-    AND(${compute_unit} STREQUAL "ascend910b" OR ${compute_unit} STREQUAL "ascend910c"))
+    AND ${compute_unit} STREQUAL "ascend910b")
     add_bin_compile_target(TARGET ascendc_bin_${compute_unit}
       OPS_INFO ${ASCEND_AUTOGEN_PATH}/aic-${compute_unit}-ops-info.ini
       IMPL_DIR ${CMAKE_CURRENT_SOURCE_DIR}

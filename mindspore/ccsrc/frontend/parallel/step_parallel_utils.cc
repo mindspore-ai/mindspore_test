@@ -3272,7 +3272,7 @@ size_t GetDeviceCapacity() {
   size_t size_from_context;
   auto max_device_memory = context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
   float total_device_memory = 32.0f;
-  if (context->ascend_soc_version() == kAscendVersion910b || context->ascend_soc_version() == kAscendVersion910c) {
+  if (context->ascend_soc_version() == kAscendVersion910b || context->ascend_soc_version() == kAscendVersion910_93) {
     total_device_memory = 64.0f;
   }
   if (max_device_memory <= total_device_memory) {
