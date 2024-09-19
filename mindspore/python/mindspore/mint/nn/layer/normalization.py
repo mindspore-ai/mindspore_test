@@ -180,7 +180,7 @@ class BatchNorm1d(_BatchNorm):
     elements of :math:`\gamma` are set to 1 and the elements of :math:`\beta` are set to 0.
 
     .. warning::
-        This API dose not support Dynamic Rank.
+        This API does not support Dynamic Rank.
         This is an experimental API that is subject to change or deletion.
 
     Args:
@@ -208,7 +208,7 @@ class BatchNorm1d(_BatchNorm):
     Raises:
         TypeError: If `num_features` is not a int number.
         TypeError: If `eps` is not a float.
-        TypeError: If `num_features` is less than 1.
+        ValueError: If `num_features` is less than 1.
 
     Supported Platforms:
         ``Ascend``
@@ -275,7 +275,7 @@ class BatchNorm2d(_BatchNorm):
     Raises:
         TypeError: If `num_features` is not a int number.
         TypeError: If `eps` is not a float.
-        TypeError: If `num_features` is less than 1.
+        ValueError: If `num_features` is less than 1.
 
     Supported Platforms:
         ``Ascend``
@@ -305,7 +305,7 @@ class BatchNorm2d(_BatchNorm):
 
 class BatchNorm3d(_BatchNorm):
     r"""
-    Applies Batch Normalization over a 2D or 3D input as described in the paper
+    Applies Batch Normalization over a 5D input as described in the paper
     `Batch Normalization: Accelerating Deep Network Training by Reducing
     Internal Covariate Shift <https://arxiv.org/abs/1502.03167>`_ .
 
@@ -345,7 +345,7 @@ class BatchNorm3d(_BatchNorm):
     Raises:
         TypeError: If `num_features` is not a int number.
         TypeError: If `eps` is not a float.
-        TypeError: If `num_features` is less than 1.
+        ValueError: If `num_features` is less than 1.
 
     Supported Platforms:
         ``Ascend``
