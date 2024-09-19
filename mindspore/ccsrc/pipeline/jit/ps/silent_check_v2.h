@@ -18,30 +18,47 @@
 #define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_
 
 #include <vector>
+#include <string>
+#include <map>
+#include <set>
 #include "base/base.h"
 #include "include/backend/optimizer/pass.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "utils/log_adapter.h"
+#include "pipeline/jit/ps/resource.h"
 
 namespace mindspore {
-namespace opt {
+namespace pipeline {
+const char kSilentCheckV2[] = "silent_check_v2";
 bool IsNpuAsdEnable();
 
-class SilentCheckV2 : public Pass {
+class SilentCheckV2 {
  public:
-  explicit SilentCheckV2(const FuncGraphPtr &root) : Pass("insert_silent_check_v2"), root_(root) {}
-  ~SilentCheckV2() override = default;
+  explicit SilentCheckV2(const FuncGraphPtr &root) : root_(root) { GetLossScale(); }
+  ~SilentCheckV2() = default;
 
-  bool Run(const FuncGraphPtr &func_graph) override;
+  bool Run(const FuncGraphPtr &func_graph);
+  void UpdateNodes();
 
  private:
   void GetLossScale();
   AnfNodePtr CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node);
 
+  // root graph
   FuncGraphPtr root_ = nullptr;
+  // pointer to loss_scale of the whole network if exists
   ParameterPtr loss_scale_ = nullptr;
+
+  // pointer to parameter `scale_sense` of graph being processed, create it if not exist
+  ParameterPtr scale_sense_ = nullptr;
+  // map for recoreding user cnodes of each graph
+  std::map<FuncGraphPtr, std::set<CNodePtr>> graph_users_;
+  // recording graphs which were added parameter `scale_sense`
+  std::set<FuncGraphPtr> add_param_graphs_;
 };
-}  // namespace opt
+
+bool SilentCheckPass(const ResourcePtr &resource);
+}  // namespace pipeline
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_
