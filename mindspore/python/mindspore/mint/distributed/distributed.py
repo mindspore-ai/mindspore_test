@@ -74,8 +74,8 @@ def init_process_group(backend="hccl",
 
         >>> import mindspore as ms
         >>> from mindspore import set_context
-        >>> from mindspore.distributed import init_process_group, destroy_process_group
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> from mindspore.mint.distributed import init_process_group, destroy_process_group
+        >>> set_context(device_target="Ascend")
         >>> init_process_group()
         >>> destroy_process_group()
     """
@@ -131,8 +131,8 @@ def destroy_process_group(group=None):
 
         >>> import mindspore as ms
         >>> from mindspore import set_context
-        >>> from mindspore.distributed import init_process_group, destroy_process_group
-        >>> set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
+        >>> from mindspore.mint.distributed import init_process_group, destroy_process_group
+        >>> set_context(device_target="Ascend")
         >>> init_process_group()
         >>> destroy_process_group()
     """
