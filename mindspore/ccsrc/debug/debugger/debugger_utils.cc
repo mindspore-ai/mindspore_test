@@ -304,6 +304,9 @@ bool CheckOverFlow(const DeviceContext *device_context, std::vector<device::Devi
   std::vector<KernelTensor *> kernel_tensors;
   std::transform(output_device_tensors.begin(), output_device_tensors.end(), std::back_inserter(kernel_tensors),
                  [](const auto &tensor_info) { return tensor_info->kernel_tensor().get(); });
+  if (kernel_tensors.empty()) {
+    return false;
+  }
   const auto &stream_id = kernel_tensors[0]->stream_id();
 
   uint32_t set_overflow_num = DumpJsonParser::GetInstance().overflow_number();
