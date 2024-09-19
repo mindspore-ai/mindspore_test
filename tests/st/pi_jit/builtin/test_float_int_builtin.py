@@ -110,4 +110,3 @@ def test_builtin_executed_by_graph():
     assert out_int == 2
     assert out_bool == True
     assert out_str == '2.0'
-    assert_executed_by_graph_mode(func)

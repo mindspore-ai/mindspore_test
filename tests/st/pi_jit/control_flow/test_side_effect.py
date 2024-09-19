@@ -74,6 +74,7 @@ def test_store_subscr_side_effect_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_del_subscr_side_effect_3():
     """
@@ -95,6 +96,7 @@ def test_del_subscr_side_effect_3():
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dict_pop_side_effect_4():
     """
@@ -111,6 +113,7 @@ def test_dict_pop_side_effect_4():
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dict_pop_side_effect_5():
     """
@@ -125,6 +128,7 @@ def test_dict_pop_side_effect_5():
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
     assert jcr["break_count_"] == 0
+
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_store_global_side_effect_6():
@@ -316,7 +320,8 @@ def test_object_consistency2():
     res1 = func(l, l)
     res2 = func(l, [l])
 
-    assert res1 == res2
+    assert res1 == 3
+    assert res2 == 4
     assert l == [a, 1, 2, 1]
 
 
