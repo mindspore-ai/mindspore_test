@@ -19,6 +19,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace opt {
@@ -61,6 +62,7 @@ AnfNodePtr CreateDependNode(const FuncGraphPtr &graph, const AnfNodePtr &to_node
   MS_EXCEPTION_IF_NULL(to_node);
   auto depend =
     graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimDepend->name())), to_node, from_node});
+  MS_EXCEPTION_IF_NULL(depend);
   depend->set_abstract(to_node->abstract());
   return depend;
 }
