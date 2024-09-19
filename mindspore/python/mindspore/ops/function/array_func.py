@@ -7064,18 +7064,19 @@ def from_numpy(obj):
     r"""
     Convert numpy array to Tensor.
     If the data is not C contiguous, the data will be copied to C contiguous to construct the tensor.
-    Otherwise, The tensor will be constructed using this numpy array without copy.
+    Otherwise, the tensor will be constructed using this numpy array without copy.
 
     Args:
         array (numpy.array): The input array.
+
     Returns:
         Tensor, has the same data type as input array.
 
     Examples:
         >>> import numpy as np
-        >>> from mindspore import ops
+        >>> import mindspore as ms
         >>> x = np.array([1, 2])
-        >>> output = ops.from_numpy(x)
+        >>> output = ms.from_numpy(x)
         >>> print(output)
         [1 2]
     """
