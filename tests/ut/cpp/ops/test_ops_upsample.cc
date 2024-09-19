@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <iterator>
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
+#include "include/common/utils/utils.h"
 #include "infer/ops_func_impl/upsample_linear1d.h"
 #include "infer/ops_func_impl/upsample_nearest1d.h"
 #include "infer/ops_func_impl/upsample_nearest2d.h"
 #include "infer/ops_func_impl/upsample_nearest3d.h"
 #include "infer/ops_func_impl/upsample_trilinear3d.h"
+#include "infer/ops_func_impl/upsample_bicubic2d.h"
 #include "infer/ops_func_impl/upsample_bilinear2d.h"
+#include "ir/anf.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
@@ -49,6 +54,7 @@ static std::map<std::string, OpFuncImplPtr> upsample_forward_func_impl = {
   {kNameUpsampleTrilinear3D, std::make_shared<UpsampleTrilinear3DFuncImpl>()},
   {kNameUpsampleLinear1D, std::make_shared<UpsampleLinear1DFuncImpl>()},
   {kNameUpsampleBilinear2D, std::make_shared<UpsampleBilinear2DFuncImpl>()},
+  {kNameUpsampleBicubic2D, std::make_shared<UpsampleBicubic2DFuncImpl>()},
 };
 
 class TestUpsampleForward : public TestOps,
@@ -66,7 +72,8 @@ TEST_P(TestUpsampleForward, dyn_shape) {
   ASSERT_NE(scales, nullptr);
   std::vector<AbstractBasePtr> input_args{image, size, scales};
 
-  static std::set<std::string> white_list{kNameUpsampleLinear1D, kNameUpsampleBilinear2D, kNameUpsampleTrilinear3D};
+  static std::set<std::string> white_list{kNameUpsampleLinear1D, kNameUpsampleBicubic2D, kNameUpsampleBilinear2D,
+                                          kNameUpsampleTrilinear3D};
   if (white_list.find(upsample_mode) != white_list.end()) {
     auto align_corners = CreateScalar<bool>(true)->ToAbstract();
     input_args.push_back(align_corners);
@@ -77,10 +84,16 @@ TEST_P(TestUpsampleForward, dyn_shape) {
   auto op_impl = op_itr->second;
   ASSERT_NE(op_impl, nullptr);
 
-  auto prim = std::make_shared<Primitive>(upsample_mode);
+  // Abstract Infer
   auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
-  auto inferred_shape = op_impl->InferShape(prim, input_args);
-  ShapeCompare(inferred_shape, expect_shape);
+  DoFuncImplInferAndCompare(op_impl, upsample_mode, input_args, {expect_shape},
+                            {std::make_shared<TensorType>(kFloat32)});
+
+  // Simple Infer
+  ValuePtrList input_values{std::make_shared<tensor::BaseTensor>(kNumberTypeFloat32, param.image_shape)};
+  std::transform(input_args.begin() + kIndex1, input_args.end(), std::back_inserter(input_values),
+                 [](const AbstractBasePtr &abstract) { return abstract->GetValue(); });
+  DoFuncImplSimpleInferAndCompare(op_impl, upsample_mode, input_values, {param.out_shape}, {kFloat32});
 }
 
 namespace {
@@ -178,6 +191,8 @@ INSTANTIATE_TEST_CASE_P(TestUpsampleNearest2DGroup, TestUpsampleForward,
                         testing::Combine(testing::ValuesIn({kNameUpsampleNearest2D}), Upsample2DDynTestCase));
 INSTANTIATE_TEST_CASE_P(TestUpsampleBilinear2DGroup, TestUpsampleForward,
                         testing::Combine(testing::ValuesIn({kNameUpsampleBilinear2D}), Upsample2DDynTestCase));
+INSTANTIATE_TEST_CASE_P(TestUpsampleBicubic2DGroup, TestUpsampleForward,
+                        testing::Combine(testing::ValuesIn({kNameUpsampleBicubic2D}), Upsample2DDynTestCase));
 
 INSTANTIATE_TEST_CASE_P(TestUpsampleNearest3DGroup, TestUpsampleForward,
                         testing::Combine(testing::ValuesIn({kNameUpsampleNearest3D}), Upsample3DDynTestCase));

@@ -258,6 +258,7 @@ mindspore.mint.nn
     mindspore.mint.nn.Mish
     mindspore.mint.nn.ReLU
     mindspore.mint.nn.SELU
+    mindspore.mint.nn.Softmax
     mindspore.mint.nn.Softshrink
 
 线性层

@@ -822,6 +822,10 @@ class COMMON_EXPORT Emitter {
                                          const NodePtr &scales, const NodePtr &align_corners) {
     return Emit("UpsampleBilinear2DGrad", {dy, input_size, output_size, scales, align_corners});
   }
+  virtual NodePtr UpsampleBicubic2DGrad(const NodePtr &dy, const NodePtr &input_size, const NodePtr &output_size,
+                                        const NodePtr &scales, const NodePtr &align_corners) {
+    return Emit("UpsampleBicubic2DGrad", {dy, input_size, output_size, scales, align_corners});
+  }
   virtual NodePtr UpsampleBilinear2D(const NodePtr &x, const NodePtr &output_size, const NodePtr &scales,
                                      const NodePtr &align_corners) {
     return Emit("UpsampleBilinear2D", {x, output_size, scales, align_corners});

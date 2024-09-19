@@ -38,12 +38,15 @@ std::tuple<std::vector<int64_t>, double, bool> UpsampleLinear1DGenerate(const st
   auto output_shape = outputs[kIndex0]->GetShapeVector();
   std::vector<int64_t> output_size{output_shape.begin() + kIndex2, output_shape.end()};
 
+  bool align_corners = inputs[kIndex3]->GetValueWithCheck<bool>();
+
   std::vector<pyfloat> scales{DEFAULT_SCALE_VALUE};
   if (inputs[kIndex2]->GetType()->type_id() != kMetaTypeNone) {
+    if (!align_corners) {
+      MS_LOG(EXCEPTION) << "For UpsampleLinear1D with align_corners false, scales was not supported.";
+    }
     scales = inputs[kIndex2]->GetValueWithCheck<std::vector<pyfloat>>();
   }
-
-  bool align_corners = inputs[kIndex3]->GetValueWithCheck<bool>();
 
   // Python float obj would be parsed by float32 number, which should be parsed
   // to double number according to PyTorch. For example, python scale is 2.6,

@@ -40,7 +40,7 @@ tensor::BaseTensorPtr UpsampleNearest1DAscendCustomize(const std::shared_ptr<OpR
                                                        const std::optional<ValueTuplePtr> &scale_factors) {
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors);
 
-  const ShapeVector &osize = op->output_abs()->GetShape()->GetShapeVector();
+  const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);

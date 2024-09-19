@@ -19,6 +19,7 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include "ir/anf.h"
 #include "ir/primitive.h"
 
 namespace mindspore {
@@ -26,8 +27,14 @@ namespace ops {
 BaseShapePtr UpsampleForwardInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                                        const size_t image_rank);
 
+ShapeArray UpsampleForwardInferShape(const PrimitivePtr &primitive, const std::vector<ValuePtr> &input_values,
+                                     const size_t image_rank);
+
 BaseShapePtr UpsampleBackwardInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                                         const size_t image_rank);
+
+ShapeArray UpsampleBackwardInferShape(const PrimitivePtr &primitive, const std::vector<ValuePtr> &input_values,
+                                      const size_t image_rank);
 
 int32_t UpsampleBackwardCheck(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                               const size_t image_rank);

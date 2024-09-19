@@ -281,6 +281,35 @@ class Softmax(Cell):
         return self.softmax(input)
 
 
+class SoftmaxExt(Cell):
+    r"""
+    Applies the Softmax function to an n-dimensional input Tensor.
+
+    For details, please refer to :func:`mindspore.mint.nn.functional.softmax`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, nn
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
+        >>> softmax = nn.SoftmaxExt()
+        >>> output = softmax(input)
+        >>> print(output)
+        [0.03168 0.01166 0.0861  0.636   0.2341 ]
+    """
+
+    def __init__(self, dim=None):
+        """Initialize Softmax."""
+        super(SoftmaxExt, self).__init__()
+        self.dim = dim
+
+    def construct(self, input):
+        return ops.function.nn_func.softmax_ext(input, self.dim)
+
+
 class LogSoftmax(Cell):
     r"""
     Applies the LogSoftmax function to n-dimensional input tensor element-wise.

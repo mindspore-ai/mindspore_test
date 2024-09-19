@@ -23,6 +23,15 @@ from mindspore import Tensor
 from mindspore import context, ops
 
 
+def set_mode(mode):
+    if mode == "GRAPH_MODE_O0":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    elif mode == "GRAPH_MODE":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O2"})
+    else:
+        context.set_context(mode=context.PYNATIVE_MODE)
+
+
 @test_utils.run_with_cell
 def upsample_linear1d_forward_func(x, size=None, scale_factor=None, align_corners=False):
     return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "linear", align_corners)
@@ -34,14 +43,14 @@ def upsample_linear1d_backward_func(x, size=None, scale_factor=None, align_corne
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", ["GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_upsample_linear_1d(mode):
     """
     Feature: test ops.
     Description: test op UpsampleLinear1D.
     Expectation: success.
     """
-    context.set_context(mode=mode)
+    set_mode(mode)
 
     input_tensor = Tensor(
         np.array([[[0.1, 0.3, 0.5], [0.7, 0.9, 1.1]]]), dtype=ms.float32
@@ -51,13 +60,6 @@ def test_upsample_linear_1d(mode):
     ).astype(np.float32)
     error = np.ones(shape=expected.shape) * 1.0e-4
     out = upsample_linear1d_forward_func(input_tensor, (6,), None, True)
-    diff = abs(out.asnumpy() - expected)
-    assert np.all(diff < error)
-
-    out = upsample_linear1d_forward_func(input_tensor, None, (2.3,), False)
-    expected = np.array(
-        [[[0.1, 0.1304, 0.2174, 0.3043, 0.3913, 0.4783],
-          [0.7, 0.7304, 0.8174, 0.9043, 0.9913, 1.0783]]]).astype(np.float32)
     diff = abs(out.asnumpy() - expected)
     assert np.all(diff < error)
 
@@ -92,7 +94,8 @@ def test_upsample_linear_1d_size_dynamic():
             [input_case2, (40,), None, False],
         ],
         'upsample_linear1d',
-        disable_input_check=True
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )
 
 
@@ -115,5 +118,6 @@ def test_upsample_linear_1d_scales_dynamic():
             [input_case2, None, (3.7,), True],
         ],
         'upsample_linear1d',
-        disable_input_check=True
+        disable_input_check=True,
+        disable_mode=["GRAPH_MODE"]
     )

@@ -24,6 +24,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+constexpr pyfloat DEFAULT_SCALE_VALUE = 0.;
 tensor::BaseTensorPtr UpsampleBilinear2DGradAscendCall(
   const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context, const BaseTensorPtr &grad_out,
   const std::vector<int64_t> &input_size, const std::vector<int64_t> &output_size, const std::vector<pyfloat> &scales,
@@ -50,7 +51,7 @@ tensor::BaseTensorPtr UpsampleBilinear2DGradAscendCustomize(const std::shared_pt
   auto input_size_vector = ConvertValueTupleToVector<int64_t>(input_size);
 
   std::vector<int64_t> output_size_vector{};
-  std::vector<pyfloat> scales{0., 0.};
+  std::vector<pyfloat> scales(kDim2, DEFAULT_SCALE_VALUE);
   if (output_size.has_value()) {
     output_size_vector = ConvertValueTupleToVector<int64_t>(output_size.value());
   } else if (scale_factors.has_value()) {

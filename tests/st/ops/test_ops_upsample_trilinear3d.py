@@ -24,6 +24,15 @@ from mindspore import ops, context
 from mindspore.common.api import _pynative_executor
 
 
+def set_mode(mode):
+    if mode == "GRAPH_MODE_O0":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
+    elif mode == "GRAPH_MODE":
+        context.set_context(mode=context.GRAPH_MODE, jit_config={"jit_level": "O2"})
+    else:
+        context.set_context(mode=context.PYNATIVE_MODE)
+
+
 @test_utils.run_with_cell
 def upsample_trilinear3d_forward_func(x, size=None, scale_factor=None, align_corners=False):
     return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "trilinear", align_corners)
@@ -41,14 +50,14 @@ def upsample_trilinear3d_grad(gradOut, input_size, output_size, scale_factor):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", ["GRAPH_MODE", "GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_upsample_trilinear_3d(mode):
     """
     Feature: test ops.
     Description: test op UpsampleTrillinear3D.
     Expectation: success.
     """
-    context.set_context(mode=mode)
+    set_mode(mode)
     input_tensor = Tensor(
         np.array([[[[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]],
                     [[0.7, 0.8, 0.9], [1.0, 1.1, 1.2]]]]]).astype(np.float32))
@@ -117,8 +126,8 @@ def test_upsample_trilinear_3d_scale_factor_dynamic():
     TEST_OP(
         upsample_trilinear3d_forward_func,
         [
-            [input_case1, None, 1.7, True],
-            [input_case2, None, 3.1, False],
+            [input_case1, None, (1.7, 2.7, 0.7), True],
+            [input_case2, None, (3.1, 4.5, 1.5), False],
         ],
         'upsample_trilinear3d', disable_input_check=True
     )
@@ -126,7 +135,7 @@ def test_upsample_trilinear_3d_scale_factor_dynamic():
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
           level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", ["GRAPH_MODE", "GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_vmap_upsample_trilinear_3d(mode):
     """
     Feature:  UpsampleTrilinear3D vmap feature.
@@ -134,7 +143,7 @@ def test_vmap_upsample_trilinear_3d(mode):
     Expectation: success.
     """
     # 3 batches
-    context.set_context(mode=mode)
+    set_mode(mode)
     net = upsample_trilinear3d_forward_func
     expect = np.array([[[[[[0.0, 0.3], [0.4, 0.7]],
                           [[0.4, 0.70000005], [0.8, 1.1]],
@@ -153,14 +162,14 @@ def test_vmap_upsample_trilinear_3d(mode):
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
           level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", ["GRAPH_MODE", "GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_vmap_upsample_trilinear_3d_grad(mode):
     """
     Feature:  UpsampleTrilinear3DGrad vmap feature.
     Description: test the vmap feature of UpsampleTrilinear3DGrad.
     Expectation: success.
     """
-    context.set_context(mode=mode)
+    set_mode(mode)
     input_size = (1, 1, 2, 2, 2)
     output_size = (2, 3, 3)
     gradOut = Tensor(np.arange(0, 5.4, 0.1).reshape((3, 1, 1, 2, 3, 3)).astype(np.float32))

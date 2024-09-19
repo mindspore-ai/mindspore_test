@@ -24,6 +24,22 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+inline bool IsDynamicInputs(const ValuePtrList &input_values) {
+  for (const auto &value : input_values) {
+    if (value->isa<tensor::BaseTensor>()) {
+      const auto &in_tensor = value->cast<tensor::BaseTensorPtr>();
+      const auto &shape = in_tensor->shape();
+      if (IsDynamic(shape)) {
+        return true;
+      }
+    } else if (value->isa<ValueAny>() || (value->isa<ValueSequence>() && value->ContainsValueAny())) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
 void ShapeCompare(const abstract::BaseShapePtr &output, const abstract::BaseShapePtr &expect) {
   ASSERT_NE(output, nullptr);
   ASSERT_NE(expect, nullptr);
@@ -80,6 +96,29 @@ void TypeCompare(const TypePtrList &output, const TypePtrList &expect) {
       ASSERT_TRUE(false);
     }
   }
+}
+
+void DoFuncImplInferAndCompare(const OpFuncImplPtr &infer_impl, const std::string &prim_name,
+                               const abstract::AbstractBasePtrList &input_args,
+                               const abstract::BaseShapePtr &expect_shape, const TypePtr &expect_type) {
+  auto prim = std::make_shared<Primitive>(prim_name);
+  auto inferred_shape = infer_impl->InferShape(prim, input_args);
+  auto inferred_type = infer_impl->InferType(prim, input_args);
+  ShapeCompare(inferred_shape, expect_shape);
+  TypeCompare(inferred_type, expect_type);
+}
+
+void DoFuncImplSimpleInferAndCompare(const OpFuncImplPtr &infer_impl, const std::string &prim_name,
+                                     const ValuePtrList &input_values, const ShapeArray &expect_shape,
+                                     const TypePtrList &expect_type) {
+  if (IsDynamicInputs(input_values)) {
+    return;
+  }
+  auto prim = std::make_shared<Primitive>(prim_name);
+  auto inferred_shape = infer_impl->InferShape(prim, input_values);
+  auto inferred_type = infer_impl->InferType(prim, input_values);
+  ShapeCompare(inferred_shape, expect_shape);
+  TypeCompare(inferred_type, expect_type);
 }
 
 void TestOpFuncImplWithEltwiseOpParams(const OpFuncImplPtr &infer_impl, const std::string &prim_name,

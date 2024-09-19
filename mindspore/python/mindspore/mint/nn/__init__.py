@@ -38,9 +38,9 @@ from mindspore.nn.layer.basic import UnfoldExt as Unfold
 # 7
 from mindspore.nn.layer.basic import Fold
 # 8
-
+from mindspore.nn.layer.activation import SoftmaxExt as Softmax
 # 9
-
+from mindspore.nn.layer.basic import UpsampleExt as Upsample
 # 10
 
 # 11
@@ -500,9 +500,9 @@ __all__ = [
     # 7
     'Unfold',
     # 8
-
+    'Softmax',
     # 9
-
+    'Upsample',
     # 10
 
     # 11

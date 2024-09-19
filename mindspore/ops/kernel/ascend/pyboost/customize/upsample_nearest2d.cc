@@ -18,6 +18,7 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,9 +39,14 @@ tensor::BaseTensorPtr UpsampleNearest2DAscendCustomize(const std::shared_ptr<OpR
                                                        const BaseTensorPtr &input_tensor,
                                                        const std::optional<ValueTuplePtr> &output_size,
                                                        const std::optional<ValueTuplePtr> &scale_factors) {
+  auto input_dtype_id = input_tensor->data_type();
+  if (input_dtype_id == TypeId::kNumberTypeFloat64 || input_dtype_id == TypeId::kNumberTypeDouble) {
+    MS_EXCEPTION(ValueError) << "For " << op->primitive()->name()
+                             << ", input's type should not be float64, which is not supported.";
+  }
   OpRunner::InferOpOutput(op, input_tensor, output_size, scale_factors);
 
-  const ShapeVector &osize = op->output_abs()->GetShape()->GetShapeVector();
+  const ShapeVector &osize = op->output(kIndex0)->shape();
   std::vector<int64_t> output_size_vector = {osize.begin() + kDim2, osize.end()};
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);

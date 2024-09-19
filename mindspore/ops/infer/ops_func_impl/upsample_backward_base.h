@@ -26,11 +26,18 @@ namespace mindspore {
 namespace ops {
 class OPS_API UpsampleBackwardBaseFuncImpl : public OpFuncImpl {
  public:
+  UpsampleBackwardBaseFuncImpl() = default;
+  ~UpsampleBackwardBaseFuncImpl() override = default;
+
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
   int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+
+  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
 
  protected:
   virtual size_t GetImageRank() const noexcept = 0;
