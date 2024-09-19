@@ -35,7 +35,6 @@ def common_test_case(func, ms_func, a, b, error=0, type_check='array'):
         ms_res = ms_func(a, b)
         res = func(a, b)
     match_array(res, ms_res, error=error, err_msg=str(ms_res))
-    assert_executed_by_graph_mode(func)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

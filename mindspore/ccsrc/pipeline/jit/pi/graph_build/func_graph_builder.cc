@@ -981,7 +981,7 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
     return nullptr;
   }
 
-  CNodePtr new_node;
+  AnfNodePtr new_node;
   AbstractBasePtr abs;
   if (callable_value->isa<Primitive>()) {
     new_node = DoPrimitiveInferAndCheck(callable_value->cast<PrimitivePtr>(), input_node_list, input_abs_list);
@@ -997,6 +997,12 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
   }
   if (new_node == nullptr || abs == nullptr) {
     return nullptr;
+  }
+
+  auto value = abs->BuildValue();
+  if (value != kValueAny) {
+    MS_LOG(INFO) << "Build value node for node: " << new_node->DebugString() << " with abstract " << abs->ToString();
+    new_node = NewValueNode(value);
   }
 
   new_node->set_abstract(abs);

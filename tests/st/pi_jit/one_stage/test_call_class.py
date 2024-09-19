@@ -66,7 +66,6 @@ def test_create_tensor_list():
     assert len(actual) == 2
     match_array(actual[0].asnumpy(), expect[0].asnumpy())
     match_array(actual[1].asnumpy(), expect[1].asnumpy())
-    assert_executed_by_graph_mode(fn)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

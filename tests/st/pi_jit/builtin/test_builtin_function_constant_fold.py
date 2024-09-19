@@ -60,7 +60,6 @@ def test_len():
     o = fn(x)
 
     assert o == 5
-    assert_executed_by_graph_mode(fn)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
