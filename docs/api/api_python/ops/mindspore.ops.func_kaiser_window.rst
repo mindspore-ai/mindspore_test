@@ -29,6 +29,6 @@ mindspore.ops.kaiser_window
         Tensor，一个Kaiser window。
 
     异常：
-        - **TypeError** - 如果 `window_length` 或 `beta` 不是整数。
+        - **TypeError** - 如果 `window_length` 不是整数。
         - **TypeError** - 如果 `periodic` 不是布尔类型。
         - **ValueError** - 如果 `window_length` 小于零。
