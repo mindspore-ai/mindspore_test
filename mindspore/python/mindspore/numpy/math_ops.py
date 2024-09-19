@@ -79,7 +79,7 @@ def absolute(x, dtype=None):
         Numpy arguments `out`, `where`, `casting`, `order`, `subok`, `signature`, and `extobj` are
         not supported.
         Currently the backend kernel only supports float calculation, if the input
-        is not a `float`, then it will be casted to :class:`mstype.float32` and casted back.
+        is not a `float`, then it will be casted to ``mstype.float32`` and casted back.
 
     Args:
         x (Tensor): Tensor to be used for calculation.

@@ -13,4 +13,4 @@ mindspore.numpy.ravel
         展平后的Tensor，与原始Tensor ``x`` 具有相同的数据类型。
 
     异常：
-        - **ValueError** - 如果 ``x`` 不是Tensor。
+        - **TypeError** - 如果 ``x`` 不是Tensor。

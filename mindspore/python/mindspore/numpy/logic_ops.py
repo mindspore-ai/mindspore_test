@@ -733,8 +733,8 @@ def array_equal(a1, a2, equal_nan=False):
         In mindspore, a bool tensor is returned instead, since in Graph mode, the
         value cannot be traced and computed at compile time.
 
-        Since on Ascend, :class:`nan` is treated differently, currently the argument
-        `equal_nan` is not supported on Ascend.
+        Since on Ascend, ``nan`` is treated differently, currently the argument
+        ``equal_nan`` is not supported on Ascend.
 
     Args:
         a1/a2 (Union[int, float, bool, list, tuple, Tensor]): Input arrays.

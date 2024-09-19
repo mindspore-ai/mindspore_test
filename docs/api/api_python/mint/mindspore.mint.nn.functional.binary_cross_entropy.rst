@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.binary_cross_entropy
 =================================================
 
-.. py:function:: mindspore.ops.binary_cross_entropy(input, target, weight=None, reduction='mean')
+.. py:function:: mindspore.mint.nn.functional.binary_cross_entropy(input, target, weight=None, reduction='mean')
 
     计算预测值 `input` 和 目标值 `target` 之间的二值交叉熵（度量两个概率分布间的差异性信息）损失。
 

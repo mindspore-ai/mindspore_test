@@ -20,7 +20,7 @@ prelu:
             no channel dim and the number of channels = 1.
 
         .. warning::
-                This is an experimental API that is subject to change or deletion.
+            This is an experimental API that is subject to change or deletion.
         
         Args:
             input (Tensor): The input Tensor of the activation function.
