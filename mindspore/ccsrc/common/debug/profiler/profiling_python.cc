@@ -63,7 +63,7 @@ void PythonTracer::start(size_t max_threads, uint32_t rank_id) {
     PyThreadState *thread_state = thread_states[i];
     PyThreadState_Swap(thread_state);
     std::vector<PyFrameObject *> current_stack;
-    auto frame = PyEval_GetFrame();
+    auto frame = PythonCApi::PyEval_GetFrame_MS();
     size_t depth = 0;  // Make sure we can't infinite loop.
     while (frame != nullptr && depth <= STACK_MAX_DEPTH) {
       current_stack.push_back(frame);
@@ -159,10 +159,11 @@ void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObjec
   std::string op_name;
   if (tag == TraceTag::kPy_Return) {
     std::string py_class_name;
-    auto f_code = PythonCApi::PyFrame_GetCode_MS(frame);
+    auto f_code = PythonCApi::PyFrame_GetCode_MS(frame).get();
+    MS_EXCEPTION_IF_NULL(f_code);
     if (reinterpret_cast<PyObject *>(f_code) == module_call_code_) {
       PyFrame_FastToLocals(frame);
-      auto f_locals = reinterpret_cast<PyObject *>(PythonCApi::PyFrame_GetLocals_MS(frame));
+      auto f_locals = reinterpret_cast<PyObject *>(PythonCApi::PyFrame_GetLocals_MS(frame).get());
       if (f_locals != nullptr) {
         auto module_class = PyDict_GetItemString(f_locals, "self");
         py_class_name = "nn.Cell." +
