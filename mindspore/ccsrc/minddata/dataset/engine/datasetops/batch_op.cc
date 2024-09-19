@@ -231,50 +231,53 @@ Status BatchOp::ConvertRowsToTensor(const std::unique_ptr<TensorQTable> *tensor_
     {
       // Acquire Python GIL
       py::gil_scoped_acquire gil_acquire;
-
-      py::dict new_dict;
-      size_t num_keys = 0;
-      for (size_t row_index = 0; row_index < batch_size; ++row_index) {
-        std::shared_ptr<Tensor> old_tensor = (**tensor_row_dequeue)[row_index][column_index];
-        py::dict old_dict;
-        RETURN_IF_NOT_OK(old_tensor->GetDataAsPythonObject(&old_dict));
-        if (row_index == 0) {
-          num_keys = py::len(old_dict);
-          for (auto key_val : old_dict) {
-            py::list li;
-            li.append(key_val.second);
-            new_dict[key_val.first] = li;
-          }
-        } else {
-          CHECK_FAIL_RETURN_UNEXPECTED(
-            num_keys == py::len(old_dict),
-            "Failed to create a batch since number of key/value pairs in dictionaries do not match. First row: " +
-              std::to_string(num_keys) + ", current row: " + std::to_string(py::len(new_dict)));
-          for (auto key_val : old_dict) {
-            CHECK_FAIL_RETURN_UNEXPECTED(new_dict.contains(key_val.first),
-                                         "Python dictionary keys do not match when creating a batch: " +
-                                           py::str(key_val.first).cast<std::string>() +
-                                           " was not found in previous rows.");
-            py::list li = new_dict[key_val.first];
-            li.append(key_val.second);
+      try {
+        py::dict new_dict;
+        size_t num_keys = 0;
+        for (size_t row_index = 0; row_index < batch_size; ++row_index) {
+          std::shared_ptr<Tensor> old_tensor = (**tensor_row_dequeue)[row_index][column_index];
+          py::dict old_dict;
+          RETURN_IF_NOT_OK(old_tensor->GetDataAsPythonObject(&old_dict));
+          if (row_index == 0) {
+            num_keys = py::len(old_dict);
+            for (auto key_val : old_dict) {
+              py::list li;
+              li.append(key_val.second);
+              new_dict[key_val.first] = li;
+            }
+          } else {
+            CHECK_FAIL_RETURN_UNEXPECTED(
+              num_keys == py::len(old_dict),
+              "Failed to create a batch since number of key/value pairs in dictionaries do not match. First row: " +
+                std::to_string(num_keys) + ", current row: " + std::to_string(py::len(new_dict)));
+            for (auto key_val : old_dict) {
+              CHECK_FAIL_RETURN_UNEXPECTED(new_dict.contains(key_val.first),
+                                           "Python dictionary keys do not match when creating a batch: " +
+                                             py::str(key_val.first).cast<std::string>() +
+                                             " was not found in previous rows.");
+              py::list li = new_dict[key_val.first];
+              li.append(key_val.second);
+            }
           }
         }
-      }
-      if (contains_per_batch_map) {
-        RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(new_dict, &new_tensor));
-      } else {  // convert to NumPy array
-        py::dict np_dict;
-        for (auto item : new_dict) {
-          py::list li = new_dict[item.first];
-          py::array arr = py::array(li);
-          CHECK_FAIL_RETURN_UNEXPECTED(
-            arr.dtype() != py::dtype("object_"),
-            "Batch: failed to create a NumPy array with primitive types for the dictionary objects in column " +
-              std::to_string(column_index) + ", key: '" + py::str(item.first).cast<std::string>() +
-              "'.\nIf you want a customized array, define a custom 'per_batch_map' function.");
-          np_dict[item.first] = arr;
+        if (contains_per_batch_map) {
+          RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(new_dict, &new_tensor));
+        } else {  // convert to NumPy array
+          py::dict np_dict;
+          for (auto item : new_dict) {
+            py::list li = new_dict[item.first];
+            py::array arr = py::array(li);
+            CHECK_FAIL_RETURN_UNEXPECTED(
+              arr.dtype() != py::dtype("object_"),
+              "Batch: failed to create a NumPy array with primitive types for the dictionary objects in column " +
+                std::to_string(column_index) + ", key: '" + py::str(item.first).cast<std::string>() +
+                "'.\nIf you want a customized array, define a custom 'per_batch_map' function.");
+            np_dict[item.first] = arr;
+          }
+          RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(np_dict, &new_tensor));
         }
-        RETURN_IF_NOT_OK(Tensor::CreateFromPythonObject(np_dict, &new_tensor));
+      } catch (const py::error_already_set &e) {
+        RETURN_STATUS_UNEXPECTED("Failed to batch Python dictionary: " + std::string(e.what()));
       }
     }
 #endif

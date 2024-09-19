@@ -24,8 +24,6 @@ Status MonitorSubprocess(int pid) {
   // get the state changes in a child of the calling process
   int status = 0;
   auto ret = waitpid(pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
-
-  // check the return value
   if (ret != 0) {  // the status of subprocess is changed
     uint32_t uint_status = static_cast<uint32_t>(status);
     if (WIFEXITED(uint_status)) {  // the child is exit normal
