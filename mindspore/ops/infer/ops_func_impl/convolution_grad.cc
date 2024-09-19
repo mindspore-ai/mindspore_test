@@ -28,7 +28,6 @@ constexpr size_t kConvolutionGradInputDims = 4;
 }  // namespace
 BaseShapePtr ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   if (input_args.size() != kConvolutionGradInputArgsSize) {
     MS_LOG(EXCEPTION) << "input args size should be " << kConvolutionGradInputArgsSize << ", but got "
                       << input_args.size();
@@ -37,7 +36,6 @@ BaseShapePtr ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
   auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
   auto dout_shape_ptr = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(dout_shape_ptr);
   const auto &dout_shape = dout_shape_ptr->GetShapeVector();
 
   auto get_bias_grad_shape = [dout_shape]() {

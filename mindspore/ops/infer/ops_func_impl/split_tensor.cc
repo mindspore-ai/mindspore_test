@@ -22,6 +22,7 @@
 namespace mindspore {
 namespace ops {
 namespace {
+constexpr size_t KInputNum = 1;
 int64_t CaculateSplitSections(const AbstractBasePtr &input_abs) {
   auto split_size_value = input_abs->GetValue();
   auto split_size = GetScalarValue<int64_t>(split_size_value);
@@ -36,7 +37,6 @@ int64_t CaculateSplitSections(const AbstractBasePtr &input_abs) {
 }  // namespace
 BaseShapePtr SplitTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
   auto axis_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
@@ -87,14 +87,14 @@ TypePtr SplitTensorFuncImpl::InferType(const PrimitivePtr &primitive,
   size_t pos = LongToSize(axis);
   auto split_sections = CaculateSplitSections(input_args[kIndex1]);
   auto output_num = (input_shape[pos] % split_sections) == 0 ? (input_shape[pos] / split_sections)
-                                                             : (input_shape[pos] / split_sections) + 1;
+                                                             : (input_shape[pos] / split_sections) + KInputNum;
   auto infer_type = input_args[0]->GetType();
   MS_EXCEPTION_IF_NULL(infer_type);
   static const std::set<TypePtr> valid_types = {kInt8,    kInt16,   kInt32,     kInt64,      kFloat16,
                                                 kFloat32, kFloat64, kComplex64, kComplex128, kBool};
   auto type = CheckAndConvertUtils::CheckTensorTypeValid("x", infer_type, valid_types, primitive->name());
   std::vector<TypePtr> type_tuple;
-  for (int32_t i = 0; i < output_num; i++) {
+  for (size_t i = 0; i < output_num; i++) {
     (void)type_tuple.emplace_back(type->Clone());
   }
   return std::make_shared<Tuple>(type_tuple);
@@ -105,7 +105,8 @@ int32_t SplitTensorFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   int32_t check_status = OP_CHECK_SUCCESS;
   auto input_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
   auto rank = SizeToLong(input_shape.size());
-  MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, 1, primitive));
+  MS_CHECK_VALUE(rank > 0,
+                 CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, KInputNum, primitive));
   auto axis_value = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
   if (MS_UNLIKELY(!axis_value.has_value()) || IsDynamicRank(input_shape)) {
     return OP_CHECK_RETRY;
