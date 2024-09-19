@@ -1,5 +1,5 @@
 mindspore.mint.nn.functional.adaptive_avg_pool1d
-=================================================q
+=================================================
 
 .. py:function:: mindspore.mint.nn.functional.adaptive_avg_pool1d(input, output_size)
 
