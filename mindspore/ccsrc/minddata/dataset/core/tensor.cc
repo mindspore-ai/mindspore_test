@@ -193,7 +193,7 @@ Status Tensor::CreateFromNpString(py::array arr, std::shared_ptr<Tensor> *out) {
   std::vector<std::string> strings;
   strings.reserve(arr.size());
   (void)std::for_each(arr.begin(), arr.end(),
-                      [&strings](const auto &s) { strings.emplace_back(py::cast<py::str>(s)); });
+                      [&strings](const auto &s) { strings.emplace_back(py::cast<std::string>(s)); });
   arr.resize(shape);  // resize arr back to the original shape
 
   if (arr.dtype().kind() == 'U') {  // numpy dtype type is "U"
