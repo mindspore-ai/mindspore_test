@@ -123,10 +123,12 @@ class DeviceQueueDataSourceActor : public DataSourceActor {
 class HostQueueDataSourceActor : public DataSourceActor {
  public:
   HostQueueDataSourceActor(const std::string &name, size_t buffer_capacity, const AID &memory_manager_aid,
-                           const AID *debug_aid, const AID *recorder_aid, const HostTensorQueuePtr &host_queue)
+                           const AID *debug_aid, const AID *recorder_aid, const HostTensorQueuePtr &host_queue,
+                           const std::string &graph_phase)
       : DataSourceActor(name, KernelTransformType::kHostDataSourceActor, buffer_capacity, memory_manager_aid, debug_aid,
                         recorder_aid),
-        host_queue_(host_queue) {}
+        host_queue_(host_queue),
+        is_infer_phase_(IsInferPhase(graph_phase)) {}
   ~HostQueueDataSourceActor() override = default;
 
   // The memory related operation interface.
@@ -159,6 +161,9 @@ class HostQueueDataSourceActor : public DataSourceActor {
   std::map<KernelWithIndex, size_t> data_node_position_map_;
   // The index of different device context for the same parameter.
   std::vector<std::pair<size_t, size_t>> heter_index_pair_;
+
+  // Whether the super kernel actor is a infer 'prefill' or 'increment' graph or not.
+  bool is_infer_phase_;
 };
 
 using DataSourceActorPtr = std::shared_ptr<DataSourceActor>;

@@ -150,6 +150,9 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
   bool DumpBackendInfo();
   bool LoadBackendInfo();
 
+  // Check whether this root_graph can enable single op and graph pipeline or not.
+  bool CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info);
+
   // When compiling FuncGraph, it is divided according to the control nodes, and obtain the control nodes and several
   // node segments. Node segments will be compiled into kernelGraphs which are expressed as GraphId and bound to
   // the corresponding device_context.
@@ -175,6 +178,9 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
                               const device::DeviceType &new_target) const;
   bool CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, DeviceContext *device_context);
   bool CacheCompileGraphs();
+
+  // Whether this root_graph can enable single op and graph pipeline or not.
+  bool enable_graph_pipeline_{false};
 };
 }  // namespace compile
 }  // namespace mindspore

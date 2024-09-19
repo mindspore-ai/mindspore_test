@@ -492,6 +492,9 @@ std::string GenerateActorIdByKernel(const AnfNodePtr &node);
 
 // GetThe repeat device tensor index.
 mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<DeviceTensor *> &device_tensors);
+
+// Check a graph is from inference phase.
+bool IsInferPhase(const std::string &phase);
 }  // namespace runtime
 }  // namespace mindspore
 

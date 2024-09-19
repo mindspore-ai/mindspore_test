@@ -176,8 +176,8 @@ void ControlNodeScheduler::BuildDataSourceActorForControlNode(
     if (control_node_ds_actor == nullptr) {
       auto actor_name = graph_compiler_info.name_ + kHostDSActorNameSuffix;
       MS_LOG(INFO) << "Create host queue data source actor: " << actor_name;
-      control_node_ds_actor =
-        std::make_shared<HostQueueDataSourceActor>(actor_name, 1, memory_manager_aid, nullptr, nullptr, host_queue);
+      control_node_ds_actor = std::make_shared<HostQueueDataSourceActor>(
+        actor_name, 1, memory_manager_aid, nullptr, nullptr, host_queue, graph_compiler_info.graph_phase_);
       MS_EXCEPTION_IF_NULL(control_node_ds_actor);
       InsertActor(control_node_ds_actor.get());
       (void)data_source_actors->emplace_back(control_node_ds_actor);

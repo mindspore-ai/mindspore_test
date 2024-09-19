@@ -106,6 +106,9 @@ void UpdatePreTensorInfo(const tensor::BaseTensorPtr &new_tensor, const tensor::
 
   {
     GilReleaseWithCheck gil_release;
+    if (IsEnableGraphPipeline()) {
+      runtime::Pipeline::Get().frontend_stage()->Wait();
+    }
     runtime::Pipeline::Get().backend_stage()->Wait();
   }
 

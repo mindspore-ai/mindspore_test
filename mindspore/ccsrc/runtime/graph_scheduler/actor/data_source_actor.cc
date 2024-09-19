@@ -323,7 +323,7 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
   // Copy data from host tensor to device tensor.
   uint64_t start_time = 0;
   PROFILER_START(start_time);
-  auto enable_async_copy = ms_context->IsEnableInferBoost() || IsTwoPhaseInfer();
+  auto enable_async_copy = ms_context->IsEnableInferBoost() || is_infer_phase_;
   try {
     for (size_t i = 0; i < host_tensors.size(); ++i) {
       auto &host_tensor = host_tensors[i];
@@ -407,6 +407,8 @@ bool HostQueueDataSourceActor::IsSameDeviceType() const {
 }
 
 void HostQueueDataSourceActor::ReleaseData() {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
+                                     "DataSourceActorReleaseData");
   // The step end need free the host queue tensor.
   MS_EXCEPTION_IF_NULL(host_queue_);
   host_queue_->Pop();

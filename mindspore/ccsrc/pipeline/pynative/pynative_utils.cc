@@ -564,7 +564,7 @@ void Common::ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph) {
   DumpGraphIR("replace_cnode_with_valuenode.ir", bprop_graph);
 }
 
-ValuePtr StubNodeToValueInner(const ValuePtr &v) {
+ValuePtr Common::StubNodeToValueInner(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (utils::isa<stub::StubNode>(v)) {
     auto stub = utils::cast<stub::StubNodePtr>(v);

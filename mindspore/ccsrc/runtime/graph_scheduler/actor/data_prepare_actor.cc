@@ -858,7 +858,7 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
     if (has_dynamic_shape_) {
       ActorDispatcher::set_enable_static_shape(!isDyn);
 
-      const auto &phase = PhaseManager::GetInstance().phase();
+      const auto &phase = graph_compiler_info_->graph_phase_;
       bool is_increment_graph = (phase.find("increment") != std::string::npos);
       if (EnableTraceMemory() && is_increment_graph) {
         if (has_continuous_memory()) {

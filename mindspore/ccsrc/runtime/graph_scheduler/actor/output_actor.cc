@@ -177,11 +177,19 @@ void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const contex
       if (device_tensor_store_key.second != nullptr && device_tensor_store_key.second->isa<ValueNode>()) {
         const auto &value = device_tensor_store_key.second->cast<ValueNodePtr>()->value();
         MS_EXCEPTION_IF_NULL(value);
+        if (!flatten_stub_nodes_.empty()) {
+          const auto &stub_node = flatten_stub_nodes_.at(device_tensor_store_key.first);
+          MS_EXCEPTION_IF_NULL(stub_node);
+          stub_node->SetValue(value);
+        }
         if (value->isa<tensor::Tensor>()) {
           outputs_[device_tensor_store_key.first] = value->cast<tensor::TensorPtr>();
           continue;
         } else if (value->isa<Scalar>()) {
           outputs_[device_tensor_store_key.first] = ScalarToTensor(value->cast<ScalarPtr>());
+          continue;
+        } else if (value->isa<StringImm>()) {
+          MS_LOG(DEBUG) << "Output value node:" << device_tensor_store_key.second->DebugString();
           continue;
         } else {
           MS_LOG(DEBUG) << "Output value node:" << device_tensor_store_key.second->DebugString();
@@ -191,6 +199,12 @@ void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const contex
         CreateOutputTensor(device_tensor_store_key.second, 0, device_tensor_store_key.first, context);
       if (outputs_[device_tensor_store_key.first] == nullptr) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR(*context, "Create output tensor failed.");
+      }
+      if (!flatten_stub_nodes_.empty()) {
+        const auto &stub_node = flatten_stub_nodes_.at(device_tensor_store_key.first);
+        MS_EXCEPTION_IF_NULL(stub_node);
+        outputs_[device_tensor_store_key.first]->set_need_pipeline_sync(true);
+        stub_node->SetValue(outputs_[device_tensor_store_key.first]);
       }
       output_nodes_[device_tensor_store_key.first] = {device_tensor_store_key.second, 0};
       const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(device_tensor_store_key.second, 0, false);
@@ -254,6 +268,12 @@ void OutputActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<De
   }
   tensor->set_need_release_device_mem(true);
   outputs_[output_position] = tensor;
+  if (!flatten_stub_nodes_.empty()) {
+    const auto &stub_node = flatten_stub_nodes_.at(output_position);
+    MS_EXCEPTION_IF_NULL(stub_node);
+    tensor->set_need_pipeline_sync(true);
+    stub_node->SetValue(tensor);
+  }
   current_outputs_num_++;
 }
 
@@ -310,6 +330,20 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
   if (abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>()) {
     return AnfAlgo::CreateMapTensor(output_node, output_index);
   }
+
+  if (!flatten_stub_nodes_.empty() && is_dynamic_shape_output) {
+    const auto &clone_abs = abstract->Clone();
+    MS_EXCEPTION_IF_NULL(clone_abs);
+    clone_abs->set_shape(output_kernel_tensor->GetShape()->Clone());
+
+    const auto &stub_node = flatten_stub_nodes_.at(output_position);
+    MS_EXCEPTION_IF_NULL(stub_node);
+    if (!stub_node->SetAbstract(clone_abs)) {
+      MS_LOG(EXCEPTION) << "Set abstract for stub node failed, output position: " << output_position
+                        << ", output node: " << output_node->fullname_with_scope();
+    }
+  }
+
   // Create host tensor, the output tensor should use the infer type, it will be handed correctly by tensor data sync
   // when infer type is not equal to device type.
   auto type_id = common::AnfAlgo::GetOutputInferDataType(output_node, output_index);
@@ -363,6 +397,17 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
 
   tensor->set_need_release_device_mem(true);
   return tensor;
+}
+
+void OutputActor::SetStubOutput(const stub::StubNodePtr &stub_output) {
+  MS_EXCEPTION_IF_NULL(stub_output);
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
+                                     "FlattenStubNode");
+  stub::FlattenStubNode(stub_output, &flatten_stub_nodes_);
+  if (flatten_stub_nodes_.size() != outputs_num()) {
+    MS_LOG(EXCEPTION) << "Invalid output number for flatten stub output nodes, expect: " << outputs_num()
+                      << ", but got: " << flatten_stub_nodes_.size();
+  }
 }
 
 void OutputActor::UpdateOutputDeviceAddress() {
@@ -451,6 +496,9 @@ void OutputActor::UpdateOutputDeviceAddress() {
   output_nodes_.resize(outputs_num_);
   output_device_tensors_.clear();
   output_device_tensors_.resize(outputs_num_);
+  if (!flatten_stub_nodes_.empty()) {
+    flatten_stub_nodes_.clear();
+  }
 }
 }  // namespace runtime
 }  // namespace mindspore

@@ -145,6 +145,9 @@ struct ActorSet {
 
   // Whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
   bool enable_kbk_sub_graph_execute_{true};
+
+  // The phase of the root graph this actor set belongs to.
+  std::string graph_phase_{""};
 };
 using ActorSetPtr = std::shared_ptr<ActorSet>;
 

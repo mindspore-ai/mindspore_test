@@ -24,7 +24,6 @@
 #include <condition_variable>
 #include <mutex>
 
-#include "pybind11/pytypes.h"
 #include "pybind11/pybind11.h"
 #include "base/base.h"
 #include "ir/value.h"
@@ -71,7 +70,7 @@ class COMMON_EXPORT StubNode : public Value {
   std::exception_ptr e_ptr_{};
 };
 
-class TensorNode : public StubNode {
+class COMMON_EXPORT TensorNode : public StubNode {
  public:
   TensorNode() = default;
   MS_DECLARE_PARENT(TensorNode, StubNode);
@@ -103,6 +102,22 @@ class SequenceNode : public StubNode {
 };
 using SequenceNodePtr = std::shared_ptr<SequenceNode>;
 
+class StringNode : public StubNode {
+ public:
+  StringNode() = default;
+  MS_DECLARE_PARENT(StringNode, StubNode);
+  bool SetAbstract(const AbstractBasePtr &abs) override;
+};
+using StringNodePtr = std::shared_ptr<StringNode>;
+
+class ScalarNode : public StubNode {
+ public:
+  ScalarNode() = default;
+  MS_DECLARE_PARENT(ScalarNode, StubNode);
+  bool SetAbstract(const AbstractBasePtr &abs) override;
+};
+using ScalarNodePtr = std::shared_ptr<ScalarNode>;
+
 class AnyTypeNode : public StubNode {
  public:
   AnyTypeNode() = default;
@@ -124,7 +139,10 @@ class NoneTypeNode : public StubNode {
 };
 
 COMMON_EXPORT std::pair<py::object, StubNodePtr> MakeTopNode(const TypePtr &type);
+COMMON_EXPORT std::pair<StubNodePtr, bool> MakeStubNode(const AbstractBasePtr &abs);
+COMMON_EXPORT void FlattenStubNode(const StubNodePtr &node, std::vector<StubNodePtr> *flatten_stub_nodes);
 COMMON_EXPORT void RegStubNodes(const py::module *m);
+COMMON_EXPORT py::object StubNodeToPyObject(const StubNodePtr &node);
 }  // namespace stub
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_UTILS_STUB_TENSOR_PY_H_

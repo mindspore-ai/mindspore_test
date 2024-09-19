@@ -84,7 +84,8 @@ struct BACKEND_EXPORT GraphCompilerInfo {
                     const std::vector<AnfNodePtr> &control_nodes,
                     const std::vector<AnfNodePtr> &origin_parameters_order, const ControlNodeParserPtr &parser,
                     const KernelMapPosition &origin_outputs_order, size_t outputs_num, size_t inputs_num,
-                    const std::string &name, bool need_erase, GraphExecutionStrategy strategy, CompileFunc compile_func)
+                    const std::string &name, bool need_erase, GraphExecutionStrategy strategy, CompileFunc compile_func,
+                    const std::string &graph_phase)
       : graphs_(graphs),
         device_contexts_(device_contexts),
         tensors_mask_(tensors_mask),
@@ -99,7 +100,8 @@ struct BACKEND_EXPORT GraphCompilerInfo {
         need_erase_(need_erase),
         exist_flatten_concat_(false),
         strategy_(strategy),
-        compile_func_(std::move(compile_func)) {}
+        compile_func_(std::move(compile_func)),
+        graph_phase_(graph_phase) {}
   ~GraphCompilerInfo();
   std::vector<KernelGraphPtr> graphs_;
   std::vector<DeviceContext *> device_contexts_;
@@ -118,6 +120,7 @@ struct BACKEND_EXPORT GraphCompilerInfo {
   mutable bool exist_flatten_concat_;
   mutable GraphExecutionStrategy strategy_;
   CompileFunc compile_func_;
+  std::string graph_phase_;
 };
 
 class GraphCompiler {

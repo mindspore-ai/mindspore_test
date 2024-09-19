@@ -103,9 +103,9 @@ std::shared_ptr<GraphCompilerInfo> ConstructGraphCompilerInfo(const KernelGraphP
   bool need_erase = false;
   GraphExecutionStrategy strategy = GraphExecutionStrategy::kPipeline;
   CompileFunc comile_func{};
-  return std::make_shared<GraphCompilerInfo>(graphs, device_contexts, tensors_mask, input_tensors, control_nodes,
-                                             origin_parameters_order, parser, origin_outputs_order, outputs_num,
-                                             origin_parameters_order.size(), name, need_erase, strategy, comile_func);
+  return std::make_shared<GraphCompilerInfo>(
+    graphs, device_contexts, tensors_mask, input_tensors, control_nodes, origin_parameters_order, parser,
+    origin_outputs_order, outputs_num, origin_parameters_order.size(), name, need_erase, strategy, comile_func, "");
 }
 }  // namespace
 
