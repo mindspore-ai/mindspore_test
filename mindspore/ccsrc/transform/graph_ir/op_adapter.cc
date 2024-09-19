@@ -498,7 +498,7 @@ std::vector<OutHandler> OpAdapterImpl::getNormalOutputs(const OperatorPtr &op) c
                  [&op](const auto &item) { return OutHandler(op, item.second.name); });
   if (!dyn_output_map_.empty()) {
     for (auto &[i, dyn_out_desc] : dyn_output_map_) {
-      MS_LOG(INFO) << "OpAdpator(" << op->GetName() << ", fectch output handle " << i << " from dyn_output_map.";
+      MS_LOG(DEBUG) << "OpAdpator(" << op->GetName() << ", fectch output handle " << i << " from dyn_output_map.";
       auto dyn_output_name = dyn_out_desc.name;
       auto dyn_output_size = op->GetDynamicOutputNum(dyn_output_name);
       for (int i = 0; i < dyn_output_size; i++) {
@@ -1112,7 +1112,7 @@ int OpAdapterImpl::setAttr(const OperatorPtr &op, const AnfNodePtr &node) {
     }
 
     auto const_value = GetValueNode(inputs[cur_idx]);
-    MS_LOG(INFO) << "Set attr: input_" << cur_idx << "(" << it.second.name << "), value: " << const_value->ToString();
+    MS_LOG(DEBUG) << "Set attr: input_" << cur_idx << "(" << it.second.name << "), value: " << const_value->ToString();
     if (const_value->isa<None>()) {
       continue;
     }
