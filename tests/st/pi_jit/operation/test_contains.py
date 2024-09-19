@@ -44,7 +44,7 @@ def common_test_case(func, ms_func, a, b, error=0, type_check='array'):
     assert_executed_by_graph_mode(func)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('func, ms_func', [(pijit_in, pynative_in), (pijit_not_in, pynative_not_in)])
 @pytest.mark.parametrize('a', [1, 0])
 @pytest.mark.parametrize('b', [[1, 2, 3], {1: 1, 2: 2}, (1, 2, 3)])
