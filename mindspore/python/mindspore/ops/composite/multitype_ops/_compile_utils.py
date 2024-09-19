@@ -483,6 +483,7 @@ def format_index_tensor(index, arg):
             index[format_idx] = F.select(index_tensor < 0, index_tensor + format_dim, index_tensor)
         return index
     index = Tensor(index)
+    format_dims = Tensor(format_dims)
     return F.select(index < 0, index + format_dims, index)
 
 
