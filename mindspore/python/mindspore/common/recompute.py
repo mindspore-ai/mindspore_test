@@ -146,7 +146,8 @@ def _check_input_args_validate(block, args):
     :param args:
     :return:
     """
-    if not any([isinstance(arg, Tensor) for arg in args]):
+    if not (any([isinstance(arg, Tensor) for arg in args]) or \
+        any([isinstance(arg, Tensor) for arg in kwargs.values()])):
         logger.warning("None of the inputs of function are tensors, which not need use recompute!")
     for arg in args:
         if isinstance(arg, (tuple, list)):
