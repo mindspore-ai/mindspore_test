@@ -2258,6 +2258,8 @@ bool OperatorInfo::IsVirtualOutput() const { return name_.find(VIRTUALOUTPUTINFO
 
 bool OperatorInfo::IsConcat() const { return name_.find(CONCATINFO) != std::string::npos; }
 
+bool OperatorInfo::IsStandAlone() const { return name_.find(STAND_ALONE_INFO) != std::string::npos; }
+
 bool OperatorInfo::IsTmpIdentity() const { return name_.find(IDENTITY_INFO) != std::string::npos; }
 
 // Keep at most (1.0 / epsilon) number of available strategies for each operator.

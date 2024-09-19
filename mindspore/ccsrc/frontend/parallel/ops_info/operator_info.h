@@ -233,6 +233,7 @@ class OperatorInfo {
   bool IsReshape() const;
   bool IsVirtualOutput() const;
   bool IsConcat() const;
+  bool IsStandAlone() const;
   bool IsTmpIdentity() const;
 
   void set_swc_index(int64_t swc, int64_t depth);
