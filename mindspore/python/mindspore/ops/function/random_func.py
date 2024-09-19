@@ -30,7 +30,7 @@ from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
-    NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt
+    NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt
 
 normal_tensor_tensor_op = NormalTensorTensor()
 normal_tensor_float_op = NormalTensorFloat()
@@ -45,6 +45,7 @@ top_k_ = P.TopK()
 uniform_ = UniformExt()
 rand_ext_ = RandExt()
 rand_like_ext_ = RandLikeExt()
+multinomial_ext_ = MultinomialExt()
 generator_step_ = Tensor(10, mstype.int64)
 
 
@@ -1573,6 +1574,106 @@ def multinomial(input, num_samples, replacement=True, seed=None):
     random_nomial = _set_prim_op_user_data(
         random_nomial, "random_cache", False)
     return random_nomial(input, num_samples)
+
+
+@_function_forbid_reuse
+def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
+    r"""
+    Returns a tensor sampled from the multinomial probability distribution located in the corresponding
+    row of the input tensor.
+
+    The polynomial distribution is a probability distribution that generalizes the binomial distribution formula to
+    multiple states. In the polynomial distribution, each event has a fixed probability, and the sum of these
+    probabilities is 1. The purpose of the `mindspore.mint.multinomial` interface is to perform `num_samples` sampling
+    on the input `input`, and the output tensor is the index of the input tensor for each sampling.
+    The values in `input` represent the probability of selecting the corresponding index for each sampling.
+
+    Here is an extreme example for better understanding. Suppose we have an input probability tensor with
+    values `Tensor([90 / 100, 10 / 100, 0], mindspore.float32)`, which means we can sample three indices,
+    namely index 0, index 1, and index 2, with probabilities of 90%, 10%, and 0%, respectively. We perform n samplings,
+    and the resulting sequence is the calculation result of the polynomial distribution, with a length equal to the
+    number of samplings.
+
+    In case 1 of the sample code, we perform two non-replacement samplings (`replacement` is `False`).
+    The calculation result is most likely `[0, 1]`, and less likely `[1, 0]`. Since the probability of selecting
+    index 0 is 90% for each sampling, the first result is most likely to be index 0. Since the probability of selecting
+    index 2 is 0, index 2 cannot appear in the sampling result. Therefore, the second result must be index 1,
+    and the resulting sequence is `[0, 1]`.
+
+    In case 2 of the sample code, we perform 10 replacement samplings (`replacement` is `True`).
+    As expected, about 90% of the sampling results are index 0.
+
+    In case 3 of the sample code, we extend the input to 2 dimensions, and the sampling results
+    in each dimension also match our sampling expectations.
+
+    Note:
+        The rows of input do not need to sum to one (in which case we use the values as weights),
+        but must be non-negative, finite and have a non-zero sum.
+        When using values as weights, it can be understood as normalizing the input along the last dimension.
+
+    Args:
+        input (Tensor): The input tensor containing probabilities, must be 1 or 2 dimensions, with float32 data type.
+        num_samples (int): Number of samples to draw.
+        replacement (bool, optional): Whether to draw with replacement or not. Default: ``False`` .
+
+    Keyword Args:
+        generator (generator, optional): MindSpore generator. Default: ``None``.
+
+    Returns:
+        Tensor, dtype is Int64.
+        If `input` is a vector, out is a vector of size `num_samples`.
+        If `input` is a matrix with m rows, out is an matrix of shape(m * num_samples).
+
+    Raises:
+        TypeError: If `input` is not a Tensor whose dtype is not in float16, float32, float64 or bfloat16.
+        TypeError: If `num_samples` is neither an int nor a Scalar of int.
+        RuntimeError: If `num_samples` <= 0.
+        RuntimeError: If `replacement` is True, num_samples > value of the last dimension of `input`.
+        RuntimeError: If value of the last dimension of `input` exceeds ``2^24``.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, ops
+        >>> from mindspore import dtype as mstype
+        >>> # case 1: The output is random, and the length of the output is the same as num_sample.
+        >>> # replacement is False.
+        >>> input1 = Tensor([90 / 100, 10 / 100, 0], mindspore.float32)
+        >>> input2 = Tensor([90, 10, 0], mindspore.float32)
+        >>> # input1 and input2 have the same meaning.
+        >>> output1 = ops.multinomial_ext(input1, 2)
+        >>> output2 = ops.multinomial_ext(input2, 2)
+        >>> # print(output1)
+        >>> # [0 1]
+        >>> # print(output2)
+        >>> # [0 1]
+        >>> print(len(output1))
+        2
+        >>> print(len(output2))
+        2
+        >>> # case 2: The output is random, and the length of the output is the same as num_sample.
+        >>> # replacement is True.
+        >>> output3 = ops.multinomial_ext(input1, 10, replacement=True)
+        >>> # print(output3)
+        >>> # [0 0 1 0 0 0 0 0 0 0]
+        >>> print(len(output3))
+        10
+        >>> # case 3: The output is random, and the length of the output is the same as num_sample.
+        >>> # replacement is True.
+        >>> # rank is 2
+        >>> input4 = Tensor([[90, 10, 0], [10, 90, 0]], mstype.float32)
+        >>> output4 = ops.multinomial_ext(input4, 10, replacement=True)
+        >>> # print(output4)
+        >>> # [[0 0 0 0 0 0 0 0 1 0]
+        >>> #  [1 1 1 1 1 0 1 1 1 1]]
+    """
+
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return multinomial_ext_(input, num_samples, replacement, seed, offset)
 
 
 def _check_shape(input_shape):

@@ -326,6 +326,8 @@ from mindspore.ops.auto_generate import floor
 from mindspore.ops.function.math_func import inverse_ext as inverse
 # 244
 from mindspore.ops.auto_generate import log1p
+# 261
+from mindspore.ops.function.random_func import multinomial_ext as multinomial
 # 275
 from mindspore.ops.function.math_func import remainder_ext as remainder
 # 285
@@ -1500,6 +1502,8 @@ __all__ = [
     'inverse',
     # 244
     'log1p',
+    # 261
+    'multinomial',
     # 275
     'remainder',
     # 285

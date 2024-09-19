@@ -1,0 +1,25 @@
+#operator multinomial_ext
+multinomial_ext:
+    args:
+        input:
+            dtype: tensor
+        num_samples:
+            dtype: int
+            type_cast: tensor
+        replacement:
+            dtype: bool
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+    returns:
+        output: 
+            dtype: tensor
+    function:
+        disable: True
+    class:
+        name: MultinomialExt
+    dispatch:
+        enable: True
+        Ascend: MultinomialExtAscend
+
