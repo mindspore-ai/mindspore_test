@@ -923,7 +923,6 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   InlineSwitchGraph(kernel_graph, &memo);
   (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph", start_time,
                                   profiler::GetClockSyscnt(), 0);
-  OptimizeExecutionOrder(NOT_NULL(graph));
 }
 
 void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
