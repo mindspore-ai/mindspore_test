@@ -20,26 +20,15 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <utility>
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {
-template <typename T>
-class NcclSendGpuKernel : public NcclGpuKernelMod {
+class NcclSendGpuKernel : public NcclGpuKernelMod, public MatchKernelHelper<NcclSendGpuKernel> {
  public:
   NcclSendGpuKernel() : dest_rank_(-1) {}
   ~NcclSendGpuKernel() override = default;
-
-  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
-              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {
-    if (is_null_input_) {
-      return true;
-    }
-    T *input_addr = GetDeviceAddress<T>(inputs, 0);
-    (void)Send(input_addr, inputs[0]->size() / sizeof(T), nccl_data_type_, dest_rank_,
-               reinterpret_cast<cudaStream_t>(stream_ptr), group_name_);
-    return true;
-  }
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
     size_t input_num = inputs.size();
@@ -47,8 +36,15 @@ class NcclSendGpuKernel : public NcclGpuKernelMod {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of inputs should be 1, but got " << input_num;
     }
     SelectCollectiveHandle();
-    return true;
+    return MatchKernelFunc(kernel_name_, inputs, outputs);
   }
+
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *cuda_stream) override {
+    cuda_stream_ = cuda_stream;
+    return kernel_func_(this, inputs, workspace, outputs);
+  }
+
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
     dest_rank_ = static_cast<int>(GetValue<int64_t>(primitive_->GetAttr("dest_rank")));
     group_name_ = GetValue<std::string>(primitive_->GetAttr(kAttrGroup));
@@ -69,9 +65,25 @@ class NcclSendGpuKernel : public NcclGpuKernelMod {
     return KRET_OK;
   }
 
+  const std::vector<std::pair<KernelAttr, KernelRunFunc>> &GetFuncList() const override;
+
+  std::vector<KernelAttr> GetOpSupport() override { return OpSupport(); }
+
  private:
+  template <typename T>
+  bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+                    const std::vector<KernelTensor *> &outputs) {
+    if (is_null_input_) {
+      return true;
+    }
+    T *input_addr = GetDeviceAddress<T>(inputs, 0);
+    (void)Send(input_addr, inputs[0]->size() / sizeof(T), nccl_data_type_, dest_rank_,
+               reinterpret_cast<cudaStream_t>(cuda_stream_), group_name_);
+    return true;
+  }
   int dest_rank_;
   bool is_null_input_;
+  void *cuda_stream_{nullptr};
 };
 }  // namespace kernel
 }  // namespace mindspore

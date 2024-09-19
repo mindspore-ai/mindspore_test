@@ -3,7 +3,7 @@ mindspore.communication.comm_func.irecv
 
 .. py:function:: mindspore.communication.comm_func.irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0)
 
-    接收张量到指定线程。
+    异步接收张量到指定线程。
 
     .. note::
         Send 和 Receive 算子需组合使用，且有同一个 `tag`。
@@ -18,7 +18,8 @@ mindspore.communication.comm_func.irecv
         - **tag** (int，可选) - 用于区分发送、接收消息的标签。该消息将被接收来自相同 `tag` 的Send发送的张量。默认值：0。
 
     返回：
-        Tensor，其shape为 :math:`(x_1, x_2, ..., x_R)`。
+        Tuple(Tensor, CommHandle)，输出Tensor的shape为 :math:`(x_1, x_2, ..., x_R)`。
+        CommHandle是一个异步工作句柄。
 
     异常：
         - **TypeError** - src不是int或group不是str。

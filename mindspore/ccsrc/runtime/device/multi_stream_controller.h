@@ -114,7 +114,8 @@ class BACKEND_EXPORT MultiStreamController {
 
   // memory_stream_addresses pair : memory_stream_id, address.
   bool RecordEvent(const DeviceContext *device_context, int64_t task_id_on_stream, uint32_t user_stream_id,
-                   const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses);
+                   const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                   const DeviceEventPtr &input_event = nullptr);
   bool WaitEvent(const DeviceContext *device_context, int64_t task_id_on_stream, uint32_t user_stream_id,
                  uint32_t memory_stream_id);
   bool WaitEvent(const DeviceContext *device_context, int64_t task_id_on_stream, uint32_t user_stream_id);

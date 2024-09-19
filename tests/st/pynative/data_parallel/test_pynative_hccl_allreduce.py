@@ -41,10 +41,12 @@ class AllReduceNet(nn.Cell):
         x = self.mul(x, 2)
         y1 = Tensor(np.array([[2, 2, 2, 2], [2, 2, 2, 2], [2, 2, 2, 2]])).astype(np.float32)
         z = self.add(x, y1)
-        z = self.all_reduce(z)
+        z, h1 = self.all_reduce(z)
         y2 = Tensor(np.array([[-16, -16, -16, -16], [-16, -16, -16, -16], [-16, -16, -16, -16]])).astype(np.float32)
+        h1.wait()
         out = self.add(z, y2)
-        out = self.all_reduce(out)
+        out, h2 = self.all_reduce(out)
+        h2.wait()
         out = self.mul(out, 2)
         return out
 

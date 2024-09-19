@@ -171,6 +171,8 @@ ACL_FUNC_VISIBILITY aclError aclrtDestroyEvent(aclrtEvent event) { return ACL_SU
 
 ACL_FUNC_VISIBILITY aclError aclrtCreateEventWithFlag(aclrtEvent *event, uint32_t flag) { return ACL_SUCCESS; }
 
+ACL_FUNC_VISIBILITY aclError aclrtCreateEventExWithFlag(aclrtEvent *event, uint32_t flag) { return ACL_SUCCESS; }
+
 ACL_FUNC_VISIBILITY aclError aclrtCreateStreamWithConfig(aclrtStream *stream, uint32_t priority, uint32_t flag) {
   return ACL_SUCCESS;
 }

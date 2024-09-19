@@ -120,6 +120,9 @@ REGISTER_PYBOOST_GRAD_TEMPLATE = CppTemplate("${register_func}")
 PYBOOST_FUNCTION_TEMPLATE = CppTemplate.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_function.tpl'))
 
+PYBOOS_COMM_FUNCTION_TEMPLATE = CppTemplate.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_comm_function.tpl'))
+
 PYBOOST_HEADER_TEMPLATE = CppTemplate.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_function_header.tpl'))
 

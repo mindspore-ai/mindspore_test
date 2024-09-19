@@ -89,18 +89,25 @@ std::mutex &MultiStreamController::GetStreamMutex(const DeviceContext *device_co
 
 bool MultiStreamController::RecordEvent(const DeviceContext *device_context, int64_t task_id_on_stream,
                                         uint32_t user_stream_id,
-                                        const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses) {
+                                        const std::vector<std::pair<uint32_t, DeviceMemPtr>> &memory_stream_addresses,
+                                        const DeviceEventPtr &input_event) {
   auto mem_manager = device_context->device_res_manager_->mem_manager();
   if (mem_manager == nullptr) {
     MS_LOG(WARNING) << "mem_manager_ is nullptr.";
     return false;
   }
 
-  auto event = device_context->device_res_manager_->CreateRuntimeEvent(false, true);
-  if (event == nullptr) {
-    return true;
+  DeviceEventPtr event = nullptr;
+  if (input_event != nullptr) {
+    event = input_event;
+  } else {
+    event = device_context->device_res_manager_->CreateRuntimeEvent(false, true);
+    if (event == nullptr) {
+      return true;
+    }
+    event->RecordEvent(user_stream_id);
   }
-  event->RecordEvent(user_stream_id);
+
   // Record event on mem buf.
   return mem_manager->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, event);
 }

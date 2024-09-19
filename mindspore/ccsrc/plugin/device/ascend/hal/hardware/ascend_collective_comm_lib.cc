@@ -203,6 +203,7 @@ bool AscendCollectiveCommLib::DestroyHcclComm() {
       return false;
     }
   }
+  group_hccl_comm_map_.clear();
   groups_.clear();
   bool res = hccl::HcclAdapter::GetInstance().FinalizeHccl();
   if (!res) {
@@ -281,6 +282,17 @@ HcclComm AscendCollectiveCommLib::HcclCommunicator(const std::string &group_name
   auto group = std::dynamic_pointer_cast<AscendCommunicationGroup>(groups_[group_name]);
   CHECK_IF_NULL(group);
   return group->hccl_communicator();
+}
+
+HcclComm AscendCollectiveCommLib::GetHcomByGroup(const std::string &group_name) {
+  auto iter = group_hccl_comm_map_.find(group_name);
+  if (iter == group_hccl_comm_map_.end()) {
+    auto comm = HcclCommunicator(group_name);
+    group_hccl_comm_map_[group_name] = comm;
+    return comm;
+  }
+
+  return iter->second;
 }
 
 std::string AscendCollectiveCommLib::HcclInnerCommName(const std::string &group_name) {

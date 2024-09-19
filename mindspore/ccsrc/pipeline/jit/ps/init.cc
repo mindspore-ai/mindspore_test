@@ -178,6 +178,7 @@ void RegModule(py::module *m) {
   RegTFT(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
+  mindspore::hal::RegCommHandle(m);
   mindspore::hal::RegMemory(m);
   mindspore::hal::RegUtils(m);
   mindspore::pynative::RegPyNativeExecutor(m);

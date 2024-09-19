@@ -3,7 +3,7 @@ mindspore.communication.comm_func.isend
 
 .. py:function:: mindspore.communication.comm_func.isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0)
 
-    发送张量到指定线程。
+    异步发送张量到指定线程。
 
     .. note::
         Send 和 Receive 算子需组合使用，且有同一个 `tag`。
@@ -14,6 +14,9 @@ mindspore.communication.comm_func.isend
         - **dst** (int，可选) - 表示发送目标的进程编号。只有目标进程会收到张量。默认值：0。
         - **group** (str，可选) - 工作的通信组。（默认值：Ascend平台为 ``"hccl_world_group"`` ，GPU平台为 ``"nccl_world_group"`` ）。
         - **tag** (int，可选) - 用于区分发送、接收消息的标签。该消息将被拥有相同 `tag` 的Receive接收。默认值：0。
+
+    返回：
+        CommHandle是一个异步工作句柄。
 
     异常：
         - **TypeError** - dst不是int或group不是str。

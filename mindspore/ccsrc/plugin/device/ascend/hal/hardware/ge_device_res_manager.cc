@@ -486,6 +486,14 @@ void *GeDeviceResManager::GetStream(size_t stream_id) const {
   return AscendStreamMng::GetInstance().GetStream(stream_id);
 }
 
+size_t GeDeviceResManager::GetCommunicationStreamID() const {
+  if (runtime_instance_ == nullptr) {
+    MS_LOG(WARNING) << "runtime_instance_ is nullptr, can not to get communication stream";
+    return kDefaultStreamIndex;
+  }
+  return runtime_instance_->communication_stream_id();
+}
+
 void GeDeviceResManager::SetCurrentStreamId(size_t stream_id) {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";
@@ -686,7 +694,7 @@ DeviceEventPtr GeDeviceResManager::CreateRuntimeEvent(bool enable_blocking, bool
 }
 
 DeviceEventPtr GeDeviceResManager::CreateEventWithFlag(bool enable_timing, bool blocking) {
-  auto flag = enable_timing ? ACL_EVENT_TIME_LINE : ACL_EVENT_DEFAULT;
+  auto flag = enable_timing ? (ACL_EVENT_TIME_LINE | ACL_EVENT_SYNC) : ACL_EVENT_SYNC;
   auto event = std::make_shared<AscendEvent>(flag);
   MS_EXCEPTION_IF_NULL(event);
   std::lock_guard<std::mutex> lock(device_events_mutex_);

@@ -22,6 +22,8 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_map>
+#include <utility>
 #include "kernel/gpu/nccl/nccl_gpu_kernel.h"
 
 namespace mindspore {
@@ -38,49 +40,21 @@ const std::map<std::string, NcclKernelType> kNcclTypeMap = {{"AllReduce", NCCL_A
                                                             {"ReduceScatter", NCCL_REDUCE_SCATTER},
                                                             {"Broadcast", NCCL_BROADCAST}};
 
-template <typename T>
-class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
+const std::unordered_map<std::string, ncclRedOp_t> kNcclReduceOpTypeMap = {
+  {"sum", ncclSum}, {"max", ncclMax}, {"min", ncclMin}, {"prod", ncclProd}};
+
+class NcclCollectiveGpuKernel : public NcclGpuKernelMod, public MatchKernelHelper<NcclCollectiveGpuKernel> {
  public:
   NcclCollectiveGpuKernel() { ResetResource(); }
   ~NcclCollectiveGpuKernel() override = default;
 
-  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {
-    if (is_null_input_) {
-      return true;
-    }
-    switch (nccl_kernel_type_) {
-      case NCCL_ALL_REDUCE: {
-        LaunchAllReduce(inputs, outputs, stream_ptr);
-        break;
-      }
-      case NCCL_ALL_GATHER: {
-        LaunchAllGather(inputs, outputs, stream_ptr);
-        break;
-      }
-      case NCCL_REDUCE_SCATTER: {
-        LaunchReduceScatter(inputs, outputs, stream_ptr);
-        break;
-      }
-      case NCCL_BROADCAST: {
-        LaunchBroadcast(inputs, outputs, stream_ptr);
-        break;
-      }
-      default: {
-        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << ", only support these types: AllReduce, AllGather, Broadcast, "
-                          << "ReduceScatter currently, but got " << nccl_kernel_type_;
-      }
-    }
-    return true;
+    cuda_stream_ = stream_ptr;
+    return kernel_func_(this, inputs, workspace, outputs);
   }
 
-  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
-    nccl_data_type_ = nccl_dtype(inputs[0]->dtype_id());
-    InferCommType(kernel_name_, primitive_);
-
-    SelectCollectiveHandle();
-    return true;
-  }
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override {
     size_t input_num = inputs.size();
@@ -92,7 +66,7 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
       if (is_null_input_) {
         return true;
       }
-      size_t size = sizeof(T);
+      size_t size = unit_size_;
       for (size_t j = 0; j < shape.size(); j++) {
         size *= LongToSizeClipNeg(shape[j]);
       }
@@ -109,7 +83,7 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
       if (is_null_input_) {
         return true;
       }
-      size_t size = sizeof(T);
+      size_t size = unit_size_;
       for (size_t j = 0; j < shape.size(); j++) {
         size *= LongToSizeClipNeg(shape[j]);
       }
@@ -134,12 +108,19 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
     output_size_ = 0;
     root_ = 0;
     is_null_input_ = false;
+    unit_size_ = 0;
+    cuda_stream_ = nullptr;
     collective_handle_ = nullptr;
     output_size_list_.clear();
     workspace_size_list_.clear();
   }
 
+  const std::vector<std::pair<KernelAttr, KernelRunFunc>> &GetFuncList() const override;
+
+  std::vector<KernelAttr> GetOpSupport() override { return OpSupport(); }
+
  private:
+  template <typename T>
   void LaunchAllReduce(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
                        void *stream_ptr) {
     T *input_addr = GetDeviceAddress<T>(inputs, 0);
@@ -148,6 +129,7 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
                     reinterpret_cast<cudaStream_t>(stream_ptr), group_name_);
   }
 
+  template <typename T>
   void LaunchAllGather(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
                        void *stream_ptr) {
     T *input_addr = GetDeviceAddress<T>(inputs, 0);
@@ -156,6 +138,7 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
                     reinterpret_cast<cudaStream_t>(stream_ptr), group_name_);
   }
 
+  template <typename T>
   void LaunchReduceScatter(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
                            void *stream_ptr) {
     T *input_addr = GetDeviceAddress<T>(inputs, 0);
@@ -164,6 +147,7 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
                         reinterpret_cast<cudaStream_t>(stream_ptr), group_name_);
   }
 
+  template <typename T>
   void LaunchBroadcast(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
                        void *stream_ptr) {
     T *input_addr = nullptr;
@@ -176,7 +160,38 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
     }
   }
 
-  void InferCommType(const std::string &kernel_name, const PrimitivePtr &prim) {
+  template <typename T>
+  bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+                    const std::vector<KernelTensor *> &outputs) {
+    if (is_null_input_) {
+      return true;
+    }
+    switch (nccl_kernel_type_) {
+      case NCCL_ALL_REDUCE: {
+        LaunchAllReduce<T>(inputs, outputs, cuda_stream_);
+        break;
+      }
+      case NCCL_ALL_GATHER: {
+        LaunchAllGather<T>(inputs, outputs, cuda_stream_);
+        break;
+      }
+      case NCCL_REDUCE_SCATTER: {
+        LaunchReduceScatter<T>(inputs, outputs, cuda_stream_);
+        break;
+      }
+      case NCCL_BROADCAST: {
+        LaunchBroadcast<T>(inputs, outputs, cuda_stream_);
+        break;
+      }
+      default: {
+        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << ", only support these types: AllReduce, AllGather, Broadcast, "
+                          << "ReduceScatter currently, but got " << nccl_kernel_type_;
+      }
+    }
+    return true;
+  }
+
+  void InferCommType(const std::string &kernel_name, const PrimitivePtr &prim, TypeId type_id) {
     auto iter = kNcclTypeMap.find(kernel_name);
     if (iter == kNcclTypeMap.end()) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << ", only support these types: AllReduce, AllGather, Broadcast, "
@@ -189,22 +204,11 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
     auto reduce_op = prim->GetAttr(kAttrOp);
     if (reduce_op) {
       std::string type = GetValue<std::string>(reduce_op);
-      if (type == "sum") {
-        nccl_reduce_type_ = ncclSum;
-      } else if (type == "max") {
-        nccl_reduce_type_ = ncclMax;
-      } else if (type == "min") {
-        nccl_reduce_type_ = ncclMin;
-      } else if (type == "prod") {
-        nccl_reduce_type_ = ncclProd;
-      } else {
-        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << ", only support these types: sum, max, min, prod currently, "
-                          << "but got " << type;
-      }
+      nccl_reduce_type_ = GetNcclReduceOpType(type);
     }
 
     // The boolean is not supported by NCCL. Convert boolean + reducesum to uint8_t + reducemax will get same result.
-    if ((nccl_reduce_type_ == ncclSum && std::is_same<T, bool>::value)) {
+    if (nccl_reduce_type_ == ncclSum && type_id == kNumberTypeBool) {
       nccl_reduce_type_ = ncclMax;
       nccl_data_type_ = ncclUint8;
     }
@@ -216,12 +220,16 @@ class NcclCollectiveGpuKernel : public NcclGpuKernelMod {
     return;
   }
 
+  ncclRedOp_t GetNcclReduceOpType(const std::string &op_type);
+
   NcclKernelType nccl_kernel_type_;
   ncclRedOp_t nccl_reduce_type_;
   size_t input_size_;
   size_t output_size_;
   int root_;
   bool is_null_input_;
+  int unit_size_{0};
+  void *cuda_stream_{nullptr};
 };
 }  // namespace kernel
 }  // namespace mindspore

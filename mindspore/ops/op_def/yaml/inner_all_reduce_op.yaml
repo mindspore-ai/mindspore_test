@@ -1,0 +1,20 @@
+#operator inner all reduce
+inner_comm_all_reduce:
+    args:
+        input:
+            dtype: tensor
+        op_type:
+            dtype: str
+        group:
+            dtype: str
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: InnerCommAllReduceAscend
+        GPU: InnerCommAllReduceGPU
+        CPU: InnerCommAllReduceCPU

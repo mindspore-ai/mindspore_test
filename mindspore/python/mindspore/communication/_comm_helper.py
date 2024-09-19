@@ -127,6 +127,7 @@ class _ExistingGroup:
     The communication groups which exist in the progress.
     """
     ITEMS = {}
+    GROUP_RANKS = {}
 
 
 def _hccl_test():
@@ -390,6 +391,38 @@ def _get_group_rank_from_world_rank_helper(world_rank_id, group):
 
 
 @check_parameter_available
+def _get_group_rank_from_world_rank_from_cache_helper(world_rank_id, group):
+    """
+    The Helper to do get_group_rank_from_world_rank_from_cache.
+
+    Args:
+        world_rank_id (int): A rank id in world communication group.
+        group (str): The user communication group.
+
+    Raises:
+        TypeError: If world_rank_id is not int.
+        KeyError: If group and world_rank_id is not found in cache.
+
+    Returns:
+        Integer. A rank id in user communication group.
+    """
+    if not isinstance(world_rank_id, int):
+        raise TypeError("For 'get_group_rank_from_world_rank_from_cache', the argument 'world_rank_id' must be type of "
+                        "int, but got 'world_rank_id' type : {}.".format(type(world_rank_id)))
+
+    if group == GlobalComm.WORLD_COMM_GROUP:
+        # world_rank_id is same with group_rank_id in WORLD_COMM_GROUP
+        return world_rank_id
+    if group not in _ExistingGroup.GROUP_RANKS:
+        raise KeyError("For 'get_group_rank_from_world_rank_from_cache', the argument 'group' is not "
+                       "found in GROUP_RANKS, 'group' : {}, 'world_rank_id' : {}".format(group, world_rank_id))
+    if world_rank_id not in _ExistingGroup.GROUP_RANKS[group]:
+        raise KeyError("For 'get_group_rank_from_world_rank_from_cache', the argument 'world_rank_id' is not "
+                       "found in GROUP_RANKS, 'group' : {}, 'world_rank_id' : {}".format(group, world_rank_id))
+    return None
+
+
+@check_parameter_available
 def _get_group_ranks(group):
     """
     The Helper to do get_group_ranks.
@@ -443,6 +476,9 @@ def _create_group_helper(group, rank_ids):
                                "is suggested before launching jobs.".format(group, rank_ids))
 
     _ExistingGroup.ITEMS[group] = rank_ids
+    sorted_ranks = sorted(rank_ids)
+    _ExistingGroup.GROUP_RANKS[group] = {world_rank_id: group_rank_id
+                                         for group_rank_id, world_rank_id in enumerate(sorted_ranks)}
 
 
 @check_parameter_available

@@ -26,12 +26,14 @@
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
+#include "runtime/pipeline/pipeline.h"
 #ifdef ENABLE_DEBUGGER
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
 #endif
 
 namespace mindspore {
 namespace device {
+std::function<void()> DynamicMemPoolBestFit::wait_callback_;
 DynamicMemPoolBestFit::~DynamicMemPoolBestFit() {
   persistent_mem_->Clear();
   common_mem_->Clear();
@@ -1131,6 +1133,13 @@ bool DynamicMemPoolBestFit::WaitEvent(int64_t task_id_on_stream, uint32_t memory
   return true;
 }
 
+void DynamicMemPoolBestFit::WaitPipeline() {
+  if (wait_callback_ != nullptr) {
+    MS_LOG(DEBUG) << "Wait for Pipeline";
+    wait_callback_();
+  }
+}
+
 bool DynamicMemPoolBestFit::SyncAllEvents() {
 #ifdef __APPLE__
   std::lock_guard<SpinLock> spin_lock(spin_lock_);
@@ -1152,6 +1161,8 @@ bool DynamicMemPoolBestFit::SyncAllEventsInner() {
       (void)carry_event_addresses.emplace(address);
     }
   }
+
+  WaitPipeline();
   for (auto &address : carry_event_addresses) {
     if (address->SyncAllEvents() && address->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
       FreeTensorMemInner(address->device_addr_);

@@ -116,7 +116,7 @@ class BACKEND_EXPORT PyBoostUtils {
 
   static void LaunchKernel(const PrimitivePtr &primitive, const device::DeviceContext *device_context,
                            const AddressInfoPair &input_address_info, const AddressInfoPair &output_address_info,
-                           size_t stream_id = kDefaultStreamIndex);
+                           size_t stream_id = kDefaultStreamIndex, bool with_prim_attr = false);
 
   static void GetKernelTensor(const DeviceContext *device_context, size_t stream_id, size_t index,
                               std::vector<kernel::KernelTensor *> *kernel_tensor_list,
@@ -195,10 +195,9 @@ class BACKEND_EXPORT PyBoostUtils {
   static bool IsKernelModRegistered(const std::string &device_name, const std::string &op_name);
   static bool IsPyBoostCustomRegistered(const std::string &device_name, const std::string &op_name);
 
-  static kernel::KernelModPtr CreateKernelMod(const PrimitivePtr &prim, const std::string &op_name,
-                                              const DeviceContext *device_context,
+  static kernel::KernelModPtr CreateKernelMod(const PrimitivePtr &prim, const DeviceContext *device_context,
                                               const std::vector<KernelTensor *> &inputs,
-                                              const std::vector<KernelTensor *> &outputs);
+                                              const std::vector<KernelTensor *> &outputs, bool with_prim_attr);
   // return IsStrictlyMatched and KernelAttr
   static std::pair<bool, KernelAttr> SelectKernel(const std::vector<AbstractBasePtr> &inputs_abs,
                                                   const AbstractBasePtr &outputs_abs,

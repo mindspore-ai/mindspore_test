@@ -33,6 +33,8 @@ class BACKEND_EXPORT KernelModCache {
 
   std::string GetKernelModKey(const std::string &op_name, const std::string &device_name,
                               const std::vector<KernelTensor *> &inputs);
+  std::string GetPrimAttrKernelModKey(const PrimitivePtr &prim, const std::string &device_name,
+                                      const std::vector<KernelTensor *> &inputs);
   KernelModPtr GetKernelMod(const std::string &key);
   void SetCache(const std::string &key, const KernelModPtr &kernel_mod) { kernel_mod_cache_[key] = kernel_mod; }
   void ClearAllCache();

@@ -18,6 +18,8 @@ from mindspore._c_expression import set_cur_stream as set_cur_stream_
 from mindspore._c_expression import synchronize as synchronize_
 from mindspore._c_expression import current_stream as current_stream_
 from mindspore._c_expression import default_stream as default_stream_
+from mindspore._c_expression import communication_stream as communication_stream_
+
 from mindspore import _checkparam as Validator
 from .event import Event
 
@@ -291,6 +293,22 @@ def default_stream():
         >>> assert cur_stream == ms.hal.default_stream()
     """
     return Stream(stream=default_stream_())
+
+
+def communication_stream():
+    r"""
+    Return default stream on this device.
+
+    Returns:
+        stream (Stream), default stream.
+
+    TODO
+    Examples:
+        >>> import mindspore as ms
+        >>> cur_stream = ms.hal.current_stream()
+        >>> assert cur_stream == ms.hal.default_stream()
+    """
+    return Stream(stream=communication_stream_())
 
 
 class StreamCtx():

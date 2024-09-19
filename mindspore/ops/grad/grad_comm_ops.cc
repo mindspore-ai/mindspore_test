@@ -21,6 +21,17 @@
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::expander::bprop {
+std::string GetStringFromNode(const NodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  ValuePtr value_ptr = node->BuildValue();
+  MS_EXCEPTION_IF_NULL(value_ptr);
+  if (!value_ptr->isa<StringImm>()) {
+    MS_LOG(EXCEPTION) << "The value of node is not a string, node:" << node->ToString();
+  }
+
+  return GetValue<std::string>(value_ptr);
+}
+
 REG_BPROP_BUILDERS_BEGIN(GradCommOps)
 REG_BPROP_BUILDER("AllReduce").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -106,6 +117,117 @@ REG_BPROP_BUILDER("_MirrorOperator").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(
     dx = ib->Mul(dx, ib->Tensor(1.0 / dev_num, ib->GetDtype(dx)));
   }
   return {dx};
+});
+
+REG_BPROP_BUILDER("InnerCommAllReduce").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto op = ib->GetInput(kIndex1);
+  const auto &op_type = GetStringFromNode(op);
+  auto group = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
+
+  auto dy = dout;
+  if (op_type == "prod") {
+    dy = ib->Mul(dout, out);
+  }
+
+  auto group_value = group->BuildValue();
+  auto dx = ib->Emit(kAllReduceOpName, {dy},
+                     {{"op", MakeValue("sum")},
+                      {"group", group_value},
+                      {"index", MakeValue<int64_t>(0)},
+                      {"fusion", MakeValue<int64_t>(0)},
+                      {"no_eliminate", MakeValue(true)}});
+  dx->set_debug_info("grad" + dx->debug_info());
+  if (op_type == "prod") {
+    dx = ib->RealDiv(dx, x);
+  } else if (op_type != "sum") {
+    auto z = ib->Equal(x, out);
+    z = ib->Cast(z, ib->GetDtype(dx));
+    dx = ib->Mul(dx, z);
+  }
+
+  return {dx, ib->OutZeros(op), ib->OutZeros(group)};
+});
+
+REG_BPROP_BUILDER("InnerCommAllGather").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto rank_size = ib->GetInput(kIndex1);
+  auto group = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+
+  auto rank_size_value = rank_size->BuildValue();
+  auto group_value = group->BuildValue();
+  auto dx = ib->Emit(kReduceScatterOpName, {dout},
+                     {{"op", MakeValue("sum")},
+                      {"rank_size", rank_size_value},
+                      {"group", group_value},
+                      {"fusion", MakeValue<int64_t>(0)},
+                      {"no_eliminate", MakeValue(true)}});
+  auto ins_name = ib->GetInstanceName();
+  dx->set_debug_info("grad" + ins_name);
+
+  return {dx, ib->OutZeros(rank_size), ib->OutZeros(group)};
+});
+
+REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto rank_size = ib->GetInput(kIndex1);
+  auto op = ib->GetInput(kIndex2);
+  auto op_type = GetStringFromNode(op);
+  auto group = ib->GetInput(kIndex3);
+
+  if (op_type == "sum") {
+    MS_LOG(EXCEPTION) << "The reducescatter bprop only support ReduceOp.SUM until now.";
+  }
+
+  auto group_value = group->BuildValue();
+
+  auto dout = ib->GetInput(kIndex5);
+  auto dx = ib->Emit(kAllGatherOpName, {dout}, {{"group", group_value}});
+  auto ins_name = ib->GetInstanceName();
+  dx->set_debug_info("grad" + ins_name);
+  return {dx, ib->OutZeros(rank_size), ib->OutZeros(op), ib->OutZeros(group)};
+});
+
+REG_BPROP_BUILDER("InnerCommIrecv").SetUnusedInputs({i0, i3, i5, i6}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto tag = ib->GetInput(kIndex1);
+  auto rank = ib->GetInput(kIndex2);
+  auto shape = ib->GetInput(kIndex3);
+  auto group = ib->GetInput(kIndex4);
+  auto dtype_node = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(kIndex7);
+
+  auto out_tensor = ib->Tensor(0.0, kFloat16);
+  auto dtype = ib->GetDtype(input);
+
+  auto send_out =
+    ib->Emit(kSendOpName, {dout},
+             {{"sr_tag", tag->BuildValue()}, {"dest_rank", rank->BuildValue()}, {"group", group->BuildValue()}});
+  auto dx = ib->Depend(ib->Cast(out_tensor, dtype), send_out);
+
+  return {
+    dx, ib->OutZeros(tag), ib->OutZeros(rank), ib->OutZeros(shape), ib->OutZeros(group), ib->OutZeros(dtype_node)};
+});
+
+REG_BPROP_BUILDER("InnerCommIsend").SetUnusedInputs({i0, i4, i5}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto rank = ib->GetInput(kIndex1);
+  auto group = ib->GetInput(kIndex2);
+  auto tag = ib->GetInput(kIndex3);
+
+  auto shape = ib->GetShape(input);
+  auto dtype = ib->GetDtype(input);
+  auto virtual_input = ib->Tensor(0.0, dtype);
+
+  auto dx = ib->Emit(kReceiveOpName, {virtual_input},
+                     {{"sr_tag", tag->BuildValue()},
+                      {"src_rank", rank->BuildValue()},
+                      {"shape", MakeValue(shape)},
+                      {"dtype", dtype},
+                      {"group", group->BuildValue()}});
+
+  return {dx, ib->OutZeros(rank), ib->OutZeros(group), ib->OutZeros(tag)};
 });
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

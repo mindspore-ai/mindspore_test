@@ -111,6 +111,8 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   bool SyncAllEvents() override;
 
   std::string GetMemoryPoolType() const override { return "Other"; }
+
+  static void set_wait_callback(const std::function<void()> &wait_callback) { wait_callback_ = wait_callback; }
 #ifdef WITH_BACKEND
 
  protected:
@@ -127,6 +129,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   const bool IsEnableEagerFree() const override { return false; }
   const bool IsEnableVmm() const override { return enable_vmm_; }
   void SetEnableVmm(bool enable_vmm) { enable_vmm_ = enable_vmm; }
+  void WaitPipeline();
 
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 #ifdef WITH_BACKEND
@@ -198,6 +201,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
 
   // key : <user_stream_id, memory_stream_id>
   std::unordered_map<std::pair<uint32_t, uint32_t>, std::set<DynamicMemBufPtr>, pair_hash> stream_pair_addresses_;
+  static std::function<void()> wait_callback_;
 
   bool enable_vmm_{false};
   size_t eager_free_count_{0};

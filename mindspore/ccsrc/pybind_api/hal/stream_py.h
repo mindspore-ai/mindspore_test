@@ -75,6 +75,8 @@ void Synchronize();
 StreamPyPtr CurrentStream();
 
 StreamPyPtr DefaultStream();
+
+StreamPyPtr CommunicationStream();
 }  // namespace hal
 }  // namespace mindspore
 

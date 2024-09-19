@@ -24,6 +24,7 @@ namespace transform {
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateContext, aclError, aclrtContext *, int32_t)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEvent, aclError, aclrtEvent *)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEventWithFlag, aclError, aclrtEvent *, uint32_t)
+ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateEventExWithFlag, aclError, aclrtEvent *, uint32_t)
 ORIGIN_METHOD_WITH_SIMU_CREATE(aclrtCreateStreamWithConfig, aclError, aclrtStream *, uint32_t, uint32_t)
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyContext, aclError, aclrtContext)
 ORIGIN_METHOD_WITH_SIMU(aclrtDestroyEvent, aclError, aclrtEvent)

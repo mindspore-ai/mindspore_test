@@ -149,6 +149,42 @@ tensor::BaseTensorPtr ClampScalarCustomizeCall(const std::shared_ptr<OpRunner> &
   MS_LOG(DEBUG) << "Call ClampScalar end";
   return output;
 }
+
+void CommonCommFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+                    const std::function<void(void)> &pre_func, std::function<void()> launch_func) {
+  MS_EXCEPTION_IF_NULL(op);
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  MS_LOG(DEBUG) << op->primitive()->name() << " call start";
+
+  if (pre_func) {
+    pre_func();
+  } else {
+    OpRunner::InferOpOutput(op, input_tensor);
+    PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
+    PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+  }
+
+  if (launch_func == nullptr) {
+    launch_func = [op, input_tensor]() {
+      const auto &device_context = op->device_context();
+      const auto &outputs = op->outputs();
+      PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+      PyBoostUtils::MallocOpOutputs(device_context, outputs);
+
+      const auto &input_address_info =
+        PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), input_tensor);
+      const auto &output_address_info =
+        PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
+
+      PyBoostUtils::LaunchKernel(op->primitive(), device_context, input_address_info, output_address_info,
+                                 op->stream_id(), true);
+    };
+  }
+
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(launch_func));
+
+  MS_LOG(DEBUG) << op->primitive()->name() << " call end";
+}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

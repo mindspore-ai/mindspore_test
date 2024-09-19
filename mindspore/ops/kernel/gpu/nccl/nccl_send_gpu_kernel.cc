@@ -15,17 +15,22 @@
  */
 
 #include "kernel/gpu/nccl/nccl_send_gpu_kernel.h"
+#include <utility>
 
 namespace mindspore {
 namespace kernel {
-MS_REG_GPU_KERNEL_ONE(
-  Send, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
-  NcclSendGpuKernel, float);
-MS_REG_GPU_KERNEL_ONE(
-  Send, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
-  NcclSendGpuKernel, half);
-MS_REG_GPU_KERNEL_ONE(Send,
-                      KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
-                      NcclSendGpuKernel, int);
+const std::vector<std::pair<KernelAttr, NcclSendGpuKernel::KernelRunFunc>> &NcclSendGpuKernel::GetFuncList() const {
+  static const std::vector<std::pair<KernelAttr, NcclSendGpuKernel::KernelRunFunc>> func_list = {
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+     &NcclSendGpuKernel::LaunchKernel<float>},
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+     &NcclSendGpuKernel::LaunchKernel<half>},
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
+     &NcclSendGpuKernel::LaunchKernel<int>},
+  };
+  return func_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, Send, NcclSendGpuKernel);
 }  // namespace kernel
 }  // namespace mindspore

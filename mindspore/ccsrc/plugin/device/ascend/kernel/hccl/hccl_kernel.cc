@@ -37,7 +37,6 @@
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
 using MultiAscendCollectiveCommLib = mindspore::device::ascend::MultiAscendCollectiveCommLib;
 namespace {
-constexpr int64_t kComplex64ConvertFloat32Num = 2;
 static std::map<std::string, std::string> kMsOpNameToHcomHcclType = {
   {mindspore::kAllReduceOpName, mindspore::kHcomOpTypeAllReduce},
   {mindspore::kReduceOpName, mindspore::kHcomOpTypeReduce},
@@ -241,7 +240,7 @@ bool HcclKernel::CalcTypeShapeAndCount(const std::vector<KernelTensor *> &inputs
   if (!HcomUtil::GetHcomCount(
         primitive_, hccl_data_type_list_,
         HcomUtil::IsReceiveOp(kernel_name_) ? hccl_kernel_output_shape_list_ : hccl_kernel_input_shape_list_,
-        inputs.size(), &hccl_count_)) {
+        inputs.size(), std::nullopt, &hccl_count_)) {
     MS_LOG(ERROR) << "GetHcomCount fail!";
     return false;
   }

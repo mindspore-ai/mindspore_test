@@ -29,7 +29,9 @@ reduce_scatter_op = ops.ReduceScatter(ops.ReduceOp.SUM)
 def hook_fn(grad_out):
     """改变梯度"""
     print("hook_fn print grad_out:", grad_out, flush=True)  # 该梯度是传播到该tensor时，该tensor所对应的梯度
-    return reduce_scatter_op(grad_out)
+    output = reduce_scatter_op(grad_out)
+    output[1].wait()
+    return output[0]
 
 
 class Net(nn.Cell):

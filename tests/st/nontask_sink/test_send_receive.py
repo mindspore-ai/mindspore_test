@@ -38,7 +38,8 @@ class SendNet(nn.Cell):
 
 class RecvNet(nn.Cell):
     def construct(self, tensor):
-        out = irecv(tensor, rank - size // 2)
+        out, handle = irecv(tensor, rank - size // 2)
+        handle.wait()
         return out
 
 def test_hccl_send_recv_2p():

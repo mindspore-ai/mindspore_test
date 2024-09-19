@@ -31,9 +31,9 @@ AscendEvent::AscendEvent() {
 }
 
 AscendEvent::AscendEvent(uint32_t flag) {
-  auto ret = CALL_ASCEND_API(aclrtCreateEventWithFlag, &event_, flag);
+  auto ret = CALL_ASCEND_API(aclrtCreateEventExWithFlag, &event_, flag);
   if (ret != ACL_ERROR_NONE) {
-    MS_LOG(ERROR) << "aclrtCreateEventWithFlag failed, ret:" << ret;
+    MS_LOG(ERROR) << "aclrtCreateEventExWithFlag failed, ret:" << ret;
     event_ = nullptr;
   }
   MS_LOG(DEBUG) << "Create ascend event success, flag : " << flag << ".";

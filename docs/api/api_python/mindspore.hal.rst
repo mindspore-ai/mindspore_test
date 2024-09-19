@@ -42,6 +42,7 @@ Hal中封装了设备管理、流管理、事件管理与内存管理的接口�
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.hal.CommHandle
     mindspore.hal.Event
 
 内存管理

@@ -111,6 +111,17 @@ class BACKEND_EXPORT PassthroughDeviceTask : public AsyncTask {
  private:
   std::function<void(void)> run_func_;
 };
+
+class BACKEND_EXPORT PassthroughNoWaitDeviceTask : public AsyncTask {
+ public:
+  explicit PassthroughNoWaitDeviceTask(std::function<void(void)> run_func)
+      : AsyncTask(kDeviceOpTask), run_func_(std::move(run_func)) {}
+  ~PassthroughNoWaitDeviceTask() override = default;
+  void Run() override;
+
+ private:
+  std::function<void(void)> run_func_;
+};
 }  // namespace runtime
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_ASYNC_DEVICE_TASK_H_

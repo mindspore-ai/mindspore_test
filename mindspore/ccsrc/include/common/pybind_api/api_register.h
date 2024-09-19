@@ -46,6 +46,7 @@ void RegTFT(py::module *m);
 namespace hal {
 void RegStream(py::module *m);
 void RegEvent(py::module *m);
+void RegCommHandle(py::module *m);
 void RegMemory(py::module *m);
 void RegUtils(py::module *m);
 }  // namespace hal

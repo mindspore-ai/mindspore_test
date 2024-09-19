@@ -56,7 +56,10 @@ def test_hccl_alltoallv2_2p():
     net = AlltoAllVNet(send_numel_list, recv_numel_list)
     output = net(ms.Tensor(data, dtype=ms.float32))
     expect_output = np.array(data, dtype=np.float32)
-    assert np.allclose(output.asnumpy(), expect_output)
+    if isinstance(output, tuple):
+        assert np.allclose(output[0].asnumpy(), expect_output)
+    else:
+        assert np.allclose(output.asnumpy(), expect_output)
 
 def test_hccl_alltoall_func_2p():
     """
@@ -68,10 +71,13 @@ def test_hccl_alltoall_func_2p():
     input_tensor_list = [ms.Tensor([data[i]], dtype=ms.float32) for i in range(world_size)]
     output_tensor_list = [(1,)] * world_size
     net = AllToAllFunNet()
-    output = net(output_tensor_list, input_tensor_list)
+    output = net(output_tensor_list, input_tensor_list)[0]
     for i, out in enumerate(output):
         expect_output = np.array([data[i]], dtype=np.float32)
-        assert np.allclose(out.asnumpy(), expect_output)
+        if isinstance(out, tuple):
+            assert np.allclose(out[0].asnumpy(), expect_output)
+        else:
+            assert np.allclose(out.asnumpy(), expect_output)
 
 def test_hccl_alltoall_tensor_2p():
     """
@@ -85,4 +91,7 @@ def test_hccl_alltoall_tensor_2p():
     net = AllToAllTensorFunNet()
     output = net(output, input_x)
     expect_output = np.array(data, dtype=np.float32)
-    assert np.allclose(output.asnumpy(), expect_output)
+    if isinstance(output, tuple):
+        assert np.allclose(output[0].asnumpy(), expect_output)
+    else:
+        assert np.allclose(output.asnumpy(), expect_output)
