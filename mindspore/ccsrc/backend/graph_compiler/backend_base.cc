@@ -269,7 +269,7 @@ void MindRTBackendBase::ProcessNotSupportCnode(const FuncGraphPtr &func_graph,
 }
 
 namespace {
-constexpr auto kControlNodeJsonSuffix = ".json";
+constexpr auto kControlNodeJsonSuffix = "_backinfo.json";
 int64_t GetTupleGetItemOutIndex(const CNodePtr &tuple_get_item) {
   MS_EXCEPTION_IF_NULL(tuple_get_item);
   if (tuple_get_item->size() != kTupleGetItemInputSize) {
@@ -559,16 +559,7 @@ bool MindRTBackendBase::DumpBackendInfo() {
   auto json_path = cache_path + kControlNodeJsonSuffix;
   MS_LOG(DEBUG) << "Json path:" << json_path;
 
-  nlohmann::json existing_data_json;
-  std::ifstream json_stream(json_path);
-  if (!json_stream.is_open()) {
-    MS_LOG(ERROR) << "Load json file: " << json_path << " error, backend graph cache Missed.";
-    context.Clear();
-    return false;
-  }
-  json_stream >> existing_data_json;
-  json_stream.close();
-
+  nlohmann::json json_stream;
   nlohmann::json new_data_json;
   std::vector<nlohmann::json> kernel_graph_to_device_context_json;
 
@@ -638,9 +629,9 @@ bool MindRTBackendBase::DumpBackendInfo() {
   new_data_json[kDeviceName] = device_name_;
   new_data_json[kDeviceId] = device_id_;
   new_data_json[kMsExcutionMode] = ms_execution_mode_;
-  existing_data_json[kControlNodeCache] = new_data_json;
+  json_stream[kControlNodeCache] = new_data_json;
   context.Clear();
-  return Common::SaveStringToFile(json_path, existing_data_json.dump());
+  return Common::SaveStringToFile(json_path, json_stream.dump());
 }
 
 bool MindRTBackendBase::LoadBackendInfo() {
