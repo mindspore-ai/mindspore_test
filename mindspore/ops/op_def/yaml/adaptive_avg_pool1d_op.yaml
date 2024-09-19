@@ -1,0 +1,16 @@
+#operator adaptive_avg_pool1d
+adaptive_avg_pool1d:
+  args:
+    input:
+      dtype: tensor
+    output_size:
+      dtype: int
+  returns:
+    output:
+      dtype: tensor
+  class:
+      name: AdaptiveAvgPool1D
+  dispatch:
+    enable: True
+    Ascend: AdaptiveAvgPool1DAscend
+

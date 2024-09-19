@@ -241,6 +241,10 @@ from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
 # 324
 from mindspore.ops.auto_generate import elu_ext as elu
 
+from mindspore.ops.auto_generate import adaptive_avg_pool1d
+
+from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
+
 
 def binary_cross_entropy(input, target, weight=None, reduction='mean'):
     r"""
@@ -661,4 +665,7 @@ __all__ = [
     'mse_loss',
     # 259
 
+    'adaptive_avg_pool1d',
+
+    'adaptive_avg_pool2d',
 ]
