@@ -971,6 +971,9 @@ def chunk_ext(input, chunks, dim=0):
     Note:
         This function may return less than the specified number of chunks!
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         input (Tensor): A Tensor to be cut.
         chunks (int): Number of sub-tensors to cut.

@@ -35,13 +35,6 @@ int64_t GetChunksNum(const ValuePtr &chunks_value, const std::string &prim_name)
   return chunks;
 }
 
-int64_t GetInputTensorRank(const ShapeVector &input_shape, const std::string &prim_name) {
-  if (IsDynamicRank(input_shape)) {
-    MS_LOG(EXCEPTION) << "For " << prim_name << ", the input tensor is with dynamic rank, which is not supported now.";
-  }
-  return SizeToLong(input_shape.size());
-}
-
 int64_t GetChunksDim(const ValuePtr &dim_value, const ShapeVector &input_shape, const std::string &prim_name) {
   auto dim_opt = GetScalarValue<int64_t>(dim_value);
   if (!dim_opt.has_value()) {
@@ -62,9 +55,11 @@ BaseShapePtr ChunkFuncImpl::InferShape(const PrimitivePtr &primitive,
   const auto &input_shape = input_shape_ptr->GetShapeVector();
   const auto &chunks_value = input_args[kIndex1]->GetValue();
   const auto &dim_value = input_args[kIndex2]->GetValue();
+  if (IsDynamicRank(input_shape)) {
+    MS_LOG(EXCEPTION) << "For " << prim_name << ", the input tensor is with dynamic rank, which is not supported now.";
+  }
 
   auto chunks = GetChunksNum(chunks_value, prim_name);
-  auto rank = GetInputTensorRank(input_shape, prim_name);
   auto dim = GetChunksDim(dim_value, input_shape, prim_name);
   auto dim_size = input_shape[dim];
   if (dim_size == abstract::Shape::kShapeDimAny) {
@@ -81,29 +76,18 @@ BaseShapePtr ChunkFuncImpl::InferShape(const PrimitivePtr &primitive,
     }
     return std::make_shared<abstract::TupleShape>(std::move(output_list));
   }
+  if (IsShapeNone(input_shape)) {
+    output_list.push_back(input_shape_ptr->Clone());
+    return std::make_shared<abstract::TupleShape>(std::move(output_list));
+  }
   auto actual_chunks = std::max<int64_t>((dim_size + each_size - 1) / each_size, 1);
   auto last_split_size = each_size - (each_size * actual_chunks - dim_size);
-  for (int64_t i = 0; i < actual_chunks - 1; i++) {
-    std::vector<int64_t> each_shape{};
-    for (int64_t j = 0; j < rank; j++) {
-      if (j == dim) {
-        (void)each_shape.emplace_back(each_size);
-      } else {
-        (void)each_shape.emplace_back(input_shape[j]);
-      }
-    }
+  for (int64_t i = 0; i < actual_chunks; i++) {
+    std::vector<int64_t> each_shape(input_shape);
+    // handle last split size
+    each_shape[dim] = (i == actual_chunks - 1) ? last_split_size : each_size;
     (void)output_list.emplace_back(std::make_shared<abstract::TensorShape>(each_shape));
   }
-  // handle last split size
-  std::vector<int64_t> last_shape{};
-  for (int64_t j = 0; j < rank; j++) {
-    if (j == dim) {
-      (void)last_shape.emplace_back(last_split_size);
-    } else {
-      (void)last_shape.emplace_back(input_shape[j]);
-    }
-  }
-  (void)output_list.emplace_back(std::make_shared<abstract::TensorShape>(last_shape));
   return std::make_shared<abstract::TupleShape>(std::move(output_list));
 }
 
@@ -113,6 +97,9 @@ TypePtr ChunkFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
   const auto &input_shape = input_shape_ptr->GetShapeVector();
   const auto &chunks_value = input_args[kIndex1]->GetValue();
   const auto &dim_value = input_args[kIndex2]->GetValue();
+  if (IsDynamicRank(input_shape)) {
+    MS_LOG(EXCEPTION) << "For " << prim_name << ", the input tensor is with dynamic rank, which is not supported now.";
+  }
 
   auto chunks = GetChunksNum(chunks_value, prim_name);
   auto dim = GetChunksDim(dim_value, input_shape, prim_name);
@@ -129,6 +116,8 @@ TypePtr ChunkFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
     std::vector<TypePtr> output_type_list(chunks, infer_type->Clone());
     return std::make_shared<Tuple>(std::move(output_type_list));
   }
+  MS_CHECK_VALUE(each_size > 0,
+                 CheckAndConvertUtils::FormatCheckIntegerMsg("each chunk size", each_size, kGreaterThan, 0, primitive));
   auto actual_chunks = std::max<int64_t>((dim_size + each_size - 1) / each_size, 1);
   std::vector<TypePtr> output_type_list(actual_chunks, infer_type->Clone());
   return std::make_shared<Tuple>(std::move(output_type_list));

@@ -788,7 +788,7 @@ inline std::vector<mindspore::kernel::KernelTensorPtr>
 ConvertKernelTensor<std::vector<mindspore::kernel::KernelTensorPtr>>(mindspore::kernel::KernelTensor *tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   if (tensor->type_id() != kObjectTypeTuple && tensor->type_id() != kObjectTypeList) {
-    return {std::shared_ptr<mindspore::kernel::KernelTensor>(tensor)};
+    return {std::make_shared<mindspore::kernel::KernelTensor>(*tensor)};
   }
   auto shape = tensor->GetShapeVector();
   if (shape.empty()) {

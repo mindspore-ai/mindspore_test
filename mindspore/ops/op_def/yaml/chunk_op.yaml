@@ -13,6 +13,6 @@ chunk:
             dtype: tuple[tensor]
     function:
         disable: True
+    view: True
     dispatch:
         enable: True
-        Ascend: ChunkAscend
