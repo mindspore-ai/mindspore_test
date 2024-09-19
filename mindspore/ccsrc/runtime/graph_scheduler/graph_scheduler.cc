@@ -986,9 +986,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     std::condition_variable thread_blocker;
     const int64_t kTimeToWait = 3;
     (void)thread_blocker.wait_for(locker, std::chrono::seconds(kTimeToWait));
-    ActorDispatcher::set_enable_async_launch_kernel(false);
-    ActorDispatcher::set_enable_runtime_multi_pipeline(false);
-    ResetTraceMemoryStatus();
+    ResetPipelineAndTraceMemoryStatus();
 
     // Reset actor state and throw uce exception.
     ProcessUceError(actor_set);
@@ -998,9 +996,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     MS_LOG(EXCEPTION) << op_context.error_info_;
   }
 
-  ActorDispatcher::set_enable_async_launch_kernel(false);
-  ActorDispatcher::set_enable_runtime_multi_pipeline(false);
-  ResetTraceMemoryStatus();
+  ResetPipelineAndTraceMemoryStatus();
   MsException::Instance().CheckException();
   double end_time = GetTime();
   const size_t kSecondsToMilliseconds = 1000;

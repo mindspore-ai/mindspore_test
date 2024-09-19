@@ -991,7 +991,7 @@ void SuperKernelActor::BuildKernelActors() {
     }
 
     KernelActorPtr kernel_actor = std::make_shared<KernelActor>(
-      kernel->fullname_with_scope(), kernel, real_device_context, memory_manager_aid_, debug_aid_, recorder_aid_,
+      GenerateActorIdByKernel(kernel), kernel, real_device_context, memory_manager_aid_, debug_aid_, recorder_aid_,
       GraphExecutionStrategy::kPipeline, ref_input_indexes, ref_output_indexes);
     MS_EXCEPTION_IF_NULL(kernel_actor);
     kernel_actors_[i] = kernel_actor;
