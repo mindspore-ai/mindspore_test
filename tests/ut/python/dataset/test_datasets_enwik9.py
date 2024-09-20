@@ -19,6 +19,7 @@ from mindspore import log as logger
 from util import config_get_set_num_parallel_workers, config_get_set_seed
 
 DATA_FILE = "../data/dataset/testEnWik9Dataset"
+TRUNCATE_DATA_FILE = "../data/dataset/testEnWik9DatasetTruncate"
 
 
 def test_enwik9_total_rows_dataset_num_samples_none():
@@ -274,12 +275,26 @@ def test_enwik9_dataset_exceptions():
 
     def exception_func(item):
         raise Exception("Error occur!")
+
     with pytest.raises(RuntimeError) as error_info:
         data = ds.EnWik9Dataset(DATA_FILE)
         data = data.map(operations=exception_func, input_columns=["text"], num_parallel_workers=1)
         for _ in data.__iter__():
             pass
     assert "map operation: [PyFunc] failed. The corresponding data file is" in str(error_info.value)
+
+
+def test_enwik9_truncate_file():
+    """
+    Feature: EnWik9Dataset
+    Description: Test read truncate EnWik9 data file
+    Expectation: Raise error as expected
+    """
+    data = ds.EnWik9Dataset(TRUNCATE_DATA_FILE)
+    with pytest.raises(RuntimeError) as e:
+        for _ in data.create_dict_iterator(num_epochs=1, output_numpy=True):
+            pass
+    assert "Failed to cast to Unicode string" in str(e.value)
 
 
 if __name__ == "__main__":
