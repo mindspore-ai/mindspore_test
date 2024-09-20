@@ -5,7 +5,7 @@ mindspore.mint.index_select
 
     返回一个新的Tensor，该Tensor沿维度 `dim` 按 `index` 中给定的索引对 `input` 进行选择。
 
-    返回的Tensor和输入Tensor( `input` )的维度数量相同，其第 `dim` 维度的大小和 `index` 的长度相同；其它维度和 `input` 相同。
+    返回的Tensor和输入Tensor( `input` )的维度数量相同，其第 `dim` 维度的大小和 `index` 的长度相同；其他维度和 `input` 相同。
 
     .. note::
         index的值必须在 `[0, input.shape[dim])` 范围内，超出该范围结果未定义。

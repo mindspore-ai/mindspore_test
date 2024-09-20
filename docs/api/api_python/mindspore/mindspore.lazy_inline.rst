@@ -7,7 +7,7 @@ mindspore.lazy_inline
     注册此装饰器到cell的内置函数 `__init__` 时，此装饰器会按照 `attrs` 的值去添加 `__init__` 函数对应的入参作为cell的属性。
 
     .. warning::
-        该特性仅支持Ascend，其它硬件不支持。
+        该特性仅支持Ascend，其他硬件不支持。
         cell的construct函数参数必须是位置参数或者关键字参数，且不能有默认值。
         lazy inline 装饰的cell不包含控制流。
 
