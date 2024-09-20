@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace parallel {
-void OverlapGradRingAttention(const FuncGraphPtr &graph);
+bool OverlapGradRingAttention(const FuncGraphPtr &graph);
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_PASS_OVERLAP_GRAD_RING_ATTENTION_H_
