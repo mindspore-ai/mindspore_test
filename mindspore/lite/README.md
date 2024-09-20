@@ -51,7 +51,7 @@ For more details please check out our [MindSpore Lite Architecture Guide](https:
 
 4. Inference
 
-   Load the model and perform inference. [Inference](https://www.mindspore.cn/lite/docs/en/master/use/runtime.html) is the process of running input data through the model to get output.
+   Load the model and perform inference. [Inference](https://www.mindspore.cn/lite/docs/en/master/infer/runtime_cpp.html) is the process of running input data through the model to get output.
 
    MindSpore provides pre-trained model that can be deployed on mobile device [example](https://www.mindspore.cn/lite/examples/en).
 

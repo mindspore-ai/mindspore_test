@@ -59,7 +59,7 @@ MindSpore Lite是MindSpore推出的端云协同的、轻量化、高性能AI推�
 
 4. 模型推理
 
-   主要完成模型推理工作，即加载模型，完成模型相关的所有计算。[推理](https://www.mindspore.cn/lite/docs/zh-CN/master/use/runtime.html)是通过模型运行输入数据，获取预测的过程。
+   主要完成模型推理工作，即加载模型，完成模型相关的所有计算。[推理](https://www.mindspore.cn/lite/docs/zh-CN/master/infer/runtime_cpp.html)是通过模型运行输入数据，获取预测的过程。
 
    MindSpore提供了预训练模型部署在智能终端的[样例](https://www.mindspore.cn/lite/examples)。
 
