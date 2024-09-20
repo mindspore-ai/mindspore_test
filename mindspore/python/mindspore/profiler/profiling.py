@@ -268,8 +268,8 @@ class Profiler:
             directory are retained to save disk space.
             Default value: ``True`` .
         with_stack (bool, optional): (Ascend) Whether to collect frame host call stack data on the Python side. This
-            data is presented in the form of a flame graph in the timeline. When using this parameter, the parameter
-            op_time must be set to True. Default value: ``False`` .
+            data is presented in the form of a flame graph in the timeline. When using this parameter, the op_time and
+            profile_framework parameters must be enabled. Default value: ``False`` .
         analyse_only (bool, optional): (Ascend/GPU) Whether to parse only performance data and not collect performance
             data. This parameter is experimental parameter and does not need to be set by the user.
             Default value: ``False`` .
