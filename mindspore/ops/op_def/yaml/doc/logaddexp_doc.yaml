@@ -8,6 +8,9 @@ logaddexp:
 
             out_i = \log(exp(input_i) + \exp(other_i))
 
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
         Args:
             input (Tensor): Input Tensor. The dtype of `input` must be float.
             other (Tensor): Input Tensor. The dtype of `other` must be float.
