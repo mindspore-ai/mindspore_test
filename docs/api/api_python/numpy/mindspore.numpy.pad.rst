@@ -9,7 +9,7 @@ mindspore.numpy.pad
         目前，不支持median模式。reflect和symmetric模式只支持GPU端。
 
     参数：
-        - **arr** (Union[Tensor, list, tuple]) - 要填充的矩阵。
+        - **arr** (Union[list, tuple, Tensor]) - 要填充的矩阵。
         - **pad_width** (Union[int, tuple, list]) - 每个轴的边缘需要填充的值的数目。 ``((before_1, after_1), ... (before_N, after_N))`` 为每个轴创建唯一的填充宽度。 ``((before, after),)`` 为每个轴产生前后相同的 ``pad`` 。 ``(pad,)`` 或int是将所有轴设置为 ``before = after = pad width`` 的快捷设置。
         - **mode** (string, 可选) - 填充的方式。
         

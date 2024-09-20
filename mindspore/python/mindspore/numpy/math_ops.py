@@ -5233,7 +5233,7 @@ def polyint(p, m=1, k=None):
         p (Union[int, float, bool, list, tuple, Tensor]): Polynomial to integrate. A
             sequence is interpreted as polynomial coefficients.
         m (int, optional): Defaults to 1, Order of the antiderivative.
-        k (Union[int, list[int]], optinoal): Integration constants. They are given
+        k (Union[int, list[int]], optional): Integration constants. They are given
             in the order of integration: those corresponding to highest-order terms
             come first. If None (default), all constants are assumed to be zero. If
             ``m = 1``, a single scalar can be given instead of a list.

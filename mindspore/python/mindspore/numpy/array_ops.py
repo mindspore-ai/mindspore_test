@@ -2358,7 +2358,7 @@ def piecewise(x, condlist, funclist, *args, **kw):
             correspond to that of `funclist`. If one extra function is given, i.e. if
             ``len(funclist) == len(condlist) + 1``, then that extra function is the default
             value, used wherever all conditions are false.
-        funclist (Union[list[callables], list[scalars]): Each function is evaluated over
+        funclist (Union[list[callables], list[scalars]]): Each function is evaluated over
             `x` wherever its corresponding condition is True. It should take a 1d array as input
             and give an 1d array or a scalar value as output. If, instead of a callable, a scalar
             is provided then a constant function ``(lambda x: scalar)`` is assumed.
