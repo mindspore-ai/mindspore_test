@@ -48,10 +48,16 @@ bool ActorDispatcher::enable_trace_dynamic_memory_ = false;
 bool ActorDispatcher::enable_use_trace_memory_ = false;
 
 bool IsRunningFailed(const OpContext<DeviceTensor> *context) {
-  if (UCEException::GetInstance().get_force_stop_flag()) {
-    const_cast<OpContext<DeviceTensor> *>(context)->error_info_ =
-      std::string("ForceStopError error occurs when execute.");
+  if (UCEException::GetInstance().is_enable_uce()) {
+    if (UCEException::GetInstance().get_force_stop_flag()) {
+      const_cast<OpContext<DeviceTensor> *>(context)->error_info_ =
+        std::string("ForceStopError error occurs when execute.");
+    }
+    if (UCEException::GetInstance().get_uce_flag()) {
+      const_cast<OpContext<DeviceTensor> *>(context)->error_info_ = std::string("UCEError error occurs when execute.");
+    }
   }
+
   return (context->error_info_ != "");
 }
 

@@ -134,6 +134,16 @@ class MS_CORE_API UCEException {
   void set_uce_flag(bool flag) { uce_flag_ = flag; }
   bool get_uce_flag() const { return uce_flag_; }
 
+  bool is_enable_uce() { return uce_env_; }
+  void check_uce_env() {
+    auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
+    constexpr std::string_view optUCE = "UCE:1";
+    if (!tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos)) {
+      uce_env_ = true;
+    }
+    uce_env_ = false;
+  }
+
  private:
   UCEException() = default;
   ~UCEException() = default;
@@ -141,6 +151,7 @@ class MS_CORE_API UCEException {
   bool has_throw_error_{false};
   bool force_stop_flag_{false};
   bool uce_flag_{false};
+  bool uce_env_{false};
 };
 }  // namespace mindspore
 
