@@ -3031,7 +3031,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         skip_merge_split = rank_list.get(param.name)[1]
         shard_stride = train_strategy.get(param.name)[4]
         if train_strategy.get(param.name)[5]:
-            shard_size = ckpt_file_len / shard_stride / train_strategy.get(param.name)[5]
+            shard_size = int(ckpt_file_len / shard_stride / train_strategy.get(param.name)[5])
         else:
             shard_size = 0
         for rank in param_rank:
