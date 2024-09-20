@@ -26,6 +26,7 @@
 #include "abstract/abstract_value.h"
 #include "utils/ms_context.h"
 #include "abstract/ops/primitive_infer_map.h"
+#include "ops/op_def.h"
 
 namespace mindspore {
 namespace {
@@ -154,10 +155,34 @@ void MindIREngine::Init(const AbstractBasePtrList &args) {
   MS_LOG(DEBUG) << "Finish init. Size of nodes:" << manager->all_nodes().size();
 }
 
+#if !defined(BUILD_LITE)
+void CheckInferInput(const PrimitivePtr &prim, const AbstractBasePtrList &args_abs_list) {
+  const auto &name = prim->name();
+  for (size_t i = 0; i < args_abs_list.size(); ++i) {
+    if (!args_abs_list[i]) {
+      MS_LOG(EXCEPTION) << "Got null AbstractBasePtr for input [" << i << "] for primitive " << name;
+    }
+  }
+  const auto op_def = ops::GetOpDef(name);
+  if (op_def) {
+    const auto expected_num = op_def->args_.size();
+    if (expected_num != args_abs_list.size()) {
+      MS_LOG(EXCEPTION) << "For primitive " << name << ", expected " << expected_num << "inputs, but got "
+                        << args_abs_list.size();
+    }
+  }
+}
+#endif
+
 // Infer primitive using C++ implement.
 AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
                                                   const AbstractBasePtrList &args_abs_list) const {
   MS_EXCEPTION_IF_NULL(prim);
+#if !defined(BUILD_LITE)
+  // For lite, there are MindIR with old primitives that attributes are not converted to inputs.
+  // This would cause input number check fail.
+  CheckInferInput(prim, args_abs_list);
+#endif
   try {
     MS_LOG_TRY_CATCH_SCOPE;
     // For Lite, the op is with old format, it will fail in new infer function, so skip it.
