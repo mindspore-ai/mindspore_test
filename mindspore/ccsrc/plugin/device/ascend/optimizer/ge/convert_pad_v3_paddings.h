@@ -34,7 +34,7 @@ class ConvertBasePaddings : public PatternProcessPass {
   const CNodePtr CreateReshapeNode(const FuncGraphPtr &, const AnfNodePtr &, const ShapeVector &) const;
   const CNodePtr CreateStridedSliceNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node,
                                         int64_t index) const;
-  const CNodePtr CreateConcatNode(const FuncGraphPtr &, const std::vector<AnfNodePtr> &, const std::string &) const;
+  const CNodePtr CreateConcatNode(const FuncGraphPtr &, const std::vector<AnfNodePtr> &, const AnfNodePtr &) const;
   const CNodePtr ProcessSliceNConcat(const FuncGraphPtr &, const AnfNodePtr &, const AnfNodePtr &, const int64_t &,
                                      const int64_t &) const;
 

@@ -144,7 +144,7 @@ CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBNSD(
     MS_LOG(ERROR) << "New prompt_flash_attention_cnode should not be null, but it is null.";
     return nullptr;
   }
-  prompt_flash_attention_cnode->set_fullname_with_scope(node->fullname_with_scope() + "_prompt_flash_attention_bnsd");
+  prompt_flash_attention_cnode->set_scope(node->scope());
   if (node->abstract() != nullptr) {
     prompt_flash_attention_cnode->set_abstract(node->abstract()->Clone());
   }

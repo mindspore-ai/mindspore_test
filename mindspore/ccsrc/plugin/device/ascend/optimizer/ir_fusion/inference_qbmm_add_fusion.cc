@@ -39,7 +39,7 @@ CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const 
                                     trans_a_node_, trans_b_node_,   out_dtype_node_};
   auto new_qbmm_node = func_graph->NewCNode(qbmm_prim, inputs);
   MS_CHECK_TRUE_RET(new_qbmm_node != nullptr, nullptr);
-  new_qbmm_node->set_fullname_with_scope(node->fullname_with_scope() + "-QbmmAddFusion");
+  new_qbmm_node->set_scope(node->scope());
   if (node->abstract() != nullptr) {
     new_qbmm_node->set_abstract(node->abstract()->Clone());
   }

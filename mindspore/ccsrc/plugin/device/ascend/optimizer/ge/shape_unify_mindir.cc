@@ -170,7 +170,7 @@ CNodePtr ShapeUnifyMindIR::CreateStridedSlice(const FuncGraphPtr &func_graph, co
                            begin_mask, end_mask,   ellipsis_mask, new_axis_mask, shrink_axis_mask};
   CNodePtr strided_slice = func_graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(strided_slice);
-  strided_slice->set_fullname_with_scope(tuple_get_node->fullname_with_scope() + "_strided_slice");
+  strided_slice->set_scope(tuple_get_node->scope());
   auto primitive = GetCNodePrimitive(strided_slice);
   MS_EXCEPTION_IF_NULL(primitive);
 

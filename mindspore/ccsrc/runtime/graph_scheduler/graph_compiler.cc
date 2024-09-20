@@ -476,24 +476,20 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
     }
 #endif
     const auto &all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
-    constexpr size_t name_scope_id = 1;
-    constexpr size_t name_suffix_id = 3;
     for (const auto &node : all_nodes) {
       if (node != nullptr && node->isa<CNode>()) {
         const auto &cnode = node->cast<CNodePtr>();
         MS_EXCEPTION_IF_NULL(cnode);
         const auto &fullname = cnode->fullname_with_scope();
-        const std::regex opname_regex("(.*)\\-op(\\d*)(.*)");  // scope&prim + -op + opid + suffix
-        std::smatch opname_match;
-        if (std::regex_match(fullname, opname_match, opname_regex)) {
-          std::string id_prefix = opname_match[name_scope_id].str() + "-op";
-          if (node_ids.find(id_prefix) == node_ids.end()) {
-            node_ids[id_prefix] = 0;
+        auto op_index = fullname.rfind("-op");
+        if (op_index != string::npos) {
+          auto scope_prefix = fullname.substr(0, op_index);
+          if (node_ids.find(scope_prefix) == node_ids.end()) {
+            node_ids[scope_prefix] = 0;
           } else {
-            node_ids[id_prefix]++;
+            node_ids[scope_prefix]++;
           }
-          cnode->set_fullname_with_scope(id_prefix + std::to_string(node_ids[id_prefix]) +
-                                         opname_match[name_suffix_id].str());
+          cnode->set_fullname_with_scope(scope_prefix + "-op" + std::to_string(node_ids[scope_prefix]));
         }
       }
     }
