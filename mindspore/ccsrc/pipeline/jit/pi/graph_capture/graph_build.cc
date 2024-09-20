@@ -4256,7 +4256,6 @@ void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTrac
   } else {
     MS_LOG(INFO) << "Add node succ";
     auto node = AObject::Convert(res);
-    MS_LOG(INFO) << py::str(node->GetPyObject());
     MS_LOG(INFO) << node->ToString();
     call_node->SetVobj(node);
     call_node->set_abstract_wrapper(res);

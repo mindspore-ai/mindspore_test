@@ -45,6 +45,32 @@ void ConstantInfo::set_value(const py::object &op) {
   }
 }
 
+namespace {
+bool IsDynamicShapeTensor(const py::object &obj) {
+  if (obj.ptr() == nullptr || !py::isinstance<mindspore::tensor::Tensor>(obj)) {
+    return false;
+  }
+  auto tensor = py::cast<mindspore::tensor::TensorPtr>(obj);
+  const ShapeVector &shape = tensor->shape();
+  return std::any_of(shape.begin(), shape.end(), [](ShapeValueDType dim) { return dim < 0; });
+}
+
+std::string PyObjToString(const py::object &obj) {
+  if (obj.ptr() == nullptr) {
+    return "NULL";
+  } else if (IsDynamicShapeTensor(obj)) {
+    // Dynamic shape tensor to str, will raise a ValueError: negative dimensions are not allowed.
+    return "<unknown>";
+  }
+  try {
+    return std::string(py::str(obj));
+  } catch (py::error_already_set &e) {
+    MS_LOG(INFO) << "Failed to print python obj " << obj.ptr() << ". " << e.what();
+    return "<ERROR DATA>";
+  }
+}
+}  // namespace
+
 std::string ConstantInfo::ToString() const {
   auto Limit = [](const std::string &s) {
     constexpr size_t limit = 120;
@@ -55,13 +81,13 @@ std::string ConstantInfo::ToString() const {
     s << "type=" << (type()->tp_name ? type()->tp_name : "<unnamed>") << ", ";
   }
   if (value().ptr() != nullptr) {
-    s << "value=" << Limit(py::str(value().ptr())) << ", ";
+    s << "value=" << Limit(PyObjToString(value_)) << ", ";
   }
   if (len() != -1) {
     s << "len=" << len() << ", ";
   }
   for (const auto &i : attrs_) {
-    s << i.first << "=" << Limit(py::str(i.second.ptr())) << ", ";
+    s << i.first << "=" << Limit(PyObjToString(i.second)) << ", ";
   }
   return s.str();
 }
