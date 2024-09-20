@@ -41,13 +41,17 @@ Status MappableLeafOp::ImageDecrypt(const std::string &path, std::shared_ptr<Ten
       RETURN_STATUS_ERROR(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized.");
     }
     try {
-      py::bytes ret_py_obj = decrypt(path);
+      py::object ret_py_obj = decrypt(path);
+      if (!py::isinstance<py::bytes>(ret_py_obj)) {
+        RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException,
+                            "The return value of the decrypt function is not of type bytes.");
+      }
       int64_t num_bytes = static_cast<int64_t>(len(ret_py_obj));
       CHECK_FAIL_RETURN_UNEXPECTED(num_bytes < kDeMaxDim,
                                    "The length of decrypted bytes returned by the decryption function exceeds the "
                                    "maximum value of int64, check path: " +
                                      path);
-      std::string ret_str = ret_py_obj;
+      std::string ret_str = py::cast<py::bytes>(ret_py_obj);
       RETURN_IF_NOT_OK(Tensor::CreateFromMemory(TensorShape{num_bytes}, DataType(DataType::DE_UINT8),
                                                 reinterpret_cast<const uchar *>(ret_str.c_str()), num_bytes, tensor));
     } catch (const py::error_already_set &e) {
