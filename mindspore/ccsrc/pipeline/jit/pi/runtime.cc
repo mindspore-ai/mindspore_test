@@ -809,9 +809,24 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
                                        "PIJitCapture");
     c->set_stat(JitCompileResults::GRAPH_BUILDING);
     auto aobject_resource = AObject::MakeResource();
-    GraphCapture(c);
+    bool enable_dynamicshape = c->conf()->GetBoolConfig(GraphJitConfig::kEnableDynamicShape);
+    std::vector<PyObject *> backup;
     if (c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
       GuardForFrame(frame, c->code(), *c->conf());
+      OptStrategy::MakeGCStrategy(c->codehub(), c->conf()->getIntConfig(GraphJitConfig::kLimitGraphSize),
+                                  c->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
+                                  c->code());
+      if (enable_dynamicshape) {
+        backup = c->code()->GetGuard()->ApplyDynamicShape(frame.frame());
+        PyFrame_FastToLocals(frame.frame());
+      }
+    }
+    GraphCapture(c);
+    if (c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
+      if (enable_dynamicshape) {
+        c->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
+        PyFrame_FastToLocals(frame.frame());
+      }
       AddGuardForGlobals(frame, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
     }
     aobject_resource.Release();
