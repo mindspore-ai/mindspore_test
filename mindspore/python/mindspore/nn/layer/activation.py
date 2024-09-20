@@ -1265,9 +1265,6 @@ class PReLUExt(Cell):
         Channel dim is the 2nd dim of input. When input has dims < 2, then there is
         no channel dim and the number of channels = 1.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         num_parameters (int): number of `w` to learn. Although it takes an int as input,
             there is only two legitimate values: 1, or the number of channels at Tensor `input`. Default: ``1`` .

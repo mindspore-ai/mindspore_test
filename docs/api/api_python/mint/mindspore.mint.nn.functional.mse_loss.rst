@@ -7,9 +7,6 @@ mindspore.mint.nn.functional.mse_loss
 
     更多参考详见 :class:`mindspore.mint.nn.MSELoss`。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 任意维度的Tensor。数据类型和 `target` 需要一致。
         - **target** (Tensor) - 输入标签，任意维度的Tensor。数据类型和 `input` 需要一致。支持在 `input` 和 `target` shape不相同的情况下，通过广播保持一致。
@@ -20,7 +17,7 @@ mindspore.mint.nn.functional.mse_loss
           - ``'sum'``：计算输出元素的总和。
 
     返回：
-        - Tensor，如果 `reduction` 为 ``'mean'`` 或 ``'sum'`` 时，shape为 `Tensor Scalar` 。
+        - Tensor。如果 `reduction` 为 ``'mean'`` 或 ``'sum'`` 时，shape为 `Tensor Scalar` 。
         - 如果 `reduction` 为 ``'none'`` ，输出的shape则是 `input` 和 `target` 广播之后的shape。
 
     异常：

@@ -466,9 +466,6 @@ class MSELoss(Cell):
             \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
         \end{cases}
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
@@ -479,13 +476,13 @@ class MSELoss(Cell):
 
     Inputs:
         - **logits** (Tensor) - The predicted value of the input. Tensor of any dimension.
-        The data type needs to be consistent with the `labels`. It should also be broadcastable with the `labels`.
+          The data type needs to be consistent with the `labels`. It should also be broadcastable with the `labels`.
         - **labels** (Tensor) - The input label. Tensor of any dimension.
-        The data type needs to be consistent with the `logits`. It should also be broadcastable with the `logits`.
+          The data type needs to be consistent with the `logits`. It should also be broadcastable with the `logits`.
 
     Outputs:
-        Tensor, loss of type float. If `reduction` is ``'mean'`` or ``'sum'``, the shape of output is tensor scalar.
-        If reduction is ``'none'``, the shape of output is the broadcasted shape of **logits** and **labels** .
+        - Tensor. If `reduction` is ``'mean'`` or ``'sum'``, the shape of output is `Tensor Scalar`.
+        - If reduction is ``'none'``, the shape of output is the broadcasted shape of **logits** and **labels** .
 
     Raises:
         ValueError: If `reduction` is not one of ``'mean'``, ``'sum'`` or ``'none'``.
