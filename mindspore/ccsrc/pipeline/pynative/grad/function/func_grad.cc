@@ -134,7 +134,7 @@ bool IsNeedComputeGrad(const ValuePtr &input) {
   return false;
 }
 
-void SetBaseTensorGradMetaData(const ValuePtr &value, const VariablePtr &variable,size_t index) {
+void SetBaseTensorGradMetaData(const ValuePtr &value, const VariablePtr &variable, size_t index) {
   auto tensor = value->cast<tensor::BaseTensorPtr>();
   auto auto_grad_meta_data = tensor->auto_grad_meta_data();
   if (auto_grad_meta_data == nullptr) {
@@ -154,8 +154,8 @@ void SetFlattenTensorGradMetaData(const ValuePtrList &flatten_outs, const Variab
   }
 }
 
-void SetFlattenTensorGradMetaDataCustom(
-  const ValuePtrList &flatten_inputs, const ValuePtrList &flatten_outs, const VariablePtr &variable) {
+void SetFlattenTensorGradMetaDataCustom(const ValuePtrList &flatten_inputs, const ValuePtrList &flatten_outs,
+                                        const VariablePtr &variable) {
   for (size_t i = 0; i < flatten_outs.size(); ++i) {
     if (flatten_outs[i]->isa<tensor::BaseTensor>() && IsNeedComputeGrad(flatten_inputs[i])) {
       SetBaseTensorGradMetaData(flatten_outs[i], variable, i);
