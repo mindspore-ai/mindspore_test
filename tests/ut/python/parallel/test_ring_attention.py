@@ -487,6 +487,49 @@ def test_flash_sp_semi_auto_parallel_bf16(input_layout):
     context.reset_auto_parallel_context()
 
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
+def test_flash_sp_semi_auto_parallel_not_full(input_layout):
+    """
+    Features: test Ring Attention
+    Description: semi_auto_parallel with strategy
+    Expectation: compile success
+    """
+    set_auto_parallel_context(device_num=8, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_context(save_graphs=True, save_graphs_path="./test_flash_sp_semi_auto_parallel_not_full")
+    dp = 1
+    mp = 1
+    sp = 4
+    B, N, S, D = 8, 16, 1024, 128
+    query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
+                                                                     input_layout)
+    net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_flash_sp=True)
+    if os.path.exists("./test_flash_sp_semi_auto_parallel_not_full/rank_0"):
+        shutil.rmtree("./test_flash_sp_semi_auto_parallel_not_full/rank_0")
+    compile_net(net, query, key, value, real_shift, attn_mask)
+    file = "./test_flash_sp_semi_auto_parallel_not_full/rank_0/*validate*.ir"
+    para = "PrimFunc_FlashAttentionScore"
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "5"
+
+    para = "Send("
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "5"
+
+    para = "Receive("
+    output = subprocess.check_output(
+        ["grep -r '%s' %s | wc -l" % (para, file)],
+        shell=True)
+    out = str(output, 'utf-8').strip()
+    assert out == "2"
+    context.reset_auto_parallel_context()
+
+@pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
 def test_flash_sp_semi_auto_parallel_multi_fa(input_layout):
     """
     Features: test Ring Attention
