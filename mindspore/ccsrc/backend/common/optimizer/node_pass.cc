@@ -72,7 +72,7 @@ void UpdateCallerAbstract(const AnfNodePtr &call_node, const FuncGraphPtr &call_
 }
 
 void ModifyOutputAndCallerToMap(const CNodePtr &cnode, const FuncGraphPtr &fg,
-                                std::map<AnfNodePtr, std::set<AnfNodePtr>> *out_caller_map, bool is_add) {
+                                mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>> *out_caller_map, bool is_add) {
   MS_EXCEPTION_IF_NULL(cnode);
   MS_EXCEPTION_IF_NULL(out_caller_map);
   auto inputs = cnode->inputs();
@@ -118,8 +118,8 @@ void ModifyOutputAndCallerToMap(const CNodePtr &cnode, const FuncGraphPtr &fg,
 }
 
 void UpdateSubGraphCaller(const AnfNodePtr &origin_output, const FuncGraphPtr &fg,
-                          std::map<AnfNodePtr, std::set<AnfNodePtr>> *out_caller_map,
-                          const std::map<AnfNodePtr, FuncGraphWeakPtr> &node_to_fg) {
+                          mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>> *out_caller_map,
+                          const mindspore::HashMap<AnfNodePtr, FuncGraphWeakPtr> &node_to_fg) {
   MS_EXCEPTION_IF_NULL(fg);
   MS_EXCEPTION_IF_NULL(fg->output());
   auto find_iter = (*out_caller_map).find(origin_output);
@@ -138,7 +138,7 @@ void UpdateSubGraphCaller(const AnfNodePtr &origin_output, const FuncGraphPtr &f
   }
 }
 
-void SkipSameOp(const AnfNodePtr &old_node, const AnfNodePtr &new_node, std::set<AnfNodePtr> *seen_node) {
+void SkipSameOp(const AnfNodePtr &old_node, const AnfNodePtr &new_node, mindspore::HashSet<AnfNodePtr> *seen_node) {
   MS_EXCEPTION_IF_NULL(seen_node);
   MS_EXCEPTION_IF_NULL(old_node);
   MS_EXCEPTION_IF_NULL(new_node);
@@ -177,7 +177,7 @@ void GenIndex(const FuncGraphPtr &func_graph, const FuncGraphIndexPtr &func_grap
 
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  std::set<AnfNodePtr> seen_node;
+  mindspore::HashSet<AnfNodePtr> seen_node;
   std::deque<std::pair<AnfNodePtr, FuncGraphPtr>> todo{{func_graph->output(), func_graph}};
 
   while (!todo.empty()) {
@@ -305,9 +305,9 @@ bool NodePass::ProcessPass(const FuncGraphPtr &func_graph, const FuncGraphManage
   bool changes = false;
 
   // maybe call subgraph many times
-  std::map<AnfNodePtr, std::set<AnfNodePtr>> subgraph_out_caller_map = {};
-  std::map<AnfNodePtr, FuncGraphWeakPtr> node_to_fg = {};
-  std::set<AnfNodePtr> seen_node;
+  mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>> subgraph_out_caller_map = {};
+  mindspore::HashMap<AnfNodePtr, FuncGraphWeakPtr> node_to_fg = {};
+  mindspore::HashSet<AnfNodePtr> seen_node;
   std::deque<std::pair<AnfNodePtr, FuncGraphPtr>> todo{{func_graph->get_return(), func_graph}};
   while (!todo.empty()) {
     AnfNodePtr node = todo.front().first;

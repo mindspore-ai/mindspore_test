@@ -89,10 +89,10 @@ class FuncGraphPassIndex {
   FuncGraphPassIndex() : has_gen_index_(false) {}
   void set_has_gen_index(bool is_gen_index) { has_gen_index_ = is_gen_index; }
   bool has_gen_index() const { return has_gen_index_; }
-  std::map<AnfNodePtr, FuncGraphWeakPtr> node_to_fg_;
-  std::map<std::string, std::set<AnfNodePtr>> name_to_cnode_;
-  std::map<AnfNodePtr, std::set<AnfNodePtr>> subgraph_out_caller_map_;
-  std::map<AnfNodePtr, size_t> node_degree_;
+  mindspore::HashMap<AnfNodePtr, FuncGraphWeakPtr> node_to_fg_;
+  mindspore::HashMap<std::string, std::set<AnfNodePtr>> name_to_cnode_;
+  mindspore::HashMap<AnfNodePtr, std::set<AnfNodePtr>> subgraph_out_caller_map_;
+  mindspore::HashMap<AnfNodePtr, size_t> node_degree_;
 
  private:
   bool has_gen_index_;
