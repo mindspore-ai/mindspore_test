@@ -764,6 +764,7 @@ constexpr auto kRankID = "RANK_ID";
 
 // pyexecute.
 constexpr auto kSyncUserDataHandler = "sync_user_data_handler";
+constexpr auto kGetValueByUserDataHandler = "get_value_by_user_data_handler";
 
 constexpr auto kRealElementsSize = "real_elements_size";
 

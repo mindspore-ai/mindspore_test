@@ -226,6 +226,33 @@ size_t GetSizeForAbstract(const abstract::AbstractBasePtr &abstract) {
   }
   return sub_abstracts.size() * GetSizeForAbstract(sub_abstracts[0]);
 }
+
+ValuePtr ConvertPyObjectToValue(const py::object &obj) {
+  if (py::isinstance<tensor::Tensor>(obj)) {
+    return obj.cast<tensor::TensorPtr>();
+  } else if (py::isinstance<py::list>(obj) || py::isinstance<py::tuple>(obj)) {
+    if (!CheckSequenceToMemory(py::sequence(obj))) {
+      return nullptr;
+    }
+    size_t obj_len = py::len(obj);
+    std::vector<ValuePtr> values;
+    for (size_t i = 0; i < obj_len; ++i) {
+      auto sub_value = ConvertPyObjectToValue((py::sequence(obj))[i]);
+      if (sub_value == nullptr) {
+        return nullptr;
+      }
+      values.emplace_back(sub_value);
+    }
+    return std::make_shared<ValueTuple>(values);
+  } else if (py::isinstance<py::bool_>(obj)) {
+    return MakeValue(py::cast<bool>(obj));
+  } else if (py::isinstance<py::int_>(obj)) {
+    return MakeValue(py::cast<int64_t>(obj));
+  } else if (py::isinstance<py::float_>(obj)) {
+    return MakeValue(py::cast<float>(obj));
+  }
+  return nullptr;
+}
 }  // namespace
 
 tensor::TensorPtr GetValueByPyObj(const py::object &obj) {
@@ -309,5 +336,22 @@ void UserDataToRawMemory(DeviceAddress *const device_address) {
   }
   tensor::TensorPtr tensor = GetValueByPyObj(obj);
   TensorToRawMemory(tensor, device_address);
+}
+
+ValuePtr GetValueFromUserData(const UserDataPtr &user_data) {
+  if (user_data == nullptr) {
+    return nullptr;
+  }
+  if (!user_data->has(kernel::PyExecuteOutputUserData::key)) {
+    return nullptr;
+  }
+  auto py_obj = user_data->get<kernel::PyExecuteOutputUserData>(kernel::PyExecuteOutputUserData::key);
+  if (py_obj == nullptr) {
+    return nullptr;
+  }
+  py::gil_scoped_acquire gil_acquire;
+  auto value = ConvertPyObjectToValue(py_obj->obj);
+  MS_LOG(DEBUG) << "Set value:" << (value == nullptr ? "nullptr" : value->ToString());
+  return value;
 }
 }  // namespace mindspore::pyexecute

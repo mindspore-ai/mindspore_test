@@ -593,6 +593,17 @@ bool KernelTensor::SetKernelTensorValue() const {
       }
       return true;
     }
+    // Set user data for PyExecute infer.
+    if (user_data()->has(kGetValueByUserDataHandler)) {
+      const auto &handler = user_data()->get<ValuePtr (*)(const UserDataPtr &)>(kGetValueByUserDataHandler);
+      if (handler != nullptr) {
+        auto value = (*handler)(user_data());
+        if (value != nullptr) {
+          host_info_->kernel_tensor_value_ = ConvertValueToKernelTensorValue(value);
+          return true;
+        }
+      }
+    }
   }
 
   // Sync value data from device.
