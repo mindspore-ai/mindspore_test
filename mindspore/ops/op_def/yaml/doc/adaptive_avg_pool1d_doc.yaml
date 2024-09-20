@@ -32,4 +32,4 @@ adaptive_avg_pool1d:
             >>> output = mint.nn.functional.adaptive_avg_pool1d(input, 3)
             >>> print(output)
             [[2.  2.5 3. ]
-            [3.  3.5 4. ]]
+             [3.  3.5 4. ]]

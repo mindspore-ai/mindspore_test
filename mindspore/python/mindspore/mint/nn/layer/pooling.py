@@ -59,7 +59,7 @@ class AdaptiveAvgPool1d(_AdaptiveAvgPoolNd):
         >>> output = net(input)
         >>> print(output)
         [[[2. 1. 2.]
-         [2. 3. 5.]]]
+          [2. 3. 5.]]]
     """
 
     def construct(self, input):
@@ -97,7 +97,7 @@ class AdaptiveAvgPool2d(_AdaptiveAvgPoolNd):
         >>> output = net(input)
         >>> print(output)
         [[[1.5 1.5]
-        [2.5 4. ]]]
+          [2.5 4. ]]]
     """
 
     def construct(self, input):
