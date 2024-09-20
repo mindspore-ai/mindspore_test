@@ -1,0 +1,32 @@
+    transpose:
+    description: |
+        Interchange two axes of a tensor.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input(Tensor): Input tensor.
+            dim0 (int): First axis.
+            dim1 (int): Second axis.
+
+        Returns:
+            Transposed tensor, has the same data type as `input`.
+
+        Raises:
+            TypeError: If argument `input` is not Tensor.
+            TypeError: If `dim0` or `dim1` is not integer.
+            ValueError: If `dim0` or `dim1` is not in the range of :math:`[-ndim, ndim-1]`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import mint
+            >>> from mindspore import Tensor
+            >>> input = Tensor(np.ones((2,3,4), dtype=np.float32))
+            >>> output = mint.transpose(input, 0, 2)
+            >>> print(output.shape)
+            (4, 3, 2)
+            
