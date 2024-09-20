@@ -3,7 +3,7 @@ mindspore.unified_safetensors
 
 .. py:function:: mindspore.unified_safetensors(src_dir, src_strategy_file, dst_dir)
 
-    将多个safetensor文件合并为一系列统一的safetenser文件。
+    将多个safetensors文件合并为一系列统一的safetensors文件。
 
     参数：
         - **src_dir** (str) - 源权重保存目录。
