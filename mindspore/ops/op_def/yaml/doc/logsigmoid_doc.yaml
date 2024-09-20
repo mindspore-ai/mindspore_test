@@ -12,7 +12,7 @@ logsigmoid:
     LogSigmoid Activation Function Graph:
 
     .. image:: ../images/LogSigmoid.png
-      :align: center
+        :align: center
 
     .. warning::
         This is an experimental API that is subject to change or deletion.

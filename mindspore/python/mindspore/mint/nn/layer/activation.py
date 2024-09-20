@@ -86,9 +86,9 @@ class LogSigmoid(Cell):
     .. math::
         \text{logsigmoid}(x_{i}) = \log(\frac{1}{1 + \exp(-x_i)}),
 
-        where :math:`x_{i}` is the element of the input.
+    where :math:`x_{i}` is the element of the input.
 
-        LogSigmoid Activation Function Graph:
+    LogSigmoid Activation Function Graph:
 
     .. image:: ../images/LogSigmoid.png
         :align: center
