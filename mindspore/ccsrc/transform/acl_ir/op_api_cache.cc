@@ -150,7 +150,7 @@ void GatherInfo(const mindspore::tensor::BaseTensorPtr &tensor) {
 
 void GatherInfo(const std::optional<tensor::BaseTensorPtr> &tensor) {
   // "ot" for optional tensor
-  MemcpyToBuf("ot", 2);
+  MemcpyToBuf("ot", kSizeTwo);
   if (tensor.has_value()) {
     GatherInfo(tensor.value());
   }
@@ -166,7 +166,7 @@ void GatherInfo(const mindspore::tensor::TensorPtr &tensor) { GatherInfo(tensor-
 
 void GatherInfo(const std::optional<tensor::TensorPtr> &tensor) {
   // "ot" for optional tensor
-  MemcpyToBuf("ot", 2);
+  MemcpyToBuf("ot", kSizeTwo);
   if (tensor.has_value()) {
     GatherInfo(tensor.value());
   }
@@ -498,7 +498,7 @@ void GatherHash(const mindspore::tensor::TensorPtr &tensor) { Gather(tensor); }
 
 void GatherHash(const std::optional<tensor::TensorPtr> &tensor) {
   // "ot" for optional tensor
-  MemcpyToBuf("ot", 2);
+  MemcpyToBuf("ot", kSizeTwo);
   if (tensor.has_value()) {
     GatherHash(tensor.value());
   }
@@ -514,7 +514,7 @@ void GatherHash(const mindspore::tensor::BaseTensorPtr &tensor) { Gather(tensor)
 
 void GatherHash(const std::optional<tensor::BaseTensorPtr> &tensor) {
   // "ot" for optional tensor
-  MemcpyToBuf("ot", 2);
+  MemcpyToBuf("ot", kSizeTwo);
   if (tensor.has_value()) {
     GatherHash(tensor.value());
   }

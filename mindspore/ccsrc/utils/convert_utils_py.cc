@@ -44,7 +44,8 @@
 namespace mindspore {
 namespace {
 bool ContainsWeights(const py::tuple &grads) {
-  if (grads.size() < 2) {
+  constexpr size_t kSize2 = 2;
+  if (grads.size() < kSize2) {
     return false;
   }
   if (!py::isinstance<py::tuple>(grads[0]) && !py::isinstance<py::dict>(grads[1])) {
@@ -1043,8 +1044,9 @@ py::tuple CheckBpropOut(const py::object &grads_obj, const py::tuple &py_args, c
     }
     return all_grads;
   } else {
+    constexpr auto kArgsSize = 2;
     MS_LOG(DEBUG) << "Not contain weights";
-    check_bprop_input_grads(py_args, grads, bprop_cls_name, 2);
+    check_bprop_input_grads(py_args, grads, bprop_cls_name, kArgsSize);
     return grads;
   }
 }
