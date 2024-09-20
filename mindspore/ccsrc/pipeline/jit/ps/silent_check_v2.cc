@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/pass/silent_check_v2.h"
+#include "pipeline/jit/ps/silent_check_v2.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -50,7 +50,7 @@
 #include "utils/ms_utils.h"
 
 namespace mindspore {
-namespace opt {
+namespace pipeline {
 namespace {
 constexpr char kScaleSense[] = "scale_sense";
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
@@ -160,6 +160,19 @@ ValueNodePtr CreateValueNode(const FuncGraphPtr &func_graph, const ValuePtr &val
   AnfAlgo::SetSelectKernelBuildInfo(builder.Build(), value_node.get());
 
   return value_node;
+}
+
+ParameterPtr GetScaleSense(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto parameters = func_graph->parameters();
+  for (const auto &param : parameters) {
+    auto param_ptr = param->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param_ptr);
+    if (param_ptr->name() == kScaleSense) {
+      return param_ptr;
+    }
+  }
+  return nullptr;
 }
 }  // namespace
 
@@ -314,18 +327,7 @@ AnfNodePtr GetGradValue(const FuncGraphPtr &func_graph, const AnfNodePtr &node, 
   return CreateCastNode(func_graph, div_node, dst_type);
 }
 
-void SilentCheckV2::GetLossScale() {
-  MS_EXCEPTION_IF_NULL(root_);
-  auto parameters = root_->parameters();
-  for (const auto &param : parameters) {
-    auto param_ptr = param->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(param_ptr);
-    const auto &name = param_ptr->name();
-    if (name == kScaleSense) {
-      loss_scale_ = param_ptr;
-    }
-  }
-}
+void SilentCheckV2::GetLossScale() { loss_scale_ = GetScaleSense(root_); }
 
 AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -341,11 +343,18 @@ AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, 
   MS_LOG(INFO) << cnode->fullname_with_scope() << " has attr forward_unique_id=" << std::boolalpha
                << GetValue<std::string>(cnode->GetPrimalAttr(kPrimalAttrForwardUniqueId));
 
+  if (loss_scale_ != nullptr && scale_sense_ == nullptr) {
+    scale_sense_ = func_graph->InsertFrontParameter();
+    scale_sense_->set_name(kScaleSense);
+    scale_sense_->set_abstract(loss_scale_->abstract()->Clone());
+    add_param_graphs_.insert(func_graph);
+  }
+
   // create SlientCheckV2 node
   auto check_prim = std::make_shared<Primitive>(kNameSilentCheckV2);
   check_prim->AddAttr("side_effect_mem", std::make_shared<BoolImm>(true));
   // input1: input_grad
-  auto dout = GetGradValue(func_graph, node, cnode->input(kIndexOne), loss_scale_);
+  auto dout = GetGradValue(func_graph, node, cnode->input(kIndexOne), scale_sense_);
   // input0: val
   auto norm_node = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2
                      ? CreateNormForGE(func_graph, node, dout)
@@ -421,6 +430,7 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(return_node);
   std::vector<AnfNodePtr> all_nodes = TopoSort(return_node);
   bool changed = false;
+  scale_sense_ = GetScaleSense(func_graph);
 
   for (auto &node : all_nodes) {
     MS_EXCEPTION_IF_NULL(node);
@@ -429,6 +439,13 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
+    // building graph node users
+    for (const auto &input : cnode->inputs()) {
+      if (IsValueNode<FuncGraph>(input)) {
+        auto sub_graph = GetValueNode<FuncGraphPtr>(input);
+        graph_users_[sub_graph].insert(cnode);
+      }
+    }
     // skip forward node in graph
     if (!cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
       continue;
@@ -445,5 +462,69 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
   }
   return changed;
 }
-}  // namespace opt
+
+void SilentCheckV2::UpdateNodes() {
+  while (!add_param_graphs_.empty()) {
+    auto graph_iter = add_param_graphs_.begin();
+    auto graph = *graph_iter;
+    add_param_graphs_.erase(graph_iter);
+
+    auto iter = graph_users_.find(graph);
+    if (iter == graph_users_.end()) {
+      continue;
+    }
+
+    auto &user_nodes = iter->second;
+    MS_LOG(DEBUG) << "Number of user nodes of graph " << graph->ToString() << " is " << user_nodes.size();
+    for (auto &cnode : user_nodes) {
+      if (!cnode->size()) {
+        MS_LOG(EXCEPTION) << "Input size of node " << cnode->ToString() << " is " << cnode->size();
+      }
+      if (!IsPrimitiveCNode(cnode, prim::kPrimPartial) && !IsValueNode<FuncGraph>(cnode->input(kIndex0))) {
+        MS_LOG(EXCEPTION) << "Not support processing node " << cnode->DebugString();
+      }
+      // create parameter `scale_sense` for user node graph if not exists
+      auto user_node_graph = cnode->func_graph();
+      MS_EXCEPTION_IF_NULL(user_node_graph);
+      auto scale_sense = GetScaleSense(user_node_graph);
+      if (loss_scale_ != nullptr && scale_sense == nullptr) {
+        scale_sense = user_node_graph->InsertFrontParameter();
+        scale_sense->set_name(kScaleSense);
+        scale_sense->set_abstract(loss_scale_->abstract()->Clone());
+        add_param_graphs_.insert(user_node_graph);
+      }
+      // add input `scale_sense` for cnode
+      auto inputs = cnode->inputs();
+      inputs.insert(IsPrimitiveCNode(cnode, prim::kPrimPartial) ? inputs.begin() + kIndex2 : inputs.begin() + kIndex1,
+                    scale_sense);
+      cnode->set_inputs(inputs);
+    }
+  }
+}
+
+bool SilentCheckPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  FuncGraphPtr root_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(root_graph);
+
+  // insert silent check operator for root graph
+  auto silent_check = std::make_shared<SilentCheckV2>(root_graph);
+  silent_check->Run(root_graph);
+
+  // insert silent check operator for sub-graphs
+  auto manager = root_graph->manager();
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &sub_graphs = manager->func_graphs_used_total(root_graph);
+  for (const auto &sub_graph : sub_graphs) {
+    silent_check->Run(sub_graph);
+  }
+
+  // add input `scale_sense` for some cnode
+  silent_check->UpdateNodes();
+
+  return true;
+}
+}  // namespace pipeline
 }  // namespace mindspore

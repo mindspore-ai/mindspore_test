@@ -53,6 +53,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/remove_value_node_dup.h"
 #include "pipeline/jit/ps/event_message_print.h"
+#include "pipeline/jit/ps/silent_check_v2.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/ad/grad.h"
@@ -1841,6 +1842,8 @@ bool PipelineSchedulerAction(const ResourcePtr &resource) { return PipelineParal
 
 bool AutoParallelAction(const ResourcePtr &resource) { return AutoParallelPass(resource); }
 
+bool SilentCheckAction(const ResourcePtr &resource) { return SilentCheckPass(resource); }
+
 bool ValidateAction(const ResourcePtr &resource) {
   auto res = ValidatePass(resource);
 #ifdef DEBUG
@@ -2013,6 +2016,9 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
 #if defined(__linux__) && defined(WITH_BACKEND)
     if (!pipeline::IsPhaseExport(phase)) {
       (void)actions.emplace_back(std::make_pair(kDistributedSplit, DistributedSplitAction));
+    }
+    if (IsNpuAsdEnable()) {
+      (void)actions.emplace_back(std::make_pair(kSilentCheckV2, SilentCheckAction));
     }
     if (ps::PSContext::instance()->is_worker()) {
       if (distributed::cluster::ClusterContext::instance()->initialized()) {
