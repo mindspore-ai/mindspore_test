@@ -69,6 +69,7 @@ from mindspore.parallel._parallel_serialization import _convert_to_list, _conver
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
+from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint
 from mindspore.train._utils import read_proto, get_parameter_redundancy
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, dynamic_obfuscate_mindir, \
     split_mindir, split_dynamic_mindir
@@ -2841,14 +2842,15 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
     return merged_parameter
 
 
-def load_distributed_checkpoint(network, checkpoint_filenames, predict_strategy=None,
-                                train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM'):
+def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
+                                train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
+                                format='ckpt', unified_safetensors_dir=None):
     """
     Load checkpoint into net for distributed predication. Used in the case of distributed inference.
 
     Args:
         network (Cell): Network for distributed predication.
-        checkpoint_filenames (list[str]): The name of Checkpoint files in order of rank id.
+        checkpoint_filenames (list[str]): The name of Checkpoint files in order of rank id. Default: ``None`` .
         predict_strategy (dict): Strategy of predication process. It means that using one device to predict
                                  when setting predict_strategy as None. Default: ``None`` .
         train_strategy_filename (str): The filename of training strategy protocol buffer file.
@@ -2865,6 +2867,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames, predict_strategy=
         dec_mode (str): This parameter is valid only when dec_key is not set to ``None`` . Specifies the decryption
                         mode, currently supports ``'AES-GCM'`` , ``'AES-CBC'``  and ``'SM4-CBC'`` .
                         Default: ``'AES-GCM'`` .
+        format (str): Input weight format to be loaded into the network.
+                      It can be set to either "ckpt" or "safetensors". Default: "ckpt".
+        unified_safetensors_dir (str): Directory of input weight files to be loaded into the network.
+                                       Default: ``None`` .
 
     Raises:
         TypeError: The type of inputs do not match the requirements.
@@ -2968,6 +2974,18 @@ def load_distributed_checkpoint(network, checkpoint_filenames, predict_strategy=
         ...
         [ 1.6067538  1.6244187  1.5384722 ...  1.5449994  1.6195512  1.6176052]]
     """
+    if format == 'safetensors':
+        if unified_safetensors_dir is None:
+            raise ValueError(f"For 'load_distributed_checkpoint', 'unified_safetensors_dir' can not be None "
+                             f"when format is 'safetensors'.")
+        unsupport_param = [checkpoint_filenames, train_strategy_filename, strict_load, dec_key, dec_mode]
+        for param in unsupport_param:
+            if param is not None:
+                raise ValueError(f"For 'load_distributed_checkpoint', {param} must be None "
+                                 f"when format is 'safetensors'.")
+        _load_parallel_checkpoint(unified_safetensors_dir, predict_strategy, network)
+        return
+
     network = Validator.check_isinstance("network", network, nn.Cell)
     _check_checkpoint_file(checkpoint_filenames)
     _check_predict_strategy(predict_strategy)

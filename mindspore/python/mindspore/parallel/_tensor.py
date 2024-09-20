@@ -683,3 +683,48 @@ def _reshape_param_data_with_weight(param_data, dev_mat, field_size):
     for i in range(1, len(tensor_slices_col)):
         new_tensor = np.concatenate((new_tensor, np.array(tensor_slices_col[i]).reshape(-1, 1)), axis=1)
     return Tensor(new_tensor)
+
+
+def _load_tensor_shape(dev_mat, tensor_map, full_shape=None, rank_id=-1):
+    """get tensor shape by slice"""
+    if rank_id == -1:
+        rank = get_rank()
+    else:
+        rank = rank_id
+    tensor_strategy = _get_tensor_strategy(dev_mat, tensor_map)
+    tensor_slice_index = _get_tensor_slice_index(dev_mat, tensor_strategy, tensor_map, rank)
+    np_tensor_list = _chunk_shape_by_strategy(full_shape, tensor_strategy)
+    np_tensor_slice_index = np_tensor_list[int(tensor_slice_index)]
+    res = []
+    for index in np_tensor_slice_index:
+        res.append(slice(index[0], index[1]))
+    return tuple(res)
+
+
+def _chunk_shape_by_strategy(full_shape, strategy):
+    """chunk shape by strategy"""
+    shape = []
+    for i in full_shape:
+        shape.append([0, i])
+    return _chunk_shape(shape, strategy, len(strategy))
+
+
+def _chunk_shape(np_tensor, strategy, depth):
+    """_chunk shape"""
+    output = []
+    axis = len(np_tensor) - depth
+    left, right = np_tensor[axis]
+    num = strategy[0]
+    chunk_size = (right - left) / num
+    append = [[i, int(i + chunk_size)] for i in range(left, right) if i % chunk_size == 0]
+    np_tensor_new = []
+    for i in append:
+        np_tensor_tmp = copy.deepcopy(np_tensor)
+        np_tensor_tmp[axis] = i
+        np_tensor_new.append(np_tensor_tmp)
+    if depth == 1:
+        return np_tensor_new
+    for ret_ in np_tensor_new:
+        output.extend(
+            _chunk_shape(ret_, strategy[len(strategy) - depth + 1:len(strategy)], depth - 1))
+    return output

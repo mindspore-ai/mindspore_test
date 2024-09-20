@@ -19,6 +19,8 @@ import os
 import time
 import glob
 import re
+import math
+import json
 from collections import defaultdict
 
 import multiprocessing as mp
@@ -30,9 +32,10 @@ from mindspore.parallel._parallel_serialization import _get_device_num_from_stra
 from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_tensor_layout, \
     _get_needed_rank_transform_operator_map_by_layouts, \
     _generate_transform_operator_stack, _apply_tensor_transform_operators, _construct_tensor_layout_for_opt_shard, \
-    _extract_layout_item
+    _extract_layout_item, _load_tensor_shape
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
+from mindspore.communication.management import get_rank
 
 from safetensors.numpy import save_file, load_file
 from safetensors import safe_open
@@ -479,7 +482,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                   src_strategy_dict, dst_strategy_dict, origin_src_strategy_list,
                                   origin_dst_strategy_list,
                                   ckpt_prefix, dst_safetensors_dir, output_format,
-                                  _transform_param_list, pipe_param_list=None):
+                                  _transform_param_list, pipe_param_list=None, file_index=None):
     """
     Transforms safetensors files to a specified format without using parallel processing.
     """
@@ -488,7 +491,6 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
         param_attr_dict = defaultdict(dict)
         needed_rank_list = needed_rank_list_key.split("-")
         for needed_rank in needed_rank_list:
-            print(f"loading safetensors from rank {needed_rank}...")
             if pipe_param_list:
                 saftensor_dict = dict()
                 with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
@@ -519,8 +521,13 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                                   param_attr_dict, src_strategy_list, dst_strategy_list,
                                                                   param_total_dict_keys)
-            save_safetensor_file = f"{ckpt_prefix}{transform_rank}.{output_format}"
-            save_safetensor_file_dir = os.path.join(dst_safetensors_dir, "rank_{}".format(transform_rank))
+            if file_index is not None:
+                save_safetensor_file = f"part{file_index}.{output_format}"
+                save_safetensor_file_dir = dst_safetensors_dir
+            else:
+                save_safetensor_file = f"{ckpt_prefix}{transform_rank}.{output_format}"
+                save_safetensor_file_dir = os.path.join(dst_safetensors_dir, "rank_{}".format(transform_rank))
+
             if not os.path.exists(save_safetensor_file_dir):
                 _make_dir(save_safetensor_file_dir, "path")
             save_file_name = os.path.join(save_safetensor_file_dir, save_safetensor_file)
@@ -787,5 +794,161 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
     return transform_param_dict
 
 
+def unified_safetensors(src_dir, src_strategy_file, dst_dir):
+    """
+    Merge multiple safetensor files into a unified safetensor file.
+
+    Args:
+        src_dir (str): Source weight saving directory.
+        src_strategy_file (str): Source weight segmentation strategy file.
+        dst_dir (str): Target save directory.
+
+    Raises:
+        ValueError: If the safetensors file of rank is missing.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> src_dir = "/usr/safetensors/llama31B/4p_safetensors/"
+        >>> src_strategy_file = "/usr/safetensors/llama31B/strategy_4p.ckpt"
+        >>> dst_dir = "/usr/safetensors/llama31B/merge_llama31B_4p/"
+        >>> ms.unified_safetensors(src_dir, src_strategy_file, dst_dir)
+    """
+    _check_transform_safetensors(src_dir, "", src_strategy_file, None)
+    _make_dir(dst_dir, "path")
+    all_safetensor_files_map = _collect_safetensor_files(src_dir)
+    src_strategy_dict = _build_searched_strategy(src_strategy_file)
+    src_stage_device_num = _get_device_num_from_strategy(src_strategy_dict)
+    dst_stage_device_num = 1
+    origin_src_strategy_list = _extract_layout_map(src_strategy_dict)
+    origin_dst_strategy_list = None
+
+    needed_rank_list_map = _find_needed_ranks(src_strategy_dict, dst_strategy_dict=None)
+    for needed_rank_list, rank in needed_rank_list_map.items():
+        for needed_rank in needed_rank_list.split("-"):
+            if int(needed_rank) not in all_safetensor_files_map:
+                raise ValueError("The safetensor file of rank{} is needed for converting rank{}'s safetensor, "
+                                 "but it is missing.".format(needed_rank, rank))
+    layout_map = _convert_to_list(src_strategy_dict)
+
+    total_size = 0
+    for _, file_name in all_safetensor_files_map.items():
+        total_size += os.path.getsize(file_name) / 1024 / 1024 / 1024
+    split_num = math.ceil(total_size / 3)
+
+    name_list = list(layout_map.keys())
+    split_list = _split_list(name_list, split_num)
+
+    all_safetensor_files_map = _collect_safetensor_files(src_dir)
+    with safe_open(all_safetensor_files_map.get(0), framework="np") as f:
+        all_key = f.keys()
+        hyper_parameter = set(all_key) - set(name_list)
+        if hyper_parameter:
+            hyper_dict = {}
+            for key in hyper_parameter:
+                hyper_dict[key] = f.get_tensor(key)
+            save_file(hyper_dict, os.path.join(dst_dir, "hyper_param.safetensors"))
+
+    # save parameter map json
+    param_name_dict = dict()
+    for index, part_list in enumerate(split_list):
+        for name in part_list:
+            param_name_dict[name] = f"part{index}.safetensors"
+    json_str = json.dumps(param_name_dict, indent=4)
+    map_file = os.path.join(dst_dir, "param_name_map.json")
+    with open(map_file, 'w') as f:
+        f.write(json_str)
+
+    max_process = min(split_num, 100)
+    res = [i for i in range(split_num)]
+    res = _split_list(res, max_process)
+    processes = []
+
+    for i in range(max_process):
+        p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
+            needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
+            src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
+            "", dst_dir, "safetensors", None, split_list, res[i]))
+        p.start()
+        processes.append(p)
+    for p in processes:
+        p.join()
+
+
+def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor_files_map,
+                                            src_stage_device_num,
+                                            dst_stage_device_num,
+                                            src_strategy_dict, dst_strategy_dict, origin_src_strategy_list,
+                                            origin_dst_strategy_list,
+                                            ckpt_prefix, dst_safetensors_dir, output_format,
+                                            _transform_param_list, pipe_param_list=None, file_index=None):
+    for i in file_index:
+        _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
+                                      dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
+                                      origin_src_strategy_list,
+                                      origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir, output_format,
+                                      _transform_param_list, pipe_param_list[i], i)
+
+
+def _split_list(split_list, split_num):
+    split_array = np.array_split(split_list, split_num)
+    return [array.tolist() for array in split_array]
+
+
+def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None):
+    """load parallel safetensors by merged file."""
+    file_list = os.listdir(total_safetensors_dir)
+    json_files = [file for file in file_list if file.endswith('.json')]
+    if len(json_files) != 1:
+        raise ValueError(f"For 'load_parallel_checkpoint', the number of json files in 'total_safetensors_dir' "
+                         f"must be 1, but got {len(json_files)}.")
+    param_name_json = os.path.join(total_safetensors_dir, json_files[0])
+    with open(param_name_json, 'r') as f:
+        param_name_map = json.load(f)
+    rank_id = get_rank()
+    _, dst_strategy_list = _extract_src_dst_layout_map(rank_id, None, dst_strategy_file)
+
+    param_list = dst_strategy_list.keys()
+    total_param = dict()
+
+    for param_name in param_list:
+        if param_name not in param_name_map:
+            continue
+        file_name = os.path.join(total_safetensors_dir, param_name_map[param_name])
+        with safe_open(file_name, framework="np") as f:
+            if param_name not in f.keys():
+                continue
+            sf_obj = f.get_slice(param_name)
+        param_dict = dict()
+        param_dict[param_name] = sf_obj
+        if param_name not in dst_strategy_list:
+            continue
+        slice_op = _get_slice(rank_id, sf_obj, param_name, dst_strategy_list)
+        slice_param = sf_obj[slice_op]
+        total_param[param_name] = ms.Parameter(slice_param)
+    if 'hyper_param.safetensors' in file_list:
+        hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
+        with safe_open(hyper_parameter_file_name, framework="np") as f:
+            for key in f.keys():
+                total_param[key] = ms.Parameter(f.get_tensor(key))
+
+    param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
+    return param_not_load, ckpt_not_load
+
+
+def _get_slice(rank_id, sf_obj, param_name, dst_strategy_list):
+    """get slice op"""
+    tensor_shape = sf_obj.get_shape()
+    to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
+        dst_strategy_list.get(param_name))
+    # Add optimizer sharding dim for tensor layout
+    to_dev_matrix, to_tensor_map, _ = _construct_tensor_layout_for_opt_shard(
+        to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, tensor_shape)
+    slice_op = _load_tensor_shape(to_dev_matrix, to_tensor_map, full_shape=tensor_shape, rank_id=rank_id)
+    return slice_op
+
+
 __all__ = ["_transform_safetensors", "transform_safetensors_by_stage",
-           "transform_safetensors_by_rank", "ckpt_to_safetensors", "safetensors_to_ckpt"]
+           "transform_safetensors_by_rank", "ckpt_to_safetensors", "safetensors_to_ckpt", "unified_safetensors"]
