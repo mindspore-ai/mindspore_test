@@ -40,7 +40,7 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              LinSpace, MatrixDeterminant, LogMatrixDeterminant, Erfinv, Conj,
                              Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
-                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc)
+                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc, Sign)
 
 
 def _infer_shape_reduce(x, axis, keep_dims, prim_name):
@@ -2462,44 +2462,6 @@ class NMSWithMask(PrimitiveWithInfer):
     def infer_dtype(self, bboxes_dtype):
         validator.check_tensor_dtype_valid("bboxes", bboxes_dtype, [mstype.float16, mstype.float32], self.name)
         return bboxes_dtype, mstype.int32, mstype.bool_
-
-
-class Sign(Primitive):
-    r"""
-    Performs sign on the tensor element-wise. Notice: when the input is NaN and dtype is float64, the output of this
-    operator is NaN.
-
-    .. math::
-        sign(x) = \begin{cases} -1, &if\ x < 0 \cr
-        0, &if\ x = 0 \cr
-        1, &if\ x > 0\end{cases}
-
-    Inputs:
-        - **x** (Tensor) - The input tensor of any dimension.
-
-    Outputs:
-        Tensor, has the same shape and dtype as the `x`.
-
-    Raises:
-        TypeError: If `x` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-         >>> import mindspore
-         >>> import numpy as np
-         >>> from mindspore import Tensor, ops
-         >>> x = Tensor(np.array([[2.0, 0.0, -1.0]]), mindspore.float32)
-         >>> sign = ops.Sign()
-         >>> output = sign(x)
-         >>> print(output)
-         [[ 1.  0. -1.]]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        pass
 
 
 class Tan(Primitive):

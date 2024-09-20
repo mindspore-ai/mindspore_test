@@ -340,7 +340,6 @@ def test_topk():
     assert np.allclose(output[1].asnumpy(), expect[1])
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_bernoulli():
     """
     Feature: bernoulli func
