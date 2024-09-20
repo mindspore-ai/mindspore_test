@@ -26,7 +26,7 @@ mindspore.load_checkpoint
 
     返回：
         字典，key是参数名称，value是Parameter类型。当使用 :func:`mindspore.save_checkpoint` 的 `append_dict` 参数和 :class:`mindspore.train.CheckpointConfig` 的 `append_info` 参数保存
-        checkpoint， `append_dict` 和 `append_info` 是dict类型，且它们的值value是string时，加载checkpoint得到的返回值是string类型，其它情况返回值均是Parameter类型。
+        checkpoint， `append_dict` 和 `append_info` 是dict类型，且它们的值value是string时，加载checkpoint得到的返回值是string类型，其他情况返回值均是Parameter类型。
 
     异常：
         - **ValueError** - checkpoint文件格式不正确。

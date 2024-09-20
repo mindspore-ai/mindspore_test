@@ -5,7 +5,7 @@ mindspore.ops.movedim
 
     调换 `x` 中 `source` 和 `destination` 两个维度的位置。
 
-    其它维度保留在原始位置。
+    其他维度保留在原始位置。
 
     参数：
         - **x** (Tensor) - 维度需要被移动的的Tensor, `x` 的维度不能是0。

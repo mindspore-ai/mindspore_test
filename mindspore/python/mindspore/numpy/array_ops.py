@@ -449,7 +449,7 @@ def append(arr, values, axis=None):
         values (Tensor): These values are appended to a copy of `arr`. It must be of
             the correct shape (the same shape as `arr`, excluding `axis`). If `axis` is
             not specified, `values` can be any shape and will be flattened before use.
-        axis (None, int, optional): The `axis` along which values are appended. If `axis` is not
+        axis (int, optional): The `axis` along which values are appended. If `axis` is not
             given, both `arr` and `values` are flattened before use, default is ``None``.
 
     Returns:
@@ -2530,7 +2530,7 @@ def argwhere(a):
 
     Returns:
         Tensor. Indices of elements that are non-zero. Indices are grouped by element.
-        This Tensor will have shape :math:`(N, a.ndim)` where N is the number of non-zero items.
+        This Tensor will have shape :math:`(N, a.ndim)` where :math:`N` is the number of non-zero items.
 
     Raises:
         TypeError: If input `a` is not array_like.

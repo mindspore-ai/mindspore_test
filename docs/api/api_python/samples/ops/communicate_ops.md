@@ -211,7 +211,7 @@ print(output)
 
 ![image](./images/NeighborExchange.png)
 
-`NeighborExchange`操作会将提供一组数据分别发往其它特定的卡上，同时从特定的卡接收数据。例如上图中，rank 0 向rank 1发送shape为[16,16]的Tensor，并接收rank 1发送的shape为[32,32]的Tensor；rank 1 向rank 0发送shape为[32,32]的Tensor，并接收rank 0发送的shape为[16,16]的Tensor。最终rank 0输出了接收到的shape为[32,32]的Tensor，rank 1输出接收到的[16,16]的Tensor。
+`NeighborExchange`操作会将提供一组数据分别发往其他特定的卡上，同时从特定的卡接收数据。例如上图中，rank 0 向rank 1发送shape为[16,16]的Tensor，并接收rank 1发送的shape为[32,32]的Tensor；rank 1 向rank 0发送shape为[32,32]的Tensor，并接收rank 0发送的shape为[16,16]的Tensor。最终rank 0输出了接收到的shape为[32,32]的Tensor，rank 1输出接收到的[16,16]的Tensor。
 
 示例代码如下：我们使用`NeighborExchange`算子进行0号卡和1号卡之间的数据交换，将0号卡的数据发送到1号卡，并接收来自1号卡的数据；1号卡将数据发送到0号卡，并接收来自0号卡的数据；最终每张卡输出接收到的数据。
 
@@ -376,9 +376,9 @@ rank 1结果为：
 
 ![image](./images/alltoall.png)
 
-`AlltoAll`操作会将输入数据在特定的维度切分成特定的块数，并按顺序发送给其他rank，同时从其他rank接收输入，按顺序在特定的维度拼接数据。例如上图中，将Tensor在零维切分成5块，同时接收其它rank的数据，并在一维进行拼接，最后输出拼接后的数据。
+`AlltoAll`操作会将输入数据在特定的维度切分成特定的块数，并按顺序发送给其他rank，同时从其他rank接收输入，按顺序在特定的维度拼接数据。例如上图中，将Tensor在零维切分成5块，同时接收其他rank的数据，并在一维进行拼接，最后输出拼接后的数据。
 
-示例代码如下：我们使用`AlltoAll`算子进行8卡的数据交换，把每张卡在第-2维进行切分，并按顺序把切分的数据发送给其它卡，同时接收其它卡的数据，在-1维进行拼接；最终每张卡输出拼接后的数据。
+示例代码如下：我们使用`AlltoAll`算子进行8卡的数据交换，把每张卡在第-2维进行切分，并按顺序把切分的数据发送给其他卡，同时接收其他卡的数据，在-1维进行拼接；最终每张卡输出拼接后的数据。
 
 ```python
 import os
