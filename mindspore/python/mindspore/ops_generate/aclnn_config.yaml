@@ -328,6 +328,11 @@ HistcExt: 'aclnnHistc'
 
 # 553
 LogAddExp: 'aclnnLogAddExp'
+
+# 556
+LogSigmoid: 'aclnnLogSigmoidForward'
+LogSigmoidGrad: 'aclnnLogSigmoidBackward'
+
 # 679
 Swiglu: 'aclnnSwiGlu'
 SwigluGrad: 'aclnnSwiGluGrad'

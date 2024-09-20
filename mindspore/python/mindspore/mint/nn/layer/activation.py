@@ -77,6 +77,57 @@ class SiLU(Cell):
         return mint.nn.functional.silu(x)
 
 
+class LogSigmoid(Cell):
+    r"""
+    Applies logsigmoid activation element-wise. The input is a Tensor with any valid shape.
+
+    Logsigmoid is defined as:
+
+    .. math::
+        \text{logsigmoid}(x_{i}) = \log(\frac{1}{1 + \exp(-x_i)}),
+
+        where :math:`x_{i}` is the element of the input.
+
+        LogSigmoid Activation Function Graph:
+
+    .. image:: ../images/LogSigmoid.png
+        :align: center
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Inputs:
+        - **input** (Tensor) - The input of LogSigmoid with data type of bfloat16, float16 or float32.
+          The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
+
+    Outputs:
+        Tensor, with the same type and shape as the `input`.
+
+    Raises:
+        TypeError: If dtype of `input` is not bfloat16, float16 and float32.
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> net = mint.nn.LogSigmoid()
+        >>> input = Tensor([1.0, 2.0, 3.0], mindspore.float32)
+        >>> output = net(input)
+        >>> print(output)
+        [-0.31326166 -0.12692806 -0.04858734]
+    """
+    def __init__(self):
+        """Initialize LogSigmoid."""
+        super(LogSigmoid, self).__init__()
+
+    def construct(self, input):
+        return mint.nn.functional.logsigmoid(input)
+
+
 __all__ = [
+    'LogSigmoid',
     'SiLU',
 ]
