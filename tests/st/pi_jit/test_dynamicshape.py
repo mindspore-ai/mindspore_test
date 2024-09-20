@@ -61,7 +61,24 @@ def test_dynamic_shape_case():
     expect = Tensor([3, 3, 3])
     c = dynamic_shape_test(a, b)
     assert all(c == expect)
-
+    a = Tensor([1, 1, 1, 1])
+    b = Tensor([2, 2, 2, 2])
+    expect = Tensor([3, 3, 3, 3])
+    c = dynamic_shape_test(a, b)
+    assert all(c == expect)
+    a = Tensor([1, 1, 1, 1, 1])
+    b = Tensor([2, 2, 2, 2, 2])
+    expect = Tensor([3, 3, 3, 3, 3])
+    c = dynamic_shape_test(a, b)
+    assert all(c == expect)
+    a = Tensor([1, 1, 1, 1, 1, 1])
+    b = Tensor([2, 2, 2, 2, 2, 2])
+    expect = Tensor([3, 3, 3, 3, 3, 3])
+    c = dynamic_shape_test(a, b)
+    assert all(c == expect)
+    jcr = get_code_extra(dynamic_shape_test.__wrapped__)
+    # when cnt=2>limit_graph_count=1, trigger gc and compile_count_ is 1(dynamic_shape) + 2 = 3
+    assert jcr["compile_count_"] == 3
 
 @pytest.mark.skip(reason="adapter later")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
