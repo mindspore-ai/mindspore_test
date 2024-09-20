@@ -52,6 +52,8 @@ enum FASInputLayoutMode : int64_t { BSH = 0, BNSD = 1, SBH = 2, BSND = 3, TND = 
 
 enum ErrorMode : int64_t { CYCLE = 0, SPECIFIC = 1 };
 
+enum PagedAttentionKVCacheQuantMode : int64_t { DEFAULT = 0, PERTOKEN = 1 };
+
 enum FlipMode : int64_t { BITFLIP = 0, BITFLIP_DESIGNED = 1, MULTIPLY = 2, MULTIPLY_MAX = 3 };
 }  // namespace ops
 }  // namespace mindspore
