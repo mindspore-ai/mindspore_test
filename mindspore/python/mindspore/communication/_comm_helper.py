@@ -419,7 +419,7 @@ def _get_group_rank_from_world_rank_from_cache_helper(world_rank_id, group):
     if world_rank_id not in _ExistingGroup.GROUP_RANKS[group]:
         raise KeyError("For 'get_group_rank_from_world_rank_from_cache', the argument 'world_rank_id' is not "
                        "found in GROUP_RANKS, 'group' : {}, 'world_rank_id' : {}".format(group, world_rank_id))
-    return None
+    return _ExistingGroup.GROUP_RANKS[group][world_rank_id]
 
 
 @check_parameter_available
