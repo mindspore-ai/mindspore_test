@@ -1099,13 +1099,16 @@ def zeros(size, *, dtype=None):
     return ops.auto_generate.zeros(size, dtype)
 
 
-def fix(x):
+def fix(input):
     """
-    Alias for mindspore.mint.trunc()
+    Alias for :func:`mindspore.mint.trunc` .
 
-    For more details, see func:`mindspore.mint.trunc`.
+    For more details, see :func:`mindspore.mint.trunc` .
+
+    Supported Platforms:
+        ``Ascend``
     """
-    return trunc(x)
+    return trunc(input)
 
 
 def scatter(input, dim, index, src):
