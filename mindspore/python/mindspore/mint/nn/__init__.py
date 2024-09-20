@@ -226,6 +226,8 @@ from mindspore.mint.nn.layer.activation import SiLU
 from mindspore.nn.layer import AvgPool2dExt as AvgPool2d
 # 100
 from mindspore.nn.layer import SoftShrink as Softshrink
+# 159
+
 # 220
 from mindspore.nn.layer import HShrink as Hardshrink
 # 221
@@ -368,6 +370,46 @@ class SELU(Cell):
 
     def construct(self, input):
         return F.selu(input)
+
+
+class GELU(Cell):
+    r"""
+    Activation function GELU (Gaussian Error Linear Unit).
+
+    Refer to :func:`mindspore.mint.nn.functional.gelu` for more details.
+
+    GELU Activation Function Graph:
+
+    .. image:: ../images/GELU.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> gelu = mint.nn.GELU()
+        >>> output = gelu(input)
+        >>> print(output)
+        [[-1.5880802e-01  3.9999299e+00 -3.1077917e-21]
+         [ 1.9545976e+00 -2.2918017e-07  9.0000000e+00]]
+        >>> gelu = mint.nn.GELU(approximate=False)
+        >>> # CPU not support "approximate=False", using "approximate=True" instead
+        >>> output = gelu(input)
+        >>> print(output)
+        [[-1.5865526e-01  3.9998732e+00 -0.0000000e+00]
+         [ 1.9544997e+00 -1.4901161e-06  9.0000000e+00]]
+    """
+
+    def __init__(self):
+        """Initialize GELU"""
+        super(GELU, self).__init__()
+
+    def construct(self, input):
+        return F.gelu(input)
 
 
 class Mish(Cell):
@@ -690,6 +732,8 @@ __all__ = [
     'AvgPool2d',
     # 100
     'SELU',
+    # 159
+    'GELU',
     # 220
     'Hardshrink',
     # 221
