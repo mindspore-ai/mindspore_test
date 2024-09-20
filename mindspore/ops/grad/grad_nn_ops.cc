@@ -1779,7 +1779,7 @@ REG_BPROP_BUILDER("SeLUExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Swiglu").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Swiglu").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
