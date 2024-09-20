@@ -477,12 +477,8 @@ void GradFirstStepCommKV(const std::string &cur_str, std::map<std::string, AnfNo
                          int64_t recv_rank_id, const Shape &neigh_shape, TypeId output_type_id,
                          std::map<std::string, AnfNodePtr> *grad_send_kv_map,
                          std::map<std::string, AnfNodePtr> *grad_recv_kv_map) {
-  auto manager = graph->manager();
-  auto fwd_fa_node = (*fa_map).at(cur_str)->cast<CNodePtr>();
-  auto key_node = fwd_fa_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex + 1);
-  auto value_node = fwd_fa_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex + 1);
-  manager->SetEdge((*grad_fa_node), kIndex2, key_node);
-  manager->SetEdge((*grad_fa_node), kIndex3, value_node);
+  auto key_node = (*grad_fa_node)->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex + 1);
+  auto value_node = (*grad_fa_node)->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex + 1);
   std::vector<AnfNodePtr> kv_nodes = {key_node, value_node};
   auto kv_tuple = NewMakeTupleNode(kv_nodes);
   auto kv_concat = NewConcatNode(kv_tuple, 0);
@@ -491,7 +487,10 @@ void GradFirstStepCommKV(const std::string &cur_str, std::map<std::string, AnfNo
   auto sp_num = GetValue<int64_t>((*grad_fa_node)->GetPrimalAttr("sp_num"));
   auto first_str = GetFirstStr(cur_str, sp_num);
   auto fwd_last_fa_node = (*fa_map).at(first_str)->cast<CNodePtr>();
-  dout = CreateDepend(dout, fwd_last_fa_node, fwd_last_fa_node);
+  auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
+  if (pipeline_stages <= 1) {
+    dout = CreateDepend(dout, fwd_last_fa_node, fwd_last_fa_node);
+  }
   if (pos % kIndex2 == kIndex0) {
     send_node = NewSendNode(CreateDepend(kv_concat, dout, kv_concat), 0, send_rank_id, neigh_shape, output_type_id,
                             g_device_manager->world_group());
@@ -683,7 +682,7 @@ void DynOverlapGradRingAttention(const FuncGraphPtr &graph) {
   }
 }
 
-void StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
+bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
   auto manager = graph->manager();
   std::map<std::string, AnfNodePtr> fa_map, grad_send_map, grad_recv_map;
   std::map<std::string, AnfNodePtr, FaGradCompareMethod> grad_fa_map;
@@ -696,7 +695,7 @@ void StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
                  &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
   if (grad_fa_map.empty() || fa_map.empty() || grad_fa_map.size() != fa_map.size() || grad_recv_map.empty() ||
       grad_send_map.empty()) {
-    return;
+    return false;
   }
 
   auto operator_info = GetAttentionInfo(fa_map);
@@ -747,18 +746,19 @@ void StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
       grad_recv_kv_map.insert({it->first, recv_node});
     }
   }
+  return true;
 }
 
-void OverlapGradRingAttention(const FuncGraphPtr &graph) {
+bool OverlapGradRingAttention(const FuncGraphPtr &graph) {
   if (parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kSemiAutoParallel &&
       parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kAutoParallel) {
-    return;
+    return false;
   }
   if (pipeline::IsDynamicShapeGraph(graph)) {
     DynOverlapGradRingAttention(graph);
-    return;
+    return false;
   }
-  StaticOverlapGradRingAttention(graph);
+  return StaticOverlapGradRingAttention(graph);
 }
 }  // namespace parallel
 }  // namespace mindspore
