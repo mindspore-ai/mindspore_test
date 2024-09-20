@@ -347,6 +347,8 @@ from mindspore.ops.auto_generate import trace_ext as trace
 
 from mindspore.ops.function.array_func import reshape
 
+from mindspore.ops.auto_generate import outer
+
 # 304
 from mindspore.ops.function.array_func import tril_ext as tril
 
@@ -1517,6 +1519,7 @@ __all__ = [
     # 303
     'trace',
     'reshape',
+    'outer',
     # 304
     'tril',
 

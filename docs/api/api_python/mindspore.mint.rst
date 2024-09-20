@@ -192,6 +192,7 @@ BLAS和LAPACK运算
     mindspore.mint.bmm
     mindspore.mint.inverse
     mindspore.mint.matmul
+    mindspore.mint.outer
     mindspore.mint.trace
 
 其他运算

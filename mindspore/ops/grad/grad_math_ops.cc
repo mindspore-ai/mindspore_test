@@ -4176,5 +4176,24 @@ REG_BPROP_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
 
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims), ib->OutZeros(dtype)};
 });
+
+REG_BPROP_BUILDER("Outer").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto vec2 = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  ShapeVector after_shape = {-1, 1};
+  auto reshape_input = ib->Reshape(input, after_shape);
+  NodePtr bc_dinput = nullptr;
+  NodePtr bc_dvec2 = nullptr;
+  if (input->need_compute_grad_out()) {
+    bc_dinput = ib->Mul(vec2, dout);
+  }
+  if (vec2->need_compute_grad_out()) {
+    bc_dvec2 = ib->Mul(reshape_input, dout);
+  }
+  auto grad = BinopGradCommon(ib, reshape_input, vec2, bc_dinput, bc_dvec2);
+  grad[0] = ib->Reshape(grad[0], ib->Shape(input));
+  return grad;
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
