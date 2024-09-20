@@ -140,6 +140,16 @@ ATTR_MAP(LpNorm) = {{"p", ATTR_DESC(p, AnyTraits<int64_t>())},
 OUTPUT_MAP(LpNorm) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(LpNorm, prim::kPrimLpNorm->name(), ADPT_DESC(LpNorm))
 
+// LpNormV2
+INPUT_MAP(LpNormV2) = {{1, INPUT_DESC(x)}};
+ATTR_MAP(LpNormV2) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(LpNormV2) = {{2, ATTR_DESC(p, AnyTraits<float>())},
+                            {3, ATTR_DESC(axes, AnyTraits<std::vector<int64_t>>())},
+                            {4, ATTR_DESC(keepdim, AnyTraits<bool>())},
+                            {5, ATTR_DESC(epsilon, AnyTraits<float>())}};
+OUTPUT_MAP(LpNormV2) = {{0, OUTPUT_DESC(y)}};
+REG_ADPT_DESC(LpNormV2, prim::kPrimLpNormV2->name(), ADPT_DESC(LpNormV2))
+
 // Trunc
 INPUT_MAP(Trunc) = {{1, INPUT_DESC(input_x)}};
 ATTR_MAP(Trunc) = EMPTY_ATTR_MAP;

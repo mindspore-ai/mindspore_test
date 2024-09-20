@@ -32,7 +32,7 @@ from mindspore.ops import composite as C
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
-from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, Norm, BitwiseAndScalar,\
+from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, BitwiseAndScalar,\
     BitwiseAndTensor, BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor,\
     RemainderTensorScalar, RemainderScalarTensor
 from mindspore.ops import auto_generate
@@ -43,7 +43,7 @@ from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
 from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
-                                         cosh, nan_to_num,
+                                         cosh, nan_to_num, norm_op, lp_norm_v2_op,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
@@ -7496,7 +7496,7 @@ def _compute_vector_norm_inf(x, dim, keepdims, norm_func):
     return ret_norm
 
 
-def norm_ext(A, ord=None, dim=None, keepdim=False, *, dtype=None):
+def norm_ext(input, p=None, dim=None, keepdim=False, *, dtype=None):
     r"""
     Returns the matrix norm or vector norm of a given tensor.
 
@@ -7511,29 +7511,15 @@ def norm_ext(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     `inf`                   :math:`max(sum(abs(x), dim=1))`  :math:`max(abs(x))`
     `-inf`                  :math:`min(sum(abs(x), dim=1))`  :math:`min(abs(x))`
     `0`                     -- not supported --              :math:`sum(x != 0)`
-    `1`                     :math:`max(sum(abs(x), dim=0))`  as below
-    `-1`                    :math:`min(sum(abs(x), dim=0))`  as below
-    `2`                     largest singular value           as below
-    `-2`                    smallest singular value          as below
     other `int` or `float`  -- not supported --              :math:`sum(abs(x)^{ord})^{(1 / ord)}`
     ====================== ================================ ==========================================
 
     Args:
-        A (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)` where * is zero or more batch dimensions.
-        ord (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
+        input (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)` where * is zero or more batch dimensions.
+        p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
             behavior. Default: ``None`` .
         dim (Union[int, Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
             Default: ``None`` .
-
-            - When `dim` is int, it will be calculated by vector norm.
-
-            - When `dim` is a 2-tuple, it will be calculated by matrix norm.
-
-            - If `dim` is None and `ord` is None, `A` will be flattened to 1D and the 2-norm
-              of the vector will be calculated.
-
-            - If `dim` is None and `ord` is not None, `A` must be 1D or 2D.
-
         keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
 
     Keyword Args:
@@ -7546,9 +7532,6 @@ def norm_ext(A, ord=None, dim=None, keepdim=False, *, dtype=None):
     Raises:
         ValueError: If `dim` is out of range.
         TypeError: If `dim` is neither an int nor a tuple of int.
-        TypeError: If `A` is a vector and `ord` is a str.
-        ValueError: If `A` is a matrices and `ord` is not in valid mode.
-        ValueError: If `A` is a matrices and `ord` is an integer but not in [1, -1, 2, -2].
         ValueError: If two elements of `dim` is same after normalize.
         ValueError: If any elements of `dim` is out of range.
 
@@ -7556,7 +7539,7 @@ def norm_ext(A, ord=None, dim=None, keepdim=False, *, dtype=None):
         ``Ascend``
 
     Note:
-        Currently, it only support `ops.function.math_func.norm_ext(A)`.
+        Currently, it only support `ops.function.math_func.norm_ext(input, p=number)`.
 
     Examples:
         >>> import mindspore as ms
@@ -7570,8 +7553,11 @@ def norm_ext(A, ord=None, dim=None, keepdim=False, *, dtype=None):
         >>> print(ops.norm(x, 0))
         25.0
     """
-    norm_ext_op = Norm()
-    return norm_ext_op(A, ord, dim, keepdim, dtype)
+    if p in [None, 0.0, 1.0, 2.0, 3.0]:
+        return norm_op(input, p, dim, keepdim, dtype)
+    if dtype is None:
+        return lp_norm_v2_op(input, p, dim, keepdim, 0.0)
+    return ops.cast(lp_norm_v2_op(input, p, dim, keepdim, 0.0), dtype)
 
 
 def vector_norm(x, ord=2, axis=None, keepdims=False, *, dtype=None):

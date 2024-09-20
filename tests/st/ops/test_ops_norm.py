@@ -25,19 +25,29 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
 
+def vector_norm_forward_func(x, p):
+    return ops.vector_norm(x, p)
+
+def vector_norm_backward_func(x, p):
+    return ms.grad(vector_norm_forward_func, (0))(x, p)
+
 @test_utils.run_with_cell
-def norm_ext_forward_func(x):
+def norm_ext_forward_func(x, p):
+    return norm_ext(x, p)
+
+@test_utils.run_with_cell
+def norm_ext_backward_func(x, p):
+    return ms.grad(norm_ext_forward_func, (0))(x, p)
+
+@test_utils.run_with_cell
+def norm_ext_forward_dyn(x):
     return norm_ext(x)
 
 
-@test_utils.run_with_cell
-def norm_ext_backward_func(x):
-    return ops.grad(norm_ext_forward_func, (0))(x)
-
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('p', [-np.inf, -1.0, 3.0, 4.0, np.inf])
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_norm_forward(mode):
+def test_ops_norm_forward(mode, p):
     """
     Feature: norm
     Description: Verify the result of norm
@@ -45,20 +55,21 @@ def test_ops_norm_forward(mode):
     """
     ms.set_context(jit_level='O0')
     ms.set_context(mode=mode)
-    a = ops.arange(9, dtype=ms.float32) - 4
+    a = ms.Tensor(np.random.randn(9,), dtype=ms.float32)
     b = a.reshape((3, 3))
-    output1 = norm_ext_forward_func(a)
-    expect_output1 = np.array(7.745967)
-    assert np.allclose(output1.asnumpy(), expect_output1)
+    output1 = norm_ext_forward_func(a, p)
+    expect_output1 = vector_norm_forward_func(a, p)
+    assert np.allclose(output1.asnumpy(), expect_output1.asnumpy())
 
-    output2 = norm_ext_forward_func(b)
-    expect_output2 = np.array(7.745967)
-    assert np.allclose(output2.asnumpy(), expect_output2)
+    output2 = norm_ext_forward_func(b, p)
+    expect_output2 = vector_norm_forward_func(b, p)
+    assert np.allclose(output2.asnumpy(), expect_output2.asnumpy())
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('p', [-np.inf, -1.0, 3.0, 4.0, np.inf])
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_norm_backward(mode):
+def test_ops_norm_backward(p, mode):
     """
     Feature: norm backward
     Description: Verify the result of norm backward
@@ -66,26 +77,26 @@ def test_ops_norm_backward(mode):
     """
     ms.set_context(jit_level='O0')
     ms.set_context(mode=mode)
-    a = ops.arange(9, dtype=ms.float32) - 4
+    a = ms.Tensor(np.random.randn(9,), dtype=ms.float32)
     b = a.reshape((3, 3))
-    output1 = norm_ext_backward_func(a)
-    expect_output1 = ops.grad(ops.norm, (0))(a).asnumpy()
-    assert np.allclose(output1.asnumpy(), expect_output1)
+    output1 = norm_ext_backward_func(a, p)
+    expect_output1 = vector_norm_backward_func(a, p)
+    assert np.allclose(output1.asnumpy(), expect_output1.asnumpy())
 
-    output2 = norm_ext_backward_func(b)
-    expect_output2 = ops.grad(ops.norm, (0))(b).asnumpy()
-    assert np.allclose(output2.asnumpy(), expect_output2)
+    output2 = norm_ext_backward_func(b, p)
+    expect_output2 = vector_norm_backward_func(b, p)
+    assert np.allclose(output2.asnumpy(), expect_output2.asnumpy())
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_norm_dyn():
     """
     Feature: pyboost function.
-    Description: test Norm with dynamic rank/shape.
+    Description: test ops.function.math_func.norm_ext with dynamic rank/shape.
     Expectation: success.
     """
     input_x1 = np.random.randn(*(3, 3)).astype(np.float32)
     input_x2 = np.random.randn(*(3, 3, 3)).astype(np.float32)
     in1 = Tensor(input_x1)
     in2 = Tensor(input_x2)
-    TEST_OP(norm_ext_forward_func, [[in1], [in2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+    TEST_OP(norm_ext_forward_dyn, [[in1], [in2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])

@@ -118,7 +118,7 @@ BaseShapePtr NormInferShape(const PrimitivePtr &primitive, const std::vector<Abs
   }
   auto dim_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]);
   if (dim_opt.has_value()) {
-    // If axis is empty tuple and keep_dims is False, return a zero-dimensional Tensor
+    // If dim is empty tuple and keep_dims is False, return a zero-dimensional Tensor
     if (dim_opt->size() == 0 && !keep_dims) {
       return std::make_shared<abstract::Shape>(ShapeVector({}));
     }

@@ -26,7 +26,7 @@ namespace kernel {
 
 class NormAscend : public AclnnKernelMod {
  public:
-  NormAscend() : AclnnKernelMod(std::move("aclnnLinalgVectorNorm")) {}
+  NormAscend() : AclnnKernelMod(std::move("aclnnNorm")) {}
   ~NormAscend() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;

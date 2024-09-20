@@ -1,12 +1,12 @@
-#operator norm
-norm:
+#operator lp_norm_v2
+lp_norm_v2:
   args:
     input_x:
       dtype: tensor
-    ord:
+    p:
       dtype: float
       type_cast: int, tensor
-      default: None
+      default: 2.0
     dim:
       dtype: tuple[int]
       type_cast: int, list[int]
@@ -14,15 +14,13 @@ norm:
     keepdim:
       dtype: bool
       default: False
-    dtype:
-      dtype: TypeId
-      arg_handler: dtype_to_type_id
-      default: None
+    epsilon:
+      dtype: float
+      default: 1e-12
   returns:
     output:
       dtype: tensor
+  class:
+    name: LpNormV2
   function:
     disable: True
-  dispatch:
-    enable: True
-    Ascend: NormAscend
