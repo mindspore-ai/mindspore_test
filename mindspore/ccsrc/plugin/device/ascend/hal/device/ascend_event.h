@@ -49,6 +49,7 @@ class AscendEvent : public DeviceEvent {
   aclrtStream record_stream_{nullptr};
   bool need_wait_{false};
   bool event_destroyed_{false};
+  bool has_flag_{false};
 };
 
 class AscendTimeEvent : public AscendEvent {
