@@ -20,7 +20,7 @@ mindspore.mint.nn.functional.mse_loss
           - ``'sum'``：计算输出元素的总和。
 
     返回：
-        - Tensor，如果 `reduction` 为 ``'mean'`` 或 ``'sum'`` 时，shape为 `Tensor Scalar` 。
+        - Tensor。如果 `reduction` 为 ``'mean'`` 或 ``'sum'`` 时，shape为 `Tensor Scalar` 。
         - 如果 `reduction` 为 ``'none'`` ，输出的shape则是 `input` 和 `target` 广播之后的shape。
 
     异常：
