@@ -192,6 +192,10 @@ REG_STRING_TO_ENUM_COMMON(driver_name, StrToEnumMap{{"GELS", DriverName::GELS},
 // ErrorMode
 REG_STRING_TO_ENUM_SPECIAL(error_mode, StrToEnumMap{{"CYCLE", ErrorMode::CYCLE}, {"SPECIFIC", ErrorMode::SPECIFIC}});
 
+// PagedAttentionKVCacheQuantMode
+REG_STRING_TO_ENUM_COMMON(kv_cache_quant_mode, StrToEnumMap{{"DEFAULT", PagedAttentionKVCacheQuantMode::DEFAULT},
+                                                            {"PERTOKEN", PagedAttentionKVCacheQuantMode::PERTOKEN}})
+
 // FlipMode
 REG_STRING_TO_ENUM_SPECIAL(flip_mode, StrToEnumMap{{"BITFLIP", FlipMode::BITFLIP},
                                                    {"BITFLIP_DESIGNED", FlipMode::BITFLIP_DESIGNED},

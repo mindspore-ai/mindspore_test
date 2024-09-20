@@ -41,6 +41,7 @@ enum PagedAttentionInputIndex : size_t {
   kPagedAttentionInputNumHeadIndex,
   kPagedAttentionInputScaleValueIndex,
   kPagedAttentionInputNumKVHeadIndex,
+  kPagedAttentionInputKVCacheQuantModeIndex,
   kPagedAttentionInputsNum
 };
 
