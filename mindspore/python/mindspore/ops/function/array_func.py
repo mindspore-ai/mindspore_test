@@ -4929,7 +4929,7 @@ def split_ext(tensor, split_size_or_sections, axis=0):
 
 def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
     """
-    Returns the lower triangle part of 'input' (elements that contain the diagonal and below),
+    Returns the lower triangle part of `input` (elements that contain the diagonal and below),
     and set the other elements to zeros.
 
     Args:
@@ -4939,13 +4939,13 @@ def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
             indicating the main diagonal.
 
     Returns:
-        Tensor, the same shape and data type as the input `x`.
+        Tensor, the same shape and data type as the `input`.
 
     Raises:
-        TypeError: If `x` is not a Tensor.
+        TypeError: If `input` is not a Tensor.
         TypeError: If `diagonal` is not an int.
-        TypeError: If the type of `x` is neither number nor bool.
-        ValueError: If the rank of `x` is less than 2.
+        TypeError: If the type of `input` is neither number nor bool.
+        ValueError: If the rank of `input` is less than 2.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -4990,7 +4990,7 @@ def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
 
 def tril_ext(input, diagonal=0):
     """
-    Returns the lower triangle part of 'input' (elements that contain the diagonal and below),
+    Returns the lower triangle part of `input` (elements that contain the diagonal and below),
     and set the other elements to zeros.
 
     .. warning::
@@ -5003,13 +5003,13 @@ def tril_ext(input, diagonal=0):
             indicating the main diagonal.
 
     Returns:
-        Tensor, the same shape and data type as the input `x`.
+        Tensor, the same shape and data type as the `input`.
 
     Raises:
-        TypeError: If `x` is not a Tensor.
+        TypeError: If `input` is not a Tensor.
         TypeError: If `diagonal` is not an int.
-        TypeError: If the type of `x` is neither number nor bool.
-        ValueError: If the rank of `x` is less than 2.
+        TypeError: If the type of `input` is neither number nor bool.
+        ValueError: If the rank of `input` is less than 2.
 
     Supported Platforms:
         ``Ascend``
