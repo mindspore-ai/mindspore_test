@@ -226,6 +226,10 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For all_reduce, the input tensor must be tensor")
+    if not isinstance(op, str):
+        raise TypeError("For all_reduce, the input op type must be str")
+    if op not in ('sum', 'prod', 'min', 'max'):
+        raise TypeError("For all_reduce, the input op value must be one of sum, prod, min, max")
     group = _get_group(group)
     all_reduce_op = _get_cache_prim(P.AllReduce)(op=op, group=group)
     output = all_reduce_op(tensor)
