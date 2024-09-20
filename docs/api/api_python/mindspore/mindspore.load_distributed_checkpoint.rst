@@ -15,6 +15,8 @@ mindspore.load_distributed_checkpoint
         - **dec_mode** (str) - 仅当dec_key不设为 ``None`` 时，该参数有效。指定了解密模式，目前支持 ``'AES-GCM'`` ， ``'AES-CBC'`` 和 ``'SM4-CBC'`` 。默认值： ``'AES-GCM'`` 。
         - **format** (str) - 待加载进网络的输入权重格式。可以设置为 "ckpt" 或 "safetensors"。默认值："ckpt"。
         - **unified_safetensors_dir** (str) - 待加载进网络的输入权重文件目录。默认值： ``None`` 。
+        - **dst_safetensors_dir** (str) - 保存模式场景下，safetensors的保存目录。
+        - **rank_id** (int) - 卡的逻辑序号。非保存模式下，通过初始化网络全局自动获取；保存模式下，按传入序号保存文件，若未传入，则全量保存。
 
     异常：
         - **TypeError** - 输入类型不符合要求。

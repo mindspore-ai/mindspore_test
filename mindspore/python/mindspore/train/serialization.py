@@ -69,7 +69,7 @@ from mindspore.parallel._parallel_serialization import _convert_to_list, _conver
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
-from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint
+from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint, _find_needed_ranks
 from mindspore.train._utils import read_proto, get_parameter_redundancy
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, dynamic_obfuscate_mindir, \
     split_mindir, split_dynamic_mindir
@@ -118,6 +118,7 @@ def init_ckpt_file_system(fs: FileSystem):
 # Initialize checkpoint file system
 init_ckpt_file_system(_ckpt_fs)
 
+
 def _get_cur_rank_dp(parameter_layout_dict):
     """ Get dp and tp from layout dict. """
     pp_num = _get_auto_parallel_context("pipeline_stages")
@@ -137,6 +138,7 @@ def _get_cur_rank_dp(parameter_layout_dict):
                 value_len = len(item)
                 min_value = item
     return min_value
+
 
 def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
     """
@@ -177,6 +179,7 @@ def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
             continue
         return new_ckpt_path
     return None
+
 
 class ParamDictFuture:
     def __init__(self, executor, param_dict_future):
@@ -511,12 +514,14 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
         ckpt_file_name += f".{format}"
     return ckpt_file_name
 
+
 def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, async_save=False, map_param_inc=False,
                                    global_step_num=None):
     param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or async_save
                          or map_param_inc or global_step_num is not None)
     if format == "safetensors" and param_not_default:
         raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
+
 
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     async_save=False, append_dict=None, enc_key=None, enc_mode="AES-GCM", choice_func=None,
@@ -2844,7 +2849,7 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
 
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
                                 train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
-                                format='ckpt', unified_safetensors_dir=None):
+                                format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None):
     """
     Load checkpoint into net for distributed predication. Used in the case of distributed inference.
 
@@ -2871,6 +2876,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                       It can be set to either "ckpt" or "safetensors". Default: "ckpt".
         unified_safetensors_dir (str): Directory of input weight files to be loaded into the network.
                                        Default: ``None`` .
+        dst_safetensors_dir (str): In the save mode scenario, the save directory for safetensors.
+        rank_id (int): The logical sequence number of the card. In non save mode, it is automatically obtained
+                       globally by initializing the network; In save mode, save the file according to the input
+                       sequence number. If it is not input, save the entire file.
 
     Raises:
         TypeError: The type of inputs do not match the requirements.
@@ -2974,16 +2983,44 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         ...
         [ 1.6067538  1.6244187  1.5384722 ...  1.5449994  1.6195512  1.6176052]]
     """
+    if format not in ['safetensors', 'ckpt']:
+        raise ValueError(
+            f"For 'load_distributed_checkpoint', 'format' must be 'ckpt' or 'safetensors', but got {format}.")
+
     if format == 'safetensors':
         if unified_safetensors_dir is None:
             raise ValueError(f"For 'load_distributed_checkpoint', 'unified_safetensors_dir' can not be None "
                              f"when format is 'safetensors'.")
-        unsupport_param = [checkpoint_filenames, train_strategy_filename, strict_load, dec_key, dec_mode]
+        unsupport_param = [checkpoint_filenames, train_strategy_filename, dec_key]
         for param in unsupport_param:
             if param is not None:
                 raise ValueError(f"For 'load_distributed_checkpoint', {param} must be None "
                                  f"when format is 'safetensors'.")
-        _load_parallel_checkpoint(unified_safetensors_dir, predict_strategy, network)
+        if strict_load or dec_mode != 'AES-GCM':
+            raise ValueError(f"For 'load_distributed_checkpoint', strict_load and dec_mode must be default "
+                             f"when format is 'safetensors'.")
+        if network is not None:
+            rank_id = get_rank()
+            _load_parallel_checkpoint(unified_safetensors_dir, predict_strategy, network, rank_id=rank_id)
+        else:
+            if dst_safetensors_dir is None:
+                raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
+                                 f"when network is None.")
+            if rank_id is not None:
+                _load_parallel_checkpoint(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                                          rank_id)
+            else:
+                needed_rank_list_map = _find_needed_ranks(predict_strategy, None)
+                processes = []
+                for needed_rank_list, rank in needed_rank_list_map.items():
+                    for needed_rank in needed_rank_list.split("-"):
+                        rank_id = int(needed_rank)
+                        p = Process(target=_load_parallel_checkpoint, args=(
+                            unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank_id))
+                        p.start()
+                        processes.append(p)
+                for p in processes:
+                    p.join()
         return
 
     network = Validator.check_isinstance("network", network, nn.Cell)
