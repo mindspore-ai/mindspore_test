@@ -75,10 +75,43 @@ ValuePtr ShallowCopyValue(const FrontendOpRunInfoPtr &op_run_info, const ValuePt
   return value;
 }
 
-ValuePtr CopyTensorValueWithNewId(const ValuePtr &v) {
+#ifndef ENABLE_TEST
+void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::BaseTensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(op_run_info);
+  MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor->device_address() != nullptr) {
+    return;
+  }
+
+  // Create a device address for tensor
+  const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
+  MS_EXCEPTION_IF_NULL(device_context);
+  auto device_address = runtime::DeviceAddressUtils::CreateDeviceAddress(device_context, tensor, tensor->shape(),
+                                                                         op_run_info->base_op_run_info.stream_id);
+  tensor->set_device_address(device_address);
+
+  // Allocate a block of device memory
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kWaitTaskFinish,
+                                     runtime::kDefaultOpName);
+  GilReleaseWithCheck gil_release;
+  runtime::Pipeline::Get().backend_stage()->Wait();
+  runtime::Pipeline::Get().launch_stage()->Wait();
+
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", op_run_info->base_op_run_info.op_name, "");
+  runtime::DeviceAddressUtils::MallocForInput(device_context, tensor, false);
+}
+#endif
+
+ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v) {
+  MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::BaseTensor>()) {
     auto tensor = v->cast<tensor::BaseTensorPtr>();
+#ifndef ENABLE_TEST
+    // Preallocate device memory for the tensor to prevent the device memory of the same tensor
+    // from being allocated multiple times
+    CreateDeviceAddressForTensor(op_run_info, tensor);
+#endif
     // This constructor will make a tensor with the new id
     auto new_tensor = std::make_shared<tensor::Tensor>(tensor->data_type(), tensor->shape(), tensor->data_ptr());
     new_tensor->set_need_pipeline_sync(true);
@@ -90,7 +123,7 @@ ValuePtr CopyTensorValueWithNewId(const ValuePtr &v) {
     const auto &v_tup = v->cast<ValueTuplePtr>();
     ValuePtrList list;
     for (const auto &ele : v_tup->value()) {
-      (void)list.emplace_back(CopyTensorValueWithNewId(ele));
+      (void)list.emplace_back(CopyTensorValueWithNewId(op_run_info, ele));
     }
     return std::make_shared<ValueTuple>(list);
   }
@@ -98,7 +131,7 @@ ValuePtr CopyTensorValueWithNewId(const ValuePtr &v) {
     const auto &v_list = v->cast<ValueListPtr>();
     ValuePtrList list;
     for (const auto &ele : v_list->value()) {
-      (void)list.emplace_back(CopyTensorValueWithNewId(ele));
+      (void)list.emplace_back(CopyTensorValueWithNewId(op_run_info, ele));
     }
     return std::make_shared<ValueList>(list);
   }
@@ -107,7 +140,7 @@ ValuePtr CopyTensorValueWithNewId(const ValuePtr &v) {
     std::vector<std::pair<ValuePtr, ValuePtr>> res;
     res.reserve(v_dict->value().size());
     for (const auto &[k, v] : v_dict->value()) {
-      (void)res.emplace_back(std::make_pair(k, CopyTensorValueWithNewId(v)));
+      (void)res.emplace_back(std::make_pair(k, CopyTensorValueWithNewId(op_run_info, v)));
     }
     return std::make_shared<ValueDictionary>(res);
   }
@@ -768,7 +801,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   if (IsVmOp(op_run_info->base_op_run_info.op_name)) {
     std::vector<ValuePtr> result(op_run_info->input_size);
     for (size_t i = 0; i < op_run_info->input_size; i++) {
-      result[i] = CopyTensorValueWithNewId(op_run_info->op_grad_info->input_value[i]);
+      result[i] = CopyTensorValueWithNewId(op_run_info, op_run_info->op_grad_info->input_value[i]);
     }
     auto result_v = ConstructOutputInVM(result);
     if (op_run_info->requires_grad) {
