@@ -1258,7 +1258,7 @@ class PReLUExt(Cell):
 
     PReLU Activation Function Graph:
 
-    .. image:: ../images/PReLU.png
+    .. image:: ../images/PReLU2.png
         :align: center
 
     .. note::
@@ -1273,7 +1273,7 @@ class PReLUExt(Cell):
             there is only two legitimate values: 1, or the number of channels at Tensor `input`. Default: ``1`` .
         init (float): the initial value of `w`. Default: ``0.25`` .
         dtype (mindspore.dtype, optional): the type of `w`. Default: ``None`` . Supported data type
-        is {float16, float32, bfloat16}.
+            is {float16, float32, bfloat16}.
 
     Inputs:
         - **input** (Tensor) - The input of PReLU.
