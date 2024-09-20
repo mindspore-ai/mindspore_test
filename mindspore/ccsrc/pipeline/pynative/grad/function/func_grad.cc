@@ -111,27 +111,6 @@ ValuePtr GenerateEmptyTupleValue() {
   return std::make_shared<ValueTuple>(tuple_list);
 }
 
-void SetFlattenTensorGradMetaData(const ValuePtrList &flatten_outs, const VariablePtr &variable) {
-  for (size_t i = 0; i < flatten_outs.size(); ++i) {
-    if (flatten_outs[i]->isa<tensor::BaseTensor>()) {
-      auto tensor = flatten_outs[i]->cast<tensor::BaseTensorPtr>();
-      auto auto_grad_meta_data = tensor->auto_grad_meta_data();
-      if (auto_grad_meta_data == nullptr) {
-        MS_LOG(DEBUG) << "Tensor " << tensor->id() << " has no auto_grad_meta_data";
-        auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
-        tensor->set_auto_grad_meta_data(auto_grad_meta_data);
-      }
-      auto_grad_meta_data->set_variable(variable);
-      auto_grad_meta_data->set_output_index(i);
-    }
-  }
-}
-
-bool IsValidTensorInput(const ValuePtr &v) {
-  MS_EXCEPTION_IF_NULL(v);
-  return v->isa<tensor::BaseTensor>() || v->isa<tensor::MetaSparseTensor>();
-}
-
 bool IsNeedComputeGrad(const ValuePtr &input) {
   MS_EXCEPTION_IF_NULL(input);
   if (input->isa<tensor::BaseTensor>()) {
@@ -153,6 +132,40 @@ bool IsNeedComputeGrad(const ValuePtr &input) {
                        [](const ValuePtr &val) { return IsNeedComputeGrad(val); });
   }
   return false;
+}
+
+void SetBaseTensorGradMetaData(const ValuePtr &value, const VariablePtr &variable,size_t index) {
+  auto tensor = value->cast<tensor::BaseTensorPtr>();
+  auto auto_grad_meta_data = tensor->auto_grad_meta_data();
+  if (auto_grad_meta_data == nullptr) {
+    MS_LOG(DEBUG) << "Tensor " << tensor->id() << " has no auto_grad_meta_data";
+    auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
+    tensor->set_auto_grad_meta_data(auto_grad_meta_data);
+  }
+  auto_grad_meta_data->set_variable(variable);
+  auto_grad_meta_data->set_output_index(index);
+}
+
+void SetFlattenTensorGradMetaData(const ValuePtrList &flatten_outs, const VariablePtr &variable) {
+  for (size_t i = 0; i < flatten_outs.size(); ++i) {
+    if (flatten_outs[i]->isa<tensor::BaseTensor>()) {
+      SetBaseTensorGradMetaData(flatten_outs[i], variable, i);
+    }
+  }
+}
+
+void SetFlattenTensorGradMetaDataCustom(
+  const ValuePtrList &flatten_inputs, const ValuePtrList &flatten_outs, const VariablePtr &variable) {
+  for (size_t i = 0; i < flatten_outs.size(); ++i) {
+    if (flatten_outs[i]->isa<tensor::BaseTensor>() && IsNeedComputeGrad(flatten_inputs[i])) {
+      SetBaseTensorGradMetaData(flatten_outs[i], variable, i);
+    }
+  }
+}
+
+bool IsValidTensorInput(const ValuePtr &v) {
+  MS_EXCEPTION_IF_NULL(v);
+  return v->isa<tensor::BaseTensor>() || v->isa<tensor::MetaSparseTensor>();
 }
 
 NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuilderPtr &emitter) {
@@ -402,7 +415,11 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
   variable->set_is_custom_op_variable(is_custom_prim);
 
   (void)variable_set_.insert(variable);
-  SetFlattenTensorGradMetaData(flatten_outputs, variable);
+  if (is_custom_prim) {
+    SetFlattenTensorGradMetaDataCustom(flatten_inputs, flatten_outputs, variable);
+  } else {
+    SetFlattenTensorGradMetaData(flatten_outputs, variable);
+  }
   MS_LOG(DEBUG) << "End update next edge for " << variable->ToString();
   return true;
 }
