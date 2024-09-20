@@ -28,6 +28,7 @@ from tests.st.pi_jit.share.utils import pi_jit_with_config
 
 
 
+
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
@@ -979,3 +980,84 @@ def test_attr_as_inputs_3():
     assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
     jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_empty_container_input():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y, z):
+        return len(x), y + z
+
+    a = [[], []]
+    b = Tensor([1, 2, 3])
+    c = Tensor([1, 1, 1])
+    ret = foo(a, b, c)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 2
+    assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_empty_container_input_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y, z):
+        return len(x), y + z
+
+    a = [([], []), []]
+    b = Tensor([1, 2, 3])
+    c = Tensor([1, 1, 1])
+    ret = foo(a, b, c)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 2
+    assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_empty_container_input_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y, z):
+        return len(x), y + z
+
+    a = {"1": [], "2": ()}
+    b = Tensor([1, 2, 3])
+    c = Tensor([1, 1, 1])
+    ret = foo(a, b, c)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 2
+    assert np.all(ret[1].asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
