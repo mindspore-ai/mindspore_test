@@ -540,6 +540,7 @@ void GradExecutor::Init() {
   MS_LOG(DEBUG) << "Do windows bprop expander register";
 #endif
   init_ = true;
+  config_no_graph_ = (common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE") == "");
 }
 
 TopCellInfoPtr GradExecutor::PopTopCellStack() {
@@ -593,6 +594,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
     return;
   }
   // If New cellid come up, bprop graph use cnode for reusing
+  // is_ir_grad mean first step for each top cell.
   if (IsCreateIrGrad()) {
     top_cell_->set_is_ir_grad(true);
   }
@@ -606,7 +608,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
       std::make_shared<autograd::FuncGrad>(input_param_values, op_num_in_bprop_graph_ * kContainerRatio,
                                            !top_cell_->is_high_order_top_cell(), is_run_recompute_));
   }
-  if (!top_cell_->is_ir_grad() && !top_cell_->use_dynamic_shape_process()) {
+  if (!top_cell_->is_first_step() && !top_cell_->use_dynamic_shape_process()) {
     pre_top_cell_ = GetAlreadyRunTopCell(top_cell_->already_run_cell_id());
     if (pre_top_cell_ == nullptr) {
       pre_top_cell_ = GetPipelineRunTopCell(top_cell_->already_run_cell_id());
@@ -620,8 +622,9 @@ bool GradExecutor::IsCreateIrGrad() {
     // CheckNeedCompileGraph
     if (pipeline_top_cell_map_.find(top_cell_->already_run_cell_id()) == pipeline_top_cell_map_.end()) {
       top_cell_->set_need_compile_graph(true);
+      top_cell_->set_is_first_step(true);
       // If top cell cannot find in both already_run_top_cell_ and pipeline_top_cell_map_ can be create new ir
-      if (!top_cell_->use_dynamic_shape_process()) {
+      if (!config_no_graph() && !top_cell_->use_dynamic_shape_process()) {
         return true;
       }
     }
@@ -1053,7 +1056,8 @@ void GradExecutor::CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info
   MS_EXCEPTION_IF_NULL(input_args_info);
   // In high-order situations, the internal top cell has changed, but the outer top cell remains unchanged. Then outer
   // bprop graph needs to compile again
-  if (top_cell_->use_dynamic_shape_process() || top_cell_->force_top_cell_compile()) {
+  if ((config_no_graph() && !top_cell_->is_high_order_top_cell()) || top_cell_->use_dynamic_shape_process() ||
+      top_cell_->force_top_cell_compile()) {
     // Function need compiler every time.
     top_cell_->use_dynamic_shape_process() ? MS_LOG(DEBUG) << "The graph is dynamic, need to compile graph again"
                                            : MS_LOG(DEBUG) << "Force outer graph compile graph";

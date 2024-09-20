@@ -149,6 +149,8 @@ class TopCellInfo {
   bool resume_flag() const { return need_resume_meta_grad_; }
   inline void set_is_ir_grad(bool is_ir_grad) { is_ir_grad_ = is_ir_grad; }
   bool is_ir_grad() const { return is_ir_grad_; }
+  inline void set_is_first_step(bool is_first_step) { is_first_step_ = is_first_step; }
+  bool is_first_step() { return is_first_step_; }
   inline void set_grad_is_running(bool grad_is_running) { grad_is_running_ = grad_is_running; }
   bool grad_is_running() const { return grad_is_running_; }
   inline void set_grad_first(bool grad_first) { grad_first_ = grad_first; }
@@ -212,7 +214,8 @@ class TopCellInfo {
   // save
   bool need_resume_meta_grad_{false};
   std::map<tensor::BaseTensorPtr, AutoGradMetaDataPtr> param_grad_info_;
-
+  // Check is the top cell is first step.
+  bool is_first_step_{false};
   // Running by actor or by func grad
   bool is_ir_grad_{false};
 

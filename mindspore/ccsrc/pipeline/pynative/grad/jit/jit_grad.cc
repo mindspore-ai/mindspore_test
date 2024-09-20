@@ -412,7 +412,8 @@ void Jit::UpdateAddCnodeFoward(const OpGradInfoPtr &op_grad_info, const GradExec
 
   // Update output tensors of added forward nodes, which are added to return node of jit func graph.
   if (!added_v_is_empty) {
-    if (grad_executor->use_dynamic_shape_process()) {
+    if ((grad_executor->config_no_graph() && !grad_executor->is_high_order_top_cell()) ||
+        grad_executor->use_dynamic_shape_process()) {
       // If jit is not control flow, the jit is executed by actor under dynamic shape, and valuenode
       // will be updated
       if (!compile_info_.is_control_flow_) {

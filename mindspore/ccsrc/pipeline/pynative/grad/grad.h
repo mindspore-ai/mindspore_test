@@ -144,6 +144,7 @@ class ME_EXPORT GradExecutor {
   inline void set_forward_use_dynamic_shape_process(bool forward_use_dynamic_shape_process) {
     forward_use_dynamic_shape_process_ = forward_use_dynamic_shape_process;
   }
+  inline bool config_no_graph() const { return config_no_graph_; }
   const std::string &hook_cell_id() { return hook_cell_id_; }
   inline void set_hook_cell_id(const std::string &hook_cell_id) { hook_cell_id_ = hook_cell_id; }
 
@@ -236,7 +237,7 @@ class ME_EXPORT GradExecutor {
   bool is_run_recompute_{false};
   bool save_graphs_{false};
   bool forward_use_dynamic_shape_process_{false};
-
+  bool config_no_graph_{true};
   // Cell which register hook
   std::string hook_cell_id_;
 

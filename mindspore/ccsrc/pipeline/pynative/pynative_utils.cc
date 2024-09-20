@@ -1480,14 +1480,10 @@ void DataConvert::FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_ten
         FlattenValueSeqArg(elem, is_only_flatten_tensor_seq, is_filter_tensor, flatten_v);
       }
     }
-  } else if (is_only_flatten_tensor_seq) {
-    if (v->isa<ValueDictionary>()) {
-      auto dic_v = v->cast<ValueDictionaryPtr>();
-      for (const auto &elem : dic_v->value()) {
-        FlattenValueSeqArg(elem.second, is_only_flatten_tensor_seq, is_filter_tensor, flatten_v);
-      }
-    } else {
-      (void)flatten_v->emplace_back(v);
+  } else if (v->isa<ValueDictionary>()) {
+    auto dic_v = v->cast<ValueDictionaryPtr>();
+    for (const auto &elem : dic_v->value()) {
+      FlattenValueSeqArg(elem.second, is_only_flatten_tensor_seq, is_filter_tensor, flatten_v);
     }
   } else if (!is_filter_tensor) {
     MS_LOG(DEBUG) << "Get not tensor value: " << v->ToString();
@@ -2509,7 +2505,7 @@ TopCellInfo *AutoGrad::FindPreTopcell(const GradExecutor *grad_executor, const O
                                       const std::string &op_info, const ValuePtr &value) {
   const auto &cur_top_cell = grad_executor->top_cell();
   // If the top cell is ir grad, which must be the first step, and pre-top cell cannot be found
-  if (cur_top_cell->is_ir_grad()) {
+  if (cur_top_cell->is_first_step()) {
     // First run top cell, save op output info for replacement
     cur_top_cell->SaveTensorIdWithOpInfo(op_info, value);
     MS_LOG(DEBUG) << "Top cell " << cur_top_cell << " with " << cur_top_cell->already_run_cell_id()
@@ -2519,7 +2515,11 @@ TopCellInfo *AutoGrad::FindPreTopcell(const GradExecutor *grad_executor, const O
     return nullptr;
   }
   if (cur_top_cell->use_dynamic_shape_process()) {
-    MS_LOG(DEBUG) << "Current top cell " << cur_top_cell << " is in dynamic process";
+    MS_LOG(DEBUG) << "Current top cell " << cur_top_cell
+                  << "dynamic shape process: " << cur_top_cell->use_dynamic_shape_process();
+    return nullptr;
+  }
+  if (grad_executor->config_no_graph() && !cur_top_cell->is_high_order_top_cell()) {
     return nullptr;
   }
   // Not the first step
@@ -2537,6 +2537,10 @@ void AutoGrad::UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradI
   const auto &top_cell = grad_executor->top_cell();
   if (!is_jit_graph) {
     grad_executor->dynamic_shape()->CheckNodeDynamic(top_cell, op_grad_info);
+  }
+  // When config no graph and not high order, we can skip update tensor.
+  if (grad_executor->config_no_graph() && !grad_executor->is_high_order_top_cell()) {
+    return;
   }
   if (op_grad_info->need_do_forward_output_replace && op_grad_info->used_in_bprop_graph) {
     MS_EXCEPTION_IF_NULL(pre_top_cell);
