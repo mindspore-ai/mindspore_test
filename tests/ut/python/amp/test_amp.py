@@ -138,7 +138,8 @@ def test_modify_amp_list():
                                      ("CumSum", []), ("CumsumExt", []), ("ProdExt", []), ("SumExt", [])]
     assert amp_c.SetDtypeList == [("Norm", [])]
     assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Addcmul", []), ("Cross", []), ("_PyboostCrossPrim", []),
-                                     ("Dot", []), ("GridSampler2D", []), ("GridSampler3D", []), ("BiasAdd", [])]
+                                     ("Dot", []), ("GridSampler2D", []), ("GridSampler3D", []), ("BiasAdd", []),
+                                     ("AddN", [])]
     amp_c.SetDtypeOptList.remove(("LogSoftmax", []))
     amp_c.SetDtypeList.append(("Test", [0]))
     amp_c.AutoPromoteList.remove(("Addcmul", []))
@@ -146,7 +147,7 @@ def test_modify_amp_list():
                                      ("CumsumExt", []), ("ProdExt", []), ("SumExt", [])]
     assert amp_c.SetDtypeList == [("Norm", []), ("Test", [0])]
     assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Cross", []), ("_PyboostCrossPrim", []), ("Dot", []),
-                                     ("GridSampler2D", []), ("GridSampler3D", []), ("BiasAdd", [])]
+                                     ("GridSampler2D", []), ("GridSampler3D", []), ("BiasAdd", []), ("AddN", [])]
 
 
 class MatmulNet(nn.Cell):

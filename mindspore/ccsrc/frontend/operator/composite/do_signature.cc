@@ -30,6 +30,7 @@
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
+#include "ir/core_ops_primitive.h"
 #include "ops/op_def.h"
 #include "utils/flags.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
@@ -39,6 +40,8 @@ namespace mindspore {
 // namespace to support composite operators definition
 namespace prim {
 namespace {
+using TypeInfoPair = std::pair<std::vector<TypeId>, std::vector<bool>>;
+
 const std::vector<Signature> &GetSignature(const ValuePtr &function) {
   static const auto empty = std::vector<Signature>();
   if (function->isa<Primitive>() && function->cast<PrimitivePtr>()->has_signature()) {
@@ -74,23 +77,25 @@ void ProcessDefault(const std::string &func_name, size_t actual_param_number, co
   }
 }
 
-void GetTypeInfo(const std::vector<TypePtr> &input_types, std::vector<TypeId> *args_type_id,
-                 std::vector<bool> *args_has_tensor) {
+TypeInfoPair GetTypeInfo(const std::vector<TypePtr> &input_types) {
+  TypeInfoPair type_info_pair;
   for (const auto &arg_type : input_types) {
     MS_EXCEPTION_IF_NULL(arg_type);
+    TypeId type_id = kTypeUnknown;
+    bool is_tensor = false;
     if (arg_type->isa<Number>()) {
-      (void)args_type_id->emplace_back(arg_type->cast<NumberPtr>()->type_id());
-      (void)args_has_tensor->emplace_back(false);
+      type_id = arg_type->cast<NumberPtr>()->type_id();
+      is_tensor = false;
     } else if (arg_type->isa<TensorType>()) {
       auto elem_type = arg_type->cast<TensorTypePtr>()->element();
       MS_EXCEPTION_IF_NULL(elem_type);
-      (void)args_type_id->emplace_back(elem_type->type_id());
-      (void)args_has_tensor->emplace_back(true);
-    } else {
-      (void)args_type_id->emplace_back(kTypeUnknown);
-      (void)args_has_tensor->emplace_back(false);
+      type_id = elem_type->type_id();
+      is_tensor = true;
     }
+    (void)type_info_pair.first.emplace_back(type_id);
+    (void)type_info_pair.second.emplace_back(is_tensor);
   }
+  return type_info_pair;
 }
 
 bool IsTypeRef(const SignatureEnumRW &sig, const TypePtr &type) {
@@ -183,7 +188,7 @@ TypePtr GetMixedPrecisionTargetType(const FuncGraphPtr &func_graph) {
 }
 
 bool GetImplicitPromoteType(const std::vector<Signature> &signature, const std::set<size_t> &write_indices,
-                            std::vector<TypeId> *args_type_id, std::vector<bool> *args_is_tensor) {
+                            TypeInfoPair *args_type_info) {
   if (signature.empty()) {
     return false;
   }
@@ -195,26 +200,118 @@ bool GetImplicitPromoteType(const std::vector<Signature> &signature, const std::
     return false;
   }
   auto args_size = dtypes.size();
-  if (args_size > args_type_id->size()) {
+  auto args_type_id = args_type_info->first;
+  auto args_is_tensor = args_type_info->second;
+  if (args_size > args_type_id.size()) {
     // It is possible that op_inputs size is larger than signatures size in vmap.
     MS_LOG(INTERNAL_EXCEPTION) << "For auto type cast, the number of args should be greater than or equal to "
-                               << args_size << ", but got " << args_type_id->size() << ".";
+                               << args_size << ", but got " << args_type_id.size() << ".";
   }
-  auto sig_type_map = GetSignatureTypeMap(dtypes, *args_type_id, *args_is_tensor, write_indices);
+  auto sig_type_map = GetSignatureTypeMap(dtypes, args_type_id, args_is_tensor, write_indices);
   for (size_t i = 0; i < args_size; ++i) {
     auto it = sig_type_map.find(dtypes[i]);
     if (it == sig_type_map.end()) {
       continue;
     }
-    (*args_type_id)[i] = (it->second).first;
-    (*args_is_tensor)[i] = (it->second).second;
+    (args_type_info->first)[i] = (it->second).first;
+    (args_type_info->second)[i] = (it->second).second;
   }
   return true;
 }
 
+TypeInfoPair UpdateTypeInfoForAmp(const std::vector<TypePtr> &input_types, const TypeInfoPair &type_info,
+                                  std::vector<bool> *matched_sequence) {
+  TypeInfoPair amp_type_info = type_info;
+  // Collect Tensor[Float] in Tuple/List.
+  for (size_t i = 0; i < input_types.size(); ++i) {
+    auto arg_type = input_types[i];
+    MS_EXCEPTION_IF_NULL(arg_type);
+    TypePtrList sequence_elements;
+    if (arg_type->isa<Tuple>()) {
+      auto tuple_type = arg_type->cast<TuplePtr>();
+      if (tuple_type->dynamic_len()) {
+        continue;
+      }
+      sequence_elements = tuple_type->elements();
+    } else if (arg_type->isa<List>()) {
+      auto list_type = arg_type->cast<ListPtr>();
+      if (list_type->dynamic_len()) {
+        continue;
+      }
+      sequence_elements = list_type->elements();
+    } else {
+      continue;
+    }
+    for (const auto &elem : sequence_elements) {
+      if (elem->isa<TensorType>()) {
+        auto tensor_type = elem->cast<TensorTypePtr>()->element();
+        MS_EXCEPTION_IF_NULL(tensor_type);
+        auto type_id = tensor_type->type_id();
+        if (IsFloatTensor(type_id, true)) {
+          (void)amp_type_info.first.emplace_back(type_id);
+          (void)amp_type_info.second.emplace_back(true);
+          (*matched_sequence)[i] = true;
+        }
+      }
+    }
+  }
+  return amp_type_info;
+}
+
+AnfNodePtr DoTypeCastForSequenceElement(const FuncGraphPtr &func_graph, const TypePtrList &elem_type_list,
+                                        const AnfNodePtr &seq_node, const TypeId &amp_type_id, bool is_tuple) {
+  bool need_cast = false;
+  auto make_prim = is_tuple ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+  auto getitem_prim = is_tuple ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+  AnfNodePtrList elem_inputs{NewValueNode(make_prim)};
+  for (size_t i = 0; i < elem_type_list.size(); ++i) {
+    auto elem_node = func_graph->NewCNodeInOrder({NewValueNode(getitem_prim), seq_node, NewValueNode(SizeToLong(i))});
+    if (elem_type_list[i]->isa<TensorType>()) {
+      auto tensor_type = elem_type_list[i]->cast<TensorTypePtr>()->element();
+      MS_EXCEPTION_IF_NULL(tensor_type);
+      auto type_id = tensor_type->type_id();
+      if (IsFloatTensor(type_id, true) && type_id != amp_type_id) {
+        auto cast_node = func_graph->NewCNodeAfter(
+          elem_node, {NewValueNode(prim::kPrimCast), elem_node, NewValueNode(static_cast<int64_t>(amp_type_id))});
+        (void)elem_inputs.emplace_back(cast_node);
+        MS_LOG(DEBUG) << "Do type cast for sequence[" << i << "]: " << cast_node->DebugString();
+        need_cast = true;
+        continue;
+      }
+    }
+    (void)elem_inputs.emplace_back(elem_node);
+  }
+  return need_cast ? func_graph->NewCNodeInOrder(elem_inputs) : nullptr;
+}
+
+void DoTypeCastForFloatTensorInSequence(const FuncGraphPtr &func_graph, const std::vector<TypePtr> &input_types,
+                                        const TypeId &amp_type_id, const std::vector<bool> &matched_sequence,
+                                        AnfNodePtrList *op_inputs) {
+  for (size_t idx = 0; idx < matched_sequence.size(); ++idx) {
+    if (!matched_sequence[idx]) {
+      continue;
+    }
+    auto input_type = input_types[idx];
+    MS_EXCEPTION_IF_NULL(input_type);
+    if (input_type->isa<Tuple>()) {
+      auto tuple_elems = input_type->cast<TuplePtr>()->elements();
+      auto new_node = DoTypeCastForSequenceElement(func_graph, tuple_elems, (*op_inputs)[idx], amp_type_id, true);
+      if (new_node != nullptr) {
+        (*op_inputs)[idx] = new_node;
+      }
+    } else if (input_type->isa<List>()) {
+      auto list_elems = input_type->cast<ListPtr>()->elements();
+      auto new_node = DoTypeCastForSequenceElement(func_graph, list_elems, (*op_inputs)[idx], amp_type_id, false);
+      if (new_node != nullptr) {
+        (*op_inputs)[idx] = new_node;
+      }
+    }
+  }
+}
+
 bool GetAutoMixedPrecisionType(const FuncGraphPtr &func_graph, const ValuePtr &function,
-                               const std::pair<std::vector<TypeId>, std::vector<bool>> &source_type_info,
-                               std::vector<TypeId> *target_type_id, std::vector<bool> *target_is_tensor) {
+                               const std::vector<TypePtr> &input_types, TypeInfoPair *target_type_info,
+                               std::vector<AnfNodePtr> *op_inputs) {
   if (!function->isa<Primitive>() || func_graph->amp_strategy() == nullptr || !func_graph->amp_strategy()->IsEnable()) {
     return false;
   }
@@ -223,9 +320,13 @@ bool GetAutoMixedPrecisionType(const FuncGraphPtr &func_graph, const ValuePtr &f
   if (strategy_info.strategy == amp::PrimCastStrategy::Ignore) {
     return false;
   }
+
+  // Get auto mixed-precision target type id.
+  std::vector<bool> matched_sequence(input_types.size());
+  auto amp_type_info = UpdateTypeInfoForAmp(input_types, *target_type_info, &matched_sequence);
   TypeId amp_type_id;
   if (strategy_info.strategy == amp::PrimCastStrategy::AutoPromote) {
-    amp_type_id = GetMixPrecisionPromoteType(source_type_info.first, source_type_info.second);
+    amp_type_id = GetMixPrecisionPromoteType(amp_type_info.first, amp_type_info.second);
     if (amp_type_id == kTypeUnknown) {
       return false;
     }
@@ -235,20 +336,21 @@ bool GetAutoMixedPrecisionType(const FuncGraphPtr &func_graph, const ValuePtr &f
   MS_LOG(DEBUG) << "For Operator[" << prim_name << "], its amp strategy is " << strategy_info.strategy
                 << ", and target type_id is" << TypeIdToString(amp_type_id);
 
-  for (size_t i = 0; i < target_type_id->size(); ++i) {
-    if (IsFloatTensor((*target_type_id)[i], (*target_is_tensor)[i])) {
-      (*target_type_id)[i] = amp_type_id;
+  // Process Tensor[Float] in Tuple/List.
+  DoTypeCastForFloatTensorInSequence(func_graph, input_types, amp_type_id, matched_sequence, op_inputs);
+  // Get target type id.
+  for (size_t i = 0; i < target_type_info->first.size(); ++i) {
+    if (IsFloatTensor((target_type_info->first)[i], (target_type_info->second)[i])) {
+      (target_type_info->first)[i] = amp_type_id;
     }
   }
   return true;
 }
 
-void DoTypeCast(const FuncGraphPtr &func_graph, const std::pair<ValuePtr, std::set<size_t>> &function_write_indices,
-                const std::pair<std::vector<TypeId>, std::vector<bool>> &source_type_info,
-                const std::pair<std::vector<TypeId>, std::vector<bool>> &target_type_info,
-                std::vector<AnfNodePtr> *op_inputs) {
-  auto func = function_write_indices.first;
-  auto write_indices = function_write_indices.second;
+void DoTypeCast(const FuncGraphPtr &func_graph, const ValuePtr &func, const std::set<size_t> &write_indices,
+                const std::pair<TypeInfoPair, TypeInfoPair> &type_info_pair, std::vector<AnfNodePtr> *op_inputs) {
+  auto source_type_info = type_info_pair.first;
+  auto target_type_info = type_info_pair.second;
   for (size_t i = 0; i < source_type_info.first.size(); ++i) {
     TypeId source_type_id = (source_type_info.first)[i];
     TypeId target_type_id = (target_type_info.first)[i];
@@ -336,20 +438,15 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   // process default
   ProcessDefault(func_name, args_abs_list.size(), signature, has_var, &op_inputs, &input_types);
   // Record type info.
-  std::vector<TypeId> source_type_id;
-  std::vector<bool> source_is_tensor;
-  GetTypeInfo(input_types, &source_type_id, &source_is_tensor);
+  auto source_type_info = GetTypeInfo(input_types);
+  auto target_type_info = source_type_info;
   // Auto mixed precision.
-  std::vector<TypeId> target_type_id = source_type_id;
-  std::vector<bool> target_is_tensor = source_is_tensor;
-  bool amp_type_changed = GetAutoMixedPrecisionType(
-    func_graph, function, std::make_pair(source_type_id, source_is_tensor), &target_type_id, &target_is_tensor);
+  bool amp_type_changed = GetAutoMixedPrecisionType(func_graph, function, input_types, &target_type_info, &op_inputs);
   // Implicit type promotion.
-  bool promote_type_changed = GetImplicitPromoteType(signature, write_indices, &target_type_id, &target_is_tensor);
+  bool promote_type_changed = GetImplicitPromoteType(signature, write_indices, &target_type_info);
   // Do type cast.
   if (promote_type_changed || amp_type_changed) {
-    DoTypeCast(func_graph, std::make_pair(function, write_indices), std::make_pair(source_type_id, source_is_tensor),
-               std::make_pair(target_type_id, target_is_tensor), &op_inputs);
+    DoTypeCast(func_graph, function, write_indices, std::make_pair(source_type_info, target_type_info), &op_inputs);
   }
   return op_inputs;
 }

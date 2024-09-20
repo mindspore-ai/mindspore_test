@@ -508,6 +508,31 @@ def test_auto_mix_precision_with_keyword_arguments(mode):
     assert out1.dtype == ms.float16 and out2.dtype == ms.float32
 
 
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_with_AddN(mode):
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test amp auto mode with AddN.
+    Expectation: success.
+    """
+    class AddnNet(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.addn = ops.AddN()
+
+        def construct(self, *z):
+            return self.addn(z)
+
+    context.set_context(mode=mode)
+    x = Tensor(np.array([1, 2, 3]), ms.float16)
+    y = Tensor(np.array([4, 5, 6]), ms.float32)
+    net = AddnNet()
+    net = auto_mixed_precision(net, amp_level="auto")
+    out = net(x, y, x, y)
+    assert out.dtype == ms.float32
+
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_amp_single_func():
     """
