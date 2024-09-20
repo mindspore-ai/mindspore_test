@@ -45,7 +45,7 @@ if(ENABLE_D OR ENABLE_ACL)
     list(REMOVE_ITEM OPS_INC_LIST "${OPS_INC_DIR}/nn_norm.h")
     list(REMOVE_ITEM OPS_INC_LIST "${OPS_INC_DIR}/selection.h")
     list(REMOVE_ITEM OPS_INC_LIST "${OPS_INC_DIR}/transformation.h")
-    # list(REMOVE_ITEM OPS_INC_LIST "${OPS_INC_DIR}/experiment_ops.h")
+    list(REMOVE_ITEM OPS_INC_LIST "${OPS_INC_DIR}/experiment_ops.h")
     list(REMOVE_ITEM OPS_INC_LIST "${OPS_INC_DIR}/flash_attention_score_proto.h")
     list(REMOVE_ITEM OPS_INC_LIST "${OPS_INC_DIR}/flash_attention_score_grad_proto.h")
     #append custom op
