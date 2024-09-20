@@ -217,8 +217,8 @@ class OpAdapter : public BaseOpAdapter {
         }
       }
 
-      MS_LOG(INFO) << "create_dyn_output for node:" << anf->fullname_with_scope() << ", type:" << type->ToString()
-                   << ", num:" << num;
+      MS_LOG(DEBUG) << "create_dyn_output for node:" << anf->fullname_with_scope() << ", type:" << type->ToString()
+                    << ", num:" << num;
       if (dyn_output_map_.size() > 1) {
         for (auto &[idx, output_desc] : dyn_output_map_) {
           // To Do
@@ -595,7 +595,7 @@ class OpAdapter : public BaseOpAdapter {
   static std::vector<int64_t> ConvertAny(const ValuePtr &value, const AnyTraits<std::vector<int64_t>>,
                                          const AnyTraits<std::vector<int64_t>>) {
     MS_EXCEPTION_IF_NULL(value);
-    MS_LOG(INFO) << "Value: " << value->type_name();
+    MS_LOG(DEBUG) << "Value: " << value->type_name();
     std::vector<int64_t> list;
     if (value->isa<ValueSequence>()) {
       auto vec = value->cast<ValueSequencePtr>();

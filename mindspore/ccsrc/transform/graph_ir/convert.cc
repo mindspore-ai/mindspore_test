@@ -940,7 +940,8 @@ void DfGraphConvertor::ReplaceAllParameterToRefData() {
         continue;
       }
       if (op_itor->second->GetOpType() == kTypeRefData) {
-        MS_LOG(INFO) << "This process param has default, have been change to RefData: " << param->fullname_with_scope();
+        MS_LOG(DEBUG) << "This process param has default, have been change to RefData: "
+                      << param->fullname_with_scope();
         continue;
       }
       auto para = param->cast<ParameterPtr>();
@@ -2129,7 +2130,7 @@ void DfGraphConvertor::SetGraphInputs(std::vector<Operator> *inputs, AnfNodeWeak
       }
       op = SetGraphInputsForNotVar(it, &index, inputs);
     } else if (vars_[name] != nullptr) {
-      MS_LOG(INFO) << "add var input " << it->ToString() << ", index " << index;
+      MS_LOG(DEBUG) << "add var input " << it->ToString() << ", index " << index;
       op = Convert(it);
       MS_EXCEPTION_IF_NULL(op);
       if (name_records.count(name) != 0) {
@@ -3346,7 +3347,7 @@ bool DfGraphConvertor::IsIdentityRedundant(const ::ge::GNode &node) const {
 }
 
 void DfGraphConvertor::RemoveIdentity(::ge::GNode identity_node) {
-  MS_LOG(INFO) << "Start Remove Identity or IdentityN, identity_node: " << GetGNodeName(identity_node);
+  MS_LOG(DEBUG) << "Start Remove Identity or IdentityN, identity_node: " << GetGNodeName(identity_node);
   auto node_type = GetGNodeType(identity_node);
   if (node_type != kTypeIdentity && node_type != kTypeIdentityN) {
     MS_LOG(EXCEPTION) << "Node is not Identity or IdentityN, but is " << node_type
@@ -3638,7 +3639,7 @@ void DfGraphConvertor::UpdateOpDesc(const AnfNodePtr node) {
   MS_EXCEPTION_IF_NULL(op);
   std::string op_type = op->GetOpType();
   if (!IsNeedToUpdateTensorDesc(op_type, node)) {
-    MS_LOG(INFO) << "No need to set the opDesc of node: " << node->fullname_with_scope() << ", op type is " << op_type;
+    MS_LOG(DEBUG) << "No need to set the opDesc of node: " << node->fullname_with_scope() << ", op type is " << op_type;
     return;
   }
 
