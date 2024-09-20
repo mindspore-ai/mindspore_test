@@ -94,15 +94,13 @@ const CNodePtr ConvertBasePaddings::CreateStridedSliceNode(const FuncGraphPtr &f
                                   new_axis_mask, shrink_axis_mask});
   MS_EXCEPTION_IF_NULL(abs);
   strided_slice_node->set_abstract(abs);
-  static size_t slice_index = 0;
-  strided_slice_node->set_fullname_with_scope(input_node->fullname_with_scope() + "_strided_slice_" +
-                                              std::to_string(slice_index++));
+  strided_slice_node->set_scope(input_node->scope());
   return strided_slice_node;
 }
 
 const CNodePtr ConvertBasePaddings::CreateConcatNode(const FuncGraphPtr &func_graph,
                                                      const std::vector<AnfNodePtr> &concat_input_vec,
-                                                     const std::string &concat_node_name) const {
+                                                     const AnfNodePtr &pad_node) const {
   auto concat_prim = std::make_shared<Primitive>(kConcatOpName);
   MS_EXCEPTION_IF_NULL(concat_prim);
   std::vector<int64_t> dyn_input_sizes = {SizeToLong(concat_input_vec.size()), -1};
@@ -121,7 +119,7 @@ const CNodePtr ConvertBasePaddings::CreateConcatNode(const FuncGraphPtr &func_gr
   auto concat_abs = InferAbstract(concat_prim, concat_inputs);
   MS_EXCEPTION_IF_NULL(concat_abs);
   concat_node->set_abstract(concat_abs);
-  concat_node->set_fullname_with_scope(concat_node_name);
+  concat_node->set_scope(pad_node->scope());
   return concat_node;
 }
 
@@ -170,10 +168,7 @@ const CNodePtr ConvertBasePaddings::ProcessSliceNConcat(const FuncGraphPtr &func
     MS_EXCEPTION_IF_NULL(fill_node);
     concat_input_vec.insert(concat_input_vec.begin(), fill_node);
   }
-  static size_t concat_index = 0;
-  auto concat_node =
-    CreateConcatNode(func_graph, concat_input_vec,
-                     pad_node->fullname_with_scope() + "_pad_slice_concat" + std::to_string(concat_index++));
+  auto concat_node = CreateConcatNode(func_graph, concat_input_vec, pad_node);
   return concat_node;
 }
 

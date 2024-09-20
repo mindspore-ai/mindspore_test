@@ -243,7 +243,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitNode(const FuncGraphPtr &f
   auto matmul_split_cnode = func_graph->NewCNode(matmul_split_prim, matmul_split_inputs);
   MS_EXCEPTION_IF_NULL(matmul_split_cnode);
 
-  matmul_split_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "-SplitWithSize");
+  matmul_split_cnode->set_scope(matmul_cnode->scope());
   if (node->abstract() != nullptr) {
     matmul_split_cnode->set_abstract(split_cnode->abstract()->Clone());
   }
@@ -300,7 +300,6 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulBiasAddSplitNode(const FuncGrap
     std::vector<AnfNodePtr> casted_bias_inputs = {NewValueNode(prim::kPrimCast), input_bias, type_node_f32};
     auto bias_cast_cnode = func_graph->NewCNode(casted_bias_inputs);
     MS_EXCEPTION_IF_NULL(bias_cast_cnode);
-    bias_cast_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "-Bf162Fp32Cast");
     auto type_fp32 = TypeIdToType(TypeId::kNumberTypeFloat32);
     auto cast_abs = std::make_shared<abstract::AbstractTensor>(type_fp32, input_bias->Shape());
     bias_cast_cnode->set_abstract(cast_abs);
@@ -321,7 +320,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulBiasAddSplitNode(const FuncGrap
   auto matmul_split_cnode = func_graph->NewCNode(matmul_split_prim, matmul_split_inputs);
   MS_EXCEPTION_IF_NULL(matmul_split_cnode);
 
-  matmul_split_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "-BiasAddSplitWithSize");
+  matmul_split_cnode->set_scope(matmul_cnode->scope());
   if (node->abstract() != nullptr) {
     matmul_split_cnode->set_abstract(split_cnode->abstract()->Clone());
   }
@@ -378,7 +377,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateQuantbatchmatmulSplitNode(const FuncG
   auto qbmm_split_cnode = func_graph->NewCNode(qbmm_split_prim, qbmm_split_inputs);
   MS_EXCEPTION_IF_NULL(qbmm_split_cnode);
 
-  qbmm_split_cnode->set_fullname_with_scope(qbmm_cnode->fullname_with_scope() + "-SplitWithSize");
+  qbmm_split_cnode->set_scope(qbmm_cnode->scope());
   if (node->abstract() != nullptr) {
     qbmm_split_cnode->set_abstract(split_cnode->abstract()->Clone());
   }
@@ -469,7 +468,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluNode(const FuncGraphPt
 
   auto new_item_cnode = CreateGetItemNode(func_graph, split_cnode, matmul_split_cnode, silu_cnode, output_index);
   MS_CHECK_TRUE_RET(new_item_cnode != nullptr, nullptr);
-  matmul_split_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "-SplitWithSizeSilu");
+  matmul_split_cnode->set_scope(matmul_cnode->scope());
   if (node->abstract() != nullptr) {
     matmul_split_cnode->set_abstract(split_cnode->abstract()->Clone());
   }
@@ -528,7 +527,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulBiasAddSplitSiluNode(const Func
 
   auto new_item_cnode = CreateGetItemNode(func_graph, split_cnode, matmul_split_cnode, silu_cnode, output_index);
   MS_CHECK_TRUE_RET(new_item_cnode != nullptr, nullptr);
-  matmul_split_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "-BiasAddSplitWithSizeSilu");
+  matmul_split_cnode->set_scope(matmul_cnode->scope());
   if (node->abstract() != nullptr) {
     matmul_split_cnode->set_abstract(split_cnode->abstract()->Clone());
   }
@@ -591,7 +590,7 @@ CNodePtr InferenceMatmulSplitFusion::CreateQuantbatchmatmulSplitSiluNode(const F
 
   auto new_item_cnode = CreateGetItemNode(func_graph, split_cnode, qbmm_split_cnode, silu_cnode, output_index);
   MS_CHECK_TRUE_RET(new_item_cnode != nullptr, nullptr);
-  qbmm_split_cnode->set_fullname_with_scope(qbmm_cnode->fullname_with_scope() + "-SplitWithSizeSilu");
+  qbmm_split_cnode->set_scope(qbmm_cnode->scope());
   if (node->abstract() != nullptr) {
     qbmm_split_cnode->set_abstract(split_cnode->abstract()->Clone());
   }

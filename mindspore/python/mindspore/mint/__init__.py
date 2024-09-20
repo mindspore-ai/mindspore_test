@@ -599,6 +599,7 @@ def cat(tensors, dim=0):
     """
     return ops.auto_generate.cat(tensors, dim)
 
+
 def concat(tensors, dim=0):
     r"""
     .. warning::
@@ -607,6 +608,7 @@ def concat(tensors, dim=0):
     Alias of mint.cat().
     """
     return cat(tensors, dim)
+
 
 def cummax(input, dim):
     r"""

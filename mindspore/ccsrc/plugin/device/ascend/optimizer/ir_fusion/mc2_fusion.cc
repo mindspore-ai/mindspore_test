@@ -247,8 +247,7 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
     return nullptr;
   }
   matmul_reduce_scatter_cnode->set_abstract(reduce_scatter_cnode->abstract()->Clone());
-  matmul_reduce_scatter_cnode->set_fullname_with_scope(reduce_scatter_cnode->fullname_with_scope() +
-                                                       "_matmul_reduce_scatter");
+  matmul_reduce_scatter_cnode->set_scope(reduce_scatter_cnode->scope());
   MS_LOG(DEBUG) << "Create MatmulReduceScatter cnode success.";
   return matmul_reduce_scatter_cnode;
 }
@@ -349,7 +348,7 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
     {matmul_cnode_dtype, all_gather_cnode_dtype},
     {std::make_shared<abstract::Shape>(matmul_cnode_shape), std::make_shared<abstract::Shape>(all_gather_cnode_shape)},
     all_gather_matmul_cnode.get());
-  all_gather_matmul_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "_all_gather_matmul");
+  all_gather_matmul_cnode->set_scope(matmul_cnode->scope());
 
   // Extract process for node
   auto manager = all_gather_cnode->func_graph()->manager();
@@ -473,7 +472,7 @@ CNodePtr QuantBatchMatmulAllReduceFusion::CreateFusionCNode(const FuncGraphPtr &
     return nullptr;
   }
   qbmm_allreduce_cnode->set_abstract(allreduce_cnode->abstract()->Clone());
-  qbmm_allreduce_cnode->set_fullname_with_scope(allreduce_cnode->fullname_with_scope() + "_qbmm_allreduce");
+  qbmm_allreduce_cnode->set_scope(allreduce_cnode->scope());
   MS_LOG(DEBUG) << "Create QuantBatchMatmulAllReduce cnode success.";
   return qbmm_allreduce_cnode;
 }

@@ -35,8 +35,7 @@ class MakeTupleUnifyMindIR : public PatternProcessPass {
  private:
   CNodePtr CreateScalarToTensor(const FuncGraphPtr &func_graph, const AnfNodePtr &anf_node, TypeId type_id) const;
   ValueNodePtr CreateScalarValueTensor(const FuncGraphPtr &func_graph, const AnfNodePtr &anf_node) const;
-  CNodePtr CreateConcat(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node_vec, const std::string &cnode_name,
-                        int64_t axis = 0) const;
+  CNodePtr CreateConcat(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node_vec, int64_t axis = 0) const;
 };
 }  // namespace opt
 }  // namespace mindspore

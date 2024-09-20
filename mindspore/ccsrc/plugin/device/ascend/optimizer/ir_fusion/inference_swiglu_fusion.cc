@@ -45,7 +45,7 @@ CNodePtr InferenceSwiGLUFusion::CreateSwiGLUNode(const FuncGraphPtr &func_graph,
   std::vector<AnfNodePtr> glu_inputs = {input_node, axis_node};
   auto glu_cnode = func_graph->NewCNode(glu_prim, glu_inputs);
   MS_CHECK_TRUE_RET(glu_cnode != nullptr, nullptr);
-  glu_cnode->set_fullname_with_scope(node->fullname_with_scope() + "-SwiGLU");
+  glu_cnode->set_scope(node->scope());
   if (node->abstract() != nullptr) {
     glu_cnode->set_abstract(node->abstract()->Clone());
   }

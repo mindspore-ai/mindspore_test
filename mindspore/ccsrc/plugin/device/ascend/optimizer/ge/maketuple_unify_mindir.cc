@@ -109,10 +109,10 @@ const AnfNodePtr MakeTupleUnifyMindIR::Process(const FuncGraphPtr &func_graph, c
   auto tmp_abstract = abstract::MakeAbstract(std::make_shared<abstract::TupleShape>(tuple_shape_list),
                                              std::make_shared<Tuple>(tuple_type_list));
   new_make_tuple_cnode->set_abstract(tmp_abstract);
+  new_make_tuple_cnode->set_scope(make_tuple_cnode->scope());
 
   // Insert concat after MakeTuple
-  auto concat_node = CreateConcat(func_graph, new_make_tuple_cnode,
-                                  make_tuple_cnode->cast<CNodePtr>()->fullname_with_scope() + "_concat_make_tuple");
+  auto concat_node = CreateConcat(func_graph, new_make_tuple_cnode);
   auto primitive = GetCNodePrimitive(concat_node);
   MS_EXCEPTION_IF_NULL(primitive);
   int64_t num_of_inputs = static_cast<int64_t>(new_make_tuple_cnode->size() - kSizeOne);
@@ -168,14 +168,14 @@ ValueNodePtr CreateValueNode(const FuncGraphPtr &graph, const ValuePtr &value_pt
 }
 
 CNodePtr MakeTupleUnifyMindIR::CreateConcat(const FuncGraphPtr &func_graph, const AnfNodePtr &maketuple_node,
-                                            const std::string &cnode_name, int64_t axis) const {
+                                            int64_t axis) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto axis_node = CreateValueNode(func_graph, MakeValue(axis));
   std::vector<AnfNodePtr> concat_inputs = {NewValueNode(std::make_shared<Primitive>(kConcatOpName)), maketuple_node,
                                            axis_node};
   auto concat = NewCNode(concat_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(concat);
-  concat->set_fullname_with_scope(cnode_name);
+  concat->set_scope(maketuple_node->scope());
   return concat;
 }
 }  // namespace opt
