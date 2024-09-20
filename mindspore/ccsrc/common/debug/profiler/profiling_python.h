@@ -27,8 +27,9 @@
 #include <deque>
 #include <limits>
 #include <Python.h>
-#include "include/common/utils/python_adapter.h"
 #include "pybind11/pybind11.h"
+#include "include/common/utils/python_adapter.h"
+#include "common/debug/profiler/python_obj_pointer.h"
 
 namespace mindspore {
 namespace profiler {
@@ -42,13 +43,18 @@ enum class COMMON_EXPORT TraceTag { kPy_Call = 0, kPy_Return, kC_Call, kC_Return
 
 class COMMON_EXPORT PythonCApi {
  public:
+  static PyFrameObject *PyEval_GetFrame_MS() {
+    auto frame = PyEval_GetFrame();
+    Py_XINCREF(frame);
+    return frame;
+  }
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 11)
-  static PyCodeObject *PyFrame_GetCode_MS(PyFrameObject *frame) { return frame->f_code; }
-  static PyObject *PyFrame_GetLocals_MS(PyFrameObject *frame) { return frame->f_locals; }
+  static PythonCodeObjPtr PyFrame_GetCode_MS(PyFrameObject *frame) { return PythonCodeObjPtr(frame->f_code); }
+  static PythonObjPtr PyFrame_GetLocals_MS(PyFrameObject *frame) { return PythonObjPtr(frame->f_locals); }
   static PyFrameObject *PyFrame_GetBack_MS(PyFrameObject *frame) { return frame->f_back; }
 #else
-  static PyCodeObject *PyFrame_GetCode_MS(PyFrameObject *frame) { return PyFrame_GetCode(frame); }
-  static PyObject *PyFrame_GetLocals_MS(PyFrameObject *frame) { return PyFrame_GetLocals(frame); }
+  static PythonCodeObjPtr PyFrame_GetCode_MS(PyFrameObject *frame) { return PythonCodeObjPtr(PyFrame_GetCode(frame)); }
+  static PythonObjPtr PyFrame_GetLocals_MS(PyFrameObject *frame) { return PythonObjPtr(PyFrame_GetLocals(frame)); }
   static PyFrameObject *PyFrame_GetBack_MS(PyFrameObject *frame) { return PyFrame_GetBack(frame); }
 #endif
 };
