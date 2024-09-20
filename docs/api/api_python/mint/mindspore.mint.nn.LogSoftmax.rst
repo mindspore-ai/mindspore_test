@@ -1,7 +1,7 @@
 mindspore.mint.nn.LogSoftmax
 ============================
 
-.. py:function:: mindspore.mint.nn.LogSoftmax(dim=None)
+.. py:class:: mindspore.mint.nn.LogSoftmax(dim=None)
 
     在指定轴上对输入Tensor应用LogSoftmax函数。假设在指定轴上， :math:`x` 对应每个元素 :math:`x_i` ，则LogSoftmax函数如下所示：
 

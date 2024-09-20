@@ -450,3 +450,16 @@ Pointwise Operations
     mindspore.mint.special.log_softmax
     mindspore.mint.special.round
     mindspore.mint.special.sinc
+
+mindspore.mint.distributed
+--------------------------------
+
+.. msplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.distributed.init_process_group
+    mindspore.mint.distributed.destroy_process_group
+    mindspore.mint.distributed.get_rank
+    mindspore.mint.distributed.get_world_size

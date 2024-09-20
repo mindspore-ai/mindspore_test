@@ -80,7 +80,7 @@ mindspore.ops.Custom
                在Ascend平台使用Custom算子之前，用户首先需要基于Ascend C开发自定义算子并编译。完整的开发和使用流程可参考教程 `AOT类型自定义算子（Ascend平台） <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/operation/op_custom_ascendc.html>`_。
                在入参 `func` 中传入算子的名字, 根据 `infer shape` 函数的实现方式，存在以下两种使用方式：
 
-               - **python infer**：若算子的infer shape是python实现，即通过 `out_shape `参数传入infer shape函数，则指定 `func="CustomName"` 。
+               - **python infer**：若算子的infer shape是python实现，即通过 `out_shape` 参数传入infer shape函数，则指定 `func="CustomName"` 。
                - **c++ infer**：若算子的infer shape通过c++实现，则在func中传入infer shape实现文件的路径并用 `:` 隔开算子名字，例如： `func="add_custom_infer.cc:AddCustom` 。
 
             2. 对于"julia"：

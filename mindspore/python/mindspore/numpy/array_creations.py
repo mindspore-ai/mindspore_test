@@ -519,7 +519,7 @@ def randint(minval, maxval=None, shape=None, dtype=mstype.int32):
         maxval(Union[int], optional): End value of interval. The interval does not include this value.
         shape (Union[int, tuple(int)]): Shape of the new tensor, e.g., :math:`(2, 3)` or :math:`2`.
         dtype (Union[:class:`mindspore.dtype`, str], optional): Designated tensor dtype, it must
-            be int type. Default is :class:`mindspore.int32`.
+            be int type. Default is `mindspore.int32`.
 
     Returns:
         Tensor, with the designated shape and dtype, filled with random integers from minval (inclusive)
@@ -1635,7 +1635,7 @@ class MGridClass(NdGrid):
 
 class OGridClass(NdGrid):
     """
-    ogrid is an :class:`NdGrid` instance with ``sparse=True``.
+    ogrid is an `NdGrid` instance with ``sparse=True``.
 
     The dimension and number of the output arrays are equal to the number
     of indexing dimensions. If the step length is not a complex number,
@@ -1954,7 +1954,7 @@ def indices(dimensions, dtype=mstype.int32, sparse=False):
     varying only along the corresponding axis.
 
     Args:
-        dimensions (tuple or list of ints): The shape of the grid.
+        dimensions (Union[list(int), tuple]): The shape of the grid.
         dtype (:class:`mindspore.dtype`, optional): Data type of the result. Default: ``mstype.int32``.
         sparse (boolean, optional): Default: ``False`` . Return a sparse
             representation of the grid instead of a dense representation.
