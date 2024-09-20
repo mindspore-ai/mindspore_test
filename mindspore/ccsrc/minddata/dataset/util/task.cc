@@ -72,12 +72,6 @@ void Task::operator()() {
       }
       ShutdownGroup();
     }
-    // The given function has finished running. We must change the running status immediately.
-    // Because std::async may create a new thread with the same thread ID as this thread since it has finished.
-    // Then there will be two tasks with the same thread ID in our task group, which may cause a mismatch
-    // in TaskManager::FindMe(). We can identify the exact task based on the running status there.
-    running_ = false;
-    MS_LOG(DEBUG) << "Task: " << my_name_ << " Thread ID " << ss.str() << " Finished.";
   } catch (const std::bad_alloc &e) {
     rc_ = STATUS_ERROR(StatusCode::kMDOutOfMemory, e.what());
     MS_LOG(ERROR) << rc_;
@@ -87,6 +81,12 @@ void Task::operator()() {
     MS_LOG(INFO) << rc_;
     ShutdownGroup();
   }
+  // The given function has finished running. We must change the running status immediately.
+  // Because std::async may create a new thread with the same thread ID as this thread since it has finished.
+  // Then there will be two tasks with the same thread ID in our task group, which may cause a mismatch
+  // in TaskManager::FindMe(). We can identify the exact task based on the running status there.
+  running_ = false;
+  MS_LOG(DEBUG) << "Task: " << my_name_ << " Thread ID " << ss.str() << " Finished.";
 }
 
 void Task::ShutdownGroup() {  // Wake up watch dog and shutdown the engine.
@@ -126,14 +126,18 @@ Status Task::GetTaskErrorIfAny() const {
   }
 }
 
+pid_t GetCurrentPID() {
+#if defined(_WIN32) || defined(_WIN64)
+  return GetCurrentProcessId();
+#else
+  return getpid();
+#endif
+}
+
 Task::Task(const std::string &myName, const std::function<Status()> &f, int32_t operator_id)
     : my_name_(myName),
       operator_id_(operator_id),
-#if defined(_WIN32) || defined(_WIN64)
-      process_id_(GetCurrentProcessId()),
-#else
-      process_id_(getpid()),
-#endif
+      process_id_(GetCurrentPID()),
       thread_id_(-1),
       rc_(Status::OK()),
       fnc_obj_(f),
@@ -167,9 +171,9 @@ Status Task::Join(WaitFlag blocking) {
   RETURN_UNEXPECTED_IF_NULL(MsContext::GetInstance());
   std::string device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
 #endif
-  // If the current process is subprocess of map or batch, the getpid() != process_id_.
+  // If the current process is a subprocess of map or batch, the process ID will not be equal to process_id_.
   // And no need to join WatchDog.
-  if (running_ && getpid() == process_id_ && my_name_.find("WatchDog") == std::string::npos) {
+  if (running_ && GetCurrentPID() == process_id_ && my_name_.find("WatchDog") == std::string::npos) {
     RETURN_UNEXPECTED_IF_NULL(MyTaskGroup());
     auto interrupt_svc = MyTaskGroup()->GetIntrpService();
     try {
