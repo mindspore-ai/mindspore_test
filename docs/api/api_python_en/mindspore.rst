@@ -19,7 +19,7 @@ Tensor
     mindspore.RowTensor
     mindspore.SparseTensor
     mindspore.is_tensor
-    mindspore.from_numpys
+    mindspore.from_numpy
 
 Parameter
 ^^^^^^^^^^
