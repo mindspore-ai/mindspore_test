@@ -88,14 +88,14 @@ void MemBufAllocator::ReleaseDeviceRes() {
 
 MemBuf *MemBufAllocator::Malloc(size_t size) {
   // Malloc with expand block first.
-  if (mem_blocks_.empty()) {
+  if (MS_UNLIKELY(mem_blocks_.empty())) {
     return MallocExpandBlock(size);
   }
 
   search_key_->size_ = size;
   auto it = free_mem_bufs_.lower_bound(search_key_);
   MemBuf *candidate = nullptr;
-  if (it != free_mem_bufs_.end()) {
+  if (MS_LIKELY(it != free_mem_bufs_.end())) {
     candidate = *it;
     (void)free_mem_bufs_.erase(it);
   } else {
@@ -105,7 +105,7 @@ MemBuf *MemBufAllocator::Malloc(size_t size) {
       (void)eager_free_mem_bufs_.erase(it);
     }
   }
-  if (candidate == nullptr) {
+  if (MS_UNLIKELY(candidate == nullptr)) {
     return nullptr;
   }
 
@@ -114,7 +114,7 @@ MemBuf *MemBufAllocator::Malloc(size_t size) {
 
 bool MemBufAllocator::Free(MemBuf *mem_buf, MemBufStatus target_status) {
   // Change mem buf status to used by event, and wait for event to free.
-  if (!mem_buf->IsEventNotUsed()) {
+  if (MS_UNLIKELY(!mem_buf->IsEventNotUsed())) {
     mem_buf->status_ = MemBufStatus::kMemBufUsedByEvent;
     return false;
   }
@@ -122,7 +122,7 @@ bool MemBufAllocator::Free(MemBuf *mem_buf, MemBufStatus target_status) {
   mem_buf->status_ = target_status;
   // Try to merge from prev.
   auto prev_buf = mem_buf->prev_;
-  if (prev_buf != nullptr && prev_buf->status_ == target_status) {
+  if (MS_LIKELY(prev_buf != nullptr && prev_buf->status_ == target_status)) {
     // Erase prev buf pointer
     auto prev = prev_buf->prev_;
     mem_buf->prev_ = prev;
@@ -147,7 +147,7 @@ bool MemBufAllocator::Free(MemBuf *mem_buf, MemBufStatus target_status) {
   }
   // Try to merge from next.
   auto next_buf = mem_buf->next_;
-  if (next_buf != nullptr && next_buf->status_ == target_status) {
+  if (MS_LIKELY(next_buf != nullptr && next_buf->status_ == target_status)) {
     // Erase next buf pointer
     auto next = next_buf->next_;
     mem_buf->next_ = next;
@@ -275,7 +275,7 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
   }
 
   // Try to split mem buf.
-  if (remaining_size >= kDynamicMemAlignSize) {
+  if (MS_LIKELY(remaining_size >= kDynamicMemAlignSize)) {
     void *remaining_addr = static_cast<uint8_t *>(candidate->addr_) + size;
     auto remaining_buf =
       new MemBuf(remaining_size, remaining_addr, candidate->stream_id_, candidate->mem_block_, candidate->status_);
@@ -356,7 +356,7 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
   size_t align_size = AlignMemorySize(size);
   LockGuard lock(lock_);
   auto &&mem_buf_allocator = AllocMemBuf(align_size, from_persistent_mem, stream_id);
-  if (mem_buf_allocator.first == nullptr) {
+  if (MS_UNLIKELY(mem_buf_allocator.first == nullptr)) {
     // Dump mem pool state info when alloc tensor failed.
     DumpDynamicMemPoolStateInfo();
     return nullptr;
@@ -370,17 +370,17 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
                                                                            uint32_t stream_id) {
   auto allocator = GetMemBufAllocator(align_size, from_persistent_mem, stream_id);
   auto mem_buf = allocator->Malloc(align_size);
-  if (mem_buf == nullptr) {
+  if (MS_UNLIKELY(mem_buf == nullptr)) {
     // Enable malloc from another allocator when from_persisatent_mem is true and vmm is not enabled.
     if (!enable_vmm_ && from_persistent_mem) {
       auto another_allocator = GetMemBufAllocator(align_size, !from_persistent_mem, stream_id);
       mem_buf = another_allocator->Malloc(align_size);
-      if (mem_buf != nullptr) {
+      if (MS_UNLIKELY(mem_buf != nullptr)) {
         allocator = another_allocator;
       }
     }
 
-    if (mem_buf == nullptr) {
+    if (MS_UNLIKELY(mem_buf == nullptr)) {
       if (IsEnableEagerFree() || enable_vmm_) {
         if (!SyncAllStreams()) {
           MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
@@ -389,13 +389,13 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
         (void)FreeIdleMemsByEagerFree();
         mem_buf = allocator->Malloc(align_size);
       }
-      if (mem_buf == nullptr) {
+      if (MS_UNLIKELY(mem_buf == nullptr)) {
         mem_buf = allocator->MallocExpandBlock(align_size);
-        if (mem_buf == nullptr) {
+        if (MS_UNLIKELY(mem_buf == nullptr)) {
           MS_LOG(INFO) << "Alloc tensor mem failed and try to sync all events to release memory.";
           (void)DoSyncAllEvents();
           mem_buf = allocator->Malloc(align_size);
-          if (mem_buf == nullptr) {
+          if (MS_UNLIKELY(mem_buf == nullptr)) {
             return std::make_pair(nullptr, nullptr);
           }
         }
@@ -472,19 +472,18 @@ void AbstractDynamicMemPool::FreeTensorMem(const DeviceMemPtr &device_addr) {
 bool AbstractDynamicMemPool::DoFreeTensorMem(const DeviceMemPtr &device_addr) {
   void *addr = device_addr;
   auto &&it = addr_mem_buf_allocators_.find(device_addr);
-  if (it != addr_mem_buf_allocators_.end()) {
+  if (MS_LIKELY(it != addr_mem_buf_allocators_.end())) {
     auto allocator = it->second.second;
     auto mem_buf = it->second.first;
     auto free_size = mem_buf->size_;
-    if (allocator->Free(mem_buf)) {
+    if (MS_LIKELY(allocator->Free(mem_buf))) {
       mem_stat_.used_size_ -= free_size;
       (void)addr_mem_buf_allocators_.erase(it);
-      MS_LOG(DEBUG) << "Do free tensor mem : " << device_addr << ", addr : " << addr << " success.";
       return true;
     }
   } else {
     // This may be normal case.
-    MS_LOG(INFO) << "Free tensor mem failed, can not find address : " << device_addr << ".";
+    MS_LOG(INFO) << "Free tensor mem failed, can not find address : " << addr << ".";
   }
   return false;
 }
@@ -585,7 +584,6 @@ std::vector<MemBuf *> AbstractDynamicMemPool::DoFreePartTensorMems(const std::ve
       MS_LOG(DEBUG) << "last mem buf : " << last_mem_buf->ToJson() << ".";
       (void)candidates.emplace(last_mem_buf->addr_, std::make_pair(last_mem_buf, allocator));
     }
-    mem_stat_.used_size_ += keep_mem_buf->size_;
   }
   for (const auto &candidate : candidates) {
     auto mem_buf = candidate.second.first;

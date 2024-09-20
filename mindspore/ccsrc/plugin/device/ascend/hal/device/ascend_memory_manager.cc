@@ -30,10 +30,7 @@ using mindspore::profiler::ascend::MemoryProfiling;
 namespace mindspore {
 namespace device {
 namespace ascend {
-void AscendMemoryManager::Initialize() {
-  (void)AscendMemAdapter::GetInstance()->Initialize();
-  memory_pool_ = &(AscendMemoryPool::GetInstance());
-}
+void AscendMemoryManager::Initialize() { (void)AscendMemAdapter::GetInstance()->Initialize(); }
 
 void AscendMemoryManager::Finalize() {
   AscendMemoryPool::GetInstance().ReleaseDeviceRes();
@@ -204,6 +201,13 @@ void AscendMemoryManager::SwapOut(const void *device_ptr, void *host_ptr, size_t
       MS_EXCEPTION(DeviceProcessError) << "Call runtime aclrtSynchronizeStreamWithTimeout error.";
     }
   }
+}
+
+DynamicMemPool *AscendMemoryManager::GetMemoryPool() {
+  if (MS_UNLIKELY(memory_pool_ == nullptr)) {
+    memory_pool_ = &(AscendMemoryPool::GetInstance());
+  }
+  return memory_pool_;
 }
 }  // namespace ascend
 }  // namespace device

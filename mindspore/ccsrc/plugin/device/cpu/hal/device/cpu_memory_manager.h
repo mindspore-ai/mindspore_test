@@ -34,7 +34,7 @@ class BACKEND_EXPORT CPUMemoryManager : public MemoryManager {
   CPUMemoryManager() = default;
   virtual ~CPUMemoryManager();
 
-  void Initialize() override { memory_pool_ = &(CPUMemoryPool::GetInstance()); }
+  void Initialize() override {}
   void Finalize() override { CPUMemoryPool::GetInstance().ReleaseDeviceRes(); }
   void ResetDynamicMemory() override;
 
@@ -54,6 +54,13 @@ class BACKEND_EXPORT CPUMemoryManager : public MemoryManager {
   std::vector<void *> MallocContinuousMemFromMemPool(const std::vector<size_t> &size_list,
                                                      uint32_t stream_id = kDefaultStreamIndex) override {
     return CPUMemoryPool::GetInstance().AllocContinuousTensorMem(size_list, stream_id);
+  }
+
+  DynamicMemPool *GetMemoryPool() override {
+    if (MS_UNLIKELY(memory_pool_ == nullptr)) {
+      memory_pool_ = &(CPUMemoryPool::GetInstance());
+    }
+    return memory_pool_;
   }
 
  protected:

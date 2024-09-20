@@ -284,14 +284,14 @@ DeviceMemInfo GeDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
 
 void GeDeviceResManager::ResetMaxMemoryReserved() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  auto memory_pool = mem_manager_->memory_pool();
+  auto memory_pool = mem_manager_->GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   memory_pool->ResetMaxMemReserved();
 }
 
 void GeDeviceResManager::ResetMaxMemoryAllocated() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  auto memory_pool = mem_manager_->memory_pool();
+  auto memory_pool = mem_manager_->GetMemoryPool();
   MS_EXCEPTION_IF_NULL(memory_pool);
   memory_pool->ResetMaxMemAllocated();
 }

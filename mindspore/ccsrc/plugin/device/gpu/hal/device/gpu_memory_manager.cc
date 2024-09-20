@@ -121,7 +121,6 @@ void GPUMemoryManager::Initialize() {
     MS_LOG(EXCEPTION) << "Dynamic memory pool init error.";
   }
   FreeMemFromMemPool(device_addr);
-  memory_pool_ = &(GPUMemoryAllocator::GetInstance());
 }
 
 void GPUMemoryManager::Finalize() { GPUMemoryAllocator::GetInstance().ReleaseDeviceRes(); }
@@ -134,6 +133,13 @@ uint8_t *GPUMemoryManager::MallocStaticMem(size_t size, bool, uint32_t) {
     MS_LOG(EXCEPTION) << "Device memory isn't enough and alloc failed, alloc size:" << size;
   }
   return AddressOffset(device_ptr, 0);
+}
+
+DynamicMemPool *GPUMemoryManager::GetMemoryPool() {
+  if (MS_UNLIKELY(memory_pool_ == nullptr)) {
+    memory_pool_ = &(GPUMemoryAllocator::GetInstance());
+  }
+  return memory_pool_;
 }
 }  // namespace gpu
 }  // namespace device

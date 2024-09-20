@@ -17,7 +17,9 @@
 #include <vector>
 #include <map>
 #include "common/common_test.h"
+#include "include/backend/mem_reuse/enhanced_dynamic_mem_pool.h"
 #include "runtime/device/memory_scheduler.h"
+
 namespace mindspore::device {
 constexpr size_t kDeviceMemSize = 5;
 constexpr size_t kMaxVirtualCount = 1024;
@@ -67,6 +69,8 @@ class MemoryManagerStub : public MemoryManager {
   void SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) override {}
 
   void SwapOut(const void *device_ptr, void *host_ptr, size_t mem_size, void *stream) override {}
+
+  DynamicMemPool *GetMemoryPool() override { return nullptr; }
 
  protected:
   uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) { return nullptr; }
