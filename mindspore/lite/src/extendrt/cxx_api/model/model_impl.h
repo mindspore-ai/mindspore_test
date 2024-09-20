@@ -32,6 +32,7 @@
 #include "src/common/config_infos.h"
 #include "mindapi/ir/common.h"
 #include "include/api/model_group.h"
+#include "utils/crypto.h"
 
 #ifndef _WIN32
 #include <dlfcn.h>

@@ -22,7 +22,6 @@
 #include "src/common/decrypt.h"
 #include "src/common/file_utils.h"
 #endif
-#include "utils/crypto.h"
 
 namespace mindspore {
 namespace {
@@ -97,29 +96,6 @@ Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
   }
   try {
     Status ret = impl_->Build(CharToString(model_path), model_type, model_context);
-    if (ret != kSuccess) {
-      MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
-      return ret;
-    }
-    return kSuccess;
-  } catch (const std::exception &exe) {
-    MS_LOG(ERROR) << "Catch exception: " << exe.what();
-    return kCoreFailed;
-  }
-}
-
-Status Model::Build(const std::vector<char> &model_path, ModelType model_type,
-                    const std::shared_ptr<Context> &model_context, const CryptoInfo &cryptoInfo) {
-  size_t decrypt_len;
-  auto decrypt_data =
-    Decrypt(&decrypt_len, CharToString(model_path).c_str(), cryptoInfo.key.key, cryptoInfo.key.len, cryptoInfo.mode);
-  if (decrypt_data == nullptr) {
-    MS_LOG(ERROR) << "Decrypt failed!";
-    return kLiteFileError;
-  }
-  try {
-    Status ret = impl_->Build(decrypt_data.get(), decrypt_len, model_type, model_context,
-                              CharToString(model_path).c_str(), cryptoInfo);
     if (ret != kSuccess) {
       MS_LOG(ERROR) << "impl_->Build failed! ret = " << ret;
       return ret;

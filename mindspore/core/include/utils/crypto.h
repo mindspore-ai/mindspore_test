@@ -19,10 +19,17 @@
 
 #include <string>
 #include <memory>
+#include "include/api/types.h"
 #include "mindapi/base/macros.h"
 
 typedef unsigned char Byte;
 namespace mindspore {
+struct CryptoInfo {
+  Key key;
+  std::string mode = "AES-GCM";
+  size_t parallel_num = 0;
+};
+
 constexpr size_t MAX_DEC_THREAD_NUM = 64;            // maximum number of threads can launch during dec
 constexpr size_t MAX_BLOCK_SIZE = 64 * 1024 * 1024;  // Maximum ciphertext segment, units is Byte
 constexpr size_t RESERVED_BYTE_PER_BLOCK = 50;       // Reserved byte per block to save addition info

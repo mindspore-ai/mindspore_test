@@ -98,19 +98,6 @@ class MS_API Model {
                       const std::shared_ptr<Context> &model_context, const Key &dec_key, const std::string &dec_mode,
                       const std::string &cropto_lib_path);
 
-  /// \brief Load and build a model from encrypted model file so that it can run on a device.
-  ///
-  /// \param[in] model_path Define the model file path.
-  /// \param[in] model_type Define The type of model file. Options: ModelType::kMindIR, ModelType::kMindIR_Lite. Only
-  /// ModelType::kMindIR_Lite is valid for Device-side Inference. Cloud-side Inference supports options
-  /// ModelType::kMindIR and ModelType::kMindIR_Lite, but option odelType::kMindIR_Lite will be removed in future
-  /// iterations. \param[in] model_context Define the context used to store options during execution.
-  /// \param[in] cryptoInfo Define the Info for model decryption
-  ///
-  /// \return Status. kSuccess: build success, kLiteModelRebuild: build model repeatedly, Other: other types of errors.
-  inline Status Build(const std::string &model_path, ModelType model_type,
-                      const std::shared_ptr<Context> &model_context, const CryptoInfo &cryptoInfo);
-
   /// \brief Build a model
   ///
   /// \param[in] graph GraphCell is a derivative of Cell. Cell is not available currently. GraphCell can be constructed
@@ -402,8 +389,6 @@ class MS_API Model {
                const std::vector<char> &cropto_lib_path);
   Status Build(const std::vector<char> &model_path, ModelType model_type, const std::shared_ptr<Context> &model_context,
                const Key &dec_key, const std::vector<char> &dec_mode, const std::vector<char> &cropto_lib_path);
-  Status Build(const std::vector<char> &model_path, ModelType model_type,
-               const std::shared_ptr<Context> &model_context, const CryptoInfo &cryptoInfo);
   std::vector<char> GetModelInfo(const std::vector<char> &key);
   std::shared_ptr<ModelImpl> impl_;
 };
@@ -446,11 +431,6 @@ Status Model::Build(const std::string &model_path, ModelType model_type, const s
 Status Model::Build(const std::string &model_path, ModelType model_type,
                     const std::shared_ptr<Context> &model_context) {
   return Build(StringToChar(model_path), model_type, model_context);
-}
-
-Status Model::Build(const std::string &model_path, ModelType model_type,
-                    const std::shared_ptr<Context> &model_context, const CryptoInfo &cryptoInfo) {
-  return Build(StringToChar(model_path), model_type, model_context, cryptoInfo);
 }
 
 inline std::string Model::GetModelInfo(const std::string &key) { return CharToString(GetModelInfo(StringToChar(key))); }
