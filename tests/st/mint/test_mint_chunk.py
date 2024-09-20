@@ -34,12 +34,15 @@ def chunk_backward_func(x, chunks, dim):
     return ops.grad(chunk_forward_func, (0,))(x, chunks, dim)
 
 
-def do_test_chunk_forward(mode):
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
+def test_chunk_foward_backward(mode):
     """
-    Feature: Chunk
-    Description: test op Chunk
+    Feature: Auto grad.
+    Description: test auto grad of op Chunk.
     Expectation: expect correct result.
     """
+    #forward
     np_x = np.array(np.arange(10).reshape((5, 2)), dtype=np.float32)
     x = ms.Tensor(np_x, dtype=ms.float32)
     dims = 0
@@ -59,75 +62,7 @@ def do_test_chunk_forward(mode):
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
 
-
-@pytest.mark.level3
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
-def test_chunk_forward_with_minus_dim(mode):
-    """
-    Feature: Chunk
-    Description: test op Chunk
-    Expectation: expect correct result.
-    """
-    np_x = np.array(np.arange(10).reshape((5, 2)), dtype=np.float32)
-    x = ms.Tensor(np_x, dtype=ms.float32)
-    dims = -1
-    chunks = 2
-    expect = [np.array([[0], [2], [4], [6], [8]], dtype=np.float32),
-              np.array([[1], [3], [5], [7], [9]], dtype=np.float32)]
-    if mode == 'pynative':
-        context.set_context(mode=ms.PYNATIVE_MODE)
-        out = chunk_forward_func(x, chunks, dims)
-    elif mode == 'KBK':
-        context.set_context(mode=ms.GRAPH_MODE)
-        out = (jit(chunk_forward_func, jit_config=JitConfig(jit_level="O0")))(x, chunks, dims)
-    else:
-        context.set_context(mode=ms.GRAPH_MODE)
-        out = chunk_forward_func(x, chunks, dims)
-    for res, exp in zip(out, expect):
-        assert np.allclose(res.asnumpy(), exp)
-
-
-@pytest.mark.level3
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.parametrize("mode", ['GE', 'pynative'])
-def test_chunk_forward(mode):
-    """
-    Feature: Chunk
-    Description: test op Chunk
-    Expectation: expect correct result.
-    """
-    do_test_chunk_forward(mode)
-
-
-@pytest.mark.level3
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-def test_chunk_forward_kbk():
-    """
-    Feature: Chunk
-    Description: test op Chunk
-    Expectation: expect correct result.
-    """
-    do_test_chunk_forward('KBK')
-
-
-@pytest.mark.level3
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
-def test_chunk_backward(mode):
-    """
-    Feature: Auto grad.
-    Description: test auto grad of op Chunk.
-    Expectation: expect correct result.
-    """
+    #backward
     x = Tensor(np.arange(20).reshape(10, 2), dtype=ms.float32)
     chunks = 2
     expect_grad = np.ones((10, 2))
@@ -144,10 +79,7 @@ def test_chunk_backward(mode):
     assert grad.asnumpy().shape == x.shape
 
 
-@pytest.mark.level3
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_chunk_forward_dynamic_shape(context_mode):
     """
@@ -184,7 +116,7 @@ def test_chunk_forward_dynamic_shape(context_mode):
             _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE])
 def test_chunk_forward_dynamic_rank(context_mode):
     """
@@ -204,7 +136,7 @@ def test_chunk_forward_dynamic_rank(context_mode):
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_chunk_backward_dynamic_shape(context_mode):
     """
@@ -229,7 +161,7 @@ def test_chunk_backward_dynamic_shape(context_mode):
     assert np.allclose(out.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE])
 def test_chunk_backward_dynamic_rank(context_mode):
     """
@@ -249,7 +181,7 @@ def test_chunk_backward_dynamic_rank(context_mode):
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_chunk_forward_mutable(context_mode):
     """

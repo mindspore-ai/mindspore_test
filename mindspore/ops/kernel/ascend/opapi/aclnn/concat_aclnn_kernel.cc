@@ -37,15 +37,13 @@ std::vector<KernelTensor *> ConcatAscend::GetConcatRealInputs(const std::vector<
     std::transform(tuple_tensors_.begin(), tuple_tensors_.end(), std::back_inserter(tensors),
                    [](const KernelTensorPtr &tensor) -> KernelTensor * { return tensor.get(); });
   }
-
-  auto last_kernel_tensor = *last_element;
-  MS_EXCEPTION_IF_NULL(last_kernel_tensor);
-  axis_ = last_kernel_tensor->GetValueWithCheck<int64_t>();
   return tensors;
 }
 void ConcatAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   auto inputs_tensors = GetConcatRealInputs(inputs);
+  auto last_kernel_tensor = *(inputs.end() - 1);
+  axis_ = last_kernel_tensor->GetValueWithCheck<int64_t>();
   GetWorkspaceForResize(inputs_tensors, axis_, outputs[kIndex0]);
 }
 
