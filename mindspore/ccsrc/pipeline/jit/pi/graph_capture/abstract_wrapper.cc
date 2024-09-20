@@ -268,6 +268,9 @@ bool AbstractWrapper::IsConstant() const {
     MS_LOG(DEBUG) << "Failed to find abstract in wrapper.";
     return false;
   }
+  if (abstract_->isa<abstract::AbstractFunction>()) {
+    return true;
+  }
   return abstract_->BuildValue() != kValueAny;
 }
 }  // namespace mindspore
