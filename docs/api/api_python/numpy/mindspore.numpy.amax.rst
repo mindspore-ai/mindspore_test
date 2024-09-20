@@ -6,7 +6,7 @@ mindspore.numpy.amax
     返回数组的最大值或沿指定轴的最大值。
 
     .. note::
-        不支持Numpy的 ``out`` 参数。在GPU上，支持的数据类型为 ``np.float16`` 和 ``np.float32`` 。
+        不支持Numpy的 ``out`` 参数。在GPU上，支持的数据类型为 ``np.float16`` 和 ``np.float32``。
 
     参数：
         - **a** (Tensor) - 输入数据。
