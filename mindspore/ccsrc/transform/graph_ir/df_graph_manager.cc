@@ -163,6 +163,11 @@ void DfGraphManager::ClearGraph() noexcept {
   std::lock_guard<std::mutex> lg(lock_);
   for (const auto &graph_id : graphs_) {
     MS_LOG(INFO) << "Remove graph, graph name: " << graph_id.first << ", graph id: " << graph_id.second->id_;
+    if (graph_id.second->export_air_) {
+      MS_LOG(INFO) << "The AIR graph has not been added to the session, so it does not need to be removed "
+                      "from the session.";
+      continue;
+    }
     if (sess_ptr_ != nullptr &&
         sess_ptr_->RemoveGraph(static_cast<uint32_t>(graph_id.second->id_)) != ::ge::GRAPH_SUCCESS) {
       MS_LOG(WARNING) << "Remove graph, graph name: " << graph_id.first << ", graph id: " << graph_id.second->id_;
