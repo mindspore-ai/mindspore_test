@@ -8619,9 +8619,6 @@ def baddbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
     .. math::
         \text{out}_{i} = \beta \text{input}_{i} + \alpha (\text{batch1}_{i} \mathbin{@} \text{batch2}_{i})
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input Tensor. When batch1 is a :math:`(C, W, T)` Tensor and batch2 is a
             :math:`(C, T, H)` Tensor, input must be broadcastable with :math:`(C, W, H)` Tensor.

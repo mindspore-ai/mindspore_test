@@ -1128,9 +1128,6 @@ def scatter(input, dim, index, src):
 
         output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The target tensor. The rank of `input` must be at least 1.
         dim (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input).

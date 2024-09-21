@@ -5,9 +5,6 @@ mindspore.mint.tril
 
     返回输入Tensor `input` 的下三角形部分(包含对角线和下面的元素)，并将其他元素设置为0。
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入Tensor。shape为 :math:`(x_1, x_2, ..., x_R)` ，其rank至少为2。
           支持的数据类型有包括所有数值型和bool类型。

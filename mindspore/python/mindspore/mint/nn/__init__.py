@@ -466,9 +466,6 @@ class MSELoss(Cell):
             \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
         \end{cases}
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .

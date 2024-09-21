@@ -19,9 +19,6 @@ mindspore.mint.nn.MSELoss
             \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
         \end{cases}
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 

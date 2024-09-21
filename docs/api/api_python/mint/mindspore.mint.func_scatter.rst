@@ -14,9 +14,6 @@ mindspore.mint.scatter
 
         output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
 
-    .. warning::
-        这是一个实验性API，后续可能修改或删除。
-
     参数：
         - **input** (Tensor) - 输入Tensor。 `input` 的秩必须至少为1。
         - **dim** (int) - 要进行更新操作的轴。取值范围是[-r, r)，其中r是 `input` 的秩。

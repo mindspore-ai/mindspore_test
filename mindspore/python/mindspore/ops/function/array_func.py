@@ -4993,9 +4993,6 @@ def tril_ext(input, diagonal=0):
     Returns the lower triangle part of `input` (elements that contain the diagonal and below),
     and set the other elements to zeros.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
           Supporting all number types including bool.
