@@ -709,6 +709,10 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTupleUnfold(const FuncGraphP
     if (build_info->op_type() == kernel::OpType::SKIP) {
       return ProcessTupleToTupleUnfoldForSkipOp(func_graph, input, node, new_prim);
     }
+    // Dynamic type the tuple cannot be flatten when compile for first time.
+    if (node->abstract() != nullptr && node->abstract()->isa<abstract::AbstractAny>()) {
+      return {input};
+    }
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Tuple to TupleUnfold pattern should have TupleGetItem as user node, but got "
                                       << node->fullname_with_scope() << ", " << node->DebugString();
   }

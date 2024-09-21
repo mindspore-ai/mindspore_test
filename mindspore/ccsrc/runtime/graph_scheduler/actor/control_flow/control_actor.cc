@@ -185,8 +185,8 @@ void ControlActor::RunOpPartial(const OpPartialPtr &partial, size_t position, Op
   (void)input_op_partials_[sequential_num].emplace_back(position, partial);
 
   auto is_run = CheckRunningCondition(context);
-  MS_LOG(DEBUG) << "Actor(" << GetAID().Name()
-                << ") receive the input op partial and check running condition:" << is_run;
+  MS_LOG(DEBUG) << "Actor(" << GetAID().Name() << ") receive the input op partial, position:" << position
+                << " and check running condition:" << is_run;
   if (is_run) {
     Run(context);
   }

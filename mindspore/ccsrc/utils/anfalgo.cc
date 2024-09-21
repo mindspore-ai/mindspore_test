@@ -128,6 +128,11 @@ std::vector<KernelWithIndex> GetAllOutputWithIndexInner(const AnfNodePtr &node,
                                                         const std::vector<PrimitivePtr> &return_types) {
   MS_EXCEPTION_IF_NULL(node);
   MS_LOG(DEBUG) << "Output node: " << node->fullname_with_scope();
+  if (std::any_of(return_types.begin(), return_types.end(), [&node](const PrimitivePtr &prim_type) -> bool {
+        return common::AnfAlgo::CheckPrimitiveType(node, prim_type);
+      })) {
+    return {KernelWithIndex(node, 0)};
+  }
   std::vector<KernelWithIndex> ret;
   std::vector<KernelWithIndex> ret_empty;
   // The MakeTuple/MakeSparse node need expand and recurse.

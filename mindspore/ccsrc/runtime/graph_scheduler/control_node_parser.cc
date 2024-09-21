@@ -2011,10 +2011,12 @@ NodeWithIndexToContext ControlNodeParser::FetchBackendParameterWithContextByFron
   for (const auto &node_with_index_to_context : iter->second) {
     const auto &node = node_with_index_to_context.first.first;
     MS_EXCEPTION_IF_NULL(node);
+    if (AnfAlgo::GetOutputTensorMemSize(node, node_with_index_to_context.first.second) != 0) {
+      return node_with_index_to_context;
+    }
     const auto &abstract =
       AnfAlgo::GetNodeAbstractByIndex(front_parameter_with_index.first, front_parameter_with_index.second);
-    bool is_map_parameter = abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>();
-    if (AnfAlgo::GetOutputTensorMemSize(node, node_with_index_to_context.first.second) != 0 || is_map_parameter) {
+    if (abstract != nullptr && abstract->isa<abstract::AbstractMapTensor>()) {
       return node_with_index_to_context;
     }
     MS_LOG(DEBUG) << "Backend node:" << node->DebugString()

@@ -252,6 +252,12 @@ void ExitActor::MergeDynamiclenDeviceAddress(OpContext<DeviceTensor> *const cont
       output_data.second->data_ = new_device_tensors[output_data.first];
     }
   }
+  for (size_t i = 0; i < new_partials.size() && i < input_partials_.size(); ++i) {
+    if (new_partials[i] != nullptr) {
+      MS_LOG(DEBUG) << "Set op partial for index:" << i << " actor:" << GetAID();
+      input_partials_[i] = new_partials[i];
+    }
+  }
 }
 
 bool ExitActor::IsNeedCopyDeviceAddress(DeviceTensor *const input_device_tensor, size_t index) {

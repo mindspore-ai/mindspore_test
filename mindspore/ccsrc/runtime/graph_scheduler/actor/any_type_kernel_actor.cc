@@ -131,7 +131,7 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const c
     MS_EXCEPTION_IF_NULL(input_data->data_);
     size_t index = IntToSize(input_data->index_);
     if (index >= input_device_tensors_.size()) {
-      std::string error_info = "Invalid input index:" + std::to_string(index) +
+      std::string error_info = "Invalid graph input index:" + std::to_string(index) +
                                " total:" + std::to_string(input_device_tensors_.size()) +
                                " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
@@ -159,9 +159,9 @@ void AnyTypeKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const c
       continue;
     }
     if (device_tensor_store_key.first >= input_device_tensors_.size()) {
-      std::string error_info = "Invalid input index:" + std::to_string(device_tensor_store_key.first) +
-                               " total:" + std::to_string(input_device_tensors_.size()) +
-                               " for actor:" + GetAID().Name();
+      std::string error_info =
+        "Invalid graph input device tensor store index:" + std::to_string(device_tensor_store_key.first) +
+        " total:" + std::to_string(input_device_tensors_.size()) + " for actor:" + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
     input_device_tensors_[device_tensor_store_key.first] = device_tensor;
@@ -666,7 +666,7 @@ void AnyTypeKernelActor::FetchGraphOutput(OpContext<DeviceTensor> *const context
       index -= graph()->input_nodes().size();
       if (index >= graph_ouput_device_tensors_.size() ||
           graph_ouput_device_tensors_.size() != fallback_device_tensors_.size()) {
-        std::string error_info = "Invalid input index:" + std::to_string(index) +
+        std::string error_info = "Invalid graph output index:" + std::to_string(index) +
                                  " total:" + std::to_string(graph_ouput_device_tensors_.size()) +
                                  " for actor:" + GetAID().Name();
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
