@@ -35,7 +35,6 @@ from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_
     _extract_layout_item, _load_tensor_shape
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
-from mindspore.communication.management import get_rank
 
 from safetensors.numpy import save_file, load_file
 from safetensors import safe_open
@@ -818,7 +817,13 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir):
     """
     _check_transform_safetensors(src_dir, "", src_strategy_file, None)
     _make_dir(dst_dir, "path")
+    if os.path.isfile(src_dir):
+        raise ValueError("For 'unified_safetensors', the 'src_dir' can not be a file.")
     all_safetensor_files_map = _collect_safetensor_files(src_dir)
+    all_ckpt_files_map = _collect_safetensor_files(src_dir, format='ckpt')
+    if all_safetensor_files_map and all_ckpt_files_map:
+        raise ValueError("For 'unified_safetensors', the 'src_dir' cannot contain "
+                         "both ckpt file and safetensors file simultaneously")
     src_strategy_dict = _build_searched_strategy(src_strategy_file)
     src_stage_device_num = _get_device_num_from_strategy(src_strategy_dict)
     dst_stage_device_num = 1
@@ -897,7 +902,8 @@ def _split_list(split_list, split_num):
     return [array.tolist() for array in split_array]
 
 
-def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None):
+def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None, dst_safetensors_dir=None,
+                              rank_id=None):
     """load parallel safetensors by merged file."""
     file_list = os.listdir(total_safetensors_dir)
     json_files = [file for file in file_list if file.endswith('.json')]
@@ -907,7 +913,6 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
     param_name_json = os.path.join(total_safetensors_dir, json_files[0])
     with open(param_name_json, 'r') as f:
         param_name_map = json.load(f)
-    rank_id = get_rank()
     _, dst_strategy_list = _extract_src_dst_layout_map(rank_id, None, dst_strategy_file)
 
     param_list = dst_strategy_list.keys()
@@ -933,9 +938,13 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
         with safe_open(hyper_parameter_file_name, framework="np") as f:
             for key in f.keys():
                 total_param[key] = ms.Parameter(f.get_tensor(key))
-
-    param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
-    return param_not_load, ckpt_not_load
+    if net is not None:
+        param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
+        return param_not_load, ckpt_not_load
+    _make_dir(os.path.join(dst_safetensors_dir, f"rank_{rank_id}"), "path")
+    ms.save_checkpoint(total_param, os.path.join(dst_safetensors_dir, f"rank_{rank_id}", f"net.safetensors"),
+                       format='safetensors')
+    return None
 
 
 def _get_slice(rank_id, sf_obj, param_name, dst_strategy_list):
