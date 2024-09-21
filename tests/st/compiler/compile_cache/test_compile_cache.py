@@ -150,23 +150,29 @@ def run_compile_cache_mp(file_name, cache_path, log_file_name_first, log_file_na
     os.system(cmd)
     check_cmd = "ps -ef | grep python | grep run_compile_cache_mp.py | grep -v grep"
     # wait for net train finish
-    ret = utils.process_check(100, check_cmd)
+    ret = utils.process_check(150, check_cmd)
+    print("check first train.", flush=True)
     assert ret
+    print("check cache file.", flush=True)
     assert os.path.exists(cache_path)
     log_fullname = 'worker_0.log'
+    print("check first log.", flush=True)
     assert os.path.exists(log_fullname)
     with open(log_fullname, "r") as f_first:
         data_first = f_first.read()
+    print("check first compile result.", flush=True)
     assert "Check the consistency of dependency files hash failed. Execute all the compilation actions." in data_first
     for i in range(8):
         os.remove(f'worker_{i}.log')
     cmd = "bash run_compile_cache_mp.sh {} {} {} {}".format(file_name, cache_path, log_file_name_second,
                                                             utils.rank_table_path)
     os.system(cmd)
-    ret = utils.process_check(100, check_cmd)
+    ret = utils.process_check(150, check_cmd)
+    print("check second train.", flush=True)
     assert ret
 
     log_fullname = 'worker_0.log'
+    print("check second log.", flush=True)
     assert os.path.exists(log_fullname)
     with open(log_fullname, "r") as f_second:
         data_second = f_second.read()
@@ -175,6 +181,7 @@ def run_compile_cache_mp(file_name, cache_path, log_file_name_first, log_file_na
               data_second
     if not has_log:
         print(f'{data_second}')
+    print("check second train result.", flush=True)
     assert has_log
 
     # Clean files
@@ -456,7 +463,7 @@ def test_compile_cache_run_two_cells_once():
     run_two_cells_networks_once("run_lenet_two_cells.py", "./lenet_two_cells", "lenet_two_cells.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_compile_cache_pipeline_parallel_and_recompute():
     """
     Feature: Compile cache.
