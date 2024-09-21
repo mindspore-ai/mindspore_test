@@ -35,6 +35,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/batchnorm_to_bninfer.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/batchnormgrad_to_bninfergrad.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/histogram_fixed_width_fusion.h"
+#include "plugin/device/ascend/optimizer/mindir/add_depend_for_adamw.h"
 #include "plugin/device/ascend/optimizer/mindir/renorm_split.h"
 #include "plugin/device/ascend/optimizer/mindir/optimizer_unify_output.h"
 #include "plugin/device/ascend/optimizer/mindir/space_batch_nd_attr_update.h"
@@ -94,6 +95,7 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SpaceToBatchNDAttrUpdate>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::BatchToSpaceNDAttrUpdate>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdamWeightDecayUnifyMindIR>());
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddDependForAdamW>());
   (*unify_mindir_pm)->AddPass(std::make_shared<CdistFission>());
   (*unify_mindir_pm)->AddPass(std::make_shared<CdistGradFission>());
 
