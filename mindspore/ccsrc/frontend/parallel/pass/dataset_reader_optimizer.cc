@@ -37,6 +37,11 @@ bool DatasetReaderOptimizer::Init() {
     return false;
   }
   opt_level_ = ms_context->get_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL);
+  auto jit_level = ms_context->get_param<std::string>(MS_CTX_JIT_LEVEL);
+  if (jit_level != "O0" && jit_level != "O1") {
+    MS_LOG(WARNING) << "Now, Dataset broadcast optimize pass only support O0 and O1 jit level.";
+    return false;
+  }
   if (ParallelInit() != SUCCESS) {
     return false;
   }
