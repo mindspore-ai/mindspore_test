@@ -147,6 +147,9 @@ void MaximumCpuKernelMod::InitTensorBroadcastShape() {
                       << "', the dimension of output must be less than or equal to 8, but got " << output_shape_.size()
                       << ".";
   }
+  broadcast_input_x_shape_.clear();
+  broadcast_input_y_shape_.clear();
+  broadcast_output_shape_.clear();
   broadcast_input_x_shape_.resize(max_dims_, 1);
   broadcast_input_y_shape_.resize(max_dims_, 1);
   broadcast_output_shape_.resize(max_dims_, 1);
