@@ -417,6 +417,9 @@ AnfNodePtr GenerateGraph::PushBack(const std::vector<AnfNodePtr> &inputs) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
   SetUserAttrs(origin_attrs_, prim);
+  if (cnode_->HasPrimalAttr(PARAMETER_START_SHARE_CELL)) {
+    cnode->AddPrimalAttr(PARAMETER_START_SHARE_CELL, cnode_->GetPrimalAttr(PARAMETER_START_SHARE_CELL));
+  }
   cnode->set_scope(scope_);
   auto new_anf_node_ptr = cnode->cast<AnfNodePtr>();
   MS_EXCEPTION_IF_NULL(new_anf_node_ptr);
