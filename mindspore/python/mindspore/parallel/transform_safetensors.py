@@ -913,9 +913,13 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
     param_name_json = os.path.join(total_safetensors_dir, json_files[0])
     with open(param_name_json, 'r') as f:
         param_name_map = json.load(f)
-    _, dst_strategy_list = _extract_src_dst_layout_map(rank_id, None, dst_strategy_file)
+    if dst_strategy_file is not None:
+        _, dst_strategy_list = _extract_src_dst_layout_map(rank_id, None, dst_strategy_file)
+        param_list = dst_strategy_list.keys()
+    else:
+        dst_strategy_list = None
+        param_list = param_name_map.keys()
 
-    param_list = dst_strategy_list.keys()
     total_param = dict()
 
     for param_name in param_list:
@@ -928,9 +932,13 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
             sf_obj = f.get_slice(param_name)
         param_dict = dict()
         param_dict[param_name] = sf_obj
-        if param_name not in dst_strategy_list:
-            continue
-        slice_op = _get_slice(rank_id, sf_obj, param_name, dst_strategy_list)
+
+        if dst_strategy_list is not None:
+            if param_name not in dst_strategy_list:
+                continue
+            slice_op = _get_slice(rank_id, sf_obj, param_name, dst_strategy_list)
+        else:
+            slice_op = slice(None, None, None)
         slice_param = sf_obj[slice_op]
         total_param[param_name] = ms.Parameter(slice_param)
     if 'hyper_param.safetensors' in file_list:
