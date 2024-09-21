@@ -357,7 +357,10 @@ void DumpNodesDebugInfos(const AnfNodePtr &caller, const AnfNodePtr &callee) {
 
 bool generate_real_location(const DebugInfoPtr &callee_debug_info, const DebugInfoPtr &caller_debug_info,
                             const std::vector<mindspore::DebugInfoPtr> &callee_debug_infos,
-                            const std::vector<mindspore::DebugInfoPtr> &caller_debug_infos) {
+                            const std::vector<mindspore::DebugInfoPtr> &caller_debug_infos, const bool loc_not_set) {
+  if (!loc_not_set) {
+    return false;
+  }
   // Generated debug info: caller debug info + used graph's debug info
   DebugInfoPtr cur_callee_debug_info;
   std::vector<DebugInfoPtr> checked_debug_info;
@@ -401,7 +404,7 @@ void SyncShadowDebugInfo(const DebugInfoPtr &caller_debug_info, const DebugInfoP
                                                      caller_shadow_debug_infos.cend());
   const auto &caller_real_loc = caller_debug_info->real_loc();
   // Synchronize callers' real location.
-  if (!caller_real_loc.empty()) {
+  if (!caller_real_loc.empty() && callee_debug_info->real_loc().empty()) {
     callee_debug_info->set_real_loc(caller_real_loc);
   }
 }
@@ -410,6 +413,7 @@ void SyncShadowDebugInfo(const DebugInfoPtr &caller_debug_info, const DebugInfoP
 void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee) {
   const DebugInfoPtr &caller_debug_info = caller->debug_info();
   const DebugInfoPtr &callee_debug_info = callee->debug_info();
+  bool loc_not_set = callee_debug_info->real_loc().empty();
   if (caller_debug_info == nullptr || callee_debug_info == nullptr) {
     return;
   }
@@ -431,7 +435,7 @@ void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &call
     if (caller_locaton == nullptr || callee_locaton == nullptr) {
       SyncShadowDebugInfo(caller_debug_info, callee_debug_info);
       // Store rest of location of callee.
-      if (callee_locaton != nullptr) {
+      if (callee_locaton != nullptr && loc_not_set) {
         for (size_t j = i; j < callee_debug_infos.size(); ++j) {
           const auto &rest_callee_debug_info = callee_debug_infos[callee_debug_infos.size() - j - 1];
           const auto &rest_locaton = rest_callee_debug_info->location();
@@ -468,9 +472,8 @@ void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &call
     DumpNodesDebugInfos(caller, callee);
     MS_LOG(INTERNAL_EXCEPTION) << "Wrong index for caller.";
   }
-
   bool got_real_location =
-    generate_real_location(callee_debug_info, caller_debug_info, callee_debug_infos, caller_debug_infos);
+    generate_real_location(callee_debug_info, caller_debug_info, callee_debug_infos, caller_debug_infos, loc_not_set);
   if (got_real_location) {
     return;
   }
