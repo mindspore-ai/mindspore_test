@@ -28,6 +28,7 @@ void set_pydata_converter(const PyDataConverter &set_pydata_converter);
 tensor::TensorPtr GetValueByPyObj(const py::object &obj);
 abstract::AbstractBasePtr GenerateAbstractFromPyObject(const py::object &obj);
 void UserDataToRawMemory(DeviceAddress *const device_address);
+ValuePtr GetValueFromUserData(const UserDataPtr &user_data);
 }  // namespace pyexecute
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_BACKEND_PY_EXECUTE_UTILS_H

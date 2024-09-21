@@ -563,6 +563,8 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         user_data = std::make_shared<UserData>();
         user_data->set(kSyncUserDataHandler,
                        std::make_shared<device::DeviceAddress::SyncUserDataHandler>(pyexecute::UserDataToRawMemory));
+        user_data->set(kGetValueByUserDataHandler,
+                       std::make_shared<ValuePtr (*)(const UserDataPtr &)>(pyexecute::GetValueFromUserData));
         graph->set_has_kernel_need_user_data(true);
         // Note: Kbk sub graph mode doesn't support PyExecutor kernel currently.
         graph->set_enable_kbk_sub_graph_execute(false);
