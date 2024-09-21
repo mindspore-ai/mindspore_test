@@ -16,6 +16,8 @@
 
 #include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
 
+#include <stdio.h>
+
 #include <algorithm>
 #include <atomic>
 
@@ -812,9 +814,29 @@ std::string GetPath() {
   }
   return path;
 }
+
+void SplitAndDumpLog(const std::string &log_str) {
+  const char *delim = "\n";
+  char *next_token;
+#ifdef _MSC_VER
+  const char *token = strtok_s(const_cast<char *>(log_str.c_str()), delim, &next_token);
+#else
+  const char *token = strtok_r(const_cast<char *>(log_str.c_str()), delim, &next_token);
+#endif
+  size_t count = 0;
+  const size_t max_count = 1000;
+  while (token && (count++ < max_count)) {
+    MS_LOG(INFO) << token;
+#ifdef _MSC_VER
+    token = strtok_s(NULL, delim, &next_token);
+#else
+    token = strtok_r(NULL, delim, &next_token);
+#endif
+  }
+}
 };  // namespace
 
-void AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo() { MS_LOG(INFO) << DynamicMemPoolStateInfo(); }
+void AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo() { SplitAndDumpLog(DynamicMemPoolStateInfo()); }
 
 std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
   std::stringstream ss;
@@ -843,7 +865,7 @@ std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
 
   ss << "The dynamic memory pool stat info : " << mem_stat_.ToReadableString()
      << ", actual peak used mem:" << ActualPeakStatistics() / kMBToByte
-     << ". Weight used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kWeight)] / kMBToByte
+     << "M. Weight used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kWeight)] / kMBToByte
      << "M, constant value used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kConstantValue)] / kMBToByte
      << "M, kernel output used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kKernelOutput)] / kMBToByte
      << "M, other used size:" << mem_buf_used_stat[static_cast<int>(AllocatorType::kOther)] / kMBToByte << "M.\n";
