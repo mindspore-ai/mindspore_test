@@ -668,8 +668,7 @@ void IrBprop::CreateParameterAdjoint(const GradParamPtr &grad_param) const {
                                                graph_parameters[i]->abstract(), SpecialType::kZerosLikeType);
     auto func_node = std::make_shared<IrFunctionNode>(ad_param_->tape_, zeros_like_dout);
     // Copy to avoid corrupt real input grad info.
-    auto op_arg =
-      PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(grad_param->op_grad_info->input_value[i], true);
+    auto op_arg = ShallowCopyTensorValue(grad_param->op_grad_info->input_value[i]);
     ClearGradMetaData(op_arg);
     auto adjoint = std::make_shared<IrVariable>(func_node, op_arg, true);
     adjoint->set_k_node(param);
