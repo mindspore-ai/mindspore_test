@@ -30,7 +30,7 @@ def test_gpto_exec_order():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dfs_exec_order():
     """
     Feature: this test call gpto_net.py
