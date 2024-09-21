@@ -478,6 +478,12 @@ if sys.version_info >= (3, 8):
         """
 
         def __init__(self, cfg_path, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
+            if not isinstance(cfg_path, str):
+                raise TypeError("The cfg_path must be a string.")
+            if not isinstance(output_path, str):
+                logger.warning(f"The output_path must be a string, "
+                               f"but got type {type(output_path)}, it will be set to './dyn_profile_data'.")
+                output_path = "./dyn_profile_data"
             super().__init__(cfg_path, output_path, poll_interval, **kwargs)
 
         def _get_prof_args(self):
@@ -589,6 +595,12 @@ else:
         """
 
         def __init__(self, cfg_path, output_path="./dyn_profile_data", poll_interval=2, **kwargs):
+            if not isinstance(cfg_path, str):
+                raise TypeError("The cfg_path must be a string.")
+            if not isinstance(output_path, str):
+                logger.warning(f"The output_path must be a string, "
+                               f"but got type {type(output_path)}, it will be set to './dyn_profile_data'.")
+                output_path = "./dyn_profile_data"
             self._cfg_path = cfg_path
             self._shm_name = f"DynamicProfileShm{datetime.now().strftime('%Y%m%d%H')}"
             self._shm_dir = os.path.join(self._cfg_path, "shm")
