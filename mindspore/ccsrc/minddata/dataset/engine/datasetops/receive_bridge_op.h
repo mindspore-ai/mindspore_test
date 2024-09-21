@@ -95,6 +95,8 @@ class ReceiveBridgeOp : public ParallelOp<TensorRow, TensorRow> {
 
   Status GetNextRowPullMode(TensorRow *const row) override;
 
+  MessageQueue GetMessageQueue();
+
   void SetSubprocessID(int pid) { subprocess_pid_ = pid; }
 
   Status MonitorIndependentDatasetProcess();

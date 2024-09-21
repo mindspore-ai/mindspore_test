@@ -54,6 +54,9 @@ const int kMasterReceiveBridgeOpFinishedMsg = 222;  // master -> worker, request
 const int kWorkerSendDataMsg = 777;  // worker -> master, request mtype
 const int kMasterSendDataMsg = 999;  // master -> worker, response mtype
 
+const int kSubprocessReadyMsg = 555;   // when the subprocess is forked, the main process can continue to run
+const int kMainprocessReadyMsg = 666;  // the main process got message from subprocess, response to the subprocess
+
 const int kFourBytes = 4;
 
 class DATASET_API MessageQueue {
