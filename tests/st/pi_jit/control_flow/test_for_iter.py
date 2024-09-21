@@ -11,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ============================================================================
 ''' test FOR_ITER for pijit '''
 import pytest
-import dis
+import sys
 from mindspore import jit, Tensor
 from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
-
+from ..share.utils import match_array, assert_executed_by_graph_mode
 
 
 def for_range(x):
@@ -33,8 +32,8 @@ def for_enumerate(x):
     x = [x, x, x]
     res = 0
     for i, v in enumerate(x):
-        res = res + i
-        res = res + v
+        res += i
+        res += v
     return x
 
 
@@ -50,8 +49,8 @@ def for_mix(x):
     x = [x, x, x]
     res = 0
     for i, v in enumerate(list(zip(x, x, x, x))):
-        res = res + i
-        res = res + v[0]
+        res += i
+        res += v[0]
     return res
 
 
@@ -103,3 +102,59 @@ def test_not_implement_for_iter(func, param):
     assert jcr["stat"] == "GRAPH_CALLABLE"
     assert jcr["code"]["call_count_"] > 0
     assert excepted == result
+
+
+jit_cfg = {"loop_unrolling": True, "compile_with_try": False}
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_for_zip_iter_1():
+    """
+    Feature: Test zip iter.
+    Description: zip of list + tuple.
+    Expectation: No exception.
+    """
+
+    def fn(seq_a: list, seq_b: tuple):
+        ret = 0
+        for a, b in zip(seq_a, seq_b):
+            ret += (a * b)
+        return ret
+
+    a = [Tensor([1, 1, 1]), Tensor([2, 2, 2]), Tensor([3, 3, 3])]
+    b = (1.5, 2.0, 2.5)
+    o1 = fn(a, b)
+
+    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(a, b)
+
+    match_array(o1, o2)
+    if sys.version_info >= (3, 8):
+        assert_executed_by_graph_mode(fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_for_zip_iter_2():
+    """
+    Feature: Test zip iter.
+    Description: Sequences have different lengths.
+    Expectation: No exception.
+    """
+
+    def fn(seq_a: list, seq_b: tuple, seq_c: list):
+        ret = 0
+        for a, b, c in zip(seq_a, seq_b, seq_c):
+            ret += (a * b + c)
+        return ret
+
+    a = [Tensor([1, 1, 1]), Tensor([2, 2, 2]), Tensor([3, 3, 3])]
+    b = (2, 3, 4, 5)
+    c = [-0.5, 2.0]
+    o1 = fn(a, b, c)
+
+    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(a, b, c)
+
+    match_array(o1, o2)
+    if sys.version_info >= (3, 8):
+        assert_executed_by_graph_mode(fn)

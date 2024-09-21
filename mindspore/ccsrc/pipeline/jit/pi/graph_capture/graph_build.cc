@@ -3471,7 +3471,7 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci, bool is_range_type) {
 
   PyObject *item = PySequence_GetItem(seq, index);
   if (item == nullptr) {
-    MS_LOG(ERROR) << "trace for iter got an error " << py::error_already_set().what();
+    MS_LOG(INFO) << "trace for iter got an error " << py::error_already_set().what();
     PyErr_Clear();
     return false;
   }
@@ -3526,10 +3526,10 @@ bool GraphBuilder::TraceRunForIterEnumerate(int jump_bci) {
 
   // reduce iterable object
   ValueNode *seq_node = iterable_node;
-  PyObject *tuple = PyIter_Next(enumerate);
-  if (tuple == nullptr) {
+  PyObject *obj = PyIter_Next(enumerate);
+  if (obj == nullptr) {
     if (PyErr_Occurred() && !PyErr_ExceptionMatches(PyExc_StopIteration)) {
-      MS_LOG(ERROR) << "trace FOR_ITER got an error " << py::error_already_set().what();
+      MS_LOG(INFO) << "trace FOR_ITER got an error " << py::error_already_set().what();
       PyErr_Clear();
       return false;
     }
@@ -3538,16 +3538,35 @@ bool GraphBuilder::TraceRunForIterEnumerate(int jump_bci) {
     cur_bci_ = jump_bci;
     return true;
   }
-  PyObject *index = PyTuple_GET_ITEM(tuple, 0);
-  PyObject *item = PyTuple_GET_ITEM(tuple, 1);
-  ValueNode *index_node = NewValueNode(AObject::Convert(index), LOAD_CONST, -1, {});
-  ValueNode *item_node = NewValueNode(AObject::Convert(item), BINARY_SUBSCR, 0, {seq_node, index_node});
-  ValueNode *value_node = NewValueNode(AObject::Convert(tuple), BUILD_TUPLE, 2, {index_node, item_node});
-  Py_DECREF(tuple);
-  graph_->GetTracedNodes().push_back(item_node);
-  graph_->GetTracedNodes().push_back(value_node);
 
-  push(value_node);
+  auto tuple = py::reinterpret_steal<py::tuple>(obj);
+  py::object index = tuple[0];
+  ValueNode *result_node;
+  if (trace_flag()) {
+    DoLoadConst({LOAD_CONST, 0, index});
+    ValueNode *index_node = pop();
+    push(seq_node);
+    push(index_node);
+    if (!DoItemAccess({BINARY_SUBSCR, 0})) {
+      return false;
+    }
+    ValueNode *item_node = pop();
+    push(index_node);
+    push(item_node);
+    if (!DoBuildOp({BUILD_TUPLE, 2})) {
+      return false;
+    }
+    result_node = pop();
+  } else {
+    py::object item = tuple[1];
+    ValueNode *index_node = NewValueNode(AObject::Convert(index), LOAD_CONST, -1, {});
+    ValueNode *item_node = NewValueNode(AObject::Convert(item), BINARY_SUBSCR, 0, {seq_node, index_node});
+    result_node = NewValueNode(AObject::Convert(tuple), BUILD_TUPLE, 2, {index_node, item_node});
+    graph_->GetTracedNodes().push_back(item_node);
+    graph_->GetTracedNodes().push_back(result_node);
+  }
+
+  push(result_node);
   cur_bci_ = cur_bci_ + 1;
   return true;
 }
@@ -3593,7 +3612,7 @@ bool GraphBuilder::TraceRunForIterZip(int jump_bci) {
   py::object handle = py::reinterpret_steal<py::object>(tuple);
   if (handle.ptr() == nullptr) {
     if (PyErr_Occurred() && !PyErr_ExceptionMatches(PyExc_StopIteration)) {
-      MS_LOG(ERROR) << "trace FOR_ITER got an error " << py::error_already_set().what();
+      MS_LOG(INFO) << "trace FOR_ITER got an error " << py::error_already_set().what();
       PyErr_Clear();
       return false;
     }
@@ -3603,18 +3622,33 @@ bool GraphBuilder::TraceRunForIterZip(int jump_bci) {
     return true;
   }
 
-  std::vector<ValueNode *> inputs;
-  for (size_t tuple_index = 0; tuple_index < iterable_nodes.size(); ++tuple_index) {
-    PyObject *item = PyTuple_GET_ITEM(tuple, tuple_index);
-    ValueNode *seq_node = iterable_nodes[tuple_index];
-    ValueNode *index_node = NewValueNode(AObject::Convert(py::int_(*index)), LOAD_CONST, -1, {});
-    ValueNode *item_node = NewValueNode(AObject::Convert(item), BINARY_SUBSCR, 0, {seq_node, index_node});
-    inputs.push_back(item_node);
-    graph_->GetTracedNodes().push_back(item_node);
+  if (trace_flag()) {
+    for (auto seq_node : iterable_nodes) {
+      DoLoadConst({LOAD_CONST, 0, py::int_(*index)});
+      ValueNode *index_node = pop();
+      push(seq_node);
+      push(index_node);
+      if (!DoItemAccess({BINARY_SUBSCR, 0})) {
+        return false;
+      }
+    }
+    if (!DoBuildOp({BUILD_TUPLE, SizeToInt(iterable_nodes.size())})) {
+      return false;
+    }
+  } else {
+    std::vector<ValueNode *> inputs;
+    for (size_t tuple_index = 0; tuple_index < iterable_nodes.size(); ++tuple_index) {
+      PyObject *item = PyTuple_GET_ITEM(tuple, tuple_index);
+      ValueNode *seq_node = iterable_nodes[tuple_index];
+      ValueNode *index_node = NewValueNode(AObject::Convert(py::int_(*index)), LOAD_CONST, -1, {});
+      ValueNode *item_node = NewValueNode(AObject::Convert(item), BINARY_SUBSCR, 0, {seq_node, index_node});
+      inputs.push_back(item_node);
+      graph_->GetTracedNodes().push_back(item_node);
+    }
+    ValueNode *value_node = NewValueNode(AObject::Convert(tuple), BUILD_TUPLE, inputs.size(), inputs);
+    graph_->GetTracedNodes().push_back(value_node);
+    push(value_node);
   }
-  ValueNode *value_node = NewValueNode(AObject::Convert(tuple), BUILD_TUPLE, inputs.size(), inputs);
-  graph_->GetTracedNodes().push_back(value_node);
-  push(value_node);
 
   (*index)++;
   cur_bci_ = cur_bci_ + 1;
