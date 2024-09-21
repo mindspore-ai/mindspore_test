@@ -196,6 +196,25 @@ def test_celeba_sampler_exception():
         assert "Unsupported sampler object of type (<class 'str'>)" in str(e)
 
 
+def test_celeba_with_invalid_decrypt():
+    """
+    Feature: CelebADataset
+    Description: Test CelebA dataset with invalid decrypt
+    Expectation: Error is raised as expected
+    """
+    logger.info("Test CelebA with invalid decrypt output")
+    try:
+        def decrypt_func1(cipher_file):
+            # return string
+            return cipher_file + 'is str'
+
+        data = ds.CelebADataset(DATA_DIR, decrypt=decrypt_func1, decode=True, shuffle=False)
+        for _ in data.create_dict_iterator(num_epochs=1):
+            pass
+    except RuntimeError as e:
+        assert "The return value of the decrypt function is not of type bytes" in str(e)
+
+
 if __name__ == '__main__':
     test_celeba_dataset_label()
     test_celeba_dataset_op()
@@ -204,3 +223,4 @@ if __name__ == '__main__':
     test_celeba_get_dataset_size()
     test_celeba_dataset_exception_file_path()
     test_celeba_sampler_exception()
+    test_celeba_with_invalid_decrypt()
