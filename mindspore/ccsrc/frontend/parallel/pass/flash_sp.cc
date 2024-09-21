@@ -1117,12 +1117,14 @@ void DynDismantleRecvOMLTensor(const AnfNodePtr &recv_oml_tensor, CNodePtr *cur_
                                             {NewTupleGetItemNode(q_shape, 0), NewTupleGetItemNode(q_shape, 1),
                                              NewTupleGetItemNode(q_shape, 2), NewTupleGetItemNode(q_shape, 3)},
                                             {1, 1, 1, 1});
+  (*cur_attn_out) = NewCastNode(*cur_attn_out, TypeId::kNumberTypeFloat32);
   (*cur_softmax_max) = NewDynStridedSliceNode(
     recv_oml_tensor,
     {NewValueNode<int64_t>(0), NewValueNode<int64_t>(0), NewValueNode<int64_t>(0), NewTupleGetItemNode(q_shape, 3)},
     {NewTupleGetItemNode(q_shape, 0), NewTupleGetItemNode(q_shape, 1), NewTupleGetItemNode(q_shape, 2),
      NewScalarAddNode(NewTupleGetItemNode(q_shape, 3), NewValueNode<int64_t>(8))},
     {1, 1, 1, 1});
+  (*cur_softmax_max) = NewCastNode(*cur_softmax_max, TypeId::kNumberTypeFloat32);
   (*cur_softmax_sum) = NewDynStridedSliceNode(
     recv_oml_tensor,
     {NewValueNode<int64_t>(0), NewValueNode<int64_t>(0), NewValueNode<int64_t>(0),
@@ -1130,6 +1132,7 @@ void DynDismantleRecvOMLTensor(const AnfNodePtr &recv_oml_tensor, CNodePtr *cur_
     {NewTupleGetItemNode(q_shape, 0), NewTupleGetItemNode(q_shape, 1), NewTupleGetItemNode(q_shape, 2),
      NewScalarAddNode(NewTupleGetItemNode(q_shape, 3), NewValueNode<int64_t>(16))},
     {1, 1, 1, 1});
+  (*cur_softmax_sum) = NewCastNode(*cur_softmax_sum, TypeId::kNumberTypeFloat32);
 }
 
 int64_t GetSendQKVDstRank(size_t rank, size_t step, size_t sp_size) { return (rank + step + 1) % sp_size; }
