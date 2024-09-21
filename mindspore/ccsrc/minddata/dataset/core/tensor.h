@@ -556,8 +556,12 @@ class DATASET_API Tensor {
       std::vector<T> string_vector;
       string_vector.reserve(Size());
       // Iterate over tensor and create a vector of string_views of strings in the tensor.
-      (void)std::transform(begin<std::string_view>(), end<std::string_view>(), std::back_inserter(string_vector),
-                           [](const auto &element) { return static_cast<std::string>(element); });
+      try {
+        (void)std::transform(begin<std::string_view>(), end<std::string_view>(), std::back_inserter(string_vector),
+                             [](const auto &element) { return static_cast<std::string>(element); });
+      } catch (const std::exception &e) {
+        RETURN_STATUS_UNEXPECTED("Failed to cast to Unicode string: " + std::string(e.what()));
+      }
       *data = py::array(py::cast(string_vector));
       data->resize(shape_.AsVector());
     }
