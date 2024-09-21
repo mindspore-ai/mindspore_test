@@ -42,7 +42,8 @@ struct TryBlock {
   bool IsFinallyBlock; /*record current block is in exception block or finally block*/
 };
 
-const std::vector<std::string> kAstFunctionList = {"mindspore.ops.function.array_func"};
+const std::vector<std::string> kAstFunctionList = {
+  "mindspore.ops.function.array_func", "mindspore.ops.function.nn_func", "mindspore.ops.function.math_func"};
 
 bool CheckSupportCreateInstance(CallNode *call_node);
 ValueNode *GetSelfFromMethod(ValueNode *method);
