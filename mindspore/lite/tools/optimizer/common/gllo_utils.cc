@@ -888,6 +888,50 @@ ParameterPtr BuildParameterNode(const FuncGraphPtr &func_graph, const tensor::Te
   return param_node;
 }
 
+ParameterPtr BuildBoolValueParameterNode(const FuncGraphPtr &func_graph, const bool &data, const std::string &node_name,
+                                         bool empty_shape) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  auto param_node = func_graph->add_parameter();
+  MS_CHECK_TRUE_RET(param_node != nullptr, nullptr);
+  param_node->set_name(node_name);
+  ShapeVector shape = empty_shape ? std::vector<int64_t>{} : std::vector<int64_t>{1};
+  auto tensor_info = lite::CreateTensorInfo(&data, sizeof(bool), shape, kNumberTypeBool);
+  if (tensor_info == nullptr) {
+    MS_LOG(ERROR) << "Create tensor info failed";
+    return nullptr;
+  }
+
+  auto status = lite::InitParameterFromTensorInfo(param_node, tensor_info);
+  if (status != RET_OK) {
+    MS_LOG(ERROR) << "init parameter from tensor info failed";
+    return nullptr;
+  }
+  return param_node;
+}
+
+ParameterPtr BuildBoolVecParameterNode(const FuncGraphPtr &func_graph, const std::vector<uint8_t> &data,
+                                       const std::string &node_name) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  auto param_node = func_graph->add_parameter();
+  MS_CHECK_TRUE_RET(param_node != nullptr, nullptr);
+  param_node->set_name(node_name);
+
+  std::vector<int64_t> shape_vector{static_cast<int64_t>(data.size())};
+  auto tensor_info = lite::CreateTensorInfo(data.data(), data.size() * sizeof(uint8_t), shape_vector, kNumberTypeBool);
+  if (tensor_info == nullptr) {
+    MS_LOG(ERROR) << "Create tensor info failed";
+    return nullptr;
+  }
+
+  auto status = lite::InitParameterFromTensorInfo(param_node, tensor_info);
+  if (status != RET_OK) {
+    MS_LOG(ERROR) << "init parameter from tensor info failed";
+    return nullptr;
+  }
+
+  return param_node;
+}
+
 ParameterPtr BuildIntValueParameterNode(const FuncGraphPtr &func_graph, const int32_t &data,
                                         const std::string &node_name, bool empty_shape) {
   MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
