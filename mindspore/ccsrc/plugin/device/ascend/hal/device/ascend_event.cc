@@ -36,6 +36,7 @@ AscendEvent::AscendEvent(uint32_t flag) {
     MS_LOG(ERROR) << "aclrtCreateEventExWithFlag failed, ret:" << ret;
     event_ = nullptr;
   }
+  has_flag_ = true;
   MS_LOG(DEBUG) << "Create ascend event success, flag : " << flag << ".";
 }
 
@@ -91,9 +92,14 @@ void AscendEvent::WaitEvent() {
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
   }
-  ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
-  if (ret != ACL_ERROR_NONE) {
-    MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
+  if (!has_flag_) {
+    // The event created by aclrtCreateEventExWithFlag is not support to call
+    // aclrtResetEvent/aclrtQueryEvent/aclrtQueryEventWaitStatus.
+    MS_LOG(DEBUG) << "Reset Event";
+    ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
+    if (ret != ACL_ERROR_NONE) {
+      MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
+    }
   }
   need_wait_ = false;
 }
@@ -105,10 +111,12 @@ bool AscendEvent::WaitEvent(uint32_t stream_id) {
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(EXCEPTION) << "aclrtStreamWaitEvent failed, ret:" << ret;
   }
-  // Reset event after wait so that event can be reused.
-  ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
-  if (ret != ACL_ERROR_NONE) {
-    MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
+  if (!has_flag_) {
+    // Reset event after wait so that event can be reused.
+    ret = CALL_ASCEND_API(aclrtResetEvent, event_, wait_stream_);
+    if (ret != ACL_ERROR_NONE) {
+      MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << ret;
+    }
   }
   need_wait_ = false;
   return true;
