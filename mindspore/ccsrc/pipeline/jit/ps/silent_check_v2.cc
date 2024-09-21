@@ -41,6 +41,8 @@
 #include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/auto_generate/gen_ops_primitive.h"
 #include "op_def/framework_ops.h"
+#include "op_def/structure_ops.h"
+#include "op_def/other_ops.h"
 #include "infer/l2_normalize.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -136,12 +138,16 @@ int GetNpuAsdDetectValue() {
   return var_val[0] - '0';
 }
 
-bool IsCommOperator(const AnfNodePtr &node) {
+bool NeedCheckCommOperator(const AnfNodePtr &node) {
   if (!IsValueNode<Primitive>(node)) {
     return false;
   }
+  // skip barrier and receive operator
+  if (IsPrimitive(node, prim::kPrimBarrier) || IsPrimitive(node, prim::kPrimReceive)) {
+    return false;
+  }
   auto prim = GetValuePtr<Primitive>(node);
-  return common::AnfAlgo::IsCommunicationOp(prim->name()) && (prim->name() != kBarrierOpName);
+  return common::AnfAlgo::IsCommunicationOp(prim->name());
 }
 
 ValueNodePtr CreateValueNode(const FuncGraphPtr &func_graph, const ValuePtr &value, TypeId dtype,
@@ -173,6 +179,25 @@ ParameterPtr GetScaleSense(const FuncGraphPtr &func_graph) {
     }
   }
   return nullptr;
+}
+
+bool HasFloat16Type(const abstract::AbstractBasePtr &abs_base) {
+  MS_EXCEPTION_IF_NULL(abs_base);
+  if (abs_base->isa<abstract::AbstractScalar>()) {
+    return abs_base->cast<abstract::AbstractScalarPtr>()->GetType()->type_id() == kNumberTypeFloat16;
+  }
+  if (abs_base->isa<abstract::AbstractTensor>()) {
+    return abs_base->cast<abstract::AbstractTensorPtr>()->element()->GetType()->type_id() == kNumberTypeFloat16;
+  }
+  if (abs_base->isa<abstract::AbstractSequence>()) {
+    auto abs_seq = abs_base->cast<abstract::AbstractSequencePtr>();
+    for (size_t i = 0; i < abs_seq->size(); ++i) {
+      if (HasFloat16Type((*abs_seq)[i])) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 }  // namespace
 
@@ -329,6 +354,26 @@ AnfNodePtr GetGradValue(const FuncGraphPtr &func_graph, const AnfNodePtr &node, 
 
 void SilentCheckV2::GetLossScale() { loss_scale_ = GetScaleSense(root_); }
 
+bool SilentCheckV2::HasFloat16Input() {
+  auto iter = std::find_if(root_->parameters().begin(), root_->parameters().end(),
+                           [](const AnfNodePtr &param) { return HasFloat16Type(param->abstract()); });
+  if (iter != root_->parameters().end()) {
+    MS_LOG(WARNING) << "Graph " << root_->ToString() << " has parameter " << (*iter)->ToString() << " with type "
+                    << (*iter)->abstract()->ToString() << ", skip inserting silent check operators.";
+    return true;
+  }
+
+  // check whether the output type of GetNext node contains float16 type
+  auto node_get_next = FindGetNextNode();
+  if (node_get_next != nullptr && HasFloat16Type(node_get_next->abstract())) {
+    MS_LOG(WARNING) << "GetNext node of graph " << root_->ToString() << " with output type "
+                    << node_get_next->abstract()->ToString() << ", skip inserting silent check operators.";
+    return true;
+  }
+
+  return false;
+}
+
 AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
@@ -424,43 +469,51 @@ AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, 
 
 bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
+  scale_sense_ = GetScaleSense(func_graph);
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  AnfNodePtr return_node = func_graph->get_return();
-  MS_EXCEPTION_IF_NULL(return_node);
-  std::vector<AnfNodePtr> all_nodes = TopoSort(return_node);
-  bool changed = false;
-  scale_sense_ = GetScaleSense(func_graph);
 
-  for (auto &node : all_nodes) {
-    MS_EXCEPTION_IF_NULL(node);
-    if (!node->isa<CNode>()) {
-      continue;
-    }
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    // building graph node users
-    for (const auto &input : cnode->inputs()) {
-      if (IsValueNode<FuncGraph>(input)) {
-        auto sub_graph = GetValueNode<FuncGraphPtr>(input);
-        graph_users_[sub_graph].insert(cnode);
+  auto fn_insert_check_node = [this, &func_graph, &manager](const AnfNodePtrList &nodes) -> bool {
+    bool changed = false;
+    for (auto &node : nodes) {
+      MS_EXCEPTION_IF_NULL(node);
+      if (!node->isa<CNode>()) {
+        continue;
       }
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      // building graph node users when the network contains loss-scale, since
+      // parameter `scale_sense` may be added to subgraph
+      if (loss_scale_ != nullptr) {
+        for (const auto &input : cnode->inputs()) {
+          if (IsValueNode<FuncGraph>(input)) {
+            auto sub_graph = GetValueNode<FuncGraphPtr>(input);
+            graph_users_[sub_graph].insert(cnode);
+          }
+        }
+      }
+      // skip forward node in graph
+      if (!cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+        continue;
+      }
+      // skip communicator operators which don't need check
+      if (!NeedCheckCommOperator(cnode->input(ops::kInputIndex0))) {
+        continue;
+      }
+      auto check_node = CreateSlientCheckNode(func_graph, node);
+      // update cnode input
+      cnode->set_input(ops::kInputIndex1, check_node);
+      manager->SetEdge(cnode, ops::kInputIndex1, check_node);
+      changed = true;
     }
-    // skip forward node in graph
-    if (!cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      continue;
-    }
-    // skip non-communicator operators
-    if (!IsCommOperator(cnode->input(ops::kInputIndex0))) {
-      continue;
-    }
-    auto check_node = CreateSlientCheckNode(func_graph, node);
-    // update cnode input
-    cnode->set_input(ops::kInputIndex1, check_node);
-    manager->SetEdge(cnode, ops::kInputIndex1, check_node);
-    changed = true;
+    return changed;
+  };
+
+  if (func_graph == root_) {
+    return fn_insert_check_node(GetRootGraphTopoNodes());
+  } else {
+    return fn_insert_check_node(TopoSort(func_graph->get_return()));
   }
-  return changed;
 }
 
 void SilentCheckV2::UpdateNodes() {
@@ -502,13 +555,35 @@ void SilentCheckV2::UpdateNodes() {
   }
 }
 
+AnfNodePtr SilentCheckV2::FindGetNextNode() {
+  for (auto &node : GetRootGraphTopoNodes()) {
+    if (IsPrimitiveCNode(node, prim::kPrimGetNext)) {
+      return node;
+    }
+  }
+
+  return nullptr;
+}
+
+AnfNodePtrList &SilentCheckV2::GetRootGraphTopoNodes() {
+  MS_EXCEPTION_IF_NULL(root_);
+  if (root_graph_nodes_.empty()) {
+    root_graph_nodes_ = TopoSort(root_->return_node());
+  }
+  return root_graph_nodes_;
+}
+
 bool SilentCheckPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   FuncGraphPtr root_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(root_graph);
 
-  // insert silent check operator for root graph
   auto silent_check = std::make_shared<SilentCheckV2>(root_graph);
+  // skip inserting silent check operator if root graph has fp16 input
+  if (silent_check->HasFloat16Input()) {
+    return true;
+  }
+  // insert silent check operator for root graph
   silent_check->Run(root_graph);
 
   // insert silent check operator for sub-graphs

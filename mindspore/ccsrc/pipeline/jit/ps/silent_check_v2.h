@@ -38,15 +38,20 @@ class SilentCheckV2 {
   explicit SilentCheckV2(const FuncGraphPtr &root) : root_(root) { GetLossScale(); }
   ~SilentCheckV2() = default;
 
+  bool HasFloat16Input();
   bool Run(const FuncGraphPtr &func_graph);
   void UpdateNodes();
 
  private:
   void GetLossScale();
+  AnfNodePtr FindGetNextNode();
+  AnfNodePtrList &GetRootGraphTopoNodes();
   AnfNodePtr CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node);
 
   // root graph
   FuncGraphPtr root_ = nullptr;
+  // buffering topo nodes of root graph
+  AnfNodePtrList root_graph_nodes_;
   // pointer to loss_scale of the whole network if exists
   ParameterPtr loss_scale_ = nullptr;
 
