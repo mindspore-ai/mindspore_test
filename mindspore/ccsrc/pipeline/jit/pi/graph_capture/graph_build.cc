@@ -2980,6 +2980,7 @@ ValueNode *GetBoundSelf(CallNode *call_node) {
   Graph *graph = call_node->GetGraph();
 
   ValueNode *self = nullptr;
+  bool is_method = false;
   switch (vo->GetType()) {
     case AObject::kTypeBoundMethod:
       self = GetSelfFromMethod(func_val);
@@ -3631,7 +3632,7 @@ bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
       // call expression "dict.items()"
       push(dict_item_node->input(0)->input(0));
     } else {
-      DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyDict_Type))});
+      DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
       push(dict_item_node);
       DoCall({CALL_FUNCTION, 1});
     }
@@ -3702,7 +3703,8 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
     succ = TraceRunForIterEnumerate(instr.extra_jump()->bci());
   } else if (iterable->GetTypeObject() == &PyZip_Type) {
     succ = TraceRunForIterZip(instr.extra_jump()->bci());
-  } else if (iterable->GetTypeObject() == &PyDictItems_Type) {
+  } else if (iterable->GetTypeObject() == &PyDictKeys_Type || iterable->GetTypeObject() == &PyDictValues_Type ||
+             iterable->GetTypeObject() == &PyDictItems_Type) {
     succ = TraceRunForIterDictItems(instr.extra_jump()->bci());
   } else {
     succ = TraceRunForIterSequence(instr.extra_jump()->bci(), IsRangeType(iter_node));
@@ -4616,6 +4618,14 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
     "zip",
     "map",
     "filter",
+    "__setitem__",
+    "getattr",
+    "range",
+    "isinstance",
+    "hasattr",
+    "arange",
+    "meshgrid",
+    "concat",
   };
   return std::any_of(forbidden_list.begin(), forbidden_list.end(),
                      [&qualname](const std::string &name) { return qualname == name; });
@@ -4719,6 +4729,31 @@ void MindGraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &c
   FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
 }
 
+// fix cyclomatic complexity
+py::object MindGraphBuilder::HandleMSCallable(CallNode *call_node, const py::object &callable_info,
+                                              const py::object &original_callable, StopTraceReason *stop_reason) {
+  std::vector<ValueNode *> args;
+  if (PyFunction_Check(callable_info.ptr())) {
+    args = GetNewArgs(call_node);
+  } else if (callable_info.ptr() != original_callable.ptr() && py::hasattr(callable_info, PYTHON_PRIMITIVE_FLAG) &&
+             (PyMethod_Check(original_callable.ptr()) || PyCFunction_Check(original_callable.ptr()))) {
+    // When x.y maps to primitive, x should be added to the first input of the primitive.
+    auto self_node = GetBoundSelf(call_node);
+    if (self_node == nullptr) {
+      MS_LOG(WARNING) << "Self of " << py::str(callable_info) << " is nullptr.";
+    } else {
+      args.insert(args.begin(), self_node);
+    }
+    const auto &call_node_inputs = call_node->getInputs();
+    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
+  } else {
+    const auto &call_node_inputs = call_node->getInputs();
+    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
+  }
+  FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+  return py::object();
+}
+
 py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
   *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
@@ -4752,7 +4787,7 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     MS_LOG(INFO) << "Should be parsed by ast for object: " << py::str(callable_info);
     std::vector<ValueNode *> args;
     auto self_node = GetBoundSelf(call_node);
-    if (callable_info != original_callable && self_node != nullptr) {
+    if (callable_info.ptr() != original_callable.ptr() && self_node != nullptr) {
       args.push_back(self_node);
     }
     const auto &call_node_inputs = call_node->getInputs();
@@ -4761,26 +4796,14 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     return py::object();
   }
   if (FGBuilder()->CheckCallable(callable_info)) {
-    std::vector<ValueNode *> args;
-    if (PyFunction_Check(callable_info.ptr())) {
-      args = GetNewArgs(call_node);
-    } else if (PyMethod_Check(original_callable.ptr()) && callable_info != original_callable &&
-               py::hasattr(callable_info, PYTHON_PRIMITIVE_FLAG)) {
-      // When x.y maps to primitive, x should be added to the first input of the primitive.
-      args = GetNewArgs(call_node, AObject::Convert(callable_info.ptr()));
-    } else {
-      const auto &call_node_inputs = call_node->getInputs();
-      (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-    }
-    FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
-    return py::object();
+    return HandleMSCallable(call_node, callable_info, original_callable, stop_reason);
   }
 
   py::object result = this->GraphBuilder::ResolveCallable(call_node, stop_reason);
   AObject *callable = call_node->input(0)->GetVobj();
-  bool pijit_specialized = original_callable == callable_info             // not converted
-                           || call_node->GetSubGraph() != nullptr         // pijit sub graph
-                           || callable->GetType() == AObject::kTypeType;  // pijit class instantiation
+  bool pijit_specialized = original_callable.ptr() == callable_info.ptr()  // not converted
+                           || call_node->GetSubGraph() != nullptr          // pijit sub graph
+                           || callable->GetType() == AObject::kTypeType;   // pijit class instantiation
   if (pijit_specialized) {
     return result;
   }

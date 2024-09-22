@@ -573,9 +573,8 @@ void CodeGenerator::LoadValue(ValueNode *node) {
     return;
   }
 
-  py::object cnst = node->GetVobj()->GetPyObject();
   if (opcode == LOAD_CONST) {
-    LoadConst(cnst);
+    LoadConst(node->GetVobj()->GetPyObject());
     return;
   }
   if (missing_value_to_undefine_) {

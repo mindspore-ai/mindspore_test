@@ -558,10 +558,6 @@ void GraphAnalyzer::CapturedInfo::clear() {
 
 std::string GraphAnalyzer::CapturedInfo::Info::ToString() {
   std::stringstream s;
-  s << "values: ";
-  for (auto i : values) {
-    s << i->ToString() << "\n";
-  }
   s << "inputs: \n";
   for (auto i : inputs) {
     s << i->ToString() << "\n";
@@ -604,11 +600,13 @@ std::string GraphAnalyzer::CapturedInfo::ToString() {
   std::stringstream s;
   s << "1. captured_ info: \n";
   s << captured_.ToString();
-  s << "2. interpret_ info: \n";
+  s << "2. outputs_optimize_ info: \n";
+  s << outputs_optimize_.ToString();
+  s << "3. interpret_ info: \n";
   s << interpret_.ToString();
-  s << "3. graph_inputs_: \n";
+  s << "4. graph_inputs_: \n";
   s << graph_inputs_.ToString();
-  s << "4. has_grad_: " << has_grad_ << "\n";
+  s << "5. has_grad_: " << has_grad_ << "\n";
   return s.str();
 }
 
