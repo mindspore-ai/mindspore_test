@@ -7496,14 +7496,14 @@ def _compute_vector_norm_inf(x, dim, keepdims, norm_func):
     return ret_norm
 
 
-def norm_ext(input, p=None, dim=None, keepdim=False, *, dtype=None):
+def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
     r"""
     Returns the matrix norm or vector norm of a given tensor.
 
-    `ord` is the calculation mode of norm. The following norm modes are supported.
+    `p` is the calculation mode of norm. The following norm modes are supported.
 
     ====================== ================================ ==========================================
-    `ord`                   norm for matrices               norm for vectors
+    `p`                     norm for matrices               norm for vectors
     ====================== ================================ ==========================================
     `None` (default)        Frobenius norm                   `2`-norm (see below)
     `'fro'`                 Frobenius norm                   -- not supported --
@@ -7514,20 +7514,24 @@ def norm_ext(input, p=None, dim=None, keepdim=False, *, dtype=None):
     other `int` or `float`  -- not supported --              :math:`sum(abs(x)^{ord})^{(1 / ord)}`
     ====================== ================================ ==========================================
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
-        input (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)` where * is zero or more batch dimensions.
+        input (Tensor): The input of LogSigmoid with data type of bfloat16, float16 or float32.
+            The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
         p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
-            behavior. Default: ``None`` .
+            behavior. Default: ``fro`` .
         dim (Union[int, Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
             Default: ``None`` .
         keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
 
     Keyword Args:
-        dtype (:class:`mindspore.dtype`, optional): When set, `A` will be converted to the specified type,
+        dtype (:class:`mindspore.dtype`, optional): When set, `input` will be converted to the specified type,
             `dtype`, before execution, and dtype of returned Tensor will also be `dtype`. Default: ``None`` .
 
     Returns:
-        Tensor, the result of norm calculation on the specified dimension, `dim`, has the same dtype as `A`.
+        Tensor, the result of norm calculation on the specified dimension, `dim`, has the same dtype as `input`.
 
     Raises:
         ValueError: If `dim` is out of range.
@@ -7545,20 +7549,23 @@ def norm_ext(input, p=None, dim=None, keepdim=False, *, dtype=None):
         >>> import mindspore as ms
         >>> from mindspore import ops
         >>> data_range = ops.arange(-13, 13, dtype=ms.float32)
-        >>> # Exclude 0 from original data for 0 is invalid input when `ord` is negative.
         >>> x = data_range[data_range != 0]
         >>> y = x.reshape(5, 5)
-        >>> print(ops.function.math_func.norm_ext(x))
+        >>> print(ops.function.math_func.norm_ext(x, 2.0))
         38.327538
-        >>> print(ops.norm(x, 0))
-        25.0
     """
-    if p in [None, 0.0, 1.0, 2.0, 3.0]:
+    if p in [0.0, 1.0, 2.0, 3.0]:
         return norm_op(input, p, dim, keepdim, dtype)
-    if dtype is None:
-        return lp_norm_v2_op(input, p, dim, keepdim, 0.0)
-    return ops.cast(lp_norm_v2_op(input, p, dim, keepdim, 0.0), dtype)
-
+    if isinstance(p, (int, float)):
+        if dtype is None:
+            return lp_norm_v2_op(input, p, dim, keepdim, 0.0)
+        return ops.cast(lp_norm_v2_op(input, p, dim, keepdim, 0.0), dtype)
+    if p == 'fro':
+        if isinstance(dim, (list, tuple)) and len(dim) > 2:
+            raise ValueError(f"For `norm_ext`, the size of `dim` cannot be greater than 2 "
+                             f"when the mode of norm is `fro`.")
+        return norm_op(input, 2.0, dim, keepdim, dtype)
+    raise ValueError(f"For `norm_ext`, the value of `p` cannot be `{p}` currently.")
 
 def vector_norm(x, ord=2, axis=None, keepdims=False, *, dtype=None):
     r"""

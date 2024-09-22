@@ -1,9 +1,9 @@
 #operator norm
 norm:
   args:
-    input_x:
+    input:
       dtype: tensor
-    ord:
+    p:
       dtype: float
       type_cast: int, tensor
       default: None
