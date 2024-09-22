@@ -69,7 +69,8 @@ from mindspore.parallel._parallel_serialization import _convert_to_list, _conver
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
-from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint, _find_needed_ranks
+from mindspore.parallel.transform_safetensors import _load_parallel_checkpoint, _get_device_num_from_strategy, \
+    _extract_pipeline_stage_num
 from mindspore.train._utils import read_proto, get_parameter_redundancy
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, dynamic_obfuscate_mindir, \
     split_mindir, split_dynamic_mindir
@@ -3010,15 +3011,16 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                 _load_parallel_checkpoint(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
                                           rank_id)
             else:
-                needed_rank_list_map = _find_needed_ranks(predict_strategy, None)
+                dst_strategy_dict = _build_searched_strategy(predict_strategy)
+                dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
+                dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
+                dst_device_num = dst_stage_device_num * dst_stage_num
                 processes = []
-                for needed_rank_list, rank in needed_rank_list_map.items():
-                    for needed_rank in needed_rank_list.split("-"):
-                        rank_id = int(needed_rank)
-                        p = Process(target=_load_parallel_checkpoint, args=(
-                            unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank_id))
-                        p.start()
-                        processes.append(p)
+                for rank in range(0, dst_device_num):
+                    p = Process(target=_load_parallel_checkpoint, args=(
+                        unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank))
+                    p.start()
+                    processes.append(p)
                 for p in processes:
                     p.join()
         return
