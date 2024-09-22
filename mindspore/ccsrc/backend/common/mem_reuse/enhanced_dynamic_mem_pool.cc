@@ -155,7 +155,7 @@ void EnhancedDynamicMemPool::DumpDynamicMemPoolStateInfo() {
   if (is_enable_memory_statistics) {
     std::cout << "[MS_RUNTIME_PROF]" << state_info << std::endl;
   }
-  MS_LOG(INFO) << state_info;
+  AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo();
 }
 
 const std::pair<size_t, size_t> EnhancedDynamicMemPool::FreeIdleMemsByEagerFree() {
