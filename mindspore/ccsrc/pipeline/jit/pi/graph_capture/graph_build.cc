@@ -462,27 +462,25 @@ bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
 bool GraphBuilder::DoBuildMapWithUnpack(const Instr &instr) {
   const std::vector<ValueNode *> iterables(frame_.GetStacks().end() - instr.arg(), frame_.GetStacks().end());
   popn(instr.arg());
-  std::vector<ValueNode *> stack_items;
-  std::for_each(iterables.rbegin(), iterables.rend(), [this, &stack_items](auto node) {
+  std::vector<ValueNode *> keys_values;
+  std::for_each(iterables.begin(), iterables.end(), [this, &keys_values](auto node) {
     if (node->GetOpcode() == BUILD_MAP) {
       std::for_each(node->getInputs().begin(), node->getInputs().end(),
-                    [&stack_items](ValueNode *input) { stack_items.push_back(input); });
+                    [&keys_values](ValueNode *input) { keys_values.push_back(input); });
     } else {
       PyObject *key = nullptr;
       PyObject *value = nullptr;
       Py_ssize_t pos = 0;
-      std::vector<ValueNode *> keys_values;
       while (PyDict_Next(node->GetVobj()->GetPyObject().ptr(), &pos, &key, &value)) {
         DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(key)});
         keys_values.push_back(pop());
         DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(value)});
         keys_values.push_back(pop());
       }
-      stack_items.insert(stack_items.end(), keys_values.begin(), keys_values.end());
     }
   });
-  std::for_each(stack_items.begin(), stack_items.end(), [this](auto node) { push(node); });
-  DoBuildOp({BUILD_MAP, static_cast<int>(stack_items.size() / 2)});
+  std::for_each(keys_values.begin(), keys_values.end(), [this](auto node) { push(node); });
+  DoBuildOp({BUILD_MAP, SizeToInt(keys_values.size() / 2)});
   return true;
 }
 
