@@ -390,6 +390,8 @@ class MindGraphBuilder : public GraphBuilder {
 
   py::object HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
                                     StopTraceReason *stop_reason);
+  py::object HandleMSCallable(CallNode *call_node, const py::object &callable_info, const py::object &original_callable,
+                              StopTraceReason *stop_reason);
 
   FuncGraphPtr BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder, const std::vector<ValueNode *> &args,
                                  CallNode *call_node);
