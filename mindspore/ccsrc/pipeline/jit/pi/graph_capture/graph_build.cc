@@ -336,7 +336,7 @@ bool GraphBuilder::UnpackDict(ValueNode *map) {
   PyObject *map_object = map->GetVobj() ? map->GetVobj()->GetPyObject().ptr() : nullptr;
   if (map->GetOpcode() == BUILD_MAP) {
     std::for_each(map->getInputs().begin(), map->getInputs().end(), [this](ValueNode *n) { this->push(n); });
-  } else if (map_object != nullptr) {
+  } else if (map_object != nullptr && PyDict_Check(map_object)) {
     auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
     // guard dict keys, transform to const key map......
     Py_ssize_t size = PyList_GET_SIZE(keys.ptr());
@@ -2976,33 +2976,48 @@ bool GraphBuilder::CheckAndSetDefaultParams(const py::object &func, FrameStates 
 ValueNode *GetBoundSelf(CallNode *call_node) {
   ValueNode *func_val = call_node->input(0);
   AObject *vo = func_val->GetVobj();
+  PyObject *method_object = vo->GetPyObject().ptr();
   Graph *graph = call_node->GetGraph();
 
   ValueNode *self = nullptr;
   switch (vo->GetType()) {
-    case AObject::kTypeBoundMethod: {
+    case AObject::kTypeBoundMethod:
       self = GetSelfFromMethod(func_val);
-      if (self == nullptr) {
-        AObject *tmp = func_val->get_attr(GraphBuilder::ID___self__);
-        ValueNode *node = graph->NewValueNode(tmp, LOAD_ATTR, -1, {func_val}, GraphBuilder::ID___self__);
-        node->SetGraph(call_node->GetGraph());
-        call_node->AddParam(node);
-        self = node;
-      }
+      is_method = true;
       break;
-    }
-    case AObject::kTypeCell: /* fallthrough */
+    case AObject::kTypeCell:
+      self = func_val;
+      break;
     case AObject::kTypeAnyValue:
+      if (method_object != nullptr &&
+          (Py_IS_TYPE(method_object, &PyMethodDescr_Type) || Py_IS_TYPE(method_object, &_PyMethodWrapper_Type))) {
+        // no bound self
+        break;
+      }
       self = func_val;
       break;
     case AObject::kTypeCFunction:
       self = GetSelfFromKnownMethod(call_node);
+      if (PyCFunction_GET_SELF(method_object) != nullptr && !PyModule_Check(PyCFunction_GET_SELF(method_object))) {
+        is_method = true;
+        if (func_val->GetOpcode() == LOAD_ATTR) {
+          self = func_val->input(0);
+          // check method is a generic attribute
+        }
+      }
       break;
     case AObject::kTypeFunction:
       break;
     default:
       MS_LOG(INTERNAL_EXCEPTION) << "unimplemented type " << vo->ToString();
       break;
+  }
+  if (is_method && self == nullptr) {
+    AObject *tmp = func_val->get_attr(GraphBuilder::ID___self__);
+    ValueNode *node = graph->NewValueNode(tmp, LOAD_ATTR, -1, {func_val}, GraphBuilder::ID___self__);
+    node->SetGraph(call_node->GetGraph());
+    call_node->AddParam(node);
+    self = node;
   }
   return self;
 }
