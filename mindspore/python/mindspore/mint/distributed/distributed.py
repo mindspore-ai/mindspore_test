@@ -17,6 +17,7 @@ from mindspore import log as logger
 from mindspore.communication._comm_helper import _destroy_group_helper, GlobalComm
 from mindspore.communication import init, release, get_group_size
 
+
 def init_process_group(backend="hccl",
                        init_method=None,
                        timeout=None,
@@ -99,6 +100,7 @@ def init_process_group(backend="hccl",
 
     if world_size != -1 and world_size != get_group_size():
         raise ValueError("world_size is wrong, please using default value or setting: ", get_group_size())
+
 
 def destroy_process_group(group=None):
     """
