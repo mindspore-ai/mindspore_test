@@ -113,6 +113,12 @@ def set_env(func):
     return wrapper
 
 
+def check_empty_string(arg_name, arg_value):
+    """Check if str arg is not empty"""
+    if arg_value == "":
+        raise ValueError(f"{arg_name} must not be empty string!")
+
+
 class Model(BaseModel):
     """
     The `Model` class defines a MindSpore Lite's model, facilitating computational graph management.
@@ -275,8 +281,7 @@ class Model(BaseModel):
             check_isinstance("dec_key", dec_key, bytes)
             check_isinstance("dec_mode", dec_mode, str)
             check_isinstance("dec_num_parallel", dec_num_parallel, int)
-            if dec_mode == "":
-                raise RuntimeError(f"build_from_file failed, dec_mode is empty!")
+            check_empty_string("dec_mode", dec_mode)
             ret = self._model.build_from_file_with_decrypt(
                 self.model_path_, model_type_, context._context._inner_context,
                 dec_key, len(dec_key), dec_mode, dec_num_parallel)
