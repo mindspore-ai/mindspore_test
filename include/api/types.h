@@ -70,12 +70,6 @@ using Key = struct MS_API Key {
 
 constexpr char kDecModeAesGcm[] = "AES-GCM";
 
-struct CryptoInfo {
-  Key key;
-  std::string mode = "AES-GCM";
-  size_t parallel_num = 0;
-};
-
 class Allocator;
 /// \brief The MSTensor class defines a tensor in MindSpore.
 class MS_API MSTensor {

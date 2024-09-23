@@ -543,10 +543,10 @@ bool CheckDecMode(const std::string &dec_mode, unsigned int cipher_flag, const s
 std::unique_ptr<Byte[]> Decrypt(size_t *decrypt_len, const std::string &encrypt_data_path, const Byte *key,
                                 size_t key_len, const std::string &dec_mode, size_t num_threads) {
   if (num_threads <= 1) {
-    MS_LOG(INFO) << "num_threads less than 1, using serial decryption.";
+    MS_LOG(WARNING) << "num_threads <= 1, using serial decryption.";
     return Decrypt(decrypt_len, encrypt_data_path, key, key_len, dec_mode);
   } else if (num_threads > MAX_DEC_THREAD_NUM) {
-    MS_LOG(INFO) << "num_threads larger than MAX_DEC_THREAD_NUM, set to MAX_DEC_THREAD_NUM.";
+    MS_LOG(WARNING) << "num_threads > MAX_DEC_THREAD_NUM, set to MAX_DEC_THREAD_NUM.";
     num_threads = MAX_DEC_THREAD_NUM;
   }
   MS_EXCEPTION_IF_NULL(key);
