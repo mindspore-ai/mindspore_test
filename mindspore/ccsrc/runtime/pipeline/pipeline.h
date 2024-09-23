@@ -31,6 +31,7 @@ class BACKEND_EXPORT Pipeline {
   const AsyncRQueuePtr &bprop_stage() const { return bprop_stage_; }
   const AsyncRQueuePtr &backend_stage() const { return backend_stage_; }
   const AsyncRQueuePtr &launch_stage() const { return launch_stage_; }
+  const AsyncRQueuePtr &stress_detect() const { return stress_detect_; }
   void SetSpin(bool spin);
 
   void WaitAll();
@@ -50,6 +51,8 @@ class BACKEND_EXPORT Pipeline {
   AsyncRQueuePtr backend_stage_;
   // Launch kernel.
   AsyncRQueuePtr launch_stage_;
+  // Stress detect.
+  AsyncRQueuePtr stress_detect_;
 };
 }  // namespace runtime
 }  // namespace mindspore

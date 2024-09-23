@@ -269,6 +269,7 @@ void PyNativeExecutor::SetMixedPrecisionType(const MixedPrecisionType mix_type, 
 void PyNativeExecutor::WorkerJoin() {
   GilReleaseWithCheck release_gil;
   runtime::Pipeline::Get().frontend_stage()->WorkerJoin();
+  runtime::Pipeline::Get().stress_detect()->WorkerJoin();
 }
 
 void PyNativeExecutor::SetJitCompileStatus(bool is_compiling, const std::string &phase) const {

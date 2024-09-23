@@ -16,11 +16,35 @@
 
 #ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_STRESS_DETECT_H_
 #define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_STRESS_DETECT_H_
+#include <thread>
+#include <future>
+#include <utility>
 #include "runtime/hardware/device_context.h"
+#include "runtime/pipeline/task/task.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+class StressDetectTask : public runtime::AsyncTask {
+ public:
+  StressDetectTask(std::function<int(int32_t, void *, uint64_t)> run_func, uint32_t device_id, void *workspace_addr,
+                   uint64_t workspace_size, std::promise<int> &&p)
+      : AsyncTask(runtime::kStressDetectTask),
+        run_func_(std::move(run_func)),
+        device_id_(device_id),
+        workspace_addr_(workspace_addr),
+        workspace_size_(workspace_size),
+        p_(std::move(p)) {}
+  ~StressDetectTask() override = default;
+  void Run() override;
+
+ private:
+  std::function<int(int32_t, void *, uint64_t)> run_func_;
+  uint32_t device_id_;
+  void *workspace_addr_;
+  uint64_t workspace_size_;
+  std::promise<int> p_;
+};
 int StressDetectKernel(const device::DeviceContext *device_context);
 }  // namespace pyboost
 }  // namespace kernel
