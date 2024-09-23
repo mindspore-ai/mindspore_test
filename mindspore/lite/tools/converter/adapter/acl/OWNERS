@@ -2,7 +2,6 @@ approvers:
 - jianghui58
 - jpc_chenjianping
 - YeFeng_24 #
-- yeyunpeng2020
 
 options:
   no_parent_owners: false
