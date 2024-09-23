@@ -548,6 +548,10 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
 }
 
 bool IsFindWrong(const OperatorInfoPtr &current_op_ptr, const std::string &prim_name) {
+  if (current_op_ptr->name().find(STAND_ALONE_INFO) != std::string::npos) {
+    // StandAlone can be different with prim
+    return false;
+  }
   bool is_find_wrong = (current_op_ptr->name().find(VIRTUAL_DATA_SET_INFO) == std::string::npos) &&
                        (current_op_ptr->name().find(BATCH_PARALLEL) == std::string::npos) &&
                        (current_op_ptr->name().find(prim_name + "Info") == std::string::npos);

@@ -2378,6 +2378,13 @@ bool OperatorInfo::IsConcat() const {
   return false;
 }
 
+bool OperatorInfo::IsStandAlone() const {
+  if (name_.find(STAND_ALONE_INFO) != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
 bool OperatorInfo::IsTmpIdentity() const {
   if (name_.find(IDENTITY_INFO) != std::string::npos) {
     return true;

@@ -2216,6 +2216,11 @@ void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes) {
     if (CheckShardingPropagation()) {
       auto find_iter = cnode->attrs().find(OP_INFO_CREATED);
       if (find_iter != cnode->attrs().end()) {
+        auto op = GetDistributeOperator(cnode);
+        if (op != nullptr) {
+          op->clear_cnodes();
+          op->set_cnode(cnode);
+        }
         continue;
       }
     }
@@ -4164,8 +4169,6 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
       MS_EXCEPTION_IF_NULL(ret_after);
       all_nodes = TopoSort(ret_after, SuccDeeperSimple);
     }
-    // extract shape and strategy, set operator_info
-    ExtractInformation(all_nodes);
   }
 
   if (loadOn) {
@@ -4182,8 +4185,9 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     if (LoadStrategyFromFile(all_nodes) == SUCCESS) {
       MS_LOG(ERROR) << "Load strategies successfully.";
     }
-  } else if (CheckShardingPropagation()) {
-    // To create opInfo for step parallel generated op
+  } else if (parallel_mode != kAutoParallel || CheckShardingPropagation()) {
+    // semi: extract shape and strategy, set operator_info
+    // auto: create opInfo for step parallel generated op and reset cnode for existing ones
     ExtractInformation(all_nodes);
   }
 

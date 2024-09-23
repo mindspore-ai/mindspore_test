@@ -304,6 +304,8 @@ std::vector<TypePtr> ExtractOutputTypeByNode(const CNodePtr &node) {
     if (primary_output_type->isa<mindspore::TensorType>()) {
       auto element_type = primary_output_type->cast<mindspore::TensorTypePtr>()->element();
       outputs_type.push_back(element_type);
+    } else if (primary_output_type->isa<mindspore::Int>()) {
+      outputs_type.push_back(primary_output_type);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, node) << "Unknown type: " << primary_output_type->type_name();
     }
