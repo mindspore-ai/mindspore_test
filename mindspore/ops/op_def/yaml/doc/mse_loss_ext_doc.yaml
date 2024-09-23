@@ -6,9 +6,9 @@ mse_loss_ext:
 
     Args:
         input (Tensor): Tensor of any dimension. The data type needs to be consistent with the `target`.
-        It should also be broadcastable with the `target`.
+            It should also be broadcastable with the `target`.
         target (Tensor): The input label. Tensor of any dimension. The data type needs to be consistent with the `input`.
-        It should also be broadcastable with the `input`.
+            It should also be broadcastable with the `input`.
         reduction (str, optional): Apply specific reduction method to the output: ``'mean'`` , ``'none'`` ,
             ``'sum'`` . Default: ``'mean'`` .
 
