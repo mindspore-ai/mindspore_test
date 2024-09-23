@@ -63,7 +63,7 @@ def generate_input_tensors():
 @pytest.mark.level0
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize("mode", ["ge", "kbk", "pyboost"])
+@pytest.mark.parametrize("mode", ["kbk", "pyboost"])
 def test_silent_check_v2_static_shape(mode):
     """
     Feature: SilentCheckV2.

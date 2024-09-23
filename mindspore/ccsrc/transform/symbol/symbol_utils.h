@@ -21,6 +21,12 @@
 #include "acl/acl.h"
 #ifndef BUILD_LITE
 #include "utils/ms_exception.h"
+#ifndef ACL_ERROR_RT_DEVICE_MEM_ERROR
+#define ACL_ERROR_RT_DEVICE_MEM_ERROR 507053
+#endif
+#ifndef ACL_ERROR_RT_DEVICE_TASK_ABORT
+#define ACL_ERROR_RT_DEVICE_TASK_ABORT 107022
+#endif
 #endif
 
 template <typename Function, typename... Args>
@@ -33,7 +39,7 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f), Args...>, int>) {
     auto ret = f(args...);
     if (mindspore::UCEException::GetInstance().is_enable_uce()) {
-      if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
+      if (ret == ACL_ERROR_RT_DEVICE_MEM_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
         mindspore::UCEException::GetInstance().set_uce_flag(true);
       }
       if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
@@ -59,7 +65,7 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f)>, int>) {
     auto ret = f();
     if (mindspore::UCEException::GetInstance().is_enable_uce()) {
-      if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
+      if (ret == ACL_ERROR_RT_DEVICE_MEM_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
         mindspore::UCEException::GetInstance().set_uce_flag(true);
       }
       if (ret == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
