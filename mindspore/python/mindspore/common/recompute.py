@@ -70,7 +70,7 @@ class _RecomputeCell(Cell):
         self.amp_strategy = None
 
     def construct(self, *args, **kwargs):
-        _check_input_args_validate(self.net, args)
+        _check_input_args_validate(self.net, args, kwargs)
         self.args.append(args)
         self.kwargs.append(kwargs)
         self.save_rng_state = kwargs.pop("save_rng_state", True)
@@ -140,7 +140,7 @@ class _RecomputeCell(Cell):
                             "only support Cell object or MethodType function!")
 
 
-def _check_input_args_validate(block, args):
+def _check_input_args_validate(block, args, kwargs):
     """
     Check recompute input args validate
     :param args:
