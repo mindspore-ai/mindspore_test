@@ -26,6 +26,7 @@
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/transpose_impl.cuh"
+#include "kernel/gpu/cuda_impl/cuda_ops/cast_impl.cuh"
 
 namespace mindspore {
 namespace kernel {
@@ -60,6 +61,18 @@ inline void MatrixTransposeND(const cuDoubleComplex *src, const std::vector<size
   auto converted_src = reinterpret_cast<const mindspore::utils::Complex<double> *>(src);
   auto converted_dst = reinterpret_cast<mindspore::utils::Complex<double> *>(dst);
   MatrixTransposeND(converted_src, host_shape, host_axis, dev_shape, dev_axis, converted_dst, cuda_stream, kernel_name);
+}
+
+template <typename S, typename T>
+void CastKernelTensor(KernelTensor *source, KernelTensor *target, cudaStream_t stream, const std::string &kernel_name) {
+  MS_EXCEPTION_IF_NULL(source);
+  MS_EXCEPTION_IF_NULL(source->device_ptr());
+  S *source_addr = reinterpret_cast<S *>(source->device_ptr());
+  MS_EXCEPTION_IF_NULL(target);
+  MS_EXCEPTION_IF_NULL(target->device_ptr());
+  T *target_addr = reinterpret_cast<T *>(target->device_ptr());
+  auto status = Cast(source->size(), source_addr, target_addr, stream);
+  CHECK_CUDA_STATUS(status, kernel_name);
 }
 }  // namespace kernel
 }  // namespace mindspore

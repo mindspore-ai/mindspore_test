@@ -81,17 +81,29 @@ const std::map<std::string, ReduceType_t> kReduceTypeMap = {
     .AddOutputAttr(INPUTX),                           \
     &ArrayReduceGpuKernelMod::LaunchComplexKernel<T>
 
-#define REDUCE_AXIS_OPT_REGISTER(INPUTX, AXIS, T)     \
+#define REDUCE_ALL_REGISTER(INPUTX, AXIS, T)          \
   KernelAttr()                                        \
     .AddInputAttr(INPUTX)                             \
     .AddOptionalInputAttr(kObjectTypeTuple, AXIS)     \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool) \
-    .AddOutputAttr(INPUTX),                           \
-    &ArrayReduceGpuKernelMod::LaunchKernel<T>
+    .AddOutputAttr(kNumberTypeBool),                  \
+    &ArrayReduceGpuKernelMod::LaunchReduceAllKernel<T>
 
 std::vector<std::pair<KernelAttr, ArrayReduceGpuKernelMod::ReduceFunc>> ArrayReduceGpuKernelMod::all_any_list_ = {
-  {REDUCE_AXIS_OPT_REGISTER(kNumberTypeBool, kNumberTypeInt64, bool)},
-};
+  {REDUCE_ALL_REGISTER(kNumberTypeBool, kNumberTypeInt64, bool)},
+  {REDUCE_ALL_REGISTER(kNumberTypeFloat16, kNumberTypeInt64, half)},
+  {REDUCE_ALL_REGISTER(kNumberTypeFloat32, kNumberTypeInt64, float)},
+  {REDUCE_ALL_REGISTER(kNumberTypeFloat64, kNumberTypeInt64, double)},
+  {REDUCE_ALL_REGISTER(kNumberTypeInt8, kNumberTypeInt64, int8_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeInt16, kNumberTypeInt64, int16_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeInt32, kNumberTypeInt64, int32_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeInt64, kNumberTypeInt64, int64_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeUInt8, kNumberTypeInt64, uint8_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeUInt16, kNumberTypeInt64, uint16_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeUInt32, kNumberTypeInt64, uint32_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeUInt64, kNumberTypeInt64, uint64_t)},
+  {REDUCE_ALL_REGISTER(kNumberTypeComplex64, kNumberTypeInt64, Complex<float>)},
+  {REDUCE_ALL_REGISTER(kNumberTypeComplex128, kNumberTypeInt64, Complex<double>)}};
 
 std::vector<std::pair<KernelAttr, ArrayReduceGpuKernelMod::ReduceFunc>> ArrayReduceGpuKernelMod::prod_list_ = {
   {REDUCE_REGISTER(kNumberTypeBool, kNumberTypeInt64, bool)},
@@ -363,6 +375,12 @@ int ArrayReduceGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     transpose_info_ = GetTransposeInfo();
     input_reshape_ = GetNewShape();
     reduce_first_axis_ = false;
+  } else {
+    workspace_size_list_.push_back(0);
+  }
+
+  if (kernel_name_ == "ReduceAll" && inputs[kIndex0]->dtype_id() != kNumberTypeBool) {
+    workspace_size_list_.push_back(input_num_ / sizeof(bool));
   }
   return KRET_OK;
 }
@@ -371,12 +389,19 @@ template <typename T>
 bool ArrayReduceGpuKernelMod::LaunchComplexKernel(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &workspace,
                                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  if (is_null_input_) {
-    return true;
-  }
-
   T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
   T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
+
+  if (is_null_input_) {
+    if (kernel_type_ == kReduceAll) {
+      bool output_true = true;
+      CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
+        cudaMemcpyAsync(output_addr, &output_true, sizeof(bool), cudaMemcpyHostToDevice,
+                        reinterpret_cast<cudaStream_t>(stream_ptr)),
+        "cudaMemcpyAsync output failed");
+    }
+    return true;
+  }
 
   if (input_reshape_.size() == 0 || (input_reshape_.size() == 1 && !reduce_first_axis_)) {
     CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
@@ -407,12 +432,19 @@ template <typename T>
 bool ArrayReduceGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &workspace,
                                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  if (is_null_input_) {
-    return true;
-  }
-
   T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
   T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
+
+  if (is_null_input_) {
+    if (kernel_type_ == kReduceAll) {
+      bool output_true = true;
+      CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
+        cudaMemcpyAsync(output_addr, &output_true, sizeof(bool), cudaMemcpyHostToDevice,
+                        reinterpret_cast<cudaStream_t>(stream_ptr)),
+        "cudaMemcpyAsync output failed");
+    }
+    return true;
+  }
 
   if (input_reshape_.size() == 0 || (input_reshape_.size() == 1 && !reduce_first_axis_)) {
     CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(

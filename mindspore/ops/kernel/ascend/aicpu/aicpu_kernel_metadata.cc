@@ -38,6 +38,7 @@ void AicpuMetadataInfo(const CNodePtr &kernel_node, std::vector<std::shared_ptr<
   if (op_name == kUnsortedSegmentSumDOpName) {
     op_name = kUnsortedSegmentSumOpName;
     auto prim = common::AnfAlgo::GetCNodePrimitive(kernel_node);
+    MS_EXCEPTION_IF_NULL(prim);
     prim->set_name(kUnsortedSegmentSumOpName);
   }
   auto op_info_ptr = mindspore::kernel::OpLib::FindOp(op_name, OpImplyType::kImplyAICPU);

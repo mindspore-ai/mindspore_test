@@ -26,6 +26,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/reduce_impl.cuh"
 #include "kernel/gpu/gpu_kernel_factory.h"
+#include "kernel/gpu/gpu_kernel_utils.h"
 #include "kernel/gpu/kernel_constants.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/transpose_impl.cuh"
 #include "utils/check_convert_utils.h"
@@ -93,6 +94,22 @@ class ArrayReduceGpuKernelMod : public NativeGpuKernelMod {
   template <typename T>
   bool LaunchComplexKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                            const std::vector<KernelTensor *> &outputs, void *stream_ptr);
+
+  template <typename T>
+  bool LaunchReduceAllKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                             const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+    if (!std::is_same_v<T, bool> && !is_null_input_) {
+      auto input_tensor = inputs[kIndex0];
+      constexpr size_t kCastWorkspaceIdx = 2;
+      auto cast_tensor = workspace[kCastWorkspaceIdx];
+      CastKernelTensor<T, bool>(input_tensor, cast_tensor, reinterpret_cast<cudaStream_t>(stream_ptr), kernel_name_);
+      auto casted_inputs = inputs;
+      casted_inputs[kIndex0] = cast_tensor;
+      return LaunchKernel<bool>(casted_inputs, workspace, outputs, stream_ptr);
+    }
+    return LaunchKernel<bool>(inputs, workspace, outputs, stream_ptr);
+  }
+
   using ReduceFunc = std::function<bool(ArrayReduceGpuKernelMod *, const std::vector<kernel::KernelTensor *> &,
                                         const std::vector<kernel::KernelTensor *> &,
                                         const std::vector<kernel::KernelTensor *> &, void *)>;
