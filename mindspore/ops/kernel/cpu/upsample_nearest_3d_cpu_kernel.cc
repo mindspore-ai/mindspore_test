@@ -23,8 +23,6 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr auto kUpsampleNearest3DInputsNum = 2;
-constexpr auto kUpsampleNearest3DOutputNum = 1;
 const double kValueZero = 0.;
 }  // namespace
 
@@ -62,7 +60,9 @@ int UpsampleNearest3DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
   }
   // shape
   x_shape_ = inputs.at(kIndex0)->GetShapeVector();
+  x_shape_.insert(x_shape_.end(), kIndex5 - x_shape_.size(), 1);
   y_shape_ = outputs.at(kIndex0)->GetShapeVector();
+  y_shape_.insert(y_shape_.end(), kIndex5 - y_shape_.size(), 1);
   // apply workspace
   workspace_size_list_.push_back(unit_size_ * LongToSize(y_shape_[kIndex2]));
   workspace_size_list_.push_back(unit_size_ * LongToSize(y_shape_[kIndex3]));
@@ -82,6 +82,7 @@ int UpsampleNearest3DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
     scales_ = std::vector<float>(kIndex3, kValueZero);
   } else {
     scales_ = scales_opt.value();
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
   }
   return KRET_OK;
 }
@@ -169,6 +170,8 @@ std::vector<KernelAttr> UpsampleNearest3DCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest1D, UpsampleNearest3DCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest2D, UpsampleNearest3DCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest3D, UpsampleNearest3DCpuKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

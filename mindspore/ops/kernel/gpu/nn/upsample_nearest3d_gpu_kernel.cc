@@ -55,7 +55,9 @@ int UpsampleNearest3dGpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
     return ret;
   }
   input_shape_ = inputs[kIndex0]->GetShapeVector();
+  input_shape_.insert(input_shape_.end(), kIndex5 - input_shape_.size(), 1);
   output_shape_ = outputs[kIndex0]->GetShapeVector();
+  output_shape_.insert(output_shape_.end(), kIndex5 - output_shape_.size(), 1);
 
   auto type_idx1 = inputs[kIndex1]->GetType();
   MS_EXCEPTION_IF_NULL(type_idx1);
@@ -70,6 +72,7 @@ int UpsampleNearest3dGpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
     scales_ = std::vector<float>(kIndex3, kValueZero);
   } else {
     scales_ = scales_opt.value();
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
   }
   return KRET_OK;
 }
@@ -115,6 +118,8 @@ std::vector<KernelAttr> UpsampleNearest3dGpuKernelMod::GetOpSupport() {
   return support_list;
 }
 
+MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, UpsampleNearest1D, UpsampleNearest3dGpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, UpsampleNearest2D, UpsampleNearest3dGpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, UpsampleNearest3D, UpsampleNearest3dGpuKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

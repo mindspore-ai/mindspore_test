@@ -61,7 +61,9 @@ int UpsampleNearest3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
     return ret;
   }
   output_shape_ = inputs.at(kIndex0)->GetDeviceShapeVector();
+  output_shape_.insert(output_shape_.end(), kIndex5 - output_shape_.size(), 1);
   input_shape_ = outputs.at(kIndex0)->GetDeviceShapeVector();
+  input_shape_.insert(input_shape_.end(), kIndex5 - input_shape_.size(), 1);
   // workspace
   size_t unit_size = sizeof(int64_t);
   workspace_size_list_.push_back(unit_size * static_cast<size_t>(output_shape_[kIndex2]));
@@ -86,6 +88,7 @@ int UpsampleNearest3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
       MS_LOG(ERROR) << "For " << kernel_name_ << " can't get scales input! ";
       return KRET_RESIZE_FAILED;
     }
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
   }
 
   return KRET_OK;
@@ -198,6 +201,8 @@ std::vector<KernelAttr> UpsampleNearest3DGradCpuKernelMod::GetOpSupport() {
   return support_list;
 }
 
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest1DGrad, UpsampleNearest3DGradCpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest2DGrad, UpsampleNearest3DGradCpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, UpsampleNearest3DGrad, UpsampleNearest3DGradCpuKernelMod);
 }  // namespace kernel
 }  // namespace mindspore
