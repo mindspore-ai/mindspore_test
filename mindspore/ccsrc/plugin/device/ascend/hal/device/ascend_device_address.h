@@ -113,7 +113,7 @@ class AscendDeviceAddress : public LoadableDeviceAddress {
     // deleter.
     SetDevicePtrDeleter();
   }
-  bool CallAclrtMemcpy(void *dst, size_t dst_size, const void *src, size_t src_size);
+  bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size);
 
  protected:
   bool CopyDeviceToHost(void *dst, const void *src, size_t size, bool async, size_t stream_id) const override;

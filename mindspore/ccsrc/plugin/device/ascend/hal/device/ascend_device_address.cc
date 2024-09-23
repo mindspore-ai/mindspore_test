@@ -1143,7 +1143,8 @@ int64_t AscendDeviceAddress::GetGroupsWithCache() const {
   return groups_;
 }
 
-bool AscendDeviceAddress::CallAclrtMemcpy(void *dst, size_t dst_size, const void *src, size_t src_size) {
+bool AscendDeviceAddress::CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src,
+                                                            size_t src_size) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
