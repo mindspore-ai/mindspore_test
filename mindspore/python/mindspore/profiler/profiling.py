@@ -236,6 +236,7 @@ class Profiler:
             - 4: ResourceConflictRatio contains vec_bankgroup/bank/resc_cflt_ratio etc.
             - 5: MemoryUB contains ub_read/write_bw_mte, ub_read/write_bw_vector, ub\_/write_bw_scalar etc.
             - 6: L2Cache contains write_cache_hit, write_cache_miss_allocate, r0_read_cache_hit, r1_read_cache_hit etc.
+              This function only support Atlas A2 training series products.
 
         l2_cache (bool, optional): (Ascend only) Whether to collect l2 cache data, collect when True.
             Default: ``False`` .
