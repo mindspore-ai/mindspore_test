@@ -19,7 +19,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 
-@arg_mark(plat_marks=['platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')

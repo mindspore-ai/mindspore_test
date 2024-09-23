@@ -30,7 +30,7 @@ class AddNetWoAlpha(nn.Cell):
         out = x.add(other)
         return out
 
-@arg_mark(plat_marks=['platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')

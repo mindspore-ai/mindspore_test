@@ -27,7 +27,7 @@ class SplitNet(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level2',
           card_mark='onecard',
           essential_mark='unessential')
