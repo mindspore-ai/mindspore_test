@@ -1,7 +1,7 @@
 mindspore.ops.tensordump
 ========================
 
-.. py:function:: mindspore.ops.tensordump(file_name, tensor, mode)
+.. py:function:: mindspore.ops.tensordump(file_name, tensor, mode='out')
 
     将Tensor保存为Numpy的npy格式的文件。
 
@@ -36,11 +36,11 @@ mindspore.ops.tensordump
         - 当前该算子不支持在控制流中使用。
         - 如果当前的并行模式为STAND_ALONE，参数mode只能设置为'out'。
         - 如使用该算子时不设置参数mode，其默认值为'out'。
-    
+
     参数：
         - **file_name** (str) - npy文件的保存路径。
         - **tensor** (Tensor) - 输入的张量。
-        - **mode** (str) - 控制tensordump行为模式的参数，可选的值为 ['out', 'in', 'all'] 中的一个。
+        - **mode** (str，可选) - 控制tensordump行为模式的参数，可选的值为 ['out', 'in', 'all'] 中的一个，默认值： ``out``。
 
     异常：
         - **TypeError** - `file_name` 不是一个str类型。
