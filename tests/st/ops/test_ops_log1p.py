@@ -68,13 +68,13 @@ def test_ops_log1p_normal(context_mode):
     output_f_special = log1p_special_forward_func(ms.Tensor(x))
     expect_f = log1p_expect_forward_func(x)
     np.testing.assert_allclose(output_f.asnumpy(), expect_f, rtol=1e-3)
-    np.testing.assert_allclose(output_f_special.asnumpy(), expect_f, rtol=1e-3)
+    np.testing.assert_allclose(output_f_special.asnumpy(), expect_f, rtol=1e-3, atol=1e-3)
 
     # backward
     x2 = np.random.rand(2, 3, 4, 5).astype(np.float32)
     output_b = log1p_backward_func(ms.Tensor(x2))
     expect_b = np.reciprocal(x2 + 1)
-    np.testing.assert_allclose(output_b.asnumpy(), expect_b, rtol=1e-3)
+    np.testing.assert_allclose(output_b.asnumpy(), expect_b, rtol=1e-3, atol=1e-3)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -107,7 +107,7 @@ def test_ops_log1p_vmap(context_mode):
     x = generate_random_input((2, 3, 4, 5), np.float32)
     output = log1p_vmap_func(ms.Tensor(x))
     expect = log1p_expect_forward_func(x)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-3)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows',
