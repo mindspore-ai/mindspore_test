@@ -1,0 +1,35 @@
+rotary_position_embedding:
+    description: |
+        Implements the Rotary Position Embedding algorithm.
+        Refer to paper `Enhanced Transformer with Rotary Position Embedding <https://arxiv.org/pdf/2104.09864.pdf>`_.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            x (Tensor): 4D tensor, with float16, bfloat16 or float32 data type.
+            cos (Tensor): 4D tensor, with float16, bfloat16 or float32 data type.
+            sin (Tensor): same with `cos` .
+            mode (int): An optional attribute. Used to select a calculation mode. 0: rotate_half(GPT-NeoX style); 1: rotate_interleaved(GPT-J style). Defaults to ``0`` .
+
+        Returns:
+            Tensor, has the same dtype and shape as the `x`.
+
+        Raises:
+            TypeError: If `x` is not a Tensor.
+            TypeError: If `cos` is not a Tensor.
+            TypeError: If `sin` is not a Tensor.
+            TypeError: If `mode` is not an int.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.random.uniform(-2, 2, (4, 8192, 4, 128)))
+            >>> cos = Tensor(np.random.uniform(-1, 1, (1, 8192, 1, 128)))
+            >>> sin = Tensor(np.random.uniform(-1, 1, (1, 8192, 1, 128)))
+            >>> output = ops.rotary_position_embedding(x, cos, sin, 0)
+            >>> print(output.shape)
+            (4, 8192, 4, 128)

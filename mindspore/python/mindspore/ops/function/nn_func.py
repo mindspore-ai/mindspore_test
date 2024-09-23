@@ -6333,6 +6333,70 @@ def layer_norm(input, normalized_shape, weight=None, bias=None, eps=1e-5):
 
 
 def add_layer_norm(x1, x2, gamma, beta, epsilon=1e-5, additional_output=False):
+    r"""
+    Implements the add_layer_norm algorithm.
+
+    .. math::
+        \begin{aligned}
+        x = x1 + x2                                                                      \\
+        y = \frac{x - \mathrm{E}[x]}{\sqrt{\mathrm{Var}[x] + \epsilon}} * \gamma + \beta \\
+        \end{aligned}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        x1 (Tensor): Input of Addition Calculation in AddLayerNorm. `x1 + x2` will be calculated in the operator
+            and the calculation result is normalized. Data type is float16, bfloat16 or float32 .
+        x2 (Tensor): Input of Addition Calculation in AddLayerNorm. `x1 + x2` will be calculated in the operator
+            and the calculation result is normalized. Has the same dtype and shape as the `x1`.
+        gamma (Tensor): Learnable parameter :math:`\gamma` . Tensor of shape is 1D, keep same with last
+            dimension `x1` .
+        beta (Tensor): Learnable parameter :math:`\beta` . Tensor of shape is 1D, keep same with last dimension `x1` .
+        epsilon (float, optional): A value added to the denominator for numerical stability(:math:`\epsilon`).
+            Default: ``1e-5`` .
+        additional_output (bool, optional): Indicates whether to enable the output of `x=x1+x2`.
+            Default: ``False`` .
+
+    Returns:
+        tuple [Tensor], tuple of 4 Tensors. the output of normalized input and the updated parameters.
+
+        - **y** (Tensor) - Output of normalization, has the same type as the `x1`.
+        - **mean** (Tensor) - The mean of input, has the same type as the `x1`.
+        - **rstd** (Tensor) - The reciprocal of the input standard deviation. Shape is the same as `mean` .
+        - **x** (Tensor) - output of `x1 + x2`.
+
+    Raises:
+        TypeError: If `x1` is not a Tensor.
+        TypeError: If `x2` is not a Tensor.
+        TypeError: If `gamma` is not a Tensor.
+        TypeError: If `beta` is not a Tensor.
+        TypeError: If `epsilon` is not a float.
+        TypeError: If `additional_output` is not a bool.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x1 = Tensor(np.array([[1, 2, 3], [1, 2, 3]]), mindspore.float32)
+        >>> x2 = Tensor(np.array([[1, 2, 3], [1, 2, 3]]), mindspore.float32)
+        >>> gamma = Tensor(np.ones([3]), mindspore.float32)
+        >>> beta = Tensor(np.zeros([3]), mindspore.float32)
+        >>> epsilon = 1e-7
+        >>> output = ops.add_layer_norm(x1, x2, gamma, beta, epsilon)
+        >>> print(output[0])
+        [[-1.2247448 0 1.2247448]
+         [-1.2247448 0 1.2247448]]
+        >>> print(output[1])
+        [[4]
+         [4]]
+        >>> print(output[2])
+        [[0.6123724]
+         [0.6123724]]
+    """
     return add_layernorm_v2_op(x1, x2, gamma, beta, epsilon, additional_output)
 
 
