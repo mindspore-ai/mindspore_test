@@ -24,7 +24,7 @@ def test_gpto_exec_order():
     """
     return_code = os.system(
         "msrun --worker_num=1 --local_worker_num=1 --master_addr=127.0.0.1 "
-        "--master_port=10969 --join=True gpto_net.py"
+        "--master_port=10967 --join=True gpto_net.py"
     )
 
     assert return_code == 0
@@ -39,7 +39,7 @@ def test_dfs_exec_order():
     """
     return_code = os.system(
         "msrun --worker_num=1 --local_worker_num=1 --master_addr=127.0.0.1 "
-        "--master_port=10969 --join=True dfs_net.py"
+        "--master_port=10968 --join=True dfs_net.py"
     )
 
     assert return_code == 0
