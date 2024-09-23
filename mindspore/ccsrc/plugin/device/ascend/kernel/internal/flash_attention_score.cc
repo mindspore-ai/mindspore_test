@@ -36,6 +36,16 @@ internal::OpParamPtr InternalFlashAttentionScore::CreateOpParam(const std::vecto
   int64_t head_num = primitive_->HasAttr("head_num") ? GetValue<int64_t>(primitive_->GetAttr("head_num"))
                                                      : inputs[kIndex10]->GetValueWithCheck<int64_t>();
   int64_t head_dim = q_shape[kDim2] / head_num;
+  if (enable_internal_fa_) {
+    const size_t q_bnsd_size = 4;
+    if (q_shape.size() == q_bnsd_size) {
+      head_dim = q_shape[kDim3];
+    }
+    const int64_t head_dim_align = 16;
+    if (head_dim % head_dim_align != 0) {
+      MS_LOG(EXCEPTION) << kernel_name_ << ": 'head_dim' must be an integer multiple of 16 currently.";
+    }
+  }
 
   int64_t pre_tokens = primitive_->HasAttr("pre_tokens") ? GetValue<int64_t>(primitive_->GetAttr("pre_tokens"))
                                                          : inputs[kIndex13]->GetValueWithCheck<int64_t>();
