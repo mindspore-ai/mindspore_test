@@ -143,7 +143,7 @@ bool NeedCheckCommOperator(const AnfNodePtr &node) {
     return false;
   }
   // skip barrier and receive operator
-  if (IsPrimitive(node, prim::kPrimBarrier) || IsPrimitive(node, prim::kPrimReceive)) {
+  if (IsOneOfPrimitive(node, {prim::kPrimBarrier, prim::kPrimReceive})) {
     return false;
   }
   auto prim = GetValuePtr<Primitive>(node);
@@ -481,7 +481,6 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
         continue;
       }
       auto cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
       // building graph node users when the network contains loss-scale, since
       // parameter `scale_sense` may be added to subgraph
       if (loss_scale_ != nullptr) {

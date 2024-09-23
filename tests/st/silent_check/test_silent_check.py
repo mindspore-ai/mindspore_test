@@ -18,10 +18,17 @@ How to run this:
 pytest tests/st/silent_check/test_silent_check.py
 """
 import os
+import subprocess
 import pytest
 
+def exec_command(cmd):
+    s = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    out = s.stdout.read().decode("UTF-8")
+    s.stdout.close()
+    return out
 
-@pytest.mark.level1
+
+@pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_single
 def test_npu_asd_enable0():
@@ -33,16 +40,16 @@ def test_npu_asd_enable0():
     os.environ['NPU_ASD_ENABLE'] = "0"
     os.environ['MS_SAVE_GRAPHS'] = "1"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    ret1 = os.system(f"bash {sh_path}/mpirun_silent_check.sh")
-    ret2 = os.system(f"ls ms_graphs/rank_0/verbose_ir_files/*.ir | grep insert_silent_check_v2")
+    ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh {sh_path}/silent_check.py")
+    ret2 = os.system(f"ls ms_graphs/rank_0/*.ir | grep silent_check_v2")
     ret3 = os.system(f"grep -E 'SilentCheckV2' ms_graphs/rank_0/graph_build*.ir")
     assert ret1 == 0
     assert ret2 != 0
     assert ret3 != 0
-    os.system(f'rm -rf ms_graphs log_output ascend_log')
+    os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
 
 
-@pytest.mark.level1
+@pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_single
 def test_npu_asd_enable1():
@@ -53,11 +60,11 @@ def test_npu_asd_enable1():
     """
     os.environ['NPU_ASD_ENABLE'] = "1"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    ret1 = os.system(f"bash {sh_path}/mpirun_silent_check.sh")
+    ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh {sh_path}/silent_check.py")
     ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v2.cc.*SilentCheck get L' ascend_log/")
     assert ret1 == 0
     assert ret2 == 0
-    os.system(f'rm -rf ms_graphs log_output ascend_log')
+    os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
 
 
 @pytest.mark.level1
@@ -71,13 +78,13 @@ def test_npu_asd_enable2():
     """
     os.environ['NPU_ASD_ENABLE'] = "2"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    ret1 = os.system(f"bash {sh_path}/mpirun_silent_check.sh &> /dev/null")
+    ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh {sh_path}/silent_check.py &> /dev/null")
     ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v2.cc.*SilentCheck get L' ascend_log/")
     ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
     assert ret1 != 0
     assert ret2 == 0
     assert ret3 != 0
-    os.system(f'rm -rf ms_graphs log_output ascend_log')
+    os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
 
 
 @pytest.mark.level1
@@ -91,10 +98,62 @@ def test_npu_asd_enable3():
     """
     os.environ['NPU_ASD_ENABLE'] = "3"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    ret1 = os.system(f"bash {sh_path}/mpirun_silent_check.sh &> /dev/null")
+    ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh {sh_path}/silent_check.py &> /dev/null")
     ret2 = os.system(f"grep -E -nr -m1 'ERROR.*silent_check_v2.cc.*SilentCheck get L' ascend_log/")
     ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
     assert ret1 != 0
     assert ret2 == 0
     assert ret3 == 0
-    os.system(f'rm -rf ms_graphs log_output ascend_log')
+    os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_single
+def test_silent_check_receive():
+    """
+    Feature: Test silent check not insert check operator for receive operator.
+    Description: Test silent check not insert check operator for receive operator.
+    Expectation: SilentCheckV2 operator was not inserted for receive operator.
+    """
+    os.environ['NPU_ASD_ENABLE'] = "3"
+    os.environ['MS_SAVE_GRAPHS'] = "1"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh {sh_path}/pipeline_parallel.py &> /dev/null")
+    ret2 = os.system(f"ls ms_graphs/rank_0/*.ir | grep silent_check_v2")
+    ret3 = os.system(f"grep -E -nr -m1 'INFO.*silent_check_v2.cc.*SilentCheck' ascend_log/")
+    assert ret1 == 0
+    assert ret2 == 0
+    assert ret3 == 0
+
+    cmd1 = f"cat ms_graphs/rank_0/graph_build*.ir | grep 'group:' | grep 'forward_unique_id:' | wc -l"
+    backward_comm_op_cnt = int(exec_command(cmd1))
+    cmd2 = f"cat ms_graphs/rank_0/graph_build*.ir | grep '= PrimFunc_SilentCheckV2(' | wc -l"
+    silent_check_op_cnt = int(exec_command(cmd2))
+    receive_op_cnt = int(exec_command(f"cat ms_graphs/rank_0/graph_build*.ir | grep '= Receive(' | wc -l"))
+    print(f'backward_comm_op_cnt={backward_comm_op_cnt} silent_check_op_cnt={silent_check_op_cnt} '
+          f'receive_op_cnt={receive_op_cnt}')
+    assert backward_comm_op_cnt == (silent_check_op_cnt + receive_op_cnt)
+
+    os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_single
+@pytest.mark.parametrize("fp16_type", ("fp16_weight", "fp16_input", "fp16_getnext"))
+def test_silent_check_skip_float16_inputs(fp16_type):
+    """
+    Feature: Test silent check not insert check operator when network has fp16 weight.
+    Description: Test silent check not insert check operator when network has fp16 weight.
+    Expectation: SilentCheckV2 operator was not inserted to graph.
+    """
+    os.environ['NPU_ASD_ENABLE'] = "3"
+    os.environ['MS_SAVE_GRAPHS'] = "1"
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    ret1 = os.system(f"bash {sh_path}/msrun_silent_check.sh {sh_path}/data_parallel.py {fp16_type}&> /dev/null")
+    ret2 = os.system(f"cat ms_graphs/rank_0/graph_build*.ir | grep '= PrimFunc_SilentCheckV2('")
+    ret3 = os.system(f"cat worker_0.log | grep ', skip inserting silent check operators'")
+    assert ret1 == 0
+    assert ret2 != 0
+    assert ret3 == 0
