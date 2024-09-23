@@ -724,6 +724,13 @@ std::vector<std::string> AnfRuntimeAlgorithm::GetAllOutputReshapeType(const AnfN
 TypeId AnfRuntimeAlgorithm::GetOutputDeviceDataType(const AnfNodePtr &node, size_t output_idx) {
   MS_EXCEPTION_IF_NULL(node);
   if (output_idx > AnfAlgo::GetOutputElementNum(node)) {
+    if (common::AnfAlgo::IsDynamicSequence(node)) {
+      auto kernel_info = dynamic_cast<device::KernelInfo *>(node->kernel_info());
+      MS_EXCEPTION_IF_NULL(kernel_info);
+      auto build_info = kernel_info->select_kernel_build_info();
+      MS_EXCEPTION_IF_NULL(build_info);
+      return build_info->GetOutputDeviceType(0);
+    }
     MS_LOG_WITH_NODE(EXCEPTION, node) << "The index [" << output_idx << "] is out of range of the node's output size [ "
                                       << AnfAlgo::GetOutputElementNum(node) << "#node [ " << node->DebugString() << "]"
                                       << trace::DumpSourceLines(node);
