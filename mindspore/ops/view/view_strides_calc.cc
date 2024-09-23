@@ -19,7 +19,6 @@
 #include <memory>
 
 namespace mindspore::ops {
-constexpr size_t kViewInputsNum = 2;
 ShapeVector update_shape(const ShapeVector &input_shape, ShapeVector shape) {
   int64_t x_num = 1;
   for (int64_t value : input_shape) {
@@ -70,10 +69,7 @@ TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::Ba
 }
 
 TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (inputs.size() != kViewInputsNum) {
-    return {};
-  }
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto ori_storage_info = input_tensor->storage_info();
   if (ori_storage_info != nullptr && !ori_storage_info->is_contiguous) {
@@ -81,7 +77,7 @@ TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<Va
                       << " is not contiguous, storage info:" << ori_storage_info->ToString();
   }
 
-  auto shape = GetValue<std::vector<int64_t>>(inputs[1]);
+  auto shape = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
   if (std::any_of(shape.begin(), shape.end(), [](const int &shape_i) { return shape_i < -1; })) {
     MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
                              << "], the component of shape can't be less than -1, but got " << shape;

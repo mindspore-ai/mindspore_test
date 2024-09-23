@@ -35,19 +35,6 @@ TEST_F(TestViewSqueeze, View) {
   std::vector<int64_t> axis_data = {2};
   auto input_axis = MakeValue(axis_data);
 
-  // test size
-  std::vector<ValuePtr> inputs_squeeze_size;
-  inputs_squeeze_size.push_back(input_tensor);
-  inputs_squeeze_size.push_back(input_axis);
-
-  ASSERT_TRUE(SqueezeCalc(prim, inputs_squeeze_size).empty());
-
-  // test nullptr
-  std::vector<ValuePtr> inputs_squeeze_null;
-  auto nullinput_tensor = nullptr;
-  inputs_squeeze_null.push_back(nullinput_tensor);
-  ASSERT_TRUE(SqueezeCalc(prim, inputs_squeeze_null).empty());
-
   // test type
   std::vector<ValuePtr> inputs_squeeze_type;
   inputs_squeeze_type.push_back(input_axis);

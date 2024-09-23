@@ -35,18 +35,6 @@ TEST_F(TestViewUnstack, View) {
   int64_t axis_data = 0;
   auto input_axis = MakeValue(axis_data);
 
-  // test size
-  std::vector<ValuePtr> inputs_unstack_size;
-  inputs_unstack_size.push_back(input_tensor);
-  inputs_unstack_size.push_back(input_axis);
-  ASSERT_TRUE(UnstackCalc(prim, inputs_unstack_size).empty());
-
-  // test nullptr
-  std::vector<ValuePtr> inputs_unstack_null;
-  auto nullinput_tensor = nullptr;
-  inputs_unstack_null.push_back(nullinput_tensor);
-  ASSERT_TRUE(UnstackCalc(prim, inputs_unstack_null).empty());
-
   // test type
   std::vector<ValuePtr> inputs_unstack_type;
   inputs_unstack_type.push_back(input_axis);

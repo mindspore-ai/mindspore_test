@@ -21,7 +21,6 @@
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
-constexpr size_t kTransposeCalcInputsNum = 2;
 
 TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_info,
                                               const std::vector<int64_t> &input_perm) {
@@ -55,11 +54,10 @@ TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_
 }
 
 TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kTransposeCalcInputsNum) || !inputs[0]->isa<tensor::BaseTensor>() ||
-      !inputs[1]->isa<ValueSequence>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>() || !inputs[kInputIndex1]->isa<ValueSequence>()) {
     return {};
   }
-  auto tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   const auto &x_shape = tensor->shape();
   auto x_rank = x_shape.size();
   const auto &dims = GetValue<std::vector<int64_t>>(inputs[1]);

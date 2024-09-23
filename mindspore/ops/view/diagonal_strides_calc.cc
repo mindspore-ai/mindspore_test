@@ -20,7 +20,6 @@
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
-constexpr size_t kDiagonalInputsNum = 4;
 constexpr int64_t kDimNum = 2;
 
 int64_t ComputeData(int64_t offset, int64_t dim1, int64_t dim2, std::vector<int64_t> old_shape) {
@@ -34,10 +33,7 @@ int64_t ComputeData(int64_t offset, int64_t dim1, int64_t dim2, std::vector<int6
 }
 
 TensorStorageInfoPtrList DiagonalCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kDiagonalInputsNum)) {
-    MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
-  }
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_type = input_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
@@ -46,9 +42,9 @@ TensorStorageInfoPtrList DiagonalCalc(const PrimitivePtr &prim, const std::vecto
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
   auto storage_offset = old_tensor_info->old_offset;
-  auto offset = GetValue<int64_t>(inputs[1]);
-  auto dim1 = GetValue<int64_t>(inputs[2]);
-  auto dim2 = GetValue<int64_t>(inputs[3]);
+  auto offset = GetValue<int64_t>(inputs[kInputIndex1]);
+  auto dim1 = GetValue<int64_t>(inputs[kInputIndex2]);
+  auto dim2 = GetValue<int64_t>(inputs[kInputIndex3]);
   int64_t dim_size = SizeToLong(old_shape.size());
   (void)CheckAndConvertUtils::CheckInRange<int64_t>("dim1", dim1, kIncludeBoth, {-dim_size, dim_size - 1},
                                                     prim->name());

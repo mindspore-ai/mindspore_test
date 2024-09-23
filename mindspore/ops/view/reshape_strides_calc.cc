@@ -21,7 +21,6 @@
 #include "utils/check_convert_utils.h"
 
 namespace mindspore::ops {
-constexpr size_t kReshapeInputsNum = 2;
 ShapeVector ReshapeUpdateShape(const ShapeVector &input_shape, ShapeVector shape) {
   int64_t x_num = 1;
   for (int64_t value : input_shape) {
@@ -69,10 +68,7 @@ TensorStorageInfoPtrList ReshapeCalcImpl(const mindspore::ops::OldTensorInfoPtr 
 }
 
 TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (inputs.size() != kReshapeInputsNum) {
-    return {};
-  }
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto input_type = input_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
@@ -82,7 +78,7 @@ TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector
     return {};
   }
 
-  auto shape = GetValue<std::vector<int64_t>>(inputs[1]);
+  auto shape = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
   if (std::any_of(shape.begin(), shape.end(), [](const int &shape_i) { return shape_i < -1; })) {
     MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
                              << "], the component of shape can't be less than -1, but got " << shape;

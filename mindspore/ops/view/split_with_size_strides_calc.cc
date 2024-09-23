@@ -20,10 +20,6 @@
 #include "utils/convert_utils_base.h"
 #include "view/split_with_size_strides_calc.h"
 
-namespace {
-constexpr size_t kSplitWithSizeInputsNum = 3;
-}
-
 namespace mindspore::ops {
 void SplitSizeInputsCheck(const PrimitivePtr &prim, const int64_t &output_num, const int64_t &axis,
                           const std::vector<int64_t> &tensor_shape) {
@@ -36,8 +32,8 @@ void SplitSizeInputsCheck(const PrimitivePtr &prim, const int64_t &output_num, c
 }
 
 TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kSplitWithSizeInputsNum) || !inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
-    MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+    MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
   }
 
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();

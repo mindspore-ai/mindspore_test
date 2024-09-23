@@ -37,9 +37,9 @@ TypePtr ErfinvFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
     return std::make_shared<TensorType>(kFloat32);
-  } else {
-    return input_type->Clone();
   }
+
+  return input_type;
 }
 TypePtrList ErfinvFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
@@ -52,9 +52,9 @@ TypePtrList ErfinvFuncImpl::InferType(const PrimitivePtr &primitive, const Value
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
     return {kFloat32};
-  } else {
-    return {input_type};
   }
+
+  return {input_type};
 }
 ShapeArray ErfinvFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
