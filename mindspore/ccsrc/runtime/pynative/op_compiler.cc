@@ -46,6 +46,19 @@ inline std::string GetNumString(int n) {
   return kNumStrCache[n];
 }
 
+inline std::string GetShapeString(const tensor::BaseTensorPtr &input_tensor) {
+  if (input_tensor->base_shape_ptr() != nullptr) {
+    return input_tensor->base_shape_ptr()->ToString();
+  }
+  if (!input_tensor->shape().empty()) {
+    const auto &shape_str = std::accumulate(
+      std::next(input_tensor->shape().begin()), input_tensor->shape().end(), std::to_string(input_tensor->shape()[0]),
+      [](std::string cur, size_t n) { return cur.append("-").append(std::to_string(n)); });
+    return shape_str;
+  }
+  return "";
+}
+
 void UpdateRefInfoBeforeCreateKernel(const session::BackendOpRunInfoPtr &op_run_info, const KernelGraphPtr &graph) {
   // Building Graph and Create Kernel is async, under pynative mode.Ref info is bind with kernel.
   // So need to get ref info to generate output addr, before create kernel.
@@ -325,15 +338,7 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
       if (op_info.use_dynamic_shape_process) {
         graph_info += GetNumString(static_cast<int>(input_tensor->shape().size()));
       } else {
-        if (input_tensor->base_shape_ptr() != nullptr) {
-          graph_info += input_tensor->base_shape_ptr()->ToString();
-        } else if (!input_tensor->shape().empty()) {
-          const auto &shape_str =
-            std::accumulate(std::next(input_tensor->shape().begin()), input_tensor->shape().end(),
-                            std::to_string(input_tensor->shape()[0]),
-                            [](std::string cur, size_t n) { return cur.append("-").append(std::to_string(n)); });
-          graph_info += shape_str;
-        }
+        graph_info += GetShapeString(input_tensor);
       }
 
       graph_info += GetNumString(input_tensor->data_type());
@@ -367,7 +372,12 @@ std::string OpCompiler::GetSingleOpGraphInfo(const pynative::BaseOpRunInfo &op_i
     MS_LOG(INFO) << "Call reg get graph info func.";
     graph_info = get_graph_info_func_(op_info, op_prim, graph_info);
   }
-
+  // Special process for avgpoolgrad op, because that ge input 0 needs shape rather than tensor.
+  if (op_name == kAvgPoolGradOpName) {
+    auto const tensor = op_info.expanded_input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    graph_info += GetShapeString(tensor);
+  }
   return graph_info;
 }
 

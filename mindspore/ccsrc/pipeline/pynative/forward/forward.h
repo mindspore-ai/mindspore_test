@@ -89,7 +89,6 @@ class ME_EXPORT ForwardExecutor {
   bool is_jit_compiling() const { return is_jit_compiling_; }
 
   void WaitForwardTask();
-  bool IsVmOp(const std::string &op_name) const;
   std::string GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const;
   void ReInit();
   void ForwardOpGradImpl(const FrontendOpRunInfoPtr &op_run_info) const;

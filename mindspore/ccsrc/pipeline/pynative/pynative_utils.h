@@ -116,6 +116,7 @@ struct Common {
     return buf.str().erase(buf.str().size() - end_char_size);
   }
   static bool IsHookNeedSaveInputs(const PrimitivePyPtr &prim);
+  static bool IsVmOp(const std::string &op_name);
   static void ClearRes();
 };
 

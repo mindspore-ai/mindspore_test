@@ -16,6 +16,7 @@
 #include "pipeline/pynative/pynative_utils.h"
 #include <algorithm>
 #include <vector>
+#include <set>
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -60,7 +61,7 @@ std::string GetObjIdFromPython(const py::handle &obj) {
 }
 // for simply infer (simple infer will push abs in bprop queue)
 AbstractConverter kGradAbstractConverter;
-
+const std::set<std::string> kVmOperators = {"InsertGradientOf", "StopGradient", "HookBackward", "CellBackwardHook"};
 std::string GetIdForPyTupleOrList(const py::handle &obj) {
   auto p_list = py::cast<py::tuple>(obj);
   string prefix = py::isinstance<py::tuple>(obj) ? "Tuple<" : "List<";
@@ -610,7 +611,7 @@ void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
   for (size_t i = 0; i < op_run_info->input_size; i++) {
     op_run_info->op_grad_info->input_value[i] = StubNodeToValueInner(op_run_info->op_grad_info->input_value[i]);
-    if (!op_run_info->is_view_op) {
+    if (!op_run_info->is_view_op && !IsVmOp(op_run_info->base_op_run_info.op_name)) {
       op_run_info->op_grad_info->input_value[i] =
         ConvertToContiguousValue(op_run_info->op_grad_info->input_value[i], op_run_info->requires_grad);
     }
@@ -1075,6 +1076,8 @@ bool Common::IsHookNeedSaveInputs(const PrimitivePyPtr &prim) {
   }
   return false;
 }
+
+bool Common::IsVmOp(const std::string &op_name) { return kVmOperators.find(op_name) != kVmOperators.end(); }
 
 void Common::ClearRes() { kGradAbstractConverter.clear(); }
 

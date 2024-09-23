@@ -316,10 +316,6 @@ void ForwardExecutor::WaitForwardTask() {
   runtime::Pipeline::Get().frontend_stage()->Wait();
 }
 
-bool ForwardExecutor::IsVmOp(const std::string &op_name) const {
-  return kVmOperators.find(op_name) != kVmOperators.end();
-}
-
 size_t ForwardExecutor::GetStreamId() const { return GetCurStreamId(device_target_); }
 
 GradExecutorPtr ForwardExecutor::grad() const {
@@ -378,8 +374,8 @@ bool ForwardExecutor::enable_async() const {
 }
 
 bool ForwardExecutor::EnablePipeline(const std::string &op_name) const {
-  return enable_async() && !IsVmOp(op_name) && op_name != kOpNameCustom && !ScopedFallbackRunning::on() &&
-         !runtime::OpExecutor::NeedSync();
+  return enable_async() && !PyNativeAlgo::Common::IsVmOp(op_name) && op_name != kOpNameCustom &&
+         !ScopedFallbackRunning::on() && !runtime::OpExecutor::NeedSync();
 }
 
 void ForwardExecutor::DispatchFrontendTask(const FrontendOpRunInfoPtr &op_run_info) {
@@ -779,7 +775,7 @@ ValuePtr ForwardExecutor::RunOpWithBackendPolicy(const FrontendOpRunInfoPtr &op_
                                                  const BackendOpRunInfoPtr &backend_op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
 #ifndef ENABLE_TEST
-  if (IsVmOp(op_run_info->base_op_run_info.op_name)) {
+  if (PyNativeAlgo::Common::IsVmOp(op_run_info->base_op_run_info.op_name)) {
     return RunOpInVM(op_run_info);
   }
   return RunOpInMs(op_run_info, backend_op_run_info);
@@ -799,7 +795,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
       (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(op_run_info->op_grad_info->input_value[i]);
     }
   }
-  if (IsVmOp(op_run_info->base_op_run_info.op_name)) {
+  if (PyNativeAlgo::Common::IsVmOp(op_run_info->base_op_run_info.op_name)) {
     std::vector<ValuePtr> result(op_run_info->input_size);
     for (size_t i = 0; i < op_run_info->input_size; i++) {
       result[i] = CopyTensorValueWithNewId(op_run_info, op_run_info->op_grad_info->input_value[i]);
