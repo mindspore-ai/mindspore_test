@@ -47,7 +47,11 @@ class AdamNoUpdateParamInfer : public abstract::OpInferBase {
     MS_EXCEPTION_IF_NULL(primitive);
     auto prim_name = primitive->name();
     const int64_t input_num = 9;
-    CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual, input_num, prim_name);
+    const int64_t input_num_with_monad = 10;
+    if (input_args.size() != input_num && input_args.size() != input_num_with_monad) {
+      MS_EXCEPTION(ValueError) << "For '" << prim_name << "', the input num should be equal to 9, but got "
+                               << input_args.size();
+    }
     for (const auto &item : input_args) {
       MS_EXCEPTION_IF_NULL(item);
     }
@@ -69,7 +73,11 @@ class AdamNoUpdateParamInfer : public abstract::OpInferBase {
     MS_EXCEPTION_IF_NULL(prim);
     auto prim_name = prim->name();
     const int64_t input_num = 9;
-    CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual, input_num, prim_name);
+    const int64_t input_num_with_monad = 10;
+    if (input_args.size() != input_num && input_args.size() != input_num_with_monad) {
+      MS_EXCEPTION(ValueError) << "For '" << prim_name << "', the input num should be equal to 9 , but got "
+                               << input_args.size();
+    }
     for (const auto &item : input_args) {
       MS_EXCEPTION_IF_NULL(item);
     }
