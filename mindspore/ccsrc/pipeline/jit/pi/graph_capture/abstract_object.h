@@ -138,6 +138,7 @@ class AbstractObjectBase {
   static std::string ToString(PyObject *, bool print_type = true, size_t limit = SIZE_MAX);
 
  protected:
+  static AObject *Convert(const abstract::AbstractBasePtr &abstract);
   static AObject *MakeAObject(Type type, PyTypeObject *tp, PyObject *op, RecMap *rec = nullptr);
   PyTypeObject *type_object_;
   const Type type_;

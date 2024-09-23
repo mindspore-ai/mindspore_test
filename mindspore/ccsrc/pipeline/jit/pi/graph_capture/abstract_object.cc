@@ -280,17 +280,43 @@ AbstractObjectBase::Type AbstractObjectBase::GetMsType(PyTypeObject *tp) {
   return kTypeAnyValue;
 }
 
-AObject *AbstractObjectBase::Convert(const AbstractWrapperPtr &wrapper) {
-  py::object res = AbstractWrapper::ConvertToPyObject(wrapper);
+AObject *AbstractObjectBase::Convert(const abstract::AbstractBasePtr &abstract) {
+  if (abstract == nullptr) {
+    return MakeAObject(kTypeAnyValue, nullptr, nullptr);
+  }
+  py::object res = AbstractWrapper::ConvertToPyObject(abstract);
   if (res.ptr() != nullptr) {
     return Convert(res.ptr());
   }
-  if (wrapper == nullptr) {
-    return Resource::Current()->pool()->New<AbstractObjectBase>(kTypeAnyValue);
+
+  if (abstract->isa<abstract::AbstractSequence>()) {
+    auto abstract_seq = abstract->cast<abstract::AbstractSequencePtr>();
+    const auto &elements = abstract_seq->elements();
+    std::vector<AObject *> items;
+    (void)std::transform(elements.begin(), elements.end(), std::back_inserter(items),
+                         [](const auto &e) { return Convert(e); });
+    if (abstract->isa<abstract::AbstractTuple>()) {
+      auto ret = static_cast<AbstractTuple *>(MakeAObject(kTypeTuple));
+      ret->Update(items);
+      return ret;
+    }
+    auto ret = static_cast<AbstractTuple *>(MakeAObject(kTypeList));
+    ret->Update(items);
+    return ret;
   }
-  auto abstract = wrapper->abstract();
-  if (abstract == nullptr || !abstract->isa<abstract::AbstractScalar>()) {
-    return Resource::Current()->pool()->New<AbstractObjectBase>(kTypeAnyValue);
+
+  if (abstract->isa<abstract::AbstractDictionary>()) {
+    auto abstract_dict = abstract->cast<abstract::AbstractDictionaryPtr>();
+    const auto &elements = abstract_dict->elements();
+    auto ret = static_cast<AbstractDict *>(MakeAObject(kTypeDict));
+    for (auto e : elements) {
+      (void)ret->MapAdd(Convert(e.first), Convert(e.second));
+    }
+    return ret;
+  }
+
+  if (!abstract->isa<abstract::AbstractScalar>()) {
+    return MakeAObject(kTypeAnyValue, nullptr, nullptr);
   }
   auto type_id = abstract->BuildType()->type_id();
   MS_LOG(INFO) << "Current type_id is " << TypeIdToString(type_id);
@@ -309,6 +335,13 @@ AObject *AbstractObjectBase::Convert(const AbstractWrapperPtr &wrapper) {
     default:
       return MakeAObject(kTypeAnyValue, nullptr, nullptr);
   }
+}
+
+AObject *AbstractObjectBase::Convert(const AbstractWrapperPtr &wrapper) {
+  if (wrapper == nullptr) {
+    return Resource::Current()->pool()->New<AbstractObjectBase>(kTypeAnyValue);
+  }
+  return Convert(wrapper->abstract());
 }
 
 AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, PyObject *o, RecMap *m) {

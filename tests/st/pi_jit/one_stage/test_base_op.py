@@ -25,7 +25,7 @@ from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
 from tests.st.pi_jit.share.utils import pi_jit_with_config
-
+from mindspore._c_expression import Tensor as CppTensor
 
 
 
@@ -321,6 +321,48 @@ def test_list_slice_with_default_parameter_3():
     assert ret[0] == Tensor([1])
     assert ret[1] == Tensor([2])
     assert ret[2] == Tensor([3])
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_variable_number_in_container():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x):
+            return x.shape
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    a = Tensor(CppTensor(shape=[-1, 12], dtype=mindspore.float32))
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    assert ret == (-1, 12)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_variable_number_in_container_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x):
+            a = x.shape[0]
+            b = {"1": a}
+            return b["1"]
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    a = Tensor(CppTensor(shape=[-1, 12], dtype=mindspore.float32))
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
+    assert ret == -1
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
