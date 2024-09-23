@@ -196,6 +196,12 @@ inline void SetReserved(const FuncGraphPtr &root) {
 }
 
 abstract::AbstractBasePtr GenerateAbsByOpInfer(const PrimitivePtr &primitive, const AnfNodePtrList &input_list);
+StrategyPtr GenerateStandAloneStra(const OperatorInfoPtr &op_info, const bool use_new_shape_base);
+void CheckStrategyAndShape(const StrategyPtr &in_strategy, const OperatorInfoPtr &op_info);
+void PaddingStrategy(const OperatorInfoPtr &op_info, const bool is_new_shape_base_node, StrategyPtr *in_strategy);
+void ObtainInOutStrategy(const StrategyMap &stra_map, const PrimitivePtr &prim, const std::string &strategy_key_name,
+                         const CNodePtr &cnode, const OperatorInfoPtr &op_info, const bool is_new_shape_base_node,
+                         StrategyPtr *in_strategy, StrategyPtr *out_strategy);
 }  // namespace parallel
 }  // namespace mindspore
 

@@ -735,3 +735,84 @@ def test_custom_op_all_tensor_no_tuple_dynamic():
     out_layout = (layout("dp", "None"),)
     parallel_net = Net(in_layout, out_layout)
     compile_net(parallel_net, x, y, z)
+
+
+def test_custom_op_all_tensor_no_tuple_pp():
+    """
+    Feature: Test custom op param and tensor (mirror).
+    Description: Test custom op with tensor and parameter inputs.
+    Expectation: allreduce inserted
+    """
+
+    def bprob(x, y, z, out, dout):
+        dz = dout * (out / z)
+        dq = dout * (out / (x + y))
+        dx = dq
+        dy = dq
+        return dx, dy, dz
+
+    def python_add_mul(x, y, z):
+        q = x + y
+        out = q * z
+        return out
+
+    class Net(nn.Cell):
+        def __init__(self, in_layout=None, out_layout=None):
+            super(Net, self).__init__()
+            np.random.seed(5)
+            self.matmul_weight = Parameter(Tensor(np.random.rand(4, 8).astype(np.float32)), name="mul_weight")
+            self.mul = P.Mul()
+            self.custom_op = P.Custom(python_add_mul, lambda x, y, z: x, lambda x, y, z: x,
+                                      func_type="pyfunc",
+                                      bprop=bprob)
+            self.custom_op.shard(in_layout, out_layout)
+            self.relu = P.ReLU()
+
+        def construct(self, x, y, z):
+            x = self.mul(x, self.matmul_weight)
+            x = self.relu(x)
+            out = self.custom_op(x, y, z)
+            out = self.relu(out)
+            return out
+
+    class PPNet(nn.Cell):
+        def __init__(self, in_layout=None, out_layout=None):
+            super(PPNet, self).__init__()
+            self.block = nn.CellList()
+            self.num_block = 4
+            for _ in range(self.num_block):
+                net = Net(in_layout, out_layout)
+                self.block.append(net)
+
+        def construct(self, x, y, z):
+            for i in range(self.num_block):
+                x = self.block[i](x, y, z)
+            return x
+
+    def compile_net_pp(net, *inputs):
+        optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+        train_net = TrainOneStepCell(net, optimizer)
+        train_net.set_train()
+        phase, _ = _cell_graph_executor.compile(train_net, *inputs)
+        return phase
+
+    x = Tensor(np.random.rand(8, 8).astype(np.float32))
+    y = Tensor(np.random.rand(8, 8).astype(np.float32))
+    z = Tensor(np.random.rand(8, 8).astype(np.float32))
+    context.reset_auto_parallel_context()
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, dataset_strategy="full_batch",
+                                      pipeline_stages=2)
+    layout = Layout((2, 2), ("dp", "mp"))
+    in_layout = (
+        layout("dp", "None"), layout("dp", "None"),
+        layout("dp", "None"))
+    out_layout = (layout("dp", "None"),)
+    parallel_net_pp = PPNet(in_layout, out_layout)
+    parallel_net_pp.block[0].pipeline_stage = 0
+    parallel_net_pp.block[1].pipeline_stage = 0
+    parallel_net_pp.block[2].pipeline_stage = 1
+    parallel_net_pp.block[3].pipeline_stage = 1
+    parallel_net = nn.PipelineCell(parallel_net_pp, 2)
+    phase = compile_net_pp(parallel_net, x, y, z)
+    validator = ParallelValidator(parallel_net, phase)
+    assert validator.check_node_inputs_has('Custom-0', ['AllGather-0'])
