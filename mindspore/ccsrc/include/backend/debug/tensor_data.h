@@ -262,7 +262,7 @@ class TensorData {
         break;
       case TypeId::kNumberTypeInt4:
         this->data_type_ = DbgDataType::DT_INT4;
-        this->data_type_size_ = 0.5;
+        this->data_type_size_ = INT4_SIZE;
         break;
       case TypeId::kNumberTypeInt8:
         this->data_type_ = DbgDataType::DT_INT8;
@@ -455,6 +455,7 @@ class TensorData {
   bool is_output_{true};
   int execution_order_{-1};
   std::string time_stamp_;
+  const float INT4_SIZE = 0.5;
 
 #ifndef OFFLINE_DBG_MODE
   std::string format_{""};

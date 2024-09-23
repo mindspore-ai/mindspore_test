@@ -91,7 +91,7 @@ class ProfilerInfoParser:
 
         with open(os.path.join(source_path, "host", "start_info"), "r") as f:
             info_dict = json.load(f)
-            cls._collectionTimeBegin = int(info_dict.get("collectionTimeBegin", 0)) #us
+            cls._collectionTimeBegin = int(info_dict.get("collectionTimeBegin", 0))  # us
             cls._clockMonotonicRaw = int(info_dict.get("clockMonotonicRaw", 0))
             us_to_ns = 1000
             cls._get_localtime_diff = cls._clock_monotonic_raw + (cls._collectionTimeBegin * us_to_ns -

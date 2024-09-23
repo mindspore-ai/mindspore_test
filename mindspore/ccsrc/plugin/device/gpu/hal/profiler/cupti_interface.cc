@@ -30,7 +30,7 @@ namespace gpu {
 #ifndef _MSC_VER
 class Handle {
  public:
-  explicit Handle(const char *name) { _handle = dlopen(name, RTLD_LAZY | RTLD_LOCAL); }
+  explicit Handle(const char *name) : _handle(dlopen(name, RTLD_LAZY | RTLD_LOCAL)) {}
 
   ~Handle() {
     if (_handle != nullptr) {

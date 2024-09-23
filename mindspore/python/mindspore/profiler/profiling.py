@@ -161,6 +161,7 @@ def _calculate_dataset_item(row, execution_time_map, ts_map):
     else:
         logger.warning("Can not map the start time for item: %s.", row)
 
+
 def _ascend_graph_msprof_generator(mindstudio_profiler_output, model_iteration_dict):
     """Executing the msprof export mode."""
     try:

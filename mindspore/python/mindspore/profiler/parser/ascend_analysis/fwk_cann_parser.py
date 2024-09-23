@@ -26,6 +26,7 @@ from mindspore.profiler.parser.ascend_analysis.msprof_timeline_parser import Msp
 from mindspore.profiler.parser.ascend_analysis.profiler_info_parser import ProfilerInfoParser
 from mindspore.profiler.parser.profiler_info import ProfilerInfo
 
+
 class FwkCANNParser:
     """The top-level trace view parser."""
 

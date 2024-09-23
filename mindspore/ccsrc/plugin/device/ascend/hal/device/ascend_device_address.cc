@@ -1191,7 +1191,8 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = LongToSize(out_tensor->data().nbytes());
   if (host_type == kNumberTypeInt4) {
-    host_size = out_tensor->DataSize() / 2;
+    int int4_nums_per_byte = 2;
+    host_size = out_tensor->DataSize() / int4_nums_per_byte;
   }
   if (host_size == 0) {
     MS_LOG(INFO) << "Tensor size is 0 for tensor: " << tensor_name;

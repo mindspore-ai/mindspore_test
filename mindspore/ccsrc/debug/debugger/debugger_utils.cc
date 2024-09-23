@@ -388,7 +388,8 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
   tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
   auto byte_size = LongToSize(out_tensor->data().nbytes());
   if (tensor_info.host_type == kNumberTypeInt4) {
-    byte_size = byte_size / 2;
+    int int4_nums_per_byte = 2;
+    byte_size = byte_size / int4_nums_per_byte;
   }
   tensor_data->SetByteSize(byte_size);
   tensor_data->SetType(tensor_info.host_type);
