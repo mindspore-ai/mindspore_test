@@ -326,3 +326,23 @@ def test_concat_with_dyn_len_sequence_input():
     grad_net = Grad(net)
     grad = grad_net(y)
     print(grad)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_concat_with_single_input():
+    """
+    Feature: Concat ops.
+    Description: Test Concat with single input.
+    Expectation: No Exception raised.
+    """
+    class Net(nn.Cell):
+        def construct(self, x):
+            x = ops.add(x, x)
+            y = ops.concat([x,])
+            return y
+
+    context.set_context(mode=context.GRAPH_MODE, jit_level="O0")
+    net = Net()
+    x = Tensor(np.random.rand(100, 10).astype(np.float32))
+    out = net(x)
+    print(out)
