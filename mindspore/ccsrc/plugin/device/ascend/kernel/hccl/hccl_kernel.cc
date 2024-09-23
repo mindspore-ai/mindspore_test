@@ -135,8 +135,8 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  std::set<std::string> reduce_op_names = {kAllReduceOpName, kReduceScatterOpName, kReduceOpName,
-                                           kMatMulAllReduceOpName};
+  std::set<std::string> reduce_op_names = {kAllReduceOpName,       kReduceScatterOpName,   kReduceOpName,
+                                           kMatMulAllReduceOpName, kAllGatherMatMulOpName, kMatMulReduceScatterOpName};
   if (reduce_op_names.count(kernel_name_) != 0) {
     if (!HcomUtil::GetHcomOperationType(primitive_, &op_type_, &collective_reduce_type_)) {
       MS_LOG(ERROR) << "GetHcomOperationType fail!";
@@ -204,7 +204,8 @@ void HcclKernel::CalLoopSize() {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
   // For MatMulAllReduce, output number is 1.
-  if (kernel_name_ == kMatMulAllReduceOpName) {
+  if (kernel_name_ == kMatMulAllReduceOpName || kernel_name_ == kAllGatherMatMulOpName ||
+      kernel_name_ == kMatMulReduceScatterOpName) {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
   MS_LOG(INFO) << "Get Hccl Kernel: " << kernel_name_ << ", output size: " << loop_size_;

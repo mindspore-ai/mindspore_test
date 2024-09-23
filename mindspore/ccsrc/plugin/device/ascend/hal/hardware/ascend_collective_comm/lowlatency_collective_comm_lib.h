@@ -65,6 +65,12 @@ class EXPORT_WRAPPER LowlatencyCollectiveCommLib : public CollectiveCommunicatio
   int MatmulAllReduce(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg, const CoCOutputPkg &output_pkg,
                       void *workspace, const aclrtStream stream);
 
+  int AllGatherMatmul(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg, const CoCOutputPkg &output_pkg,
+                      void *workspace, const aclrtStream stream);
+
+  int MatmulReduceScatter(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg, const CoCOutputPkg &output_pkg,
+                          void *workspace, const aclrtStream stream);
+
   // Return lccl communicator so that caller could pass this communicator to communication APIs.
   LcclPtr LcclCommunicator(const std::string &group_name);
 
@@ -99,6 +105,12 @@ extern "C" EXPORT_WRAPPER int Broadcast(const LcclPtr &lccl_ptr, void *buff, siz
 extern "C" EXPORT_WRAPPER int MatmulAllReduce(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg,
                                               const CoCOutputPkg &output_pkg, void *workspace,
                                               const aclrtStream stream);
+extern "C" EXPORT_WRAPPER int AllGatherMatmul(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg,
+                                              const CoCOutputPkg &output_pkg, void *workspace,
+                                              const aclrtStream stream);
+extern "C" EXPORT_WRAPPER int MatmulReduceScatter(const LcocPtr &lcoc_ptr, const CoCInputPkg &input_pkg,
+                                                  const CoCOutputPkg &output_pkg, void *workspace,
+                                                  const aclrtStream stream);
 extern "C" EXPORT_WRAPPER LcclPtr LcclCommunicator(const std::string &group_name);
 extern "C" EXPORT_WRAPPER LcocPtr CreateLcocForOp(const std::string &group_name);
 extern "C" EXPORT_WRAPPER void SetParamForLcoc(const LcocPtr &lcoc_ptr, LcalType lcal_type, const CoCTiling &tiling,
@@ -115,6 +127,10 @@ ORIGIN_METHOD(ReduceScatter, int, const LcclPtr &, void *, void *, size_t, HcclD
 ORIGIN_METHOD(All2All, int, const LcclPtr &, void *, void *, size_t, HcclDataType, const aclrtStream)
 ORIGIN_METHOD(Broadcast, int, const LcclPtr &, void *, size_t, HcclDataType, int, const aclrtStream)
 ORIGIN_METHOD(MatmulAllReduce, int, const LcocPtr &, const CoCInputPkg &, const CoCOutputPkg &, void *,
+              const aclrtStream)
+ORIGIN_METHOD(AllGatherMatmul, int, const LcocPtr &, const CoCInputPkg &, const CoCOutputPkg &, void *,
+              const aclrtStream)
+ORIGIN_METHOD(MatmulReduceScatter, int, const LcocPtr &, const CoCInputPkg &, const CoCOutputPkg &, void *,
               const aclrtStream)
 ORIGIN_METHOD(LcclCommunicator, LcclPtr, const std::string &);
 ORIGIN_METHOD(CreateLcocForOp, LcocPtr, const std::string &);
