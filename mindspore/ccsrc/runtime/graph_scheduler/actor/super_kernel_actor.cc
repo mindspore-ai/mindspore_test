@@ -115,6 +115,12 @@ void SuperKernelActor::Init() {
     data->data_ = device_address.get();
   }
 
+  if (enable_kbk_sub_graph_execute_) {
+    // 1. Don't cache DeviceAddress of Parameter node into node_device_tensors_ on PyNative mode.
+    // 2. Ignore the operator of SuperKernelActor for O2(GE) mode.
+    return;
+  }
+
   const auto &output_with_indexs = common::AnfAlgo::GetAllOutputWithIndex(graph_->output());
   for (const auto &origin_output_with_index : output_with_indexs) {
     const auto &output_with_index = common::AnfAlgo::FetchRealNodeSkipMonadControl(origin_output_with_index);
