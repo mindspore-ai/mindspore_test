@@ -1,7 +1,7 @@
 mindspore.load_distributed_checkpoint
 ======================================
 
-.. py:function:: mindspore.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None)
+.. py:function:: mindspore.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None)
 
     给分布式预测加载checkpoint文件到网络。用于分布式推理。关于分布式推理的细节，请参考： `分布式模型加载 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/model_loading.html>`_ 。
 

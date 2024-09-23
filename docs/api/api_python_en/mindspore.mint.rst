@@ -1,7 +1,7 @@
 mindspore.mint
 ===============
 
-mindpsore.mint provides a large number of functional, nn, optimizer interfaces. The API usages and functions are consistent with the mainstream usage in the industry for easy reference.
+mindspore.mint provides a large number of functional, nn, optimizer interfaces. The API usages and functions are consistent with the mainstream usage in the industry for easy reference.
 The mint interface is currently an experimental interface and performs better than ops in graph mode of O0 and PyNative mode. Currently, the graph sinking mode and CPU/GPU backend are not supported, and it will be gradually improved in the future.
 
 The module import method is as follows:
@@ -197,7 +197,7 @@ BLAS and LAPACK Operations
     mindspore.mint.bmm
     mindspore.mint.inverse
     mindspore.mint.matmul
-    mindpsore.mint.outer
+    mindspore.mint.outer
     mindspore.mint.trace
 
 Other Operations
@@ -260,7 +260,7 @@ Non-linear Activations (weighted sum, nonlinearity)
     :nosignatures:
     :template: classtemplate.rst
 
-    mindpsore.mint.nn.GELU
+    mindspore.mint.nn.GELU
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish

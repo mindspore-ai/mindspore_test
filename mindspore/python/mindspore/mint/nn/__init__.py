@@ -482,7 +482,7 @@ class MSELoss(Cell):
 
     Outputs:
         - Tensor. If `reduction` is ``'mean'`` or ``'sum'``, the shape of output is `Tensor Scalar`.
-        - If reduction is ``'none'``, the shape of output is the broadcasted shape of **logits** and **labels** .
+        - If reduction is ``'none'``, the shape of output is the broadcasted shape of `logits` and `labels` .
 
     Raises:
         ValueError: If `reduction` is not one of ``'mean'``, ``'sum'`` or ``'none'``.

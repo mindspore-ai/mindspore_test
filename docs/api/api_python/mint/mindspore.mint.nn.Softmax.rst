@@ -5,4 +5,4 @@ mindspore.mint.nn.Softmax
 
     将Softmax函数应用于n维输入Tensor。
 
-    更多参考详见 :func:`mindspore.mint.nn.functional.Softmax`。
+    更多参考详见 :func:`mindspore.mint.nn.functional.softmax`。

@@ -1402,7 +1402,7 @@ def amax(a, axis=None, keepdims=False, initial=None, where=True):
 
     Args:
         a (Tensor): Input data.
-        axis (Union[int, tuple(ints), None], optional): Default: ``None`` . Axis or
+        axis (Union[int, tuple(int), None], optional): Default: ``None`` . Axis or
             axes along which to operate. By default, flattened input is used. If
             this is a tuple of integers, the maximum is selected over multiple axes,
             instead of a single axis or all the axes as before.

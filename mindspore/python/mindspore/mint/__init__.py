@@ -1132,7 +1132,7 @@ def scatter(input, dim, index, src):
         input (Tensor): The target tensor. The rank of `input` must be at least 1.
         dim (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input).
         index (Tensor): The index to do update operation whose data must be positive number with type of mindspore.int32
-        or mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
+            or mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
         src (Tensor, float): The tensor doing the update operation with `input` , has the same data type as
             `input`, and the shape of `src` should be equal to the shape of `index`. Also can be a float number to
             scatter.
