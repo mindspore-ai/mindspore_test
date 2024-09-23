@@ -81,7 +81,7 @@ def run_command_compile(cmd, log_path, backend_time, compile_time):
         os.remove(log_path)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_train_compile():
     """
     Feature: Trainer.train()
@@ -89,7 +89,7 @@ def test_train_compile():
     Expectation: AssertionError
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    run_command_compile(f"bash {sh_path}/dry_compile.sh compile", f"{sh_path}/compile.log", 90000, 250000)
+    run_command_compile(f"bash {sh_path}/dry_compile.sh compile", f"{sh_path}/compile.log", 70000, 200000)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
