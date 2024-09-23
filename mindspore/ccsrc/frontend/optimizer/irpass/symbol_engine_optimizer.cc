@@ -272,41 +272,6 @@ AnfNodePtr FoldConstSymbol::operator()(const OptimizerPtr &, const AnfNodePtr &n
   return new_node;
 }
 
-bool ShapeOpCse::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer) {
-  if (func_graph->symbol_engine() == nullptr) {
-    return false;
-  }
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple, AlwaysInclude);
-  auto mng = optimizer->manager();
-  MS_EXCEPTION_IF_NULL(mng);
-  std::vector<std::pair<AnfNodePtr, SymbolPtr>> shape_values;
-  bool changed = false;
-  for (auto &node : nodes) {
-    if (IsPrimitiveCNode(node, prim::kPrimShape)) {
-      auto v = node->abstract()->GetSymbolicValue();
-      if (v == nullptr) {
-        continue;
-      }
-      bool matched = false;
-      for (auto &prev : shape_values) {
-        if (node->func_graph() == prev.first->func_graph() && v->EqualsTo(prev.second)) {
-          MS_LOG(INFO) << "The symbolic value of " << node->DebugString() << " (" << node->fullname_with_scope()
-                       << ") is same as previous node " << prev.first->DebugString() << " ("
-                       << prev.first->fullname_with_scope() << "), eliminated it. Value:" << v->ToString();
-          mng->Replace(node, prev.first);
-          changed = true;
-          matched = true;
-          break;
-        }
-      }
-      if (!matched) {
-        (void)shape_values.emplace_back(std::make_pair(node, v));
-      }
-    }
-  }
-  return changed;
-}
-
 AnfNodePtr FoldSameValue::operator()(const OptimizerPtr &, const AnfNodePtr &node) {
   if (GetSymbolEngine(node) == nullptr) {
     return nullptr;
