@@ -514,12 +514,17 @@ void GetCommInfo(int64_t *send_rank_id, int64_t *recv_rank_id, std::shared_ptr<O
   auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>((*operator_info));
 
   auto rankList = flash_score_info_ptr->GetSPRankList();
-  (*pos) = -1;
+  (*pos) = 0;
+  bool is_find = false;
   int64_t dev_rank_id = g_device_manager->global_rank();
   for (size_t i = 0; i < rankList.size(); ++i) {
     if (dev_rank_id == rankList[i]) {
       (*pos) = SizeToLong(i);
+      is_find = true;
     }
+  }
+  if (!is_find) {
+    MS_LOG(EXCEPTION) << "RA can not find pos in ranklist";
   }
   (*recv_rank_id) = rankList[((*pos) + 1) % rankList.size()];
   (*send_rank_id) = rankList[((*pos) + rankList.size() - 1) % rankList.size()];
