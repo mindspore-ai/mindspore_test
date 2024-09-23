@@ -3248,6 +3248,19 @@ REG_BPROP_BUILDER("InplaceIndexAdd").SetUnusedInputs({i0, i2, i3}).SetBody(BODYF
   return {dout, ib->OutZeros(indices), ib->Gather(dout, indices, ib->EmitValue(ib->GetAttr("axis")))};
 });
 
+REG_BPROP_BUILDER("InplaceAddmm").SetUnusedInputs({i0, i3, i5}).SetBody(BODYFUNC(ib) {
+  auto mat1 = ib->GetInput(kIndex1);
+  auto mat2 = ib->GetInput(kIndex2);
+  auto mat1_t_conj = ib->Conj(ib->Transpose(mat1, {1, 0}));
+  auto mat2_t_conj = ib->Conj(ib->Transpose(mat2, {1, 0}));
+  auto aplha_conj = ib->Conj(ib->GetInput(kIndex4));
+  auto aplha_tensor = ib->ScalarToTensor(aplha_conj, ib->GetDtype(mat1));
+  auto dout = ib->GetInput(kIndex6);
+  auto dmat1 = ib->Mul(ib->MatMul(dout, mat2_t_conj), aplha_tensor);
+  auto dmat2 = ib->Mul(ib->MatMul(mat1_t_conj, dout), aplha_tensor);
+  return {ib->OutZeros(dout), dmat1, dmat2, ib->OutZeros(aplha_conj), ib->OutZeros(aplha_conj)};
+});
+
 REG_BPROP_BUILDER("Zeta").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto q = ib->GetInput(kIndex1);

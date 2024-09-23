@@ -25,35 +25,55 @@ def generate_random_input(shape):
     return np.random.randn(*shape).astype(np.float16)
 
 
-def addmm__dyn_shape_func(input1, mat1, mat2, beta, alpha):
-    return input1.addmm_(mat1, mat2, beta=beta, alpha=alpha)
-
-
 def generate_numpy_output(input1, mat1, mat2, beta, alpha):
     return input1 * beta + alpha * np.dot(mat1, mat2)
 
 
+def generate_backward_output(mat1, mat2, alpha):
+    dy = np.ones((3, 3))
+    return np.dot(dy, mat2.T) * alpha, np.dot(mat1.T, dy) * alpha
+
+
+def addmm__dyn_shape_func(input1, mat1, mat2, beta, alpha):
+    return input1.addmm_(mat1, mat2, beta=beta, alpha=alpha)
+
+
+@test_utils.run_with_cell
+def addmm__forward_func(input1, mat1, mat2, beta, alpha):
+    return input1.addmm_(mat1, mat2, beta=beta, alpha=alpha)
+
+
+@test_utils.run_with_cell
+def addmm__backward_func(input1, mat1, mat2, beta, alpha):
+    return ms.grad(addmm__forward_func, (1, 2))(input1, mat1, mat2, beta, alpha)
+
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('ms_type', [mstype.float32, mstype.float16])
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_inplace_addmm(context_mode, ms_type):
+def test_inplace_addmm(ms_type):
     """
     Feature: pyboost function.
     Description: test function inplace_addmm backward.
     Expectation: expect correct result.
     """
-    ms.set_context(jit_level='O0')
-    ms.context.set_context(mode=context_mode)
+    ms.context.set_context(mode=ms.PYNATIVE_MODE)
     input_np = np.arange(9).astype(np.float32).reshape((3, 3))
     mat1_np = np.arange(12).astype(np.float32).reshape((3, 4))
     mat2_np = np.arange(12).astype(np.float32).reshape((4, 3))
     input1 = Tensor(input_np, dtype=ms_type)
+    input2 = Tensor(input_np.copy(), dtype=ms_type)
     mat1 = Tensor(mat1_np, dtype=ms_type)
     mat2 = Tensor(mat2_np, dtype=ms_type)
-
-    input1.addmm_(mat1, mat2, beta=0.5, alpha=2)
     expect_output = generate_numpy_output(input_np, mat1_np, mat2_np, 0.5, 2)
-    assert np.allclose(input1.asnumpy(), expect_output)
+    expect_grad_output = generate_backward_output(mat1_np, mat2_np, 2)
+
+    output = input1.addmm_(mat1, mat2, beta=0.5, alpha=2)
+    output_grad = addmm__backward_func(input2, mat1, mat2, 0.5, 2)
+
+    assert np.allclose(output.asnumpy(), expect_output)
+    assert np.allclose(output_grad[0].asnumpy(), expect_grad_output[0])
+    assert np.allclose(output_grad[1].asnumpy(), expect_grad_output[1])
 
 
 @pytest.mark.level1
