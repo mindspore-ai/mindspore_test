@@ -42,6 +42,7 @@ def test_auto_parallel_sapp_custom_strategy1():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
     context.set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="recursive_programming")
+    ms.set_algo_parameters(fully_use_devices=True)
     os.environ['MS_INTERFERED_SAPP'] = '1'
 
     x = Tensor(np.ones([32768, 1024]), dtype=ms.float32)
