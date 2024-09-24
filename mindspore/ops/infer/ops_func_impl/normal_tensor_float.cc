@@ -29,8 +29,6 @@ namespace ops {
 BaseShapePtr NormalTensorFloatFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                    const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   if (CheckAndConvertUtils::IsTensor(input_args[kInputIndex0]) &&
       !CheckAndConvertUtils::IsTensor(input_args[kInputIndex1])) {
     auto mean_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
@@ -48,10 +46,8 @@ BaseShapePtr NormalTensorFloatFuncImpl::InferShape(const PrimitivePtr &primitive
 
 TypePtr NormalTensorFloatFuncImpl::InferType(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  auto x_type = input_args[0]->GetType();
+  auto x_type = input_args[kInputIndex0]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, common_valid_types_with_complex_and_bool, prim_name);
   return x_type;
 }

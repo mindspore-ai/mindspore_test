@@ -26,8 +26,6 @@ BaseShapePtr ReduceAnyFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ReduceAnyFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
   return std::make_shared<TensorType>(kBool);
 }
 }  // namespace ops

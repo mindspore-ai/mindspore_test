@@ -42,9 +42,8 @@ def moe_init_routing_forward_func(query, key, cos, sin, layout):
     batch_valid_length = ms.Tensor(np.ones((1, 1)), mstype.int32)
     return apply_rotary_pos_emb_(query, key, cos, sin, batch_valid_length, cos_format=layout)
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('mode', ['GE'])
 def test_apply_rotary_pos_emb_case0(mode):

@@ -70,7 +70,7 @@ BaseShapePtr OneHotExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr OneHotExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
   auto tensor_type = input_args[kInputIndex0]->GetType();
-  return tensor_type->Clone();
+  return tensor_type;
 }
 
 int32_t OneHotExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
