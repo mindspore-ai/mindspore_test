@@ -98,7 +98,7 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
         file.write(ctx)
     assert os.path.exists(temp_file)
 
-    os.environ['MS_DEV_RUNTIME_CONF'] = "memory_statistics:True,compile_statistics:True,kbk_cache:True"
+    os.environ['MS_DEV_RUNTIME_CONF'] = "memory_statistics:True,compile_statistics:True,backend_compile_cache:True"
     # First run without compile cache
     cmd_first = f"export GLOG_v=1; python " + temp_file + " '" \
         + cache_path + "' > " + log_file_name_first + " 2>&1"
