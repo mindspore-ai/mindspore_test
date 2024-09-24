@@ -34,6 +34,7 @@ from mindspore.ops.operations.math_ops import Roll
 from mindspore.ops.composite.math_ops import mm
 from mindspore.ops.function.math_func import dot
 from mindspore.ops import auto_generate
+from mindspore.ops.auto_generate import cast
 from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
 from mindspore.ops.operations.manually_defined.ops_def import scalar_div, scalar_mod, scalar_add, scalar_mul, \
     scalar_sub, scalar_gt, scalar_ge, scalar_le, scalar_lt, scalar_eq, scalar_floordiv, scalar_log, scalar_pow, \
@@ -41,7 +42,7 @@ from mindspore.ops.operations.manually_defined.ops_def import scalar_div, scalar
 
 typeof = Primitive('typeof')
 hastype = Primitive('hastype')
-cast = P.Cast()
+_cast = P.Cast()
 dtype = P.DType()
 isconstant = _inner_ops.IsConstant()
 isconstant.set_const_prim(True)
@@ -318,7 +319,7 @@ setattr(tensor_operator_registry, 'unsqueeze', unsqueeze)
 setattr(tensor_operator_registry, 'expand_dims', expand_dims)
 setattr(tensor_operator_registry, 'contiguous', auto_generate.contiguous)
 # support GE backend for no compare operators
-setattr(tensor_operator_registry, 'cast', cast)
+setattr(tensor_operator_registry, 'cast', _cast)
 setattr(tensor_operator_registry, 'shape_mul', shape_mul)
 setattr(tensor_operator_registry, 'concatenate', concat)
 setattr(tensor_operator_registry, 'fill', fill)
@@ -396,13 +397,13 @@ setattr(tensor_operator_registry, 'argwhere', argwhere)
 setattr(tensor_operator_registry, 'coo_add', coo_add)
 setattr(tensor_operator_registry, 'topk', topk)
 setattr(tensor_operator_registry, 'isfinite', isfinite)
-setattr(tensor_operator_registry, 'to', cast)
-setattr(tensor_operator_registry, 'bool', cast)
-setattr(tensor_operator_registry, 'float', cast)
-setattr(tensor_operator_registry, 'half', cast)
-setattr(tensor_operator_registry, 'int', cast)
-setattr(tensor_operator_registry, 'long', cast)
-setattr(tensor_operator_registry, 'byte', cast)
+setattr(tensor_operator_registry, 'to', _cast)
+setattr(tensor_operator_registry, 'bool', _cast)
+setattr(tensor_operator_registry, 'float', _cast)
+setattr(tensor_operator_registry, 'half', _cast)
+setattr(tensor_operator_registry, 'int', _cast)
+setattr(tensor_operator_registry, 'long', _cast)
+setattr(tensor_operator_registry, 'byte', _cast)
 setattr(tensor_operator_registry, 'cholesky', cholesky)
 setattr(tensor_operator_registry, 'cholesky_inverse', cholesky_inverse)
 setattr(tensor_operator_registry, 'cholesky_solve', cholesky_solve)

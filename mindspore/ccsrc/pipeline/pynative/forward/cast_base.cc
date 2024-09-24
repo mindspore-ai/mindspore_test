@@ -122,7 +122,7 @@ PrimitivePtr CastBaseOperation::GetPrimByTypeId(const TypeId &type_id) const {
   return cast_prim;
 #else
   py::gil_scoped_acquire gil;
-  const auto &cast_prim = python_adapter::GetPyFn(kOpsFunctionModelName, "cast");
+  const auto &cast_prim = python_adapter::GetPyFn(kOpsFunctionModelName, "_cast");
   auto prim_adapter = cast_prim.cast<PrimitivePyAdapterPtr>();
   MS_EXCEPTION_IF_NULL(prim_adapter);
   auto primitive = prim_adapter->attached_primitive();

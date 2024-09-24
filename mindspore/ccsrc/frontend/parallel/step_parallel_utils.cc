@@ -1172,7 +1172,7 @@ TypePtr FindChildCastWithFP32ToFP16(const std::pair<AnfNodePtr, int> &res, const
 // Return the new cast node with pre_node as the inputs.
 AnfNodePtr CreateFP16Cast(const CNodePtr &node, const AnfNodePtr &pre_node, const TypePtr &compute_node_type) {
   const char kOpsFunctionModelName[] = "mindspore.ops.functional";
-  static py::object cast_prim = python_adapter::GetPyFn(kOpsFunctionModelName, "cast");
+  static py::object cast_prim = python_adapter::GetPyFn(kOpsFunctionModelName, "_cast");
   const auto &adapter = py::cast<PrimitivePyAdapterPtr>(cast_prim);
   MS_EXCEPTION_IF_NULL(adapter);
   MS_EXCEPTION_IF_NULL(compute_node_type);

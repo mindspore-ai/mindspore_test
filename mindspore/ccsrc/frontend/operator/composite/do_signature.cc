@@ -416,7 +416,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
           auto source_element = source_tensor_type->element();
           if (cast_type != nullptr && (IsSubType(source_element, kFloat) || IsSubType(source_element, kBFloat)) &&
               *source_element != *cast_type) {
-            auto cast = prim::GetPythonOps("cast", "mindspore.ops.functional");
+            auto cast = prim::GetPythonOps("_cast", "mindspore.ops.functional");
             param = func_graph->NewCNodeAfter(param, {NewValueNode(cast), param, NewValueNode(cast_type)});
             type = cast_type->type_id() == kNumberTypeFloat16
                      ? kTensorTypeFP16
