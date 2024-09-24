@@ -77,6 +77,9 @@ std::vector<int64_t> ReshapeDecompose(std::vector<int64_t> input_shape, std::vec
   if (std::any_of(output_shape.begin(), output_shape.end(), [](int64_t shape) { return shape != 1; })) {
     return std::vector<int64_t>{};
   }
+  if (std::any_of(dependency.begin(), dependency.end(), [](int64_t shape) { return shape == INT_MAX; })) {
+    return std::vector<int64_t>{};
+  }
 
   return dependency;
 }
