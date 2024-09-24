@@ -35,7 +35,7 @@ mindspore.mint.multinomial
 
     异常：
         - **TypeError** - 如果 `input` 不是数据类型不是float16、float32、float64或bfloat16的Tensor。
-        - **TypeError** - 如果 `num_samples` 不是一个int，或元素为int的是Scalar。
-        - **RuntimeError** - `num_samples` <= 0。
-        - **RuntimeError** - `replacement` 为 True 时， `num_samples` > `input` 最后一维的值。
-        - **RuntimeError** - `input` 最后一维的值超过 ``2^24``。
+        - **TypeError** - 如果 `num_samples` 不是一个int，或元素为int的是Scalar, 或元素为int且shape为(1, 1)的Tensor。
+        - **RuntimeError** - :math:`\text{num_samples} <= 0`。
+        - **RuntimeError** - `replacement` 为 False 时， :math:`\text{num_samples} > input` 最后一维的shape。
+        - **RuntimeError** - `input` 最后一维的shape超过 ``2^24``。
