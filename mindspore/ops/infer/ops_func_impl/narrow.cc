@@ -15,16 +15,15 @@
  */
 
 #include <vector>
-#include <set>
 #include <memory>
+#include <set>
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "infer/ops_func_impl/slice_ext.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_utils.h"
+#include "infer/ops_func_impl/narrow.h"
 
 namespace mindspore::ops {
-BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                          const std::vector<AbstractBasePtr> &input_args) const {
+BaseShapePtr NarrowFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                        const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
   auto input_x_shape = input_args[0]->GetShape()->GetShapeVector();
   (void)CheckAndConvertUtils::CheckInteger("rank of input", SizeToLong(input_x_shape.size()), kGreaterThan, 0,
@@ -35,11 +34,9 @@ BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   auto axis_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue());
-  auto input_begin_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
-  auto input_end_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex3]->GetValue());
-  auto input_step_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex4]->GetValue());
-  if (!axis_value_opt.has_value() || !input_begin_value_opt.has_value() || !input_end_value_opt.has_value() ||
-      !input_step_value_opt.has_value()) {
+  auto begin_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
+  auto length_value_opt = GetScalarValue<int64_t>(input_args[kInputIndex3]->GetValue());
+  if (!axis_value_opt.has_value() || !begin_value_opt.has_value() || !length_value_opt.has_value()) {
     return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeRankAny});
   }
 
@@ -57,37 +54,25 @@ BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
     return std::make_shared<abstract::TensorShape>(input_x_shape);
   }
 
-  auto step = input_step_value_opt.value();
-  MS_CHECK_VALUE(step > 0, "For primitive [SliceExt]: step value must be positive.");
+  auto begin_value = begin_value_opt.value();
+  MS_CHECK_VALUE(begin_value >= -x_axis_size && begin_value <= x_axis_size,
+                 "For primitive [SliceExt]: start value error, start: " + std::to_string(begin_value) +
+                   ", start should be in [" + std::to_string(-x_axis_size) + ", " + std::to_string(x_axis_size) + "].");
+  begin_value = begin_value < 0 ? begin_value + x_axis_size : begin_value;
 
-  auto start = input_begin_value_opt.value();
-  auto end = input_end_value_opt.value();
-  auto dim_value = x_axis_size;
-
-  start = start < 0 ? start + dim_value : start;
-
-  end = end < 0 ? end + dim_value : end;
-
-  if (start < 0) {
-    start = 0;
-  } else if (start > dim_value) {
-    start = dim_value;
-  }
-
-  if (end < start) {
-    end = start;
-  } else if (end > dim_value) {
-    end = dim_value;
-  }
+  auto length_value = length_value_opt.value();
+  auto max_length = x_axis_size - begin_value;
+  MS_CHECK_VALUE(length_value >= 0 && length_value <= max_length,
+                 "length value error. length: " + std::to_string(length_value) + ", length should be in [0, " +
+                   std::to_string(max_length) + "].");
 
   auto out_shape = input_x_shape;
-  out_shape[axis_value] = (end - start + step - 1) / step;
+  out_shape[axis_value] = length_value;
 
   return std::make_shared<abstract::Shape>(out_shape);
 }
 
-TypePtr SliceExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr NarrowFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kIndex0]->GetType();
   const std::set<TypePtr> valid_type = {kInt8, kInt32, kInt64, kUInt8, kFloat16, kFloat32, kBool, kBFloat16};
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_type, primitive->name());
