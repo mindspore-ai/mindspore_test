@@ -75,7 +75,7 @@ def train_net(epoch_size, repeat_size, sink_mode):
     # define the loss function
     net_loss = SoftmaxCrossEntropyWithLogits(sparse=True, reduction='mean')
     model = Model(net, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
-    model.train(epoch_size, ds_train, dataset_sink_mode=sink_mode)
+    model.train(epoch_size, ds_train, dataset_sink_mode=sink_mode, sink_size=1)
 
 
 def run_async_dump(test_name):
@@ -97,7 +97,7 @@ def run_async_dump(test_name):
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @security_off_wrap
 def test_async_dump_dataset_sink():
     """
