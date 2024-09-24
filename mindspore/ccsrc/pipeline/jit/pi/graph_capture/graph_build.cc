@@ -5048,10 +5048,35 @@ bool MindGraphBuilder::DoGetItem(const Instr &instr) {
   auto r = pop();
   auto l = pop();
   auto o = HandleMultiOp(instr, {l, r}, false);
-  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
-  v->set_abstract_wrapper(o);
-  push(v);
-  return true;
+  if (o != nullptr) {
+    auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
+    v->set_abstract_wrapper(o);
+    push(v);
+    return true;
+  }
+  /*
+   * Currently, there are several known scenarios where MetaFuncGraph-getitem infer may fail:
+   * 1.Cell list getitem: The Cell to be retrieved fails to be parsed (e.g. due to side effects in Cell.construct(),
+   * such as STORE_ATTR).
+   * 2.Index Out-of-Bounds or Key not exist.
+   * In the first case, we can try to fallback to two-stages mode and do getitem from python object.
+   * But in the second case, fallback to two-stages is useless. However, we cannot distinguish which scenario caused
+   * getitem infer failure, so we always fallback to have a try.
+   */
+  MS_LOG(INFO) << "Getitem infer failed, fallback to do getitem from python obj. source: " << l->ToString()
+               << ", key: " << r->ToString();
+  push(l);
+  push(r);
+  if (GraphBuilder::DoGetItem(instr)) {
+    auto v = seek(0);
+    o = fg_builder_->AddLocalVariable(v->GetVobj()->GetPyObject());
+    if (o != nullptr) {
+      v->set_abstract_wrapper(o);
+      return true;
+    }
+  }
+  MS_LOG(INFO) << "Failed to getitem from python obj, do break graph";
+  return false;
 }
 
 bool MindGraphBuilder::DoUnary(const Instr &instr) {
