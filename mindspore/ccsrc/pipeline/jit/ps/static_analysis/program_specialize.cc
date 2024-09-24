@@ -1286,9 +1286,9 @@ AnfNodePtr FuncGraphSpecializer::BuildSpecializedNodeInner(const CNodePtr &cnode
   }
 
   FuncGraphPtr func_graph = fg_spec->specialized_func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(DEBUG) << "Get spec fg of func graph: " << context->func_graph()->ToString()
                 << ", specialized fg: " << func_graph->ToString();
-  MS_EXCEPTION_IF_NULL(func_graph);
   func_graph->set_flag(kFuncGraphFlagUndetermined, false);
   static auto dummy_context = AnalysisContext::DummyContext();
   MS_EXCEPTION_IF_NULL(dummy_context);

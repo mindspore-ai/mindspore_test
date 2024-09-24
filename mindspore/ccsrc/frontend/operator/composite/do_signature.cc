@@ -294,13 +294,13 @@ void DoTypeCastForFloatTensorInSequence(const FuncGraphPtr &func_graph, const st
     auto input_type = input_types[idx];
     MS_EXCEPTION_IF_NULL(input_type);
     if (input_type->isa<Tuple>()) {
-      auto tuple_elems = input_type->cast<TuplePtr>()->elements();
+      const auto &tuple_elems = input_type->cast<TuplePtr>()->elements();
       auto new_node = DoTypeCastForSequenceElement(func_graph, tuple_elems, (*op_inputs)[idx], amp_type_id, true);
       if (new_node != nullptr) {
         (*op_inputs)[idx] = new_node;
       }
     } else if (input_type->isa<List>()) {
-      auto list_elems = input_type->cast<ListPtr>()->elements();
+      const auto &list_elems = input_type->cast<ListPtr>()->elements();
       auto new_node = DoTypeCastForSequenceElement(func_graph, list_elems, (*op_inputs)[idx], amp_type_id, false);
       if (new_node != nullptr) {
         (*op_inputs)[idx] = new_node;

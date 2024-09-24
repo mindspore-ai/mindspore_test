@@ -1139,6 +1139,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
     MsProfileStatGuard stat_guard("type_inference.specialize");
     new_fg = ProgramSpecialize(resource->engine(), result.context->func_graph(), result.context);
   }
+  MS_EXCEPTION_IF_NULL(new_fg);
   (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kProgramSpecialize, start_time, profiler::GetClockSyscnt(),
                                   0);
   // Update the top func graph with the specialized graph.
