@@ -242,7 +242,7 @@ class TensorDump(Primitive):
           such as using sleep.
 
     Args:
-        input_output (str, available): Used to control Tensordump behavior.
+        input_output (str, optional): Used to control Tensordump behavior.
             Available value is one of ['in', 'out', 'all']. Default value is ``out``.
 
             In case of OpA --> RedistributionOps --> OpB,

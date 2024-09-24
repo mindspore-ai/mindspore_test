@@ -1137,8 +1137,8 @@ def full_like(a, fill_value, dtype=None, shape=None):
     Returns a full array with the same shape and type as a given array.
 
     Note:
-        Input array must have the same size across a dimension.
-        If `a` is not a Tensor, dtype is float32 by default if not provided.
+        - Input array must have the same size across a dimension.
+        - If `a` is not a Tensor, dtype is float32 by default if not provided.
 
     Args:
         a (Union[Tensor, list, tuple]): The shape and data-type of `a` define these same
