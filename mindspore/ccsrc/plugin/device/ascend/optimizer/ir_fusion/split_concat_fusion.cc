@@ -33,6 +33,11 @@ const BaseRef SplitConcatFusion::DefinePattern() const {
   output_num_ = std::make_shared<CondVar>(IsConstant);
   VectorRef split_ops = VectorRef({prim::kPrimSplit, x1_, split_axis_, output_num_});
   global_rank_size_ = distributed::collective::CollectiveManager::instance()->global_rank_size();
+  // this pass is mainly used for infer, limit max_rank_size in order to reduce the training compile time
+  uint32_t max_rank_size = 128;
+  if (global_rank_size_ > max_rank_size) {
+    global_rank_size_ = max_rank_size;
+  }
   std::vector<BaseRef> tuple_elements;
   tuple_elements.emplace_back(prim::kPrimMakeTuple);
   for (size_t i = 0; i < global_rank_size_; i++) {
