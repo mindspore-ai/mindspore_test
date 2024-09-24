@@ -83,6 +83,7 @@ mindspore.Tensor
     mindspore.Tensor.bmm
     mindspore.Tensor.bool
     mindspore.Tensor.broadcast_to
+    mindspore.Tensor.byte
     mindspore.Tensor.cauchy
     mindspore.Tensor.ceil
     mindspore.Tensor.cholesky
