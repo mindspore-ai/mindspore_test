@@ -29,9 +29,6 @@ namespace ops {
 BaseShapePtr NormalFloatFloatFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);
   if (!CheckAndConvertUtils::IsTensor(input_args[kInputIndex0]) &&
       !CheckAndConvertUtils::IsTensor(input_args[kInputIndex1])) {
     auto shape_shape = input_args[kInputIndex2]->GetShape();
@@ -83,8 +80,6 @@ BaseShapePtr NormalFloatFloatFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr NormalFloatFloatFuncImpl::InferType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[0]);
   return std::make_shared<TensorType>(kFloat32);
 }
 }  // namespace ops

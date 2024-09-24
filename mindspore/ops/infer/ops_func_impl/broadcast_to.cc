@@ -86,13 +86,13 @@ BaseShapePtr BroadcastToFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  auto x_shape = input_args[0]->GetShape()->GetShapeVector();
-  auto shape_shape = input_args[1]->GetShape();
+  auto x_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
+  auto shape_shape = input_args[kIndex1]->GetShape();
   if (shape_shape->isa<abstract::DynamicSequenceShape>()) {
     return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
   }
 
-  auto shape_array_opt = GetArrayValue<int64_t>(input_args[1]);
+  auto shape_array_opt = GetArrayValue<int64_t>(input_args[kIndex1]);
   if (!shape_array_opt.has_value()) {
     if (shape_shape->isa<abstract::SequenceShape>()) {
       auto seq_shape = shape_shape->cast<abstract::SequenceShapePtr>();
@@ -136,14 +136,11 @@ BaseShapePtr BroadcastToFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr BroadcastToFuncImpl::InferType(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
-  auto x_dtype = input_args[0]->GetType()->cast<TensorTypePtr>();
+  auto x_dtype = input_args[kIndex0]->GetType()->cast<TensorTypePtr>();
   MS_EXCEPTION_IF_NULL(x_dtype);
   std::set<TypePtr> template_types = {kTensorType};
   (void)CheckAndConvertUtils::CheckSubClass("x_dtype", x_dtype, template_types, primitive->name());
-  return x_dtype->Clone();
+  return x_dtype;
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -77,7 +77,6 @@ TypePtr OneHotFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
   (void)CheckAndConvertUtils::CheckTensorTypeValid("indices", indices_type, indices_valid_types, primitive->name());
 
   auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
   auto is_ascend = (context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
   if (is_ascend && on_value_type->isa<TensorType>() && indices_type->isa<TensorType>()) {
     auto on_value_tensor_type = on_value_type->cast<TensorTypePtr>()->element();
@@ -88,7 +87,7 @@ TypePtr OneHotFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
                               << indices_type << ".";
     }
   }
-  return on_value_type->Clone();
+  return on_value_type;
 }
 
 int32_t OneHotFuncImpl::CheckValidation(const PrimitivePtr &primitive,
