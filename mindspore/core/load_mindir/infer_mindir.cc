@@ -163,14 +163,6 @@ void CheckInferInput(const PrimitivePtr &prim, const AbstractBasePtrList &args_a
       MS_LOG(EXCEPTION) << "Got null AbstractBasePtr for input [" << i << "] for primitive " << name;
     }
   }
-  const auto op_def = ops::GetOpDef(name);
-  if (op_def) {
-    const auto expected_num = op_def->args_.size();
-    if (expected_num != args_abs_list.size()) {
-      MS_LOG(EXCEPTION) << "For primitive " << name << ", expected " << expected_num << "inputs, but got "
-                        << args_abs_list.size();
-    }
-  }
 }
 #endif
 

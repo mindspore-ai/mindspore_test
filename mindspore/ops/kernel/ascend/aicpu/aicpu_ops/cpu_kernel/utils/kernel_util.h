@@ -379,7 +379,9 @@ TargetType IntegerCast(CpuKernelContext &ctx, SourceType value) {
   static_assert(std::is_integral<TargetType>::value, "TargetType must be an integral type.");
   static_assert(std::is_integral<SourceType>::value, "SourceType must be an integral type.");
 
-  // Check for overflow/underflow when casting signed to unsigned
+  using PromotedType = std::common_type_t<TargetType, SourceType>;
+
+  // negative to unsigned
   if constexpr (std::is_unsigned<TargetType>::value && std::is_signed<SourceType>::value) {
     if (value < 0) {
       CUST_AICPU_LOGE(ctx, "Try to cast negative value to unsigned type.");
@@ -387,11 +389,19 @@ TargetType IntegerCast(CpuKernelContext &ctx, SourceType value) {
     }
   }
 
-  // Check if the value is within the range of TargetType
-  if (value < static_cast<SourceType>(std::numeric_limits<TargetType>::min()) ||
-      value > static_cast<SourceType>(std::numeric_limits<TargetType>::max())) {
-    CUST_AICPU_LOGE(ctx, "Value out of range for target type.");
+  // value > max(target)
+  if (static_cast<PromotedType>(value) > static_cast<PromotedType>(std::numeric_limits<TargetType>::max())) {
+    CUST_AICPU_LOGE(ctx, "Value is greater than maximum value of target type.");
     return 0;
+  }
+
+  // value < min(target)
+  // no need to check lowerbound for unsignd source type
+  if constexpr (!std::is_unsigned<SourceType>::value) {
+    if (static_cast<PromotedType>(value) < static_cast<PromotedType>(std::numeric_limits<TargetType>::min())) {
+      CUST_AICPU_LOGE(ctx, "Value is smaller than minimum value of target type.");
+      return 0;
+    }
   }
 
   // Safe to cast
