@@ -108,6 +108,18 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_i1, c
   comm_i1->AddAttr(GRAD_OVERLAP_MATMUL, MakeValue(comm_id));
   matmul_i->AddAttr(GRAD_OVERLAP_MATMUL, MakeValue(comm_id));
   manager->SetEdge(comm_i1_output, manager->node_users()[comm_i1].front().second, depend_node2);
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->GetJitLevel() != kAttrJitLevelO2) {
+    std::vector<AnfNodePtr> depend3_inputs{NewValueNode(prim::kPrimDepend), matmul_i_input, comm_i1};
+    auto depend_node3 = matmul_i_input->func_graph()->NewCNode(depend3_inputs);
+    MS_EXCEPTION_IF_NULL(depend_node3);
+    depend_node3->set_abstract(matmul_i->abstract()->Clone());
+    depend_node3->AddAttr("matmul_grad_depend3", MakeValue(true));
+    depend_node3->AddAttr(kAttrCommInputDepend, MakeValue(true));
+    manager->SetEdge(matmul_i, 1, depend_node3);
+  }
 }
 
 void OverLapGradMatMul(const FuncGraphManagerPtr &manager, const std::vector<CNodePtr> &origin_nodes_topological,
