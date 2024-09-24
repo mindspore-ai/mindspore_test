@@ -27,7 +27,7 @@ from mindspore._c_expression import _repair_device, _stop_device, _tft_sem_post
 from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv
 from mindspore._c_expression import CollectiveManager
-
+from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
 
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
     """ Common func to generate ckpt dir name."""
@@ -105,13 +105,27 @@ or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
         send_recv(cb_params.network.trainable_params(), src_rank, dst_rank)
     logger.info("Finish _tft_repair_callback")
 
-def _tft_clean_callback(cb_ctx):
+
+def _tft_clean_callback(is_uce_error, ctx):
     """ Callback used for TFT clean function."""
     logger.info("Enter _tft_clean_callback")
+    ret = 0
+    if is_uce_error:
+        _get_uce_mem_info(ctx.device_id)
+        err_strategy = _get_uce_process_strategy()
+        logger.info("_tft_clean_callback err_strategy: {}".format(err_strategy))
+        if err_strategy == "RS_UCE_HIGHLEVEL":
+            ret = 0
+        elif err_strategy == "RS_UCE_LOWLEVEL":
+            ret = 2
+        else:
+            ret = 1
     clean_tdt_channel()
     logger.info("Enter _tft_clean_callback resume_hccl_comm")
     CollectiveManager.get_instance().resume_hccl_comm()
-    logger.info("Finish _tft_clean_callback")
+    logger.info("Finish _tft_clean_callback, ret: {}".format(ret))
+    return ret
+
 
 def _tft_stop_callback(cb_ctx):
     """ Callback used for TFT stop function."""
