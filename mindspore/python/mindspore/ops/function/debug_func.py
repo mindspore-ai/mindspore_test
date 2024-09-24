@@ -114,7 +114,7 @@ def tensordump(file_name, tensor, mode='out'):
     Args:
         file_name (str): The path of the npy file saves.
         tensor (Tensor): The tensor that user want to dump.
-        mode (str, available): Used to control tensordump behavior, available value is one of ['in', 'out', 'all'].
+        mode (str, optional): Used to control tensordump behavior, available value is one of ['in', 'out', 'all'].
             Default value is ``out``.
 
     Raises:

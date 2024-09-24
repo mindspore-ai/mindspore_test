@@ -13,7 +13,7 @@ mindspore.mint.distributed.init_process_group
         - **backend** (str，可选) - 分布式后端的名称，默认为 ``"hccl"``，且目前只能设置为hccl。
         - **init_method** (str, 无效参数) - 初始化通讯域时的URL配置。这个参数主要对标PT，但实际无效且设置不生效。
         - **timeout** (int, 无效参数) - 设置接口的超时配置。这个参数主要对标PT，但实际无效且设置不生效。
-        - **world_size** (int, 可选参数) - 配置初始化时全局通讯的卡数。
+        - **world_size** (int, 可选) - 配置初始化时全局通讯的卡数。
         - **rank** (int, 无效参数) - 设置当前设备卡的卡号。这个参数主要对标PT，但实际无效且设置不生效。
         - **store** (store, 无效参数) - key/value 数据在设备进程上存储以便于设备进程间通讯地址、连接信息的交换。这个参数主要对标PT，但实际无效且设置不生效。
         - **pg_option** (ProcessGroupOption, 无效参数) - 针对创建的通讯group设置特殊配置策略。这个参数主要对标PT，但实际无效且设置不生效。

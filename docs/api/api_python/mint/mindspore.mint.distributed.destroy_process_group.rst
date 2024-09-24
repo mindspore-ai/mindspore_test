@@ -2,7 +2,7 @@ mindspore.mint.distributed.destroy_process_group
 ==================================================
 
 .. py:function:: mindspore.mint.distributed.destroy_process_group(group=None)
-    
+
     销毁指定通讯group。
     如果指定的通讯group为None或“hccl_world_group”, 则销毁全局通讯域并释放分布式资源，例如 `hccl`  服务。
 
