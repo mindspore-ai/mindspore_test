@@ -467,9 +467,9 @@ def isclose(a, b, rtol=1e-05, atol=1e-08, equal_nan=False):
     Args:
         a (Union[Tensor, list, tuple]): Input first tensor to compare.
         b (Union[Tensor, list, tuple]): Input second tensor to compare.
-        rtol (numbers.Number): The relative tolerance parameter (see Note).
-        atol (numbers.Number): The absolute tolerance parameter (see Note).
-        equal_nan (bool): Whether to compare ``NaN`` as equal. If True, ``NaN`` in
+        rtol (numbers.Number, optional): The relative tolerance parameter (see Note). Default: ``1e-05`` .
+        atol (numbers.Number, optional): The absolute tolerance parameter (see Note). Default: ``1e-08`` .
+        equal_nan (bool, optional): Whether to compare ``NaN`` as equal. If True, ``NaN`` in
             `a` will be considered equal to ``NaN`` in `b` in the output tensor.
             Default: ``False`` .
 
@@ -738,7 +738,7 @@ def array_equal(a1, a2, equal_nan=False):
 
     Args:
         a1/a2 (Union[int, float, bool, list, tuple, Tensor]): Input arrays.
-        equal_nan (bool): Whether to compare NaN's as equal. Default: ``False`` .
+        equal_nan (bool, optional): Whether to compare NaN's as equal. Default: ``False`` .
 
     Returns:
         Scalar bool tensor, value is `True` if inputs are equal, `False` otherwise.
@@ -900,7 +900,8 @@ def setdiff1d(ar1, ar2, assume_unique=False):
     Args:
         ar1 (Union[int, float, bool, list, tuple, Tensor]): Input tensor.
         ar2 (Union[int, float, bool, list, tuple, Tensor]): Input tensor.
-        assume_unique (bool): If `True`, the input Tensors are assumed to be unique, which can speed up the calculation.
+        assume_unique (bool, optional): If `True`, the input Tensors are assumed to be unique,
+                              which can speed up the calculation.
                               If `True` but `ar1` or `ar2` are not unique,
                               incorrect results and out-of-bounds indices could result.
                               Default: ``False``.

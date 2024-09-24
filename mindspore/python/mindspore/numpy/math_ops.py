@@ -607,11 +607,11 @@ def mean(a, axis=None, keepdims=False, dtype=None):
         axis (Union[int, tuple(int), None], optional): Axis or axes along
                     which the means are computed. The default is to compute
                     the mean of the flattened array. If this is a tuple of
-                    ints, a mean is performed over multiple axes.
+                    ints, a mean is performed over multiple axes. Default: ``None`` .
         keepdims (bool, optional): If this is set to ``True`` , the axes which
                     are reduced are left in the result as dimensions with
                     size one. With this option, the result will broadcast
-                    correctly against the input tensor.
+                    correctly against the input tensor. Default: ``False`` .
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
 
@@ -902,7 +902,7 @@ def std(x, axis=None, ddof=0, keepdims=False):
 
             If ``None`` , compute the standard deviation of the flattened array.
         ddof (int): Means Delta Degrees of Freedom. The divisor used in calculations is :math:`N - ddof`,
-            where :math:`N` represents the number of elements. Default: 0.
+            where :math:`N` represents the number of elements. Default: ``0``.
         keepdims: If this is set to True, the axes which are reduced are left in the result as
             dimensions with size one. With this option, the result will broadcast correctly against the input tensor.
             If the default value is passed, then keepdims will not be passed through to the std method of
@@ -1011,14 +1011,14 @@ def average(x, axis=None, weights=None, returned=False):
 
     Args:
         x (Tensor): A Tensor to be averaged.
-        axis (Union[None, int, tuple(int)]): Axis along which to average `x`. Default: ``None`` .
+        axis (Union[None, int, tuple(int)], optional): Axis along which to average `x`. Default: ``None`` .
             If the axis is `None`, it will average over all of the elements of the tensor `x`.
             If the axis is negative, it counts from the last to the first axis.
-        weights (Union[None, Tensor]): Weights associated with the values in `x`. Default: ``None`` .
+        weights (Union[None, Tensor], optional): Weights associated with the values in `x`. Default: ``None`` .
             If `weights` is `None`, all the data in `x` are assumed to have a weight equal to one.
             If `weights` is 1-D tensor, the length must be the same as the given axis.
             Otherwise, `weights` should have the same shape as `x`.
-        returned (bool): Default: ``False`` .
+        returned (bool, optional): Default: ``False`` .
             If `True`, the tuple (average, sum_of_weights) is returned.
             If `False`, only the average is returned.
 
@@ -1154,7 +1154,7 @@ def square(x, dtype=None):
 
     Returns:
         Tensor or scalar, element-wise ``x*x``, of the same shape and dtype as `x`.
-        This is a scalar if `x` is a scalar..
+        This is a scalar if `x` is a scalar.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1993,9 +1993,9 @@ def ediff1d(ary, to_end=None, to_begin=None):
     Args:
         ary (Tensor): If necessary, will be flattened before the differences are taken.
         to_end (Tensor, scalar, optional): Number(s) to append at the end of the
-            returned differences.
+            returned differences. Default: ``None`` .
         to_begin (Tensor, scalar, optional): Number(s) to prepend at the beginning
-            of the returned differences.
+            of the returned differences. Default: ``None`` .
 
     Returns:
         The differences.
@@ -2500,7 +2500,7 @@ def nanmax(a, axis=None, dtype=None, keepdims=False):
         a (Union[int, float, list, tuple, Tensor]): Array containing numbers whose maximum
             is desired. If `a` is not an array, a conversion is attempted.
         axis (Union[int, tuple(int), None], optional): Axis or axes along which the maximum is
-            computed. The default is to compute the maximum of the flattened array.
+            computed. The default is to compute the maximum of the flattened array. Default: ``None`` .
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
         keepdims (boolean, optional): Default: ``False`` . If this is set to True, the axes which
@@ -2550,7 +2550,7 @@ def nanmin(a, axis=None, dtype=None, keepdims=False):
         a (Union[int, float, list, tuple, Tensor]): Array containing numbers whose minimum
             is desired. If `a` is not an array, a conversion is attempted.
         axis (Union[int, tuple(int), None], optional): Axis or axes along which the minimum is
-            computed. The default is to compute the minimum of the flattened array.
+            computed. The default is to compute the minimum of the flattened array. Default: ``None`` .
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
         keepdims (boolean, optional): Default: ``False`` . If this is set to True, the axes which
@@ -2605,7 +2605,7 @@ def nansum(a, axis=None, dtype=None, keepdims=False):
         a (Union[int, float, list, tuple, Tensor]): Array containing numbers
             whose sum is desired. If `a` is not an array, a conversion is attempted.
         axis (Union[int, tuple of int, None], optional): Axis or axes along which the sum is
-            computed. The default is to compute the sum of the flattened array.
+            computed. The default is to compute the sum of the flattened array. Default: ``None`` .
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
         keepdims (boolean, optional): Default: ``False`` . If this is set to True, the axes which
@@ -2662,7 +2662,7 @@ def nanmean(a, axis=None, dtype=None, keepdims=False):
         a (Union[int, float, list, tuple, Tensor]): Array containing numbers
             whose mean is desired. If `a` is not an array, a conversion is attempted.
         axis (Union[int, tuple of int, None], optional): Axis or axes along which the mean is
-            computed. The default is to compute the mean of the flattened array.
+            computed. The default is to compute the mean of the flattened array. Default: ``None`` .
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
         keepdims (boolean, optional): Default: ``False`` . If this is set to True, the axes which
@@ -2724,7 +2724,7 @@ def nanvar(a, axis=None, dtype=None, ddof=0, keepdims=False):
         a (Union[int, float, list, tuple, Tensor]): Array containing numbers
             whose variance is desired. If `a` is not an array, a conversion is attempted.
         axis (Union[int, tuple of int, None], optional): Axis or axes along which the variance is
-            computed. The default is to compute the variance of the flattened array.
+            computed. The default is to compute the variance of the flattened array. Default: ``None`` .
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
         ddof (int, optional): "Delta Degrees of Freedom": the divisor used in the calculation is
@@ -2779,7 +2779,7 @@ def nanstd(a, axis=None, dtype=None, ddof=0, keepdims=False):
         a (Union[int, float, list, tuple, Tensor]): Calculates the standard deviation of the non-NaN values.
         axis (Union[int, tuple of int, None], optional): Axis or axes along which the standard
             deviation is computed. The default is to compute the standard deviation of the
-            flattened array.
+            flattened array. Default: ``None`` .
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
         ddof (int, optional): "Delta Degrees of Freedom": the divisor used in the calculation is
@@ -3171,7 +3171,7 @@ def nancumsum(a, axis=None, dtype=None):
         dtype (:class:`mindspore.dtype`, optional): If not specified, stay the same as `a`,
             unless `a` has an integer dtype with a precision less than that of the
             default platform integer. In that case, the default platform integer
-            is used.
+            is used. Default: ``None`` .
 
     Returns:
         Tensor.
@@ -3981,7 +3981,7 @@ def gradient(f, *varargs, axis=None, edge_order=1):
             only along the given axis or axes. The default ``(axis = None)`` is to calculate
             the gradient for all the axes of the input tensor. `axis` may be negative,
             in which case it counts from the last to the first `axis`.
-        edge_order (int): Gradient is calculated using N-th order accurate differences
+        edge_order (int, optional): Gradient is calculated using N-th order accurate differences
             at the boundaries. Default: ``1`` .
 
     Returns:
@@ -4051,20 +4051,21 @@ def sum_(a, axis=None, dtype=None, keepdims=False, initial=None):
 
     Args:
         a (Union[int, float, bool, list, tuple, Tensor]): Elements to sum.
-        axis (Union[None, int, tuple(int)]): Axis or axes along which a sum is performed. Default: `None`.
+        axis (Union[None, int, tuple(int)], optional): Axis or axes along which a sum is performed. Default: ``None``.
             If `None`, sum all of the elements of the input array.
             If axis is negative it counts from the last to the first axis.
             If axis is a tuple of integers, a sum is performed on all of the axes specified in the tuple
             instead of a single axis or all the axes as before.
         dtype (:class:`mindspore.dtype`, optional): Defaults to `None`. Overrides the dtype of the
             output Tensor.
-        keepdims (bool): If this is set to True, the axes which are reduced are left in the result as
+        keepdims (bool, optional): If this is set to True, the axes which are reduced are left in the result as
             dimensions with size one. With this option, the result will broadcast correctly against the input array.
             If the default value is passed, then keepdims will not be passed through to the sum method of
             sub-classes of ndarray, however any non-default value will be. If the sub-class method does not
-            implement keepdims any exceptions will be raised. Default: `False`.
-        initial (scalar): Starting value for the sum, if `None`, which refers to the first element of the reduction.
-            Default: `None`.
+            implement keepdims any exceptions will be raised. Default: ``False``.
+        initial (scalar, optional): Starting value for the sum, if `None`,
+            which refers to the first element of the reduction.
+            Default: ``None``.
 
     Returns:
         Tensor. An array with the same shape as a, with the specified axis removed.
@@ -4309,12 +4310,12 @@ def searchsorted(a, v, side='left', sorter=None):
             None, then it must be sorted in ascending order, otherwise `sorter` must be
             an array of indices that sort it.
         v (Union[int, float, bool, list, tuple, Tensor]): Values to insert into `a`.
-        side ('left', 'right', optional): If ``'left'`` , the index of the first suitable
+        side ('left', 'right', optional): If ``'left'`` (default value), the index of the first suitable
             location found is given. If ``'right'`` , return the last such index. If there is
             no suitable index, return either 0 or N (where N is the length of `a`).
         sorter (Union[int, float, bool, list, tuple, Tensor]): 1-D optional array of
             integer indices that sort array `a` into ascending order. They are typically
-            the result of argsort.
+            the result of argsort. Default: ``None`` .
 
     Returns:
         Tensor, array of insertion points with the same shape as `v`.
@@ -4378,9 +4379,9 @@ def interp(x, xp, fp, left=None, right=None):
         fp (Union[int, float, bool, list, tuple, Tensor]): 1-D sequence of floats, the
             y-coordinates of the data points, same length as `xp`.
         left (float, optional): Value to return for ``x < xp[0]``, default is ``fp[0]``
-            once obtained.
+            once obtained. Default: ``None`` .
         right (float, optional): Value to return for ``x > xp[-1]``, default is ``fp[-1]``
-            once obtained.
+            once obtained. Default: ``None`` .
 
     Returns:
         Tensor, the interpolated values, same shape as `x`.
@@ -4685,21 +4686,21 @@ def histogram(a, bins=10, range=None, weights=None, density=False): # pylint: di
         bins (Union[int, tuple, list, Tensor], optional): If `bins` is an int, it
             defines the number of equal-width bins in the given range (10, by
             default). If `bins` is a sequence, it defines the bin edges, including
-            the rightmost edge, allowing for non-uniform bin widths.
+            the rightmost edge, allowing for non-uniform bin widths. Default: ``10`` .
         range((float, float), optional): The lower and upper range of the bins. If
             not provided, `range` is simply ``(a.min(), a.max())``. Values outside
             the range are ignored. The first element of the range must be less than
-            or equal to the second.
+            or equal to the second. Default: ``None`` .
         weights (Union[int, float, bool, list, tuple, Tensor], optional): An array
             of weights, of the same shape as `a`. If density is True, the weights
             are normalized, so that the integral of the density over the range
-            remains 1.
+            remains 1. Default: ``None`` .
         density (boolean, optional): If False, the result will contain the number of
             samples in each bin. If True, the result is the value of the probability
             density function at the bin, normalized such that the integral over the
             range is 1. Note that the sum of the histogram values will not be equal
             to 1 unless bins of unity width are chosen; it is not a probability mass
-            function.
+            function. Default: ``False`` .
 
     Returns:
         (Tensor, Tensor), the values of the histogram and the bin edges.
@@ -4795,7 +4796,7 @@ def histogramdd(sample, bins=10, range=None, weights=None, density=False): # pyl
             such as ``histogramdd((X, Y, Z))``.
 
             The first form should be preferred.
-        bins (Union[int, tuple, list], optional): The bin specification:
+        bins (Union[int, tuple, list], optional): Default: ``10`` . The bin specification:
 
             A sequence of arrays describing the monotonically increasing bin edges along
             each dimension.
@@ -4807,12 +4808,12 @@ def histogramdd(sample, bins=10, range=None, weights=None, density=False): # pyl
             ``(lower, upper)`` tuple giving the outer bin edges to be used if the edges
             are not given explicitly in bins. An entry of None in the sequence results in
             the minimum and maximum values being used for the corresponding dimension.
-            The default, None, is equivalent to passing a tuple of `D` None values.
+            The default, None, is equivalent to passing a tuple of `D` None values. Default: ``None`` .
         weights (Union[list, tuple, Tensor], optional): An array with shape `(N,)` of values
-            `w_i` weighing each sample ``(x_i, y_i, z_i, …)``.
+            `w_i` weighing each sample ``(x_i, y_i, z_i, …)``. Default: ``None`` .
         density (boolean, optional): If False, the default, returns the number of samples
             in each bin. If True, returns the probability density function at the bin,
-            ``bin_count / sample_count / bin_volume``.
+            ``bin_count / sample_count / bin_volume``. Default: ``False`` .
 
     Returns:
         (Tensor, list of Tensor), the values of the histogram and the bin edges.
@@ -4899,7 +4900,7 @@ def histogram2d(x, y, bins=10, range=None, weights=None, density=False): # pylin
             coordinates of the points to be histogrammed.
         y (Union[list, tuple, Tensor]): An array with shape `(N,)` containing the y
             coordinates of the points to be histogrammed.
-        bins (Union[int, tuple, list], optional): The bin specification:
+        bins (Union[int, tuple, list], optional): Default: ``10`` . The bin specification:
 
             If int, the number of bins for the two dimensions ``(nx=ny=bins)``.
 
@@ -4914,12 +4915,12 @@ def histogram2d(x, y, bins=10, range=None, weights=None, density=False): # pylin
         range(Union[list, tuple], optional): has shape (2, 2), the leftmost and rightmost
             edges of the bins along each dimension (if not specified explicitly in the bins
             parameters): ``[[xmin, xmax], [ymin, ymax]]``. All values outside of this range
-            will be considered outliers and not tallied in the histogram.
+            will be considered outliers and not tallied in the histogram. Default: ``None`` .
         weights (Union[list, tuple, Tensor], optional): An array with shape `(N,)` of values
-            `w_i` weighing each sample `(x_i, y_i)`.
+            `w_i` weighing each sample `(x_i, y_i)`. Default: ``None`` .
         density (boolean, optional): If False, the default, returns the number of samples
             in each bin. If True, returns the probability density function at the bin,
-            ``bin_count / sample_count / bin_volume``.
+            ``bin_count / sample_count / bin_volume``. Default: ``False`` .
 
     Returns:
         (Tensor, Tensor, Tensor), the values of the bi-directional histogram and the bin edges
@@ -5473,13 +5474,13 @@ def ravel_multi_index(multi_index, dims, mode='clip', order='C'):
         multi_index (tuple of array_like):
             A tuple of integer arrays, one array for each dimension.
         dims (Union[int, tuple(int)]): The shape of array into which the indices from multi_index apply.
-        mode ({`wrap`, `clip`}): Specifies how out-of-bounds indices are handled. Default: ``clip''``.
+        mode ({`wrap`, `clip`}, optional): Specifies how out-of-bounds indices are handled. Default: ``'clip'``.
 
             - `wrap`: wrap around
             - `clip`: clip to the range
 
             In `clip` mode, a negative index which would normally wrap will clip to 0 instead.
-        order ({`C`, `F`}): Determines whether the multi-index should be viewed as indexing in
+        order ({`C`, `F`}, optional): Determines whether the multi-index should be viewed as indexing in
             row-major (C-style) or column-major (Fortran-style) order.
 
     Returns:

@@ -11,7 +11,7 @@ mindspore.numpy.bitwise_xor
     参数：
         - **x1** (Tensor) - 输入数组。
         - **x2** (Tensor) - 输入数组。 只处理int和bool类型。 如果 `x1.shape != x2.shape` ，它们必须能广播到一个共同的shape(即输出的shape)。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量。 若 `x` 是标量，则返回值也是标量。

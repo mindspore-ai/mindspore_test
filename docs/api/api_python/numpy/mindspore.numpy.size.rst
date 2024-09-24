@@ -7,7 +7,7 @@ mindspore.numpy.size
 
     参数：
         - **a** (Union[int, float, bool, list, tuple, Tensor]) - 输入数据。
-        - **axis** (int) - 计算元素数量的轴。默认值： ``None`` 。如果为None，则返回总的元素数量。
+        - **axis** (int，可选) - 计算元素数量的轴。默认值： ``None`` 。如果为None，则返回总的元素数量。
 
     返回：
         沿指定轴的元素数量。

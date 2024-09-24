@@ -12,7 +12,7 @@ mindspore.numpy.exp
 
     参数：
         - **x** (Tensor) - 输入数据。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量，逐元素计算的指数值。 如果 `x1` 和 `x2` 都是标量，返回标量。

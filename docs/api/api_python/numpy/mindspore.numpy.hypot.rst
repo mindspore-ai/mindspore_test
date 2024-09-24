@@ -13,7 +13,7 @@ mindspore.numpy.hypot
     参数：
         - **x1** (Tensor) - 三角形的直角边。
         - **x2** (Tensor) - 三角形的直角边。如果 ``x1.shape != x2.shape``，他们必须可以广播到一个共同的shape(这将成为输出的形状)。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量。三角形的斜边。如果 `x1` 和 `x2` 都是标量，返回标量。

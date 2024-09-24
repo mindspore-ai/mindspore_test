@@ -10,8 +10,8 @@ mindspore.numpy.cumprod
 
     参数：
         - **a** (Union[int, float, bool, list, tuple, Tensor]) - 输入Tensor。
-        - **axis** (int, 可选) - 计算累积乘积所沿的轴。 默认情况下输入会被展开。 默认值： `None` 。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。覆盖输出Tensor的dtype。
+        - **axis** (int, 可选) - 计算累积乘积所沿的轴。 默认情况下输入会被展开。 默认值： ``None`` 。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。覆盖输出Tensor的dtype。
 
     返回：
         Tensor。

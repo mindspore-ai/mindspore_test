@@ -13,7 +13,7 @@ mindspore.numpy.remainder
     参数：
         - **x1** (Tensor) - 输入数组。
         - **x2** (Tensor) - 输入数组。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。覆盖输出Tensor的dtype。
 
     返回：
         Tensor 或标量，逐元素计算 ``floor_divide(x1, x2)`` 得到的余数。如果 `x1` 和 `x2` 都是标量，则返回标量。

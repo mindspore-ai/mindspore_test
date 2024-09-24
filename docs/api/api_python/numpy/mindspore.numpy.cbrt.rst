@@ -10,7 +10,7 @@ mindspore.numpy.cbrt
 
     参数：
         - **x** (Tensor) - 输入Tensor。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor。

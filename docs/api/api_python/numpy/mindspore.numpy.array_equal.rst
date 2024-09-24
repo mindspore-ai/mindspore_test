@@ -10,7 +10,7 @@ mindspore.numpy.array_equal
 
     参数：
         - **a1/a2** (Union[int, float, bool, list, tuple, Tensor]) - 输入数组。
-        - **equal_nan** (bool) - 是否将 ``NaN`` 视为相等。默认值： ``False`` 。
+        - **equal_nan** (bool，可选) - 是否将 ``NaN`` 视为相等。默认值： ``False`` 。
 
     返回：
         标量bool tensor，如果输入相等，值为 ``True`` ，否则为 ``False`` 。

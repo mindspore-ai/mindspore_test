@@ -9,7 +9,7 @@ mindspore.numpy.clip
         - **x** (Tensor) - 包含需要限制的元素的Tensor。
         - **xmin** (Tensor, scalar, None) - 最小值。 如果为None，则不在下边界进行限制。 `xmin` 和 `xmax` 不可以同时为None。
         - **xmax** (Tensor, scalar, None) - 最大值。 如果为None，则不在上边界进行限制。 `xmin` 和 `xmax` 不可以同时为None。 如果 `xmin` 或 `xmax` 是Tensor，则这三个Tensor将会广播以匹配它们的shape。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。覆盖输出Tensor的dtype。
 
     返回：
         Tensor，一个包含x的元素的Tensor，但小于 `xmin` 的值替换为 `xmin` ，大于 `xmax` 的值替换为 `xmax` 。

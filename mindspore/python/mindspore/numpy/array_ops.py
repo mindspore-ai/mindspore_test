@@ -87,7 +87,7 @@ def squeeze(a, axis=None):
 
     Args:
         a (Tensor): Input tensor array.
-        axis (Union[None, int, list(int), tuple(list)]): The axis(axes) to squeeze,
+        axis (Union[None, int, list(int), tuple(list)], optional): The axis(axes) to squeeze,
             default: ``None`` .
 
     Returns:
@@ -117,7 +117,7 @@ def transpose(a, axes=None):
 
     Args:
         a (Tensor): a tensor to be transposed
-        axes (Union[None, tuple, list]): the axes order, if `axes` is `None`, transpose
+        axes (Union[None, tuple, list], optional): the axes order, if `axes` is `None`, transpose
             the entire tensor. Default: ``None`` .
 
     Returns:
@@ -671,12 +671,12 @@ def where(condition, x=None, y=None):
 
     Note:
         As nonzero is not supported, both `x` and `y` must be provided Tensor
-        input.
+            input.
 
     Args:
         condition (Tensor): where True, yield `x`, otherwise yield `y`.
-        x (Tensor): Values from which to choose. Default: ``None`` .
-        y (Tensor): Values from which to choose. `x`, `y` and `condition` need
+        x (Tensor, optional): Values from which to choose. Default: ``None`` .
+        y (Tensor, optional): Values from which to choose. `x`, `y` and `condition` need
             to be broadcastable to some shape. Default: ``None`` .
 
     Returns:
@@ -971,7 +971,7 @@ def unique(x, return_inverse=False):
 
     Args:
         x (Tensor): The input tensor to be processed.
-        return_inverse (bool): If `True`, also return the indices of the unique tensor.
+        return_inverse (bool, optional): If `True`, also return the indices of the unique tensor.
             Default: ``False`` .
 
     Returns:
@@ -1399,7 +1399,7 @@ def split(x, indices_or_sections, axis=0):
             three sub-tensors :math:`x[:2]`, :math:`x[2:3]` and :math:`x[3:]`.
             If an index exceeds the dimension of the array along axis,
             an empty sub-array is returned correspondingly.
-        axis (int): The axis along which to split. Default: ``0`` .
+        axis (int, optional): The axis along which to split. Default: ``0`` .
 
     Returns:
         A tuple of sub-tensors.
@@ -1951,7 +1951,7 @@ def rot90(a, k=1, axes=(0, 1)):
     Args:
         a (Tensor): Input tensor of two or more dimensions.
         k (int): Number of times the tensor is rotated by 90 degrees. Default: ``1`` .
-        axes (Union[tuple(int), list(int)]): The tensor is rotated in the plane
+        axes (Union[tuple(int), list(int)], optional): The tensor is rotated in the plane
             defined by the axes. Default: ``(0, 1)`` .
             Axes must be different and with the shape of `(2,)`.
 
@@ -2207,7 +2207,7 @@ def size(a, axis=None):
 
     Args:
         a (Union[int, float, bool, list, tuple, Tensor]): Input data.
-        axis (int): Axis along which the elements are counted. Default: ``None``.
+        axis (int, optional): Axis along which the elements are counted. Default: ``None``.
             If None, give the total number of elements.
 
     Returns:

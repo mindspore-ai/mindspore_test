@@ -17,7 +17,7 @@ mindspore.numpy.float_power
     参数：
         - **x1** (Tensor) - 基数。
         - **x2** (Tensor) - 指数。
-        - **dtype** (mindspore.dtype，可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype，可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量。 `x1` 中的基数以 `x2` 中的对应元素为指数计算得到的幂次方。 如果 `x1` 和 `x2` 都是标量，返回标量。

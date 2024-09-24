@@ -13,7 +13,7 @@ mindspore.numpy.floor
 
     参数：
         - **x** (Tensor) - 输入数据。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量。 `x` 中各元素的向下取整。 如果 `x` 是标量，返回标量。

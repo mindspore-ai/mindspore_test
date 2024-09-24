@@ -7,8 +7,8 @@ mindspore.numpy.ediff1d
 
     参数：
         - **ary** (Tensor) - 如果需要，将在取差值之前被展平。
-        - **to_end** (Tensor, scalar, 可选) - 在返回的差值末尾添加的数字。
-        - **to_begin** (Tensor, scalar, 可选) - 在返回的差值开头添加的数字。
+        - **to_end** (Tensor, scalar, 可选) - 在返回的差值末尾添加的数字。默认值： ``None`` 。
+        - **to_begin** (Tensor, scalar, 可选) - 在返回的差值开头添加的数字。默认值： ``None`` 。
 
     返回：
         差值。

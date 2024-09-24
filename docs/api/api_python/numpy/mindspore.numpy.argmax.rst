@@ -10,7 +10,7 @@ mindspore.numpy.argmax
 
     参数：
         - **a** (Union[int, float, bool, list, tuple, Tensor]) - 输入数组。
-        - **axis** (int, 可选) - 默认情况下，索引进入展平的数组，否则沿指定 `axis` 。 默认值： `None` 。
+        - **axis** (int, 可选) - 默认情况下，索引进入展平的数组，否则沿指定 `axis` 。 默认值： ``None`` 。
 
     返回：
         Tensor，原数组中元素的索引的数组。 与移除指定 `axis` 后的入参 `a` 的shape相同。

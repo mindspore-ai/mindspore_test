@@ -13,7 +13,7 @@ mindspore.numpy.true_divide
     参数：
         - **x1** (Tensor) - 被除数。
         - **x2** (Tensor) - 除数。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量，如果 `x1` 和 `x2` 都是标量，则返回标量。

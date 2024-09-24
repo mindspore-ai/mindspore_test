@@ -13,7 +13,7 @@ mindspore.numpy.fmod
     参数：
         - **x1** (Tensor) - 第一个输入数组。
         - **x2** (Tensor) - 第二个输入数组。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量。 `x1` 除以 `x2` 所得余数。 如果 `x1` 和 `x2` 都是标量，返回标量。
