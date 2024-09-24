@@ -49,7 +49,8 @@ def upsample_nearest3d_grad(gradOut, input_size, output_size, scale_factor):
     return op(gradOut, input_size, output_size, scale_factor)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'cpu_linux'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_upsample_nearest(mode):
     """
@@ -211,7 +212,171 @@ def test_upsample_nearest(mode):
     assert np.all(diff < error)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ["GRAPH_MODE_O0", "PYNATIVE_MODE"])
+def test_upsample_nearest_gpu(mode):
+    """
+    Feature: UpsampleNearest1D/2D/3D
+    Description: Test cases for UpsampleNearest1D/2D/3D with output_size.
+    Expectation: The result match expected output.
+    """
+    set_mode(mode)
+    input_tensor = Tensor(
+        np.array([[[0.1, 0.3, 0.5, 0.7], [0.9, 1.1, 1.3, 1.5]]]).astype(np.float32)
+    )
+    expected = np.array(
+        [
+            [
+                [0.1000, 0.1000, 0.3000, 0.3000, 0.5000, 0.5000, 0.7000, 0.7000],
+                [0.9000, 0.9000, 1.1000, 1.1000, 1.3000, 1.3000, 1.5000, 1.5000],
+            ]
+        ]
+    ).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, (8,), None)
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    expected = np.array([[[0.1000, 0.1000, 0.1000, 0.3000,
+                           0.3000, 0.5000, 0.5000, 0.7000, 0.7000],
+                          [0.9000, 0.9000, 0.9000, 1.1000,
+                           1.1000, 1.3000, 1.3000, 1.5000, 1.5000]]]).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, None, (2.3,))
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    expected = np.array([[[3.0, 2.0, 2.0, 2.0],
+                          [3.0, 2.0, 2.0, 2.0]]]).astype(np.float32)
+    out = upsample_nearest_backward_func(input_tensor, None, [2.3,])
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    input_tensor = Tensor(
+        np.array(
+            [[[[0.1, 0.3, 0.5], [0.7, 0.9, 1.1]], [[1.3, 1.5, 1.7], [1.9, 2.1, 2.3]]]]
+        ).astype(np.float32)
+    )
+    expected = np.array(
+        [[[[0.1000, 0.1000, 0.3000, 0.3000, 0.5000],
+           [0.1000, 0.1000, 0.3000, 0.3000, 0.5000],
+           [0.7000, 0.7000, 0.9000, 0.9000, 1.1000],
+           [0.7000, 0.7000, 0.9000, 0.9000, 1.1000]],
+          [[1.3000, 1.3000, 1.5000, 1.5000, 1.7000],
+           [1.3000, 1.3000, 1.5000, 1.5000, 1.7000],
+           [1.9000, 1.9000, 2.1000, 2.1000, 2.3000],
+           [1.9000, 1.9000, 2.1000, 2.1000, 2.3000]]]]).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, (4, 5), None)
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    expected = np.array(
+        [[[[0.1000, 0.1000, 0.1000, 0.3000, 0.3000, 0.5000],
+           [0.1000, 0.1000, 0.1000, 0.3000, 0.3000, 0.5000],
+           [0.7000, 0.7000, 0.7000, 0.9000, 0.9000, 1.1000]],
+          [[1.3000, 1.3000, 1.3000, 1.5000, 1.5000, 1.7000],
+           [1.3000, 1.3000, 1.3000, 1.5000, 1.5000, 1.7000],
+           [1.9000, 1.9000, 1.9000, 2.1000, 2.1000, 2.3000]]]]).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, None, (1.7, 2.3))
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    expected = np.array(
+        [[[[6.0, 4.0, 2.0], [3.0, 2.0, 1.0]], [[6.0, 4.0, 2.0], [3.0, 2.0, 1.0]]]]
+    ).astype(np.float32)
+    out = upsample_nearest_backward_func(input_tensor, None, [1.7, 2.3])
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    input_tensor = Tensor(
+        np.array(
+            [[[[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[0.7, 0.8, 0.9], [1.0, 1.1, 1.2]]]]]
+        ).astype(np.float32)
+    )
+    expected = np.array(
+        [
+            [
+                [
+                    [
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000],
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000],
+                    ],
+                    [
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000],
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000],
+                    ],
+                    [
+                        [0.7000, 0.7000, 0.8000, 0.8000, 0.9000],
+                        [0.7000, 0.7000, 0.8000, 0.8000, 0.9000],
+                        [1.0000, 1.0000, 1.1000, 1.1000, 1.2000],
+                        [1.0000, 1.0000, 1.1000, 1.1000, 1.2000],
+                    ],
+                ]
+            ]
+        ]
+    ).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, [3, 4, 5], None)
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    expected = np.array(
+        [
+            [
+                [
+                    [
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000, 0.3000],
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000, 0.3000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000, 0.6000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000, 0.6000],
+                    ],
+                    [
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000, 0.3000],
+                        [0.1000, 0.1000, 0.2000, 0.2000, 0.3000, 0.3000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000, 0.6000],
+                        [0.4000, 0.4000, 0.5000, 0.5000, 0.6000, 0.6000],
+                    ],
+                    [
+                        [0.7000, 0.7000, 0.8000, 0.8000, 0.9000, 0.9000],
+                        [0.7000, 0.7000, 0.8000, 0.8000, 0.9000, 0.9000],
+                        [1.0000, 1.0000, 1.1000, 1.1000, 1.2000, 1.2000],
+                        [1.0000, 1.0000, 1.1000, 1.1000, 1.2000, 1.2000],
+                    ],
+                    [
+                        [0.7000, 0.7000, 0.8000, 0.8000, 0.9000, 0.9000],
+                        [0.7000, 0.7000, 0.8000, 0.8000, 0.9000, 0.9000],
+                        [1.0000, 1.0000, 1.1000, 1.1000, 1.2000, 1.2000],
+                        [1.0000, 1.0000, 1.1000, 1.1000, 1.2000, 1.2000],
+                    ],
+                ]
+            ]
+        ]
+    ).astype(np.float32)
+    out = upsample_nearest_forward_func(input_tensor, None, [2.0, 2.0, 2.0])
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+    expected = np.array(
+        [[[[[12.0, 8.0, 8.0], [12.0, 8.0, 8.0]], [[6.0, 4.0, 4.0], [6.0, 4.0, 4.0]]]]]
+    ).astype(np.float32)
+    out = upsample_nearest_backward_func(input_tensor, None, [1.5, 2.0, 2.5])
+    diff = abs(out.asnumpy() - expected)
+    error = np.ones(shape=expected.shape) * 1.0e-4
+    assert np.all(diff < error)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu', 'cpu_linux'],
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_1d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -236,7 +401,8 @@ def test_upsample_nearest_1d_size_dynamic():
     )
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu', 'cpu_linux'],
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_1d_scale_factor_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -261,7 +427,8 @@ def test_upsample_nearest_1d_scale_factor_dynamic():
     )
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu', 'cpu_linux'],
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_2d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -286,7 +453,8 @@ def test_upsample_nearest_2d_size_dynamic():
     )
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu', 'cpu_linux'],
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_2d_scale_factor_dynamic():
     """
     Feature: test dynamic by TEST_OP.

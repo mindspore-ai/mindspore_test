@@ -29,8 +29,6 @@ namespace mindspore {
 namespace kernel {
 namespace {
 const double kValueZero = 0.;
-constexpr int kUpsampleNearest3DGpuGradInputsNum = 3;
-constexpr int kUpsampleNearest3DGpuGradOutputsNum = 1;
 }  // namespace
 bool UpsampleNearest3DGradGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
@@ -51,7 +49,10 @@ int UpsampleNearest3DGradGpuKernelMod::Resize(const std::vector<KernelTensor *> 
   }
 
   std::vector<int64_t> dy_shape = inputs[kIndex0]->GetShapeVector();
+  dy_shape.insert(dy_shape.end(), kIndex5 - dy_shape.size(), 1);
   std::vector<int64_t> dx_shape = outputs[kIndex0]->GetShapeVector();
+  dx_shape.insert(dx_shape.end(), kIndex5 - dx_shape.size(), 1);
+
   n_ = dy_shape[kIndex0];
   c_ = dy_shape[kIndex1];
   // input
@@ -77,6 +78,7 @@ int UpsampleNearest3DGradGpuKernelMod::Resize(const std::vector<KernelTensor *> 
     scales_ = std::vector<float>(kIndex3, kValueZero);
   } else {
     scales_ = scales_opt.value();
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
   }
   return KRET_OK;
 }
@@ -123,6 +125,9 @@ std::vector<KernelAttr> UpsampleNearest3DGradGpuKernelMod::GetOpSupport() {
                        [](const std::pair<KernelAttr, UpsampleNearest3DGradFunc> &pair) { return pair.first; });
   return support_list;
 }
+
+MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, UpsampleNearest1DGrad, UpsampleNearest3DGradGpuKernelMod);
+MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, UpsampleNearest2DGrad, UpsampleNearest3DGradGpuKernelMod);
 MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, UpsampleNearest3DGrad, UpsampleNearest3DGradGpuKernelMod);
 }  // namespace kernel
 }  // namespace mindspore
