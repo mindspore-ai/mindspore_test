@@ -4885,6 +4885,44 @@ def _vm_compare(*args):
     return Tensor(np.array(fn(y)))
 
 
+def _check_sequence_shape(input_data):
+    """Check the shape of tensor input with type of sequence."""
+    max_dims_reached = False
+    max_ndim = 64 # corresponding to NPY_MAXDIMS
+    out_shape = [0]*max_ndim
+
+    def check_shape_recursive(input_data, curr_ndim):
+        nonlocal max_dims_reached, max_ndim, out_shape
+        if curr_ndim > max_ndim:
+            return False
+        if not isinstance(input_data, (tuple, list)):
+            if max_dims_reached and curr_ndim != max_ndim:
+                max_ndim = curr_ndim
+                return False
+            max_dims_reached = True
+            max_ndim = curr_ndim
+            return True
+        if not max_dims_reached:
+            out_shape[curr_ndim] = len(input_data)
+        else:
+            if out_shape[curr_ndim] != len(input_data):
+                max_ndim = curr_ndim
+                return False
+        if not input_data:
+            # process empty list
+            if not check_shape_recursive(None, curr_ndim + 1):
+                return False
+        for data in input_data:
+            if not check_shape_recursive(data, curr_ndim + 1):
+                return False
+        return True
+
+    if not check_shape_recursive(input_data, 0):
+        raise ValueError(f"When initializing a tensor with a sequence, the sequence has an inhomogeneous shape "
+                         f"after {max_ndim} dimensions. The detected shape was {tuple(out_shape[:max_ndim])} "
+                         f"+ inhomogeneous part.")
+
+
 def _check_tensor_input(input_data=None, dtype=None, shape=None, init=None):
     """Check the tensor input."""
     if input_data is not None and shape is not None:
@@ -4897,9 +4935,10 @@ def _check_tensor_input(input_data=None, dtype=None, shape=None, init=None):
     if input_data is not None:
         if isinstance(input_data, np.ndarray) and input_data.ndim >= 1 and input_data.size == 0:
             raise ValueError("input_data can not contain zero dimension.")
-        if isinstance(input_data, (tuple, list)) and np.array(input_data).ndim >= 1 \
-                and np.array(input_data).size == 0:
-            raise ValueError("input_data can not contain zero dimension.")
+        if isinstance(input_data, (tuple, list)):
+            _check_sequence_shape(input_data)
+            if np.array(input_data).ndim >= 1 and np.array(input_data).size == 0:
+                raise ValueError("input_data can not contain zero dimension.")
 
     if shape is not None and not (hasattr(init, "__enable_zero_dim__") and init.__enable_zero_dim__) and 0 in shape:
         raise ValueError("Shape can not contain zero value.")

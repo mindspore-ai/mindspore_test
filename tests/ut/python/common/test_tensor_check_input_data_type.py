@@ -43,3 +43,56 @@ def test_convert_to_tensor_by_object_type_array():
         Tensor(a)
     assert "initializing tensor by numpy array failed" in str(ex.value)
     assert "<class 'mindspore.common.tensor.Tensor'>" in str(ex.value)
+
+
+def test_convert_to_tensor_by_sequence():
+    """
+    Feature: Check the shape of input_data for Tensor.
+    Description: Convert to Tensor by sequence type.
+    Expectation: Throw ValueError.
+    """
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[3], [[4]]])
+    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
+    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[[3]], [4]])
+    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
+    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[3], [4, 5]])
+    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
+    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[3], [[4, 5]]])
+    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
+    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[[3]], [[4, 5]]])
+    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
+    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[], [4]])
+    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
+    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[4], []])
+    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
+    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([[], None])
+    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
+    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+
+    with pytest.raises(ValueError) as ex:
+        Tensor([None, []])
+    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
+    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
