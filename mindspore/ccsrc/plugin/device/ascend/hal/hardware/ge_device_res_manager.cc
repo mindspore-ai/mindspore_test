@@ -114,9 +114,10 @@ bool GeDeviceResManager::IsEnableVmm() const { return AscendVmmAdapter::GetInsta
 bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  auto device_name_in_address = GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()));
-  if (IsEnableRefMode() && device_name_in_address != device_context_->device_context_key().device_name_) {
-    MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:" << device_name_in_address
+
+  if (IsEnableRefMode() && (address->GetDeviceType() != device_context_->GetDeviceType())) {
+    MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:"
+                      << GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()))
                       << ", type name in context:" << device_context_->device_context_key().device_name_;
   }
 
@@ -134,31 +135,32 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
     stream_id = address->stream_id();
   }
 
-  const auto kernel_tensor = address->kernel_tensor();
-  const auto &hete_info = kernel_tensor == nullptr ? nullptr : kernel_tensor->heterogeneous_info();
-  if (swap_manager_ != nullptr && hete_info != nullptr) {
-    if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedHostMem) {
-      if (hete_info->host_ptr_ != nullptr) {
-        MS_LOG(ERROR) << "Memory leak detected!";
-        return false;
-      }
-      auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
-      hete_info->host_ptr_ = host_ptr;
-      address->set_from_mem_pool(true);
-      return true;
-    }
-    if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedDiskFile) {
-      if (!hete_info->file_name_.empty()) {
-        MS_LOG(ERROR) << "Memory leak detected!";
-        return false;
-      }
-      auto file_name = swap_manager_->GetSwapFileName(device_context_->device_context_key_.device_id_);
-      swap_manager_->CreateFile(file_name, address->GetSize());
-      hete_info->file_name_ = file_name;
-      return true;
-    }
-  }
   if (swap_manager_ != nullptr) {
+    const auto kernel_tensor = address->kernel_tensor();
+    const auto &hete_info = kernel_tensor == nullptr ? nullptr : kernel_tensor->heterogeneous_info();
+    if (hete_info != nullptr) {
+      if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedHostMem) {
+        if (hete_info->host_ptr_ != nullptr) {
+          MS_LOG(ERROR) << "Memory leak detected!";
+          return false;
+        }
+        auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
+        hete_info->host_ptr_ = host_ptr;
+        address->set_from_mem_pool(true);
+        return true;
+      }
+      if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedDiskFile) {
+        if (!hete_info->file_name_.empty()) {
+          MS_LOG(ERROR) << "Memory leak detected!";
+          return false;
+        }
+        auto file_name = swap_manager_->GetSwapFileName(device_context_->device_context_key_.device_id_);
+        swap_manager_->CreateFile(file_name, address->GetSize());
+        hete_info->file_name_ = file_name;
+        return true;
+      }
+    }
+
     device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
   } else {
     device_ptr = mem_manager_->MallocMemFromMemPool(address->GetSize(), address->from_persistent_mem(),
@@ -171,7 +173,9 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
-  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
+  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
+  }
   return true;
 }
 
