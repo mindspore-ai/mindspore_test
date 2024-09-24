@@ -78,6 +78,7 @@ message AttributeProto {
 message FunctorProto {
   enum FunctorType {
     SHAPE_CALC_FUNCTOR = 1;
+    ANY_FUNCTOR = 2;
   }
   optional FunctorType type = 1;
   optional string name = 2;
