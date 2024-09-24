@@ -1626,10 +1626,11 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
 
     Raises:
         TypeError: If `input` is not a Tensor whose dtype is not in float16, float32, float64 or bfloat16.
-        TypeError: If `num_samples` is neither an int nor a Scalar of int.
-        RuntimeError: If `num_samples` <= 0.
-        RuntimeError: If `replacement` is True, num_samples > value of the last dimension of `input`.
-        RuntimeError: If value of the last dimension of `input` exceeds ``2^24``.
+        , 或是shape为(1, 1)的Tensor
+        TypeError: If `num_samples` is not an int, a Scalar of int or a Tensor of int with shape[1,1].
+        RuntimeError: If :math:`\text{num_samples} <= 0`.
+        RuntimeError: If `replacement` is False, :math:`\text{num_samples} > shape` of the last dimension of `input`.
+        RuntimeError: If shape of the last dimension of `input` exceeds ``2^24``.
 
     Supported Platforms:
         ``Ascend``
