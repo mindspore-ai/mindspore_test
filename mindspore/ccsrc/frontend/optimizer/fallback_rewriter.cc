@@ -813,7 +813,8 @@ AnfNodePtr ConvertSequenceGetItemInner(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(sequence_node);
   auto sequence_abs = sequence_node->abstract();
   // If the sequence is any, then the sequence getitem should be converted to PyExecute node.
-  if (sequence_abs == nullptr || !sequence_abs->isa<abstract::AbstractAny>()) {
+  if (!IsPrimitiveCNode(sequence_node, prim::kPrimPyExecute) &&
+      (sequence_abs == nullptr || !sequence_abs->isa<abstract::AbstractAny>())) {
     if (!CheckAndConvertUtils::CheckContainNestedOrIrregularSequence(inputs_abs) &&
         !output_abs->isa<abstract::AbstractAny>()) {
       return nullptr;
