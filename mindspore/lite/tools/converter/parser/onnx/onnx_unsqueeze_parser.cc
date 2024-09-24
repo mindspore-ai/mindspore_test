@@ -44,16 +44,27 @@ PrimitiveCPtr OnnxUnSqueezeParser::Parse(const onnx::GraphProto &onnx_graph, con
                     << onnx_node.name();
       return nullptr;
     }
-    const auto slope_raw_data = reinterpret_cast<const int64_t *>(slope_data->raw_data().data());
-    MS_CHECK_TRUE_RET(slope_raw_data != nullptr, nullptr);
-    const int64_t slope_size = slope_data->raw_data().size() / sizeof(int64_t);
-    axis.resize(slope_size);
-    if (INT_MUL_OVERFLOW_THRESHOLD(slope_size, sizeof(int64_t), SIZE_MAX)) {
-      MS_LOG(ERROR) << "data_size overflow";
+    const int64_t *slope_int64_data;
+    int64_t slope_size = 0;
+    if (slope_data->raw_data().size() > 0) {
+      slope_int64_data = reinterpret_cast<const int64_t *>(slope_data->raw_data().data());
+      MS_CHECK_TRUE_RET(slope_int64_data != nullptr, nullptr);
+      slope_size = slope_data->raw_data().size() / sizeof(int64_t);
+    } else if (slope_data->int64_data().size() > 0) {
+      slope_int64_data = slope_data->int64_data().data();
+      MS_CHECK_TRUE_RET(slope_int64_data != nullptr, nullptr);
+      slope_size = slope_data->int64_data().size();
+    } else {
+      MS_LOG(ERROR) << "Data size is 0!";
       return nullptr;
     }
-    if (memcpy_s(axis.data(), slope_size * sizeof(int64_t), slope_raw_data, slope_data->raw_data().size()) != EOK) {
-      MS_LOG(ERROR) << "memcpy_s failed.";
+    axis.resize(slope_size);
+    if (INT_MUL_OVERFLOW_THRESHOLD(slope_size, sizeof(int64_t), SIZE_MAX)) {
+      MS_LOG(ERROR) << "data_size overflow!";
+      return nullptr;
+    }
+    if (memcpy_s(axis.data(), slope_size * sizeof(int64_t), slope_int64_data, slope_size * sizeof(int64_t)) != EOK) {
+      MS_LOG(ERROR) << "memcpy_s failed!";
       return nullptr;
     }
   }
