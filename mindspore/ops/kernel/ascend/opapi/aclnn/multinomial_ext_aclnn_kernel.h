@@ -34,6 +34,10 @@ class MultinomialExtAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
+  int64_t num_samples_{0};
+  bool replacement_;
+  int64_t seed_{0};
+  int64_t offset_{0};
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace kernel
