@@ -241,13 +241,13 @@ ShapeVector DynamicComputeInferShape(const PrimitivePtr &primitive, const SliceI
   while (i < x_rank || j < slice_len) {
     int64_t slicing_length = -1;
     int64_t x_dim_size = x_shape[i];
-    int64_t begin;
-    int64_t end;
-    int64_t stride;
-    begin = begin_info.slice_value[j];
-    end = end_info.slice_value[j];
-    stride = strides_info.slice_value[j];
+    int64_t begin = 0;
+    int64_t end = x_shape[i];
+    int64_t stride = 1;
     if (j < slice_len) {
+      begin = begin_info.slice_value[j];
+      end = end_info.slice_value[j];
+      stride = strides_info.slice_value[j];
       if (j < mask_info.begin_pos.size() && mask_info.begin_pos[j] == 1) {
         begin = stride < 0 ? -1 : 0;
       }
@@ -272,9 +272,6 @@ ShapeVector DynamicComputeInferShape(const PrimitivePtr &primitive, const SliceI
         slicing_length = ComputeSlicingLength(begin, end, stride, x_dim_size);
       }
     } else {
-      begin = 0;
-      end = x_shape[i];
-      stride = 1;
       slicing_length = ComputeSlicingLength(begin, end, stride, x_dim_size);
     }
     infer_shape.push_back(slicing_length);
