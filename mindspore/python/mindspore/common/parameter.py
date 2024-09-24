@@ -41,6 +41,8 @@ from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _i
                                            _is_ps_mode
 from mindspore.parallel._ps_context import _reinsert_hash_table_size, _insert_accumu_init_info, _cache_enable
 from mindspore.common._decorator import deprecated
+from mindspore.communication._comm_helper import _is_initialized
+from mindspore.communication import get_group_size
 import mindspore.common._monad as monad
 
 __all__ = ['Parameter', 'ParameterTuple']
@@ -52,9 +54,18 @@ PARAMETER_NAME_PREFIX_MAX_LEN = 1024
 _GLOBAL_PARAMETER_KEY = -1
 
 
-def _is_in_parallel_mode():
+def _is_in_auto_parallel_mode():
     """Get parallel mode."""
     return auto_parallel_context().get_parallel_mode() in ["semi_auto_parallel", "auto_parallel"]
+
+
+def _is_parallel_mode():
+    """ Whether is parallel mode """
+    if not _is_initialized() or context.get_context('mode') == context.PYNATIVE_MODE:
+        return False
+    if get_group_size() > 1 and _get_parallel_mode() == "stand_alone":
+        return True
+    return False
 
 
 def init_to_value(init):
@@ -274,7 +285,7 @@ class Parameter(Tensor_):
         self.requires_aggr = True
         self._cast_type = None
         self._unique = False
-        self.is_in_parallel = _is_in_parallel_mode()
+        self.is_in_parallel = _is_in_auto_parallel_mode()
         self.is_in_shard = False
         self._pipeline_stage_list = []
         self.slice_num = 1
@@ -357,7 +368,8 @@ class Parameter(Tensor_):
                     return (Tensor, data.asnumpy(), mstype.qint4x2)
                 return (Tensor, data.asnumpy())
 
-            not_init_data = _is_role_sched() or (_is_role_pserver() and _cache_enable()) or _is_in_parallel_mode()
+            not_init_data = _is_role_sched() or (_is_role_pserver() and _cache_enable()
+                                                 ) or _is_in_auto_parallel_mode() or _is_parallel_mode()
             if not_init_data:
                 # do not init data while in auto parallel.
                 return (Tensor, None, data.dtype, get_slice_shape(data.dtype, data.shape), data.init)
@@ -960,7 +972,7 @@ class Parameter(Tensor_):
             >>> x = Parameter(Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32)), name="param")
             >>> x.init_data()
         """
-        if self.is_default_input_init and self.is_in_parallel != _is_in_parallel_mode():
+        if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
             raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
         if self.init_mode is None:
             return self
