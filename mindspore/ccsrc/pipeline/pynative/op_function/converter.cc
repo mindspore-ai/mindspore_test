@@ -437,6 +437,374 @@ ValueTuplePtr Converter::ConvertValueTupleByCastDtype(const py::list &python_arg
   return nullptr;
 }
 
+PythonArgParser::PythonArgParser(std::vector<std::string> fmts): max_args_(0) {
+  int index = 0;
+  for (auto& stmt: fmts) {
+    signatures_.emplace_back(stmt, index);
+    index++;
+  }
+  for (auto& signature: signatures_) {
+    if (signature.max_args_ > max_args_){
+      max_args_ = signature.max_args_;
+    }
+  }
+  if (signatures_.size() > 0) {
+    function_name_ = signatures_[0].name_;
+  }
+}
+
+const FunctionSignature& PythonArgParser::parse(const py::list &args,  const py::dict &kwargs, py::list python_args) {
+  for (auto& signature : signatures_) {
+    python_args.attr("clear")();
+    if (signature.parse(args, kwargs, python_args)) {
+      return signature;
+    }
+  }
+  MS_LOG(EXCEPTION)<< "Matching failed. Please check the parameter list.";
+}
+
+bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::list& python_args) {
+  size_t nargs = args ? args.size() : 0;
+  size_t nkwargs = kwargs ? kwargs.size() : 0;
+  size_t arg_pos = 0;
+
+  if (nargs > max_args_ || nargs < min_args_) {
+    return false;
+  }
+  for (auto& param : params_) {
+    bool is_kwd = false;
+    py::object obj;
+    bool obj_not_found = true;
+    if (arg_pos < nargs) {
+      obj_not_found = false;
+      obj = (args)[arg_pos];
+    } else if (kwargs) {
+      is_kwd = true;
+      py::str key_object(param.name_);
+      if (PyDict_Contains(kwargs.ptr(), key_object.ptr())) {
+        obj_not_found = false;
+        obj = py::reinterpret_borrow<py::object>(PyDict_GetItem(kwargs.ptr(), key_object.ptr()));
+      } else {
+        obj_not_found = true;
+      }
+    }
+
+    if (obj_not_found) {
+      if (!param.optional_){
+        return false;
+      }
+      python_args.append(param.get_default_value());
+    } else if(py::isinstance<py::none>(obj)){
+      if (!param.allow_none_){
+        return false;
+      }
+      python_args.append(obj);
+    } else if (param.check(obj)) {
+      python_args.append(obj);
+    } else {
+      return false;
+    }
+
+    if (!is_kwd) {
+      arg_pos++;
+    } else if (obj) {
+      nkwargs--;
+    }
+  }
+
+  if (nkwargs > 0) {
+    return false;
+  }
+  return true;
+}
+
+FunctionSignature::FunctionSignature(const std::string& fmt, int index)
+  : min_args_(0)
+  , max_args_(0)
+  , index_(index) {
+  auto open_paren = fmt.find('(');
+  if (open_paren == std::string::npos) {
+    MS_LOG(EXCEPTION) << "parse failed";
+  }
+  name_ = fmt.substr(0, open_paren);
+
+  auto last_offset = open_paren + 1;
+  auto next_offset = last_offset;
+  bool done = false;
+  while (!done) {
+    auto offset = fmt.find(", ", last_offset);
+    if (offset == std::string::npos) {
+      offset = fmt.find(')', last_offset);
+      done = true;
+      next_offset = offset+ 1;
+      if (offset == last_offset) {
+        last_offset = next_offset;
+        break;
+      }
+    } else {
+      next_offset = offset + 2;
+    }
+    if (offset == std::string::npos || offset == last_offset) {
+      MS_LOG(EXCEPTION) << "parse failed";
+    }
+
+    auto param_str = fmt.substr(last_offset, offset - last_offset);
+    last_offset = next_offset;
+    params_.emplace_back(param_str);
+  }
+
+  max_args_ = params_.size();
+  for (auto& param : params_) {
+    if (!param.optional_) {
+      min_args_++;
+    }
+  }
+}
+
+FunctionParameter::FunctionParameter(const std::string& fmt)
+  : optional_(false)
+  , allow_none_(false)
+  , size_(0)
+{
+  auto space = fmt.find(' ');
+  if (space == std::string::npos) {
+    MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << fmt;
+  }
+  auto type_str = fmt.substr(0, space);
+  auto bracket = type_str.find('[');
+  if (bracket != std::string::npos) {
+    auto size_str = type_str.substr(bracket + 1, type_str.length() - bracket - 2);
+    size_ = atoi(size_str.c_str());
+    type_str = type_str.substr(0, bracket);
+  }
+
+  auto name_str = fmt.substr(space + 1);
+  auto it = type_str_map.find(type_str);
+  if (it == type_str_map.end()) {
+    MS_LOG(EXCEPTION) << "Parse function parameter failed! invalid type string:" << type_str;
+  }
+  type_ = it->second; //OP_DTYPE
+
+  auto eq = name_str.find('=');
+  if (eq != std::string::npos) {
+    name_ = name_str.substr(0, eq);
+    optional_ = true;
+    set_default_str(name_str.substr(eq + 1));
+  } else {
+    optional_ = false;
+    name_ = name_str;
+  }
+}
+
+bool is_tensor(const py::object &obj, bool is_optional) {
+  if (py::isinstance<py::none>(obj) && is_optional) {
+    return true;
+  }
+  if(py::isinstance<mindspore::tensor::Tensor>(obj)){
+    return true;
+  }
+  if (IsStubTensor(obj)) {
+    return true;
+  }
+  return false;
+}
+
+bool is_tensor_list(const py::object &obj){
+  if (!py::isinstance<py::tuple>(obj)) {
+    return false;
+  }
+  auto seq = obj.cast<py::tuple>();
+  std::vector<ValuePtr> value_list;
+  for (size_t it = 0; it < seq.size(); ++it) {
+    if (!is_tensor(seq[it], false)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename T, typename U>
+bool check_list_type(const py::object &obj) {
+  if (!py::isinstance<T>(obj)) {
+    return false;
+  }
+  auto seq = py::cast<T>(obj);
+  size_t size = seq.size();
+  for (size_t i = 0; i < size; ++i) {
+    if (!py::isinstance<U>(seq[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool is_scalar_list(const py::object &obj) {
+  if (!py::isinstance<py::tuple>(obj)) {
+    return false;
+  }
+  auto seq = py::cast<py::tuple>(obj);
+  size_t size = seq.size();
+  for (size_t i = 0; i < size; ++i) {
+    if (!(py::isinstance<py::float_>(seq[i]) || py::isinstance<py::bool_>(seq[i])||
+          py::isinstance<py::int_>(seq[i]))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static inline std::vector<int64_t> parse_list_int(const std::string& s, int64_t size) {
+  if (s.empty()) return std::vector<int64_t>();
+  if (s[0] != '[' || s[0] != '(') {
+    return std::vector<int64_t>(size, std::stol(s));
+  }
+  auto args = std::vector<int64_t>();
+  std::istringstream ss(s.substr(1, s.length() - 2));
+  std::string tok;
+  while(std::getline(ss, tok, ',')) {
+    args.emplace_back(std::stol(tok));
+  }
+  return args;
+}
+
+bool FunctionParameter::check(const py::object &obj) {
+  switch (type_) {
+    case OP_DTYPE::DT_TENSOR:
+      return is_tensor(obj, optional_);
+    case OP_DTYPE::DT_NUMBER:
+      return py::isinstance<py::float_>(obj) || py::isinstance<py::bool_>(obj)||
+             py::isinstance<py::int_>(obj);
+    case OP_DTYPE::DT_FLOAT:
+      return py::isinstance<py::float_>(obj)||py::isinstance<py::int_>(obj);
+    case OP_DTYPE::DT_INT:
+      return py::isinstance<py::int_>(obj);
+    case OP_DTYPE::DT_LIST_TENSOR:
+      return is_tensor_list(obj);
+    case OP_DTYPE::DT_LIST_INT:
+      return check_list_type<py::tuple, py::int_>(obj);
+    case OP_DTYPE::DT_LIST_FLOAT:
+      return check_list_type<py::tuple, py::float_>(obj);
+    case OP_DTYPE::DT_BOOL:
+      return py::isinstance<py::bool_>(obj) || (py::isinstance<py::int_>(obj) &&
+             py::hasattr(obj, "__ms_mutable_bool__"));
+    case OP_DTYPE::DT_TYPE:
+      return py::isinstance<py::int_>(obj) || py::isinstance<mindspore::Type>(obj);
+    case OP_DTYPE::DT_STR:
+      return py::isinstance<py::str>(obj);
+    case OP_DTYPE::DT_LIST_NUMBER: {
+      return is_scalar_list(obj);
+    }
+    default:
+      MS_LOG(EXCEPTION) << "Unknown param type";
+  }
+  return false;
+}
+
+void FunctionParameter::set_default_str(const std::string& str) {
+  if (str == "None") {
+    allow_none_ = true;
+  }
+  switch (type_){
+    case ops::OP_DTYPE::DT_INT:
+      default_int = atol(str.c_str());break;
+    case ops::OP_DTYPE::DT_FLOAT:
+      default_double = atof(str.c_str());break;
+    case ops::OP_DTYPE::DT_BOOL:
+      default_bool = (str == "True" || str == "true");break;
+    case ops::OP_DTYPE::DT_NUMBER:
+      default_double = atof(str.c_str());break;
+    case ops::OP_DTYPE::DT_TUPLE_INT:
+      default_intlist = parse_list_int(str, size_);
+      break;
+    case ops::OP_DTYPE::DT_TUPLE_FLOAT:
+    case ops::OP_DTYPE::DT_TUPLE_BOOL:
+      MS_LOG(EXCEPTION) << "Not Implemented type.";
+      break;
+    case ops::OP_DTYPE::DT_TUPLE_TENSOR: 
+      if (str != "None") {
+        MS_LOG(EXCEPTION) << "default value for Tensor must be none, got: " << str;
+      }
+      break;
+    case ops::OP_DTYPE::DT_TUPLE_NUMBER:
+      MS_LOG(EXCEPTION) << "Not Implemented type.";
+      break;
+    case ops::OP_DTYPE::DT_STR:
+      default_string = str;
+      break;
+    case ops::OP_DTYPE::DT_TENSOR:
+      if (str != "None") {
+        MS_LOG(EXCEPTION) << "default value for Tensor must be None, but got: " << str;
+      }
+      break;
+    case ops::OP_DTYPE::DT_LIST_INT:
+      default_intlist = parse_list_int(str, size_);
+      break;
+    case ops::OP_DTYPE::DT_LIST_FLOAT:
+      if (str != "None") {
+        MS_LOG(EXCEPTION) << "Defaults not supported for float[]";
+      }
+      break;
+    case ops::OP_DTYPE::DT_LIST_BOOL:
+    case ops::OP_DTYPE::DT_LIST_TENSOR:
+    case ops::OP_DTYPE::DT_LIST_NUMBER:
+    case ops::OP_DTYPE::DT_LIST_STR:
+    case ops::OP_DTYPE::DT_TYPE: 
+      MS_LOG(EXCEPTION) << "Not Implemented type.";
+      break;
+    default:
+      MS_LOG(EXCEPTION) << " Unknow type "<< type_ <<" when set default value.";
+      break;
+  }
+}
+
+template <typename T>
+py::object get_py_listint(const std::vector<int64_t>& vec){
+  T list_py(vec.size());
+  for (size_t i = 0; i < vec.size(); ++i) {
+      list_py[i] = py::int_(vec[i]);
+  }
+  return list_py;
+}
+
+py::object FunctionParameter::get_default_value() {
+  py::list list_py;
+  switch (type_){
+    case ops::OP_DTYPE::DT_INT:
+      return py::int_(default_int);
+    case ops::OP_DTYPE::DT_FLOAT:
+      return py::float_(default_double);
+    case ops::OP_DTYPE::DT_BOOL:
+      return py::bool_(default_bool);
+    case ops::OP_DTYPE::DT_NUMBER:
+      return py::float_(default_double);
+    case ops::OP_DTYPE::DT_TUPLE_TENSOR:
+      //now only support default=None
+      return py::none();
+    case ops::OP_DTYPE::DT_TENSOR:
+      //now only support default=None
+      return py::none();
+    case ops::OP_DTYPE::DT_STR:
+      return py::str(default_string);
+    case ops::OP_DTYPE::DT_LIST_INT:
+      return get_py_listint<py::list>(default_intlist);
+    case ops::OP_DTYPE::DT_TUPLE_INT:
+      return get_py_listint<py::tuple>(default_intlist);
+    case ops::OP_DTYPE::DT_TUPLE_FLOAT:
+    case ops::OP_DTYPE::DT_TUPLE_BOOL:
+    case ops::OP_DTYPE::DT_TUPLE_NUMBER:
+    case ops::OP_DTYPE::DT_LIST_FLOAT:
+    case ops::OP_DTYPE::DT_LIST_BOOL:
+    case ops::OP_DTYPE::DT_LIST_TENSOR:
+    case ops::OP_DTYPE::DT_LIST_NUMBER:
+    case ops::OP_DTYPE::DT_LIST_STR:
+    case ops::OP_DTYPE::DT_TYPE:
+      MS_LOG(EXCEPTION) << "Not Implemented yet.";break;
+    default:
+      MS_LOG(EXCEPTION) << " Unknow type "<< type_ <<" when get default value.";
+  }
+  return py::none();
+}
+
 // Declare template to compile corresponding method.
 template ValueTuplePtr Converter::ToTensorList<py::tuple>(const py::list &python_args, size_t i);
 template ValueTuplePtr Converter::ToTensorList<py::list>(const py::list &python_args, size_t i);

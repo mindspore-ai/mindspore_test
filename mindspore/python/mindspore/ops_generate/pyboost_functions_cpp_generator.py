@@ -68,7 +68,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         self.PYBOOST_HEADER_TEMPLATE = template.PYBOOST_HEADER_TEMPLATE
         self.TENSOR_FUNC_CLASS_REG = template.TENSOR_FUNC_CLASS_REG
 
-    def generate(self, work_path, op_protos, tensor_func_protos_data: dict[str, list[TensorFuncProto]]):
+    def generate(self, work_path, op_protos, tensor_func_protos_data):
         """
         Generates the C++ PyBoost functions and writes them to the specified files.
 
@@ -136,7 +136,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         file_name = "pyboost_functions.cc"
         save_file(save_path, file_name, pyboost_func_file)
 
-    def _get_function_class_register(self, tensor_func_protos_data: dict[str, list[TensorFuncProto]]) -> str:
+    def _get_function_class_register(self, tensor_func_protos_data) -> str:
         function_class_register = ''
         op_set = set()
         for func_name, tensor_func_protos in tensor_func_protos_data.items():

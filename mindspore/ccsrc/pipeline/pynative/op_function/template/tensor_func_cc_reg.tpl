@@ -15,7 +15,6 @@
  */
 
 #include "pybind_api/ir/tensor_func_reg.h"
-
 #include <memory>
 
 namespace mindspore {

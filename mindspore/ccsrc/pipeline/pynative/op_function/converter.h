@@ -27,6 +27,72 @@
 
 namespace mindspore {
 namespace pynative {
+static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
+  {"int", ops::OP_DTYPE::DT_INT},
+  {"float", ops::OP_DTYPE::DT_FLOAT},
+  {"bool", ops::OP_DTYPE::DT_BOOL},
+  {"number", ops::OP_DTYPE::DT_NUMBER},
+  {"tuple[int]", ops::OP_DTYPE::DT_TUPLE_INT},
+  {"tuple[float]", ops::OP_DTYPE::DT_TUPLE_FLOAT},
+  {"tuple[bool]", ops::OP_DTYPE::DT_TUPLE_BOOL},
+  {"tuple[tensor]", ops::OP_DTYPE::DT_TUPLE_TENSOR},
+  {"tuple[number]", ops::OP_DTYPE::DT_TUPLE_NUMBER},
+  {"tuple[str]", ops::OP_DTYPE::DT_STR},
+  {"list[int]", ops::OP_DTYPE::DT_LIST_INT},
+  {"list[float]", ops::OP_DTYPE::DT_LIST_FLOAT},
+  {"list[bool]", ops::OP_DTYPE::DT_LIST_BOOL},
+  {"list[tensor]", ops::OP_DTYPE::DT_LIST_TENSOR},
+  {"list[number]", ops::OP_DTYPE::DT_LIST_NUMBER},
+  {"list[str]", ops::OP_DTYPE::DT_LIST_STR},
+  {"tensor", ops::OP_DTYPE::DT_TENSOR},
+  {"str", ops::OP_DTYPE::DT_STR},
+  {"type", ops::OP_DTYPE::DT_TYPE},
+};
+// information of single parameter
+struct FunctionParameter {
+  FunctionParameter(const std::string& fmt);
+  bool check(const py::object &obj);
+  void set_default_str(const std::string& str);
+  py::object get_default_value();
+
+  ops::OP_DTYPE type_;  // type of parameter
+  bool optional_;       // if has default value
+  bool allow_none_;
+  int size_;             // size of vec type
+  std::string name_;       // parameter name
+  py::object default_value;
+  std::vector<int64_t> default_intlist;
+  std::string default_string;
+  bool default_bool;
+  int64_t default_int;
+  double default_double;
+  double default_complex[2];
+};
+
+// single overload
+struct FunctionSignature {
+  explicit FunctionSignature(const std::string& fmt, int index);
+  // bind with real args
+  bool parse(const py::list &args, const py::dict &kwargs, py::list& python_args);
+
+  std::string name_;
+  std::vector<FunctionParameter> params_;
+  size_t min_args_;
+  size_t max_args_;
+  int index_;
+};
+
+//parser util
+struct PythonArgParser {
+  explicit PythonArgParser(std::vector<std::string> fmts);
+  const FunctionSignature& parse(const py::list &args,  const py::dict &kwargs, py::list arg_list);
+
+private:
+  std::vector<FunctionSignature> signatures_; // all overloads
+  std::string function_name_;
+  size_t max_args_; // max num of args
+};
+
 class Converter {
  public:
   explicit Converter(ops::OpDef *op_def);

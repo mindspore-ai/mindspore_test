@@ -79,9 +79,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.cc", func_cc_reg)
 
     def _get_single_op_str(self, func_protos_data,
-                                 func_header_body_str,
-                                 func_call_body_str,
-                                 func_def_body_str):
+                           func_header_body_str,
+                           func_call_body_str,
+                           func_def_body_str):
         single_op_func_data = {}
         for func_api_name, func_protos in func_protos_data.items():
             if len(func_protos) == 1:
@@ -101,9 +101,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return func_header_body_str, func_call_body_str, func_def_body_str
 
     def _get_overload_op_str(self, func_protos_data,
-                                   func_header_body_str,
-                                   func_call_body_str,
-                                   func_def_body_str):
+                             func_header_body_str,
+                             func_call_body_str,
+                             func_def_body_str):
         overload_op_func_data = {}
         for func_api_name, func_protos in func_protos_data.items():
             if len(func_protos) > 1:
@@ -118,12 +118,41 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return func_header_body_str, func_call_body_str, func_def_body_str
 
     def _get_overload_func_call_str(self, func_api_name, func_protos):
-        parser_body_str = self._get_overload_op_parser_body(func_protos)
+        signatures_str = self._generate_func_signatures_str(func_protos)
         dispatch_cases_str = self._get_dispatch_cases(func_protos)
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG.replace(class_name=func_api_name.capitalize(),
-                                                                                 parser_body=parser_body_str,
+                                                                                 signatures=signatures_str,
                                                                                  dispatch_cases=dispatch_cases_str)
         return overload_func_call_str
+
+    def _generate_func_signatures_str(self, func_protos) -> str:
+        sig_str = ''
+        first_sig = True
+        for tensor_proto in func_protos:
+            op_proto = tensor_proto.op_proto
+            if not first_sig:
+                sig_str += ',\n'
+            first_sig = False
+            sig_str += self._generate_single_signature_str(op_proto)
+        return sig_str
+
+    def _generate_single_signature_str(self, op_proto: OpProto) -> str:
+        args_str = f'"{op_proto.op_class.name}('
+        first_arg = True
+        for index, arg in enumerate(op_proto.op_args):
+            single_arg = ''
+            if not first_arg:
+                single_arg = ', '
+            first_arg = False
+            arg_dtype = arg.arg_dtype
+            arg_name = arg.arg_name
+            single_arg += f"{arg_dtype} {arg_name}"
+            if arg.as_init_arg:
+                arg_default = str(arg.default)
+                single_arg += '='
+                single_arg += arg_default
+            args_str += single_arg
+        return args_str + ')"'
 
     def _get_dispatch_cases(self, func_protos):
         dispatch_cases_str = ''
@@ -153,9 +182,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                       class_name=func_proto.op_proto.op_class.name)
         else:
             return callback_python_template.replace(info="Callback python is not yet implemented.")
-
-    def _get_overload_op_parser_body(self, func_protos):
-        return "// ${overload_op_parser_body} is not yet implemented!\n"
 
     def _get_arg_handler_processor(self, func_proto):
         return "// ${arg_handler_processor} is not yet implemented!\n"

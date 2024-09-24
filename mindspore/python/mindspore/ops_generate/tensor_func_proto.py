@@ -32,7 +32,7 @@ class TensorFuncProto:
         self.cpu = cpu
 
 
-def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos: list[OpProto]) -> dict[str, list[TensorFuncProto]]:
+def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos):
     op_protos_dict = {}
     for op_proto in op_protos:
         op_protos_dict[op_proto.op_name] = op_proto
