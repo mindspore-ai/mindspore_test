@@ -46,9 +46,6 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-constexpr size_t kSearchSortedInputNum = 5;
-}
 
 bool CheckDimsMatched(const ShapeVector &sequence, const ShapeVector &values) {
   if (sequence.size() != values.size()) {
@@ -66,10 +63,7 @@ bool CheckDimsMatched(const ShapeVector &sequence, const ShapeVector &values) {
 
 abstract::BaseShapePtr SearchSortedFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                         const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kGreaterEqual,
-                                           kSearchSortedInputNum, prim_name);
   auto sequence_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto sequence_shape = sequence_shape_ptr->GetShapeVector();
 
@@ -86,7 +80,6 @@ abstract::BaseShapePtr SearchSortedFuncImpl::InferShape(const PrimitivePtr &prim
   }
 
   std::map<std::string, TypePtr> types;
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);
   TypePtr sorter_type = input_args[kInputIndex2]->GetType();
   if (!sorter_type->isa<TypeNone>()) {
     (void)types.emplace("sorter", sorter_type);
@@ -115,7 +108,6 @@ abstract::BaseShapePtr SearchSortedFuncImpl::InferShape(const PrimitivePtr &prim
   }
   (void)CheckAndConvertUtils::CheckArgsType(prim_name, input_args, kInputIndex0, kObjectTypeTensorType);
   (void)CheckAndConvertUtils::CheckArgsType(prim_name, input_args, kInputIndex1, kObjectTypeTensorType);
-  MS_EXCEPTION_IF_NULL(values_shape_ptr);
   auto shape_element = values_shape_ptr->cast<abstract::ShapePtr>();
   MS_EXCEPTION_IF_NULL(shape_element);
   return shape_element;

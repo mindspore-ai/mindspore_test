@@ -21,7 +21,6 @@
 #include "mindspore/ops/op_def/array_op_name.h"
 
 namespace mindspore::ops {
-constexpr size_t kBroadCastToInputsNum = 2;
 bool BroadcastToCheck(const std::string &prim_name, const std::vector<int64_t> &input_x,
                       const std::vector<int64_t> &x_shape) {
   CheckAndConvertUtils::Check("x shape", SizeToLong(x_shape.size()), kLessEqual, SizeToLong(input_x.size()),
@@ -115,13 +114,13 @@ TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tens
 }
 
 TensorStorageInfoPtrList BroadcastToCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kBroadCastToInputsNum) || !inputs[0]->isa<tensor::BaseTensor>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
     return {};
   }
 
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto input_x = GetValue<std::vector<int64_t>>(inputs[1]);
+  auto input_x = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
   return BroadCastToProcess(prim, input_tensor, input_x);
 }
 

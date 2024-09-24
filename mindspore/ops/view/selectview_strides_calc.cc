@@ -19,12 +19,8 @@
 #include <memory>
 
 namespace mindspore::ops {
-constexpr size_t kGatherInputsNum = 3;
 
 TensorStorageInfoPtrList SelectViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kGatherInputsNum)) {
-    return {};
-  }
   auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   int64_t dim;

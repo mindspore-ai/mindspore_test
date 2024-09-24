@@ -86,7 +86,7 @@ REG_FALLBACK_BUILDER("FlattenExt").SetBody(BODYFUNC(ib) {
   NodePtr input = ib->GetInput(kIndex0);
   NodePtr start_dim = ib->GetInput(kIndex1);
   NodePtr end_dim = ib->GetInput(kIndex2);
-  auto shape = ib->ShapeCalc(g_flatten_ext_fallback_shapecalc, {input, start_dim, end_dim}, {1, 2})[0];
+  auto shape = ib->ShapeCalc(g_flatten_ext_fallback_shapecalc, {input, start_dim, end_dim}, {kIndex1, kIndex2})[0];
   auto out = ib->Reshape(input, shape);
   return {out};
 });

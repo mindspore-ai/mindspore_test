@@ -18,15 +18,13 @@
 #include <memory>
 
 namespace mindspore::ops {
-constexpr size_t kUnsqueezeInputsNum = 2;
 
 TensorStorageInfoPtrList UnsqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kUnsqueezeInputsNum) || !inputs[0]->isa<tensor::BaseTensor>() ||
-      !inputs[1]->isa<IntegerImm>()) {
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>() || !inputs[kInputIndex1]->isa<IntegerImm>()) {
     return {};
   }
 
-  auto input_tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
   auto old_tensor_info = GetOldTensorInfo(input_tensor);
   auto old_shape = old_tensor_info->old_shape;
@@ -37,7 +35,7 @@ TensorStorageInfoPtrList UnsqueezeCalc(const PrimitivePtr &prim, const std::vect
   auto new_strides = old_strides;
 
   int64_t dim_size = SizeToLong(new_shape.size());
-  auto axis = GetValue<int64_t>(inputs[1]);
+  auto axis = GetValue<int64_t>(inputs[kInputIndex1]);
   axis = DynamicDimWrap(axis, new_shape.size() + 1);
   int64_t tmp_strides = axis >= dim_size ? 1 : new_shape[axis] * new_strides[axis];
   (void)new_strides.insert(new_strides.begin() + axis, tmp_strides);

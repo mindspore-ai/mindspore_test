@@ -29,10 +29,8 @@ BaseShapePtr PowFuncImpl::InferShape(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
   auto x1_base_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x1_base_shape);
   const auto &x1_shape = x1_base_shape->GetShapeVector();
   auto x2_base_shape = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(x2_base_shape);
   const auto &x2_shape = x2_base_shape->GetShapeVector();
   auto broadcast_shape = CalBroadCastShape(x1_shape, x2_shape, prim_name);
   return std::make_shared<abstract::Shape>(broadcast_shape);
@@ -41,8 +39,6 @@ BaseShapePtr PowFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr PowFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto x1_type = input_args[kInputIndex0]->GetType();
   auto x2_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(x1_type);
-  MS_EXCEPTION_IF_NULL(x2_type);
   return std::make_shared<TensorType>(PromoteType(x1_type, x2_type, primitive->name()));
 }
 
