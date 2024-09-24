@@ -634,7 +634,9 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
   }
   if (graph_->is_dynamic_shape() && !ActorDispatcher::enable_runtime_multi_pipeline()) {
-    MS_INTERNAL_EXCEPTION(RuntimeError) << "Must enable runtime multi pipeline when run dynamic shape graph.";
+    MS_LOG(DEBUG)
+      << "Run dynamic shape graph: " << graph_->ToString()
+      << ", but does not enable runtime multi pipeline, maybe the thread number of actor is not greater than 3.";
   }
   if (!graph_->is_dynamic_shape()) {
     ActorDispatcher::set_enable_static_shape(false);
