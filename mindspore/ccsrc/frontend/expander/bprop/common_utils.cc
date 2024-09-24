@@ -485,7 +485,7 @@ class ReduceShapeShapeCalc : public ShapeCalcFunctor {
   DECLARE_SHAPE_CALC("ShapeCalc_ReduceShape", ReduceShapeShapeCalc)
   explicit ReduceShapeShapeCalc(bool skip_mode) : ShapeCalcFunctor("ShapeCalc_ReduceShape"), skip_mode_(skip_mode) {}
   ValuePtr ToValue() const override { return MakeValue(skip_mode_); }
-  void FromValue(const ValuePtr &value) override { skip_mode_ = GetValue<int64_t>(value); }
+  void FromValue(const ValuePtr &value) override { skip_mode_ = GetValue<bool>(value); }
   ShapeArray Calc(const ShapeArray &inputs) const override {
     auto x_shape = inputs.at(0);
     auto axis_value = inputs.at(1);
