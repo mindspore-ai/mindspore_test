@@ -94,7 +94,7 @@ def _get_unique_parameter_key():
 def _gen_offload_file_path(offload_dir):
     offload_dir = os.path.relpath(offload_dir)
     if not os.path.exists(offload_dir):
-        os.makedirs(offload_dir)
+        os.makedirs(offload_dir, mode=0o700, exist_ok=True)
     offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
         _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
     return offload_file_path
