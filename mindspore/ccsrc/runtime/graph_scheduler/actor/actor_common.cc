@@ -280,7 +280,10 @@ bool EnableTraceMemory() {
   return true;
 }
 
-void ResetTraceMemoryStatus() {
+void ResetPipelineAndTraceMemoryStatus() {
+  ActorDispatcher::set_enable_async_launch_kernel(false);
+  ActorDispatcher::set_enable_runtime_multi_pipeline(false);
+
   ActorDispatcher::set_enable_static_shape(false);
   ActorDispatcher::set_enable_trace_dynamic_memory(false);
   ActorDispatcher::set_enable_use_trace_memory(false);
