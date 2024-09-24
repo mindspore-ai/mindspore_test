@@ -42,7 +42,6 @@ acme::AcmeOpPtr AcmeFlashAttentionScore::CreateKernel(const acme::InputsImmutabl
   return acme::CreateFlashAttentionScoreOp(inputs_ii, outputs_ii, param, acme::kAcmeFlashAttentionScoreOpName);
 }
 
-// MS_ACME_KERNEL_FACTORY_REG(FlashAttentionScore, acme::kAcmeFlashAttentionScoreOpName, AcmeFlashAttentionScore);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FlashAttentionScore, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_6);
 REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(FlashAttentionScore, OUTPUT_NUM_1, INDEX_3);
 }  // namespace kernel

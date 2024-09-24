@@ -7060,7 +7060,8 @@ def one_hot_ext(tensor, num_classes):
     off_value = Tensor(0, dtype=tensor.dtype)
     return one_hot_ext_impl(tensor, num_classes, on_value, off_value, -1)
 
-def from_numpy(obj):
+
+def from_numpy(array):
     r"""
     Convert numpy array to Tensor.
     If the data is not C contiguous, the data will be copied to C contiguous to construct the tensor.
@@ -7080,7 +7081,7 @@ def from_numpy(obj):
         >>> print(output)
         [1 2]
     """
-    return Tensor.from_numpy(obj)
+    return Tensor.from_numpy(array)
 
 __all__ = [
     'unique',

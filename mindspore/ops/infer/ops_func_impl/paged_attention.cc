@@ -72,7 +72,6 @@ TypePtr PagedAttentionFuncImpl::InferType(const PrimitivePtr &primitive,
     auto offset_type = input_args[kPagedAttentionInputAntiquantOffsetIndex]->GetType()->cast<TensorTypePtr>();
     MS_EXCEPTION_IF_NULL(offset_type);
     auto offset_type_id = offset_type->element()->type_id();
-
     if ((scale_type_id == TypeId::kNumberTypeFloat16 && offset_type_id == TypeId::kNumberTypeFloat16) ||
         (scale_type_id == TypeId::kNumberTypeInt64 && offset_type_id == TypeId::kNumberTypeInt32)) {
       valid_flag = true;

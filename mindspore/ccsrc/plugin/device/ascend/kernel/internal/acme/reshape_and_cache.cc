@@ -29,6 +29,5 @@ acme::AcmeOpPtr AcmeReshapeAndCache::CreateKernel(const acme::InputsImmutableInf
 }
 MS_ACME_KERNEL_FACTORY_REG(ReshapeAndCache, acme::kAcmeReshapeAndCacheOpName, AcmeReshapeAndCache);
 REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(ReshapeAndCache, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_4);
-// REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(ReshapeAndCache, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
