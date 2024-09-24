@@ -387,22 +387,22 @@ REG_FALLBACK_BUILDER("EqualCount").SetBody(BODYFUNC(ib) {
   // Check inputs
   const auto &input_x = ib->GetInput(kIndex0);
   const auto &input_y = ib->GetInput(kIndex1);
-  if (input_x->dtype() != input_y->dtype()) {
-    MS_LOG(INFO) << "In EqualCount, two inputs should have same data type, but type of input_x is "
-                 << input_x->dtype()->ToString() << " type of input_y is " << input_y->dtype()->ToString();
+  if (input_x->dtype()->type_id() != input_y->dtype()->type_id()) {
+    MS_LOG(WARNING) << "In EqualCount, two inputs should have same data type, but type of input_x is "
+                    << input_x->dtype()->ToString() << ", type of input_y is " << input_y->dtype()->ToString();
     return {};
   }
 
-  if (input_x->dtype() != TypeIdToType(kNumberTypeFloat32) && input_x->dtype() != TypeIdToType(kNumberTypeFloat16) &&
-      input_x->dtype() != TypeIdToType(kNumberTypeInt32)) {
-    MS_LOG(INFO) << "In EqualCount, dtype of inputs must be float16 or float32 or int32, but get data type:"
-                 << input_x->dtype()->ToString();
+  if (input_x->dtype()->type_id() != kNumberTypeFloat32 && input_x->dtype()->type_id() != kNumberTypeFloat16 &&
+      input_x->dtype()->type_id() != kNumberTypeInt32) {
+    MS_LOG(WARNING) << "In EqualCount, dtype of inputs must be float16 or float32 or int32, but get data type:"
+                    << input_x->dtype()->ToString();
     return {};
   }
 
   if (input_x->shape() != input_y->shape()) {
-    MS_LOG(INFO) << "In EqualCount, two inputs should have same shape, but shape of input_x is " << input_x->shape()
-                 << " shape of input_y is " << input_y->shape();
+    MS_LOG(WARNING) << "In EqualCount, two inputs should have same shape, but shape of input_x is " << input_x->shape()
+                    << ", shape of input_y is " << input_y->shape();
     return {};
   }
   // Expand
