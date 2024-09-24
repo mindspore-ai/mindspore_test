@@ -47,6 +47,7 @@ namespace ascend {
 namespace {
 constexpr size_t kDefaultStreamId = 0;
 constexpr char kHcclWorldGroup[] = "hccl_world_group";
+constexpr size_t kMegaByte = 1024 * 1024;
 
 uint64_t AlignSize(uint64_t num) {
   constexpr uint64_t align_value = 64;
@@ -186,9 +187,9 @@ int ParamReplication::CopyParamsInBatches(const std::vector<tensor::TensorPtr> &
       }
 
       void *dst_addr =
-        is_send ? reinterpret_cast<char *>(xchg_buf_addr) + sum_size : tensor->device_address()->GetMutablePtr();
+        is_send ? reinterpret_cast<uint8_t *>(xchg_buf_addr) + sum_size : tensor->device_address()->GetMutablePtr();
       void *src_addr =
-        is_send ? tensor->device_address()->GetMutablePtr() : reinterpret_cast<char *>(xchg_buf_addr) + sum_size;
+        is_send ? tensor->device_address()->GetMutablePtr() : reinterpret_cast<uint8_t *>(xchg_buf_addr) + sum_size;
 
       if (aclrtMemcpyAsync(dst_addr, tensor->Size(), src_addr, tensor->Size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_) !=
           ACL_SUCCESS) {
@@ -235,7 +236,6 @@ int ParamReplication::CopyParamsOneByOne(const std::vector<tensor::TensorPtr> &p
     if (rank_id_ == src_rank) {
       hccl::HcclAdapter::GetInstance().HcclSend(tensor->device_address()->GetMutablePtr(), tensor->Size(),
                                                 HCCL_DATA_TYPE_INT8, dst_rank, stream_, comm_);
-
     } else {
       hccl::HcclAdapter::GetInstance().HcclRecv(tensor->device_address()->GetMutablePtr(), tensor->Size(),
                                                 HCCL_DATA_TYPE_INT8, src_rank, stream_, comm_);
@@ -262,17 +262,18 @@ int ParamReplication::SendRecv(const std::vector<tensor::TensorPtr> &params, int
     return 1;
   }
 
-  size_t device_hbm_free_size, device_hbm_total_size;
+  size_t device_hbm_free_size;
+  size_t device_hbm_total_size;
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size, &device_hbm_total_size);
   if (ret != ACL_ERROR_NONE || device_hbm_total_size == 0) {
     MS_LOG(EXCEPTION) << "Internal Error: Get Device HBM memory size failed, ret = " << ret
                       << ", total HBM size :" << device_hbm_total_size;
   }
+  MS_LOG(INFO) << "device_hbm_free_size=" << device_hbm_free_size / kMegaByte
+               << "MB, device_hbm_total_size=" << device_hbm_total_size / kMegaByte;
 
-  MS_LOG(INFO) << "device_hbm_free_size=" << device_hbm_free_size / 1024 / 1024
-               << "MB, device_hbm_total_size=" << device_hbm_total_size / 1024 / 1024;
-
-  DataExchangeInfo local_info(params, device_hbm_free_size), remote_info(params.size());
+  DataExchangeInfo local_info(params, device_hbm_free_size);
+  DataExchangeInfo remote_info(params.size());
   if (DoParamInfoExchange(&local_info, &remote_info, src_rank, dst_rank) != 0) {
     return 1;
   }
