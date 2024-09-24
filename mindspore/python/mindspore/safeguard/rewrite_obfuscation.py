@@ -68,6 +68,7 @@ network_obf_template = {
     'insert_ops': [{'name': 'mul', 'input_x': 'weight', 'input_y': 'obf_metadata'}]
 }
 
+
 def _transform_target_modules(target_modules):
     """transform target_modules to obf config"""
     obf_config = {}
@@ -112,12 +113,14 @@ def _transform_target_modules(target_modules):
         obf_config['network_obf_config'].append(network_obf)
     return obf_config
 
+
 def _get_op(op_name):
     if op_name is None:
         return None
     if op_name not in _supported_ops:
         raise KeyError(f"'op name' must be in {list(_supported_ops.keys())}, but got {op_name}.")
     return _supported_ops[op_name]()
+
 
 def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, saved_path='./', obfuscate_scale=100):
     """
@@ -259,6 +262,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
                                    obf_metadata, obf_config, saved_path)
     return saved_metadata
 
+
 def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
     """Obfuscate single ckpt file"""
     def _get_op_input_name(obf_op, name_key='input_x', layer=0):
@@ -270,6 +274,10 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
         strTemplate = Template(input_name)
         input_name = strTemplate.safe_substitute({"layer": str(layer)})
         return input_name
+
+    def _get_op_input(input_name, obf_param):
+        op_input = obf_metadata.get(input_name, None) if input_name.startswith('obf_metadata') else obf_param
+        return op_input
 
     def _obfuscate_param(param, obf_metadata, obf_ops, layer=0):
         param_dtype = F.dtype(param)
@@ -297,8 +305,8 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
             elif op_name == 'matmul':
                 input_x_name = _get_op_input_name(obf_ops[i], 'input_x', layer)
                 input_y_name = _get_op_input_name(obf_ops[i], 'input_y', layer)
-                input_x = obf_metadata.get(input_x_name, None) if input_x_name.startswith('obf_metadata') else obf_param
-                input_y = obf_metadata.get(input_y_name, None) if input_y_name.startswith('obf_metadata') else obf_param
+                input_x = _get_op_input(input_x_name, obf_param)
+                input_y = _get_op_input(input_y_name, obf_param)
                 if input_x is None or input_y is None:
                     log.error("the input_x or input_y of op: {} is None.".format(op_name))
                     return None
@@ -354,6 +362,7 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
     obf_ckpt_file_name = ckpt_file_name.split('.')[0] + '_obf' + '.ckpt'
     save_checkpoint(obf_param_list, os.path.abspath(saved_path) + '/' + obf_ckpt_file_name)
     return True
+
 
 def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_config=None,
                              data_parallel_num=1, **kwargs):
@@ -444,6 +453,7 @@ def _check_dir_path(name, dir_path):
     if not Path(dir_path).is_dir():
         raise TypeError("{} must be a directory path, but got {}.".format(name, dir_path))
 
+
 def _check_valid_target(network, target_modules):
     """check whether the input 'target_modules' exists"""
     if not isinstance(target_modules, list):
@@ -502,6 +512,7 @@ def _check_valid_target(network, target_modules):
     _update_max_obf_ratios_num(target_modules)
     return True
 
+
 def _check_ops_info(ops_info):
     """check ops info config"""
     for op in ops_info:
@@ -519,6 +530,7 @@ def _check_ops_info(ops_info):
         if not isinstance(op.get('transpose_b', False), bool):
             raise TypeError("transpose_b type should be bool, but got {}.".format(type(op.get('transpose_b'))))
 
+
 def _check_new_input_info(insert_new_input):
     """check new input config"""
     if not isinstance(insert_new_input, list):
@@ -529,6 +541,7 @@ def _check_new_input_info(insert_new_input):
         if not isinstance(input_name, str):
             raise TypeError("obf_config[][]['insert_new_input'][]['name'] type should be str, but got {}."
                             .format(type(input_name)))
+
 
 def _check_obf_metadata_config(config):
     """check obf metadata config"""
@@ -551,6 +564,7 @@ def _check_obf_metadata_config(config):
             raise TypeError("obf_config[][]['type'] should be str and must in {}, but got {}."
                             .format(str(_supported_metadata_type), type(metadata_type)))
 
+
 def _check_weight_obf_config(config):
     """check weight obfuscation config"""
     target = config.get('target')
@@ -561,6 +575,7 @@ def _check_weight_obf_config(config):
         raise TypeError("obf_config[][]['weight_obf_ops'] type should be list, but got {}."
                         .format(type(weight_obf_ops)))
     _check_ops_info(weight_obf_ops)
+
 
 def _check_network_obf_config(config):
     """check network obfuscation config"""
@@ -577,13 +592,14 @@ def _check_network_obf_config(config):
         raise TypeError("obf_config[][]['insert_ops'] type should be list, but got {}.".format(type(insert_ops)))
     _check_ops_info(insert_ops)
 
+
 def _check_valid_obf_config(obf_config, config_type):
     """check obfuscation config"""
-    if (not isinstance(config_type, str)) or (not config_type in _supported_config_type):
+    if not isinstance(config_type, str) or config_type not in _supported_config_type:
         raise TypeError("config_type must be str, and in {}, but got {}."
                         .format(str(_supported_config_type), config_type))
     for config_type_item in obf_config.keys():
-        if (not isinstance(config_type_item, str)) or (not config_type_item in _supported_config_type):
+        if not isinstance(config_type_item, str) or config_type_item not in _supported_config_type:
             raise TypeError("config_type must be str, and in {}, but got {}."
                             .format(str(_supported_config_type), config_type_item))
     config_list = obf_config.get(config_type)
@@ -608,6 +624,7 @@ def _check_valid_obf_config(obf_config, config_type):
                     raise TypeError("obf_config[][]['layers'][] type should be int, but got {}.".format(type(layer)))
     return True
 
+
 def _update_max_obf_ratios_num(target_modules):
     """Update MAX_OBF_RATIOS_NUM"""
     if len(target_modules) >= 3:
@@ -625,6 +642,7 @@ def _update_max_obf_ratios_num(target_modules):
                     "'obfuscate_layers:int'")
             MAX_OBF_RATIOS_NUM = int(obfuscate_layers[1]) * OBF_RATIOS_WIDTH
 
+
 def _remove_digit(item):
     """remove digit in the parameter path"""
     item_split = item.split('_')
@@ -633,6 +651,7 @@ def _remove_digit(item):
             item_split.remove(tmp_str)
     return '_'.join(item_split)
 
+
 def _remove_scope(item):
     """remove scope of name values"""
     item_split = item.split('.')
@@ -640,6 +659,7 @@ def _remove_scope(item):
         if tmp_str == 'self':
             item_split.remove(tmp_str)
     return '.'.join(item_split)
+
 
 def _obfuscate_network(model, obf_config=None, data_parallel_num=1, **kwargs):
     """obfuscate original network, including add deobfuscation ops and add inputs for passing obf_metadata."""
@@ -768,8 +788,6 @@ def _obfuscate_network(model, obf_config=None, data_parallel_num=1, **kwargs):
                 if not _process_controlflow_node(node, stree, full_path + '/' + node_name, path, targets):
                     log.error("process controlflow node: {} failed.".format(node.get_name()))
                     return False
-            # elif node.get_node_type() == NodeType.CellContainer:
-            #     _process_cellcontainer_node(node, full_path + '/' + node_name, path, targets)
             elif node.get_node_type() == NodeType.Tree and _is_target_module(path + '/' + node_name, targets):
                 sub_stree = node.get_sub_tree()
                 _insert_input(sub_stree, arg_name='obf_metadata')
@@ -821,7 +839,7 @@ def _obfuscate_network(model, obf_config=None, data_parallel_num=1, **kwargs):
             real_insert_ops_info = []
             if not targets.get(module, None):
                 targets[module] = []
-            if not target in targets[module]:
+            if target not in targets[module]:
                 targets[module].append(target)
             target_path = module + '/' + target
             for op_info in insert_ops_info:
@@ -834,7 +852,7 @@ def _obfuscate_network(model, obf_config=None, data_parallel_num=1, **kwargs):
             real_module = strTemplate.safe_substitute({"layer": str(layer)})
             if not targets.get(real_module, None):
                 targets[real_module] = []
-            if not target in targets[real_module]:
+            if target not in targets[real_module]:
                 targets[real_module].append(target)
             target_path = real_module + '/' + target
             for op_info in insert_ops_info:
