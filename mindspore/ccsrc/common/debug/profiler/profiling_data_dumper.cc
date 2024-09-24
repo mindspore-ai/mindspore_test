@@ -229,10 +229,7 @@ void RingBuffer<T>::Reset() {
 
 ProfilingDataDumper::ProfilingDataDumper() : path_(""), start_(false), init_(false) {}
 
-ProfilingDataDumper::~ProfilingDataDumper() {
-  Flush();
-  UnInit();
-}
+ProfilingDataDumper::~ProfilingDataDumper() { UnInit(); }
 
 ProfilingDataDumper &ProfilingDataDumper::GetInstance() {
   static ProfilingDataDumper instance;

@@ -115,9 +115,9 @@ void PythonTracer::Flush() {
   std::unordered_map<uint32_t, std::string> op_index_map;
   for (const auto &kv : op_map_) {
     std::string op_name = kv.first;
-    int op_name_len = op_name.size();
+    uint32_t op_name_len = op_name.size();
     for (std::string &p : sys_path_list) {
-      int path_len = p.size();
+      uint32_t path_len = p.size();
       if (op_name_len >= path_len && op_name.substr(0, path_len) == p) {
         op_name = op_name.substr(path_len, op_name_len - path_len);
       }

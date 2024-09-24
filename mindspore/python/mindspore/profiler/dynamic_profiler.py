@@ -21,7 +21,6 @@ import atexit
 import struct
 import random
 import multiprocessing
-from datetime import datetime
 
 from mindspore import log as logger
 from mindspore.train import Callback
@@ -231,7 +230,7 @@ class DynamicProfilerMonitorBase(Callback):
             self._poll_interval = 2
 
         self._kwargs = kwargs
-        self._shm_name = f"DynamicProfileShm{datetime.now().strftime('%Y%m%d%H')}"
+        self._shm_name = time.strftime("DynamicProfileShm%Y%m%d%H", time.localtime())
         self._rank_id = get_real_rank()
         self._shared_loop_flag = multiprocessing.Value('b', True)
         self._shm = None
@@ -602,7 +601,7 @@ else:
                                f"but got type {type(output_path)}, it will be set to './dyn_profile_data'.")
                 output_path = "./dyn_profile_data"
             self._cfg_path = cfg_path
-            self._shm_name = f"DynamicProfileShm{datetime.now().strftime('%Y%m%d%H')}"
+            self._shm_name = time.strftime("DynamicProfileShm%Y%m%d%H", time.localtime())
             self._shm_dir = os.path.join(self._cfg_path, "shm")
             PathManager.make_dir_safety(self._shm_dir)
             self._shm_path = os.path.abspath(os.path.join(self._shm_dir, self._shm_name))
