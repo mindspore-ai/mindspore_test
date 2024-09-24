@@ -34,10 +34,11 @@ def check_results(commands, results):
     for idx in error_idx:
         print(f"testcase {commands[idx]} failed. please check log {results[idx][1]}.")
         os.system(f"grep -E 'ERROR|error|Error' {results[idx][1]} -C 5")
+        os.system(f"cat {results[idx][1]}")
     assert error_idx == []
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_train():
     """
     Feature: Trainer.train()
