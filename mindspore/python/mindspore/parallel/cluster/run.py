@@ -37,8 +37,8 @@ def get_args():
     parser.add_argument(
         "--master_addr",
         default="127.0.0.1", type=str,
-        help="specifies the IP address of the scheduler and its data type is string."
-        " Allowed values: valid IP addresses."
+        help="specifies the IP address or the host name of the scheduler and its data type is string."
+        " Allowed values: valid IP addresses or valid host name."
     )
     parser.add_argument(
         "--master_port", default=8118, type=int,

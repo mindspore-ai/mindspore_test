@@ -266,3 +266,39 @@ def test_msrun_tail_specified_worker_log():
     assert result_rename_1 != -1
     assert result_rename_2 != -1
     assert result_rename_3 != -1
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
+def test_msrun_with_correct_hostname():
+    """
+    Feature: 'msrun' launch utility.
+    Description: Launch distributed training job with dynamic cluster using msrun with a correct hostname.
+    Expectation: Hostname is correctly converted to IP and all workers are successfully spawned and running training.
+    """
+    ms.set_context(jit_level='O0')
+    hostname = socket.gethostname()
+    print(f"The hostname of this node is {hostname}.")
+    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} "\
+            "--master_port=10969 --join=True test_msrun.py --device_target=Ascend "\
+            "--dataset_path=/home/workspace/mindspore_dataset/mnist")
+    return_code = os.system(cmd)
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
+def test_msrun_with_wrong_hostname():
+    """
+    Feature: 'msrun' launch utility.
+    Description: Launch distributed training job with dynamic cluster using msrun with a wrong hostname.
+    Expectation: Hostname cannot be converted to IP and a RuntimeError will be raised.
+    """
+    os.environ['GLOG_v'] = str(2)
+    ms.set_context(jit_level='O0')
+    hostname = "wrong_hostname"
+    print(f"The hostname of this node is {hostname}.")
+    cmd = (f"msrun --worker_num=4 --local_worker_num=4 --master_addr={hostname} --master_port=10969 --join=True "\
+            "test_msrun.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist "\
+            "> ./hostname_abnormal_msrun.log 2>&1")
+    os.system(cmd)
+    result = subprocess.getoutput("grep -rn 'DNS resolution failed' ./hostname_abnormal_msrun.log")
+    assert result.find("Name or service not known") != -1

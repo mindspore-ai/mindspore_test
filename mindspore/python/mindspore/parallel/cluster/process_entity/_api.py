@@ -20,7 +20,7 @@ import subprocess
 import socket
 import mindspore.log as logger
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url,\
-                    _is_local_ip, _send_scale_num, _get_local_ip
+                    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip
 
 class _Node:
     """
@@ -116,11 +116,11 @@ class _ProcessManager:
         self.cgn_processes = []
         self.tail_cgn_processes = []
 
-        """`is_master` flags whether the current node is the master node."""
-        self.is_master = _is_local_ip(args.master_addr)
-
-        self.master_addr = args.master_addr
+        self.master_addr = _convert_addr_to_ip(args.master_addr)
         self.master_port = args.master_port
+
+        """`is_master` flags whether the current node is the master node."""
+        self.is_master = _is_local_ip(self.master_addr)
 
         self.worker_num = args.worker_num
         if self.worker_num <= 0:

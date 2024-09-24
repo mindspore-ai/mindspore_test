@@ -16,6 +16,7 @@
 import os
 import json
 import socket
+import ipaddress
 import mindspore.log as logger
 
 CURRENT_IP = None
@@ -102,6 +103,24 @@ def _is_local_ip(ip_address):
                 logger.info(f"IP address found on this node. Address info:{addr}. Found address:{ip_address}")
                 return True
     return False
+
+
+def _convert_addr_to_ip(master_addr):
+    """
+    Check whether the input parameter 'master_addr' is IPv4. If a hostname is inserted, it will be converted
+    to IP and then set as master host's IP.
+
+    """
+    try:
+        ipaddress.IPv4Address(master_addr)
+        return master_addr
+    except ipaddress.AddressValueError:
+        try:
+            ip_address = socket.gethostbyname(master_addr)
+            logger.info(f"Convert input host name:{master_addr} to ip address:{ip_address}.")
+            return ip_address
+        except socket.gaierror as e:
+            raise RuntimeError(f"DNS resolution failed: {e}. Please check whether the correct host name is input.")
 
 
 def _send_scale_num(url, scale_num):
