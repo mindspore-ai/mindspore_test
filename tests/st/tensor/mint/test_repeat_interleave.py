@@ -26,7 +26,7 @@ class RepeatInterleave(nn.Cell):
         return x.repeat_interleave(repeats=2, dim=0)
 
 
-@arg_mark(plat_marks=['platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level2',
           card_mark='onecard',
           essential_mark='unessential')

@@ -33,7 +33,7 @@ class FlattenNet(nn.Cell):
             res = x.flatten(start_dim=start_dim, end_dim=end_dim)
         return res
 
-@arg_mark(plat_marks=['platform_ascend'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
