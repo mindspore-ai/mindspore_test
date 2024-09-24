@@ -289,7 +289,7 @@ void TaskManager::ReturnFreeTask(Task *p) noexcept {
   }
   // We need to deallocate the string resources associated with the Task class
   // before we cache its memory for future use.
-  p->ReleaseTaskGroup();
+  p->~Task();
   // Put it back into free list
   {
     LockGuard lck(&free_lock_);

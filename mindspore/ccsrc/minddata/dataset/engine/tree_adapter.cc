@@ -590,7 +590,7 @@ Status TreeAdapter::LaunchSubprocess() {
     if (message_queue.SerializeStatus(ret) != Status::OK()) {
       MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
     }
-    message_queue.MsgSnd(kWorkerErrorMsg);
+    RETURN_IF_NOT_OK(message_queue.MsgSnd(kWorkerErrorMsg));
 
     // waiting for the main process get the message
     sleep(kMonitorInterval * kSleepDelays);
@@ -625,7 +625,7 @@ Status TreeAdapter::LaunchSubprocess() {
       if (message_queue.SerializeStatus(ret) != Status::OK()) {
         MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
       }
-      message_queue.MsgSnd(kWorkerErrorMsg);
+      RETURN_IF_NOT_OK(message_queue.MsgSnd(kWorkerErrorMsg));
 
       // waiting for the main process get the message
       sleep(kMonitorInterval * kSleepDelays);
@@ -690,6 +690,16 @@ Status TreeAdapter::Launch() {
     } else if (fpid == 0) {  // in sub-process
       PyOS_AfterFork_Child();
 
+      // get the message queue
+      if (tree_->root()->Name() != kSendBridgeOp) {
+        MS_LOG(EXCEPTION) << "The send_tree_ root is not SendBridgeOp.";
+      }
+      auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
+
+      // the subprocess had been launched
+      RETURN_IF_NOT_OK(message_queue.MsgSnd(kSubprocessReadyMsg));
+      RETURN_IF_NOT_OK(message_queue.MsgRcv(kMainprocessReadyMsg));
+
       // set the seed for independent dataset process
       uint32_t seed = GlobalContext::config_manager()->seed();
       if (seed != std::mt19937::default_seed) {
@@ -726,6 +736,16 @@ Status TreeAdapter::Launch() {
 
     // move the receive_tree_ to tree_ and launch it
     tree_ = std::move(receive_tree_);
+
+    // get the message queue id
+    if (tree_->root()->Name() != kReceiveBridgeOp) {
+      MS_LOG(EXCEPTION) << "The receive_tree_ root is not ReceiveBridgeOp.";
+    }
+    auto message_queue = dynamic_cast<ReceiveBridgeOp *>(tree_->root().get())->GetMessageQueue();
+
+    // make sure the subprocess had been forked and response to the subprocess
+    RETURN_IF_NOT_OK(message_queue.MsgRcv(kSubprocessReadyMsg));
+    RETURN_IF_NOT_OK(message_queue.MsgSnd(kMainprocessReadyMsg));
 
     // get the receive_bridge_op and set the subprocess id to it
     for (auto itr = tree_->begin(); itr != tree_->end(); ++itr) {
