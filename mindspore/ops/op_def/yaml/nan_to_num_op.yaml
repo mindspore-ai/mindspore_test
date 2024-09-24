@@ -5,7 +5,7 @@ nan_to_num:
             dtype: tensor
         nan:
             dtype: float
-            default: 0.0
+            default: None
             type_cast: int, bool
             prim_init: True
         posinf:

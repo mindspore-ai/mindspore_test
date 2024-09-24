@@ -8,7 +8,7 @@ nan_to_num:
 
         Args:
             input (Tensor): The shape of tensor is :math:`(input_1, input_2, ..., input_R)`.
-            nan (number, optional): The replace value of `NaN`. Default value is ``0.0``.
+            nan (number, optional): The replace value of `NaN`. Default value is ``None``.
             posinf (number, optional): the value to replace positive infinity values with. Default: ``None``,
                 replacing positive infinity with the maximum value supported by the data type of `input`.
             neginf (number, optional): the value to replace negative infinity values with. Default: ``None``,

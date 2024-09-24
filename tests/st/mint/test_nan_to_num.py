@@ -60,10 +60,22 @@ def test_nan_to_num_std(mode):
     neg_inf_num = 3.0
     expect = generate_expect_forward_output(x, nan_num, inf_num, neg_inf_num)
     expect_grad = generate_expect_backward_output(x, nan_num, inf_num, neg_inf_num)
+
     if mode == 'pynative':
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         output = nan_to_num_forward_func(ms.Tensor(x), nan_num, inf_num, neg_inf_num)
         output_grad = nan_to_num_backward_func(ms.Tensor(x), nan_num, inf_num, neg_inf_num)
+
+        output_nan_n = nan_to_num_forward_func(ms.Tensor(x), None, inf_num, neg_inf_num)
+        output_nan_n_grad = nan_to_num_backward_func(ms.Tensor(x), None, inf_num, neg_inf_num)
+
+        # nan=None will update to -> nan=0.0
+        expect_nan_n = generate_expect_forward_output(x, None, inf_num, neg_inf_num)
+        expect_nan_n_grad = generate_expect_backward_output(x, None, inf_num, neg_inf_num)
+
+        np.allclose(output_nan_n.asnumpy(), expect_nan_n, rtol=1e-5, equal_nan=True)
+        np.allclose(output_nan_n_grad.asnumpy(), expect_nan_n_grad, rtol=1e-5, equal_nan=True)
+
     elif mode == 'KBK':
         output = (jit(nan_to_num_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), nan_num, inf_num,
                                                                                       neg_inf_num)

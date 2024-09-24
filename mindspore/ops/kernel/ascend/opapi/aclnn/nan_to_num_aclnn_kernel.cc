@@ -26,8 +26,8 @@
 
 namespace mindspore {
 namespace kernel {
-void NanToNumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                      const std::vector<KernelTensor *> &outputs) {
+void NanToNumAscend::GetInfValues(TypeId input_type, const std::optional<float> &posinf,
+                                  const std::optional<float> &neginf, bool posinf_has_value, bool neginf_has_value) {
   const float DOUBLE_MAX_VALUE = 1.7976931348623157e+308;
   const float DOUBLE_MIN_VALUE = -1.7976931348623157e+308;
   const float FLOAT32_MAX_VALUE = 3.4028235e+38;
@@ -36,6 +36,32 @@ void NanToNumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   const float FLOAT16_MIN_VALUE = -65504.0;
   const float BFLOAT16_MAX_VALUE = 3.3895314e+38;
   const float BFLOAT16_MIN_VALUE = -3.3895314e+38;
+  switch (input_type) {
+    case kNumberTypeFloat64:
+      posinf_ = posinf_has_value ? posinf.value() : DOUBLE_MAX_VALUE;
+      neginf_ = neginf_has_value ? neginf.value() : DOUBLE_MIN_VALUE;
+      break;
+    case kNumberTypeFloat32:
+      posinf_ = posinf_has_value ? posinf.value() : FLOAT32_MAX_VALUE;
+      neginf_ = neginf_has_value ? neginf.value() : FLOAT32_MIN_VALUE;
+      break;
+    case kNumberTypeFloat16:
+      posinf_ = posinf_has_value ? posinf.value() : FLOAT16_MAX_VALUE;
+      neginf_ = neginf_has_value ? neginf.value() : FLOAT16_MIN_VALUE;
+      break;
+    case kNumberTypeBFloat16:
+      posinf_ = posinf_has_value ? posinf.value() : BFLOAT16_MAX_VALUE;
+      neginf_ = neginf_has_value ? neginf.value() : BFLOAT16_MIN_VALUE;
+      break;
+    default:
+      posinf_ = posinf_has_value ? posinf.value() : FLOAT32_MAX_VALUE;
+      neginf_ = neginf_has_value ? neginf.value() : FLOAT32_MIN_VALUE;
+      break;
+  }
+}
+
+void NanToNumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                      const std::vector<KernelTensor *> &outputs) {
   const float DEFAULT_NAN = 0.0;
 
   auto nan = inputs[kIndex1]->GetOptionalValueWithCheck<float>();
@@ -46,36 +72,13 @@ void NanToNumAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
 
   bool posinf_has_value = posinf.has_value();
   bool neginf_has_value = neginf.has_value();
-
   if (posinf_has_value && neginf_has_value) {
     posinf_ = transform::ConvertKernelTensor<float>(inputs[kIndex2]);
     neginf_ = transform::ConvertKernelTensor<float>(inputs[kIndex3]);
   } else {
     auto input_type = inputs[kIndex0]->dtype_id();
-    switch (input_type) {
-      case kNumberTypeFloat64:
-        posinf_ = posinf_has_value ? posinf.value() : DOUBLE_MAX_VALUE;
-        neginf_ = neginf_has_value ? neginf.value() : DOUBLE_MIN_VALUE;
-        break;
-      case kNumberTypeFloat32:
-        posinf_ = posinf_has_value ? posinf.value() : FLOAT32_MAX_VALUE;
-        neginf_ = neginf_has_value ? neginf.value() : FLOAT32_MIN_VALUE;
-        break;
-      case kNumberTypeFloat16:
-        posinf_ = posinf_has_value ? posinf.value() : FLOAT16_MAX_VALUE;
-        neginf_ = neginf_has_value ? neginf.value() : FLOAT16_MIN_VALUE;
-        break;
-      case kNumberTypeBFloat16:
-        posinf_ = posinf_has_value ? posinf.value() : BFLOAT16_MAX_VALUE;
-        neginf_ = neginf_has_value ? neginf.value() : BFLOAT16_MIN_VALUE;
-        break;
-      default:
-        posinf_ = posinf_has_value ? posinf.value() : FLOAT32_MAX_VALUE;
-        neginf_ = neginf_has_value ? neginf.value() : FLOAT32_MIN_VALUE;
-        break;
-    }
+    GetInfValues(input_type, posinf, neginf, posinf_has_value, neginf_has_value);
   }
-
   GetWorkspaceForResize(inputs[kIndex0], nan_, posinf_, neginf_, outputs[kIndex0]);
 }
 
