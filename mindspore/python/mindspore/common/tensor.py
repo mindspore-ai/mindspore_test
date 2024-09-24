@@ -2040,11 +2040,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         reshape_op = tensor_operator_registry.get('reshape')
         return reshape_op(self, (-1,))
 
-    def round(self):
+    def round(self, decimals=0):
         """
         For details, please refer to :func:`mindspore.ops.round`.
         """
-        return tensor_operator_registry.get('round')(self)
+        return tensor_operator_registry.get('round')(self, decimals=decimals)
 
     def roll(self, shifts, dims):
         """
