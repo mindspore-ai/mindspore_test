@@ -1666,8 +1666,8 @@ def set_context(**kwargs):
                 - 2: Apply fusion to backward nodes.
 
                 - 3: Apply fusion to all nodes.
-              - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading.
-                Default: ``0``.
+              - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading. Only
+                support O0/O1 jit level. It doesn't work in O2 mode. Default: ``0``.
 
                 - 0: Disable this optimize.
 

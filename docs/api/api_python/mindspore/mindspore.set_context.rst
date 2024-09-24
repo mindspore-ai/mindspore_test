@@ -244,7 +244,7 @@ mindspore.set_context
               - 2: 仅对反向节点使能通算融合。
 
               - 3: 对所有节点使能通算融合。
-            - **dataset_broadcast_opt_level** (int): 数据集读取的优化级别。默认值：``0``。
+            - **dataset_broadcast_opt_level** (int): 数据集读取的优化级别， 目前只支持O0/O1模式，O2模式下不生效。默认值：``0``。
 
               - 0: 不启用数据集读取优化。
 
