@@ -77,7 +77,7 @@ class AscendEnvChecker(metaclass=ABCMeta):
         """Check Ascend env"""
         if self.ascend_home_path is None:
             return False
-        return self.check_cann_version() and self.check_lib_path() and self.check_python_deps()
+        return self.check_cann_version() and self.check_lib_path()
 
     def check_cann_version(self) -> bool:
         v = self.read_version(self.ascend_version_file)
