@@ -29,11 +29,9 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr ConstantPadNDFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto x_base_shape = input_args[kInputIndex0]->GetShape();
   auto x_shape = x_base_shape->GetShapeVector();
   // input x dynamic rank
-  MS_EXCEPTION_IF_NULL(x_base_shape);
   if (x_base_shape->IsDimUnknown()) {
     return std::make_shared<abstract::Shape>(std::vector<int64_t>{abstract::Shape::kShapeRankAny});
   }
@@ -77,7 +75,6 @@ BaseShapePtr ConstantPadNDFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ConstantPadNDFuncImpl::InferType(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   return CheckAndConvertUtils::CheckSubClass("input_x", input_args[kInputIndex0]->GetType(), {kTensorType}, prim_name);
 }
