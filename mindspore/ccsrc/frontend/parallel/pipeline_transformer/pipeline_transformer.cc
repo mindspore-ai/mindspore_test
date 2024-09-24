@@ -148,7 +148,28 @@ void PipelineTransformer::UpdateParameterSharedInfo(const AnfNodePtr &node, cons
   param->set_user_data<SharedParameter>(shared_parameters);
 }
 
+TensorInfo PipelineTransformer::GetTensorInfoNew(const std::pair<OperatorInfoPtr, int> &op_info_pair, bool is_param) {
+  if (is_param) {
+    auto inputs_tensor_info = op_info_pair.first->inputs_tensor_info_new();
+    auto correspond_tensor_info = inputs_tensor_info.at(IntToSize(op_info_pair.second));
+    if (correspond_tensor_info->is_list()) {
+      MS_LOG(EXCEPTION) << "The input tensor info is a list, which is not supported.";
+    }
+    return correspond_tensor_info->GetValue();
+  } else {
+    auto outputs_tensor_info = op_info_pair.first->outputs_tensor_info_new();
+    auto correspond_tensor_info = outputs_tensor_info.at(IntToSize(op_info_pair.second));
+    if (correspond_tensor_info->is_list()) {
+      MS_LOG(EXCEPTION) << "The output tensor info is a list, which is not supported.";
+    }
+    return correspond_tensor_info->GetValue();
+  }
+}
+
 TensorInfo PipelineTransformer::GetTensorInfo(const std::pair<OperatorInfoPtr, int> &op_info_pair, bool is_param) {
+  if (!op_info_pair.first->inputs_tensor_info_new().empty()) {
+    return GetTensorInfoNew(op_info_pair, is_param);
+  }
   if (is_param) {
     auto inputs_tensor_info = op_info_pair.first->inputs_tensor_info();
     return inputs_tensor_info.at(IntToSize(op_info_pair.second));
@@ -652,26 +673,50 @@ OperatorInfoPtr PipelineTransformer::CreateOpInfo(const CNodePtr &cnode, int tup
   auto op_info = CreateOperatorInfo(temp_node);
 
   StrategyPtr in_strategy = nullptr, out_strategy = nullptr;
+  auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
   std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
   std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
-  if (ExtractUserConfigLayout(attrs, op_info->inputs_shape(), op_info->outputs_shape(), &in_tensor_layouts,
-                              &out_tensor_layouts) != SUCCESS) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << prim->name() << " extract configured layout failed"
-                                       << trace::DumpSourceLines(cnode);
-  }
-
-  if (in_tensor_layouts.empty() && out_tensor_layouts.empty()) {
-    if (!StrategyFound(attrs)) {
-      in_strategy = GenerateBatchParallelStrategy(op_info, prim);
-    } else {
-      in_strategy = ExtractStrategy(attrs[IN_STRATEGY]);
-      out_strategy = ExtractStrategy(attrs[OUT_STRATEGY]);
+  std::vector<TensorLayoutBasePtr> in_tensor_layouts_new;
+  std::vector<TensorLayoutBasePtr> out_tensor_layouts_new;
+  StrategyMap stra_map;
+  std::string strategy_key_name = "";
+  if (is_new_shape_base_node) {
+    if (ExtractUserConfigLayoutForNewShape(attrs, op_info->inputs_shape_new(), op_info->outputs_shape_new(),
+                                           &in_tensor_layouts_new, &out_tensor_layouts_new) != SUCCESS) {
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << prim->name() << " extract configured layout failed"
+                                         << trace::DumpSourceLines(cnode);
     }
-    MS_EXCEPTION_IF_NULL(in_strategy);
+    for (size_t i = 0; i < in_tensor_layouts_new.size(); ++i) {
+      auto in_layouts = in_tensor_layouts_new[i]->GetAllElements();
+      in_tensor_layouts.insert(in_tensor_layouts.end(), in_layouts.begin(), in_layouts.end());
+    }
+    for (size_t i = 0; i < out_tensor_layouts_new.size(); ++i) {
+      auto out_layouts = out_tensor_layouts_new[i]->GetAllElements();
+      out_tensor_layouts.insert(out_tensor_layouts.end(), out_layouts.begin(), out_layouts.end());
+    }
+  } else {
+    if (ExtractUserConfigLayout(attrs, op_info->inputs_shape(), op_info->outputs_shape(), &in_tensor_layouts,
+                                &out_tensor_layouts) != SUCCESS) {
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << prim->name() << " extract configured layout failed"
+                                         << trace::DumpSourceLines(cnode);
+    }
   }
-
-  if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts) == FAILED) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "operator: " << prim->name() << " init failed.";
+  if (in_tensor_layouts.empty() && out_tensor_layouts.empty() && in_tensor_layouts_new.empty() &&
+      out_tensor_layouts_new.empty()) {
+    ObtainInOutStrategy(stra_map, prim, strategy_key_name, cnode, op_info, is_new_shape_base_node, &in_strategy,
+                        &out_strategy);
+    PaddingStrategy(op_info, is_new_shape_base_node, &in_strategy);
+  }
+  if (is_new_shape_base_node) {
+    if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts_new, out_tensor_layouts_new) == FAILED) {
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << prim->name() << " init failed"
+                                         << trace::DumpSourceLines(cnode);
+    }
+  } else {
+    if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts) == FAILED) {
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << prim->name() << " init failed"
+                                         << trace::DumpSourceLines(cnode);
+    }
   }
   return op_info;
 }

@@ -88,6 +88,10 @@ class PipelineTransformer {
   AnfNodePtr FindPipelineCareNode(const AnfNodePtr &node) const;
   std::pair<OperatorInfoPtr, int> GetOpInfo(const AnfNodePtr &node);
   TensorInfo GetTensorInfo(const std::pair<OperatorInfoPtr, int> &op_info_pair, bool is_param);
+  // The input opinfo is created in NewShapeBase logic (IsSupportNewShapeBaseNode is true)
+  // inputs_tensor_info of op_info is empty. Thus GetTensorInfoNew will obtain
+  // the value of inputs_tensor_info_new from op_info
+  TensorInfo GetTensorInfoNew(const std::pair<OperatorInfoPtr, int> &op_info_pair, bool is_param);
   std::pair<OperatorInfoPtr, int> GetParameterPair(const AnfNodePtr &node);
   OperatorInfoPtr CreateOpInfo(const CNodePtr &cnode, int tuple_index);
   bool LabelParameterStart(const FuncGraphPtr &graph);
