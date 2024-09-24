@@ -26,15 +26,15 @@ namespace lite {
 PrimitiveCPtr OnnxFlashAttentionParser::Parse(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node) {
   auto prim = std::make_unique<ops::Custom>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
-  std::vector<std::string> input_name = {"q", "k", "v", "attention_mask"};
+  std::vector<std::string> input_name = {"q", "k", "v"};  // the input of q here is (q * scale_value)
   std::vector<std::string> output_name = {"y"};
   prim->AddAttr("input_names", api::MakeValue(input_name));
   prim->AddAttr("output_names", api::MakeValue(output_name));
-  prim->set_type("FlashAttention");
-  prim->AddAttr("reg_op_name", api::MakeValue("FlashAttention"));
+  prim->set_type("FlashAttentionTik");
+  prim->AddAttr("reg_op_name", api::MakeValue("FlashAttentionTik"));
   return prim->GetPrim();
 }
 
-OnnxNodeRegistrar g_onnxFlashAttentionParser("FlashAttention", new OnnxFlashAttentionParser());
+OnnxNodeRegistrar g_onnxFlashAttentionParser("FlashAttentionTik", new OnnxFlashAttentionParser());
 }  // namespace lite
 }  // namespace mindspore
