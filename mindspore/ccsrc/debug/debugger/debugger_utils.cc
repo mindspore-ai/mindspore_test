@@ -505,8 +505,8 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
         MS_LOG(ERROR) << "Dump host size " << host_size << " greater than device size " << device_size;
         continue;
       }
-      auto ret_rt_memcpy = tensor_info.device_tensor->CallAclrtMemcpy(out_tensor->data_c(), host_size,
-                                                                      tensor_info.device_ptr, device_size);
+      auto ret_rt_memcpy = tensor_info.device_tensor->CopyDeviceToHostWithoutSyncStream(
+        out_tensor->data_c(), host_size, tensor_info.device_ptr, device_size);
       MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret_rt_memcpy << file_path;
 
       // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
@@ -631,7 +631,7 @@ inline mindspore::tensor::TensorPtr DeviceAddress2Tensor(device::DeviceAddressPt
     MS_LOG(WARNING) << "Dump tensor size is 0 for tensor: . Skip it";
     return out_tensor;
   }
-  device_addr->CallAclrtMemcpy(out_tensor->data_c(), host_size, src, host_size);
+  device_addr->CopyDeviceToHostWithoutSyncStream(out_tensor->data_c(), host_size, src, host_size);
   return out_tensor;
 }
 
