@@ -413,7 +413,7 @@ CNodePtr CloneReshapeNode(const AnfNodePtr &input_node, mindspore::HashMap<CNode
   std::vector<ValuePtr> value_ptr_vec = value_ptr->cast<ValueTuplePtr>()->value();
 
   size_t scale_dim = 0;
-  if (node_idx == 0 || node_idx == 3) {
+  if (node_idx == kIndex0 || node_idx == kIndex3) {
     scale_dim = 1;
   }
 
@@ -421,7 +421,7 @@ CNodePtr CloneReshapeNode(const AnfNodePtr &input_node, mindspore::HashMap<CNode
   for (size_t j = 0; j < value_ptr_vec.size(); j++) {
     auto shape_value = GetValue<int64_t>(value_ptr_vec[j]);
     if (j == scale_dim) {
-      shape_value /= scale_factor;
+      shape_value /= SizeToLong(scale_factor);
     }
     new_shape.push_back(shape_value);
   }
@@ -738,8 +738,6 @@ bool SetOffloadingPackedExpert(const FuncGraphPtr &func_graph) {
     return false;
   }
   MS_LOG(INFO) << " pass if (parallel::g_device_manager == nullptr)";
-  // MS_EXCEPTION_IF_NULL(resource);
-  // FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
 
   auto ope_info = OpeInfo();
@@ -757,11 +755,9 @@ bool SetOffloadingPackedExpert(const FuncGraphPtr &func_graph) {
   auto it = std::find_if(graphs.begin(), graphs.end(), [&](const auto &each_graph) {
     return SetOffloadingPackedExpertsForEachGraph(each_graph, &ope_info);
   });
-
   if (it != graphs.end()) {
     res = true;
   }
-
   return res;
 }
 }  // namespace parallel

@@ -1527,7 +1527,8 @@ Status FlashAttentionScoreInfo::ComputeReplaceGraphForLoadBalance(const CNodePtr
     LoadBalanceExchange(all_gather_idx, group, attn_mask_exchange, &attn_mask_target, &gen_g);
   }
 
-  AnfNodePtr flash_attention_score_keep, flash_attention_score_target;
+  AnfNodePtr flash_attention_score_keep;
+  AnfNodePtr flash_attention_score_target;
   AnfNodePtr q_target_shape = nullptr;
   AnfNodePtr q_keep_shape = nullptr;
   AnfNodePtr k_shape = nullptr;

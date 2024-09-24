@@ -223,7 +223,7 @@ static void InsertAllReduceToNodeInput(const CNodePtr &node, const std::string &
 }
 
 bool InsertAllReduceOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = (int64_t)devices;
+  int64_t device_num = SizeToLong(devices);
   if (device_num <= 1) {
     return true;
   }
@@ -337,7 +337,7 @@ bool InsertAllReduceOpsForFFN(const std::vector<AnfNodePtr> &all_nodes, const Fu
 }
 
 void ChangeReshape(const AnfNodePtr &node, const size_t devices) {
-  int64_t device_num = (int64_t)devices;
+  int64_t device_num = SizeToLong(devices);
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     return;
@@ -398,7 +398,7 @@ void ChangeReshape(const AnfNodePtr &node, const size_t devices) {
 }
 
 bool ModifyReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = (int64_t)devices;
+  int64_t device_num = SizeToLong(devices);
   MS_EXCEPTION_IF_NULL(root);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
@@ -432,7 +432,7 @@ bool ModifyReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphP
 }
 
 bool ModifyMakeTupleOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = (int64_t)devices;
+  int64_t device_num = SizeToLong(devices);
   MS_EXCEPTION_IF_NULL(root);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
@@ -463,7 +463,7 @@ bool ModifyMakeTupleOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
 }
 
 bool ModifySoftmaxReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = (int64_t)devices;
+  int64_t device_num = SizeToLong(devices);
   MS_EXCEPTION_IF_NULL(root);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
@@ -887,7 +887,7 @@ static void FixReturnRedistribution(const FuncGraphPtr &root, const size_t devic
     } else {
       auto allgather = gen_g.PushBack({NewAllGatherNode(ALL_GATHER, HCCL_WORLD_GROUP), matmul});
       // split
-      int64_t split_count = (int64_t)devices;
+      int64_t split_count = SizeToLong(devices);
       Attr split_axis_attr = std::make_pair(AXIS, MakeValue(0));
       Attr split_count_attr = std::make_pair(OUTPUT_NUM, MakeValue(split_count));
       OperatorAttrs split_attrs = {split_axis_attr, split_count_attr};
