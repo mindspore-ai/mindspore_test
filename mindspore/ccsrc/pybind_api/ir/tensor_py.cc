@@ -30,6 +30,7 @@
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pipeline/pipeline.h"
 #include "include/backend/mbuf_device_address.h"
+#include "pybind_api/ir/tensor_func_reg.h"
 
 namespace mindspore {
 namespace tensor {
@@ -729,8 +730,8 @@ void RegMetaTensor(const py::module *m) {
   // Define python Tensor class.
   // dtype should define before Tensor, because Tensor init depend dtype
   (void)py::class_<BaseTensor, MetaTensor, std::shared_ptr<BaseTensor>>(*m, "BaseTensor");
-  (void)py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>>(*m, "Tensor")
-    .def(py::init([](const Tensor &tensor) { return std::make_shared<Tensor>(tensor); }), py::arg("input"))
+  auto tensor_class = py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>>(*m, "Tensor");
+  tensor_class.def(py::init([](const Tensor &tensor) { return std::make_shared<Tensor>(tensor); }), py::arg("input"))
     .def(py::init([](const Tensor &tensor, const TypePtr &type_ptr) {
            TypeId data_type = type_ptr ? type_ptr->type_id() : kTypeUnknown;
            if (data_type == kTypeUnknown || tensor.data_type() == data_type) {
@@ -1057,8 +1058,7 @@ void RegMetaTensor(const py::module *m) {
     .def("__repr__", &Tensor::ToStringRepr)
     .def("_offload", &TensorPy::Offload)
     .def("set_device_address", &TensorPy::SetDeviceAddress, py::arg("addr"), py::arg("shape"), py::arg("dtype"))
-    .def(
-      py::pickle(
+    .def(py::pickle(
         [](const Tensor &t) {  // __getstate__
           /* Return a tuple that fully encodes the state of the object */
           return py::make_tuple(TensorPy::SyncAsNumpy(t));
@@ -1070,6 +1070,7 @@ void RegMetaTensor(const py::module *m) {
           /* Create a new C++ instance */
           return TensorPy::MakeTensor(t[0].cast<py::array>());
         }));
+  RegTensorFunc(&tensor_class);
 }
 
 template <typename T>

@@ -24,10 +24,13 @@
 #include "pipeline/pynative/forward/forward_task.h"
 #include "op_def/auto_generate/gen_ops_def.h"
 #include "pybind_api/hal/comm_handle_py.h"
+#include "pybind_api/ir/tensor_func_reg.h"
 ${include_op_header}
 
 namespace mindspore::pynative {
 ${function_body}
 
 ${register_function_body}
+
+${function_class_register}
 }// namespace mindspore::pynative

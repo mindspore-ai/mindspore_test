@@ -65,8 +65,9 @@ class PyboostFunctionsGenerator(BaseGenerator):
         self.REGISTER_DEFINE_TEMPLATE = template.REGISTER_DEFINE_TEMPLATE
         self.REGISTER_TEMPLATE = template.REGISTER_TEMPLATE
         self.PYBOOST_HEADER_TEMPLATE = template.PYBOOST_HEADER_TEMPLATE
+        self.TENSOR_FUNC_CLASS_REG = template.TENSOR_FUNC_CLASS_REG
 
-    def generate(self, work_path, op_protos):
+    def generate(self, work_path, op_protos, tensor_func_protos):
         """
         Generates the C++ PyBoost functions and writes them to the specified files.
 
@@ -77,6 +78,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         Args:
             work_path (str): The file path where the generated files will be saved.
             op_protos (list): A list of operator prototypes containing information about the operators to be processed.
+            tensor_func_protos(list): A list of tensor prototypes containing information about the tensors to be processed.
 
         Returns:
             None
@@ -123,13 +125,22 @@ class PyboostFunctionsGenerator(BaseGenerator):
                 class_name=op_proto.op_class.name)
             pyboost_func_include_headers_str += self.pyboost_func_include_header_template.replace(
                 operator_name=op_proto.op_name)
+        function_class_register = self._get_function_class_register(tensor_func_protos)
         register_func_str = self.REGISTER_TEMPLATE.replace(register_func=pyboost_func_pybind_def)
         pyboost_func_file = self.PYBOOST_HEADER_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
                                                                  function_body=pyboost_func_str,
-                                                                 register_function_body=register_func_str)
+                                                                 register_function_body=register_func_str,
+                                                                 function_class_register=function_class_register)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         file_name = "pyboost_functions.cc"
         save_file(save_path, file_name, pyboost_func_file)
+
+    def _get_function_class_register(self, tensor_func_protos) -> str:
+        function_class_register = ''
+        for tensor_func_proto in tensor_func_protos:
+            function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=tensor_func_proto.class_name,
+                                                                          op_name=tensor_func_proto.op_name)
+        return function_class_register
 
     def _generate_parser_func(self, op_proto: OpProto) -> str:
         """

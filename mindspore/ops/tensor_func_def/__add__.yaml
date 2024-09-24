@@ -1,0 +1,5 @@
+__add__:
+  op_name: add
+  Ascend: aclnn
+  CPU: python
+  GPU: python

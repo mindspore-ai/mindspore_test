@@ -119,9 +119,12 @@ mindspore/lite/test/do_test/
 auto_generate/
 mindspore/python/mindspore/ops_generate/ops.yaml
 mindspore/python/mindspore/ops_generate/ops_doc.yaml
+mindspore/python/mindspore/ops_generate/tensor_func.yaml
 mindspore/python/mindspore/ops_generate/inner_ops.yaml
 mindspore/python/mindspore/ops_generate/inner_ops_doc.yaml
 mindspore/ops/kernel/ascend/opapi/aclnn_kernel_register_auto.cc
+mindspore/ccsrc/pybind_api/ir/tensor_func_reg.h
+mindspore/ccsrc/pybind_api/ir/tensor_func_reg.cc
 mindspore/ops/kernel/ascend/opapi/aclnn_auto_gen/
 
 # ascendc compile
