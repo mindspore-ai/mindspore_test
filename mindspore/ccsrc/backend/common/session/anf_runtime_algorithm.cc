@@ -2465,54 +2465,61 @@ bool AnfRuntimeAlgorithm::IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph
   return true;
 }
 
-std::vector<size_t> AnfRuntimeAlgorithm::GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) {
+bool AnfRuntimeAlgorithm::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) {
   MS_EXCEPTION_IF_NULL(node);
   auto kernel_mod = GetKernelMod(node);
   MS_EXCEPTION_IF_NULL(kernel_mod);
+  // Search for the ignore list if kernelmod has ignore list.
   std::vector<size_t> launch_ignored_input_idx = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+  if (!launch_ignored_input_idx.empty()) {
+    if (std::find(launch_ignored_input_idx.begin(), launch_ignored_input_idx.end(), input_idx) !=
+        launch_ignored_input_idx.end()) {
+      return true;
+    }
+    return false;
+  }
+
+  // The new ignore input cannot be dumped, so it is not ignored when dump.
   static bool is_enable_dump = !common::GetEnv(kMindsporeDumpConfig).empty();
-  if (!launch_ignored_input_idx.empty() || is_enable_dump) {
-    return launch_ignored_input_idx;
+  if (is_enable_dump) {
+    return false;
   }
 
-  auto input_num = common::AnfAlgo::GetInputTensorNum(node);
-  for (size_t input_idx = 0; input_idx < input_num; ++input_idx) {
-    auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, input_idx);
-    auto node = kernel_with_index.first;
-    MS_EXCEPTION_IF_NULL(node);
-    MS_EXCEPTION_IF_NULL(node->abstract());
-    const auto &input_type = node->abstract()->BuildType();
-    // Tensor or tuple of tensor should not be ignored.
-    if (input_type->type_id() == kObjectTypeTensorType) {
-      continue;
-    }
-
-    if (input_type->type_id() == kObjectTypeTuple) {
-      auto type = input_type->cast<TuplePtr>();
-      MS_EXCEPTION_IF_NULL(type);
-      if (type->dynamic_len()) {
-        continue;
-      }
-      const auto &elements = type->elements();
-      if (!elements.empty() && elements[0]->type_id() == kObjectTypeTensorType) {
-        continue;
-      }
-    }
-
-    if (input_type->type_id() == kObjectTypeList) {
-      auto type = input_type->cast<ListPtr>();
-      MS_EXCEPTION_IF_NULL(type);
-      if (type->dynamic_len()) {
-        continue;
-      }
-      const auto &elements = type->elements();
-      if (!elements.empty() && elements[0]->type_id() == kObjectTypeTensorType) {
-        continue;
-      }
-    }
-    launch_ignored_input_idx.emplace_back(input_idx);
+  auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, input_idx);
+  auto cnode = kernel_with_index.first;
+  MS_EXCEPTION_IF_NULL(cnode);
+  MS_EXCEPTION_IF_NULL(cnode->abstract());
+  const auto &input_type = cnode->abstract()->BuildType();
+  // Tensor or tuple of tensor should not be ignored.
+  if (input_type->type_id() == kObjectTypeTensorType) {
+    return false;
   }
 
-  return launch_ignored_input_idx;
+  if (input_type->type_id() == kObjectTypeTuple) {
+    auto type = input_type->cast<TuplePtr>();
+    MS_EXCEPTION_IF_NULL(type);
+    if (type->dynamic_len()) {
+      return false;
+    }
+    const auto &elements = type->elements();
+    if (!elements.empty() && elements[0]->type_id() == kObjectTypeTensorType) {
+      return false;
+    }
+  }
+
+  if (input_type->type_id() == kObjectTypeList) {
+    auto type = input_type->cast<ListPtr>();
+    MS_EXCEPTION_IF_NULL(type);
+    if (type->dynamic_len()) {
+      return false;
+    }
+    const auto &elements = type->elements();
+    if (!elements.empty() && elements[0]->type_id() == kObjectTypeTensorType) {
+      return false;
+    }
+  }
+
+  return true;
 }
+
 }  // namespace mindspore::session

@@ -77,7 +77,14 @@ class GeKernelExecutor : public KernelExecutor {
 
   std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
     MS_EXCEPTION_IF_NULL(node);
-    return AnfAlgo::GetLaunchIgnoredInputAddressIdx(node);
+    auto input_num = common::AnfAlgo::GetInputTensorNum(node);
+    std::vector<size_t> ignore_input_list;
+    for (size_t input_idx = 0; input_idx < input_num; ++input_idx) {
+      if (AnfAlgo::IsLaunchIgnoredInputAddressIdx(node, input_idx)) {
+        ignore_input_list.emplace_back(input_idx);
+      }
+    }
+    return ignore_input_list;
   }
 
  private:

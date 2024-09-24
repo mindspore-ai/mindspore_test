@@ -76,7 +76,11 @@ bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const Kernel
     packet_kernel_mod->inputs_cache_[i] = std::move(kernel_tensor);
   }
   packet_kernel_mod->real_kernel_mod_ = real_kernel_mod;
-  packet_kernel_mod->ignored_input_idx_ = AnfAlgo::GetLaunchIgnoredInputAddressIdx(real_node);
+  for (size_t input_idx = 0; input_idx < input_tensor_num; ++input_idx) {
+    if (AnfAlgo::IsLaunchIgnoredInputAddressIdx(real_node, input_idx)) {
+      packet_kernel_mod->ignored_input_idx_.emplace_back(input_idx);
+    }
+  }
 
   return true;
 }

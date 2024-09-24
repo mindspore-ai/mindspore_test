@@ -332,15 +332,7 @@ bool SchedulerHelper::IsIgnoredInputAddress(AbstractActor *const to_actor, size_
     return true;
   }
 
-  MS_EXCEPTION_IF_NULL(to_actor->device_contexts_[0]);
-  auto kernel_executor = to_actor->device_contexts_[0]->GetKernelExecutor(false);
-  MS_EXCEPTION_IF_NULL(kernel_executor);
-  const auto &ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(to_kernel);
-  if (ignored_address.empty()) {
-    return false;
-  }
-
-  if (std::find(ignored_address.begin(), ignored_address.end(), to_input_index) != ignored_address.end()) {
+  if (AnfAlgo::IsLaunchIgnoredInputAddressIdx(to_kernel, to_input_index)) {
     MS_LOG(INFO) << "Ignore the input address for kernel: " << to_kernel->fullname_with_scope()
                  << " with input index: " << to_input_index;
     return true;
