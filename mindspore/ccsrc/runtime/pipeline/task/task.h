@@ -33,7 +33,8 @@ enum TaskType {
   kBackendTask,
   kKernelTask,
   kExitTask,
-  kWaitTask
+  kWaitTask,
+  kStressDetectTask
 };
 
 enum class KernelTaskType { kNORMAL_VIEW_TASK = 0, kCONTIGUOUS_TASK, kCOPY_TASK };

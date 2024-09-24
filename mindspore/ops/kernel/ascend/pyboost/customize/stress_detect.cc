@@ -18,12 +18,20 @@
 #include <string>
 #include <thread>
 #include <future>
+#include <memory>
+#include <utility>
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+
+void StressDetectTask::Run() {
+  auto ret = run_func_(device_id_, workspace_addr_, workspace_size_);
+  p_.set_value(ret);
+}
 
 int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceContext *device_context) {
   runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,
@@ -44,9 +52,14 @@ int LaunchAclnnWithNoInput(const std::string &aclnn_name, const device::DeviceCo
     MS_LOG(EXCEPTION) << aclnn_name << " not in " << transform::GetOpApiLibName() << ", please check!";
   }
   auto run_api_func = reinterpret_cast<int (*)(int32_t, void *, uint64_t)>(op_api_func);
-  std::future<int> result = std::async(std::launch::async, run_api_func,
-                                       device_context->device_context_key().device_id_, workspace_addr, workspace_size);
-  int api_ret = result.get();
+  std::promise<int> p;
+  std::future<int> f = p.get_future();
+  auto task =
+    std::make_shared<StressDetectTask>(std::move(run_api_func), device_context->device_context_key().device_id_,
+                                       workspace_addr, workspace_size, std::move(p));
+  runtime::Pipeline::Get().stress_detect()->Push(task);
+  runtime::Pipeline::Get().stress_detect()->Wait();
+  int api_ret = f.get();
   return api_ret;
 }
 

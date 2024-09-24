@@ -43,6 +43,7 @@ enum kThreadWaitLevel : int {
   kLevelGrad,
   kLevelBackend,
   kLevelDevice,
+  kLevelStressDetect,
 };
 
 // Create a new thread to execute the tasks in the queue sequentially.

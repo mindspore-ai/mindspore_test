@@ -29,7 +29,8 @@ Pipeline::Pipeline()
     : frontend_stage_(std::make_unique<AsyncRQueue>("frontend_queue", runtime::kThreadWaitLevel::kLevelFrontend)),
       bprop_stage_(std::make_unique<AsyncRQueue>("bprop_queue", kThreadWaitLevel::kLevelGrad)),
       backend_stage_(std::make_unique<AsyncRQueue>("backend_queue", kThreadWaitLevel::kLevelBackend)),
-      launch_stage_(std::make_unique<AsyncRQueue>("launch_queue", kThreadWaitLevel::kLevelDevice)) {}
+      launch_stage_(std::make_unique<AsyncRQueue>("launch_queue", kThreadWaitLevel::kLevelDevice)),
+      stress_detect_(std::make_unique<AsyncRQueue>("stress_detect_queue", kThreadWaitLevel::kLevelStressDetect)) {}
 
 void Pipeline::WaitAll() {
   GilReleaseWithCheck gil_release;
