@@ -102,7 +102,6 @@ class TestCase():
         result = subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
         assert result.returncode == 0
 
-
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
     def test_custom_add_aclnn_dynamic(self):
         """
@@ -133,5 +132,16 @@ class TestCase():
         Expectation: the result match with numpy result
         """
         command = ['pytest -sv test_custom_aclnn.py::test_custom_add_aclnn_bprop']
+        result = subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
+        assert result.returncode == 0
+
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+    def test_multi_custom_aclnn(self):
+        """
+        Feature: Custom op testcase
+        Description: test case for multi custom
+        Expectation: the result match with numpy result
+        """
+        command = ['pytest -sv test_custom_aclnn.py::test_multi_custom_aclnn']
         result = subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
         assert result.returncode == 0

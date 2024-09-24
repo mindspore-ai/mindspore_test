@@ -47,6 +47,20 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
     MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                     \
   });
 
+#define DISPATCH_LAUNCH_CUSTOM_KERNEL(device_context, aclnn_name, ws_ptr, ws_size, executor, stream, release_func, \
+                                      update_func)                                                                 \
+  runtime::OpExecutor::DispatchLaunchTask([=]() {                                                                  \
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative,                                         \
+                                       runtime::ProfilerEvent::kPyNativeLaunchTask, aclnn_name, false);            \
+    MS_LOG(DEBUG) << "launch task start, " << aclnn_name;                                                          \
+    device_context->device_res_manager_->BindDeviceToCurrentThread(false);                                         \
+    if (update_func != nullptr) {                                                                                  \
+      update_func();                                                                                               \
+    }                                                                                                              \
+    RUN_CUSTOM_OP_API_ASYNC(aclnn_name, ws_ptr, ws_size, executor, stream, release_func);                          \
+    MS_LOG(DEBUG) << "launch task end, " << aclnn_name;                                                            \
+  });
+
 #define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                  \
   [](const std::string &api_str, const auto &... args) -> auto {                                  \
     uint64_t hash_id = mindspore::transform::AclnnHash(api_str, args...);                         \

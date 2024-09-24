@@ -51,7 +51,69 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
       res_tuple);
   }
 
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  template <typename... Args>
+  void GetWorkspaceForResize(const Args &... args) {
+    hash_id_ = transform::AclnnHash(op_type_, args...);
+    size_t cur_workspace = 0;
+    if (hash_map_.count(hash_id_)) {
+      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_]);
+      cur_workspace = std::get<3>(hash_cache_.front());
+    } else {
+      auto [workspace, executor, cache, fail_cache] = GEN_CUSTOM_EXECUTOR_FOR_RESIZE(op_type_, args...);
+      cur_workspace = workspace;
+      if (!fail_cache) {
+        hash_cache_.emplace_front(hash_id_, executor, cache, workspace);
+        hash_map_[hash_id_] = hash_cache_.begin();
+      } else {
+        hash_id_ = 0;
+        cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
+      }
+    }
+    if (hash_cache_.size() > capacity_) {
+      hash_map_.erase(std::get<0>(hash_cache_.back()));
+      auto release_func = std::get<2>(hash_cache_.back());
+      release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
+      hash_cache_.pop_back();
+    }
+
+    if (cur_workspace != 0) {
+      std::vector<size_t> workspace_size_list = {cur_workspace};
+      SetWorkspaceSizeList(workspace_size_list);
+    }
+  }
+
+  template <typename... Args>
+  void RunOp(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {
+    auto [executor, release_func] = GetExecutor(args...);
+    if (workspace_size_list_.empty()) {
+      RUN_CUSTOM_OP_API_ASYNC(op_type_, nullptr, 0, executor, stream_ptr, release_func);
+    } else {
+      if (workspace.empty()) {
+        MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";
+      }
+      auto workspace_tensor = workspace[0];
+      if (workspace_tensor->size() != workspace_size_list_[0]) {
+        MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"
+                          << workspace_size_list_[0] << ", but get " << workspace_tensor->size();
+      }
+      RUN_CUSTOM_OP_API_ASYNC(op_type_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, stream_ptr,
+                              release_func);
+    }
+  }
+
+  template <typename... Args>
+  std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {
+    if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {
+      aclOpExecutor *executor;
+      std::function<void()> release_func;
+      std::tie(std::ignore, executor, release_func) = GEN_CUSTOM_EXECUTOR(op_type_, args...);
+      return std::make_pair(executor, release_func);
+    }
+    const auto &cur_run = *hash_map_[hash_id_];
+    UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);
+    const auto &executor = std::get<1>(cur_run);
+    return std::make_pair(executor, nullptr);
+  }
 };
 
 }  // namespace kernel
