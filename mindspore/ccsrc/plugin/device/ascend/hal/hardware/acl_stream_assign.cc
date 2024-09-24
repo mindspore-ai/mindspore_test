@@ -132,7 +132,7 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     auto parallel_context = parallel::ParallelContext::GetInstance();
     MS_EXCEPTION_IF_NULL(parallel_context);
     auto is_pp_interleave = parallel_context->pipeline_interleave();
-    if (common::AnfAlgo::IsCommunicationOp(node)) {
+    if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
       AddStreamIdForCommunicationOp(node, is_pp_interleave);
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());

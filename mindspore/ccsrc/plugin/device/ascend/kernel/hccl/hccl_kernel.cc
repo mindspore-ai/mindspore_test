@@ -29,8 +29,8 @@
 #include "utils/ms_context.h"
 #include "runtime/device/kernel_runtime.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/multi_ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
@@ -160,14 +160,14 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
       MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
     use_lccl_ = isSupportLccl(group_, kernel_name_, lccl_enabled_groups);
     if (use_lccl_) {
-      MS_LOG(DEBUG) << "Load LCCL for kernel: " << kernel_name_ << ", in group: " << group_;
+      MS_LOG(WARNING) << "Loading LCCL for kernel: " << kernel_name_ << ", in group: " << group_;
       LoadLcclLibrary();
     } else {
-      MS_LOG(DEBUG) << "Load HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
+      MS_LOG(WARNING) << "Loading HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
       LoadHcclLibrary();
     }
 #else
-    MS_LOG(DEBUG) << "Load HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
+    MS_LOG(WARNING) << "Loading HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
     LoadHcclLibrary();
 #endif
   }
@@ -318,6 +318,7 @@ void HcclKernel::LoadHcclLibrary() {
     MS_EXCEPTION_IF_NULL(comm_);
     primitive_->set_attr(kAttrComm, MakeValue<int64_t>(reinterpret_cast<int64_t>(comm_)));
   }
+  primitive_->set_attr(kAttrCollectiveCommLib, MakeValue<std::string>("HCCL"));
 }
 
 #ifdef ENABLE_INTERNAL_KERNELS
@@ -334,6 +335,7 @@ void HcclKernel::LoadLcclLibrary() {
   auto get_lccl_func = DlsymFuncObj(LcclCommunicator, lowlatency_comm_lib_handle_);
   lccl_ptr_ = get_lccl_func(group_);
   MS_EXCEPTION_IF_NULL(lccl_ptr_);
+  primitive_->set_attr(kAttrCollectiveCommLib, MakeValue<std::string>("LCCL"));
 }
 #endif
 }  // namespace kernel

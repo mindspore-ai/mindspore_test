@@ -1264,6 +1264,21 @@ bool AnfAlgo::IsCommunicationOp(const AnfNodePtr &node) {
   return IsCommunicationOp(kernel_name);
 }
 
+bool AnfAlgo::IsLcclCommunicationOp(const AnfNodePtr &node) {
+  if (!IsCommunicationOp(node)) {
+    return false;
+  }
+  auto primitive = AnfAlgo::GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(primitive);
+  ValuePtr attr_collective_comm_lib = primitive->GetAttr(kAttrCollectiveCommLib);
+  if (attr_collective_comm_lib == nullptr) {
+    return false;
+  }
+
+  auto collective_comm_lib = GetValue<std::string>(attr_collective_comm_lib);
+  return (collective_comm_lib == "LCCL") ? true : false;
+}
+
 bool AnfAlgo::IsDtypeFormatSensitiveOp(const AnfNodePtr &node) {
   static const std::set<std::string> kDtypeFormatSensitiveOpNames = {kCastOpName};
   MS_EXCEPTION_IF_NULL(node);

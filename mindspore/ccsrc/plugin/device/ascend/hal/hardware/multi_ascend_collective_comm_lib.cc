@@ -15,8 +15,8 @@
  */
 
 #include "plugin/device/ascend/hal/hardware/multi_ascend_collective_comm_lib.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 
-constexpr size_t kPathMax = 4096;
 namespace mindspore {
 namespace device {
 namespace ascend {
@@ -46,7 +46,7 @@ bool MultiAscendCollectiveCommLib::isGroupWithinLocalMachine(const std::vector<u
     return false;
   }
   return std::all_of(group_ranks.begin() + 1, group_ranks.end(),
-                     [&](uint32_t rank) { return all_host_hashs[rank] == all_host_hashs[0]; });
+                     [&](uint32_t rank) { return all_host_hashs[rank] == all_host_hashs[group_ranks[0]]; });
 }
 
 bool MultiAscendCollectiveCommLib::InitializeWatchDog(uint32_t global_rank_id, uint32_t global_rank_size,
@@ -77,12 +77,14 @@ bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
                        "communication group within single node in KernelByKernel for now.";
     RETURN_IF_FALSE_WITH_LOG(lowlatency_collective_comm_lib_->Initialize(global_rank, global_rank_size, local_rank_id),
                              "Failed to initialize LCCL.");
+    MS_LOG(INFO) << "Successfully initialize LCCL.";
   }
 #endif
   ascend_collective_comm_lib_ = &AscendCollectiveCommLib::GetInstance();
   MS_EXCEPTION_IF_NULL(ascend_collective_comm_lib_);
   RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->Initialize(global_rank, global_rank_size, local_rank_id),
                            "Failed to initialize HCCL.");
+  MS_LOG(INFO) << "Successfully initialize HCCL.";
   return true;
 }
 
@@ -97,10 +99,12 @@ bool MultiAscendCollectiveCommLib::DestroyCommunicationGroup(const std::string &
     RETURN_IF_FALSE_WITH_LOG(lowlatency_collective_comm_lib_->DestroyCommunicationGroup(group_name),
                              "Failed to destroy LCCL communication group " + group_name);
     lccl_enabled_groups.erase(group_name);
+    MS_LOG(INFO) << "Successfully destroy LCCL communication group " << group_name;
   }
 #endif
   RETURN_IF_FALSE_WITH_LOG(ascend_collective_comm_lib_->DestroyCommunicationGroup(group_name),
                            "Failed to destroy HCCL communication group " + group_name);
+  MS_LOG(INFO) << "Successfully destroy HCCL communication group " << group_name;
   return true;
 }
 
@@ -125,6 +129,7 @@ bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
     MS_EXCEPTION_IF_NULL(lccl_group);
     group->SetLcclGroup(lccl_group);
     lccl_enabled_groups.insert(group_name);
+    MS_LOG(INFO) << "Successfully create LCCL communication group " << group_name;
   }
 #endif
   RETURN_IF_FALSE_WITH_LOG(
@@ -133,6 +138,7 @@ bool MultiAscendCollectiveCommLib::CreateCommunicationGroup(const std::string &g
   CommunicationGroupPtr hccl_group = ascend_collective_comm_lib_->GetGroup(group_name);
   MS_EXCEPTION_IF_NULL(hccl_group);
   group->SetHcclGroup(hccl_group);
+  MS_LOG(INFO) << "Successfully create HCCL communication group " << group_name;
 
   groups_[group_name] = group;
 
