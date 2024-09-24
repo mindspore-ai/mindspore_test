@@ -346,7 +346,7 @@ class AscendEnvChecker(EnvChecker):
                                               "../lib/plugin/ascend/custom_ascendc_ops/op_impl/ai_core/tbe/kernel",
                                               MSContext.get_instance().get_ascend_soc_version())
         if not os.path.exists(custom_ascendc_soc_dir):
-            logger.warning(f"The path {custom_ascendc_soc_dir} of the custom ascend c operator does not exist.")
+            logger.debug(f"The path {custom_ascendc_soc_dir} of the custom ascend c operator does not exist.")
             return False
 
         if not Path(self.fwk_version).is_file():
