@@ -69,8 +69,7 @@ class SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {
     NodePtrList softmax_node_outputs;
     auto expand_dims_node = CreateMulInput(inputs, dout, &softmax_node_outputs);
 
-    NodePtr new_mul_node =
-      func_builder_->EmitOp(func_builder_->NewPrimitive(kMulOpName), {softmax_node_outputs[kIndex1], expand_dims_node});
+    NodePtr new_mul_node = func_builder_->Mul(softmax_node_outputs[kIndex1], expand_dims_node);
     // Reshape 1D result to multi-dim result.
     auto reshape_node = CreateReshape(new_mul_node, BaseShapeToShape(inputs[kIndex0]->GetShape()));
     return reshape_node;
@@ -81,16 +80,7 @@ class SparseSoftmaxCrossEntropyWithLogitsUnifyMindIR {
  private:
   NodePtr CreateReshape(const NodePtr &input_node, const ShapeVector &shape) {
     MS_EXCEPTION_IF_NULL(input_node);
-    std::vector<std::string> input_names = {"x", "shape"};
-    std::vector<std::string> output_names = {"output"};
-    auto prim = func_builder_->NewPrimitive(
-      kReshapeOpName, {{kAttrInputNames, MakeValue(input_names)}, {kAttrOutputNames, MakeValue(output_names)}});
-    constexpr auto kShapeFromTensor = "shape_from_tensor";
-    prim->set_attr(kShapeFromTensor, MakeValue(true));
-    auto shape_node = func_builder_->NewFuncNode(PyNativeAlgo::Common::CreateTensorByConstantValue(MakeValue(shape)),
-                                                 nullptr, InputType::kConstant);
-    shape_node->set_abstract(shape_node->Value()->ToAbstract());
-    return func_builder_->EmitOp(prim, {input_node, shape_node});
+    return func_builder_->Reshape(input_node, func_builder_->Value<ShapeVector>(shape));
   }
 
   void GetDepthAndBatchSizeFromSparseSoftmaxNode(const NodePtrList &inputs) {
