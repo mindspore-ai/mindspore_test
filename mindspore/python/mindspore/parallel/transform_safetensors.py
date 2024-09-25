@@ -936,10 +936,12 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
         if dst_strategy_list is not None:
             if param_name not in dst_strategy_list:
                 continue
-            slice_op = _get_slice(rank_id, sf_obj, param_name, dst_strategy_list)
+            slice_op, shape = _get_slice(rank_id, sf_obj, param_name, dst_strategy_list)
         else:
-            slice_op = slice(None, None, None)
+            slice_op, shape = slice(None, None, None), None
         slice_param = sf_obj[slice_op]
+        if shape is not None:
+            slice_param = slice_param.reshape(shape)
         total_param[param_name] = ms.Parameter(slice_param)
     if 'hyper_param.safetensors' in file_list:
         hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
@@ -964,8 +966,18 @@ def _get_slice(rank_id, sf_obj, param_name, dst_strategy_list):
     to_dev_matrix, to_tensor_map, _ = _construct_tensor_layout_for_opt_shard(
         to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, tensor_shape)
     slice_op = _load_tensor_shape(to_dev_matrix, to_tensor_map, full_shape=tensor_shape, rank_id=rank_id)
-    return slice_op
+    shape = None
+    if to_opt_shard_size > 0:
+        to_tensor_strategy = _get_tensor_strategy(to_dev_matrix_origin, to_tensor_map_origin)
+        to_slice_tensor_shape = ()
+        for i, item in enumerate(tensor_shape):
+            if i == 0 and to_opt_shard_size > 0:
+                to_slice_tensor_shape += (item // (to_tensor_strategy[i] * to_opt_shard_size),)
+                continue
+            to_slice_tensor_shape += (item // to_tensor_strategy[i],)
+        shape = list(to_slice_tensor_shape)
 
+    return slice_op, shape
 
 __all__ = ["_transform_safetensors", "transform_safetensors_by_stage",
            "transform_safetensors_by_rank", "ckpt_to_safetensors", "safetensors_to_ckpt", "unified_safetensors"]
