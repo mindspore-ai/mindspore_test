@@ -18,16 +18,29 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, ops
 from mindspore import context
-from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from tests.ut.python.ops.test_math_ops import VirtualLoss
+from parallel.utils.utils import ParallelValidator, compile_net
 
 
 def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
 
 grad_all = C.GradOperation(get_all=True)
+
+
+def get_tensordump_node_num(validator):
+    d = validator.graph_info_dict
+    res = 0
+    for _, v in d.items():
+        for node, _ in v.items():
+            if node.startswith('TensorDump'):
+                res += 1
+    return res
+
+
+
 
 class NetWithLoss(nn.Cell):
     def __init__(self, network):
@@ -47,10 +60,6 @@ class GradWrap(nn.Cell):
 
     def construct(self, x, y, b):
         return grad_all(self.network)(x, y, b)
-
-def compile_net(net, x, y, b1):
-    net.set_train()
-    _cell_graph_executor.compile(net, x, y, b1)
 
 
 def test_tensordump_out_at_parameter():
@@ -83,7 +92,10 @@ def test_tensordump_out_at_parameter():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 3
 
 
 def test_tensordump_in_at_parameter():
@@ -116,7 +128,10 @@ def test_tensordump_in_at_parameter():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 3
 
 
 def test_tensordump_all_at_parameter():
@@ -149,7 +164,10 @@ def test_tensordump_all_at_parameter():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 6
 
 
 def test_tensordump_out_at_result():
@@ -180,7 +198,10 @@ def test_tensordump_out_at_result():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 1
 
 
 def test_tensordump_in_at_result():
@@ -211,7 +232,10 @@ def test_tensordump_in_at_result():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 1
 
 
 def test_tensordump_all_at_result():
@@ -242,7 +266,10 @@ def test_tensordump_all_at_result():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 1
 
 
 def test_tensordump_out_between_ops():
@@ -274,7 +301,10 @@ def test_tensordump_out_between_ops():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 1
 
 
 def test_tensordump_in_between_ops():
@@ -306,7 +336,10 @@ def test_tensordump_in_between_ops():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 1
 
 
 def test_tensordump_all_between_ops():
@@ -338,7 +371,10 @@ def test_tensordump_all_between_ops():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 2
 
 def test_multiple_output():
     """
@@ -374,7 +410,10 @@ def test_multiple_output():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 3
 
 
 def test_multiple_output_with_full_name():
@@ -411,4 +450,7 @@ def test_multiple_output_with_full_name():
     y = Tensor(np.ones([32, 64]), dtype=ms.float32)
     b = Tensor(np.ones([64, 64]), dtype=ms.float32)
 
-    compile_net(net, x, y, b)
+    phase = compile_net(net, x, y, b)
+    validator = ParallelValidator(net, phase)
+    tensordump_num = get_tensordump_node_num(validator)
+    assert tensordump_num == 3
