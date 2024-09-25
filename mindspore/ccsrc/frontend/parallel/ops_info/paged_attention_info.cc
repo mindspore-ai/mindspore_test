@@ -142,8 +142,10 @@ Status PagedAttentionInfo::InferTensorMap() {
   if (optional_inputs_[kAttenMaskIndex]) {
     auto atten_mask_shape_size = input_strategies[inputs_tensor_map_.size()].size();
     Shape atten_mask_map{-1, -1};
-    if (atten_mask_shape_size == 3) {
-      atten_mask_map.insert(atten_mask_map.begin(), 4);
+    const size_t kAttenMaskSize = 3;
+    if (atten_mask_shape_size == kAttenMaskSize) {
+      const size_t kAttenMaskDim4 = 4;
+      atten_mask_map.insert(atten_mask_map.begin(), kAttenMaskDim4);
     }
     inputs_tensor_map_.emplace_back(atten_mask_map);
   }

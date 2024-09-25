@@ -81,6 +81,12 @@ internal::OpParamPtr InternalPagedAttention::CreateOpParam(const std::vector<Ker
     if (soc_ == "ascend910b" && !(inputs[kIndex5]->GetType()->isa<TypeNone>())) {
       op_param.identityM = CreateEyeMatrix32x32();
     }
+  } else {
+    const int64_t head_dim_align = 16;
+    int64_t head_dim = inputs[kIndex1]->GetShapeVector()[kDim3];
+    if (head_dim % head_dim_align != 0) {
+      MS_LOG(EXCEPTION) << kernel_name_ << ": 'head_dim' must be an integer multiple of 16 currently.";
+    }
   }
 
   GetSeqLenFromGraphInputOrEnv(kernel_name_, "q_seq_lens", "MS_INTERNAL_Q_SEQ_LEN", &q_seq_len_);
