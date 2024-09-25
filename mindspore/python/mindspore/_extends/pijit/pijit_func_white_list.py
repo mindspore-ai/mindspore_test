@@ -488,6 +488,7 @@ _func_map = {
     function_id(validator.check_number_range): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(validator.check_is_int): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(validator.check_is_number): FUNC_KEY_PIJIT_CONSTEXPR,
+    function_id(validator.check_positive_int_sequence): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(np_version_valid): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_is_initialized): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(_set_elegant_exit_handle): FUNC_KEY_PIJIT_CONSTEXPR,

@@ -21,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include "pybind11/pybind11.h"
+#include "ir/anf.h"
 
 namespace mindspore {
 namespace pijit {
@@ -85,6 +86,7 @@ bool FindTensorName(const std::string &name);
 
 bool CheckTensorDataInitialized(const py::object &tensor);
 py::object EvalMSAPIValue(const py::object &ms_api, const py::object &args, const py::object &key_words);
+bool PromotePrimitiveInputsType(const ValuePtr &primitive, AbstractBasePtrList *args_abs_list);
 
 using SpecialPrimitiveInferFuncMap =
   std::unordered_map<std::string, PyObject *(*)(PyObject *, const std::vector<PyObject *> &)>;

@@ -2144,15 +2144,20 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
     return true;
   }
 
+  // create empty container(list(),tuple(),dict(),zip())
+  static const std::set<PyTypeObject *> support_empty_create_instance_type = {
+    &PyList_Type, &PyTuple_Type, &PySet_Type, &PyFrozenSet_Type, &PyDict_Type, &PyZip_Type};
+  if (call_node->getInputs().size() == 1 &&
+      support_empty_create_instance_type.find(tp) != support_empty_create_instance_type.end()) {
+    return true;
+  }
+
   /**
    * maybe has sideeffect, limit create
    */
   static const std::set<PyTypeObject *> limit_create_instance_type = {
     &PyList_Type, &PyTuple_Type, &PySet_Type, &PyFrozenSet_Type, &PyDict_Type, &PyUnicode_Type, &PyEnum_Type,
   };
-  if (call_node->getInputs().size() == 1) {
-    return limit_create_instance_type.find(tp) != limit_create_instance_type.end();
-  }
   if (call_node->getInputs().size() != 2) {
     return false;
   }

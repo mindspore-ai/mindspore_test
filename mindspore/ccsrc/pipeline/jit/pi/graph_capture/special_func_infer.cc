@@ -572,14 +572,16 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
     if (cur_input->GetOpcode() == LOAD_CONST) {
       continue;
     }
-    auto cur_input_wrapper = cur_input->abstract_wrapper();
-    if (cur_input_wrapper == nullptr) {
-      MS_LOG(WARNING) << "Failed to guard built-in function since wrapper is nullptr for " << cur_input->ToString();
-      return false;
-    }
-    if (!cur_input_wrapper->IsConstant()) {
-      MS_LOG(INFO) << "Failed to guard built-in function due to variable input " << cur_input->ToString();
-      return false;
+    if (cur_input->GetVobj()->GetType() == AObject::kTypeTensor) {
+      auto cur_input_wrapper = cur_input->abstract_wrapper();
+      if (cur_input_wrapper == nullptr) {
+        MS_LOG(WARNING) << "Failed to guard built-in function since wrapper is nullptr for " << cur_input->ToString();
+        return false;
+      }
+      if (!cur_input_wrapper->IsConstant()) {
+        MS_LOG(INFO) << "Failed to guard built-in function due to variable input " << cur_input->ToString();
+        return false;
+      }
     }
     if (guard_inputs && !graph->GuardValueNode(cur_input)) {
       return false;
@@ -1068,11 +1070,11 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
   auto meta = py::module::import(kMeTaModule).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
 
   auto fg = dynamic_cast<MindGraphBuilder *>(parent);
-  AbstractWrapperPtrList args{self->abstract_wrapper()};
+  std::vector<ValueNode *> args = {self};
   for (size_t i = 1 + is_not_method; i < call_node->getInputs().size(); ++i) {
-    args.push_back(call_node->input(i)->abstract_wrapper());
+    args.push_back(call_node->input(i));
   }
-  auto abs = fg->FGBuilder()->AddNode(meta, args);
+  auto abs = fg->FGBuilder()->AddNode(meta, fg->HandleInputArgs(std::move(args)));
   if (abs == nullptr) {
     return false;
   }
