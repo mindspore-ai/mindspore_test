@@ -131,6 +131,10 @@ int TrainSession::AllocWorkSpace() {
       workspace_size = static_cast<kernel::LiteKernel *>(kernel->kernel())->workspace_size();
     }
   }
+  if (workspace_size == 0) {
+    MS_LOG(INFO) << "workspace_size is 0";
+    return RET_OK;
+  }
   workspace_ = malloc(workspace_size);
   if (workspace_ == nullptr) {
     MS_LOG(ERROR) << "cannot allocate " << workspace_size << " for workspace";
