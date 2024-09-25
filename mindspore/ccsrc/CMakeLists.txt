@@ -41,6 +41,7 @@ set(SUB_COMP
         frontend/expander
         pipeline/jit/ps
         pipeline/jit/pi
+        pipeline/jit/trace
         pipeline/pynative
         pipeline/llm_boost
         pybind_api

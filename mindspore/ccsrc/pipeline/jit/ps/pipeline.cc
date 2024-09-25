@@ -663,8 +663,9 @@ py::object GraphExecutorPy::GenerateArgumentsKey(const py::object &obj, const py
 
   static uint64_t key_counter = 0;
   kArgsCache[args_abs] = key_counter;
-  kCellArgsMap[obj.ptr()] = args_abs;
-
+  if (!py::isinstance<py::none>(obj)) {
+    kCellArgsMap[obj.ptr()] = args_abs;
+  }
   MS_LOG(INFO) << "Generate a new compile key for new args, key: " << key_counter;
   if (IS_OUTPUT_ON(mindspore::kInfo)) {
     std::ostringstream buffer;
