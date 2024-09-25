@@ -709,15 +709,16 @@ void GeDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tenso
   device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
 }
 
-std::vector<device::DeviceMemPtr> GeDeviceResManager::GetMemUceInfo(int32_t device_id) {
+bool GeDeviceResManager::GetMemUceInfo(int32_t device_id) {
   aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
   size_t retSize = 0;
   auto ret = CALL_ASCEND_API(aclrtGetMemUceInfo, device_id, info, sizeof(info) / sizeof(aclrtMemUceInfo), &retSize);
   if (ret != ACL_ERROR_NONE) {
-    MS_EXCEPTION(DeviceProcessError) << "Call aclrtGetMemUceInfo failed.";
+    MS_LOG(WARNING) << "Call aclrtGetMemUceInfo failed, ret code: " << ret;
+    return false;
   }
   if (retSize == 0) {
-    MS_LOG(EXCEPTION) << "aclrtGetMemUceInfo get UCE Error failed.";
+    MS_LOG(WARNING) << "aclrtGetMemUceInfo get UCE size is 0.";
   }
 
   MS_LOG(INFO) << "aclrtGetMemUceInfo get UCE Error, retSize is " << retSize;
@@ -730,11 +731,7 @@ std::vector<device::DeviceMemPtr> GeDeviceResManager::GetMemUceInfo(int32_t devi
   std::lock_guard<std::mutex> lock(mem_uce_info_mutex_);
   mem_uce_info_ = mem_uce_info;
 
-  std::vector<device::DeviceMemPtr> mem_uce_device_list;
-  for (size_t i = 0; i < retSize; ++i) {
-    mem_uce_device_list.emplace_back(info[i].addr);
-  }
-  return mem_uce_device_list;
+  return true;
 }
 
 std::vector<std::pair<device::DeviceMemPtr, size_t>> GeDeviceResManager::GetMemUceAddr() {
@@ -753,8 +750,9 @@ void GeDeviceResManager::UceMemRepair(int32_t device_id) {
                       << ", but got " << device_id << ".";
   }
   aclrtMemUceInfo *info = mem_uce_info_.info.data();
-  if (CALL_ASCEND_API(aclrtMemUceRepair, mem_uce_info_.device_id, info, mem_uce_info_.retSize) != ACL_ERROR_NONE) {
-    MS_EXCEPTION(DeviceProcessError) << "Call aclrtMemUceRepair failed.";
+  auto ret = CALL_ASCEND_API(aclrtMemUceRepair, mem_uce_info_.device_id, info, mem_uce_info_.retSize);
+  if (ret != ACL_ERROR_NONE) {
+    MS_EXCEPTION(DeviceProcessError) << "Call aclrtMemUceRepair failed, ret code: " << ret;
   }
   // Clear mem_uce_info.
   mem_uce_info_.device_id = 0;
@@ -764,16 +762,12 @@ void GeDeviceResManager::UceMemRepair(int32_t device_id) {
 
 void GeDeviceResManager::StopDevice(int32_t device_id) {
   UCEException::GetInstance().set_force_stop_flag(true);
-
+  MS_LOG(INFO) << "Device id [" << device_id << "] stop device.";
   uint32_t timeout = 0;
-  if (CALL_ASCEND_API(aclrtDeviceTaskAbort, device_id, timeout) != ACL_ERROR_NONE) {
-    MS_EXCEPTION(DeviceProcessError) << "Call aclrtDeviceTaskAbort failed.";
+  auto ret = CALL_ASCEND_API(aclrtDeviceTaskAbort, device_id, timeout);
+  if (ret != ACL_ERROR_NONE) {
+    MS_EXCEPTION(DeviceProcessError) << "Call aclrtDeviceTaskAbort failed, ret code: " << ret;
   }
-}
-
-void GeDeviceResManager::ThrowUCEError() {
-  UCEException::GetInstance().set_uce_flag(true);
-  MS_EXCEPTION(UCEError) << "UCEError.";
 }
 }  // namespace ascend
 }  // namespace device

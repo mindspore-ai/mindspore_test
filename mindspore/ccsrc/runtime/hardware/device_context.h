@@ -349,12 +349,10 @@ class BACKEND_EXPORT DeviceResManager {
                                                          size_t end) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
-  virtual std::vector<device::DeviceMemPtr> GetMemUceInfo(int32_t device_id) { return {}; }
+  virtual bool GetMemUceInfo(int32_t device_id) { return false; }
   virtual void UceMemRepair(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce repair device is not supported."; }
   virtual void StopDevice(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce stop device is not supported."; }
   virtual std::vector<std::pair<device::DeviceMemPtr, size_t>> GetMemUceAddr() { return {}; };
-
-  virtual void ThrowUCEError() { MS_EXCEPTION(UCEError) << "UCEError"; }  // test api, remove later.
 
  protected:
   // Ensure the thread safety for allocating device memory.

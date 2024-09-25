@@ -17,6 +17,7 @@
 #include "transform/symbol/symbol_utils.h"
 #include "transform/symbol/acl_rt_symbol.h"
 
+int (*aclrt_get_last_error)(int) = nullptr;
 namespace mindspore {
 namespace transform {
 aclrtCreateContextFunObj aclrtCreateContext_ = nullptr;
@@ -139,6 +140,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtGetMemUceInfo_ = DlsymAscendFuncObj(aclrtGetMemUceInfo, handler);
   aclrtDeviceTaskAbort_ = DlsymAscendFuncObj(aclrtDeviceTaskAbort, handler);
   aclrtMemUceRepair_ = DlsymAscendFuncObj(aclrtMemUceRepair, handler);
+  aclrt_get_last_error = reinterpret_cast<int (*)(int)>(dlsym(handler, "aclrtGetLastError"));
   MS_LOG(INFO) << "Load acl rt api success!";
 }
 
