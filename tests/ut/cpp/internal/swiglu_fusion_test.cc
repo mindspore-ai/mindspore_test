@@ -17,7 +17,7 @@
 #include "backend/graph_optimizer_test_framework.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "common/common_test.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/inference_swiglu_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "utils/phase.h"

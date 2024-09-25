@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ir_fusion/split_concat_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/split_concat_fusion.h"
 
 #include <string>
 #include <vector>

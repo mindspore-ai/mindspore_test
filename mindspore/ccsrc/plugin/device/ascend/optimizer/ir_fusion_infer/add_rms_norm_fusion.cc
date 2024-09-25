@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ir_fusion/add_rms_norm_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_fusion.h"
 
 #include <vector>
 #include <string>

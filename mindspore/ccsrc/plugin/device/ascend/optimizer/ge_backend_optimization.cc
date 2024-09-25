@@ -71,7 +71,7 @@
 #include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
 #include "plugin/device/ascend/optimizer/ge/broadcast_for_select.h"
 #include "plugin/device/ascend/optimizer/ge/fa_alltoallv_parallel.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/shape_reshape_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/shape_reshape_fusion.h"
 #include "include/common/utils/parallel_context.h"
 #include "backend/common/pass/communication_op_fusion.h"
 #include "backend/common/pass/concat_outputs_for_all_gather.h"

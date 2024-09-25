@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_allreduce_add_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.h"
 #include <memory>
 #include "mindspore/ops/op_def/other_ops.h"
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
