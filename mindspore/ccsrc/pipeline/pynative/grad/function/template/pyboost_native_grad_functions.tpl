@@ -82,6 +82,23 @@ NodePtr NativeFunc::RunOpDeprecated(const PrimitivePtr &prim, const NodePtrList 
   return result;
 }
 
+ValuePtr NativeFunc::ConvertNode2Value(const NodePtr &node) {
+  if (!node->Value()->isa<None>()) {
+    return node->Value();
+  }
+  const auto abs = node->abstract();
+  const auto func_impl = node->emitter();
+  if (abs->isa<abstract::AbstractTensor>()) {
+    auto tensor_dtype = abs->BuildType()->cast<TensorTypePtr>();
+    MS_EXCEPTION_IF_NULL(tensor_dtype);
+    auto dtype = tensor_dtype->element();
+    auto shape = PyNativeAlgo::Common::BuildShape(abs);
+    auto zero_node = Zeros(func_impl->NewFuncNode(MakeValue(shape), nullptr, InputType::kConstant), func_impl->NewFuncNode(MakeValue(static_cast<int64_t>(dtype->type_id())), nullptr, InputType::kConstant));
+    return zero_node->Value();
+  }
+  return node->Value();
+}
+
 ${function_body}
 }
 }

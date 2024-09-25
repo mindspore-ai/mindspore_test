@@ -147,7 +147,7 @@ class FuncGrad : public AutoGrad {
   ValuePtr GetWeightGrads(bool grad_weights, const tensor::BaseTensorPtrList &weights, bool weight_param_is_tuple);
   ValuePtr GetWeightGrad(const tensor::BaseTensorPtr &weight);
   void ClearGrads(const tensor::BaseTensorPtrList &weights);
-  ValuePtrList OnsLike(const ValuePtr &value);
+  ValuePtrList OnsLike(const ValuePtrList &value);
   void CheckSensShapeAndType(const ValuePtr &sens_gradient);
   void PruningGradGraph(const tensor::BaseTensorPtrList &weights, const GradAttr &grad_attr,
                         const std::vector<size_t> &grad_position);
@@ -159,7 +159,7 @@ class FuncGrad : public AutoGrad {
   OrderedSet<FuncVariablePtr> variable_set_;
   std::vector<std::pair<ValuePtr, FuncVariablePtr>> cell_inputs_;
   std::vector<tensor::BaseTensorPtr> weights_used_in_graph_;
-  ValuePtr sens_value_{nullptr};
+  ValuePtrList flatten_sens_out_{};
   FuncVariablePtr last_variable_{nullptr};
   ValuePtrList root_gradients_;
 };

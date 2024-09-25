@@ -549,7 +549,7 @@ def convert_native_value_type(op_proto: OpProto) -> str:
     :return: str
     """
     convert_template = CppTemplate(
-        "auto convert_$arg_name = runtime::ValueConverter::${convert_func}($arg_name->Value());\n")
+        "auto convert_$arg_name = runtime::ValueConverter::${convert_func}(ConvertNode2Value($arg_name));\n")
     parser_func_str = ''
     for arg in op_proto.op_args:
         is_optional = is_optional_param(arg)

@@ -1,6 +1,7 @@
 NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kNativeFunc, "${func_name}",
                                      false);
+  MS_LOG(DEBUG) << "Begin execute native func" << " ${func_name}";
   if (device_target_.empty()) {
     MS_LOG(EXCEPTION) << "Device target is empty!";
   }
@@ -32,9 +33,12 @@ NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
     if (op->output_value_simple_info() != nullptr) {
       PyNativeAlgo::AutoGrad::CacheOutputAbstract(output_value, output_abs);
     }
+    MS_LOG(DEBUG) << "End execute native func" << " ${func_name}";
     return output_node;
   }
-  return RunOpDeprecated(prim::kPrim${op_name}, {${op_args}});
+  auto res = RunOpDeprecated(prim::kPrim${op_name}, {${op_args}});
+  MS_LOG(DEBUG) << "End execute native func" << " ${func_name}";
+  return res;
 #else
   return RunOpInVm(prim::kPrim${op_name}, {${op_args}});
 #endif

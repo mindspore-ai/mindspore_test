@@ -182,7 +182,6 @@ NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuil
   for (size_t i = 0; i < op_grad_info->input_value.size(); ++i) {
     auto func_node = emitter->NewFuncNode(op_grad_info->input_value[i], op_grad_info->input_abs[i],
                                           op_grad_info->input_value_grad_type[i]);
-    func_node->set_need_compute_grad_out(IsNeedComputeGrad(op_grad_info->input_value[i]));
     (void)node_inputs.emplace_back(func_node);
   }
   (void)node_inputs.emplace_back(
@@ -270,6 +269,14 @@ void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr
   const size_t output_index = node_inputs_.size() - kIndex1;
   const auto &output_node = node_inputs_[output_index];
   const auto &op_output = output_node->Value();
+  // The flag of need compute grad should set after pruning graph, because we know whether input of network
+  // need grad in grad interface.
+  for (size_t i = 0; i < node_inputs_.size() - 1; ++i) {
+    auto value = node_inputs_[i]->Value();
+    auto func_node = std::dynamic_pointer_cast<expander::FuncNode>(node_inputs_[i]);
+    MS_EXCEPTION_IF_NULL(func_node);
+    func_node->set_need_compute_grad_out(IsNeedComputeGrad(value));
+  }
   if (dout.size() == kSizeOne && !op_output->isa<ValueSequence>()) {
     (void)node_inputs_.emplace_back(emitter->NewFuncNode(dout[kIndex0], output_node->abstract(), InputType::kOpOutput));
   } else {
@@ -434,22 +441,21 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
 }
 
 void FuncGrad::UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) {
-  MS_LOG(DEBUG) << "Real output of top cell is " << PyNativeAlgo::Common::GetIdByValue(sens_out);
-  sens_value_ = sens_out;
-  auto flatten_sens = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(sens_out);
-  ConstructParameterNodes(flatten_sens);
+  MS_LOG(DEBUG) << "Real output of top cell is " << PyNativeAlgo::Common::GetIdByValue(sens_out)
+                << ", output: " << sens_out->ToString();
+  flatten_sens_out_ = PyNativeAlgo::DataConvert::FlattenOnlyTensor(sens_out);
+  ConstructParameterNodes(flatten_sens_out_);
 }
 
 void FuncGrad::BuildForwardLastNode(const ValuePtr &sens_gradient) {
   ValuePtrList root_gradient_value;
   if (sens_gradient == nullptr) {
-    root_gradient_value = OnsLike(sens_value_);
+    root_gradient_value = OnsLike(flatten_sens_out_);
   } else {
-    root_gradient_value = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(sens_gradient);
+    root_gradient_value = PyNativeAlgo::DataConvert::FlattenOnlyTensor(sens_gradient);
   }
   auto root = std::make_shared<GraphRoot>("GraphRoot");
-  auto flatten_args = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(sens_value_);
-  root->UpdateNextEdges(flatten_args);
+  root->UpdateNextEdges(flatten_sens_out_);
   root_gradients_ = root->BuildFlattenSensGradient(root_gradient_value);
   auto sens_variable = std::make_shared<FuncVariable>(root, false);
   if (root_gradients_.empty()) {
@@ -836,10 +842,8 @@ void FuncGrad::ClearGrads(const tensor::BaseTensorPtrList &weights) {
   cell_inputs_.clear();
 }
 
-ValuePtrList FuncGrad::OnsLike(const ValuePtr &sens) {
-  MS_EXCEPTION_IF_NULL(sens);
-  auto flatten_values = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(sens);
-  const auto &v = PyNativeAlgo::AutoGrad::BuildSpecialValueGrad(std::make_shared<ValueTuple>(flatten_values), nullptr,
+ValuePtrList FuncGrad::OnsLike(const ValuePtrList &sens) {
+  const auto &v = PyNativeAlgo::AutoGrad::BuildSpecialValueGrad(std::make_shared<ValueTuple>(sens), nullptr,
                                                                 func_impl_.get(), SpecialType::kOnesLikeType);
   auto v_seq = v->cast<ValueTuplePtr>();
   return v_seq->value();
@@ -849,26 +853,29 @@ void FuncGrad::CheckSensShapeAndType(const ValuePtr &sens_gradient) {
   if (sens_gradient == nullptr) {
     return;
   }
-  const auto sens_gradient_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(sens_gradient->ToAbstract());
-  const auto out_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(sens_value_->ToAbstract());
-  const auto &sens_gradient_shape = sens_gradient_abs->BuildShape()->ToString();
-  const auto &out_shape = out_abs->BuildShape()->ToString();
-  if (sens_gradient_shape != "()" && out_shape != "()") {
-    if (sens_gradient_shape != out_shape) {
-      // Sens shape in ir graph is determined by graph output, so it can be dynamic shape; But input shape is
-      // determined by user input, which could not be dynamic shape.
-      if (!sens_gradient_abs->BuildShape()->IsDynamic()) {
+  const auto flatten_sens_gradient = PyNativeAlgo::DataConvert::FlattenOnlyTensor(sens_gradient);
+  MS_EXCEPTION_IF_CHECK_FAIL(flatten_sens_out_.size() == flatten_sens_gradient.size(),
+                             "The given sens gradient's size should be same as out of network!");
+  for (size_t i = 0; i < flatten_sens_out_.size(); ++i) {
+    const auto &out_tensor = flatten_sens_out_[i]->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(out_tensor);
+    const auto &sens_tensor = flatten_sens_gradient[i]->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(sens_tensor);
+    const auto &out_shape = out_tensor->shape();
+    const auto &sens_gradient_shape = sens_tensor->shape();
+    if (!sens_gradient_shape.empty() && !out_shape.empty()) {
+      if (sens_gradient_shape != out_shape) {
         MS_EXCEPTION(ValueError) << "The shape should be " << out_shape << ", but got " << sens_gradient_shape << ", "
-                                 << ", sens gradient abs " << sens_gradient_abs->ToString() << ", out abs"
-                                 << out_abs->ToString();
+                                 << ", sens gradient abs " << sens_tensor->ToAbstract()->ToString() << ", out abs"
+                                 << out_tensor->ToAbstract()->ToString();
       }
-    }
-    const auto &sens_gradient_dtype = sens_gradient_abs->BuildType()->ToString();
-    const auto &out_dtype = out_abs->BuildType()->ToString();
-    if (sens_gradient_dtype != out_dtype) {
-      MS_EXCEPTION(TypeError) << "The dtype should be " << out_dtype << ", but got " << sens_gradient_dtype << ", "
-                              << ", sens gradient abs " << sens_gradient_abs->ToString() << ", out abs"
-                              << out_abs->ToString();
+      const auto &sens_gradient_dtype = sens_tensor->Dtype()->ToString();
+      const auto &out_dtype = out_tensor->Dtype()->ToString();
+      if (sens_gradient_dtype != out_dtype) {
+        MS_EXCEPTION(TypeError) << "The dtype should be " << out_dtype << ", but got " << sens_gradient_dtype << ", "
+                                << ", sens gradient abs " << sens_tensor->ToAbstract()->ToString() << ", out abs"
+                                << out_tensor->ToAbstract()->ToString();
+      }
     }
   }
 }
