@@ -390,7 +390,7 @@ KernelWithIndex AnfAlgo::VisitKernelWithReturnType(const AnfNodePtr &anf_node, s
   if (IsOneOfPrimitiveCNode(cnode, follow_first_input_prims)) {
     return VisitKernelWithReturnType(cnode->input(kRealInputIndexInDepend), index, skip_nop_node, return_types);
   }
-  if (IsNopNode(cnode) && skip_nop_node) {
+  if (skip_nop_node && IsNopNode(cnode)) {
     return VisitKernelWithReturnType(cnode->input(kNopNodeRealInputIndex), 0, skip_nop_node, return_types);
   }
   return KernelWithIndex(anf_node, index);
