@@ -21,7 +21,7 @@
 #include <map>
 #include "kernel/cpu/cpu_kernel.h"
 #include "kernel/common_utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "mindspore/ops/infer/identity_n.h"
 
 namespace mindspore {

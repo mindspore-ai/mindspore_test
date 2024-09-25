@@ -22,7 +22,7 @@
 #include <map>
 #include <memory>
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/nnacl/base/gather_base.h"
 
 namespace mindspore {

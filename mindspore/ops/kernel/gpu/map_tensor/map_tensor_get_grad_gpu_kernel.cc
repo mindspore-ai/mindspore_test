@@ -20,7 +20,7 @@
 #include <string>
 #include "abstract/utils.h"
 #include "kernel/common_utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

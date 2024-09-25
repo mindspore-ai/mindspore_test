@@ -19,7 +19,7 @@
 #include <functional>
 #include <string>
 #include "mindspore/ops/infer/meshgrid.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

@@ -18,7 +18,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DECIVE_CPU_ADJUST_SATURATION_CPU_KERNEL_H_
 #include <vector>
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

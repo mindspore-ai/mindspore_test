@@ -23,7 +23,7 @@
 #include <string>
 #include <unordered_map>
 #include "mindspore/ops/infer/ops_func_impl/generator.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

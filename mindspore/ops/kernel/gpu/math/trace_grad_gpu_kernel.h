@@ -25,7 +25,7 @@
 #include <map>
 #include "mindspore/ops/infer/grad/trace_grad.h"
 #include "abstract/utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/trace_grad_impl.cuh"

@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include "kernel/kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore::kernel {
 class KernelPlugin {

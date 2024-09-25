@@ -23,7 +23,7 @@
 #include <memory>
 #include <utility>
 #include <unordered_map>
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/cpu_kernel.h"
 namespace mindspore {
 namespace kernel {

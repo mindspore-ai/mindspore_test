@@ -22,7 +22,7 @@
 #include "abstract/utils.h"
 #include "plugin/device/cpu/hal/device/cpu_common.h"
 #include "include/common/utils/python_adapter.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "utils/ms_utils_secure.h"
 
 namespace mindspore {

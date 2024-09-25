@@ -47,7 +47,7 @@
 "mindspore/mindspore/ops/kernel/ascend/ascendc/"                                   "runtime/references"
 "mindspore/mindspore/ops/kernel/ascend/ascendc/"                                   "build/include_subdir"
 "mindspore/mindspore/ops/kernel/ascend/ascendc/"                                   "build/namespaces"
-"mindspore/mindspore/ccsrc/common/np_dtype/np_dtypes.cc"                                           "runtime/int"
+"mindspore/mindspore/ccsrc/pybind_api/np_dtype/np_dtypes.cc"                                           "runtime/int"
 "mindspore/mindspore/ccsrc/include/common/np_dtype/np_dtypes.h"                                    "runtime/string"
 "mindspore/mindspore/ops/kernel/cpu/linear_sum_assignment_cpu_kernel.cc"           "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/arithmetic_self_cpu_kernel.cc"                 "readability/braces"

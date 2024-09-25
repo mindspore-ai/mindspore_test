@@ -21,7 +21,7 @@
 #include <vector>
 #include <map>
 #include "src/extendrt/session/memory_offload_session.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "src/extendrt/session/factory.h"
 #include "src/extendrt/memory_offload/infer_strategy_builder.h"
 #include "src/extendrt/utils/func_graph_utils.h"

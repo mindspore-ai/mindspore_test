@@ -19,7 +19,7 @@
 #include <vector>
 #include <utility>
 #include <map>
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/diagonal_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

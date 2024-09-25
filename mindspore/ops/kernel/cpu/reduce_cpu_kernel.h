@@ -27,7 +27,7 @@
 #include "base/bfloat16.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "kernel/cpu/utils/cpu_utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 #define REDUCE_DO_BOOL_CAST(TYPE_ID, TYPE)                   \
   case TYPE_ID:                                              \

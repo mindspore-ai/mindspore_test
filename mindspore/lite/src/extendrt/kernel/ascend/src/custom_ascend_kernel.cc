@@ -22,7 +22,7 @@
 #include "include/api/data_type.h"
 #include "extendrt/kernel/ascend/model/model_infer.h"
 #include "infer/custom.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "src/common/log_util.h"
 #include "src/common/common.h"
 #include "common/log_adapter.h"

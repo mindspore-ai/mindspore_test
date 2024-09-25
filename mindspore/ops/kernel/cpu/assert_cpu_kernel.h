@@ -23,7 +23,7 @@
 #include <map>
 #include "mindspore/ops/infer/assert.h"
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 namespace mindspore {
 namespace kernel {
 class AssertCpuKernelMod : public NativeCpuKernelMod {

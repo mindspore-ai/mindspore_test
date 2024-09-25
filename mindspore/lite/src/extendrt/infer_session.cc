@@ -15,7 +15,7 @@
  */
 #include "extendrt/infer_session.h"
 
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "extendrt/delegate/factory.h"
 #include "extendrt/session/factory.h"
 #include "extendrt/delegate/plugin/tensorrt_executor_plugin.h"

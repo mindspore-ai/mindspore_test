@@ -16,6 +16,7 @@ set(DVPP_IMAGE_SOURCE
         )
 
 if(NOT BUILD_LITE AND ENABLE_D)
+    include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
 set(DVPP_IMAGE_SOURCE
         ${DVPP_IMAGE_SOURCE}
         # Ascend910B

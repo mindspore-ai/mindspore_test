@@ -28,7 +28,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool_with_argmax_grad_impl.cuh"
 #include "kernel/gpu/kernel_constants.h"
 #include "mindspore/ops/infer/grad/max_pool_grad_with_argmax.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "mindspore/ccsrc/kernel/common_utils.h"
 
 namespace mindspore {

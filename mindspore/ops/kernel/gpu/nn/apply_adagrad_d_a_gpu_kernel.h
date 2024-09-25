@@ -22,7 +22,7 @@
 
 #include "mindspore/ops/infer/apply_adagrad_d_a.h"
 #include "kernel/gpu/gpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

@@ -25,7 +25,7 @@
 #include <map>
 #include "mindspore/ops/infer/lower_bound.h"
 #include "abstract/utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upper_bound_lower_bound_impl.cuh"

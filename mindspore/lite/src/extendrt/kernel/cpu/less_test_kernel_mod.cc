@@ -19,7 +19,7 @@
 
 #include "extendrt/kernel/cpu/less_test_kernel_mod.h"
 #include "mindspore/ops/op_def/comparison_ops.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore::kernel {
 const size_t test_input_size = 2;

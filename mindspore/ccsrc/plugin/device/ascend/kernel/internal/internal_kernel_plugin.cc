@@ -29,7 +29,7 @@
 #include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/framework_utils.h"
 #include "op_def/math_op_name.h"
 #include "op_def/nn_op_name.h"

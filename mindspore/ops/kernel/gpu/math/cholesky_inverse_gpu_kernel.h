@@ -28,7 +28,7 @@
 #include <functional>
 #include "mindspore/ops/infer/ops_func_impl/cholesky_inverse.h"
 #include "abstract/utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cholesky_inverse_impl.cuh"

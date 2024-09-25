@@ -186,3 +186,12 @@ endif()
 if(ENABLE_DVM)
     add_compile_definitions(ENABLE_DVM)
 endif()
+
+if(ENABLE_MPI)
+    add_compile_definitions(ENABLE_MPI)
+endif()
+
+if(ENABLE_RDMA)
+    add_compile_definitions(ENABLE_RDMA)
+    include_directories(/usr/include/umdk)
+endif()

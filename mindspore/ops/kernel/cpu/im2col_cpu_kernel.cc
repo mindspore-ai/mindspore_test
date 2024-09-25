@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <complex>
 #include "mindspore/ops/infer/im2col.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "extendrt/session/factory.h"
 #include "extendrt/graph_compiler/factory.h"
 #include "extendrt/graph_runtime/factory.h"

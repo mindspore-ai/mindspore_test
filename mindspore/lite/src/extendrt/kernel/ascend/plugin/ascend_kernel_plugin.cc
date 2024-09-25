@@ -19,7 +19,7 @@
 #include <utility>
 #include "utils/log_adapter.h"
 #include "include/errorcode.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #if !defined(_WIN32)
 #include <dlfcn.h>
 #include "extendrt/cxx_api/dlutils.h"

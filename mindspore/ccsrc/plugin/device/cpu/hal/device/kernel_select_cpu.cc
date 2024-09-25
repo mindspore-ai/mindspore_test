@@ -37,7 +37,7 @@
 #include "kernel/cpu/custom/custom_aot_cpu_kernel.h"
 #include "kernel/cpu/custom/custom_julia_cpu_kernel.h"
 #include "kernel/cpu/pyfunc/py_func_cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "utils/trace_base.h"
 
 namespace mindspore {

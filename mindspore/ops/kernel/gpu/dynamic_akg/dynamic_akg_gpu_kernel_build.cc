@@ -21,7 +21,7 @@
 #include "kernel/framework_utils.h"
 #include "kernel/common_utils.h"
 #include "utils/ms_utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/gpu/akg/akg_gpu_kernel_build.h"

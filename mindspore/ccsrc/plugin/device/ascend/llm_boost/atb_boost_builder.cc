@@ -16,7 +16,7 @@
 
 #include "plugin/device/ascend/llm_boost/atb_boost_builder.h"
 #include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "utils/ms_utils.h"
 
 namespace mindspore::kernel {

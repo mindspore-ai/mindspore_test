@@ -28,7 +28,7 @@
 #ifdef ENABLE_AKG
 #include "kernel/cpu/akg/akg_cpu_kernel_build.h"
 #endif
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "kernel/kernel_build_info.h"
 #include "kernel/framework_utils.h"

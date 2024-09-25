@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/hshrink_grad_cpu_kernel.h"
 #include <algorithm>
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/nnacl/fp32_grad/activation_grad_fp32.h"
 
 namespace mindspore {
