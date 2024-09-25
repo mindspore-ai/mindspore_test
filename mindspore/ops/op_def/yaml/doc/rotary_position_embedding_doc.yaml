@@ -8,9 +8,46 @@ rotary_position_embedding:
 
         Args:
             x (Tensor): 4D tensor, with float16, bfloat16 or float32 data type.
-            cos (Tensor): 4D tensor, with float16, bfloat16 or float32 data type.
-            sin (Tensor): same with `cos` .
+            cos (Tensor): 4D tensor, has the same type as `x` , in range of [-1, 1].
+            sin (Tensor): Same with `cos` .
             mode (int): An optional attribute. Used to select a calculation mode. 0: rotate_half(GPT-NeoX style); 1: rotate_interleaved(GPT-J style). Defaults to ``0`` .
+
+        .. list-table:: Config layout constraints
+            :widths: 5 20 20
+            :header-rows: 1
+
+            * - Args
+              - RotateHalf(mode:0)
+              - RotateInterleaved(mode:1)
+            * - x
+              - Supported layout:
+
+                11SD, B1SD, BNSD; D < 896 and D is an Even. B, N < 1000;
+
+                B * N <= 1024 if gradient calculation of cos/sin is used.
+              - Supported layout: 11SD, B1SD, BNSD;
+
+                D < 896 and D is an Even.
+
+                B, N < 1000;
+            * - cos
+              - Support layout for different values of `x`:
+
+                `x` is BNSD: 11SD, B1SD, BNSD;
+
+                `x` is BSND: 1S1D, BS1D, BSND;
+
+                `x` is SBND: S11D, SB1D, SBND
+              - Support layout for different values of `x`:
+
+                `x` is BNSD: 11SD;
+
+                `x` is BSND: 1S1D;
+
+                `x` is SBND: S11D
+            * - sin
+              - Same with `cos` .
+              - Same with `cos` .
 
         Returns:
             Tensor, has the same dtype and shape as the `x`.
