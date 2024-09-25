@@ -424,7 +424,7 @@ class MSANFModelParser {
   ValuePtr ObtainValueInDictionaryForm(const mind_ir::AttributeProto &attr_proto);
   std::vector<std::shared_ptr<mindspore::QuantizationParam>> GenerateQuantizationParam(
     const mind_ir::TensorProto &attr_tensor);
-  FunctorPtr GenerateFunctorValue(const mind_ir::FunctorProto &functor_proto);
+  ValuePtr GenerateFunctorValue(const mind_ir::FunctorProto &functor_proto);
   FuncGraphPtr GenerateFuncGraphValue(const mind_ir::GraphProto &graph_proto);
   bool little_endian() const { return little_endian_; }
   mindspore::HashMap<std::string, abstract::AbstractBasePtr> GetAbstractForNode(
@@ -536,10 +536,9 @@ FuncGraphPtr MSANFModelParser::GenerateFuncGraphValue(const mind_ir::GraphProto 
   return graph;
 }
 
-FunctorPtr MSANFModelParser::GenerateFunctorValue(const mind_ir::FunctorProto &functor_proto) {
+ValuePtr MSANFModelParser::GenerateFunctorValue(const mind_ir::FunctorProto &functor_proto) {
   auto name = functor_proto.name();
   auto type = functor_proto.type();
-  auto values = GetValueFromAttributeProto(functor_proto.values(0));
   if (type == mind_ir::FunctorProto_FunctorType_SHAPE_CALC_FUNCTOR) {
     auto creator = FunctorRegistry::Instance().GetCreator(name);
     if (creator == nullptr) {
@@ -547,11 +546,12 @@ FunctorPtr MSANFModelParser::GenerateFunctorValue(const mind_ir::FunctorProto &f
       return nullptr;
     }
     auto functor = creator();
+    auto values = GetValueFromAttributeProto(functor_proto.values(0));
     functor->FromValue(values);
     return functor;
   }
-  MS_LOG(ERROR) << "Unknown functor type: " << type;
-  return nullptr;
+  MS_LOG(INFO) << "Unknown functor type: " << type;
+  return kValueAny;
 }
 
 tensor::TensorPtr MSANFModelParser::GenerateTensorPtrFromTensorProto(const mind_ir::TensorProto &attr_tensor) {
@@ -2248,7 +2248,7 @@ bool MSANFModelParser::BuildPrimitiveNodeFromProto(const mind_ir::ModelProto &mo
   std::vector<mind_ir::PrimitiveProto> graph_kernel_prim_proto;
   for (int i = 0; i < model_proto.primitives_size(); ++i) {
     auto prim_name = model_proto.primitives(i).name();
-    if (prim_name.find("GraphKernel") == 0) {
+    if (prim_name.find("GraphKernel") == 0 || prim_name.find("_packet") != std::string::npos) {
       (void)graph_kernel_prim_proto.emplace_back(model_proto.primitives(i));
     } else if (!BuildPrimitiveNode(model_proto.primitives(i))) {
       MS_LOG(ERROR) << "Parse primitives info for pb file failed! " << graph_kernel_prim_proto[i].DebugString();
