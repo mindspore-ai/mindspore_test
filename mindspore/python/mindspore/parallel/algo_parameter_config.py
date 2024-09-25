@@ -234,7 +234,7 @@ def set_algo_parameters(**kwargs):
 
     Args:
         fully_use_devices (bool): Whether ONLY searching strategies that fully use all available devices.
-            Default: ``True`` . For example with 8 devices available, if set ``True`` , strategy (4, 1) will not be
+            Default: ``False`` . For example with 8 devices available, if set ``True`` , strategy (4, 1) will not be
             included in ReLU's candidate strategies, because strategy (4, 1) only utilizes 4 devices.
         elementwise_op_strategy_follow (bool): Whether the elementwise operator has the consistent strategies as its
             subsequent operators. Elementwise operators refer to operators that operate on input element by element,
@@ -386,7 +386,7 @@ def reset_algo_parameters():
 
     After reset, the values of the attributes are:
 
-    - fully_use_devices: True.
+    - fully_use_devices: False.
     - elementwise_op_strategy_follow: False.
     - enable_algo_approxi: False.
     - algo_approxi_epsilon: 0.1.

@@ -56,7 +56,7 @@ TEST_F(TestGenerateStrategy, AutoStrategy1) {
   Shapes inputs_shape = {{64, 32}, {64, 32}};
   Shapes splittable_inputs = {{1, 1}, {1, 1}};
   GenerateStrategiesWithBroadcast(0, inputs_shape, splittable_inputs, &sp_vector);
-  ASSERT_EQ(sp_vector.size(), 5);
+  ASSERT_EQ(sp_vector.size(), 10);
   for (auto& sp : sp_vector) {
     Dimensions input0_strategy = sp->GetInputDim()[0];
     Dimensions input1_strategy = sp->GetInputDim()[1];
@@ -69,7 +69,7 @@ TEST_F(TestGenerateStrategy, AutoStrategy2) {
   Shapes inputs_shape = {{32}, {64, 32}};
   Shapes splittable_inputs = {{1}, {1, 1}};
   GenerateStrategiesWithBroadcast(0, inputs_shape, splittable_inputs, &sp_vector);
-  ASSERT_EQ(sp_vector.size(), 5);
+  ASSERT_EQ(sp_vector.size(), 10);
   for (auto& sp : sp_vector) {
     Dimensions input0_strategy = sp->GetInputDim()[0];
     Dimensions input1_strategy = sp->GetInputDim()[1];
@@ -84,7 +84,7 @@ TEST_F(TestGenerateStrategy, AutoStrategy3) {
   Shapes inputs_shape = {{64, 32}, {32}};
   Shapes splittable_inputs = {{1, 1}, {1}};
   GenerateStrategiesWithBroadcast(0, inputs_shape, splittable_inputs, &sp_vector);
-  ASSERT_EQ(sp_vector.size(), 5);
+  ASSERT_EQ(sp_vector.size(), 10);
   for (auto& sp : sp_vector) {
     Dimensions input0_strategy = sp->GetInputDim()[0];
     Dimensions input1_strategy = sp->GetInputDim()[1];
@@ -99,7 +99,7 @@ TEST_F(TestGenerateStrategy, AutoStrategy4) {
   Shapes inputs_shape = {{64, 1}, {1, 32}};
   Shapes splittable_inputs = {{1, 1}, {1, 1}};
   GenerateStrategiesWithBroadcast(0, inputs_shape, splittable_inputs, &sp_vector);
-  ASSERT_EQ(sp_vector.size(), 5);
+  ASSERT_EQ(sp_vector.size(), 10);
   for (auto& sp : sp_vector) {
     Dimensions input0_strategy = sp->GetInputDim()[0];
     Dimensions input1_strategy = sp->GetInputDim()[1];
@@ -113,7 +113,7 @@ TEST_F(TestGenerateStrategy, AutoStrategy5) {
   Shapes inputs_shape = {{64, 8, 1}, {1, 8, 32}};
   Shapes splittable_inputs = {{1, 1, 1}, {1, 1, 1}};
   GenerateStrategiesWithBroadcast(0, inputs_shape, splittable_inputs, &sp_vector);
-  ASSERT_EQ(sp_vector.size(), 11);
+  ASSERT_EQ(sp_vector.size(), 20);
   for (auto& sp : sp_vector) {
     Dimensions input0_strategy = sp->GetInputDim()[0];
     Dimensions input1_strategy = sp->GetInputDim()[1];
@@ -128,7 +128,7 @@ TEST_F(TestGenerateStrategy, AutoStrategy6) {
   Shapes inputs_shape = {{64, 32}};
   Shapes splittable_inputs = {{1, 1}};
   GenerateStrategiesForIndependentInputs(0, inputs_shape, splittable_inputs, &sp_vector);
-  ASSERT_EQ(sp_vector.size(), 5);
+  ASSERT_EQ(sp_vector.size(), 10);
 }
 
 TEST_F(TestGenerateStrategy, AutoStrategy7) {

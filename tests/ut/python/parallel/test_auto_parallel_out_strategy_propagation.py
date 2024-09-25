@@ -47,6 +47,7 @@ def test_out_strategy_propagate1():
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
+    ms.set_algo_parameters(fully_use_devices=True)
     dp = 4
     mp = 2
     _x = Tensor(np.ones([64, 32]), dtype=ms.float32)
@@ -329,6 +330,7 @@ def test_sharding_strategy_save_and_load():
 
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0,
                                       search_mode="sharding_propagation")
+    ms.set_algo_parameters(fully_use_devices=True)
     _set_ops_strategy_json_config(type="SAVE", path="./tmp/strategy.json", mode="all")
 
     _in_strategy1 = ((_dp1, _mp1), (1, _mp1))

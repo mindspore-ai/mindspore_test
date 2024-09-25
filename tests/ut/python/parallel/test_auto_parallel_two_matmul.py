@@ -147,7 +147,7 @@ def test_two_matmul():
     para_slice_align_size = get_algo_parameters("tensor_slice_align_size")
     assert para_slice_align_size == 16
     fully_use_devices = get_algo_parameters("fully_use_devices")
-    assert fully_use_devices
+    assert not fully_use_devices
     elementwise_op_strategy_follow = get_algo_parameters("elementwise_op_strategy_follow")
     assert not elementwise_op_strategy_follow
     enable_approxi = get_algo_parameters("enable_algo_approxi")

@@ -10,7 +10,7 @@ mindspore.reset_algo_parameters
 
     重置后，属性值为：
 
-    - fully_use_devices：True
+    - fully_use_devices：False
     - elementwise_op_strategy_follow：False
     - enable_algo_approxi：False
     - algo_approxi_epsilon：0.1
