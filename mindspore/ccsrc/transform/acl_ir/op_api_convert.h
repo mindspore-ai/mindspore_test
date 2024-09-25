@@ -982,7 +982,7 @@ void CallUpdate(aclOpExecutor *executor, const std::vector<std::vector<void *>> 
 template <typename Tuple>
 void UpdateAddressForTensor(aclOpExecutor *executor, const std::vector<std::vector<void *>> &address_list,
                             const Tuple &t) {
-  static constexpr auto size = std::tuple_size<Tuple>::value;
+  static constexpr auto size = std::tuple_size<Tuple>::value - kIndex2;
   CallUpdate(executor, address_list, t, std::make_index_sequence<size>{});
 }
 
