@@ -22,7 +22,7 @@
 #include <vector>
 #include <string>
 #include "runtime/collective/collective_communication_lib.h"
-#include "plugin/device/ascend/hal/hardware/lowlatency_communication_group.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/lowlatency_communication_group.h"
 
 #ifndef EXPORT_WRAPPER
 #define EXPORT_WRAPPER __attribute__((visibility("default")))

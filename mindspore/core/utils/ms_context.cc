@@ -375,7 +375,7 @@ int MsContext::GetSaveGraphsLevel() const {
 bool MsContext::CanDump(const DumpLevel &level) const { return GetSaveGraphsLevel() >= level; }
 
 void MsContext::MarkReadStatus(MsCtxParam param) const {
-#if !(defined(ENABLE_TEST) || defined(ENABLE_TESTCASES) || defined(BUILD_LITE))
+#if !(defined(ENABLE_TEST) || defined(BUILD_LITE))
   // unit tests will set device_id many times in one process
   if (static_cast<size_t>(param) < params_read_status_.size()) {
     params_read_status_[static_cast<size_t>(param)] = true;
@@ -391,7 +391,7 @@ void MsContext::MarkWriteStatus(MsCtxParam param) const {
 
 template <typename T>
 void MsContext::CheckReadStatus(MsCtxParam param, const T &value) const {
-#if !(defined(ENABLE_TEST) || defined(ENABLE_TESTCASES) || defined(BUILD_LITE))
+#if !(defined(ENABLE_TEST) || defined(BUILD_LITE))
   // unit tests will set device_id many times in one process
   if (static_cast<size_t>(param) >= params_read_status_.size()) {
     return;

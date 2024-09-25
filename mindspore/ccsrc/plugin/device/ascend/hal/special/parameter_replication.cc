@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <vector>
 #include "hal/device/ascend_stream_manager.h"
-#include "hal/hardware/ascend_collective_comm_lib.h"
+#include "mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "hal/hccl_adapter/hccl_adapter.h"
 #include "include/common/utils/utils.h"
 #include "transform/symbol/acl_rt_symbol.h"

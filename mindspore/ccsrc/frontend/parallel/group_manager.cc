@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <vector>
 #include <utility>
-#if (!defined(_WIN32) && !defined(__APPLE__) && !(defined(ENABLE_TESTCASES) || defined(ENABLE_TEST)))
+#if (!defined(_WIN32) && !defined(__APPLE__) || defined(ENABLE_TEST))
 #include "backend/common/session/executor_manager.h"
 #else
 #include "frontend/parallel/parallel_stub/executor_manager_stub.h"
@@ -89,7 +89,7 @@ Status Group::GetIndexByRank(int64_t rank, size_t *index) {
 
 GroupManager::GroupManager() { groups_.clear(); }
 
-#if (!defined(_WIN32) && !defined(__APPLE__) && !(defined(ENABLE_TESTCASES) || defined(ENABLE_TEST)))
+#if (!defined(_WIN32) && !defined(__APPLE__) || defined(ENABLE_TEST))
 bool GroupManager::CreateGroupByExecutor(const std::string &device_name, const std::string &group_name,
                                          const std::vector<uint32_t> ranks, uint32_t device_id) const {
   // The group operation thread must be same with nccl init thread in the GPU device.

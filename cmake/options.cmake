@@ -137,7 +137,7 @@ if(ENABLE_TESTCASES OR (NOT ENABLE_D))
     add_compile_definitions(NO_DLIB=1)
 endif()
 
-if(NOT (ENABLE_TESTCASES OR ENABLE_TEST) AND (ENABLE_D OR ENABLE_GPU OR ENABLE_CPU))
+if(ENABLE_D OR ENABLE_GPU OR ENABLE_CPU)
     add_compile_definitions(WITH_BACKEND)
 endif()
 

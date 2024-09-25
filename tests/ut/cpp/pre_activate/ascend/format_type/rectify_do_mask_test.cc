@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "utils/ms_context.h"
-#include "plugin/device/ascend/optimizer/mindir/ascend_vm_op_adapter.h"
 
 #define private public
 #define protected public

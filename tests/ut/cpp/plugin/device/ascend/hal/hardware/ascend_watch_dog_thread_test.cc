@@ -15,7 +15,7 @@
  */
 
 #include "common/common_test.h"
-#include "plugin/device/ascend/hal/hardware/hccl_watch_dog_thread.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.h"
 
 namespace mindspore {
 namespace device {

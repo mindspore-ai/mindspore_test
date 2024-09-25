@@ -58,10 +58,6 @@ add_npu_support_target(
   INSTALL_DIR
   ${PKG_PATH}/packages/vendors/${vendor_name}/framework/${ASCEND_FRAMEWORK_TYPE})
 
-if(ENABLE_TEST AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/testcases)
-  add_subdirectory(testcases)
-endif()
-
 # install kernel file
 if(${ENABLE_SOURCE_PACKAGE})
   file(GLOB KERNEL_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp

@@ -192,9 +192,11 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_vmm_adapter.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/lic_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/tasksink/rtmodel_zero_copy.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/hccl_watch_dog_thread.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_communication_group.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm/
+        ascend_collective_comm_lib.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm/hccl_watch_dog_thread.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm/
+        ascend_communication_group.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_context.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_res_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_kernel_executor.cc"
@@ -299,13 +301,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 
 list(REMOVE_ITEM MINDSPORE_SRC_LIST
         "../../../mindspore/ccsrc/distributed/rpc/rdma/rdma_client.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/rdma/rdma_server.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/mindir/ascend_vm_op_adapter.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/mindir/conv2d_unify_mindir.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge/dropout_for_ge.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge/convert_attr_to_input.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge/convert_resize_nearest_neighbor_x_dtype.cc"
-        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge/batchnorm_transform.cc")
+        "../../../mindspore/ccsrc/distributed/rpc/rdma/rdma_server.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/util.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/create_node_helper.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/scheduler.cc")

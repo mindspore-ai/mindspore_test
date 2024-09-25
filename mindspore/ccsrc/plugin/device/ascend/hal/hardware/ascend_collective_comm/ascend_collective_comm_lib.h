@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include <vector>
 #include <string>
 #include "runtime/collective/collective_communication_lib.h"
-#include "plugin/device/ascend/hal/hardware/ascend_communication_group.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
 
 #ifndef EXPORT_WRAPPER
 #define EXPORT_WRAPPER __attribute__((visibility("default")))

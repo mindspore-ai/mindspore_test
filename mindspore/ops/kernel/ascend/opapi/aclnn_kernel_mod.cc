@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@
 #include "utils/ms_utils.h"
 #include "ir/tensor.h"
 #include "transform/acl_ir/acl_helper.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/dummy_ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
 
 namespace mindspore {
 namespace kernel {

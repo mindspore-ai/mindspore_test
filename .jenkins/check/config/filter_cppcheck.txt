@@ -68,6 +68,7 @@
 "mindspore/mindspore/ops/kernel/cpu/xlogy_cpu_kernel.cc"                              "unreadVariable"
 "mindspore/mindspore/ops/kernel/cpu/arithmetic_cpu_kernel.cc"                         "unreadVariable"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/hccl/mux_send_ascend_kernel.cc"                "knownConditionTrueFalse"
+"mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_collective_comm_lib.cc" "noConstructor"
 "mindspore/mindspore/ops/kernel/cpu/xdivy_cpu_kernel.cc"                              "unreadVariable"
 "mindspore/mindspore/ops/kernel/cpu/cast_cpu_kernel.cc"                               "multiCondition"
 "mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/embedding_cache/embedding_cache_prefetch_actor.cc"  "constParameter"

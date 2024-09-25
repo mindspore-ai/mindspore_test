@@ -29,8 +29,8 @@
 #include "runtime/collective/collective_communication_lib.h"
 #include "runtime/collective/collective_comm_lib_loader.h"
 #include "runtime/collective/communication_group.h"
-#include "plugin/device/ascend/hal/hardware/multi_ascend_communication_group.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/multi_ascend_communication_group.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/dlopen_macro.h"
 
