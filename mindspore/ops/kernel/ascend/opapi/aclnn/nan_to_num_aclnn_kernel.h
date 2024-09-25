@@ -29,6 +29,8 @@ class NanToNumAscend : public AclnnKernelMod {
  public:
   NanToNumAscend() : AclnnKernelMod(std::move("aclnnNanToNum")) {}
   ~NanToNumAscend() = default;
+  void GetInfValues(TypeId input_type, const std::optional<float> &posinf, const std::optional<float> &neginf,
+                    bool posinf_has_value, bool neginf_has_value);
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 
