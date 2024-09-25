@@ -2606,49 +2606,77 @@ REG_BPROP_BUILDER("NextAfter").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {ib->Cast(dx1, dout_type), ib->Cast(dx2, dout_type)};
 });
 
-REG_BPROP_BUILDER("Norm").SetUnusedInputs({i2, i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Norm").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
-  auto ord = ib->GetInput(kIndex1);
+  auto input_shape = ib->GetShape(input);
+  auto p = ib->GetInput(kIndex1);
   auto dim = ib->GetInput(kIndex2);
   auto keepdim = ib->GetInput(kIndex3);
   auto dtype = ib->GetInput(kIndex4);
   auto out = ib->GetInput(kIndex5);
   auto dout = ib->GetInput(kIndex6);
-  auto ord_type = ord->abstract()->BuildType();
-  if (ord_type->isa<TypeNone>()) {
-    auto scale_v = ib->RealDiv(dout, out);
-    return {ib->Mul(input, scale_v), ib->OutZeros(ord), ib->OutZeros(dim), ib->OutZeros(keepdim), ib->OutZeros(dtype)};
-  }
   NodePtr grad_input = nullptr;
-  float ord_value = GetValue<float>(ord->BuildValue());
-  if (ord_value == 0.0) {
+  if (p->BuildValue()->ContainsValueAny()) {
+    MS_EXCEPTION(ValueError) << "For gradient of `Norm`, the `p` must be a constant!.";
+  }
+  ShapeVector dim_value{};
+  auto dim_type = dim->abstract()->BuildType();
+  if (!dim_type->isa<TypeNone>()) {
+    dim_value = GetValue<ShapeVector>(dim->BuildValue());
+  }
+  auto keepdim_value = GetValue<bool>(keepdim->BuildValue());
+  if ((!keepdim_value) && (!input_shape.empty())) {
+    for (const auto &i : dim_value) {
+      dout = ib->ExpandDims(dout, i);
+      out = ib->ExpandDims(out, i);
+    }
+  }
+  float p_value = GetValue<float>(p->BuildValue());
+  if (p_value == 0.0) {
     grad_input = ib->OutZeros(input);
-  }
-  if (ord_value == 1.0) {
+  } else if (p_value == 1.0) {
     grad_input = ib->Mul(dout, (ib->Sign(input)));
-  }
-  if (ord_value == 2.0) {
-    auto scale_v = ib->RealDiv(dout, out);
+  } else if (p_value == 2.0) {
+    auto scale_v = ib->Div(dout, out);
+    auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+    scale_v = ib->MaskedFill(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
     grad_input = ib->Mul(input, scale_v);
   } else {
     auto input_abs = ib->Abs(input);
-    auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(ord_value - 2, ib->GetDtype(input_abs))), input);
-    auto scale_v = ib->RealDiv(dout, ib->Pow(out, ib->Tensor(ord_value - 1, ib->GetDtype(out))));
+    auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(p_value - 2, ib->GetDtype(input_abs))), input);
+    auto scale_v = ib->Div(dout, ib->Pow(out, ib->Tensor(p_value - 1, ib->GetDtype(out))));
     auto equal_zero = ib->Equal(input_scaled, ib->Tensor(0, ib->GetDtype(input_scaled)));
     scale_v = ib->MaskedFill(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
     grad_input = ib->Mul(input_scaled, scale_v);
   }
-  return {grad_input, ib->OutZeros(ord), ib->OutZeros(dim), ib->OutZeros(keepdim), ib->OutZeros(dtype)};
+  return {grad_input, ib->OutZeros(p), ib->OutZeros(dim), ib->OutZeros(keepdim), ib->OutZeros(dtype)};
 });
 
-REG_BPROP_BUILDER("LpNormV2").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("LpNormV2").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
+  auto input_shape = ib->GetShape(input);
   auto p = ib->GetInput(kIndex1);
   auto dim = ib->GetInput(kIndex2);
   auto keepdim = ib->GetInput(kIndex3);
   auto epsilon = ib->GetInput(kIndex4);
   auto out = ib->GetInput(kIndex5);
   auto dout = ib->GetInput(kIndex6);
+  auto dim_type = dim->abstract()->BuildType();
+  if (p->BuildValue()->ContainsValueAny() || dim->BuildValue()->ContainsValueAny() ||
+      keepdim->BuildValue()->ContainsValueAny()) {
+    MS_EXCEPTION(ValueError) << "For gradient of `LpNormV2`, the `p`, `dim` and `keepdims` must be constant!.";
+  }
+  ShapeVector dim_value{};
+  if (!dim_type->isa<TypeNone>()) {
+    dim_value = GetValue<ShapeVector>(dim->BuildValue());
+  }
+  auto keepdim_value = GetValue<bool>(keepdim->BuildValue());
+  if ((!keepdim_value) && (!input_shape.empty())) {
+    for (const auto &i : dim_value) {
+      dout = ib->ExpandDims(dout, i);
+      out = ib->ExpandDims(out, i);
+    }
+  }
   auto input_abs = ib->Abs(input);
   auto input_sgn = ib->Sign(input);
   auto tensor_zero = ib->Tensor(0, input->dtype());
@@ -2656,35 +2684,47 @@ REG_BPROP_BUILDER("LpNormV2").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
   float p_value = GetValue<float>(p->BuildValue());
   if (p_value == 0.0) {
     grad_input = ib->OutZeros(input);
-  }
-  if (p_value == 1.0) {
+  } else if (p_value == 1.0) {
     grad_input = ib->Mul(dout, input_sgn);
-  }
-  if (p_value == 2.0) {
-    auto scale_v = ib->RealDiv(dout, out);
+  } else if (p_value == 2.0) {
+    auto scale_v = ib->Div(dout, out);
+    auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+    scale_v = ib->MaskedFill(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
     grad_input = ib->Mul(input, scale_v);
-  }
-  if (p_value < 2.0) {
-    auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(p_value - 1, ib->GetDtype(input_abs))), input_sgn);
-    auto scale_v = ib->RealDiv(dout, ib->Pow(out, ib->Tensor(p_value - 1, ib->GetDtype(out))));
-    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
-    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
-    grad_input = ib->Mul(input_scaled, scale_v);
-  }
-  if (std::isinf(p_value)) {
+  } else if (std::isinf(p_value)) {
+    auto input_typeid = ib->GetDtypeId(input);
+    // For Primitive 'IsNan', input's dtype cannot be bfloat16.
+    if (input_typeid == kNumberTypeBFloat16) {
+      input = ib->Cast(input, kFloat32);
+      out = ib->Cast(out, kFloat32);
+    }
     auto input_nan = ib->Emit("IsNan", {input});
     auto out_nan = ib->Emit("IsNan", {out});
     auto input_and_out_nan = ib->LogicalAnd(input_nan, out_nan);
     auto equal_max = ib->Cast(ib->LogicalOr(ib->Equal(input_abs, out), input_and_out_nan), input->dtype());
     auto input_scaled = ib->Mul(input_sgn, equal_max);
     auto max_cnt = ib->SumExt(ib->NotEqual(equal_max, tensor_zero), dim, ib->Value(false), ib->EmitValue(kNone));
-    auto scale_v = ib->RealDiv(dout, max_cnt);
+    if (!input_shape.empty()) {
+      for (const auto &i : dim_value) {
+        max_cnt = ib->ExpandDims(max_cnt, i);
+      }
+    }
+    auto scale_v = ib->Div(dout, max_cnt);
+    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
+    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    grad_input = ib->Mul(input_scaled, scale_v);
+    if (input_typeid == kNumberTypeBFloat16) {
+      grad_input = ib->Cast(grad_input, kBFloat16);
+    }
+  } else if (p_value < 2.0) {
+    auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(p_value - 1, ib->GetDtype(input_abs))), input_sgn);
+    auto scale_v = ib->Div(dout, ib->Pow(out, ib->Tensor(p_value - 1, ib->GetDtype(out))));
     auto equal_zero = ib->Equal(input_scaled, tensor_zero);
     scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
     grad_input = ib->Mul(input_scaled, scale_v);
   } else {
     auto input_scaled = ib->Mul(ib->Pow(input_abs, ib->Tensor(p_value - 2, ib->GetDtype(input_abs))), input);
-    auto scale_v = ib->RealDiv(dout, ib->Pow(out, ib->Tensor(p_value - 1, ib->GetDtype(out))));
+    auto scale_v = ib->Div(dout, ib->Pow(out, ib->Tensor(p_value - 1, ib->GetDtype(out))));
     auto equal_zero = ib->Equal(input_scaled, tensor_zero);
     scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
     grad_input = ib->Mul(input_scaled, scale_v);
