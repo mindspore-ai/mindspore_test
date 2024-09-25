@@ -51,7 +51,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
-                                         bincount_ext, rotated_iou_op, cat, narrow)
+                                         bincount_ext, rotated_iou_op, cat, narrow, var_op)
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
@@ -4372,6 +4372,65 @@ def vander(x, N=None):
     x = F.expand_dims(x, 1)
     exponent = F.expand_dims(exponent, 0)
     return F.tensor_pow(x, exponent)
+
+def var_ext(input, dim=None, *, correction=1, keepdim=False):
+    r"""
+    Calculates the variance over the dimensions specified by `dim`. `dim` can be a single dimension, list of
+    dimensions, or None to reduce over all dimensions.
+
+    The variance (:math:`\delta ^2`) is calculated as:
+
+    .. math::
+        \delta ^2 = \frac{1}{\max(0, N - \delta N)}\sum^{N - 1}_{i = 0}(x_i - \bar{x})^2
+
+    where :math:`x` is the sample set of elements, :math:`\bar{x}` is the sample mean, :math:`N` is the number
+    of samples and :math:`\delta N` is the `correction`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The tensor used to calculate the variance.
+        dim (None or int or tuple of ints, optional): The dimension or dimensions to reduce. Defaults to ``None``.
+            If ``None``, all dimensions are reduced.
+
+    Keyword Args:
+        correction (int, optional): The difference between the sample size and sample degrees of freedom. Defaults
+            to Bessel’s correction. Defaults to ``1``.
+        keepdim (bool, optional): Whether the output tensor has dim retained or not. If ``True`` , keep these
+            reduced dimensions and the length is 1. If ``False``, don't keep these dimensions. Defaults to ``False``.
+
+    Returns:
+        Tensor, the variance.
+        Suppose the shape of `input` is :math:`(x_0, x_1, ..., x_R)`:
+
+        - If `dim` is () and `keepdim` is set to ``False`` , returns a 0-D Tensor, indicating the variance of all
+          elements in `input`.
+        - If `dim` is int, e.g. ``1`` and `keepdim` is set to ``False`` , then the returned Tensor has shape
+          :math:`(x_0, x_2, ..., x_R)`.
+        - If `dim` is tuple(int) or list(int), e.g. ``(1, 2)`` and `keepdim` is set to ``False`` , then the returned
+          Tensor has shape :math:`(x_0, x_3, ..., x_R)`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `input` is not in bfloat16, float16, flaot32.
+        TypeError: If `dim` is not one of the followings: None, int, tuple.
+        TypeError: If `correction` is not an int.
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If `dim` is out of range :math:`[-input.ndim, input.ndim)`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor([[8, 2, 1], [5, 9, 3], [4, 6, 7]], mindspore.float32)
+        >>> output = ops.var_ext(input, dim=0, correction=1, keepdim=True)
+        >>> print(output)
+        [[ 4.333333, 12.333333, 9.333333]]
+    """
+    return var_op(input, dim, correction, keepdim)
 
 
 def var(input, axis=None, ddof=0, keepdims=False):
