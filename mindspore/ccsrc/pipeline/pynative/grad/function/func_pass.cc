@@ -308,7 +308,7 @@ NodePtr FuncPassForward::BatchNormGradToBNInferGrad(const NodePtrList &inputs, b
   } else {
     MS_LOG(ERROR) << "For BNInferGrad pass, failed to get attr epsilon, use default epsilon: 1e-5.";
   }
-  bn_infer_grad_prim->set_attr(kAttrIsTraining, MakeValue(epsilon));
+  bn_infer_grad_prim->set_attr(kAttrEpsilon, MakeValue(epsilon));
   bn_infer_grad_prim->set_attr(kAttrIsTraining, MakeValue(is_training_opt.value()));
   auto dx = func_builder_->EmitOp(bn_infer_grad_prim, new_inputs);
   return func_builder_->MakeTuple(

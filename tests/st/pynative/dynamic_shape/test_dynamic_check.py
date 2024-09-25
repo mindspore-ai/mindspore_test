@@ -13,8 +13,10 @@
 # limitations under the License.
 # ============================================================================
 
+import os
 import pytest
 import numpy as np
+os.environ['MS_PYNATIVE_CONFIG_STATIC_SHAPE'] = '1'
 import mindspore as ms
 from mindspore import nn
 from mindspore import ops
@@ -72,6 +74,7 @@ def test_net_input_shape_changed():
     Description: Top cell input shape changed, net is dynamic.
     Expectation: Dynamic check is detected.
     """
+
     net = Net()
     grad_op = ops.GradOperation(get_all=True, get_by_list=False, sens_param=False)
 
@@ -164,6 +167,7 @@ def test_net_bprop_dynamic_shape():
     Description: Net has custom bprop is dynamic.
     Expectation: The net is dynamic.
     """
+
     net = NetHasBprop()
     grad_op = ops.GradOperation(get_all=True, get_by_list=False, sens_param=False)
     context.set_context(save_graphs=True, save_graphs_path="ir")
