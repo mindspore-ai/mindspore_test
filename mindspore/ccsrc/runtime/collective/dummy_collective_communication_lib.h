@@ -21,6 +21,7 @@
 
 #include "runtime/collective/communication_group.h"
 #include "runtime/collective/collective_communication_lib.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 constexpr int kDecimalBase = 10;

@@ -15,6 +15,7 @@
  */
 
 #include "runtime/collective/collective_comm_lib_loader.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace device {

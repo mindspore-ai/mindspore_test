@@ -23,7 +23,6 @@
 #include <memory>
 #include <sstream>
 #include <algorithm>
-#include "utils/log_adapter.h"
 #include "pybind11/pybind11.h"
 
 namespace mindspore {
