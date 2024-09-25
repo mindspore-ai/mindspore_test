@@ -1847,6 +1847,7 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
     MS_LOG(WARNING) << "ByteCode " << Opcode(instr.op()).name() << " is not supported yet.";
     return false;
   }
+  MS_LOG(DEBUG) << "Do bytecode " << instr.ToString();
   auto infer_succ = (this->*(func_iter->second))(instr);
 
   const auto &nodes = graph_->GetTracedNodes();
@@ -2566,7 +2567,11 @@ AbstractWrapperPtrList MindGraphBuilder::HandleInputArgs(const std::vector<Value
       ret.push_back(arg->abstract_wrapper());
       continue;
     }
+    MS_LOG(INFO) << "Can not find anf node for arg: " << arg->ToString();
     auto new_wrapper = FGBuilder()->AddLocalVariable(arg->GetVobj()->GetPyObject());
+    if (new_wrapper == nullptr) {
+      MS_LOG(INFO) << "Failed to add anf node for arg: " << arg->ToString();
+    }
     arg->set_abstract_wrapper(new_wrapper);
     ret.push_back(new_wrapper);
   }
@@ -5030,6 +5035,10 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildStringOp(const PrimitivePtr &pri
   // The string_concat primitive only supports concatenating two strings.
   // Thus, if we want to concatenate multiple strings, we need to call this primitive multiple times.
   MS_LOG(DEBUG) << "Handle BUILD_STRING op, concat " << inputs_wrapper.size() << " strings";
+  if (std::any_of(inputs_wrapper.begin(), inputs_wrapper.end(), [](auto abs) { return abs == nullptr; })) {
+    MS_LOG(INFO) << "Failed to do string concat, found null input arg";
+    return nullptr;
+  }
   AbstractWrapperPtr result_str = inputs_wrapper[0];
   for (size_t i = 1; i < inputs_wrapper.size(); ++i) {
     const AbstractWrapperPtr &concated_str = fg_builder_->AddNode(primitive, {result_str, inputs_wrapper[i]});
