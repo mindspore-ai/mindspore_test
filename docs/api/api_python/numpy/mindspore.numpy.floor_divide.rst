@@ -11,7 +11,7 @@ mindspore.numpy.floor_divide
     参数：
         - **x1** (Tensor) - 输入数组。
         - **x2** (Tensor) - 输入数组。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量。

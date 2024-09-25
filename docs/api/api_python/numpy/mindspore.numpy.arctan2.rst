@@ -11,7 +11,7 @@ mindspore.numpy.arctan2
     参数：
         - **x1** (Tensor) - 输入Tensor。
         - **x2** (Tensor) - 输入Tensor。
-        - **dtype** (:class:`mindspore.dtype`, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 默认值： ``None`` 。 覆盖输出Tensor的dtype 。
 
     返回：
         Tensor或标量， `x1` 与 `x2` 逐元素的计算结果。如果 `x1` 与 `x2` 都是标量，则结果也是标量。

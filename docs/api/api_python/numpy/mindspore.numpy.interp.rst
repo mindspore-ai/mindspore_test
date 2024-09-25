@@ -12,8 +12,8 @@ mindspore.numpy.interp
         - **x** (Union[int, float, bool, list, tuple, Tensor]) - 计算插值后的值时使用的x坐标。
         - **xp** (Union[int, float, bool, list, tuple, Tensor]) - 元素为float的1-D序列，输入数据点的x坐标，必须递增。
         - **fp** (Union[int, float, bool, list, tuple, Tensor]) - 元素为float的1-D序列，输入数据点的y坐标，与 `xp` 等长。
-        - **left** (float, 可选) - ``x < xp[0]`` 时返回的值，一旦存在，默认值为 ``fp[0]`` 。
-        - **right** (float, 可选) - ``x > xp[-1]`` 时返回的值，一旦存在，默认值为 ``fp[-1]`` 。
+        - **left** (float, 可选) - ``x < xp[0]`` 时返回的值，一旦存在，默认值为 ``fp[0]`` 。默认值： ``None`` 。
+        - **right** (float, 可选) - ``x > xp[-1]`` 时返回的值，一旦存在，默认值为 ``fp[-1]`` 。默认值： ``None`` 。
         
     返回：
         Tensor，插值得到的值，其shape与 `x` 相同。

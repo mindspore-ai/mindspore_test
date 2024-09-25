@@ -15,10 +15,10 @@ mindspore.numpy.cov
         - **y** (Union[Tensor, list, tuple], 可选) - 一个附加的变量和观测值的集合。 `y` 的形式与 `m` 相同，默认值： `None`。
         - **rowvar** (bool, 可选) - 如果 `rowvar` 为 `True` (默认值)，则每行代表一个变量，每列代表一个观测值。 否则，关系被转置：每列代表一个变量，每行代表一个观测值。
         - **bias** (bool, 可选) - 默认的归一化( `False` )是通过 :math:`N - 1` 计算的， 其中 :math:`N` 是观测值的数量。 如果 `bias` 为 `True` ，则归一化通过 :math:`N` 计算。 这些值可通过关键词 `ddof` 被覆盖。
-        - **ddof** (int, 可选) - 如果不为 `None`，由 `bias` 设定的默认值将被覆盖。 请注意，即使指定了 `fweights` 和 `aweights`， :math:`ddof = 1` 也将返回无偏估计 ， :math:`ddof = 0` 将返回简单平均值。默认值： `None` 。
-        - **fweights** (Union[Tensor, list, tuple], 可选) - 一个1-D的整数频率权重Tensor。 表示每个观测向量应该重复的次数。 默认值： `None` 。
+        - **ddof** (int, 可选) - 如果不为 `None`，由 `bias` 设定的默认值将被覆盖。 请注意，即使指定了 `fweights` 和 `aweights`， :math:`ddof = 1` 也将返回无偏估计 ， :math:`ddof = 0` 将返回简单平均值。默认值： ``None`` 。
+        - **fweights** (Union[Tensor, list, tuple], 可选) - 一个1-D的整数频率权重Tensor。 表示每个观测向量应该重复的次数。 默认值： ``None`` 。
         - **aweights** (Union[Tensor, list, tuple], 可选) - 一个1-D的观测向量权重Tensor。 被认为更重要的观测值的权重相对较大，被认为不那么重要的观测值的权重相对较小。如果 :math:`ddof = 0` ，权重Tensor可用于给观测向量分配概率。默认值： `None`。
-        - **dtype** (Union[mindspore.dtype, str], 可选) - 结果的数据类型。 默认情况下，返回的数据类型将具有mstype.float32精度。 默认值： `None` 。
+        - **dtype** (Union[mindspore.dtype, str], 可选) - 结果的数据类型。 默认情况下，返回的数据类型将具有mstype.float32精度。 默认值： ``None`` 。
 
     返回：
         Tensor，变量的协方差矩阵。

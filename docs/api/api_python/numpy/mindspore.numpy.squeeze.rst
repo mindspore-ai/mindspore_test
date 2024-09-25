@@ -7,7 +7,7 @@ mindspore.numpy.squeeze
 
     参数：
         - **a** (Tensor) - 输入Tensor数组。
-        - **axis** (Union[None, int, list(int), tuple(list)]) - 要压缩的轴，默认值: ``None`` 。
+        - **axis** (Union[None, int, list(int), tuple(list)]，可选) - 要压缩的轴，默认值: ``None`` 。
 
     返回：
         Tensor，移除了所有或部分长度为1的维度。

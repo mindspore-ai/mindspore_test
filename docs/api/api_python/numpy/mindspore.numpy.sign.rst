@@ -12,7 +12,7 @@ mindspore.numpy.sign
 
     参数：
         - **x** (Union[int, float, list, tuple, Tensor]) - 输入值。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。覆盖输出Tensor的dtype。
 
     返回：
         `x` 的符号，当 `x` 是标量时，可以是一个tensor或者标量。

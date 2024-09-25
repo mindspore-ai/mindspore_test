@@ -7,7 +7,7 @@ mindspore.numpy.transpose
 
     参数：
         - **a** (Tensor) - 要转置的Tensor。
-        - **axes** (Union[None, tuple, list]) - 轴的顺序。如果 ``axes`` 为 ``None`` ，则转置整个Tensor。默认值： ``None`` 。
+        - **axes** (Union[None, tuple, list]，可选) - 轴的顺序。如果 ``axes`` 为 ``None`` ，则转置整个Tensor。默认值： ``None`` 。
 
     返回：
         Tensor，转置后的Tensor数组。

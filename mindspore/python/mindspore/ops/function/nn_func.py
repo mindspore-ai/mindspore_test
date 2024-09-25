@@ -978,7 +978,7 @@ def adaptive_max_pool3d(input, output_size, return_indices=False):
             width respectively. The value must be a positive integer. If it is None, the output size and
             input size of the corresponding dimension are the same.
         return_indices (bool, optional): If `return_indices` is `True`, the indices of max value would be output,
-            Otherwise, it will not be output. Default: `False`.
+            Otherwise, it will not be output. Default: ``False``.
 
     Returns:
         - **y** (Tensor) - Tensor, with the same number of dims and data type as the `input`.

@@ -8,7 +8,7 @@ mindspore.numpy.rot90
     参数：
         - **a** (Tensor) - 输入的二维或更多维的Tensor。
         - **k** (int) - Tensor旋转90度的次数。默认值: ``1`` 。
-        - **axes** (Union[tuple(int), list(int)]) - Tensor在由轴定义的平面内进行旋转。默认值: ``(0, 1)`` 。轴必须不同，并且shape为 ``(2,)`` 。
+        - **axes** (Union[tuple(int), list(int)]，可选) - Tensor在由轴定义的平面内进行旋转。默认值: ``(0, 1)`` 。轴必须不同，并且shape为 ``(2,)`` 。
 
     返回：
         Tensor。

@@ -10,7 +10,7 @@ mindspore.numpy.square
 
     参数：
         - **x** (Tensor) - 输入数据。
-        - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。覆盖输出Tensor的dtype。
+        - **dtype** (mindspore.dtype, 可选) - 默认值： ``None`` 。覆盖输出Tensor的dtype。
 
     返回：
         Tensor或标量，逐元素计算 ``x*x`` ，具有与 `x` 相同的shape和dtype。如果 `x` 是标量，则返回标量。
