@@ -74,13 +74,7 @@ BaseShapePtr RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr RmsNormFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  auto prim_name = primitive->name();
   auto x_dtype = input_args[kInputIndex0]->GetType();
-  auto gamma_dtype = input_args[kInputIndex1]->GetType();
-  std::map<std::string, TypePtr> types;
-  (void)types.emplace("x", x_dtype);
-  (void)types.emplace("gamma", gamma_dtype);
-  (void)CheckAndConvertUtils::CheckTypeSame(types, prim_name);
   return std::make_shared<Tuple>(std::vector<TypePtr>{x_dtype, std::make_shared<TensorType>(kFloat32)});
 }
 
@@ -124,18 +118,9 @@ ShapeArray RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 }
 
 TypePtrList RmsNormFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  auto prim_name = primitive->name();
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_dtype = x_tensor->Dtype();
-  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(gamma_tensor);
-  const auto &gamma_dtype = gamma_tensor->Dtype();
-  std::map<std::string, TypePtr> types;
-  (void)types.emplace("x", x_dtype);
-  (void)types.emplace("gamma", gamma_dtype);
-  (void)CheckAndConvertUtils::CheckTypeSame(types, prim_name);
   return {x_dtype, kFloat32};
 }
 
