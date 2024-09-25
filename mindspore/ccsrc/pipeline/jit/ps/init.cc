@@ -57,6 +57,7 @@
 #include "pipeline/jit/pi/external.h"
 #include "include/common/np_dtype/np_dtypes.h"
 #include "include/common/amp/amp.h"
+#include "pipeline/jit/trace/trace_recorder.h"
 
 namespace py = pybind11;
 using GraphExecutorPy = mindspore::pipeline::GraphExecutorPy;
@@ -163,6 +164,7 @@ void RegModule(py::module *m) {
   RegCell(m);
   RegMetaFuncGraph(m);
   RegFuncGraph(m);
+  mindspore::trace::RegTraceRecorderPy(m);
   RegUpdateFuncGraphHyperParams(m);
   RegParamInfo(m);
   RegPrimitive(m);

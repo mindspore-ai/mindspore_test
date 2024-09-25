@@ -369,6 +369,8 @@ from mindspore.ops.auto_generate.gen_arg_dtype_cast import type_it
 from mindspore.ops.auto_generate.gen_arg_handler import *
 from mindspore._c_expression import OpDtype
 from mindspore.common._stub_tensor import _convert_stub
+from mindspore.common.jit_context import jit_context
+from mindspore._checkparam import is_stub_tensor
 """
 
 OP_PRIM_CLASS_DEFINE_TEMPLATE = Template("""

@@ -1,0 +1,7 @@
+approvers:
+- zh_qh #
+- ginfung
+- liangzhibo
+
+options:
+    no_parent_owners: true

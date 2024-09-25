@@ -281,8 +281,8 @@ class OpPrimPyGenerator(BaseGenerator):
         call_method_args_str = ", ".join(call_args)
         call_method_body_str = self._get_call_method_body_str(args_handlers, init_args, inputs_args, inputs_default,
                                                               op_proto)
-        call_code_str += f"""    def __call__(self, {call_method_args_str}):\n"""
-        call_code_str += f"""          {call_method_body_str}"""
+        call_code_str += f"""    def __call__(self, {call_method_args_str}):"""
+        call_code_str += f"""{call_method_body_str}"""
         return call_code_str
 
     def _get_call_method_body_str(self, args_handlers, init_args, inputs_args, inputs_default, op_proto: OpProto):
@@ -317,10 +317,23 @@ class OpPrimPyGenerator(BaseGenerator):
         call_method_body_str = ""
         is_pyboost = op_proto.op_dispatch and op_proto.op_dispatch.enable
         if is_pyboost:
+            call_method_body_str += f"""
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return None"""
             pyboost_func_name = pyboost_utils.get_pyboost_name(op_proto.op_name)
-            call_method_body_str += f"""return _convert_stub({pyboost_func_name}(self, [{call_args_list_str}]))"""
+            call_method_body_str += f"""
+        res = _convert_stub({pyboost_func_name}(self, [{call_args_list_str}]))"""
+            call_method_body_str += f"""
+        # Add for jit context.
+        if jit_context():
+            if is_stub_tensor(res):
+                res = res.stub_sync()
+            return jit_context().run_op(self, res, {call_args_list_str})
+        return res\n"""
         else:
-            call_method_body_str += f"""return super().__call__({call_args_list_str})\n"""
+            call_method_body_str += f"""
+        return super().__call__({call_args_list_str})\n"""
         return call_method_body_str
 
     def _generate_py_op_signature(self, op_proto: OpProto, args_name, args_default):

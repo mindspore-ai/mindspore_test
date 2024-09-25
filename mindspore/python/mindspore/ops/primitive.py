@@ -27,6 +27,7 @@ from mindspore.parallel._ps_context import _is_ps_mode, _is_role_sched
 from mindspore.parallel.shard import Layout
 from mindspore.common.api import _pynative_executor
 from mindspore.common._stub_tensor import _convert_stub
+from mindspore.common.jit_context import jit_context
 from mindspore._c_expression import Primitive_, PrimitiveFunction_, prim_type, typing
 from mindspore import _checkparam as Validator
 from mindspore.ops import signature as sig
@@ -401,6 +402,9 @@ class Primitive(Primitive_):
         return (False, None)
 
     def __call__(self, *args):
+        # Add for jit context.
+        if jit_context() and jit_context().compiled:
+            return None
         should_elim, output = self.check_elim(*args)
         if should_elim:
             return output
@@ -1001,29 +1005,16 @@ def _primexpr(fn=None, get_instance=True, name=None, reuse_result=True):
     return deco
 
 
-class _RunOpHook:
-    """Hook for run op"""
-
-    current = None
-
-    def __init__(self, hook):
-        self.hook = hook
-        self.old = _RunOpHook.current
-
-    def __enter__(self):
-        _RunOpHook.current = self
-        return self
-
-    def __exit__(self, *err):
-        _RunOpHook.current = self.old
-
-
 def _run_op(obj, op_name, args):
     """Single op execution function supported by ge in PyNative mode."""
-    if not _RunOpHook.current:
-        stub = _pynative_executor.run_op_async(obj, op_name, args)
-        return _convert_stub(stub)
-    return _RunOpHook.current.hook(obj, args)
+    stub = _pynative_executor.run_op_async(obj, op_name, args)
+    res = _convert_stub(stub)
+    # Add for jit context.
+    if jit_context():
+        if Validator.is_stub_tensor(res):
+            res = res.stub_sync()
+        return jit_context().run_op(obj, res, *args)
+    return res
 
 
 @_wrap_func

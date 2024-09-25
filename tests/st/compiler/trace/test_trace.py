@@ -1,0 +1,372 @@
+# Copyright 2024 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+""" test trace functions """
+
+import sys
+import time
+import numpy as np
+import pytest
+from tests.mark_utils import arg_mark
+from tests.st.compiler.auto_monad.capture import Capture, capture, check_output
+import mindspore as ms
+from mindspore.common.api import _pynative_executor
+from mindspore.common.jit_begin_end import _jit_begin as jit_begin
+from mindspore.common.jit_begin_end import _jit_end as jit_end
+from mindspore.common.jit_trace import _jit_trace as jit_trace
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_1():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @jit_trace
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            z = x + a
+            z = z + self.x
+            z = z * y
+            return z
+
+    trace_net = TraceNet()
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == 12
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == 12
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_2():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @jit_trace
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            z = x + a
+            z = z + self.x
+            z = z * y
+            return x, y, z
+
+    trace_net = TraceNet()
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == (1, 3, 12)
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == (1, 3, 12)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_3():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @jit_trace
+    def foo(x, y, z):
+        return x + y + z
+
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == 6
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == 6
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_4():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @jit_trace
+    def foo(inputs):
+        x, y, z = inputs
+        return x + y + z
+
+    inputs = ms.mutable([ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)])
+    res = foo(inputs)
+    assert res == 6
+    res = foo(inputs)
+    assert res == 6
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_5():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @jit_trace
+    def foo(inputs):
+        x, y, z = inputs
+        return x, y, z, x + y + z
+
+    inputs = ms.mutable([ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)])
+    res = foo(inputs)
+    assert res == (1, 2, 3, 6)
+    res = foo(inputs)
+    assert res == (1, 2, 3, 6)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_6():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @jit_trace
+    def foo(inputs):
+        x = ms.ops.addn(inputs)
+        return x, inputs
+
+    inputs = ms.mutable((ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)))
+    res = foo(inputs)
+    assert res == (6, (1, 2, 3))
+    res = foo(inputs)
+    assert res == (6, (1, 2, 3))
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_7():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @jit_trace
+    def foo(inputs):
+        x = ms.ops.addn(inputs)
+        return x, inputs
+
+    inputs = ms.mutable([ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)])
+    res = foo(inputs)
+    assert res == (6, [1, 2, 3])
+    res = foo(inputs)
+    assert res == (6, [1, 2, 3])
+
+
+class TensorGetItem(ms.nn.Cell):
+    def construct(self, tensor, index):
+        res = tensor[index]
+        return res
+
+
+class TensorSetItem(ms.nn.Cell):
+    def construct(self, tensor, index, value):
+        tensor[index] = value
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.skip(reason="No support")
+def test_trace_tensor_tuple_index_0():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @jit_trace
+    def foo(x, index):
+        return TensorGetItem()(x, index)
+
+    input_1d_np = np.array([1]).astype(np.float32)
+    input_1d_ms = ms.Tensor(input_1d_np, ms.dtype.float32)
+    input_3d_np = np.random.randint(3, size=(3, 4, 5)).astype(np.int32)
+    input_3d_ms = ms.Tensor(input_3d_np, ms.dtype.float32)
+
+    index_np_1 = (0,)
+    index_np_2 = (1, 2)
+    index_np_3 = (1, 2, 3)
+    index_np_4 = (3, 4, 4)
+    index_np_5 = (1, 2, 3, 4)
+
+    output_1d_ms = foo(input_1d_ms, index_np_1)
+    print(f'output_1d_ms: {output_1d_ms}')
+    output_3d_ms = foo(input_3d_ms, index_np_3)
+    print(f'output_3d_ms: {output_3d_ms}')
+    assert output_1d_ms == input_1d_np.item(index_np_1)
+    assert output_3d_ms == input_3d_np.item(index_np_3)
+
+    with pytest.raises(IndexError):
+        foo(input_1d_ms, index_np_2)
+        _pynative_executor.sync()
+
+    with pytest.raises(ValueError):
+        foo(input_3d_ms, index_np_2)
+        _pynative_executor.sync()
+
+    with pytest.raises(IndexError):
+        foo(input_3d_ms, index_np_4)
+        _pynative_executor.sync()
+
+    with pytest.raises(IndexError):
+        foo(input_3d_ms, index_np_5)
+        _pynative_executor.sync()
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_side_effect_1():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    class TraceNet(ms.nn.Cell):
+        def __init__(self):
+            super(TraceNet, self).__init__()
+            self.x = ms.Tensor(1)
+
+        @jit_trace
+        def construct(self, x, y):
+            a = ms.Tensor(2)
+            ms.ops.Print()(a)
+            z = x + a
+            ms.ops.Print()(z)
+            z = z + self.x
+            ms.ops.Print()(z)
+            z = z * y
+            ms.ops.Print()(z)
+            return z
+
+    trace_net = TraceNet()
+    res = trace_net(ms.Tensor(1), ms.Tensor(3))
+    assert res == 12
+
+    cap = Capture()
+    with capture(cap):
+        res = trace_net(ms.Tensor(1), ms.Tensor(3))
+        sys.stdout.flush()
+        time.sleep(0.1)
+    assert res == 12
+    patterns = {'Tensor(shape=[], dtype=Int64, value=2)\n'
+                'Tensor(shape=[], dtype=Int64, value=3)\n'
+                'Tensor(shape=[], dtype=Int64, value=4)\n'
+                'Tensor(shape=[], dtype=Int64, value=12)'}
+    check_output(cap.output, patterns)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_side_effect_2():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    @jit_trace
+    def foo(inputs):
+        x = ms.ops.addn(inputs)
+        ms.ops.Print()('x: ', x)
+        return x, inputs
+
+    inputs = ms.mutable([ms.Tensor(1), ms.Tensor(2), ms.Tensor(3)])
+    res = foo(inputs)
+    assert res == (6, [1, 2, 3])
+
+    cap = Capture()
+    with capture(cap):
+        res = foo(inputs)
+        sys.stdout.flush()
+        time.sleep(0.1)
+    assert res == (6, [1, 2, 3])
+    patterns = {'x: \nTensor(shape=[], dtype=Int64, value=6)'}
+    check_output(cap.output, patterns)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_begin_end_1():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    def foo(x, y, z):
+        a = ms.Tensor(2)
+        z = z + a
+        jit_begin("__trace__jit_block__1__", x, y, z)
+        z = z + x
+        z = z * y
+        z = jit_end(z)
+        return z
+
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == 12
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == 12
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_begin_end_2():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    def foo(x, y, z):
+        t = ms.Tensor(2)
+        z = z + t
+        jit_begin("__trace__jit_block__2__", x, y, z)
+        a = z + x
+        b = a * y
+        a, b = jit_end(a, b)
+        return a, b
+
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == (6, 12)
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == (6, 12)
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trace_begin_end_3():
+    """
+    Feature: JIT trace function
+    Description: JIT trace function
+    Expectation: No exception
+    """
+    def bar(x, y, z):
+        t = ms.Tensor(2)
+        z = z + t
+        jit_begin("__trace__jit_block__3__", x, y, z)  # <-- Start func graph building.
+        a = z + x
+        b = a * y
+        return a, b
+
+    def foo(x, y, z):
+        inputs = bar(x, y, z)
+        a = ms.ops.addn(inputs)
+        a = jit_end(a)  # <-- End func graph building.
+        b = a * y
+        return a, b
+
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == (18, 36)
+    res = foo(ms.Tensor(1), ms.Tensor(2), ms.Tensor(3))
+    assert res == (18, 36)

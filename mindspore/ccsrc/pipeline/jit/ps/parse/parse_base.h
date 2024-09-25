@@ -271,6 +271,8 @@ ValuePtr GetArgDefaultValue(const std::string &prim_name, const std::string &arg
 AnfNodePtr TransPropertyToFunc(const FuncGraphPtr &fg, const AnfNodePtr &node, const py::object &property_net_obj,
                                std::string attr_str);
 void CleanParameterNameCache();
+
+void AttachIsolatedNodes(const FuncGraphPtr &func_graph, const OrderedSet<AnfNodePtr> &isolated_nodes);
 }  // namespace parse
 }  // namespace mindspore
 
