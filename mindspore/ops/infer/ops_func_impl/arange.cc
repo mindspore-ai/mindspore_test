@@ -117,10 +117,6 @@ BaseShapePtr ArangeFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto end_value = input_args[kInputIndex1]->GetValue();
   auto step_value = input_args[kInputIndex2]->GetValue();
   auto dtype_value = input_args[kInputIndex3]->GetValue();
-  MS_EXCEPTION_IF_NULL(start_value);
-  MS_EXCEPTION_IF_NULL(end_value);
-  MS_EXCEPTION_IF_NULL(step_value);
-  MS_EXCEPTION_IF_NULL(dtype_value);
 
   bool is_compile = (IsNoneOrAnyValue(start_value) || IsNoneOrAnyValue(end_value) || IsNoneOrAnyValue(step_value));
   if (is_compile) {
@@ -170,13 +166,7 @@ TypePtrList ArangeFuncImpl::InferType(const PrimitivePtr &primitive, const Value
 
 ShapeArray ArangeFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &start_value = input_values[kInputIndex0];
-  const auto &end_value = input_values[kInputIndex1];
-  const auto &step_value = input_values[kInputIndex2];
   const auto &dtype_value = input_values[kInputIndex3];
-  MS_EXCEPTION_IF_NULL(start_value);
-  MS_EXCEPTION_IF_NULL(end_value);
-  MS_EXCEPTION_IF_NULL(step_value);
-  MS_EXCEPTION_IF_NULL(dtype_value);
 
   auto result_type_is_int = CheckDtypeValidAndIsInteger(primitive, dtype_value);
   auto shape_size = GetShapeSize(start_value->type(), input_values, result_type_is_int);

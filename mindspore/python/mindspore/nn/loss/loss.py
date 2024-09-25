@@ -362,6 +362,7 @@ class MSELoss(LossBase):
     Raises:
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'`` or ``'sum'``.
         ValueError: If `logits` and `labels` have different shapes and cannot be broadcasted.
+        TypeError: if `logits` and `labels` have different data types.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

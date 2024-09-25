@@ -3299,13 +3299,13 @@ def tensor_scatter_elements(input_x, indices, updates, axis=0, reduction="none")
     Note:
         If some values of the `indices` exceed the upper or lower bounds of the index of `input_x`, instead of raising
         an index error, the corresponding `updates` will not be updated to `input_x`.
+        The backward is supported only for the case `updates.shape == indices.shape`.
 
     Args:
         input_x (Tensor): The target tensor. The rank must be at least 1.
         indices (Tensor): The index of `input_x` to do scatter operation whose data type must be mindspore.int32 or
             mindspore.int64. Same rank as  `input_x`. And accepted range is [-s, s) where s is the size along axis.
-        updates (Tensor): The tensor doing the scatter operation with `input_x`, has the same type as `input_x` and
-            the same shape as `indices`.
+        updates (Tensor): The tensor doing the scatter operation with `input_x`.
         axis (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input_x). Default: ``0``.
         reduction (str): Which reduction operation to scatter, supports ``"none"`` , ``"add"`` . Default: ``"none"``.
             When `reduction` is set to ``"none"``, `updates` will be assigned to `input_x` according to  `indices`.
@@ -3317,7 +3317,6 @@ def tensor_scatter_elements(input_x, indices, updates, axis=0, reduction="none")
     Raises:
         TypeError: If `indices` is neither int32 nor int64.
         ValueError: If anyone of the rank among `input_x`, `indices` and `updates` less than 1.
-        ValueError: If the shape of `updates` is not equal to the shape of `indices`.
         ValueError: If the rank of `updates` is not equal to the rank of `input_x`.
         RuntimeError: If the data type of `input_x` and `updates` conversion of Parameter
             is required when data type conversion of Parameter is not supported.
@@ -3356,6 +3355,9 @@ def scatter(input, axis, index, src):
     """
     Update the value in `src` to `input` according to the specified index.
     Refer to :func:`mindspore.ops.tensor_scatter_elements` for more details.
+
+    .. note::
+        The backward is supported only for the case `src.shape == index.shape`.
 
     Args:
         input (Tensor): The target tensor. The rank of `input` must be at least 1.
