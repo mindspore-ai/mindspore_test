@@ -472,16 +472,6 @@ def multinomial(input, num_samples, replacement=True, seed=None):
     return F.multinomial(input, num_samples, replacement, seed)
 
 
-def multinomial_ext(input, num_samples, replacement=True, *, generator=None):
-    r"""
-    Returns a tensor sampled from the multinomial_ext probability distribution located in the corresponding
-    row of the input tensor.
-
-    Refer to :func:`mindspore.ops.multinomial_ext` for more detail.
-    """
-    return F.multinomial_ext(input, num_samples, replacement, generator=generator)
-
-
 def tile(x, reps):
     r"""
     Replicates an input tensor with given reps times.

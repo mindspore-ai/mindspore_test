@@ -17,14 +17,18 @@
 #ifndef MINDSPORE_OPS_OPS_FUNC_IMPL_MULTINOMIAL_EXT_H_
 #define MINDSPORE_OPS_OPS_FUNC_IMPL_MULTINOMIAL_EXT_H_
 
+#include <set>
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore::ops {
 class OPS_API MultinomialExtFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  // For aclnn GetWorkspace
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex3, kInputIndex4}; };
   bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace mindspore::ops

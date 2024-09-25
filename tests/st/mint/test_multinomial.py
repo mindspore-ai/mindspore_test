@@ -29,6 +29,10 @@ def multinomial_forward_func(x, num_samples, replacement):
     return mint.multinomial(x, num_samples, replacement)
 
 
+def multinomial_forward_dyn_func(x, num_samples, replacement):
+    return mint.multinomial(x, num_samples, replacement).shape
+
+
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_multinomial_std(mode):
@@ -74,7 +78,7 @@ def test_multinomial_dynamic_shape():
     replacement_1 = ms.mutable(False)
     replacement_2 = ms.mutable(True)
 
-    TEST_OP(multinomial_forward_func,
+    TEST_OP(multinomial_forward_dyn_func,
             [[tensor_1, num_samples_1, replacement_1], [tensor_2, num_samples_2, replacement_2]],
             'multinomial_ext', disable_mode=['GRAPH_MODE'], disable_yaml_check=True, disable_grad=True)
 
