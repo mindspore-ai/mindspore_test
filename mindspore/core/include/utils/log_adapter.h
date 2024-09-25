@@ -179,7 +179,7 @@ enum SubModuleId : int {
   SM_OPTIMIZER,          // optimzer
   SM_PARALLEL,           // parallel
   SM_PARSER,             // parser
-  SM_PIPELINE,           // ME pipeline
+  SM_PIPELINE,           // MindSpore pipeline
   SM_PRE_ACT,            // pre-activate
   SM_PYNATIVE,           // PyNative
   SM_SESSION,            // session
@@ -199,6 +199,7 @@ enum SubModuleId : int {
   SM_SYMBOLIC_SHAPE,     // symbolic shape
   SM_GRAPH_KERNEL,       // graph kernel fusion
   SM_LLM_BOOST,          // llm boost
+  SM_TRACE,              // JIT trace
   NUM_SUBMODUES,         // number of submodules
 };
 

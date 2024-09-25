@@ -105,7 +105,11 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
     if (line_end_ > line_) {
       debug_info_ss << "~" << line_end_;
     }
-    debug_info_ss << ", " << column_ << "~" << column_end_ << std::endl;
+    if (column_ != 0 && column_end_ != 0) {
+      debug_info_ss << ", " << column_ << "~" << column_end_ << std::endl;
+    } else {
+      debug_info_ss << std::endl;
+    }
     // Use line_str_ as cache.
     if (!line_str_.empty()) {
       debug_info_ss << HighlightLine(line_str_, column_, column_end_, line_end_ == line_, tip) << std::endl;
