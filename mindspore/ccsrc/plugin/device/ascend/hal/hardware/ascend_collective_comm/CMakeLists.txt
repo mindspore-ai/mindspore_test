@@ -31,8 +31,4 @@ set(MULTI_ASCEND_COLLECTIVE_SRCS "multi_ascend_collective_comm_lib.cc"
 set_property(SOURCE ${MULTI_ASCEND_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
         SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
 add_library(multi_ascend_collective STATIC ${MULTI_ASCEND_COLLECTIVE_SRCS})
-if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
-    target_link_libraries(multi_ascend_collective PRIVATE d_collective PRIVATE lowlatency_collective)
-else()
-    target_link_libraries(multi_ascend_collective PRIVATE d_collective)
-endif()
+target_link_libraries(multi_ascend_collective PRIVATE d_collective)

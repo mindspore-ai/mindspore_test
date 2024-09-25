@@ -22,6 +22,7 @@
 #include <memory>
 #include <mutex>
 #include "utils/ms_utils.h"
+#include "utils/ms_context.h"
 #include "runtime/collective/collective_communication_lib.h"
 #include "include/backend/visible.h"
 
