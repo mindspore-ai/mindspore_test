@@ -33,12 +33,13 @@ class CastBaseOperation {
   }
   ~CastBaseOperation() = default;
 
+  // Modify tensor data type, when op input source dtype is not tensor without dispatch cast op.
+  static ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type);
+  static tensor::BaseTensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id);
+
  protected:
   PrimitivePtr GetPrimByTypeId(const TypeId &type_id) const;
   bool GetSignatureType(const std::vector<Signature> &signatures, std::vector<SignatureEnumDType> *dtypes) const;
-  // Modify tensor data type, when op input source dtype is not tensor without dispatch cast op.
-  tensor::BaseTensorPtr TensorToDstDtypeValue(const ValuePtr &src_value, const TypeId &dst_type_id) const;
-  ValuePtr ScalarToDstDtypeValue(const ValuePtr &src_value, const std::pair<TypeId, bool> &dst_type) const;
 
   mutable mindspore::HashMap<TypeId, PrimitivePtr> type_prim_cache_;
   mutable ImplicitCastCache implicit_cast_map_;

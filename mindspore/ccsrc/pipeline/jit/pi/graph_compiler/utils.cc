@@ -175,6 +175,7 @@ std::string GraphUtils::OpCodeToGraphName(int op_code) {
                                                             {BINARY_SUBSCR, "getitem"},
                                                             {BINARY_FLOOR_DIVIDE, "floordiv"},
                                                             {BINARY_TRUE_DIVIDE, "div"},
+                                                            {BINARY_MATRIX_MULTIPLY, "matmul"},
                                                             {INPLACE_FLOOR_DIVIDE, "floordiv"},
                                                             {INPLACE_TRUE_DIVIDE, "div"},
                                                             {INPLACE_ADD, "add"},

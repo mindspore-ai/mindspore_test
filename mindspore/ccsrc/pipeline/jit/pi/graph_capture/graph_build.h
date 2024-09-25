@@ -359,6 +359,7 @@ class MindGraphBuilder : public GraphBuilder {
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
 
   LocationPtr GetLocation(CallNode *call_node) const;
+  AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
 
  protected:
   bool DoGetItem(const Instr &instr) override;
@@ -384,7 +385,6 @@ class MindGraphBuilder : public GraphBuilder {
   void FGAddTopInputs();
   bool FGAddInputs(const std::vector<ValueNode *> &args);
 
-  AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
   std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
   bool IsGradCallable(ValueNode *node);
   py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);

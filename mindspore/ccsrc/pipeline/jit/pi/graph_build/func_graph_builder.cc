@@ -1037,11 +1037,18 @@ AbstractWrapperPtr FuncGraphBuilder::AddMultiNode(const std::string &name,
                                                   const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   const std::string mod_str = "mindspore.ops.composite.multitype_ops";
   py::module mod = py::module::import(mod_str.c_str());
-  if (!py::hasattr(mod, name.c_str())) {
-    MS_LOG(INFO) << "Fail to find multitype function graph for name " << name;
-    return nullptr;
+  py::object fn;
+  if (py::hasattr(mod, name.c_str())) {
+    fn = mod.attr(name.c_str());
+  } else {
+    const std::string math_ops_mod_str = "mindspore.ops.composite.math_ops";
+    py::module math_mod = py::module::import(math_ops_mod_str.c_str());
+    if (!py::hasattr(math_mod, name.c_str())) {
+      MS_LOG(INFO) << "Fail to find multitype function graph for name " << name;
+      return nullptr;
+    }
+    fn = math_mod.attr(name.c_str());
   }
-  py::object fn = mod.attr(name.c_str());
   return AddNode(fn, inputs_abstract_wrapper);
 }
 
