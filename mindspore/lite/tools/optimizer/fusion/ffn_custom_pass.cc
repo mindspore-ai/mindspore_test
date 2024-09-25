@@ -31,8 +31,10 @@ constexpr auto kNameFFNNameConf = "FFNCust";
 constexpr auto kNameFFNPatternForSD = "FFNCustPatternForSD";
 constexpr auto kNameFFNPatternForSDConst = "FFNCustPatternForSDConst";
 
+constexpr size_t kNumIndex0 = 0;
 constexpr size_t kNumIndex1 = 1;
 constexpr size_t kNumIndex2 = 2;
+constexpr size_t kNumIndex3 = 3;
 
 }  // namespace
 
@@ -73,31 +75,31 @@ bool FFNCustomPass::CheckInputShpae(const CNodePtr &input_x, const AnfNodePtr &w
     auto weight2_shape = GetTensorShapeParam(weight2);
     MS_LOG(INFO) << "input shape:" << input_shape << " weight1 shape:" << weight1_shape
                  << " weight2_shape:" << weight2_shape;
-    if (input_shape.size() != 3 || weight1_shape.size() != 2 || weight2_shape.size() != 2) {
+    if (input_shape.size() != kNumIndex3 || weight1_shape.size() != kNumIndex2 || weight2_shape.size() != kNumIndex2) {
       MS_LOG(ERROR) << "input shapes is not correct!";
       return false;
     }
     auto attr_map = op_attrs_map_.at("FFNCust");
     for (const auto &attr : attr_map) {
       auto shape_vec = mindspore::lite::SplitStringToVector(attr.second, ",");
-      if (shape_vec.size() != 2) {
+      if (shape_vec.size() != kNumIndex2) {
         continue;
       }
-      auto a = std::stoi(shape_vec[0]);
-      auto b = std::stoi(shape_vec[1]);
+      auto a = std::stoi(shape_vec[kNumIndex0]);
+      auto b = std::stoi(shape_vec[kNumIndex1]);
       auto a_1 = INT_MAX;
       auto b_1 = INT_MAX;
       if (attr.first == "x_thresh") {
-        a_1 = input_shape[1];
-        b_1 = input_shape[2];
+        a_1 = input_shape[kNumIndex1];
+        b_1 = input_shape[kNumIndex2];
       }
       if (attr.first == "w1_thresh") {
-        a_1 = weight1_shape[0];
-        b_1 = weight1_shape[1];
+        a_1 = weight1_shape[kNumIndex0];
+        b_1 = weight1_shape[kNumIndex1];
       }
       if (attr.first == "w2_thresh") {
-        a_1 = weight2_shape[0];
-        b_1 = weight2_shape[1];
+        a_1 = weight2_shape[kNumIndex0];
+        b_1 = weight2_shape[kNumIndex1];
       }
       if (a > a_1 || b > b_1) {
         MS_LOG(WARNING) << attr.first << " shapes: [" << a_1 << " " << b_1 << "] is not match threshold [" << a << " "

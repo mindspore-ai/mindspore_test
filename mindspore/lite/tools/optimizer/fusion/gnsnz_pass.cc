@@ -225,13 +225,12 @@ static CNodePtr CreateGroupNormSiluNodeForSD15(const std::string &pattern_name, 
     return nullptr;
   }
   // 2, 320, 64, 64
-  //  auto groupnorm_silu_cnode = func_graph->NewCNode(GNS_prim_c, {conv, gamma_1D, beta_1D});
   auto groupnorm_silu_cnode = func_graph->NewCNode(GNS_prim_c, {conv, gamma_1D, beta_1D});
-
   if (groupnorm_silu_cnode == nullptr) {
     MS_LOG(ERROR) << "New cnode failed!";
     return nullptr;
   }
+
   auto name_suffix = use_silu ? "_gnsnz_sd" : "_gnnz_sd";
   groupnorm_silu_cnode->set_fullname_with_scope(node->fullname_with_scope() + name_suffix);
   if (node->abstract() != nullptr) {
