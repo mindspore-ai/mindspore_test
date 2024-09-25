@@ -62,7 +62,6 @@ Tensor
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.mint.multinomial
     mindspore.mint.normal
     mindspore.mint.rand_like
     mindspore.mint.rand
@@ -119,7 +118,6 @@ Tensor
     mindspore.mint.logical_or
     mindspore.mint.logical_xor
     mindspore.mint.mul
-    mindspore.mint.nan_to_num
     mindspore.mint.neg
     mindspore.mint.negative
     mindspore.mint.pow

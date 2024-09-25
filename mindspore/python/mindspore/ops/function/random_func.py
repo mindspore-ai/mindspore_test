@@ -1611,6 +1611,9 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
         but must be non-negative, finite and have a non-zero sum.
         When using values as weights, it can be understood as normalizing the input along the last dimension.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         input (Tensor): The input tensor containing probabilities, must be 1 or 2 dimensions, with float32 data type.
         num_samples (int): Number of samples to draw.
@@ -1627,7 +1630,8 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
     Raises:
         TypeError: If `input` is not a Tensor whose dtype is not in float16, float32, float64 or bfloat16.
         , 或是shape为(1, 1)的Tensor
-        TypeError: If `num_samples` is not an int, a Scalar of int or a Tensor of int with shape[1,1].
+        TypeError: If `num_samples` is not an int, a Scalar of int
+            or a Tensor with shape[1,] and only one int element.
         RuntimeError: If :math:`\text{num_samples} <= 0`.
         RuntimeError: If `replacement` is False, :math:`\text{num_samples} > shape` of the last dimension of `input`.
         RuntimeError: If shape of the last dimension of `input` exceeds ``2^24``.
