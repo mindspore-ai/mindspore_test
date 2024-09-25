@@ -175,6 +175,13 @@ BaseShapePtr ConstructInferShape(const ShapeVector &softmax_shape, const ShapeVe
      std::make_shared<abstract::Shape>(ShapeVector{1}), std::make_shared<abstract::Shape>(query_shape)}));
 }
 
+BaseShapePtr ConstructInferShapeWithSoftmaxOut(const ShapeVector &softmax_shape, const ShapeVector &softmax_out_shape,
+                                               const ShapeVector &query_shape) {
+  return std::make_shared<abstract::TupleShape>(abstract::BaseShapePtrList(
+    {std::make_shared<abstract::Shape>(softmax_shape), std::make_shared<abstract::Shape>(softmax_shape),
+     std::make_shared<abstract::Shape>(softmax_out_shape), std::make_shared<abstract::Shape>(query_shape)}));
+}
+
 std::vector<int64_t> GetFASInfoFromInputLayout(int64_t input_layout, int64_t q_head_num, const std::string &op_name,
                                                const ShapeVector &query_shape, const ShapeVector &key_shape) {
   int64_t batch_size = -1;
@@ -258,13 +265,13 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
   ShapeVector dyn_rank{abstract::Shape::kShapeRankAny};
   ShapeVector dyn_shape{abstract::Shape::kShapeDimAny};
   if (IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputLayoutIndex])) {
-    return ConstructInferShape(dyn_rank, query_shape);
+    return ConstructInferShapeWithSoftmaxOut(dyn_rank, dyn_rank, query_shape);
   }
   auto input_layout_value = input_args[kFlashAttentionScoreInputLayoutIndex]->GetValue();
   MS_EXCEPTION_IF_NULL(input_layout_value);
   auto input_layout_opt = GetScalarValue<int64_t>(input_layout_value);
   if (!input_layout_opt.has_value()) {
-    return ConstructInferShape(dyn_rank, query_shape);
+    return ConstructInferShapeWithSoftmaxOut(dyn_rank, dyn_rank, query_shape);
   }
   auto input_layout = input_layout_opt.value();
   if (input_layout == FASInputLayoutMode::TND) {
@@ -273,18 +280,23 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
       MS_LOG(EXCEPTION) << op_name << ": actual_seq_qlen and actual_seq_kvlen should be not none.";
     }
     if (IsDynamicRank(query_shape)) {
-      return ConstructInferShape(
+      return ConstructInferShapeWithSoftmaxOut(
         ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
+        ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny},
         query_shape);
     }
-    return ConstructInferShape(ShapeVector{query_shape[0], query_shape[1], kFlashAttentionScoreSoftmaxLastDim},
-                               query_shape);
+    return ConstructInferShapeWithSoftmaxOut(
+      ShapeVector{query_shape[0], query_shape[1], kFlashAttentionScoreSoftmaxLastDim},
+      ShapeVector{query_shape[0], query_shape[1], abstract::Shape::kShapeDimAny}, query_shape);
   }
 
   if (IsDynamicRank(query_shape)) {
-    return ConstructInferShape(ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
-                                           abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
-                               query_shape);
+    return ConstructInferShapeWithSoftmaxOut(
+      ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
+                  kFlashAttentionScoreSoftmaxLastDim},
+      ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
+                  abstract::Shape::kShapeDimAny},
+      query_shape);
   }
 
   auto head_num_value = input_args[kFlashAttentionScoreInputHeadNumIndex]->GetValue();
@@ -307,16 +319,19 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
     seq_index = kIndex2;
   }
   if (head_num_no_value) {
-    return ConstructInferShape(ShapeVector{query_shape[batch_index], abstract::Shape::kShapeDimAny,
-                                           query_shape[seq_index], kFlashAttentionScoreSoftmaxLastDim},
-                               query_shape);
+    return ConstructInferShapeWithSoftmaxOut(ShapeVector{query_shape[batch_index], abstract::Shape::kShapeDimAny,
+                                                         query_shape[seq_index], kFlashAttentionScoreSoftmaxLastDim},
+                                             ShapeVector{query_shape[batch_index], abstract::Shape::kShapeDimAny,
+                                                         query_shape[seq_index], abstract::Shape::kShapeDimAny},
+                                             query_shape);
   }
 
   auto head_num_opt = GetScalarValue<int64_t>(head_num_value);
   auto q_head_num = head_num_opt.value();
   if (IsDynamicShape(query_shape) || IsDynamic(key_shape)) {
-    return ConstructInferShape(
+    return ConstructInferShapeWithSoftmaxOut(
       ShapeVector{query_shape[batch_index], q_head_num, query_shape[seq_index], kFlashAttentionScoreSoftmaxLastDim},
+      ShapeVector{query_shape[batch_index], q_head_num, query_shape[seq_index], abstract::Shape::kShapeDimAny},
       query_shape);
   }
 
@@ -336,8 +351,9 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
                                      {batch_size, q_head_num, q_seq_len, kv_seq_len / 8}, op_name, "drop_mask", true);
   CheckFlashAttentionScoreSparseMode(primitive, input_args, shape_info, q_head_num);
 
-  return ConstructInferShape(ShapeVector{batch_size, q_head_num, q_seq_len, kFlashAttentionScoreSoftmaxLastDim},
-                             query_shape);
+  return ConstructInferShapeWithSoftmaxOut(
+    ShapeVector{batch_size, q_head_num, q_seq_len, kFlashAttentionScoreSoftmaxLastDim},
+    ShapeVector{batch_size, q_head_num, q_seq_len, kv_seq_len}, query_shape);
 }
 
 TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
