@@ -20,6 +20,9 @@ mindspore.mint.multinomial
     .. note::
         输入的行不需要求和为1（当使用值作为权重的情况下），但必须是非负的、有限的，并且和不能为0。在使用值作为权重的情况下，可以理解为对输入沿最后一维进行了归一化操作，以此保证概率和为1。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **input** (Tensor) - 输入的概率值Tensor，必须是一维或二维，数据类型为float32。
         - **num_samples** (int) - 采样的次数。
@@ -35,7 +38,7 @@ mindspore.mint.multinomial
 
     异常：
         - **TypeError** - 如果 `input` 不是数据类型不是float16、float32、float64或bfloat16的Tensor。
-        - **TypeError** - 如果 `num_samples` 不是一个int，或元素为int的是Scalar, 或元素为int且shape为(1, 1)的Tensor。
+        - **TypeError** - 如果 `num_samples` 不是一个int，或元素为int的是Scalar, 或shape为(1, ) 仅有一个int元素的Tensor。
         - **RuntimeError** - :math:`\text{num_samples} <= 0`。
         - **RuntimeError** - `replacement` 为 False 时， :math:`\text{num_samples} > input` 最后一维的shape。
         - **RuntimeError** - `input` 最后一维的shape超过 ``2^24``。

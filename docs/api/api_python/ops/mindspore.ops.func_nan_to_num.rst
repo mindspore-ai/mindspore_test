@@ -7,6 +7,7 @@ mindspore.ops.nan_to_num
 
     .. warning::
         对于Ascend，仅支持 Atlas A2 训练系列产品。
+        这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **input** (Tensor) - shape为 :math:`(input_1, input_2, ..., input_R)` 的tensor。
