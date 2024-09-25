@@ -344,6 +344,6 @@ class TFTRegister(Callback):
 
     def end(self, run_context):
         cur_rank = get_rank()
-        self.tft.tft_destroy_processor()
         if cur_rank == self._controller_rank_id:
             self.tft.tft_destroy_controller()
+        self.tft.tft_destroy_processor()
