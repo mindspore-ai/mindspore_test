@@ -151,7 +151,6 @@ ShapeArray SearchSortedFuncImpl::InferShape(const PrimitivePtr &primitive, const
   auto values_shape = values_tensor_ptr->shape();
 
   auto sorter_tensor_ptr = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
-
   if (sorter_tensor_ptr != nullptr) {
     MS_CHECK_VALUE(sorter_tensor_ptr->Dtype()->type_id() == kNumberTypeInt64,
                    "For '" + primitive->name() + "' sorter type should be Int64");

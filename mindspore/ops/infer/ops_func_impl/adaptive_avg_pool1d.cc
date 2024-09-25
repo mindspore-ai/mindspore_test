@@ -23,6 +23,9 @@
 
 namespace mindspore {
 namespace ops {
+namespace {
+constexpr int64_t kInputNumDims2 = 2;
+}
 ShapeArray AdaptiveAvgPool1DFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const InferInfoPtrList &input_infos) const {
   auto op_name = primitive->name();
@@ -47,7 +50,7 @@ ShapeArray AdaptiveAvgPool1DFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto output_size_opt = output_size_info_ptr->GetScalarValue<int64_t>();
   const int64_t input_num_dims = SizeToLong(x_shape.size());
   if (!output_size_opt.has_value()) {
-    if (input_num_dims == 2) {
+    if (input_num_dims == kInputNumDims2) {
       ShapeVector dyn_output{x_shape[0], abstract::Shape::kShapeDimAny};
       return {dyn_output};
     } else {

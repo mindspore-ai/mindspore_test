@@ -43,7 +43,7 @@ class GenerateEodMaskV2CpuKernel : public CpuKernel {
 
  private:
   template <typename T>
-  uint32_t Memcpy(CpuKernelContext &ctx, const T *input, T *output, size_t num);
+  uint32_t CopyData(CpuKernelContext &ctx, const T *input, T *output, size_t num);
 
   template <typename T>
   uint32_t FaultInjection(CpuKernelContext &ctx, T *output, int64_t num);

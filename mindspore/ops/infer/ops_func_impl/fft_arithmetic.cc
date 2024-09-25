@@ -71,7 +71,6 @@ BaseShapePtr FFTInferShape(const PrimitivePtr &primitive, const std::vector<Abst
 BaseShapePtr DCTInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
-
   // When input is a dynamic rank, it needs to be processed in the kernel
   if (IsDynamicRank(input_shape)) {
     ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};

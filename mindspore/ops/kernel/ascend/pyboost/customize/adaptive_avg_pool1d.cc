@@ -26,6 +26,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
+constexpr int kShape2dDims = 2;
+}
 tensor::BaseTensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                        const BaseTensorPtr &input_x_tensor,
                                                        const Int64ImmPtr &output_size) {
@@ -56,10 +59,11 @@ tensor::BaseTensorPtr AdaptiveAvgPool1DAscendCustomize(const std::shared_ptr<OpR
   auto shape_pool2d = output_adaptive_avg_pool2d_tensor->shape();
   auto shape_pool2d_dim = SizeToLong(shape_pool2d.size());
   std::vector<ValuePtr> squeeze_input_shape;
-  if (shape_pool2d_dim <= 2) {
+  if (shape_pool2d_dim <= kShape2dDims) {
     MS_LOG(EXCEPTION) << "For AdaptiveAvgPool1DAscendCustomize, the value of shape_pool2d.size is invalid.";
   }
-  for (auto i = 0; i < shape_pool2d_dim - 2; i++) {
+  constexpr int offset = 2;
+  for (auto i = 0; i < shape_pool2d_dim - offset; i++) {
     squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[i]));
   }
   squeeze_input_shape.emplace_back(std::make_shared<Int64Imm>(shape_pool2d[shape_pool2d_dim - 1]));

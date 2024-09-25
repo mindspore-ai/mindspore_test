@@ -57,18 +57,20 @@ std::tuple<std::vector<int64_t>, std::vector<int64_t>, std::tuple<double, double
 void UpsampleBilinear2DGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                     const std::vector<KernelTensor *> &outputs) {
   auto params = UpsampleBilinear2DGradGenerate(inputs, outputs);
-  input_size_ = std::get<0>(params);
-  output_size_ = std::get<1>(params);
-  std::tie(scales_h_, scales_w_) = std::get<2>(params);
-  align_corners_ = std::get<3>(params);
-  GetWorkspaceForResize(inputs[0], output_size_, input_size_, align_corners_, scales_h_, scales_w_, outputs[0]);
+  input_size_ = std::get<kIndex0>(params);
+  output_size_ = std::get<kIndex1>(params);
+  std::tie(scales_h_, scales_w_) = std::get<kIndex2>(params);
+  align_corners_ = std::get<kIndex3>(params);
+  GetWorkspaceForResize(inputs[kIndex0], output_size_, input_size_, align_corners_, scales_h_, scales_w_,
+                        outputs[kIndex0]);
 }
 
 bool UpsampleBilinear2DGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &workspace,
                                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[0], output_size_, input_size_, align_corners_, scales_h_, scales_w_, outputs[0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], output_size_, input_size_, align_corners_, scales_h_, scales_w_,
+        outputs[kIndex0]);
   return true;
 }
 

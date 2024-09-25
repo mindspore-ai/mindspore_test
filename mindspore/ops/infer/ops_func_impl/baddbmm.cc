@@ -29,7 +29,6 @@ BaseShapePtr BaddbmmFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto batch1_shape = batch1_shape_ptr->GetShapeVector();
   auto batch2_shape_ptr = input_args[kInputIndex2]->GetShape();
   auto batch2_shape = batch2_shape_ptr->GetShapeVector();
-
   if (IsDynamicRank(batch1_shape) || IsDynamicRank(batch2_shape)) {
     ShapeVector ret_shape = {abstract::Shape::kShapeDimAny};
     return std::make_shared<abstract::Shape>(ret_shape);

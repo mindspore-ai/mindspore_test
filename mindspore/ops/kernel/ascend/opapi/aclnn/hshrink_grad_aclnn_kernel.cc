@@ -29,7 +29,7 @@ namespace kernel {
 void HshrinkGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   auto lambd_value = inputs[kIndex2]->GetValueWithCheck<float>();
-  MAKE_SCALAR(lambd_value, inputs[2]->dtype_id(), lambd_);
+  MAKE_SCALAR(lambd_value, inputs[kIndex2]->dtype_id(), lambd_);
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], lambd_, outputs[kIndex0]);
 }
 

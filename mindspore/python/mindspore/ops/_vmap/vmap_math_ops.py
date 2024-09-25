@@ -916,6 +916,7 @@ def get_isclose_vmap_rule(prim, axis_size):
 
     return vmap_rule
 
+
 @vmap_rules_getters.register(P.Round)
 def get_round_vmap_rule(prim, axis_size):
     """VmapRule for round."""
