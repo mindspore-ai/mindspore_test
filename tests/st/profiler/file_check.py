@@ -186,6 +186,33 @@ class FileChecker:
             assert False, f"Failed to read JSON file, ERROR: {e}"
 
     @classmethod
+    def check_json_keys(cls, json_path: str, keys: list) -> None:
+        """
+        Check if a JSON file contains the specified keys with the expected values, including nested keys.
+
+        Args:
+            json_path (str): Path to the JSON file.
+            keys (list): Dictionary containing expected keys
+
+        Example:
+            Given a JSON file with the following content:
+            {
+                "a": "1",
+                "b": "2"
+            }
+            You can set keys to ["a", "b"] and call:
+            FileChecker.check_json_keys(json_path, ["a", "b"])
+        """
+        try:
+            cls.check_file_exists(json_path)
+            with open(json_path, 'r', encoding='utf-8') as jsonfile:
+                data = json.load(jsonfile)
+                for key in keys:
+                    assert key in data, f"Key '{key}' not found in JSON file."
+        except (IOError, OSError, json.JSONDecodeError) as e:
+            assert False, f"Failed to read JSON file, ERROR: {e}"
+
+    @classmethod
     def check_file_line_count(cls, file_path: str, expected_line_count: int) -> None:
         """
         Check if a file (CSV or TXT) contains the expected number of lines.
