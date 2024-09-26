@@ -308,7 +308,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static bool IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph);
 
   // Only used for ascend ops.
-  static std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node);
+  static bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx);
 };
 }  // namespace session
 
