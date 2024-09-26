@@ -2637,6 +2637,11 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
   } else if (!CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject())) {
     MS_LOG(INFO) << "Subgraph ret value is const type, will not build subgraph";
     call_node->SetVobj(sub_ret->GetVobj());
+    auto ret_wrapper = FGBuilder()->AddLocalVariable(sub_ret->GetVobj()->GetPyObject());
+    if (ret_wrapper != nullptr) {
+      call_node->set_abstract_wrapper(ret_wrapper);
+      MS_LOG(INFO) << "Constant fold call node " << call_node->ToString() << " to wrapper " << ret_wrapper->ToString();
+    }
   } else {
     TraceGuard trace_guard(GetLocation(call_node));
     sg->FGBuilder()->SetGraphName(GetFuncGraphName(func, sg));
