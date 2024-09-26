@@ -528,7 +528,7 @@ class ModelCheckpoint(Callback):
             from aiturbo.checkpoint.aiturbo_mindspore_ckpt import CheckpointShmManager
             self._manager = CheckpointShmManager()
         else:
-            self._manager = CheckpointManager()
+            self._manager = CheckpointManager(self._config.format)
         if not callable(directory) and not callable(prefix):
             self._prefix = _chg_ckpt_file_name_if_same_exist(self._directory, self._prefix)
         self._append_dict = self._config.append_dict or {}

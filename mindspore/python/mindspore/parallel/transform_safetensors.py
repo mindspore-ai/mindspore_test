@@ -493,6 +493,11 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             if pipe_param_list:
                 saftensor_dict = dict()
                 with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
+                    all_param_name_set = set(f.keys())
+                    src_param_name_set = set(_convert_to_list(src_strategy_dict).keys())
+                    dst_param_name_set = set(_convert_to_list(dst_strategy_dict).keys())
+                    hyper_param_set = all_param_name_set - (src_param_name_set & dst_param_name_set)
+                    pipe_param_list.extend(list(hyper_param_set))
                     for param_name in pipe_param_list:
                         if param_name not in f.keys():
                             # param not in ckpt file, check reason
