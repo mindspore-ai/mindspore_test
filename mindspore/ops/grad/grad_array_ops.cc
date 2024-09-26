@@ -809,8 +809,15 @@ NodePtrList DynBinopGradSelect(BpropBuilder *ib, const NodePtr &cond, const Node
         reduce[i] = ib->Reshape(reduce[i], ib->Shape(inputs[i]));
       }
     } else {
-      bool keep_dims = (!IsDynamicRank(shape[kIndex0]) && !IsDynamicRank(shape[kIndex1]) &&
-                        !IsDynamicRank(shape[kIndex2]) && shape[i].size() >= shape[i ^ 1].size());
+      bool keep_dims = True;
+      for (size_t j = 1; j < kDim3; j++) {
+        if (shape[i].size() < shape[j].size()) {
+          keep_dims = False;
+          break;
+        }
+      }
+      keep_dims = (!IsDynamicRank(shape[kIndex0]) && !IsDynamicRank(shape[kIndex1]) && !IsDynamicRank(shape[kIndex2]) &&
+                   keep_dims);
       reduce[i] = ib->ReduceSum(reduce[i], broadcast_axes[i], keep_dims, true);
       reduce[i] = ib->Reshape(reduce[i], ib->Shape(inputs[i]));
     }
