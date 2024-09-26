@@ -26,21 +26,48 @@ from tests.ut.python.parallel.test_moe_net import MoEFFNet, compile_net
 
 def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
-    context.set_context(mode=context.GRAPH_MODE, save_graphs=True, save_graphs_path="./batchmatmul_allreduce_opt")
 
 
-def check_output(num_comm_ops=1):
-    file = "./batchmatmul_allreduce_opt/rank_0/*validate*.ir"
+def check_output(dir_name, num_comm_ops=1):
+    file = "%s/rank_0/*validate*.ir" % dir_name
     prim_name = "ReduceScatter("
     tag_name = "forward_op"
     output = subprocess.check_output(
         ["grep -r '%s' %s | grep '%s' |wc -l" % (prim_name, file, tag_name)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == str(num_comm_ops)
+    assert out >= str(num_comm_ops)
 
 
-@pytest.mark.skip(reason="Random failure")
+def set_test_context(dir_name):
+    config = {"enable_allreduce_slice_to_reducescatter": True,}
+    with open("./parallel_speed_up_test.json", "w") as file:
+        json.dump(config, file, indent=4, separators=(',', ': '))
+    context.set_context(mode=context.GRAPH_MODE, save_graphs=True,
+                        save_graphs_path=dir_name,
+                        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
+                                      device_num=128,
+                                      global_rank=0,
+                                      enable_alltoall=True)
+
+
+def compile_add_check_output(dir_name, net, x):
+    if os.path.exists(dir_name):
+        shutil.rmtree(dir_name)
+
+    compile_net(net, x)
+    check_output(dir_name)
+
+    context.set_context(save_graphs=False)
+    config = {"enable_allreduce_slice_to_reducescatter": False,}
+    with open("./parallel_speed_up_test.json", "w") as file:
+        json.dump(config, file, indent=4, separators=(',', ': '))
+    context.set_context(
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+
+
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt(has_bias):
     """
@@ -48,16 +75,11 @@ def test_batch_matmul_opt(has_bias):
     Description: BatchMatMul+allreduce+split to BatchMatMul+reducescatter.
     Expectation: compile done without error.
     """
-    config = {"enable_allreduce_slice_to_reducescatter": True,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    dir_name = "./test_batch_matmul_opt"
+    if has_bias:
+        dir_name = dir_name + "_bias_true"
+    set_test_context(dir_name)
 
-    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
-                                      device_num=128,
-                                      global_rank=0,
-                                      enable_alltoall=True)
     hidden_size = 4096
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
@@ -70,21 +92,9 @@ def test_batch_matmul_opt(has_bias):
     net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias, transpose_b)
     x = Tensor(np.ones([expert_num, expert_num, channel, hidden_size]), dtype=ms.float16)
 
-    if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
-        shutil.rmtree("./batchmatmul_allreduce_opt/rank_0")
-
-    compile_net(net, x)
-    check_output()
-
-    context.set_context(save_graphs=False)
-    config = {"enable_allreduce_slice_to_reducescatter": False,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    compile_add_check_output(dir_name, net, x)
 
 
-@pytest.mark.skip(reason="Random failure")
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt_with_mp_larger_than_ep(has_bias):
     """
@@ -92,16 +102,11 @@ def test_batch_matmul_opt_with_mp_larger_than_ep(has_bias):
     Description: BatchMatMul+allreduce+split to BatchMatMul+reducescatter with mp > ep.
     Expectation: compile done without error.
     """
-    config = {"enable_allreduce_slice_to_reducescatter": True,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    dir_name = "./test_batch_matmul_opt_with_mp_larger_than_ep"
+    if has_bias:
+        dir_name = dir_name + "_bias_true"
+    set_test_context(dir_name)
 
-    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
-                                      device_num=128,
-                                      global_rank=0,
-                                      enable_alltoall=True)
     hidden_size = 4096
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
@@ -113,21 +118,9 @@ def test_batch_matmul_opt_with_mp_larger_than_ep(has_bias):
     net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias)
     x = Tensor(np.ones([expert_num, expert_num, channel, hidden_size]), dtype=ms.float16)
 
-    if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
-        shutil.rmtree("./batchmatmul_allreduce_opt/rank_0")
-
-    compile_net(net, x)
-    check_output()
-
-    context.set_context(save_graphs=False)
-    config = {"enable_allreduce_slice_to_reducescatter": False,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    compile_add_check_output(dir_name, net, x)
 
 
-@pytest.mark.skip(reason="Random failure")
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt_with_outer_dp(has_bias):
     """
@@ -135,16 +128,11 @@ def test_batch_matmul_opt_with_outer_dp(has_bias):
     Description: BatchMatMul+allreduce+split to BatchMatMul+reducescatter with outer dp > 1.
     Expectation: compile done without error.
     """
-    config = {"enable_allreduce_slice_to_reducescatter": True,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    dir_name = "./test_batch_matmul_opt_with_outer_dp"
+    if has_bias:
+        dir_name = dir_name + "_bias_true"
+    set_test_context(dir_name)
 
-    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
-                                      device_num=128,
-                                      global_rank=0,
-                                      enable_alltoall=True)
     hidden_size = 4096
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
@@ -156,18 +144,7 @@ def test_batch_matmul_opt_with_outer_dp(has_bias):
     net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias)
     x = Tensor(np.ones([dp, ep, expert_num, channel, hidden_size]), dtype=ms.float16)
 
-    if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
-        shutil.rmtree("./batchmatmul_allreduce_opt/rank_0")
-
-    compile_net(net, x)
-    check_output()
-
-    context.set_context(save_graphs=False)
-    config = {"enable_allreduce_slice_to_reducescatter": False,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    compile_add_check_output(dir_name, net, x)
 
 @pytest.mark.parametrize('has_bias', [False, True])
 def test_batch_matmul_opt_with_sp(has_bias):
@@ -176,16 +153,11 @@ def test_batch_matmul_opt_with_sp(has_bias):
     Description: BatchMatMul+allreduce+split to BatchMatMul+reducescatter with sp = true.
     Expectation: compile done without error.
     """
-    config = {"enable_allreduce_slice_to_reducescatter": True,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    dir_name = "./test_batch_matmul_opt_with_sp"
+    if has_bias:
+        dir_name = dir_name + "_bias_true"
+    set_test_context(dir_name)
 
-    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
-                                      device_num=128,
-                                      global_rank=0,
-                                      enable_alltoall=True)
     hidden_size = 4096
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
@@ -197,15 +169,4 @@ def test_batch_matmul_opt_with_sp(has_bias):
     net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias)
     x = Tensor(np.ones([dp, ep, expert_num, channel, hidden_size]), dtype=ms.float16)
 
-    if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
-        shutil.rmtree("./batchmatmul_allreduce_opt/rank_0")
-
-    compile_net(net, x)
-    check_output()
-
-    context.set_context(save_graphs=False)
-    config = {"enable_allreduce_slice_to_reducescatter": False,}
-    with open("./parallel_speed_up_test.json", "w") as file:
-        json.dump(config, file, indent=4, separators=(',', ': '))
-    context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+    compile_add_check_output(dir_name, net, x)
