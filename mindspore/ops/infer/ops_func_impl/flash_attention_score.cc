@@ -351,9 +351,10 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
                                      {batch_size, q_head_num, q_seq_len, kv_seq_len / 8}, op_name, "drop_mask", true);
   CheckFlashAttentionScoreSparseMode(primitive, input_args, shape_info, q_head_num);
 
+  int64_t aligned_kv_seq_len = ((kv_seq_len + 15) / 16) * 16;
   return ConstructInferShapeWithSoftmaxOut(
     ShapeVector{batch_size, q_head_num, q_seq_len, kFlashAttentionScoreSoftmaxLastDim},
-    ShapeVector{batch_size, q_head_num, q_seq_len, kv_seq_len}, query_shape);
+    ShapeVector{batch_size, q_head_num, q_seq_len, aligned_kv_seq_len}, query_shape);
 }
 
 TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
