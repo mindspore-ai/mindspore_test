@@ -1079,6 +1079,17 @@ bool Common::IsHookNeedSaveInputs(const PrimitivePyPtr &prim) {
 
 bool Common::IsVmOp(const std::string &op_name) { return kVmOperators.find(op_name) != kVmOperators.end(); }
 
+std::vector<int64_t> Common::BuildShape(const abstract::AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  auto base_shape = abs->BuildShape();
+  if (base_shape->isa<abstract::NoShape>()) {
+    return {};
+  }
+  auto shape = base_shape->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(shape);
+  return shape->shape();
+}
+
 void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 void AutoGrad::CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs) {
@@ -1492,6 +1503,13 @@ void DataConvert::FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_ten
     MS_LOG(DEBUG) << "Get not tensor value: " << v->ToString();
     (void)flatten_v->emplace_back(v);
   }
+}
+
+ValuePtrList DataConvert::FlattenOnlyTensor(const ValuePtr &v) {
+  MS_EXCEPTION_IF_NULL(v);
+  ValuePtrList outputs;
+  FlattenValueSeqArg(v, false, true, &outputs);
+  return outputs;
 }
 
 ValuePtrList DataConvert::FlattenTensorSeqInValue(const ValuePtr &v) {

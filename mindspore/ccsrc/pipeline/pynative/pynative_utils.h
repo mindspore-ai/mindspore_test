@@ -117,6 +117,7 @@ struct Common {
   }
   static bool IsHookNeedSaveInputs(const PrimitivePyPtr &prim);
   static bool IsVmOp(const std::string &op_name);
+  static std::vector<int64_t> BuildShape(const abstract::AbstractBasePtr &abs);
   static void ClearRes();
 };
 
@@ -149,6 +150,7 @@ struct DataConvert {
                                    size_t op_index = 0);
   static void FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_tensor_seq, bool is_filter_tensor,
                                  std::vector<ValuePtr> *flatten_v);
+  static ValuePtrList FlattenOnlyTensor(const ValuePtr &v);
   static void FlattenArgs(const std::vector<ValuePtr> &v_vec, std::vector<ValuePtr> *flatten_v, bool has_sens);
   static ValuePtrList FlattenTensorSeqInValue(const ValuePtr &v);
   static ValuePtrList FlattenTensorSeqInValueSeq(const ValuePtrList &v, bool only_flatten_tensor = true);

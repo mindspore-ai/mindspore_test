@@ -157,17 +157,6 @@ void SetDependValue(const PrimitivePtr &primitive, const NodePtrList &inputs) {
   }
 }
 
-std::vector<int64_t> BuildShape(const abstract::AbstractBasePtr &abs) {
-  MS_EXCEPTION_IF_NULL(abs);
-  auto base_shape = abs->BuildShape();
-  if (base_shape->isa<abstract::NoShape>()) {
-    return {};
-  }
-  auto shape = base_shape->cast<abstract::ShapePtr>();
-  MS_EXCEPTION_IF_NULL(shape);
-  return shape->shape();
-}
-
 bool ParseCond(const NodePtr &cond) {
   MS_EXCEPTION_IF_NULL(cond);
   auto cond_val = cond->Value();
@@ -1350,7 +1339,7 @@ ValuePtr FuncBuilder::FillZeros(const ValuePtr &value, const abstract::AbstractB
       auto tensor_dtype = abs->BuildType()->cast<TensorTypePtr>();
       MS_EXCEPTION_IF_NULL(tensor_dtype);
       auto dtype = tensor_dtype->element();
-      auto shape = BuildShape(abs);
+      auto shape = PyNativeAlgo::Common::BuildShape(abs);
       auto out_tensor = std::make_shared<tensor::Tensor>(dtype->type_id(), shape);
       auto zero_node = ZerosLike(NewFuncNode(out_tensor, abs, InputType::kOpOutput));
       convert_value = zero_node->Value();
