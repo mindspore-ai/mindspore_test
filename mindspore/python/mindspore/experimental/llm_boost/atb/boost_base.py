@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops, Tensor
 from mindspore.ops import operations as P
 import mindspore.common.dtype as mstype
+from mindspore._c_expression import _set_format
 
 from mindspore.common.parameter import Parameter
 from mindspore.experimental.llm_boost.utils import get_real_rank, get_real_group_size
@@ -28,7 +29,7 @@ class AttentionMask:
     """attention mask"""
 
     @classmethod
-    def static(cls, max_seq_len, dtype=mstype.float16):
+    def static(cls, max_seq_len, dtype=mstype.float16, need_nz=False):
         """cache mask"""
         bias_cache = Tensor(np.tril(np.ones((max_seq_len, max_seq_len), dtype=np.bool_))).reshape(max_seq_len,
                                                                                                   max_seq_len)
@@ -39,6 +40,13 @@ class AttentionMask:
             mask_value = Tensor(1)
         attn_mask = ops.masked_fill(Tensor(np.zeros(
             (max_seq_len, max_seq_len)), dtype=mstype.float16), bias_cache, mask_value)
+        if need_nz:
+            # ND -> NZ
+            attn_mask = ops.reshape(attn_mask, (1, max_seq_len, max_seq_len))
+            attn_mask = ops.reshape(
+                attn_mask, (1, max_seq_len, max_seq_len // 16, 16))
+            attn_mask = ops.transpose(attn_mask, (0, 2, 1, 3)).contiguous()
+            attn_mask = _set_format(attn_mask, "FRACTAL_NZ")
         return attn_mask
 
 
@@ -54,30 +62,30 @@ class AtbBoostBase():
         self.num_kv_heads = config.n_kv_heads if config.n_kv_heads else self.num_heads
         self.num_layers = config.num_layers
         self.n_kv_heads = config.n_kv_heads if config.n_kv_heads else config.num_heads
-
         self.head_dim = config.hidden_size // self.num_heads
-        self.in_tensor_length = 13
-        self.total_head_nums = config.hidden_size // self.head_dim
-        self.acl_encoder_operation_inputs = [None] * self.in_tensor_length
-        self.acl_decoder_operation_inputs = [None] * self.in_tensor_length
-
+        self.need_nz = False
+        if hasattr(config, "need_nz"):
+            self.need_nz = config.need_nz
         self.placeholder = Tensor(np.zeros(1), dtype=self.dtype)
         self.lm_head_indices_fake = Tensor([0], dtype=mstype.int64)
-
         self.position_embedding_type = "ROPE"
         self.add_norm_enable = True
         self.max_decode_length = self.config.max_decode_length
         self.max_base_len = 128
         self.attn_mask = AttentionMask.static(
-            self.max_base_len, dtype=self.dtype)
+            self.max_base_len, dtype=self.dtype, need_nz=self.need_nz)
 
         self.cast = P.Cast()
-
+        self.reshape = P.Reshape()
         self.kv_quant = None
         self.rank_id = get_real_rank()
         self.device_num = get_real_group_size()
-        self.reshape = P.Reshape()
-        self.cast = P.Cast()
+
+    def _convert_tensor_format_and_dtype(self, tensor, dtype=mstype.float16):
+        tensor = self.cast(tensor, dtype=dtype)
+        if self.need_nz:
+            tensor = _set_format(tensor, "FRACTAL_NZ")
+        return tensor
 
     def set_weights(self, parm_dict, dtype=mstype.float16):
         """set weights for llm boost"""
@@ -96,54 +104,62 @@ class AtbBoostBase():
         ascend_weight.append(
             self.cast(parm_dict[embedding_weight_name], dtype))
         for i in range(self.num_layers):
-            ascend_weight.append(
-                self.cast(parm_dict[f"model.layers.{i}.{attention_norm_name}.weight"], dtype))
+            ascend_weight.append(self._convert_tensor_format_and_dtype(
+                parm_dict[f"model.layers.{i}.{attention_norm_name}.weight"], dtype))
             ascend_weight.extend([placeholder] * 3)
 
             ascend_weight.append(
-                self.cast(parm_dict[f"model.layers.{i}.{qkv_name}.weight"], dtype))
-            ascend_weight.append(self.cast(parm_dict.get(
+                self._convert_tensor_format_and_dtype(parm_dict[f"model.layers.{i}.{qkv_name}.weight"], dtype))
+            ascend_weight.append(self._convert_tensor_format_and_dtype(parm_dict.get(
                 f"model.layers.{i}.{qkv_name}.bias", placeholder), dtype))
             ascend_weight.extend([placeholder] * 16)
 
             ascend_weight.append(
-                self.cast(parm_dict[f"model.layers.{i}.{o_name}.weight"], dtype))
-            ascend_weight.append(self.cast(parm_dict.get(
+                self._convert_tensor_format_and_dtype(parm_dict[f"model.layers.{i}.{o_name}.weight"], dtype))
+            ascend_weight.append(self._convert_tensor_format_and_dtype(parm_dict.get(
                 f"model.layers.{i}.{o_name}.bias", placeholder), dtype))
             ascend_weight.extend([placeholder] * 4)
 
             ascend_weight.append(
-                self.cast(parm_dict[f"model.layers.{i}.{mlp_norm_name}.weight"], dtype))
+                self._convert_tensor_format_and_dtype(parm_dict[f"model.layers.{i}.{mlp_norm_name}.weight"], dtype))
             ascend_weight.extend([placeholder] * 3)
 
             ascend_weight.append(
-                self.cast(parm_dict[f"model.layers.{i}.{mlp_gate_name}.weight"], dtype))
-            ascend_weight.append(self.cast(parm_dict.get(
+                self._convert_tensor_format_and_dtype(parm_dict[f"model.layers.{i}.{mlp_gate_name}.weight"], dtype))
+            ascend_weight.append(self._convert_tensor_format_and_dtype(parm_dict.get(
                 f"model.layers.{i}.{mlp_gate_name}.bias", placeholder), dtype))
             ascend_weight.extend([placeholder] * 10)
 
             ascend_weight.append(
-                self.cast(parm_dict[f"model.layers.{i}.{mlp_down_name}.weight"], dtype))
-            ascend_weight.append(self.cast(parm_dict.get(
+                self._convert_tensor_format_and_dtype(parm_dict[f"model.layers.{i}.{mlp_down_name}.weight"], dtype))
+            ascend_weight.append(self._convert_tensor_format_and_dtype(parm_dict.get(
                 f"model.layers.{i}.{mlp_down_name}.bias", placeholder), dtype))
             ascend_weight.extend([placeholder] * 4)
 
         ascend_weight.append(
-            self.cast(parm_dict[f"{norm_out_name}.weight"], dtype))
+            self._convert_tensor_format_and_dtype(parm_dict[f"{norm_out_name}.weight"], dtype))
         ascend_weight.append(
-            self.cast(parm_dict[f"{lm_head_name}.weight"], dtype))
+            self._convert_tensor_format_and_dtype(parm_dict[f"{lm_head_name}.weight"], dtype))
         self.atb_encoder_operation.set_weights(ascend_weight)
         self.atb_decoder_operation.set_weights(ascend_weight)
 
     def set_kvcache(self, k_caches=None, v_caches=None):
         """set kv_cache for llm boost"""
         if not k_caches or v_caches:
-            kv_shape = (self.config.num_blocks, self.config.block_size,
-                        self.num_kv_heads // self.device_num, self.head_dim)
-            k_caches = [Parameter(Tensor(
-                shape=kv_shape, dtype=self.dtype, init=Zero())) for _ in range(self.num_layers)]
-            v_caches = [Parameter(Tensor(
-                shape=kv_shape, dtype=self.dtype, init=Zero())) for _ in range(self.num_layers)]
+            if self.need_nz:
+                kv_shape = (self.config.num_blocks, self.num_kv_heads*self.head_dim //
+                            self.device_num // 16, self.config.block_size, 16)
+                k_caches = [_set_format(Parameter(Tensor(
+                    shape=kv_shape, dtype=self.dtype, init=Zero())), "FRACTAL_NZ") for _ in range(self.num_layers)]
+                v_caches = [_set_format(Parameter(Tensor(
+                    shape=kv_shape, dtype=self.dtype, init=Zero())), "FRACTAL_NZ") for _ in range(self.num_layers)]
+            else:
+                kv_shape = (self.config.num_blocks, self.config.block_size,
+                            self.num_kv_heads // self.device_num, self.head_dim)
+                k_caches = [Parameter(Tensor(
+                    shape=kv_shape, dtype=self.dtype, init=Zero())) for _ in range(self.num_layers)]
+                v_caches = [Parameter(Tensor(
+                    shape=kv_shape, dtype=self.dtype, init=Zero())) for _ in range(self.num_layers)]
 
         self.atb_encoder_operation.set_kvcache(k_caches, v_caches)
         self.atb_decoder_operation.set_kvcache(k_caches, v_caches)
@@ -191,6 +207,5 @@ class AtbBoostBase():
                                                      seqLen=seqLen)
         ms.hal.synchronize()
         logits = self._execute_operator(acl_inputs, acl_param)
-
         logits = self.cast(logits, mstype.float32)
         return logits

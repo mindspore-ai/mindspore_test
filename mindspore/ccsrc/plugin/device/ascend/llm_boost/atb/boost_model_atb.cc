@@ -174,7 +174,6 @@ std::vector<tensor::TensorPtr> BoostModelATB::Forward(const std::vector<tensor::
   }
   std::vector<atb::TensorDesc> outTensorDescs(model_->GetOutputNum());
   atb::Status st = model_->InferShape(inTensorDescs, outTensorDescs);
-
   if (st != 0) {
     MS_LOG(ERROR) << "BoostModel  infer shape fail, error code: " << st;
   }
@@ -237,7 +236,7 @@ atb::Tensor BoostModelATB::MSTensor2Tensor(const tensor::TensorPtr &msTensor) {
                         << ", alloc size: " << device_address->GetSize() << "B.";
     }
     if (!device_address->SyncHostToDevice(msTensor->shape(), device_address->GetSize(), device_address->type_id(),
-                                          kOpFormat_ND, msTensor->data_ptr())) {
+                                          msTensor->data_ptr()->data(), kOpFormat_ND)) {
       MS_LOG(EXCEPTION) << "SyncHostToDevice failed";
     }
   }
@@ -248,9 +247,12 @@ atb::Tensor BoostModelATB::MSTensor2Tensor(const tensor::TensorPtr &msTensor) {
     {kNumberTypeInt64, ACL_INT64},     {kNumberTypeBFloat16, ACL_BF16}, {kNumberTypeInt16, ACL_INT16},
   };
 
-  tensor.deviceData = msTensor->device_address()->GetMutablePtr();
-  tensor.desc.format = ACL_FORMAT_ND;
-
+  tensor.deviceData = device_address->GetMutablePtr();
+  if (device_address->format() == kOpFormat_FRAC_NZ) {
+    tensor.desc.format = ACL_FORMAT_FRACTAL_NZ;
+  } else {
+    tensor.desc.format = ACL_FORMAT_ND;
+  }
   if (tensor.deviceData != nullptr) {
     tensor.desc.shape.dimNum = msTensor->DataDim();
     for (int64_t i = 0; i < msTensor->DataDim(); i++) {
