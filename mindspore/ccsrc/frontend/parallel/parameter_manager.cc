@@ -460,6 +460,10 @@ void SliceParameterObj(const ParameterPtr &parameter, const TensorLayoutPtr &ten
         if (!IsAccuGradObj(each_cloned_obj) || grad_accumulation_shard) {
           cloned_param_slice_shape = tensor_layout->opt_shard_slice_shape();
         }
+        if (IsAccuGradObj(each_cloned_obj) && !grad_accumulation_shard) {
+          // clear to avoid further accu grad parameter slicing for opt shard if grad_accumulation_shard is false
+          opt_shard_group.clear();
+        }
       }
       py::tuple cloned_param_layout = py::make_tuple(device_arrangement, tensor_map, cloned_param_slice_shape,
                                                      field_size, uniform_split, opt_shard_group, full_shape);
