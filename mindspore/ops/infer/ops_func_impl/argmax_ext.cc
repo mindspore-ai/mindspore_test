@@ -27,6 +27,9 @@ namespace ops {
 BaseShapePtr ArgMaxExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   auto x_shape_vec = input_args[kInputIndex0]->GetShape()->GetShapeVector();
+  if (IsShapeNone(x_shape_vec)) {
+    MS_LOG(EXCEPTION) << "ArgMax is not supported zero size!";
+  }
   if (IsDynamicRank(x_shape_vec)) {
     ShapeVector out_shape{abstract::TensorShape::kShapeRankAny};
     return std::make_shared<abstract::TensorShape>(std::move(out_shape));
@@ -75,6 +78,9 @@ ShapeArray ArgMaxExtFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape_vec = x_tensor->shape();
+  if (IsShapeNone(x_shape_vec)) {
+    MS_LOG(EXCEPTION) << "ArgMax is not supported zero size!";
+  }
   ShapeVector output_shape(x_shape_vec);
   if (input_values[kInputIndex1] != mindspore::kNone) {
     const auto &axis_value_scalar = GetScalarValue<int64_t>(input_values[kInputIndex1]);
