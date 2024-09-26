@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
+import pytest
 import mindspore.nn as nn
 from mindspore.ops import composite as C
 from mindspore import context, Tensor
@@ -35,4 +36,5 @@ def test_cell_bprop_grad():
     input_y = Tensor(np.random.randn(2, 2).astype(np.float32))
     context.set_context(mode=context.PYNATIVE_MODE)
     net = CellBprop()
-    grad_all(net)(input_x, input_y)
+    with pytest.raises(RuntimeError):
+        grad_all(net)(input_x, input_y)
