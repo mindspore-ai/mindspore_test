@@ -61,6 +61,7 @@ class ScalarCast(Primitive):
         value = value.item()
         return value
 
+
 class TensorReport(Primitive):
     @prim_attr_register
     def __init__(self):

@@ -38,6 +38,7 @@ namespace kernel {
 namespace {
 // An empiric parameters for parallel
 constexpr size_t kGrainSize = 32768;
+constexpr size_t kShiftLeft24 = 24;
 std::vector<size_t> CalPhysicalIndexes(const std::vector<size_t> &input_shape,
                                        const std::vector<size_t> &logical_stride, size_t input_elements) {
   size_t shape_size = input_shape.size();
@@ -59,13 +60,13 @@ std::vector<size_t> CalPhysicalIndexes(const std::vector<size_t> &input_shape,
 void disable_ftz() {
   uint32_t fpcr;
   asm volatile("mrs %0, fpcr" : "=r"(fpcr));
-  fpcr &= ~(1 << 24);
+  fpcr &= ~(1 << kShiftLeft24);
   asm volatile("msr fpcr, %0" : : "r"(fpcr));
 }
 void enable_ftz() {
   uint32_t fpcr;
   asm volatile("mrs %0, fpcr" : "=r"(fpcr));
-  fpcr |= (1 << 24);
+  fpcr |= (1 << kShiftLeft24);
   asm volatile("msr fpcr, %0" : : "r"(fpcr));
 }
 #endif

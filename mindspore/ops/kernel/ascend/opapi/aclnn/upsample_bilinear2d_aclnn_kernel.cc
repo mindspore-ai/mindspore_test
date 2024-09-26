@@ -54,17 +54,17 @@ std::tuple<std::vector<int64_t>, std::tuple<double, double>, bool> UpsampleBilin
 void UpsampleBilinear2DAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                 const std::vector<KernelTensor *> &outputs) {
   auto params = UpsampleBilinear2DGenerate(inputs, outputs);
-  output_size_ = std::get<0>(params);
-  std::tie(scales_h_, scales_w_) = std::get<1>(params);
-  align_corners_ = std::get<2>(params);
-  GetWorkspaceForResize(inputs[0], output_size_, align_corners_, scales_h_, scales_w_, outputs[0]);
+  output_size_ = std::get<kIndex0>(params);
+  std::tie(scales_h_, scales_w_) = std::get<kIndex1>(params);
+  align_corners_ = std::get<kIndex2>(params);
+  GetWorkspaceForResize(inputs[kIndex0], output_size_, align_corners_, scales_h_, scales_w_, outputs[kIndex0]);
 }
 
 bool UpsampleBilinear2DAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &workspace,
                                       const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[0], output_size_, align_corners_, scales_h_, scales_w_, outputs[0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], output_size_, align_corners_, scales_h_, scales_w_, outputs[kIndex0]);
   return true;
 }
 

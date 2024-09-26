@@ -1563,6 +1563,9 @@ AbstractBasePtr CheckAndConvertUtils::CheckArgsSequenceType(const std::string &o
   return args_abs;
 }
 
+namespace {
+constexpr size_t kPostSize2 = 2;
+}
 template <typename TypeIdList>
 static std::string TypeIdListToString(TypeIdList types) {
   if (types.size() < 1) {
@@ -1573,7 +1576,7 @@ static std::string TypeIdListToString(TypeIdList types) {
     ss << TypeIdToString(type) << ", ";
   }
   auto str = ss.str();
-  return str.erase(str.length() - 2, str.length());
+  return str.erase(str.length() - kPostSize2, str.length());
 }
 
 void CheckAndConvertUtils::CheckTypeIdValid(const std::string &arg_name, TypeId type,

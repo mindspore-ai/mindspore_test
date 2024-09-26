@@ -528,7 +528,7 @@ void GatherHash(const std::vector<tensor::BaseTensorPtr> &tensors) {
 
 void GatherHash(const ScalarPtr &scalar) {
   if (scalar == nullptr) {
-    MemcpyToBuf("None", 5);
+    MemcpyToBuf("None", kSizeFive);
     return;
   }
   // "s" for scalar
@@ -569,7 +569,7 @@ void GatherHash(const std::optional<ScalarPtr> &scalar) {
   if (scalar.has_value()) {
     GatherHash(scalar.value());
   } else {
-    MemcpyToBuf("None", 5);
+    MemcpyToBuf("None", kSizeFive);
   }
 }
 

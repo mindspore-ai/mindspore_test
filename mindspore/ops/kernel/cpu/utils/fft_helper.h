@@ -119,7 +119,7 @@ void PocketFFTC2R(std::complex<T> *calculate_input, T *output_ptr, bool forward,
   pocketfft::stride_t stride_out(shape.size());
   size_t tmp_in = sizeof(std::complex<T>);
   size_t tmp_out = sizeof(T);
-  for (int i = shape.size() - 1; i >= 0; --i) {
+  for (int64_t i = static_cast<int64_t>(shape.size()) - 1; i >= 0; --i) {
     stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
     stride_out[i] = SizeToLong(tmp_out);
@@ -141,7 +141,7 @@ void PocketFFTR2C(T *calculate_input, std::complex<T> *output_ptr, bool forward,
   const int64_t kNum2 = 2;
   size_t tmp_in = sizeof(T);
   size_t tmp_out = sizeof(std::complex<T>);
-  for (int i = shape.size() - 1; i >= 0; --i) {
+  for (int64_t i = static_cast<int64_t>(shape.size()) - 1; i >= 0; --i) {
     stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
     stride_out[i] = SizeToLong(tmp_out);
@@ -166,7 +166,7 @@ void PocketFFTC2C(std::complex<T> *calculate_input, std::complex<T> *output_ptr,
   pocketfft::stride_t stride_out(shape.size());
   size_t tmp_in = sizeof(std::complex<T>);
   size_t tmp_out = sizeof(std::complex<T>);
-  for (int i = shape.size() - 1; i >= 0; --i) {
+  for (int64_t i = static_cast<int64_t>(shape.size()) - 1; i >= 0; --i) {
     stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
     stride_out[i] = SizeToLong(tmp_out);
@@ -187,7 +187,7 @@ void PocketFFTDCT(T *calculate_input, T *output_ptr, int dct_type, T fct, const 
   pocketfft::stride_t stride_out(shape.size());
   size_t tmp_in = sizeof(T);
   size_t tmp_out = sizeof(T);
-  for (int i = shape.size() - 1; i >= 0; --i) {
+  for (int64_t i = static_cast<int64_t>(shape.size()) - 1; i >= 0; --i) {
     stride_in[i] = SizeToLong(tmp_in);
     tmp_in *= shape[i];
     stride_out[i] = SizeToLong(tmp_out);

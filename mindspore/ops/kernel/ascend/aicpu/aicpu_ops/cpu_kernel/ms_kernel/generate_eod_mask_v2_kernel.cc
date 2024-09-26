@@ -207,13 +207,14 @@ uint32_t GenerateEodMaskV2CpuKernel::FaultInjection(CpuKernelContext &ctx, T *ou
 }
 
 template <typename T>
-uint32_t GenerateEodMaskV2CpuKernel::Memcpy(CpuKernelContext &ctx, const T *input, T *output, size_t num) {
+uint32_t GenerateEodMaskV2CpuKernel::CopyData(CpuKernelContext &ctx, const T *input, T *output, size_t num) {
   auto task = [&](size_t start, size_t end) {
-    auto copy_size = (end - start) * sizeof(T);
-    (void)memcpy_s(output + start, copy_size, input + start, copy_size);
+    for (auto i = start; i < end; i++) {
+      *(output + i) = *(input + i);
+    }
   };
   CUST_KERNEL_HANDLE_ERROR(ctx, CpuKernelUtils::ParallelFor(ctx, num, GetPerUnitSize(ctx, num), task),
-                           "GenerateEodMaskV2 Memcpy failed.");
+                           "GenerateEodMaskV2 CopyData failed.");
   return KERNEL_STATUS_OK;
 }
 
@@ -229,9 +230,9 @@ uint32_t GenerateEodMaskV2CpuKernel::ComputeKernel(CpuKernelContext &ctx) {
 
   auto output = reinterpret_cast<T *>(ctx.Output(0)->GetData());
 
-  // memcpy from input to output
-  CUST_KERNEL_HANDLE_ERROR(ctx, Memcpy(ctx, input, output, static_cast<size_t>(ele_num)),
-                           "GenerateEodMaskV2 Memcpy failed.");
+  // CopyData from input to output
+  CUST_KERNEL_HANDLE_ERROR(ctx, CopyData(ctx, input, output, static_cast<size_t>(ele_num)),
+                           "GenerateEodMaskV2 CopyData failed.");
 
   // inject faults
   CUST_KERNEL_HANDLE_ERROR(ctx, FaultInjection(ctx, output, ele_num), "GenerateEodMaskV2 injected errors failed.");
@@ -276,7 +277,7 @@ uint32_t GenerateEodMaskV2CpuKernel::ParamCheck(CpuKernelContext &ctx) {
 
   auto ele_pos_shape = ctx.Input(1)->GetTensorShape()->GetDimSizes();
   ele_pos_num_ = std::accumulate(ele_pos_shape.begin(), ele_pos_shape.end(), int64_t(1), std::multiplies<int64_t>());
-  if (flip_probability_ <= 0. && ele_pos_num_ == 0) {
+  if (flip_probability_ <= 0.f && ele_pos_num_ == 0) {
     CUST_KERNEL_LOG_ERROR(ctx,
                           "when the num of ele_pos is 0, the flip_probability should be greater than 0, but got %f",
                           flip_probability_);

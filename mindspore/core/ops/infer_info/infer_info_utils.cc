@@ -37,6 +37,7 @@ namespace mindspore::ops {
 static std::vector<std::string> GetArgNames(const AbstractBasePtrList &abstract_list, const OpDefPtr op_def) {
   size_t n = abstract_list.size();
   std::vector<std::string> arg_names;
+  MS_EXCEPTION_IF_NULL(op_def);
   if (op_def->args_.empty()) {
     return arg_names;
   }
@@ -61,6 +62,7 @@ static std::vector<std::string> GetArgNames(const AbstractBasePtrList &abstract_
 
 InferInfoPtrList ConvertAbstractListToInferInfoList(const AbstractBasePtrList &abstract_list, const OpDefPtr op_def) {
   InferInfoPtrList infer_infos;
+  MS_EXCEPTION_IF_NULL(op_def);
   const auto &op_type = op_def->name_;
   auto size = abstract_list.size();
   const auto &arg_names = GetArgNames(abstract_list, op_def);
@@ -75,6 +77,7 @@ AbstractBasePtr DoGeneralInfer(const PrimitivePtr primitive, const AbstractBaseP
   const auto &op_type = primitive->name();
   MS_LOG(DEBUG) << "DoGeneralInfer for op " << op_type;
   const auto op_def = GetOpDef(op_type);
+  MS_EXCEPTION_IF_NULL(op_def);
   const std::vector<InferInfoPtr> &infer_infos = ConvertAbstractListToInferInfoList(abstract_list, op_def);
   auto ret = op_def->func_impl_.CheckValidation(primitive, infer_infos);
   if (ret != OP_CHECK_SUCCESS) {

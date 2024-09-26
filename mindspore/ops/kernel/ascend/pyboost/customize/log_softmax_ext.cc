@@ -28,7 +28,7 @@ int64_t GetDimValue(const BaseTensorPtr &input_tensor) {
   const auto &shape = input_tensor->shape();
   size_t ndim = shape.size();
   int64_t ret;
-  if (ndim == 0 || ndim == 1 || ndim == 3) {
+  if (ndim == kDim0 || ndim == kDim1 || ndim == kDim3) {
     ret = 0;
   } else {
     ret = 1;

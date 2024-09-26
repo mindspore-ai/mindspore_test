@@ -36,6 +36,7 @@ from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from mindspore.ops.operations import _grad_ops as G
 import mindspore as ms
 
+
 @bprop_getters.register(AllReduce)
 def get_bprop_all_reduce(self):
     """Generate bprop for AllReduce, do allreduce or allgather, allgather for sparse feature."""

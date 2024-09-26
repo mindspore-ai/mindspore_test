@@ -22,9 +22,15 @@ from __future__ import absolute_import
 from mindspore.mint.nn.layer import normalization
 from mindspore.mint.nn.layer import activation
 from mindspore.mint.nn.layer import pooling
-from mindspore.mint.nn.layer.normalization import *
-from mindspore.mint.nn.layer.activation import *
-from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d, AdaptiveAvgPool2d
+from mindspore.mint.nn.layer.normalization import GroupNorm
+from mindspore.mint.nn.layer.normalization import BatchNorm1d
+from mindspore.mint.nn.layer.normalization import BatchNorm2d
+from mindspore.mint.nn.layer.normalization import BatchNorm3d
+from mindspore.mint.nn.layer.normalization import LayerNorm
+from mindspore.mint.nn.layer.activation import LogSigmoid
+from mindspore.mint.nn.layer.activation import SiLU
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool1d
+from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
 
 
 __all__ = []

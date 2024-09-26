@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from mindspore.ops.auto_generate import erfc, expm1, sinc, log1p, round_op
 from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
 
+
 def round(input):
     r"""
     Returns half to even of a tensor element-wise.
