@@ -26,7 +26,7 @@ from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _reverse, \
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
-from mindspore.ops.auto_generate import trace_v2_op
+from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op
 
 from ... import _checkparam as validator
 from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
@@ -3848,7 +3848,7 @@ def addmm_(self, mat1, mat2, *, beta=1, alpha=1):
         This is an experimental API that is subject to change or deletion.
 
     """
-    return tensor_operator_registry.get('inplace_addmm')(self, mat1, mat2, beta=beta, alpha=alpha)
+    return inplace_addmm_op(self, mat1, mat2, beta=beta, alpha=alpha)
 
 
 def addmv(x, mat, vec, beta=1, alpha=1):

@@ -1361,7 +1361,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             This is an experimental API that is subject to change or deletion.
 
         """
-        return tensor_operator_registry.get('inplace_addmm')(self, mat1, mat2, beta=beta, alpha=alpha)
+        return tensor_operator_registry.get('addmm_')(self, mat1, mat2, beta=beta, alpha=alpha)
 
     def addr(self, vec1, vec2, beta=1, alpha=1):
         r"""
