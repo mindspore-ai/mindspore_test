@@ -374,6 +374,7 @@ class MSANFModelParser {
   void TrytoBuildCNodeAbstract();
   bool BuildPrimitiveNode(const mind_ir::PrimitiveProto &primitive_proto);
   bool BuildPrimitiveNodeFromProto(const mind_ir::ModelProto &model_proto);
+  bool BuildValueNodes(const mind_ir::ModelProto &model_proto);
   abstract::AbstractBasePtr BuildAbstractFunction(const mind_ir::AttributeProto &attr_proto);
   void CorrectFuncGraph(const FuncGraphPtr &root);
   bool BuildFuncGraph(const FuncGraphPtr &outputFuncGraph, const mind_ir::GraphProto &importProto);
@@ -2265,6 +2266,31 @@ bool MSANFModelParser::BuildPrimitiveNodeFromProto(const mind_ir::ModelProto &mo
   return true;
 }
 
+bool MSANFModelParser::BuildValueNodes(const mind_ir::ModelProto &model_proto) {
+  const mind_ir::GraphProto &proto = model_proto.graph();
+  for (int i = 0; i < proto.node_size(); ++i) {
+    const mind_ir::NodeProto &node_proto = proto.node(i);
+    if (node_proto.op_type() == kConstantValueNode && !BuildValueNodeForFuncGraph(node_proto)) {
+      MS_LOG(ERROR) << "Build value node failed for " << node_proto.output(0);
+      return false;
+    }
+  }
+
+  for (int i = 0; i < model_proto.functions_size(); ++i) {
+    const auto &graph_proto = model_proto.functions(i);
+    if (!graph_proto.has_name()) {
+      continue;
+    }
+    for (int j = 0; j < graph_proto.node_size(); ++j) {
+      const mind_ir::NodeProto &node_proto = graph_proto.node(j);
+      if (node_proto.op_type() == kConstantValueNode && !BuildValueNodeForFuncGraph(node_proto)) {
+        MS_LOG(WARNING) << "Build value node failed for " << node_proto.output(0);
+      }
+    }
+  }
+  return true;
+}
+
 bool MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto, const std::vector<FuncGraphPtr> &graphs,
                              mindspore::HashMap<std::string, AnfNodePtr> *name_to_node) {
   is_kernel_graph_ = graphs.front()->type_name() == kKernelGraphTypeName;
@@ -2295,16 +2321,10 @@ bool MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto, const std::
   };
 
   // Build value node first
-  const mind_ir::GraphProto &proto = model_proto.graph();
-  for (int i = 0; i < proto.node_size(); ++i) {
-    const mind_ir::NodeProto &node_proto = proto.node(i);
-    if (node_proto.op_type() == kConstantValueNode) {
-      if (!BuildValueNodeForFuncGraph(node_proto)) {
-        MS_LOG(ERROR) << "Build value node failed for " << node_proto.output(0);
-        return false;
-      }
-    }
+  if (!BuildValueNodes(model_proto)) {
+    return false;
   }
+
   if (!BuildPrimitiveNodeFromProto(model_proto)) {
     return false;
   }
@@ -2647,8 +2667,8 @@ bool ParseModelProto(mind_ir::ModelProto *model, const std::string &path, const 
     size_t plain_len;
     auto plain_data = Decrypt(&plain_len, path, loader->dec_key(), loader->key_len(), loader->dec_mode());
     if (plain_data == nullptr) {
-      MS_LOG(ERROR)
-        << "Decrypt MindIR file failed, please check the correctness of the dec_key or dec_mode or the file integrity.";
+      MS_LOG(ERROR) << "Decrypt MindIR file failed, please check the correctness of the dec_key or dec_mode or the "
+                       "file integrity.";
       return false;
     }
     if (!model->ParseFromArray(reinterpret_cast<char *>(plain_data.get()), static_cast<int32_t>(plain_len))) {
@@ -2670,8 +2690,8 @@ bool ParseGraphProto(mind_ir::GraphProto *graph, const std::string &path, const 
     size_t plain_len;
     auto plain_data = Decrypt(&plain_len, path, loader->dec_key(), loader->key_len(), loader->dec_mode());
     if (plain_data == nullptr) {
-      MS_LOG(ERROR)
-        << "Decrypt MindIR file failed, please check the correctness of the dec_key or dec_mode or the file integrity.";
+      MS_LOG(ERROR) << "Decrypt MindIR file failed, please check the correctness of the dec_key or dec_mode or the "
+                       "file integrity.";
       return false;
     }
     if (!graph->ParseFromArray(reinterpret_cast<char *>(plain_data.get()), static_cast<int32_t>(plain_len))) {
