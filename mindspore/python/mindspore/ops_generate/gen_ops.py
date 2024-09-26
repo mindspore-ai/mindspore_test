@@ -1026,7 +1026,7 @@ def generate_arg_handler_files(work_path):
     dst_arg_handler_path = os.path.join(dst_dir, 'gen_arg_handler.py')
     tmp_dst_arg_handler_path = os.path.join(dst_dir, 'tmp_gen_arg_handler.py')
     if not os.path.exists(dst_dir):
-        os.makedirs(dst_dir)
+        os.makedirs(dst_dir, mode=0o700)
     shutil.copy(src_arg_handler_path, tmp_dst_arg_handler_path)
     check_change_and_replace_file(dst_arg_handler_path, tmp_dst_arg_handler_path)
 
