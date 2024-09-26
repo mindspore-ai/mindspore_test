@@ -2137,7 +2137,7 @@ def _save_air(net, file_name, *inputs, **kwargs):
         os.chmod(file_name, stat.S_IWUSR)
     if "/" in file_name:
         real_path = os.path.realpath(file_name[:file_name.rfind("/")])
-        os.makedirs(real_path, exist_ok=True)
+        os.makedirs(real_path, mode=0o700, exist_ok=True)
     if 'enc_key' in kwargs.keys() and 'enc_mode' in kwargs.keys():
         _executor.export(file_name, graph_id, enc_key=kwargs.get('enc_key'), encrypt_func=kwargs.get('enc_mode'))
     else:
@@ -2252,7 +2252,7 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
     data_path = os.path.join(dirname, file_prefix + "_variables")
     if os.path.exists(data_path):
         shutil.rmtree(data_path)
-    os.makedirs(data_path, exist_ok=True)
+    os.makedirs(data_path, mode=0o700, exist_ok=True)
     os.chmod(data_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
     index = 0
     external_local = os.path.join(file_prefix + "_variables", "data_" + str(index))
@@ -2423,7 +2423,7 @@ def _save_mindir_together(net_dict, model, file_name, is_encrypt, **kwargs):
         file_name += ".mindir"
     current_path = os.path.realpath(file_name)
     dirname = os.path.dirname(current_path)
-    os.makedirs(dirname, exist_ok=True)
+    os.makedirs(dirname, mode=0o700, exist_ok=True)
     if os.path.exists(file_name):
         os.chmod(file_name, stat.S_IWUSR)
     with open(file_name, 'wb') as f:

@@ -150,7 +150,7 @@ class ClusterMonitor(Callback):
         with _perf_mutex:
             dir_path = os.path.dirname(self.full_path)
             if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
+                os.makedirs(dir_path, mode=0o700)
             if os.path.exists(self.full_path):
                 os.chmod(self.full_path, stat.S_IWUSR)
                 os.remove(self.full_path)
