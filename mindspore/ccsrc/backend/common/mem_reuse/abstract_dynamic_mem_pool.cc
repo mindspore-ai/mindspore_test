@@ -695,6 +695,10 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_
       (void)iter->second.erase(mem_buf);
       mem_stat_.used_by_event_size_ -= mem_buf->size_;
       if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
+        // Force clear all mem bufs.
+        for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
+          (void)stream_pair_mem_bufs.second.erase(mem_buf);
+        }
         (void)DoFreeTensorMem(mem_buf->addr_);
       }
     }
@@ -706,19 +710,23 @@ bool AbstractDynamicMemPool::WaitEvent(int64_t task_id_on_stream, uint32_t memor
   MS_LOG(DEBUG) << "Wait event for task id on stream : " << task_id_on_stream
                 << ", memory stream id : " << memory_stream_id << ".";
   LockGuard lock(lock_);
-  for (auto &stream_pair_mem_bufs_ : stream_pair_mem_bufs_) {
-    const auto &[user_stream, memory_stream] = stream_pair_mem_bufs_.first;
+  for (auto &stream_pair_mem_bufs : stream_pair_mem_bufs_) {
+    const auto &[user_stream, memory_stream] = stream_pair_mem_bufs.first;
     if (memory_stream != memory_stream_id) {
       continue;
     }
-    auto mem_bufs_ = stream_pair_mem_bufs_.second;
-    for (const auto &mem_buf : mem_bufs_) {
+    auto mem_bufs = stream_pair_mem_bufs.second;
+    for (const auto &mem_buf : mem_bufs) {
       mem_buf->WaitEvent(task_id_on_stream, user_stream);
       // Remove event and try to free memory.
       if (mem_buf->IsEventNotUsed()) {
-        (void)stream_pair_mem_bufs_.second.erase(mem_buf);
+        (void)stream_pair_mem_bufs.second.erase(mem_buf);
         mem_stat_.used_by_event_size_ -= mem_buf->size_;
         if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
+          // Force clear all mem bufs.
+          for (auto &kv : stream_pair_mem_bufs_) {
+            (void)kv.second.erase(mem_buf);
+          }
           (void)DoFreeTensorMem(mem_buf->addr_);
         }
       }
