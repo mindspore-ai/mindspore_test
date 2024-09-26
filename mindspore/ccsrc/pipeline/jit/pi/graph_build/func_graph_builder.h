@@ -153,8 +153,10 @@ class FuncGraphBuilder {
 
   /// \brief Set the final outputs and get the graph.
   ///
+  /// \param[in] force Allows getting the graph when the outputs have not yet been added.
+  ///
   /// \return The graph constructed.
-  FuncGraphPtr graph();
+  FuncGraphPtr graph(bool force = false);
 
   /// \brief Clear abstract for nodes.
   void ClearNodeAbstract();
@@ -179,6 +181,14 @@ class FuncGraphBuilder {
   AnfNodePtr ReadLocalVariable(const AbstractWrapperPtr &abstract_wrapper);
 
   AbstractWrapperPtr AddLocalVariable(const py::object &obj);
+
+  /// \brief Add a custom node to the graph.
+  ///
+  /// \param[in] wrapper The abstract wrapper corresponding to the node.
+  /// \param[in] node The node will be added.
+  ///
+  /// \note Nodes created during the conversion of Dict nodes need to be added to the graph using this method.
+  void AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node);
 
   AbstractWrapperPtr BuildGradNetNode(const ValuePtr &callable_value, const py::object &callable_obj,
                                       const AbstractWrapperPtrList &inputs_abstract_wrapper);

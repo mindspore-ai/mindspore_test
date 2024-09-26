@@ -448,6 +448,10 @@ bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
       MS_LOG(ERROR) << "Invalid unpack object. error : " << py::error_already_set().what();
       return false;
     }
+    // maybe there is empty tuple/list in BUILD_*_UNPACK*
+    if (size == 0) {
+      continue;
+    }
     push(*iter);
     DoUnpack({UNPACK_SEQUENCE, size});
     elements_cnt += size;

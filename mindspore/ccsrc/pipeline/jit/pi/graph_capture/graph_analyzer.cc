@@ -744,8 +744,6 @@ void MindGraphAnalyzer::Analyze() {
     return;
   }
 
-  // assume all values is captured to func_graph
-  GetCaptureInfo().captured_.operations = collect_trace_nodes();
   ResetSideEffectRecord();
   CollectCapturedAndInterpret();
   CollectGraphInputs();
@@ -769,14 +767,236 @@ void MindGraphAnalyzer::Analyze() {
   need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
 }
 
-bool IsValidOutput(AObject *vobj) {
-  if (vobj == nullptr) {
+// check whether the node can be added to the output of the graph
+// or can be added to the output of the graph through transformation
+// support : none, scalar, tensor, tuple, list, dict, and combination during them
+inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
+  if (abstract == nullptr) {
     return false;
   }
-  return vobj->IsMindSporeSupportedType();
+  if (abstract->isa<abstract::AbstractSequence>()) {
+    const auto elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::all_of(elements.begin(), elements.end(),
+                       [](const AbstractBasePtr &elem) { return IsValidGraphOutput(elem); });
+  }
+  if (abstract->isa<abstract::AbstractDictionary>()) {
+    const auto elements = abstract->cast<abstract::AbstractDictionaryPtr>()->elements();
+    return std::all_of(elements.begin(), elements.end(), [](const abstract::AbstractElementPair &elem) {
+      return IsValidGraphOutput(elem.first) && IsValidGraphOutput(elem.second);
+    });
+  }
+  return abstract->isa<abstract::AbstractNone>() || abstract->isa<abstract::AbstractScalar>() ||
+         abstract->isa<abstract::AbstractTensor>() || abstract->isa<abstract::AbstractRowTensor>() ||
+         abstract->isa<abstract::AbstractMapTensor>();
 }
 
-inline bool IsValidOutput(const ValueNode *node) { return node != nullptr && IsValidOutput(node->GetVobj()); }
+inline bool IsValidOutput(const ValueNode *node) {
+  return node != nullptr && node->abstract_wrapper() != nullptr &&
+         IsValidGraphOutput(node->abstract_wrapper()->abstract());
+}
+
+inline std::vector<ValueNode *> CollectInputs(const ValueNode *node, bool recursive = true) {
+  MS_EXCEPTION_IF_NULL(node);
+  std::vector<ValueNode *> inputs;
+  std::for_each(node->getInputs().begin(), node->getInputs().end(), [recursive, &inputs](const auto &input) {
+    if (recursive) {
+      auto sub_inputs = CollectInputs(input);
+      inputs.insert(inputs.end(), sub_inputs.begin(), sub_inputs.end());
+    }
+    inputs.push_back(input);
+  });
+  return inputs;
+}
+
+std::vector<ValueNode *> CollectInputs(std::vector<ValueNode *> *nodes, bool recursive = true) {
+  MS_EXCEPTION_IF_NULL(nodes);
+  std::vector<ValueNode *> inputs;
+  std::for_each(nodes->begin(), nodes->end(), [recursive, &inputs](const auto &node) {
+    auto node_inputs = CollectInputs(node, recursive);
+    inputs.insert(inputs.end(), node_inputs.begin(), node_inputs.end());
+  });
+  std::sort(inputs.begin(), inputs.end());
+  inputs.erase(std::unique(inputs.begin(), inputs.end()), inputs.end());
+  return inputs;
+}
+
+void AddNodeWithoutDuplicate(GraphAnalyzer::CapturedInfo *info, ValueNode *node, bool to_captured = false,
+                             bool to_outputs = false) {
+  MS_EXCEPTION_IF_NULL(info);
+  MS_EXCEPTION_IF_NULL(node);
+  MS_LOG(INFO) << "Add [" << node->ToString() << "] to " << (to_captured ? "captured_." : "outputs_optimize_.")
+               << (to_outputs ? "outputs." : "operations.");
+  auto &category = to_captured ? info->captured_ : info->outputs_optimize_;
+  auto &operations = category.operations;
+  if (std::find(operations.begin(), operations.end(), node) == operations.end()) {
+    operations.push_back(node);
+  }
+  if (to_outputs) {
+    category.outputs.push_back(node);
+  }
+  if (to_captured) {
+    return;
+  }
+  auto &nodes = info->captured_.operations;
+  auto inputs = CollectInputs(&nodes, false);
+  if (std::find(inputs.begin(), inputs.end(), node) != inputs.end()) {
+    return;
+  }
+  nodes.erase(std::remove(nodes.begin(), nodes.end(), node), nodes.end());
+}
+
+void ReplaceSequenceNoneElementWithConst(ValueNode *node, Graph *graph) {
+  auto opcode = node->GetOpcode();
+  if (opcode != BUILD_LIST && opcode != BUILD_TUPLE) {
+    return;
+  }
+  for (auto iter = node->getInputs().begin(); iter != node->getInputs().end(); iter++) {
+    auto abstract_wrapper = (*iter)->abstract_wrapper();
+    MS_EXCEPTION_IF_NULL(abstract_wrapper);
+    auto abstract = abstract_wrapper->abstract();
+    MS_EXCEPTION_IF_NULL(abstract);
+    if (abstract->isa<abstract::AbstractNone>()) {
+      *iter = graph->NewValueNode(AObject::Convert(Py_None), LOAD_CONST, 0, {});
+      (*iter)->set_abstract_wrapper(abstract_wrapper);
+    }
+  }
+}
+
+void UpdateUseDefOrder(std::vector<ValueNode *> *nodes) {
+  MS_EXCEPTION_IF_NULL(nodes);
+  std::list<ValueNode *> node_list(nodes->begin(), nodes->end());
+  nodes->clear();
+  while (!node_list.empty()) {
+    auto front = node_list.front();
+    node_list.pop_front();
+    auto inputs = front->getInputs();
+    auto independent = std::all_of(inputs.begin(), inputs.end(), [&node_list](const auto &input) {
+      return std::find(node_list.begin(), node_list.end(), input) == node_list.end();
+    });
+    if (inputs.empty() || independent) {
+      nodes->push_back(front);
+    } else {
+      node_list.push_back(front);
+    }
+  }
+}
+
+ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto abstract_wrapper = node->abstract_wrapper();
+  MS_EXCEPTION_IF_NULL(abstract_wrapper);
+  auto abstract = abstract_wrapper->abstract();
+  MS_EXCEPTION_IF_NULL(abstract);
+  if (!abstract->isa<abstract::AbstractSequence>()) {
+    return node;
+  }
+  ReplaceSequenceNoneElementWithConst(node, graph_);
+  auto opcode = node->GetOpcode();
+  if (opcode == BUILD_LIST || opcode == BUILD_TUPLE) {
+    return node;
+  }
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), node, true);
+  auto sequence = abstract->cast<abstract::AbstractSequencePtr>();
+  auto func_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_)->FGBuilder();
+  auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
+  auto func_graph = func_graph_builder->graph(true);
+  bool is_tuple = abstract->isa<abstract::AbstractTuple>();
+  auto mutated_node = graph_->NewValueNode(nullptr, is_tuple ? BUILD_TUPLE : BUILD_LIST, sequence->size(), {});
+  mutated_node->set_abstract_wrapper(std::make_shared<AbstractWrapper>(sequence));
+  PrimitivePtr prim = is_tuple ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+  auto graph_sequence = func_graph->NewCNodeInOrder(prim, {});
+  graph_sequence->set_abstract(abstract);
+  func_graph_builder->AddLocalVariableNode(mutated_node->abstract_wrapper(), graph_sequence);
+  prim = is_tuple ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+  for (size_t index = 0; index < sequence->size(); index++) {
+    auto graph_item = func_graph->NewCNodeInOrder(prim, {graph_node, NewValueNode(SizeToLong(index))});
+    graph_item->set_abstract(sequence->elements()[index]);
+    graph_sequence->add_input(graph_item);
+    auto item_abstract_wrapper = std::make_shared<AbstractWrapper>(sequence->elements()[index]);
+    func_graph_builder->AddLocalVariableNode(item_abstract_wrapper, graph_item);
+    auto bc_index = graph_->NewValueNode(AObject::Convert(py::int_(index)), LOAD_CONST, -1, {});
+    bc_index->set_abstract_wrapper(std::make_shared<AbstractWrapper>(MakeValue(index)->ToAbstract()));
+    auto bc_item = graph_->NewValueNode(nullptr, BINARY_SUBSCR, 0, {node, bc_index});
+    bc_item->set_abstract_wrapper(item_abstract_wrapper);
+    AddNodeWithoutDuplicate(&GetCaptureInfo(), bc_index, true);
+    AddNodeWithoutDuplicate(&GetCaptureInfo(), bc_item, true);
+    mutated_node->AddInput(bc_item);
+    maybe_update_nodes_[bc_item].push_back(mutated_node);
+  }
+  ReplaceSequenceNoneElementWithConst(mutated_node, graph_);
+  if (maybe_update_nodes_.find(node) != maybe_update_nodes_.end()) {
+    auto update_nodes = maybe_update_nodes_.at(node);
+    std::for_each(update_nodes.begin(), update_nodes.end(), [node, mutated_node](ValueNode *element) {
+      std::replace(element->getInputs().begin(), element->getInputs().end(), node, mutated_node);
+    });
+  }
+  GetCaptureInfo().replaced_nodes_[node] = mutated_node;
+  return mutated_node;
+}
+
+std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode *node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto abstract_wrapper = node->abstract_wrapper();
+  MS_EXCEPTION_IF_NULL(abstract_wrapper);
+  auto abstract = abstract_wrapper->abstract();
+  MS_EXCEPTION_IF_NULL(abstract);
+  if (!abstract->isa<abstract::AbstractDictionary>()) {
+    return std::make_pair(node, nullptr);
+  }
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), node, true);
+  auto dict = abstract->cast<abstract::AbstractDictionaryPtr>();
+  AbstractBasePtrList key_abstracts;
+  AbstractBasePtrList value_abstracts;
+  std::for_each(dict->elements().begin(), dict->elements().end(),
+                [&key_abstracts, &value_abstracts](const abstract::AbstractElementPair &ele) {
+                  key_abstracts.push_back(ele.first);
+                  value_abstracts.push_back(ele.second);
+                });
+  auto keys_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(key_abstracts));
+  auto values_wrapper = std::make_shared<AbstractWrapper>(std::make_shared<abstract::AbstractTuple>(value_abstracts));
+  auto func_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_)->FGBuilder();
+  auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
+  MS_EXCEPTION_IF_NULL(graph_node);
+  auto func_graph = func_graph_builder->graph(true);
+  auto keys = func_graph->NewCNodeInOrder(prim::kPrimDictGetKeys, {graph_node});
+  keys->set_abstract(keys_wrapper->abstract());
+  func_graph_builder->AddLocalVariableNode(keys_wrapper, keys);
+  auto load_dict = graph_->NewValueNode(nullptr, LOAD_GLOBAL, 0, {});
+  load_dict->SetName("dict");
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_dict, true);
+  auto load_attr = graph_->NewValueNode(nullptr, LOAD_ATTR, 0, {load_dict});
+  load_attr->SetName("keys");
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_attr, true);
+  auto bc_keys = graph_->NewCallNode(CALL_FUNCTION, 1, {load_attr, node});
+  bc_keys->set_abstract_wrapper(keys_wrapper);
+
+  auto values = func_graph->NewCNodeInOrder(prim::kPrimDictGetValues, {graph_node});
+  values->set_abstract(values_wrapper->abstract());
+  func_graph_builder->AddLocalVariableNode(values_wrapper, values);
+  load_attr = graph_->NewValueNode(nullptr, LOAD_ATTR, 0, {load_dict});
+  load_attr->SetName("values");
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_attr, true);
+  auto bc_values = graph_->NewCallNode(CALL_FUNCTION, 1, {load_attr, node});
+  bc_values->set_abstract_wrapper(values_wrapper);
+  auto load_zip = graph_->NewValueNode(nullptr, LOAD_GLOBAL, 0, {});
+  load_zip->SetName("zip");
+  auto call_zip = graph_->NewCallNode(CALL_FUNCTION, 2, {load_zip, bc_keys, bc_values});
+  maybe_update_nodes_[bc_keys].push_back(call_zip);
+  maybe_update_nodes_[bc_values].push_back(call_zip);
+  ValueNode *make_dict = graph_->NewCallNode(CALL_FUNCTION, 1, {load_dict, call_zip});
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), make_dict);
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), call_zip);
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_zip);
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_dict);
+  if (maybe_update_nodes_.find(node) != maybe_update_nodes_.end()) {
+    auto update_nodes = maybe_update_nodes_.at(node);
+    std::for_each(update_nodes.begin(), update_nodes.end(), [node, make_dict](ValueNode *element) {
+      std::replace(element->getInputs().begin(), element->getInputs().end(), node, make_dict);
+    });
+  }
+  GetCaptureInfo().replaced_nodes_[node] = make_dict;
+  return std::make_pair(bc_keys, bc_values);
+}
 
 bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
@@ -784,41 +1004,87 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
   auto func_graph_builder = mind_graph_builder->FGBuilder();
   MS_EXCEPTION_IF_NULL(func_graph_builder);
   func_graph_builder->ClearOutputNodes();
-  auto &outputs = GetCaptureInfo().captured_.outputs;
+  auto &captured = GetCaptureInfo().captured_;
   auto &values = GetCaptureInfo().interpret_.values;
-  outputs.clear();
+  captured.outputs.clear();
+  auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
   std::list<ValueNode *> nodes(aliveNodes.begin(), aliveNodes.end());
   while (!nodes.empty()) {
     auto node = nodes.front();
     nodes.pop_front();
+    MS_LOG(INFO) << "Start analyze : " << node->ToString() << " abs : "
+                 << (node->abstract_wrapper() == nullptr ? "nullptr"
+                                                         : node->abstract_wrapper()->abstract()->ToString());
     // If the value can get from local, no need to add to graph output.
     if (IsNonLocalValue(node)) {
       MS_LOG(INFO) << "Skip non local value used as graph output: " << node->ToString();
       continue;
     }
 
-    // The node has been added to the output
-    if (std::find(outputs.begin(), outputs.end(), node) != outputs.end()) {
-      continue;
-    }
-
-    // This value is defined out of the graph
+    // This node is defined out of the graph
     if (std::find(values.begin(), values.end(), node) != values.end()) {
       continue;
     }
 
-    // add output for func_graph
-    if (IsValidOutput(node) && func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
-      MS_LOG(INFO) << "Add graph output : " << node->ToString();
-      GetCaptureInfo().captured_.outputs.push_back(node);
+    // This node has been added to the output
+    if (std::find(captured.outputs.begin(), captured.outputs.end(), node) != captured.outputs.end()) {
       continue;
     }
-    MS_LOG(INFO) << "Invalid output : " << node->ToString();
-    GetCaptureInfo().outputs_optimize_.operations.push_back(node);
 
-    std::for_each(node->getInputs().begin(), node->getInputs().end(),
-                  [&nodes](ValueNode *input) { nodes.push_back(input); });
+    // This node has been handle
+    auto &handled_nodes = outputs_optimize.operations;
+    if (std::find(handled_nodes.begin(), handled_nodes.end(), node) != handled_nodes.end()) {
+      continue;
+    }
+
+    // add output for func_graph
+    if (func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
+      MS_LOG(INFO) << "Add graph output : " << node->ToString();
+      AddNodeWithoutDuplicate(&GetCaptureInfo(), node, true, true);
+      continue;
+    }
+
+    // Contains data whose type is not supported by the graph, analyze its inputs
+    if (!IsValidOutput(node)) {
+      MS_LOG(INFO) << "Invalid output : " << node->ToString();
+      AddNodeWithoutDuplicate(&GetCaptureInfo(), node);
+      if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
+        GRAPH_JIT_LOG_F("This call node will executed in pynative : [%s]", node->ToString().c_str());
+      }
+      auto inputs = node->getInputs();
+      std::for_each(inputs.begin(), inputs.end(), [this, &nodes, node](ValueNode *input) {
+        if (std::find(nodes.begin(), nodes.end(), input) == nodes.end()) {
+          nodes.push_back(input);
+          maybe_update_nodes_[input].push_back(node);
+        }
+      });
+      continue;
+    }
+
+    auto pair = MutateDictNode(node);
+    if (pair.second != nullptr) {
+      nodes.push_back(pair.first);
+      nodes.push_back(pair.second);
+      continue;
+    }
+
+    auto sequence = MutateSequenceNode(node);
+    for (auto iter = sequence->getInputs().begin(); iter != sequence->getInputs().end(); iter++) {
+      auto input = *iter;
+      auto wrapper = input->abstract_wrapper();
+      if (wrapper == nullptr || !wrapper->abstract()->isa<abstract::AbstractNone>()) {
+        if (std::find(nodes.begin(), nodes.end(), input) == nodes.end()) {
+          nodes.push_back(input);
+          maybe_update_nodes_[input].push_back(node);
+        }
+      }
+    }
+    MS_LOG(INFO) << "Add to output opt : " << node->ToString();
+    AddNodeWithoutDuplicate(&GetCaptureInfo(), sequence);
   }
+  outputs_optimize.inputs = CollectInputs(&outputs_optimize.operations);
+  UpdateUseDefOrder(&outputs_optimize.operations);
+  UpdateUseDefOrder(&captured.operations);
   return true;
 }
 
@@ -838,15 +1104,6 @@ void MindGraphAnalyzer::CollectCapturedAndInterpret() {
   GetCaptureInfo().interpret_.outputs = graph_->CollectAliveNode(graph_->GetStopTraceBci(), &alive_locals_);
   GetCaptureInfo().interpret_.operations = graph_->prepare().operations_;
 
-  std::set<ValueNode *> outputs_optimize_inputs;
-  for (const auto &i : GetCaptureInfo().outputs_optimize_.operations) {
-    for (const auto &j : i->getInputs()) {
-      outputs_optimize_inputs.insert(j);
-    }
-  }
-  auto inserter = std::back_inserter(GetCaptureInfo().outputs_optimize_.inputs);
-  std::copy(outputs_optimize_inputs.begin(), outputs_optimize_inputs.end(), inserter);
-
   // remove side-effect node
   auto is_remove = [this](ValueNode *node) {
     const auto &rec = this->graph_->GetSideEffect();
@@ -859,6 +1116,22 @@ void MindGraphAnalyzer::CollectCapturedAndInterpret() {
 }
 
 void MindGraphAnalyzer::UseDefAnalyze() {
+  // assume all values is captured to func_graph
+  auto collect_trace_nodes = [this]() {
+    const auto &nodes = graph_->GetTracedNodes();
+    if (graph_->GetStopTraceBci() == -1) {
+      return nodes;
+    }
+    std::vector<ValueNode *> result;
+    for (const auto &node : nodes) {
+      if (node->bci() >= graph_->GetStopTraceBci()) {
+        break;
+      }
+      result.push_back(node);
+    }
+    return result;
+  };
+  GetCaptureInfo().captured_.operations = collect_trace_nodes();
   // UD analyze: alive nodes analysis
   std::vector<ValueNode *> aliveLocals = GetAliveLocals(graph_);
   if (!aliveLocals.empty()) {

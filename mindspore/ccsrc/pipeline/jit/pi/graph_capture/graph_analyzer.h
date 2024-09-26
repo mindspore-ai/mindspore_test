@@ -18,8 +18,10 @@
 
 #include <set>
 #include <vector>
+#include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include "pipeline/jit/pi/graph_capture/cfg.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
@@ -78,6 +80,8 @@ class GraphAnalyzer {
      * Others, recreate in python.
      */
     Info outputs_optimize_;
+
+    std::map<ValueNode *, ValueNode *> replaced_nodes_;
 
     /**
      * for interpret inputs, it's ordered and same as original function.
@@ -157,6 +161,11 @@ class MindGraphAnalyzer : public GraphAnalyzer {
   bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
   void ResetSideEffectRecord() const override;
   GraphBuilderPtr graph_builder_ = nullptr;
+
+ private:
+  ValueNode *MutateSequenceNode(ValueNode *node);
+  std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);
+  std::map<ValueNode *, std::vector<ValueNode *>> maybe_update_nodes_;
 };
 }  // namespace pijit
 }  // namespace mindspore

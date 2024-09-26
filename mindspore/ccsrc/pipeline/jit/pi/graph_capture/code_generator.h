@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <utility>
+#include <map>
 #include <memory>
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
@@ -73,6 +74,7 @@ class CodeGenerator {
   std::vector<std::unique_ptr<Instr>> MoveCode() { return std::move(code_.co_code); }
   const py::dict &GetGlobals() const { return globals_; }
   const std::unordered_map<ValueNode *, int> &GetLocalsMap() const { return locals_map_; }
+  std::unordered_map<ValueNode *, int> &GetLocalsMap() { return locals_map_; }
   bool EarseLocal(ValueNode *item) {
     auto it = GetLocalsMap().find(item);
     if (it != GetLocalsMap().end()) {
@@ -272,6 +274,9 @@ class CodeBreakGenerator {
 
   // interpret execute node after graph
   NodeSet outputs_optimize_;
+
+  // used to record the value nodes and the nodes that replaced them
+  std::map<ValueNode *, ValueNode *> replaced_nodes_;
 
   GraphInputInfo graph_inputs_info_;
 
