@@ -250,7 +250,7 @@ class L1Loss(LossBase):
 
 class L1LossExt(LossBase):
     r"""
-    L1LossExt is used to calculate the mean absolute error between the predicted value and the target value.
+    L1Loss is used to calculate the mean absolute error between the predicted value and the target value.
 
     Assuming that the :math:`x` and :math:`y` are 1-D Tensor, length :math:`N`, then calculate the loss of :math:`x` and
     :math:`y` without dimensionality reduction (the reduction parameter is set to ``'none'`` ). The formula is as
