@@ -63,15 +63,15 @@ class CustomAclnnPyboostKernelMod : public CustomAclnnPyboostKernelModBase {
     auto res_tuple = GetKernelTuple<N>(vecs...);
     auto update_func = std::function<void()>(nullptr);
     auto [ws_size, executor_handle, release_function] =
-      std::apply([&aclnn_name](const auto &... args) { return GEN_EXECUTOR(aclnn_name, args...); }, res_tuple);
+      std::apply([&aclnn_name](const auto &... args) { return GEN_CUSTOM_EXECUTOR(aclnn_name, args...); }, res_tuple);
     if (ws_size == 0) {
-      DISPATCH_LAUNCH_KERNEL(device_context, aclnn_name, nullptr, 0, executor_handle, stream_ptr, release_function,
-                             update_func);
+      DISPATCH_LAUNCH_CUSTOM_KERNEL(device_context, aclnn_name, nullptr, 0, executor_handle, stream_ptr,
+                                    release_function, update_func);
     } else {
       auto workspace_device_address =
         runtime::DeviceAddressUtils::CreateWorkspaceAddressWithoutKernelTensor(device_context, stream_id, ws_size);
-      DISPATCH_LAUNCH_KERNEL(device_context, aclnn_name, workspace_device_address->GetMutablePtr(), ws_size,
-                             executor_handle, stream_ptr, release_function, update_func);
+      DISPATCH_LAUNCH_CUSTOM_KERNEL(device_context, aclnn_name, workspace_device_address->GetMutablePtr(), ws_size,
+                                    executor_handle, stream_ptr, release_function, update_func);
     }
   }
 };

@@ -48,6 +48,38 @@ class AddCustomAclnnNet(Cell):
         return res
 
 
+class MultiCustomAclnnNet(Cell):
+    def __init__(self):
+        super(MultiCustomAclnnNet, self).__init__()
+        add_reg_info = CustomRegOp("aclnnAddCustom") \
+            .input(0, "x", "required") \
+            .input(1, "y", "required") \
+            .output(0, "z", "required") \
+            .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
+            .target("Ascend") \
+            .get_op_info()
+        self.custom_add = ops.Custom("aclnnAddCustom", out_shape=lambda x, _: x, out_dtype=lambda x, _: x,
+                                     func_type="aot",
+                                     bprop=None,
+                                     reg_info=add_reg_info)
+        sub_reg_info = CustomRegOp("aclnnSubCustom") \
+            .input(0, "x", "required") \
+            .input(1, "y", "required") \
+            .output(0, "z", "required") \
+            .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
+            .target("Ascend") \
+            .get_op_info()
+        self.custom_sub = ops.Custom("aclnnSubCustom", out_shape=lambda x, _: x, out_dtype=lambda x, _: x,
+                                     func_type="aot",
+                                     bprop=None,
+                                     reg_info=sub_reg_info)
+
+    def construct(self, x, y, z):
+        res = self.custom_add(x, y)
+        res = self.custom_sub(res, z)
+        return res
+
+
 class AddCustomAclnnAddPrefix(Cell):
     def __init__(self, func, out_shape, bprop):
         super(AddCustomAclnnAddPrefix, self).__init__()
@@ -82,6 +114,25 @@ class BaseNet(Cell):
         res = self.add(res, y)
         res = self.sub(res, z)
         return res
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_multi_custom_aclnn(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for multi custom
+    Expectation: the result match with numpy result
+    """
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = np.ones([8, 2048]).astype(np.float16)
+    y = np.ones([8, 2048]).astype(np.float16)
+    z = np.ones([8, 2048]).astype(np.float16)
+    net = MultiCustomAclnnNet()
+    expect_out = x + y - z
+    out = net(Tensor(x), Tensor(y), Tensor(z))
+    assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
