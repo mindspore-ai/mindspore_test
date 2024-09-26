@@ -69,7 +69,7 @@ def _make_directory(path):
     if not os.path.exists(path):
         logger.debug("The directory(%s) doesn't exist, will create it", path)
         try:
-            os.makedirs(path)
+            os.makedirs(path, mode=0o700)
         except FileExistsError:
             logger.debug("The directory(%s) already exist.", path)
         except PermissionError as e:

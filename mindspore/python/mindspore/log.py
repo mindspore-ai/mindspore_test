@@ -507,7 +507,7 @@ def _create_logfile_dir(kwargs):
     rank_id = _get_rank_id()
     log_dir += '/rank_' + rank_id + '/logs'
     if not os.path.exists(log_dir):
-        os.makedirs(log_dir, exist_ok=True)
+        os.makedirs(log_dir, mode=0o700, exist_ok=True)
     return log_dir
 
 
