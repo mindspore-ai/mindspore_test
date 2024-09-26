@@ -82,14 +82,12 @@ void CreateDeviceAddressForTensor(const FrontendOpRunInfoPtr &op_run_info, const
   if (tensor->device_address() != nullptr) {
     return;
   }
-
   // Create a device address for tensor
   const auto &device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   MS_EXCEPTION_IF_NULL(device_context);
-  auto device_address = runtime::DeviceAddressUtils::CreateDeviceAddress(device_context, tensor, tensor->shape(),
-                                                                         op_run_info->base_op_run_info.stream_id);
-  tensor->set_device_address(device_address);
-
+  auto tensor_size = LongToSize(tensor->data().nbytes());
+  runtime::DeviceAddressUtils::CreateOutputTensorAddress(device_context, op_run_info->base_op_run_info.stream_id,
+                                                         tensor, tensor_size);
   // Allocate a block of device memory
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kWaitTaskFinish,
                                      runtime::kDefaultOpName);
