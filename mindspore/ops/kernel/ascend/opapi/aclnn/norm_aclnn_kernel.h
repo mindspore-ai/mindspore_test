@@ -35,7 +35,7 @@ class NormAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
-  ScalarPtr ord_scalar_{nullptr};
+  ScalarPtr p_scalar_{nullptr};
   std::vector<int64_t> dim_{};
   TypeId dtype_;
   bool keepdim_;
