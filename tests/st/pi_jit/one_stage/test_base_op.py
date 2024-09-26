@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Test basic operation with one stage"""
+import os
 import pytest
 import numpy as np
 import mindspore
@@ -657,6 +658,31 @@ def test_guard_for_getattr_2():
     assert jcr["break_count_"] == 0
     assert ret1 == 2
     assert ret2 == 3
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_env_get():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    os.environ["abc"] = "1"
+
+    @jit(mode="PIJit", jit_config=cfg)
+    def foo(x):
+        ret = os.environ.get("abc")
+        return ret, x + 1
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    ret = foo(Tensor([1, 2, 3]))
+    assert isinstance(ret, tuple)
+    assert ret[0] == "1"
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
