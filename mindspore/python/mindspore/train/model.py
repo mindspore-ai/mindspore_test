@@ -195,7 +195,7 @@ def _check_tft():
         if ms_mode != mindspore.GRAPH_MODE:
             raise ValueError("TFT is only supported in GRAPH_MODE")
         jit_level = context.get_context("jit_level")
-        if jit_level == "O2":
+        if jit_level == "O2" and "UCE:1" in tft_env:
             raise ValueError("TFT is not supported when using jit_level == O2")
 
 
