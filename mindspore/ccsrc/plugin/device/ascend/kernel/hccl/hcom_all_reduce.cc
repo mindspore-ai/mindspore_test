@@ -53,14 +53,12 @@ bool HcomAllReduceKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
 
 #ifdef ENABLE_INTERNAL_KERNELS
   if (use_lccl_) {
-    MS_LOG(DEBUG) << "Using LCCL AllReduce.";
     auto lccl_result = lccl_all_reduce_func_(lccl_ptr_, inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
                                              hccl_data_type_list_[0], op_type_, stream_ptr);
     if (lccl_result != Lcal::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL AllReduce failed.";
     }
   } else {
-    MS_LOG(DEBUG) << "Using HCCL AllReduce.";
     auto hccl_result =
       hccl::HcclAdapter::GetInstance().HcclAllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
                                                      hccl_data_type_list_[0], op_type_, stream_ptr, comm_);
@@ -70,7 +68,6 @@ bool HcomAllReduceKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
     }
   }
 #else
-  MS_LOG(DEBUG) << "Using HCCL AllReduce.";
   auto hccl_result =
     hccl::HcclAdapter::GetInstance().HcclAllReduce(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
                                                    hccl_data_type_list_[0], op_type_, stream_ptr, comm_);
