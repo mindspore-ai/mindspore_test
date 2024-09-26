@@ -16,9 +16,11 @@
 #include "backend/common/graph_kernel/optimize_assign.h"
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_set>
 #include <utility>
 
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -97,6 +99,25 @@ bool HasPathToParamUser(const AnfNodePtr &gk_node, const AnfNodePtr &param_user,
   return result;
 }
 
+std::unordered_set<AnfNodePtr> HasPathToReturn(const FuncGraphPtr &func_graph) {
+  std::unordered_set<AnfNodePtr> result;
+  std::function<void(const AnfNodePtr &node)> dfs;
+  dfs = [&result, &dfs](const AnfNodePtr &node) {
+    if (IsPrimitiveCNode(node, prim::kPrimReturn) || IsPrimitiveCNode(node, prim::kPrimDepend)) {
+      result.insert(node);
+      dfs(node->cast<CNodePtr>()->input(1));
+    } else if (IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
+      result.insert(node);
+      auto inputs = node->cast<CNodePtr>()->inputs();
+      for (size_t i = 1; i < inputs.size(); ++i) {
+        dfs(inputs[i]);
+      }
+    }
+  };
+  dfs(func_graph->get_return());
+  return result;
+}
+
 void KeepExecOrder(const FuncGraphPtr &func_graph, const AnfNodePtr &getitem, const AnfNodePtr &assign_to_node,
                    const FuncGraphManagerPtr &mng) {
   AnfNodePtrList depend_inputs = {NewValueNode(prim::kPrimDepend), assign_to_node, getitem};
@@ -114,7 +135,8 @@ int64_t GetitemIndex(const AnfNodePtr &getitem) {
 }
 
 void UpdateUsersOfGraphKernel(const FuncGraphPtr &func_graph, const AnfNodePtr &cnode, const AnfNodePtr &assign_to,
-                              int64_t removed_index, int64_t assign_idx) {
+                              int64_t removed_index, int64_t assign_idx,
+                              const std::unordered_set<AnfNodePtr> &outputs) {
   auto mng = func_graph->manager();
   MS_EXCEPTION_IF_NULL(mng);
   for (const auto &getitem_iter : mng->node_users()[cnode]) {
@@ -127,8 +149,15 @@ void UpdateUsersOfGraphKernel(const FuncGraphPtr &func_graph, const AnfNodePtr &
     }
     auto getitem_users = mng->node_users()[getitem];  // get a copy of getitem's users before replacing
 
+    bool if_in_outputs = false;
     for (const auto &getitem_user_iter : getitem_users) {
       auto getitem_user = getitem_user_iter.first;
+      // if `getitem` will be returned, we can't optimize this getitem.
+      // because we can't keep exec_order outside the kernel graph.
+      if (outputs.find(getitem_user) != outputs.end()) {
+        if_in_outputs = true;
+        break;
+      }
       // 1. Data users may not link directly to its input, they may segregated by Depend node.
       // 2. If the `cnode` has another path to the getitem_user, it's unnecessary to add depend node to
       //    keep exec_order.
@@ -137,6 +166,9 @@ void UpdateUsersOfGraphKernel(const FuncGraphPtr &func_graph, const AnfNodePtr &
         continue;
       }
       KeepExecOrder(func_graph, getitem, assign_to, mng);
+    }
+    if (if_in_outputs) {
+      break;
     }
     // the index of TupleGetItem should be changed from the output index of the replaced node to the assign node
     auto item_idx = opt::CreateValueNodeWithKernelInfo(func_graph, MakeValue(assign_idx));
@@ -152,6 +184,7 @@ bool RepalceOutputByParameter(const FuncGraphPtr &func_graph) {
   auto todos = TopoSort(func_graph->get_return());
 
   bool changed = false;
+  auto outputs = HasPathToReturn(func_graph);
   for (const auto &n : todos) {
     if (!common::AnfAlgo::IsGraphKernel(n)) {
       continue;
@@ -164,7 +197,7 @@ bool RepalceOutputByParameter(const FuncGraphPtr &func_graph) {
     changed = true;
     for (const auto &[index, idx_node] : replaceable_nodes) {
       UpdateUsersOfGraphKernel(func_graph, cnode, idx_node.second, static_cast<int64_t>(index),
-                               static_cast<int64_t>(idx_node.first));
+                               static_cast<int64_t>(idx_node.first), outputs);
     }
   }
   return changed;
