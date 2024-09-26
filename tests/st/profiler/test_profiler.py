@@ -155,7 +155,7 @@ def test_host_profiler(profile_framework):
     data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
-        _train_with_profiler(data_path=data_path, device_target="Ascend", profile_memory=False, only_profile_host=True,
+        _train_with_profiler(data_path=data_path, device_target="Ascend", profile_memory=False, only_profile_host=False,
                              profile_framework=profile_framework)
         _check_host_profiling_file(profiler_path, rank_id, profile_framework=profile_framework)
     finally:

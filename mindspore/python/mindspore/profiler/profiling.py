@@ -258,7 +258,8 @@ class Profiler:
         timeline_limit (int, optional): (Ascend/GPU) Set the maximum storage size of the timeline file (unit M).
             When using this parameter, `op_time` must be set to True. Default value: ``500`` .
         profile_framework (str, optional): (Ascend/GPU) The host information to collect, it must be one of
-            ["all", "time", None], When is not set to None, it would collect the host profiler data.
+            ["all", "time", None], When is not set to None, it would collect the host profiler data. When using this
+            parameter, the op_time parameter must be enabled.
             Default: None.
 
             - "all": Record host timestamp.
