@@ -205,20 +205,31 @@ size_t GeDeviceResManager::GetMaxUsedMemorySize() const {
 
 void GeDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
   MS_EXCEPTION_IF_NULL(address);
-  const auto &hete_info =
-    address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
-  if (hete_info != nullptr && swap_manager_ != nullptr) {
-    if (hete_info->host_ptr_ != nullptr) {
-      swap_manager_->FreeHostMemory(hete_info->host_ptr_);
-      hete_info->host_ptr_ = nullptr;
-    }
-    if (!hete_info->file_name_.empty()) {
-      swap_manager_->DeleteFile(hete_info->file_name_);
-      hete_info->file_name_ = "";
+  if (swap_manager_ != nullptr) {
+    const auto &hete_info =
+      address->kernel_tensor() == nullptr ? nullptr : address->kernel_tensor()->heterogeneous_info();
+    if (hete_info != nullptr) {
+      if (hete_info->host_ptr_ != nullptr) {
+        swap_manager_->FreeHostMemory(hete_info->host_ptr_);
+        hete_info->host_ptr_ = nullptr;
+      }
+      if (!hete_info->file_name_.empty()) {
+        swap_manager_->DeleteFile(hete_info->file_name_);
+        hete_info->file_name_ = "";
+      }
     }
   }
-  if (address->GetPtr() != nullptr) {
-    DeviceResManager::FreeMemory(address);
+
+  void *device_ptr = address->GetMutablePtr();
+  if (device_ptr != nullptr) {
+    if (!address->from_mem_pool()) {
+      MS_LOG(DEBUG) << "device address:" << address << " ptr:" << device_ptr << " not from pool";
+      return;
+    }
+
+    MS_LOG(DEBUG) << "Free memory from device address:" << address << " ptr:" << device_ptr;
+    FreeMemory(device_ptr);
+    address->set_ptr(nullptr);
   }
 }
 
