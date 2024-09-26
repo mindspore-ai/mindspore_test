@@ -16,7 +16,7 @@ mindspore.mint.outer
         - **vec2** (Tensor) - 输入一维向量。
 
     返回：
-        out (Tensor, optional)，两个一维向量的外积，是一个二维矩阵。
+        out，两个一维向量的外积，是一个二维矩阵。
 
     异常：
         - **TypeError** - 如果 `input` 或 `vec2` 不是Tensor。

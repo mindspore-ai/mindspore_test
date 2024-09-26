@@ -6,7 +6,7 @@ outer:
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
-    Note:
+    .. note::
         This function does not broadcast.
 
     Args:
@@ -14,12 +14,12 @@ outer:
         vec2 (Tensor): 1-D input vector.
 
     Returns:
-        out (Tensor, optional), 2-D matrix, the outer product of two vectors.
+        out, 2-D matrix, the outer product of two vectors.
 
     Raises:
         TypeError: If `input` or `vec2` is not a Tensor.
         TypeError: The implicitly converted data types of `input` and `vec2` are not one of float16, float32, float64, bool, uint8, int8, int16, int32, int64, complex64, complex128, bfloat16
-        TypeError: If the dimension of `input` or `vec2` is not equal to 1.
+        ValueError: If the dimension of `input` or `vec2` is not equal to 1.
 
     Supported Platforms:
         ``Ascend``

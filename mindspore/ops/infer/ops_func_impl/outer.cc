@@ -32,10 +32,9 @@
 
 namespace mindspore::ops {
 static inline bool IsValidType(TypeId t) {
-  static const std::set<TypeId> valid_types = {kNumberTypeBool,     kNumberTypeInt8,      kNumberTypeInt16,
-                                               kNumberTypeInt32,    kNumberTypeInt64,     kNumberTypeUInt8,
-                                               kNumberTypeFloat16,  kNumberTypeFloat32,   kNumberTypeFloat64,
-                                               kNumberTypeBFloat16, kNumberTypeComplex64, kNumberTypeComplex128};
+  static const std::set<TypeId> valid_types = {
+    kNumberTypeBool,  kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,   kNumberTypeInt64,
+    kNumberTypeUInt8, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
   return valid_types.find(t) != valid_types.end();
 }
 
@@ -47,11 +46,11 @@ ShapeArray OuterFuncImpl::InferShape(const PrimitivePtr &primitive, const InferI
 
   const size_t kTraceInputRank = 1;
   if (!input->IsDynamicRank() && input_shape.size() != kTraceInputRank) {
-    MS_EXCEPTION(TypeError) << "For Primitive[Outer], the rank of the input must be 1, but got " << input_shape.size()
-                            << "!";
+    MS_EXCEPTION(ValueError) << "For Primitive[Outer], the rank of the input must be 1, but got " << input_shape.size()
+                             << "!";
   } else if (!vec2->IsDynamicRank() && vec2_shape.size() != kTraceInputRank) {
-    MS_EXCEPTION(TypeError) << "For Primitive[Outer], the rank of the vec2 must be 1, but got " << vec2_shape.size()
-                            << "!";
+    MS_EXCEPTION(ValueError) << "For Primitive[Outer], the rank of the vec2 must be 1, but got " << vec2_shape.size()
+                             << "!";
   }
   ShapeValueDType dim0 = 0;
   ShapeValueDType dim1 = 0;
@@ -72,7 +71,7 @@ std::vector<TypeId> OuterFuncImpl::InferType(const PrimitivePtr &primitive, cons
   const auto input_type_id = input_infos[0]->GetType();
   if (!IsValidType(input_type_id)) {
     MS_EXCEPTION(TypeError) << "For Primitive[Outer], the type of the input tensor must be [Bool , Uint8, Int8, Int16, "
-                               "Int32, Int64, Float16, Float32, Float64, BFloat16, Complex64, Complex128], but got "
+                               "Int32, Int64, Float16, Float32, Float64, BFloat16], but got "
                             << TypeIdToString(input_type_id) << "!";
   }
   return {input_type_id};
