@@ -42,8 +42,7 @@ TypePtr L1LossExtFuncImpl::InferType(const PrimitivePtr &primitive,
   auto target_type = input_args[kInputIndex1]->GetType();
   MS_EXCEPTION_IF_NULL(input_type);
   MS_EXCEPTION_IF_NULL(target_type);
-  auto input_real_type = input_type->cast<TensorTypePtr>()->element()->type_id();
-  return input_real_type == kNumberTypeInt64 ? target_type : input_type;
+  return std::make_shared<TensorType>(PromoteType(input_type, target_type, primitive->name()));
 }
 
 TypePtrList L1LossExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
@@ -51,12 +50,7 @@ TypePtrList L1LossExtFuncImpl::InferType(const PrimitivePtr &primitive, const Va
   auto target_type = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>()->Dtype();
   MS_EXCEPTION_IF_NULL(input_type);
   MS_EXCEPTION_IF_NULL(target_type);
-  auto input_real_type = input_type->type_id();
-  if (input_real_type == kNumberTypeInt64) {
-    return {target_type};
-  } else {
-    return {input_type};
-  }
+  return {PromoteType(input_type, target_type, primitive->name())};
 }
 
 ShapeArray L1LossExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

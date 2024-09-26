@@ -1355,6 +1355,8 @@ REG_BPROP_BUILDER("L1LossExt").SetUnusedInputs({i3}).SetBody((BODYFUNC(ib) {
   auto dx = ib->Emit("L1LossBackwardExt", {grad_output, input, target, reduction});
   auto dy = ib->Emit("L1LossBackwardExt", {grad_output, target, input, reduction});
   std::vector<NodePtr> ret = BinopGradCommon(ib, input, target, dx, dy);
+  ret[kIndex0] = ib->Cast(ret[kIndex0], ib->GetDtype(input));
+  ret[kIndex1] = ib->Cast(ret[kIndex1], ib->GetDtype(target));
   ret.emplace_back(ib->OutZeros(reduction));
   return ret;
 }));
