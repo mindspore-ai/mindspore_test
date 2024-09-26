@@ -28,12 +28,14 @@ namespace mindspore {
 namespace ops {
 TypePtr L1LossBackwardExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                              const std::vector<abstract::AbstractBasePtr> &input_args) const {
+  auto grad_output_type = input_args[kInputIndex0]->GetType();
   auto input_type = input_args[kInputIndex1]->GetType();
   auto target_type = input_args[kInputIndex2]->GetType();
+  MS_EXCEPTION_IF_NULL(grad_output_type);
   MS_EXCEPTION_IF_NULL(input_type);
   MS_EXCEPTION_IF_NULL(target_type);
-  auto input_real_type = input_type->cast<TensorTypePtr>()->element()->type_id();
-  return input_real_type == kNumberTypeInt64 ? target_type : input_type;
+  auto promote1 = PromoteType(target_type, input_type, primitive->name());
+  return std::make_shared<TensorType>(PromoteType(grad_output_type, promote1, primitive->name()));
 }
 
 BaseShapePtr L1LossBackwardExtFuncImpl::InferShape(const PrimitivePtr &primitive,
@@ -50,16 +52,14 @@ BaseShapePtr L1LossBackwardExtFuncImpl::InferShape(const PrimitivePtr &primitive
 
 TypePtrList L1LossBackwardExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const ValuePtrList &input_values) const {
-  auto input_type = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>()->Dtype();
-  auto target_type = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>()->Dtype();
+  auto grad_output_type = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>()->Dtype();
+  auto input_type = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>()->Dtype();
+  auto target_type = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>()->Dtype();
+  MS_EXCEPTION_IF_NULL(grad_output_type);
   MS_EXCEPTION_IF_NULL(input_type);
   MS_EXCEPTION_IF_NULL(target_type);
-  auto input_real_type = input_type->type_id();
-  if (input_real_type == kNumberTypeInt64) {
-    return {target_type};
-  } else {
-    return {input_type};
-  }
+  auto promote1 = PromoteType(target_type, input_type, primitive->name());
+  return {PromoteType(grad_output_type, promote1, primitive->name())};
 }
 
 ShapeArray L1LossBackwardExtFuncImpl::InferShape(const PrimitivePtr &primitive,

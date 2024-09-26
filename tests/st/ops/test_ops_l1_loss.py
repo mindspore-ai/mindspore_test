@@ -14,11 +14,13 @@
 # ============================================================================
 import pytest
 import numpy as np
+from mindspore.common.api import _pynative_executor
 from mindspore.mint.nn.functional import l1_loss
 from mindspore.mint.nn import L1Loss
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -54,9 +56,7 @@ def l1_loss_backward_func(inputx, target, reduction="mean"):
     return grad_op(inputx, target, reduction)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_ops_l1_loss_forward(mode, reduction):
@@ -84,9 +84,7 @@ def test_ops_l1_loss_forward(mode, reduction):
     np.testing.assert_allclose(output_backward_value[0].asnumpy(), expect_backward_value, rtol=1e-3)
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_ops_nn_L1Loss(mode, reduction):
@@ -113,9 +111,7 @@ def test_ops_nn_L1Loss(mode, reduction):
     np.testing.assert_allclose(output_backward_value[0].asnumpy(), expect_backward_value, rtol=1e-3)
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_ops_l1_loss_dynamic_shape(reduction):
     """
@@ -132,3 +128,117 @@ def test_ops_l1_loss_dynamic_shape(reduction):
     test_cell = test_utils.to_cell_obj(l1_loss_forward_func)
     TEST_OP(test_cell, [[x1, target1, reduction], [x2, target2, reduction]], "l1_loss_ext", disable_grad=False,
             disable_input_check=True, disable_mode=['GRAPH_MODE'])
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ["pynative", "KBK"])
+def test_ops_l1_loss_promote_dtype(mode):
+    """
+    Feature: pyboost function.
+    Description: test function l1_loss forward with promote dtype.
+    Expectation: expect correct result.
+    """
+    ms_dtype_groups = {
+        'bool_': [0, ms.bool_],
+        'int8_': [1, ms.int8],
+        'int16': [2, ms.int16],
+        'int32': [3, ms.int32],
+        'int64': [4, ms.int64],
+        'uint8': [5, ms.uint8],
+        'fp16_': [6, ms.float16],
+        'fp32_': [7, ms.float32],
+        'fp64_': [8, ms.float64],
+        'cx64_': [9, ms.complex64],
+        'cx128': [10, ms.complex128],
+        'bf16_': [11, ms.bfloat16],
+    }
+
+    out_dtype = [
+        #bool     int8     int16    int32    int64    uint8    fp16     fp32     fp64     cx64     cx128    bf16 target/input
+        ['undef', 'undef', 'undef', 'undef', 'int64', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #bool
+        ['undef', 'undef', 'undef', 'undef', 'int64', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int8
+        ['undef', 'undef', 'undef', 'undef', 'int64', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int16
+        ['undef', 'undef', 'undef', 'undef', 'int64', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int32
+        ['int64', 'int64', 'int64', 'int64', 'int64', 'int64', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int64
+        ['undef', 'undef', 'undef', 'undef', 'int64', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #uint8
+        ['fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp32_', 'undef', 'undef', 'undef', 'fp32_'],  #fp16
+        ['fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'undef', 'undef', 'undef', 'fp32_'],  #fp32
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #fp64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #cx64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #cx128
+        ['bf16_', 'bf16_', 'bf16_', 'bf16_', 'bf16_', 'bf16_', 'fp32_', 'fp32_', 'undef', 'undef', 'undef', 'bf16_'],  #bf16
+    ]
+
+    grad_input_dtype = [
+        #bool     int8     int16    int32    int64    uint8    fp16     fp32     fp64     cx64     cx128    bf16 target/input
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #bool
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int8
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int16
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int32
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #uint8
+        ['fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp16_', 'fp16_', 'undef', 'undef', 'undef', 'fp16_'],  #fp16
+        ['fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'fp32_', 'undef', 'undef', 'undef', 'fp32_'],  #fp32
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #fp64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #cx64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #cx128
+        ['bf16_', 'bf16_', 'bf16_', 'bf16_', 'bf16_', 'bf16_', 'bf16_', 'bf16_', 'undef', 'undef', 'undef', 'bf16_'],  #bf16
+    ]
+
+    grad_target_dtype = [
+        #bool     int8     int16    int32    int64    uint8    fp16     fp32     fp64     cx64     cx128    bf16 target/input
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #bool
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int8
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int16
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int32
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #int64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #uint8
+        ['bool_', 'int8_', 'int16', 'int32', 'int64', 'uint8', 'fp16_', 'fp32_', 'undef', 'undef', 'undef', 'bf16_'],  #fp16
+        ['bool_', 'int8_', 'int16', 'int32', 'int64', 'uint8', 'fp16_', 'fp32_', 'undef', 'undef', 'undef', 'bf16_'],  #fp32
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #fp64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #cx64
+        ['undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef', 'undef'],  #cx128
+        ['bool_', 'int8_', 'int16', 'int32', 'int64', 'uint8', 'fp16_', 'fp32_', 'undef', 'undef', 'undef', 'bf16_'],  #bf16
+    ]
+
+    if mode == "pynative":
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+
+    for _, input_dtype in ms_dtype_groups.items():
+        for _, target_dtype in ms_dtype_groups.items():
+            inputx = ms.Tensor(generate_random_input((2, 2), np.float32), dtype=input_dtype[1])
+            target = ms.Tensor(generate_random_input((2, 2), np.float32), dtype=target_dtype[1])
+            if out_dtype[input_dtype[0]][target_dtype[0]] == 'undef':
+                with pytest.raises(Exception):
+                    output = l1_loss_forward_func(inputx, target, reduction='none')
+                    _pynative_executor.sync()
+            else:
+                try:
+                    output = l1_loss_forward_func(inputx, target, reduction='none')
+                    assert output.dtype == ms_dtype_groups[out_dtype[input_dtype[0]][target_dtype[0]]][1]
+                except Exception as e:
+                    print(f'inputx.dtype {inputx.dtype}, target.dtype {target.dtype} -> output.dtype {output.dtype}')
+                    print(f'expect output.dtype {ms_dtype_groups[out_dtype[input_dtype[0]][target_dtype[0]]][1]}')
+                    raise e
+
+            if mode == "KBK":
+                continue
+            if grad_input_dtype[input_dtype[0]][target_dtype[0]] == 'undef':
+                with pytest.raises(Exception):
+                    grad_input, grad_target = l1_loss_backward_func(inputx, target, reduction='none')
+                    _pynative_executor.sync()
+            else:
+                try:
+                    grad_input, grad_target = l1_loss_backward_func(inputx, target, reduction='none')
+                    expect_grad_input_dtype = ms_dtype_groups[grad_input_dtype[input_dtype[0]][target_dtype[0]]][1]
+                    expect_grad_target_dtype = ms_dtype_groups[grad_target_dtype[input_dtype[0]][target_dtype[0]]][1]
+                    assert grad_input.dtype == expect_grad_input_dtype
+                    assert grad_target.dtype == expect_grad_target_dtype
+                except Exception as e:
+                    print(f'inputx.dtype {inputx.dtype}, target.dtype {target.dtype} -> '
+                          f'grad_input.dtype {grad_input.dtype}, grad_target.dtype {grad_target.dtype}')
+                    print(f'expect grad_input.dtype {expect_grad_input_dtype}, '
+                          f'expect grad_target.dtype {expect_grad_target_dtype}')
+                    raise e
