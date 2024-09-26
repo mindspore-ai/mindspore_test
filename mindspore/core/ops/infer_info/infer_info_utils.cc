@@ -40,6 +40,12 @@ static std::vector<std::string> GetArgNames(const AbstractBasePtrList &abstract_
   if (op_def->args_.empty()) {
     return arg_names;
   }
+  if (!abstract_list.empty()) {  // ignore monad for side effect ops
+    MS_EXCEPTION_IF_NULL(abstract_list.back());
+    if (abstract_list.back()->isa<abstract::AbstractMonad>()) {
+      n -= 1;
+    }
+  }
   if (op_def->args_[0].arg_dtype_ > DT_ANY) {  // sequence type
     auto rest_input_size = op_def->args_.size() - 1;
     auto tuple_size = n - rest_input_size;
@@ -62,8 +68,8 @@ static std::vector<std::string> GetArgNames(const AbstractBasePtrList &abstract_
 InferInfoPtrList ConvertAbstractListToInferInfoList(const AbstractBasePtrList &abstract_list, const OpDefPtr op_def) {
   InferInfoPtrList infer_infos;
   const auto &op_type = op_def->name_;
-  auto size = abstract_list.size();
   const auto &arg_names = GetArgNames(abstract_list, op_def);
+  auto size = arg_names.size();
   for (size_t i = 0; i < size; ++i) {
     infer_infos.push_back(std::make_unique<AbstractInferInfoAdapter>(abstract_list[i], op_type, arg_names[i]));
   }

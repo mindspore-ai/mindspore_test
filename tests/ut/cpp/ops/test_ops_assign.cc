@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,39 @@
  * limitations under the License.
  */
 
-#include "ir/dtype/number.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "infer/ops_func_impl/assign.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore::ops {
-OP_FUNC_IMPL_TEST_DECLARE(Assign, MultiInputOpParams);
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{1}, kNumberTypeFloat16}, InferInfoParam{ShapeVector{}, kNumberTypeFloat16}})
+    .FeedExpectedOutput({{1}}, {kNumberTypeFloat16});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{1}, kNumberTypeFloat32}})
+    .FeedExpectedOutput({{}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat64},
+                    InferInfoParam{ShapeVector{2, 3, 4}, kNumberTypeFloat64}})
+    .FeedExpectedOutput({{2, 3, 4}}, {kNumberTypeFloat64});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{1, 2}, kNumberTypeUInt16}, InferInfoParam{ShapeVector{-2}, kNumberTypeUInt16}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeUInt16});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{-1, -1}, kNumberTypeBool}, InferInfoParam{ShapeVector{1, 2}, kNumberTypeBool}})
+    .FeedExpectedOutput({{-1, -1}}, {kNumberTypeBool});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{-2}, kNumberTypeComplex128}, InferInfoParam{ShapeVector{-1}, kNumberTypeComplex128}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeComplex128});
+  return generator.Generate();
+}
+}  // namespace
 
-OP_FUNC_IMPL_TEST_CASES(
-  Assign, testing::Values(MultiInputOpParams{{{1}, {}}, {kFloat16, kFloat16}, {{1}}, {kFloat16}, {}},
-                          MultiInputOpParams{{{}, {1}}, {kFloat32, kFloat32}, {{}}, {kFloat32}, {}},
-                          MultiInputOpParams{{{2, 3, 4}, {2, 3, 4}}, {kFloat64, kFloat64}, {{2, 3, 4}}, {kFloat64}, {}},
-                          MultiInputOpParams{{{1, 2}, {-2}}, {kUInt16, kUInt16}, {{-2}}, {kUInt16}, {}},
-                          MultiInputOpParams{{{-1, -1}, {1, 2}}, {kBool, kBool}, {{-1, -1}}, {kBool}, {}},
-                          MultiInputOpParams{{{-2}, {-1}}, {kComplex128, kComplex128}, {{-2}}, {kComplex128}, {}}));
+INSTANTIATE_TEST_CASE_P(Assign, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops
