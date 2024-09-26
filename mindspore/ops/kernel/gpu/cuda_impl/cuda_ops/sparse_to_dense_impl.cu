@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@
 #include "include/cuda_fp16.h"
 
 template <typename T>
-__global__ void SetDefaultValue(const T default_value, const int64_t output_elements, T *output) {
+__global__ void SetDefaultValue(const T *default_value, const int64_t output_elements, T *output) {
   for (size_t ops = blockIdx.x * blockDim.x + threadIdx.x; ops < output_elements; ops += blockDim.x * gridDim.x) {
-    output[ops] = default_value;
+    output[ops] = *default_value;
   }
 }
 
 template <typename T>
-cudaError_t CallSetDefaultValue(const T default_value, const int64_t output_elements, T *output,
+cudaError_t CallSetDefaultValue(const T *default_value, const int64_t output_elements, T *output,
                                 const uint32_t &device_id, cudaStream_t cuda_stream) {
   SetDefaultValue<<<CUDA_BLOCKS(device_id, output_elements), CUDA_THREADS(device_id), 0, cuda_stream>>>(
     default_value, output_elements, output);
@@ -61,36 +61,36 @@ cudaError_t CallSparseToDense(const Index *indices, const T *vals, const int num
   return GetCudaStatus();
 }
 
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<bool>(bool default_value, const int64_t output_elements,
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<bool>(const bool *default_value, const int64_t output_elements,
                                                                bool *output, const uint32_t &device_id,
                                                                cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int8_t>(int8_t default_value, const int64_t output_elements,
-                                                                 int8_t *output, const uint32_t &device_id,
-                                                                 cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int16_t>(int16_t default_value, const int64_t output_elements,
-                                                                  int16_t *output, const uint32_t &device_id,
-                                                                  cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int32_t>(int32_t default_value, const int64_t output_elements,
-                                                                  int32_t *output, const uint32_t &device_id,
-                                                                  cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int64_t>(int64_t default_value, const int64_t output_elements,
-                                                                  int64_t *output, const uint32_t &device_id,
-                                                                  cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<uint8_t>(uint8_t default_value, const int64_t output_elements,
-                                                                  uint8_t *output, const uint32_t &device_id,
-                                                                  cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<uint16_t>(uint16_t default_value,
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int8_t>(const int8_t *default_value,
+                                                                 const int64_t output_elements, int8_t *output,
+                                                                 const uint32_t &device_id, cudaStream_t cuda_stream);
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int16_t>(const int16_t *default_value,
+                                                                  const int64_t output_elements, int16_t *output,
+                                                                  const uint32_t &device_id, cudaStream_t cuda_stream);
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int32_t>(const int32_t *default_value,
+                                                                  const int64_t output_elements, int32_t *output,
+                                                                  const uint32_t &device_id, cudaStream_t cuda_stream);
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<int64_t>(const int64_t *default_value,
+                                                                  const int64_t output_elements, int64_t *output,
+                                                                  const uint32_t &device_id, cudaStream_t cuda_stream);
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<uint8_t>(const uint8_t *default_value,
+                                                                  const int64_t output_elements, uint8_t *output,
+                                                                  const uint32_t &device_id, cudaStream_t cuda_stream);
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<uint16_t>(const uint16_t *default_value,
                                                                    const int64_t output_elements, uint16_t *output,
                                                                    const uint32_t &device_id, cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<half>(half default_value, const int64_t output_elements,
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<half>(const half *default_value, const int64_t output_elements,
                                                                half *output, const uint32_t &device_id,
                                                                cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<float>(float default_value, const int64_t output_elements,
-                                                                float *output, const uint32_t &device_id,
-                                                                cudaStream_t cuda_stream);
-template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<double>(double default_value, const int64_t output_elements,
-                                                                 double *output, const uint32_t &device_id,
-                                                                 cudaStream_t cuda_stream);
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<float>(const float *default_value,
+                                                                const int64_t output_elements, float *output,
+                                                                const uint32_t &device_id, cudaStream_t cuda_stream);
+template CUDA_LIB_EXPORT cudaError_t CallSetDefaultValue<double>(const double *default_value,
+                                                                 const int64_t output_elements, double *output,
+                                                                 const uint32_t &device_id, cudaStream_t cuda_stream);
 
 template CUDA_LIB_EXPORT cudaError_t CallSparseToDense<bool, int32_t>(const int32_t *indices, const bool *vals,
                                                                       const int num_elems, const int num_vals,

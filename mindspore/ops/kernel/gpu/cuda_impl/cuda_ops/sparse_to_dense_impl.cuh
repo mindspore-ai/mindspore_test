@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 #include <vector>
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_device_info.h"
 template <typename T>
-cudaError_t CallSetDefaultValue(T default_value, const int64_t output_elements, T *output, const uint32_t &device_id,
-                                cudaStream_t cuda_stream);
+cudaError_t CallSetDefaultValue(const T *default_value, const int64_t output_elements, T *output,
+                                const uint32_t &device_id, cudaStream_t cuda_stream);
 
 template <typename T, typename Index>
 cudaError_t CallSparseToDense(const Index *indices, const T *vals, const int num_elems, const int num_vals,

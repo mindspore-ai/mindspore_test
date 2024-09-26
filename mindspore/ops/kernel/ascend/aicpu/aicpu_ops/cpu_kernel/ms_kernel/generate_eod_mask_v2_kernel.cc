@@ -209,9 +209,9 @@ uint32_t GenerateEodMaskV2CpuKernel::FaultInjection(CpuKernelContext &ctx, T *ou
 template <typename T>
 uint32_t GenerateEodMaskV2CpuKernel::CopyData(CpuKernelContext &ctx, const T *input, T *output, size_t num) {
   auto task = [&](size_t start, size_t end) {
-    for (auto i = start; i < end; i++) {
-      *(output + i) = *(input + i);
-    }
+    auto res_size = (num - start) * sizeof(T);
+    auto copy_size = (end - start) * sizeof(T);
+    (void)memcpy_s(output + start, res_size, input + start, copy_size);
   };
   CUST_KERNEL_HANDLE_ERROR(ctx, CpuKernelUtils::ParallelFor(ctx, num, GetPerUnitSize(ctx, num), task),
                            "GenerateEodMaskV2 CopyData failed.");
@@ -228,6 +228,13 @@ uint32_t GenerateEodMaskV2CpuKernel::ComputeKernel(CpuKernelContext &ctx) {
   Tensor *ele_pos_tensor = ctx.Input(1);
   ele_pos_ptr_ = reinterpret_cast<int64_t *>(ele_pos_tensor->GetData());
 
+  auto output_shape = ctx.Output(0)->GetTensorShape()->GetDimSizes();
+  auto output_num = std::accumulate(output_shape.begin(), output_shape.end(), int64_t(1), std::multiplies<int64_t>());
+  if (output_num != ele_num) {
+    CUST_KERNEL_LOG_ERROR(ctx, "For GenerateEodMaskV2, input's ele_num should be equal to output, but got %d and %d",
+                          ele_num, output_num);
+    return KERNEL_STATUS_PARAM_INVALID;
+  }
   auto output = reinterpret_cast<T *>(ctx.Output(0)->GetData());
 
   // CopyData from input to output

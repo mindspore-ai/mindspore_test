@@ -37,7 +37,7 @@ class SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod : public NativeCpuKernel
 
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs) override {
-    return kernel_func_(this, inputs, outputs);
+    return kernel_func_(this, inputs, workspace, outputs);
   }
 
  protected:
@@ -45,18 +45,19 @@ class SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod : public NativeCpuKernel
 
  private:
   template <typename I, typename T>
-  bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+  bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
   using SparseSoftmaxCrossEntropyWithLogitsV2Func =
     std::function<bool(SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod *, const std::vector<kernel::KernelTensor *> &,
-                       const std::vector<kernel::KernelTensor *> &)>;
+                       const std::vector<kernel::KernelTensor *> &, const std::vector<kernel::KernelTensor *> &)>;
   static std::vector<std::pair<KernelAttr, SparseSoftmaxCrossEntropyWithLogitsV2Func>> func_list_;
   SparseSoftmaxCrossEntropyWithLogitsV2Func kernel_func_;
 
-  std::vector<int64_t> features_shape;
-  std::vector<int64_t> labels_shape;
-  std::vector<int64_t> loss_shape;
-  std::vector<int64_t> backprop_shape;
+  std::vector<int64_t> features_shape_;
+  std::vector<int64_t> labels_shape_;
+  size_t unit_size_{0};
+  size_t features_length_{0};
+  size_t labels_length_{0};
   std::string reduction;
 };
 }  // namespace kernel

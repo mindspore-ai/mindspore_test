@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ bool SparseToDenseV2GpuKernelMod::Init(const std::vector<KernelTensor *> &inputs
     return false;
   }
   kernel_func_ = func_list_[index].second;
-  indice_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex0).dtype);
   value_size_ = abstract::TypeIdSize(kernel_attr.GetInputAttr(kIndex2).dtype);
   return true;
 }
@@ -73,11 +72,9 @@ int SparseToDenseV2GpuKernelMod::Resize(const std::vector<KernelTensor *> &input
   for (size_t i = 0; i < output_shape.size(); ++i) {
     output_elements *= output_shape[i];
   }
-  input_elements_indices = std::accumulate(indices_shape_.begin(), indices_shape_.end(), 1, std::multiplies<size_t>());
-  input_elements_values =
-    std::accumulate(input_shape_values.begin(), input_shape_values.end(), 1, std::multiplies<size_t>());
-  input_elements_output_shape =
-    std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<size_t>());
+  indices_num_ = std::accumulate(indices_shape_.begin(), indices_shape_.end(), 1, std::multiplies<size_t>());
+  values_num_ = std::accumulate(input_shape_values.begin(), input_shape_values.end(), 1, std::multiplies<size_t>());
+  output_num_ = std::accumulate(output_shape_.begin(), output_shape_.end(), 1, std::multiplies<size_t>());
   size_t output_size = output_elements * value_size_;
   output_size_list_.push_back(output_size);
   return KRET_OK;
@@ -85,9 +82,9 @@ int SparseToDenseV2GpuKernelMod::Resize(const std::vector<KernelTensor *> &input
 
 void SparseToDenseV2GpuKernelMod::ResetResource() noexcept {
   output_elements = 1;
-  input_elements_indices = 0;
-  input_elements_values = 0;
-  input_elements_output_shape = 0;
+  indices_num_ = 0;
+  values_num_ = 0;
+  output_num_ = 0;
   is_null_input_ = false;
   output_size_list_.clear();
 }
@@ -102,9 +99,10 @@ void SparseToDenseV2GpuKernelMod::CheckValidateTwoDim(const std::vector<kernel::
     MS_LOG(WARNING) << "For '" << kernel_name_ << "', output memory size should be greater than 0, but got 0.";
   }
   I *input_indices = GetDeviceAddress<I>(inputs, kIndex0);
-  I *indices_addr = reinterpret_cast<I *>(malloc(input_elements_indices * indice_size_));
+  std::vector<I> indices_host;
+  indices_host.resize(indices_num_);
   CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
-    cudaMemcpyAsync(indices_addr, input_indices, input_elements_indices * indice_size_, cudaMemcpyDeviceToHost,
+    cudaMemcpyAsync(indices_host.data(), input_indices, indices_num_ * sizeof(I), cudaMemcpyDeviceToHost,
                     reinterpret_cast<cudaStream_t>(cuda_stream_)),
     "For 'SparseToDenseV2', cudaMemcpyAsync indices failed.");
   if (cudaStreamQuery(reinterpret_cast<cudaStream_t>(cuda_stream_)) != cudaSuccess) {
@@ -113,10 +111,11 @@ void SparseToDenseV2GpuKernelMod::CheckValidateTwoDim(const std::vector<kernel::
   }
 
   I *input_output_shape = GetDeviceAddress<I>(inputs, kIndex1);
-  I *output_shape_addr = reinterpret_cast<I *>(malloc(input_elements_output_shape * indice_size_));
+  std::vector<I> output_shape_host;
+  output_shape_host.resize(output_num_);
   CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
-    cudaMemcpyAsync(output_shape_addr, input_output_shape, input_elements_output_shape * indice_size_,
-                    cudaMemcpyDeviceToHost, reinterpret_cast<cudaStream_t>(cuda_stream_)),
+    cudaMemcpyAsync(output_shape_host.data(), input_output_shape, output_num_ * sizeof(I), cudaMemcpyDeviceToHost,
+                    reinterpret_cast<cudaStream_t>(cuda_stream_)),
     "For 'SparseToDenseV2', cudaMemcpyAsync dense_shape failed");
   if (cudaStreamQuery(reinterpret_cast<cudaStream_t>(cuda_stream_)) != cudaSuccess) {
     CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(cuda_stream_)),
@@ -127,7 +126,7 @@ void SparseToDenseV2GpuKernelMod::CheckValidateTwoDim(const std::vector<kernel::
   bool increasing = true;
   for (size_t k = 0; k < indices_shape_[1]; ++k) {
     size_t index = k;
-    if (indices_addr[index] < 0 || indices_addr[index] >= output_shape_addr[index]) {
+    if (indices_host[index] < 0 || indices_host[index] >= output_shape_host[index]) {
       valid = false;
     }
   }
@@ -138,10 +137,10 @@ void SparseToDenseV2GpuKernelMod::CheckValidateTwoDim(const std::vector<kernel::
     for (size_t j = 0; j < indices_shape_[1]; ++j) {
       size_t index1 = i * indices_shape_[1] + j;
       size_t index2 = (i - 1) * indices_shape_[1] + j;
-      if (indices_addr[index1] < 0 || indices_addr[index1] >= output_shape_addr[j]) {
+      if (indices_host[index1] < 0 || indices_host[index1] >= output_shape_host[j]) {
         valid = false;
       }
-      I diff = indices_addr[index1] - indices_addr[index2];
+      I diff = indices_host[index1] - indices_host[index2];
       if (diff > 0) {
         different = true;
       }
@@ -168,12 +167,13 @@ void SparseToDenseV2GpuKernelMod::CheckValidateOneDim(const std::vector<kernel::
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSparseToDenseV2InputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSparseToDenseV2OutputsNum, kernel_name_);
   if (outputs[0]->size() == 0) {
-    MS_LOG(WARNING) << "For '" << kernel_name_ << "', output memory size should be greater than 0, but got 0.";
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output memory size should be greater than 0, but got 0.";
   }
   I *input_indices = GetDeviceAddress<I>(inputs, kIndex0);
-  I *indices_addr = reinterpret_cast<I *>(malloc(input_elements_indices * indice_size_));
+  std::vector<I> indices_host;
+  indices_host.resize(indices_num_);
   CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
-    cudaMemcpyAsync(indices_addr, input_indices, input_elements_indices * indice_size_, cudaMemcpyDeviceToHost,
+    cudaMemcpyAsync(indices_host.data(), input_indices, indices_num_ * sizeof(I), cudaMemcpyDeviceToHost,
                     reinterpret_cast<cudaStream_t>(cuda_stream_)),
     "For 'SparseToDenseV2', cudaMemcpyAsync indices failed");
   if (cudaStreamQuery(reinterpret_cast<cudaStream_t>(cuda_stream_)) != cudaSuccess) {
@@ -182,10 +182,11 @@ void SparseToDenseV2GpuKernelMod::CheckValidateOneDim(const std::vector<kernel::
   }
 
   I *input_output_shape = GetDeviceAddress<I>(inputs, kIndex1);
-  I *output_shape_addr = reinterpret_cast<I *>(malloc(input_elements_output_shape * indice_size_));
+  std::vector<I> output_shape_host;
+  output_shape_host.resize(output_num_);
   CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
-    cudaMemcpyAsync(output_shape_addr, input_output_shape, input_elements_output_shape * indice_size_,
-                    cudaMemcpyDeviceToHost, reinterpret_cast<cudaStream_t>(cuda_stream_)),
+    cudaMemcpyAsync(output_shape_host.data(), input_output_shape, output_num_ * sizeof(I), cudaMemcpyDeviceToHost,
+                    reinterpret_cast<cudaStream_t>(cuda_stream_)),
     "For 'SparseToDenseV2', cudaMemcpyAsync dense_shape failed");
   if (cudaStreamQuery(reinterpret_cast<cudaStream_t>(cuda_stream_)) != cudaSuccess) {
     CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(cuda_stream_)),
@@ -194,14 +195,14 @@ void SparseToDenseV2GpuKernelMod::CheckValidateOneDim(const std::vector<kernel::
   bool valid = true;
   bool different = false;
   bool increasing = true;
-  if (indices_addr[0] < 0 || indices_addr[0] > output_shape_addr[0]) {
+  if (indices_host[0] < 0 || indices_host[0] > output_shape_host[0]) {
     valid = false;
   }
   for (size_t i = 1; i < indices_shape_[0]; ++i) {
-    if (indices_addr[i] < 0 || indices_addr[i] >= output_shape_addr[0]) {
+    if (indices_host[i] < 0 || indices_host[i] >= output_shape_host[0]) {
       valid = false;
     }
-    I diff = indices_addr[i] - indices_addr[i - 1];
+    I diff = indices_host[i] - indices_host[i - 1];
     if (diff > 0) {
       different = true;
     }
@@ -235,21 +236,11 @@ bool SparseToDenseV2GpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
   T *input_default_value = GetDeviceAddress<T>(inputs, kIndex3);
   T *output = GetDeviceAddress<T>(outputs, kIndex0);
 
-  T *default_value_data = reinterpret_cast<T *>(malloc(value_size_));
-  CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(
-    cudaMemcpyAsync(default_value_data, input_default_value, value_size_, cudaMemcpyDeviceToHost,
-                    reinterpret_cast<cudaStream_t>(cuda_stream_)),
-    "For 'SparseToDenseV2', cudaMemcpyAsync default_value failed");
-  if (cudaStreamQuery(reinterpret_cast<cudaStream_t>(cuda_stream_)) != cudaSuccess) {
-    CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(cuda_stream_)),
-                                       "For 'SparseToDenseV2', cuda Stream Sync Failed.");
-  }
-
   auto cuda_stream = reinterpret_cast<cudaStream_t>(cuda_stream_);
-  auto status = CallSetDefaultValue(default_value_data[0], output_elements, output, device_id_, cuda_stream);
+  auto status = CallSetDefaultValue(input_default_value, output_elements, output, device_id_, cuda_stream);
   CHECK_CUDA_STATUS(status, kernel_name_);
-  status = CallSparseToDense(input_indices, input_values, num_elems, input_elements_values, input_output_shape, ndims,
-                             output, device_id_, cuda_stream);
+  status = CallSparseToDense(input_indices, input_values, num_elems, values_num_, input_output_shape, ndims, output,
+                             device_id_, cuda_stream);
   CHECK_CUDA_STATUS(status, kernel_name_);
   return true;
 }

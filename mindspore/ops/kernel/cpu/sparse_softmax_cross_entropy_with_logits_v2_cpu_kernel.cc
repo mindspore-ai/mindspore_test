@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ bool SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::Init(const std::vector<K
                       << kernel_attr;
   }
   kernel_func_ = func_list_[index].second;
+  unit_size_ = abstract::TypeIdSize(outputs[kIndex0]->dtype_id());
   return true;
 }
 
@@ -44,39 +45,43 @@ int SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::Resize(const std::vector<
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  features_shape = inputs.at(kIndex0)->GetShapeVector();
-  labels_shape = inputs.at(kIndex1)->GetShapeVector();
-  loss_shape = outputs.at(kIndex0)->GetShapeVector();
-  backprop_shape = outputs.at(kIndex1)->GetShapeVector();
-  auto features_batch = features_shape[kIndex0];
-  auto labels_batch = labels_shape[kIndex0];
-  if (features_shape.size() != kSparseSoftmaxCrossEntropyWithLogitsV2FeaturesShape ||
-      labels_shape.size() != kSparseSoftmaxCrossEntropyWithLogitsV2LabelsShape) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the input logits(features) shape " << features_shape
-                      << " must be same as [batch * classes] and the input labels shape " << labels_shape
+  features_shape_ = inputs.at(kIndex0)->GetShapeVector();
+  labels_shape_ = inputs.at(kIndex1)->GetShapeVector();
+  auto features_batch = features_shape_[kIndex0];
+  auto labels_batch = labels_shape_[kIndex0];
+  if (features_shape_.size() != kSparseSoftmaxCrossEntropyWithLogitsV2FeaturesShape ||
+      labels_shape_.size() != kSparseSoftmaxCrossEntropyWithLogitsV2LabelsShape) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the input logits(features) shape " << features_shape_
+                      << " must be same as [batch * classes] and the input labels shape " << labels_shape_
                       << " must be same as [batch].";
   }
   if (features_batch != labels_batch) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the input logits(features) batch " << features_batch
                       << " must be equal to the input label batch " << labels_batch;
   }
+  // apply workspace
+  features_length_ =
+    std::accumulate(features_shape_.begin(), features_shape_.end(), int64_t(1), std::multiplies<int64_t>());
+  labels_length_ = std::accumulate(labels_shape_.begin(), labels_shape_.end(), int64_t(1), std::multiplies<int64_t>());
+  workspace_size_list_.push_back(sizeof(float) * labels_length_);
+  workspace_size_list_.push_back(sizeof(float) * features_length_);
+  workspace_size_list_.push_back(unit_size_ * labels_length_);
   return KRET_OK;
 }
 
 template <typename data_type, typename label_type>
 bool SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::LaunchKernel(
-  const std::vector<kernel::KernelTensor *> &inputs, const std::vector<kernel::KernelTensor *> &outputs) {
+  const std::vector<kernel::KernelTensor *> &inputs, const std::vector<kernel::KernelTensor *> &workspace,
+  const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSparseSoftmaxCrossEntropyWithLogitsV2InputNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSparseSoftmaxCrossEntropyWithLogitsV2OutputNum, kernel_name_);
   auto *features = static_cast<data_type *>(inputs[kIndex0]->device_ptr());
   auto *labels = static_cast<label_type *>(inputs[kIndex1]->device_ptr());
   auto *loss = static_cast<data_type *>(outputs[kIndex0]->device_ptr());
   auto *backprop = static_cast<data_type *>(outputs[kIndex1]->device_ptr());
-  const size_t features_length = inputs[kIndex0]->size() / sizeof(data_type);
-  const size_t labels_length = inputs[kIndex1]->size() / sizeof(label_type);
-  const size_t batch_size = labels_length;
-  const size_t classes_num = features_length / labels_length;
-  for (size_t index = 0; index < labels_length; index++) {
+  const size_t batch_size = labels_length_;
+  const size_t classes_num = features_length_ / labels_length_;
+  for (size_t index = 0; index < labels_length_; index++) {
     if (labels[index] >= SizeToInt(classes_num) || labels[index] < 0) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the labels[" << index << "] = " << labels[index]
                         << " value is outside the valid range of [0, " << classes_num << ").";
@@ -84,9 +89,9 @@ bool SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::LaunchKernel(
     }
   }
 
-  float *dims_exp_sum = static_cast<float *>(malloc(batch_size * sizeof(float)));
-  float *bp_fp32 = static_cast<float *>(malloc(features_length * sizeof(float)));
-  data_type *dims_maximum = static_cast<data_type *>(malloc(batch_size * sizeof(data_type)));
+  auto dims_exp_sum = GetDeviceAddress<float>(workspace, kIndex0);
+  auto bp_fp32 = GetDeviceAddress<float>(workspace, kIndex1);
+  auto dims_maximum = GetDeviceAddress<data_type>(workspace, kIndex2);
   if (memset_s(dims_exp_sum, batch_size * sizeof(float), 0, batch_size * sizeof(float)) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset dims_exp_sum failed!";
   }
@@ -98,7 +103,7 @@ bool SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::LaunchKernel(
   // compute softmax
   dims_max = logits.maximum(axes);
   const data_type constant_one(1.0);
-  for (size_t index = 0, batch_idx = 0; index < features_length; index++) {
+  for (size_t index = 0, batch_idx = 0; index < features_length_; index++) {
     bp_fp32[index] = Eigen::numext::exp(static_cast<float>(features[index] - dims_max(batch_idx)));
     dims_exp_sum[batch_idx] += bp_fp32[index];
     if ((index + 1) % classes_num == 0) {
@@ -106,7 +111,7 @@ bool SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::LaunchKernel(
     }
   }
   dims_sum = dims_sum.inverse();
-  for (size_t index = 0, batch_idx = 0; index < features_length; index++) {
+  for (size_t index = 0, batch_idx = 0; index < features_length_; index++) {
     backprop[index] = static_cast<data_type>(bp_fp32[index] * dims_sum(batch_idx));
     if ((index + 1) % classes_num == 0) {
       batch_idx++;
@@ -117,9 +122,6 @@ bool SparseSoftmaxCrossEntropyWithLogitsV2CpuKernelMod::LaunchKernel(
     loss[index] = -Eigen::numext::log(backprop[batch_base + offset]);
     backprop[batch_base + offset] = backprop[batch_base + offset] - constant_one;
   }
-  free(bp_fp32);
-  free(dims_exp_sum);
-  free(dims_maximum);
   return true;
 }
 
