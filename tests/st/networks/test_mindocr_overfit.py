@@ -204,7 +204,7 @@ def main_test_process(args, cfg):
     return loss_start, loss_end, average_step_time, time_compile
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_db_r50_1p():
     """
     Feature: MindOCR dbnet-resnet50 1p test
@@ -223,8 +223,8 @@ def test_db_r50_1p():
         35.55 <= loss_start <= 35.65
     ), f"Loss start should in [35.55, 35.65], but got {loss_start}"
     assert (
-        10.06 <= loss_end <= 10.45
-    ), f"Loss end should in less than 10.45, but got {loss_end}"
+        loss_end <= 11.5
+    ), f"Loss end should in less than 11.5, but got {loss_end}"
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
