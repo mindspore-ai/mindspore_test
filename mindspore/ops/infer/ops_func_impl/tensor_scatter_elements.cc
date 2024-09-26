@@ -56,13 +56,17 @@ BaseShapePtr TensorScatterElementsFuncImpl::InferShape(const PrimitivePtr &primi
                              << ", indices_shape:" << indices_shape << ", updates_shape: " << updates_shape << ".";
   }
 
+  if (IsDynamicRank(indices_shape) || IsDynamicRank(updates_shape)) {
+    return input_x_shape_ptr->Clone();
+  }
+
   if (input_x_shape.size() != indices_shape.size() || input_x_shape.size() != updates_shape.size() ||
       indices_shape.size() != updates_shape.size()) {
     MS_EXCEPTION(ValueError) << "For '" << prim_name
                              << "', the dimension of 'input_x', 'indice' and 'update' should be same, but got "
-                             << "input_x dims: " << input_x_shape.size() << "; "
-                             << "indice dims: " << indices_shape.size() << "; "
-                             << "update dims: " << updates_shape.size() << ".";
+                             << "input_x shape: " << input_x_shape << "; "
+                             << "indice shape: " << indices_shape << "; "
+                             << "update shape: " << updates_shape << ".";
   }
 
   return input_x_shape_ptr->Clone();

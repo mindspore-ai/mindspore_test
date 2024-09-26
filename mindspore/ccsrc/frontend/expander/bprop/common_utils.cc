@@ -532,43 +532,37 @@ NodePtr MinOrMaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, co
   return indicators / num_selected * grad;
 }
 
-inline NodePtr TensorScatterElementsZeroDim(Emitter *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,
-                                            const NodePtr &src, const NodePtr &reduce) {
-  // TensorScatterElements op: ZeroDim need to expand to OneDim
+inline NodePtr ScatterZeroDim(Emitter *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,
+                              const NodePtr &src, const NodePtr &reduce) {
+  // Scatter op: ZeroDim need to expand to OneDim
   auto input_expand = ib->ExpandDims(input, -1);
   auto index_expand = ib->ExpandDims(index, -1);
-  auto src_expand = ib->ExpandDims(src, -1);
-  auto out = ib->Emit("TensorScatterElements", {input_expand, index_expand, src_expand, dim, reduce});
+  auto out = ib->Emit("ScatterValue", {input_expand, dim, index_expand, src, reduce});
   // recover OneDim To ZeroDim
   return ib->Squeeze(out, MakeValue(ShapeVector{0}));
-}
-
-inline NodePtr TensorScatterElements(Emitter *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,
-                                     const NodePtr &src, const NodePtr &reduce) {
-  return ib->Emit("TensorScatterElements", {input, index, src, dim, reduce});
 }
 
 NodePtr Scatter_(BpropBuilder *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index, const NodePtr &src,
                  const NodePtr &reduce) {
   auto dim_val = dim->BuildValue();
   if (!IsValueKnown(dim_val)) {
-    MS_EXCEPTION(ValueError) << "For `TensorScatterElements` op, the `axis` must currently be a constant!";
+    MS_EXCEPTION(ValueError) << "For Scatter, the `axis` must currently be a constant!";
   }
   auto input_shape = ib->GetShape(input);
   if (input_shape.size() == 0) {
-    return TensorScatterElementsZeroDim(ib, input, dim, index, src, reduce);
+    return ScatterZeroDim(ib, input, dim, index, src, reduce);
   } else if (IsDynamicRank(input_shape)) {
     auto rank = ib->Emit("Rank", {input});
     auto is_zero_dim_cond = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
     auto scatter_zero_dim_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
-      return {TensorScatterElementsZeroDim(e, input, dim, index, src, reduce)};
+      return {ScatterZeroDim(e, input, dim, index, src, reduce)};
     };
     auto scatter_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
-      return {TensorScatterElements(e, input, dim, index, src, reduce)};
+      return {e->Emit("Scatter", {input, dim, index, src, reduce})};
     };
     return ib->Conditional(is_zero_dim_cond, scatter_zero_dim_impl, scatter_impl);
   }
-  return TensorScatterElements(ib, input, dim, index, src, reduce);
+  return ib->Emit("Scatter", {input, dim, index, src, reduce});
 }
 
 NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,
@@ -581,19 +575,19 @@ NodePtr ScatterOrTensorScatterElements(BpropBuilder *ib, const NodePtr &input, c
   }
   auto input_shape = ib->GetShape(input);
   if (input_shape.size() == 0) {
-    return TensorScatterElementsZeroDim(ib, input, dim, index, src, reduce);
+    return ScatterZeroDim(ib, input, dim, index, src, reduce);
   } else if (IsDynamicRank(input_shape)) {
     auto rank = ib->Emit("Rank", {input});
     auto is_zero_dim_cond = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
     auto scatter_zero_dim_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
-      return {TensorScatterElementsZeroDim(e, input, dim, index, src, reduce)};
+      return {ScatterZeroDim(e, input, dim, index, src, reduce)};
     };
     auto scatter_impl = [&input, &dim, &index, &src, &reduce](Emitter *e) -> NodePtrList {
-      return {TensorScatterElements(e, input, dim, index, src, reduce)};
+      return {e->Emit("Scatter", {input, dim, index, src, reduce})};
     };
     return ib->Conditional(is_zero_dim_cond, scatter_zero_dim_impl, scatter_impl);
   }
-  return TensorScatterElements(ib, input, dim, index, src, reduce);
+  return ib->Emit("Scatter", {input, dim, index, src, reduce});
 }
 
 NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
