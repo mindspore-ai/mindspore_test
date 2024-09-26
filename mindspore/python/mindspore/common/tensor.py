@@ -270,7 +270,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                     validator.check_value_type('const_arg', const_arg, bool, 'Tensor')
 
         if device is not None and device != "CPU":
-            raise ValueError(f"Only 'CPU' is supported for device, but got ${device}.")
+            raise ValueError(f"Only 'CPU' is supported for device, but got {device}.")
 
         self.const_arg = const_arg
         self.virtual_flag = False
