@@ -926,7 +926,7 @@ def get_round_vmap_rule(prim, axis_size):
         var, x_dim = x_bdim
         decimal_var, decimal_dim = decimal_bdim
         if decimal_dim is not None:
-            _raise_value_error("The decimal should be None")
+            _raise_value_error("For vmap, the batch axis of decimal must be none.")
         out = prim(var, decimal_var)
         return out, x_dim
 

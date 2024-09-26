@@ -29,10 +29,7 @@ round:
             >>> import numpy as np
             >>> from mindspore import Tensor, ops
             >>> input = Tensor(np.array([0.8, 1.5, 2.3, 2.5, -4.5]), mindspore.float32)
-            >>> output = ops.Round(input)
+            >>> round = ops.Round()
+            >>> output = round(input)
             >>> print(output)
             [ 1.  2.  2.  2. -4.]
-            >>> input = Tensor(np.array([0.81, 1.52, 2.35, 2.53, -4.57]), mindspore.float32)
-            >>> output = ops.Round(input, decimals=1)
-            >>> print(output)
-            [ 0.8  1.5  2.4  2.5 -4.6]

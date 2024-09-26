@@ -11897,7 +11897,7 @@ def batch_dot(x1, x2, axes=None):
 
     return final_result
 
-def round(input, *, decimals=None):
+def round(input, *, decimals=0):
     r"""
     Returns half to even of a tensor element-wise.
 

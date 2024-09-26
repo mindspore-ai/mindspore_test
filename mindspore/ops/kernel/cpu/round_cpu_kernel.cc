@@ -1,18 +1,18 @@
 /**
-* Copyright 2024 Huawei Technologies Co., Ltd
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2024 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "kernel/cpu/round_cpu_kernel.h"
 #include <algorithm>
@@ -40,15 +40,15 @@ int RoundCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
 
 template <typename T>
 bool RoundCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
-                                    const std::vector<KernelTensor *> &outputs) {
+                                     const std::vector<KernelTensor *> &outputs) {
   const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
   auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
   const size_t lens = outputs[0]->size() / sizeof(T);
 
-  auto value_opt = inputs[1]->GetOptionalValueWithCheck<int64_t>();
-  if (value_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", the input decimals should be None, but got input of decimals "
-                      << value_opt.value();
+  auto decimals = inputs[1]->GetValueWithCheck<int64_t>();
+  if (decimals != 0) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_ << " only support decimals equal 0, but got decimals equal "
+                      << decimals;
     return false;
   }
 
@@ -62,27 +62,14 @@ bool RoundCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
 }
 
 std::vector<std::pair<KernelAttr, RoundCpuKernelMod::RoundFunc>> RoundCpuKernelMod::func_list_ = {
-    { KernelAttr()
-          .AddInputAttr(kNumberTypeInt32)
-          .AddOptionalInputAttr(kNumberTypeInt64)
-          .AddOutputAttr(kNumberTypeInt32),
-      &RoundCpuKernelMod::LaunchKernel<int> },
-    { KernelAttr()
-          .AddInputAttr(kNumberTypeInt64)
-          .AddOptionalInputAttr(kNumberTypeInt64)
-          .AddOutputAttr(kNumberTypeInt64),
-    &RoundCpuKernelMod::LaunchKernel<int64_t> },
-    { KernelAttr()
-          .AddInputAttr(kNumberTypeFloat32)
-          .AddOptionalInputAttr(kNumberTypeInt64)
-          .AddOutputAttr(kNumberTypeFloat32),
-    &RoundCpuKernelMod::LaunchKernel<float> },
-    { KernelAttr()
-          .AddInputAttr(kNumberTypeFloat64)
-          .AddOptionalInputAttr(kNumberTypeInt64)
-          .AddOutputAttr(kNumberTypeFloat64),
-    &RoundCpuKernelMod::LaunchKernel<double> }
-};
+  {KernelAttr().AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt32),
+   &RoundCpuKernelMod::LaunchKernel<int>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
+   &RoundCpuKernelMod::LaunchKernel<int64_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat32),
+   &RoundCpuKernelMod::LaunchKernel<float>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeFloat64),
+   &RoundCpuKernelMod::LaunchKernel<double>}};
 
 std::vector<KernelAttr> RoundCpuKernelMod::GetOpSupport() {
   std::vector<KernelAttr> support_list;
@@ -91,7 +78,6 @@ std::vector<KernelAttr> RoundCpuKernelMod::GetOpSupport() {
 
   return support_list;
 }
-
 
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, Round, RoundCpuKernelMod);
 }  // namespace kernel
