@@ -7554,7 +7554,7 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         >>> print(ops.function.math_func.norm_ext(x, 2.0))
         38.327538
     """
-    if p in [0.0, 1.0, 2.0, 3.0]:
+    if float(p) in [0.0, 1.0, 2.0, 3.0]:
         return norm_op(input, p, dim, keepdim, dtype)
     if isinstance(p, (int, float)):
         if dtype is None:

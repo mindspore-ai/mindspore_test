@@ -26,15 +26,15 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kNumberTwo = 2;
+constexpr float kNumberTwo = 2.0;
 }
 void NormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
   if (inputs[kIndex1]->dtype_id() == kMetaTypeNone) {
-    MAKE_SCALAR(kNumberTwo, kNumberTypeFloat32, ord_scalar_);
+    MAKE_SCALAR(kNumberTwo, kNumberTypeFloat32, p_scalar_);
   } else {
-    auto ord_opt = inputs[kIndex1]->GetOptionalValueWithCheck<ScalarPtr>();
-    ord_scalar_ = ord_opt.has_value() ? ord_opt.value() : std::make_shared<FP32Imm>(static_cast<float>(kNumberTwo));
+    auto p_opt = inputs[kIndex1]->GetOptionalValueWithCheck<float>();
+    p_scalar_ = p_opt.has_value() ? std::make_shared<FP32Imm>(p_opt.value()) : std::make_shared<FP32Imm>(kNumberTwo);
   }
   const auto dim_opt = inputs[kIndex2]->GetOptionalValueWithCheck<std::vector<int64_t>>();
   if (dim_opt.has_value()) {
@@ -44,13 +44,13 @@ void NormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   }
   keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
 
-  GetWorkspaceForResize(inputs[kIndex0], ord_scalar_, dim_, keepdim_, outputs[kIndex0]);
+  GetWorkspaceForResize(inputs[kIndex0], p_scalar_, dim_, keepdim_, outputs[kIndex0]);
 }
 
 bool NormAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                         const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], ord_scalar_, dim_, keepdim_, outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], p_scalar_, dim_, keepdim_, outputs[kIndex0]);
   return true;
 }
 
