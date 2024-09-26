@@ -1,0 +1,51 @@
+#operator apply_adamw
+apply_adamw:
+  args:
+    var:
+      dtype: tensor
+    m:
+      dtype: tensor
+    v:
+      dtype: tensor
+    beta1_power:
+      dtype: float
+    beta2_power:
+      dtype: float
+    lr:
+      dtype: tensor
+      type_cast: float
+    weight_decay:
+      dtype: float
+    beta1:
+      dtype: float
+    beta2:
+      dtype: float
+    epsilon:
+      dtype: float
+    grad:
+      dtype: tensor
+    max_grad_norm:
+      dtype: tensor
+      default: None
+    amsgrad:
+      dtype: bool
+      default: False
+    maximize:
+      dtype: bool
+      default: False
+  function:
+    disable: True
+  args_signature:
+    rw_write: var, m, v
+    dtype_group: (m, v), (lr, beta1, beta2, epsilon, weight_decay), (var, grad)
+  labels:
+    side_effect_mem: True
+  returns:
+    var:
+      dtype: tensor
+    m:
+      dtype: tensor
+    v:
+      dtype: tensor
+  class:
+    name: ApplyAdamW

@@ -68,6 +68,7 @@ constexpr auto kApplyAdamWithAmsgradOpName = "ApplyAdamWithAmsgrad";
 constexpr auto kApplyAdamWithAmsgradDOpName = "ApplyAdamWithAmsgradD";
 constexpr auto kApplyAdamWithAmsgradV2OpName = "ApplyAdamWithAmsgradV2";
 constexpr auto kApplyAddSignDOpName = "ApplyAddSignD";
+constexpr auto kNameApplyAdamW = "ApplyAdamW";
 constexpr auto kApplyCenteredRMSPropDOpName = "ApplyCenteredRMSPropD";
 constexpr auto kApplyCenteredRMSPropOpName = "ApplyCenteredRMSProp";
 constexpr auto kApplyFtrlDOpName = "ApplyFtrlD";
