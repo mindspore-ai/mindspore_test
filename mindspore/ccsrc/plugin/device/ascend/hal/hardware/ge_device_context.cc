@@ -214,7 +214,7 @@ void GeDeviceContext::Initialize() {
     return;
   }
 
-  MS_LOG(DEBUG) << "Start initialize...";
+  MS_LOG(INFO) << "Start initialize...";
   if (UseSimulationApi()) {
     transform::LoadSimulationApiSymbols();
   }
@@ -424,6 +424,7 @@ void GeDeviceContext::GetGeOptions(const std::shared_ptr<MsContext> &ms_context_
   (*ge_options)["ge.exec.overflow"] = "1";
   // enable deterministic
   (*ge_options)[::ge::DETERMINISTIC] = ms_context_ptr->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? "1" : "0";
+  MS_LOG(INFO) << "Set ge::DETERMINISTIC to " << (*ge_options)[::ge::DETERMINISTIC];
 
   SetPassthroughGeOptions(true, ge_options);
 }

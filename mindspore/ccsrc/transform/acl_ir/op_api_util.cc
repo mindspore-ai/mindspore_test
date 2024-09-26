@@ -164,6 +164,7 @@ void AclUtil::SetDeterministic() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   bool is_deterministic = ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON" ? true : false;
+  MS_LOG(INFO) << "Set kernel deterministic value: " << (is_deterministic ? "1" : "0");
   // Set acl
   auto ret = SetCompileopt(aclCompileOpt::ACL_OP_DETERMINISTIC, is_deterministic ? "1" : "0");
   if (ret != ACL_SUCCESS) {
