@@ -60,8 +60,6 @@ int32_t GatherDFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
   auto x_shape_vec = input_args[kInputIndex0]->GetShape()->GetShapeVector();
   auto index_shape_vec = input_args[kInputIndex2]->GetShape()->GetShapeVector();
-  MS_EXCEPTION_IF_CHECK_FAIL(!IsShapeNone(x_shape_vec) && !IsShapeNone(index_shape_vec),
-                             "For 'GatherD', [x] or [input] got empty tensor, which is not allowed.");
 
   if (IsDynamicRank(x_shape_vec) || IsDynamicRank(index_shape_vec)) {
     return OP_CHECK_RETRY;
