@@ -282,6 +282,12 @@ bool FuncGraphBuilder::CheckGraphOutput(const AbstractBasePtr &abs) {
          abs->isa<abstract::AbstractMapTensor>();
 }
 
+void FuncGraphBuilder::AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(wrapper);
+  MS_EXCEPTION_IF_NULL(node);
+  (void)key_to_node_.emplace(wrapper, node);
+}
+
 AbstractWrapperPtr FuncGraphBuilder::AddLocalVariable(const py::object &obj) {
   if (obj.ptr() == nullptr) {
     MS_LOG(INFO) << "Failed to add local variable, py object is null";
@@ -620,7 +626,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const py::object &cal
     return nullptr;
   }
   size_t dict_len = key_tuple_abstract->size();
-  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len - 1, "kwargs length check error");
+  MS_EXCEPTION_IF_CHECK_FAIL(inputs_abstract_wrapper.size() >= dict_len + 1, "kwargs length check error");
   size_t arg_len = inputs_abstract_wrapper.size() - dict_len - 1;
 
   auto fg = std::make_shared<FuncGraph>();
@@ -1062,8 +1068,8 @@ bool FuncGraphBuilder::AddOutput(const AbstractWrapperPtr &abstract_wrapper, boo
   return true;
 }
 
-FuncGraphPtr FuncGraphBuilder::graph() {
-  if (has_set_output_) {
+FuncGraphPtr FuncGraphBuilder::graph(bool force) {
+  if (has_set_output_ || force) {
     return graph_;
   }
   if (output_nodes_.empty()) {

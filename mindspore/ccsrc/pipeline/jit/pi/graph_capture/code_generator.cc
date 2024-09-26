@@ -789,7 +789,7 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
   });
   // reconstruct interpret values if need
   auto index = interpret_.operations.size() + 1;
-  std::for_each(outputs_optimize_.operations.rbegin(), outputs_optimize_.operations.rend(),
+  std::for_each(outputs_optimize_.operations.begin(), outputs_optimize_.operations.end(),
                 [code_gen, &index](ValueNode *input) {
                   // fill interpret local map
                   auto target = code_gen->GetLocalsMap().find(input);
@@ -799,6 +799,14 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
                   }
                   index++;
                 });
+  // bind the value node to the node that replaced it so that bytecode can be generated correctly
+  // avoid missing value
+  std::for_each(replaced_nodes_.begin(), replaced_nodes_.end(), [code_gen](auto item) {
+    std::unordered_map<ValueNode *, int> &local_map = code_gen->GetLocalsMap();
+    MS_EXCEPTION_IF_CHECK_FAIL(local_map.find(item.second) != local_map.end(),
+                               item.second->ToString() + " should be a local var.");
+    local_map[item.first] = local_map.at(item.second);
+  });
 }
 
 void CodeBreakGenerator::RestoreStack(CodeGenerator *code_gen) const {
@@ -1157,6 +1165,7 @@ void CodeBreakGenerator::Init(const Graph *graph, const GraphAnalyzer &analyzer)
   outputs_optimize_.inputs = info.outputs_optimize_.inputs;
   outputs_optimize_.outputs = info.outputs_optimize_.outputs;
   outputs_optimize_.operations = info.outputs_optimize_.operations;
+  replaced_nodes_ = info.replaced_nodes_;
   graph_inputs_info_.args = info.graph_inputs_.args;
   graph_inputs_info_.vargs = info.graph_inputs_.vargs;
   graph_inputs_info_.kwargs = info.graph_inputs_.kwargs;
