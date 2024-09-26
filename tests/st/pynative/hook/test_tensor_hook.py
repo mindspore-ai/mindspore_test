@@ -256,7 +256,7 @@ def test_tensor_backward_hook_handle_remove():
                                0.001)
 
 
-@arg_mark(plat_marks=['platform_gpu'],
+@arg_mark(plat_marks=['platform_ascend910b'],
           level_mark='level0',
           card_mark='allcards',
           essential_mark='essential')

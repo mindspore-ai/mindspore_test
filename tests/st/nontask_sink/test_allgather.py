@@ -48,7 +48,8 @@ class AllGatherFuncNet(nn.Cell):
         self.group = group
 
     def construct(self, x):
-        return all_gather_into_tensor(x)
+        out, _ = all_gather_into_tensor(x)
+        return out
 
 
 def test_hccl_all_gather_into_tensor_8p():
@@ -85,5 +86,5 @@ def test_hccl_all_gather_into_tensor_func_8p():
     """
     x = np.ones([3, 4]).astype(np.float32)
     expect_output = np.ones([24, 4]).astype(np.float32)
-    output = all_gather_into_tensor(Tensor(x, mstype.float32))
+    output, _ = all_gather_into_tensor(Tensor(x, mstype.float32))
     assert np.allclose(output.asnumpy(), expect_output)

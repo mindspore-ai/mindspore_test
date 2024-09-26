@@ -22,6 +22,7 @@ from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore.ops import operations as P
 import mindspore.communication.management as D
+from mindspore.communication.comm_func import all_reduce
 from mindspore import context
 from mindspore.context import ParallelMode
 
@@ -34,19 +35,17 @@ class AllReduceNet(nn.Cell):
     def __init__(self):
         super(AllReduceNet, self).__init__()
         self.mul = P.Mul()
-        self.all_reduce = P.AllReduce()
+        self.all_reduce = all_reduce
         self.add = P.Add()
 
     def construct(self, x):
         x = self.mul(x, 2)
         y1 = Tensor(np.array([[2, 2, 2, 2], [2, 2, 2, 2], [2, 2, 2, 2]])).astype(np.float32)
         z = self.add(x, y1)
-        z, h1 = self.all_reduce(z)
+        z, _ = self.all_reduce(z)
         y2 = Tensor(np.array([[-16, -16, -16, -16], [-16, -16, -16, -16], [-16, -16, -16, -16]])).astype(np.float32)
-        h1.wait()
         out = self.add(z, y2)
-        out, h2 = self.all_reduce(out)
-        h2.wait()
+        out, _ = self.all_reduce(out)
         out = self.mul(out, 2)
         return out
 

@@ -24,11 +24,6 @@ from mindspore.communication.management import get_rank, get_group_size, GlobalC
 from mindspore.common import dtype as mstype
 from mindspore.ops.primitive import PrimitiveWithInfer, PrimitiveWithCheck, Primitive, prim_attr_register
 from mindspore.common.api import context
-from mindspore._c_expression import (pyboost_inner_comm_irecv, pyboost_inner_comm_isend, pyboost_inner_comm_all_reduce,
-                                     pyboost_inner_comm_all_gather, pyboost_inner_comm_all_to_all_v,
-                                     pyboost_inner_comm_reduce_scatter)
-from mindspore.common._stub_tensor import _convert_stub
-from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
 
 
 class ReduceOp:
@@ -195,10 +190,6 @@ class AllReduce(Primitive):
         self.add_prim_attr('fusion', 0)
         self.add_prim_attr('index', 0)
         self.add_prim_attr('no_eliminate', True)
-
-    def __call__(self, x):
-        out, handle = pyboost_inner_comm_all_reduce(self, [x, self.op, self.group])
-        return (_convert_stub(out), handle)
 
 
 class Reduce(PrimitiveWithInfer):
@@ -384,10 +375,6 @@ class AllGather(PrimitiveWithInfer):
     def infer_dtype(self, x_dtype):
         check_collective_target_dtype('x', x_dtype, self.name)
         return x_dtype
-
-    def __call__(self, x):
-        out, handle = pyboost_inner_comm_all_gather(self, [x, self.rank_size, self.group])
-        return (_convert_stub(out), handle)
 
 
 class _MiniStepAllGather(PrimitiveWithInfer):
@@ -601,10 +588,6 @@ class ReduceScatter(Primitive):
         self.add_prim_attr('group', self.group)
         self.add_prim_attr('fusion', 0)
         self.add_prim_attr('no_eliminate', True)
-
-    def __call__(self, x):
-        out, handle = pyboost_inner_comm_reduce_scatter(self, [x, self.rank_size, self.op, self.group])
-        return (_convert_stub(out), handle)
 
 
 class _HostReduceScatter(PrimitiveWithInfer):
@@ -1442,13 +1425,6 @@ class Send(PrimitiveWithInfer):
     def infer_dtype(self, x_dtype):
         return x_dtype
 
-    def __call__(self, x):
-        out, handle = pyboost_inner_comm_isend(self, [x, self.rank, self.group, self.sr_tag])
-        return (_convert_stub(out), handle)
-
-
-dtype_to_type_id = DtypeToEnum()
-
 
 class Receive(PrimitiveWithInfer):
     """
@@ -1538,11 +1514,6 @@ class Receive(PrimitiveWithInfer):
 
     def infer_dtype(self, x_dtype=None):
         return self.get_attr_dict()['dtype']
-
-    def __call__(self, x):
-        out, handle = pyboost_inner_comm_irecv(self, [x, self.tag, self.rank, self.shape, self.group,
-                                                      dtype_to_type_id('InnerCommIrecv', 'dtype', self.dtype)])
-        return (_convert_stub(out), handle)
 
 
 class _MirrorOperator(PrimitiveWithInfer):
@@ -2014,8 +1985,3 @@ class AlltoAllV(PrimitiveWithInfer):
         self.add_prim_attr('group', self.group)
         self.add_prim_attr('send_numel_list', send_numel_list)
         self.add_prim_attr('recv_numel_list', recv_numel_list)
-
-    def __call__(self, x):
-        out, handle = pyboost_inner_comm_all_to_all_v(self, [x, self.group, self.send_numel_list, self.recv_numel_list,
-                                                             self.rank_size, self.split_sizes_empty])
-        return (_convert_stub(out), handle)

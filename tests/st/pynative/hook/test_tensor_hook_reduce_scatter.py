@@ -16,6 +16,7 @@ import numpy as np
 import mindspore.nn as nn
 import mindspore as ms
 from mindspore.communication.management import init, get_rank
+from mindspore.communication.comm_func import reduce_scatter_tensor
 from mindspore import Tensor, Parameter
 from mindspore import ops
 from tests.st.pynative.utils import GradOfAllParams
@@ -23,15 +24,13 @@ from tests.st.pynative.utils import GradOfAllParams
 np.random.seed(1)
 
 init()
-reduce_scatter_op = ops.ReduceScatter(ops.ReduceOp.SUM)
 
 
 def hook_fn(grad_out):
     """改变梯度"""
     print("hook_fn print grad_out:", grad_out, flush=True)  # 该梯度是传播到该tensor时，该tensor所对应的梯度
-    output = reduce_scatter_op(grad_out)
-    output[1].wait()
-    return output[0]
+    output, _ = reduce_scatter_tensor(grad_out, ops.ReduceOp.SUM)
+    return output
 
 
 class Net(nn.Cell):
