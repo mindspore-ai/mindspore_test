@@ -2637,6 +2637,32 @@ bool AttachCommTupleNodeToFA(const std::map<int, std::vector<AnfNodePtr>> &index
   }
   return true;
 }
+
+void ProcessIndexMakeTupleInputMap(const AnfNodePtr &node, const CNodePtr &forward_cnode,
+                                   const NodeUsersMap &node_users_map, const std::string &origin_index,
+                                   std::map<int, std::vector<AnfNodePtr>> *index_make_tuple_input_map,
+                                   FuncGraphPtr *grad_graph) {
+  MS_LOG(INFO) << "Start to Handle the RA/FlashSP Send/Recv grad attaching for the forward comm node: "
+               << forward_cnode->DebugString();
+  auto comm_bprop_get_item = GetDoutGetItemByFuncGraphNode(node, node_users_map);
+  MS_EXCEPTION_IF_NULL(comm_bprop_get_item);
+  if (index_make_tuple_input_map->find(GetFaIndex(origin_index)) == index_make_tuple_input_map->end()) {
+    int fa_index = GetFaIndex(origin_index);
+    std::vector<AnfNodePtr> new_make_tuple_input = {NewValueNode(prim::kPrimMakeTuple), comm_bprop_get_item};
+    index_make_tuple_input_map->insert({fa_index, new_make_tuple_input});
+  } else {
+    auto &make_tuple_input = index_make_tuple_input_map->at(GetFaIndex(origin_index));
+    make_tuple_input.emplace_back(comm_bprop_get_item);
+  }
+  MS_LOG(INFO) << "Find the comm bprop getitem node to be attached: " << comm_bprop_get_item->DebugString()
+               << ", the corresponding forward node: " << forward_cnode->DebugString();
+  if (*grad_graph == nullptr) {
+    *grad_graph = comm_bprop_get_item->func_graph();
+  } else if (*grad_graph != comm_bprop_get_item->func_graph()) {
+    MS_LOG(EXCEPTION) << "Got Wrong Grad graph when attaching RA/FlashSP Send/Recv grad.";
+  }
+}
+
 bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) {
   if (root->has_flag(FLASH_SP_SEND_RECV_HAS_ATTACHED)) {
     return false;
@@ -2691,25 +2717,8 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
     if (!IsPrimitiveCNode(forward_cnode, prim::kPrimReceive) && !IsPrimitiveCNode(forward_cnode, prim::kPrimSend)) {
       continue;
     }
-    MS_LOG(INFO) << "Start to Handle the RA/FlashSP Send/Recv grad attaching for the forward comm node: "
-                 << forward_cnode->DebugString();
-    auto comm_bprop_get_item = GetDoutGetItemByFuncGraphNode(node, node_users_map);
-    MS_EXCEPTION_IF_NULL(comm_bprop_get_item);
-    if (index_make_tuple_input_map.find(GetFaIndex(origin_index)) == index_make_tuple_input_map.end()) {
-      int fa_index = GetFaIndex(origin_index);
-      std::vector<AnfNodePtr> new_make_tuple_input = {NewValueNode(prim::kPrimMakeTuple), comm_bprop_get_item};
-      index_make_tuple_input_map.insert({fa_index, new_make_tuple_input});
-    } else {
-      auto &make_tuple_input = index_make_tuple_input_map.at(GetFaIndex(origin_index));
-      make_tuple_input.emplace_back(comm_bprop_get_item);
-    }
-    MS_LOG(INFO) << "Find the comm bprop getitem node to be attached: " << comm_bprop_get_item->DebugString()
-                 << ", the corresponding forward node: " << forward_cnode->DebugString();
-    if (grad_graph == nullptr) {
-      grad_graph = comm_bprop_get_item->func_graph();
-    } else if (grad_graph != comm_bprop_get_item->func_graph()) {
-      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Got Wrong Grad graph when attaching RA/FlashSP Send/Recv grad.";
-    }
+    ProcessIndexMakeTupleInputMap(node, forward_cnode, node_users_map, origin_index, &index_make_tuple_input_map,
+                                  &grad_graph);
   }
 
   if (index_fa_input_bprop_getitem_map.empty()) {

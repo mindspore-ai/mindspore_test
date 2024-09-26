@@ -843,7 +843,6 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
         << "The inputs size " << inputs_values.size() << ", is not equal to inputs shape size "
         << op_info->inputs_tensor_info().size();
     }
-
   } else {
     if (inputs_values.size() != op_info->inputs_tensor_info_new()[index - 1]->size()) {
       MS_LOG_WITH_NODE(EXCEPTION, next_node)

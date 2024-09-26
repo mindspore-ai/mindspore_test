@@ -84,6 +84,9 @@ class MatMul : public MatMulBase {
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
 
  private:
+  void ProcessMatMulLeftInput(const std::vector<Group> &x_group_list, const AnfNodePtr &matmul_actual_input_node,
+                              const size_t &all_gather_tensor_axis, const CNodePtr &cnode, GenerateGraph *gen_g,
+                              AnfNodePtr *x_all_gather, AnfNodePtr *matmul_left_input);
   AnfNodePtr GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNodePtr &square_actual_input_node,
                                        GenerateGraph *gen_g, std::vector<std::pair<AnfNodePtr, int64_t>> *input_nodes);
   Status ComputeNDTPReplaceGraph(const CNodePtr &cnode);

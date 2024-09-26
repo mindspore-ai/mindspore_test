@@ -1131,6 +1131,30 @@ std::shared_ptr<Strategies> BatchMatMulInfo::GenerateBatchStrategies() {
 
 Status MatMulBase::SetCostUnderStrategy(const StrategyPtr &strategy) { return SetCostUnderStrategyBase(strategy); }
 
+void MatMul::ProcessMatMulLeftInput(const std::vector<Group> &x_group_list, const AnfNodePtr &matmul_actual_input_node,
+                                    const size_t &all_gather_tensor_axis, const CNodePtr &cnode, GenerateGraph *gen_g,
+                                    AnfNodePtr *x_all_gather, AnfNodePtr *matmul_left_input) {
+  bool x_flag = !x_group_list.empty();
+  if (x_flag) {
+    OperatorAttrs all_gather_attrs;
+    Attr attr_group = std::make_pair(GROUP, MakeValue(x_group_list[kIndex0].name()));
+    all_gather_attrs.push_back(attr_group);
+    if (matmul_actual_input_node == nullptr) {
+      *x_all_gather = gen_g->PushBack({gen_g->NewOpInst(ALL_GATHER, all_gather_attrs), gen_g->virtual_input_node()});
+    } else {
+      *x_all_gather = gen_g->PushBack({gen_g->NewOpInst(ALL_GATHER, all_gather_attrs), matmul_actual_input_node});
+    }
+    *matmul_left_input = this->ComputePreAllGatherGraph(cnode, gen_g, x_group_list, SizeToLong(all_gather_tensor_axis),
+                                                        *x_all_gather, transpose_a_);
+  } else {
+    if (matmul_actual_input_node == nullptr) {
+      *matmul_left_input = gen_g->virtual_input_node();
+    } else {
+      *matmul_left_input = matmul_actual_input_node;
+    }
+  }
+}
+
 AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNodePtr &matmul_actual_input_node,
                                              GenerateGraph *gen_g,
                                              std::vector<std::pair<AnfNodePtr, int64_t>> *input_nodes) {
@@ -1181,24 +1205,8 @@ AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNod
   AnfNodePtr matmul_right_input;
   AnfNodePtr x_all_gather;
   AnfNodePtr z_all_gather;
-  if (x_flag) {
-    OperatorAttrs all_gather_attrs;
-    Attr attr_group = std::make_pair(GROUP, MakeValue(x_group_list[kIndex0].name()));
-    all_gather_attrs.push_back(attr_group);
-    if (matmul_actual_input_node == nullptr) {
-      x_all_gather = gen_g->PushBack({gen_g->NewOpInst(ALL_GATHER, all_gather_attrs), gen_g->virtual_input_node()});
-    } else {
-      x_all_gather = gen_g->PushBack({gen_g->NewOpInst(ALL_GATHER, all_gather_attrs), matmul_actual_input_node});
-    }
-    matmul_left_input = this->ComputePreAllGatherGraph(cnode, gen_g, x_group_list, SizeToLong(all_gather_tensor_axis),
-                                                       x_all_gather, transpose_a_);
-  } else {
-    if (matmul_actual_input_node == nullptr) {
-      matmul_left_input = gen_g->virtual_input_node();
-    } else {
-      matmul_left_input = matmul_actual_input_node;
-    }
-  }
+  ProcessMatMulLeftInput(x_group_list, matmul_actual_input_node, all_gather_tensor_axis, cnode, gen_g, &x_all_gather,
+                         &matmul_left_input);
   if (z_flag) {
     OperatorAttrs all_gather_attrs;
     Attr attr_group = std::make_pair(GROUP, MakeValue(z_group_list[kIndex0].name()));

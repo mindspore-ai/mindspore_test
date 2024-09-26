@@ -59,8 +59,8 @@ class OffloadingPackedExpertInfo {
   }
 
  private:
-  int64_t expert_num_;
-  int64_t pe_num_;
+  int64_t expert_num_ = 0;
+  int64_t pe_num_ = 0;
   std::vector<int64_t> front_reorder_experts_idx_;
   std::vector<int64_t> back_reorder_experts_idx_;
 
