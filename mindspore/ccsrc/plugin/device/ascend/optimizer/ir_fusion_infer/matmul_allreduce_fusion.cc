@@ -34,7 +34,7 @@
 #include "ir/anf.h"
 #include "utils/phase.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/matmul_allreduce_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
 
 namespace mindspore::opt {
 enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
