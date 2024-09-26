@@ -3953,20 +3953,51 @@ static void ParallelPartProcess(const std::vector<AnfNodePtr> &all_nodes, const 
   return;
 }
 
-Status LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
+void SaveStrategyToFile(const std::vector<AnfNodePtr> &all_nodes) {
+  if (!StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn() || !CheckShardingPropagation()) {
+    return;
+  }
+  StrategyMap stra_map;
+  StrategyMap out_stra_map;
+
+  for (auto &node : all_nodes) {
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode == nullptr) {
+      continue;
+    }
+    std::string strategy_key_name = cnode->fullname_with_scope();
+    OperatorInfoPtr op = cnode->user_data<OperatorInfo>();
+    if (op == nullptr) {
+      continue;
+    }
+    StrategyPtr s_strategy = op->selected_strategy();
+    if (s_strategy != nullptr) {
+      stra_map[strategy_key_name] = s_strategy;
+    }
+    StrategyPtr o_strategy = op->out_strategy();
+    if (o_strategy != nullptr) {
+      out_stra_map[strategy_key_name] = o_strategy;
+    }
+  }
+  if (StrategyCheckpoint::GetInstance().SaveAutoOpStrategy(stra_map, out_stra_map) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Save strategy checkpoint failed";
+  }
+  MS_LOG(INFO) << "Success save strategies to file.";
+}
+
+void LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
+  if (!StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
+    return;
+  }
   StrategyMap stra_map;
   StrategyMap out_stra_map;
   if ((StrategyCheckpoint::GetInstance().LoadAutoOpStrategy(&stra_map, &out_stra_map) != SUCCESS)) {
-    return FAILED;
+    return;
   }
   MS_LOG(INFO) << "Load strategies map from json successfully";
   SetStridedSliceSplitStrategy(all_nodes);
   for (auto &node : all_nodes) {
     auto cnode = node->cast<CNodePtr>();
-    if (cnode == nullptr) {
-      MS_LOG(INFO) << "This node is not a cnode";
-      continue;
-    }
     if (!CheckExtractInformation(cnode) || IsPrimitiveCNode(node, prim::kPrimSend)) {
       continue;
     }
@@ -3975,10 +4006,17 @@ Status LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
     OperatorInfoPtr operator_info = CreateOperatorInfo(cnode);
     MS_EXCEPTION_IF_NULL(operator_info);
 
+    ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
+    PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+
+    if (prim->name() == RESHAPE) {
+      cnode->set_user_data<OperatorInfo>(operator_info);
+      continue;
+    }
+
     std::string strategy_key_name = cnode->fullname_with_scope();
     if (stra_map.find(strategy_key_name) == stra_map.end()) {
-      MS_LOG(INFO) << "Not found strategy for " << strategy_key_name;
-      return FAILED;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Not found strategy for " << strategy_key_name;
     }
     StrategyPtr s_strategy = stra_map[strategy_key_name];
     operator_info->SetSelectedStrategy(s_strategy, 0);
@@ -3992,18 +4030,15 @@ Status LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
     if (initRet == SUCCESS) {
       MS_LOG(INFO) << "Init selected strategy succeeded.";
     } else {
-      MS_LOG(INFO) << "Init selected strategy failed.";
-      return initRet;
+      MS_LOG(EXCEPTION) << "Init selected strategy failed.";
     }
     cnode->set_user_data<OperatorInfo>(operator_info);
+    cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
   }
   MS_LOG(INFO) << "End load strategies from file";
-  return SUCCESS;
 }
 
 bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) {
-  MSLogTime msTime;
-  msTime.Start();
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
     return false;
@@ -4012,7 +4047,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   MS_EXCEPTION_IF_NULL(root);
   MS_EXCEPTION_IF_NULL(ParallelContext::GetInstance());
   std::string parallel_mode = ParallelContext::GetInstance()->parallel_mode();
-  bool loadOn = StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn();
+  bool load_strategy_on = StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn();
   HandleDataParallel();
   FuncGraphManagerPtr manager;
   pipeline::ResourceBasePtr res;
@@ -4045,6 +4080,8 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     return changes;
   }
 
+  MSLogTime msTime;
+  msTime.Start();
   DumpGraph(root, std::string(STEP_PARALLEL_BEGIN));
   RecordFlopsOriginShape(manager);
   AnfNodePtr ret = root->get_return();
@@ -4056,7 +4093,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     all_nodes = TopoSort(ret, SuccDeeperSimple);
   }
   if (pipeline_stages <= 1) {
-    if (parallel_mode != kAutoParallel || loadOn) {
+    if (parallel_mode != kAutoParallel || load_strategy_on) {
       if (ParallelInit() != SUCCESS) {
         MS_LOG_WITH_NODE(EXCEPTION, ret) << "Parallel init failed";
       }
@@ -4072,7 +4109,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   // tag dynamic shape graph
   TagDynamicShapeFuncGraph(root);
   UpdateMicroBatchInterleavedStatus(all_nodes);
-  if (parallel_mode != kAutoParallel) {
+  if (load_strategy_on || parallel_mode != kAutoParallel) {
     TOTAL_OPS = 0;
     ExceptionIfHasCommunicationOp(all_nodes);
 
@@ -4084,25 +4121,13 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     }
   }
 
-  if (loadOn) {
-    TOTAL_OPS = 0;
-    ExceptionIfHasCommunicationOp(all_nodes);
-
-    if (IsInsertVirtualOutput(root)) {
-      InsertVirtualOutput(root, all_nodes);
-      AnfNodePtr ret_after = root->get_return();
-      MS_EXCEPTION_IF_NULL(ret_after);
-      all_nodes = TopoSort(ret_after, SuccDeeperSimple);
-    }
-
-    if (LoadStrategyFromFile(all_nodes) == SUCCESS) {
-      MS_LOG(ERROR) << "Load strategies successfully.";
-    }
-  } else if (parallel_mode != kAutoParallel || CheckShardingPropagation()) {
+  LoadStrategyFromFile(all_nodes);
+  if (!load_strategy_on && (parallel_mode != kAutoParallel || CheckShardingPropagation())) {
     // semi: extract shape and strategy, set operator_info
     // auto: create opInfo for step parallel generated op and reset cnode for existing ones
     ExtractInformation(all_nodes);
   }
+  SaveStrategyToFile(all_nodes);
 
   ParallelPartProcess(all_nodes, root, manager);
   BroadcastLastResult(root, manager);

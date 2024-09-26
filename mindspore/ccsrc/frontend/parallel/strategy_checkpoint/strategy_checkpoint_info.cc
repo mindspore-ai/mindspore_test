@@ -193,6 +193,9 @@ void StrategyJsonInfo::FromJson(const nlohmann::json &stra_json_info_j) {
     auto stra = stra_j.value().at("parallel_strategy").get<std::vector<std::vector<int64_t>>>();
     strategy_map_[node_name] = std::make_shared<Strategy>(stage, stra);
   }
+  if (!stra_json_info_j.contains("parallel_out_strategy_item")) {
+    return;
+  }
   for (const auto &stra_j : stra_json_info_j.at("parallel_out_strategy_item").items()) {
     auto node_name = stra_j.key();
     auto stage = stra_j.value().at("stage").get<int64_t>();
