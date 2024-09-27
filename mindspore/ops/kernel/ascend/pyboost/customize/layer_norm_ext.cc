@@ -43,7 +43,7 @@ void LayerNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const Base
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
     [op, input_tensor, normalized_shape_vector, weight_opt_tensor, bias_opt_tensor, eps_imm]() {
-      MS_LOG(DEBUG) << "Run device task Add start";
+      MS_LOG(DEBUG) << "Run device task LayerNormExt start";
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
       // Malloc for input tensors
@@ -53,7 +53,7 @@ void LayerNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const Base
 
       LAUNCH_ACLNN(aclnnLayerNorm, device_context, op->stream_id(), input_tensor, normalized_shape_vector,
                    weight_opt_tensor, bias_opt_tensor, eps_imm, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
-      MS_LOG(DEBUG) << "Run device task Add end";
+      MS_LOG(DEBUG) << "Run device task LayerNormExt end";
     }));
 }
 }  // namespace pyboost
