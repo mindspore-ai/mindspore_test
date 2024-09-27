@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ir/memory_overlap.h"
-
+#include "ops_utils/memory_overlap.h"
 #include "ir/base_tensor.h"
-namespace mindspore {
 
+namespace mindspore {
 MemOverlap IsInternalOverlap(const BaseTensorPtr &variable_tensor) {
   // For tensor is not type of view, never has overlap in tensor.
   if (variable_tensor->storage_info() == nullptr) {
@@ -25,8 +24,11 @@ MemOverlap IsInternalOverlap(const BaseTensorPtr &variable_tensor) {
   }
 
   // For broadcast_to case, there is overlap in tensor of course.
-  auto strides = variable_tensor->storage_info()->strides;
-  auto shape = variable_tensor->storage_info()->shape;
+  const auto &strides = variable_tensor->storage_info()->strides;
+  const auto &shape = variable_tensor->storage_info()->shape;
+  if (strides.size() != shape.size()) {
+    MS_LOG(EXCEPTION) << "Size of strides and shape are not equal:" << strides.size() << ", " << shape.size();
+  }
   for (uint32_t i = 0; i < strides.size(); i++) {
     if (shape[i] > 1 && strides[i] == 0) {
       return MemOverlap::Yes;

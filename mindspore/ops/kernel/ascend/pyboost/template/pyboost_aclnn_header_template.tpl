@@ -20,7 +20,7 @@
 #include "kernel/common/pyboost/auto_generate/${operator_name}.h"
 #include "ir/tensor.h"
 #include "ir/scalar.h"
-#include "ir/memory_overlap.h"
+#include "mindspore/ops/ops_utils/memory_overlap.h"
 
 namespace mindspore {
 namespace kernel {
