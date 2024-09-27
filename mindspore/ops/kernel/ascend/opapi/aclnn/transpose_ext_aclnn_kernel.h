@@ -36,7 +36,7 @@ class TransposeExtAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  std::vector<int64_t> input_perm_;
+  std::vector<int64_t> input_perm_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

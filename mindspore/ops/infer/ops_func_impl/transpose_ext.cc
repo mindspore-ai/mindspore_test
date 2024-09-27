@@ -46,6 +46,10 @@ BaseShapePtr TransposeExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   auto dim0 = dim0_opt.value();
   auto dim1 = dim1_opt.value();
+  // if x is a scalar tensor, then dim must be in the range [-1, 0].
+  if (x_rank <= 0) {
+    x_rank = 1;
+  }
   MS_CHECK_VALUE(dim0 >= -x_rank && dim0 < x_rank,
                  CheckAndConvertUtils::FormatCheckInRangeMsg("dim0", dim0, kIncludeLeft, {-x_rank, x_rank}, primitive));
   MS_CHECK_VALUE(dim1 >= -x_rank && dim1 < x_rank,

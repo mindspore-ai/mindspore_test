@@ -38,6 +38,10 @@ TensorStorageInfoPtrList TransposeExtCalc(const PrimitivePtr &prim, const std::v
   auto oldStrides = old_tensor_info->old_strides;
   auto oldStorageOffset = old_tensor_info->old_offset;
   int64_t dim_size = SizeToLong(oldShape.size());
+  // if x is a scalar tensor, then dim must be in the range [-1, 0].
+  if (dim_size <= 0) {
+    dim_size = 1;
+  }
   MS_CHECK_VALUE(dim0 >= -dim_size && dim0 < dim_size,
                  CheckAndConvertUtils::FormatCheckInRangeMsg("dim0", dim0, kIncludeLeft, {-dim_size, dim_size}, prim));
   MS_CHECK_VALUE(dim1 >= -dim_size && dim1 < dim_size,
