@@ -105,7 +105,6 @@
     mindspore.Tensor.conj
     mindspore.Tensor.contiguous
     mindspore.Tensor.copy
-    mindspore.Tensor.copy_
     mindspore.Tensor.copysign
     mindspore.Tensor.cos
     mindspore.Tensor.cosh
