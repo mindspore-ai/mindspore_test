@@ -15,6 +15,7 @@
 import os
 from tests.mark_utils import arg_mark
 
+os.environ['HCCL_IF_BASE_PORT'] = '30000'
 
 @arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
 def test_graph_mode_parallel_complex_input():

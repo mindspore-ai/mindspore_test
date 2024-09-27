@@ -18,6 +18,11 @@ import mindspore as ms
 from mindspore import nn, ops
 import mindspore.communication as D
 
+import os
+
+os.environ['HCCL_IF_BASE_PORT'] = '30000'
+
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -33,6 +38,8 @@ def test_graph_mode():
     Description: graph mode
     Expectation: Run success
     '''
+    print(f"env 'HCCL_IF_BASE_PORT' is {os.environ['HCCL_IF_BASE_PORT']}")
+
     ms.set_context(mode=ms.GRAPH_MODE)
     ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL, dataset_strategy="full_batch")
     # Parallel in the case of complex input only supports KernelByKernel mode by now. So we set 'jit_level' to 'O0'.
