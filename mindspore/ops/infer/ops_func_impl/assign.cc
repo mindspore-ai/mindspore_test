@@ -19,25 +19,24 @@
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
-BaseShapePtr AssignFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                        const std::vector<AbstractBasePtr> &input_args) const {
+ShapeArray AssignFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   auto prim_name = primitive->name();
-  auto variable_shape_ptr = input_args[kIndex0]->GetShape();
-  auto value_shape_ptr = input_args[kIndex1]->GetShape();
-  if (variable_shape_ptr->IsDynamic()) {
-    return variable_shape_ptr->Clone();
+  auto &variable = input_infos[kIndex0];
+  auto &value = input_infos[kIndex1];
+  const auto &variable_shape = variable->GetShape();
+  const auto &value_shape = value->GetShape();
+  if (variable->IsDynamic()) {
+    return {variable_shape};
   }
-  if (value_shape_ptr->IsDynamic()) {
-    return value_shape_ptr->Clone();
+  if (value->IsDynamic()) {
+    return {value_shape};
   }
 
-  auto variable_shape = variable_shape_ptr->GetShapeVector();
-  auto value_shape = value_shape_ptr->GetShapeVector();
   if (variable_shape.size() != value_shape.size()) {
     if (variable_shape.size() == 1 && variable_shape[0] == 1 && value_shape.empty()) {
-      return variable_shape_ptr->Clone();
+      return {variable_shape};
     } else if (value_shape.size() == 1 && value_shape[0] == 1 && variable_shape.empty()) {
-      return variable_shape_ptr->Clone();
+      return {variable_shape};
     } else {
       MS_EXCEPTION(ValueError) << "For '" << prim_name
                                << "','value' must have the same rank as 'variable'. But got 'value' rank: "
@@ -49,16 +48,16 @@ BaseShapePtr AssignFuncImpl::InferShape(const PrimitivePtr &primitive,
     if (variable_shape[i] != value_shape[i]) {
       MS_EXCEPTION(ValueError) << "For '" << prim_name
                                << "','value' must have the same shape as 'variable'. But got 'value' shape: "
-                               << value_shape_ptr->ToString()
-                               << ", 'variable' shape: " << variable_shape_ptr->ToString() << ".";
+                               << ShapeVectorToStr(value_shape)
+                               << ", 'variable' shape: " << ShapeVectorToStr(variable_shape) << ".";
     }
   }
 
-  return variable_shape_ptr->Clone();
+  return {variable_shape};
 }
 
-TypePtr AssignFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  auto variable_type_ptr = input_args[kIndex0]->GetType();
-  return variable_type_ptr->Clone();
+std::vector<TypeId> AssignFuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex0]->GetType()};
 }
 }  // namespace mindspore::ops
