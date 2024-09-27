@@ -159,14 +159,11 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
       MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
     use_lccl_ = isSupportLccl(group_, kernel_name_, lccl_enabled_groups);
     if (use_lccl_) {
-      MS_LOG(WARNING) << "Loading LCCL for kernel: " << kernel_name_ << ", in group: " << group_;
       LoadLcclLibrary();
     } else {
-      MS_LOG(WARNING) << "Loading HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
       LoadHcclLibrary();
     }
 #else
-    MS_LOG(WARNING) << "Loading HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
     LoadHcclLibrary();
 #endif
   }
