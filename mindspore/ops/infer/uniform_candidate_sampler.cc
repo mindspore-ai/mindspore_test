@@ -59,10 +59,9 @@ abstract::TupleShapePtr UCSInferShape(const PrimitivePtr &primitive, const std::
 
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  bool is_ascend = (context->ascend_soc_version() == kAscendVersion910);
+  bool is_ascend = (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
   if (is_ascend && IsDynamic(input_shape)) {
-    MS_EXCEPTION(ValueError)
-      << "UniformCandidateSampler does not support dynamic shape scenarios on Ascend Atlas training series currently.";
+    MS_EXCEPTION(ValueError) << "UniformCandidateSampler does not support dynamic shape scenarios on Ascend currently.";
   }
 
   if (IsDynamicRank(input_shape)) {
