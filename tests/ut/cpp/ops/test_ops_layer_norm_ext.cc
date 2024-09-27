@@ -38,9 +38,7 @@ struct LayerNormExtOpParams {
   ShapeVector output_x_shape;
   TypePtr output_x_type;
   ShapeVector mean_shape;
-  TypePtr mean_type;
   ShapeVector rstd_shape;
-  TypePtr rstd_type;
 };
 
 class TestLayerNormExt : public TestOps, public testing::WithParamInterface<LayerNormExtOpParams> {};
@@ -76,18 +74,12 @@ TEST_P(TestLayerNormExt, layer_norm_ext_dyn_shape) {
   ASSERT_NE(expect_output_x_type, nullptr);
   auto expect_mean_shape = std::make_shared<abstract::TensorShape>(param.mean_shape);
   ASSERT_NE(expect_mean_shape, nullptr);
-  auto expect_mean_type = std::make_shared<TensorType>(param.mean_type);
-  ASSERT_NE(expect_mean_type, nullptr);
   auto expect_rstd_shape = std::make_shared<abstract::TensorShape>(param.rstd_shape);
   ASSERT_NE(expect_rstd_shape, nullptr);
-  auto expect_rstd_type = std::make_shared<TensorType>(param.rstd_type);
-  ASSERT_NE(expect_rstd_type, nullptr);
   ASSERT_TRUE(*((*infer_shapes)[0]) == *expect_output_x_shape);
   ASSERT_TRUE(*((*infer_shapes)[1]) == *expect_mean_shape);
   ASSERT_TRUE(*((*infer_shapes)[2]) == *expect_rstd_shape);
   ASSERT_TRUE(*((*infer_types)[0]) == *expect_output_x_type);
-  ASSERT_TRUE(*((*infer_types)[1]) == *expect_mean_type);
-  ASSERT_TRUE(*((*infer_types)[2]) == *expect_rstd_type);
 }
 
 INSTANTIATE_TEST_CASE_P(TestLayerNormExtGroup, TestLayerNormExt,
@@ -102,9 +94,7 @@ INSTANTIATE_TEST_CASE_P(TestLayerNormExtGroup, TestLayerNormExt,
                                                              {-2},
                                                              kFloat32,
                                                              {-2},
-                                                             kFloat32,
-                                                             {-2},
-                                                             kFloat32},
+                                                             {-2}},
                                         LayerNormExtOpParams{{2, 3, 4},
                                                              kFloat32,
                                                              CreateTuple({I64(3), I64(4)}),
@@ -116,8 +106,6 @@ INSTANTIATE_TEST_CASE_P(TestLayerNormExtGroup, TestLayerNormExt,
                                                              {2, 3, 4},
                                                              kFloat32,
                                                              {2, 1, 1},
-                                                             kFloat32,
-                                                             {2, 1, 1},
-                                                             kFloat32}));
+                                                             {2, 1, 1}}));
 }  // namespace ops
 }  // namespace mindspore

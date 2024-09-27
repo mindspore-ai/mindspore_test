@@ -93,17 +93,15 @@ TypePtr LayerNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
   CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, input_num, op_name);
 
   auto input_type = input_args[kInputIndex0]->GetType();
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
   std::vector<TypePtr> types_list;
-  types_list = {input_type, input_type, input_type};
+  types_list = {input_type, kFloat32, kFloat32};
   return std::make_shared<Tuple>(types_list);
 }
 
 TypePtrList LayerNormExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  return {x_tensor->Dtype(), x_tensor->Dtype(), x_tensor->Dtype()};
+  return {x_tensor->Dtype(), kFloat32, kFloat32};
 }
 
 ShapeArray LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
