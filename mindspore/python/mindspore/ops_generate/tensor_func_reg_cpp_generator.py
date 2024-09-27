@@ -42,7 +42,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.TENSOR_FUNC_CALL_BODY = template.TENSOR_FUNC_CALL_BODY
         self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG = template.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG
 
-    def generate(self, work_path, func_protos_data: dict[str, list[TensorFuncProto]], op_protos):
+    def generate(self, work_path, func_protos_data: dict[str, list[TensorFuncProto]]):
         func_header_body_str = ''
         func_call_body_str = ''
         func_def_body_str = ''
@@ -62,7 +62,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 func_def_body_str += self.func_def_reg.replace(func_name=func_name,
                                                                class_name=func_name.capitalize())
                 # Process overload cases
-                func_call_body_str += self._get_overload_func_call_body(func_name, func_protos)
+                # func_call_body_str += self._get_overload_func_call_body(func_name, func_protos)
                 func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(
                     class_name=func_name.capitalize())
 
@@ -72,51 +72,5 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.h", func_header_reg)
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.cc", func_cc_reg)
 
-    def _get_overload_func_call_body(self, func_name, func_protos):
-        self.func_signatures_template = Template(
-            'static PythonArgParser parser({\n'
-            '  ${signatures}});')
-        self.signature_template = Template("\"$func_name(${args})\"")
-
-        self.func_dispatch_template = Template(
-            'switch (converter.index_){\n'
-            '  ${dispatch}\n'
-            '}\n')
-
-        self.dispatch_case_template = Template(
-            'case ${index}: {\n'
-            '  MS_LOG(INFO) << "Call Tensor${class_name}";'
-            '  return ToPython(Tensor${class_name}Register::GetOp()(args));'
-            '  break;}'
-        )
-        op_protos = [func_proto.op_proto for func_proto in func_protos]
-        overload_args = [op_proto.op_args for op_proto in func_protos]
-
-    def _generate_func_signature_str(self, op_proto: OpProto) -> str:
-        args_str = ''
-        first_arg = True
-        for index, arg in enumerate(op_proto.op_args):
-            single_arg = ''
-            if not first_arg:
-                single_arg = ', '
-            first_arg = False
-            arg_dtype = arg.arg_dtype
-            arg_name = arg.arg_name
-            single_arg += f"{arg_dtype} {arg_name}"
-            if arg.as_init_arg:
-                arg_default = str(arg.default)
-                single_arg += '='
-                single_arg += arg_default
-            args_str += single_arg
-        sig_str = self.signature_template.replace(func_name=op_proto.op_name, args=args_str)
-        return self.func_signatures_template.replace(signatures=sig_str)
-
-    def _generate_dispatch_str(self, op_proto: OpProto) -> str:
-        index_num = '0'
-        func_name = op_proto.op_class.name + 'Dispatcher'
-        args_str = ''
-        for index, arg in enumerate(op_proto.op_args):
-            args_str += f"{arg.arg_name}, "
-        dispatch_str = self.dispatch_case_template.replace(index=index_num,
-                                                           class_name=op_proto.op_class.name)
-        return self.func_dispatch_template.replace(dispatch=dispatch_str)
+    def _get_overload_func_call_body(self) -> str:
+        pass

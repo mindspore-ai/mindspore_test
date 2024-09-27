@@ -2858,11 +2858,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('minimum')(self, other)
 
-    def clamp(self, min=None, max=None):
-        r"""
-        For details, please refer to :func:`mindspore.ops.clamp`.
-        """
-        return tensor_operator_registry.get('clamp')(self, min, max)
 
     def clamp_(self, min=None, max=None):
         r"""

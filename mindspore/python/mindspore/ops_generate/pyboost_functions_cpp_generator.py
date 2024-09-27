@@ -138,10 +138,14 @@ class PyboostFunctionsGenerator(BaseGenerator):
 
     def _get_function_class_register(self, tensor_func_protos_data: dict[str, list[TensorFuncProto]]) -> str:
         function_class_register = ''
+        op_set = set()
         for func_name, tensor_func_protos in tensor_func_protos_data.items():
             for func_proto in tensor_func_protos:
-                function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=func_proto.op_proto.class_name,
-                                                                              op_name=func_proto.op_proto.op_name)
+                op_set.add((func_proto.op_proto.op_class.name, func_proto.op_proto.op_name))
+        for op in op_set:
+            class_name, op_name = op
+            function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,
+                                                                          op_name=op_name)
         return function_class_register
 
     def _generate_parser_func(self, op_proto: OpProto) -> str:

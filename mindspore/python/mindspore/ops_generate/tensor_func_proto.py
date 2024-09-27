@@ -26,8 +26,6 @@ class TensorFuncProto:
                  op_proto,
                  ascend, gpu, cpu):
         self.func_name = func_name
-        # self.op_name = op_name
-        # self.class_name = class_name
         self.op_proto = op_proto
         self.ascend = ascend
         self.gpu = gpu
