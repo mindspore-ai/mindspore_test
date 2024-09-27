@@ -736,7 +736,6 @@ Status TreeAdapter::Launch() {
 
     // move the receive_tree_ to tree_ and launch it
     tree_ = std::move(receive_tree_);
-
     // get the message queue id
     if (tree_->root()->Name() != kReceiveBridgeOp) {
       MS_LOG(EXCEPTION) << "The receive_tree_ root is not ReceiveBridgeOp.";
