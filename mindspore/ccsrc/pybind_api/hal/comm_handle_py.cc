@@ -33,7 +33,6 @@ CommHandlePy::~CommHandlePy() {
   runtime::Pipeline::Get().WaitForward();
   auto device_ctx = comm_handle_->device_ctx();
   auto event = comm_handle_->event();
-
   if (event == nullptr) {
     return;
   }
