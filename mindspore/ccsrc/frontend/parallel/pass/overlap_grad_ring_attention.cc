@@ -506,6 +506,11 @@ void GradFirstStepCommKV(const std::string &cur_str, std::map<std::string, AnfNo
   common::AnfAlgo::SetNodeAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(cur_str + "grad"), recv_node);
   (*grad_send_kv_map).insert({cur_str, send_node});
   (*grad_recv_kv_map).insert({cur_str, recv_node});
+  auto grad_fa_node_input = (*grad_fa_node)->input(1);
+  grad_fa_node_input = CreateDepend(grad_fa_node_input, send_node, (*grad_fa_node));
+  grad_fa_node_input = CreateDepend(grad_fa_node_input, recv_node, (*grad_fa_node));
+  auto manager = graph->manager();
+  manager->SetEdge((*grad_fa_node), 1, grad_fa_node_input);
 }
 
 void GetCommInfo(int64_t *send_rank_id, int64_t *recv_rank_id, std::shared_ptr<OperatorInfo> *operator_info,
@@ -535,17 +540,14 @@ void CreateCommForRAGrad(const FuncGraphPtr &graph, const CNodePtr &pre_grad_rec
                          TypeId output_type_id, CNodePtr *grad_fa_node, CNodePtr *grad_recv_node,
                          CNodePtr *grad_send_node, AnfNodePtr *send_node, AnfNodePtr *recv_node) {
   auto manager = graph->manager();
-  auto kv_split = NewSplitNode(pre_grad_recv_kv_node, kIndex0, kIndex2);
+  auto split_input = CreateDepend(pre_grad_recv_kv_node, last_fa_grad, *grad_send_node);
+  auto kv_split = NewSplitNode(split_input, kIndex0, kIndex2);
   auto key_node = NewTupleGetItemNode(kv_split, kIndex0);
   auto value_node = NewTupleGetItemNode(kv_split, kIndex1);
-  std::vector<AnfNodePtr> kv_nodes = {key_node, value_node};
-  auto kv_tuple = NewMakeTupleNode(kv_nodes);
-  auto kv_concat = NewConcatNode(kv_tuple, 0);
 
   key_node = CreateDepend(key_node, last_fa_grad, *grad_send_node);  // cur fa wait pre fa
-  kv_concat = CreateDepend(kv_concat, last_fa_grad, kv_concat);
   if (pos % kIndex2 == 0) {
-    kv_concat = CreateDepend(kv_concat, *grad_recv_node, *grad_send_node);
+    auto kv_concat = CreateDepend(split_input, *grad_recv_node, *grad_send_node);
     *send_node = NewSendNode(CreateDepend(kv_concat, pre_grad_recv_kv_node, *grad_send_node), 0, send_rank_id,
                              neigh_shape, output_type_id, g_device_manager->world_group());
     *recv_node =
@@ -570,7 +572,7 @@ void CreateCommForRAGrad(const FuncGraphPtr &graph, const CNodePtr &pre_grad_rec
 
     manager->Replace(*grad_fa_node, CreateDepend(*grad_fa_node, *grad_recv_node, *grad_fa_node));
   } else {
-    kv_concat = CreateDepend(kv_concat, *grad_send_node, *grad_send_node);
+    auto kv_concat = CreateDepend(split_input, *grad_send_node, *grad_send_node);
     *recv_node = NewReceiveNode(CreateDepend(kv_concat, pre_grad_send_kv_node, kv_concat), 0, recv_rank_id, neigh_shape,
                                 output_type_id, g_device_manager->world_group());
     *send_node = NewSendNode(CreateDepend(kv_concat, *recv_node, kv_concat), 0, send_rank_id, neigh_shape,
