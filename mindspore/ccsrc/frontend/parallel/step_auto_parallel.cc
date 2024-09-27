@@ -63,37 +63,6 @@
 
 namespace mindspore {
 namespace parallel {
-void SaveStrategyToFile(const std::vector<AnfNodePtr> &all_nodes) {
-  StrategyMap stra_map;
-  StrategyMap out_stra_map;
-
-  for (auto &node : all_nodes) {
-    auto cnode = node->cast<CNodePtr>();
-    if (cnode == nullptr) {
-      MS_LOG(INFO) << "This node is not a cnode";
-      continue;
-    }
-    std::string strategy_key_name = cnode->fullname_with_scope();
-    OperatorInfoPtr op = cnode->user_data<OperatorInfo>();
-    if (op == nullptr) {
-      MS_LOG(INFO) << "No ops in cnode: " << strategy_key_name;
-      continue;
-    }
-    StrategyPtr s_strategy = op->selected_strategy();
-    if (s_strategy != nullptr) {
-      stra_map[strategy_key_name] = s_strategy;
-    }
-    StrategyPtr o_strategy = op->out_strategy();
-    if (o_strategy != nullptr) {
-      out_stra_map[strategy_key_name] = o_strategy;
-    }
-  }
-  if (StrategyCheckpoint::GetInstance().SaveAutoOpStrategy(stra_map, out_stra_map) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Save strategy checkpoint failed";
-  }
-  MS_LOG(INFO) << "Success save strategies to file.";
-}
-
 void SearchParallelStrategy(const std::string &strategy_search_mode, const FuncGraphPtr &root,
                             const std::vector<AnfNodePtr> &all_nodes) {
   if ((strategy_search_mode == kDynamicProgramming) || (strategy_search_mode == kShardingPropagation)) {
@@ -107,9 +76,6 @@ void SearchParallelStrategy(const std::string &strategy_search_mode, const FuncG
     }
   } else {
     MS_LOG(EXCEPTION) << "Auto-parallel strategy searching mode unexpected: " << strategy_search_mode;
-  }
-  if (StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn()) {
-    SaveStrategyToFile(all_nodes);
   }
 }
 
@@ -126,14 +92,11 @@ bool HasCellShard(const FuncGraphPtr &func_graph) {
 }
 
 bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_search_mode, const bool is_pre_action) {
-  if (StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
-    MS_LOG(INFO) << "Load strategies, skip auto parallel.";
-    return true;
-  }
   root->set_flag(kHasShard, HasCellShard(root));
   std::string parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (root->has_flag(kSkipAutoParallelCompile) || parallel_mode != kAutoParallel ||
-      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY) || HasNestedMetaFg(root)) {
+      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY) || StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn() ||
+      HasNestedMetaFg(root)) {
     return true;
   }
 

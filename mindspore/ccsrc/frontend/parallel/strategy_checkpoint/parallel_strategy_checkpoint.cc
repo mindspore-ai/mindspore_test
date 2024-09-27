@@ -216,7 +216,7 @@ Status StrategyCheckpoint::SaveAutoOpStrategy(const StrategyMap &strategy_map, c
   if (!CheckPath(auto_op_strategy_file_)) {
     MS_LOG(EXCEPTION) << "CheckPoint file is invalid";
   }
-  strategy_json_info_.Init(strategy_map, out_strategy_map, ++current_stage_);
+  strategy_json_info_.Init(strategy_map, out_strategy_map, 0);
   auto stra_ckpt_info_j = strategy_json_info_.to_json();
   std::fstream output(auto_op_strategy_file_, std::ios::out);
   stra_ckpt_info_j >> output;
