@@ -2334,8 +2334,7 @@ REG_BPROP_BUILDER("EmbeddingLookup").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(
   (void)std::copy(new_indices_shape.begin(), new_indices_shape.end(), std::back_inserter(actual_dout_shape));
   (void)std::copy(x_shp_tail.begin(), x_shp_tail.end(), std::back_inserter(actual_dout_shape));
   auto actual_dout = ib->Reshape(dout, actual_dout_shape);
-  return {ib->MakeTuple({new_indices, actual_dout, ib->Value<ShapeVector>(x_shp)}), ib->OutZeros(indices),
-          ib->OutZeros(offset)};
+  return {actual_dout, ib->OutZeros(indices), ib->OutZeros(offset)};
 });
 
 REG_BPROP_BUILDER("MaskedSelect").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {

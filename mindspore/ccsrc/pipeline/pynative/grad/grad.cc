@@ -2183,7 +2183,7 @@ void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, 
   context.cell_name = cell_ptr->name();
   context.is_recompute = cell_ptr->HasAttr(kNeedRecompute);
   context.bprop_fn = py::getattr(obj, parse::CUSTOM_BPROP_NAME);
-  MS_LOG(DEBUG) << CheckBpropWithJit(context.bprop_fn);
+  (void)CheckBpropWithJit(context.bprop_fn);
   context.inputs.reserve(args.size() + kSizeEight);
   context.input_value_grad_type.reserve(args.size() + kSizeEight);
   py::list list_inputs;
