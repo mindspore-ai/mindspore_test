@@ -914,7 +914,7 @@ class Model:
         return epoch % validation_freq == 0 if isinstance(validation_freq, int) else epoch in validation_freq
 
     def _train_dataset_sink_process(self, epoch, train_dataset, list_callback=None, cb_params=None,
-                                    sink_size=-1, initial_epoch=0, valid_infos=None, initial_step=None):
+                                    sink_size=-1, initial_epoch=0, valid_infos=None, initial_step=0):
         """
         Training process. The data would be passed to network through dataset channel.
 
@@ -945,19 +945,12 @@ class Model:
 
         cb_params.sink_size = sink_size
         cb_params.cur_step_num = 0
-        if initial_step:
-            if sink_size != -1:
-                cb_params.cur_step_num = initial_epoch * sink_size + initial_step
-            else:
-                cb_params.cur_step_num = initial_epoch * dataset_size + initial_step
-
-        cb_params.dataset_sink_mode = True
-
-        if sink_size != 1:
+        if sink_size != -1:
             cb_params.cur_step_num = initial_epoch * sink_size + initial_step
         else:
             cb_params.cur_step_num = initial_epoch * dataset_size + initial_step
 
+        cb_params.dataset_sink_mode = True
         run_context = RunContext(cb_params)
         list_callback.on_train_begin(run_context)
         # used to stop training for early stop, such as stopAtTIme or stopATStep
