@@ -20,6 +20,7 @@
 #include <memory>
 #include "mindspore/core/include/ir/tensor.h"
 #include "mindspore/core/include/ir/base_tensor.h"
+#include "utils/ms_context.h"
 #include "pybind11/pybind11.h"
 
 namespace py = pybind11;

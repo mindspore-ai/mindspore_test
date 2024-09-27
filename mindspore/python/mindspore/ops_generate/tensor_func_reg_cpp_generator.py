@@ -35,6 +35,25 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
     def __init__(self):
         self.func_def_reg = Template("tensor_class->def(\"${func_name}\", Tensor${class_name});\n")
+        self.single_case_template = Template(
+            'case ${case_id}:\n'
+            '  ${device_dispatcher}'
+            '  break;\n'
+        )
+        self.device_dispatcher_template = Template(
+            'if (backend == kAscendDevice || backend == kDavinciDevice) {\n'
+            '  ${ascend_dispatcher}\n'
+            '} else if (backend == kCPUDevice) {\n'
+            '  ${cpu_dispatcher}\n'
+            '} else if (backend == kGPUDevice) {\n'
+            '  ${gpu_dispatcher}\n'
+            '}'
+        )
+        self.aclnn_return_template = Template(
+            '${arg_handler_processor}\n'
+            'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
+            'return ToPython(Tensor${class_name}Register::GetOp()(args));\n'
+        )
 
         self.TENSOR_FUNC_CC_REG = template.TENSOR_FUNC_CC_REG
         self.TENSOR_FUNC_HEADER_REG = template.TENSOR_FUNC_HEADER_REG
@@ -46,25 +65,12 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         func_header_body_str = ''
         func_call_body_str = ''
         func_def_body_str = ''
-        for func_name, func_protos in func_protos_data.items():
-            if len(func_protos) == 1:
-                func_proto = func_protos[0]
-                class_name = func_proto.op_proto.op_class.name
-                func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
-                    class_name=class_name)
-                func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(
-                    class_name=class_name)
-                func_def_body_str += self.func_def_reg.replace(func_name=func_proto.func_name,
-                                                               class_name=class_name)
-            else:
-                func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
-                    class_name=func_name.capitalize())
-                func_def_body_str += self.func_def_reg.replace(func_name=func_name,
-                                                               class_name=func_name.capitalize())
-                # Process overload cases
-                # func_call_body_str += self._get_overload_func_call_body(func_name, func_protos)
-                func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(
-                    class_name=func_name.capitalize())
+
+        func_header_body_str, func_call_body_str, func_def_body_str = (
+            self._get_single_op_str(func_protos_data, func_header_body_str, func_call_body_str, func_def_body_str))
+
+        func_header_body_str, func_call_body_str, func_def_body_str = (
+            self._get_overload_op_str(func_protos_data, func_header_body_str, func_call_body_str, func_def_body_str))
 
         func_cc_reg = self.TENSOR_FUNC_CC_REG.replace(func_call_body=func_call_body_str,
                                                       func_def_body=func_def_body_str)
@@ -72,5 +78,84 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.h", func_header_reg)
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.cc", func_cc_reg)
 
-    def _get_overload_func_call_body(self) -> str:
-        pass
+    def _get_single_op_str(self, func_protos_data,
+                                 func_header_body_str,
+                                 func_call_body_str,
+                                 func_def_body_str):
+        single_op_func_data = {}
+        for func_api_name, func_protos in func_protos_data.items():
+            if len(func_protos) == 1:
+                func_name = func_protos[0].func_name
+                if func_name not in single_op_func_data:
+                    single_op_func_data[func_name] = func_protos[0]
+
+        for func_name, func_proto in single_op_func_data.items():
+            func_name = func_proto.func_name
+            class_name = func_proto.op_proto.op_class.name
+            func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name)
+            device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
+            func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
+                                                                     device_dispatcher=device_dispatcher_str)
+            func_def_body_str += self.func_def_reg.replace(func_name=func_name,
+                                                           class_name=class_name)
+        return func_header_body_str, func_call_body_str, func_def_body_str
+
+    def _get_overload_op_str(self, func_protos_data,
+                                   func_header_body_str,
+                                   func_call_body_str,
+                                   func_def_body_str):
+        overload_op_func_data = {}
+        for func_api_name, func_protos in func_protos_data.items():
+            if len(func_protos) > 1:
+                overload_op_func_data[func_api_name] = func_protos
+
+        for func_api_name, func_protos in overload_op_func_data.items():
+            func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
+                class_name=func_api_name.capitalize())
+            func_call_body_str += self._get_overload_func_call_str(func_api_name, func_protos)
+            func_def_body_str += self.func_def_reg.replace(func_name=func_api_name,
+                                                           class_name=func_api_name.capitalize())
+        return func_header_body_str, func_call_body_str, func_def_body_str
+
+    def _get_overload_func_call_str(self, func_api_name, func_protos):
+        parser_body_str = self._get_overload_op_parser_body(func_protos)
+        dispatch_cases_str = self._get_dispatch_cases(func_protos)
+        overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG.replace(class_name=func_api_name.capitalize(),
+                                                                                 parser_body=parser_body_str,
+                                                                                 dispatch_cases=dispatch_cases_str)
+        return overload_func_call_str
+
+    def _get_dispatch_cases(self, func_protos):
+        dispatch_cases_str = ''
+        for idx, func_proto in enumerate(func_protos):
+            device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
+            dispatch_cases_str += self.single_case_template.replace(case_id=idx,
+                                                                    device_dispatcher=device_dispatcher_str)
+        return dispatch_cases_str
+
+    def _get_device_dispatchers_str(self, func_proto):
+        ascend_dispatcher_str = self._get_single_device_dispatcher_str(func_proto, 'ascend')
+        cpu_dispatcher_str = self._get_single_device_dispatcher_str(func_proto, 'cpu')
+        gpu_dispatcher_str = self._get_single_device_dispatcher_str(func_proto, 'gpu')
+        device_dispatcher_str = self.device_dispatcher_template.replace(ascend_dispatcher=ascend_dispatcher_str,
+                                                                        cpu_dispatcher=cpu_dispatcher_str,
+                                                                        gpu_dispatcher=gpu_dispatcher_str)
+        return device_dispatcher_str
+
+    def _get_single_device_dispatcher_str(self, func_proto, device):
+
+        callback_python_template = Template(
+            'MS_LOG(INFO) << "${info}";\n'
+        )
+        if getattr(func_proto, device) == 'aclnn':
+            arg_handler_processor_str = self._get_arg_handler_processor(func_proto)
+            return self.aclnn_return_template.replace(arg_handler_processor=arg_handler_processor_str,
+                                                      class_name=func_proto.op_proto.op_class.name)
+        else:
+            return callback_python_template.replace(info="Callback python is not yet implemented.")
+
+    def _get_overload_op_parser_body(self, func_protos):
+        return "// ${overload_op_parser_body} is not yet implemented!\n"
+
+    def _get_arg_handler_processor(self, func_proto):
+        return "// ${arg_handler_processor} is not yet implemented!\n"
