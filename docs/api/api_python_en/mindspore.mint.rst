@@ -195,7 +195,6 @@ BLAS and LAPACK Operations
     mindspore.mint.bmm
     mindspore.mint.inverse
     mindspore.mint.matmul
-    mindspore.mint.outer
     mindspore.mint.trace
 
 Other Operations
