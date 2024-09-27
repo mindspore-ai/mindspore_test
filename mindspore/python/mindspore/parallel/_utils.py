@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Utils of auto parallel"""
+import os
 from importlib import import_module
 import numpy as np
 import mindspore as ms
@@ -47,7 +48,9 @@ def _is_in_auto_parallel_mode():
 
 
 def _is_parallel_mode():
-    if not _is_initialized():
+    if not _is_initialized() or context.get_context('mode') == context.PYNATIVE_MODE:
+        return False
+    if os.getenv("RUN_MODE") != "predict":
         return False
     if get_group_size() > 1 and _get_parallel_mode() == ms.ParallelMode.STAND_ALONE:
         return True
