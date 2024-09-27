@@ -119,7 +119,7 @@ int DCTNCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const st
   }
 
   fft_nums_ = std::accumulate(s_.begin(), s_.end(), 1, std::multiplies<int64_t>());
-  int64_t cmpt_nums = fft_nums_ * pow(kNormFactor, static_cast<int64_t>(s_.size()));
+  int64_t cmpt_nums = fft_nums_ * static_cast<int64_t>(pow(kNormFactor, static_cast<int64_t>(s_.size())));
   norm_weight_ = GetNormalized(cmpt_nums, norm_, forward_);
   return KRET_OK;
 }
