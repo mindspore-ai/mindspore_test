@@ -49,6 +49,9 @@ mindspore.ops.rotary_position_embedding
         * - sin
           - 同 `cos`
           - 同 `cos`
+      
+    .. note::
+        layout是BNSD，并且D是32bytes对齐、B * N > 8S 时，因为性能不好，不允许调用。
 
     返回：
         Tensor，其shape和dtype和 `x` 保持一致。
