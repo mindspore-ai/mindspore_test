@@ -523,9 +523,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         return state
 
     def __setstate__(self, state):
-        value = state.pop("value")
+        if isinstance(state, tuple):
+            value = state
+        else:
+            value = state.pop("value")
+            self.__dict__.update(state)
         Tensor_.__setstate__(self, value)
-        self.__dict__.update(state)
 
     @property
     def shape(self):
