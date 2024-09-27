@@ -24,6 +24,9 @@ from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops import ReduceOp, cat
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops.primitive import _primexpr
+from mindspore.ops.auto_generate.gen_ops_prim import (inner_comm_all_reduce_op, inner_comm_all_gather_op,
+                                                      inner_comm_all_to_all_v_op, inner_comm_irecv_op,
+                                                      inner_comm_isend_op, inner_comm_reduce_scatter_op)
 from mindspore._c_expression import CommHandle as CommHandle_
 from mindspore import jit_class
 
@@ -231,8 +234,7 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async
     if op not in ('sum', 'prod', 'min', 'max'):
         raise TypeError("For all_reduce, the input op value must be one of sum, prod, min, max")
     group = _get_group(group)
-    all_reduce_op = _get_cache_prim(P.AllReduce)(op=op, group=group)
-    output = all_reduce_op(tensor)
+    output = inner_comm_all_reduce_op(tensor, op, group)
     return _deal_comm_outputs(output, async_op)
 
 
@@ -299,8 +301,8 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=F
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the input tensor must be tensor")
     group = _get_group(group)
-    all_gather_op = _get_cache_prim(P.AllGather)(group=group)
-    output = all_gather_op(tensor)
+    group_size = get_group_size(group)
+    output = inner_comm_all_gather_op(tensor, group_size, group)
     return _deal_comm_outputs(output, async_op)
 
 
@@ -367,8 +369,9 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
 
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter_tensor, the input tensor must be tensor")
-    reduce_scatter_op = _get_cache_prim(P.ReduceScatter)(op=op, group=group)
-    output = reduce_scatter_op(tensor)
+    group = _get_group(group)
+    rank_size = get_group_size(group)
+    output = inner_comm_reduce_scatter_op(tensor, rank_size, op, group)
     return _deal_comm_outputs(output, async_op)
 
 
@@ -917,8 +920,7 @@ def send(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         raise TypeError("For send, the input tensor must be tensor")
     group = _get_group(group)
     _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
-    _op = _get_cache_prim(P.Send)(tag, _dst, group, group)
-    output = _op(tensor)
+    output = inner_comm_isend_op(tensor, _dst, group, tag)
     _deal_comm_outputs(output, False)
 
 
@@ -990,8 +992,7 @@ def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
     _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
     shape = tensor.shape
     dtype = tensor.dtype
-    _op = _get_cache_prim(P.Receive)(tag, _src, shape, dtype, group, group)
-    output, _ = _deal_comm_outputs(_op(tensor), False)
+    output, _ = _deal_comm_outputs(inner_comm_irecv_op(tensor, tag, _src, shape, group, dtype), False)
     return output
 
 
@@ -1049,8 +1050,7 @@ def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         raise TypeError("For isend, the input tensor must be tensor")
     group = _get_group(group)
     _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
-    _op = _get_cache_prim(P.Send)(tag, _dst, group, group)
-    output = _op(tensor)
+    output = inner_comm_isend_op(tensor, _dst, group, tag)
     _, handle = _deal_comm_outputs(output, True)
     return handle
 
@@ -1122,8 +1122,7 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
     _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
     shape = tensor.shape
     dtype = tensor.dtype
-    _op = _get_cache_prim(P.Receive)(tag, _src, shape, dtype, group, group)
-    output = _op(tensor)
+    output = inner_comm_irecv_op(tensor, tag, _src, shape, group, dtype)
     return _deal_comm_outputs(output, True)
 
 
@@ -1217,9 +1216,11 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
             recv_numel_list.append(_get_size(_shape))
             recv_shape_list.append(_shape)
 
-    _op = _get_cache_prim(P.AlltoAllV)(send_numel_list, recv_numel_list, group)
     send_flatten_tensor = cat(send_flatten_tensor)
-    output = _op(send_flatten_tensor)
+    group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
+    rank_size = get_group_size(group)
+    output = inner_comm_all_to_all_v_op(send_flatten_tensor, group, send_numel_list, recv_numel_list,
+                                        rank_size, False)
     output, handle = _deal_comm_outputs(output, async_op)
     result = []
     offset = 0
@@ -1348,9 +1349,10 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
     split_sizes_empty = _is_split_sizes_empty(output_split_sizes) and _is_split_sizes_empty(input_split_sizes)
     send_numel_list, recv_numel_list, recv_shape_without_first_dim = \
         _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group)
-    _op = _get_cache_prim(P.AlltoAllV)(send_numel_list, recv_numel_list, group, split_sizes_empty)
     _input = tensor.reshape(-1)
-    result = _op(_input)
+    group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
+    rank_size = get_group_size(group)
+    result = inner_comm_all_to_all_v_op(_input, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty)
     result, handle = _deal_comm_outputs(result, async_op)
     if any(recv_numel_list):
         result = result.reshape((-1,) + recv_shape_without_first_dim)

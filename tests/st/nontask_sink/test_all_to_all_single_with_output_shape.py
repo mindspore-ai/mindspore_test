@@ -64,7 +64,7 @@ def test_hccl_all_to_all_single_with_output_shape_func_2p():
     rank = get_rank()
     data = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
     output_shape = (2, 4)
-    out = all_to_all_single_with_output_shape(output_shape, data)
+    out, _ = all_to_all_single_with_output_shape(output_shape, data)
 
     if rank == 0:
         gt_rank0 = np.arange(0, 4).reshape([1, 4]).astype(np.float32)

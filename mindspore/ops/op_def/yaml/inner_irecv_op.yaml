@@ -13,6 +13,7 @@ inner_comm_irecv:
             dtype: str
         dtype:
             dtype: TypeId
+            arg_handler: dtype_to_type_id
     returns:
         output:
             dtype: tensor

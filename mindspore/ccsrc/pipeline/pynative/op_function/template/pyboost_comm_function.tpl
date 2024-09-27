@@ -14,17 +14,20 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
     const auto &output_obj = py::make_tuple(node.first, comm_handle_py_obj);    
     kernel::pyboost::CommHandlePtr comm_handle{nullptr};
     bool is_ascend = op_run_info->base_op_run_info.device_target == kAscendDevice;
-    if (is_ascend) {
-      comm_handle_py->comm_handle()->CreateEvent();
-      comm_handle = comm_handle_py->comm_handle();
+    if (!is_ascend) {
+      MS_LOG(EXCEPTION) << "mindspore.communication.comm_func is not supported in CPU or GPU. Please use "
+                        << "Operators in mindspore.communication.comm_ops.py";
     }
+
+    comm_handle_py->comm_handle()->CreateEvent();
+    comm_handle = comm_handle_py->comm_handle();
     
     GilReleaseWithCheck release_gil;
     op_run_info->stub_output = node.second;
     op_run_info->source_type = converter.source_type();
     DispatchOp(
       std::make_shared<FrontendTask>(
-        [${op_args}, comm_handle, is_ascend](const FrontendOpRunInfoPtr &op_run_info) {
+        [${op_args}, comm_handle](const FrontendOpRunInfoPtr &op_run_info) {
           MS_LOG(DEBUG) << "Run frontend task ${func_name} start";
           auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
           kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
@@ -36,9 +39,6 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
           auto op = CREATE_PYBOOST_OP(${op_name}, op_run_info->base_op_run_info.device_target);
           op->set_comm_handle(comm_handle);
           const auto &op_prim = op->primitive();
-          if (!is_ascend) {
-            op->set_primitive(op_run_info->op_grad_info->op_prim);
-          }
 
           // Do mixed precision and implicit cast
           static const std::vector<std::vector<size_t>> same_type_table{${same_type}};

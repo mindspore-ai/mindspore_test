@@ -29,7 +29,7 @@ from mindspore.ops import ReduceOp
 np.random.seed(1)
 os.environ['HCCL_WHITELIST_DISABLE'] = str(1)
 context.set_context(jit_level='O0')
-context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+context.set_context(device_target="Ascend")
 init()
 
 
@@ -59,7 +59,8 @@ class AllReduceFuncNet(nn.Cell):
         self.op = op
 
     def construct(self, x):
-        return all_reduce(x)
+        out, _ = all_reduce(x)
+        return out
 
 
 def test_hccl_allreduce_8p():
@@ -96,5 +97,5 @@ def test_hccl_allreduce_func_8p():
     """
     x = np.ones([3, 4]).astype(np.float32)
     expect_output = [[8, 8, 8, 8], [8, 8, 8, 8], [8, 8, 8, 8]]
-    output = all_reduce(Tensor(x, mstype.float32))
+    output, _ = all_reduce(Tensor(x, mstype.float32))
     assert np.allclose(output.asnumpy(), expect_output)
