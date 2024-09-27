@@ -19,6 +19,7 @@ from __future__ import absolute_import
 import os
 from mindspore.common._register_for_tensor import tensor_operator_registry_for_mint
 
+
 def repeat_interleave_mint(orig_fn):
     """
     repeat_interleave wrapper.
@@ -30,6 +31,7 @@ def repeat_interleave_mint(orig_fn):
         return orig_fn(self, *args, **kwargs)
     return wrapper
 
+
 def isnan_mint(orig_fn):
     """
     isnan wrapper.
@@ -40,6 +42,7 @@ def isnan_mint(orig_fn):
         return orig_fn(self, *args, **kwargs)
     return wrapper
 
+
 def add_mint(add):
     """
     add wrapper
@@ -49,6 +52,7 @@ def add_mint(add):
             return tensor_operator_registry_for_mint.get('add')(self, other, **kwargs)
         return add(self, other, **kwargs)
     return wrapper
+
 
 def flatten_mint(flatten):
     """
@@ -68,6 +72,7 @@ def flatten_mint(flatten):
         return flatten(self, *args, **kwargs)
     return wrapper
 
+
 def item_mint(fn):
     """
     item wrapper
@@ -77,6 +82,7 @@ def item_mint(fn):
             return tensor_operator_registry_for_mint.get('item')(self, *args, **kwargs)
         return fn(self, *args, **kwargs)
     return wrapper
+
 
 def max_mint(fn):
     """
@@ -88,6 +94,7 @@ def max_mint(fn):
         return fn(self, *args, **kwargs)
     return wrapper
 
+
 def mean_mint(fn):
     """
     mean wrapper
@@ -97,6 +104,7 @@ def mean_mint(fn):
             return tensor_operator_registry_for_mint.get('mean')(self, *args, **kwargs)
         return fn(self, *args, **kwargs)
     return wrapper
+
 
 def min_mint(fn):
     """
@@ -108,6 +116,7 @@ def min_mint(fn):
         return fn(self, *args, **kwargs)
     return wrapper
 
+
 def split_mint(split):
     """
     split wrapper
@@ -117,6 +126,7 @@ def split_mint(split):
             return tensor_operator_registry_for_mint.get('split')(self, *args, **kwargs)
         return split(self, *args, **kwargs)
     return wrapper
+
 
 def sub_mint(sub):
     """
