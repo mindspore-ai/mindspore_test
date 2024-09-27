@@ -27,8 +27,7 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                       const std::optional<Int64ImmPtr> &decimals);
+void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const Int64ImmPtr &decimals);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

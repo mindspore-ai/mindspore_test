@@ -1,18 +1,18 @@
 /**
-* Copyright 2024 Huawei Technologies Co., Ltd
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2024 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "kernel/gpu/math/round_gpu_kernel.h"
 #include <memory>
@@ -21,8 +21,7 @@
 
 namespace mindspore {
 namespace kernel {
-bool RoundGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
-                             const std::vector<KernelTensor *> &outputs) {
+bool RoundGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto kernel_attr = GetKernelAttrFromTensors(inputs, outputs);
   auto [is_match, index] = MatchKernelAttr(kernel_attr, GetOpSupport());
   if (!is_match) {
@@ -33,8 +32,7 @@ bool RoundGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 
-int RoundGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
-                              const std::vector<KernelTensor *> &outputs) {
+int RoundGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
@@ -49,10 +47,10 @@ bool RoundGpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
   const auto input_ptr = reinterpret_cast<Inp_t *>(inputs[kIndex0]->device_ptr());
   auto output_ptr = reinterpret_cast<Out_t *>(outputs[kIndex0]->device_ptr());
 
-  auto value_opt = inputs[kIndex1]->GetOptionalValueWithCheck<int64_t>();
-  if (value_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", the input decimals should be None, but got input of decimals "
-                      << value_opt.value();
+  auto decimals = inputs[kIndex1]->GetValueWithCheck<int64_t>();
+  if (decimals != 0) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_ << " only support decimals equal 0, but got decimals equal "
+                      << decimals;
     return false;
   }
 
@@ -62,22 +60,21 @@ bool RoundGpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
   return true;
 }
 
-#define ADD_ROUND_TYPE(Op, NUMBER_TYPE, TYPE)                   \
-  KernelAttr().AddInputAttr(NUMBER_TYPE).AddOptionalInputAttr(kNumberTypeInt64).AddOutputAttr(NUMBER_TYPE), \
+#define ADD_ROUND_TYPE(Op, NUMBER_TYPE, TYPE)                                                       \
+  KernelAttr().AddInputAttr(NUMBER_TYPE).AddInputAttr(kNumberTypeInt64).AddOutputAttr(NUMBER_TYPE), \
     &RoundGpuKernelMod::LaunchKernel<Op, TYPE, TYPE>
 
-std::vector <std::pair<KernelAttr, RoundGpuKernelMod::RoundFunc>>
-  RoundGpuKernelMod::func_list_ = {
-    {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeFloat16, half)},
-    {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeFloat32, float)},
-    {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeFloat64, double)},
-    {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeInt32, int32_t)},
-    {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeInt64, int64_t)}};
+std::vector<std::pair<KernelAttr, RoundGpuKernelMod::RoundFunc>> RoundGpuKernelMod::func_list_ = {
+  {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeFloat16, half)},
+  {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeFloat32, float)},
+  {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeFloat64, double)},
+  {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeInt32, int32_t)},
+  {ADD_ROUND_TYPE(ElwiseOpType::kRound, kNumberTypeInt64, int64_t)}};
 
-std::vector <KernelAttr> RoundGpuKernelMod::GetOpSupport() {
-  std::vector <KernelAttr> support_list;
-  (void) std::transform(func_list_.begin(), func_list_.end(), std::back_inserter(support_list),
-                       [](const std::pair <KernelAttr, RoundFunc> &pair) { return pair.first; });
+std::vector<KernelAttr> RoundGpuKernelMod::GetOpSupport() {
+  std::vector<KernelAttr> support_list;
+  (void)std::transform(func_list_.begin(), func_list_.end(), std::back_inserter(support_list),
+                       [](const std::pair<KernelAttr, RoundFunc> &pair) { return pair.first; });
   return support_list;
 }
 

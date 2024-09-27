@@ -56,7 +56,7 @@ def test_fallback_round_tensor_decimals():
 
     net = Net()
     x = Tensor(np.array([0.4, 0.6, 9.9]), mstype.float32)
-    out = net(x, None)
+    out = net(x, 0)
     expect = Tensor(np.array([0.0, 1.0, 10.0]))
     np.testing.assert_almost_equal(out.asnumpy(), expect.asnumpy())
 

@@ -6,7 +6,7 @@ round:
     decimals:
       dtype: int
       type_cast: tensor
-      default: None
+      default: 0
   returns:
     output:
       dtype: tensor

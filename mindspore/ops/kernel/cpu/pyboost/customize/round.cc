@@ -49,17 +49,8 @@ void RoundCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &inpu
 }
 }  // namespace
 
-void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input,
-                       const std::optional<Int64ImmPtr> &decimals) {
+void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input, const Int64ImmPtr &decimals) {
   OpRunner::InferOpOutput(op, input, decimals);
-
-  ValuePtr act_decimals;
-  if (decimals.has_value()) {
-    act_decimals = MakeValue<int64_t>(GetValue<int64_t>(decimals.value()));
-  } else {
-    // The decimals default val is None
-    act_decimals = kNone;
-  }
 
   BaseTensorPtr act_tensor = input;
 
@@ -73,8 +64,8 @@ void RoundCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr 
     const auto &output_tensor = PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device_name);
     op->set_outputs({output_tensor});
   } else {
-    std::vector<AbstractBasePtr> new_input_abs{act_tensor->ToAbstract(), act_decimals->ToAbstract()};
-    RoundCPUCall(op, act_tensor, act_decimals, new_input_abs);
+    std::vector<AbstractBasePtr> new_input_abs{act_tensor->ToAbstract(), decimals->ToAbstract()};
+    RoundCPUCall(op, act_tensor, decimals, new_input_abs);
   }
 }
 }  // namespace pyboost

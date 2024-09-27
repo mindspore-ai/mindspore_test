@@ -187,7 +187,7 @@ EvalResultPtr InnerRoundEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
   if (args_abs_list.size() == max_input_index) {
     (void)round_inputs.emplace_back(cnode->input(index_decimals + 1));
   } else {
-    (void)round_inputs.emplace_back(NewValueNode(kNone));
+    (void)round_inputs.emplace_back(NewValueNode(MakeValue<int64_t>(0)));
   }
   auto fg = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(fg);

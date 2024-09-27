@@ -51,7 +51,7 @@ def round(input):
         >>> print(output)
         [ 1.  2.  2.  2. -4.]
     """
-    return round_op(input, None)
+    return round_op(input, 0)
 
 __all__ = [
     'erfc',

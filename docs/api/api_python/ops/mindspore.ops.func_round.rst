@@ -1,7 +1,7 @@
 mindspore.ops.round
 ====================
 
-.. py:function:: mindspore.ops.round(input, *, decimals=None)
+.. py:function:: mindspore.ops.round(input, *, decimals=0)
 
     对输入数据进行四舍五入到最接近的整数数值。
 
