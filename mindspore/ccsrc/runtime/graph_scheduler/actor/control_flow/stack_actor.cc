@@ -95,6 +95,8 @@ void StackActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<Dev
   if (IntToSize(input_data->index_) < input_stack_data_num_ + device_tensor_store_keys_.size() +
                                         input_stack_partials_num_ + local_device_tensors_.size()) {
     input_stack_data_[context->sequential_num_][input_data->index_].push(input_data->data_);
+    MS_LOG(DEBUG) << "Actor:" << GetAID()
+                  << " stack depth:" << input_stack_data_[context->sequential_num_][input_data->index_].size();
   } else {
     // The outputs of call nodes are placed directly in the input data.
     (void)input_op_datas_[context->sequential_num_].emplace_back(input_data);
