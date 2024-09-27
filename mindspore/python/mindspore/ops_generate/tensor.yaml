@@ -1,0 +1,22 @@
+__add__:
+    op_name: add
+    Ascend: aclnn
+    CPU: python
+    GPU: python
+
+argmax:
+    op_name: argmax_ext
+    Ascend: aclnn
+    CPU: python
+    GPU: python
+
+clamp:
+    -   op_name: clamp_scalar
+        Ascend: aclnn
+        CPU: aclnn
+        GPU: aclnn
+
+    -   op_name: clamp_tensor
+        Ascend: aclnn
+        CPU: aclnn
+        GPU: aclnn

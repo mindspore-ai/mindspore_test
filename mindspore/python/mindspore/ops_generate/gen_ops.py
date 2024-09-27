@@ -31,6 +31,8 @@ from lite_ops_cpp_generator import LiteOpsCcGenerator, LiteOpsHGenerator
 from ops_name_h_generator import OpsNameHGenerator
 
 from op_proto import OpProto
+from tensor_func_proto import load_func_protos_from_yaml
+from tensor_func_reg_cpp_generator import TensorFuncRegCppGenerator
 from gen_pyboost_func import gen_pyboost_code
 
 import gen_constants as K
@@ -128,12 +130,17 @@ def generate_arg_handler_files(work_path):
     check_change_and_replace_file(dst_arg_dtype_cast_path, tmp_arg_dtype_cast_path)
 
 
+def gen_tensor_func_code(work_path, func_protos):
+    generator = TensorFuncRegCppGenerator()
+    generator.generate(work_path, func_protos)
+
+
 def main():
     current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
 
     # merge ops yaml
-    doc_yaml_path, ops_yaml_path = merge_ops_yaml(work_path)
+    doc_yaml_path, ops_yaml_path, tensor_yaml_path = merge_ops_yaml(work_path)
 
     # make auto_generate dir
     cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
@@ -145,18 +152,22 @@ def main():
     # read ops definition str and doc str
     ops_yaml_dict = safe_load_yaml(ops_yaml_path)
     doc_yaml_dict = safe_load_yaml(doc_yaml_path)
-    op_protos = load_ops_yaml_to_op_protos(ops_yaml_dict)
+    tensor_yaml_dict = safe_load_yaml(tensor_yaml_path)
+    op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
+    func_protos = load_func_protos_from_yaml(tensor_yaml_dict, op_protos)
 
     # generate ops python files
     generate_ops_py_files(work_path, op_protos, doc_yaml_dict, "gen")
-
     # generate ops c++ files
     generate_ops_cc_files(work_path, op_protos)
     # generate create prim instance helper file
     generate_create_instance_helper_file(work_path, op_protos)
     # generate pyboost code
-    gen_pyboost_code(work_path, op_protos, doc_yaml_dict)
+    gen_pyboost_code(work_path, op_protos, doc_yaml_dict, func_protos)
     # generate aclnn kernelmod register
+    generate_aclnn_reg_file(work_path, ops_yaml_dict)
+    # generate tensor_py func code
+    gen_tensor_func_code(work_path, func_protos)
     generate_aclnn_reg_file(work_path, op_protos)
 
 
@@ -170,6 +181,7 @@ def load_ops_yaml_to_op_protos(ops_yaml_data):
     Returns:
         List[OpProto]: A list of OpProto objects created from the YAML data.
     """
+def load_op_protos_from_ops_yaml(ops_yaml_data):
     op_protos = []
     for operator_name, operator_data in ops_yaml_data.items():
         op_proto = OpProto.load_from_yaml(operator_name, operator_data)
@@ -188,21 +200,25 @@ def merge_ops_yaml(work_path):
         tuple: Paths to the merged documentation and operators YAML files.
     """
     ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops.yaml')
-    doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops_doc.yaml')
-    ops_yaml_dir_path = os.path.join(work_path, K.MS_YAML_PATH)
+    ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEF_YAML_PATH)
     infer_ops_yaml_dir_path = os.path.join(ops_yaml_dir_path, "infer")
-    doc_yaml_dir_path = os.path.join(ops_yaml_dir_path, "doc")
     merge_files(ops_yaml_dir_path, ops_yaml_path, '*op.yaml')
     merge_files_append(infer_ops_yaml_dir_path, ops_yaml_path, '*op.yaml')
+
+    doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops_doc.yaml')
+    doc_yaml_dir_path = os.path.join(ops_yaml_dir_path, "doc")
     merge_files(doc_yaml_dir_path, doc_yaml_path, '*doc.yaml')
-    return doc_yaml_path, ops_yaml_path
+
+    tensor_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor.yaml')
+    tensor_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_YAML_PATH)
+    merge_files(tensor_yaml_dir_path, tensor_yaml_path, '*.yaml')
+
+    return doc_yaml_path, ops_yaml_path, tensor_yaml_path
 
 
 if __name__ == "__main__":
-    main()
     try:
-        pass
-        # main()
+        main()
     # pylint: disable=broad-except
     except Exception as e:
         logging.critical("Auto generate failed, err info: %s", e)

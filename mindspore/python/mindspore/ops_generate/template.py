@@ -138,6 +138,10 @@ TENSOR_FUNC_HEADER_BODY = Template.load_from_file(
 TENSOR_FUNC_CALL_BODY = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_call_body.tpl'))
 
+TENSOR_FUNC_OVERLOAD_CALL_BODY_REG = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_overload_call_body.tpl'))
+
 TENSOR_FUNC_CLASS_REG = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_class_reg.tpl'))
 

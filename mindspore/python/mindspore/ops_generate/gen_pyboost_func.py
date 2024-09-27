@@ -38,16 +38,11 @@ from pyboost_op_cpp_code_generator import (
 )
 
 
-def gen_pyboost_code(work_path, ops_yaml_data, doc_yaml_data, tensor_func_yaml_data, extra_ops):
+def gen_pyboost_code(work_path, op_protos, doc_yaml_data, func_protos):
     """ gen_pyboost_code """
-    op_protos = []
-    for operator_name, operator_data in ops_yaml_data.items():
-        op_proto = OpProto.load_from_yaml(operator_name, operator_data)
-        op_protos.append(op_proto)
-    func_protos = TensorFuncProto.load_from_yaml(tensor_func_yaml_data, ops_yaml_data)
     call_pyboost_inner_prim_generator(work_path, op_protos)
     call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data)
-    call_ops_header_files_generator(work_path, op_protos, extra_ops)
+    call_ops_header_files_generator(work_path, op_protos)
     call_pyboost_functions_cpp_generator(work_path, op_protos, func_protos)
     call_pyboost_grad_functions_cpp_generator(work_path, op_protos)
     call_pyboost_native_grad_functions_generator(work_path, op_protos)
@@ -64,9 +59,9 @@ def call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data):
     generator.generate(work_path, op_protos, doc_yaml_data)
 
 
-def call_ops_header_files_generator(work_path, op_protos, extra_ops):
+def call_ops_header_files_generator(work_path, op_protos):
     generator = OpHeaderFileGenerator()
-    generator.generate(work_path, op_protos, extra_ops)
+    generator.generate(work_path, op_protos)
 
 
 def call_pyboost_functions_cpp_generator(work_path, op_protos, func_protos):

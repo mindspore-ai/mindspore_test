@@ -1,0 +1,10 @@
+clamp:
+    -   op_name: clamp_scalar
+        Ascend: aclnn
+        CPU: aclnn
+        GPU: aclnn
+
+    -   op_name: clamp_tensor
+        Ascend: aclnn
+        CPU: aclnn
+        GPU: aclnn

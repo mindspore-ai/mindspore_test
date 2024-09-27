@@ -61,9 +61,9 @@ CC_LICENSE = f"""/**
 # op_def
 OP_DEF_AUTO_GENERATE_PATH = "op_def/auto_generate"
 MS_OP_DEF_AUTO_GENERATE_PATH = "mindspore/ops/op_def/auto_generate"
-YAML_PATH = "op_def/yaml"
-MS_YAML_PATH = "mindspore/ops/" + YAML_PATH
-PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
+MS_OP_DEF_YAML_PATH = "mindspore/ops/op_def/yaml"
+MS_TENSOR_YAML_PATH = "mindspore/ops/tensor_func_def"
+PY_AUTO_GEN_PATH = "mindspore/python/mindspore/op11auto_generate"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"
 PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/function/auto_generate"
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/auto_generate"

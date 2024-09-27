@@ -1,5 +1,5 @@
 argmax:
-  op_name: argmax_ext
-  Ascend: aclnn
-  CPU: python
-  GPU: python
+    op_name: argmax_ext
+    Ascend: aclnn
+    CPU: python
+    GPU: python

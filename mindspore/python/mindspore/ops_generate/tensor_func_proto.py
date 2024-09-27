@@ -14,6 +14,7 @@
 # ============================================================================
 
 """Tensor Func Proto module for defining tensor_py function prototypes and their arguments."""
+from collections import defaultdict
 
 from op_proto import OpProto
 
@@ -22,35 +23,36 @@ class TensorFuncProto:
 
     def __init__(self,
                  func_name,
-                 op_name,
-                 class_name,
+                 op_proto,
                  ascend, gpu, cpu):
         self.func_name = func_name
-        self.op_name = op_name
-        self.class_name = class_name
+        # self.op_name = op_name
+        # self.class_name = class_name
+        self.op_proto = op_proto
         self.ascend = ascend
         self.gpu = gpu
         self.cpu = cpu
 
-    @staticmethod
-    def load_from_yaml(tensor_func_yaml_data, ops_yaml_str):
-        op_protos = {}
-        for operator_name, operator_data in ops_yaml_str.items():
-            op_proto = OpProto.load_from_yaml(operator_name, operator_data)
-            op_protos[op_proto.op_name] = op_proto
-        func_protos = []
-        for func_name, func_data in tensor_func_yaml_data.items():
+
+def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos: list[OpProto]) -> dict[str, list[TensorFuncProto]]:
+    op_protos_dict = {}
+    for op_proto in op_protos:
+        op_protos_dict[op_proto.op_name] = op_proto
+    func_protos = defaultdict(list)
+    for func_name, tensor_func_data in tensor_func_yaml_data.items():
+        func_data_list = [tensor_func_data] if isinstance(tensor_func_data, dict) else tensor_func_data
+        for func_data in func_data_list:
             op_name = func_data.get('op_name', '')
             if op_name == '':
                 raise TypeError('For generating tensor functions, op name should not be empty')
-            op_proto = op_protos.get(op_name, None)
+            op_proto = op_protos_dict.get(op_name, None)
             if op_proto is None:
                 raise TypeError("For generating tensor functions, op_proto should not be empty")
             ascend = func_data.get('Ascend', 'aclnn')
-            gpu = func_data.get('GPU', 'python')
-            cpu = func_data.get('CPU', 'python')
-            tensor_func_proto = TensorFuncProto(func_name=func_name, op_name=op_proto.op_name,
-                                                class_name=op_proto.op_class.name,
+            gpu = func_data.get('GPU', 'aclnn')
+            cpu = func_data.get('CPU', 'aclnn')
+            tensor_func_proto = TensorFuncProto(func_name=func_name,
+                                                op_proto=op_proto,
                                                 ascend=ascend, gpu=gpu, cpu=cpu)
-            func_protos.append(tensor_func_proto)
-        return func_protos
+            func_protos[func_name].append(tensor_func_proto)
+    return func_protos
