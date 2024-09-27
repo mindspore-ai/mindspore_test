@@ -513,11 +513,25 @@ using SpecializeReduceFuncCreator = std::function<std::shared_ptr<CpuKernelFunc>
     .AddInputAttr(MS_T)                               \
     .AddOptionalInputAttr(kObjectTypeTuple, MS_S)     \
     .AddInputAttr(kObjectTypeNumber, kNumberTypeBool) \
-    .AddOutputAttr(MS_T),                             \
+    .AddOutputAttr(kNumberTypeBool),                  \
     SpecializeReduceFunc<T>
 
 static std::vector<std::pair<KernelAttr, SpecializeReduceFuncCreator>> kernel_all_any_list = {
-  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeBool, kNumberTypeInt64, bool)}};
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeBool, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeInt8, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeInt16, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeInt32, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeInt64, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeUInt8, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeUInt16, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeUInt32, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeUInt64, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeFloat16, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeBFloat16, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeFloat32, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeFloat64, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeComplex64, kNumberTypeInt64, bool)},
+  {REDUCE_AXIS_OPT_CPU_REG(kNumberTypeComplex128, kNumberTypeInt64, bool)}};
 
 static std::vector<std::pair<KernelAttr, SpecializeReduceFuncCreator>> kernel_max_min_list = {
   {REDUCE_CPU_REG(kNumberTypeFloat32, kNumberTypeInt64, float)},
@@ -609,6 +623,11 @@ int ReduceCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
   int ret = KernelMod::Resize(inputs, outputs);
   if (ret != KRET_OK) {
     return ret;
+  }
+  if (kernel_type_ == kReduceAll && inputs[kIndex0]->type_id() != kNumberTypeBool) {
+    workspace_size_list_.clear();
+    auto input_num = SizeOf(inputs[kIndex0]->GetDeviceShapeVector());
+    workspace_size_list_.push_back(input_num * sizeof(bool));
   }
   ret = func_obj_->Resize(inputs, outputs);
 

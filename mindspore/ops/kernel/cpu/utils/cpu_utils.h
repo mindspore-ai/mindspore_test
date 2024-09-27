@@ -19,11 +19,49 @@
 
 #include <cmath>
 #include <utility>
+#include <algorithm>
+#include <complex>
 
+#include "kernel/cpu/cpu_kernel.h"
 #include "base/float16.h"
 
 namespace mindspore {
 namespace kernel {
+template <typename S, typename T>
+void Cast(const S *in, T *out, size_t size) {
+  auto task = [&in, &out](size_t start, size_t end) {
+    for (size_t i = start; i < end; i++) {
+      if constexpr (std::is_same_v<S, T>) {
+        out[i] = static_cast<T>(in[i]);
+      } else if constexpr (std::is_same_v<S, bool> && std::is_same_v<T, std::complex<float>>) {
+        out[i] = std::complex<float>(in[i] ? 1.0f : 0.0f, 0.0f);
+      } else if constexpr (std::is_same_v<S, bool> && std::is_same_v<T, std::complex<double>>) {
+        out[i] = std::complex<double>(in[i] ? 1.0 : 0.0, 0.0);
+      } else if constexpr ((std::is_same_v<S, std::complex<float>>) || (std::is_same_v<S, std::complex<double>>)) {
+        out[i] = static_cast<T>(std::real(in[i]));
+      } else if constexpr ((std::is_same_v<T, std::complex<float>>) || (std::is_same_v<T, std::complex<double>>)) {
+        double realValue = static_cast<double>(in[i]);
+        std::complex<double> complexValue(realValue, 0.0);
+        out[i] = (std::is_same_v<T, std::complex<float>>) ? static_cast<T>(complexValue) : complexValue;
+      } else {
+        out[i] = static_cast<T>(in[i]);
+      }
+    }
+  };
+  CPUKernelUtils::ParallelFor(task, size);
+}
+
+template <typename S, typename T>
+void CastKernelTensor(KernelTensor *source, KernelTensor *target) {
+  MS_EXCEPTION_IF_NULL(source);
+  MS_EXCEPTION_IF_NULL(source->device_ptr());
+  S *source_addr = reinterpret_cast<S *>(source->device_ptr());
+  MS_EXCEPTION_IF_NULL(target);
+  MS_EXCEPTION_IF_NULL(target->device_ptr());
+  T *target_addr = reinterpret_cast<T *>(target->device_ptr());
+  Cast(source_addr, target_addr, source->size() / sizeof(S));
+}
+
 template <typename T>
 inline T offset_to_index_init(T offset) {
   return offset;

@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <complex>
 
+#include "kernel/cpu/utils/cpu_utils.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 
 namespace mindspore {
@@ -43,36 +44,12 @@ class CastCpuKernelFunc : public CpuKernelFunc {
 };
 
 template <typename S, typename T>
-void Cast(CastCpuKernelFunc<S, T> *content, const S *in, T *out, size_t size) {
-  auto task = [&in, &out](size_t start, size_t end) {
-    for (size_t i = start; i < end; i++) {
-      if constexpr (std::is_same_v<S, T>) {
-        out[i] = static_cast<T>(in[i]);
-      } else if constexpr (std::is_same_v<S, bool> && std::is_same_v<T, std::complex<float>>) {
-        out[i] = std::complex<float>(in[i] ? 1.0f : 0.0f, 0.0f);
-      } else if constexpr (std::is_same_v<S, bool> && std::is_same_v<T, std::complex<double>>) {
-        out[i] = std::complex<double>(in[i] ? 1.0 : 0.0, 0.0);
-      } else if constexpr ((std::is_same_v<S, std::complex<float>>) || (std::is_same_v<S, std::complex<double>>)) {
-        out[i] = static_cast<T>(std::real(in[i]));
-      } else if constexpr ((std::is_same_v<T, std::complex<float>>) || (std::is_same_v<T, std::complex<double>>)) {
-        double realValue = static_cast<double>(in[i]);
-        std::complex<double> complexValue(realValue, 0.0);
-        out[i] = (std::is_same_v<T, std::complex<float>>) ? static_cast<T>(complexValue) : complexValue;
-      } else {
-        out[i] = static_cast<T>(in[i]);
-      }
-    }
-  };
-  ParallelLaunchAutoSearch(task, size, content, &content->parallel_search_info_);
-}
-
-template <typename S, typename T>
 bool CastCpuKernelFunc<S, T>::RunFunc(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                       const std::vector<KernelTensor *> &outputs) {
   const auto *input = reinterpret_cast<S *>(inputs[0]->device_ptr());
   auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
   MS_LOG(DEBUG) << "Type source: " << typeid(S).name() << "; target: " << typeid(T).name();
-  Cast<S, T>(this, input, output, outputs[0]->size() / sizeof(T));
+  Cast<S, T>(input, output, outputs[0]->size() / sizeof(T));
   return true;
 }
 
