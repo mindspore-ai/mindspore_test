@@ -14,7 +14,7 @@
 # ============================================================================
 """Communication management API"""
 from mindspore import log as logger
-from mindspore.communication._comm_helper import _destroy_group_helper, GlobalComm
+from mindspore.communication._comm_helper import _destroy_group_helper, GlobalComm, _get_rank_helper, _get_size_helper
 from mindspore.communication import init, release, get_group_size
 
 
@@ -146,3 +146,109 @@ def destroy_process_group(group=None):
                         "but got 'group' type : {}.".format(type(group)))
     else:
         _destroy_group_helper(group)
+
+
+def get_rank(group=None):
+    """
+    Get the rank ID for the current device in the specified collective communication group.
+
+    Note:
+        This method should be used after init().
+
+    Args:
+        group (str): The communication group to work on. Normally, the group should be created by create_group,
+                     otherwise, using the default group. If None, ``GlobalComm.WORLD_COMM_GROUP`` will be used.
+
+    Returns:
+        int, the rank ID of the calling process within the group.
+        return -1, if not part of the group
+
+    Raises:
+        TypeError: If group is not a string.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+        >>> from mindspore import set_context
+        >>> from mindspore.mint.distributed import init_process_group, get_rank
+        >>> set_context(device_target="Ascend")
+        >>> init_process_group()
+        >>> rank_id = get_rank()
+        >>> print(rank_id)
+        >>> # the result is the rank_id in world_group
+    """
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError("For 'get_rank', the argument 'group' must be type of string, "
+                        "but got 'group' type : {}.".format(type(group)))
+    try:
+        ret = _get_rank_helper(group)
+    except RuntimeError as e:
+        logger.warning(e)
+        ret = -1
+    return ret
+
+
+def get_world_size(group=None):
+    """
+    Get the rank size of the specified collective communication group.
+
+    Note:
+        This method should be used after init().
+
+    Args:
+        group (str): The communication group to work on. Normally, the group should be created by create_group,
+                     otherwise, using the default group. If None, ``GlobalComm.WORLD_COMM_GROUP`` will be used.
+
+    Returns:
+        int, the rank size of the group.
+        return -1, if the group is not available.
+
+    Raises:
+        TypeError: If group is not a string.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+        >>> import mindspore as ms
+        >>> from mindspore import set_context
+        >>> from mindspore.mint.distributed import init_process_group, get_world_size
+        >>> set_context(device_target="Ascend")
+        >>> init_process_group()
+        >>> group_size = get_world_size()
+        >>> print("group_size is: ", group_size)
+        group_size is: 8
+    """
+    ret = -1
+    if group is None:
+        group = GlobalComm.WORLD_COMM_GROUP
+    if not isinstance(group, str):
+        raise TypeError("For 'get_group_size', the argument 'group' must be type of string, "
+                        "but got 'group' type : {}.".format(type(group)))
+    try:
+        ret = _get_size_helper(group)
+    except RuntimeError as e:
+        logger.warning(e)
+        ret = -1
+    return ret
