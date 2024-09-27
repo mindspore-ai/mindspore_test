@@ -120,7 +120,7 @@ PassManagerPtr GraphKernelOptimizer::PreProcess() const {
   pm->Add(std::make_shared<CommonSubexpressionElimination>("cse1"), OptLevel_1);
 
   // Save the original output info
-  pm->Add(std::make_shared<SaveOutputShape>(), OptLevel_1);
+  pm->Add(std::make_shared<SaveOutputShape>(), OptLevel_1, is_gpu);
 
   // Change Assign(p, a, U) to Assign(Depend(p, U), a)
   pm->Add(std::make_shared<SplitAssign>(), OptLevel_1, is_gpu || is_cpu || is_dvm);
@@ -302,7 +302,7 @@ PassManagerPtr GraphKernelOptimizer::PostProcess() const {
 
   // Recover the original output info
   pm->Add(std::make_shared<GetitemTuple>(), OptLevel_1);
-  pm->Add(std::make_shared<RewriteOutputShape>(), OptLevel_1);
+  pm->Add(std::make_shared<RewriteOutputShape>(), OptLevel_1, is_gpu);
 
   auto enable_dyn_level = GetPassLevelByFlag(GraphKernelFlags::GetInstance().enable_dynamic_shape_fusion);
   // Add infershape functor for dynamic shape graph kernel

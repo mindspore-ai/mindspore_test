@@ -506,12 +506,36 @@ class ExtraReduce1PatternTree : public PatternTree {
 };
 
 // "ReduceSum(Neg(A),B)=Neg(ReduceSum(A,B))"
+// "ReduceSum(RealDiv(A,const1),B)=RealDiv(ReduceSum(A,B),const1)"
+// "ReduceSum(Mul(A,const1),B)=Mul(ReduceSum(A,B),const1)"
 class ExtraReduce2PatternTree : public PatternTree {
  public:
   explicit ExtraReduce2PatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
   ~ExtraReduce2PatternTree() override = default;
 
  protected:
+  bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
+    if (origin_root->input(0)->inputs().size() <= 1) {
+      return true;
+    }
+    auto shape_const = origin_root->input(0)->input(1)->shape;
+    auto shape_a = origin_root->input(0)->input(0)->shape;
+    auto shape_reduce = origin_root->shape;
+    if (shape_a.size() < shape_const.size() || shape_const.size() > shape_reduce.size()) {
+      return false;
+    }
+    size_t ndim_const = shape_const.size();
+    size_t ndim_reduce = shape_reduce.size();
+    for (size_t i = 1; i <= ndim_reduce; ++i) {
+      auto dim_const = (i <= ndim_const) ? shape_const[ndim_const - i] : 1;
+      auto dim_reduce = shape_reduce[ndim_reduce - i];
+      if (dim_const != dim_reduce && dim_const != 1) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   mindspore::HashMap<PatternNodePtr, inner::DAttrs> SetAttributes(const inner::NodePtr &origin_root) override {
     auto attrs_map = PatternTree::SetAttributes(origin_root);
     bool keep_dims = GetValue<bool>(origin_root->attrs().find("keep_dims")->second);
