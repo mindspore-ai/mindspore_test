@@ -74,6 +74,7 @@
 #include "frontend/parallel/pass/overlap_gradmatmul_and_gradallreduce.h"
 #include "frontend/parallel/pass/overlap_grad_ring_attention.h"
 #include "frontend/parallel/pass/overlap_grad_flash_sp.h"
+#include "frontend/parallel/pass/interleave_split_concat_branches.h"
 #include "frontend/parallel/pass/begin_end_overlap_inline.h"
 #include "frontend/parallel/pass/split_matmul_comm_elementwise_fp.h"
 #include "frontend/parallel/pass/split_layernorm_comm_fp.h"
@@ -853,6 +854,12 @@ bool OverlapGradFlashSP(const ResourcePtr &resource) {
   return true;
 }
 
+bool InterleaveSplitConcatBranches(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  parallel::InterleaveSplitConcatBranches(resource->func_graph());
+  return true;
+}
+
 bool OptimizeParallelAllGatherCommPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   parallel::OptimizeParallelAllGatherComm(resource->func_graph());
@@ -1375,6 +1382,7 @@ std::vector<PassItem> kVmPasses = {
   {"reorder_send_recv_between_fp_bp", ReorderSendRecvBetweenFpBpPass},
   {"comm_op_add_attrs", CommOpAddAttrs},
   {"add_comm_op_reuse_tag", AddCommOpReusePass},
+  {"interleave_split_concat_branches", InterleaveSplitConcatBranches},
   {"overlap_opt_shard_in_pipeline", OverlapOptShardInPipelinePass},
   {"overlap_opt_shard_grad_in_pipeline", OverlapOptShardGradInPipelinePass},
   {"control_data_broadcast_order", ControlDataBroadcastOrderPass},

@@ -173,6 +173,7 @@ void RegMsContext(const py::module *m) {
     .value("hccl_watchdog", MsCtxParam::MS_CTX_ENABLE_HCCL_WATCHDOG)
     .value("enable_flash_attention_load_balance", MsCtxParam::MS_CTX_ENABLE_FLASH_ATTENTION_LOAD_BALANCE)
     .value("enable_allreduce_slice_to_reducescatter", MsCtxParam::MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER)
+    .value("enable_interleave_split_concat_branch", MsCtxParam::MS_CTX_ENABLE_INTERLEAVE_SPLIT_CONCAT_BRANCH)
     .value("enable_offloading_packed_experts", MsCtxParam::MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS)
     .value("op_debug_option", MsCtxParam::MS_CTX_OP_DEBUG_OPTION);
   RegMsContextDefs(m);
