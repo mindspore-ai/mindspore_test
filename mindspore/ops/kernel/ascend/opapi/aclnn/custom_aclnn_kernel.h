@@ -25,6 +25,8 @@
 
 namespace mindspore {
 namespace kernel {
+constexpr size_t kWorkspaceIndex = 3;
+constexpr size_t kReleaseFuncIndex = 2;
 
 template <size_t N>
 class CustomAclnnKernelMod : public AclnnKernelMod {
@@ -57,7 +59,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
     size_t cur_workspace = 0;
     if (hash_map_.count(hash_id_)) {
       hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_]);
-      cur_workspace = std::get<3>(hash_cache_.front());
+      cur_workspace = std::get<kWorkspaceIndex>(hash_cache_.front());
     } else {
       auto [workspace, executor, cache, fail_cache] = GEN_CUSTOM_EXECUTOR_FOR_RESIZE(op_type_, args...);
       cur_workspace = workspace;
@@ -71,7 +73,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
     }
     if (hash_cache_.size() > capacity_) {
       hash_map_.erase(std::get<0>(hash_cache_.back()));
-      auto release_func = std::get<2>(hash_cache_.back());
+      auto release_func = std::get<kReleaseFuncIndex>(hash_cache_.back());
       release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});
       hash_cache_.pop_back();
     }
@@ -110,7 +112,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
       return std::make_pair(executor, release_func);
     }
     const auto &cur_run = *hash_map_[hash_id_];
-    UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);
+    UPDATE_TENSOR_FOR_LAUNCH(std::get<kReleaseFuncIndex>(cur_run), args...);
     const auto &executor = std::get<1>(cur_run);
     return std::make_pair(executor, nullptr);
   }
