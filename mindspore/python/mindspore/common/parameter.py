@@ -63,6 +63,8 @@ def _is_parallel_mode():
     """ Whether is parallel mode """
     if not _is_initialized() or context.get_context('mode') == context.PYNATIVE_MODE:
         return False
+    if os.getenv("RUN_MODE") != "predict":
+        return False
     if get_group_size() > 1 and _get_parallel_mode() == "stand_alone":
         return True
     return False
