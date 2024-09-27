@@ -38,6 +38,8 @@ class BACKEND_EXPORT Pipeline {
   // No need to wait bprop queue finish.
   void WaitForward();
 
+  void ChildAfterFork();
+
  private:
   Pipeline();
   ~Pipeline() = default;

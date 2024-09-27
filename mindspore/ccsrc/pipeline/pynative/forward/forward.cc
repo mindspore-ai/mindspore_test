@@ -1027,8 +1027,6 @@ void ForwardExecutor::ClearRes() {
 
 void ForwardExecutor::ChildAfterFork() {
   MS_LOG(DEBUG) << "ForwardExecutor reinitialize after fork.";
-  MS_LOG(DEBUG) << "Reinitialize frontend_queue_.";
-  runtime::Pipeline::Get().frontend_stage()->ChildAfterFork();
   op_backend_ = std::make_unique<compile::OpBackend>();
   MS_LOG(DEBUG) << "ForwardExecutor reinitialize after fork done.";
 }

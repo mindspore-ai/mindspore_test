@@ -209,16 +209,19 @@ void AsyncRQueue::WorkerJoin() {
   }
 }
 
+void AsyncRQueue::ChildAfterForkPre() {
+  thread_id_to_wait_level_.clear();
+  current_level_ = kThreadWaitLevel::kLevelUnknown;
+}
+
 void AsyncRQueue::ChildAfterFork() {
-  MS_LOG(DEBUG) << "AsyncQueue reinitialize after fork";
+  MS_LOG(DEBUG) << "AsyncQueue " << name_ << " reinitialize after fork";
   if (worker_ != nullptr) {
     MS_LOG(DEBUG) << "Release and recreate worker_.";
     (void)worker_.release();
     worker_ = std::make_unique<std::thread>(&AsyncRQueue::WorkerLoop, this);
-    thread_id_to_wait_level_.clear();
-    current_level_ = kThreadWaitLevel::kLevelUnknown;
   }
-  MS_LOG(DEBUG) << "AsyncQueue reinitialize after fork done.";
+  MS_LOG(DEBUG) << "AsyncQueue " << name_ << " reinitialize after fork done.";
 }
 
 void AsyncRQueue::SetSpin(bool spin) { tasks_queue_.set_spin(spin); }
