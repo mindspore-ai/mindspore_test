@@ -38,3 +38,36 @@ def test_matmul_reduce_scatter_forward():
     ret = os.system("mpirun -n 8 -x HCCL_DETERMINISTIC=true "
                     "pytest -s mc2_fusion.py::test_matmul_reduce_scatter_forward")
     assert ret == 0
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_all_gather_matmul_enable_all_kbk_mode():
+    '''
+    Feature: MC2 fusion.
+    Description: Test all_gather_matmul_enable_all_kbk_mode.
+    Expectation: Run success
+    '''
+    ret = os.system("mpirun -n 8 -x HCCL_DETERMINISTIC=true "
+                    "pytest -s mc2_fusion.py::test_all_gather_matmul_enable_all_kbk_mode")
+    assert ret == 0
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_matmul_reduce_scatter_enable_all_kbk_mode():
+    '''
+    Feature: MC2 fusion.
+    Description: Test matmul_reduce_scatter_enable_all_kbk_mode.
+    Expectation: Run success
+    '''
+    ret = os.system("mpirun -n 8 -x HCCL_DETERMINISTIC=true "
+                    "pytest -s mc2_fusion.py::test_matmul_reduce_scatter_enable_all_kbk_mode")
+    assert ret == 0
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_matmul_all_reduce_enable_all_kbk_mode():
+    '''
+    Feature: MC2 fusion.
+    Description: Test matmul_all_reduce_enable_all_kbk_mode.
+    Expectation: Run success
+    '''
+    ret = os.system("mpirun -n 8 -x HCCL_DETERMINISTIC=true "
+                    "pytest -s mc2_fusion.py::test_matmul_all_reduce_enable_all_kbk_mode")
+    assert ret == 0
