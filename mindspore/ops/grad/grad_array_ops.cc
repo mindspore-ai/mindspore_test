@@ -1820,6 +1820,14 @@ REG_BPROP_BUILDER("Transpose").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   return {ib->Transpose(dout, res_perm), ib->OutZeros(perm)};
 });
 
+REG_BPROP_BUILDER("TransposeExt").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+  auto dim0 = ib->GetInput(kIndex1);
+  auto dim1 = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = ib->Emit("TransposeExt", {dout, dim0, dim1});
+  return {dx, ib->OutZeros(dim0), ib->OutZeros(dim1)};
+});
+
 REG_BPROP_BUILDER("Slice").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto begin = ib->GetInput(kIndex1);

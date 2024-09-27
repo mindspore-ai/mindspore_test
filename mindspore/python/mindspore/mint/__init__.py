@@ -55,7 +55,7 @@ from mindspore.ops.auto_generate import stack_ext as stack
 # 7
 from mindspore.ops.function.array_func import unsqueeze
 # 8
-
+from mindspore.ops.auto_generate import transpose_ext as transpose
 # 9
 from mindspore.ops.auto_generate import masked_select
 from mindspore.ops.function.math_func import cross
@@ -1070,6 +1070,22 @@ def sub(input, other, *, alpha=1):
     return ops.auto_generate.sub_ext(input, other, alpha)
 
 
+def swapaxes(input, axis0, axis1):
+    '''
+    Interchange two axes of a tensor, alias for mint.transpose()
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import mint
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.ones((2,3,4), dtype=np.float32))
+        >>> output = mint.swapaxes(input, 0, 2)
+        >>> print(output.shape)
+        (4, 3, 2)
+    '''
+    return transpose(input, axis0, axis1)
+
+
 def zeros(size, *, dtype=None):
     """
     Creates a tensor filled with 0 with shape described by `size` and fills it with value 0 in type of `dtype`.
@@ -1215,7 +1231,8 @@ __all__ = [
     # 7
     'zeros',
     # 8
-
+    'transpose',
+    'swapaxes',
     # 9
 
     # 10
