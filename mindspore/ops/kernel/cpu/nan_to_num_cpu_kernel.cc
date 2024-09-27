@@ -30,6 +30,25 @@ constexpr auto kPosinfValueIdx = 2;
 constexpr auto kNeginfValueIdx = 3;
 }  // namespace
 
+void NanToNumCpuKernelMod::GetInfValues(TypeId input_type, const std::optional<float> &posinf,
+                                        const std::optional<float> &neginf, bool posinf_has_value,
+                                        bool neginf_has_value) {
+  const float FLOAT32_MAX_VALUE = 3.4028235e+38;
+  const float FLOAT32_MIN_VALUE = -3.4028235e+38;
+  const float FLOAT16_MAX_VALUE = 65504.0;
+  const float FLOAT16_MIN_VALUE = -65504.0;
+  switch (input_type) {
+    case kNumberTypeFloat16:
+      posinf_value_ = posinf_has_value ? posinf.value() : FLOAT16_MAX_VALUE;
+      neginf_value_ = neginf_has_value ? neginf.value() : FLOAT16_MIN_VALUE;
+      break;
+    default:
+      posinf_value_ = posinf_has_value ? posinf.value() : FLOAT32_MAX_VALUE;
+      neginf_value_ = neginf_has_value ? neginf.value() : FLOAT32_MIN_VALUE;
+      break;
+  }
+}
+
 bool NanToNumCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   return MatchKernelFunc(kernel_name_, inputs, outputs);
 }
@@ -41,14 +60,6 @@ int NanToNumCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     MS_LOG(WARNING) << kernel_name_ << " reinit failed.";
     return ret;
   }
-  const float DOUBLE_MAX_VALUE = 1.7976931348623157e+308;
-  const float DOUBLE_MIN_VALUE = -1.7976931348623157e+308;
-  const float FLOAT32_MAX_VALUE = 3.4028235e+38;
-  const float FLOAT32_MIN_VALUE = -3.4028235e+38;
-  const float FLOAT16_MAX_VALUE = 65504.0;
-  const float FLOAT16_MIN_VALUE = -65504.0;
-  const float BFLOAT16_MAX_VALUE = 3.3895314e+38;
-  const float BFLOAT16_MIN_VALUE = -3.3895314e+38;
   const float DEFAULT_NAN = 0.0;
 
   auto nan_opt = inputs[kNanValueIdx]->GetOptionalValueWithCheck<float>();
@@ -59,34 +70,12 @@ int NanToNumCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   bool posinf_has_value = posinf_opt.has_value();
   bool neginf_has_value = neginf_opt.has_value();
-
   if (posinf_has_value && neginf_has_value) {
     posinf_value_ = posinf_opt.value();
     neginf_value_ = neginf_opt.value();
   } else {
     auto input_type = inputs[kIndex0]->dtype_id();
-    switch (input_type) {
-      case kNumberTypeFloat64:
-        posinf_value_ = posinf_has_value ? posinf_opt.value() : DOUBLE_MAX_VALUE;
-        neginf_value_ = neginf_has_value ? neginf_opt.value() : DOUBLE_MIN_VALUE;
-        break;
-      case kNumberTypeFloat32:
-        posinf_value_ = posinf_has_value ? posinf_opt.value() : FLOAT32_MAX_VALUE;
-        neginf_value_ = neginf_has_value ? neginf_opt.value() : FLOAT32_MIN_VALUE;
-        break;
-      case kNumberTypeFloat16:
-        posinf_value_ = posinf_has_value ? posinf_opt.value() : FLOAT16_MAX_VALUE;
-        neginf_value_ = neginf_has_value ? neginf_opt.value() : FLOAT16_MIN_VALUE;
-        break;
-      case kNumberTypeBFloat16:
-        posinf_value_ = posinf_has_value ? posinf_opt.value() : BFLOAT16_MAX_VALUE;
-        neginf_value_ = neginf_has_value ? neginf_opt.value() : BFLOAT16_MIN_VALUE;
-        break;
-      default:
-        posinf_value_ = posinf_has_value ? posinf_opt.value() : FLOAT32_MAX_VALUE;
-        neginf_value_ = neginf_has_value ? neginf_opt.value() : FLOAT32_MIN_VALUE;
-        break;
-    }
+    GetInfValues(input_type, posinf_opt, neginf_opt, posinf_has_value, neginf_has_value);
   }
   return 0;
 }

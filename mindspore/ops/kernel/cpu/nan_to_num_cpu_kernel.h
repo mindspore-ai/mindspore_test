@@ -20,7 +20,7 @@
 #include <map>
 #include <utility>
 #include <vector>
-
+#include "ops/base_operator.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "plugin/factory/ms_factory.h"
 
@@ -32,7 +32,8 @@ class NanToNumCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper
   ~NanToNumCpuKernelMod() override = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
-
+  void GetInfValues(TypeId input_type, const std::optional<float> &posinf, const std::optional<float> &neginf,
+                    bool posinf_has_value, bool neginf_has_value);
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
