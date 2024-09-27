@@ -91,6 +91,19 @@ int64_t GetMindStorageSize(const std::vector<int64_t> &sizes, const std::vector<
   return storage_size;
 }
 
+/**
+ * @brief To judge whether there may be memory overlap in as strided operator.
+ *        Considering performing efficiency, is hard to judge overlap in view accurately.
+ *
+ *        1. Sort the strides and shape by stride ascending order.
+ *        2. Traverse from left to right, it may be overlap if there exist a stride value less or equal then the maximum
+ * index.
+ *        3. It never overlap when all strides value larger then the corresponding maximum index.
+ *
+ * @param shapes Shapes of corresponding dims.
+ * @param strides Strides of corresponding dims.
+ * @return true: maybe overlap, false: never overlap.
+ */
 bool MaybeOverlapMemory(const std::vector<int64_t> &shapes, const std::vector<int64_t> &strides) {
   if (!shapes.empty()) {
     std::vector<int64_t> index_sort(shapes.size());
@@ -3082,9 +3095,9 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
       out_strides.insert(out_strides.begin(), stride);
     }
   }
-  if (MaybeOverlapMemory(out_shape, out_strides)) {
-    MS_LOG(EXCEPTION) << "For as strided backward, out view may has memory overlap.";
-  }
+  // The result of as strided operator maybe overlap.
+  auto output_maybe_overlap = MaybeOverlapMemory(out_shape, out_strides);
+
   auto input_rank = input_tensor->storage_info() == nullptr ? output_tensor->storage_info()->ori_shape.size()
                                                             : input_tensor->storage_info()->shape.size();
   auto input_shape = input_tensor->storage_info() == nullptr ? output_tensor->storage_info()->ori_shape
@@ -3104,11 +3117,9 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
       simplify_input_strides.insert(simplify_input_strides.begin(), stride);
     }
   }
-  if (MaybeOverlapMemory(simplify_input_shape, simplify_input_strides)) {
-    MS_LOG(EXCEPTION) << "For as strided backward, input view may has memory overlap.";
-  }
-  // Todo need add overlap scenarios.
-  // auto maybe_overlap = false;
+  // The input of as strided maybe an overlap view.
+  auto input_maybe_overlap = MaybeOverlapMemory(simplify_input_shape, simplify_input_strides);
+
   auto shared_offset = std::min(output_storage_offset, input_storage_offset);
   int64_t input_effective_offset = input_storage_offset - shared_offset;
   int64_t output_effective_offset = output_storage_offset - shared_offset;
@@ -3117,9 +3128,42 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
   auto base_size = std::max(input_min_storage, output_min_storage);
   std::vector<int64_t> storage_shape{base_size};
   auto storage = ib->Zeros(ib->Value(storage_shape), ib->Value(static_cast<int64_t>(input->dtype()->type_id())));
-  auto view_output =
-    ib->AsStrided(storage, ib->Value(out_shape), ib->Value(out_strides), ib->Value(output_effective_offset));
-  (void)ib->InplaceCopy(view_output, dout);
+
+  // Index array can be used in both input overlap and output overlap scene.
+  NodePtr flatten_full_indices;
+  if (output_maybe_overlap || input_maybe_overlap) {
+    auto start = ib->EmitValue(MakeValue<int64_t>(0));
+    auto end = ib->EmitValue(MakeValue<int64_t>(base_size));
+    auto step = ib->EmitValue(MakeValue<int64_t>(1));
+    auto dtype = ib->Value(static_cast<int64_t>(TypeId::kNumberTypeInt64));
+    flatten_full_indices = ib->Arange(start, end, step, dtype);
+  }
+
+  // For output overlap, all change to view should be accumulated to the base tensor.
+  if (output_maybe_overlap) {
+    auto output_indices = ib->AsStrided(flatten_full_indices, ib->Value(out_shape), ib->Value(out_strides),
+                                        ib->Value(output_effective_offset));
+    storage = ib->IndexAddExt(storage, ib->Reshape(output_indices, {-1}), ib->Reshape(dout, {-1}),
+                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(1LL));
+  } else {
+    auto view_output =
+      ib->AsStrided(storage, ib->Value(out_shape), ib->Value(out_strides), ib->Value(output_effective_offset));
+    (void)ib->InplaceCopy(view_output, dout);
+  }
+
+  // For input overlap, all change to base tensor should be dived by count.
+  if (input_maybe_overlap) {
+    auto count = ib->ZerosLikeExt(storage, ib->Value(static_cast<int64_t>(TypeId::kNumberTypeFloat32)));
+    auto input_indices = ib->AsStrided(flatten_full_indices, ib->Value(simplify_input_shape),
+                                       ib->Value(simplify_input_strides), ib->Value(input_effective_offset));
+    auto flatten_input_indices = ib->Reshape(input_indices, {-1});
+    ShapeVector one_shape{1};
+    auto source = ib->BroadcastTo(
+      ib->Ones(ib->Value<ShapeVector>(one_shape), ib->Value(static_cast<int64_t>(input->dtype()->type_id()))),
+      flatten_input_indices);
+    count = ib->IndexAddExt(count, flatten_input_indices, source, ib->Value<int64_t>(0LL), ib->Value<int64_t>(1LL));
+    storage = ib->Div(storage, count);
+  }
   auto input_grad =
     ib->AsStrided(storage, ib->Value(input_shape), ib->Value(input_strides), ib->Value(input_effective_offset));
   return {input_grad, ib->OutZeros(size), ib->OutZeros(strides_node), ib->OutZeros(offset)};

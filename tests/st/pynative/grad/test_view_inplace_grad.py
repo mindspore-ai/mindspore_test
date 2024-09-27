@@ -249,6 +249,19 @@ def as_strided_overlap(x):
     y.sum().backward()
 
 
+class AsStridedInputOverlapNet(nn.Cell):
+    def construct(self, x):
+        y = mint.broadcast_to(x, (3, 3))
+        z = as_strided(y, (1, 1), (1, 1))
+        return z
+
+
+def as_strided_input_overlap(x):
+    y = x.expand(3, 3)
+    z = y.as_strided((1, 1), (1, 1))
+    z.sum().backward()
+
+
 class NoGradViewCopyNet(nn.Cell):
     def construct(self, x, y):
         with _no_grad():
@@ -265,6 +278,11 @@ class MultiOutputViewCopyNet(nn.Cell):
 
 
 class LeafViewCopyNet(nn.Cell):
+    def construct(self, x, y):
+        x.copy_(y)
+        return x
+
+class OverlapViewCopyNet(nn.Cell):
     def construct(self, x, y):
         x.copy_(y)
         return x
@@ -538,16 +556,23 @@ def test_as_strided_overlap_grad():
 
     x_torch2 = torch.tensor([1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13, 14, 15], requires_grad=True)
     as_strided_overlap(x_torch2)
-    print('x grad', x_torch2.grad.numpy())
-    x2 = Tensor([1., 2., 3.])
+    x2 = Tensor([1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13, 14, 15])
     sens = Tensor([[1., 1.], [1., 1.], [1., 1.]])
     overlap_net = AsStridedOverlapNet()
     overlap_net.set_inputs()
     grad_fn2 = GradOfAllInputs(overlap_net, sens_param=True)
-    with pytest.raises(RuntimeError) as err:
-        grad_fn2(x2, sens)
-        _pynative_executor.sync()
-    assert "view may has memory overlap" in str(err.value)
+    grads2 = grad_fn2(x2, sens)
+    np.testing.assert_almost_equal(grads2[0].asnumpy(), x_torch2.grad.numpy())
+
+    x_torch3 = torch.tensor([[1.0], [4.0], [7.0]], requires_grad=True)
+    as_strided_input_overlap(x_torch3)
+    x3 = Tensor([[1.0], [4.0], [7.0]])
+    sens = Tensor([[1.0]])
+    inputoverlap_net = AsStridedInputOverlapNet()
+    inputoverlap_net.set_inputs()
+    grad_fn3 = GradOfAllInputs(inputoverlap_net, sens_param=True)
+    grads3 = grad_fn3(x3, sens)
+    np.testing.assert_almost_equal(grads3[0].asnumpy(), x_torch3.grad.numpy())
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -592,3 +617,13 @@ def test_view_inplace_grad_check_exception():
         grad_fn3(x3, y3, sens)
         _pynative_executor.sync()
     assert "A leaf tensor that requires grad is being used in an inplace operator" in str(err.value)
+
+    x4 = Tensor([[2.], [2.], [3.]])
+    y4 = Tensor([[1., 2.], [2., 2.], [1, 1]])
+    sens = Tensor([[1., 1.], [1., 1.], [1, 1]])
+    z4 = mint.broadcast_to(x4, (3, 2))
+    overlap_view_copy = OverlapViewCopyNet()
+    with pytest.raises(RuntimeError) as err:
+        overlap_view_copy.construct(z4, y4)
+        _pynative_executor.sync()
+    assert "This tensor has multi element reference to the same memory address" in str(err.value)
