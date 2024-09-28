@@ -112,14 +112,11 @@ uint32_t AdaptiveAvgPool3dOutFrame(CpuKernelContext &ctx, AdaptiveCalcArgs<SCALA
       }
     }
   };
-  if (num <= kParallelDataNums) {
-    for (size_t i = 0; i < size_t(args.size_d); i++) {
-      shard_frame(i, i + 1);
-    }
-  } else {
-    CUST_KERNEL_HANDLE_ERROR(ctx, CpuKernelUtils::ParallelFor(ctx, args.size_d, 1, shard_frame),
-                             "AdaptiveAvgPool3d shard_frame Compute failed.");
+
+  for (size_t i = 0; i < size_t(args.size_d); i++) {
+    shard_frame(i, i + 1);
   }
+
   return KERNEL_STATUS_OK;
 }
 
