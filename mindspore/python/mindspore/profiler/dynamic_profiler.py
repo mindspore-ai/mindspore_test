@@ -428,8 +428,7 @@ def worker_func(loop_flag, poll_interval, shm, cfg_path):
 
 if sys.version_info >= (3, 8):
     from multiprocessing import shared_memory
-    from multiprocessing import resource_tracker
-
+    from unittest.mock import patch
 
     class DynamicProfilerMonitor(DynamicProfilerMonitorBase):
         r"""
@@ -521,9 +520,12 @@ if sys.version_info >= (3, 8):
             while try_times:
                 try:
                     # Step 1: try to open shm file, first time shm not exists.
-                    self._shm = shared_memory.SharedMemory(name=self._shm_name)
+                    # Python incorrectly tracks shared memory even if it is not
+                    # created by the process. The following patch is a workaround.
+                    with patch("multiprocessing.resource_tracker.register",
+                               lambda *args, **kwargs: None):
+                        self._shm = shared_memory.SharedMemory(name=self._shm_name)
                     self._is_create_process = False
-                    resource_tracker.unregister(self._shm._name, 'shared_memory')
                     logger.info("Rank %d shared memory is connected.", self._rank_id)
                     break
                 except FileNotFoundError:
@@ -542,7 +544,7 @@ if sys.version_info >= (3, 8):
                         time.sleep(random.uniform(0, 0.02))  # sleep 0 ~ 20 ms
 
             if try_times <= 0:
-                raise RuntimeError("Failed to create shared memory.")
+                raise RuntimeError(f"Rank {self._rank_id} failed to create shared memory.")
 
 else:
     import mmap
