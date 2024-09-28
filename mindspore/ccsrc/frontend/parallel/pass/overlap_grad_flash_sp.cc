@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <list>
+#include <utility>
 #include <algorithm>
 #include <string>
 #include <queue>
@@ -42,6 +43,12 @@
 namespace mindspore {
 namespace parallel {
 namespace {
+constexpr int64_t kDim4 = 4;
+constexpr int64_t kFAHeadSizeNum2 = 2;
+constexpr int64_t kFAHeadSizeNum3 = 3;
+constexpr int64_t kFAMax = 8;
+constexpr int64_t kFASum = 8;
+
 enum TagType {
   query = 0,
   kv_a = 1,
@@ -106,38 +113,63 @@ std::string FirstFlashIndex(std::string origin_str, int64_t sp_num) {
   return new_str;
 }
 
+void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *dout_map,
+                         std::map<int64_t, AnfNodePtr> *softmax_max_map, std::map<int64_t, AnfNodePtr> *softmax_sum_map,
+                         std::map<int64_t, AnfNodePtr> *attention_out_map) {
+  if (node != nullptr) {
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_MUL) && node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_MUL));
+      dout_map->insert({flash_index, node});
+    }
+
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_MAX) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_MAX));
+      softmax_max_map->insert({flash_index, node});
+    }
+
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_SUM) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_SUM));
+      softmax_sum_map->insert({flash_index, node});
+    }
+
+    if (node->HasPrimalAttr(RING_ATTENTION_UPDATE_ATTN) && !node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      auto flash_index = GetValue<int>(node->GetPrimalAttr(RING_ATTENTION_UPDATE_ATTN));
+      attention_out_map->insert({flash_index, node});
+    }
+  }
+}
+
 void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<std::string, AnfNodePtr> *fa_map,
                     std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map,
                     std::map<std::string, AnfNodePtr> *grad_send_qkv_map,
                     std::map<std::string, AnfNodePtr> *grad_recv_qkv_map,
                     std::map<std::string, AnfNodePtr> *grad_send_oml_map,
-                    std::map<std::string, AnfNodePtr> *grad_recv_oml_map, CNodePtr *loss_node) {
+                    std::map<std::string, AnfNodePtr> *grad_recv_oml_map, CNodePtr *loss_node,
+                    std::map<int64_t, AnfNodePtr> *dout_map, std::map<int64_t, AnfNodePtr> *softmax_max_map,
+                    std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *attention_out_map) {
   for (auto &anf_node : *origin_nodes_topological) {
     CNodePtr node = anf_node->cast<CNodePtr>();
     if (node != nullptr && node->HasPrimalAttr(FLASH_LOSS_NODE)) {
       (*loss_node) = node;
+      auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
+      if (pipeline_stages > 1) {
+        *loss_node = nullptr;
+      }
     }
 
-    if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScore)) {
-      if (!node->HasPrimalAttr(FLASH_INDEX)) {
-        continue;
-      }
+    if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScore) && node->HasPrimalAttr(FLASH_INDEX)) {
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
       fa_map->insert({flash_index, node});
     }
 
-    if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScoreGrad)) {
-      if (!node->HasPrimalAttr(FLASH_INDEX) || !node->HasPrimalAttr("forward_unique_id")) {
-        continue;
-      }
+    if (IsPrimitiveCNode(node, prim::kPrimFlashAttentionScoreGrad) && node->HasPrimalAttr(FLASH_INDEX) &&
+        node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
       (*grad_fa_map)[flash_index] = node;
     }
 
-    if (IsPrimitiveCNode(node, prim::kPrimSend)) {
-      if (!node->HasPrimalAttr(FLASH_INDEX) || !node->HasPrimalAttr("forward_unique_id")) {
-        continue;
-      }
+    if (IsPrimitiveCNode(node, prim::kPrimSend) && node->HasPrimalAttr(FLASH_INDEX) &&
+        node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
       if (GetValue<std::string>(node->GetPrimalAttr(FLASH_SP_COMM_TYPE)) == FLASH_SP_COMM_QKV) {
         (*grad_recv_qkv_map).insert({flash_index, node});
@@ -146,10 +178,8 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
       }
     }
 
-    if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
-      if (!node->HasPrimalAttr(FLASH_INDEX) || !node->HasPrimalAttr("forward_unique_id")) {
-        continue;
-      }
+    if (IsPrimitiveCNode(node, prim::kPrimReceive) && node->HasPrimalAttr(FLASH_INDEX) &&
+        node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
       if (GetValue<std::string>(node->GetPrimalAttr(FLASH_SP_COMM_TYPE)) == FLASH_SP_COMM_QKV) {
         (*grad_send_qkv_map).insert({flash_index, node});
@@ -157,6 +187,8 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
         (*grad_send_oml_map).insert({flash_index, node});
       }
     }
+
+    FindFAGradInputNode(node, dout_map, softmax_max_map, softmax_sum_map, attention_out_map);
   }
 }
 
@@ -201,16 +233,18 @@ CNodePtr NewSplitNode(const AnfNodePtr &split_node, size_t split_dim, size_t spl
 CNodePtr NewMakeTupleNode(const std::vector<AnfNodePtr> &input_nodes) {
   // input_nodes are getitem nodes
   std::vector<AnfNodePtr> make_tuple_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  std::vector<ShapeVector> shapes;
+  std::vector<TypeId> dtypes;
   for (size_t i = 0; i < input_nodes.size(); ++i) {
+    auto dtype = common::AnfAlgo::GetOutputInferDataType(input_nodes[i], 0);
+    auto shape = common::AnfAlgo::GetOutputInferShape(input_nodes[i], 0);
+    shapes.emplace_back(shape);
+    dtypes.emplace_back(dtype);
     make_tuple_inputs.push_back(input_nodes[i]);
   }
   auto make_tuple = input_nodes[0]->func_graph()->NewCNode(make_tuple_inputs);
   MS_EXCEPTION_IF_NULL(make_tuple);
 
-  auto dtype = common::AnfAlgo::GetOutputInferDataType(input_nodes[0], 0);
-  std::vector<TypeId> dtypes(input_nodes.size(), dtype);
-  auto shape = common::AnfAlgo::GetOutputInferShape(input_nodes[0], 0);
-  std::vector<ShapeVector> shapes(input_nodes.size(), shape);
   common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, make_tuple.get());
   make_tuple->set_scope(input_nodes[0]->scope());
   MS_EXCEPTION_IF_NULL(make_tuple->abstract());
@@ -233,7 +267,7 @@ CNodePtr NewTupleGetItemNode(const AnfNodePtr &input_node, size_t output_index) 
   return getitem;
 }
 
-CNodePtr NewConcatNode(const AnfNodePtr &input_node, size_t concat_dim) {
+CNodePtr NewConcatNode(const AnfNodePtr &input_node, size_t concat_dim, const Shape &output_shape) {
   MS_EXCEPTION_IF_NULL(input_node);
   auto concat_dim_node = NewValueNode(MakeValue(static_cast<int64_t>(concat_dim)));
   concat_dim_node->set_abstract(std::make_shared<abstract::AbstractScalar>(static_cast<int64_t>(concat_dim)));
@@ -242,13 +276,61 @@ CNodePtr NewConcatNode(const AnfNodePtr &input_node, size_t concat_dim) {
   MS_EXCEPTION_IF_NULL(concat);
 
   std::vector<TypeId> dtypes = {common::AnfAlgo::GetOutputInferDataType(input_node, 0)};
-  auto shape = common::AnfAlgo::GetOutputInferShape(input_node, 0);
-  shape[concat_dim] *= kIndex2;
-  std::vector<ShapeVector> shapes(1, shape);
-  common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, concat.get());
+  common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, {output_shape}, concat.get());
   concat->set_scope(input_node->scope());
   MS_EXCEPTION_IF_NULL(concat->abstract());
   return concat;
+}
+
+CNodePtr NewCastNode(const AnfNodePtr &tensor_node, const TypeId &dtype) {
+  MS_EXCEPTION_IF_NULL(tensor_node);
+  auto type_node = NewValueNode(static_cast<int64_t>(dtype));
+  common::AnfAlgo::SetOutputInferTypeAndShape({TypeId::kNumberTypeInt64}, {Shape{1}}, type_node.get());
+  std::vector<AnfNodePtr> cast_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimCast->name())),
+                                         tensor_node, type_node};
+  auto cast_node = tensor_node->func_graph()->NewCNode(cast_inputs);
+  MS_EXCEPTION_IF_NULL(cast_node);
+  common::AnfAlgo::SetNodeAttrSafely(kAttrDstType, TypeIdToType(dtype), cast_node);
+
+  auto shape = common::AnfAlgo::GetOutputInferShape(tensor_node, 0);
+  common::AnfAlgo::SetOutputInferTypeAndShape({dtype}, {shape}, cast_node.get());
+
+  cast_node->set_scope(tensor_node->scope());
+  MS_EXCEPTION_IF_NULL(cast_node->abstract());
+  return cast_node;
+}
+
+CNodePtr NewStridedSliceNode(const AnfNodePtr &tensor_node, const Shape &begin, const Shape &end, const Shape &strides,
+                             const Shape &out_shape) {
+  MS_EXCEPTION_IF_NULL(tensor_node);
+  auto begin_node = NewValueNode(MakeValue(begin));
+  common::AnfAlgo::SetOutputInferTypeAndShape({TypeId::kNumberTypeInt64}, {Shape{kDim4}}, begin_node.get());
+  auto end_node = NewValueNode(MakeValue(end));
+  common::AnfAlgo::SetOutputInferTypeAndShape({TypeId::kNumberTypeInt64}, {Shape{kDim4}}, end_node.get());
+  auto strides_node = NewValueNode(MakeValue(strides));
+  common::AnfAlgo::SetOutputInferTypeAndShape({TypeId::kNumberTypeInt64}, {Shape{kDim4}}, strides_node.get());
+  auto mask_node = NewValueNode(MakeValue(int64_t(0)));
+  common::AnfAlgo::SetOutputInferTypeAndShape({TypeId::kNumberTypeInt64}, {Shape{1}}, mask_node.get());
+
+  std::vector<AnfNodePtr> stridedslice_inputs = {
+    NewValueNode(std::make_shared<Primitive>(prim::kPrimStridedSlice->name())),
+    tensor_node,
+    begin_node,
+    end_node,
+    strides_node,
+    mask_node,
+    mask_node,
+    mask_node,
+    mask_node,
+    mask_node};
+  auto stridedslice_node = tensor_node->func_graph()->NewCNode(stridedslice_inputs);
+  MS_EXCEPTION_IF_NULL(stridedslice_node);
+
+  auto dtypes = {common::AnfAlgo::GetOutputInferDataType(tensor_node, 0)};
+  common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, {out_shape}, stridedslice_node.get());
+  stridedslice_node->set_scope(tensor_node->scope());
+  MS_EXCEPTION_IF_NULL(stridedslice_node->abstract());
+  return stridedslice_node;
 }
 
 CNodePtr NewSendNode(const AnfNodePtr &send_data, int64_t tag, int64_t dest_rank, const Shape &send_shape,
@@ -391,18 +473,19 @@ void GetGradNode(std::map<std::string, AnfNodePtr> *grad_send_qkv_map,
   (*grad_comm_map).insert({3, grad_recv_oml_node});
 }
 
-void GetPreCommNode(const std::string &new_str, int64_t index, std::map<std::string, AnfNodePtr> *grad_send_qkv_map,
-                    std::map<std::string, AnfNodePtr> *grad_recv_qkv_map,
-                    std::map<std::string, AnfNodePtr> *grad_send_oml_map,
-                    std::map<std::string, AnfNodePtr> *grad_recv_oml_map, CNodePtr *pre_grad_comm_node) {
-  if (index == kIndex0 && (*grad_send_qkv_map).find(new_str) != (*grad_send_qkv_map).end()) {
-    (*pre_grad_comm_node) = (*grad_send_qkv_map).at(new_str)->cast<CNodePtr>();
-  } else if (index == kIndex1 && (*grad_recv_qkv_map).find(new_str) != (*grad_recv_qkv_map).end()) {
-    (*pre_grad_comm_node) = (*grad_recv_qkv_map).at(new_str)->cast<CNodePtr>();
-  } else if (index == kIndex2 && (*grad_send_oml_map).find(new_str) != (*grad_send_oml_map).end()) {
-    (*pre_grad_comm_node) = (*grad_send_oml_map).at(new_str)->cast<CNodePtr>();
-  } else if (index == kIndex3 && (*grad_recv_oml_map).find(new_str) != (*grad_recv_oml_map).end()) {
-    (*pre_grad_comm_node) = (*grad_recv_oml_map).at(new_str)->cast<CNodePtr>();
+void GetPreCommNode(const std::string &new_str, int64_t index,
+                    const std::map<std::string, AnfNodePtr> &grad_send_qkv_map,
+                    const std::map<std::string, AnfNodePtr> &grad_recv_qkv_map,
+                    const std::map<std::string, AnfNodePtr> &grad_send_oml_map,
+                    const std::map<std::string, AnfNodePtr> &grad_recv_oml_map, CNodePtr *pre_grad_comm_node) {
+  if (index == kIndex0 && grad_send_qkv_map.find(new_str) != grad_send_qkv_map.end()) {
+    (*pre_grad_comm_node) = grad_send_qkv_map.at(new_str)->cast<CNodePtr>();
+  } else if (index == kIndex1 && grad_recv_qkv_map.find(new_str) != grad_recv_qkv_map.end()) {
+    (*pre_grad_comm_node) = grad_recv_qkv_map.at(new_str)->cast<CNodePtr>();
+  } else if (index == kIndex2 && grad_send_oml_map.find(new_str) != grad_send_oml_map.end()) {
+    (*pre_grad_comm_node) = grad_send_oml_map.at(new_str)->cast<CNodePtr>();
+  } else if (index == kIndex3 && grad_recv_oml_map.find(new_str) != grad_recv_oml_map.end()) {
+    (*pre_grad_comm_node) = grad_recv_oml_map.at(new_str)->cast<CNodePtr>();
   }
 }
 
@@ -431,7 +514,8 @@ int64_t GetSendQKVDstRank(size_t rank, size_t step, size_t sp_size) { return (ra
 
 int64_t GetRecvQKVSrcRank(size_t rank, size_t step, size_t sp_size) { return (rank + sp_size - step - 1) % sp_size; }
 
-CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_t sp_num, const AnfNodePtr &query_node,
+CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_t sp_num,
+                               const std::vector<AnfNodePtr> &send_query_and_grads,
                                const std::vector<AnfNodePtr> &send_kv_nodes, const RankList &spRankList,
                                const std::string &qkv_group, const CNodePtr &pre_node, Shape q_shape, Shape kv_shape,
                                TypeId output_type_id) {
@@ -440,9 +524,13 @@ CNodePtr GetCurrentSendQKVNode(size_t pos, size_t step, size_t inner_step, size_
     auto send_qkv_dst_rank = GetSendQKVDstRank(pos, step, sp_num);
     if (pos + step + 1 >= sp_num) {  // send q
       if (inner_step == 0) {
-        cur_send_qkv_node = NewSendNode(CreateDepend(query_node, pre_node, pre_node),
+        auto send_shape = q_shape;
+        send_shape[kIndex3] = kFAHeadSizeNum3 * send_shape[kIndex3] + kFAMax + kFASum;
+        auto query_tuple = NewMakeTupleNode(send_query_and_grads);
+        auto query_concat = NewConcatNode(query_tuple, kIndex3, send_shape);
+        cur_send_qkv_node = NewSendNode(CreateDepend(query_concat, pre_node, pre_node),
                                         GetSendRecvTag(pos, send_qkv_dst_rank, TagType::query),
-                                        spRankList[send_qkv_dst_rank], q_shape, output_type_id, qkv_group);
+                                        spRankList[send_qkv_dst_rank], send_shape, output_type_id, qkv_group);
       }
     } else {                                                             // send kv
       auto kv_type = (inner_step == 0 ? TagType::kv_a : TagType::kv_b);  // grad should send kv_a first
@@ -464,8 +552,10 @@ CNodePtr GetCurrentRecvQKVNode(size_t pos, size_t step, size_t inner_step, size_
     auto recv_qkv_src_rank = GetRecvQKVSrcRank(pos, step, sp_num);
     if (pos < step + kIndex1) {
       if (inner_step == kIndex0) {  // recv q
+        auto recv_shape = q_shape;
+        recv_shape[kIndex3] = kFAHeadSizeNum3 * recv_shape[kIndex3] + kFAMax + kFASum;
         cur_recv_qkv_node = NewReceiveNode(pre_node, GetSendRecvTag(recv_qkv_src_rank, pos, TagType::query),
-                                           spRankList[recv_qkv_src_rank], q_shape, output_type_id, qkv_group);
+                                           spRankList[recv_qkv_src_rank], recv_shape, output_type_id, qkv_group);
         cur_recv_qkv_node->AddPrimalAttr("recv_type", MakeValue<int64_t>(TagType::query));
       }
     } else {  // recv kv
@@ -478,7 +568,7 @@ CNodePtr GetCurrentRecvQKVNode(size_t pos, size_t step, size_t inner_step, size_
   return cur_recv_qkv_node;
 }
 
-void ChangeQKVToBNSD(const std::shared_ptr<FlashAttentionScoreInfo> &fa_info, Shape *q_shape, Shape *kv_shape) {
+void GetQKVShape(const std::shared_ptr<FlashAttentionScoreInfo> &fa_info, Shape *q_shape, Shape *kv_shape) {
   auto input_layout = fa_info->input_layout();
   *q_shape = fa_info->inputs_tensor_info()[kIndex0].tensor_layout().base_slice_shape().array();
   *kv_shape = fa_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
@@ -506,27 +596,113 @@ void WaitForAllInputs(CNodePtr *later_node, CNodePtr *fromer_node, const FuncGra
   manager->SetEdge((*later_node), 1, later_node_input);
 }
 
+void GetPreGradNode(const std::map<std::string, AnfNodePtr, FaGradCompareMethod> &grad_fa_map,
+                    const std::map<std::string, AnfNodePtr> &grad_send_qkv_map,
+                    const std::map<std::string, AnfNodePtr> &grad_recv_qkv_map,
+                    const std::map<std::string, AnfNodePtr> &grad_send_oml_map,
+                    const std::map<std::string, AnfNodePtr> &grad_recv_oml_map, const std::string &flash_index,
+                    int64_t sp_num, CNodePtr *pre_grad_fa_node, CNodePtr *pre_grad_comm_node) {
+  auto new_str = NextFlashIndex(flash_index, sp_num);
+  while (new_str != "") {
+    if (grad_fa_map.find(new_str) != grad_fa_map.end()) {
+      *pre_grad_fa_node = grad_fa_map.at(new_str)->cast<CNodePtr>();
+      if (GetValue<std::string>((*pre_grad_fa_node)->GetPrimalAttr("comm_order")) != "") {
+        auto pre_comm_order = GetValue<std::string>((*pre_grad_fa_node)->GetPrimalAttr("comm_order"));
+        auto pre_comm_order_list = GetCommOrder(pre_comm_order);
+        GetPreCommNode(new_str, pre_comm_order_list[0], grad_send_qkv_map, grad_recv_qkv_map, grad_send_oml_map,
+                       grad_recv_oml_map, pre_grad_comm_node);
+        break;
+      }
+    }
+    new_str = NextFlashIndex(new_str, sp_num);
+  }
+}
+
+void ReplaceLocalInput(const FuncGraphPtr &graph, const std::vector<AnfNodePtr> &cur_query_and_grads,
+                       CNodePtr *grad_fa_node) {
+  auto manager = graph->manager();
+  manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputDyIndex + 1, cur_query_and_grads[kIndex1]);
+  manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxMaxIndex + 1,
+                   cur_query_and_grads[kIndex3]);
+  manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxSumIndex + 1,
+                   cur_query_and_grads[kIndex4]);
+  auto none_node = NewValueNode(std::make_shared<None>());
+  MS_EXCEPTION_IF_NULL(none_node);
+  none_node->set_abstract(std::make_shared<abstract::AbstractNone>());
+  manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxOutIndex + 1, none_node);
+  manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputAttentionInIndex + 1,
+                   cur_query_and_grads[kIndex2]);
+}
+
 void GetFirstFAGradQKV(const std::map<std::string, AnfNodePtr, FaGradCompareMethod> &grad_fa_map,
-                       const string &flash_index, int64_t sp_num, std::vector<AnfNodePtr> *send_kv_nodes,
-                       AnfNodePtr *query_node, int64_t real_step) {
+                       const std::map<int64_t, AnfNodePtr> &dout_map,
+                       const std::map<int64_t, AnfNodePtr> &softmax_max_map,
+                       const std::map<int64_t, AnfNodePtr> &softmax_sum_map,
+                       const std::map<int64_t, AnfNodePtr> &attention_out_map, const string &flash_index,
+                       int64_t sp_num, std::vector<AnfNodePtr> *send_kv_nodes,
+                       std::vector<AnfNodePtr> *send_query_and_grads) {
   // first grad fa, grad_fa_map has been sorted
   auto first_flash_index = FirstFlashIndex(flash_index, sp_num);
   auto first_grad_fa = grad_fa_map.at(first_flash_index)->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(first_grad_fa);
-  *query_node = first_grad_fa->input(ops::FASGradInputIndex::kFASGradInputQueryIndex + 1);
+  auto send_query_node = first_grad_fa->input(ops::FASGradInputIndex::kFASGradInputQueryIndex + 1);
+  MS_EXCEPTION_IF_NULL(send_query_node);
+  size_t underscore_pos = flash_index.find('_');
+  std::string first_number_str = first_flash_index.substr(0, underscore_pos);
+  int first_number = std::stoi(first_number_str);
+  MS_EXCEPTION_IF_NULL(dout_map.find(first_number)->second);
+  auto dout_node = dout_map.find(first_number)->second->cast<CNodePtr>()->input(kIndex2);
+  auto softmax_max_node = softmax_max_map.find(first_number)->second;
+  auto softmax_sum_node = softmax_sum_map.find(first_number)->second;
+  auto attention_out_node = attention_out_map.find(first_number)->second;
+  MS_EXCEPTION_IF_NULL(dout_node);
+  MS_EXCEPTION_IF_NULL(softmax_max_node);
+  MS_EXCEPTION_IF_NULL(softmax_sum_node);
+  MS_EXCEPTION_IF_NULL(attention_out_node);
+  *send_query_and_grads = {send_query_node, dout_node, attention_out_node, softmax_max_node, softmax_sum_node};
+
   auto key_node = first_grad_fa->input(ops::FASGradInputIndex::kFASGradInputKeyIndex + 1);
   auto value_node = first_grad_fa->input(ops::FASGradInputIndex::kFASGradInputValueIndex + 1);
-
   std::vector<AnfNodePtr> kv_a_nodes;
   std::vector<AnfNodePtr> kv_b_nodes;
   SplitKVNode(&kv_a_nodes, &kv_b_nodes, key_node, value_node);
-  auto kv_a_concat = NewConcatNode(NewMakeTupleNode(kv_a_nodes), kIndex2);
-  auto kv_b_concat = NewConcatNode(NewMakeTupleNode(kv_b_nodes), kIndex2);
+  auto shape = common::AnfAlgo::GetOutputInferShape(key_node, 0);
+  auto kv_a_concat = NewConcatNode(NewMakeTupleNode(kv_a_nodes), kIndex2, shape);
+  auto kv_b_concat = NewConcatNode(NewMakeTupleNode(kv_b_nodes), kIndex2, shape);
   *send_kv_nodes = {kv_a_concat, kv_b_concat};
 }
 
-void ReplaceGradQKV(const FuncGraphPtr &graph, const CNodePtr &pre_grad_recv_qkv_node,
-                    const CNodePtr &pre_grad_send_qkv_node, const CNodePtr &pre_grad_fa_node, CNodePtr *grad_fa_node) {
+void DismantleQueryAndGradsTensor(const AnfNodePtr &recv_query_and_grads, const Shape &q_shape, AnfNodePtr *query_node,
+                                  AnfNodePtr *dout, AnfNodePtr *cur_attn_out, AnfNodePtr *cur_softmax_max,
+                                  AnfNodePtr *cur_softmax_sum) {
+  Shape out_shape = q_shape;
+  *query_node =
+    NewStridedSliceNode(recv_query_and_grads, {0, 0, 0, 0},
+                        {q_shape[0], q_shape[1], q_shape[kIndex2], q_shape[kIndex3]}, {1, 1, 1, 1}, out_shape);
+  *dout = NewStridedSliceNode(recv_query_and_grads, {0, 0, 0, q_shape[3]},
+                              {q_shape[0], q_shape[1], q_shape[kIndex2], kFAHeadSizeNum2 * q_shape[kIndex3]},
+                              {1, 1, 1, 1}, out_shape);
+  *cur_attn_out = NewStridedSliceNode(recv_query_and_grads, {0, 0, 0, kFAHeadSizeNum2 * q_shape[kIndex3]},
+                                      {q_shape[0], q_shape[1], q_shape[kIndex2], kFAHeadSizeNum3 * q_shape[kIndex3]},
+                                      {1, 1, 1, 1}, out_shape);
+  out_shape[kIndex3] = kIndex8;
+  *cur_softmax_max = NewCastNode(
+    NewStridedSliceNode(recv_query_and_grads, {0, 0, 0, kFAHeadSizeNum3 * q_shape[kIndex3]},
+                        {q_shape[0], q_shape[1], q_shape[kIndex2], kFAHeadSizeNum3 * q_shape[kIndex3] + kFAMax},
+                        {1, 1, 1, 1}, out_shape),
+    TypeId::kNumberTypeFloat32);
+  *cur_softmax_sum =
+    NewCastNode(NewStridedSliceNode(
+                  recv_query_and_grads, {0, 0, 0, kFAHeadSizeNum3 * q_shape[kIndex3] + kFAMax},
+                  {q_shape[0], q_shape[1], q_shape[kIndex2], kFAHeadSizeNum3 * q_shape[kIndex3] + kFAMax + kFASum},
+                  {1, 1, 1, 1}, out_shape),
+                TypeId::kNumberTypeFloat32);
+}
+
+void ReplaceGradQKV(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttentionScoreInfo> &fa_info,
+                    const CNodePtr &pre_grad_recv_qkv_node, const CNodePtr &pre_grad_send_qkv_node,
+                    const CNodePtr &pre_grad_fa_node, const std::vector<AnfNodePtr> &cur_query_and_grads,
+                    CNodePtr *grad_fa_node) {
   auto manager = graph->manager();
   if (pre_grad_recv_qkv_node == nullptr && pre_grad_send_qkv_node == nullptr) {
     MS_LOG(EXCEPTION) << "Last step kv comm nodes have not been created.";
@@ -535,10 +711,32 @@ void ReplaceGradQKV(const FuncGraphPtr &graph, const CNodePtr &pre_grad_recv_qkv
   MS_EXCEPTION_IF_NULL(*grad_fa_node);
   auto recv_type = GetValue<int64_t>(pre_grad_recv_qkv_node->GetPrimalAttr("recv_type"));
   if (recv_type == TagType::query) {
-    AnfNodePtr query_node = pre_grad_recv_qkv_node;
+    Shape q_shape;
+    Shape kv_shape;
+    GetQKVShape(fa_info, &q_shape, &kv_shape);
+    AnfNodePtr query_node;
+    AnfNodePtr dout;
+    AnfNodePtr cur_attn_out;
+    AnfNodePtr cur_softmax_max;
+    AnfNodePtr cur_softmax_sum;
+    DismantleQueryAndGradsTensor(pre_grad_recv_qkv_node, q_shape, &query_node, &dout, &cur_attn_out, &cur_softmax_max,
+                                 &cur_softmax_sum);
+    MS_EXCEPTION_IF_NULL(query_node);
+    MS_EXCEPTION_IF_NULL(dout);
+    MS_EXCEPTION_IF_NULL(cur_attn_out);
+    MS_EXCEPTION_IF_NULL(cur_softmax_max);
+    MS_EXCEPTION_IF_NULL(cur_softmax_sum);
     query_node = CreateDepend(query_node, pre_grad_send_qkv_node, pre_grad_send_qkv_node);
     query_node = CreateDepend(query_node, pre_grad_fa_node, pre_grad_fa_node);
-    manager->SetEdge(*grad_fa_node, kIndex1, query_node);
+    manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputQueryIndex + 1, query_node);
+    manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputDyIndex + 1, dout);
+    manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxMaxIndex + 1, cur_softmax_max);
+    manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxSumIndex + 1, cur_softmax_sum);
+    auto none_node = NewValueNode(std::make_shared<None>());
+    MS_EXCEPTION_IF_NULL(none_node);
+    none_node->set_abstract(std::make_shared<abstract::AbstractNone>());
+    manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxOutIndex + 1, none_node);
+    manager->SetEdge(*grad_fa_node, ops::FASGradInputIndex::kFASGradInputAttentionInIndex + 1, cur_attn_out);
   } else {
     auto kv_split = NewSplitNode(pre_grad_recv_qkv_node, kIndex2, kIndex2);
     auto key_node = NewTupleGetItemNode(kv_split, kIndex0);
@@ -547,12 +745,13 @@ void ReplaceGradQKV(const FuncGraphPtr &graph, const CNodePtr &pre_grad_recv_qkv
     auto value_node = NewTupleGetItemNode(kv_split, kIndex1);
     manager->SetEdge(*grad_fa_node, kIndex2, key_node_new);
     manager->SetEdge(*grad_fa_node, kIndex3, value_node);
+    ReplaceLocalInput(graph, cur_query_and_grads, grad_fa_node);
   }
 }
 
 void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttentionScoreInfo> &fa_info,
                     const CNodePtr &grad_last_comm_node, const CNodePtr &pre_grad_comm_node,
-                    const CNodePtr &pre_grad_fa_node, const AnfNodePtr &query_node,
+                    const CNodePtr &pre_grad_fa_node, const std::vector<AnfNodePtr> &send_query_and_grads,
                     const std::vector<AnfNodePtr> &send_kv_nodes, int64_t outer_step, int64_t inner_step,
                     int64_t sp_num, TypeId output_type_id, CNodePtr *pre_grad_send_qkv_node,
                     CNodePtr *pre_grad_recv_qkv_node, CNodePtr *cur_send_qkv_node, CNodePtr *cur_recv_qkv_node) {
@@ -561,19 +760,21 @@ void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
   auto spRankList = fa_info->GetSPRankList();
   Shape q_shape;
   Shape kv_shape;
-  ChangeQKVToBNSD(fa_info, &q_shape, &kv_shape);
+  GetQKVShape(fa_info, &q_shape, &kv_shape);
   // current step has no dkv comm node
   int64_t grad_qkv_step = outer_step - 1;
   auto rank_ring_index = GetRankIndex(pos, grad_qkv_step, sp_num);
   CNodePtr depend_node = grad_last_comm_node == nullptr ? pre_grad_comm_node : grad_last_comm_node;
   if (rank_ring_index % kIndex2 == 0) {  // send first
     *cur_send_qkv_node =
-      GetCurrentSendQKVNode(pos, grad_qkv_step, inner_step, sp_num, query_node, send_kv_nodes, spRankList,
+      GetCurrentSendQKVNode(pos, grad_qkv_step, inner_step, sp_num, send_query_and_grads, send_kv_nodes, spRankList,
                             g_device_manager->world_group(), depend_node, q_shape, kv_shape, output_type_id);
     if (*cur_send_qkv_node != nullptr) {
       auto cur_send_qkv_node_input = (*cur_send_qkv_node)->input(1);
-      manager->SetEdge(*cur_send_qkv_node, 1,
-                       CreateDepend(cur_send_qkv_node_input, pre_grad_fa_node, pre_grad_fa_node));
+      cur_send_qkv_node_input = CreateDepend(cur_send_qkv_node_input, pre_grad_fa_node, pre_grad_fa_node);
+      cur_send_qkv_node_input = CreateDepend(cur_send_qkv_node_input, *pre_grad_send_qkv_node, pre_grad_fa_node);
+      cur_send_qkv_node_input = CreateDepend(cur_send_qkv_node_input, *pre_grad_recv_qkv_node, pre_grad_fa_node);
+      manager->SetEdge(*cur_send_qkv_node, 1, cur_send_qkv_node_input);
       depend_node = *cur_send_qkv_node;
     }
     *cur_recv_qkv_node = GetCurrentRecvQKVNode(pos, grad_qkv_step, inner_step, sp_num, spRankList, q_shape, kv_shape,
@@ -591,11 +792,13 @@ void CreateCommNode(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttent
       auto cur_recv_qkv_node_input = (*cur_recv_qkv_node)->input(1);
       cur_recv_qkv_node_input = CreateDepend(cur_recv_qkv_node_input, depend_node, depend_node);
       cur_recv_qkv_node_input = CreateDepend(cur_recv_qkv_node_input, pre_grad_fa_node, pre_grad_fa_node);
+      cur_recv_qkv_node_input = CreateDepend(cur_recv_qkv_node_input, *pre_grad_send_qkv_node, pre_grad_fa_node);
+      cur_recv_qkv_node_input = CreateDepend(cur_recv_qkv_node_input, *pre_grad_recv_qkv_node, pre_grad_fa_node);
       manager->SetEdge(*cur_recv_qkv_node, 1, cur_recv_qkv_node_input);
       depend_node = *cur_recv_qkv_node;
     }
     *cur_send_qkv_node =
-      GetCurrentSendQKVNode(pos, grad_qkv_step, inner_step, sp_num, query_node, send_kv_nodes, spRankList,
+      GetCurrentSendQKVNode(pos, grad_qkv_step, inner_step, sp_num, send_query_and_grads, send_kv_nodes, spRankList,
                             g_device_manager->world_group(), depend_node, q_shape, kv_shape, output_type_id);
   }
   // if cur step receive nothing, use query which receive at latest step twice
@@ -613,7 +816,6 @@ void AdjustCommNodeDependency(const FuncGraphPtr &graph, const CNodePtr &loss_no
   auto manager = graph->manager();
   // ensure that fa and comm node start at the same time
   WaitForAllInputs(grad_first_comm_node, grad_fa_node, graph);
-  WaitForAllInputs(grad_fa_node, grad_first_comm_node, graph);
 
   // first comm node sort after pre ring comm node
   auto grad_first_comm_node_input = (*grad_first_comm_node)->input(1);
@@ -631,112 +833,116 @@ void AdjustCommNodeDependency(const FuncGraphPtr &graph, const CNodePtr &loss_no
                      CreateDepend(grad_last_comm_node_input, *grad_first_comm_node, *grad_first_comm_node));
   }
 }
+
+void AdjustFADependency(const FuncGraphPtr &graph, const std::shared_ptr<FlashAttentionScoreInfo> &fa_info,
+                        const CNodePtr &pre_grad_fa_node, const CNodePtr &cur_send_qkv_node,
+                        const CNodePtr &cur_recv_qkv_node, int64_t step, CNodePtr *grad_last_comm_node,
+                        CNodePtr *grad_fa_node) {
+  auto manager = graph->manager();
+  Shape q_shape;
+  Shape kv_shape;
+  GetQKVShape(fa_info, &q_shape, &kv_shape);
+  if (q_shape[0] > 1 && *grad_last_comm_node != nullptr) {
+    auto grad_fa_node_input = (*grad_fa_node)->input(1);
+    grad_fa_node_input = CreateDepend(grad_fa_node_input, pre_grad_fa_node, *grad_fa_node);
+    manager->SetEdge(*grad_fa_node, 1, grad_fa_node_input);
+    manager->Replace(*grad_last_comm_node, CreateDepend(*grad_last_comm_node, *grad_fa_node, *grad_last_comm_node));
+    manager->Replace(*grad_fa_node, CreateDepend(*grad_fa_node, *grad_last_comm_node, *grad_fa_node));
+  } else {  // ensure fa sort after cur dkv comm
+    auto grad_fa_node_input = (*grad_fa_node)->input(1);
+    grad_fa_node_input = CreateDepend(grad_fa_node_input, pre_grad_fa_node, *grad_fa_node);
+    grad_fa_node_input = CreateDepend(grad_fa_node_input, *grad_last_comm_node, *grad_fa_node);
+    grad_fa_node_input = CreateDepend(grad_fa_node_input, cur_send_qkv_node, *grad_fa_node);
+    grad_fa_node_input = CreateDepend(grad_fa_node_input, cur_recv_qkv_node, *grad_fa_node);
+    manager->SetEdge(*grad_fa_node, 1, grad_fa_node_input);
+  }
+}
 }  // namespace
 
-void OverlapGradFlashSP(const FuncGraphPtr &graph) {
-  auto manager = graph->manager();
+bool OverlapGradFlashSP(const FuncGraphPtr &graph) {
   std::map<std::string, AnfNodePtr> fa_map;
   std::map<std::string, AnfNodePtr, FaGradCompareMethod> grad_fa_map;
   std::map<std::string, AnfNodePtr> grad_send_qkv_map;
   std::map<std::string, AnfNodePtr> grad_recv_qkv_map;
   std::map<std::string, AnfNodePtr> grad_send_oml_map;
   std::map<std::string, AnfNodePtr> grad_recv_oml_map;
+  std::map<int64_t, AnfNodePtr> dout_map;
+  std::map<int64_t, AnfNodePtr> softmax_max_map;
+  std::map<int64_t, AnfNodePtr> softmax_sum_map;
+  std::map<int64_t, AnfNodePtr> attention_out_map;
   auto ret = graph->get_return();
   auto origin_nodes_topological = DeepScopedGraphSearch(ret);
   CNodePtr loss_node;
   FindTargetNode(&origin_nodes_topological, &fa_map, &grad_fa_map, &grad_send_qkv_map, &grad_recv_qkv_map,
-                 &grad_send_oml_map, &grad_recv_oml_map, &loss_node);
-  auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
-  if (pipeline_stages > 1) {
-    loss_node = nullptr;
-  }
+                 &grad_send_oml_map, &grad_recv_oml_map, &loss_node, &dout_map, &softmax_max_map, &softmax_sum_map,
+                 &attention_out_map);
   if (grad_fa_map.empty() || fa_map.empty()) {
-    return;
+    return false;
   }
   auto fa_info = GetAttentionInfo(fa_map);
   MS_EXCEPTION_IF_NULL(fa_info);
 
-  AnfNodePtr send_query_node;
+  std::vector<AnfNodePtr> send_query_and_grads;
   std::vector<AnfNodePtr> send_kv_nodes;
   int step = 0;
   int real_step = 0;
-  // pre ring kv comm node
-  CNodePtr pre_grad_recv_qkv_node;
+  CNodePtr pre_grad_recv_qkv_node;  // pre kv comm node
   CNodePtr pre_grad_send_qkv_node;
   for (auto it = grad_fa_map.begin(); it != grad_fa_map.end(); ++it) {
     CNodePtr grad_fa_node = it->second->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(grad_fa_node);
+    auto sp_num = GetValue<int64_t>(grad_fa_node->GetPrimalAttr("sp_num"));
     auto output_type_id = common::AnfAlgo::GetOutputInferDataType(grad_fa_node, 0);
     std::map<int64_t, CNodePtr> grad_comm_map;
     GetGradNode(&grad_send_qkv_map, &grad_recv_qkv_map, &grad_send_oml_map, &grad_recv_oml_map, &grad_comm_map,
                 it->first);
+    CNodePtr pre_grad_comm_node;  // pre dkv comm node
+    CNodePtr pre_grad_fa_node;    // pre fa grad
+    GetPreGradNode(grad_fa_map, grad_send_qkv_map, grad_recv_qkv_map, grad_send_oml_map, grad_recv_oml_map, it->first,
+                   sp_num, &pre_grad_fa_node, &pre_grad_comm_node);
 
-    // pre ring dkv comm node
-    CNodePtr pre_grad_comm_node;
-    // pre ring fa grad
-    CNodePtr pre_grad_fa_node;
-    auto sp_num = GetValue<int64_t>(grad_fa_node->GetPrimalAttr("sp_num"));
-    auto new_str = NextFlashIndex(it->first, sp_num);
-    while (new_str != "") {
-      if (grad_fa_map.find(new_str) != grad_fa_map.end()) {
-        pre_grad_fa_node = grad_fa_map.at(new_str)->cast<CNodePtr>();
-        if (GetValue<std::string>(pre_grad_fa_node->GetPrimalAttr("comm_order")) != "") {
-          auto pre_comm_order = GetValue<std::string>(pre_grad_fa_node->GetPrimalAttr("comm_order"));
-          auto pre_comm_order_list = GetCommOrder(pre_comm_order);
-          GetPreCommNode(new_str, pre_comm_order_list[0], &grad_send_qkv_map, &grad_recv_qkv_map, &grad_send_oml_map,
-                         &grad_recv_oml_map, &pre_grad_comm_node);
-          break;
-        }
-      }
-      new_str = NextFlashIndex(new_str, sp_num);
-    }
     if (step == 0) {  // when num_layers > 1
-      GetFirstFAGradQKV(grad_fa_map, it->first, sp_num, &send_kv_nodes, &send_query_node, real_step);
+      GetFirstFAGradQKV(grad_fa_map, dout_map, softmax_max_map, softmax_sum_map, attention_out_map, it->first, sp_num,
+                        &send_kv_nodes, &send_query_and_grads);
       pre_grad_recv_qkv_node = nullptr;
       pre_grad_send_qkv_node = nullptr;
     }
-    // cur ring dkv comm node
-    CNodePtr grad_first_comm_node;
+    CNodePtr grad_first_comm_node;  // cur dkv comm node
     CNodePtr grad_last_comm_node;
-    // cur ring kv comm node
-    CNodePtr cur_send_qkv_node;
+    CNodePtr cur_send_qkv_node;  // cur kv comm node
     CNodePtr cur_recv_qkv_node;
     auto comm_order = GetValue<std::string>(grad_fa_node->GetPrimalAttr("comm_order"));
     auto comm_order_list = GetCommOrder(comm_order);
     if (comm_order_list.size() != 0) {
       grad_first_comm_node = grad_comm_map.at(comm_order_list[comm_order_list.size() - 1]);
       grad_last_comm_node = grad_comm_map.at(comm_order_list[0]);
-
       AdjustCommNodeDependency(graph, loss_node, pre_grad_comm_node, pre_grad_fa_node, pre_grad_send_qkv_node,
                                pre_grad_recv_qkv_node, &grad_first_comm_node, &grad_last_comm_node, &grad_fa_node);
+    }
+    if (step == 0 || step == sp_num) {
+      ReplaceLocalInput(graph, send_query_and_grads, &grad_fa_node);
     }
 
     int64_t outer_step = (sp_num - step) / kIndex2;
     int64_t inner_step = step == 0 ? 0 : (step + 1) % kIndex2;
     int64_t first_step = sp_num / kIndex2;
-    if (outer_step >= 0) {                              // outer step
-      if (outer_step != first_step && step < sp_num) {  // no need to replace grad qkv
-        ReplaceGradQKV(graph, pre_grad_recv_qkv_node, pre_grad_send_qkv_node, pre_grad_fa_node, &grad_fa_node);
+    if (outer_step >= 0) {                              // outer step < 0 no need create send/recv kv
+      if (outer_step != first_step && step < sp_num) {  // first step no need to replace grad qkv
+        ReplaceGradQKV(graph, fa_info, pre_grad_recv_qkv_node, pre_grad_send_qkv_node, pre_grad_fa_node,
+                       send_query_and_grads, &grad_fa_node);
       }
-
-      // create kv comm node when is not last outer_step
-      if (outer_step != 0) {
-        CreateCommNode(graph, fa_info, grad_last_comm_node, pre_grad_comm_node, pre_grad_fa_node, send_query_node,
+      if (outer_step != 0) {  // create kv comm node when is not last outer_step
+        CreateCommNode(graph, fa_info, grad_last_comm_node, pre_grad_comm_node, pre_grad_fa_node, send_query_and_grads,
                        send_kv_nodes, outer_step, inner_step, sp_num, output_type_id, &pre_grad_send_qkv_node,
                        &pre_grad_recv_qkv_node, &cur_send_qkv_node, &cur_recv_qkv_node);
       }
     }
-    // no need create send/recv kv
-    // ensure fa sort after cur dkv comm
-    auto grad_fa_node_input = grad_fa_node->input(1);
-    grad_fa_node_input = CreateDepend(grad_fa_node_input, grad_last_comm_node, grad_fa_node);
-    grad_fa_node_input = CreateDepend(grad_fa_node_input, pre_grad_fa_node, grad_fa_node);
-    grad_fa_node_input = CreateDepend(grad_fa_node_input, cur_send_qkv_node, grad_fa_node);
-    grad_fa_node_input = CreateDepend(grad_fa_node_input, cur_recv_qkv_node, grad_fa_node);
-    manager->SetEdge(grad_fa_node, 1, grad_fa_node_input);
+    AdjustFADependency(graph, fa_info, pre_grad_fa_node, cur_send_qkv_node, cur_recv_qkv_node, step,
+                       &grad_last_comm_node, &grad_fa_node);
     real_step++;
     step = real_step % (sp_num + 1);
   }
+  return true;
 }
 }  // namespace parallel
 }  // namespace mindspore

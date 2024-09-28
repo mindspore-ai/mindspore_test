@@ -1528,13 +1528,17 @@ void HandleFAResult(size_t actual_step, CNodePtr *acc_attention, CNodePtr *histo
       *cur_softmax_sum = CreateDepend(*cur_softmax_sum, *latest_send_oml);
       *cur_attn_out = CreateDepend(*cur_attn_out, *latest_send_oml);
     }
+    bool need_update = *latest_recv_oml == nullptr ? true : false;
     UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum, *cur_attn_out,
-                          fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id);
+                          fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id,
+                          need_update);
     *latest_fa_op = *acc_attention;
     if ((*latest_recv_oml) != nullptr) {
+      *latest_recv_oml = CreateDepend(*latest_recv_oml, *latest_fa_op);
       DismantleRecvOMLTensor(*latest_recv_oml, cur_attn_out, cur_softmax_max, cur_softmax_sum, q_shape);
       UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum, *cur_attn_out,
-                            fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id);
+                            fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id,
+                            true);
       *latest_fa_op = *acc_attention;
     }
   } else {
@@ -1561,6 +1565,7 @@ void HandleFAResult(size_t actual_step, CNodePtr *acc_attention, CNodePtr *histo
                             fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step, output_type_id);
       *latest_fa_op = *acc_attention;
       if ((*latest_recv_oml) != nullptr) {
+        *latest_recv_oml = CreateDepend(*latest_recv_oml, *latest_fa_op);
         DismantleRecvOMLTensor(*latest_recv_oml, cur_attn_out, cur_softmax_max, cur_softmax_sum, q_shape);
         UpdateAttentionOutput(history_max, history_sum, acc_attention, *cur_softmax_max, *cur_softmax_sum,
                               *cur_attn_out, fa_b, fa_s1, fa_n1, fa_h1, FASInputLayoutMode::BNSD, fa_index, actual_step,
@@ -1739,6 +1744,7 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
     }
   }
   acc_attention = CreateDepends(acc_attention, {latest_send_qkv, latest_recv_qkv, latest_send_oml, latest_recv_oml});
+  acc_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index));
   acc_attention = NewCastNode(acc_attention, output_type_id);
   if (input_layout == FASInputLayoutMode::BSH) {
     auto tmp_tup1 = parallel::CreateTuple({0, 2, 1, 3});
@@ -2714,7 +2720,7 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
       }
       continue;
     }
-    if (!IsPrimitiveCNode(forward_cnode, prim::kPrimReceive) && !IsPrimitiveCNode(forward_cnode, prim::kPrimSend)) {
+    if (!IsPrimitiveCNode(forward_cnode, prim::kPrimReceive)) {
       continue;
     }
     ProcessIndexMakeTupleInputMap(node, forward_cnode, node_users_map, origin_index, &index_make_tuple_input_map,

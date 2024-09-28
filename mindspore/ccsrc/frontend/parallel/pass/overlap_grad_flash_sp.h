@@ -21,7 +21,7 @@
 
 namespace mindspore {
 namespace parallel {
-void OverlapGradFlashSP(const FuncGraphPtr &graph);
+bool OverlapGradFlashSP(const FuncGraphPtr &graph);
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_PASS_OVERLAP_GRAD_FLASH_SP_H_
