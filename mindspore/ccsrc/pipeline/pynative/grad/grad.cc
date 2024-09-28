@@ -2378,11 +2378,6 @@ void GradExecutor::WaitBpropTask() const {
 
 void GradExecutor::ChildAfterFork() {
   MS_LOG(DEBUG) << "GradExecutor reinitialize after fork.";
-  const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
-  if (bprop_queue != nullptr) {
-    MS_LOG(DEBUG) << "Reinitialize bprop_queue_.";
-    bprop_queue->ChildAfterFork();
-  }
   runtime::PyBoostOpExecute::GetInstance().ClearBackend();
   MS_LOG(DEBUG) << "GradExecutor reinitialize after fork done.";
 }

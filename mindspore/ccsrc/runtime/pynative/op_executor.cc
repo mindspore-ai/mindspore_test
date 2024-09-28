@@ -85,9 +85,6 @@ void OpExecutor::RegisterCallbackForMemoryPool() {
 
 void OpExecutor::ChildAfterFork() {
   MS_LOG(DEBUG) << "OpExecutor reinitialize after fork";
-  MS_LOG(DEBUG) << "Reinitialize async_queue_.";
-  runtime::Pipeline::Get().backend_stage()->ChildAfterFork();
-  runtime::Pipeline::Get().launch_stage()->ChildAfterFork();
   // Refresh the lazy callback in Tensor.
   tensor::Tensor::RegisterLazyCallback([]() { runtime::Pipeline::Get().WaitAll(); });
   RegisterCallbackForMemoryPool();

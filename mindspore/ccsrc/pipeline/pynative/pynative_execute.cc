@@ -314,6 +314,7 @@ void PyNativeExecutor::ParentBeforeFork() {
 void PyNativeExecutor::ChildAfterFork() {
   MS_LOG(DEBUG) << "PyNativeExecutor reinitialize after fork.";
   MS_LOG(DEBUG) << "Clear OpCompiler Cache.";
+  runtime::Pipeline::Get().ChildAfterFork();
   pynative::OpCompiler::GetInstance().ClearAllCache();
   if (forward_executor_ != nullptr) {
     MS_LOG(DEBUG) << "Clear forward_executor_ resources.";

@@ -49,8 +49,19 @@ void Pipeline::WaitForward() {
 
 void Pipeline::SetSpin(bool spin) {
   frontend_stage_->SetSpin(spin);
+  bprop_stage_->SetSpin(spin);
   backend_stage_->SetSpin(spin);
   launch_stage_->SetSpin(spin);
+}
+
+void Pipeline::ChildAfterFork() {
+  MS_LOG(DEBUG) << "Pipeline reinitialize after fork start.";
+  AsyncRQueue::ChildAfterForkPre();
+  frontend_stage_->ChildAfterFork();
+  bprop_stage_->ChildAfterFork();
+  backend_stage_->ChildAfterFork();
+  launch_stage_->ChildAfterFork();
+  MS_LOG(DEBUG) << "Pipeline reinitialize after fork end.";
 }
 }  // namespace runtime
 }  // namespace mindspore
