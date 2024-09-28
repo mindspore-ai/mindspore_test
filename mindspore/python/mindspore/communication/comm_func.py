@@ -43,6 +43,8 @@ __all__ = [
     'reduce_scatter_tensor',
     'reduce',
     'scatter_tensor',
+    'send',
+    'recv',
     'P2POp',
     'batch_isend_irecv',
 ]

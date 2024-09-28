@@ -25,6 +25,8 @@ for more details.
     mindspore.communication.comm_func.gather_into_tensor
     mindspore.communication.comm_func.irecv
     mindspore.communication.comm_func.isend
+    mindspore.communication.comm_func.recv
+    mindspore.communication.comm_func.send
     mindspore.communication.comm_func.P2POp
     mindspore.communication.comm_func.reduce
     mindspore.communication.comm_func.reduce_scatter_tensor
