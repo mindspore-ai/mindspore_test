@@ -53,17 +53,16 @@ bool ExtractVolumePatchesKernelMod::Init(const std::vector<KernelTensor *> &inpu
 
 int ExtractVolumePatchesKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
-  constexpr size_t x_dim_num = 5;
-  constexpr size_t out_dim_num = 5;
   if (inputs.empty() || outputs.empty()) {
     MS_LOG(EXCEPTION) << "Get empty inputs or outputs, inputs size: " << inputs.size()
                       << ", outputs size: " << outputs.size();
   }
-
-  int ret = KernelMod::Resize(inputs, outputs);
-  if (ret != 0) {
+  if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
+
+  constexpr size_t x_dim_num = 5;
+  constexpr size_t out_dim_num = 5;
   input_shape_ = inputs[0]->GetShapeVector();
   if (input_shape_.size() != x_dim_num) {
     MS_LOG(EXCEPTION) << "Incorrect input dim size: " << input_shape_.size() << ", which should be " << x_dim_num;
@@ -72,6 +71,12 @@ int ExtractVolumePatchesKernelMod::Resize(const std::vector<KernelTensor *> &inp
   output_shape_ = outputs[0]->GetShapeVector();
   if (output_shape_.size() != out_dim_num) {
     MS_LOG(EXCEPTION) << "Incorrect output dim size: " << output_shape_.size() << ", which should be " << out_dim_num;
+  }
+
+  if (!(IsValidShape(input_shape_) && IsValidShape(output_shape_))) {
+    MS_LOG(EXCEPTION) << "For " << kernel_name_
+                      << ", the input's shape and output's shape should be nonnegative, but got " << input_shape_
+                      << " and " << output_shape_;
   }
 
   return static_cast<int>(KRET_OK);

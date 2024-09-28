@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 #include "infer/grad/pad_v3_grad.h"
+#include <cstdint>
+#include <optional>
 #include <set>
+#include <vector>
 #include "abstract/ops/primitive_infer_map.h"
+#include "ir/anf.h"
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
+#include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
@@ -42,102 +49,126 @@ void PaddingsValueCheck(const PrimitivePtr &primitive, const ShapeVector &x_shap
   }
 }
 
+std::optional<std::vector<int64_t>> PadV3GradFetchPaddingsValFromArg(const PrimitivePtr &primitive,
+                                                                     const AbstractBasePtr &paddings_arg) {
+  std::vector<int64_t> paddings_val;
+  MS_EXCEPTION_IF_NULL(primitive);
+  const auto &prim_name = primitive->name();
+  auto padding_type = paddings_arg->GetType();
+  if (padding_type->isa<TensorType>()) {
+    auto paddings_shape_ptr = paddings_arg->GetShape();
+    MS_EXCEPTION_IF_NULL(paddings_shape_ptr);
+    auto paddings_value_ptr = paddings_arg->GetValue();
+    MS_EXCEPTION_IF_NULL(paddings_value_ptr);
+    if (paddings_shape_ptr->IsDynamic() || paddings_value_ptr->isa<ValueAny>()) {
+      return std::nullopt;
+    }
+    paddings_val =
+      CheckAndConvertUtils::CheckTensorIntValue("paddings value", paddings_value_ptr, prim_name, padding_type);
+  } else if (padding_type->isa<Tuple>() || padding_type->isa<List>()) {
+    auto value_ptr = paddings_arg->GetValue();
+    if (IsValueKnown(value_ptr)) {
+      paddings_val = CheckAndConvertUtils::CheckIntOrTupleInt("paddings value", paddings_arg, prim_name);
+    } else {
+      return std::nullopt;
+    }
+  } else {
+    return std::nullopt;
+  }
+  return paddings_val;
+}
+
+std::vector<int64_t> PadV3GradDealWithPaddingValue(const PrimitivePtr &primitive, const std::vector<int64_t> &x_shape,
+                                                   size_t paddings_size, const std::vector<int64_t> &ori_paddings_val) {
+  const auto &prim_name = primitive->name();
+  std::vector<int64_t> paddings_val(ori_paddings_val);
+  if (paddings_size == x_shape.size() * kInputIndex2) {
+    MS_LOG(INFO) << "For " << prim_name
+                 << ", the paddings' val has been changed in ascend backend pass, which causes paddings' size expanded "
+                    "to 2 times x_rank(8, or 10)";
+    // (0, 1, 2, 3, 4, 5, 6, 7) -> (6, 7, 4, 5, 2, 3, 0, 1)
+    std::reverse(paddings_val.begin(), paddings_val.end());
+    for (size_t i = 1; i < paddings_val.size(); i += kInputIndex2) {
+      std::swap(paddings_val[i - 1], paddings_val[i]);
+    }
+  } else {
+    PaddingsValueCheck(primitive, x_shape, paddings_val, prim_name);
+    auto paddings_contiguous = GetValue<bool>(primitive->GetAttr("paddings_contiguous"));
+    if (!paddings_contiguous) {
+      for (size_t i = 0; i < paddings_size; ++i) {
+        if (i % kInputIndex2 == 0) {
+          paddings_val[i] = ori_paddings_val[i / kInputIndex2];
+        } else {
+          paddings_val[i] = ori_paddings_val[(i + paddings_size) / kInputIndex2];
+        }
+      }
+    }
+  }
+  return paddings_val;
+}
+
+std::vector<int64_t> PadV3GradInferOutputShapeWithPaddings(const PrimitivePtr &primitive,
+                                                           const std::vector<int64_t> &x_shape, size_t paddings_size,
+                                                           const std::vector<int64_t> &paddings_val) {
+  const auto &prim_name = primitive->name();
+  std::vector<int64_t> out_shape;
+  if (paddings_size == kInputIndex2) {
+    (void)CheckAndConvertUtils::CheckInteger("input dims when padding's size equal 2", SizeToLong(kInputIndex3), kEqual,
+                                             SizeToLong(x_shape.size()), prim_name);
+    (void)out_shape.emplace_back(x_shape[0]);
+    (void)out_shape.emplace_back(x_shape[1]);
+    (void)out_shape.emplace_back(x_shape[kInputIndex2] - paddings_val[0] - paddings_val[1]);
+  } else if (paddings_size == kInputIndex4) {
+    (void)CheckAndConvertUtils::CheckInteger("input dims when padding's size equal 4", SizeToLong(kInputIndex4), kEqual,
+                                             SizeToLong(x_shape.size()), prim_name);
+    (void)out_shape.emplace_back(x_shape[0]);
+    (void)out_shape.emplace_back(x_shape[1]);
+    (void)out_shape.emplace_back(x_shape[kInputIndex2] - paddings_val[kInputIndex2] - paddings_val[kInputIndex3]);
+    (void)out_shape.emplace_back(x_shape[kInputIndex3] - paddings_val[0] - paddings_val[1]);
+  } else if (paddings_size == kInputIndex6) {
+    (void)CheckAndConvertUtils::CheckInteger("input dims when padding's size equal 6", SizeToLong(kInputIndex5), kEqual,
+                                             SizeToLong(x_shape.size()), prim_name);
+    (void)out_shape.emplace_back(x_shape[0]);
+    (void)out_shape.emplace_back(x_shape[1]);
+    (void)out_shape.emplace_back(x_shape[kInputIndex2] - paddings_val[kInputIndex4] - paddings_val[kInputIndex5]);
+    (void)out_shape.emplace_back(x_shape[kInputIndex3] - paddings_val[kInputIndex2] - paddings_val[kInputIndex3]);
+    (void)out_shape.emplace_back(x_shape[kInputIndex4] - paddings_val[0] - paddings_val[1]);
+  } else if (paddings_size == kInputIndex2 * x_shape.size()) {
+    MS_LOG(INFO) << "For " << prim_name
+                 << ", the paddings' val has been changed in ascend backend pass, which causes paddings' size expanded "
+                    "to 2 times x_rank(8, or 10)";
+    MS_ASSERT(paddings_val.size() == kInputIndex8 || paddings_val.size() == kInputIndex10);
+    for (size_t i = 0; i < x_shape.size(); i++) {
+      (void)out_shape.push_back(x_shape[i] - paddings_val[paddings_size - kInputIndex2 * i - kInputIndex1] -
+                                paddings_val[paddings_size - kInputIndex2 * (i + kInputIndex1)]);
+    }
+  } else {
+    MS_EXCEPTION(ValueError) << "For '" << prim_name << "', the length of paddings must be 2, 4 or 6, but got "
+                             << paddings_size;
+  }
+  (void)CheckAndConvertUtils::CheckPositiveVector("out_shape", out_shape, prim_name);
+  return out_shape;
+}
+
 abstract::ShapePtr PadV3GradInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  constexpr size_t kTwo = 2;
-  constexpr size_t kThree = 3;
-  constexpr size_t kFour = 4;
-  constexpr size_t kFive = 5;
-  constexpr size_t kPaddingsSizeTwo = 2;
-  constexpr size_t kPaddingsSizeFour = 4;
-  constexpr size_t kPaddingsSizeSix = 6;
-  constexpr size_t paddings_pos_2 = 2;
-  constexpr size_t paddings_pos_3 = 3;
-  constexpr size_t paddings_pos_4 = 4;
-  constexpr size_t paddings_pos_5 = 5;
   auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
   MS_EXCEPTION_IF_NULL(x_shape_ptr);
   // support dynamic rank
   if (x_shape_ptr->IsDimUnknown()) {
     return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
   }
-  auto x_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(x_shape_ptr)[kShape];
-  if (x_shape_ptr->IsDynamic()) {
+
+  const auto &x_shape = x_shape_ptr->GetShapeVector();
+  auto ori_paddings_val_opt = PadV3GradFetchPaddingsValFromArg(primitive, input_args[kInputIndex1]);
+  if (x_shape_ptr->IsDynamic() || !ori_paddings_val_opt.has_value()) {
     return std::make_shared<abstract::Shape>(std::vector<int64_t>(x_shape.size(), abstract::Shape::kShapeDimAny));
   }
 
-  MS_EXCEPTION_IF_NULL(primitive);
-  auto prim_name = primitive->name();
+  auto ori_paddings_val = ori_paddings_val_opt.value();
+  auto paddings_size = ori_paddings_val.size();
+  auto paddings_val = PadV3GradDealWithPaddingValue(primitive, x_shape, paddings_size, ori_paddings_val);
+  auto out_shape = PadV3GradInferOutputShapeWithPaddings(primitive, x_shape, paddings_size, paddings_val);
 
-  std::vector<int64_t> paddings_arg;
-  auto padding_type = input_args[kInputIndex1]->GetType();
-  if (padding_type->isa<TensorType>()) {
-    auto paddings_shape_ptr = input_args[kInputIndex1]->GetShape();
-    MS_EXCEPTION_IF_NULL(paddings_shape_ptr);
-    if (paddings_shape_ptr->IsDynamic()) {
-      return std::make_shared<abstract::Shape>(std::vector<int64_t>(x_shape.size(), abstract::Shape::kShapeDimAny));
-    }
-    auto paddings_value = input_args[kInputIndex1]->GetValue();
-    MS_EXCEPTION_IF_NULL(paddings_value);
-    if (paddings_value->isa<ValueAny>()) {
-      return std::make_shared<abstract::Shape>(std::vector<int64_t>(x_shape.size(), abstract::Shape::kShapeDimAny));
-    }
-    paddings_arg = CheckAndConvertUtils::CheckTensorIntValue("paddings value", paddings_value, prim_name, padding_type);
-  } else if (padding_type->isa<Tuple>() || padding_type->isa<List>()) {
-    auto value = input_args[1]->GetValue();
-    if (IsValueKnown(value)) {
-      paddings_arg = CheckAndConvertUtils::CheckIntOrTupleInt("paddings value", input_args[1], prim_name);
-    } else {
-      return std::make_shared<abstract::Shape>(std::vector<int64_t>(x_shape.size(), abstract::Shape::kShapeDimAny));
-    }
-  } else {
-    return std::make_shared<abstract::Shape>(std::vector<int64_t>(x_shape.size(), abstract::Shape::kShapeDimAny));
-  }
-
-  int64_t paddings_size = SizeToLong(paddings_arg.size());
-  std::vector<int64_t> paddings_val;
-  for (int64_t i = 0; i < paddings_size; ++i) {
-    paddings_val.push_back(int64_t(paddings_arg[LongToSize(i)]));
-  }
-  PaddingsValueCheck(primitive, x_shape, paddings_val, prim_name);
-  auto paddings_contiguous = GetValue<bool>(primitive->GetAttr("paddings_contiguous"));
-  if (!paddings_contiguous) {
-    std::vector<int64_t> tmp = paddings_val;
-    for (int64_t i = 0; i < paddings_size; ++i) {
-      if (i % SizeToLong(kTwo) == 0) {
-        paddings_val[LongToSize(i)] = tmp[LongToSize(i) / kTwo];
-      } else {
-        paddings_val[LongToSize(i)] = tmp[LongToSize(i + paddings_size) / kTwo];
-      }
-    }
-  }
-
-  std::vector<int64_t> out_shape;
-  if (paddings_size == SizeToLong(kPaddingsSizeTwo)) {
-    (void)CheckAndConvertUtils::CheckInteger("input dims when padding's size equal 2", SizeToLong(kThree), kEqual,
-                                             SizeToLong(x_shape.size()), prim_name);
-    (void)out_shape.emplace_back(x_shape[0]);
-    (void)out_shape.emplace_back(x_shape[1]);
-    (void)out_shape.emplace_back(x_shape[kInputIndex2] - paddings_val[0] - paddings_val[1]);
-  } else if (paddings_size == SizeToLong(kPaddingsSizeFour)) {
-    (void)CheckAndConvertUtils::CheckInteger("input dims when padding's size equal 4", SizeToLong(kFour), kEqual,
-                                             SizeToLong(x_shape.size()), prim_name);
-    (void)out_shape.emplace_back(x_shape[0]);
-    (void)out_shape.emplace_back(x_shape[1]);
-    (void)out_shape.emplace_back(x_shape[kInputIndex2] - paddings_val[paddings_pos_2] - paddings_val[paddings_pos_3]);
-    (void)out_shape.emplace_back(x_shape[kInputIndex3] - paddings_val[0] - paddings_val[1]);
-  } else if (paddings_size == SizeToLong(kPaddingsSizeSix)) {
-    (void)CheckAndConvertUtils::CheckInteger("input dims when padding's size equal 6", SizeToLong(kFive), kEqual,
-                                             SizeToLong(x_shape.size()), prim_name);
-    (void)out_shape.emplace_back(x_shape[0]);
-    (void)out_shape.emplace_back(x_shape[1]);
-    (void)out_shape.emplace_back(x_shape[kInputIndex2] - paddings_val[paddings_pos_4] - paddings_val[paddings_pos_5]);
-    (void)out_shape.emplace_back(x_shape[kInputIndex3] - paddings_val[paddings_pos_2] - paddings_val[paddings_pos_3]);
-    (void)out_shape.emplace_back(x_shape[kInputIndex4] - paddings_val[0] - paddings_val[1]);
-  } else {
-    MS_EXCEPTION(ValueError) << "For '" << prim_name << "', the length of paddings must be 2, 4 or 6, but got "
-                             << paddings_size;
-  }
-  (void)CheckAndConvertUtils::CheckPositiveVector("out_shape", out_shape, prim_name);
   return std::make_shared<abstract::Shape>(out_shape);
 }
 

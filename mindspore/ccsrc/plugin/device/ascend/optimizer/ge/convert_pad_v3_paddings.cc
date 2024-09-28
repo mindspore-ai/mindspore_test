@@ -316,6 +316,9 @@ const AnfNodePtr ConvertBasePaddings::Process(const FuncGraphPtr &graph, const A
     auto paddings_value_node = CreateConstPaddingsNode(graph, cnode);
     MS_EXCEPTION_IF_NULL(paddings_value_node);
     common::AnfAlgo::SetNodeInput(cnode, paddings_value_node, kIndex1);
+    auto node_prim = GetCNodePrimitive(node);
+    MS_EXCEPTION_IF_NULL(node_prim);
+    node_prim->AddAttr("is_paddings_changed", MakeValue(true));
   }
   // Not verified: for PadV3Grad, if the input tensor rand < 4, the input should be expanded to 4.
   auto is_expand = ExpandInputXDims(graph, cnode);
