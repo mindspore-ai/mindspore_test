@@ -156,7 +156,7 @@ def test_host_profiler(profile_framework):
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
         _train_with_profiler(data_path=data_path, device_target="Ascend", profile_memory=False, only_profile_host=False,
-                             profile_framework=profile_framework)
+                             profile_framework=profile_framework, with_stack=False)
         _check_host_profiling_file(profiler_path, rank_id, profile_framework=profile_framework)
     finally:
         if os.path.exists(data_path):
