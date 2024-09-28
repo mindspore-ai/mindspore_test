@@ -23,7 +23,7 @@ from types import FunctionType, MethodType
 from mindspore import log as logger
 from mindspore.parallel._utils import _get_device_num, _get_gradients_mean,\
     _get_parallel_mode, _get_enable_parallel_optimizer, _is_pynative_parallel
-from mindspore.context import ParallelMode, GRAPH_MODE, get_context
+from mindspore.context import ParallelMode
 from mindspore import _checkparam as validator
 from mindspore import ops, nn
 from mindspore.common import dtype as mstype
@@ -753,15 +753,6 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         self.opt_shard = _get_enable_parallel_optimizer()
         self._get_attr_from_cell(network)
         self.enable_tft = False
-        mode = get_context("mode")
-        device_type = get_context("device_target")
-        if device_type != "Ascend" or mode != GRAPH_MODE:
-            return
-        tft_env = os.getenv("MS_ENABLE_TFT", "")
-        if ("TTP:1" in tft_env) or ("UCE:1" in tft_env):
-            self.g_one = Tensor([0.1])
-            self.allreduce_sum = ops.AllReduce()
-            self.enable_tft = True
 
     def construct(self, *inputs):
         if not self.sense_flag:
@@ -770,11 +761,6 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         sens = ops.fill(ops.DType()(loss), ops.Shape()(loss), self.sens)
         grads = self.grad(self.network, self.weights)(*inputs, sens)
         accu_grads = ops.depend(self.accu_grads, grads)
-        if self.enable_tft:
-            g_one = ops.depend(self.g_one, accu_grads)
-            g_one_res = self.allreduce_sum(g_one)
-            accu_grads = ops.depend(accu_grads, g_one_res)
-            grads = ops.depend(grads, g_one_res)
         if self.opt_shard:
             succ = self.optimizer(grads)
         else:
@@ -789,11 +775,6 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         loss = self.network(*inputs)
         grads = self.grad_no_sens(self.network, self.weights)(*inputs)
         accu_grads = ops.depend(self.accu_grads, grads)
-        if self.enable_tft:
-            g_one = ops.depend(self.g_one, accu_grads)
-            g_one_res = self.allreduce_sum(g_one)
-            accu_grads = ops.depend(accu_grads, g_one_res)
-            grads = ops.depend(grads, g_one_res)
         if self.opt_shard:
             succ = self.optimizer(grads)
         else:

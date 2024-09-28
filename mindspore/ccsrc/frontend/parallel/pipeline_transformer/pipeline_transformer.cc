@@ -2036,8 +2036,13 @@ void PipelineTransformer::FreezeGradient() {
       }
       break;
     }
+    auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
+    constexpr std::string_view optUCE = "UCE:1";
+    constexpr std::string_view optTTP = "TTP:1";
+    bool enableTFT =
+      !tftEnv.empty() && (tftEnv.find(optUCE) != std::string::npos || tftEnv.find(optTTP) != std::string::npos);
     for (auto &node : nodes) {
-      if (!IsPrimitiveCNode(node, prim::kPrimNPUGetFloatStatusV2)) {
+      if (!IsPrimitiveCNode(node, prim::kPrimNPUGetFloatStatusV2) && !IsTFTAllReduce(node)) {
         continue;
       }
       auto cnode = node->cast<CNodePtr>();
@@ -2047,7 +2052,9 @@ void PipelineTransformer::FreezeGradient() {
       auto new_node = root_->NewCNode(depend_input);
       new_node->set_abstract(cnode->input(1)->abstract());
       manager_->Replace(cnode->input(1), new_node);
-      break;
+      if (!enableTFT) {
+        break;
+      }
     }
   }
 }
