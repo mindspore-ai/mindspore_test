@@ -41,6 +41,19 @@ def whitelist_const_func(x, y):
         return x - y
 
 @pi_jit_with_config(jit_config={"compile_with_try": False})
+def whitelist_builtin_func0(x, y):
+    """
+    Feature: builtin function should be guarded as a node in graph
+    Description: builtin function will be guarded in graph
+    Expectation: 0 break count
+    """
+    x = y + x
+    if isinstance(x, Tensor):
+        return x + y
+    else:
+        return x - y
+
+@pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_builtin_func1(x, y):
     """
     Feature: builtin function should be guarded as a node in graph
@@ -54,17 +67,16 @@ def whitelist_builtin_func1(x, y):
         return x - y
 
 @pi_jit_with_config(jit_config={"compile_with_try": False})
-def whitelist_builtin_func0(x, y):
+def whitelist_builtin_func2(x, y):
     """
     Feature: builtin function should be guarded as a node in graph
     Description: builtin function will be guarded in graph
     Expectation: 0 break count
     """
     x = y + x
-    if isinstance(x, Tensor):
-        return x + y
-    else:
-        return x - y
+    c = "string"
+    cc = c.replace('ing', 'val')
+    return {cc: x - y}
 
 @pi_jit_with_config(jit_config={"compile_with_try": False})
 def whitelist_forbidden_func(x, y):
@@ -80,8 +92,9 @@ def whitelist_forbidden_func(x, y):
         return x - y
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('func', [(whitelist_const_func, 0), (whitelist_builtin_func1, 1), \
-                                  (whitelist_builtin_func0, 0), (whitelist_forbidden_func, 1)])
+@pytest.mark.parametrize('func', [(whitelist_const_func, 0), (whitelist_builtin_func0, 0), \
+                                  (whitelist_builtin_func1, 1), (whitelist_builtin_func2, 0), \
+                                  (whitelist_forbidden_func, 1)])
 def test_break_func(func):
     """
     Feature: graph break func

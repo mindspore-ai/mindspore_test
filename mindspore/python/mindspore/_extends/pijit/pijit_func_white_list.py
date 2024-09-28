@@ -448,6 +448,7 @@ _func_map = {
     function_id(str.isalnum): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.isidentifier): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.isprintable): FUNC_KEY_BUILTIN_FUNC,
+    function_id(str.replace): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.format): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.format_map): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.__format__): FUNC_KEY_BUILTIN_FUNC,
