@@ -28,9 +28,13 @@ namespace mindspore {
 namespace kernel {
 void TransposeExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
+  auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
+  if (input_shape.size() == 0) {
+    GetWorkspaceForResize(inputs[kIndex0], input_perm_, outputs[kIndex0]);
+    return;
+  }
   auto dim0 = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   auto dim1 = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-  auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
   auto rank = SizeToLong(input_shape.size());
   dim0 = (dim0 < 0) ? (dim0 + rank) : dim0;
   dim1 = (dim1 < 0) ? (dim1 + rank) : dim1;
