@@ -1,4 +1,4 @@
-    transpose:
+    transpose_ext:
     description: |
         Interchange two axes of a tensor.
 
