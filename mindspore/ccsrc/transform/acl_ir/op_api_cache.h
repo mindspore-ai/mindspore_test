@@ -225,25 +225,25 @@ bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
 }
 
 // New cache hash.
-void GatherHash(mindspore::kernel::KernelTensor *);
-void GatherHash(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
-void GatherHash(const std::vector<mindspore::kernel::KernelTensor *> &);
-void GatherHash(const device::DeviceAddressPtr &);
+BACKEND_EXPORT void GatherHash(mindspore::kernel::KernelTensor *);
+BACKEND_EXPORT void GatherHash(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
+BACKEND_EXPORT void GatherHash(const std::vector<mindspore::kernel::KernelTensor *> &);
+BACKEND_EXPORT void GatherHash(const device::DeviceAddressPtr &);
 
-void GatherHash(const mindspore::tensor::BaseTensorPtr &);
-void GatherHash(const std::optional<tensor::BaseTensorPtr> &);
-void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
-void GatherHash(const mindspore::tensor::TensorPtr &);
-void GatherHash(const std::optional<tensor::TensorPtr> &);
-void GatherHash(const std::vector<tensor::TensorPtr> &);
-void GatherHash(const std::vector<int64_t> &);
+BACKEND_EXPORT void GatherHash(const mindspore::tensor::BaseTensorPtr &);
+BACKEND_EXPORT void GatherHash(const std::optional<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherHash(const mindspore::tensor::TensorPtr &);
+BACKEND_EXPORT void GatherHash(const std::optional<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherHash(const std::vector<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherHash(const std::vector<int64_t> &);
 
 template <typename T>
-void GatherHash(const T &value) {
+BACKEND_EXPORT void GatherHash(const T &value) {
   GatherInfo(value);
 }
 
-void GatherHash();
+BACKEND_EXPORT void GatherHash();
 
 template <typename T, typename... Args>
 void GatherHash(const T &arg, const Args &... args) {
