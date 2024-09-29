@@ -89,6 +89,7 @@ class TopCellInfo {
   }
   inline bool is_need_save_dynamic_detect_nodes() const { return is_need_save_dynamic_detect_nodes_; }
   inline pipeline::ResourcePtr resource() const { return resource_; }
+  inline void set_resource(const pipeline::ResourcePtr &resource) { resource_ = resource; }
   inline FuncGraphPtr fg() const {
     MS_EXCEPTION_IF_NULL(fg_);
     return fg_;

@@ -603,6 +603,9 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
     top_cell_->set_auto_grad_cell_ptr(
       std::make_shared<autograd::IrGrad>(input_param_values, abs_list, op_num_in_bprop_graph_ * kContainerRatio,
                                          !top_cell_->is_high_order_top_cell(), is_run_recompute_));
+    // Only ir grad need resource.
+    auto resource = std::make_shared<pipeline::Resource>();
+    top_cell_->set_resource(resource);
   } else {
     top_cell_->set_auto_grad_cell_ptr(
       std::make_shared<autograd::FuncGrad>(input_param_values, op_num_in_bprop_graph_ * kContainerRatio,
@@ -794,7 +797,6 @@ void GradExecutor::MakeNewTopCell(const InputArgsInfoPtr &input_args_info) {
 
   auto fg = std::make_shared<FuncGraph>();
   fg->debug_info()->set_name("pynative_forward_graph");
-  auto resource = std::make_shared<pipeline::Resource>();
 
   pre_top_cell_ = nullptr;
   finded_top_cell_ = nullptr;
@@ -814,7 +816,7 @@ void GradExecutor::MakeNewTopCell(const InputArgsInfoPtr &input_args_info) {
   MS_LOG(DEBUG) << "Get obj id with grad order " << obj_id_with_grad_order;
   top_cell_ = std::make_shared<TopCellInfo>(
     input_args_info->is_high_order_top_cell, grad_order_, obj_id_with_grad_order, input_args_info->cell_id,
-    input_args_info->already_run_cell_id, resource, fg, op_num_in_bprop_graph_ * kContainerRatio);
+    input_args_info->already_run_cell_id, nullptr, fg, op_num_in_bprop_graph_ * kContainerRatio);
   top_cell_->set_forward_already_run(true);
   top_cell_->set_input_args_id(input_args_info->input_args_id);
   auto use_dynamic_shape_process = GetTopCellDynamicFlag(input_args_info, obj_id_with_grad_order);
@@ -1190,7 +1192,6 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
     (void)need_gc_top_cell_list_.emplace_back(top_cell_);
     ClearBpropTask();
     top_cell_->ClearMetaGradInfo();
-
     // If top cell is pipeline top cell, finded_top_cell_ will be itself;
     // Otherwise, it ir top cell in already_run_top_cell_;
     if (!ReplacePipelineTopCellForwardOutput()) {
@@ -1469,6 +1470,7 @@ FuncGraphPtr GradExecutor::GetBpropGraph(const autograd::GradAttr &grad_attr,
   if (top_cell()->need_do_final_opt()) {
     bprop_graph = BpropGraphFinalOpt(bprop_graph, top_cell()->has_control_flow());
   }
+  MS_EXCEPTION_IF_NULL(top_cell()->resource());
   if (top_input_args_info_->is_high_order_top_cell) {
     MS_LOG(DEBUG) << "Get high grad";
     top_cell()->resource()->set_optimize_graph(bprop_graph);
