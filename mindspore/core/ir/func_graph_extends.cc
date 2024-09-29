@@ -83,7 +83,8 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int var
                         << " positional arguments, but " << pos_args_input_count << " were given.";
     }
     // Only copy parameters other than default arguments.
-    for (size_t i = 0; i < IntToSize(pos_args_input_count); ++i) {
+    size_t pos_size = IntToSize(pos_args_input_count);
+    for (size_t i = 0; i < pos_size; ++i) {
       specialized_parameter_list->push_back(specialized_graph->parameters()[i]);
     }
     return;
@@ -95,7 +96,8 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int var
                       << " is less or equal to parameter size: " << GetPositionalArgsCount();
   }
   // Copy other parameters than vararg's firstly.
-  for (size_t i = 0; i < IntToSize(GetPositionalArgsCount()); ++i) {
+  size_t positional_args_count = IntToSize(GetPositionalArgsCount());
+  for (size_t i = 0; i < positional_args_count; ++i) {
     specialized_parameter_list->push_back(specialized_graph->parameters()[i]);
   }
   MS_EXCEPTION_IF_NULL(specialized_graph->GetVariableArgParameter());
