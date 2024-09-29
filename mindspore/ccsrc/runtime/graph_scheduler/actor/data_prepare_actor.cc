@@ -502,11 +502,14 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-    if (first_step_ || !tensors_need_reprepare_.empty() || (has_parameter_input_ && !enable_infer_boost) ||
-        is_sub_data_ || UCEException::GetInstance().get_uce_flag()) {
+    bool enable_prepare_case =
+      !tensors_need_reprepare_.empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_;
+    bool not_empty_input = !input_tensors.empty() || !args.empty();
+    if (first_step_ || UCEException::GetInstance().get_uce_flag() || (enable_prepare_case && not_empty_input)) {
       PrepareDataForDeviceTensorStore(input_tensors, args, context);
     }
     PrepareDataForHostTensorQueue(input_tensors, args, context);
+    tensors_need_reprepare_.clear();
   } catch (const std::exception &e) {
     std::string error_info = e.what();
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(real_strategy_, (*context), error_info);
