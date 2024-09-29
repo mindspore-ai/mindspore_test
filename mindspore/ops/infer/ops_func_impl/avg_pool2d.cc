@@ -69,15 +69,6 @@ static inline int64_t AvgPool2DOutputShapePadLR(int64_t input_size, int64_t kern
   return output_size;
 }
 
-void Avgpool2DCheckUnsupportedScenirao(bool ceil_mode, bool count_include_pad) {
-  // There are bugs in aclnnAvgpool2d when count_include_pad and ceil_mode are both true,
-  // so the scenirao is not supported now.
-  if (ceil_mode && count_include_pad) {
-    MS_EXCEPTION(ValueError)
-      << "For AvgPool2D, the scenirao, where ceil_mode and count_include_pad are both true, had not been supported.";
-  }
-}
-
 void Avgpool2DCheckPaddingAndKernelSize(const PrimitivePtr &primitive, size_t max_ele_num,
                                         const ArrayValue<int64_t> &kernel_size, const ArrayValue<int64_t> &padding) {
   const int64_t kNum2 = 2;
@@ -220,7 +211,6 @@ int32_t AvgPool2DFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   if (MS_UNLIKELY(!ceil_mode_opt.has_value() || !count_include_pad_opt.has_value())) {
     return OP_CHECK_RETRY;
   }
-  Avgpool2DCheckUnsupportedScenirao(ceil_mode_opt.value(), count_include_pad_opt.value());
 
   if (input_args[kIndex6]->GetType()->type_id() != kMetaTypeNone) {
     auto divisor_opt = GetScalarValue<int64_t>(input_args[kIndex6]->GetValue());
@@ -257,7 +247,6 @@ ShapeArray AvgPool2DFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
   AvgPool2DCheckTupleIntParam(primitive, padding, tuple_min_ele_num_, tuple_max_ele_num_, -1, "padding");
   Avgpool2DCheckPaddingAndKernelSize(primitive, LongToSize(tuple_max_ele_num_), kernel_size, padding);
   auto ceil_mode = ceil_mode_opt.value();
-  Avgpool2DCheckUnsupportedScenirao(ceil_mode, count_include_pad_opt.value());
 
   if (input_values[kIndex6] != mindspore::kNone) {
     auto divisor = GetValue<int64_t>(input_values[kIndex6]);
