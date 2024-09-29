@@ -19,12 +19,14 @@
 #include <string>
 #include "ops/other_ops.h"
 #include "ops/array_ops.h"
+#include "ops/framework_ops.h"
 #include "utils/trace_base.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/backend/optimizer/helper.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "plugin/device/ascend/optimizer/optimizer_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -151,10 +153,6 @@ CNodePtr AllToAllUnifyMindIR::CreateSplitNodeWithSplitDim(const KernelGraphPtr &
   int64_t split_count = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitCount);
   int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
 
-  if (all_to_all->size() <= kAllToAllInputIdx) {
-    MS_LOG(EXCEPTION) << "Inputs should not be empty for cnode " << all_to_all->DebugString()
-                      << trace::DumpSourceLines(all_to_all);
-  }
   auto all_to_all_input = all_to_all->input(kAllToAllInputIdx);
   return CreateSplitNode(graph, all_to_all, all_to_all_input, split_count, split_dim);
 }
@@ -216,18 +214,18 @@ CNodePtr AllToAllUnifyMindIR::CreateAllToAllvNode(const KernelGraphPtr &graph, c
 }
 
 CNodePtr AllToAllUnifyMindIR::CreateAllToAllNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
-                                                 const CNodePtr &concat) const {
+                                                 const AnfNodePtr &all_to_all_input) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(all_to_all);
-  MS_EXCEPTION_IF_NULL(concat);
+  MS_EXCEPTION_IF_NULL(all_to_all_input);
   int64_t split_count = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitCount);
   std::string group = common::AnfAlgo::GetNodeAttr<std::string>(all_to_all, kAttrGroup);
   std::vector<AnfNodePtr> new_ata_input = {NewValueNode(std::make_shared<Primitive>(kAllToAllOpName))};
-  (void)new_ata_input.insert(new_ata_input.end(), concat);
+  (void)new_ata_input.insert(new_ata_input.end(), all_to_all_input);
   auto new_ata = NewCNode(new_ata_input, graph);
   MS_EXCEPTION_IF_NULL(new_ata);
   new_ata->set_scope(all_to_all->scope());
-  new_ata->set_abstract(concat->abstract());
+  new_ata->set_abstract(all_to_all_input->abstract());
   common::AnfAlgo::CopyNodeAttr(kAttrGroup, all_to_all, new_ata);
   auto all_to_all_prim = GetCNodePrimitive(all_to_all);
   MS_EXCEPTION_IF_NULL(all_to_all_prim);
@@ -334,22 +332,52 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
   if (GetBoolAttr(all_to_all, kAttrIrUnified)) {
     return nullptr;
   }
+  if (all_to_all->size() <= kAllToAllInputIdx) {
+    MS_LOG(EXCEPTION) << "Inputs should not be empty for cnode " << all_to_all->fullname_with_scope()
+                      << trace::DumpSourceLines(all_to_all);
+  }
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto ms_context = MsContext::GetInstance();
   bool is_kbk = ms_context->IsKByKExecutorMode() || ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK) == false;
   AnfNodePtr ret_node = nullptr;
+
   if (is_kbk) {
-    auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
-    auto concat_dim0 = CreateConcatNodeWithDim0(kernel_graph, all_to_all, split);
-    auto new_ata = CreateAllToAllNode(kernel_graph, all_to_all, concat_dim0);
-    auto split_dim0 = CreateSplitNodeWithDim0(kernel_graph, all_to_all, new_ata);
-    auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, split_dim0);
-    ret_node = concat;
+    int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
+    int64_t concat_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrConcatDim);
+    AnfNodePtr all_to_all_input = all_to_all->input(kAllToAllInputIdx);
+    if (split_dim != 0) {
+      auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
+      auto concat_dim0 = CreateConcatNodeWithDim0(kernel_graph, all_to_all, split);
+      all_to_all_input = concat_dim0;
+      OptimizerUtils::MoveContrlDepend(graph, all_to_all->input(1), concat_dim0);
+    }
+    auto new_ata = CreateAllToAllNode(kernel_graph, all_to_all, all_to_all_input);
+    OptimizerUtils::MoveContrlDepend(graph, node, new_ata);
+    auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_ata);
+    auto pre_node = new_ata;
+    if (!moved_depends.empty()) {
+      pre_node = moved_depends[0];
+    }
+    ret_node = new_ata;
+    if (concat_dim != 0) {
+      auto split_dim0 = CreateSplitNodeWithDim0(kernel_graph, all_to_all, pre_node);
+      auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, split_dim0);
+      OptimizerUtils::ReplaceDataDepend(kernel_graph, moved_depends, concat);
+      ret_node = concat;
+    }
   } else {
     auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
+    OptimizerUtils::MoveContrlDepend(graph, all_to_all->input(1), split);
     auto new_ata = CreateAllToAllvNode(kernel_graph, all_to_all, split);
-    auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, new_ata);
+    OptimizerUtils::MoveContrlDepend(graph, node, new_ata);
+    auto moved_depends = OptimizerUtils::MoveDataDepend(graph, node, new_ata);
+    auto pre_node = new_ata;
+    if (!moved_depends.empty()) {
+      pre_node = moved_depends[0];
+    }
+    auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, pre_node);
+    OptimizerUtils::ReplaceDataDepend(graph, moved_depends, concat);
     ret_node = concat;
   }
   return ret_node;

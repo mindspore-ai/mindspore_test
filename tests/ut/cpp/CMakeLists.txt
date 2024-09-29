@@ -192,6 +192,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge_backend_optimization.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ge_optimization.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/optimizer_utils.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/get_value_helper.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/backend_common_unify_mindir.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/format_type/insert_cast.cc"
