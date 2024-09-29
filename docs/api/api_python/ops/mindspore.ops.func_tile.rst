@@ -7,7 +7,7 @@ mindspore.ops.tile
 
     参数：
         - **input** (Tensor) - 需要被复制的Tensor，shape为 :math:`(x_1, x_2, ..., x_S)` 。
-        - **dims** (tuple[int]) - 指定复制次数的参数，参数类型为tuple，数据类型为整数。如 :math:`(y_1, y_2, ..., y_S)` 。 只支持常量值。
+        - **dims** (tuple[int]) - 指定复制次数的参数，参数类型为tuple，数据类型为整数。如 :math:`(y_1, y_2, ..., y_S)` 。 只支持常量值，参数个数不大于8，当前不支持超过4个维度同时做repeat的场景。
 
     返回：
         Tensor，具有与 `input` 相同的数据类型。假设 `dims` 的长度为 `d` ，`input` 的维度为 `input.dim` ，`input` 的shape为 :math:`(x_1, x_2, ..., x_S)` 。
