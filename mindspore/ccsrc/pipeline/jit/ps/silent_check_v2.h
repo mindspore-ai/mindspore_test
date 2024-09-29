@@ -39,6 +39,7 @@ class SilentCheckV2 {
   ~SilentCheckV2() = default;
 
   bool HasFloat16Input();
+  void GetLastGradNode();
   bool Run(const FuncGraphPtr &func_graph);
   void UpdateNodes();
 
@@ -46,6 +47,7 @@ class SilentCheckV2 {
   void GetLossScale();
   AnfNodePtr FindGetNextNode();
   AnfNodePtrList &GetRootGraphTopoNodes();
+  CNodePtr GetLastGradNode(const FuncGraphPtr &func_graph, const AnfNodePtr &start_node);
   AnfNodePtr CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node);
 
   // root graph
@@ -54,6 +56,8 @@ class SilentCheckV2 {
   AnfNodePtrList root_graph_nodes_;
   // pointer to loss_scale of the whole network if exists
   ParameterPtr loss_scale_ = nullptr;
+  // last node in backward grad which needs inserting SilentCheck operator
+  CNodePtr last_grad_node_ = nullptr;
 
   // pointer to parameter `scale_sense` of graph being processed, create it if not exist
   ParameterPtr scale_sense_ = nullptr;
