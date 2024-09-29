@@ -2504,11 +2504,11 @@ PrimitivePyPtr AutoGrad::BuildBpropCutPrim(const PrimitivePtr &prim, bool is_nee
   return bprop_cut;
 }
 
-void AutoGrad::CheckRecomputeInputs(const GradParamPtr &grad_param) {
-  if (!grad_param->op_grad_info->is_need_recompute) {
+void AutoGrad::CheckRecomputeInputs(const ValuePtrList &inputs, bool is_need_recompute) {
+  if (!is_need_recompute) {
     return;
   }
-  for (const auto &input : grad_param->op_grad_info->input_value) {
+  for (const auto &input : inputs) {
     if (!input->isa<ValueSequence>()) {
       continue;
     }
