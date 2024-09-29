@@ -246,8 +246,9 @@ void UpdateDeviceAddressByRefInputNode(const std::vector<KernelGraphPtr> &graphs
                                        const std::set<AnfNode *> &modified_input_nodes) {
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
-    // The DeviceAddress of the graph parameter has been updated.
-    if (graph->is_graph_run_mode()) {
+    // The DeviceAddress of the graph parameter has been updated for GE mode, but need update for kbk sub graph execute
+    // mode.
+    if (graph->is_graph_run_mode() && !EnableKbkSubGraphExecute()) {
       continue;
     }
 
