@@ -56,12 +56,6 @@ class Generator:
     A generator that manages the state of random numbers and provides seed and offset for random functions.
     When the seed and offset are fixed, the random function generates the same random sequence.
 
-    Inputs:
-        - **step** (int) - Set the step size for offset update.
-
-    Outputs:
-        Tuple consisting of the seed and offset of generator.
-
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 

@@ -5,12 +5,6 @@ mindspore.Generator
 
     管理随机数状态的生成器，为随机函数提供seed和offset。当seed和offset固定时，随机函数产生相同的随机序列。
 
-    输入：
-        - **step** (int) - 偏移量更新的步长。
-
-    输出：
-        包含生成器的种子和偏移量的tuple。
-
     .. py:method:: get_state()
 
         获取生成器状态。
