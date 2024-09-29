@@ -215,8 +215,6 @@ class OPS_API AGSpaceToBatchNDInfer : public abstract::OpInferBase {
                                     const std::vector<AbstractBasePtr> &input_args) const override {
     return SpaceToBatchNDInfer(engine, primitive, input_args);
   }
-
-  std::set<int64_t> GetValueDependArgIndices() const override { return {1, 2}; }
 };
 
 REGISTER_PRIMITIVE_OP_INFER_IMPL(SpaceToBatchND, prim::kPrimSpaceToBatchND, AGSpaceToBatchNDInfer, false);
