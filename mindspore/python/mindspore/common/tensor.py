@@ -2460,8 +2460,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             [0. 0. 0.]
             [0. 0. 0.]]
         """
-        if non_blocking:
-            logger.warning(f"'non_blocking' == True has no effect")
         return tensor_operator_registry.get("copy_")(self, src)
 
     @max_mint
