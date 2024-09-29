@@ -1914,3 +1914,6 @@ class Profiler:
             logger.warning(f"For '{self.__class__.__name__}', the parameter with_stack must be bool, but got "
                            f"type {type(self._with_stack)}, it will be set to False.")
             self._with_stack = False
+        if self._with_stack and self._profile_framework not in ["time", "all"]:
+            logger.warning("When using the with_stack parameter, the profile_framework parameter must be enabled.")
+            self._with_stack = False
