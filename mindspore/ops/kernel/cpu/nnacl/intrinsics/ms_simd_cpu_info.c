@@ -83,6 +83,9 @@ bool IsIntelX86Platform(void) {
 
   const int vid_info_size = 13;
   char *vid_info = malloc(sizeof(char) * vid_info_size);
+  if (vid_info == NULL) {
+    return false;
+  }
   memset(vid_info, 0, vid_info_size);
 
   ExecuteCpuIdCmd(0, &eax_data, &ebx_data, &ecx_data, &edx_data);  // eax = 0, execute cpuid to get vid info

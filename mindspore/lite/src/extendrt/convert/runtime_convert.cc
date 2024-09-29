@@ -91,6 +91,8 @@ static int UpdateDynamicInputShape(mindspore::FuncGraphPtr func_graph, const std
   size_t input_index = 0;
   for (auto shape_vec : input_shapes) {
     auto shape_ptr = std::make_shared<mindspore::abstract::Shape>(shape_vec);
+    MS_CHECK_TRUE_RET(func_graph->get_inputs()[input_index] != nullptr, RET_ERROR);
+    MS_CHECK_TRUE_RET(func_graph->get_inputs()[input_index]->abstract() != nullptr, RET_ERROR);
     func_graph->get_inputs()[input_index]->abstract()->set_shape(shape_ptr);
     input_index++;
   }
@@ -164,6 +166,7 @@ int RuntimeConvert(const mindspore::api::FuncGraphPtr &graph, const std::shared_
 
   auto device_list = context->MutableDeviceInfo();
   for (auto &device : device_list) {
+    MS_CHECK_TRUE_MSG(device != nullptr, RET_ERROR, "device is nullptr!");
     if (device->GetDeviceType() == mindspore::kAscend) {
       param->aclModelOptionCfgParam.offline = false;
       param->device = "Ascend310";
@@ -182,6 +185,7 @@ int RuntimeConvert(const mindspore::api::FuncGraphPtr &graph, const std::shared_
       }
 
       auto ascend_info = device->Cast<mindspore::AscendDeviceInfo>();
+      MS_CHECK_TRUE_MSG(ascend_info != nullptr, RET_ERROR, "ascend_info is nullptr!");
       SetParamByAscendInfo(param, ascend_info);
 
       if (!((param->aclModelOptionCfgParam.input_shape).empty())) {

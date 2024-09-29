@@ -100,7 +100,7 @@ FuncGraphPtr CreateFuncGraphFromDataFlow(const void *model_data, size_t data_siz
   MS_CHECK_TRUE_RET(custom_cnode != nullptr, nullptr);
   custom_cnode->set_fullname_with_scope("Custom_" + std::string(kDataFlowGraphName));
   auto return_prim = std::make_shared<ops::Return>();
-  MS_CHECK_TRUE_RET(custom_prim != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(return_prim != nullptr, nullptr);
   auto return_prim_c = return_prim->GetPrim();
   MS_CHECK_TRUE_RET(return_prim_c != nullptr, nullptr);
   auto return_cnode = func_graph->NewCNode(return_prim_c, {custom_cnode});
@@ -133,15 +133,15 @@ std::unordered_map<std::string, mindspore::Format> kStr2FormatMap{{"DEFAULT_FORM
                                                                   {"NC8HW8", mindspore::Format::NC8HW8}};
 
 Status PrimitivePyToC(const FuncGraphPtr &func_graph) {
-  MS_ASSERT(func_graph != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, kLiteError, "func_graph is nullptr!");
   auto node_list = TopoSort(func_graph->get_return());
   for (auto &node : node_list) {
-    MS_ASSERT(node != nullptr);
+    MS_CHECK_TRUE_MSG(node != nullptr, kLiteError, "node is nullptr!");
     if (!utils::isa<CNodePtr>(node)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
-    MS_ASSERT(cnode != nullptr);
+    MS_CHECK_TRUE_MSG(cnode != nullptr, kLiteError, "cnode is nullptr!");
 
     // judge if primitive is PrimitivePy
     auto primpy_ptr = GetValueNode<PrimitivePtr>(cnode->input(0));
@@ -181,6 +181,7 @@ Status PrimitivePyToC(const FuncGraphPtr &func_graph) {
 
     auto new_prim = MakeValue(primc_ptr);
     auto new_value_node = NewValueNode(new_prim);
+    MS_CHECK_TRUE_MSG(new_value_node != nullptr, kLiteError, "new_value_node is nullptr!");
     new_value_node->set_abstract(new_prim->ToAbstract());
     cnode->set_input(0, new_value_node);
   }
@@ -679,7 +680,7 @@ Status ModelImpl::Build(const std::string &model_path, ModelType model_type,
 }
 
 Status ModelImpl::ConvertGraphOnline(const FuncGraphPtr &func_graph, const std::shared_ptr<Context> &model_context) {
-  MS_ASSERT(func_graph != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, kLiteError, "func_graph is nullptr!");
   bool is_device_ascend = false;
   auto device_list = model_context->MutableDeviceInfo();
   for (const auto &device_info : device_list) {

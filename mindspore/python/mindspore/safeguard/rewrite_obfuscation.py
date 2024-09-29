@@ -244,7 +244,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
         sub_path = os.path.abspath(ckpt_files) + '/' + ckpt_name
         if Path(sub_path).is_dir():
             sub_ckpt_file_list = os.listdir(sub_path)
-            new_saved_path = os.path.abspath(saved_path) + '/' + ckpt_name
+            new_saved_path = os.path.realpath(saved_path) + '/' + ckpt_name
             if not os.path.exists(new_saved_path):
                 try:
                     os.mkdir(new_saved_path, mode=0o700)
