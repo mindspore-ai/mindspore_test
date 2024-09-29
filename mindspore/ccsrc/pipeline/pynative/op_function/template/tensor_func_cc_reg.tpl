@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+#include "pybind_api/ir/arg_handler.h"
 #include "pybind_api/ir/tensor_func_reg.h"
+#include "pipeline/pynative/op_function/converter.h"
 #include <memory>
 
 namespace mindspore {

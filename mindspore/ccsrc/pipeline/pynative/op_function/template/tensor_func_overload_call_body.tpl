@@ -2,8 +2,9 @@ py::object Tensor${class_name}(const py::args &py_args, const py::kwargs &py_kwa
   static mindspore::pynative::PythonArgParser parser({
     ${signatures}
   });
-  py::list args;
-  auto sig = parser.parse(py_args, py_kwargs, args);
+  py::list arg_list;
+  py::list args(py_args);
+  auto sig = parser.parse(py_args, py_kwargs, arg_list);
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);

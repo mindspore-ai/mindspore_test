@@ -47,12 +47,15 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '  ${cpu_dispatcher}\n'
             '} else if (backend == kGPUDevice) {\n'
             '  ${gpu_dispatcher}\n'
+            '} else {'
+            '  MS_LOG(ERROR) << "Device target is not supported!";\n'
+            '  return py::none();\n'
             '}'
         )
         self.aclnn_return_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
-            'return ToPython(Tensor${class_name}Register::GetOp()(args));\n'
+            'return ToPython(Tensor${class_name}Register::GetOp()(arg_list));\n'
         )
 
         self.TENSOR_FUNC_CC_REG = template.TENSOR_FUNC_CC_REG
@@ -94,8 +97,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             class_name = func_proto.op_proto.op_class.name
             func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name)
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
+            signature_str = self._generate_single_signature_str(func_proto.op_proto)
             func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
-                                                                     device_dispatcher=device_dispatcher_str)
+                                                                     device_dispatcher=device_dispatcher_str,
+                                                                     signatures=signature_str)
             func_def_body_str += self.func_def_reg.replace(func_name=func_name,
                                                            class_name=class_name)
         return func_header_body_str, func_call_body_str, func_def_body_str
@@ -110,12 +115,18 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 overload_op_func_data[func_api_name] = func_protos
 
         for func_api_name, func_protos in overload_op_func_data.items():
-            func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
-                class_name=func_api_name.capitalize())
+            func_header_body_str += self._get_overload_tensor_func_header_body_str(func_protos)
             func_call_body_str += self._get_overload_func_call_str(func_api_name, func_protos)
             func_def_body_str += self.func_def_reg.replace(func_name=func_api_name,
                                                            class_name=func_api_name.capitalize())
         return func_header_body_str, func_call_body_str, func_def_body_str
+
+    def _get_overload_tensor_func_header_body_str(self, func_protos):
+        overload_tensor_func_header_body_str = ''
+        for tensor_proto in func_protos:
+            overload_tensor_func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
+                class_name=tensor_proto.op_proto.op_class.name)
+        return overload_tensor_func_header_body_str
 
     def _get_overload_func_call_str(self, func_api_name, func_protos):
         signatures_str = self._generate_func_signatures_str(func_protos)
@@ -160,6 +171,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
             dispatch_cases_str += self.single_case_template.replace(case_id=idx,
                                                                     device_dispatcher=device_dispatcher_str)
+        dispatch_cases_str += 'default:\n'
+        dispatch_cases_str += '  return py::none();'
         return dispatch_cases_str
 
     def _get_device_dispatchers_str(self, func_proto):
@@ -175,13 +188,33 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
         callback_python_template = Template(
             'MS_LOG(INFO) << "${info}";\n'
+            'py::function fn = python_adapter::GetPyFn(\"${python_module}\", \"${python_func}\");\n'
+            'py::object res = fn(*args);\n'
+            'return res;\n'
         )
         if getattr(func_proto, device) == 'aclnn':
             arg_handler_processor_str = self._get_arg_handler_processor(func_proto)
             return self.aclnn_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                       class_name=func_proto.op_proto.op_class.name)
         else:
-            return callback_python_template.replace(info="Callback python is not yet implemented.")
+            python_module_and_func = getattr(func_proto, device)
+            if '.' not in python_module_and_func:
+                return (f'MS_LOG(ERROR) << "Callback python module and func is: {python_module_and_func}";\n'
+                        f'return py::none();')
+            last_doc_index = python_module_and_func.rindex('.')
+            python_module = python_module_and_func[:last_doc_index]
+            python_func = python_module_and_func[last_doc_index + 1:]
+            return callback_python_template.replace(info=python_module_and_func,
+                                                    python_module=python_module,
+                                                    python_func=python_func)
 
     def _get_arg_handler_processor(self, func_proto):
-        return "// ${arg_handler_processor} is not yet implemented!\n"
+        arg_handler_processor = ''
+        op_proto = func_proto.op_proto
+        op_args = op_proto.op_args
+        for idx, op_arg in enumerate(op_args):
+            arg_handler = op_arg.arg_handler
+            if arg_handler:
+                cc_arg_handler = ''.join(word.capitalize() for word in arg_handler.split('_'))
+                arg_handler_processor += f"args[{idx}] = (*pynative::{cc_arg_handler}(args, kIndex{idx}))->value();\n"
+        return arg_handler_processor

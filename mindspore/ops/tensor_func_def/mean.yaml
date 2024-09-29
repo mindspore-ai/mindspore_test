@@ -1,0 +1,5 @@
+mean:
+    op_name: mean_ext
+    Ascend: aclnn
+    CPU: mindspore.ops.function.math_func.mean
+    GPU: mindspore.ops.function.math_func.mean
