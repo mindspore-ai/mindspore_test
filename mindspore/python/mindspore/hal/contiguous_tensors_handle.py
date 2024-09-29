@@ -91,8 +91,6 @@ class ContiguousTensorsHandle:
             raise TypeError(f"input list must be [Tensor, ...].")
         if not isinstance(enable_mem_align, bool):
             raise TypeError(f"enable_mem_align must be bool.")
-        if not enable_mem_align:
-            raise ValueError(f"disable_mem_align is not supported.")
         padding_sizes_pair = combine_tensor_list(self.tensor_list, enable_mem_align)
         self.before_padding_sizes = padding_sizes_pair[0]
         self.after_padding_sizes = padding_sizes_pair[1]

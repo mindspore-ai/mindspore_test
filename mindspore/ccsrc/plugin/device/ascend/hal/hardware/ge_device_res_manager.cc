@@ -24,6 +24,9 @@
 #include "plugin/device/ascend/hal/hardware/ge_utils.h"
 #include <utility>
 #include <unordered_set>
+#include <vector>
+#include <algorithm>
+#include <numeric>
 
 #include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
@@ -567,6 +570,42 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
+  if (enable_mem_align == false) {
+    size_t total_size = std::accumulate(before_padding_sizes.begin(), before_padding_sizes.end(), 0);
+    auto stream_id = DefaultStream();
+    auto total_align_size = device::MemoryManager::GetCommonAlignSize(total_size);
+    auto device_ptr = mem_manager_->MallocMemFromMemPool(total_align_size, false, false, stream_id);
+    if (!device_ptr) {
+      MS_LOG(EXCEPTION) << "Alloc device memory failed!";
+    }
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+    const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+
+    // create device for all tensor in tensor list
+    char *ptr = reinterpret_cast<char *>(device_ptr);
+    for (size_t i = 0; i < tensor_list.size(); ++i) {
+      const auto &tensor = tensor_list[i];
+      auto device_address = CreateDeviceAddress(reinterpret_cast<void *>(ptr), before_padding_sizes[i], tensor->shape(),
+                                                Format::ND, tensor->data_type(), device_name, device_id, stream_id);
+      MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
+                    << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
+      MS_EXCEPTION_IF_NULL(device_address);
+      if (tensor->device_address() == nullptr) {
+        device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
+      } else {
+        device_address->SyncDeviceToDevice(tensor->device_address().get());
+      }
+      tensor->set_device_address(device_address);
+      ptr += before_padding_sizes[i];
+    }
+    std::vector<size_t> after_padding_sizes(before_padding_sizes.size());
+    std::copy(before_padding_sizes.begin(), before_padding_sizes.end(), after_padding_sizes.begin());
+    after_padding_sizes.back() = total_align_size - total_size + before_padding_sizes.back();
+    return std::make_pair(before_padding_sizes, after_padding_sizes);
+  }
+
   std::vector<size_t> after_padding_sizes;
   for (auto &size : before_padding_sizes) {
     auto align_size = device::MemoryManager::GetCommonAlignSize(size);
