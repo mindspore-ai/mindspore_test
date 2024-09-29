@@ -65,7 +65,6 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
     comm_handle->RecordEvent(comm_stream_id);
   }();
 
-  comm_handle->UpdateTaskId(comm_stream_id);
   if (post_func) {
     post_func(comm_handle->event(), comm_stream_id);
   } else {
@@ -73,6 +72,7 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
     runtime::DeviceAddressUtils::ProcessCrossStreamAddressWithEvent(
       op->primitive()->name(), device_context, comm_stream_id, comm_handle->event(), input_tensor, op->output(0));
   }
+  comm_handle->UpdateTaskId(comm_stream_id);
 
   if (sync) {
     if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {
