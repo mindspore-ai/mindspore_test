@@ -255,9 +255,9 @@ bool AicpuOpKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std
 int AicpuOpKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (IsGetNextOp(kernel_name_)) {
     auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+    MS_EXCEPTION_IF_NULL(wingman_queue);
     std::vector<device::DataQueueItem> data;
     RetryPeakItemFromDataQueue(nullptr, wingman_queue, &data);
-    MS_EXCEPTION_IF_NULL(wingman_queue);
     (void)wingman_queue->Pop();
     MS_EXCEPTION_IF_CHECK_FAIL(outputs.size() == data.size(), "Size of output is not equal to size of data");
     output_size_list_.clear();
