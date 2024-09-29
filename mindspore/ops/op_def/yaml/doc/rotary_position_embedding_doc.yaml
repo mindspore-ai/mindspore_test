@@ -49,6 +49,9 @@ rotary_position_embedding:
               - Same with `cos` .
               - Same with `cos` .
 
+        .. note::
+            When the layout is BNSD, B * N > 8S and D is 32-bytes alignment, the performance is poor. Therefore, this interface cannot be called.
+
         Returns:
             Tensor, has the same dtype and shape as the `x`.
 
