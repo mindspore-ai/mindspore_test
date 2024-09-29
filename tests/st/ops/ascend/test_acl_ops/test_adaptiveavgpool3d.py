@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
@@ -47,6 +46,22 @@ def test_adaptiveavgpool3d_acl():
     shape = (1, 32, 9, 9, 9)
     net = Net(output_size)
     x = Tensor(np.random.randn(*shape).astype(np.float32))
+    output = net(x)
+    expect_shape = shape[:-3] + output_size
+    assert output.asnumpy().shape == expect_shape
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_adaptiveavgpool3d_acl_fp16():
+    '''
+    Feature: Test adaptive_avg_pool3d on ACL
+    Description: A randomly generated 5-dimensional matrix, Expected pooled output size
+    Expectation: Successfully get output with expected output size
+    '''
+    output_size = (16, 16, 16)
+    shape = (18, 28, 8, 8, 8)
+    net = Net(output_size)
+    x = Tensor(np.random.randn(*shape).astype(np.float16))
     output = net(x)
     expect_shape = shape[:-3] + output_size
     assert output.asnumpy().shape == expect_shape
