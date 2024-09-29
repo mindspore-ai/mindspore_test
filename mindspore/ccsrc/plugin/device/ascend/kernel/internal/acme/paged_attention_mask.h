@@ -40,7 +40,6 @@ class AcmePagedAttentionMask : public AcmeKernelMod {
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
-  bool enable_custom_pa_mask_{false};
   std::vector<int32_t> q_seq_len_;
   std::vector<int32_t> kv_seq_len_;
 };

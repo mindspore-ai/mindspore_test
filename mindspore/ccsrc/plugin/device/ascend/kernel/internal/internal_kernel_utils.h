@@ -35,6 +35,7 @@ class InternalKernelUtils {
 
 void GetSeqLenFromGraphInputOrEnv(const std::string &kernel_name, const std::string &tensor_name,
                                   const std::string &env_name, std::vector<int32_t> *seq_len);
+std::vector<int32_t> ConvertActualSeqLengthsToVector(KernelTensor *const actual_seq_length_ptr);
 }  // namespace kernel
 }  // namespace mindspore
 

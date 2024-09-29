@@ -266,26 +266,6 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
   if (!input_layout_opt.has_value()) {
     return ConstructInferShape(dyn_rank, query_shape);
   }
-  auto input_layout = input_layout_opt.value();
-  if (input_layout == FASInputLayoutMode::TND) {
-    if (IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputActualSeqQlenIndex]) ||
-        IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputActualSeqKVlenIndex])) {
-      MS_LOG(EXCEPTION) << op_name << ": actual_seq_qlen and actual_seq_kvlen should be not none.";
-    }
-    if (IsDynamicRank(query_shape)) {
-      return ConstructInferShape(
-        ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
-        query_shape);
-    }
-    return ConstructInferShape(ShapeVector{query_shape[0], query_shape[1], kFlashAttentionScoreSoftmaxLastDim},
-                               query_shape);
-  }
-
-  if (IsDynamicRank(query_shape)) {
-    return ConstructInferShape(ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
-                                           abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
-                               query_shape);
-  }
 
   auto head_num_value = input_args[kFlashAttentionScoreInputHeadNumIndex]->GetValue();
   MS_EXCEPTION_IF_NULL(head_num_value);
@@ -297,6 +277,40 @@ BaseShapePtr FlashAttentionScoreFuncImpl::InferShape(const PrimitivePtr &primiti
     if (!head_opt.has_value()) {
       head_num_no_value = true;
     }
+  }
+
+  auto input_layout = input_layout_opt.value();
+  if (input_layout == FASInputLayoutMode::TND || input_layout == FASInputLayoutMode::TH) {
+    if (IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputActualSeqQlenIndex]) ||
+        IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputActualSeqKVlenIndex])) {
+      MS_LOG(EXCEPTION) << op_name << ": actual_seq_qlen and actual_seq_kvlen should be not none.";
+    }
+
+    if (input_layout == FASInputLayoutMode::TND) {
+      if (IsDynamicRank(query_shape)) {
+        return ConstructInferShape(
+          ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
+          query_shape);
+      }
+      return ConstructInferShape(ShapeVector{query_shape[0], query_shape[1], kFlashAttentionScoreSoftmaxLastDim},
+                                 query_shape);
+    } else {
+      if (IsDynamicRank(query_shape)) {
+        return ConstructInferShape(ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny},
+                                   query_shape);
+      }
+
+      auto head_num_opt = GetScalarValue<int64_t>(head_num_value);
+      int64_t q_head_num = head_num_opt.value();
+      q_head_num *= static_cast<int64_t>(kFlashAttentionScoreSoftmaxLastDim);
+      return ConstructInferShape(ShapeVector{query_shape[0], q_head_num}, query_shape);
+    }
+  }
+
+  if (IsDynamicRank(query_shape)) {
+    return ConstructInferShape(ShapeVector{abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
+                                           abstract::Shape::kShapeDimAny, kFlashAttentionScoreSoftmaxLastDim},
+                               query_shape);
   }
 
   size_t seq_index = kIndex1, batch_index = kIndex0;
@@ -356,6 +370,7 @@ TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
   if (!IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputPaddingMaskIndex])) {
     MS_LOG(EXCEPTION) << op_name << ": 'padding_mask' must be None currently.";
   }
+
   if (!IsFlashAttentionScoreOptionalInputNotPass(input_args[kFlashAttentionScoreInputAttnMaskIndex])) {
     auto attn_mask_type = input_args[kFlashAttentionScoreInputAttnMaskIndex]->GetType();
     std::set attn_mask_valid_types = {kUInt8, kBool};
@@ -363,6 +378,7 @@ TypePtr FlashAttentionScoreFuncImpl::InferType(const PrimitivePtr &prim,
     MS_EXCEPTION_IF_NULL(ms_context);
     if (ms_context->IsEnableInferBoost()) {
       (void)attn_mask_valid_types.emplace(kFloat16);
+      (void)attn_mask_valid_types.emplace(kBFloat16);
     }
     CheckAndConvertUtils::CheckTensorTypeValid("attn_mask", attn_mask_type, attn_mask_valid_types, op_name);
   }

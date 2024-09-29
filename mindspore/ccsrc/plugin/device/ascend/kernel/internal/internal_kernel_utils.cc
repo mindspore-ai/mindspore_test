@@ -139,5 +139,24 @@ void GetSeqLenFromGraphInputOrEnv(const std::string &kernel_name, const std::str
                << tensor_name << "' is not in graph_input, and env '" << env_name << "' is not set";
 }
 
+std::vector<int32_t> ConvertActualSeqLengthsToVector(KernelTensor *const actual_seq_length_ptr) {
+  MS_EXCEPTION_IF_NULL(actual_seq_length_ptr);
+  std::vector<int32_t> actual_seq_lengths_vector;
+  if (actual_seq_length_ptr->type_id() != kMetaTypeNone) {
+    TypeId actual_seq_lengths_dtype_id = actual_seq_length_ptr->dtype_id();
+    if (actual_seq_lengths_dtype_id == kNumberTypeInt64) {
+      std::vector<int64_t> actual_seq_lengths_vector_64 =
+        actual_seq_length_ptr->GetValueWithCheck<std::vector<int64_t>>();
+      actual_seq_lengths_vector.assign(actual_seq_lengths_vector_64.begin(), actual_seq_lengths_vector_64.end());
+    } else if (actual_seq_lengths_dtype_id == kNumberTypeInt32) {
+      actual_seq_lengths_vector = actual_seq_length_ptr->GetValueWithCheck<std::vector<int32_t>>();
+    } else {
+      MS_LOG(EXCEPTION) << "actual_seq_lengths data type must be Int32 or Int64, but got "
+                        << TypeIdToString(actual_seq_lengths_dtype_id);
+    }
+  }
+  return actual_seq_lengths_vector;
+}
+
 }  // namespace kernel
 }  // namespace mindspore

@@ -32,6 +32,11 @@ paged_attention:
     kv_head_num:
       dtype: int
       prim_init: True
+    kv_cache_quant_mode:
+      dtype: int
+      default: "'DEFAULT'"
+      prim_init: True
+      arg_handler: str_to_enum
 
   returns:
     attention_out:

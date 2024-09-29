@@ -19,6 +19,7 @@
 #include <memory>
 #include "kernel/kernel.h"
 #include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
+#include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -33,12 +34,16 @@ acme::AcmeOpPtr AcmeFlashAttentionScore::CreateKernel(const acme::InputsImmutabl
   acme::FlashAttentionScoreParam param;
   param.mask_dtype = TransAcmeDataType(ms_inputs[kIndex6]->dtype_id());
   param.mask_dims = ms_inputs[kIndex6]->GetShapeVector();
+  param.q_seq_len = ConvertActualSeqLengthsToVector(ms_inputs[kIndex8]);
+  param.kv_seq_len = ConvertActualSeqLengthsToVector(ms_inputs[kIndex9]);
   param.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
   param.tor = ms_inputs[kIndex12]->GetValueWithCheck<float>();
   param.pre_tokens = static_cast<int32_t>(ms_inputs[kIndex13]->GetValueWithCheck<int64_t>());
   param.next_tokens = static_cast<int32_t>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
   param.inner_precise = static_cast<int32_t>(ms_inputs[kIndex15]->GetValueWithCheck<int64_t>());
+  param.input_layout = static_cast<int32_t>(ms_inputs[kIndex16]->GetValueWithCheck<int64_t>());
   param.sparse_mode = static_cast<int32_t>(ms_inputs[kIndex17]->GetValueWithCheck<int64_t>());
+
   return acme::CreateFlashAttentionScoreOp(inputs_ii, outputs_ii, param, acme::kAcmeFlashAttentionScoreOpName);
 }
 

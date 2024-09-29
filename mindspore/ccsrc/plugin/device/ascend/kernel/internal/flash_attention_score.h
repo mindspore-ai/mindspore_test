@@ -26,15 +26,17 @@ class InternalFlashAttentionScore : public InternalKernelMod {
  public:
   InternalFlashAttentionScore() : InternalKernelMod("FlashAttentionScore") {}
   ~InternalFlashAttentionScore() = default;
-  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
-  int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  protected:
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs);
+  void SetKVHead(internal::MixParam *op_param, int64_t head_num, int64_t input_layout);
 
  private:
   bool enable_internal_fa_{false};
+  ShapeVector q_shape_;
+  ShapeVector kv_shape_;
 };
 }  // namespace kernel
 }  // namespace mindspore
