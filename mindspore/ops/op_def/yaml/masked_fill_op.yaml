@@ -8,6 +8,8 @@ masked_fill:
         value:
             dtype: tensor
             type_cast: number
+    args_signature:
+        dtype_group: (input_x, value)
     returns:
         output:
             dtype: tensor

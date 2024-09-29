@@ -279,6 +279,7 @@ void KernelTensor::SetShapeVector(const ShapeVector &shape_vector) {
 
     MS_LOG(DEBUG) << "Set shape vector: " << shape_vector
                   << ", the format: " << GetFormatFromEnumToStr(address_common_->format_);
+    CalculateMemSize();
     return;
   }
 
@@ -286,6 +287,7 @@ void KernelTensor::SetShapeVector(const ShapeVector &shape_vector) {
     if (!shape_vector.empty()) {
       MS_LOG(EXCEPTION) << "For Number Type, shape should be empty, but got " << shape_vector;
     }
+    CalculateMemSize();
     return;
   }
 
@@ -293,6 +295,7 @@ void KernelTensor::SetShapeVector(const ShapeVector &shape_vector) {
     if (!shape_vector.empty()) {
       MS_LOG(EXCEPTION) << "For String Type, shape should be empty, but got " << shape_vector;
     }
+    CalculateMemSize();
     return;
   }
 
@@ -309,6 +312,7 @@ void KernelTensor::SetShapeVector(ShapeVector &&shape_vector) {
 
     MS_LOG(DEBUG) << "Set shape vector: " << shape_vector
                   << ", the format: " << GetFormatFromEnumToStr(address_common_->format_);
+    CalculateMemSize();
     return;
   }
 
@@ -316,6 +320,7 @@ void KernelTensor::SetShapeVector(ShapeVector &&shape_vector) {
     if (!shape_vector.empty()) {
       MS_LOG(EXCEPTION) << "For String Type, shape should be empty, but got " << shape_vector;
     }
+    CalculateMemSize();
     return;
   }
 
@@ -323,6 +328,7 @@ void KernelTensor::SetShapeVector(ShapeVector &&shape_vector) {
     if (!shape_vector.empty()) {
       MS_LOG(EXCEPTION) << "For Number Type, shape should be empty, but got " << shape_vector;
     }
+    CalculateMemSize();
     return;
   }
 

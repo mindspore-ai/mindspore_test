@@ -23,6 +23,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "kernel/kernel.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace transform {
@@ -69,6 +70,9 @@ class BACKEND_EXPORT AclHelper {
 
   // Set identity flag.
   static bool NeedIdentityFlag(const std::vector<std::string> &formats);
+
+  // convert ms Reduction to ge
+  static int64_t ConvertMsReductionToGe(Reduction ms_reduction);
 };
 }  // namespace transform
 }  // namespace mindspore

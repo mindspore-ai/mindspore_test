@@ -26,7 +26,7 @@ from mindspore.ops import functional as F
 from mindspore.ops.operations import nn_ops as NN_OPS
 from mindspore.ops.operations import _sequence_ops as seq
 import mindspore.common.dtype as mstype
-from mindspore.ops.function.math_func import logsumexp
+from mindspore.ops.function.math_func import logsumexp, div
 from mindspore.ops.function.random_func import _get_seed, _set_prim_op_user_data
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
@@ -49,13 +49,16 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          constant_pad_nd_op, dropout_ext_op, reverse_v2_impl, avg_pool2d_op,
                                          upsample_nearest1d_op, upsample_nearest2d_op, upsample_nearest3d_op,
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
-                                         upsample_trilinear3d_impl, fill_scalar_op, floor_op)
+                                         upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
+                                         masked_fill_op, masked_select, ones, flatten_ext)
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, ConstantPadND, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
 from mindspore.ops.auto_generate import adaptive_avg_pool2d_ext_op
+from mindspore.ops.auto_generate.pyboost_inner_prim import nllloss_impl
+from mindspore.ops.function.array_func import gather_ext
 
 abs_ = P.Abs()
 add_ = P.Add()
@@ -4269,6 +4272,224 @@ def _nll_loss(inputs, target, target_dim=-1, weight=None, ignore_index=None, red
     loss = (1. - label_smoothing) * loss + eps_i * smooth_loss
 
     return loss
+
+
+def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean'):
+    """nllloss_nd inner function"""
+    input_dim = input.ndim
+    class_dim = 0 if input_dim == 1 else 1
+    n_classes = input.shape[class_dim]
+    if weight is None:
+        weight = ones(n_classes, input.dtype)
+    if input_dim < 1:
+        raise ValueError(f"input dim should be less than 1, but got {input_dim}")
+    if input_dim != 1 and input.shape[0] != target.shape[0]:
+        raise ValueError(f"input bacth_size should be equal to target batch_size, but got {input.shape[0]} and "
+                         f"{target.shape[0]}")
+    if input_dim == 1 or input_dim == 2:
+        return nllloss_impl(input, target, weight, reduction, ingore_index)[0]
+    if input_dim == 4:
+        return nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
+    # input_dim==3 or input_dim>4
+    n = input.shape[0]
+    c = input.shape[1]
+    out_size = (n,) + input.shape[2:]
+    if input.size > 0:
+        input = input.view((n, c, 1, -1))
+    else:
+        input = input.view((n, c, 0, 0))
+    if target.size > 0:
+        target = target.view((n, 1, -1))
+    else:
+        target = target.view((n, 0, 0))
+    if reduction != 'none':
+        return nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
+    ret = nllloss_2d_op(input, target, weight, reduction, ingore_index)[0]
+    return ret.view(out_size)
+
+
+def _cross_entropy_for_probabilities(input, target, weight, reduction, label_smoothing, class_dim, n_classes):
+    """cross_entropy inner function for class probabilities"""
+    if input.shape != target.shape:
+        raise ValueError("For cross_entropy that target is probabilities, input shape should equal to target shape.")
+    if label_smoothing > 0.0:
+        target = target * (1 - label_smoothing) + label_smoothing / n_classes
+    loss = input * target
+    if weight is not None:
+        weight_ = weight
+        ori_shape = loss.shape
+        if input.ndim > 2:
+            loss = loss.view(ori_shape[:2] + (-1,))
+            weight_ = weight_.view(1, -1, 1)
+        loss = loss * weight_
+        loss = loss.view(ori_shape)
+    if reduction == "mean":
+        return -div(loss.sum(), (input.size / n_classes))
+    if reduction == "sum":
+        return -loss.sum()
+    if reduction == "none":
+        return -loss.sum(class_dim)
+    raise ValueError(f"redution value {reduction} not valid.")
+
+
+def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduction, label_smoothing, class_dim,
+                                     n_classes):
+    """cross_entropy inner function for class indices"""
+    nllloss = _nllloss_nd(input, target, weight, ingore_index, reduction)
+    if label_smoothing > 0.0:
+        if weight is not None:
+            weight_ = weight
+            input_ = input
+            ori_shape = input.shape
+            if input.ndim > 2:
+                input_ = input.view(ori_shape[:2] + (-1,))
+                weight_ = weight_.view(1, -1, 1)
+            loss = input_ * weight_
+            loss = loss.view(ori_shape)
+            smooth_loss = -loss.sum(class_dim)
+        else:
+            smooth_loss = -input.sum(class_dim)
+        ignore_mask = ops.eq(target, ingore_index)
+        smooth_loss = masked_fill_op(smooth_loss, ignore_mask, 0.0)
+        if reduction == "mean":
+            true_mask = ~ignore_mask
+            if  weight is not None:
+                weight_sum = gather_ext(weight, 0, flatten_ext(masked_select(target, true_mask))).sum()
+                if weight_sum == 0:
+                    ret = smooth_loss.sum()
+                else:
+                    ret = smooth_loss.sum() / weight_sum
+            else:
+                weight_sum = true_mask.sum()
+                if weight_sum == 0:
+                    ret = smooth_loss.sum()
+                else:
+                    ret = smooth_loss.sum() / weight_sum
+        elif reduction == "sum":
+            ret = smooth_loss.sum()
+        elif reduction == "none":
+            ret = smooth_loss
+        else:
+            raise ValueError(f"redution value {reduction} not valid.")
+        return (1 - label_smoothing) * nllloss + ret * (label_smoothing / n_classes)
+    return nllloss
+
+
+def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='mean', label_smoothing=0.0):
+    r"""
+    The cross entropy loss between input and target.
+
+    The cross entropy support two kind of targets:
+
+    - Class indices (int) in the range :math:`[0, C)` where :math:`C` is the number of classes,
+      the loss with reduction=none can be described as:
+
+      .. math::
+
+          \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad
+          l_n = - w_{y_n} \log \frac{\exp(x_{n,y_n})}{\sum_{c=1}^C \exp(x_{n,c})}
+          \cdot \mathbb{1}\{y_n \not= \text{ignore_index}\}
+
+      where :math:`x` is the inputs, :math:`y` is the target, :math:`w` is the weight, N is the batch size,
+      :math:`c` belonging to :math:`[0, C-1]` is class index, where :math:`C` is the number of classes.
+
+      If `reduction` is not ``None`` (default ``'mean'`` ), then
+
+      .. math::
+
+          \ell(x, y) = \begin{cases}
+              \sum_{n=1}^N \frac{1}{\sum_{n=1}^N w_{y_n} \cdot \mathbb{1}\{y_n \not= \text{ignore_index}\}} l_n, &
+              \text{if reduction} = \text{'mean',}\\
+              \sum_{n=1}^N l_n,  &
+              \text{if reduction} = \text{'sum'.}
+              \end{cases}
+
+    - Probabilities (float) for each class, useful when labels beyond a single class per minibatch item
+      are required, the loss with reduction=none can be described as:
+
+      .. math::
+
+          \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad
+          l_n = - \sum_{c=1}^C w_c \log \frac{\exp(x_{n,c})}{\sum_{i=1}^C \exp(x_{n,i})} y_{n,c}
+
+      where :math:`x` is the inputs, :math:`y` is the target, :math:`w` is the weight, N is the batch size,
+      :math:`c` belonging to :math:`[0, C-1]` is class index, where :math:`C` is the number of classes.
+
+      If `reduction` is not ``None`` (default ``'mean'`` ), then
+
+      .. math::
+
+          \ell(x, y) = \begin{cases}
+              \frac{\sum_{n=1}^N l_n}{N}, &
+              \text{if reduction} = \text{'mean',}\\
+              \sum_{n=1}^N l_n,  &
+              \text{if reduction} = \text{'sum'.}
+              \end{cases}
+
+    Args:
+        input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
+            in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)`.
+            `input` is expected to be log-probabilities, data type must be float16 or float32 or bfloat16(only supported
+            by Atlas A2 training series products).
+        target (Tensor): For class indices, tensor of shape :math:`()`, :math:`(N)` or
+            :math:`(N, d_1, d_2, ..., d_K)` , data type must be int32 or int64. For probabilities, tensor of shape
+            :math:`(N,)` , :math:`(N, C)` or :math:`(N, C, d_1, d_2, ..., d_K)` , data type must be float16 or float32
+            or bfloat16(only supported by Atlas A2 training series products).
+        weight (Tensor): A rescaling weight applied to the loss of each batch element.
+            If not None, the shape is :math:`(C,)`, data type must be float16 or float32 or bfloat16(only supported by
+            Atlas A2 training series products). Default: ``None`` .
+        ignore_index (int): Specifies a target value that is ignored and does not contribute to the input gradient.
+            Only valid in class indices, please set it to a negative number in probabilities. Default: ``-100`` .
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the weighted mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+        label_smoothing (float): Label smoothing values, a regularization tool used to prevent the model
+            from overfitting when calculating Loss. The value range is [0.0, 1.0]. Default value: ``0.0`` .
+
+    Returns:
+        Tensor, the computed loss value.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> # Case 1: Indices labels
+        >>> inputs = ms.Tensor(np.random.randn(3, 5), ms.float32)
+        >>> target = ms.Tensor(np.array([1, 0, 4]), ms.int32)
+        >>> output = ms.ops.cross_entropy_ext(inputs, target)
+        >>> # Case 2: Probability labels
+        >>> inputs = ms.Tensor(np.random.randn(3, 5), ms.float32)
+        >>> target = ms.Tensor(np.random.randn(3, 5), ms.float32)
+        >>> output = ms.ops.cross_entropy_ext(inputs, target)
+    """
+    if not isinstance(input, Tensor) or not isinstance(target, Tensor):
+        raise TypeError(
+            f"For cross_entropy, input and target must be Tensor, but got input:{type(input)}, target:{type(target)}.")
+    if weight is not None and not isinstance(weight, Tensor):
+        raise TypeError(f"For cross_entropy, weight must be Tensor or None, but got {type(weight)}.")
+    if label_smoothing < 0.0 or label_smoothing > 1.0:
+        raise ValueError(f"For cross_entropy, label_smoothing must in [0, 1]")
+    if input.ndim == 0 or input.shape[0] == 0:
+        raise ValueError(f"For cross_entropy, input don't support 0-dim and shape[0].")
+    class_dim = 0 if input.ndim == 1 else 1
+    n_classes = input.shape[class_dim]
+    input = log_softmax_ext(input, class_dim, dtype=input.dtype)
+    # for probabilities
+    target_dtype = target.dtype
+    if isinstance(target_dtype, type(mstype.tensor_type)):
+        target_dtype = target_dtype.element_type()
+    if target_dtype in mstype.float_type:
+        return _cross_entropy_for_probabilities(input, target, weight, reduction, label_smoothing, class_dim,
+                                                n_classes)
+    # for class indices
+    return _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduction, label_smoothing,
+                                            class_dim, n_classes)
 
 
 def l1_loss(input, target, reduction='mean'):

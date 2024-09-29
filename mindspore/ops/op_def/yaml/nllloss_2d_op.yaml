@@ -1,33 +1,28 @@
-#operator nllloss_grad
-nllloss_grad:
+#operator nllloss_2d
+nllloss_2d:
     args:
-        logits:
+        input:
             dtype: tensor
-        loss_grad:
-            dtype: tensor
-        labels:
+        target:
             dtype: tensor
         weight:
-            dtype: tensor
-        total_weight:
             dtype: tensor
         reduction:
             dtype: int
             default: "'mean'"
-            prim_init: True
             arg_handler: str_to_enum
         ignore_index:
             dtype: int
             default: -100
-            prim_init: True
     returns:
-        logits_grad:
+        loss:
             dtype: tensor
-    class:
-        name: NLLLossGrad
+        total_weight:
+            dtype: tensor
     function:
         disable: True
+    class:
+        name: NLLLoss2d
     dispatch:
         enable: True
-        Ascend: NLLLossGradAscend
-
+        Ascend: NLLLoss2dAscend

@@ -17,7 +17,7 @@ nllloss:
             default: -100
             prim_init: True
     returns:
-        loss: 
+        loss:
             dtype: tensor
         total_weight:
             dtype: tensor
@@ -25,3 +25,6 @@ nllloss:
         disable: True
     class:
         name: NLLLoss
+    dispatch:
+        enable: True
+        Ascend: NLLLossAscend

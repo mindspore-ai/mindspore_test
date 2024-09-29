@@ -247,6 +247,7 @@ from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 from mindspore.ops.auto_generate import adaptive_avg_pool1d
 
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
+from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 
 
 def binary_cross_entropy(input, target, weight=None, reduction='mean'):
@@ -495,7 +496,7 @@ __all__ = [
     # 19
     'binary_cross_entropy',
     # 20
-
+    'cross_entropy',
     # 21
 
     # 22
