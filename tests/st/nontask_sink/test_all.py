@@ -184,7 +184,7 @@ def test_entry_hccl_allreduce_fusion_by_attr():
                             "pytest -s test_comm_fusion.py::test_hccl_allreduce_fusion_by_attr")
     if return_code != 0:
         import datetime
-        t = datetime.now()
+        t = datetime.datetime.now()
         f = t.strftime('%m-%d %H:%M:%S')
         os.system(f"mkdir ~/zpc_{f} && cp -rf *.log ~/zpc_{f} && cp -rf ～/ascend/log ~/zpc_{f}")
     assert return_code == 0
