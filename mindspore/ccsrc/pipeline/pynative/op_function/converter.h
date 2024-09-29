@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <unordered_map>
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "include/common/pybind_api/api_register.h"
@@ -49,7 +50,7 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"type", ops::OP_DTYPE::DT_TYPE},
 };
 // information of single parameter
-struct FunctionParameter {
+explicit struct FunctionParameter {
   FunctionParameter(const std::string &fmt);
   bool check(const py::object &obj);
   void set_default_str(const std::string &str);
@@ -73,7 +74,7 @@ struct FunctionParameter {
 struct FunctionSignature {
   explicit FunctionSignature(const std::string &fmt, int index);
   // bind with real args
-  bool parse(const py::list &args, const py::dict &kwargs, py::list &python_args);
+  bool parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
 
   std::string name_;
   std::vector<FunctionParameter> params_;

@@ -23,15 +23,20 @@ that can be used to call the Pyboost primitive implementations.
 
 import os
 import template
+from template import Template
 import gen_constants as K
 from gen_utils import save_file
-from template import Template
 from base_generator import BaseGenerator
 from op_proto import OpProto
-from tensor_func_proto import TensorFuncProto
 
 
 class TensorFuncRegCppGenerator(BaseGenerator):
+    """
+    Generates C++ tensor function registration code for different backends (Ascend, CPU, GPU).
+
+    This class is responsible for generating header and implementation files required to register
+    tensor functions, including device-specific dispatchers and function definitions.
+    """
 
     def __init__(self):
         self.func_def_reg = Template("tensor_class->def(\"${func_name}\", Tensor${class_name});\n")
@@ -64,7 +69,17 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.TENSOR_FUNC_CALL_BODY = template.TENSOR_FUNC_CALL_BODY
         self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG = template.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG
 
-    def generate(self, work_path, func_protos_data: dict[str, list[TensorFuncProto]]):
+    def generate(self, work_path, func_protos_data):
+        """
+        Generates C++ header and source files for tensor function registrations.
+
+        Args:
+            work_path (str): The directory where the generated files will be saved.
+            func_protos_data (dict): Dictionary mapping function names to lists of TensorFuncProto objects.
+
+        The function constructs C++ registration strings from the provided tensor function prototypes
+        and writes the output to the specified work path.
+        """
         func_header_body_str = ''
         func_call_body_str = ''
         func_def_body_str = ''
@@ -85,8 +100,20 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                            func_header_body_str,
                            func_call_body_str,
                            func_def_body_str):
+        """
+        Generates C++ strings for single operation function registrations.
+
+        Args:
+            func_protos_data (dict): Dictionary of tensor function prototypes.
+            func_header_body_str (str): Header body string to append generated code to.
+            func_call_body_str (str): Function call body string to append generated code to.
+            func_def_body_str (str): Function definition body string to append generated code to.
+
+        Returns:
+            tuple: Updated header body, call body, and definition body strings.
+        """
         single_op_func_data = {}
-        for func_api_name, func_protos in func_protos_data.items():
+        for _, func_protos in func_protos_data.items():
             if len(func_protos) == 1:
                 func_name = func_protos[0].func_name
                 if func_name not in single_op_func_data:
@@ -109,6 +136,18 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                              func_header_body_str,
                              func_call_body_str,
                              func_def_body_str):
+        """
+        Generates C++ strings for overloaded operation function registrations.
+
+        Args:
+            func_protos_data (dict): Dictionary of tensor function prototypes.
+            func_header_body_str (str): Header body string to append generated code to.
+            func_call_body_str (str): Function call body string to append generated code to.
+            func_def_body_str (str): Function definition body string to append generated code to.
+
+        Returns:
+            tuple: Updated header body, call body, and definition body strings.
+        """
         overload_op_func_data = {}
         for func_api_name, func_protos in func_protos_data.items():
             if len(func_protos) > 1:
@@ -122,6 +161,15 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return func_header_body_str, func_call_body_str, func_def_body_str
 
     def _get_overload_tensor_func_header_body_str(self, func_protos):
+        """
+        Generates C++ header body string for overloaded tensor functions.
+
+        Args:
+            func_protos (list): List of TensorFuncProto objects representing the function prototypes.
+
+        Returns:
+            str: Generated header body string for the overloaded functions.
+        """
         overload_tensor_func_header_body_str = ''
         for tensor_proto in func_protos:
             overload_tensor_func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
@@ -129,6 +177,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return overload_tensor_func_header_body_str
 
     def _get_overload_func_call_str(self, func_api_name, func_protos):
+        """
+        Generates C++ call body string for overloaded tensor functions.
+
+        Args:
+            func_api_name (str): Name of the function API.
+            func_protos (list): List of TensorFuncProto objects representing the function prototypes.
+
+        Returns:
+            str: Generated call body string for the overloaded functions.
+        """
         signatures_str = self._generate_func_signatures_str(func_protos)
         dispatch_cases_str = self._get_dispatch_cases(func_protos)
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG.replace(class_name=func_api_name.capitalize(),
@@ -137,6 +195,15 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return overload_func_call_str
 
     def _generate_func_signatures_str(self, func_protos) -> str:
+        """
+        Generates function signatures as a string from the given prototypes.
+
+        Args:
+            func_protos (list): List of TensorFuncProto objects representing the function prototypes.
+
+        Returns:
+            str: Generated function signatures string.
+        """
         sig_str = ''
         first_sig = True
         for tensor_proto in func_protos:
@@ -148,9 +215,18 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return sig_str
 
     def _generate_single_signature_str(self, op_proto: OpProto) -> str:
+        """
+        Generates a single function signature string for the given operation prototype.
+
+        Args:
+            op_proto (OpProto): Operation prototype to generate the signature for.
+
+        Returns:
+            str: Generated function signature string.
+        """
         args_str = f'"{op_proto.op_class.name}('
         first_arg = True
-        for index, arg in enumerate(op_proto.op_args):
+        for _, arg in enumerate(op_proto.op_args):
             single_arg = ''
             if not first_arg:
                 single_arg = ', '
@@ -169,6 +245,15 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return args_str + ')"'
 
     def _get_dispatch_cases(self, func_protos):
+        """
+        Generates C++ switch-case statements for dispatching tensor function calls.
+
+        Args:
+            func_protos (list): List of TensorFuncProto objects representing the function prototypes.
+
+        Returns:
+            str: Generated switch-case dispatch statements.
+        """
         dispatch_cases_str = ''
         for idx, func_proto in enumerate(func_protos):
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
@@ -179,6 +264,15 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return dispatch_cases_str
 
     def _get_device_dispatchers_str(self, func_proto):
+        """
+        Generates device-specific dispatch strings for the given function prototype.
+
+        Args:
+            func_proto (TensorFuncProto): Function prototype to generate dispatch strings for.
+
+        Returns:
+            str: Generated device-specific dispatch string.
+        """
         ascend_dispatcher_str = self._get_single_device_dispatcher_str(func_proto, 'ascend')
         cpu_dispatcher_str = self._get_single_device_dispatcher_str(func_proto, 'cpu')
         gpu_dispatcher_str = self._get_single_device_dispatcher_str(func_proto, 'gpu')
@@ -188,7 +282,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         return device_dispatcher_str
 
     def _get_single_device_dispatcher_str(self, func_proto, device):
+        """
+        Generates the dispatch string for a specific device.
 
+        Args:
+            func_proto (TensorFuncProto): Function prototype to generate the dispatcher for.
+            device (str): Device type ('ascend', 'cpu', 'gpu').
+
+        Returns:
+            str: Generated device dispatcher string.
+        """
         callback_python_template = Template(
             'MS_LOG(INFO) << "${info}";\n'
             'py::function fn = python_adapter::GetPyFn(\"${python_module}\", \"${python_func}\");\n'
@@ -199,19 +302,28 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             arg_handler_processor_str = self._get_arg_handler_processor(func_proto)
             return self.aclnn_return_template.replace(arg_handler_processor=arg_handler_processor_str,
                                                       class_name=func_proto.op_proto.op_class.name)
-        else:
-            python_module_and_func = getattr(func_proto, device)
-            if '.' not in python_module_and_func:
-                return (f'MS_LOG(ERROR) << "Callback python module and func is: {python_module_and_func}";\n'
-                        f'return py::none();')
-            last_doc_index = python_module_and_func.rindex('.')
-            python_module = python_module_and_func[:last_doc_index]
-            python_func = python_module_and_func[last_doc_index + 1:]
-            return callback_python_template.replace(info=python_module_and_func,
-                                                    python_module=python_module,
-                                                    python_func=python_func)
+
+        python_module_and_func = getattr(func_proto, device)
+        if '.' not in python_module_and_func:
+            return (f'MS_LOG(ERROR) << "Callback python module and func is: {python_module_and_func}";\n'
+                    f'return py::none();')
+        last_doc_index = python_module_and_func.rindex('.')
+        python_module = python_module_and_func[:last_doc_index]
+        python_func = python_module_and_func[last_doc_index + 1:]
+        return callback_python_template.replace(info=python_module_and_func,
+                                                python_module=python_module,
+                                                python_func=python_func)
 
     def _get_arg_handler_processor(self, func_proto):
+        """
+        Generates argument handler processing code for the given function prototype.
+
+        Args:
+            func_proto (TensorFuncProto): Function prototype to generate argument processing for.
+
+        Returns:
+            str: Generated argument handler processing code.
+        """
         arg_handler_processor = ''
         op_proto = func_proto.op_proto
         op_args = op_proto.op_args

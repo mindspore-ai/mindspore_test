@@ -16,11 +16,11 @@
 """Tensor Func Proto module for defining tensor_py function prototypes and their arguments."""
 from collections import defaultdict
 
-from op_proto import OpProto
-
 
 class TensorFuncProto:
-
+    """
+    Represents a tensor function prototype with associated function name, operation prototype, and target devices.
+    """
     def __init__(self,
                  func_name,
                  op_proto,
@@ -33,6 +33,9 @@ class TensorFuncProto:
 
 
 def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos):
+    """
+    Loads tensor function prototypes from YAML data and returns them as a dictionary.
+    """
     op_protos_dict = {}
     for op_proto in op_protos:
         op_protos_dict[op_proto.op_name] = op_proto

@@ -388,6 +388,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __abs__(self):
         return tensor_operator_registry.get('abs')(self)
 
+    @add_mint
+    def __add__(self, other):
+        return tensor_operator_registry.get('__add__')(self, other)
+
+
     def __and__(self, other):
         if isinstance(other, (int, bool, float, Tensor)):
             return tensor_operator_registry.get('bitwise_and')(self, other)
@@ -1931,6 +1936,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('log2')(self)
 
+    @mean_mint
+    def mean(self, axis=None, keep_dims=False):
+        """
+        For details, please refer to :func:`mindspore.ops.mean`.
+        """
+        return tensor_operator_registry.get('mean')(self, axis, keep_dims)
+
     def amin(self, axis=None, keepdims=False, *, initial=None, where=None):
         """
         For details, please refer to :func:`mindspore.ops.amin`.
@@ -2289,6 +2301,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         if not copy and dtype == self.dtype:
             return self
         return tensor_operator_registry.get('cast')(self, dtype)
+
+    def argmax(self, axis=None, keepdims=False):
+        """
+        For details, please refer to :func:`mindspore.ops.argmax`.
+        """
+        out = tensor_operator_registry.get('argmax')(self, axis, keepdims)
+        return out
 
     def argmin(self, axis=None, keepdims=False):
         """
@@ -2851,6 +2870,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('minimum')(self, other)
 
+    def clamp(self, min=None, max=None):
+        r"""
+        For details, please refer to :func:`mindspore.ops.clamp`.
+        """
+        return tensor_operator_registry.get('clamp')(self, min, max)
 
     def clamp_(self, min=None, max=None):
         r"""

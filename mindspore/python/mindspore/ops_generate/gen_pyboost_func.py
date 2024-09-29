@@ -16,8 +16,6 @@
 Generate pyboost function from pyboost_op.yaml
 """
 
-from op_proto import OpProto
-from tensor_func_proto import TensorFuncProto
 from pyboost_inner_prim_generator import PyboostInnerPrimGenerator
 from pyboost_functions_py_generator import PyboostFunctionsPyGenerator
 from ops_header_files_generator import OpHeaderFileGenerator

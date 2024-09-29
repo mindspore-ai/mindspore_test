@@ -463,7 +463,7 @@ const FunctionSignature &PythonArgParser::parse(const py::list &args, const py::
   MS_LOG(EXCEPTION) << "Matching failed. Please check the parameter list.";
 }
 
-bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::list &python_args) {
+bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::list *python_args) {
   size_t nargs = args ? args.size() : 0;
   size_t nkwargs = kwargs ? kwargs.size() : 0;
   size_t arg_pos = 0;
@@ -493,14 +493,14 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
       if (!param.optional_) {
         return false;
       }
-      python_args.append(param.get_default_value());
+      python_args->append(param.get_default_value());
     } else if (py::isinstance<py::none>(obj)) {
       if (!param.allow_none_) {
         return false;
       }
-      python_args.append(obj);
+      python_args->append(obj);
     } else if (param.check(obj)) {
-      python_args.append(obj);
+      python_args->append(obj);
     } else {
       return false;
     }
@@ -616,7 +616,6 @@ bool is_tensor_list(const py::object &obj) {
     return false;
   }
   auto seq = obj.cast<T>();
-  std::vector<ValuePtr> value_list;
   for (size_t it = 0; it < seq.size(); ++it) {
     if (!is_tensor(seq[it], false)) {
       return false;

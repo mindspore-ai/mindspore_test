@@ -30,7 +30,6 @@ import gen_constants as K
 from gen_utils import save_file
 from op_proto import OpProto
 from op_template_parser import OpTemplateParser
-from tensor_func_proto import TensorFuncProto
 from base_generator import BaseGenerator
 
 
@@ -137,9 +136,20 @@ class PyboostFunctionsGenerator(BaseGenerator):
         save_file(save_path, file_name, pyboost_func_file)
 
     def _get_function_class_register(self, tensor_func_protos_data) -> str:
+        """
+        Generates a function class registration string for tensor functions.
+
+        Args:
+            tensor_func_protos_data (dict): A dictionary where the keys are function names and
+                                            the values are lists of tensor function prototypes.
+
+        Returns:
+            str: A concatenated string representing the registration information for tensor
+                 function classes.
+        """
         function_class_register = ''
         op_set = set()
-        for func_name, tensor_func_protos in tensor_func_protos_data.items():
+        for _, tensor_func_protos in tensor_func_protos_data.items():
             for func_proto in tensor_func_protos:
                 op_set.add((func_proto.op_proto.op_class.name, func_proto.op_proto.op_name))
         for op in op_set:
