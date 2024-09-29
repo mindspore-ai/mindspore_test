@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <cstddef>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
@@ -101,48 +103,50 @@ void PaddingsSizeCheck(const PrimitivePtr &primitive, const int64_t paddings_siz
 }
 
 void PaddingsValueCheck(const std::string &prim_name, const std::vector<int64_t> &x_shape,
-                        const std::vector<int64_t> &paddings_arg) {
+                        const std::vector<int64_t> &paddings_val) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
-    (void)CheckAndConvertUtils::CheckPositiveVector("paddings", paddings_arg, prim_name);
+    (void)CheckAndConvertUtils::CheckPositiveVector("paddings", paddings_val, prim_name);
   }
   auto x_shape_reverse = x_shape;
   std::reverse_copy(x_shape.begin(), x_shape.end(), x_shape_reverse.begin());
-  for (size_t i = 0; i < paddings_arg.size(); i++) {
-    if (paddings_arg[i] < 0) {
-      (void)CheckAndConvertUtils::CheckInteger("paddings_value", paddings_arg[i], CompareEnum::kGreaterEqual,
+  for (size_t i = 0; i < paddings_val.size(); i++) {
+    if (paddings_val[i] < 0) {
+      (void)CheckAndConvertUtils::CheckInteger("paddings_value", paddings_val[i], CompareEnum::kGreaterEqual,
                                                -x_shape_reverse[i / nTwo], prim_name);
     }
   }
 }
 
 void ReflectModeCheck(const std::string &prim_name, const int64_t paddings_size, std::vector<int64_t> x_shape,
-                      std::vector<int64_t> paddings_arg, const int64_t size) {
+                      std::vector<int64_t> paddings_val, const int64_t size, bool is_paddings_changed) {
+  if (is_paddings_changed) {
+    return;
+  }
+
   constexpr int64_t kReflectMaxDims = 4;
-  constexpr int64_t padding_pos_2 = 2;
-  constexpr int64_t padding_pos_3 = 3;
   (void)CheckAndConvertUtils::CheckInteger("input dims for reflect mode", size, kLessEqual, kReflectMaxDims, prim_name);
   if (paddings_size == kPaddingsSizeTwo) {
-    if (paddings_arg[0] >= x_shape[kInputIndex2] || paddings_arg[1] >= x_shape[kInputIndex2]) {
+    if (paddings_val[0] >= x_shape[kInputIndex2] || paddings_val[1] >= x_shape[kInputIndex2]) {
       MS_EXCEPTION(ValueError) << "For '" << prim_name
                                << "' reflect mode, Padding size must be less than the corresponding input dimension"
-                               << ", but got: padding (" << paddings_arg[0] << ',' << paddings_arg[1]
+                               << ", but got: padding (" << paddings_val[0] << ',' << paddings_val[1]
                                << ") at dimension 2 of input:[" << x_shape[kInputIndex2] << "]";
     }
   }
   if (paddings_size == kPaddingsSizeFour) {
-    if (paddings_arg[0] >= x_shape[kInputIndex3] || paddings_arg[1] >= x_shape[kInputIndex3]) {
+    if (paddings_val[0] >= x_shape[kInputIndex3] || paddings_val[1] >= x_shape[kInputIndex3]) {
       MS_EXCEPTION(ValueError) << "For '" << prim_name
                                << "' reflect mode, Padding size must be less than the corresponding input dimension"
-                               << ", but got: padding (" << paddings_arg[0] << ',' << paddings_arg[1]
+                               << ", but got: padding (" << paddings_val[0] << ',' << paddings_val[1]
                                << ") at dimension 3 of input:[" << x_shape[kInputIndex3] << "]";
     }
-    if (paddings_arg[padding_pos_2] >= x_shape[kInputIndex2] || paddings_arg[padding_pos_3] >= x_shape[kInputIndex2]) {
+    if (paddings_val[kInputIndex2] >= x_shape[kInputIndex2] || paddings_val[kInputIndex3] >= x_shape[kInputIndex2]) {
       MS_EXCEPTION(ValueError) << "For '" << prim_name
                                << "' reflect mode, Padding size must be less than the corresponding input dimension"
-                               << ", but got: padding (" << paddings_arg[padding_pos_2] << ','
-                               << paddings_arg[padding_pos_3] << ") at dimension 2 of input:[" << x_shape[kInputIndex2]
+                               << ", but got: padding (" << paddings_val[kInputIndex2] << ','
+                               << paddings_val[kInputIndex3] << ") at dimension 2 of input:[" << x_shape[kInputIndex2]
                                << "]";
     }
   }
@@ -191,27 +195,92 @@ void AscendTransformPaddingsAttr(const PrimitivePtr &primitive,
   }
 }
 
+std::vector<std::pair<int64_t, int64_t>> PadV3DealWithPaddings(const PrimitivePtr &primitive,
+                                                               const std::vector<int64_t> &x_shape,
+                                                               const std::vector<int64_t> &ori_paddings_val) {
+  const auto &prim_name = primitive->name();
+  auto is_paddings_changed{false};
+  if (primitive->HasAttr("is_paddings_changed")) {
+    MS_LOG(INFO) << "For " << prim_name
+                 << ", the paddings' val has been changed in ascend backend pass, which causes paddings' size expanded "
+                    "to 2 times x_rank";
+    is_paddings_changed = GetValue<bool>(primitive->GetAttr("is_paddings_changed"));
+  }
+
+  auto x_rank = SizeToLong(x_shape.size());
+  int64_t paddings_size = SizeToLong(ori_paddings_val.size());
+  auto mode = GetValue<std::string>(primitive->GetAttr(kAttrMode));
+  if (mode != kConstant) {
+    constexpr int64_t kOtherMinDims = 3;
+    (void)CheckAndConvertUtils::CheckInteger("input dims for edge, reflect or circular mode", x_rank, kGreaterEqual,
+                                             kOtherMinDims, prim_name);
+    if (mode == kReflect) {
+      ReflectModeCheck(prim_name, paddings_size, x_shape, ori_paddings_val, x_rank, is_paddings_changed);
+    } else {
+      constexpr int64_t kEdgeMaxDims = 5;
+      (void)CheckAndConvertUtils::CheckInteger("input dims for edge mode", x_rank, kLessEqual, kEdgeMaxDims, prim_name);
+    }
+  }
+
+  std::vector<int64_t> paddings_val(ori_paddings_val);
+  if (is_paddings_changed) {
+    // (0, 1, 2, 3, 4, 5, 6, 7) -> (6, 7, 4, 5, 2, 3, 0, 1)
+    std::reverse(paddings_val.begin(), paddings_val.end());
+    for (size_t i = 1; i < paddings_val.size(); i += kInputIndex2) {
+      std::swap(paddings_val[i - 1], paddings_val[i]);
+    }
+  } else {
+    PaddingsSizeCheck(primitive, paddings_size, x_rank);
+    // Checker: whether paddings_value + x_shape_value < 0 or not
+    PaddingsValueCheck(prim_name, x_shape, ori_paddings_val);
+
+    auto paddings_contiguous = GetValue<bool>(primitive->GetAttr("paddings_contiguous"));
+    if (paddings_contiguous == false) {
+      std::vector<int64_t> tmp = paddings_val;
+      for (int64_t i = 0; i < paddings_size; ++i) {
+        if (i % nTwo == 0) {
+          paddings_val[LongToSize(i)] = tmp[LongToSize(i / nTwo)];
+        } else {
+          paddings_val[LongToSize(i)] = tmp[LongToSize((i + paddings_size) / nTwo)];
+        }
+      }
+    }
+  }
+
+  std::vector<std::pair<int64_t, int64_t>> paddings_attr;
+  for (int64_t i = 0; i < x_rank; ++i) {
+    if (nTwo * i >= paddings_size) {
+      paddings_attr.push_back(std::make_pair(int64_t(0), int64_t(0)));
+    } else {
+      paddings_attr.push_back(
+        std::make_pair(paddings_val[LongToSize(nTwo * i)], paddings_val[LongToSize(nTwo * i + 1)]));
+    }
+  }
+  AscendTransformPaddingsAttr(primitive, &paddings_attr);
+  return paddings_attr;
+}
+
 abstract::ShapePtr PadV3InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  constexpr int64_t kEdgeMaxDims = 5;
-  constexpr int64_t kOtherMinDims = 3;
   MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  auto input_shape_ptr = input_args[0]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_shape_ptr);
-  if (input_shape_ptr->IsDimUnknown()) {
+
+  auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
+  MS_EXCEPTION_IF_NULL(x_shape_ptr);
+  if (x_shape_ptr->IsDimUnknown()) {
     return std::make_shared<abstract::Shape>(std::vector<int64_t>{abstract::Shape::kShapeRankAny});
   }
-  auto x_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_shape_ptr)[kShape];
+
+  auto x_shape = x_shape_ptr->GetShapeVector();
   auto dim_size = x_shape.size();
   if (dim_size == 0) {
     MS_EXCEPTION(ValueError) << "For '" << prim_name << "', the dimension of 'x' must bigger than 0.";
   }
   CheckAscendInputXDim(dim_size, prim_name);
-  if (input_shape_ptr->IsDynamic()) {
+  if (x_shape_ptr->IsDynamic()) {
     return std::make_shared<abstract::Shape>(std::vector<int64_t>(dim_size, abstract::Shape::kShapeDimAny));
   }
 
-  std::vector<int64_t> paddings_arg;
+  std::vector<int64_t> ori_paddings_val;
   auto padding_type = input_args[kInputIndex1]->GetType();
   if (padding_type->isa<TensorType>()) {
     auto paddings_shape_ptr = input_args[kInputIndex1]->GetShape();
@@ -224,61 +293,23 @@ abstract::ShapePtr PadV3InferShape(const PrimitivePtr &primitive, const std::vec
     if (paddings_value->ContainsValueAny()) {
       return PaddingNoTensor(paddings_shape_ptr, x_shape);
     }
-    paddings_arg = CheckAndConvertUtils::CheckTensorIntValue("paddings value", paddings_value, prim_name, padding_type);
+    ori_paddings_val =
+      CheckAndConvertUtils::CheckTensorIntValue("paddings value", paddings_value, prim_name, padding_type);
   } else if (padding_type->isa<Tuple>() || padding_type->isa<List>()) {
-    paddings_arg = CheckAndConvertUtils::CheckIntOrTupleInt("paddings value", input_args[1], prim_name);
+    ori_paddings_val = CheckAndConvertUtils::CheckIntOrTupleInt("paddings value", input_args[1], prim_name);
   } else {
     return std::make_shared<abstract::Shape>(std::vector<int64_t>(dim_size, abstract::Shape::kShapeDimAny));
   }
 
-  int64_t size = SizeToLong(dim_size);
-  int64_t paddings_size = SizeToLong(paddings_arg.size());
-  std::vector<int64_t> paddings_val;
-  auto mode = GetValue<std::string>(primitive->GetAttr(kAttrMode));
-  if (mode != kConstant) {
-    (void)CheckAndConvertUtils::CheckInteger("input dims for edge, reflect or circular mode", size, kGreaterEqual,
-                                             kOtherMinDims, prim_name);
-    if (mode == kReflect) {
-      ReflectModeCheck(prim_name, paddings_size, x_shape, paddings_arg, size);
-    } else {
-      (void)CheckAndConvertUtils::CheckInteger("input dims for edge mode", size, kLessEqual, kEdgeMaxDims, prim_name);
-    }
-  }
-
-  PaddingsSizeCheck(primitive, paddings_size, size);
-  // Checker: whether paddings_value + x_shape_value < 0 or not
-  PaddingsValueCheck(prim_name, x_shape, paddings_arg);
-  for (int64_t i = 0; i < paddings_size; ++i) {
-    paddings_val.push_back(int64_t(paddings_arg[LongToSize(i)]));
-  }
-  auto paddings_contiguous = GetValue<bool>(primitive->GetAttr("paddings_contiguous"));
-  if (paddings_contiguous == false) {
-    std::vector<int64_t> tmp = paddings_val;
-    for (int64_t i = 0; i < paddings_size; ++i) {
-      if (i % nTwo == 0) {
-        paddings_val[LongToSize(i)] = tmp[LongToSize(i / nTwo)];
-      } else {
-        paddings_val[LongToSize(i)] = tmp[LongToSize((i + paddings_size) / nTwo)];
-      }
-    }
-  }
-  std::vector<std::pair<int64_t, int64_t>> paddings_attr;
-  for (int64_t i = 0; i < size; ++i) {
-    if (nTwo * i >= paddings_size) {
-      paddings_attr.push_back(std::make_pair(int64_t(0), int64_t(0)));
-    } else {
-      paddings_attr.push_back(
-        std::make_pair(paddings_val[LongToSize(nTwo * i)], paddings_val[LongToSize(nTwo * i + 1)]));
-    }
-  }
-  AscendTransformPaddingsAttr(primitive, &paddings_attr);
+  auto paddings_attr = PadV3DealWithPaddings(primitive, x_shape, ori_paddings_val);
   std::vector<int64_t> out_shape;
-  for (int64_t i = 0; i < size; ++i) {
-    int64_t now_dim_size = x_shape[LongToSize(i)] + paddings_attr[LongToSize(size - i - 1)].first +
-                           paddings_attr[LongToSize(size - i - 1)].second;
+  for (size_t i = 0; i < dim_size; ++i) {
+    auto index = dim_size - i - 1;
+    int64_t now_dim_size = x_shape[i] + paddings_attr[index].first + paddings_attr[index].second;
     (void)CheckAndConvertUtils::CheckInteger("output size", now_dim_size, kGreaterThan, 0, prim_name);
     (void)out_shape.emplace_back(now_dim_size);
   }
+
   return std::make_shared<abstract::Shape>(out_shape);
 }
 
