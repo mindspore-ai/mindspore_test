@@ -526,6 +526,8 @@ void GatherHash(const std::vector<tensor::BaseTensorPtr> &tensors) {
   }
 }
 
+void GatherHash(const std::vector<int64_t> &int_arrays) { MemcpyToBuf(&int_arrays, sizeof(void *)); }
+
 void GatherHash(const ScalarPtr &scalar) {
   if (scalar == nullptr) {
     MemcpyToBuf("None", kSizeFive);

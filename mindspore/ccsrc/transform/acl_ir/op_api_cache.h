@@ -236,6 +236,7 @@ void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
 void GatherHash(const mindspore::tensor::TensorPtr &);
 void GatherHash(const std::optional<tensor::TensorPtr> &);
 void GatherHash(const std::vector<tensor::TensorPtr> &);
+void GatherHash(const std::vector<int64_t> &);
 
 template <typename T>
 void GatherHash(const T &value) {
