@@ -15,6 +15,7 @@
  */
 
 #include "kernel/cpu/eigen/extract_volume_patches_cpu_kernel.h"
+#include <any>
 #include <functional>
 #include <memory>
 #include <string>
@@ -61,59 +62,77 @@ int ExtractVolumePatchesKernelMod::Resize(const std::vector<KernelTensor *> &inp
     return ret;
   }
 
-  constexpr size_t x_dim_num = 5;
-  constexpr size_t out_dim_num = 5;
   input_shape_ = inputs[0]->GetShapeVector();
-  if (input_shape_.size() != x_dim_num) {
-    MS_LOG(EXCEPTION) << "Incorrect input dim size: " << input_shape_.size() << ", which should be " << x_dim_num;
-  }
-
   output_shape_ = outputs[0]->GetShapeVector();
-  if (output_shape_.size() != out_dim_num) {
-    MS_LOG(EXCEPTION) << "Incorrect output dim size: " << output_shape_.size() << ", which should be " << out_dim_num;
-  }
+  CheckParams();
 
+  return static_cast<int>(KRET_OK);
+}
+
+void ExtractVolumePatchesKernelMod::CheckParams() const noexcept {
+  if (input_shape_.size() != expect_rank_) {
+    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect input dim size: " << input_shape_.size()
+                      << ", which should be " << expect_rank_;
+  }
+  if (output_shape_.size() != expect_rank_) {
+    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect output dim size: " << output_shape_.size()
+                      << ", which should be " << expect_rank_;
+  }
   if (!(IsValidShape(input_shape_) && IsValidShape(output_shape_))) {
     MS_LOG(EXCEPTION) << "For " << kernel_name_
                       << ", the input's shape and output's shape should be nonnegative, but got " << input_shape_
                       << " and " << output_shape_;
   }
 
-  return static_cast<int>(KRET_OK);
+  if (kernel_size_.size() != expect_rank_) {
+    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect kernel_size_ dim size: " << kernel_size_.size()
+                      << ", which should be " << expect_rank_;
+  }
+  if (std::any_of(kernel_size_.begin(), kernel_size_.end(), [](int64_t v) { return v <= 0; })) {
+    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, kernel_size should be greater than 0, but got " << kernel_size_;
+  }
+
+  if (strides_.size() != expect_rank_) {
+    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect strides_ dim size: " << strides_.size()
+                      << ", which should be " << expect_rank_;
+  }
+  if (std::any_of(strides_.begin(), strides_.end(), [](int64_t v) { return v <= 0; })) {
+    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, strides should be greater than 0, but got " << strides_;
+  }
+
+  if (padding_ == "VALID") {
+    for (size_t i = 0; i < expect_rank_; i++) {
+      auto cur_val = input_shape_[i] - kernel_size_[i];
+      if (cur_val < 0) {
+        MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", padding = VALID, input_shape[" << i << "] - kernel_size[" << i
+                          << "] should be greater equal to 0, but got " << cur_val;
+      }
+    }
+  } else {
+    for (size_t i = 0; i < expect_rank_; i++) {
+      auto output_size = (input_shape_[i] + strides_[i] - 1) / strides_[i];
+      auto padding_needed = (output_size - 1) * strides_[i] + kernel_size_[i] - input_shape_[i];
+      if (padding_needed < 0) {
+        MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", padding = ((input_shape[" << i << "] + strides[" << i
+                          << "] - 1) / strides[" << i << "]) - 1) * strides[" << i << "] + kernel_size[" << i
+                          << "] - input_shape[" << i << "] should be greater equal to 0, but got " << padding_needed;
+      }
+    }
+  }
 }
 
 template <typename T>
 bool ExtractVolumePatchesKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                  const std::vector<kernel::KernelTensor *> &workspace,
                                                  const std::vector<kernel::KernelTensor *> &outputs) {
-  constexpr size_t dims = 5;
-  constexpr size_t x_dim_num = 5;
-  constexpr size_t out_dim_num = 5;
-  constexpr size_t extract_dims = 6;
   constexpr size_t xn = 0, xc = 1, xd = 2, xh = 3, xw = 4;
   constexpr size_t on = 0, oc = 1, od = 2, oh = 3, ow = 4;
   constexpr size_t kd = 2, kh = 3, kw = 4;
   constexpr size_t sd = 2, sh = 3, sw = 4;
+  constexpr size_t dims = 5;
+  constexpr size_t extract_dims = 6;
   constexpr int storage_option = static_cast<int>(Eigen::RowMajor);
   constexpr int alignment_type = static_cast<int>(Eigen::Aligned);
-
-  if (input_shape_.size() != x_dim_num) {
-    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect input dim size: " << input_shape_.size()
-                      << ", which should be " << x_dim_num;
-  }
-  if (output_shape_.size() != out_dim_num) {
-    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect output dim size: " << output_shape_.size()
-                      << ", which should be " << out_dim_num;
-  }
-  if (kernel_size_.size() != dims) {
-    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect kernel_size_ dim size: " << kernel_size_.size()
-                      << ", which should be " << dims;
-  }
-  if (strides_.size() != dims) {
-    MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect strides_ dim size: " << strides_.size()
-                      << ", which should be " << dims;
-  }
-
   Eigen::TensorMap<Eigen::Tensor<T, dims, storage_option, Eigen::DenseIndex>, alignment_type> eigen_inputs(
     static_cast<T *>(inputs[0]->device_ptr()), input_shape_[xn], input_shape_[xc], input_shape_[xd], input_shape_[xh],
     input_shape_[xw]);
