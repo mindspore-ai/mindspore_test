@@ -42,7 +42,7 @@ class DtypeToEnum(Primitive):
     def __call__(self, op_name, arg_name, dtype):
         """Run in PyNative mode"""
         if not isinstance(dtype, typing.Type):
-            raise TypeError(f"For '{op_name}', the input '{arg_name}' should be mindpsore dtype, but got {dtype}.")
+            raise TypeError(f"For '{op_name}', the input '{arg_name}' should be mindspore dtype, but got {dtype}.")
         return typing.type_to_type_id(dtype)
 
 
