@@ -41,8 +41,6 @@
 #include "infer/ops_func_impl/greater_equal.h"
 #include "infer/ops_func_impl/greater.h"
 #include "infer/mod.h"
-#include "infer/strided_slice_v2.h"
-#include "infer/grad/strided_slice_v2_grad.h"
 #include "abstract/abstract_function.h"
 #include "utils/ms_context.h"
 #include "mindspore/ops/op_def/op_name.h"

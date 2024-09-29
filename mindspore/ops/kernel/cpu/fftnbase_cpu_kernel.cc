@@ -131,22 +131,14 @@ bool FFTNBaseCpuKernelMod::LaunchKernelC2C(const std::vector<kernel::KernelTenso
   T_out fct = static_cast<T_out>(norm_weight_);
 
   // Allocate temporary memory of the required type and size and copy the input into this space.
-  std::complex<T_out> *calculate_input =
-    static_cast<std::complex<T_out> *>(malloc(sizeof(std::complex<T_out>) * calculate_element_nums_));
-  auto ret = memset_s(calculate_input, sizeof(std::complex<T_out>) * calculate_element_nums_, 0,
-                      sizeof(std::complex<T_out>) * calculate_element_nums_);
-  if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
-  }
+  std::vector<std::complex<T_out>> calculate_input_vec(calculate_element_nums_, 0);
+  auto calculate_input = calculate_input_vec.data();
 
   ShapeCopy<T_in, std::complex<T_out>>(input_ptr, calculate_input, tensor_shape_, calculate_shape_);
 
   // Run FFT according to parameters
   PocketFFTC2C<T_out>(calculate_input, output_ptr, forward_, fct, calculate_shape_, dim_);
 
-  // Release temporary memory
-  free(calculate_input);
-  calculate_input = nullptr;
   return true;
 }
 
@@ -160,12 +152,9 @@ bool FFTNBaseCpuKernelMod::LaunchKernelR2C(const std::vector<kernel::KernelTenso
   T_out fct = static_cast<T_out>(norm_weight_);
 
   // Allocate temporary memory of the required type and size and copy the input into this space.
-  T_out *calculate_input = static_cast<T_out *>(malloc(sizeof(T_out) * calculate_element_nums_));
-  auto ret =
-    memset_s(calculate_input, sizeof(T_out) * calculate_element_nums_, 0, sizeof(T_out) * calculate_element_nums_);
-  if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
-  }
+  std::vector<T_out> calculate_input_vec(calculate_element_nums_, 0);
+  auto calculate_input = calculate_input_vec.data();
+
   ShapeCopy<T_in, T_out>(input_ptr, calculate_input, tensor_shape_, calculate_shape_);
 
   // Run FFT according to parameters
@@ -175,9 +164,7 @@ bool FFTNBaseCpuKernelMod::LaunchKernelR2C(const std::vector<kernel::KernelTenso
     std::transform(output_ptr, output_ptr + outputs[kIndex0]->size() / sizeof(std::complex<T_out>), output_ptr,
                    [](std::complex<T_out> x) { return std::conj(x); });
   }
-  // Release temporary memory
-  free(calculate_input);
-  calculate_input = nullptr;
+
   return true;
 }
 
@@ -190,13 +177,9 @@ bool FFTNBaseCpuKernelMod::LaunchKernelC2R(const std::vector<kernel::KernelTenso
   // Calculate the required memory based on s and dim.
   T_out fct = static_cast<T_out>(norm_weight_);
   // Allocate temporary memory of the required type and size and copy the input into this space.
-  std::complex<T_out> *calculate_input =
-    static_cast<std::complex<T_out> *>(malloc(sizeof(std::complex<T_out>) * calculate_element_nums_));
-  auto ret = memset_s(calculate_input, sizeof(std::complex<T_out>) * calculate_element_nums_, 0,
-                      sizeof(std::complex<T_out>) * calculate_element_nums_);
-  if (ret != EOK) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
-  }
+  std::vector<std::complex<T_out>> calculate_input_vec(calculate_element_nums_, 0);
+  auto calculate_input = calculate_input_vec.data();
+
   ShapeCopy<T_in, std::complex<T_out>>(input_ptr, calculate_input, tensor_shape_, calculate_shape_);
 
   if (kernel_name_ == prim::kPrimHFFT2->name() || kernel_name_ == prim::kPrimHFFTN->name()) {
@@ -207,9 +190,6 @@ bool FFTNBaseCpuKernelMod::LaunchKernelC2R(const std::vector<kernel::KernelTenso
   // Run FFT according to parameters
   PocketFFTC2R<T_out>(calculate_input, output_ptr, forward_, fct, calculate_shape_, dim_);
 
-  // Release temporary memory
-  free(calculate_input);
-  calculate_input = nullptr;
   return true;
 }
 

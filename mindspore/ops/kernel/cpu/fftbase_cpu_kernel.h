@@ -39,7 +39,7 @@ class FFTBaseCpuKernelMod : public NativeCpuKernelMod {
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs) override {
-    return kernel_func_(this, inputs, outputs);
+    return kernel_func_(this, inputs, workspace, outputs);
   }
 
  protected:
@@ -50,24 +50,26 @@ class FFTBaseCpuKernelMod : public NativeCpuKernelMod {
 
   void UpdateParam();
 
+  void ApplyWorkSpace(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+
   template <typename T_in, typename T_out>
-  bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+  bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 
   template <typename T_in, typename T_out>
-  bool LaunchKernelC2C(const std::vector<kernel::KernelTensor *> &inputs,
+  bool LaunchKernelC2C(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                        const std::vector<kernel::KernelTensor *> &outputs);
 
   template <typename T_in, typename T_out>
-  bool LaunchKernelR2C(const std::vector<kernel::KernelTensor *> &inputs,
+  bool LaunchKernelR2C(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                        const std::vector<kernel::KernelTensor *> &outputs);
 
   template <typename T_in, typename T_out>
-  bool LaunchKernelC2R(const std::vector<kernel::KernelTensor *> &inputs,
+  bool LaunchKernelC2R(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                        const std::vector<kernel::KernelTensor *> &outputs);
 
   using FFTBaseFunc = std::function<bool(FFTBaseCpuKernelMod *, const std::vector<KernelTensor *> &,
-                                         const std::vector<KernelTensor *> &)>;
+                                         const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &)>;
   static std::vector<std::pair<KernelAttr, FFTBaseFunc>> func_list_;
 
   FFTBaseFunc kernel_func_;

@@ -73,7 +73,7 @@ bool LinSpaceCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *
     const auto input = inputs[kIndex0];
     const auto output = outputs[kIndex0];
     if (memcpy_s(output->device_ptr(), output->size(), input->device_ptr(), input->size()) != EOK) {
-      MS_LOG(ERROR) << "For '" << kernel_name_ << "', it launch memcpy_s failed.";
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', it launch memcpy_s failed.";
     }
     return true;
   }

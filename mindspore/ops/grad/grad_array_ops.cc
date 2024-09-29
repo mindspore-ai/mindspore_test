@@ -2180,28 +2180,6 @@ REG_BPROP_BUILDER("Size").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("SearchSorted").SetUnusedInputs({i0, i1, i2, i3, i4, i5, i6}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("StridedSliceV2").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto begin = ib->GetInput(kIndex1);
-  auto end = ib->GetInput(kIndex2);
-  auto strides = ib->GetInput(kIndex3);
-  auto dout = ib->GetInput(kIndex5);
-  auto x_shape_vec = ib->GetShape(x);
-  NodePtr x_shape;
-  if (IsDynamic(x_shape_vec)) {
-    x_shape = ib->Shape(x);
-  } else {
-    x_shape = ib->Tensor(x_shape_vec);
-  }
-  auto dx = ib->Emit("StridedSliceV2Grad", {x_shape, begin, end, strides, dout},
-                     {{"begin_mask", ib->GetAttr("begin_mask")},
-                      {"end_mask", ib->GetAttr("end_mask")},
-                      {"ellipsis_mask", ib->GetAttr("ellipsis_mask")},
-                      {"new_axis_mask", ib->GetAttr("new_axis_mask")},
-                      {"shrink_axis_mask", ib->GetAttr("shrink_axis_mask")}});
-  return {dx, ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(strides)};
-});
-
 REG_BPROP_BUILDER("MaskedFill").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
   auto input_data = ib->GetInput(kIndex0);
   auto mask = ib->GetInput(kIndex1);

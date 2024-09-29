@@ -325,9 +325,8 @@ static cudnnConvolutionBwdDataAlgo_t SelectBackwardDataAlgorithm(
   const cudnnTensorDescriptor_t &dy_desc, const cudnnConvolutionDescriptor_t &conv_desc,
   const cudnnTensorDescriptor_t &dx_desc, const int &group) {
   auto context_ptr = MsContext::GetInstance();
-  auto algo = context_ptr->get_param<std::string>(MS_CTX_CONV_DGRAD_ALGO);
   MS_EXCEPTION_IF_NULL(context_ptr);
-
+  auto algo = context_ptr->get_param<std::string>(MS_CTX_CONV_DGRAD_ALGO);
   cudnnConvolutionBwdDataAlgo_t conv_algorithm = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
   if (cudnn_data_type == CUDNN_DATA_HALF) {
     if (cudnn_bwd_data_algos.find(algo) != cudnn_bwd_data_algos.end()) {
@@ -372,8 +371,8 @@ static cudnnConvolutionBwdFilterAlgo_t SelectBackwardFilterAlgorithm(
   const cudnnTensorDescriptor_t dy_desc, const cudnnConvolutionDescriptor_t conv_desc,
   const cudnnFilterDescriptor_t dw_desc, const int &group) {
   auto context_ptr = MsContext::GetInstance();
-  auto algo = context_ptr->get_param<std::string>(MS_CTX_CONV_WGRAD_ALGO);
   MS_EXCEPTION_IF_NULL(context_ptr);
+  auto algo = context_ptr->get_param<std::string>(MS_CTX_CONV_WGRAD_ALGO);
   constexpr int requested_algo_count = 1;
   int returned_algo_count = 0;
   cudnnConvolutionBwdFilterAlgoPerf_t perf_results;

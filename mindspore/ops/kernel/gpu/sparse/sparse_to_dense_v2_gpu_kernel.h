@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,11 +69,10 @@ class SparseToDenseV2GpuKernelMod : public NativeGpuKernelMod {
                        const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &, void *)>;
   static std::vector<std::pair<KernelAttr, SparseToDenseV2LaunchFunc>> func_list_;
   SparseToDenseV2LaunchFunc kernel_func_{};
-  size_t indice_size_{1};
   size_t value_size_{1};
-  size_t input_elements_indices{0};
-  size_t input_elements_values{0};
-  size_t input_elements_output_shape{0};
+  size_t indices_num_{0};
+  size_t values_num_{0};
+  size_t output_num_{0};
   size_t output_elements{0};
   int ndims{0};
   int num_elems{0};

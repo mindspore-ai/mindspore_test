@@ -15,6 +15,7 @@
  */
 
 #include "kernel/cpu/fftbase_cpu_kernel.h"
+#include "mindapi/base/type_id.h"
 #include "ops_utils/op_utils.h"
 #include "kernel/kernel.h"
 #include "utils/fft_helper.h"
@@ -53,6 +54,16 @@ void FFTBaseCpuKernelMod::UpdateParam() {
   norm_weight_ = GetNormalized(n_, norm_, forward_);
 }
 
+void FFTBaseCpuKernelMod::ApplyWorkSpace(const std::vector<KernelTensor *> &inputs,
+                                         const std::vector<KernelTensor *> &outputs) {
+  auto out_type_id = outputs[kIndex0]->dtype_id();
+  auto workspace_size = calculate_element_nums_ * abstract::TypeIdSize(out_type_id);
+  if (out_type_id != kNumberTypeComplex64 && out_type_id != kNumberTypeComplex128) {
+    workspace_size *= 2;
+  }
+  workspace_size_list_.push_back(workspace_size);
+}
+
 int FFTBaseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
@@ -87,11 +98,13 @@ int FFTBaseCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   input_element_nums_ = SizeToLong(SizeOf(tensor_shape_));
 
   UpdateParam();
+  ApplyWorkSpace(inputs, outputs);
   return KRET_OK;
 }
 
 template <typename T_in, typename T_out>
 bool FFTBaseCpuKernelMod::LaunchKernelC2C(const std::vector<kernel::KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &workspace,
                                           const std::vector<kernel::KernelTensor *> &outputs) {
   auto *input_ptr = reinterpret_cast<T_in *>(inputs[kIndex0]->device_ptr());
   auto *output_ptr = reinterpret_cast<std::complex<T_out> *>(outputs[kIndex0]->device_ptr());
@@ -100,10 +113,8 @@ bool FFTBaseCpuKernelMod::LaunchKernelC2C(const std::vector<kernel::KernelTensor
   T_out fct = static_cast<T_out>(norm_weight_);
 
   // Allocate temporary memory of the required type and size and copy the input into this space.
-  std::complex<T_out> *calculate_input =
-    static_cast<std::complex<T_out> *>(malloc(sizeof(std::complex<T_out>) * calculate_element_nums_));
-  auto ret = memset_s(calculate_input, sizeof(std::complex<T_out>) * calculate_element_nums_, 0,
-                      sizeof(std::complex<T_out>) * calculate_element_nums_);
+  auto calculate_input = GetDeviceAddress<std::complex<T_out>>(workspace, kIndex0);
+  auto ret = memset_s(calculate_input, workspace[kIndex0]->size(), 0, workspace[kIndex0]->size());
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
   }
@@ -114,14 +125,12 @@ bool FFTBaseCpuKernelMod::LaunchKernelC2C(const std::vector<kernel::KernelTensor
   std::vector<int64_t> dim(1, dim_);
   PocketFFTC2C<T_out>(calculate_input, output_ptr, forward_, fct, calculate_shape_, dim);
 
-  // Release temporary memory
-  free(calculate_input);
-  calculate_input = nullptr;
   return true;
 }
 
 template <typename T_in, typename T_out>
 bool FFTBaseCpuKernelMod::LaunchKernelR2C(const std::vector<kernel::KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &workspace,
                                           const std::vector<kernel::KernelTensor *> &outputs) {
   auto *input_ptr = reinterpret_cast<T_in *>(inputs[kIndex0]->device_ptr());
   auto *output_ptr = reinterpret_cast<std::complex<T_out> *>(outputs[kIndex0]->device_ptr());
@@ -130,9 +139,8 @@ bool FFTBaseCpuKernelMod::LaunchKernelR2C(const std::vector<kernel::KernelTensor
   T_out fct = static_cast<T_out>(norm_weight_);
 
   // Allocate temporary memory of the required type and size and copy the input into this space.
-  T_out *calculate_input = static_cast<T_out *>(malloc(sizeof(T_out) * calculate_element_nums_));
-  auto ret =
-    memset_s(calculate_input, sizeof(T_out) * calculate_element_nums_, 0, sizeof(T_out) * calculate_element_nums_);
+  auto calculate_input = GetDeviceAddress<T_out>(workspace, kIndex0);
+  auto ret = memset_s(calculate_input, workspace[kIndex0]->size(), 0, workspace[kIndex0]->size());
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
   }
@@ -147,14 +155,13 @@ bool FFTBaseCpuKernelMod::LaunchKernelR2C(const std::vector<kernel::KernelTensor
     std::transform(output_ptr, output_ptr + outputs[kIndex0]->size() / sizeof(std::complex<T_out>), output_ptr,
                    [](std::complex<T_out> x) { return std::conj(x); });
   }
-  // Release temporary memory
-  free(calculate_input);
-  calculate_input = nullptr;
+
   return true;
 }
 
 template <typename T_in, typename T_out>
 bool FFTBaseCpuKernelMod::LaunchKernelC2R(const std::vector<kernel::KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &workspace,
                                           const std::vector<kernel::KernelTensor *> &outputs) {
   auto *input_ptr = reinterpret_cast<T_in *>(inputs[kIndex0]->device_ptr());
   auto *output_ptr = reinterpret_cast<T_out *>(outputs[kIndex0]->device_ptr());
@@ -163,10 +170,8 @@ bool FFTBaseCpuKernelMod::LaunchKernelC2R(const std::vector<kernel::KernelTensor
   T_out fct = static_cast<T_out>(norm_weight_);
 
   // Allocate temporary memory of the required type and size and copy the input into this space.
-  std::complex<T_out> *calculate_input =
-    static_cast<std::complex<T_out> *>(malloc(sizeof(std::complex<T_out>) * calculate_element_nums_));
-  auto ret = memset_s(calculate_input, sizeof(std::complex<T_out>) * calculate_element_nums_, 0,
-                      sizeof(std::complex<T_out>) * calculate_element_nums_);
+  auto calculate_input = GetDeviceAddress<std::complex<T_out>>(workspace, kIndex0);
+  auto ret = memset_s(calculate_input, workspace[kIndex0]->size(), 0, workspace[kIndex0]->size());
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
   }
@@ -181,23 +186,21 @@ bool FFTBaseCpuKernelMod::LaunchKernelC2R(const std::vector<kernel::KernelTensor
   std::vector<int64_t> dim(1, dim_);
   PocketFFTC2R<T_out>(calculate_input, output_ptr, forward_, fct, calculate_shape_, dim);
 
-  // Release temporary memory
-  free(calculate_input);
-  calculate_input = nullptr;
   return true;
 }
 
 template <typename T_in, typename T_out>
 bool FFTBaseCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                                       const std::vector<KernelTensor *> &workspace,
                                        const std::vector<kernel::KernelTensor *> &outputs) {
   if (kernel_name_ == prim::kPrimFFT->name() || kernel_name_ == prim::kPrimIFFT->name()) {
-    LaunchKernelC2C<T_in, T_out>(inputs, outputs);
+    LaunchKernelC2C<T_in, T_out>(inputs, workspace, outputs);
   }
   if (kernel_name_ == prim::kPrimRFFT->name() || kernel_name_ == prim::kPrimIHFFT->name()) {
-    LaunchKernelR2C<T_in, T_out>(inputs, outputs);
+    LaunchKernelR2C<T_in, T_out>(inputs, workspace, outputs);
   }
   if (kernel_name_ == prim::kPrimIRFFT->name() || kernel_name_ == prim::kPrimHFFT->name()) {
-    LaunchKernelC2R<T_in, T_out>(inputs, outputs);
+    LaunchKernelC2R<T_in, T_out>(inputs, workspace, outputs);
   }
   return true;
 }
