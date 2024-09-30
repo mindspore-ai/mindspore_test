@@ -14,6 +14,10 @@ def create_nested_tuple_with_none(x):
 def create_tuple_with_dict(x):
     return (x * x, {'x' : x, 'none': None})
 
+def create_tuple_with_recursive(x):
+    t = (x, x * x, x *100)
+    return (t, {'x' : x, 'none': None, 't': t})
+
 def create_dict(x):
     return {'x' : x, '2x': x * 2}
 
@@ -92,6 +96,22 @@ def test_nested_tuple_with_none(func, x):
 @pytest.mark.parametrize('func', [create_tuple_with_dict])
 @pytest.mark.parametrize('x', [Tensor([1, 2, 3, 4, 5, 6])])
 def test_tuple_with_dict(func, x):
+    """
+    Feature: ALL TO ALL
+    Description: test cases for return tuple contain None in graph
+    Expectation: the result correct, no cracked graph
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    res = func(x)
+    wrapped_func = jit(func, mode='PIJit')
+    ms_res = wrapped_func(x,)
+    result_compare(res, ms_res)
+    check_func_compile_state(wrapped_func)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('func', [create_tuple_with_recursive])
+@pytest.mark.parametrize('x', [Tensor([1, 2, 3, 4, 5, 6])])
+def test_tuple_with_recursive(func, x):
     """
     Feature: ALL TO ALL
     Description: test cases for return tuple contain None in graph

@@ -3480,8 +3480,8 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
     if (index != 0) {
       seq_node = seek(1);
     } else {
-      DoLoadConst({LOAD_CONST, 0, py::reinterpret_borrow<py::obect>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
-      push(iter->input(0));
+      DoLoadConst({LOAD_CONST, 0, py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
+      push(iter_node->input(0));
       DoCall({CALL_FUNCTION, 1});
       std::swap(seek(0), seek(1));
     }
