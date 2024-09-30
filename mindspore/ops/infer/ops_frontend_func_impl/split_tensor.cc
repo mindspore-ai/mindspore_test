@@ -39,6 +39,7 @@ class SplitTensorFrontendFuncImpl : public OpFrontendFuncImpl {
     if (!axis_opt.has_value() || !split_sections_opt.has_value() || IsDynamicRank(input_shape) ||
         input_shape[(axis_opt.value() + static_cast<int64_t>(input_shape.size())) %
                     static_cast<int64_t>(input_shape.size())] == abstract::Shape::kShapeDimAny) {
+      MS_EXCEPTION(ValueError) << "Unsupported dynamic shape for graph mode.";
       auto dynamic_shape = std::make_shared<abstract::Shape>(std::vector<int64_t>{abstract::Shape::kShapeRankAny});
       output_list.push_back(abstract::MakeAbstractTensor(dynamic_shape, input_abs->GetType()));
       auto abs_tuple = std::make_shared<abstract::AbstractTuple>(output_list);
