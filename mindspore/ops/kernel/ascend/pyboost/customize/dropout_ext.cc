@@ -30,8 +30,9 @@ tensor::BaseTensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> 
   // Create device address for input/output tensors.
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+  auto [seed_value, offset_value] = UpdateGeneratorState(seed, offset);
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, p, seed, offset]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input, p, seed_value, offset_value]() {
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
     // Malloc for input tensors
@@ -39,7 +40,7 @@ tensor::BaseTensorPtr DropoutExtAscendCustomize(const std::shared_ptr<OpRunner> 
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(op->device_context(), outputs);
     auto p_value = static_cast<double>(p->value());
-    auto [seed_value, offset_value] = UpdateGeneratorState(seed, offset);
+
     std::vector<int64_t> input_shape = input->shape();
     auto tensor_type = op->input_abs()[kIndex0]->GetType()->cast<TensorTypePtr>();
     MS_EXCEPTION_IF_NULL(tensor_type);
