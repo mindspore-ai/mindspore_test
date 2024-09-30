@@ -586,7 +586,15 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
   // create GEGraphOp node
   auto call_inline = new_kernel_graph->NewCNode(call_inline_inputs);
   MS_EXCEPTION_IF_NULL(call_inline);
-  call_inline->set_abstract(kernel_graph->get_return()->abstract());
+  auto outputs_abstract = kernel_graph->get_return()->abstract();
+  // one output do not use AbstractSequence, otherwise cannot recognize None
+  if (outputs_abstract->isa<abstract::AbstractSequence>() &&
+      outputs_abstract->cast<abstract::AbstractSequencePtr>()->elements().size() == 1) {
+    call_inline->set_abstract(outputs_abstract->cast<abstract::AbstractSequencePtr>()->elements()[0]);
+  } else {
+    call_inline->set_abstract(outputs_abstract);
+  }
+
   common::AnfAlgo::SetNodeAttr(kAttrKernelGraph, MakeValue(kernel_graph), call_inline);
   auto output_num = io_nodes.second.size();
   common::AnfAlgo::SetNodeAttr(kAttrOutputNum, MakeValue<int64_t>(output_num), call_inline);
