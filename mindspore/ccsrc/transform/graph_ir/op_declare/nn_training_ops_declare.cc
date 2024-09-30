@@ -66,16 +66,16 @@ OUTPUT_MAP(ApplyAdamD) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(m)}, {2, OUTPUT
 REG_ADPT_DESC(Adam, kNameAdam, ADPT_DESC(ApplyAdamD))
 REG_ADPT_DESC(ApplyAdamD, kNameApplyAdamD, ADPT_DESC(ApplyAdamD))
 
-// ApplyAdamW
-INPUT_MAP(ApplyAdamW) = {{1, INPUT_DESC(var)},          {2, INPUT_DESC(m)},           {3, INPUT_DESC(v)},
-                         {4, INPUT_DESC(beta1_power)},  {5, INPUT_DESC(beta2_power)}, {6, INPUT_DESC(lr)},
-                         {7, INPUT_DESC(weight_decay)}, {8, INPUT_DESC(beta1)},       {9, INPUT_DESC(beta2)},
-                         {10, INPUT_DESC(epsilon)},     {11, INPUT_DESC(grad)}};
-INPUT_ATTR_MAP(ApplyAdamW) = {{13, ATTR_DESC(amsgrad, AnyTraits<bool>())},
-                              {14, ATTR_DESC(maximize, AnyTraits<bool>())}};
-ATTR_MAP(ApplyAdamW) = EMPTY_ATTR_MAP;
-OUTPUT_MAP(ApplyAdamW) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(m)}, {2, OUTPUT_DESC(v)}};
-REG_ADPT_DESC(ApplyAdamW, kNameApplyAdamW, ADPT_DESC(ApplyAdamW))
+// ApplyAdamWMS
+INPUT_MAP(ApplyAdamWMS) = {{1, INPUT_DESC(var)},          {2, INPUT_DESC(m)},           {3, INPUT_DESC(v)},
+                           {4, INPUT_DESC(beta1_power)},  {5, INPUT_DESC(beta2_power)}, {6, INPUT_DESC(lr)},
+                           {7, INPUT_DESC(weight_decay)}, {8, INPUT_DESC(beta1)},       {9, INPUT_DESC(beta2)},
+                           {10, INPUT_DESC(epsilon)},     {11, INPUT_DESC(grad)}};
+INPUT_ATTR_MAP(ApplyAdamWMS) = {{13, ATTR_DESC(amsgrad, AnyTraits<bool>())},
+                                {14, ATTR_DESC(maximize, AnyTraits<bool>())}};
+ATTR_MAP(ApplyAdamWMS) = EMPTY_ATTR_MAP;
+OUTPUT_MAP(ApplyAdamWMS) = {{0, OUTPUT_DESC(var)}, {1, OUTPUT_DESC(m)}, {2, OUTPUT_DESC(v)}};
+REG_ADPT_DESC(ApplyAdamWMS, kNameApplyAdamW, ADPT_DESC(ApplyAdamWMS))
 
 // ApplyAdagradD
 INPUT_MAP(ApplyAdagradD) = {{1, INPUT_DESC(var)}, {2, INPUT_DESC(accum)}, {3, INPUT_DESC(lr)}, {4, INPUT_DESC(grad)}};

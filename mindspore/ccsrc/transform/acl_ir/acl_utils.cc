@@ -351,7 +351,9 @@ void AclRunner::Run(void *stream_ptr, bool is_sync) {
 
   AclDumper acl_dumper;
   acl_dumper.SetDump();
-
+  if (op_type_ == "ApplyAdamWMS") {
+    op_type_ = "ApplyAdamW";
+  }
   MS_LOG(DEBUG) << "Start aclopCompileAndExecute of op_type: " << op_type_;
   if (is_sync) {
     bool ret = CALL_ASCEND_API(aclrtSynchronizeStreamWithTimeout, stream_ptr, -1);
