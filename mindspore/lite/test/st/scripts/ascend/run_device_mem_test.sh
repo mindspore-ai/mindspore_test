@@ -16,7 +16,7 @@ if [ ! -f "./build/mindspore_quick_start_cpp" ];then
   exit 1
 fi
 
-#build/mindspore_quick_start_cpp ${LITE_ST_MODEL}
+build/mindspore_quick_start_cpp ${LITE_ST_MODEL}
 Run_device_example_status=$?
 if [[ ${Run_device_example_status} != 0 ]];then
   echo "Run device example failed"
