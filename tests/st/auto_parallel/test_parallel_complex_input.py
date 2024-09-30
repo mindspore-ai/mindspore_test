@@ -24,5 +24,24 @@ def test_graph_mode_parallel_complex_input():
     Description: graph mode
     Expectation: Run success
     '''
-    ret = os.system("mpirun -n 8 --allow-run-as-root pytest -s -v parallel_complex_input.py::test_graph_mode")
+    os.environ['ASCEND_GLOBAL_EVENT_ENABLE'] = str(1)
+    os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = str(0)
+    os.environ['ASCEND_SLOG_PRINT_TO_STDOUT'] = str(1)
+    os.environ['GLOG_v'] = str(1)
+    # print("netstat")
+    # os.system(f"netstat")
+    print("netstat -tunlp")
+    os.system("netstat -tunlp")
+    os.system("netstat -tunlp > netstat.txt")
+
+
+    ret = os.system("mpirun -n 8 --allow-run-as-root pytest -s -v parallel_complex_input.py::test_graph_mode \
+                    > parallel_complex_input_train.log 2>&1")
+    if ret != 0:
+        import datetime
+        t = datetime.datetime.now()
+        f = t.strftime('%m-%d-%H:%M:%S')
+        os.system(f"mkdir ~/parallel_complex_input_{f} && cp -rf *.log ~/parallel_complex_input_{f} \
+                    && cp -rf ~/ascend/log ~/parallel_complex_input_{f} \
+                    && cp -rf netstat.txt ~/parallel_complex_input_{f}")
     assert ret == 0
