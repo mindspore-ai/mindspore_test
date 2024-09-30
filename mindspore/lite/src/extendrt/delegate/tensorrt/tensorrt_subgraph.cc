@@ -65,12 +65,14 @@ TensorRTSubGraph::~TensorRTSubGraph() {
     config_->destroy();
     config_ = nullptr;
   }
-#ifdef PROFILER_
-  auto profile = dynamic_cast<SimpleProfiler *>(trt_context_->getProfiler());
-  if (profile != nullptr) std::cout << *profile << std::endl;
-  delete profile;
-#endif
   if (trt_context_ != nullptr) {
+#ifdef PROFILER_
+    auto profile = dynamic_cast<SimpleProfiler *>(trt_context_->getProfiler());
+    if (profile != nullptr) {
+      std::cout << *profile << std::endl;
+      delete profile;
+    }
+#endif
     trt_context_->destroy();
     trt_context_ = nullptr;
   }

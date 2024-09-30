@@ -723,6 +723,7 @@ STATUS OnnxModelParser::InitOriginModel(const std::string &model_file) {
   onnx_root_graph_ = onnx_model_.graph();
   auto fmk_value_node = MakeValue(static_cast<int>(converter::kFmkTypeOnnx));
   CHECK_NULL_RETURN(fmk_value_node);
+  MS_CHECK_TRUE_RET(res_graph != nullptr, RET_NULL_PTR);
   res_graph->set_attr("fmk", fmk_value_node);
   return RET_OK;
 }

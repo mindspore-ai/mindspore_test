@@ -116,6 +116,7 @@ void ParallelThreadPoolManager::BindPoolToRunner(
   auto parallel_pool = static_cast<ParallelThreadPool *>(pool);
   if (parallel_pool == nullptr) {
     THREAD_ERROR("parallel pool is nullptr.");
+    return;
   }
   int model_id = 0;
   auto item_runner = it_id->second.find(kInnerModelID);
