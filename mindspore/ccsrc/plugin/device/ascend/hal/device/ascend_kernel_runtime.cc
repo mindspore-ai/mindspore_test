@@ -739,7 +739,7 @@ bool AscendKernelRuntime::DestroyHccl() {
     return true;
   }
   if (common::GetEnv(kSimulationLevel).empty() && !AscendCollectiveCommLib::GetInstance().DestroyHcclComm()) {
-    MS_LOG(ERROR) << "Hccl destroy failed.";
+    MS_LOG(WARNING) << "Hccl destroy failed.";
     return false;
   }
   MS_LOG(INFO) << "Hccl destroy successful.";
