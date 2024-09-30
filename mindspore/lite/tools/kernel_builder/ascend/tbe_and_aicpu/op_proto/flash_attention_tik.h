@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef GE_OP_FLASHATTENTION_H
-#define GE_OP_FLASHATTENTION_H
+#ifndef GE_OP_FLASH_ATTENTION_TIK_H
+#define GE_OP_FLASH_ATTENTION_TIK_H
 #include "graph/operator_reg.h"
 namespace ge {
-REG_OP(FlashAttention)
-  .INPUT(q, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-  .INPUT(k, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-  .INPUT(v, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-  .INPUT(attention_mask, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-  .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-  .OP_END_FACTORY_REG(FlashAttention)
+
+REG_OP(FlashAttentionTik)
+  .INPUT(q, TensorType({DT_FLOAT16}))
+  .INPUT(k, TensorType({DT_FLOAT16}))
+  .INPUT(v, TensorType({DT_FLOAT16}))
+  .OUTPUT(y, TensorType({DT_FLOAT16}))
+  .OP_END_FACTORY_REG(FlashAttentionTik)
 }
-#endif  // GE_OP_FLASHATTENTION_H
+#endif

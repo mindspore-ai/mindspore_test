@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "./flash_attention.h"
+#include "./flash_attention_tik.h"
 namespace ge {
-IMPLEMT_COMMON_INFERFUNC(FlashAttentionInferShape) {
+IMPLEMT_COMMON_INFERFUNC(FlashAttentionTikInferShape) {
   TensorDesc output_desc = op.GetOutputDescByName("y");
   output_desc.SetShape(op.GetInputDescByName("q").GetShape());
   output_desc.SetDataType(op.GetInputDescByName("q").GetDataType());
@@ -28,9 +28,9 @@ IMPLEMT_COMMON_INFERFUNC(FlashAttentionInferShape) {
   return GRAPH_SUCCESS;
 }
 
-IMPLEMT_VERIFIER(FlashAttention, FlashAttentionVerify) { return GRAPH_SUCCESS; }
+IMPLEMT_VERIFIER(FlashAttentionTik, FlashAttentionTikVerify) { return GRAPH_SUCCESS; }
 
-COMMON_INFER_FUNC_REG(FlashAttention, FlashAttentionInferShape);
-VERIFY_FUNC_REG(FlashAttention, FlashAttentionVerify);
+COMMON_INFER_FUNC_REG(FlashAttentionTik, FlashAttentionTikInferShape);
+VERIFY_FUNC_REG(FlashAttentionTik, FlashAttentionTikVerify);
 
 }  // namespace ge
