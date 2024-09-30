@@ -2168,6 +2168,7 @@ static std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, boo
   auto node_set = NextNodeUsers(cnode);
   for (auto &node_pair : node_set) {
     auto use_apply = node_pair.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(use_apply);
     if (visit->find(use_apply) != visit->end()) {
       continue;
     }

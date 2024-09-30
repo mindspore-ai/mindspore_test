@@ -38,16 +38,15 @@ using ReplacementMemo = std::map<size_t, int64_t>;
 class TensorRedistribution {
  public:
   explicit TensorRedistribution(bool construct_op_flag = true, bool keep_reshape = false)
-      : reshape_flag_(false),
+      : is_inited_(false),
+        reshape_flag_(false),
         comm_cost_(0.0),
         forward_comm_cost_(0.0),
         backward_comm_cost_(0.0),
         computation_cost_(0.0),
         memory_cost_(0.0),
         construct_op_flag_(construct_op_flag),
-        keep_reshape_(keep_reshape) {
-    this->is_inited_ = false;
-  }
+        keep_reshape_(keep_reshape) {}
   ~TensorRedistribution() = default;
 
   void SetPreAndNextCNode(const AnfNodePtr &pre_cnode, const CNodePtr &next_cnode) {
