@@ -92,27 +92,27 @@ bool AcmeKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
       switch (data_type) {
         case kNumberTypeBool: {
           auto value = input->GetValueWithCheck<bool>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<int32_t>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<int64_t>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeFloat32: {
           auto value = input->GetValueWithCheck<float>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeFloat64: {
           auto value = input->GetValueWithCheck<double>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         default:
@@ -124,12 +124,12 @@ bool AcmeKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
       switch (data_type) {
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<std::vector<int32_t>>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<std::vector<int64_t>>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         default:
@@ -137,7 +137,7 @@ bool AcmeKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
                                      << ", index: " << idx;
       }
     } else if (type == kMetaTypeNone) {
-      transform::GatherInfo(type);
+      transform::GatherHash(type);
     } else if (type != kObjectTypeTensorType) {
       MS_LOG(INTERNAL_EXCEPTION) << "Unsupported type: " << type << ", kenrel_name: " << kernel_name_
                                  << ", index: " << idx;
@@ -261,15 +261,13 @@ int AcmeKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::
     return KRET_RESIZE_FAILED;
   }
 
-  acme::ShapeInfoList acme_inputs_shape;
-  acme::ShapeInfoList acme_outputs_shape;
   for (size_t i = 0; i < acme_to_ms_input_indices_mapper_.size(); i++) {
     auto ms_index = acme_to_ms_input_indices_mapper_[i];
     auto shape = TransAcmeShape(inputs[ms_index]->GetShapeVector());
     if (inputs[ms_index]->dtype_id() == kMetaTypeNone) {
       shape = {};
     }
-    acme_inputs_shape.emplace_back(shape);
+    acme_inputs_shape_[i] = std::move(shape);
   }
 
   for (size_t i = 0; i < acme_to_ms_output_indices_mapper_.size(); i++) {
@@ -278,10 +276,10 @@ int AcmeKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::
     if (outputs[ms_index]->dtype_id() == kMetaTypeNone) {
       shape = {};
     }
-    acme_outputs_shape.emplace_back(shape);
+    acme_outputs_shape_[i] = std::move(shape);
   }
 
-  auto acme_ret = acme_op_->UpdateShape(acme_inputs_shape, acme_outputs_shape);
+  auto acme_ret = acme_op_->UpdateShape(acme_inputs_shape_, acme_outputs_shape_);
   if (acme_ret != acme::kAcmeOk) {
     MS_LOG(ERROR) << "AcmeKernel UpdateShape failed, kernel_name: " << kernel_name_;
     return KRET_RESIZE_FAILED;

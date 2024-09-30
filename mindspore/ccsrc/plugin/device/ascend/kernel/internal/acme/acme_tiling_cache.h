@@ -43,7 +43,7 @@ using TilingCacheItemPtr = std::shared_ptr<TilingCacheItem>;
 
 template <typename T>
 inline void GatherSingleInfo(const std::string &, const T &input) {
-  transform::GatherInfo(input);
+  transform::GatherHash(input);
 }
 
 template <>
@@ -51,33 +51,33 @@ inline void GatherSingleInfo(const std::string &kernel_name, const std::vector<K
   for (auto &input : inputs) {
     auto type = input->type_id();
     if (type == kObjectTypeTensorType) {
-      transform::GatherInfo(input);
+      transform::GatherHash(input);
     } else if (type == kObjectTypeNumber) {
       auto data_type = input->dtype_id();
       switch (data_type) {
         case kNumberTypeBool: {
           auto value = input->GetValueWithCheck<bool>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<int32_t>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<int64_t>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeFloat32: {
           auto value = input->GetValueWithCheck<float>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeFloat64: {
           auto value = input->GetValueWithCheck<double>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         default:
@@ -88,12 +88,12 @@ inline void GatherSingleInfo(const std::string &kernel_name, const std::vector<K
       switch (data_type) {
         case kNumberTypeInt32: {
           auto value = input->GetValueWithCheck<std::vector<int32_t>>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         case kNumberTypeInt64: {
           auto value = input->GetValueWithCheck<std::vector<int64_t>>();
-          transform::GatherInfo(value);
+          transform::GatherHash(value);
           break;
         }
         default:
@@ -107,12 +107,12 @@ inline void GatherSingleInfo(const std::string &kernel_name, const std::vector<K
   }
 }
 
-inline void GatherInfosForKey(const std::string &) {}
+inline void GatherHashsForKey(const std::string &) {}
 
 template <typename T, typename... Args>
-inline void GatherInfosForKey(const std::string &kernel_name, T first, Args... args) {
+inline void GatherHashsForKey(const std::string &kernel_name, T first, Args... args) {
   GatherSingleInfo(kernel_name, first);
-  GatherInfosForKey(kernel_name, args...);
+  GatherHashsForKey(kernel_name, args...);
 }
 
 class AcmeTilingCache {
@@ -134,9 +134,9 @@ class AcmeTilingCache {
   static inline uint64_t GenerateKey(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
                                      Args... args) {
     transform::g_hash_offset = 0;
-    transform::GatherInfo(kernel_name);
+    transform::GatherHash(kernel_name);
 
-    GatherInfosForKey(kernel_name, inputs, args...);
+    GatherHashsForKey(kernel_name, inputs, args...);
     auto hash_id = transform::calc_hash_id();
     return hash_id;
   }
