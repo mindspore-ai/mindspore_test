@@ -20,16 +20,43 @@ from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 import mindspore.common.dtype as mstype
 from mindspore.experimental.optim.optimizer import Optimizer
+from mindspore import _checkparam as validator
+from mindspore.ops import auto_generate as gen
 from mindspore import ops
 from mindspore import jit
 
 _adamw_opt = C.MultitypeFuncGraph("adamw_opt")
+_speed_adamw_opt = C.MultitypeFuncGraph("speed_adamw_opt")
 
 op_mul = P.Mul()
 op_pow = P.Pow()
 op_sqrt = P.Sqrt()
 op_maximum = P.Maximum()
 hyper_map = C.HyperMap()
+
+
+@_speed_adamw_opt.register("Function", "Float", "Float", "Tensor", "Float", "Float", "Bool", "Bool", "Tensor", "Tensor",
+                           "Tensor", "Tensor", "Tensor", "Tensor")
+def _run_speed_adamw_opt(opt, beta1, beta2, lr, eps, weight_decay, amsgrad, maximize, bias_correction1,
+                         bias_correction2, parameters, grads, exp_avg, exp_avg_sq):
+    """Apply adamw optimizer to the weight parameter."""
+    success = True
+    opt(parameters, exp_avg, exp_avg_sq, bias_correction1, bias_correction2, lr, weight_decay, beta1, beta2, eps,
+        grads, None, amsgrad, maximize)
+    return success
+
+
+def _check_param_value(betas, eps, weight_decay, lr, amsgrad, maximize, prim_name):
+    """Check the type of inputs."""
+    validator.check_value_type('betas', betas, [tuple], prim_name)
+    validator.check("betas size", len(betas), "", [2], validator.IN, prim_name)
+    validator.check_value_type("betas[0]", betas[0], [float], prim_name)
+    validator.check_value_type("betas[1]", betas[1], [float], prim_name)
+    validator.check_value_type("eps", eps, [float], prim_name)
+    validator.check_value_type("weight_decay", weight_decay, [float], prim_name)
+    validator.check_value_type("lr", lr, [float], prim_name)
+    validator.check_value_type("amsgrad", amsgrad, [bool], prim_name)
+    validator.check_value_type("maximize", maximize, [bool], prim_name)
 
 
 @jit
@@ -201,5 +228,63 @@ class AdamW(Optimizer):
 
             self.implementation(lr, group.get("weight_decay"), beta1, beta2, group.get("amsgrad"), group.get("eps"),
                                 grads, start_id, end_id)
+
+        return True
+
+
+class SpeedAdamW(Optimizer):
+    r"""
+    Implements Adam Weight Decay algorithm.
+    """
+
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
+                 weight_decay=1e-2, amsgrad=False, *, maximize=False):
+        _check_param_value(betas, eps, weight_decay, lr, amsgrad, maximize, self.cls_name)
+        if lr < 0.0:
+            raise ValueError("Invalid learning rate: {}".format(lr))
+        if eps < 0.0:
+            raise ValueError("Invalid epsilon value: {}".format(eps))
+        if not 0.0 <= betas[0] < 1.0:
+            raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))
+        if not 0.0 <= betas[1] < 1.0:
+            raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
+        if weight_decay < 0.0:
+            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
+
+        defaults = dict(lr=lr, betas=betas, eps=eps,
+                        weight_decay=weight_decay, amsgrad=amsgrad,
+                        maximize=maximize)
+        self.max_v_group = True
+        super(SpeedAdamW, self).__init__(params, defaults)
+
+        self.exp_avg = self.parameters.clone(prefix="exp_avg", init='zeros')
+        self.exp_avg_sq = self.parameters.clone(prefix="exp_avg_sq", init='zeros')
+        self.state_step = Parameter(Tensor([0], mstype.float32), "state_step")
+        self.increase_tensor = Tensor(1, mstype.float32)
+        self.assignadd = P.AssignAdd()
+        self.adamw_opt = gen.ApplyAdamW()
+
+    def construct(self, gradients):
+        self.assignadd(self.state_step, self.increase_tensor)
+        for group_id, group in enumerate(self.param_groups):
+            beta1, beta2 = group['betas']
+            maximize = group.get("maximize")
+            start_id = self.group_start_id[group_id]
+            end_id = self.group_start_id[group_id + 1]
+            lr = group.get("lr")
+            grads = tuple(gradients[start_id: end_id])
+
+            bias_correction1 = float(beta1) ** (float(self.state_step) - 1.0)
+            bias_correction2 = float(beta2) ** (float(self.state_step) - 1.0)
+
+            # 当前 ApplyAdamW 仅支持 amsgrad 为 False
+            if group.get("amsgrad"):
+                raise ValueError("For SpeedAdamW, the value of amsgrad can only be False.")
+
+            self.hyper_map(F.partial(_speed_adamw_opt, self.adamw_opt, beta1, beta2, lr,
+                                     group.get("eps"), group.get("weight_decay"),
+                                     group.get("amsgrad"), maximize, bias_correction1, bias_correction2),
+                           self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
+                           self.exp_avg_sq[start_id: end_id])
 
         return True
