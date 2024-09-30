@@ -164,7 +164,10 @@ void Rebuilder::CreateSubGraphs() {
       old2new_[outputs[0]] = callnode;
     } else {
       for (size_t j = 0; j < outputs.size(); j++) {
-        AnfNodePtrList getitem_inputs = {NewValueNode(prim::kPrimTupleGetItem), callnode, NewValueNode(SizeToLong(j))};
+        auto idx_val = SizeToLong(j);
+        auto idx = NewValueNode(idx_val);
+        idx->set_abstract(std::make_shared<abstract::AbstractScalar>(idx_val));
+        AnfNodePtrList getitem_inputs = {NewValueNode(prim::kPrimTupleGetItem), callnode, idx};
         auto getitem_node = main_graph_->NewCNode(getitem_inputs);
         auto abs_tuple = dyn_cast<abstract::AbstractTuple>(callnode->abstract());
         MS_EXCEPTION_IF_CHECK_FAIL(j < abs_tuple->elements().size(), "overflow!");
