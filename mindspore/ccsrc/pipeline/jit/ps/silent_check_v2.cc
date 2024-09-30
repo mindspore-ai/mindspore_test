@@ -420,10 +420,14 @@ CNodePtr SilentCheckV2::GetLastGradNode(const FuncGraphPtr &func_graph, const An
       if (cnode->HasPrimalAttr(kPrimalAttrUniqueId)) {
         auto node_unique_id = GetValue<std::string>(cnode->GetPrimalAttr(kPrimalAttrUniqueId));
         if (grad_node_map.count(node_unique_id)) {
-          MS_LOG(INFO) << "Found grad node " << grad_node_map[node_unique_id]->DebugString()
-                       << " based on start node: " << start_node->DebugString() << " for graph "
-                       << func_graph->ToString();
-          return grad_node_map[node_unique_id];
+          auto grad_node = grad_node_map[node_unique_id]->cast<CNodePtr>();
+          // normally dout is a tensor, so here expect grad-node input1 is a tensor
+          if (grad_node != nullptr && grad_node->input(kIndex1)->abstract()->isa<abstract::AbstractTensor>()) {
+            MS_LOG(INFO) << "Found grad node " << grad_node->DebugString()
+                         << " based on start node: " << start_node->DebugString() << " for graph "
+                         << func_graph->ToString();
+            return grad_node;
+          }
         }
       }
       if (common::AnfAlgo::IsCallNode(cnode)) {
@@ -609,8 +613,7 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
       }
       auto check_node = CreateSlientCheckNode(func_graph, node);
       // update cnode input
-      cnode->set_input(ops::kInputIndex1, check_node);
-      manager->SetEdge(cnode, ops::kInputIndex1, check_node);
+      manager->Replace(cnode->input(ops::kInputIndex1), check_node);
       changed = true;
     }
     return changed;
