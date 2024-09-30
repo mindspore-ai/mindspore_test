@@ -68,7 +68,7 @@ class ScatterValueCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   size_t input_dims_{0};
   int64_t axis_{0};
   std::vector<size_t> output_stride_{};
-  std::vector<size_t> indices_stride_{};
+  std::vector<int> indices_stride_{};
   Reduce reduction_type_{Reduce::REDUCE_NONE};
 };
 }  // namespace mindspore::kernel
