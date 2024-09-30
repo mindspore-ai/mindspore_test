@@ -169,6 +169,7 @@ NPUOp *GetNPUConvOp(const schema::Primitive *primitive, const std::vector<mindsp
 
   NPUOp *op = nullptr;
   auto conv_prim = primitive->value_as_Conv2DFusion();
+  MS_CHECK_TRUE_MSG(conv_prim != nullptr, nullptr, "conv_prim is nullptr!");
   auto group = static_cast<int>(conv_prim->group());
   auto input_channel = in_tensors.front().Shape()[NHWC_C];
   auto output_channel = out_tensors.front().Shape()[NHWC_C];

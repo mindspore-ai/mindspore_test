@@ -169,7 +169,7 @@ TensorPtr CreateTensorFromData(const lite::DataInfo &data_info, const bool &has_
 
 int LiteTensorExtractor::GetCNodeConstInputToAbstract(const CNodePtr &cnode, const AbstractBasePtrList &abs_list,
                                                       converter::FmkType fmk_type, bool train_flag) {
-  MS_ASSERT(cnode != nullptr && const_ms_inputs != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
   for (size_t i = 1; i < cnode->size(); ++i) {
     if (utils::isa<CNodePtr>(cnode->input(i))) {
       continue;
@@ -344,8 +344,8 @@ int ModifyLiteDynamicShapeToOps(const AbstractBasePtr &abstract) {
 }
 
 int LiteTensorExtractor::GetCNodeInputAbstractLists(const CNodePtr &cnode, AbstractBasePtrList *abs_list) {
-  MS_ASSERT(cnode != nullptr);
-  MS_ASSERT(abs_list != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
+  MS_CHECK_TRUE_MSG(abs_list != nullptr, lite::RET_NULL_PTR, "abs_list is nullptr!");
   auto origin_inputs = cnode->inputs();
   if (lite::RemoveIfDepend(cnode) != RET_OK) {
     MS_LOG(ERROR) << "remove depend failed.";
@@ -408,8 +408,8 @@ int LiteTensorExtractor::GetCNodeInputAbstractLists(const CNodePtr &cnode, Abstr
 
 int LiteTensorExtractor::GetCNodeInputTensors(const CNodePtr &cnode, std::vector<TensorPtr> *inputs,
                                               converter::FmkType fmk_type, bool train_flag, bool copy_data) {
-  MS_ASSERT(cnode != nullptr);
-  MS_ASSERT(inputs != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
+  MS_CHECK_TRUE_MSG(inputs != nullptr, RET_ERROR, "inputs is nullptr!");
   auto origin_inputs = cnode->inputs();
   if (lite::RemoveIfDepend(cnode) != RET_OK) {
     MS_LOG(ERROR) << "remove depend failed.";
@@ -446,8 +446,8 @@ int LiteTensorExtractor::GetCNodeInputTensors(const CNodePtr &cnode, std::vector
 
 int LiteTensorExtractor::GetCNodeOutputTensors(const CNodePtr &cnode, std::vector<TensorPtr> *outputs,
                                                bool train_flag) {
-  MS_ASSERT(cnode != nullptr);
-  MS_ASSERT(outputs != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
+  MS_CHECK_TRUE_MSG(outputs != nullptr, RET_ERROR, "outputs is nullptr!");
   std::vector<lite::DataInfo> data_infos;
   if (utils::isa<abstract::AbstractTuple>(cnode->abstract())) {
     auto tuple = std::reinterpret_pointer_cast<abstract::AbstractTuple>(cnode->abstract());

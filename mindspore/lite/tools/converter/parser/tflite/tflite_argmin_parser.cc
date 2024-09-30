@@ -33,6 +33,7 @@ PrimitiveCPtr TfliteArgminParser::Parse(const std::unique_ptr<tflite::OperatorT>
   prim->set_top_k(1);
 
   std::vector<int64_t> axes;
+  MS_CHECK_GE(tflite_op->inputs.size(), SECOND_INPUT + 1, nullptr);
   auto ret = GetTfliteData(tflite_op->inputs[SECOND_INPUT], tflite_subgraph->tensors, tflite_model->buffers, &axes);
   if (ret != RET_OK && ret != RET_NO_CHANGE) {
     MS_LOG(ERROR) << "get axes value failed.";

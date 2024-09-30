@@ -125,7 +125,7 @@ Status NNAPIDelegate::Build(DelegateModel<schema::Primitive> *model) {
     auto kernel = *iter;
     MS_CHECK_TRUE_RET(kernel != nullptr, mindspore::kLiteNullptr);
     auto primitive = model->GetPrimitive(kernel);
-    MS_ASSERT(primitive != nullptr);
+    MS_CHECK_TRUE_RET(primitive != nullptr, mindspore::kLiteNullptr);
     auto prim_type = primitive->value_type();
     if (op_func_lists_.find(prim_type) == op_func_lists_.end()) {
       MS_LOG(WARNING) << "Unsupported to get NNAPI Op with type of " << prim_type;
@@ -205,7 +205,7 @@ Status NNAPIDelegate::Build(DelegateModel<schema::Primitive> *model) {
 }
 
 void NNAPIDelegate::ReplaceNodes(const std::shared_ptr<LiteDelegateGraph> &graph) {
-  MS_ASSERT(graph != nullptr);
+  MS_CHECK_PTR_IF_NULL(graph);
   auto nodes = graph->nodes();
   MS_CHECK_TRUE_RET_VOID(nodes != nullptr);
   nodes->erase(nodes->begin(), nodes->end());

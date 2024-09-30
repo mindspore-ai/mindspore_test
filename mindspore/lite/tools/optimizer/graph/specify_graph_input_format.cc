@@ -32,7 +32,7 @@
 namespace mindspore {
 namespace opt {
 bool SpecifyGraphInputFormat::Run(const FuncGraphPtr &graph) {
-  MS_ASSERT(graph != nullptr);
+  MS_CHECK_TRUE_MSG(graph != nullptr, false, "graph is nullptr!");
   if (exp_graph_input_format_ == cur_graph_input_format_) {
     return true;
   }
@@ -51,13 +51,13 @@ bool SpecifyGraphInputFormat::Run(const FuncGraphPtr &graph) {
 }
 
 STATUS SpecifyGraphInputFormat::HandleGraphInput(const FuncGraphPtr &graph) {
-  MS_ASSERT(graph != nullptr);
+  MS_CHECK_TRUE_MSG(graph != nullptr, RET_ERROR, "graph is nullptr!");
   auto manager = graph->manager();
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(manager != nullptr, RET_ERROR, "manager is nullptr!");
   auto graph_inputs = graph->get_inputs();
   for (const auto &input : graph_inputs) {
     auto input_node = input->cast<ParameterPtr>();
-    MS_ASSERT(input_node != nullptr);
+    MS_CHECK_TRUE_MSG(input_node != nullptr, RET_ERROR, "input_node is nullptr!");
     auto abstract = input_node->abstract();
     MS_CHECK_TRUE_MSG(abstract != nullptr, lite::RET_NULL_PTR, "abstract is nullptr");
 
@@ -100,7 +100,7 @@ STATUS SpecifyGraphInputFormat::HandleGraphInput(const FuncGraphPtr &graph) {
 }
 
 bool CheckInputsFormatNHWC(const FuncGraphPtr &func_graph) {
-  MS_ASSERT(func_graph != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, false, "func_graph is nullptr!");
   auto manager = func_graph->manager();
   if (manager == nullptr) {
     manager = Manage(func_graph, true);
@@ -122,6 +122,10 @@ bool CheckInputsFormatNHWC(const FuncGraphPtr &func_graph) {
   });
   for (auto input : nodes) {
     auto itr = node_users.find(input);
+    if (itr == node_users.end()) {
+      MS_LOG(ERROR) << "Failed to find node " << input->fullname_with_scope();
+      return false;
+    }
     for (auto pair : itr->second) {
       auto used_node = pair.first;
       MS_CHECK_TRUE_RET(used_node != nullptr && used_node->isa<CNode>(), false);
@@ -142,7 +146,7 @@ bool CheckInputsFormatNHWC(const FuncGraphPtr &func_graph) {
 }
 
 std::vector<AnfNodePtr> GetTracedCnodes(const FuncGraphPtr &func_graph) {
-  MS_ASSERT(func_graph != nullptr);
+  MS_CHECK_TRUE_RET(func_graph != nullptr, {});
   auto manager = func_graph->manager();
   MS_CHECK_TRUE_RET(manager != nullptr, {});
   auto node_users = manager->node_users();
@@ -192,8 +196,8 @@ std::vector<AnfNodePtr> GetTracedCnodes(const FuncGraphPtr &func_graph) {
 
 bool SpecifyGraphInputFormat::GetCurGraphInputFormat(const FuncGraphPtr &func_graph, converter::FmkType fmk_type,
                                                      mindspore::Format *input_format) {
-  MS_ASSERT(func_graph != nullptr);
-  MS_ASSERT(input_format != nullptr);
+  MS_CHECK_TRUE_RET(func_graph != nullptr, false);
+  MS_CHECK_TRUE_RET(input_format != nullptr, false);
   if (fmk_type == converter::kFmkTypeTf || fmk_type == converter::kFmkTypeTflite) {
     *input_format = NHWC;
   } else {

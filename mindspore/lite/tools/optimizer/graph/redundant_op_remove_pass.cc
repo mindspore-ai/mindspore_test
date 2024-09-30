@@ -42,7 +42,8 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
     return lite::RET_NO_CHANGE;
   }
   // only solve UpdateState with at lease one Monad input
-  MS_ASSERT(func_graph != nullptr && cnode != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_ERROR, "func_graph is nullptr!");
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   AnfNodePtr monad_input = nullptr;
   auto first_input = cnode->input(kInputIndexOne);
   if (CheckPrimitiveType(first_input, prim::kPrimTranspose)) {
@@ -56,14 +57,14 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
   }
   if (utils::isa<ValueNode>(first_input)) {
     auto value_node = first_input->cast<ValueNodePtr>();
-    MS_ASSERT(value_node->value() != nullptr);
+    MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       monad_input = first_input;
     }
   }
   if (utils::isa<ValueNode>(second_input)) {
     auto value_node = second_input->cast<ValueNodePtr>();
-    MS_ASSERT(value_node->value() != nullptr);
+    MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       monad_input = second_input;
     }
@@ -81,15 +82,16 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
 }
 
 int ProcessInputIsMonad(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
-  MS_ASSERT(func_graph != nullptr && cnode != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_ERROR, "func_graph is nullptr!");
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   auto first_input = cnode->input(1);
-  MS_ASSERT(first_input != nullptr);
+  MS_CHECK_TRUE_MSG(first_input != nullptr, RET_ERROR, "first_input is nullptr!");
   if (CheckPrimitiveType(first_input, prim::kPrimTranspose)) {
     first_input = cnode->input(1)->cast<CNodePtr>()->input(1);
     MS_CHECK_TRUE_MSG(first_input != nullptr, RET_ERROR, "first_input is nullptr");
   }
   auto second_input = cnode->input(kInputIndexTwo);
-  MS_ASSERT(seconde_input != nullptr);
+  MS_CHECK_TRUE_MSG(second_input != nullptr, RET_ERROR, "second_input is nullptr!");
   if (CheckPrimitiveType(second_input, prim::kPrimTranspose)) {
     second_input = cnode->input(kInputIndexTwo)->cast<CNodePtr>()->input(1);
     MS_CHECK_TRUE_MSG(second_input != nullptr, RET_ERROR, "second_input is nullptr");
@@ -98,7 +100,7 @@ int ProcessInputIsMonad(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
   AnfNodePtr not_must_monad = nullptr;
   if (utils::isa<ValueNode>(first_input)) {
     auto value_node = first_input->cast<ValueNodePtr>();
-    MS_ASSERT(value_node->value() != nullptr);
+    MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       must_monad = first_input;
       not_must_monad = second_input;
@@ -106,7 +108,7 @@ int ProcessInputIsMonad(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
   }
   if (utils::isa<ValueNode>(second_input)) {
     auto value_node = second_input->cast<ValueNodePtr>();
-    MS_ASSERT(value_node->value() != nullptr);
+    MS_CHECK_TRUE_RET(value_node->value() != nullptr, RET_ERROR);
     if (utils::isa<Monad>(value_node->value())) {
       must_monad = second_input;
       not_must_monad = first_input;
@@ -132,11 +134,12 @@ int ProcessInputIsMonad(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
 }
 
 int ProcessDependencyWithTwoNodes(const FuncGraphPtr &func_graph, const CNodePtr &cnode, bool pre_node_is_first) {
-  MS_ASSERT(func_graph != nullptr && cnode != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_ERROR, "func_graph is nullptr!");
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   AnfNodePtr pre_node = cnode->input(1);
   AnfNodePtr post_node = cnode->input(kInputIndexTwo);
-  MS_ASSERT(pre_node != nullptr);
-  MS_ASSERT(post_node != nullptr);
+  MS_CHECK_TRUE_MSG(pre_node != nullptr, RET_ERROR, "pre_node is nullptr!");
+  MS_CHECK_TRUE_MSG(post_node != nullptr, RET_ERROR, "post_node is nullptr!");
   if (!pre_node_is_first) {
     pre_node = cnode->input(kInputIndexTwo);
     post_node = cnode->input(1);
@@ -176,7 +179,8 @@ int ProcessDependencyWithTwoNodes(const FuncGraphPtr &func_graph, const CNodePtr
 }
 
 int ProcessInputHaveDependency(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
-  MS_ASSERT(func_graph != nullptr && cnode != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_ERROR, "func_graph is nullptr!");
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   if (ProcessDependencyWithTwoNodes(func_graph, cnode, true) == lite::RET_OK) {
     return lite::RET_OK;
   }
@@ -214,7 +218,7 @@ int RemoveRedundantOpPass::ReplaceOp(const AnfNodePtr &anf_node, const FuncGraph
     return lite::RET_NO_CHANGE;
   }
   auto cnode = anf_node->cast<CNodePtr>();
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   if (CheckPrimitiveType(anf_node, kPrimIdentity)) {
     if (cnode->size() != kInputSizeTwo) {
       MS_LOG(DEBUG) << "The node inputs size is bigger than 1";
@@ -251,7 +255,7 @@ int RemoveRedundantOpPass::ReplaceUpdateStateOp(const FuncGraphPtr &func_graph, 
     return lite::RET_NO_CHANGE;
   }
   auto cnode = anf_node->cast<CNodePtr>();
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   if (ReplaceUpdateStateWithMonad(func_graph, cnode, remove_side_effect_) == lite::RET_OK) {
     return lite::RET_OK;
   }
@@ -272,7 +276,7 @@ int RemoveRedundantOpPass::ReplaceTupleGetItem(const AnfNodePtr &anf_node, const
     return lite::RET_NO_CHANGE;
   }
   auto cnode = anf_node->cast<CNodePtr>();
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   if (cnode->size() != kInputSizeThree) {
     MS_LOG(ERROR) << "TupleGetItem should have 3 inputs, got " << cnode->size();
     return RET_ERROR;
@@ -302,14 +306,14 @@ int RemoveRedundantOpPass::ReplaceTupleGetItem(const AnfNodePtr &anf_node, const
 }
 
 int RemoveRedundantOpPass::RemoveDropoutOp(const AnfNodePtr &anf_node, const FuncGraphManagerPtr &manager) {
-  MS_ASSERT(anf_node != nullptr);
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(anf_node != nullptr, RET_ERROR, "anf_node is nullptr!");
+  MS_CHECK_TRUE_MSG(manager != nullptr, RET_ERROR, "manager is nullptr!");
   if (!utils::isa<CNodePtr>(anf_node)) {
     MS_LOG(DEBUG) << "anf node is node a cnode.";
     return lite::RET_NO_CHANGE;
   }
   auto cnode = anf_node->cast<CNodePtr>();
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   if (cnode->size() > kInputSizeTwo) {
     MS_LOG(ERROR) << "dropout input invalid.";
     return lite::RET_ERROR;
@@ -348,10 +352,10 @@ int RemoveRedundantOpPass::RemoveDropoutOp(const AnfNodePtr &anf_node, const Fun
 }
 
 int RemoveRedundantOpPass::GetConstDataFromInputNode(const CNodePtr &cnode, lite::DataInfo *data_info) {
-  MS_ASSERT(cnode != nullptr);
-  MS_ASSERT(data_info != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
+  MS_CHECK_TRUE_MSG(data_info != nullptr, RET_ERROR, "data_info is nullptr!");
   auto padding_node = cnode->input(kInputIndexTwo);
-  MS_ASSERT(padding_node != nullptr);
+  MS_CHECK_TRUE_MSG(padding_node != nullptr, RET_ERROR, "padding_node is nullptr!");
   if (utils::isa<Parameter>(padding_node)) {
     auto status = lite::FetchDataFromParameterNode(cnode, kIndexNum, converter::kFmkTypeMs, data_info, true);
     if (status != lite::RET_OK && status != lite::RET_NO_CHANGE) {
@@ -374,7 +378,7 @@ int RemoveRedundantOpPass::RemoveInvalidPadOp(const AnfNodePtr &anf_node, const 
     return lite::RET_NO_CHANGE;
   }
   auto cnode = anf_node->cast<CNodePtr>();
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   auto primitive = GetValueNode<mindspore::PrimitivePtr>(cnode->input(0));
   if (primitive == nullptr) {
     MS_LOG(ERROR) << "primitive is nullptr:" << cnode->fullname_with_scope();
@@ -424,7 +428,7 @@ int RemoveRedundantOpPass::RemoveInvalidPadOp(const AnfNodePtr &anf_node, const 
 
 int RemoveRedundantOpPass::RemoveInvalidTransposeOp(const AnfNodePtr &anf_node, const FuncGraphManagerPtr &manager) {
   auto cnode = anf_node->cast<CNodePtr>();
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   if (cnode->size() != kInputSizeThree) {
     MS_LOG(DEBUG) << "The node inputs size is bigger than 2";
     return lite::RET_NO_CHANGE;
@@ -434,7 +438,7 @@ int RemoveRedundantOpPass::RemoveInvalidTransposeOp(const AnfNodePtr &anf_node, 
     return RET_OK;
   }
   auto tensor_info = std::dynamic_pointer_cast<tensor::Tensor>(index_node->default_param());
-  MS_ASSERT(tensor_info != nullptr);
+  MS_CHECK_TRUE_MSG(tensor_info != nullptr, RET_ERROR, "tensor_info is nullptr!");
   if (tensor_info->Size() != 0) {
     return RET_OK;
   }
@@ -442,8 +446,8 @@ int RemoveRedundantOpPass::RemoveInvalidTransposeOp(const AnfNodePtr &anf_node, 
 }
 
 int RemoveRedundantOpPass::FlattenMakeTuple(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
-  MS_ASSERT(func_graph != nullptr);
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_ERROR, "func_graph is nullptr!");
+  MS_CHECK_TRUE_MSG(manager != nullptr, RET_ERROR, "manager is nullptr!");
   auto node_list = TopoSort(func_graph->get_return());
   for (auto &node : node_list) {
     auto cnode = node->cast<CNodePtr>();
@@ -489,8 +493,8 @@ int RemoveRedundantOpPass::FlattenMakeTuple(const FuncGraphPtr &func_graph, cons
 }
 
 int RemoveRedundantOpPass::RemoveUmonad(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
-  MS_ASSERT(func_graph != nullptr);
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_ERROR, "func_graph is nullptr!");
+  MS_CHECK_TRUE_MSG(manager != nullptr, RET_ERROR, "manager is nullptr!");
   auto node_list = TopoSort(func_graph->get_return());
   for (auto &node : node_list) {
     auto cnode = node->cast<CNodePtr>();
@@ -562,9 +566,9 @@ int RemoveRedundantOpPass::RemoveRedundantOp(const FuncGraphPtr &func_graph, con
 }
 
 bool RemoveRedundantOpPass::Run(const FuncGraphPtr &func_graph) {
-  MS_ASSERT(func_graph != nullptr);
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, false, "func_graph is nullptr!");
   auto manager = Manage(func_graph, true);
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(manager != nullptr, false, "manager is nullptr!");
   if (!is_train_model_) {
     auto ret = RemoveUmonad(func_graph, manager);
     if (ret != lite::RET_OK) {

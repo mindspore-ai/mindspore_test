@@ -53,7 +53,7 @@ class TfliteNodeParser {
   STATUS GetTfliteData(const int32_t tensor_index, const std::vector<std::unique_ptr<tflite::TensorT>> &tflite_tensors,
                        const std::vector<std::unique_ptr<tflite::BufferT>> &tflite_model_buffer,
                        std::vector<T> *attr_data) {
-    MS_ASSERT(attr_data != nullptr);
+    MS_CHECK_TRUE_MSG(attr_data != nullptr, RET_NULL_PTR, "attr_data is nullptr!");
     CHECK_LESS_RETURN(tflite_tensors.size(), static_cast<size_t>(tensor_index + 1));
     const auto &tensor = tflite_tensors[tensor_index];
     if (tensor == nullptr) {
@@ -63,7 +63,7 @@ class TfliteNodeParser {
 
     size_t count = 1;
     std::for_each(tensor->shape.begin(), tensor->shape.end(), [&](int32_t sha) {
-      MS_ASSERT(sha >= 0);
+      MS_CHECK_TRUE_RET_VOID(sha >= 0);
       count *= static_cast<size_t>(sha);
     });
     CHECK_LESS_RETURN(tflite_model_buffer.size(), static_cast<size_t>(tensor->buffer + 1));
@@ -145,7 +145,7 @@ class TfliteNodeParser {
                                 const std::vector<std::unique_ptr<tflite::TensorT>> &tflite_tensors,
                                 const std::vector<std::unique_ptr<tflite::BufferT>> &tflite_model_buffer,
                                 std::vector<std::vector<T>> *vec) {
-    MS_ASSERT(vec != nullptr);
+    MS_CHECK_TRUE_MSG(vec != nullptr, RET_NULL_PTR, "vec is nullptr!");
     CHECK_LESS_RETURN(tflite_tensors.size(), static_cast<size_t>(tensor_index + 1));
     const auto &tensor = tflite_tensors[tensor_index];
     if (tensor == nullptr) {
@@ -155,7 +155,7 @@ class TfliteNodeParser {
 
     size_t count = 1;
     std::for_each(tensor->shape.begin(), tensor->shape.end(), [&](int32_t sha) {
-      MS_ASSERT(sha >= 0);
+      MS_CHECK_TRUE_RET_VOID(sha >= 0);
       count *= static_cast<size_t>(sha);
     });
     CHECK_LESS_RETURN(tflite_model_buffer.size(), static_cast<size_t>(tensor->buffer + 1));
