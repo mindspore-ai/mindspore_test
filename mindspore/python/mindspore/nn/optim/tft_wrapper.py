@@ -61,7 +61,7 @@ class OptTFTWrapper(Optimizer):
         >>> model = ms.train.Model(net, loss_fn=loss, optimizer=optim)
     """
 
-    def __init__(self, opt):
+    def __init__(self, opt, **kwargs):
         super(OptTFTWrapper, self).__init__(opt.learning_rate, opt._parameters) # pylint: disable=W0212
         if not isinstance(opt, Optimizer):
             raise TypeError(f"For 'OptTFTWrapper', the argument 'opt' must be Optimizer type, " f"but got {type(opt)}.")
@@ -76,8 +76,18 @@ class OptTFTWrapper(Optimizer):
         self.report = TensorReport()
         self.depend = ops.Depend()
         self.g_one = Tensor([0.1])
+        # enable consistent check by default, only disable when enable_consistent_check is False
+        self.use_allreduce = kwargs.get("enable_consistent_check", True)
+
+        if self.use_allreduce:
+            self.allreduce_sum = ops.AllReduce()
+            self.allreduce_sum.add_prim_attr("tft_report_before", True)
 
     def construct(self, gradients):
         g_one = self.depend(self.g_one, gradients)
-        self.report("tft_report", g_one)
+        if self.use_allreduce is True:
+            g_one_res = self.allreduce_sum(g_one)
+        else:
+            g_one_res = g_one
+        self.report("tft_report", g_one_res)
         return self.opt(gradients)

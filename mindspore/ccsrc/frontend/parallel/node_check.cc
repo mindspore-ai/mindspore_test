@@ -52,5 +52,25 @@ bool IsFromGradMirrorAR(const AnfNodePtr &node) {
   }
   return true;
 }
+
+bool IsTFTAllReduce(const AnfNodePtr &node) {
+  auto tftEnv = common::GetEnv("MS_ENABLE_TFT");
+  constexpr std::string_view optUCE = "UCE:1";
+  constexpr std::string_view optTTP = "TTP:1";
+
+  if (tftEnv.empty() || (tftEnv.find(optUCE) == std::string::npos && tftEnv.find(optTTP) == std::string::npos)) {
+    return false;
+  }
+
+  bool isTFTAllReduce = false;
+  if (IsPrimitiveCNode(node, prim::kPrimAllReduce)) {
+    auto tftAttr = "tft_report_before";
+    auto nodePrim = GetCNodePrimitive(node);
+    isTFTAllReduce = nodePrim->HasAttr(tftAttr) && GetValue<bool>(nodePrim->GetAttr(tftAttr));
+    MS_LOG(INFO) << "Found TFT allreduce, is enable:" << isTFTAllReduce;
+  }
+  return isTFTAllReduce;
+}
+
 }  // namespace parallel
 }  // namespace mindspore

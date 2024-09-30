@@ -24,6 +24,7 @@ namespace parallel {
 bool IsInBatchParallelBlackList(const PrimitivePtr &prim);
 bool IsFromParallelOptimizerRs(const AnfNodePtr &node);
 bool IsFromGradMirrorAR(const AnfNodePtr &node);
+bool IsTFTAllReduce(const AnfNodePtr &node);
 }  // namespace parallel
 }  // namespace mindspore
 
