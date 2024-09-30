@@ -193,7 +193,7 @@ def manual_seed(seed):  # pylint: disable=redefined-outer-name
         >>> print(initial_seed())
         13
     """
-    default_generator.manual_seed(seed)
+    return default_generator.manual_seed(seed)
 
 
 def initial_seed():
