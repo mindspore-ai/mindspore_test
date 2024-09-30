@@ -3458,7 +3458,7 @@ bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1
   return true;
 }
 
-bool GraphBuilder::TraceRunForIterSequence(int jump_bci, bool is_range_type) {
+bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
   // check for iter
   ValueNode *iter_node = seek(0);
   ValueNode *seq_node = iter_node->input(0);
@@ -3475,15 +3475,27 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci, bool is_range_type) {
   }
 
   int &index = iter_node->marker_;
-  if (index == 0 && ((is_range_type && !GuardIterInputs(graph_, seq_node)) ||
-                     (!is_range_type && !GuardLoopSequence(graph_, seq_node)))) {
+  bool is_tuple = seq_node->GetVobj()->GetType() == AObject::kTypeTuple;
+  if (is_tuple) {
+    if (index != 0) {
+      seq_node = seek(1);
+    } else {
+      DoLoadConst({LOAD_CONST, 0, py::reinterpret_borrow<py::obect>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
+      push(iter->input(0));
+      DoCall({CALL_FUNCTION, 1});
+      std::swap(seek(0), seek(1));
+    }
+  }
+  if (index == 0 && !GuardLoopSequence(graph_, seq_node)) {
     // loop start.
     MS_LOG(INFO) << "guard loop sequence failed";
     return false;
   }
 
   if (index >= size) {
-    pop();
+    if (is_tuple) {
+      pop();
+    }
     cur_bci_ = jump_bci;
     return true;
   }
@@ -3680,15 +3692,9 @@ bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
   int &index = iter_node->marker_;
   if (index == 0) {
     ValueNode *dict_item_node = iter_node->input(0);
-    if (dict_item_node->GetOpcode() == CALL_FUNCTION && dict_item_node->input(0)->GetOpcode() == LOAD_ATTR &&
-        dict_item_node->input(0)->GetName() == "items") {
-      // call expression "dict.items()"
-      push(dict_item_node->input(0)->input(0));
-    } else {
-      DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
-      push(dict_item_node);
-      DoCall({CALL_FUNCTION, 1});
-    }
+    DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
+    push(dict_item_node);
+    DoCall({CALL_FUNCTION, 1});
     std::swap(seek(0), seek(1));
     dict_node = seek(1);
     if (!dict_item_node->IsConstantValue()) {
@@ -3717,27 +3723,13 @@ bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
     cur_bci_ = jump_bci;
     return true;
   }
-  ValueNode *key_node = NewValueNode(AObject::Convert(key), LOAD_CONST, -1, {});
-  push(key_node);
+  ValueNode *key_node = NewValueNode(AObject::Convert(py::int_(index)), LOAD_CONST, -1, {});
   push(dict_node);
   push(key_node);
   DoItemAccess({BINARY_SUBSCR, 0});
-  DoBuildOp({BUILD_TUPLE, 2});
   index++;
   cur_bci_ = cur_bci_ + 1;
   return true;
-}
-
-bool IsRangeType(ValueNode *iter_node) {
-  if (iter_node->input(0)->GetOpcode() != CALL_FUNCTION) {
-    return false;
-  }
-  auto vobj = iter_node->input(0)->input(0)->GetVobj();
-  if (vobj == nullptr) {
-    return false;
-  }
-  PyTypeObject *type = reinterpret_cast<PyTypeObject *>(static_cast<AbstractType *>(vobj)->GetPyObject().ptr());
-  return type == &PyRange_Type;
 }
 
 bool GraphBuilder::TraceRunForIter(const Instr &instr) {
@@ -3760,7 +3752,7 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
              iterable->GetTypeObject() == &PyDictItems_Type) {
     succ = TraceRunForIterDictItems(instr.extra_jump()->bci());
   } else {
-    succ = TraceRunForIterSequence(instr.extra_jump()->bci(), IsRangeType(iter_node));
+    succ = TraceRunForIterSequence(instr.extra_jump()->bci());
   }
   if (!succ) {
     if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
@@ -4666,6 +4658,7 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
     "dict.update",
     "dict.clear",
     "dict.pop",
+    "dict.keys",
     "enumerate",
     "zip",
     "map",
@@ -4673,10 +4666,6 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
     "__setitem__",
     "getattr",
     "range",
-    "isinstance",
-    "hasattr",
-    "arange",
-    "meshgrid",
     "concat",
   };
   return std::any_of(forbidden_list.begin(), forbidden_list.end(),
