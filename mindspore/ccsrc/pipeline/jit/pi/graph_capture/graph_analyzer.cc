@@ -795,12 +795,18 @@ inline bool IsValidOutput(const ValueNode *node) {
          IsValidGraphOutput(node->abstract_wrapper()->abstract());
 }
 
-inline std::vector<ValueNode *> CollectInputs(const ValueNode *node, bool recursive = true) {
+inline std::vector<ValueNode *> CollectInputs(const ValueNode *node, std::vector<const ValueNode *> *visited,
+                                              bool recursive = true) {
   MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(visited);
   std::vector<ValueNode *> inputs;
-  std::for_each(node->getInputs().begin(), node->getInputs().end(), [recursive, &inputs](const auto &input) {
+  if (std::find(visited->begin(), visited->end(), node) != visited->end()) {
+    return inputs;
+  }
+  visited->push_back(node);
+  std::for_each(node->getInputs().begin(), node->getInputs().end(), [recursive, &inputs, &visited](const auto &input) {
     if (recursive) {
-      auto sub_inputs = CollectInputs(input);
+      auto sub_inputs = CollectInputs(input, visited, recursive);
       inputs.insert(inputs.end(), sub_inputs.begin(), sub_inputs.end());
     }
     inputs.push_back(input);
@@ -811,8 +817,9 @@ inline std::vector<ValueNode *> CollectInputs(const ValueNode *node, bool recurs
 std::vector<ValueNode *> CollectInputs(std::vector<ValueNode *> *nodes, bool recursive = true) {
   MS_EXCEPTION_IF_NULL(nodes);
   std::vector<ValueNode *> inputs;
-  std::for_each(nodes->begin(), nodes->end(), [recursive, &inputs](const auto &node) {
-    auto node_inputs = CollectInputs(node, recursive);
+  std::vector<const ValueNode *> visited;
+  std::for_each(nodes->begin(), nodes->end(), [recursive, &inputs, &visited](const auto &node) {
+    auto node_inputs = CollectInputs(node, &visited, recursive);
     inputs.insert(inputs.end(), node_inputs.begin(), node_inputs.end());
   });
   std::sort(inputs.begin(), inputs.end());
