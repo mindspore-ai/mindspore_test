@@ -4778,6 +4778,9 @@ bool MindGraphBuilder::DoCompare(const Instr &instr) {
 }
 
 bool MindGraphBuilder::DoBuildOp(const Instr &instr) {
+  if (instr.op() == BUILD_SET) {
+    return false;
+  }
   int opcode = instr.op();
   int oparg = instr.arg();
   int tmp_arg = oparg;
