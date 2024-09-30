@@ -50,23 +50,23 @@ def test_copy_std():
     y = generate_random_input((2, 2, 3, 4), np.float32)
     z = generate_random_input((2, 1, 4), np.float32)  # broadcast
 
-    expect_y_grad = np.ones_like(y, dtype=np.float32)
+    # expect_y_grad = np.ones_like(y, dtype=np.float32)
 
     expect_z = np.expand_dims(z.repeat(3, axis=1), axis=0).repeat(2, axis=0)
-    expect_z_grad = np.ones_like(z, dtype=np.float32) * 6
+    # expect_z_grad = np.ones_like(z, dtype=np.float32) * 6
 
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     output_y = copy_forward_func(ms.Tensor(x), ms.Tensor(y))
-    output_y_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(y))
+    # output_y_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(y))
 
     output_z = copy_forward_func(ms.Tensor(x), ms.Tensor(z))
-    output_z_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(z))
+    # output_z_grad = copy_backward_func(ms.Tensor(x), ms.Tensor(z))
 
     np.allclose(output_y.asnumpy(), y, rtol=1e-5, equal_nan=True)
-    np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
+    # np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
 
     np.allclose(output_z.asnumpy(), expect_z, rtol=1e-5, equal_nan=True)
-    np.allclose(output_z_grad[1].asnumpy(), expect_z_grad, rtol=1e-5, equal_nan=True)
+    # np.allclose(output_z_grad[1].asnumpy(), expect_z_grad, rtol=1e-5, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -82,7 +82,7 @@ def test_copy_dynamic_shape():
     tensor_y2 = ms.Tensor(generate_random_input((1, 1, 5), np.float32))  # broadcast
 
     TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'copy_ext',
-            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_grad=True)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -96,11 +96,11 @@ def test_copy_bfloat16():
     y = generate_random_input((2, 1, 4), np.float32)
 
     expect = np.expand_dims(y.repeat(5, axis=1), axis=0).repeat(3, axis=0)
-    expect_grad = np.ones_like(y).astype(np.float32) * 15
+    # expect_grad = np.ones_like(y).astype(np.float32) * 15
 
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     output = copy_forward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
-    output_grad = copy_backward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
+    # output_grad = copy_backward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
 
     np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
-    np.allclose(output_grad[1].float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)
+    # np.allclose(output_grad[1].float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)

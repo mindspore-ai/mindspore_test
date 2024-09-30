@@ -27,15 +27,6 @@ REG_BPROP_BUILDER("Assign").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   return {dout, ib->OutZeros(y)};
 });
 
-REG_BPROP_BUILDER("CopyExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto y = ib->GetInput(kIndex1);
-  auto y_dtype = ib->GetDtype(y);
-  auto dout = ib->GetInput(kIndex3);
-  auto res = BinopGradCommon(ib, x, y, nullptr, dout);
-  return {ib->OutZeros(x), ib->Cast(res[1], y_dtype)};
-});
-
 REG_BPROP_BUILDER("InvertPermutation").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("IOU").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
