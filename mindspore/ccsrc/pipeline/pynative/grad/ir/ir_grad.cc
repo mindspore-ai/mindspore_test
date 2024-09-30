@@ -298,7 +298,8 @@ bool IrGrad::KPynativeOp(const GradParamPtr &grad_param) {
     }
   } else {
     variable_adjoint->set_is_custom_op_variable(true);
-    PyNativeAlgo::AutoGrad::CheckRecomputeInputs(grad_param);
+    PyNativeAlgo::AutoGrad::CheckRecomputeInputs(grad_param->op_grad_info->input_value,
+                                                 grad_param->op_grad_info->is_need_recompute);
     ir_bprop_->BuildBPropCutCNode(input_node, prim, &outputs, grad_param->op_grad_info->weight_size,
                                   grad_param->op_grad_info->is_need_recompute);
   }

@@ -419,7 +419,6 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
       fn = BuildCustomBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
     }
   } else {
-    PyNativeAlgo::AutoGrad::CheckRecomputeInputs(grad_param);
     grad_param->op_grad_info->out_abs = GenerateFlattenAbs(flatten_outputs);
     fn = BuildHookBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
   }
@@ -485,6 +484,7 @@ bool FuncGrad::KPynativeWithFProp(const GradParamPtr &grad_param) {
 void FuncGrad::CallCustomBprop(const CustomContext &context) {
   MS_LOG(DEBUG) << "Begin Call CallCustomBprop";
   BackwardNodePtr custom_fn;
+  PyNativeAlgo::AutoGrad::CheckRecomputeInputs(context.inputs, context.is_recompute);
   auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(context.inputs);
   auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(context.output);
   ConstructParameterNodes(flatten_inputs);

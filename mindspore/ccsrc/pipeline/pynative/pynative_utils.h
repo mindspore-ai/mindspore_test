@@ -246,7 +246,7 @@ struct AutoGrad {
   static CallBackFn CreateGraphCallBack(const FuncGraphPtr &call_graph, const std::string &cache_key,
                                         const GraphCallCondition &graph_call_condition);
   static PrimitivePyPtr BuildBpropCutPrim(const PrimitivePtr &prim, bool is_need_recompute = false);
-  static void CheckRecomputeInputs(const GradParamPtr &grad_param);
+  static void CheckRecomputeInputs(const ValuePtrList &inputs, bool is_need_recompute);
   static TopCellInfo *FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
                                      const std::string &op_info, const ValuePtr &value);
   static void UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
