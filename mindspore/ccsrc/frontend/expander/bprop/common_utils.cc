@@ -537,7 +537,8 @@ inline NodePtr ScatterZeroDim(Emitter *ib, const NodePtr &input, const NodePtr &
   // Scatter op: ZeroDim need to expand to OneDim
   auto input_expand = ib->ExpandDims(input, -1);
   auto index_expand = ib->ExpandDims(index, -1);
-  auto out = ib->Emit("ScatterValue", {input_expand, dim, index_expand, src, reduce});
+  auto src_expand = ib->ExpandDims(src, -1);
+  auto out = ib->Emit("TensorScatterElements", {input_expand, index_expand, src_expand, dim, reduce});
   // recover OneDim To ZeroDim
   return ib->Squeeze(out, MakeValue(ShapeVector{0}));
 }

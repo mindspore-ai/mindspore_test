@@ -127,7 +127,7 @@ KernelTensor::KernelTensor(const AddressCommonPtr &address_common, const abstrac
 KernelTensor::KernelTensor(const KernelTensor &other) {
   // Copy host info.
   shape_ = other.shape_ != nullptr ? other.shape_->Clone() : abstract::kNoShape;
-  type_ = other.shape_ != nullptr ? other.type_->Clone() : kTypeAny;
+  type_ = other.type_ != nullptr ? other.type_->Clone() : kTypeAny;
   value_ = other.value_;
 
   if (other.host_info_) {

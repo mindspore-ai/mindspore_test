@@ -53,7 +53,7 @@ class ExtractVolumePatchesKernelMod : public NativeCpuKernelMod,
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
 
-  void CheckParams() const noexcept;
+  void CheckParams() const;
 
   const size_t expect_rank_{5};
   std::vector<int64_t> kernel_size_;
