@@ -15,7 +15,7 @@ mindspore.mint.scatter
         output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
 
     .. note::
-        仅当index的shape和src的shape相同时支持求反向梯度。
+        如果src为Tensor，则仅当src的shape和index的shape相同时支持求反向梯度。
 
     参数：
         - **input** (Tensor) - 输入Tensor。 `input` 的秩必须至少为1。
