@@ -20,7 +20,8 @@ mindspore.RowTensor
          [0, 0]]
 
     .. warning::
-        这是一个实验性API，后续可能修改或删除。
+        - 这是一个实验性API，后续可能修改或删除。
+        - 使用PyNative模式，需要添加"export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1"。
 
     参数：
         - **indices** (Tensor) - shape为 :math:`(d_0)` 的一维整数Tensor。默认值： ``None`` 。
