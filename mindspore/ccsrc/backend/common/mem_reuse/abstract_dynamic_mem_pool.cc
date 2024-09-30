@@ -69,8 +69,12 @@ MemBufAllocator::~MemBufAllocator() {
 void MemBufAllocator::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Release device resource for allocator, " << BriefInfo()
                << ", mem_blocks_ size : " << mem_blocks_.size() << ".";
-  for (auto &mem_block : mem_blocks_) {
+  for (auto mem_block : mem_blocks_) {
+    MS_LOG(INFO) << "Clean mem block : " << mem_block->ToJson() << ".";
     (void)mem_block_cleaner_(mem_block);
+  }
+  for (auto mem_block : mem_blocks_) {
+    MS_LOG(INFO) << "Delete mem block : " << mem_block->ToJson() << ".";
     delete mem_block;
   }
   mem_blocks_.clear();
