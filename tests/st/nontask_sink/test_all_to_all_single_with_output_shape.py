@@ -29,7 +29,7 @@ init()
 
 class AllToAllSingleNet(nn.Cell):
     def construct(self, output_shape, tensor):
-        out = all_to_all_single_with_output_shape(output_shape, tensor)
+        out, _ = all_to_all_single_with_output_shape(output_shape, tensor)
         return out
 
 def test_hccl_all_to_all_single_with_output_shape_func_in_cell_2p():

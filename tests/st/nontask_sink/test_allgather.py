@@ -29,7 +29,7 @@ from mindspore import context
 np.random.seed(1)
 context.set_context(jit_level='O0')
 os.environ['HCCL_WHITELIST_DISABLE'] = str(1)
-context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
 init()
 
 
