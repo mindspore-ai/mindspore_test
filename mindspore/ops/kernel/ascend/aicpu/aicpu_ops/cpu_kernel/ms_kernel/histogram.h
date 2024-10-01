@@ -34,6 +34,8 @@ class HistogramCpuKernel : public CpuKernel {
   template <typename T, typename InterType>
   uint32_t DoCompute(CpuKernelContext &ctx);
 
+  uint32_t DoComputeFloat16(CpuKernelContext &ctx);
+
   double min_attr = 0.0;
   double max_attr = 0.0;
   int32_t bins = 100;

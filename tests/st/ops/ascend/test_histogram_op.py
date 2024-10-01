@@ -13,6 +13,9 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
+import pytest
+
+import mindspore.context as context
 from mindspore import ops
 from mindspore import nn
 from mindspore import Tensor
@@ -29,19 +32,25 @@ class Net(nn.Cell):
         return self.histogram(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-def test_histogram_normal():
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_histogram_normal(mode):
     """
     Feature: Histogram
     Description: Verify the result of Histogram
     Expectation: success
     """
+    context.set_context(mode=mode)
     bins, min_val, max_val = 4, 0.0, 3.0
     net = Net(bins, min_val, max_val)
     x = Tensor([1, 2, 1], mstype.int32)
     x2 = Tensor([1., 2., 1.], mstype.float32)
+    x3 = Tensor([1., 2., 1.], mstype.float16)
     output = net(x)
     output2 = net(x2)
+    output3 = net(x3)
     expected_output = np.array([0, 2, 1, 0])
+    expected_output2 = np.array([0., 2., 1., 0.])
     assert np.array_equal(output.asnumpy(), expected_output)
-    assert np.array_equal(output2.asnumpy(), expected_output)
+    assert np.array_equal(output2.asnumpy(), expected_output2)
+    assert np.array_equal(output3.asnumpy(), expected_output2)
