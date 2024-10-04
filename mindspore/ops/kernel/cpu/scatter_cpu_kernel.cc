@@ -109,7 +109,7 @@ int ScatterCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   // calculate indices_stride
   indices_stride_.resize(input_dims_, 1);
   for (size_t i = input_dims_ - 1; i > 0; --i) {
-    indices_stride_[i - 1] = indices_stride_[i] * static_cast<size_t>(index_shape[i]);
+    indices_stride_[i - 1] = indices_stride_[i] * index_shape[i];
   }
 
   // calculate output_stride
@@ -124,7 +124,7 @@ template <typename T, typename S, typename ReductionT>
 bool ScatterCpuKernelMod::Scatter(const ReductionT &reduction_func, T *output, const S *indices, const T *updates) {
   auto task = [reduction_func, output, indices, updates, this](size_t start, size_t end) {
     for (size_t index = start; index < end; index++) {
-      int remain = index;
+      int remain = static_cast<int>(index);
       int output_offset = 0;
       for (size_t i = 0; i < this->input_dims_; ++i) {
         int output_dim_index = remain / this->indices_stride_[i];
@@ -138,7 +138,7 @@ bool ScatterCpuKernelMod::Scatter(const ReductionT &reduction_func, T *output, c
             output_dim_index += this->input_axis_size_;
           }
         }
-        output_offset += this->output_stride_[i] * output_dim_index;
+        output_offset += static_cast<int>(this->output_stride_[i] * output_dim_index);
       }
       reduction_func(output + output_offset, *(updates + index));
     }
