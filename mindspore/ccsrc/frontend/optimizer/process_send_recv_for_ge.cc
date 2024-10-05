@@ -381,7 +381,7 @@ void ProcessSendRecvForGE(const FuncGraphPtr &graph) {
   if (context->IsKByKExecutorMode()) {
     return;
   }
-  if (common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+  if (IsDisableGeKernel()) {
     ProcessSpecialNodes(graph, all_nodes, send_cnt);
   }
 }

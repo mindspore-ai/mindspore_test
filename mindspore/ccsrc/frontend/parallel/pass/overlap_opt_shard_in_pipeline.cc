@@ -171,7 +171,7 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
     MS_LOG(INFO) << "parallel::g_device_manager is not initialized.";
     return;
   }
-  const auto disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  const auto disable_ge_kernel = IsDisableGeKernel();
   if (disable_ge_kernel) {
     return;
   }

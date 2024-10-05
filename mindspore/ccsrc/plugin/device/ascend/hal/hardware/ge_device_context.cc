@@ -95,7 +95,7 @@ bool IsNeedHybridMode(const FuncGraphPtr &func_graph) {
     }
     return false;
   }
-  if (common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+  if (IsDisableGeKernel()) {
     if (has_cell_reuse) {
       // force subgraph sink
       context->SetCellReuseLevel(CellReuseLevel::kNoInline);

@@ -489,7 +489,7 @@ void GEMemoryAllocator::AllocGraphMemory(const transform::RunOptions &options, c
                                          const GraphSummary &summary, size_t stream_id,
                                          GeDeviceResManager *res_manager) {
   AllocConstMemory(options, graph, summary.const_memory_size, res_manager);
-  if (common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+  if (IsDisableGeKernel()) {
     AllocFeatureMemory(options, summary.fixed_memory_size, res_manager);
   } else {
     GEMemoryManager::Instance().InitGEMemory(options, summary.workspace_memory_size, summary.fixed_memory_size,

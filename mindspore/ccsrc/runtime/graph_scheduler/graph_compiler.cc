@@ -640,7 +640,7 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   }
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (!common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+  if (!IsDisableGeKernel()) {
     if (context_ptr->backend_policy() == "ge" && device_context->GetDeviceType() == device::DeviceType::kAscend &&
         !run_in_pynative && (actual_run_mode == device::RunMode::kGraphMode) && IsEnableRefMode()) {
       kernel_graph->set_run_mode(actual_run_mode);

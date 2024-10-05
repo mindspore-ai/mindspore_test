@@ -77,7 +77,7 @@ class AscendVmmAdapter {
   static const bool IsVmmEnabled() {
     auto ctx = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ctx);
-    if (ctx->GetJitLevel() == kAttrJitLevelO2 && common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+    if (ctx->GetJitLevel() == kAttrJitLevelO2 && IsDisableGeKernel()) {
       MS_LOG(INFO) << "Jit level is O2, vmm is disabled.";
       return false;
     }
