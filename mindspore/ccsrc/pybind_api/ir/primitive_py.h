@@ -114,7 +114,7 @@ class ME_EXPORT PrimitivePy : public Primitive {
   py::function hook_fn_{py::none()};
   // If a cell registers a backward hook, but the inputs of the cell does not calculate the derivative, and the
   // parameters in the cell need to calculate the derivative, then the hook function will not be executed
-  static std::unordered_map<std::string, py::function> unpair_backward_hook_grad_;
+  static std::map<std::string, py::function> unpair_backward_hook_grad_;
 };
 
 class PrimitivePyAdapter {
