@@ -69,7 +69,7 @@ int ExtractVolumePatchesKernelMod::Resize(const std::vector<KernelTensor *> &inp
   return static_cast<int>(KRET_OK);
 }
 
-void ExtractVolumePatchesKernelMod::CheckParams() const noexcept {
+void ExtractVolumePatchesKernelMod::CheckParams() const {
   if (input_shape_.size() != expect_rank_) {
     MS_LOG(EXCEPTION) << "For ExtractVolumePatches, incorrect input dim size: " << input_shape_.size()
                       << ", which should be " << expect_rank_;

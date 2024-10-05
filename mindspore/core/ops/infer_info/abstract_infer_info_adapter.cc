@@ -122,6 +122,10 @@ InferInfoPtrList AbstractInferInfoAdapter::GetSequenceElements() {
       MS_LOG(EXCEPTION) << "Failed to get types of list elements from type " << type_ptr->ToString() << ", "
                         << BaseDebugInfo();
     }
+    if (shapes.size() != types.size()) {
+      MS_LOG(EXCEPTION) << "Shapes number and types number must be equal when calling GetSequenceElements(), but got: "
+                        << shapes.size() << " vs " << types.size();
+    }
     for (size_t i = 0; i < shapes.size(); ++i) {
       const auto &element = abstract::MakeAbstract(shapes[i], types[i]);
       elem_infer_infos.push_back(
