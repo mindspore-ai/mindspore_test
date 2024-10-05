@@ -25,6 +25,7 @@
 
     .. note::
         如果 `indices` 的值超出 `input_x` 索引上下界，则相应的 `updates` 不会更新到 `input_x` ，也不会抛出索引错误。
+        仅当indices的shape和updates的shape相同时支持求反向梯度。
 
     参数：
         - **input_x** (Tensor) - 输入Tensor。rank必须大于等于1。
@@ -39,6 +40,5 @@
     异常：
         - **TypeError** - `indices` 的数据类型不满足int32或int64。
         - **ValueError** - `input_x` 、 `indices` 和 `updates` 中，任意一者的rank小于1。
-        - **ValueError** - `updates` 的shape和 `indices` 的shape不一致。
         - **ValueError** - `updates` 的rank和 `input_x` 的rank不一致。
         - **RuntimeError** - `input_x` 的数据类型和 `updates` 的数据类型不能隐式转换。

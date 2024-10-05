@@ -3364,17 +3364,15 @@ def scatter(input, axis, index, src):
         axis (int): Which axis to scatter. Accepted range is [-r, r) where r = rank(input).
         index (Tensor): The index to do update operation whose data must be positive number with type of mindspore.int32
             or mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
-        src (Tensor, float): The tensor doing the update operation with `input` , has the same data type as
-            `input`, and the shape of `src` should be equal to the shape of `index`. Also can be a float number to
-            scatter.
+        src (Tensor, float): The data doing the update operation with `input`. Can be a tensor with the same data type
+            as `input` or a float number to scatter.
 
     Returns:
-        Tensor, has the same shape and type as `input` .
+        The backward is supported only for the case `src.shape == index.shape` when `src` is a tensor.
 
     Raises:
         TypeError: If `index` is neither int32 nor int64.
         ValueError: If rank of any of `input` , `index` and `src` less than 1.
-        ValueError: If the shape of `src` is not equal to the shape of `index` .
         ValueError: If the rank of `src` is not equal to the rank of `input` .
         TypeError: If the data type of `input` and `src` have different dtypes.
         RuntimeError: If `index` has negative elements.
