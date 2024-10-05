@@ -530,7 +530,13 @@ ValuePtr MSANFModelParser::GetValueFromAttributeProto(const mind_ir::AttributePr
 }
 
 FuncGraphPtr MSANFModelParser::GenerateFuncGraphValue(const mind_ir::GraphProto &graph_proto) {
+  static std::unordered_map<std::string, FuncGraphPtr> graphs;
+  auto it = graphs.find(graph_proto.name());
+  if (it != graphs.end()) {
+    return it->second;
+  }
   auto graph = std::make_shared<FuncGraph>();
+  graphs[graph_proto.name()] = graph;
   if (!BuildFuncGraph(graph, graph_proto)) {
     MS_LOG(ERROR) << "Failed to build funcgraph for " << graph_proto.name();
   }
