@@ -20,9 +20,10 @@ from mindspore.common.tensor import Tensor
 from mindspore.nn.optim.optimizer import Optimizer
 from mindspore.ops.operations.manually_defined._inner import TensorReport
 from mindspore import ops, context
+from mindspore.nn.cell import Cell
 
 
-class OptTFTWrapper(Optimizer):
+class OptTFTWrapper(Cell):
     r"""
     Implements TFT optimizer wrapper, this wrapper is used to report status to MindIO TFT before optimizer updating.
 
@@ -62,7 +63,7 @@ class OptTFTWrapper(Optimizer):
     """
 
     def __init__(self, opt, **kwargs):
-        super(OptTFTWrapper, self).__init__(opt.learning_rate, opt._parameters) # pylint: disable=W0212
+        super(OptTFTWrapper, self).__init__(auto_prefix=False)  # pylint: disable=W0212
         if not isinstance(opt, Optimizer):
             raise TypeError(f"For 'OptTFTWrapper', the argument 'opt' must be Optimizer type, " f"but got {type(opt)}.")
         tft_env = os.getenv("MS_ENABLE_TFT", "")
@@ -82,6 +83,41 @@ class OptTFTWrapper(Optimizer):
         if self.use_allreduce:
             self.allreduce_sum = ops.AllReduce()
             self.allreduce_sum.add_prim_attr("tft_report_before", True)
+
+        self.param_rank = opt.param_rank
+        self.optim_filter = opt.optim_filter
+        self.loss_scale = opt.loss_scale
+        self.dynamic_weight_decay = opt.dynamic_weight_decay
+        self.grad_centralization = opt.grad_centralization
+
+        self.dynamic_lr = opt.dynamic_lr
+        self.global_step = opt.global_step
+        self.is_group = opt.is_group
+        self.is_group_lr = opt.is_group_lr
+        self.is_group_params_ordered = opt.is_group_params_ordered
+        self.use_parallel = opt.use_parallel
+        if self.is_group:
+            self.group_params = opt.group_params
+            self.group_lr = opt.group_lr
+            self.group_weight_decay = opt.group_weight_decay
+            self.group_grad_centralization = opt.group_grad_centralization
+            self.grad_centralization_flags = opt.grad_centralization_flags
+
+        self.skip_auto_parallel_compile = opt.skip_auto_parallel_compile
+
+        self.learning_rate = opt.learning_rate
+        self.parameters = opt.parameters
+        self.decay_flags = opt.decay_flags
+        self.dynamic_decay_flags = opt.dynamic_decay_flags
+        self.weight_decay = opt.weight_decay
+        self.exec_weight_decay = opt.exec_weight_decay
+        self.ps_parameters = opt.ps_parameters
+        self.cache_enable = opt.cache_enable
+        self.reciprocal_scale = opt.reciprocal_scale
+        self.need_scale = opt.need_scale
+        self.global_step_increase_tensor = opt.global_step_increase_tensor
+        self.param_length = opt.param_length
+        self.enable_tuple_broaden = opt.enable_tuple_broaden
 
     def construct(self, gradients):
         g_one = self.depend(self.g_one, gradients)
