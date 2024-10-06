@@ -20,6 +20,7 @@ mindspore.COOTensor
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
+        - 使用PyNative模式，需要添加"export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1"。
         - 目前COOTensor中相同索引的值不会进行合并。如果索引中包含界外值，则得出未定义结果。
 
     参数：

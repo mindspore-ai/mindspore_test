@@ -19,6 +19,7 @@ mindspore.CSRTensor
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
+        - 使用PyNative模式，需要添加"export MS_PYNATIVE_CONFIG_STATIC_SHAPE=1"。
         - 如果 `indptr` 或 `indices` 的值不合法，行为将没有定义。不合法的值包括当 `values` 或 `indices` 的长度超出了 `indptr` 所指定的取值范围，以及当 `indices` 在同一行中出现重复的列。
 
     参数：
