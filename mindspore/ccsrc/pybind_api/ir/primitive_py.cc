@@ -102,7 +102,7 @@ py::tuple UnfoldPyArgs(const py::tuple &py_args) {
 }
 }  // namespace
 
-std::unordered_map<std::string, py::function> PrimitivePy::unpair_backward_hook_grad_{};
+std::map<std::string, py::function> PrimitivePy::unpair_backward_hook_grad_{};
 
 PrimitivePy::PrimitivePy(const std::string &name) : Primitive(name, false), python_obj_(py::none()) {}
 
