@@ -878,7 +878,7 @@ std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph
       nodes = SplitSort(graph, default_target);
     }
     // Keep the cutting position as far back as possible
-    auto disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+    auto disable_ge_kernel = IsDisableGeKernel();
     if (!disable_ge_kernel) {
       nodes = LazySort(nodes, {prim::kPrimPartial});
     }

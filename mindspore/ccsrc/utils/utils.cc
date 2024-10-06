@@ -308,9 +308,21 @@ bool IsEnableRefMode() {
   return ret;
 }
 
+bool IsDisableGeKernel() {
+  static bool config_disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  // ge_kbk mix can not use rank_table
+  static bool use_hccl_rank_table = !common::UseHostCollective() && !common::GetEnv("RANK_TABLE_FILE").empty();
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  // do not use ge_kernel in 910
+  static bool use_ascend910 = context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice &&
+                              context->ascend_soc_version() == kAscendVersion910;
+  return config_disable_ge_kernel || use_hccl_rank_table || use_ascend910;
+}
+
 bool IsMemoryPoolRecycle() {
   static bool optimize_mem = !common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
-  static bool disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  static bool disable_ge_kernel = IsDisableGeKernel();
   static bool enable_ref_mode = IsEnableRefMode();
   auto context_ptr = MsContext::GetInstance();
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);

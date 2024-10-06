@@ -74,7 +74,7 @@ bool NoAdditionalMemory() {
   const auto is_cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   const auto is_multi_graph_sink = context->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
   const auto is_task_sink = context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  const auto disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  const auto disable_ge_kernel = IsDisableGeKernel();
   return (is_cell_reuse || is_multi_graph_sink) && is_task_sink && disable_ge_kernel;
 }
 }  // namespace

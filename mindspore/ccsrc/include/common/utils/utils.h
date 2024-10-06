@@ -813,6 +813,7 @@ COMMON_EXPORT size_t GetSystemMemorySize(const std::string &key);
 COMMON_EXPORT size_t GetSystemFreeDiskSize(const std::string &path);
 
 COMMON_EXPORT bool IsEnableRefMode();
+COMMON_EXPORT bool IsDisableGeKernel();
 COMMON_EXPORT bool IsMemoryPoolRecycle();
 
 COMMON_EXPORT AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node);

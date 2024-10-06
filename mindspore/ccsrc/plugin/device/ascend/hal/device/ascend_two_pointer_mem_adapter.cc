@@ -131,7 +131,7 @@ uint8_t *AscendTwoPointerMemAdapter::MallocDynamicDevMem(size_t size, const std:
   if (AscendVmmAdapter::GetInstance().IsEnabled()) {
     MS_LOG(EXCEPTION) << "VMM is enabled, can not allocate dynamic memory.";
   }
-  if (!common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+  if (!IsDisableGeKernel()) {
     MS_LOG(EXCEPTION) << "GE Kernel mod, The dynamic memory allocation is disabled.";
   }
   size = GetRoundUpAlignSize(size);

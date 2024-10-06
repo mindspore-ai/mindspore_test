@@ -140,7 +140,7 @@ class GeGraphExecutor : public GraphExecutor {
   mindspore::HashMap<std::string, std::vector<std::pair<uint32_t, uint32_t>>> io_indexes_;
   std::map<std::string, int64_t> graph_sink_size_;
   int64_t pre_sink_size_{-1};
-  bool disable_ge_kernel_ = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  bool disable_ge_kernel_ = IsDisableGeKernel();
   GeMessageManager ge_message_manager_;
 };
 }  // namespace ascend

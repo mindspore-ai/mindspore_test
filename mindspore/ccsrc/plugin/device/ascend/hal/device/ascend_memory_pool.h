@@ -117,8 +117,7 @@ class BACKEND_EXPORT AscendMemoryPool {
   }
 
   static bool UseOldMemoryPool() {
-    return common::IsDisableRuntimeConfig(common::kRuntimeGeKernel) ||
-           common::IsEnableAllocConfig(common::kAllocMemoryPool);
+    return IsDisableGeKernel() || common::IsEnableAllocConfig(common::kAllocMemoryPool);
   }
 
   // Use enhanced memory pool when enable debug, enable log, enable prof, dry run and so on.
