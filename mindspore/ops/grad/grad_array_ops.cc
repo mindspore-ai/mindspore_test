@@ -2689,7 +2689,7 @@ REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
     auto scatter_indices = ib->Range(length);
     auto axis = ib->Value<int64_t>(0);
     auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
-    dupdates = ib->Emit("Scatter", {dupdates, axis, scatter_indices, dupdates_val, reduce});
+    dupdates = ib->Emit("TensorScatterElements", {dupdates, scatter_indices, dupdates_val, axis, reduce});
     // The operator test case pass on cpu or ascend backend. But it may fail once enabled on gpu backend for pynative
     // mode. Now it is not supported on gpu backend.
     dupdates = ib->Reshape(dupdates, ib->Shape(updates));
