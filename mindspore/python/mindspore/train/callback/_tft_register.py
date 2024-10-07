@@ -20,6 +20,7 @@ from mindspore.parallel._utils import _get_device_num
 from mindspore import _checkparam as Validator
 from mindspore.train.callback._callback import Callback
 from mindspore import context
+from mindspore.common.parameter import Parameter
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
@@ -55,10 +56,7 @@ def _save_checkpoint_on_failure(step, save_info, args, cb_ctx):
     append_dict["batch_num"] = batch_num
     append_dict["__exception_save__"] = True
 
-    if cb_params.optimizer is not None:
-        append_dict["global_step"] = cb_params.optimizer.global_step
-    else:
-        append_dict["global_step"] = cb_params.network.optimizer.global_step
+    append_dict["global_step"] = Parameter([cb_ctx.global_step])
     outputs = cb_params.net_outputs
     if isinstance(outputs, (tuple, list)) and len(outputs) >= 3:
         append_dict["loss_scale"] = outputs[2]
@@ -256,6 +254,7 @@ class TFTRegister(Callback):
         # let it raise errors if not install mindio_tft package
         from mindio_ttp import framework_ttp as tft
         self.tft = tft
+        self.global_step = 0
         Validator.check_non_negative_int(ctrl_port)
         self.has_init_replica = False
         self._controller_ip = ctrl_ip
@@ -329,6 +328,10 @@ class TFTRegister(Callback):
             self.has_init_replica = True
             self._set_tft_optimizer_replica(run_context)
         cb_params = run_context.original_args()
+        if cb_params.optimizer is not None:
+            self.global_step = int(cb_params.optimizer.global_step.data)
+        else:
+            self.global_step = int(cb_params.network.optimizer.global_step.data)
         logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
         self.tft.tft_end_updating_os(cb_params.cur_step_num)
         logger.info("END Set optimizer finish step status to TFT.")
