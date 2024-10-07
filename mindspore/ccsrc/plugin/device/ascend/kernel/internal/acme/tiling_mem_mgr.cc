@@ -144,6 +144,7 @@ void TilingMemPool::Free(void *addr, size_t size) {
   if (addr < mem_base_ptr_ || addr >= mem_base_ptr_ + total_size_) {
     TMP_LOG(INFO) << "Free directly for one off memory, addr: " << addr;
     FreeInner(addr);
+    (void)one_off_mem_ptrs_.erase(addr);
     return;
   }
 
@@ -174,9 +175,13 @@ void TilingMemPool::Free(void *addr, size_t size) {
   }
 }
 
-TilingMemPool::~TilingMemPool() {
+void TilingMemPool::FreeMemPtrs() {
   if (mem_base_ptr_ != nullptr) {
     FreeInner(mem_base_ptr_);
+  }
+
+  for (const auto &ptr : one_off_mem_ptrs_) {
+    FreeInner(ptr);
   }
 }
 
@@ -188,7 +193,10 @@ void *TilingMemPoolDevice::MallocInner(size_t size) {
   return device::ascend::AscendMemoryPool::GetInstance().AllocTensorMem(size);
 }
 
-void TilingMemPoolDevice::FreeInner(void *addr) { device::ascend::AscendMemoryPool::GetInstance().FreeTensorMem(addr); }
+void TilingMemPoolDevice::FreeInner(void *addr) {
+  TMP_LOG(INFO) << "free addr: " << addr;
+  device::ascend::AscendMemoryPool::GetInstance().FreeTensorMem(addr);
+}
 
 TilingMemPoolHost::TilingMemPoolHost(size_t block_size, size_t block_num) : TilingMemPool(block_size, block_num) {
   SetName("HOST");
@@ -196,7 +204,10 @@ TilingMemPoolHost::TilingMemPoolHost(size_t block_size, size_t block_num) : Tili
 
 void *TilingMemPoolHost::MallocInner(size_t size) { return malloc(size); }
 
-void TilingMemPoolHost::FreeInner(void *addr) { free(addr); }
+void TilingMemPoolHost::FreeInner(void *addr) {
+  TMP_LOG(INFO) << "free addr: " << addr;
+  free(addr);
+}
 
 TilingMemMgr::TilingMemMgr() {
   auto context_ptr = mindspore::MsContext::GetInstance();
