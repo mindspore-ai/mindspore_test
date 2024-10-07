@@ -78,7 +78,10 @@ void IncreFlashAttentionInfo::SetOptinalInputs() {
   size_t valid_input_index = 0;
   for (size_t index = 0; index < input_value_.size(); index++) {
     auto optinal_input_ptr = input_value_[index];
-    if (optinal_input_ptr == nullptr) {
+    if (optinal_input_ptr != nullptr && (optinal_input_ptr->isa<None>() || optinal_input_ptr->isa<StringImm>() ||
+                                         optinal_input_ptr->isa<Int64Imm>() || optinal_input_ptr->isa<FP32Imm>())) {
+      optinal_inputs_[index] = False;
+    } else {
       if (index == ops::kIncreFlashAttentionInputAttnMaskIndex && valid_input_index < inputs_shape_.size()) {
         atten_mask_rank_ = inputs_shape_[valid_input_index].size();
       }
@@ -86,11 +89,6 @@ void IncreFlashAttentionInfo::SetOptinalInputs() {
         pse_shift_rank_ = inputs_shape_[valid_input_index].size();
       }
       valid_input_index++;
-    } else {
-      if (optinal_input_ptr->isa<None>() || optinal_input_ptr->isa<StringImm>() || optinal_input_ptr->isa<Int64Imm>() ||
-          optinal_input_ptr->isa<FP32Imm>()) {
-        optinal_inputs_[index] = False;
-      }
     }
   }
   if (atten_mask_rank_ > kRank4 || pse_shift_rank_ > kRank4) {
