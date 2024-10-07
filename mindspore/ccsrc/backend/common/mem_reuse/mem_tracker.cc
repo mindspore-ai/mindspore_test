@@ -565,7 +565,7 @@ void MemoryTrackerEnabled::Dump() {
 
 void MemoryTrackerEnabled::UpdateProfilingPos() {
   std::lock_guard<std::mutex> lock(mutex_);
-  last_profiling_pos_ = mem_info_list_.size();
+  last_profiling_pos_ = mem_block_list_.size();
 }
 
 void MemoryTrackerEnabled::DumpProfilingMemInfo(const std::string &path, const std::string &file_name) {
