@@ -1023,6 +1023,10 @@ ReplaceGraphPtr Conv2DInfo::replace_graph(const CNodePtr &cnode) {
   }
 
   ComputeReplaceGraph(cnode);
+  MS_LOG(WARNING) << name_ << "Your network uses Conv2D and its input has been split into multi device, this operation "
+                  << "will introduce NeighborExchange operation, which may cause the execution order of "
+                  << "communication operators among all device to be inconsistent. If you encounter the HCCL timeout "
+                  << "problem, try not to split the input of the Conv2D.";
   return replace_graph_;
 }
 

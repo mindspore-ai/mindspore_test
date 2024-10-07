@@ -222,6 +222,10 @@ void Conv3DInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(transpose_1, 1)};
   replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
     std::make_pair(input_nodes, conv3d));
+  MS_LOG(WARNING) << name_ << ": Your network uses Conv3D and its input has been split into multi device, "
+                  << "this operation will introduce NeighborExchange operation, which may cause the execution order of "
+                  << "communication operators among all device to be inconsistent. If you encounter the HCCL timeout "
+                  << "problem, try not to split the input of the Conv3D.";
 }
 
 REGISTER(Conv3DInfo);
