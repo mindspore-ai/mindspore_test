@@ -27,7 +27,7 @@ namespace mindspore {
 namespace kernel {
 constexpr size_t kTilingMemPoolBlockSize = 32;
 constexpr size_t kTilingMemPoolDeviceBlockNum = 2 * 1024 * 1024;
-constexpr size_t kTilingMemPoolHostBlockNum = 512 * 1024 * 1024;
+constexpr size_t kTilingMemPoolHostBlockNum = 32 * 1024 * 1024;
 
 enum MemoryType : int {
   kMemoryUndefined = 0,
@@ -43,7 +43,7 @@ struct Slot {
 class TilingMemPool {
  public:
   TilingMemPool(size_t block_size, size_t block_num);
-  virtual ~TilingMemPool();
+  virtual ~TilingMemPool() = default;
   virtual int Init();
 
   size_t GetAlignedSize(size_t size);
@@ -59,11 +59,13 @@ class TilingMemPool {
  protected:
   virtual void *MallocInner(size_t size) { return nullptr; }
   virtual void FreeInner(void *addr) {}
+  void FreeMemPtrs();
 
  private:
   inline void *MallocOneOffMem(size_t size) {
     auto addr = MallocInner(size);
     MS_EXCEPTION_IF_NULL(addr);
+    one_off_mem_ptrs_.insert(addr);
     return addr;
   }
 
@@ -75,6 +77,7 @@ class TilingMemPool {
   size_t block_num_{0};
   size_t total_size_{0};
   int8_t *mem_base_ptr_{nullptr};
+  std::set<void *> one_off_mem_ptrs_;
 
   std::vector<Slot> mem_slots_;
   size_t head_{0};
@@ -85,7 +88,7 @@ class TilingMemPool {
 class TilingMemPoolHost : public TilingMemPool {
  public:
   TilingMemPoolHost(size_t block_size, size_t block_num);
-  ~TilingMemPoolHost() override = default;
+  ~TilingMemPoolHost() override { FreeMemPtrs(); }
 
  protected:
   void *MallocInner(size_t size) override;
@@ -95,7 +98,7 @@ class TilingMemPoolHost : public TilingMemPool {
 class TilingMemPoolDevice : public TilingMemPool {
  public:
   TilingMemPoolDevice(size_t block_size, size_t block_num);
-  ~TilingMemPoolDevice() override = default;
+  ~TilingMemPoolDevice() override { FreeMemPtrs(); }
 
  protected:
   void *MallocInner(size_t size) override;

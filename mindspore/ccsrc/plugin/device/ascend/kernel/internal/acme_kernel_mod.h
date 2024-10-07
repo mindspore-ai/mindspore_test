@@ -40,7 +40,7 @@ class AcmeKernelMod : public KernelMod {
     MS_EXCEPTION_IF_NULL(ascend_profiler_);
   }
 
-  virtual ~AcmeKernelMod() = default;
+  virtual ~AcmeKernelMod();
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
@@ -84,6 +84,7 @@ class AcmeKernelMod : public KernelMod {
   MemoryType device_tiling_mem_type_{kMemoryUndefined};
   uint64_t last_key_{0};
   TilingCacheItemPtr last_item_{nullptr};
+  TilingCacheItemPtr not_cached_item_{nullptr};
   std::vector<size_t> recreate_cared_indices_;
   std::vector<size_t> nz_output_indices_;
   std::string fullname_;

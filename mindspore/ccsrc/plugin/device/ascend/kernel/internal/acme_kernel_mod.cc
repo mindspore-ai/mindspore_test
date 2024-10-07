@@ -17,12 +17,21 @@
 #include "plugin/device/ascend/kernel/internal/acme_kernel_mod.h"
 
 #include <functional>
+#include <utility>
 #include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "transform/acl_ir/op_api_cache.h"
 
 namespace mindspore {
 namespace kernel {
+AcmeKernelMod::~AcmeKernelMod() {
+  if (not_cached_item_ != nullptr) {
+    TilingMemMgr::GetInstance().pool_device_.Free(not_cached_item_->tiling_info_->tiling_addr_,
+                                                  not_cached_item_->size_);
+    TilingMemMgr::GetInstance().pool_host_.Free(not_cached_item_->host_addr_, not_cached_item_->size_);
+  }
+}
+
 bool AcmeKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   acme_to_ms_input_indices_mapper_.clear();
   acme_to_ms_output_indices_mapper_.clear();
@@ -163,10 +172,17 @@ uint64_t AcmeKernelMod::GenerateTilingKey(const std::vector<KernelTensor *> &inp
 void AcmeKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
   auto key = GenerateTilingKey(inputs);
+  std::lock_guard<SimpleSpinLock> lock(lock_);
   auto tiling_cache_item = AcmeTilingCache::GetInstance().Bind(key);
   AcmeTilingCache::GetInstance().Unbind(last_item_);
+  if (not_cached_item_ != nullptr) {
+    TilingMemMgr::GetInstance().pool_device_.Free(not_cached_item_->tiling_info_->tiling_addr_,
+                                                  not_cached_item_->size_);
+    TilingMemMgr::GetInstance().pool_host_.Free(not_cached_item_->host_addr_, not_cached_item_->size_);
+    not_cached_item_ = nullptr;
+  }
+
   if (tiling_cache_item == nullptr) {
-    std::lock_guard<SimpleSpinLock> lock(lock_);
     auto tiling_size = acme_op_->GetTilingSize();
     auto host_addr = TilingMemMgr::GetInstance().pool_host_.Malloc(tiling_size);
     acme::HostRunInfoPtr host_run_info_ptr = nullptr;
@@ -195,8 +211,11 @@ void AcmeKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &input
       TilingMemMgr::GetInstance().pool_device_.Rearrange();
       TilingMemMgr::GetInstance().pool_host_.Rearrange();
 
-      // try insert again, ignore the result of the insertion
-      (void)AcmeTilingCache::GetInstance().Insert(key, tiling_info_ptr);
+      // try insert again, store the ptr to free memory if failed
+      ret = AcmeTilingCache::GetInstance().Insert(key, tiling_info_ptr);
+      if (!ret) {
+        not_cached_item_ = tiling_info_ptr;
+      }
     }
     last_item_ = tiling_info_ptr;
   } else {
