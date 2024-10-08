@@ -49,7 +49,7 @@ PrimitiveCPtr OnnxUnSqueezeParser::Parse(const onnx::GraphProto &onnx_graph, con
     if (slope_data->raw_data().size() > 0) {
       slope_int64_data = reinterpret_cast<const int64_t *>(slope_data->raw_data().data());
       MS_CHECK_TRUE_RET(slope_int64_data != nullptr, nullptr);
-      slope_size = slope_data->raw_data().size() / sizeof(int64_t);
+      slope_size = static_cast<int64_t>(slope_data->raw_data().size() / sizeof(int64_t));
     } else if (slope_data->int64_data().size() > 0) {
       slope_int64_data = slope_data->int64_data().data();
       MS_CHECK_TRUE_RET(slope_int64_data != nullptr, nullptr);
@@ -59,7 +59,7 @@ PrimitiveCPtr OnnxUnSqueezeParser::Parse(const onnx::GraphProto &onnx_graph, con
       return nullptr;
     }
     axis.resize(slope_size);
-    if (INT_MUL_OVERFLOW_THRESHOLD(slope_size, sizeof(int64_t), SIZE_MAX)) {
+    if (INT_MUL_OVERFLOW_THRESHOLD(static_cast<size_t>(slope_size), sizeof(int64_t), SIZE_MAX)) {
       MS_LOG(ERROR) << "data_size overflow!";
       return nullptr;
     }
