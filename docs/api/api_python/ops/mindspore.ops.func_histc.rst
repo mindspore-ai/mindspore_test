@@ -17,7 +17,7 @@ mindspore.ops.histc
         - **max** (int, float, 可选) - 范围上限（含）的可选浮点数。默认值： ``0`` 。
 
     返回：
-        Tensor，类型为int32的1-D Tensor。
+        1-D Tensor。如果输入是int32类型，输出返回int32类型，否则返回float32类型。
 
     异常：
         - **TypeError** - 如果 `input` 不是Tensor。

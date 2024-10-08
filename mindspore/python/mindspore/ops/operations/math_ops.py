@@ -1188,7 +1188,7 @@ class Histogram(Primitive):
         - **x** (Tensor) - the input tensor, type support list: [float16, float32, int32].
 
     Outputs:
-        Tensor, 1-D Tensor with type int32.
+        1-D Tensor. If the input is int32, the output returns int32, otherwise it returns float32.
 
     Raises:
         TypeError: If `x` is not a Tensor.
@@ -1206,7 +1206,7 @@ class Histogram(Primitive):
         >>> op = ops.Histogram(bins=4, min=0.0, max=3.0)
         >>> y = op(x)
         >>> print(y)
-        [0 2 1 0]
+        [0. 2. 1. 0.]
     """
 
     @prim_attr_register
