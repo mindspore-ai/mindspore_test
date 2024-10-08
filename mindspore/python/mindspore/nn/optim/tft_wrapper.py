@@ -20,10 +20,8 @@ from mindspore.common.tensor import Tensor
 from mindspore.nn.optim.optimizer import Optimizer
 from mindspore.ops.operations.manually_defined._inner import TensorReport
 from mindspore import ops, context
-from mindspore.nn.cell import Cell
 
-
-class OptTFTWrapper(Cell):
+class OptTFTWrapper(Optimizer):
     r"""
     Implements TFT optimizer wrapper, this wrapper is used to report status to MindIO TFT before optimizer updating.
 
@@ -63,7 +61,7 @@ class OptTFTWrapper(Cell):
     """
 
     def __init__(self, opt, **kwargs):
-        super(OptTFTWrapper, self).__init__(auto_prefix=False)  # pylint: disable=W0212
+        super(OptTFTWrapper, self).__init__(opt.learning_rate, opt._parameters) # pylint: disable=W0212
         if not isinstance(opt, Optimizer):
             raise TypeError(f"For 'OptTFTWrapper', the argument 'opt' must be Optimizer type, " f"but got {type(opt)}.")
         tft_env = os.getenv("MS_ENABLE_TFT", "")
