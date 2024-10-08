@@ -178,6 +178,7 @@ def test_entry_hccl_allreduce_fusion_by_attr():
     """
     os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = str(1)
     os.environ['ASCEND_SLOG_PRINT_TO_STDOUT'] = str(1)
+    os.environ['HCCL_EXEC_TIMEOUT'] = str(300)
     os.environ['GLOG_v'] = str(1)
     return_code = os.system("rm -rf ～/ascend/log && rm -rf rank* && msrun --worker_num=8 --local_worker_num=8 "
                             "--join=True "
