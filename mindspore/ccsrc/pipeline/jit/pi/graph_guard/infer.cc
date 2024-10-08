@@ -480,37 +480,6 @@ void GeneratePrimitiveArgs(PrimitivePtr prim, std::vector<PyObject *> *list, PyO
   }
 }
 
-static py::object ConvertCppTensor(const py::object &any) {
-  PyObject *op = any.ptr();
-  PyTypeObject *cpp_tensor_type = GetPybindType<mindspore::tensor::Tensor>();
-
-  if (Py_IS_TYPE(op, cpp_tensor_type)) {
-    py::object tp = py::reinterpret_borrow<py::object>(GetMsTensorType());
-    return tp(any);
-  }
-
-  if (PyTuple_Check(op) || PyList_Check(op)) {
-    for (Py_ssize_t i = 0; i < Py_SIZE(op); ++i) {
-      PyObject **item = PyTuple_Check(op) ? &PyTuple_GET_ITEM(op, i) : &PyList_GET_ITEM(op, i);
-      PyObject *new_item = ConvertCppTensor(py::cast<py::object>(*item)).inc_ref().ptr();
-      Py_SETREF(*item, new_item);
-    }
-    return any;
-  }
-
-  if (PyDict_Check(op)) {
-    Py_ssize_t pos = 0;
-    PyObject *key;
-    PyObject *value;
-    while (PyDict_Next(op, &pos, &key, &value)) {
-      py::object new_value = ConvertCppTensor(py::cast<py::object>(value));
-      PyDict_SetItem(op, key, new_value.ptr());
-    }
-    return any;
-  }
-  return any;
-}
-
 // return new reference
 PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyObject *> &args, bool *is_abstract) {
   if (!SupportInfer(primitive)) {
@@ -564,7 +533,7 @@ PyObject *InferEngine::InferPrimitive(PyObject *primitive, const std::vector<PyO
         pyObj = MakeObjectFromAbstract(abs->BuildShape(), abs->BuildType(), is_abstract);
       }
       if (pyObj.ptr() != nullptr) {
-        pyObj = ConvertCppTensor(pyObj);
+        pyObj = ConvertCppTensorToMsTensor(pyObj);
       }
     }
     return pyObj.inc_ref().ptr();
@@ -1055,7 +1024,7 @@ py::object EvalMSAPIValue(const py::object &ms_api, const py::object &args, cons
     MS_LOG(ERROR) << "can't convert AbstractBasePtr to PyObject [" << eval_result->ToString() << "]";
     return py::object();
   }
-  return ConvertCppTensor(res);
+  return ConvertCppTensorToMsTensor(res);
 }
 
 }  // namespace pijit

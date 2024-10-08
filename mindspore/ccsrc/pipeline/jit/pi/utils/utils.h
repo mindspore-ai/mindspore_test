@@ -161,8 +161,10 @@ bool CheckDynamicLength(PyObject *obj);
 bool CheckScalar(PyObject *obj);
 bool CheckContainer(PyObject *obj);
 bool IsTensorPyObject(PyObject *obj);
+bool IsCTensorPyObject(PyObject *obj);
 bool IsMsClass(PyObject *obj);
 bool IsNumpyObject(PyObject *obj);
+bool IsZipPyObject(PyTypeObject *obj);
 bool IsNoGradEnterFunc(const py::object &handle);
 bool IsNoGradExitFunc(const py::object &handle);
 bool IsPartialFunc(const py::object &handle);
@@ -171,6 +173,7 @@ const char *GetFuncName(const py::object &handle);
 bool CheckAdapterTensor(const py::object &tensor);
 py::object ConvertToMsTensor(const py::object &tensor);
 py::object ConvertToAdapterTensor(const py::object &tensor);
+py::object ConvertCppTensorToMsTensor(const py::object &tensor);
 
 std::string GetTopModule(const py::object &o);
 py::object GetPyCodeObject(const py::object &any, bool exact_func = false);
