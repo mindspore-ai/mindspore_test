@@ -544,3 +544,20 @@ def _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple):
                     continue
                 to_slice_tensor_shape += (item // to_tensor_strategy[i],)
             param_rank_map.get(param_rank).append(('Reshape', list(to_slice_tensor_shape)))
+
+
+def _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_sharded_device_index, rank):
+    """Calculate rank list for optimizer parallel when first dim of parameter is sharded by other parallel method"""
+    first_dim_sharded_size = device_arrangement[-1 - first_dim_sharded_device_index]
+    param_total_list = []
+    sharded_stride = 1
+    for n in device_arrangement[::-1][:first_dim_sharded_device_index]:
+        sharded_stride *= n
+    repeate_num = 1
+    for n in device_arrangement[::-1][first_dim_sharded_device_index + 1:]:
+        repeate_num *= n
+    offset = rank % (first_dim_sharded_size * sharded_stride) // sharded_stride * sharded_stride
+    for i in range(0, repeate_num):
+        start = first_dim_sharded_size * sharded_stride * i + offset
+        param_total_list.extend(range(start, start + sharded_stride))
+    return param_total_list
