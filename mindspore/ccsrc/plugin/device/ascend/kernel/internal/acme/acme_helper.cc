@@ -74,8 +74,16 @@ acme::TensorFormat TransAcmeFormat(Format format) {
     MS_LOG(EXCEPTION) << "Format " << format << " is not supported in Acme";
   }
 
-  return iter->second;
+  switch (format) {
+    case NCHW:
+    case NHWC:
+    case NDHWC:
+    case NCDHW:
+      // some op not support NCHW, NHWC, ... format, current return ND format
+      return acme::TensorFormat::kFormatND;
+    default:
+      return iter->second;
+  }
 }
-
 }  // namespace kernel
 }  // namespace mindspore
