@@ -2313,6 +2313,15 @@ void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::stri
   GRAPH_JIT_LOG_F("%s", s.str().c_str());
 }
 
+static py::object FilterCTensorInZip(AObject *vobj, py::object obj) {
+  if (IsZipPyObject(reinterpret_cast<PyTypeObject *>(static_cast<AbstractType *>(vobj)->GetPyObject().ptr())) &&
+      IsCTensorPyObject(obj.ptr())) {
+    return ConvertCppTensorToMsTensor(obj);
+  } else {
+    return obj;
+  }
+}
+
 ValueNode *GraphBuilder::HandleCallClass(CallNode *call_node) {
   AObject *vobj = call_node->input(0)->GetVobj();
   if (!vobj || vobj->GetType() != AObject::kTypeType) {
@@ -2335,9 +2344,9 @@ ValueNode *GraphBuilder::HandleCallClass(CallNode *call_node) {
     MS_LOG(INFO) << "Build instance, support_create_instance=" << support_create_instance << ", constant=" << constant;
     constant |= std::none_of(params.begin(), params.end(), [](ValueNode *i) { return !i->IsConstantValue(); });
     std::vector<py::object> args;
-    std::transform(params.begin() + 1, params.end(), std::back_inserter(args), [](ValueNode *n) {
+    std::transform(params.begin() + 1, params.end(), std::back_inserter(args), [vobj](ValueNode *n) {
       AObject *i = n->GetVobj();
-      return i ? i->GetPyObject() : py::object();
+      return i ? FilterCTensorInZip(vobj, i->GetPyObject()) : py::object();
     });
     py::object res = t->BuildInstance(args, call_node->GetOpcode());
     instance = res.ptr() ? AObject::Convert(res) : nullptr;
@@ -3617,7 +3626,8 @@ static bool CheckForIterZip(ValueNode *iter_node) {
   std::vector<ValueNode *> iterable_nodes = {zip_node->getInputs().begin() + 1, zip_node->getInputs().end()};
   auto iter = std::find_if(iterable_nodes.begin(), iterable_nodes.end(), [&graph](ValueNode *iterable_node) {
     PyObject *iterable = iterable_node->GetVobj()->GetPyObject().ptr();
-    return iterable == nullptr || !PySequence_Check(iterable) || !GuardLoopSequence(graph, iterable_node);
+    return iterable == nullptr || ((!PySequence_Check(iterable) || !GuardLoopSequence(graph, iterable_node)) &&
+                                   (!IsTensorPyObject(iterable) || !graph->GuardValueNode(iterable_node, GDeduce)));
   });
   if (iter != iterable_nodes.end()) {
     return false;

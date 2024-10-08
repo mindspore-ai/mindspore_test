@@ -317,6 +317,18 @@ bool IsTensorPyObject(PyObject *obj) {
          py::isinstance<mindspore::tensor::COOTensor>(obj) || py::isinstance<mindspore::tensor::TensorData>(obj);
 }
 
+bool IsCTensorPyObject(PyObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  py::handle mapped_type = py::detail::get_type_handle(typeid(mindspore::tensor::Tensor), false);
+  PyTypeObject *tar = reinterpret_cast<PyTypeObject *>(mapped_type.ptr());
+  if (tar == nullptr) {
+    return false;
+  }
+  return Py_TYPE(obj) == tar;
+}
+
 bool IsMsClass(PyObject *obj) {
   if (obj == nullptr) {
     return false;
@@ -332,6 +344,13 @@ bool IsNumpyObject(PyObject *op) {
   PyTypeObject *tp = Py_TYPE(op);
   constexpr const char numpy[] = "numpy";
   return tp->tp_name ? strncmp(tp->tp_name, numpy, sizeof(numpy) - 1) == 0 : false;
+}
+
+bool IsZipPyObject(PyTypeObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  return obj == &PyZip_Type;
 }
 
 bool IsNoGradEnterFunc(const py::object &handle) {
@@ -463,6 +482,39 @@ py::object ConvertToMsTensor(const py::object &tensor) {
   py::object common_tensor_type = Utils::GetModuleAttr("mindspore", "Tensor", false, true);
   PyTypeObject *tp = reinterpret_cast<PyTypeObject *>(common_tensor_type.ptr());
   return Py_TYPE(tensor.ptr()) == tp ? tensor : common_tensor_type(tensor);
+}
+
+PyObject *GetMsTensorType();
+py::object ConvertCppTensorToMsTensor(const py::object &any) {
+  PyObject *op = any.ptr();
+  py::handle mapped_type = py::detail::get_type_handle(typeid(mindspore::tensor::Tensor), false);
+  PyTypeObject *cpp_tensor_type = reinterpret_cast<PyTypeObject *>(mapped_type.ptr());
+
+  if (Py_IS_TYPE(op, cpp_tensor_type)) {
+    py::object tp = py::reinterpret_borrow<py::object>(GetMsTensorType());
+    return tp(any);
+  }
+
+  if (PyTuple_Check(op) || PyList_Check(op)) {
+    for (Py_ssize_t i = 0; i < Py_SIZE(op); ++i) {
+      PyObject **item = PyTuple_Check(op) ? &PyTuple_GET_ITEM(op, i) : &PyList_GET_ITEM(op, i);
+      PyObject *new_item = ConvertCppTensorToMsTensor(py::cast<py::object>(*item)).inc_ref().ptr();
+      Py_SETREF(*item, new_item);
+    }
+    return any;
+  }
+
+  if (PyDict_Check(op)) {
+    Py_ssize_t pos = 0;
+    PyObject *key;
+    PyObject *value;
+    while (PyDict_Next(op, &pos, &key, &value)) {
+      py::object new_value = ConvertCppTensorToMsTensor(py::cast<py::object>(value));
+      PyDict_SetItem(op, key, new_value.ptr());
+    }
+    return any;
+  }
+  return any;
 }
 
 size_t DeviceAvailableMemSize() {
