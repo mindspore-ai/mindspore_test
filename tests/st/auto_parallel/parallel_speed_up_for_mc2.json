@@ -4,5 +4,6 @@
   "enable_task_opt": false,
   "interleaved_matmul_comm": false,
   "interleaved_layernorm_comm": false,
-  "compute_communicate_fusion_level": 3
+  "compute_communicate_fusion_level": 3,
+  "enable_allreduce_slice_to_reducescatter": true
 }

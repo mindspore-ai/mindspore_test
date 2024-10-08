@@ -146,6 +146,10 @@ GVAR_DEF(PrimitivePtr, kPrimSelfAdjointEig, std::make_shared<Primitive>("SelfAdj
 GVAR_DEF(PrimitivePtr, kPrimOrmqr, std::make_shared<Primitive>("Ormqr"));
 GVAR_DEF(PrimitivePtr, kPrimEps, std::make_shared<Primitive>(kEpsOpName));
 GVAR_DEF(PrimitivePtr, kPrimQuantBatchMatmulAllReduce, std::make_shared<Primitive>(kQuantBatchMatmulAllReduceOpName));
+GVAR_DEF(PrimitivePtr, kPrimAlltoAllAllGatherBatchMatMul,
+         std::make_shared<Primitive>(kAlltoAllAllGatherBatchMatMulOpName));
+GVAR_DEF(PrimitivePtr, kPrimBatchMatMulReduceScatterAlltoAll,
+         std::make_shared<Primitive>(kBatchMatMulReduceScatterAlltoAllOpName));
 }  // namespace prim
 }  // namespace mindspore
 

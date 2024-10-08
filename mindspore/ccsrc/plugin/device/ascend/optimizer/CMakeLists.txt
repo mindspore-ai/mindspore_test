@@ -37,6 +37,8 @@ file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./ir_fusion/flash_attention_fusion.cc"
         "./ir_fusion/mc2_fusion.cc"
         "./ir_fusion/insert_depend_for_all_gather.cc"
+        "./ir_fusion/batchmatmul_reducescatter_alltoall_fusion.cc"
+        "./ir_fusion/alltoall_allgather_batch_matmul_fusion.cc"
         "./ir_fusion_infer/inference_weight_preprocess_utils.cc"
         "./ir_fusion_infer/inference_matmul_split_fusion.cc"
         "./ir_fusion_infer/inference_swiglu_fusion.cc"

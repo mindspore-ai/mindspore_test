@@ -83,6 +83,8 @@
 #include "utils/phase.h"
 #include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/batchmatmul_reducescatter_alltoall_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/alltoall_allgather_batch_matmul_fusion.h"
 
 namespace mindspore {
 namespace opt {
@@ -102,6 +104,8 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddDependForAdamW>());
   (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistFission>());
   (*unify_mindir_pm)->AddFusionPass(std::make_shared<CdistGradFission>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::BatchMatMulReduceScatterAllToAllFusion>());
+  (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllToAllAllGatherBatchMatMulFusion>());
 
   // Since the SparseSoftmaxCrossEntropyWithLogits operator can only use AICPU and has poor execution performance,
   // it does not take effect for the time being.
