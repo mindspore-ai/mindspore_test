@@ -2117,6 +2117,24 @@ static void ExtractStrategyAndInit(const CNodePtr &cnode, const PrimitivePtr &pr
   }
 }
 
+void ClearCnodesForOperator(const std::vector<AnfNodePtr> &all_nodes) {
+  for (auto &node : all_nodes) {
+    auto cnode = node->cast<CNodePtr>();
+    if (!CheckExtractInformation(cnode) || IsPrimitiveCNode(node, prim::kPrimSend)) {
+      continue;
+    }
+
+    auto find_iter = cnode->attrs().find(OP_INFO_CREATED);
+    if (find_iter != cnode->attrs().end()) {
+      auto op = GetDistributeOperator(cnode);
+      if (op != nullptr) {
+        op->clear_cnodes();
+      }
+      continue;
+    }
+  }
+}
+
 void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes) {
   SetStridedSliceSplitStrategy(all_nodes);
   for (auto &node : all_nodes) {
@@ -2130,7 +2148,6 @@ void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes) {
       if (find_iter != cnode->attrs().end()) {
         auto op = GetDistributeOperator(cnode);
         if (op != nullptr) {
-          op->clear_cnodes();
           op->set_cnode(cnode);
         }
         continue;
@@ -4099,7 +4116,10 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
       }
     }
   }
-
+  // Different pass may have different cnodes handle, need clear the old first and then reset cnodes
+  if (CheckShardingPropagation()) {
+    ClearCnodesForOperator(all_nodes);
+  }
   // Insert TupleToTensor for FA if actual_seq_len input is tuple type.
   PreProcessActualSeqLenInputForFlashAttentionScore(root, all_nodes);
 
