@@ -530,12 +530,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
       continue;
     }
     // create new input
-    AnfNodePtr new_node;
-    if (input->isa<Parameter>()) {
-      new_node = session_->CreateNewParameter(input, new_kernel_graph.get());
-    } else {
-      MS_LOG(EXCEPTION) << "input node is not parameter or cnode, node: " << input->DebugString();
-    }
+    AnfNodePtr new_node = session_->CreateNewParameter(input, new_kernel_graph.get());
     MS_EXCEPTION_IF_NULL(new_node);
 
     // add new input to maps

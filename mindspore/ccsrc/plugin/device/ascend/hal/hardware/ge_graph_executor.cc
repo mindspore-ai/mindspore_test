@@ -786,11 +786,15 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
     session::AnfWithOutIndex origin_node = std::make_pair(graph_inputs[in_out_index.first], 0);
     session::AnfWithOutIndex final_node = graph_outputs[in_out_index.second];
     if (origin_node.first == final_node.first) {
-      kg_io_indexes.emplace_back(
-        std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
-      MS_LOG(INFO) << "The origin node is same as final node, node: " << origin_node.first->fullname_with_scope();
+      if (origin_node.first->isa<Parameter>() &&
+          common::AnfAlgo::IsParameterWeight(origin_node.first->cast<ParameterPtr>())) {
+        kg_io_indexes.emplace_back(
+          std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
+        MS_LOG(INFO) << "The origin node is same as final node, node: " << origin_node.first->fullname_with_scope();
+      }
       continue;
     }
+
     if (ref_out_in_map.count(final_node) != 0) {
       MS_LOG(INFO) << "The node is already in ref_out_in_map, node: " << final_node.first->fullname_with_scope()
                    << ", index: " << final_node.second;
