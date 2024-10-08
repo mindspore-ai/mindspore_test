@@ -18,7 +18,7 @@ from __future__ import absolute_import
 import os
 import stat
 import time
-from multiprocessing import active_children
+import threading
 
 import mindspore.context as context
 from mindspore import log as logger
@@ -42,14 +42,6 @@ from mindspore._c_expression import collect_host_info, get_clock_syscnt
 _cur_dir = os.getcwd()
 SAVE_DIR = _cur_dir
 _info_list = ["epoch_num", "step_num"]
-
-
-def _wait_async_save_ckpt(async_save=True):
-    """Waiting for asynchronous saving of ckpt to complete."""
-    if async_save:
-        for process in active_children():
-            if process.name == "asyn_save_ckpt":
-                process.join()
 
 
 def _get_dp_tp_from_redundancy(redundancy_tuple):
@@ -591,6 +583,10 @@ class ModelCheckpoint(Callback):
                 os.remove(graph_file_name)
             _save_graph(cb_params.train_network, graph_file_name)
             self._graph_saved = True
+        thread_list = threading.enumerate()
+        for thread in thread_list:
+            if thread.getName() == "asyn_save_ckpt":
+                thread.join()
         self._save_ckpt(cb_params)
 
     def end(self, run_context):
@@ -606,7 +602,10 @@ class ModelCheckpoint(Callback):
 
         self._save_ckpt(cb_params, _to_save_last_ckpt)
 
-        _wait_async_save_ckpt(self._config.async_save)
+        thread_list = threading.enumerate()
+        for thread in thread_list:
+            if thread.getName() == "asyn_save_ckpt":
+                thread.join()
 
         destroy_allgather_cell()
 
@@ -644,9 +643,6 @@ class ModelCheckpoint(Callback):
         step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
 
         if save_ckpt:
-
-            _wait_async_save_ckpt(self._config.async_save)
-
             if self._prefix_func:
                 cur_ckpoint_file = self._prefix + f".{self._config.format}"
             else:
