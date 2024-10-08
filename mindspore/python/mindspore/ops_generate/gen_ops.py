@@ -102,12 +102,12 @@ def generate_create_instance_helper_file(work_path, op_protos):
     generator.generate(work_path, op_protos)
 
 
-def generate_aclnn_reg_file(work_path, yaml_str):
+def generate_aclnn_reg_file(work_path, op_protos):
     """
     Generate nnacl kernelmod register
     """
     generator = AclnnKernelRegisterAutoCcGenerator()
-    generator.generate(work_path, yaml_str)
+    generator.generate(work_path, op_protos)
 
 
 def generate_arg_handler_files(work_path):
@@ -165,10 +165,9 @@ def main():
     # generate pyboost code
     gen_pyboost_code(work_path, op_protos, doc_yaml_dict, func_protos)
     # generate aclnn kernelmod register
-    generate_aclnn_reg_file(work_path, ops_yaml_dict)
+    generate_aclnn_reg_file(work_path, op_protos)
     # generate tensor_py func code
     gen_tensor_func_code(work_path, func_protos)
-    generate_aclnn_reg_file(work_path, op_protos)
 
 
 def load_ops_yaml_to_op_protos(ops_yaml_data):
