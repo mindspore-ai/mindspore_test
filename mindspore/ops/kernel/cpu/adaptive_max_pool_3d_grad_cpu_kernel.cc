@@ -173,10 +173,12 @@ bool AdaptiveMaxPool3DGradCpuKernelMod::LaunchKernelHalf(const std::vector<Kerne
   auto output = reinterpret_cast<Eigen::half *>(outputs[0]->device_ptr());
   const int64_t output_num_data = std::accumulate(output_shape_.begin(), output_shape_.end(), static_cast<size_t>(1),
                                                   [=](size_t a, size_t b) { return a * b; });
-  const float data_zero = static_cast<float>(0);
+
   float *output_tmp = static_cast<float *>(malloc(sizeof(float) * output_num_data));
-  for (int64_t i = 0; i < output_num_data; ++i) {
-    output_tmp[i] = data_zero;
+  MS_EXCEPTION_IF_NULL(output_tmp);
+  auto ret = memset_s(output_tmp, sizeof(float) * output_num_data, 0, sizeof(float) * output_num_data);
+  if (ret != EOK) {
+    MS_LOG(EXCEPTION) << "For 'AdaptiveMaxPool3DGrad', memset failed, ret=" << ret;
   }
   const int64_t output_stride = output_shape_.cend()[-1] * output_shape_.cend()[-2] * output_shape_.cend()[-3];
   const int64_t argmax_stride =

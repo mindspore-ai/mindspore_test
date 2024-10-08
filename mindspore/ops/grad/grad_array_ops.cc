@@ -1960,7 +1960,7 @@ REG_BPROP_BUILDER("Tile").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   NodePtr dx;
   auto need_reduce = ib->NeedReduce(r_shape, axis, false);
   if (need_reduce.first) {
-    dx = ib->ReduceSum(dout_reshaped, axis);
+    dx = ib->SumExt(dout_reshaped, axis, ib->Value(false));
   } else {
     dx = ib->Reshape(dout_reshaped, ib->TensorToTuple(need_reduce.second));
   }
