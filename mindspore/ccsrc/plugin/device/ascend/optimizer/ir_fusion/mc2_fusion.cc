@@ -29,7 +29,6 @@
 
 namespace mindspore::opt {
 namespace {
-enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
 
 bool IsForwardNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -187,6 +186,14 @@ const VectorRef MatmulReduceScatterFusion::DefineFusionPattern() const {
 CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                       const EquivPtr &equiv) const {
   MS_LOG(DEBUG) << "Create MatmulReduceScatter CNode";
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  const auto &soc_version = context_ptr->ascend_soc_version();
+  if (soc_version == "ascend910_93") {
+    // The current feature is not supported on this machine.
+    return nullptr;
+  }
+
   auto reduce_scatter_cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(reduce_scatter_cnode != nullptr, {});
 
@@ -271,8 +278,9 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   MS_LOG(DEBUG) << "Create AllGatherMatmul CNode";
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->ascend_soc_version() == "ascend310p") {
-    // MC2 on 310p is demo feature, AllGatherMatmul is not support, other is ok.
+  const auto &soc_version = context_ptr->ascend_soc_version();
+  if (soc_version == "ascend310p" || soc_version == "ascend910_93") {
+    // The current feature is not supported on this machine.
     return nullptr;
   }
   auto matmul_cnode = node->cast<CNodePtr>();

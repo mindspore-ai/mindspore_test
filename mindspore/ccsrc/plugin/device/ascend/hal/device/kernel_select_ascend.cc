@@ -366,12 +366,21 @@ bool ReadAclnnEnableEnv(const std::string &op_name) {
     }
   }
 
-  static std::set<std::string> kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatmulReduceScatter",
-                                                     "QuantBatchMatmulAllReduce"};
+  static std::set<std::string> kAscendcKernelList = {"AllFinite",
+                                                     "AllGatherMatmul",
+                                                     "MatmulReduceScatter",
+                                                     "QuantBatchMatmulAllReduce",
+                                                     "AlltoAllAllGatherBatchMatMul",
+                                                     "BatchMatMulReduceScatterAlltoAll"};
   //  In the current kbk, MatMulAllReduce can also be implemented using LCCL operator.
   bool enable_lccl = device::ascend::EnableLccl();
   if (!enable_lccl) {
-    kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatMulAllReduce", "MatmulReduceScatter",
+    kAscendcKernelList = {"AllFinite",
+                          "AllGatherMatmul",
+                          "MatMulAllReduce",
+                          "MatmulReduceScatter",
+                          "AlltoAllAllGatherBatchMatMul",
+                          "BatchMatMulReduceScatterAlltoAll",
                           "QuantBatchMatmulAllReduce"};
   }
 
