@@ -79,8 +79,22 @@ DeviceMemPtr EnhancedDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
 
 std::vector<DeviceMemPtr> EnhancedDynamicMemPool::AllocContinuousTensorMem(const std::vector<size_t> &size_list,
                                                                            uint32_t stream_id) {
-  MS_LOG(DEBUG) << "Alloc continuous tensor mem.";
-  return AbstractDynamicMemPool::AllocContinuousTensorMem(size_list, stream_id);
+  MS_LOG(DEBUG) << "Alloc continuous tensor mem, stream id : " << stream_id << ".";
+  const auto &continuous_addrs = AbstractDynamicMemPool::AllocContinuousTensorMem(size_list, stream_id);
+  if (continuous_addrs.size() != size_list.size()) {
+    return continuous_addrs;
+  }
+  if (continuous_addrs.size() == 1 && continuous_addrs[0] == nullptr) {
+    return continuous_addrs;
+  }
+
+  for (size_t i = 0; i < continuous_addrs.size(); i++) {
+    if (tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+      tracker::CALL_MEMORY_TRACKER(AllocMemBlock, continuous_addrs[i], size_list[i], GetMemoryPoolType(),
+                                   ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(), stream_id);
+    }
+  }
+  return continuous_addrs;
 }
 
 void EnhancedDynamicMemPool::FreeTensorMem(const DeviceMemPtr &device_addr) {

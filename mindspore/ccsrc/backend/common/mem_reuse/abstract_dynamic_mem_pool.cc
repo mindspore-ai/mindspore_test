@@ -420,7 +420,7 @@ std::vector<DeviceMemPtr> AbstractDynamicMemPool::AllocContinuousTensorMem(const
   std::vector<DeviceMemPtr> device_addr_list;
   size_t total_size = std::accumulate(size_list.begin(), size_list.end(), IntToSize(0));
   // Pre-alloc the one whole piece memory.
-  auto device_addr = AllocTensorMem(total_size, false, false, stream_id);
+  auto device_addr = AbstractDynamicMemPool::AllocTensorMem(total_size, false, false, stream_id);
   if (!device_addr) {
     return device_addr_list;
   }
