@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.12)
-project(Lite)
+project(Lite LANGUAGES C CXX ASM)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 set(BUILD_LITE "on")
 add_compile_definitions(BUILD_LITE)
@@ -8,64 +11,100 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/secure_option.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compile_link_option.cmake)
 
-#Options that can be configured through environment variables or manually
-set(MSLITE_GPU_BACKEND "" CACHE STRING "enable gpu backend, \
-    opencl only support arm64 and x86_64 , tensorrt only support x86_64, opencl/cuda/tensorrt/off")
-set(MSLITE_REGISTRY_DEVICE "off" CACHE STRING "Compile Mindspore Lite that supports specific devices, \
-    currently supported devices: Hi3516D/Hi3519A/Hi3559A/SD3403")
-set(MSLITE_MICRO_PLATFORM "auto" CACHE STRING "Platform of micro static library micro static, \
-    currently supported : cortex-m7/cortex-m4/cortex-m33/auto")
-set(MSLITE_MINDDATA_IMPLEMENT "full" CACHE STRING "minddata mode, \
-    currently supported : off/full/wrapper/lite/lite_cv")
-option(MSLITE_ENABLE_NPU "enable npu, only arm64 or arm32 support" off)
-option(MSLITE_ENABLE_COREML "enable coreML, only apple ios devices support" off)
-option(MSLITE_ENABLE_NNAPI "enable nnapi, only android with arm64 or arm32" off)
-option(MSLITE_ENABLE_TRAIN "enable train" on)
+# =================================== [Lite build options] ===================================
+
+# === part 1. basic options ===
+
+# kernel
 option(MSLITE_ENABLE_SSE "enable SSE instruction set, only x86_64 support" off)
 option(MSLITE_ENABLE_AVX "enable AVX instruction set, only x86_64 support" off)
 option(MSLITE_ENABLE_AVX512 "enable AVX512 instruction set, only x86_64 support" off)
-option(MSLITE_ENABLE_CONVERTER "enable converter" on)
-option(MSLITE_ENABLE_TOOLS "enable tools" on)
-option(MSLITE_ENABLE_TESTCASES "enable testcase" off)
-option(MSLITE_ENABLE_RUNTIME_PASS "enable runtime pass" on)
-option(MSLITE_ENABLE_HIGH_PERFORMANCE "enable high performance" off)
-option(MSLITE_ENABLE_STRING_KERNEL "enable string kernel" on)
-option(MSLITE_ENABLE_CONTROLFLOW "enable control and tensorlist" on)
-option(MSLITE_ENABLE_AUTO_PARALLEL "enable automatic parallelism" on)
-option(MSLITE_ENABLE_WEIGHT_DECODE "enable weight decode" on)
-option(MSLITE_ENABLE_CUSTOM_KERNEL "enable extend kernel registry" on)
-option(MSLITE_ENABLE_MINDRT "enable mindrt use" on)
-option(MSLITE_ENABLE_DELEGATE "enable delegate use" on)
+
 option(MSLITE_ENABLE_FP16 "Whether to compile Fp16 operator" off)
 option(MSLITE_ENABLE_INT8 "Whether to compile Int8 operator" on)
+
+option(MSLITE_ENABLE_STRING_KERNEL "enable string kernel" on)
+option(MSLITE_ENABLE_HIGH_PERFORMANCE "enable high performance" off)
+option(MSLITE_ENABLE_SPARSE_COMPUTE "enable sparse kernel" off)
+
+# runtime
+option(MSLITE_ENABLE_MINDRT "enable mindrt use" on)
+option(MSLITE_ENABLE_CONTROLFLOW "enable control and tensorlist" on)
+
+option(MSLITE_ENABLE_DELEGATE "enable delegate use" on)
+option(MSLITE_ENABLE_CUSTOM_KERNEL "enable extend kernel registry" on)
+option(MSLITE_ENABLE_GRAPH_KERNEL "enable graph kernel" off)
+option(MSLITE_ENABLE_KERNEL_EXECUTOR "enable kernel executor" off)
+
+option(MSLITE_ENABLE_RUNTIME_CONVERT "enable runtime convert" off)
+option(MSLITE_ENABLE_RUNTIME_PASS "enable runtime pass" on)
+
+option(MSLITE_ENABLE_BFC_MEMORY "enable distribute BFC memory" off)
+
+option(MSLITE_ENABLE_RUNTIME_GLOG "enable runtime glog" off)
+option(MSLITE_EXPORT_COMPUTE_IR "export graph structure dotfile when debug mode" off)
+option(MSLITE_ENABLE_MODEL_PRE_INFERENCE "enable model do pre-inference when Build interface is called" off)
+
+# tools
+option(MSLITE_ENABLE_CONVERTER "enable converter" on)
+option(MSLITE_ENABLE_TOOLS "enable tools" on)
+set(MSLITE_MICRO_PLATFORM "auto" CACHE STRING "Platform of micro static library micro static, \
+    currently supported : cortex-m7/cortex-m4/cortex-m33/auto")
+option(MSLITE_ENABLE_MODEL_ENCRYPTION "enable model encryption" off)
+option(MSLITE_ENABLE_CONVERT_PYTORCH_MODEL "enable to convert pytorch model" off)
+option(MSLITE_ENABLE_MODEL_OBF "enable model obfuscation" off)
+
+# pre/post process
+option(MSLITE_ENABLE_OPENCV "enable opencv" on)
+set(MSLITE_MINDDATA_IMPLEMENT "full" CACHE STRING "minddata mode, \
+    currently supported : off/full/wrapper/lite/lite_cv")
+
+# tests
+option(MSLITE_ENABLE_TESTCASES "enable testcase" off)
+option(MSLITE_ENABLE_COVERAGE "enable code coverage" off)
+
+# third-party dependency source
+option(MSLITE_ENABLE_GITEE_MIRROR "enable download third_party from gitee mirror" off)
+
+# === part 2. device-only options ===
+
+# backends
+set(MSLITE_GPU_BACKEND "" CACHE STRING "enable gpu backend, \
+    opencl only support arm64 and x86_64 , tensorrt only support x86_64, opencl/cuda/tensorrt/off")
+option(MSLITE_ENABLE_COREML "enable coreML, only apple ios devices support" off)
+option(MSLITE_ENABLE_NNAPI "enable nnapi, only android with arm64 or arm32" off)
+option(MSLITE_ENABLE_NPU "enable npu, only arm64 or arm32 support" off)
+
+# runtime
+option(MSLITE_ENABLE_TRAIN "enable train" on)
+option(MSLITE_ENABLE_WEIGHT_DECODE "enable weight decode" on)
+
+# supported custom platform
+option(MSLITE_TARGET_SITEAI "target siteai" off)
+set(MSLITE_REGISTRY_DEVICE "off" CACHE STRING "Compile Mindspore Lite that supports specific devices, \
+    currently supported devices: Hi3516D/Hi3519A/Hi3559A/SD3403")
+
+# === part 3. cloud-only options ===
+
+# backends
 option(MSLITE_ENABLE_ACL "enable ACL" off)
 option(MSLITE_ENABLE_ACL_QUANT_PARAM "enable ACL_QUANT_PARAM" off)
-option(MSLITE_ENABLE_MODEL_ENCRYPTION "enable model encryption" off)
-option(MSLITE_ENABLE_SPARSE_COMPUTE "enable sparse kernel" off)
-option(MSLITE_ENABLE_RUNTIME_CONVERT "enable runtime convert" off)
-option(MSLITE_ENABLE_RUNTIME_GLOG "enable runtime glog" off)
-option(MSLITE_ENABLE_COVERAGE "enable code coverage" off)
+
+# runtime
+option(MSLITE_ENABLE_SHARING_MODEL_WEIGHT "enable sharing model weight" off)
 option(MSLITE_ENABLE_SERVER_INFERENCE "enable inference on server" off)
 option(MSLITE_ENABLE_DYNAMIC_THREAD_DISTRIBUTE "enable distribute thread dynamically" off)
-option(MSLITE_ENABLE_BFC_MEMORY "enable distribute BFC memory" off)
+option(MSLITE_ENABLE_AUTO_PARALLEL "enable automatic parallelism" on)
 option(MSLITE_ENABLE_PARALLEL_INFERENCE "enable parallel inference interface" off)
-option(MSLITE_ENABLE_SHARING_MODEL_WEIGHT "enable sharing model weight" off)
-option(MSLITE_ENABLE_GRAPH_KERNEL "enable graph kernel" off)
-option(MSLITE_ENABLE_CONVERT_PYTORCH_MODEL "enable to convert pytorch model" off)
-option(MSLITE_ENABLE_KERNEL_EXECUTOR "enable kernel executor" off)
-option(MSLITE_ENABLE_GITEE_MIRROR "enable download third_party from gitee mirror" off)
 option(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE "enable cloud and device fusion inference architecture" off)
 option(MSLITE_ENABLE_CLOUD_INFERENCE "alias to MSLITE_ENABLE_CLOUD_FUSION_INFERENCE" off)
-option(MSLITE_ENABLE_MODEL_OBF "enable model obfuscation" off)
-option(MSLITE_ENABLE_MODEL_PRE_INFERENCE "enable model do pre-inference when Build interface is called" off)
-option(MSLITE_EXPORT_COMPUTE_IR "export graph structure dotfile when debug mode" off)
-option(MSLITE_ENABLE_PACKAGE_WHEEL "enable package python wheel" off)
-option(MSLITE_ENABLE_OPENCV "enable opencv" on)
-option(MSLITE_TARGET_SITEAI "target siteai" off)
 
-#Option that can be configured through manually
+# archives
+option(MSLITE_ENABLE_PACKAGE_WHEEL "enable package python wheel" off)
+
+# ============================ [Lite build env] ============================
 option(ENABLE_VERBOSE "" off)
-set(VERSION_STR "1.8.0" CACHE STRING "get from version")
+set(VERSION_STR "2.4.0" CACHE STRING "get from version")
 
 add_definitions(-DVERSION_STR=\"${VERSION_STR}\")
 
@@ -203,7 +242,6 @@ endif()
 if(DEFINED ENV{MSLITE_ASCEND_TARGET})
     set(MSLITE_ASCEND_TARGET $ENV{MSLITE_ASCEND_TARGET})
 endif()
-
 
 if(DEFINED ENV{MSLITE_ENABLE_ACL_QUANT_PARAM})
     set(MSLITE_ENABLE_ACL_QUANT_PARAM $ENV{MSLITE_ENABLE_ACL_QUANT_PARAM})
