@@ -736,19 +736,20 @@ Status TreeAdapter::Launch() {
 
     // move the receive_tree_ to tree_ and launch it
     tree_ = std::move(receive_tree_);
-    // get the message queue id
-    if (tree_->root()->Name() != kReceiveBridgeOp) {
-      MS_LOG(EXCEPTION) << "The receive_tree_ root is not ReceiveBridgeOp.";
-    }
-    auto message_queue = dynamic_cast<ReceiveBridgeOp *>(tree_->root().get())->GetMessageQueue();
 
-    // make sure the subprocess had been forked and response to the subprocess
-    RETURN_IF_NOT_OK(message_queue.MsgRcv(kSubprocessReadyMsg));
-    RETURN_IF_NOT_OK(message_queue.MsgSnd(kMainprocessReadyMsg));
-
-    // get the receive_bridge_op and set the subprocess id to it
+    // get the receive_bridge_op
+    // 1. get the message queue and make sure the subprocess had been forked and response to the subprocess
+    // 2. set the subprocess id to it
     for (auto itr = tree_->begin(); itr != tree_->end(); ++itr) {
       if (itr->Name() == kReceiveBridgeOp) {
+        // get the message queue
+        auto message_queue = dynamic_cast<ReceiveBridgeOp *>(itr.get().get())->GetMessageQueue();
+
+        // make sure the subprocess had been forked and response to the subprocess
+        RETURN_IF_NOT_OK(message_queue.MsgRcv(kSubprocessReadyMsg));
+        RETURN_IF_NOT_OK(message_queue.MsgSnd(kMainprocessReadyMsg));
+
+        // set the subprocess id to it
         auto receive_bridge_op = dynamic_cast<ReceiveBridgeOp *>(itr.get().get());
         receive_bridge_op->SetSubprocessID(sub_process_id_);
         break;
