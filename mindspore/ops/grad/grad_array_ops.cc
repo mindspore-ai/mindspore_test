@@ -1838,6 +1838,16 @@ REG_BPROP_BUILDER("TransposeExt").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib)
   return {dx, ib->OutZeros(dim0), ib->OutZeros(dim1)};
 });
 
+REG_BPROP_BUILDER("TExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto x_shape = ib->GetShape(x);
+  if (IsDynamicRank(x_shape) || x_shape.size() == 2) {
+    return {ib->Emit("TExt", {dout})};
+  }
+  return {dout};
+});
+
 REG_BPROP_BUILDER("Slice").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto begin = ib->GetInput(kIndex1);

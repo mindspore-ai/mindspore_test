@@ -373,6 +373,8 @@ from mindspore.ops.function.math_func import nan_to_num
 # 695
 from mindspore.ops.auto_generate import count_nonzero
 
+#1007
+from mindspore.ops.auto_generate import t_ext as t
 
 def add(input, other, *, alpha=1):
     r"""
@@ -2029,6 +2031,9 @@ __all__ = [
 
     # 695
     'count_nonzero',
+
+    # 1007
+    't',
 ]
 
 setattr(tensor_operator_registry_for_mint, 'add', add)
