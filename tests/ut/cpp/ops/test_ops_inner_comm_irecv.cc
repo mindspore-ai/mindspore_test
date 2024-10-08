@@ -23,8 +23,6 @@
 namespace mindspore {
 namespace ops {
 struct IrecvShapeParams {
-  ShapeVector input_x_shape;
-  TypePtr input_x_type;
   ValuePtr tag;
   ValuePtr src;
   ValuePtr shape;
@@ -38,7 +36,6 @@ class TestIrecv : public TestOps, public testing::WithParamInterface<IrecvShapeP
 
 TEST_P(TestIrecv, dyn_shape) {
   const auto &param = GetParam();
-  auto input_x = std::make_shared<abstract::AbstractTensor>(param.input_x_type, param.input_x_shape);
   auto expect_shape = std::make_shared<abstract::Shape>(param.output_shape);
   auto expect_dtype = std::make_shared<TensorType>(param.output_type);
 
@@ -51,34 +48,28 @@ TEST_P(TestIrecv, dyn_shape) {
   auto group_abs = param.group->ToAbstract();
   auto dtype_abs = param.dtype->ToAbstract();
 
-  auto out_dtype = irecv_func_impl.InferType(prim, {input_x, tag_abs, src_abs, shape_abs, group_abs, dtype_abs});
+  auto out_dtype = irecv_func_impl.InferType(prim, {tag_abs, src_abs, shape_abs, group_abs, dtype_abs});
   ASSERT_TRUE(*out_dtype == *expect_dtype);
-  auto out_shape = irecv_func_impl.InferShape(prim, {input_x, tag_abs, src_abs, shape_abs, group_abs, dtype_abs});
+  auto out_shape = irecv_func_impl.InferShape(prim, {tag_abs, src_abs, shape_abs, group_abs, dtype_abs});
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
 INSTANTIATE_TEST_CASE_P(TestIrecv, TestIrecv,
-                        testing::Values(IrecvShapeParams{{3, 4, 5},
-                                                         kFloat32,
-                                                         CreateScalar<int64_t>(0),
+                        testing::Values(IrecvShapeParams{CreateScalar<int64_t>(0),
                                                          CreateScalar<int64_t>(0),
                                                          CreatePyIntTuple({2, 2}),
                                                          CreateScalar<int64_t>(0),
                                                          CreateScalar<int64_t>(kNumberTypeFloat32),
                                                          {2, 2},
                                                          kFloat32},
-                                        IrecvShapeParams{{3, 4, 5},
-                                                         kFloat16,
-                                                         CreateScalar<int64_t>(0),
+                                        IrecvShapeParams{CreateScalar<int64_t>(0),
                                                          CreateScalar<int64_t>(0),
                                                          CreatePyIntTuple({-1, -1}),
                                                          CreateScalar<int64_t>(0),
                                                          CreateScalar<int64_t>(kNumberTypeFloat32),
                                                          {-1, -1},
                                                          kFloat32},
-                                        IrecvShapeParams{{3, 4, 5},
-                                                         kFloat16,
-                                                         CreateScalar<int64_t>(0),
+                                        IrecvShapeParams{CreateScalar<int64_t>(0),
                                                          CreateScalar<int64_t>(0),
                                                          CreatePyIntTuple({-2}),
                                                          CreateScalar<int64_t>(0),

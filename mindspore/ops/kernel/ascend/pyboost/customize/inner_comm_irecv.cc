@@ -26,13 +26,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
-                                   const Int64ImmPtr &tag, const Int64ImmPtr &src, const ValueTuplePtr &shape,
-                                   const StringImmPtr &group, const std::optional<Int64ImmPtr> &dtype) {
-  OpRunner::InferOpOutput(op, input_tensor, tag, src, shape, group, dtype);
+void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr &tag, const Int64ImmPtr &src,
+                                   const ValueTuplePtr &shape, const StringImmPtr &group,
+                                   const std::optional<Int64ImmPtr> &dtype) {
+  OpRunner::InferOpOutput(op, tag, src, shape, group, dtype);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
 
-  auto run_func = [op, input_tensor, src, group]() {
+  auto run_func = [op, src, group]() {
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
@@ -54,7 +54,7 @@ void InnerCommIrecvAscendCustomize(const std::shared_ptr<OpRunner> &op, const Ba
       runtime::DeviceAddressUtils::ProcessCrossStreamAddressWithEvent(op->primitive()->name(), op->device_context(),
                                                                       comm_stream_id, event, output_tensor);
     };
-    CommonCommAscendFunc(op, input_tensor, group, launch_func, post_func);
+    CommonCommAscendFunc(op, nullptr, group, launch_func, post_func);
   };
 
   if (runtime::OpExecutor::NeedSync()) {
