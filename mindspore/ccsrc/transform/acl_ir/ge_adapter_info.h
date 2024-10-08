@@ -105,6 +105,8 @@ class GeAdapterInfo {
 
   const mindspore::HashMap<int, Ms2GeParamInfo> &GetMs2GeInputMap() const { return info_.input_idx_ms2ge; }
 
+  const mindspore::HashMap<int, Ms2GeParamInfo> &GetMs2GeOutputMap() const { return info_.output_idx_ms2ge; }
+
   const Ms2GeParamInfo &GetGeInputByMsInputIndex(size_t ms_input_idx) const {
     auto iter = info_.input_idx_ms2ge.find(ms_input_idx);
     if (iter == info_.input_idx_ms2ge.end()) {
