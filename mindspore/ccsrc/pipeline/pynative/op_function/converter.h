@@ -50,18 +50,18 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
 };
 // information of single parameter
 struct FunctionParameter {
-  FunctionParameter(const std::string& fmt);
+  FunctionParameter(const std::string &fmt);
   bool check(const py::object &obj);
-  void set_default_str(const std::string& str);
+  void set_default_str(const std::string &str);
   py::object get_default_value();
 
   ops::OP_DTYPE type_;  // type of parameter
-  bool optional_;       // if has default value
+  std::vector<ops::OP_DTYPE> cast_types_;
+  bool optional_;  // if has default value
   bool allow_none_;
-  int size_;             // size of vec type
-  std::string name_;       // parameter name
-  py::object default_value;
-  std::vector<int64_t> default_intlist;
+  int size_;          // size of vec type
+  std::string name_;  // parameter name
+  std::optional<std::vector<int64_t>> default_intlist;
   std::string default_string;
   bool default_bool;
   int64_t default_int;
@@ -71,9 +71,9 @@ struct FunctionParameter {
 
 // single overload
 struct FunctionSignature {
-  explicit FunctionSignature(const std::string& fmt, int index);
+  explicit FunctionSignature(const std::string &fmt, int index);
   // bind with real args
-  bool parse(const py::list &args, const py::dict &kwargs, py::list& python_args);
+  bool parse(const py::list &args, const py::dict &kwargs, py::list &python_args);
 
   std::string name_;
   std::vector<FunctionParameter> params_;
@@ -82,15 +82,15 @@ struct FunctionSignature {
   int index_;
 };
 
-//parser util
+// parser util
 struct PythonArgParser {
   explicit PythonArgParser(std::vector<std::string> fmts);
-  const FunctionSignature& parse(const py::list &args,  const py::dict &kwargs, py::list arg_list);
+  const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list arg_list);
 
-private:
-  std::vector<FunctionSignature> signatures_; // all overloads
+ private:
+  std::vector<FunctionSignature> signatures_;  // all overloads
   std::string function_name_;
-  size_t max_args_; // max num of args
+  size_t max_args_;  // max num of args
 };
 
 class Converter {

@@ -156,6 +156,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 single_arg = ', '
             first_arg = False
             arg_dtype = arg.arg_dtype
+            for cast_type in arg.type_cast:
+                arg_dtype += '|'
+                arg_dtype += cast_type
             arg_name = arg.arg_name
             single_arg += f"{arg_dtype} {arg_name}"
             if arg.as_init_arg:
