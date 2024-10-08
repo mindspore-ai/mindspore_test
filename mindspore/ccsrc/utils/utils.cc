@@ -309,6 +309,11 @@ bool IsEnableRefMode() {
 }
 
 bool IsDisableGeKernel() {
+  static bool config_enable_ge_kernel = common::IsEnableRuntimeConfig(common::kRuntimeGeKernel);
+  if (config_enable_ge_kernel) {
+    return false;
+  }
+
   static bool config_disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
   // ge_kbk mix can not use rank_table
   static bool use_hccl_rank_table = !common::UseHostCollective() && !common::GetEnv("RANK_TABLE_FILE").empty();
