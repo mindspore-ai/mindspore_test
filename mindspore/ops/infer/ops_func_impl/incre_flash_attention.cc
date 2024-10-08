@@ -493,6 +493,12 @@ TypePtrList IncreFlashAttentionFuncImpl::InferType(const PrimitivePtr &primitive
   if (input_values[kIncreFlashAttentionInputQuantScale2] != mindspore::kNone) {
     return {kInt8};
   }
+  const auto &kv_padding_size_tensor =
+    input_values[kIncreFlashAttentionInputKvPaddingSize]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(kv_padding_size_tensor);
+  const std::set<TypePtr> kv_padding_size_valid_types = {kInt64};
+  (void)CheckAndConvertUtils::CheckTypeValid("kv_padding_size", kv_padding_size_tensor->Dtype(),
+                                             kv_padding_size_valid_types, primitive->name());
   const auto &query_tensor = input_values[kIncreFlashAttentionInputQueryIndex]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(query_tensor);
   return {query_tensor->Dtype()};
