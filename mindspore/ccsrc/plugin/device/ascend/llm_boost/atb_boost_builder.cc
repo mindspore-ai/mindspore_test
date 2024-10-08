@@ -18,6 +18,7 @@
 #include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
 #include "plugin/factory/ms_factory.h"
 #include "utils/ms_utils.h"
+#include "include/common/debug/common.h"
 
 namespace mindspore::kernel {
 AtbBoostBuilder::AtbBoostBuilder() : BoostBaseBuilder("DEFAULT") { Initialize(); }
@@ -26,9 +27,7 @@ AtbBoostBuilder::~AtbBoostBuilder() {}
 
 void AtbBoostBuilder::Initialize() {
   // load atb adapter so when called atb boost
-
   std::string err_msg = "";
-
   std::string atb_model_path_env = common::GetEnv("ATB_MODEL_HOME_PATH");
   if (atb_model_path_env == "") {
     MS_LOG(EXCEPTION) << "ATB_MODEL_HOME_PATH is not set";
@@ -44,10 +43,27 @@ void AtbBoostBuilder::Initialize() {
   }
 
   std::string atb_layer_lib_path = atb_model_libs_path + "/" + "libatb_speed_layers.so";
-  auto layer_lib_ptr = dlopen(atb_layer_lib_path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
-  err_msg = GetDlErrorMsg();
-  if (layer_lib_ptr == nullptr) {
-    MS_LOG(EXCEPTION) << "Loading " + std::string("libatb_speed_layers.so") + " failed. Error: " + err_msg;
+  std::string atb_operation_lib_path = atb_model_libs_path + "/" + "libatb_speed_operations.so";
+  if (!Common::FileExists(atb_layer_lib_path) && !Common::FileExists(atb_operation_lib_path)) {
+    MS_LOG(EXCEPTION) << std::string("libatb_speed_layers.so") + " or " + std::string("libatb_speed_operations.so") +
+                           " not found";
+  }
+
+  // Compatible with older versions
+  if (Common::FileExists(atb_layer_lib_path)) {
+    auto layer_lib_ptr = dlopen(atb_layer_lib_path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+    err_msg = GetDlErrorMsg();
+    if (layer_lib_ptr == nullptr) {
+      MS_LOG(EXCEPTION) << "Loading " + std::string("libatb_speed_layers.so") + " failed. Error: " + err_msg;
+    }
+  }
+
+  if (Common::FileExists(atb_operation_lib_path)) {
+    auto operation_lib_ptr = dlopen(atb_operation_lib_path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+    err_msg = GetDlErrorMsg();
+    if (operation_lib_ptr == nullptr) {
+      MS_LOG(EXCEPTION) << "Loading " + std::string("libatb_speed_operations.so") + " failed. Error: " + err_msg;
+    }
   }
 
   std::string atb_model_lib_path = atb_model_libs_path + "/" + "libatb_speed_models.so";
