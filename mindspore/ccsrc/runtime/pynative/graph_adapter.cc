@@ -355,7 +355,8 @@ void GraphAdapter::UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph,
 }
 
 void GraphAdapter::HandleHeterogeneousTensors(const std::vector<std::vector<tensor::TensorPtr>> &input_tensors,
-                                              const std::vector<device::DeviceContext *> &device_contexts) {
+                                              const std::vector<device::DeviceContext *> &device_contexts,
+                                              ActorSet *actor_set) {
   if (input_tensors.size() < device_contexts.size()) {
     MS_LOG(EXCEPTION) << "Invalid input_tensors size " << input_tensors.size() << " device_contexts size "
                       << device_contexts.size();
@@ -371,6 +372,7 @@ void GraphAdapter::HandleHeterogeneousTensors(const std::vector<std::vector<tens
         if (device_address->GetDeviceType() != device_context->GetDeviceType()) {
           tensor->data_sync();
           tensor->set_device_address(nullptr);
+          actor_set->data_prepare_actor_->set_heter_weights(true);
         }
       }
     }

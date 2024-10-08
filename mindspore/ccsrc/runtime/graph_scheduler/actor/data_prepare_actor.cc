@@ -500,13 +500,8 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
     SetInitTensorsIfNeeded(input_tensors);
   }
   try {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-    bool enable_prepare_case =
-      !tensors_need_reprepare_.empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_;
     bool not_empty_input = !input_tensors.empty() || !args.empty();
-    if (first_step_ || UCEException::GetInstance().get_uce_flag() || (enable_prepare_case && not_empty_input)) {
+    if (first_step_ || UCEException::GetInstance().get_uce_flag() || (enable_prepare_case() && not_empty_input)) {
       PrepareDataForDeviceTensorStore(input_tensors, args, context);
     }
     PrepareDataForHostTensorQueue(input_tensors, args, context);
