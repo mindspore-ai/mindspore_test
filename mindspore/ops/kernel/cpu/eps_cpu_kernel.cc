@@ -17,7 +17,7 @@
 #include <limits>
 #include <cmath>
 #include "kernel/cpu/eps_cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/factory/ms_factory.h"
 #include "base/float16.h"
 
 namespace mindspore {

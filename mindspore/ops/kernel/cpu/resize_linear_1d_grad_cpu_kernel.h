@@ -23,7 +23,7 @@
 #include <map>
 #include <utility>
 #include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/factory/ms_factory.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore::kernel {
