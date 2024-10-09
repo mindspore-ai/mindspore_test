@@ -42,18 +42,18 @@ class ROC(Metric):
         >>> from mindspore.train import ROC
         >>>
         >>> # 1) binary classification example
-        >>> x = Tensor(np.array([3, 1, 4, 2]))
+        >>> x = Tensor(np.array([0.28, 0.55, 0.15, 0.05]))
         >>> y = Tensor(np.array([0, 1, 2, 3]))
         >>> metric = ROC(pos_label=2)
         >>> metric.clear()
         >>> metric.update(x, y)
         >>> fpr, tpr, thresholds = metric.eval()
         >>> print(fpr)
-        [0. 0. 0.33333333 0.6666667 1.]
+        [0.         0.33333333 0.66666667 0.66666667 1.        ]
         >>> print(tpr)
-        [0. 1. 1. 1. 1.]
+        [0. 0. 0. 1. 1.]
         >>> print(thresholds)
-        [5 4 3 2 1]
+        [1.55 0.55 0.28 0.15 0.05]
         >>>
         >>> # 2) multiclass classification example
         >>> x = Tensor(np.array([[0.28, 0.55, 0.15, 0.05], [0.10, 0.20, 0.05, 0.05], [0.20, 0.05, 0.15, 0.05],
