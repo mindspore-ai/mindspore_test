@@ -50,8 +50,8 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"type", ops::OP_DTYPE::DT_TYPE},
 };
 // information of single parameter
-explicit struct FunctionParameter {
-  FunctionParameter(const std::string &fmt);
+struct FunctionParameter {
+  explicit FunctionParameter(const std::string &fmt);
   bool check(const py::object &obj);
   void set_default_str(const std::string &str);
   py::object get_default_value();
@@ -86,7 +86,7 @@ struct FunctionSignature {
 // parser util
 struct PythonArgParser {
   explicit PythonArgParser(std::vector<std::string> fmts);
-  const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list arg_list);
+  const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *arg_list);
 
  private:
   std::vector<FunctionSignature> signatures_;  // all overloads
