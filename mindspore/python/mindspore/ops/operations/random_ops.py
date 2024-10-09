@@ -1067,7 +1067,7 @@ class UniformCandidateSampler(Primitive):
 
     Inputs:
         - **true_classes** (Tensor) - A Tensor. The target classes with a Tensor shape of
-          :math:`(batch\_size, num\_true)`.
+          :math:`(batch\_size, num\_true)`. The value range of the elements must be :math:`[0, range\_max)`.
 
     Outputs:
         - **sampled_candidates** (Tensor) - The sampled_candidates is independent of the true classes.

@@ -439,6 +439,7 @@ def uniform_candidate_sampler(true_classes,
 
     Args:
         true_classes (Tensor): A Tensor. The target classes with a Tensor shape of :math:`(batch\_size, num\_true)` .
+            The value range of the elements must be :math:`[0, range\_max)`.
         num_true (int): The number of target classes in each training example.
         num_sampled (int): The number of classes to randomly sample. The sampled_candidates will have a shape
             of num_sampled. If unique=True, num_sampled must be less than or equal to range_max.

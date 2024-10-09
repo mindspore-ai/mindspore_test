@@ -22,7 +22,7 @@
         - **remove_accidental_hits** (bool，可选) - 表示是否移除accidental hit。accidental hit表示其中一个 `true_classes` 目标类匹配 `sampled_candidates` 采样类之一，设置为 ``True`` 表示移除等于目标类的采样类。默认值： ``False`` 。
 
     输入：
-        - **true_classes** (Tensor) - 输入Tensor，目标类，其shape为 :math:`(batch\_size, num\_true)`。
+        - **true_classes** (Tensor) - 输入Tensor，目标类，其shape为 :math:`(batch\_size, num\_true)`。 其元素值范围需要在 :math:`[0, range\_max)` 。
 
     输出：
         - **sampled_candidates** (Tensor) -  候选采样与目标类之间不存在联系，其shape为 :math:`(num\_sampled, )`。

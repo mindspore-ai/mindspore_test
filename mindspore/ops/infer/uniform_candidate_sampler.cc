@@ -57,13 +57,6 @@ abstract::TupleShapePtr UCSInferShape(const PrimitivePtr &primitive, const std::
   auto input_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_shape_ptr);
   auto input_shape = input_shape_map[kShape];
 
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  bool is_ascend = (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
-  if (is_ascend && IsDynamic(input_shape)) {
-    MS_EXCEPTION(ValueError) << "UniformCandidateSampler does not support dynamic shape scenarios on Ascend currently.";
-  }
-
   if (IsDynamicRank(input_shape)) {
     auto unknow_shape_ptr = std::make_shared<abstract::Shape>(std::vector<int64_t>{abstract::Shape::kShapeRankAny});
     return std::make_shared<abstract::TupleShape>(
