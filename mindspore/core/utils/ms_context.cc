@@ -57,15 +57,9 @@ std::map<MsCtxParam, std::string> kUnresetParamCheckList = {
   {MsCtxParam::MS_CTX_MEMPOOL_BLOCK_SIZE, "mempool_block_size"}};
 
 MsContext::MsContext(const std::string &policy, const std::string &target) {
-#ifndef ENABLE_SECURITY
   set_param<int>(MS_CTX_SAVE_GRAPHS_FLAG, 0);
   set_param<std::string>(MS_CTX_SAVE_GRAPHS_PATH, ".");
   set_param<std::string>(MS_CTX_COMPILE_CACHE_PATH, "");
-#else
-  // Need set a default value for arrays even if running in the security mode.
-  int_params_[MS_CTX_SAVE_GRAPHS_FLAG - MS_CTX_TYPE_BOOL_BEGIN] = 0;
-  string_params_[MS_CTX_SAVE_GRAPHS_PATH - MS_CTX_TYPE_STRING_BEGIN] = ".";
-#endif
   InitBoolTypeDefaultValue();
   InitStringTypeDefaultValue();
   InitDigitalTypeDefaultValue();

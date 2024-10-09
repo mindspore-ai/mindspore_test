@@ -99,11 +99,9 @@
 #include "load_mindir/infer_mindir.h"
 #include "pipeline/jit/ps/pass_config.h"
 
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/acl_dump_json_writer.h"
 #include "abstract/abstract_value.h"
-#endif
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/constants.h"
 #include "include/backend/distributed/ps/util.h"
@@ -1622,7 +1620,6 @@ void RecordIR(const size_t action_index, const size_t action_size, const std::st
 }
 #endif
 
-#ifndef ENABLE_SECURITY
 void SaveGraphForReadability(const std::string &action_name, const FuncGraphPtr &graph, const ResourcePtr &resource) {
   if (graph != nullptr && action_name.find("optimize") != string::npos) {
 #ifdef ENABLE_DUMP_IR
@@ -1635,7 +1632,6 @@ void SaveGraphForReadability(const std::string &action_name, const FuncGraphPtr 
     resource->set_optimize_graph(graph);
   }
 }
-#endif
 
 void Pipeline::Run() {
   MS_LOG(INFO) << "Pipeline run";
@@ -1684,7 +1680,6 @@ void Pipeline::Run() {
       } else if (action.first == last_compile_action) {
         CheckInterpretNodeLineInfos();
         CacheFuncGraph(resource_);
-#ifndef ENABLE_SECURITY
 #ifdef WITH_BACKEND
         MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
         if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {
@@ -1695,7 +1690,6 @@ void Pipeline::Run() {
           device_context->GetDeprecatedInterface()->DumpProfileParallelStrategy(resource_->func_graph());
         }
 #endif
-#endif
         ResetId(resource_);
       }
       FuncGraphPtr graph = resource_->func_graph();
@@ -1704,9 +1698,7 @@ void Pipeline::Run() {
       RDRRecordGraph(i, actions_.size(), filename, graph);
       RecordIR(i, actions_.size(), action.first, graph, &user_graph);
 #endif
-#ifndef ENABLE_SECURITY
       SaveGraphForReadability(action.first, graph, resource_);
-#endif
       i++;
 #ifdef ENABLE_TIMELINE
       dump_time.Record(action.first, GetTime(), false);
@@ -2711,10 +2703,8 @@ void ClearSingleton() {
   session::SessionFactory::Get().Clear();
   device::KernelRuntimeManager::Instance().Clear();
   OpPrimPyRegister::GetInstance().Clear();
-#ifndef ENABLE_SECURITY
   DumpJsonParser::Finalize();
   AclDumpJsonWriter::Finalize();
-#endif
   CommManager::Clear();
   expander::ClearAllCache();
 

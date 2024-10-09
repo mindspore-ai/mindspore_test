@@ -1,12 +1,7 @@
 add_subdirectory(datasetops)
 add_subdirectory(opt)
 add_subdirectory(ir)
-
-message("ENABLE_SECURITY = ${ENABLE_SECURITY}")
-if(NOT ENABLE_SECURITY)
-    add_subdirectory(perf)
-endif()
-
+add_subdirectory(perf)
 add_subdirectory(cache)
 
 file(GLOB_RECURSE _CURRENT_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
@@ -53,11 +48,11 @@ else()
     add_dependencies(engine engine-cache-client)
 endif()
 
-if(NOT ENABLE_SECURITY)
-    add_dependencies(engine engine-perf)
-    if(ENABLE_CACHE)
-        add_dependencies(engine-perf engine-cache-server)
-    else()
-        add_dependencies(engine-perf engine-cache-client)
-    endif()
+
+add_dependencies(engine engine-perf)
+if(ENABLE_CACHE)
+    add_dependencies(engine-perf engine-cache-server)
+else()
+    add_dependencies(engine-perf engine-cache-client)
 endif()
+

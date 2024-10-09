@@ -54,7 +54,6 @@ Status PythonIteratorConsumer::Init(const std::shared_ptr<DatasetNode> &root, in
     tree_adapter_ = std::make_unique<TreeAdapter>(TreeAdapter::UsageFlag::kDeReset);
   }
   RETURN_IF_NOT_OK(tree_adapter_->Compile(root, num_epochs_, global_step, dataset_size, true));
-#ifndef ENABLE_SECURITY
   profiling_manager_ = GlobalContext::profiling_manager();
   if (profiling_manager_->IsProfiling()) {
     // Init has been called already
@@ -63,7 +62,6 @@ Status PythonIteratorConsumer::Init(const std::shared_ptr<DatasetNode> &root, in
   if (GlobalContext::config_manager()->enable_autotune()) {
     RETURN_IF_NOT_OK(InitAutoTune());
   }
-#endif
   return Status::OK();
 }
 

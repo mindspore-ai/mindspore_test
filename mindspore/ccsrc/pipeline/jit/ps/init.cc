@@ -23,9 +23,7 @@
 #include "utils/symbolic.h"
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/utils/python_adapter.h"
-#ifndef ENABLE_SECURITY
 #include "include/common/utils/summary/event_writer.h"
-#endif
 #include "include/common/utils/config_manager.h"
 #include "include/common/utils/mpi/mpi_config.h"
 #include "utils/ms_utils.h"
@@ -50,9 +48,7 @@
 #include "pipeline/llm_boost/llm_boost_binder.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/profiler/profiling.h"
-#endif
 #include "include/common/profiler.h"
 
 #include "pipeline/jit/pi/external.h"
@@ -64,9 +60,7 @@ using GraphExecutorPy = mindspore::pipeline::GraphExecutorPy;
 using Pipeline = mindspore::pipeline::Pipeline;
 using PrimitivePy = mindspore::PrimitivePy;
 using MetaFuncGraph = mindspore::MetaFuncGraph;
-#ifndef ENABLE_SECURITY
 using EventWriter = mindspore::summary::EventWriter;
-#endif  // ENABLE_SECURITY
 using OpLib = mindspore::kernel::OpLib;
 using ParallelContext = mindspore::parallel::ParallelContext;
 using CostModelContext = mindspore::parallel::CostModelContext;
@@ -81,7 +75,6 @@ using DeviceContext = mindspore::device::DeviceContext;
 
 constexpr int PROFILER_RECORD_STAMP = 2;
 
-#ifndef ENABLE_SECURITY
 namespace mindspore {
 namespace profiler {
 void RegProfiler(const py::module *m) {
@@ -149,7 +142,6 @@ void RegLlmBoostBinder(const py::module *m) {
 void RegLlmBoostUtils(py::module *m) { m->def("_set_format", &pipeline::SetFormat, "set_format"); }
 }  // namespace profiler
 }  // namespace mindspore
-#endif  // ENABLE_SECURITY
 
 namespace mindspore {
 void RegModule(py::module *m) {
@@ -189,13 +181,11 @@ void RegModule(py::module *m) {
   mindspore::pynative::RegisterPyBoostFunction(m);
   mindspore::pijit::RegPIJitInterface(m);
   mindspore::prim::RegCompositeOpsGroup(m);
-#ifndef ENABLE_SECURITY
   mindspore::profiler::RegProfilerManager(m);
   mindspore::profiler::RegProfiler(m);
   mindspore::profiler::RegHostProfile(m);
   mindspore::profiler::RegFrameworkProfiler(m);
   mindspore::profiler::RegFrameworkPythonProfileRecorder(m);
-#endif
 #ifdef _MSC_VER
   mindspore::abstract::RegPrimitiveFrontEval();
 #endif
@@ -586,7 +576,6 @@ PYBIND11_MODULE(_c_expression, m) {
     MS_LOG(INFO) << "Start register...";
     mindspore::MsContext::GetInstance()->RegisterCheckEnv(nullptr);
     mindspore::MsContext::GetInstance()->RegisterSetEnv(nullptr);
-#ifndef ENABLE_SECURITY
     MS_LOG(INFO) << "Start mindspore.profiler...";
     try {
       auto profiler = py::module::import("mindspore.profiler").attr("EnvProfiler")();
@@ -594,7 +583,6 @@ PYBIND11_MODULE(_c_expression, m) {
     } catch (const std::exception &e) {
       MS_LOG(ERROR) << "Failed to parse profiler data." << e.what();
     }
-#endif
     MS_LOG(INFO) << "Start EmbeddingCacheScheduler...";
 #if defined(__linux__) && defined(WITH_BACKEND)
     mindspore::runtime::EmbeddingCacheScheduler::GetInstance().Finalize(
@@ -615,7 +603,6 @@ PYBIND11_MODULE(_c_expression, m) {
     }
   }});
 
-#ifndef ENABLE_SECURITY
   (void)py::class_<EventWriter, std::shared_ptr<EventWriter>>(m, "EventWriter_")
     .def(py::init<const std::string &>())
     .def("GetFileName", &EventWriter::GetFileName, "Get the file name.")
@@ -625,7 +612,6 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("Flush", &EventWriter::Flush, "Flush the event.")
     .def("Close", &EventWriter::Close, "Close the write.")
     .def("Shut", &EventWriter::Shut, "Final close the write.");
-#endif  // ENABLE_SECURITY
 
   (void)py::class_<OpLib, std::shared_ptr<OpLib>>(m, "Oplib")
     .def(py::init())

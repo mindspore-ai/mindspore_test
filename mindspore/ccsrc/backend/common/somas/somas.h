@@ -73,9 +73,7 @@ class BACKEND_EXPORT Somas {
   bool Assign(const session::KernelGraph &graph);
   bool Assign(const KernelGraphPtr &graph_ptr);
   std::string SomasInfo(bool calc_hash = false) const;
-#ifndef ENABLE_SECURITY
   virtual void ConvertToProfilingNode(uint32_t /* graph_id */) const {}
-#endif
 
  private:
   // device implementation interface
@@ -156,9 +154,7 @@ class BACKEND_EXPORT Somas {
   void InitControlTensors();
   bool CommonSpecNodeProcess(const session::KernelGraph &graph);
   SomasStreamPtr GetSomasStream(size_t stream_id) const;
-#ifndef ENABLE_SECURITY
   void SummaryInputProcess(const session::KernelGraph &graph);
-#endif
   void RefNodeProcess(const session::KernelGraph &graph);
   void UnReuseNodeProcess(const session::KernelGraph &graph);
   void CommunicationNodeProcess();

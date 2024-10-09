@@ -444,11 +444,9 @@ bool CPUKernelRuntime::Run(const session::KernelGraph &kernel_graph, bool) {
 
   auto kernels = kernel_graph.execution_order();
 
-#ifndef ENABLE_SECURITY
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   bool iter_dump_flag = dump_json_parser.GetIterDumpFlag();
   uint32_t graph_id = kernel_graph.graph_id();
-#endif
 #ifdef ENABLE_DUMP_IR
   std::string name = "mem_address_list";
   (void)mindspore::RDR::RecordMemAddressInfo(SubModuleId::SM_KERNEL, name);
@@ -480,12 +478,10 @@ bool CPUKernelRuntime::Run(const session::KernelGraph &kernel_graph, bool) {
     std::vector<kernel::KernelTensor *> kernel_outputs;
     GetRuntimeAddressFromNode(kernel, &kernel_inputs, &kernel_outputs, &kernel_workspaces);
     bool ret = true;
-#ifndef ENABLE_SECURITY
     auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
     MS_EXCEPTION_IF_NULL(profiler_inst);
     uint32_t pid = getpid();
     profiler_inst->OpDataProducerBegin(kernel->fullname_with_scope(), pid);
-#endif
 #ifdef ENABLE_DUMP_IR
     kernel::KernelLaunchInfo launch_info = {kernel_inputs, kernel_outputs, kernel_workspaces};
     std::string op_name = kernel->fullname_with_scope();
@@ -498,12 +494,10 @@ bool CPUKernelRuntime::Run(const session::KernelGraph &kernel_graph, bool) {
     } catch (std::exception &e) {
       MS_LOG(EXCEPTION) << e.what() << trace::DumpSourceLines(kernel);
     }
-#ifndef ENABLE_SECURITY
     if (iter_dump_flag) {
       CPUE2eDump::DumpCNodeData(kernel, graph_id);
     }
     profiler_inst->OpDataProducerEnd();
-#endif
     if (!ret) {
 #ifdef ENABLE_DUMP_IR
       mindspore::RDR::TriggerAll();
@@ -516,7 +510,6 @@ bool CPUKernelRuntime::Run(const session::KernelGraph &kernel_graph, bool) {
       MS_LOG(INFO) << "cpu kernel: " << kernel->fullname_with_scope() << "  costs " << cost_time * 1e6 << " us";
     }
   }
-#ifndef ENABLE_SECURITY
   if (iter_dump_flag) {
     CPUE2eDump::DumpParameters(&kernel_graph, graph_id);
     CPUE2eDump::DumpConstants(&kernel_graph, graph_id);
@@ -524,7 +517,6 @@ bool CPUKernelRuntime::Run(const session::KernelGraph &kernel_graph, bool) {
   if (graph_id == 0) {
     dump_json_parser.UpdateDumpIter();
   }
-#endif
   return true;
 }
 }  // namespace cpu

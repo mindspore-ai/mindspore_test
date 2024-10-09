@@ -89,10 +89,8 @@ GVAR_DEF(PrimitivePtr, kPrimGetTupleIndexInfo, std::make_shared<Primitive>("GetT
 
 // Debug ops
 GVAR_DEF(PrimitivePtr, kPrimAssert, std::make_shared<Primitive>("Assert"));
-#ifndef ENABLE_SECURITY
 GVAR_DEF(PrimitivePtr, kPrimHistogramFixedWidth, std::make_shared<Primitive>("HistogramFixedWidth"));
 GVAR_DEF(PrimitivePtr, kPrimTensorDump, std::make_shared<Primitive>(kTensorDump));
-#endif
 GVAR_DEF(PrimitivePtr, kPrimTensorReport, std::make_shared<Primitive>(kTensorReport));
 GVAR_DEF(PrimitivePtr, kPrimDebug, std::make_shared<Primitive>("Debug"));
 

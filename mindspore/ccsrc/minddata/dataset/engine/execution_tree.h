@@ -29,9 +29,7 @@
 #endif
 #include "minddata/dataset/engine/datasetops/dataset_op.h"
 #include "minddata/dataset/util/status.h"
-#ifndef ENABLE_SECURITY
 #include "mindspore/ccsrc/minddata/dataset/engine/perf/profiling.h"
-#endif
 namespace mindspore {
 namespace dataset {
 // Forward declares

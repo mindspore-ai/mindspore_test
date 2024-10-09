@@ -23,8 +23,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
-
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -46,7 +44,6 @@
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
-#endif
 
 namespace mindspore {
 namespace device {

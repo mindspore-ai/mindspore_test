@@ -42,9 +42,7 @@ bool CommonSomasAllocator::Assign(const session::KernelGraph &graph) {
     std::string name = "somas_allocate_info." + std::to_string(graph.graph_id());
     (void)mindspore::RDR::RecordString(module, name, somas_ptr->SomasInfo());
 #endif
-#ifndef ENABLE_SECURITY
     somas_ptr->ConvertToProfilingNode(graph.graph_id());
-#endif
   }
   return ret;
 }

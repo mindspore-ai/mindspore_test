@@ -21,11 +21,9 @@
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
-#ifndef ENABLE_SECURITY
 #include "debug/data_dump/cpu_e2e_dump.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
 #include "utils/ms_context.h"
-#endif
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "debug/debugger/debugger_utils.h"
@@ -145,7 +143,6 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Devic
     AscendKbkDump(cnode, input_device_tensors, output_device_tensors, device_context);
 #endif
   } else if (device_context->GetDeviceType() == device::DeviceType::kCPU) {
-#ifndef ENABLE_SECURITY
     if (DumpJsonParser::GetInstance().op_debug_mode() == DumpJsonParser::DUMP_LITE_EXCEPTION) {
       MS_LOG(WARNING) << "Abnormal dump is not supported on CPU backend.";
       return;
@@ -156,7 +153,6 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Devic
       CPUE2eDump::DumpCNodeData(cnode, kernel_graph->graph_id());
       CPUE2eDump::DumpRunIter(kernel_graph);
     }
-#endif
   } else if (device_context->GetDeviceType() == device::DeviceType::kGPU) {
 #ifdef ENABLE_DEBUGGER
     if (DumpJsonParser::GetInstance().op_debug_mode() == DumpJsonParser::DUMP_LITE_EXCEPTION) {
@@ -255,7 +251,6 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
       ACLDump(device_id, graphs, is_kbyk);
     }
   }
-#ifndef ENABLE_SECURITY
   if (DumpJsonParser::GetInstance().e2e_dump_enabled() && !graphs.empty()) {
     // First graph is the dataset graph when dataset_sink_mode = True
     auto graph = graphs[0];
@@ -268,7 +263,6 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
     }
     DumpJsonParser::GetInstance().SetDatasetSink(is_dataset_graph);
   }
-#endif
   if (backend == "ge") {
     return;
   }
@@ -288,7 +282,6 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
     debugger->PreExecuteGraphDebugger(graphs, origin_parameters_order);
   }
 #endif
-#ifndef ENABLE_SECURITY
   if (DumpJsonParser::GetInstance().e2e_dump_enabled()) {
     DumpJsonParser::GetInstance().ClearGraph();
     if (graphs.size() != device_contexts.size()) {
@@ -304,7 +297,6 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
       }
     }
   }
-#endif
 }
 
 /*
@@ -336,12 +328,10 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
   device_ctx_->device_res_manager_->SyncAllStreams();
   std::lock_guard<std::mutex> locker(debug_mutex_);
 
-#ifndef ENABLE_SECURITY
   if (DumpJsonParser::GetInstance().GetIterDumpFlag()) {
     CPUE2eDump::DumpParametersData();
     CPUE2eDump::DumpConstantsData();
   }
-#endif
 
 #ifdef ENABLE_DEBUGGER
   auto debugger = Debugger::GetInstance();
@@ -354,10 +344,8 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
     exec_order_ = 0;
     debugger->Debugger::PostExecuteGraphDebugger();
   }
-#ifndef ENABLE_SECURITY
   DumpJsonParser::GetInstance().UpdateDumpIter(step_count_);
   MS_LOG(INFO) << "UpdateDumpIter: " << step_count_;
-#endif
 #endif
 }
 void DebugActor::Finalize() { DumpJsonParser::GetInstance().PrintUnusedKernel(); }

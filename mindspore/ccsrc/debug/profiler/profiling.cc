@@ -286,14 +286,12 @@ uint64_t GetClockSyscnt() {
 void CollectHostInfo(const std::string &module, const std::string &event, const std::string &stage,
                      const uint64_t &start_time, const uint64_t &end_time, int8_t level,
                      const std::map<std::string, std::string> &custom_info) {
-#ifndef ENABLE_SECURITY
 #ifndef __linux__
   return;
 #else
   profiler::ascend::ProfilingFrameworkData::RecordHostProfile(
     std::make_shared<runtime::ProfilerData>(module, event, stage, start_time, end_time, level, custom_info));
   return;
-#endif
 #endif
 }
 

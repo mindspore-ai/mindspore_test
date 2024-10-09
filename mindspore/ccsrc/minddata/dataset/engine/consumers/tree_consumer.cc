@@ -24,13 +24,9 @@
 #include "minddata/dataset/engine/consumers/tree_consumer.h"
 #include "minddata/dataset/engine/datasetops/data_queue_op.h"
 #include "minddata/dataset/engine/opt/pre/getter_pass.h"
-#ifndef ENABLE_SECURITY
 #include "minddata/dataset/engine/perf/auto_tune.h"
-#endif
 #include "minddata/dataset/engine/perf/info_collector.h"
-#ifndef ENABLE_SECURITY
 #include "minddata/dataset/engine/perf/profiling.h"
-#endif
 #include "minddata/dataset/engine/tree_adapter.h"
 #ifndef ENABLE_ANDROID
 #include "minddata/dataset/kernels/data/data_utils.h"
@@ -44,9 +40,7 @@
 
 namespace mindspore {
 namespace dataset {
-#ifndef ENABLE_SECURITY
 using ProfilingRegistrationState = ProfilingManager::ProfilingRegistrationState;
-#endif
 // TreeConsumer
 TreeConsumer::TreeConsumer() : TreeConsumer(1) {}
 
@@ -56,10 +50,8 @@ TreeConsumer::TreeConsumer(int32_t num_epochs) : num_epochs_(num_epochs) {
 
 Status TreeConsumer::Init(const std::shared_ptr<DatasetNode> &root) {
   RETURN_IF_NOT_OK(tree_adapter_->Compile(root));
-#ifndef ENABLE_SECURITY
   profiling_manager_ = GlobalContext::profiling_manager();
   RETURN_IF_NOT_OK(RegisterProfilingManager());
-#endif
   return Status::OK();
 }
 
@@ -76,7 +68,6 @@ Status TreeConsumer::Terminate() {
   return Status::OK();
 }
 
-#ifndef ENABLE_SECURITY
 Status IteratorConsumer::RegisterProfilingManager() {
   auto profiler_state = profiling_manager_->GetProfilerTreeState(tree_adapter_->tree_.get());
   // This should never happen
@@ -164,7 +155,6 @@ Status TreeConsumer::InitAutoTune() {
   }
   return Status::OK();
 }
-#endif
 
 std::string TreeConsumer::GetOffload() { return (tree_adapter_->GetOffloadJson()).dump(); }
 
@@ -174,7 +164,6 @@ Status IteratorConsumer::Init(const std::shared_ptr<DatasetNode> &root, int64_t 
     tree_adapter_ = std::make_unique<TreeAdapter>(TreeAdapter::UsageFlag::kDeReset);
   }
   RETURN_IF_NOT_OK(tree_adapter_->Compile(root, num_epochs_, global_step, dataset_size, false));
-#ifndef ENABLE_SECURITY
   profiling_manager_ = GlobalContext::profiling_manager();
   if (profiling_manager_->IsProfiling()) {
     // Init has been called already
@@ -183,7 +172,6 @@ Status IteratorConsumer::Init(const std::shared_ptr<DatasetNode> &root, int64_t 
   if (GlobalContext::config_manager()->enable_autotune()) {
     RETURN_IF_NOT_OK(InitAutoTune());
   }
-#endif
   return Status::OK();
 }
 
@@ -320,7 +308,6 @@ Status ToDevice::Init(const std::shared_ptr<DatasetNode> &root, int64_t global_s
     tree_adapter_ = std::make_unique<TreeAdapter>(TreeAdapter::UsageFlag::kDeReset);
   }
   RETURN_IF_NOT_OK(tree_adapter_->Compile(root, num_epochs_, global_step, dataset_size, true));
-#ifndef ENABLE_SECURITY
   profiling_manager_ = GlobalContext::profiling_manager();
   if (profiling_manager_->IsProfiling()) {
     // Init has been called already
@@ -329,7 +316,6 @@ Status ToDevice::Init(const std::shared_ptr<DatasetNode> &root, int64_t global_s
   if (GlobalContext::config_manager()->enable_autotune()) {
     RETURN_IF_NOT_OK(InitAutoTune());
   }
-#endif
   return Status::OK();
 }
 

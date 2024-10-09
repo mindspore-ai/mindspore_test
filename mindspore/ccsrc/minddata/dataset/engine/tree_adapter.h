@@ -37,13 +37,11 @@ class ToDevice;
 class IteratorConsumer;
 
 class TreeAdapter {
-#ifndef ENABLE_SECURITY
   friend ProfilingManager;
   friend TreeConsumer;
   friend ToDevice;
   friend IteratorConsumer;
   friend AutoTune;
-#endif
   friend TreeModifier;
 
  public:
@@ -99,7 +97,6 @@ class TreeAdapter {
 
   // Return Offload Json
   nlohmann::json GetOffloadJson();
-#ifndef ENABLE_SECURITY
   /// \brief Setter for Profiling Manager
   Status SetProfilingManagerPtr(const std::shared_ptr<ProfilingManager> &profiling_manager,
                                 std::shared_ptr<Tracing> tracing_node = nullptr) {
@@ -112,7 +109,6 @@ class TreeAdapter {
 
   /// \brief Getter for profiling manager, no ownership
   ProfilingManager *GetProfilingManager() { return profiling_manager_.get(); }
-#endif
 
  protected:
   // Run the mandatory pass checking the syntax and semantics of the IR tree
@@ -170,15 +166,13 @@ class TreeAdapter {
   // 1. the tree holder, the send_tree_ will be moved to it and launched in independent dataset process
   // 2. the tree holder, the receive_tree_ will be moved to it and launched in main dataset process
   std::unique_ptr<ExecutionTree> tree_;
-  bool optimize_;  // Flag to enable optional optimization pass
-#ifndef ENABLE_SECURITY
+  bool optimize_;                                        // Flag to enable optional optimization pass
   std::shared_ptr<ProfilingManager> profiling_manager_;  // Profiling manager
   std::shared_ptr<DatasetIteratorTracing> tracing_;      // trace profiling data
-#endif
-  int32_t cur_batch_num_;           // current batch number, used for profiling
-  int32_t cur_connector_size_;      // current connector size of root op, used for profiling
-  int32_t cur_connector_capacity_;  // current connector capacity of root op, used for profiling
-  UsageFlag usage_;                 // usage of this tree adapter (type of consumer)
+  int32_t cur_batch_num_;                                // current batch number, used for profiling
+  int32_t cur_connector_size_;                           // current connector size of root op, used for profiling
+  int32_t cur_connector_capacity_;                       // current connector capacity of root op, used for profiling
+  UsageFlag usage_;                                      // usage of this tree adapter (type of consumer)
   bool launched_;
   // State flags for the lifecycle of the tree
   enum CompileState {

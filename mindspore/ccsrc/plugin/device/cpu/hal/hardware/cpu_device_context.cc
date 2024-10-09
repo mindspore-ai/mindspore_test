@@ -62,9 +62,7 @@
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
 #endif
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/anf_ir_dump.h"
 #endif
@@ -113,7 +111,6 @@ void CPUDeviceContext::Initialize() {
   device_res_manager_->Initialize();
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-#ifndef ENABLE_SECURITY
   if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
     // Dump json config file if dump is enabled.
     uint32_t rank_id = 0;
@@ -122,7 +119,6 @@ void CPUDeviceContext::Initialize() {
     json_parser.CopyDumpJsonToDir(rank_id);
     json_parser.CopyMSCfgJsonToDir(rank_id);
   }
-#endif
 #ifdef __linux__
   if (ms_context->IsDefaultDeviceTarget() && ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
     MS_LOG(INFO)
@@ -619,14 +615,12 @@ bool CPUKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<K
                                      void * /* stream*/) const {
   MS_EXCEPTION_IF_NULL(kernel);
 
-#ifndef ENABLE_SECURITY
   const auto &profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_inst);
   if (profiler_inst->GetEnableFlag() && profiler_inst->GetOpTimeFlag()) {
     auto ret = LaunchKernelWithProfiling(kernel, inputs, workspace, outputs, kernel_mod);
     return ret;
   }
-#endif
   auto ret = DoLaunchKernel(kernel, inputs, workspace, outputs, kernel_mod);
   return ret;
 }

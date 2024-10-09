@@ -97,12 +97,10 @@ class CPUKernelExecutor : public KernelExecutor {
   void SingleOpGraphOptimize(const KernelGraphPtr &graph) const;
   void OptimizeGraphImpl(const KernelGraphPtr &graph) const;
   void OptimizeMindIR(const KernelGraphPtr &graph) const;
-#ifndef ENABLE_SECURITY
   // Launch a kernel and record the elapsed time end to end.
   bool LaunchKernelWithProfiling(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod) const;
-#endif
   // Launch a kernel by 'KernelMod' of the kernel.
   bool DoLaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                       const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,

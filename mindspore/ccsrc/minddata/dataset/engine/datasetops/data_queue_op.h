@@ -100,13 +100,11 @@ class DataQueueOp : public PipelineOp {
   }
 
   Status operator()() override;
-#ifndef ENABLE_SECURITY
   // Record the pipeline profiling info
   void ProfilingRecorder(bool is_profiling_enable, const std::shared_ptr<DeviceQueueTracing> &profiling_node,
                          int64_t send_batch, int32_t tdt_cost, uint64_t *batch_start_time, uint64_t *end_time,
                          int32_t connector_capacity, int32_t connector_size) const;
 
-#endif
   // Op name getter
   // @return Name of the current Op
   std::string Name() const override { return kDeviceQueueOp; }
@@ -179,7 +177,6 @@ class DataQueueOp : public PipelineOp {
   uint32_t queue_capacity_;
 
   Status SendDataToCPU();
-#ifndef ENABLE_SECURITY
   // Create async thread to detect whether it takes too long and unable to fetch first batch
   Status DetectFirstBatch();
 
@@ -203,7 +200,6 @@ class DataQueueOp : public PipelineOp {
     }
   };
   std::vector<SendInfo> send_summary_;
-#endif
 
   std::unique_ptr<ChildIterator> child_iterator_;
   std::string channel_name_;

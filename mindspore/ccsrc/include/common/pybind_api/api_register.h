@@ -71,12 +71,10 @@ void RegRowTensor(const py::module *m);
 void RegMapTensor(const py::module *m);
 }  // namespace tensor
 
-#ifndef ENABLE_SECURITY
 namespace profiler {
 void RegProfilerManager(const py::module *m);
 void RegProfiler(const py::module *m);
 }  // namespace profiler
-#endif
 
 namespace prim {
 void RegCompositeOpsGroup(const py::module *m);

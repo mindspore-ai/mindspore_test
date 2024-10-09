@@ -30,10 +30,8 @@ namespace mindspore::dataset {
 // Forward declare
 class TreeAdapter;
 class DatasetNode;
-#ifndef ENABLE_SECURITY
 class AutoTune;
 class ProfilingManager;
-#endif
 /// A base class for tree consumers which would fetch rows from the tree pipeline
 class TreeConsumer {
  public:
@@ -76,7 +74,6 @@ class TreeConsumer {
   /// \return Status error code
   virtual Status Stop() { return Status::OK(); }
 
-#ifndef ENABLE_SECURITY
   virtual Status RegisterProfilingManager();
 
   /// \brief Getter for profiling manager, no ownership
@@ -86,7 +83,6 @@ class TreeConsumer {
   std::shared_ptr<ProfilingManager> GetProfilingManagerPtr() { return profiling_manager_; }
 
   Status InitAutoTune();
-#endif
 
   /// Returns the next row in a vector format
   /// \param[out] out std::vector of Tensors
@@ -109,11 +105,9 @@ class TreeConsumer {
   /// The class owns the tree_adapter that handles execution tree operations.
   std::unique_ptr<TreeAdapter> tree_adapter_;
 
-#ifndef ENABLE_SECURITY
   /// Profiling Manager
   std::shared_ptr<ProfilingManager> profiling_manager_;
   std::shared_ptr<AutoTune> autotune_;
-#endif
 
   /// Method to return the name of the consumer
   /// \return string

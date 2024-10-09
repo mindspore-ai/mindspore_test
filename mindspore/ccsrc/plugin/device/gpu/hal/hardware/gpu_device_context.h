@@ -165,12 +165,10 @@ class GPUKernelExecutor : public KernelExecutor {
   // Update kernel ref info before create kernel
   void UpdateKernelRefInfo(const KernelGraphPtr &graph) const;
 
-#ifndef ENABLE_SECURITY
   // Launch a kernel and record the elapsed time end to end.
   bool LaunchKernelWithProfiling(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod, void *stream) const;
-#endif
   // Launch a kernel by 'KernelMod' of the kernel.
   bool DoLaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                       const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,

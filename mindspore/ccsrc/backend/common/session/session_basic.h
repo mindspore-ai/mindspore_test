@@ -55,9 +55,7 @@ const char kSessionBasic[] = "SessionBasic";
 
 namespace session {
 using mindspore::debug::CallBackFunc;
-#ifndef ENABLE_SECURITY
 using mindspore::debug::Summary;
-#endif
 
 using AnyList = std::vector<Any>;
 using AnyListPtr = std::shared_ptr<AnyList>;
@@ -117,9 +115,7 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   void RunGraph(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
   void RunGraphAsync(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs, VectorRef *outputs);
 
-#ifndef ENABLE_SECURITY
   virtual void RegisterSummaryCallBackFunc(const CallBackFunc &callback);
-#endif
   virtual GraphId GetFinalRunGraph() const { return kInvalidGraphId; }
   bool IsGetNextGraph(const std::shared_ptr<KernelGraph> &kernel_graph, std::string *channel_name) const;
   virtual bool CheckModelInputs(uint32_t graph_id, const std::vector<tensor::TensorPtr> &inputs,
@@ -220,10 +216,8 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
 
   void ProcessInputTensorsForHeterogeneous(const std::string &cur_target,
                                            const std::vector<tensor::TensorPtr> &input_tensors) const;
-#ifndef ENABLE_SECURITY
   virtual void SetSummaryNodes(KernelGraph *graph);
   void RecurseSetSummaryNodesForAllGraphs(KernelGraph *graph);
-#endif
 
   void LoadInputs(const GraphId &graph_id, const std::vector<tensor::TensorPtr> &inputs_const) const {
     MS_LOG(INFO) << "Status record: start load input. graph id: " << graph_id;
@@ -245,9 +239,7 @@ class BACKEND_EXPORT SessionBasic : public KernelGraphMgr, public std::enable_sh
   void UpdateOutputs(const std::shared_ptr<KernelGraph> &kernel_graph, VectorRef *const outputs,
                      const std::vector<tensor::TensorPtr> &input_tensors,
                      std::map<tensor::TensorPtr, session::KernelWithIndex> *tensor_to_node) const;
-#ifndef ENABLE_SECURITY
   void Summary(KernelGraph *graph);
-#endif
   // create graph output for RunOp
   void CreateOutputNode(const CNodePtr &cnode, const std::shared_ptr<KernelGraph> &graph) const;
 

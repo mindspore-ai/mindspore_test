@@ -4,10 +4,5 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     list(REMOVE_ITEM _UTILS_SRC_LIST ${_UTILS_SIGNAL_SRC_FILES})
 endif()
 
-if(ENABLE_SECURITY)
-    file(GLOB_RECURSE _UTILS_SUMMARY_FILES ./summary/event_writer.cc)
-    list(REMOVE_ITEM _UTILS_SRC_LIST ${_UTILS_SUMMARY_FILES})
-endif()
-
 set_property(SOURCE ${_UTILS_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_UTILS)
 add_library(_mindspore_utils_obj OBJECT ${_UTILS_SRC_LIST})

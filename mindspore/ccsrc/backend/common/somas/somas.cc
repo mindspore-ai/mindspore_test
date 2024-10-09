@@ -40,10 +40,8 @@
 #include "debug/rdr/string_recorder.h"
 #endif
 #include "include/common/thread_pool.h"
-#ifndef ENABLE_SECURITY
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
-#endif
 #endif
 namespace mindspore {
 namespace somas {
@@ -213,12 +211,10 @@ bool Somas::Assign(const KernelGraphPtr &graph_ptr) {
   if (!IsSupportSomas(*graph_ptr)) {
     return false;
   }
-#ifndef ENABLE_SECURITY
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name = "somas_input_graph_" + std::to_string(graph_ptr->graph_id()) + ".ir";
     DumpIR(file_name, graph_ptr, true, kWholeStack);
   }
-#endif
   return Assign(*graph_ptr);
 }
 
@@ -557,7 +553,7 @@ bool Somas::UpdateTensorsOffset(const std::vector<nlohmann::json> &tensors_json)
 
 void Somas::InitSomasModel(const session::KernelGraph &graph) {
   MS_EXCEPTION_IF_CHECK_FAIL(InitBasicInfoFromGraph(graph), "Init SOMAS basic info from graph failed.");
-#if defined(ENABLE_DUMP_IR) && !defined(ENABLE_SECURITY)
+#if defined(ENABLE_DUMP_IR)
   SubModuleId module = SubModuleId::SM_OPTIMIZER;
   std::string name = device_name_ + "_somas_initial_info." + std::to_string(graph.graph_id());
   (void)mindspore::RDR::RecordString(module, name, SomasInfo());
@@ -584,7 +580,7 @@ void Somas::InitSomasModel(const session::KernelGraph &graph) {
                << nodes_list_.size() << " nodes, " << tensors_list_.size() << " tensors, " << union_tensors_list_.size()
                << " union tensors lists, and " << contiguous_tensors_list_.size() << " contiguous tensors lists";
 
-#if defined(ENABLE_DUMP_IR) && !defined(ENABLE_SECURITY)
+#if defined(ENABLE_DUMP_IR)
   name = device_name_ + "_somas_pre_processed_info." + std::to_string(graph.graph_id());
   (void)mindspore::RDR::RecordString(module, name, SomasInfo());
   name = device_name_ + "_somas_offline_log." + std::to_string(graph.graph_id());
@@ -682,9 +678,7 @@ void Somas::InitControlTensors() {
 }
 
 bool Somas::CommonSpecNodeProcess(const session::KernelGraph &graph) {
-#ifndef ENABLE_SECURITY
   SummaryInputProcess(graph);
-#endif
   RefNodeProcess(graph);
   CommunicationNodeProcess();
   return true;
@@ -1001,7 +995,6 @@ bool Somas::InitBasicInfoFromGraph(const session::KernelGraph &graph) {
   return true;
 }
 
-#ifndef ENABLE_SECURITY
 void Somas::SummaryInputProcess(const session::KernelGraph &graph) {
   bool summary_exist = graph.summary_node_exist();
   if (!summary_exist) {
@@ -1044,7 +1037,6 @@ void Somas::SummaryInputProcess(const session::KernelGraph &graph) {
 
   MS_LOG(INFO) << "Special Tensor total size: SummaryNodes: " << total_summary_size;
 }
-#endif
 
 void Somas::GraphOutputProcess(const session::KernelGraph &graph) {
   bool need_reuse_graph_output = NeedReuseGraphOutput();
@@ -2021,14 +2013,12 @@ void Somas::DumpParameters(std::ostringstream &oss) const {
 }
 
 void Somas::DumpSomasModelInfo(const string &tag, uint32_t graph_id) const {
-#ifndef ENABLE_SECURITY
   bool force_dump = device::tracker::MemTrackerManager::GetInstance().IsEnabled() && tag == "somas_tensor_offset";
   if (save_debug_info_ || force_dump) {
     std::string file_path =
       GetSaveGraphsPathName("/" + device_name_ + "_" + tag + "_" + std::to_string(graph_id) + ".ir", debug_info_path_);
     (void)Common::SaveStringToFile(file_path, SomasInfo());
   }
-#endif
 }
 
 std::string Somas::Offline() const {

@@ -39,14 +39,10 @@
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "ir/dtype.h"
 #include "include/backend/optimizer/helper.h"
-#ifndef ENABLE_SECURITY
 #include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
 #include "plugin/device/gpu/hal/profiler/gpu_profiling_utils.h"
-#endif
 #include "utils/shape_utils.h"
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #include "kernel/gpu/gpu_kernel.h"
 #ifdef ENABLE_DEBUGGER
 #include "debug/debug_services.h"
@@ -99,9 +95,7 @@ bool GPUKernelRuntime::Init() {
     MS_LOG(ERROR) << "InitDevice error.";
     return ret;
   }
-#ifndef ENABLE_SECURITY
   DumpJsonParser::GetInstance().Parse();
-#endif
   mem_manager_ = std::make_shared<GPUMemoryManager>();
   MS_EXCEPTION_IF_NULL(mem_manager_);
   mem_manager_->Initialize();
@@ -596,10 +590,8 @@ void GPUKernelRuntime::InitKernelRefCount(const session::KernelGraph *graph) {
   mem_reuse_util_ptr->SetReuseRefCount();
   // Can't free the device address of graph output, so set the reference count of graph output specially.
   mem_reuse_util_ptr->SetGraphOutputRefCount();
-#ifndef ENABLE_SECURITY
   // Can't free the device address of summary nodes, so set the reference count of summary nodes specially.
   mem_reuse_util_ptr->SetSummaryNodesRefCount();
-#endif
   auto graph_id = graph->graph_id();
   mem_reuse_util_map_[graph_id] = mem_reuse_util_ptr;
 }
@@ -843,7 +835,6 @@ void GPUKernelRuntime::LaunchKernelWithoutMock(const session::KernelGraph *graph
                                                const KernelTensorList &outputs, bool profiling) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(kernel);
-#ifndef ENABLE_SECURITY
   auto profiler_inst = profiler::gpu::GPUProfiler::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_inst);
 
@@ -853,13 +844,10 @@ void GPUKernelRuntime::LaunchKernelWithoutMock(const session::KernelGraph *graph
       profiler::gpu::ProfilingUtils::GetProfilingTraceFromEnv(NOT_NULL(graph));
     profiler_inst->SetStepTraceOpName(profiling_trace);
   }
-#endif
   if (!profiling) {
-#ifndef ENABLE_SECURITY
     if (profiler_inst->GetEnableFlag() && profiler_inst->GetOpTimeFlag()) {
       profiler_inst->OpDataProducerBegin(kernel->fullname_with_scope(), stream_);
     }
-#endif
     auto kernel_mod = AnfAlgo::GetKernelMod(kernel);
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream_);
@@ -869,14 +857,12 @@ void GPUKernelRuntime::LaunchKernelWithoutMock(const session::KernelGraph *graph
 #endif
       MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Launch kernel failed: " << kernel->fullname_with_scope();
     }
-#ifndef ENABLE_SECURITY
     if (profiler_inst->GetEnableFlag() && profiler_inst->GetOpTimeFlag()) {
       profiler_inst->OpDataProducerEnd();
       if (profiler_inst->GetSyncEnableFlag()) {
         CHECK_OP_RET_WITH_ERROR(SyncStream(), "Profiler SyncStream failed.");
       }
     }
-#endif
   } else {
     LaunchKernelWithTimeProfiling(kernel, inputs, workspaces, outputs);
   }

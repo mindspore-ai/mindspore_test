@@ -716,7 +716,6 @@ void GetEvalStackInfo(std::ostringstream &oss) {
   }
   bool empty_stack_info = oss.str() == "\n";
 
-#ifndef ENABLE_SECURITY
   std::string msg =
     "\n----------------------------------------------------\n"
     "- The Traceback of Net Construct Code:\n"
@@ -730,7 +729,6 @@ void GetEvalStackInfo(std::ostringstream &oss) {
         << "' for more details. Get instructions about `analyze_fail.ir` at "
            "https://www.mindspore.cn/search?inputValue=analyze_fail.ir)";
   }
-#endif
   stack.clear();
   MS_LOG(INFO) << "Get graph analysis information end";
   if (empty_stack_info) {

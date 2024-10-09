@@ -28,10 +28,8 @@
 #include "pipeline/pynative/grad/jit/jit_call_graph.h"
 #include "utils/trace_base.h"
 #include "ir/func_graph_cloner.h"
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
-#endif
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/utils/config_manager.h"
 #include "load_mindir/load_model.h"
@@ -770,9 +768,7 @@ nlohmann::json GenKernelGraphJson(const KernelGraphPtr &kg, const std::vector<An
   kg_json[kIsNeedGil] = kg->is_need_gil();
   kg_json[kIsFromSingleOp] = kg->is_from_single_op();
   kg_json[kLabelNum] = kg->label_num();
-#ifndef ENABLE_SECURITY
   kg_json[kSummaryNodeExist] = kg->summary_node_exist();
-#endif
   const auto &back_front_anf_json = SaveAnfToAnfMap(kg->backend_front_anf_map());
   if (!back_front_anf_json.empty()) {
     kg_json[kBackendFrontAnf] = back_front_anf_json;
@@ -838,12 +834,10 @@ nlohmann::json GenKernelGraphJson(const KernelGraphPtr &kg, const std::vector<An
   if (!index_set.empty()) {
     kg_json[kCommSubGraphIds] = index_set;
   }
-#ifndef ENABLE_SECURITY
   const auto &summary_nodes_json = SaveSummaryNodes(kg->summary_nodes());
   if (!summary_nodes_json.empty()) {
     kg_json[kSummaryNodes] = summary_nodes_json;
   }
-#endif
   auto &context = CompileCacheContext::GetInstance();
   auto front_graph = context.GetFrontendGraphByBackendGraph(kg);
   if (front_graph) {
@@ -1103,7 +1097,6 @@ ParamInfoPtr GetParamDefaultValue(const AnfNodePtr &node) {
   return parameter->param_info();
 }
 
-#ifndef ENABLE_SECURITY
 bool ExistSummaryNode(const KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
   for (auto &n : TopoSort(graph->get_return())) {
@@ -1113,7 +1106,6 @@ bool ExistSummaryNode(const KernelGraph *graph) {
   }
   return false;
 }
-#endif
 
 GraphId KernelGraphMgr::graph_sum_ = 0;
 GraphId KernelGraphMgr::pynative_graph_sum_ = kPynativeGraphIdStart;
@@ -2246,11 +2238,9 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
   graph->set_output(ConstructOutput(outputs, graph));
   graph->SetExecOrderByDefault();
 
-#ifndef ENABLE_SECURITY
   if (ExistSummaryNode(graph.get())) {
     graph->set_summary_node_exist(true);
   }
-#endif
   MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
   if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_MINDRT)) {
     FuncGraphManagerPtr manager = MakeManager({graph}, false);
@@ -2365,11 +2355,9 @@ void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
   SetInputNodeUsage(graph, manager);
   graph->SetExecOrderByDefault();
 
-#ifndef ENABLE_SECURITY
   if (ExistSummaryNode(graph.get())) {
     graph->set_summary_node_exist(true);
   }
-#endif
 
   all_out_graph->push_back(graph);
   graph->set_parameters(graph->inputs());
@@ -2441,10 +2429,8 @@ void HandleGraphSimpleAttr(const nlohmann::json &graph_json, KernelGraph *graph)
       somas_info->merged_blocks_map_[block.at(0)] = block.at(1);
     }
   }
-#ifndef ENABLE_SECURITY
   // set summary_node of graph
   graph->set_summary_node_exist(graph_json[kSummaryNodeExist]);
-#endif
   if (graph_json.contains(kStartLabel)) {
     auto start_label = context.FindBackNodeByBackName(graph_json[kStartLabel]);
     if (start_label) {
@@ -2674,7 +2660,6 @@ void HandleGraphComplexAttr(const mindspore::HashMap<GraphId, std::shared_ptr<Ke
     LoadAnfKernelInfoFromJson(kernel_infos_json);
   }
   HandleAttrVauleNode(graph_json, graph);
-#ifndef ENABLE_SECURITY
   if (graph_json.contains(kSummaryNodes)) {
     const auto &summary_nodes_json = graph_json[kSummaryNodes];
     std::map<std::string, std::pair<AnfNodePtr, int>> summary_nodes;
@@ -2688,7 +2673,6 @@ void HandleGraphComplexAttr(const mindspore::HashMap<GraphId, std::shared_ptr<Ke
     }
     graph->set_summary_nodes(summary_nodes);
   }
-#endif
   HandleSwitchInlineMaps(graph_json, graph);
   MS_LOG(INFO) << "Handle graph " << graph->ToString() << " complex attr success.";
 }

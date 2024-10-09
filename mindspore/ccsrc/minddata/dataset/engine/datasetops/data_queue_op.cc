@@ -216,10 +216,8 @@ Status DataQueueOp::CheckExceptions(const TensorRow &row) const {
 }
 
 Status DataQueueOp::operator()() {
-#ifndef ENABLE_SECURITY
   RETURN_IF_NOT_OK(tree_->AllTasks()->CreateAsyncTask("Detect first batch",
                                                       std::bind(&DataQueueOp::DetectFirstBatch, this), nullptr, id()));
-#endif
   TaskManager::FindMe()->Post();
   child_iterator_ = std::make_unique<ChildIterator>(this, 0, 0);
 
@@ -460,25 +458,20 @@ Status DataQueueOp::SendDataToAscend() {
     RETURN_IF_NOT_OK(tree_->AllTasks()->CreateAsyncTask(
       "Push prefetch data to ascend queue", std::bind(&DataQueueOp::PushPrefetchDataToAscend, this), nullptr, id()));
   }
-#ifndef ENABLE_SECURITY
   uint64_t batch_start_time = 0;
   uint64_t end_time = 0;
   uint64_t batch_record_start = 0;
   uint64_t batch_record_end = 0;
-#endif
   int64_t send_batch = 0;
   int32_t tdt_cost = 0;
-#ifndef ENABLE_SECURITY
   int32_t connector_size = 0;
   int32_t connector_capacity = 0;
-#endif
   bool is_break_loop = false;
   double row_timer_start = 0;
 
   std::shared_ptr<ConfigManager> cfg = GlobalContext::config_manager();
   int64_t sending_num = cfg->sending_batches();  // Get the current sending_num
 
-#ifndef ENABLE_SECURITY
   std::shared_ptr<DeviceQueueTracing> profiling_node;
   bool is_profiling_enable = GlobalContext::profiling_manager()->IsProfilingEnable(tree_);
   if (is_profiling_enable) {
@@ -488,16 +481,11 @@ Status DataQueueOp::SendDataToAscend() {
     batch_start_time = ProfilingTime::GetCurMilliSecond();
     connector_capacity = ChildOpConnectorCapacity();
   }
-#else
-  bool is_profiling_enable = false;
-#endif
 #ifdef ENABLE_DUMP_IR
   RETURN_IF_NOT_OK(md_channel_info_->RecordBatchQueue(ChildOpConnectorSize()));
   RETURN_IF_NOT_OK(md_channel_info_->RecordPreprocessBatch(0));
 #endif
-#ifndef ENABLE_SECURITY
   batch_record_start = ProfilingTime::GetCurMilliSecond();
-#endif
   TensorRow curr_row;
   row_timer_start = GetMilliTimeStamp();
   RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&curr_row));
@@ -523,9 +511,7 @@ Status DataQueueOp::SendDataToAscend() {
         RETURN_IF_NOT_OK(md_channel_info_->RecordPushFirstStartTime());
       }
 #endif
-#ifndef ENABLE_SECURITY
       DetectPerBatchTime(&batch_record_start, &batch_record_end);
-#endif
       PrintBeginInfoWhenFirstBatch(first_push_flag_);
       // when training stopped, handle might have been destroyed immediately
       if (ascend_data_queue_ != nullptr && !ascend_data_queue_->IsOpen()) {
@@ -558,11 +544,9 @@ Status DataQueueOp::SendDataToAscend() {
         VLOG_MD(curr_row.Timer()->Summary());
       }
       PrintEndInfoWhenFirstBatch(&first_push_flag_);
-#ifndef ENABLE_SECURITY
       ProfilingRecorder(is_profiling_enable, profiling_node, send_batch, tdt_cost, &batch_start_time, &end_time,
                         connector_capacity, connector_size);
       batch_record_start = ProfilingTime::GetCurMilliSecond();
-#endif
       send_batch++;
       MS_LOG(INFO) << "Have sent " << send_batch << " batch(es) to device, channel name: " << channel_name_;
 #ifdef ENABLE_DUMP_IR
@@ -579,25 +563,19 @@ Status DataQueueOp::SendDataToAscend() {
       // wait when sending num is not 0, and sending num no larger than already sending batch
       LimitSendingBatches(send_batch, &sending_num, cfg);
 
-#ifndef ENABLE_SECURITY
       RecordProfilingData(is_profiling_enable, false, &connector_size, &connector_capacity, &send_batch);
-#endif
       row_timer_start = GetMilliTimeStamp();
       RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&curr_row));
       curr_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
-#ifndef ENABLE_SECURITY
       uint64_t batch_fetch_end = ProfilingTime::GetCurMilliSecond();
-#endif
       if (ascend_data_queue_->QueueType() == "Ascend_MBUF") {
         if (!enable_prefetch_cache_pipeline_) {
           RETURN_IF_NOT_OK(WaitForAscendQueue(static_cast<size_t>(curr_row.SizeInBytes())));
         }
       }
-#ifndef ENABLE_SECURITY
       uint64_t queue_wait_end = ProfilingTime::GetCurMilliSecond();
       // Skip the time looping in the mbuf queue control, FetchNextTensorRow time is what we need
       batch_record_start = batch_record_start + (queue_wait_end - batch_fetch_end);
-#endif
     }
 
     uint64_t start_time = GetSyscnt();
@@ -606,9 +584,7 @@ Status DataQueueOp::SendDataToAscend() {
     RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "PushToAscend", start_time,
                                    {{"TensorRowFlags", TensorRow(TensorRow::kFlagEOE).FlagName()}}));
     UpdateRepeatAndEpochCounter();
-#ifndef ENABLE_SECURITY
     RecordProfilingData(is_profiling_enable, true, &connector_size, &connector_capacity, &send_batch);
-#endif
     row_timer_start = GetMilliTimeStamp();
     RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&curr_row));
     curr_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
@@ -654,20 +630,16 @@ Status DataQueueOp::SendEpochEndToAscend(const TensorRow &curr_row, const bool &
   if (curr_row.eoe() && send_epoch_end_ && ascend_data_queue_->IsOpen()) {
     TensorRow dummy_row;
     if (!enable_prefetch_cache_pipeline_) {
-#ifndef ENABLE_SECURITY
       double start_time = 0;
       if (is_profiling_enable) {
         start_time = ProfilingTime::GetCurMilliSecond();
       }
-#endif
       auto status = ascend_data_queue_->Push({});
-#ifndef ENABLE_SECURITY
       if (is_profiling_enable) {
         double end_time = ProfilingTime::GetCurMilliSecond();
         RETURN_UNEXPECTED_IF_NULL(tdt_cost);
         *tdt_cost = static_cast<int32_t>(end_time - start_time);
       }
-#endif
 
       RETURN_IF_NOT_OK(CheckPushStatus(status, stop_send_, &send_finished_, is_break_loop));
       MS_LOG(INFO) << "an epoch has already sent, now stop send data.";
@@ -701,22 +673,18 @@ void DataQueueOp::LimitSendingBatches(int64_t send_batch, int64_t *sending_num,
 
 Status DataQueueOp::SendRowToTdt(TensorRow *curr_row, bool is_profiling_enable, int32_t *tdt_cost) {
   std::vector<device::DataQueueItem> items = ConvertTensorRowToDataQueueItem(*curr_row);
-#ifndef ENABLE_SECURITY
   double start_time = 0;
   if (is_profiling_enable) {
     start_time = ProfilingTime::GetCurMilliSecond();
   }
-#endif
   double row_timer_start = GetMilliTimeStamp();
   auto status = ascend_data_queue_->Push(items);
   curr_row->TimerRecord(NameWithID(), RowTimer::kPushToDeviceTime, {GetMilliTimeStamp() - row_timer_start});
-#ifndef ENABLE_SECURITY
   if (is_profiling_enable) {
     double end_time = ProfilingTime::GetCurMilliSecond();
     RETURN_UNEXPECTED_IF_NULL(tdt_cost);
     *tdt_cost = static_cast<int32_t>(end_time - start_time);
   }
-#endif
   if (status != device::DataQueueStatus::SUCCESS) {
     if (stop_send_) {
       MS_LOG(INFO) << "stop_send received";
@@ -874,7 +842,6 @@ Status DataQueueOp::PushDataToGPU() {
   // Every thread use cuda api should SetThreadDevice
   RETURN_IF_NOT_OK(SetThreadDevice());
   TaskManager::FindMe()->Post();
-#ifndef ENABLE_SECURITY
   uint64_t batch_start_time = 0;
   uint64_t end_time = 0;
   uint64_t push_cost = 0;
@@ -886,7 +853,6 @@ Status DataQueueOp::PushDataToGPU() {
     profiling_node = std::dynamic_pointer_cast<DeviceQueueTracing>(node);
     batch_start_time = ProfilingTime::GetCurMilliSecond();
   }
-#endif
 #ifdef ENABLE_DUMP_IR
   md_channel_info_->RecordBatchQueue(gpu_connector_->size());
   md_channel_info_->RecordPreprocessBatch(0);
@@ -917,10 +883,8 @@ Status DataQueueOp::PushDataToGPU() {
         PushDataToGPUCacheQueue(std::move(items));
       }
       RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "PushToGPU", start_time, {{"TensorRowFlags", "Data"}}));
-#ifndef ENABLE_SECURITY
       ProfilingRecorder(is_profiling_enable, profiling_node, send_batch, push_cost, &batch_start_time, &end_time,
                         gpu_connector_->capacity(), gpu_connector_->size());
-#endif
       send_batch++;
       MS_LOG(INFO) << "Have sent " << send_batch << " batch(es) to device, channel name: " << channel_name_;
 #ifdef ENABLE_DUMP_IR
@@ -932,12 +896,10 @@ Status DataQueueOp::PushDataToGPU() {
         break;
       }
     } else {
-#ifndef ENABLE_SECURITY
       if (is_profiling_enable) {
         tree_->SetEpochEnd();
         GlobalContext::profiling_manager()->RecordEndOfEpoch(send_batch);
       }
-#endif
     }
     if (NoExceptionRaised()) {
       auto rc = gpu_connector_->Pop(0, &item);
@@ -1014,11 +976,9 @@ Status DataQueueOp::SendDataToGPU() {
 #ifdef WITH_BACKEND
   RETURN_IF_NOT_OK(LaunchParallelCopyThread());
   MS_LOG(INFO) << "Device queue, sending data to GPU.";
-#ifndef ENABLE_SECURITY
   uint64_t batch_record_start;
   uint64_t batch_record_end;
   batch_record_start = ProfilingTime::GetCurMilliSecond();
-#endif
   TensorRow current_row;
   RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&current_row));
   first_fetch_flag_ = true;
@@ -1034,9 +994,7 @@ Status DataQueueOp::SendDataToGPU() {
     while (!current_row.eoe() && !is_break_loop && !device::DataQueueMgr::GetInstance().IsClosed()) {
       RETURN_IF_NOT_OK(FilterMetadata(&current_row));
       RETURN_IF_NOT_OK(CheckExceptions(current_row));
-#ifndef ENABLE_SECURITY
       DetectPerBatchTime(&batch_record_start, &batch_record_end);
-#endif
 
       if (create_data_info_queue_) {
         DATA_INFO data_info;
@@ -1048,9 +1006,7 @@ Status DataQueueOp::SendDataToGPU() {
       PrintBeginInfoWhenFirstBatch(first_push_flag_);
       RETURN_IF_NOT_OK(receive_queues_[num_buf++ % num_workers_]->Add(std::move(current_row)));
       PrintEndInfoWhenFirstBatch(&first_push_flag_);
-#ifndef ENABLE_SECURITY
       batch_record_start = ProfilingTime::GetCurMilliSecond();
-#endif
       if (NoExceptionRaised()) {
         RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&current_row));
       } else {
@@ -1166,7 +1122,6 @@ void DataQueueOp::Print(std::ostream &out, bool show_all) const {
   }
 }
 
-#ifndef ENABLE_SECURITY
 void DataQueueOp::ProfilingRecorder(bool is_profiling_enable, const std::shared_ptr<DeviceQueueTracing> &profiling_node,
                                     int64_t send_batch, int32_t tdt_cost, uint64_t *batch_start_time,
                                     uint64_t *end_time, int32_t connector_capacity, int32_t connector_size) const {
@@ -1224,7 +1179,6 @@ void DataQueueOp::DetectPerBatchTime(const uint64_t *start_time, uint64_t *end_t
                          " performance(with creating dataset iterator) and optimize it.";
   }
 }
-#endif
 
 void DataQueueOp::PrintBeginInfoWhenFirstBatch(const bool &first_push_flag) const {
   if (first_push_flag != true) {
@@ -1248,12 +1202,10 @@ void DataQueueOp::PrintEndInfoWhenFirstBatch(bool *first_push_flag) const {
 Status DataQueueOp::RetryPushData(const std::vector<DataQueueItem> &items, const bool profiling, uint64_t *push_time) {
 #ifdef WITH_BACKEND
   bool flag_log = false;
-#ifndef ENABLE_SECURITY
   uint64_t start_time = 0;
   if (profiling) {
     start_time = ProfilingTime::GetCurMilliSecond();
   }
-#endif
   while (!device::DataQueueMgr::GetInstance().IsClosed() && !TaskManager::FindMe()->Interrupted()) {
     DataQueueStatus ret = device::DataQueueMgr::GetInstance().Push(channel_name_, items, WAIT_TIME);
     if (ret != DataQueueStatus::SUCCESS) {
@@ -1278,11 +1230,9 @@ Status DataQueueOp::RetryPushData(const std::vector<DataQueueItem> &items, const
       break;
     }
   }
-#ifndef ENABLE_SECURITY
   if (profiling) {
     *push_time = ProfilingTime::GetCurMilliSecond() - start_time;
   }
-#endif
 #endif
   return Status::OK();
 }

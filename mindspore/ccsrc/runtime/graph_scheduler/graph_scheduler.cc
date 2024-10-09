@@ -54,9 +54,7 @@
 #include "include/common/utils/signal_util.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
 #endif
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/rdr/recorder_manager.h"
 #endif
@@ -593,11 +591,9 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
 
   // Create and schedule recorder actor.
   bool recorder_actor_need = false;
-#ifndef ENABLE_SECURITY
   if (profiler::ProfilerManager::GetInstance()->GetProfilingEnableFlag()) {
     recorder_actor_need = true;
   }
-#endif
 #ifdef ENABLE_DUMP_IR
   if (mindspore::RecorderManager::Instance().RdrEnable()) {
     recorder_actor_need = true;
@@ -627,9 +623,7 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   // Create and schedule debug actor.
   // debugger_actor_need is true for CPU when e2e dump is enabled and for Ascend and GPU is true when debugger or dump
   // is enabled.
-#ifndef ENABLE_SECURITY
   bool debugger_actor_need = DumpJsonParser::GetInstance().e2e_dump_enabled();
-#endif
 #ifdef ENABLE_DEBUGGER
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
@@ -637,7 +631,6 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
     debugger_actor_need = true;
   }
 #endif
-#ifndef ENABLE_SECURITY
   if (debugger_actor_need) {
     auto debug_actor = std::make_shared<DebugActor>();
     MS_EXCEPTION_IF_NULL(debug_actor);
@@ -645,7 +638,6 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
     auto base_debug_actor = static_cast<ActorReference>(debug_actor);
     (void)actor_manager->Spawn(base_debug_actor, true);
   }
-#endif
 }
 
 ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info) {
@@ -994,7 +986,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   CheckUceBeforeGraphRun(actor_set);
 
   // Create recorder actor in the running to support the profiler in callback scene.
-#ifndef ENABLE_SECURITY
   if (profiler::ProfilerManager::GetInstance()->GetProfilingEnableFlag() && (recorder_aid_ == nullptr)) {
     auto recorder_actor = std::make_shared<RecorderActor>();
     MS_EXCEPTION_IF_NULL(recorder_actor);
@@ -1007,7 +998,6 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
       actor_set->loop_count_actor_->recorder_aid_ = recorder_aid_;
     }
   }
-#endif
 
   // Construct OpContext.
   OpContext<DeviceTensor> op_context;

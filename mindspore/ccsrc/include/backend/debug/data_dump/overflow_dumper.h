@@ -19,11 +19,8 @@
 #include <memory>
 #include <string>
 #include <map>
-
-#ifndef ENABLE_SECURITY
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ccsrc/kernel/kernel.h"
-#endif
 
 namespace mindspore {
 namespace debug {

@@ -30,12 +30,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT BUILD_LITE)
 else()
     # ------- LITE merge_files -----
     include(${TOP_DIR}/mindspore/lite/cmake/merge.cmake)
-    if(ENABLE_SECURITY)
-        merge_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge
-                    "_summary.cc$")
-    else()
-        merge_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge "")
-    endif()
+    merge_files(${CMAKE_CURRENT_SOURCE_DIR}/infer/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops infer_merge "")
     merge_files(${CMAKE_CURRENT_SOURCE_DIR}/op_def/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops op_def_merge "")
     merge_files(${CMAKE_CURRENT_SOURCE_DIR}/view/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops view_merge "")
     merge_files(${CMAKE_CURRENT_SOURCE_DIR}/ops_utils/ ${CMAKE_BINARY_DIR}/merge/mindspore/ops utils_merge "")
@@ -57,10 +52,6 @@ if(ANDROID_NDK)
     set(TARGET_AOS_ARM ON)
 endif()
 
-if(ENABLE_SECURITY)
-    file(GLOB_RECURSE _INFER_SUMMARY_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${INFER_DIR}/*_summary.cc")
-    list(REMOVE_ITEM CORE_OPS_LIST ${_INFER_SUMMARY_FILES})
-endif()
 # ------------------ COMPILE_DEFINITIONS -------------------
 
 if(NOT MSLITE_TARGET_SITEAI)

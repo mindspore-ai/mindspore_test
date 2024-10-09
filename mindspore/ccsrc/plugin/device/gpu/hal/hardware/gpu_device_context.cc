@@ -59,9 +59,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #include "backend/common/pass/optimize_updatestate.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "backend/common/expander/fallback/expander_fallback.h"
@@ -133,7 +131,6 @@ void GPUDeviceContext::Initialize() {
   device_res_manager_->Initialize();
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
   GetKernelExecutor(false)->Initialize();
-#ifndef ENABLE_SECURITY
   // Dump json config file if dump is enabled.
   uint32_t rank_id = 0;
   if (distributed::collective::CollectiveManager::instance()->need_init()) {
@@ -145,7 +142,6 @@ void GPUDeviceContext::Initialize() {
   json_parser.Parse();
   json_parser.CopyDumpJsonToDir(rank_id);
   json_parser.CopyMSCfgJsonToDir(rank_id);
-#endif
   initialized_ = true;
 }
 
@@ -987,20 +983,16 @@ bool GPUKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<K
   }
   bool ret = true;
 
-#ifndef ENABLE_SECURITY
   const auto &profiler_inst = profiler::gpu::GPUProfiler::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_inst);
 
   if (!profiler_inst->GetEnableFlag() || !profiler_inst->GetOpTimeFlag()) {
-#endif
     auto lock = LockLaunchKernel(stream);
     ret = DoLaunchKernel(kernel, inputs, workspace, outputs, kernel_mod, stream);
-#ifndef ENABLE_SECURITY
   } else {
     auto lock = LockLaunchKernel(stream);
     ret = LaunchKernelWithProfiling(kernel, inputs, workspace, outputs, kernel_mod, stream);
   }
-#endif
   if (!ret) {
     MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
     return false;
@@ -1009,7 +1001,6 @@ bool GPUKernelExecutor::LaunchKernel(const CNodePtr &kernel, const std::vector<K
   return ret;
 }
 
-#ifndef ENABLE_SECURITY
 bool GPUKernelExecutor::LaunchKernelWithProfiling(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &workspace,
                                                   const std::vector<KernelTensor *> &outputs, KernelMod *kernel_mod,
@@ -1043,7 +1034,6 @@ bool GPUKernelExecutor::LaunchKernelWithProfiling(const CNodePtr &kernel, const 
   }
   return ret;
 }
-#endif
 
 bool GPUKernelExecutor::DoLaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &workspace,

@@ -21,9 +21,7 @@
 #include "plugin/device/cpu/hal/hardware/cpu_memory_pool.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "plugin/device/cpu/hal/device/cpu_hash_table_util.h"
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 
 namespace mindspore {
 namespace device {
@@ -122,7 +120,6 @@ void CPUDeviceAddress::ClearUserData() {
 bool CPUDeviceAddress::DumpMemToFile(const std::string &filepath, const std::string &, const ShapeVector &host_shape,
                                      TypeId host_type, bool) const {
   bool ret = false;
-#ifndef ENABLE_SECURITY
   if (filepath.empty()) {
     MS_LOG(ERROR) << "Dump file path is null!";
     return ret;
@@ -134,7 +131,6 @@ bool CPUDeviceAddress::DumpMemToFile(const std::string &filepath, const std::str
     return true;
   }
   ret = DumpJsonParser::DumpToFile(path, GetDevicePtr(), GetSize(), host_shape, host_type);
-#endif
   return ret;
 }
 
