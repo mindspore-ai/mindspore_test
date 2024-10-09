@@ -115,7 +115,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         single_op_func_data = {}
         for _, func_protos in func_protos_data.items():
             if len(func_protos) == 1:
-                func_name = func_protos[0].func_name
+                func_name = func_protos[0].op_proto.op_name
                 if func_name not in single_op_func_data:
                     single_op_func_data[func_name] = func_protos[0]
 
