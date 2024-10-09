@@ -45,6 +45,28 @@ def test_list_comprehension_with_variable_tensor():
     assert res[2] == 4
 
 
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+def test_nested_list_comprehension_with_variable_tensor():
+    """
+    Feature: Graph isinstance.
+    Description: Nested graph list comprehension syntax with variable input.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(a):
+        x = [i + j + 1 for i in a for j in a]
+        return x
+
+    res = foo(Tensor([1, 2]))
+    assert len(res) == 4
+    assert res[0] == 3
+    assert res[1] == 4
+    assert res[2] == 4
+    assert res[3] == 5
+
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_list_comprehension_with_variable_dict():
     """
@@ -63,6 +85,28 @@ def test_list_comprehension_with_variable_dict():
     assert len(res) == 2
     assert res[0] == 3
     assert res[1] == 1
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_list_comprehension_with_variable_dict():
+    """
+    Feature: Graph isinstance.
+    Description: Nested graph list comprehension syntax with variable input.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(a):
+        m = {"1": a, "2": a+1, "3": a-1}
+        x = [m[i]+m[j]+1 for i in m if i != "1" for j in m if j != "3"]
+        return x
+
+    res = foo(Tensor([1]))
+    assert len(res) == 4
+    assert res[0] == 4
+    assert res[1] == 5
+    assert res[2] == 2
+    assert res[3] == 3
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
@@ -88,6 +132,28 @@ def test_list_comprehension_with_variable_input():
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
           essential_mark='unessential')
+def test_nested_list_comprehension_with_variable_input():
+    """
+    Feature: Graph isinstance.
+    Description: Nested graph list comprehension syntax with variable input.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(a):
+        x = [a for i in range(2) for j in range(2)]
+        return x
+
+    res = foo(Tensor([1, 2, 3]))
+    assert len(res) == 4
+    assert np.all(res[0].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[1].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[2].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[3].asnumpy() == np.array([1, 2, 3]))
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_list_comprehension_with_variable_input_2():
     """
     Feature: Graph isinstance.
@@ -105,6 +171,28 @@ def test_list_comprehension_with_variable_input_2():
     assert np.all(res[0].asnumpy() == np.array([1, 2, 3]))
     assert np.all(res[1].asnumpy() == np.array([2, 3, 4]))
     assert np.all(res[2].asnumpy() == np.array([3, 4, 5]))
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
+def test_nested_list_comprehension_with_variable_input_2():
+    """
+    Feature: Graph isinstance.
+    Description: Nested graph list comprehension syntax with variable input.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(a):
+        x = [a + i + j for i in range(2) for j in range(2)]
+        return x
+
+    res = foo(Tensor([1, 2, 3]))
+    assert len(res) == 4
+    assert np.all(res[0].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[1].asnumpy() == np.array([2, 3, 4]))
+    assert np.all(res[2].asnumpy() == np.array([2, 3, 4]))
+    assert np.all(res[3].asnumpy() == np.array([3, 4, 5]))
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
@@ -131,6 +219,29 @@ def test_list_comprehension_with_variable_input_3():
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
           essential_mark='unessential')
+def test_nested_list_comprehension_with_variable_input_3():
+    """
+    Feature: Graph isinstance.
+    Description: Nested graph list comprehension syntax with variable input.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(a):
+        a = a + 10
+        x = [a + i + j for i in range(2) for j in range(2)]
+        return x
+
+    res = foo(Tensor([1, 2, 3]))
+    assert len(res) == 4
+    assert np.all(res[0].asnumpy() == np.array([11, 12, 13]))
+    assert np.all(res[1].asnumpy() == np.array([12, 13, 14]))
+    assert np.all(res[2].asnumpy() == np.array([12, 13, 14]))
+    assert np.all(res[3].asnumpy() == np.array([13, 14, 15]))
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_list_comprehension_with_variable_input_and_condition():
     """
     Feature: Graph isinstance.
@@ -141,6 +252,27 @@ def test_list_comprehension_with_variable_input_and_condition():
     @jit
     def foo(a):
         x = [a for i in range(5) if i%2 == 0]
+        return x
+
+    res = foo(Tensor([1, 2, 3]))
+    assert len(res) == 3
+    assert np.all(res[0].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[1].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[2].asnumpy() == np.array([1, 2, 3]))
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
+def test_nested_list_comprehension_with_variable_input_and_condition():
+    """
+    Feature: Graph isinstance.
+    Description: Nested graph list comprehension syntax with variable input and condition.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(a):
+        x = [a for i in range(5) if i%2 == 0 for j in range(2) if j < 1]
         return x
 
     res = foo(Tensor([1, 2, 3]))
@@ -169,6 +301,28 @@ def test_list_comprehension_with_variable_input_and_condition_2():
     assert np.all(res[0].asnumpy() == np.array([1, 2, 3]))
     assert np.all(res[1].asnumpy() == np.array([3, 4, 5]))
     assert np.all(res[2].asnumpy() == np.array([5, 6, 7]))
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
+def test_nested_list_comprehension_with_variable_input_and_condition_2():
+    """
+    Feature: Graph isinstance.
+    Description: Graph list comprehension syntax with variable input and condition.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo(a):
+        x = [a + i for i in range(4) if i%2 == 0 for j in range(4) if j%2 == 1]
+        return x
+
+    res = foo(Tensor([1, 2, 3]))
+    assert len(res) == 4
+    assert np.all(res[0].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[1].asnumpy() == np.array([1, 2, 3]))
+    assert np.all(res[2].asnumpy() == np.array([3, 4, 5]))
+    assert np.all(res[3].asnumpy() == np.array([3, 4, 5]))
 
 
 @pytest.mark.skip(reason="Join error msg change")
@@ -208,6 +362,25 @@ def test_list_comprehension_with_iterator_input():
 
     res = foo()
     assert res == [(1, 4), (1, 5), (2, 4), (2, 5)]
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_nested_list_comprehension_with_iterator_input():
+    """
+    Feature: Graph syntax list comp.
+    Description: Nested graph list comprehension syntax.
+    Expectation: No exception.
+    """
+
+    @jit
+    def foo():
+        m = (1, 2)
+        n = (4,)
+        x = [i + j for i in itertools.product(m, n) for j in itertools.product(m, n)]
+        return x
+
+    res = foo()
+    assert res == [(1, 4, 1, 4), (1, 4, 2, 4), (2, 4, 1, 4), (2, 4, 2, 4)]
 
 
 @pytest.mark.skip(reason="AbstractAny cause dynamic length list exist")
