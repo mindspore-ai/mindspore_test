@@ -76,7 +76,7 @@ def init_env(cfg):
     cfg.rank, cfg.rank_size = rank, rank_size
 
     if cfg.rank % min(cfg.rank_size, 8) == 0:
-        cfg.save_dir = os.path.abspath(cfg.save_dir)
+        cfg.save_dir = os.path.realpath(cfg.save_dir)
         if not os.path.exists(cfg.save_dir):
             os.makedirs(cfg.save_dir, exist_ok=True)
             os.makedirs(os.path.join(cfg.save_dir, "checkpoints"), exist_ok=True)

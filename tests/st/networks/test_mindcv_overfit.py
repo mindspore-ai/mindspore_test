@@ -30,7 +30,7 @@ from mindspore.communication import get_group_size, get_rank, init
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 
-workspace = os.path.dirname(os.path.abspath(__file__))
+workspace = os.path.dirname(os.path.realpath(__file__))
 if os.path.exists(os.path.join(workspace, "mindcv/tests")):
     os.rename(os.path.join(workspace, "mindcv/tests"), os.path.join(workspace, "mindcv/mindcv_tests"))
 sys.path.insert(0, os.path.join(workspace, "mindcv"))

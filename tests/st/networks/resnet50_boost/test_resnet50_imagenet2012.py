@@ -38,7 +38,7 @@ def test_resnet50_boost_imagenet2012_ascend():
     Expectation: Success
     """
     os.environ['MS_DEV_JIT_SYNTAX_LEVEL'] = '0'
-    current_path = os.path.dirname(os.path.abspath(__file__))
+    current_path = os.path.dirname(os.path.realpath(__file__))
     model_path = "{}/../../../../tests/models/official/cv".format(current_path)
     model = "resnet"
     utils.copy_files(model_path, current_path, model)

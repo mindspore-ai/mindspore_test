@@ -80,7 +80,7 @@ def ops_binary_cases(ops_case, *, binary_data_path=None, debug_info=False):
         def wrapper(*args, **kwargs):
             frame = inspect.currentframe().f_back
             file_path = frame.f_code.co_filename
-            work_path, _ = os.path.abspath(__file__).split('/st/ops/ops_binary_cases.py')
+            work_path, _ = os.path.realpath(__file__).split('/st/ops/ops_binary_cases.py')
             relative_path = os.path.relpath(file_path, work_path)
             relative_cases_path, _ = os.path.splitext(relative_path)
             cases_path = os.path.join(binary_data_path, relative_cases_path)

@@ -32,7 +32,7 @@ from mindspore.nn.wrap.loss_scale import DynamicLossScaleUpdateCell, FixedLossSc
 
 from tests.mark_utils import arg_mark
 
-workspace = os.path.dirname(os.path.abspath(__file__))
+workspace = os.path.dirname(os.path.realpath(__file__))
 if os.path.exists(os.path.join(workspace, "mindone/examples/stable_diffusion_v2/tests")):
     os.rename(os.path.join(workspace, "mindone/examples/stable_diffusion_v2/tests"),
               os.path.join(workspace, "mindone/examples/stable_diffusion_v2/sd2_tests"))
@@ -230,7 +230,7 @@ def parse_args(args=None):
         help="log level, options: logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR",
     )
 
-    abs_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ""))
+    abs_path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ""))
     default_args = parser.parse_args(args)
     if default_args.train_config:
         default_args.train_config = os.path.join(abs_path, default_args.train_config)

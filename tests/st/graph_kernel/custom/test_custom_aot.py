@@ -74,7 +74,7 @@ def get_cuda_bare_metal_version():
 
 
 def get_file_path_gpu(cuda, so):
-    dir_path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     cmd = "nvcc -D_GLIBCXX_USE_CXX11_ABI=0 --shared -Xcompiler -fPIC  -o " + dir_path + "/aot_test_files/" + so + \
           " " + dir_path + "/aot_test_files/" + cuda
     func_path = dir_path + "/aot_test_files/" + so
@@ -82,7 +82,7 @@ def get_file_path_gpu(cuda, so):
 
 
 def get_file_path_cpu(cc, so):
-    dir_path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     cmd = "g++ -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++17 --shared -fPIC -o " + dir_path + "/aot_test_files/" + so + " " + \
           dir_path + "/aot_test_files/" + cc
     func_path = dir_path + "/aot_test_files/" + so
@@ -121,7 +121,7 @@ def aot_single_output_auto_compile(source_name, reg):
     shape = (4, 5)
     input_x = np.random.normal(0, 1, shape).astype(np.float32)
     input_y = np.random.normal(0, 1, shape).astype(np.float32)
-    dir_path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     func_path = dir_path + "/aot_test_files/" + source_name
 
     test = AOTSingleOutputNet(func_path + ":CustomAdd", (shape,), (mstype.float32,), reg)
@@ -134,7 +134,7 @@ def aot_single_output_dyn_shape(source_name, reg):
     shape = (4, 5)
     input_x = np.random.normal(0, 1, shape).astype(np.float32)
     input_y = np.random.normal(0, 1, shape).astype(np.float32)
-    dir_path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     func_path = dir_path + "/aot_test_files/" + source_name
 
     test = AOTSingleOutputDynNet(func_path + ":CustomAdd", mstype.float32, reg)
@@ -147,7 +147,7 @@ def aot_single_output_with_attr(source_name, reg):
     shape = (4, 5)
     input_x = np.random.normal(0, 1, shape).astype(np.float32)
     input_y = np.random.normal(0, 1, shape).astype(np.float32)
-    dir_path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     func_path = dir_path + "/aot_test_files/" + source_name
 
     test = AOTSingleOutputWithAttrNet(func_path + ":CustomAdd", (shape,), (mstype.float32,), reg)
@@ -161,7 +161,7 @@ def aot_single_output_with_attr_only(source_name, reg):
     shape = (4, 5)
     input_x = np.random.normal(0, 1, shape).astype(np.float32)
     input_y = np.random.normal(0, 1, shape).astype(np.float32)
-    dir_path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     func_path = dir_path + "/aot_test_files/" + source_name
 
     test = AOTSingleOutputNet(func_path + ":CustomAdd", (shape,), (mstype.float32,), reg)

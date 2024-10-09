@@ -45,7 +45,7 @@ class AscendEnvChecker(metaclass=ABCMeta):
                             "${ASCEND_HOME_PATH}/set_env.sh to setup Ascend envs.")
             return
 
-        self.ascend_home_path = os.path.abspath(self.ascend_home_path)
+        self.ascend_home_path = os.path.realpath(self.ascend_home_path)
         self.ascend_version_file = os.path.join(self.ascend_home_path, "compiler/version.info")
 
         self.env_ld_lib_path = os.getenv("LD_LIBRARY_PATH")

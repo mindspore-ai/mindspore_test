@@ -76,7 +76,7 @@ def julia_elemwise_test(func_name, bench):
     shape = (4, 5)
     input_x = np.random.normal(0, 1, shape).astype(np.float32)
     input_y = np.random.normal(0, 1, shape).astype(np.float32)
-    func_path = os.path.dirname(os.path.abspath(__file__)) + "/julia_test_files/"
+    func_path = os.path.dirname(os.path.realpath(__file__)) + "/julia_test_files/"
     try:
         test = JuliaTwoInputsNet(func_path + func_name, (shape,), (mstype.float32,))
         output = test(Tensor(input_x), Tensor(input_y))[0]
@@ -91,7 +91,7 @@ def julia_matmul_test(func_name, bench):
     shape3 = (2, 4)
     input_x = np.random.normal(0, 1, shape1).astype(np.float32)
     input_y = np.random.normal(0, 1, shape2).astype(np.float32)
-    func_path = os.path.dirname(os.path.abspath(__file__)) + "/julia_test_files/"
+    func_path = os.path.dirname(os.path.realpath(__file__)) + "/julia_test_files/"
     try:
         test = JuliaTwoInputsNet(func_path + func_name, (shape3,), (mstype.float32,))
         output = test(Tensor(input_x), Tensor(input_y))[0]
@@ -104,7 +104,7 @@ def julia_reducesum_test(func_name, bench):
     shape1 = (2, 3, 4)
     input_x = np.random.normal(0, 1, shape1).astype(np.float32)
     expect = bench(input_x, 1)
-    func_path = os.path.dirname(os.path.abspath(__file__)) + "/julia_test_files/"
+    func_path = os.path.dirname(os.path.realpath(__file__)) + "/julia_test_files/"
     try:
         test = JuliaOneInputNet(func_path + func_name, (expect.shape,), (mstype.float32,))
         output = test(Tensor(input_x))[0]
@@ -117,7 +117,7 @@ def julia_multiout_test(func_name, bench):
     shape = (4, 5)
     input_x = np.random.normal(0, 1, shape).astype(np.float32)
     input_y = np.random.normal(0, 1, shape).astype(np.float32)
-    func_path = os.path.dirname(os.path.abspath(__file__)) + "/julia_test_files/"
+    func_path = os.path.dirname(os.path.realpath(__file__)) + "/julia_test_files/"
     try:
         test = JuliaTwoInputsNet(func_path + func_name, (shape, shape,), (mstype.float32, mstype.float32,))
         output1 = test(Tensor(input_x), Tensor(input_y))[0]

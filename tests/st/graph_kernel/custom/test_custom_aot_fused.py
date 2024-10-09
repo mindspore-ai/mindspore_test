@@ -44,7 +44,7 @@ class ReduceDynNet(Cell):
 
 
 def aot_fused_kernel():
-    dir_path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     func_path = dir_path + "/aot_test_files/"
 
     shape = (4, 5)

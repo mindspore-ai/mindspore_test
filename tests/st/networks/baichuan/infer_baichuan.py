@@ -18,7 +18,7 @@ import os
 import pandas as pd
 import numpy as np
 
-workspace = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindspore import set_seed
 from mindformers.tools.register import MindFormerConfig

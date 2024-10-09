@@ -82,7 +82,7 @@ def set_env(func):
     """set env for Ascend custom opp"""
 
     def wrapper(*args, **kwargs):
-        current_path = os.path.dirname(os.path.abspath(__file__))
+        current_path = os.path.dirname(os.path.realpath(__file__))
         mslite_ascend_ascendc_custom_kernel_path = os.path.join(current_path,
                                                                 "custom_kernels",
                                                                 "ascend", "ascendc",

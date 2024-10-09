@@ -168,7 +168,7 @@ def test_compile_cache_load_weights():
     Description: test whether the compile cache can load the value of parameters successfully.
     Expectation: success.
     """
-    fpath = os.path.abspath(os.path.dirname(os.getcwd()))
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
     pypath = fpath + "/compiler/compile_cache/run_network_with_weights.py"
     run_twice_with_same_network(pypath, "./weight", "weight_first.txt", "weight_second.txt")
 
@@ -180,7 +180,7 @@ def test_compile_cache_lenet():
     Description: test whether the regular compile cache function can run successfully.
     Expectation: success.
     """
-    fpath = os.path.abspath(os.path.dirname(os.getcwd()))
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
     pypath = fpath + "/compiler/compile_cache/run_lenet.py"
     run_twice_with_same_network(pypath, "./lenet", "lenet_first.txt", "lenet_second.txt")
 
@@ -192,7 +192,7 @@ def test_compile_cache_ms_function():
     Description: test whether the compile cache function can run successfully in the compilation of ms_function.
     Expectation: success.
     """
-    fpath = os.path.abspath(os.path.dirname(os.getcwd()))
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
     pypath = fpath + "/compiler/compile_cache/run_lenet_ms_function.py"
     run_twice_with_same_network(pypath, "./lenet_ms_function", "lenet_ms_function_first.txt",
                                 "lenet_ms_function_second.txt")
@@ -205,7 +205,7 @@ def test_compile_cache_lenet_ge():
     Description: Test whether the ge compile cache function can run successfully.
     Expectation: success.
     """
-    fpath = os.path.abspath(os.path.dirname(os.getcwd()))
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
     pypath = fpath + "/compiler/compile_cache/run_lenet.py"
     run_twice_with_same_network(pypath, "./lenet", "lenet_first.txt", "lenet_second.txt")
 
@@ -217,7 +217,7 @@ def test_resnet_infer_compile_cache():
     Description: support compile cache in inference scenarios.
     Expectation: success.
     """
-    fpath = os.path.abspath(os.path.dirname(os.getcwd()))
+    fpath = os.path.realpath(os.path.dirname(os.getcwd()))
     pypath = fpath + "/compiler/compile_cache/run_resnet_infer.py"
     run_twice_with_same_network(pypath, "./resnet_infer", "resnet_infer_first.txt",
                                 "resnet_infer_second.txt")

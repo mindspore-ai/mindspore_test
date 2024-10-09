@@ -218,7 +218,7 @@ class DynamicProfilerMonitorBase(Callback):
     def __init__(self, cfg_path, output_path=None, poll_interval=2, **kwargs):
         self._cfg_path = cfg_path
         self._cfg_json_path = os.path.join(self._cfg_path, "profiler_config.json")
-        self._cfg_json_path = os.path.abspath(self._cfg_json_path)
+        self._cfg_json_path = os.path.realpath(self._cfg_json_path)
         self._output_path = "dyn_profile_data" if output_path is None else output_path
         self._poll_interval = poll_interval
         if not isinstance(self._poll_interval, int):
@@ -606,7 +606,7 @@ else:
             self._shm_name = time.strftime("DynamicProfileShm%Y%m%d%H", time.localtime())
             self._shm_dir = os.path.join(self._cfg_path, "shm")
             PathManager.make_dir_safety(self._shm_dir)
-            self._shm_path = os.path.abspath(os.path.join(self._shm_dir, self._shm_name))
+            self._shm_path = os.path.realpath(os.path.join(self._shm_dir, self._shm_name))
 
             super().__init__(cfg_path, output_path, poll_interval, **kwargs)
             logger.warning("Dynamic profiler is not work well on python 3.7x, "

@@ -19,7 +19,7 @@ Refer to Deep Residual Learning for Image Recognition.
 import os
 import sys
 
-mindcv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../mindcv")
+mindcv_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../../mindcv")
 sys.path.insert(5, mindcv_path)
 os.system(f"git submodule init {mindcv_path}")
 os.system(f"git submodule update {mindcv_path}")

@@ -32,7 +32,7 @@ from mindspore import load_checkpoint, set_context
 
 from tests.mark_utils import arg_mark
 
-workspace = os.path.dirname(os.path.abspath(__file__))
+workspace = os.path.dirname(os.path.realpath(__file__))
 if os.path.exists(os.path.join(workspace, "mindocr/tests")):
     os.rename(os.path.join(workspace, "mindocr/tests"), os.path.join(workspace, "mindocr/mindocr_tests"))
 sys.path.insert(0, os.path.join(workspace, "mindocr"))

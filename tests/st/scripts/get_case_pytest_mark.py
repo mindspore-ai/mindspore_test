@@ -28,7 +28,7 @@ def get_case_file_pytestmark(case_root, package, case_name, result_file,
     """
     get pytestmark info from testcase name, function/class name
     """
-    root_path = os.path.abspath(os.path.join(package, ".."))
+    root_path = os.path.realpath(os.path.join(package, ".."))
     package_name = package.split(os.sep)[-1]
 
     init_py = os.path.join(package, "__init__.py")

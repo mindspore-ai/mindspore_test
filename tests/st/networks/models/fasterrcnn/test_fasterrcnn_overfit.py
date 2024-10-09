@@ -34,7 +34,7 @@ from mindspore.amp import DynamicLossScaler, StaticLossScaler
 
 def get_args_train(parents=None):
     parser = argparse.ArgumentParser(description="Train", parents=[parents] if parents else [])
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = os.path.dirname(os.path.realpath(__file__))
     parser.add_argument(
         "--config",
         type=str,

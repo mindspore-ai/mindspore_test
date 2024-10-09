@@ -61,7 +61,7 @@ def test_gather_mem_check():
     Description: gather op mem check success.
     Expectation: the result equal to expect.
     """
-    cfg_path = os.path.abspath("./test_mem_check.cfg")
+    cfg_path = os.path.realpath("./test_mem_check.cfg")
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
                         ascend_config={"ge_options":
                                            {"global": {"op_debug_config": cfg_path}}})
@@ -82,7 +82,7 @@ def test_add_mem_check():
     Description: add op mem check success.
     Expectation: the result equal to expect.
     """
-    cfg_path = os.path.abspath("./test_mem_check.cfg")
+    cfg_path = os.path.realpath("./test_mem_check.cfg")
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
                         ascend_config={"ge_options":
                                            {"global": {"op_debug_config": cfg_path}}})
@@ -103,7 +103,7 @@ def test_sort_mem_check_graph():
     Description: sort op mem check fail.
     Expectation: RuntimeError.
     """
-    cfg_path = os.path.abspath("./test_mem_check.cfg")
+    cfg_path = os.path.realpath("./test_mem_check.cfg")
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
                         ascend_config={"ge_options":
                                            {"global": {"op_debug_config": cfg_path}}})
@@ -133,7 +133,7 @@ def test_softmax_mem_check_graph():
     Expectation: RuntimeError.
     skip because tbe compiler error
     """
-    cfg_path = os.path.abspath("./test_mem_check.cfg")
+    cfg_path = os.path.realpath("./test_mem_check.cfg")
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend",
                         ascend_config={"ge_options":
                                            {"global": {"op_debug_config": cfg_path}}})
