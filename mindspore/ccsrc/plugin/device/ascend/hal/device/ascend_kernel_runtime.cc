@@ -230,6 +230,19 @@ void AscendKernelRuntime::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
   auto error_code = CALL_ASCEND_API(aclrtGetErrorCodeFromExceptionInfo, task_fail_info);
   auto device_id = CALL_ASCEND_API(aclrtGetDeviceIdFromExceptionInfo, task_fail_info);
   auto tid = CALL_ASCEND_API(aclrtGetThreadIdFromExceptionInfo, task_fail_info);
+  if (UCEException::GetInstance().enable_uce()) {
+    if (aclrt_get_last_error != nullptr) {
+      auto rt_error = aclrt_get_last_error(thread_level);
+      MS_LOG(ERROR) << "Run task failed, error rt code [" << rt_error << "].";
+      if (rt_error == ACL_ERROR_RT_DEVICE_MEM_ERROR) {
+        UCEException::GetInstance().set_uce_flag(true);
+        MS_LOG(ERROR) << "UCEError occurs, wait to catch.";
+      } else if (rt_error == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+        UCEException::GetInstance().set_force_stop_flag(true);
+        MS_LOG(ERROR) << "ForceStopError occurs, wait to catch.";
+      }
+    }
+  }
   MS_LOG(ERROR) << "Run Task failed, task_id: " << task_id << ", stream_id: " << stream_id << ", tid: " << tid
                 << ", device_id: " << device_id << ", retcode: " << error_code << " (" << GetErrorMsg(error_code)
                 << ")";
