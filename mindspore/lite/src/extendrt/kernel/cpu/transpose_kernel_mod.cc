@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include "mindspore/ops/op_def/array_ops.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "include/api/status.h"
 #include "nnacl/errorcode.h"
 #include "src/common/log_util.h"

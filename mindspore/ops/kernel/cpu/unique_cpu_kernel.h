@@ -25,7 +25,7 @@
 #include <map>
 #include <functional>
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "include/common/thread_pool.h"
 #include "ops_utils/op_utils.h"
 

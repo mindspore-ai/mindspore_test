@@ -27,7 +27,7 @@
 #include "ops/base_operator.h"
 #include "ops/op_def.h"
 #include "kernel/kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "include/common/utils/utils.h"
 #include "include/common/profiler.h"
 #include "runtime/pynative/op_runtime_info.h"

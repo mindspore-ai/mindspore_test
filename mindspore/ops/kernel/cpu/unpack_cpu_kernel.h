@@ -26,7 +26,7 @@
 #include <tuple>
 #include <complex>
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "nnacl/base/unstack_base.h"
 
 namespace mindspore {

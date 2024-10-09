@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/tensor_shape_cpu_kernel.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore::kernel {
 namespace {

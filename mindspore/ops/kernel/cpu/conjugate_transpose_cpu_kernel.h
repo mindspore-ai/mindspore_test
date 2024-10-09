@@ -23,7 +23,7 @@
 #include <memory>
 #include <string>
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "nnacl/transpose_parameter.h"
 
 namespace mindspore {

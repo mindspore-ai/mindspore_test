@@ -24,7 +24,7 @@
 #include <utility>
 #include "mindspore/ops/infer/non_deterministic_ints.h"
 #include "kernel/gpu/gpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 namespace mindspore {
 namespace kernel {
 class NonDeterministicIntsGpuKernelMod : public NativeGpuKernelMod {
