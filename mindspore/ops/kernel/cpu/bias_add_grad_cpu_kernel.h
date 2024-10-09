@@ -23,7 +23,7 @@
 #include <string>
 #include <utility>
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "mindspore/ops/infer/ops_func_impl/bias_add_grad.h"
 
 namespace mindspore {

@@ -24,7 +24,7 @@
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "include/common/utils/anfalgo.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_executor.h"
 

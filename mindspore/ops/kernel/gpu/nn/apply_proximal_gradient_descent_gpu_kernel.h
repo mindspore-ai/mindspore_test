@@ -25,7 +25,7 @@
 #include "mindspore/ops/infer/apply_proximal_gradient_descent.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/apply_proximal_gradient_descent_impl.cuh"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 namespace mindspore {
 namespace kernel {
 class ApplyProximalGradientDescentGpuKernelMod : public NativeGpuKernelMod {

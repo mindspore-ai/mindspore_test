@@ -27,7 +27,7 @@
 #include "mindspore/ops/infer/inplace_add.h"
 #include "mindspore/ops/infer/inplace_sub.h"
 #include "abstract/utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cuda_common.h"

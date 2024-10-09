@@ -22,7 +22,7 @@
 #include "ir/func_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "kernel/kernel_build_info.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

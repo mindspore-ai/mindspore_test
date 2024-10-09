@@ -1,0 +1,6 @@
+include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/ascend)
+add_subdirectory(plugin/device/ascend)
+enable_directory_when_only_build_plugins(plugin/device/ascend)
+add_subdirectory(transform/graph_ir)
+add_subdirectory(transform/acl_ir)

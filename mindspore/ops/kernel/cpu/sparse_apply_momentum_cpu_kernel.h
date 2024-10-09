@@ -23,7 +23,7 @@
 
 #include "mindspore/ops/infer/sparse_apply_momentum.h"
 #include "kernel/cpu/sparse_optimizer_cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

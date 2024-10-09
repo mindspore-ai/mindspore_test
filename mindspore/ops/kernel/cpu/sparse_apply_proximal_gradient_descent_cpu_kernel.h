@@ -23,7 +23,7 @@
 
 #include "mindspore/ops/infer/sparse_apply_proximal_gradient_descent.h"
 #include "kernel/cpu/sparse_optimizer_cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

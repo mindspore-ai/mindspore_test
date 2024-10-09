@@ -58,7 +58,7 @@ install(
 )
 
 install(
-  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_np_dtype
+  TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
   DESTINATION ${INSTALL_LIB_DIR}
   COMPONENT mindspore
 )
@@ -77,11 +77,6 @@ if(MSVC AND DEBUG_MODE)
     COMPONENT mindspore
   )
 
-  install(
-    FILES  $<TARGET_PDB_FILE:mindspore_np_dtype>
-    DESTINATION ${INSTALL_LIB_DIR}
-    COMPONENT mindspore
-  )
 endif()
 
 if(USE_GLOG)

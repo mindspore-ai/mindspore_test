@@ -20,7 +20,7 @@
 #include "extendrt/mindir_loader/mindir_model/kernel_mod_util.h"
 
 #include "kernel/kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/cpu_kernel_mod.h"
 
 namespace mindspore::kernel {

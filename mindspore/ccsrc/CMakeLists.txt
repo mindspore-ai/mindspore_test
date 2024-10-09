@@ -8,331 +8,30 @@ include_directories(${CMAKE_BINARY_DIR})
 
 set(MS_OPS_KERNEL_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel")
 
-set(SERVER_FLATBUFFER_OUTPUT "${CMAKE_BINARY_DIR}/schema")
-
-## Function for setting NVCC flag and cuda arch list
-function(set_nvcc_flag CUDA_NVCC_FLAGS CUDA_ARCH_LIST)
-    # Detect gpu archs by cudaGetDeviceProperties.
-    message("Detect gpu arch on this device.")
-    set(cu_file "${CMAKE_SOURCE_DIR}/build/mindspore/ccsrc/get_device_compute_capabilities.cu")
-    file(WRITE ${cu_file} ""
-        "#include <cuda_runtime.h>\n"
-        "#include <cstdio>\n"
-        "int main () {\n"
-        " int dev_num = 0;\n"
-        " if (cudaGetDeviceCount(&dev_num) != cudaSuccess) return -1;\n"
-        " if (dev_num < 1) return -1;\n"
-        " for (int dev_id = 0; dev_id < dev_num; ++dev_id) {\n"
-        "    cudaDeviceProp prop;"
-        "    if (cudaGetDeviceProperties(&prop, dev_id) == cudaSuccess) {\n"
-        "      printf(\"%d.%d \", prop.major, prop.minor);\n"
-        "    }\n"
-        "  }\n"
-        "  return 0;\n"
-        "}\n")
-    # Build and run cu_file, get the result from properties.
-    if(NOT MSVC)
-        set(CUDA_LIB_PATH ${CUDA_PATH}/lib64/libcudart.so)
-    else()
-        set(CUDA_LIB_PATH ${CUDA_PATH}/lib/x64/cudart.lib)
-    endif()
-    try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR ${CMAKE_SOURCE_DIR}/build/mindspore/ccsrc/ ${cu_file}
-            CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${CUDA_INCLUDE_DIRS}"
-            LINK_LIBRARIES ${CUDA_LIB_PATH}
-            RUN_OUTPUT_VARIABLE compute_cap)
-    set(cuda_archs_bin)
-    if(RUN_RESULT_VAR EQUAL 0)
-        string(REGEX REPLACE "[ \t]+" ";" compute_cap "${compute_cap}")
-        list(REMOVE_DUPLICATES compute_cap)
-        foreach(arch ${compute_cap})
-            set(arch_bin)
-            if(arch MATCHES "^([0-9]\\.[0-9](\\[0-9]\\.[0-9]\\))?)$")
-                set(arch_bin ${CMAKE_MATCH_1})
-            else()
-                message(FATAL_ERROR "Unknown CUDA arch Name ${arch} !")
-            endif()
-            if(NOT arch_bin)
-                message(FATAL_ERROR "arch_bin was not set !")
-            endif()
-            list(APPEND cuda_archs_bin ${arch_bin})
-        endforeach()
-    else()
-        message("Failed to detect gpu arch automatically, build a base arch 6.0.")
-        list(APPEND CUDA_NVCC_FLAGS -arch=sm_60)
-        list(APPEND CUDA_ARCH_LIST sm_60)
-    endif()
-    # Get build flag from env to choose common/auto build.
-    set(NVCC_ARCH_FLAG_FROM_ENV $ENV{CUDA_ARCH})
-    if(NVCC_ARCH_FLAG_FROM_ENV STREQUAL "common")
-        message("Build common archs for release.")
-        list(APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_60,code=sm_60
-                                    -gencode=arch=compute_61,code=sm_61
-                                    -gencode=arch=compute_70,code=sm_70)
-        list(APPEND CUDA_ARCH_LIST sm_60 sm_61 sm_70)
-        if(${CUDA_VERSION} VERSION_GREATER "9.5")
-            list(APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_75,code=sm_75)
-            list(APPEND CUDA_ARCH_LIST sm_75)
-            if(${CUDA_VERSION} VERSION_LESS "11.0")
-                list(APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_75,code=compute_75)
-            endif()
-        endif()
-        if(${CUDA_VERSION} VERSION_GREATER "10.5")
-            list(APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_80,code=sm_80)
-            list(APPEND CUDA_ARCH_LIST sm_80)
-            if(${CUDA_VERSION} VERSION_LESS "11.1")
-                list(APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_80,code=compute_80)
-            endif()
-        endif()
-        if(NOT ${CUDA_VERSION} VERSION_LESS "11.1")
-            list(APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_86,code=compute_86)
-        endif()
-    elseif(NVCC_ARCH_FLAG_FROM_ENV STREQUAL "auto")
-        message("Auto build for arch(s) " ${cuda_archs_bin})
-        string(REGEX REPLACE "\\." "" cuda_archs_bin "${cuda_archs_bin}")
-        string(REGEX MATCHALL "[0-9()]+" cuda_archs_bin "${cuda_archs_bin}")
-        foreach(arch ${cuda_archs_bin})
-            list(APPEND CUDA_NVCC_FLAGS -gencode=arch=compute_${arch},code=sm_${arch})
-            list(APPEND CUDA_ARCH_LIST sm_${arch})
-        endforeach()
-        # For auto build, it only generate the code for indeed arch, so add sm_60 as a default arch
-        # to avoid error in different archs. It may increase the compilation time.
-        list(APPEND CUDA_NVCC_FLAGS -arch=sm_60)
-        list(APPEND CUDA_ARCH_LIST sm_60)
-    else()
-        message("Only build ptx to speed up compiling cuda ops.")
-        set(CUDA_NVCC_FLAGS "CUDA_NVCC_FLAGS")
-        list(APPEND CUDA_NVCC_FLAGS -arch=compute_60 -code=compute_60)
-    endif()
-    list(REMOVE_DUPLICATES CUDA_NVCC_FLAGS)
-    list(REMOVE_DUPLICATES CUDA_ARCH_LIST)
-    message("Final CUDA_NVCC_FLASG " ${CUDA_NVCC_FLAGS})
-
-    list(APPEND CUDA_NVCC_FLAGS --expt-relaxed-constexpr)
-    if(MSVC AND ${CUDA_VERSION} VERSION_GREATER_EQUAL "11.6")
-        list(APPEND CUDA_NVCC_FLAGS -t0)
-    endif()
-    set(${CUDA_NVCC_FLAGS} ${${CUDA_NVCC_FLAGS}} PARENT_SCOPE)
-    set(${CUDA_ARCH_LIST} ${${CUDA_ARCH_LIST}} PARENT_SCOPE)
-endfunction()
-
-if(ENABLE_GPU AND GPU_BACKEND_CUDA)
-    find_package(CUDA REQUIRED)
-    find_package(Threads)
-    if(${CUDA_VERSION} VERSION_LESS ${MS_REQUIRE_CUDA_VERSION})
-        message(FATAL_ERROR "The minimum CUDA version ${MS_REQUIRE_CUDA_VERSION} is required, \
-              but only CUDA ${CUDA_VERSION} found.")
-    endif()
-    enable_language(CUDA)
-    if(NOT CUDA_PATH OR CUDA_PATH STREQUAL "")
-        if(DEFINED ENV{CUDA_HOME} AND NOT $ENV{CUDA_HOME} STREQUAL "")
-            set(CUDA_PATH $ENV{CUDA_HOME})
-        else()
-            set(CUDA_PATH ${CUDA_TOOLKIT_ROOT_DIR})
-        endif()
-    endif()
-
-    if(DEFINED ENV{CUDNN_HOME} AND NOT $ENV{CUDNN_HOME} STREQUAL "")
-        set(CUDNN_INCLUDE_DIR $ENV{CUDNN_HOME}/include)
-        if(WIN32)
-        set(CUDNN_LIBRARY_DIR $ENV{CUDNN_HOME}/lib $ENV{CUDNN_HOME}/lib/x64)
-        else()
-        set(CUDNN_LIBRARY_DIR $ENV{CUDNN_HOME}/lib64)
-        endif()
-        find_path(CUDNN_INCLUDE_PATH cudnn.h HINTS ${CUDNN_INCLUDE_DIR} NO_DEFAULT_PATH)
-        find_library(CUDNN_LIBRARY_PATH "cudnn" HINTS ${CUDNN_LIBRARY_DIR} NO_DEFAULT_PATH)
-        if(WIN32)
-        find_library(CUBLAS_LIBRARY_PATH "cublas" HINTS ${CUDA_PATH}/lib/x64)
-        else()
-        find_library(CUBLAS_LIBRARY_PATH "cublas" HINTS ${CUDNN_LIBRARY_DIR})
-        endif()
-        if(CUDNN_INCLUDE_PATH STREQUAL CUDNN_INCLUDE_PATH-NOTFOUND)
-            message(FATAL_ERROR "Failed to find cudnn header file, please set environment variable CUDNN_HOME to \
-                    cudnn installation position.")
-        endif()
-        if(CUDNN_LIBRARY_PATH STREQUAL CUDNN_LIBRARY_PATH-NOTFOUND)
-            message(FATAL_ERROR "Failed to find cudnn library file, please set environment variable CUDNN_HOME to \
-                    cudnn installation position.")
-        endif()
-    else()
-        list(APPEND CMAKE_PREFIX_PATH  ${CUDA_TOOLKIT_ROOT_DIR})
-        find_path(CUDNN_INCLUDE_PATH cudnn.h PATH_SUFFIXES cuda/inclulde include cuda)
-        find_library(CUDNN_LIBRARY_PATH "cudnn" PATH_SUFFIXES cuda/lib64 lib64 lib cuda/lib lib/x86_64-linux-gnu)
-        find_library(CUBLAS_LIBRARY_PATH "cublas" PATH_SUFFIXES cuda/lib64 lib64 lib cuda/lib lib/x86_64-linux-gnu)
-        if(CUDNN_INCLUDE_PATH STREQUAL CUDNN_INCLUDE_PATH-NOTFOUND)
-            message(FATAL_ERROR "Failed to find cudnn header file, if cudnn library is not installed, please put \
-                    cudnn header file in cuda include path or user include path(eg. /usr/local/cuda/include; \
-                    /usr/local/include; /usr/include), if cudnn library is installed in other position, please \
-                    set environment variable CUDNN_HOME to cudnn installation position, there should be cudnn.h \
-                    in {CUDNN_HOME}/include.")
-        endif()
-        if(CUDNN_LIBRARY_PATH STREQUAL CUDNN_LIBRARY_PATH-NOTFOUND)
-            message(FATAL_ERROR "Failed to find cudnn library file, if cudnn library is not installed, please put \
-                    cudnn library file in cuda library path or user library path(eg. /usr/local/cuda/lib64; \
-                    /usr/local/lib64; /usr/lib64; /usr/local/lib; /usr/lib), if cudnn library is installed in other \
-                    position, please set environment variable CUDNN_HOME to cudnn installation position, there should \
-                    be cudnn library file in {CUDNN_HOME}/lib64.")
-        endif()
-    endif()
-
-    if(NOT CUPTI_INCLUDE_DIRS OR CUPTI_INCLUDE_DIRS STREQUAL "")
-        set(CUPTI_INCLUDE_DIRS  ${CUDA_PATH}/extras/CUPTI/include)
-    endif()
-    message("CUDA_PATH: ${CUDA_PATH}")
-    message("CUDA_INCLUDE_DIRS: ${CUDA_INCLUDE_DIRS}")
-    message("CUDNN_INCLUDE_PATH: ${CUDNN_INCLUDE_PATH}")
-    message("CUDNN_LIBRARY_PATH: ${CUDNN_LIBRARY_PATH}")
-    message("CUBLAS_LIBRARY_PATH: ${CUBLAS_LIBRARY_PATH}")
-    message("CUPTI_INCLUDE_DIRS: ${CUPTI_INCLUDE_DIRS}")
-    include_directories(${CUDNN_INCLUDE_PATH} ${CUDA_PATH} ${CUDA_INCLUDE_DIRS} ${CUPTI_INCLUDE_DIRS})
-    ## set NVCC ARCH FLAG and CUDA ARCH LIST
-    set(CUDA_NVCC_FLAGS)
-    set(CUDA_ARCH_LIST)
-    set_nvcc_flag(CUDA_NVCC_FLAGS CUDA_ARCH_LIST)
-    if(NOT MSVC)
-    add_definitions(-Wno-unknown-pragmas) # Avoid compilation warnings from cuda/thrust
-    endif()
-    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        list(APPEND CUDA_NVCC_FLAGS -G)
-        message("CUDA_NVCC_FLAGS" ${CUDA_NVCC_FLAGS})
-    endif()
-    set(NVCC_TMP_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    set(CMAKE_CXX_FLAGS ${NVCC_TMP_CMAKE_CXX_FLAGS})
-    add_compile_definitions(ENABLE_GPU)
-
-    foreach(arch ${CUDA_ARCH_LIST})
-        string(APPEND CUDA_ARCH_LIST_STR "${arch} ")
-    endforeach()
-    message("Final CUDA_ARCH_LIST " ${CUDA_ARCH_LIST})
-    add_compile_definitions(CUDA_ARCH_LIST=${CUDA_ARCH_LIST_STR})
-endif()
-
 if(ENABLE_CPU)
-    if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "aarch64")
-        set(PLATFORM_ARM64 "on")
-        set(X86_64_SIMD "off")
-    elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-        set(X86_64_SIMD "off")
-    elseif("${X86_64_SIMD}" STREQUAL "off" AND NOT ${ENABLE_ASAN})
-        set(X86_64_SIMD "avx512")
-    endif()
-    include_directories("${MS_OPS_KERNEL_DIR}/cpu")
-    add_subdirectory("${MS_OPS_KERNEL_DIR}/cpu/nnacl" plugin/device/cpu/kernel/nnacl)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cpu_compile_config.cmake)
 endif()
 
-if(NOT CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    link_directories(${CMAKE_SOURCE_DIR}/build/mindspore/graphengine)
-else()
-    if(NOT MSVC)
+# gcc flag
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 \
-        -Wno-delete-non-abstract-non-virtual-dtor -Wno-unused-private-field -Wno-overloaded-virtual \
-        -Wno-unused-const-variable -Wno-pessimizing-move -Wno-range-loop-analysis -Wno-mismatched-tags \
-        -Wno-c++11-narrowing")
-    else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-    endif()
-endif()
-
-if(CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes -DHAVE_SNPRINTF")
+            -Wno-delete-non-abstract-non-virtual-dtor -Wno-unused-private-field -Wno-overloaded-virtual \
+            -Wno-unused-const-variable -Wno-pessimizing-move -Wno-range-loop-analysis -Wno-mismatched-tags \
+            -Wno-c++11-narrowing")
 endif()
 
 # Set compile flags to ensure float compute consistency.
-if(NOT MSVC)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-fast-math")
-endif()
-
-if(ENABLE_MPI)
-    add_compile_definitions(ENABLE_MPI)
-endif()
-
-if(ENABLE_RDMA)
-    add_compile_definitions(ENABLE_RDMA)
-    include_directories(/usr/include/umdk)
-endif()
-
-## make protobuf files
-file(GLOB ONNX_PROTO "" ${CMAKE_SOURCE_DIR}/third_party/proto/onnx/onnx.proto)
-message("onnx proto path is :" ${ONNX_PROTO})
-ms_protobuf_generate(ONNX_PROTO_SRCS ONNX_PROTO_HDRS ${ONNX_PROTO})
-list(APPEND MINDSPORE_PROTO_LIST ${ONNX_PROTO_SRCS})
-
-include_directories("${CMAKE_BINARY_DIR}/ps/core")
-file(GLOB_RECURSE COMM_PROTO_IN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ps/core/protos/*.proto")
-ms_protobuf_generate(COMM_PROTO_SRCS COMM_PROTO_HDRS ${COMM_PROTO_IN})
-list(APPEND MINDSPORE_PROTO_LIST ${COMM_PROTO_SRCS})
-
-include_directories("${CMAKE_BINARY_DIR}/distributed/cluster/topology")
-file(GLOB_RECURSE DISTRIBUTED_CLUSTER_TOPOLOGY RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  "distributed/cluster/topology/protocol/*.proto")
-ms_protobuf_generate(DISTRIBUTED_CLUSTER_TOPOLOGY_SRCS DISTRIBUTED_CLUSTER_TOPOLOGY_HDRS
-  ${DISTRIBUTED_CLUSTER_TOPOLOGY})
-list(APPEND MINDSPORE_PROTO_LIST ${DISTRIBUTED_CLUSTER_TOPOLOGY_SRCS})
-
-if(NOT ENABLE_SECURITY)
-    file(GLOB_RECURSE PROFILER_PROTO_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-      "plugin/device/ascend/hal/profiler/memory_profiling.proto")
-    ms_protobuf_generate_py(PROFILER_MEM_PROTO_PY PROFILER_MEM_PROTO_HDRS_PY PROFILER_MEM_PROTO_PYS
-      ${PROFILER_PROTO_LIST})
-    list(APPEND MINDSPORE_PROTO_LIST ${PROFILER_MEM_PROTO_PY})
-endif()
-
-if(ENABLE_DEBUGGER)
-    # debugger: compile proto files
-    include_directories("${CMAKE_BINARY_DIR}/debug/debugger")
-    file(GLOB_RECURSE DEBUGGER_PROTO_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "debug/debugger/debug_graph.proto")
-    ms_protobuf_generate(DEBUGGER_PROTO_SRCS DEBUGGER_PROTO_HDRS ${DEBUGGER_PROTO_LIST})
-    file(GLOB_RECURSE DUMP_DATA_PROTO_LIST FOLLOW_SYMLINKS "${ASCEND_PATH}/latest/include/proto/dump_data.proto")
-    list(LENGTH DUMP_DATA_PROTO_LIST PROTO_LEN)
-    if(PROTO_LEN EQUAL 0)
-        message("Can't find dump_data.proto in path: ${ASCEND_PATH}/latest/include/proto, use proto in mindspore path.")
-        file(GLOB_RECURSE DUMP_DATA_PROTO_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "debug/debugger/dump_data.proto")
-    endif()
-    ms_protobuf_generate(DUMP_DATA_PROTO_SRCS DUMP_DATA_PROTO_HDRS ${DUMP_DATA_PROTO_LIST})
-    list(APPEND MINDSPORE_PROTO_LIST ${DEBUGGER_PROTO_SRCS})
-    list(APPEND MINDSPORE_PROTO_LIST ${DUMP_DATA_PROTO_SRCS})
+if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-fast-math")
 endif()
 
 if(ENABLE_SECURITY OR NOT ENABLE_CPU AND ENABLE_DEBUGGER)
     list(APPEND BACKEND_SUB_OBJECTS_SRC
-        plugin/device/cpu/hal/profiler/cpu_profiling.cc
-        plugin/device/cpu/hal/profiler/cpu_data_saver.cc)
+            plugin/device/cpu/hal/profiler/cpu_profiling.cc
+            plugin/device/cpu/hal/profiler/cpu_data_saver.cc)
 endif()
 
-if(ENABLE_DUMP_PROTO)
-    include_directories(${CMAKE_BINARY_DIR})
-
-    file(GLOB_RECURSE PROTO_PY RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "utils/anf_ir.proto"
-        "utils/summary.proto"
-        "utils/lineage.proto"
-        "utils/checkpoint.proto"
-        "utils/print.proto"
-        "utils/node_strategy.proto"
-        "utils/profiling_parallel.proto"
-    )
-    ms_protobuf_generate_py(PY_SRCS PY_HDRS PY_PYS ${PROTO_PY})
-
-    list(APPEND MINDSPORE_PROTO_LIST ${PROTO_SRCS})
-    list(APPEND MINDSPORE_PROTO_LIST ${PY_SRCS})
-endif()
-
-# core/mindir.proto
-file(GLOB_RECURSE CORE_PROTO_IN ${CMAKE_SOURCE_DIR}/mindspore/core/proto/*.proto)
-ms_protobuf_generate(CORE_PROTO_SRC CORE_PROTO_HDR ${CORE_PROTO_IN})
-list(APPEND MINDSPORE_PROTO_LIST ${CORE_PROTO_SRC})
-
-include_directories("${CMAKE_BINARY_DIR}/runtime/graph_scheduler/actor/rpc")
-file(GLOB_RECURSE RPC_PROTO RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  "runtime/graph_scheduler/actor/rpc/*.proto")
-ms_protobuf_generate(RPC_PROTO_SRCS RPC_PROTO_HDRS ${RPC_PROTO})
-list(APPEND MINDSPORE_PROTO_LIST ${RPC_PROTO_SRCS})
-
-if(MINDSPORE_PROTO_LIST)
-    add_library(proto_input STATIC ${MINDSPORE_PROTO_LIST})
-    if(NOT MSVC)
-    set_target_properties(proto_input PROPERTIES COMPILE_FLAGS "-Wno-unused-variable -Wno-array-bounds")
-    endif()
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
 ## make sub objects
 set(SUB_COMP
@@ -346,10 +45,11 @@ set(SUB_COMP
         pipeline/pynative
         pipeline/llm_boost
         pybind_api
-)
+        )
 
 if(WIN32)
-add_compile_definitions(BUILDING_ME_DLL)
+    add_compile_definitions(BUILDING_ME_DLL)
+    add_compile_definitions(BUILDING_NP_DTYPE_DLL)
 endif()
 
 foreach(_comp ${SUB_COMP})
@@ -363,20 +63,6 @@ endforeach()
 
 set_property(SOURCE ${SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore STATIC ${SUB_OBJECTS_SRC})
-
-## link mindspore_np_dtype to mindspore
-if(WIN32)
-add_compile_definitions(BUILDING_NP_DTYPE_DLL)
-endif()
-
-add_subdirectory(common/np_dtype)
-target_link_libraries(mindspore PUBLIC mindspore_np_dtype)
-add_dependencies(mindspore mindspore_np_dtype)
-
-target_link_libraries(mindspore_np_dtype PRIVATE mindspore_core)
-if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(mindspore_np_dtype PRIVATE mindspore::pybind11_module)
-endif()
 
 set(COMMON_SUB_COMP
         utils
@@ -410,7 +96,7 @@ endif()
 target_link_libraries(mindspore PUBLIC securec mindspore::flatbuffers)
 
 if(NOT WIN32)
-  target_link_libraries(mindspore PUBLIC dl)
+    target_link_libraries(mindspore PUBLIC dl)
 endif()
 
 set(BACKEND_SUB_COMP
@@ -464,13 +150,6 @@ foreach(number RANGE 1 ${CPU_KERNEL_OBJECT_COUNT})
         endif()
     endif()
 endforeach()
-
-if(ENABLE_TESTCASES)
-    include_directories(${CMAKE_BINARY_DIR})
-    list(APPEND STUB_BACKEND_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/ps/ps_core_stub.cc)
-    add_library(stub_backend_obj OBJECT ${STUB_BACKEND_SOURCE})
-endif()
-
 set_property(SOURCE ${BACKEND_SUB_OBJECTS_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_ME)
 add_library(mindspore_backend SHARED ${BACKEND_SUB_OBJECTS_SRC})
 
@@ -479,7 +158,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 
 target_link_libraries(mindspore_backend PRIVATE mindspore_core mindspore_ops
-                      mindspore_common proto_input mindspore::protobuf)
+        mindspore_common proto_input mindspore::protobuf)
 target_link_libraries(mindspore_backend PRIVATE securec)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -530,7 +209,7 @@ endif()
 # set c_expression building
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set_property(SOURCE "pipeline/jit/ps/init.cc" PROPERTY
-            COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PIPELINE)
+        COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PIPELINE)
 pybind11_add_module(_c_expression NO_EXTRAS "pipeline/jit/ps/init.cc" NO_EXTRAS)
 
 MESSAGE(STATUS "operation system is ${CMAKE_SYSTEM}")
@@ -546,37 +225,19 @@ else()
     MESSAGE(FATAL_ERROR "other platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
-if(ENABLE_D)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/ascend)
-    add_subdirectory(plugin/device/ascend)
-    enable_directory_when_only_build_plugins(plugin/device/ascend)
-endif()
-
-if(ENABLE_GPU AND GPU_BACKEND_CUDA)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/gpu)
-    add_subdirectory(plugin/device/gpu)
-    enable_directory_when_only_build_plugins(plugin/device/gpu)
-endif()
-
-if(ENABLE_GPU AND GPU_BACKEND_ROCM)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/amd)
-    add_subdirectory(plugin/device/amd)
-    enable_directory_when_only_build_plugins(plugin/device/amd)
-endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(mindspore PUBLIC mindspore::pybind11_module)
     if(NOT MSVC)
         target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore -Wl,--no-whole-archive mindspore_core
-            mindspore_ops mindspore_common mindspore_backend)
+                mindspore_ops mindspore_common mindspore_backend)
     else()
         target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops
-                              mindspore_common mindspore_backend mindspore)
+                mindspore_common mindspore_backend mindspore)
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore proto_input -Wl,-noall_load mindspore_core
-                          mindspore_ops mindspore_common mindspore_backend)
+            mindspore_ops mindspore_common mindspore_backend)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     if(ENABLE_CPU AND NOT WIN32)
@@ -591,12 +252,6 @@ endif()
 set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
 if(USE_GLOG)
     target_link_libraries(_c_expression PRIVATE mindspore::glog)
-endif()
-
-if(ENABLE_GPU)
-    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        target_link_libraries(_c_expression PRIVATE mindspore::ssl mindspore::crypto)
-    endif()
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -615,23 +270,15 @@ if(ENABLE_MINDDATA)
 endif()
 
 if(ENABLE_TESTCASES)
-    include_directories(${CMAKE_BINARY_DIR})
-    list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/ge/ge_operator_stub.cc)
-    list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/transform/util.cc)
-    list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/pipeline/action_stub.cc)
-    list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/cluster/cluster_stub.cc)
-    list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/profiling/parallel_strategy_profiling_stub.cc)
-    list(APPEND STUB_COMMON_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/profiling/profiling_stub.cc)
-
-    list(APPEND EXPRESSION_STUB_SOURCE ${CMAKE_SOURCE_DIR}/tests/ut/cpp/stub/ps/ps_core_stub.cc)
-
-    add_library(stub_common STATIC ${STUB_COMMON_SOURCE})
-    target_link_libraries(mindspore_common PUBLIC stub_common)
-
-    add_library(expression_ STATIC ${EXPRESSION_STUB_SOURCE})
-    target_link_libraries(_c_expression PUBLIC expression_)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/testcase_compile_config.cmake)
 endif()
 
-add_subdirectory(transform/graph_ir)
-add_subdirectory(transform/acl_ir)
+if(ENABLE_GPU)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/gpu_compile_config.cmake)
+endif()
+
+if(ENABLE_D)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ascend_compile_config.cmake)
+endif()
+
 add_subdirectory(transform/symbol)

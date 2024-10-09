@@ -24,7 +24,7 @@
 #include "src/extendrt/session/single_op_session.h"
 #include "src/extendrt/infer_device_address.h"
 
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/common_utils.h"
