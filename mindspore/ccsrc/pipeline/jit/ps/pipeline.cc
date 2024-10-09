@@ -440,12 +440,15 @@ void ResetId(const ResourcePtr &resource) {
 #endif
   mindspore::id_generator::reset_id();
   const auto &all_nodes = TopoSort(resource->func_graph()->get_return(), SuccDeeperSimple);
+  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
   for (const auto &node : all_nodes) {
     if (node != nullptr && node->isa<CNode>()) {
       const auto &cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
       cnode->set_fullname_with_scope("");
-      (void)cnode->fullname_with_scope();
+      if (!ge_mode) {
+        (void)cnode->fullname_with_scope();
+      }
     }
   }
 }
