@@ -78,7 +78,7 @@ int UpsampleNearest3DGradGpuKernelMod::Resize(const std::vector<KernelTensor *> 
     scales_ = std::vector<float>(kIndex3, kValueZero);
   } else {
     scales_ = scales_opt.value();
-    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.f);
   }
   return KRET_OK;
 }

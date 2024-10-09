@@ -57,9 +57,9 @@ void FFTBaseCpuKernelMod::UpdateParam() {
 void FFTBaseCpuKernelMod::ApplyWorkSpace(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   auto out_type_id = outputs[kIndex0]->dtype_id();
-  auto workspace_size = calculate_element_nums_ * abstract::TypeIdSize(out_type_id);
+  auto workspace_size = calculate_element_nums_ * static_cast<int64_t>(abstract::TypeIdSize(out_type_id));
   if (out_type_id != kNumberTypeComplex64 && out_type_id != kNumberTypeComplex128) {
-    workspace_size *= 2;
+    workspace_size *= kNum2;
   }
   workspace_size_list_.push_back(workspace_size);
 }
