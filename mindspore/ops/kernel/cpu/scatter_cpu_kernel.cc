@@ -138,7 +138,7 @@ bool ScatterCpuKernelMod::Scatter(const ReductionT &reduction_func, T *output, c
             output_dim_index += this->input_axis_size_;
           }
         }
-        output_offset += static_cast<int>(this->output_stride_[i] * output_dim_index);
+        output_offset += static_cast<int>(this->output_stride_[i]) * output_dim_index;
       }
       reduction_func(output + output_offset, *(updates + index));
     }

@@ -88,7 +88,7 @@ int UpsampleNearest3DGradCpuKernelMod::Resize(const std::vector<KernelTensor *> 
       MS_LOG(ERROR) << "For " << kernel_name_ << " can't get scales input! ";
       return KRET_RESIZE_FAILED;
     }
-    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.);
+    scales_.insert(scales_.end(), kIndex3 - scales_.size(), 1.f);
   }
 
   return KRET_OK;
