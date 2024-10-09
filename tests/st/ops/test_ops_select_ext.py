@@ -69,9 +69,11 @@ def test_ops_select_ext(mode):
             output = select_ext_forward_func(ms.Tensor(x), dim, index)
             out_grad = select_ext_backward_func(ms.Tensor(x), dim, index)
         elif mode == 'KBK':
+            ms.context.set_context(mode=ms.GRAPH_MODE)
             output = (jit(select_ext_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, index)
             out_grad = (jit(select_ext_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x), dim, index)
         else:
+            ms.context.set_context(mode=ms.GRAPH_MODE)
             output = (jit(select_ext_forward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), dim, index)
             out_grad = (jit(select_ext_backward_func, jit_config=JitConfig(jit_level="O2")))(ms.Tensor(x), dim, index)
         expect = expect_list[i]
