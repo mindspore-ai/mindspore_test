@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/factory/ms_factory.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

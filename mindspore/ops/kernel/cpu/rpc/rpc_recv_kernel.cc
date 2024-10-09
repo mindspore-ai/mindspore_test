@@ -18,7 +18,7 @@
 #include <map>
 #include <utility>
 #include <algorithm>
-#include "include/common/factory/ms_factory.h"
+#include "plugin/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

@@ -27,7 +27,7 @@
 #include <utility>
 #include <complex>
 #include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
+#include "plugin/factory/ms_factory.h"
 #include "nnacl/base/sequence_unstack_base.h"
 
 namespace mindspore {
