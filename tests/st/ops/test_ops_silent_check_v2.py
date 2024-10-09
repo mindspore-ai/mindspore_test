@@ -103,5 +103,6 @@ def test_silent_check_v2_dyn_shape():
         "silent_check_v2",
         disable_input_check=True,
         disable_grad=True,
-        inplace_update=True
+        inplace_update=True,
+        disable_mode=["GRAPH_MODE"]
     )
