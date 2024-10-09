@@ -86,6 +86,7 @@ class SingleCommunicator(Cell):
     def __init__(self, group_name):
         super(SingleCommunicator, self).__init__()
         self.allreduce = P.AllReduce(group=group_name)
+        self.add_flags(skip_auto_parallel_compile=True)
 
     def construct(self, loaded_param):
         result = self.allreduce(loaded_param)
