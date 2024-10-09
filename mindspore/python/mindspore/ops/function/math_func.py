@@ -4124,7 +4124,7 @@ def histc(input, bins=100, min=0., max=0.):
         max (int, float, optional): An optional float of the upper end of the range (inclusive). Default: ``0.0`` .
 
     Returns:
-        Tensor, 1-D Tensor with type int32.
+        1-D Tensor. If the input is int32, the output returns int32, otherwise it returns float32.
 
     Raises:
         TypeError: If `input` is not a Tensor.
@@ -4142,7 +4142,7 @@ def histc(input, bins=100, min=0., max=0.):
         >>> x = Tensor([1., 2, 1])
         >>> y = ops.histc(x, bins=4, min=0.0, max=3.0)
         >>> print(y)
-        [0 2 1 0]
+        [0. 2. 1. 0.]
     """
     if not isinstance(min, (int, float)):
         raise TypeError(f"For 'histc', parameter 'min' must be an int or float, but got {type(min)}.")

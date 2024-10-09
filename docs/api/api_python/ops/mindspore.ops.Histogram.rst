@@ -19,7 +19,7 @@ mindspore.ops.Histogram
         - **x** (Tensor) - 输入Tensor，类型支持：[float16, float32, int32]。
 
     输出：
-        Tensor，类型为int32的1-D Tensor。
+        1-D Tensor。如果输入是int32类型，输出返回int32类型，否则返回float32类型。
 
     异常：
         - **TypeError** - 如果 `x` 不是Tensor。
