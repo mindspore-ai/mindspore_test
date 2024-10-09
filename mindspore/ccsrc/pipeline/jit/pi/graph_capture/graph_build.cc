@@ -3502,6 +3502,7 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
   }
 
   if (index >= size) {
+    pop();
     if (is_tuple) {
       pop();
     }
