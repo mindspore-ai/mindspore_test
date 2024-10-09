@@ -28,7 +28,7 @@ from mindspore import set_seed
 from mindspore.communication import init
 from mindspore.dataset import GeneratorDataset
 
-workspace = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from training_checker import TrainingChecker
 from mindformers.models.llama.llama_config import LlamaConfig

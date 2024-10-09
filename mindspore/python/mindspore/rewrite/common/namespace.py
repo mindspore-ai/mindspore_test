@@ -107,7 +107,7 @@ def is_third_party(func_obj):
 def get_top_level_module_path(module_path):
     """Get the path of the top level package of the current working directory."""
     module_abspath = os.path.realpath(module_path)
-    upper_path = os.path.abspath(os.path.dirname(module_abspath))
+    upper_path = os.path.realpath(os.path.dirname(module_abspath))
     if module_abspath == upper_path:
         return module_abspath
     # Check whether __init__.py exists in the upper directory.

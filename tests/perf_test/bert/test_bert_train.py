@@ -30,7 +30,7 @@ from ...dataset_mock import MindData
 from ...ops_common import nn, np, batch_tuple_tensor, build_construct_graph
 from tests.st.networks import utils
 
-head_path = os.path.dirname(os.path.abspath(__file__)) + "/../../../"
+head_path = os.path.dirname(os.path.realpath(__file__)) + "/../../../"
 utils.replace_check_param(head_path)
 
 from tests.models.official.nlp.bert.src import BertConfig, BertNetworkWithLoss, BertTrainOneStepCell, BertTrainOneStepWithLossScaleCell

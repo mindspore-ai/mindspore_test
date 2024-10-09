@@ -31,7 +31,7 @@ from mindspore.train import Model, Callback
 import mindspore.nn.learning_rate_schedule as lr_schedules
 from tests.st.networks import utils
 
-head_path = os.path.dirname(os.path.abspath(__file__)) + "/../../../../../../"
+head_path = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../../"
 utils.replace_check_param(head_path)
 
 from tests.mark_utils import arg_mark

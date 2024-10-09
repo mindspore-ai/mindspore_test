@@ -241,7 +241,7 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
     # start obfuscate ckpt
     ckpt_dir_files = os.listdir(ckpt_files)
     for ckpt_name in ckpt_dir_files:
-        sub_path = os.path.abspath(ckpt_files) + '/' + ckpt_name
+        sub_path = os.path.realpath(ckpt_files) + '/' + ckpt_name
         if Path(sub_path).is_dir():
             sub_ckpt_file_list = os.listdir(sub_path)
             new_saved_path = os.path.realpath(saved_path) + '/' + ckpt_name
@@ -253,12 +253,12 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
             for sub_ckpt_name in sub_ckpt_file_list:
                 if not sub_ckpt_name.endswith('.ckpt'):
                     continue
-                _obfuscate_single_ckpt(os.path.abspath(sub_path) + '/' + sub_ckpt_name, obf_metadata,
+                _obfuscate_single_ckpt(os.path.realpath(sub_path) + '/' + sub_ckpt_name, obf_metadata,
                                        obf_config, new_saved_path)
         else:
             if not ckpt_name.endswith('.ckpt'):
                 continue
-            _obfuscate_single_ckpt(os.path.abspath(ckpt_files) + '/' + ckpt_name,
+            _obfuscate_single_ckpt(os.path.realpath(ckpt_files) + '/' + ckpt_name,
                                    obf_metadata, obf_config, saved_path)
     return saved_metadata
 
@@ -360,7 +360,7 @@ def _obfuscate_single_ckpt(ckpt_name, obf_metadata, obf_config, saved_path):
         obf_param_list.append({'name': item, 'data': ckpt_param[item]})
     ckpt_file_name = ckpt_name.split('/')[-1]
     obf_ckpt_file_name = ckpt_file_name.split('.')[0] + '_obf' + '.ckpt'
-    save_checkpoint(obf_param_list, os.path.abspath(saved_path) + '/' + obf_ckpt_file_name)
+    save_checkpoint(obf_param_list, os.path.realpath(saved_path) + '/' + obf_ckpt_file_name)
     return True
 
 

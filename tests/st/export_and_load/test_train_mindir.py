@@ -196,7 +196,7 @@ def test_load_mindir_generated_from_old_version():
     Expectation: load successfully
     """
     context.set_context(mode=context.GRAPH_MODE)
-    path = os.path.abspath(os.path.dirname(__file__)) + "/exported_mindir/old_version_mindir.mindir"
+    path = os.path.realpath(os.path.dirname(__file__)) + "/exported_mindir/old_version_mindir.mindir"
     graph = load(file_name=path)
     x = Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
     loaded_net = nn.GraphCell(graph)

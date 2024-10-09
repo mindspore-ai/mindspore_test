@@ -289,7 +289,7 @@ def check_inputs_with_yaml(inputs_seq, yaml_name, disable_yaml_check):
     if disable_yaml_check:
         warning_log("yaml check is disabled.")
         return
-    work_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../../')
+    work_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../')
     ops_yaml_path = os.path.join(work_path, 'mindspore/python/mindspore/ops_generate/ops.yaml')
     if not os.path.exists(ops_yaml_path):
         warning_log(ops_yaml_path, " is not found.")

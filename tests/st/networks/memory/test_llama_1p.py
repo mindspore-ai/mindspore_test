@@ -24,7 +24,7 @@ import mindspore as ms
 from mindspore import set_seed
 from mindspore.dataset import GeneratorDataset
 
-workspace = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+workspace = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindformers.models.llama.llama_config import LlamaConfig
 from mindformers.models.llama.llama import LlamaForCausalLM

@@ -134,7 +134,7 @@ def test_cv_file_writer():
     ret = writer.commit()
     assert ret == SUCCESS, 'failed on committing.'
     # ShardIndexGenerator
-    generator = ShardIndexGenerator(os.path.abspath(paths[0]))
+    generator = ShardIndexGenerator(os.path.realpath(paths[0]))
     generator.build()
     generator.write_to_db()
 

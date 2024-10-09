@@ -14,7 +14,7 @@ from copy import deepcopy
 from subprocess import getstatusoutput
 import yaml
 
-script_path = os.path.dirname(os.path.abspath(__file__))
+script_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, script_path)
 
 # command line parameters

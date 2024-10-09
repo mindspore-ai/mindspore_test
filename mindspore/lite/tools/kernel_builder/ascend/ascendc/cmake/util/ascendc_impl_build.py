@@ -215,7 +215,7 @@ class AdpBuilder(opdesc_parser.OpDesc):
             src_file = os.path.join(impl_path, self.op_file + '.cpp')
             if not os.path.exists(src_file):
                 return
-        out_path = os.path.abspath(path)
+        out_path = os.path.realpath(path)
         if self.dynamic_shape and not out_path.endswith('dynamic'):
             out_path = os.path.join(path, 'dynamic')
             os.makedirs(out_path, exist_ok=True)

@@ -95,7 +95,7 @@ def test_cell_shard_with_layout_be_set_and_propagate():
     context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       device_num=8, global_rank=0)
     case_name = "test_cell_shard_with_layout_be_set_and_propagate"
-    ir_graph_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "layout_ir", case_name)
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
     context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
     layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
     in_layout1 = (layout("dp", "mp"),)
@@ -123,7 +123,7 @@ def test_ms_shard_with_layout_be_set_and_propagate():
     context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       device_num=8, global_rank=0)
     case_name = "test_ms_shard_with_layout_be_set_and_propagate"
-    ir_graph_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "layout_ir", case_name)
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
     context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
     layout = Layout((2, 4, 1), ("dp", "sp", "mp"))
     in_layout1 = (layout("dp", "mp"),)
@@ -151,7 +151,7 @@ def test_ms_shard_with_multi_dim_and_interleaved_parallel_layout():
     context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation",
                                       device_num=16, global_rank=0)
     case_name = "test_ms_shard_with_multi_dim_and_interleaved_parallel_layout"
-    ir_graph_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "layout_ir", case_name)
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "layout_ir", case_name)
     context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
     layout = Layout((2, 4, 2, 2), ("dp", "mp", "sp", "interleaved_parallel"))
     in_layout1 = (layout(("dp", "interleaved_parallel", "mp"), "sp"),)

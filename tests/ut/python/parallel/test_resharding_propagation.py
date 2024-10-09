@@ -121,7 +121,7 @@ def before_test(case_name, device_num=4):
     context.set_auto_parallel_context(parallel_mode=ms.ParallelMode.AUTO_PARALLEL, device_num=device_num,
                                       global_rank=0, search_mode="sharding_propagation")
     context.set_context(mode=ms.GRAPH_MODE)
-    ir_graph_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reshard_ir", case_name)
+    ir_graph_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "reshard_ir", case_name)
     context.set_context(save_graphs=True, save_graphs_path=ir_graph_path)
     net = Net()
     x = Tensor(np.ones(shape=(32, 1, 28, 28)), dtype=ms.float32)

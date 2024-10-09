@@ -380,7 +380,7 @@ if __name__ == "__main__":
     logger.info('STARTING: cropper_configure.py ')
 
     original_path = os.getcwd()
-    script_path = os.path.dirname(os.path.abspath(__file__))
+    script_path = os.path.dirname(os.path.realpath(__file__))
 
     try:
         # change directory to mindspore directory

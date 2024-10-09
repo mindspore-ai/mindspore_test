@@ -352,7 +352,7 @@ class AclnnUtils:
     """
     aclnn utils
     """
-    work_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../")
+    work_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../../")
     aclnn_map = safe_load_yaml(os.path.join(work_path, "./mindspore/python/mindspore/ops_generate/aclnn_config.yaml"))
 
     @staticmethod
