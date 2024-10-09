@@ -22,10 +22,12 @@
 #include <unordered_map>
 #include "include/backend/kernel_graph.h"
 #include "runtime/hardware/device_context.h"
+#include "runtime/graph_scheduler/actor/actor_set.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 
 namespace mindspore::pynative {
 using GraphCompilerInfo = runtime::GraphCompilerInfo;
+using ActorSet = runtime::ActorSet;
 class GraphAdapter {
  public:
   void UpdateForwardOutputInBpropGraph(const KernelGraphPtr &graph, const device::DeviceContext *device_context,
@@ -39,7 +41,8 @@ class GraphAdapter {
                                                        const device::DeviceContext *device_context);
   static void RemoveUnusedValueNodes(const KernelGraphPtr &graph);
   static void HandleHeterogeneousTensors(const std::vector<std::vector<tensor::TensorPtr>> &tensors,
-                                         const std::vector<device::DeviceContext *> &device_contexts);
+                                         const std::vector<device::DeviceContext *> &device_contexts,
+                                         ActorSet *actor_set);
   static bool IsPynativeGeGraphSink(const GraphCompilerInfo &graph_compiler_info);
   static bool IsPynativeGeGraphSink(const FuncGraphPtr &func_graph);
   static bool PyNativeEnableTaskSink(const FuncGraphPtr &func_graph);

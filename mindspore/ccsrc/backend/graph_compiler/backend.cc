@@ -507,7 +507,7 @@ void MindRTBackend::RunGraphByActors(const ActorInfo &actor_info, const GraphCom
     MS_LOG(EXCEPTION) << "The actor_set " << actor_info << " graphs size " << graphs.size()
                       << " should less than or equal to inputs size " << input_tensors.size();
   }
-  pynative::GraphAdapter::HandleHeterogeneousTensors(input_tensors, device_contexts);
+  pynative::GraphAdapter::HandleHeterogeneousTensors(input_tensors, device_contexts, actor_set);
   CreateKernelTensor(input_tensors, device_contexts);
 
   // Release GIL and run actor DAG.

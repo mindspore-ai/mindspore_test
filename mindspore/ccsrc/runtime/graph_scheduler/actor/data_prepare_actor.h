@@ -66,6 +66,7 @@ class DataPrepareActor : public DebugAwareActor {
 
   void set_has_continuous_memory(bool has_continuous_memory) { has_continuous_memory_ = has_continuous_memory; }
   bool has_continuous_memory() { return has_continuous_memory_; }
+  void set_heter_weights(bool is_heter) { has_heter_weights_ = is_heter; }
 
  protected:
   void Init() override;
@@ -132,6 +133,15 @@ class DataPrepareActor : public DebugAwareActor {
   // Preprocess before prepare data for data prepare actor.
   void PreprocessBeforePrepareData() const;
 
+  // Remove after refact.
+  bool enable_prepare_case() {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+    return !tensors_need_reprepare_.empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_ ||
+           has_heter_weights_;
+  }
+
   const GraphCompilerInfo *graph_compiler_info_;
   GraphExecutionStrategy strategy_;
   GraphExecutionStrategy real_strategy_;
@@ -157,6 +167,8 @@ class DataPrepareActor : public DebugAwareActor {
   static std::atomic<size_t> execution_count_;
   // Flatten weights needs to prepare data every step.
   bool is_sub_data_{false};
+  // heterogeneous parameter needs to prepare data every step, remove after refact.
+  bool has_heter_weights_{false};
 };  // namespace runtime
 
 using DataPrepareActorPtr = std::shared_ptr<DataPrepareActor>;
