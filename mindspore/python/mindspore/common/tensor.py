@@ -4563,6 +4563,31 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('zeros')(size, dtype)
 
+    def zero_(self):
+        r"""
+        Return a tensor filled with zeros.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Returns:
+            Return a tensor. Fill self tensor with zeros.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([2, 2]))
+            >>> output = x.zero_()
+            >>> print(output)
+            [[0. 0.]
+             [0. 0.]]
+        """
+        return tensor_operator_registry.get('zero_')(self)
+
     def new_ones(self, size, dtype=None):
         r"""
         Return a tensor of `size` filled with ones.

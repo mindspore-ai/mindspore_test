@@ -474,6 +474,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"ne", std::string("ne")},                                          // ne()
        {"not_equal", std::string("not_equal")},                            // not_equal()
        {"new_zeros", std::string("new_zeros")},                            // new_zeros()
+       {"zero_", std::string("zero_")},                                    // zero_()
        {"new_ones", std::string("new_ones")},                              // new_ones()
        {"sgn", std::string("sgn")},                                        // sgn()
        {"sign", std::string("sign")},                                      // sign()

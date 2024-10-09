@@ -1,0 +1,18 @@
+#operator inplace_zero
+inplace_zero:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  function:
+    name: zero_
+  class:
+    name: InplaceZero
+  dispatch:
+    enable: True
+    Ascend: InplaceZeroAscend

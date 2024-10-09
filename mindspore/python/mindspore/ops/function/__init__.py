@@ -43,6 +43,7 @@ from .array_func import (
     size,
     ones,
     ones_like,
+    zero_,
     zeros,
     zeros_like,
     shape,
