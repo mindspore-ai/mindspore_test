@@ -98,7 +98,6 @@ struct COMMON_EXPORT BaseReportData {
   BaseReportData(int32_t device_id, std::string tag) : device_id(device_id), tag(std::move(tag)) {}
   virtual ~BaseReportData() = default;
   virtual std::vector<uint8_t> encode() = 0;
-  virtual void preprocess() = 0;
 };
 
 enum class COMMON_EXPORT OpRangeDataType {
@@ -133,9 +132,8 @@ struct COMMON_EXPORT OpRangeData : BaseReportData {
   std::map<std::string, std::string> custom_info{};
   uint64_t step{0};
   OpRangeData(int64_t start_ns, int64_t end_ns, int64_t sequence_number, uint64_t process_id, uint64_t start_thread_id,
-              uint64_t end_thread_id, uint64_t forward_thread_id, bool is_async, std::string name,
-              std::vector<std::string> stack, uint64_t flow_id, int32_t device_id, uint64_t step, int8_t level,
-              const std::map<std::string, std::string> &custom_info)
+              uint64_t end_thread_id, uint64_t forward_thread_id, bool is_async, std::string name, uint64_t flow_id,
+              int32_t device_id, uint64_t step, int8_t level, const std::map<std::string, std::string> &custom_info)
       : BaseReportData(device_id, "op_range_" + std::to_string(device_id)),
         start_ns(start_ns),
         end_ns(end_ns),
@@ -146,7 +144,6 @@ struct COMMON_EXPORT OpRangeData : BaseReportData {
         forward_thread_id(forward_thread_id),
         is_async(is_async),
         name(std::move(name)),
-        stack(std::move(stack)),
         flow_id(flow_id),
         level(level),
         custom_info(custom_info),
@@ -160,7 +157,6 @@ struct COMMON_EXPORT OpRangeData : BaseReportData {
         name(std::move(name)) {}
 
   std::vector<uint8_t> encode();
-  void preprocess();
 };
 
 class COMMON_EXPORT ProfilingDataDumper {

@@ -99,26 +99,7 @@ inline void EncodeStrMapData(const uint16_t type, const std::map<std::string, st
   EncodeStrData(type, rst, result);
 }
 
-void OpRangeData::preprocess() {
-  const std::string delim = "|";
-  const std::string remove_ms = "site-packages/mindspore";
-  if (stack.size() > 0 && !stack[0].empty()) {
-    std::string all_stack = stack[0];
-    stack.erase(stack.begin());
-    size_t nPos = all_stack.find(delim.c_str());
-    while (nPos != std::string::npos) {
-      std::string temp = all_stack.substr(0, nPos + 1);
-      if (temp.find(remove_ms.c_str()) == std::string::npos) {
-        stack.push_back(temp);
-      }
-      all_stack = all_stack.substr(nPos + 1);
-      nPos = all_stack.find(delim.c_str());
-    }
-  }
-}
-
 std::vector<uint8_t> OpRangeData::encode() {
-  preprocess();
   std::unique_ptr<std::vector<uint8_t>> result = std::make_unique<std::vector<uint8_t>>();
   EncodeFixedData<int64_t>({start_ns, end_ns, sequence_number}, result);
   EncodeFixedData<uint64_t>({process_id, start_thread_id, end_thread_id, forward_thread_id, flow_id, step}, result);
@@ -160,20 +141,21 @@ void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> dat
   if (!profiler_manager->GetProfilingEnableFlag() || !profiler_manager->EnableCollectHost()) {
     return;
   }
-  std::vector<std::string> stack_vec;
-  stack_vec.push_back(data->py_stack_);
-  std::string op_name = data->op_full_name_;
+  std::string op_name;
   if (data->is_graph_data_) {
     op_name = data->module_graph_ + "::" + data->event_graph_ + "::" + data->op_name_;
   } else if (data->is_stage_) {
     op_name = kProfilerStageString.at(data->stage_);
   } else if (data->op_name_ != "flow") {
-    op_name = kProfilerModuleString.at(data->module_) + "::" + kProfilerEventString.at(data->event_) + "::" + op_name;
+    op_name = kProfilerModuleString.at(data->module_) + "::" + kProfilerEventString.at(data->event_) +
+              "::" + data->op_full_name_;
+  } else {
+    op_name = data->op_full_name_;
   }
   auto &instance = runtime::ProfilerAnalyzer::GetInstance();
   std::unique_ptr<OpRangeData> report = std::make_unique<OpRangeData>(
-    data->start_time_, data->end_time_, 0, 0, data->tid_, data->tid_, data->tid_, false, op_name, std::move(stack_vec),
-    data->flow_id_, ProfilingFrameworkData::Device_Id, instance.step(), data->level_, data->custom_info_);
+    data->start_time_, data->end_time_, 0, 0, data->tid_, data->tid_, data->tid_, false, op_name, data->flow_id_,
+    ProfilingFrameworkData::Device_Id, instance.step(), data->level_, data->custom_info_);
   ProfilingDataDumper::GetInstance().Report(std::move(report));
 }
 #else
