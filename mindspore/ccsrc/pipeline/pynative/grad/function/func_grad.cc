@@ -236,7 +236,7 @@ void ReleaseResource(const VariablePtr &variable) {
   const auto &forward = PyNativeExecutor::forward_executor();
   if (forward->enable_async()) {
     const auto task = [variable]() { variable->Release(); };
-    runtime::Pipeline::Get().bprop_stage()->Push(std::make_shared<BpropTask>(task));
+    runtime::Pipeline::Get().backend_stage()->Push(std::make_shared<BpropTask>(task));
   } else {
     variable->Release();
   }
@@ -548,6 +548,7 @@ void FuncGrad::BackPropagate() {
     if (!variable->is_need_propagate() || !variable->is_need_grad()) {
       MS_LOG(DEBUG) << "No need grad, variable is: " << variable->ToString();
       WeightNodeNotInGradButHasTensorHook(variable, fn);
+      ReleaseResource(variable);
       continue;
     }
     if (static_cast<bool>(MS_UNLIKELY(variable->is_fake_bprop()))) {
