@@ -3471,8 +3471,7 @@ FunctionBlockPtr Parser::ParseListCompIter(const FunctionBlockPtr &block, const 
   CNodePtr cond_apply = list_header_block->func_graph()->NewCNodeInOrder({NewValueNode(less_op), iter_idx, iter_len});
 
   // Create body graph.
-  FunctionBlockPtr list_body_block =
-    MakeFunctionBlock(MakeTraceInfo<TraceForBody>(block->func_graph()->debug_info()));
+  FunctionBlockPtr list_body_block = MakeFunctionBlock(MakeTraceInfo<TraceForBody>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(list_body_block);
   list_body_block->AddPrevBlock(list_header_block);
 
