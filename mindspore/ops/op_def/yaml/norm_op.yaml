@@ -6,7 +6,7 @@ norm:
     p:
       dtype: float
       type_cast: int, tensor
-      default: None
+      default: 2.0
     dim:
       dtype: tuple[int]
       type_cast: int, list[int]
