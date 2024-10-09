@@ -359,6 +359,7 @@ static void InsertRedistribution(const RedistributionOpListPtr &redistribution_o
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+
   if ((redistribution_oplist_ptr->first).size() != (redistribution_oplist_ptr->second).size()) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "size of OperatorVector and OutPutInfoVector must be the same!";
   }
@@ -367,6 +368,10 @@ static void InsertRedistribution(const RedistributionOpListPtr &redistribution_o
   if (pos_u >= node->size()) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "InsertRedistribution:pos can't be larger than node's inputs'size";
   }
+  // Check existence of dump and dumpprev
+  // If found, this pair stores (TensorDump Node, Parent Node of TensorDump<a.k.a node->input(pos_u)>)
+  auto dump_and_dumpprev = FindDumpAndDumpPrev(node, pos_u, manager);
+
   for (size_t index = 0; index < (redistribution_oplist_ptr->first).size(); ++index) {
     // Create new node
     AnfNodePtr target_node = node->input(pos_u);
@@ -397,6 +402,11 @@ static void InsertRedistribution(const RedistributionOpListPtr &redistribution_o
       (void)InsertMakeTuple(target_node, (redistribution_oplist_ptr->second)[index].second, func_graph);
     }
   }
+  AnfNodePtr last_insert_node = node->input(pos_u);
+  MS_EXCEPTION_IF_NULL(last_insert_node);
+  CNodePtr last_insert_op = last_insert_node->cast<CNodePtr>();
+  ProcessParallelTensorDump(dump_and_dumpprev.first, dump_and_dumpprev.second, node, last_insert_op, func_graph,
+                            pre_node->scope());
 }
 
 static void InsertGetTensorSliceOp(const Operator &op, const CNodePtr &node, const FuncGraphPtr &func_graph,

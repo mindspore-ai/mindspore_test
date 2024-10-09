@@ -135,7 +135,10 @@ def tensordump(file_name, tensor, mode='out'):
         >>> import mindspore as ms
         >>> from mindspore import nn, Tensor, ops, context
         >>> from mindspore.ops import operations as P
-        >>> from mindspore.communication import init
+        >>> from mindspore.communication import init, get_rank
+        >>> init()
+        >>> rank_id = get_rank()
+        >>> dump_path = f'dumps/rank_{rank_id}/mul1_mul2.npy'
         >>> class Net(nn.Cell):
         ...     def __init__(self, strategy1, strategy2):
         ...         super(Net, self).__init__()
@@ -144,11 +147,10 @@ def tensordump(file_name, tensor, mode='out'):
         ...
         ...     def construct(self, x, y, b):
         ...         out1 = self.matmul1(x, y)
-        ...         ops.tensordump('dumps/mul1_mul2.npy', out1, 'all')
+        ...         ops.tensordump(dump_path, out1, 'all')
         ...         out2 = self.matmul2(out1, b)
         ...         return out2
         ...
-        >>> init()
         >>> ms.set_context(mode=ms.GRAPH_MODE, save_graphs=2)
         >>> context.set_auto_parallel_context(parallel_mode='semi_auto_parallel', full_batch=True)
         >>> strategy1 = ((1, 2), (2, 1))
