@@ -41,14 +41,9 @@
 #endif
 #include "include/common/thread_pool.h"
 #ifndef ENABLE_SECURITY
-#include "plugin/device/ascend/hal/profiler/memory_profiling.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"
 #endif
-
-using mindspore::profiler::ascend::MemoryProfiling;
-using mindspore::profiler::ascend::NodeMemory;
-using mindspore::profiler::ascend::TensorMemory;
 #endif
 namespace mindspore {
 namespace somas {

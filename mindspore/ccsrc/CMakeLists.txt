@@ -30,12 +30,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-fast-math")
 endif()
 
-if(ENABLE_TESTCASES)
-    list(APPEND BACKEND_SUB_OBJECTS_SRC
-            plugin/device/cpu/hal/profiler/cpu_profiling.cc
-            plugin/device/cpu/hal/profiler/cpu_data_saver.cc)
-endif()
-
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/proto_compile_config.cmake)
 
 ## make sub objects

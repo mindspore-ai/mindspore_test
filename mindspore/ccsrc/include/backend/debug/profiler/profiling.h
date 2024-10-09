@@ -103,8 +103,10 @@ class BACKEND_EXPORT Profiler {
   virtual void Stop() = 0;
   virtual void StepStart(uint64_t /* step_id */, void * /* stream */) {}
   virtual void StepStop() {}
-  virtual void StepProfilingEnable(const bool enable_flag) = 0;
+  virtual void StepProfilingEnable(bool enable_flag) = 0;
   virtual void OpDataProducerEnd() = 0;
+  virtual void RecordMemoryPoolInfo(const size_t total_allocated, const size_t total_reserved,
+                                    const size_t total_active) {}
   void RecordOneStepStartEndInfo();
   bool GetEnableFlag() const { return enable_flag_; }
   void EnableOpTime() { op_time_ = true; }

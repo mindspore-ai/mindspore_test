@@ -56,7 +56,8 @@ class CPUProfiler : public Profiler {
   void SetRuntimeStart(const std::string op_name, const uint64_t start_timestamp);
   void RecordFrameWorkInfo(const CNodePtr &kernel);
   void RecordFrameWorkInfo(const std::string &op_name, const std::vector<BaseShapePtr> &input_shapes);
-  void RecordMemoryPoolInfo(const size_t total_allocated, const size_t total_reserved, const size_t total_active);
+  void RecordMemoryPoolInfo(const size_t total_allocated, const size_t total_reserved,
+                            const size_t total_active) override;
   std::vector<CurKernelInfo> all_kernel_info_;
   std::mutex kernel_mutex_;
 
