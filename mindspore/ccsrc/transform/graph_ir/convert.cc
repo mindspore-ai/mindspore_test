@@ -122,7 +122,8 @@ const std::map<std::string, std::vector<std::pair<size_t, TypeId>>> kTransInputD
   {kLinSpaceOpName, {{3, kNumberTypeInt32}}},
   {kResizeNearestNeighborV2GradOpName, {{2, kNumberTypeInt32}}},
   {kResizeBilinearV2OpName, {{2, kNumberTypeInt32}}},
-  {kCol2ImOpName, {{2, kNumberTypeInt32}}}};
+  {kCol2ImOpName, {{2, kNumberTypeInt32}}},
+  {kSplitOpName, {{2, kNumberTypeInt32}}}};
 
 // {node name | {{attr_name, dst_type}...}}
 const std::map<std::string, std::vector<std::pair<std::string, TypeId>>> kTransAttrDTypeMap = {
@@ -3789,6 +3790,9 @@ void DfGraphConvertor::TransInputDataType(const CNodePtr &node, const std::strin
   MS_EXCEPTION_IF_NULL(node);
   MS_LOG(DEBUG) << "Trans input data type of node:" << node->DebugString();
   for (auto &item : iter->second) {
+    if (node->size() <= item.first) {
+      continue;
+    }
     auto input_node = node->input(item.first);
     TypeId dst_type = item.second;
     MS_EXCEPTION_IF_NULL(input_node);
