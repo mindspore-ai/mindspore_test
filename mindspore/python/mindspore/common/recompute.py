@@ -92,9 +92,13 @@ class _RecomputeCell(Cell):
         self.args.pop()
         self.kwargs.pop()
         if kwargs:
-            input_args = list(input_args) + list(kwargs.values())
+            input_args_for_check = list(input_args) + list(kwargs.values())
+        else:
+            input_args_for_check = list(input_args)
         # To detach inputs to avoid erasing auto grad meta info of origin inputs.
         input_args = _detach_input(input_args)
+        kwargs = _detach_input(kwargs)
+        kwargs['sens'] = grad_input
         try:
             pre_rng_state = get_rng_state()
             set_rng_state(self.cpu_rng_state)
@@ -102,9 +106,9 @@ class _RecomputeCell(Cell):
             if self.amp_strategy:
                 with amp_decorator(self.amp_strategy.get_amp_level(), self.amp_strategy.get_amp_dtype(),
                                    self.amp_strategy.get_white_list(), self.amp_strategy.get_black_list()):
-                    grads = self.grad(self.net, self.internal_params)(*input_args, grad_input)
+                    grads = self.grad(self.net, self.internal_params)(*input_args, **kwargs)
             else:
-                grads = self.grad(self.net, self.internal_params)(*input_args, grad_input)
+                grads = self.grad(self.net, self.internal_params)(*input_args, **kwargs)
             _pynative_executor.set_is_run_recompute(False)
             set_rng_state(pre_rng_state)
         except Exception as err:
@@ -112,7 +116,7 @@ class _RecomputeCell(Cell):
             raise err
         weights = OrderedDict()
         input_grads = list(grads[0])
-        _padding_input_grads(input_args, input_grads)
+        _padding_input_grads(input_args_for_check, input_grads)
         for i, param in enumerate(self.internal_params):
             weights[param] = grads[1][i]
         return tuple(input_grads), weights
@@ -181,6 +185,11 @@ def _padding_input_grads(args, input_grads):
 
 
 def _detach_input(input_arg):
+    """
+    Detach input
+    :param input_arg:
+    :return: detach output
+    """
     if isinstance(input_arg, Tensor):
         return ops.stop_gradient(input_arg)
     if isinstance(input_arg, (list, tuple)):
@@ -188,6 +197,14 @@ def _detach_input(input_arg):
         for arg in input_arg:
             detach_inputs.append(_detach_input(arg))
         return detach_inputs if isinstance(input_arg, list) else tuple(detach_inputs)
+    if isinstance(input_arg, dict):
+        detach_inputs = {}
+        for key, val in input_arg.items():
+            if isinstance(val, Tensor):
+                detach_inputs[key] = ops.stop_gradient(val)
+            else:
+                detach_inputs[key] = val
+        return detach_inputs
     return input_arg
 
 
