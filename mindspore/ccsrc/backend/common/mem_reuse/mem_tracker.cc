@@ -234,8 +234,9 @@ void MemoryTrackerEnabled::BindDevicePtr(DeviceAddress *device_address, DeviceMe
   } else {
     auto iter = kernel_tensor_mem_map.find(device_address->kernel_tensor().get());
     if (iter == kernel_tensor_mem_map.end()) {
-      MS_LOG(ERROR) << "MemoryTracker BindDevicePtr failed, kernel_tensor:" << device_address->kernel_tensor().get()
-                    << " not found, " << file_name << ":" << line_num;
+      MS_LOG(WARNING) << "MemoryTracker BindDevicePtr failed, device_address : " << device_address
+                      << ", kernel_tensor:" << device_address->kernel_tensor().get() << " not found, " << file_name
+                      << ":" << line_num;
       return;
     }
     mem_info = iter->second;
