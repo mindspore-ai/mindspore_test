@@ -3417,89 +3417,144 @@ AnfNodePtr Parser::ParseIfExp(const FunctionBlockPtr &block, const py::object &n
 }
 
 FunctionBlockPtr Parser::ParseListCompIter(const FunctionBlockPtr &block, const py::object &node,
-                                           const py::object &generator_node) {
-  // Create a header block.
+                                           const py::list &generators_node, size_t generators_num,
+                                           const FunctionBlockPtr &outer_header_block) {
   MS_EXCEPTION_IF_NULL(block->func_graph());
-  FunctionBlockPtr top_block = MakeFunctionBlock(MakeTraceInfo<TraceListComp>(block->func_graph()->debug_info()));
-  top_block->AddPrevBlock(block);
-  // Handle iter attribute.
+  if (generators_node.empty()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "generators list is empty";
+  }
+  // Remaining generators num and current generator.
+  size_t current_generator_num = generators_node.size();
+  py::object generator_node = generators_node[0];
+
+  // Handle current iter attribute.
+  AnfNodePtr op_len = block->MakeResolveOperation(NAMED_PRIMITIVE_LEN);
+  AnfNodePtr op_getitem = block->MakeResolveOperation(NAMED_PRIMITIVE_GETITEM);
+  AnfNodePtr op_iter = block->MakeResolveOperation(NAMED_PRIMITIVE_ITER);
+  MS_EXCEPTION_IF_NULL(op_len);
+  MS_EXCEPTION_IF_NULL(op_getitem);
+  MS_EXCEPTION_IF_NULL(op_iter);
   py::object iter_node = python_adapter::GetPyObjAttr(generator_node, "iter");
   AnfNodePtr origin_iter_anf_node = ParseExprNode(block, iter_node);
-  MS_EXCEPTION_IF_NULL(origin_iter_anf_node);
-  AnfNodePtr op_iter = block->MakeResolveOperation(NAMED_PRIMITIVE_ITER);
-  MS_EXCEPTION_IF_NULL(op_iter);
   AnfNodePtr iter_anf_node = block->func_graph()->NewCNodeInOrder({op_iter, origin_iter_anf_node});
+  CNodePtr iter_len = block->func_graph()->NewCNodeInOrder({op_len, iter_anf_node});
+  MS_EXCEPTION_IF_NULL(origin_iter_anf_node);
   MS_EXCEPTION_IF_NULL(iter_anf_node);
+  MS_EXCEPTION_IF_NULL(iter_len);
+
+  // Create a call block.
+  FunctionBlockPtr top_block = MakeFunctionBlock(MakeTraceInfo<TraceListComp>(block->func_graph()->debug_info()));
+  MS_EXCEPTION_IF_NULL(top_block);
+  top_block->AddPrevBlock(block);
 
   // Create header graph.
   FunctionBlockPtr list_header_block =
     MakeFunctionBlock(MakeTraceInfo<TraceForHeader>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(list_header_block);
 
-  // Create hasNext apply.
-  AnfNodePtr op_hasnext = top_block->MakeResolveOperation(NAMED_PRIMITIVE_HASNEXT);
-  MS_EXCEPTION_IF_NULL(list_header_block->func_graph());
-  ParameterPtr iter_param = list_header_block->func_graph()->add_parameter();
-  constexpr auto iter_param_name = "iter";
-  iter_param->set_name(iter_param_name);
-  if (iter_param->debug_info() != nullptr) {
-    iter_param->debug_info()->set_name(iter_param_name);
-  }
-  CNodePtr cond_apply = list_header_block->func_graph()->NewCNodeInOrder({op_hasnext, iter_param});
+  // param 0: the iter index, for example: 'i'
+  ParameterPtr iter_idx = list_header_block->func_graph()->add_parameter();
 
-  // Call the header graph with iter.
+  // param 1: generated list
+  constexpr auto list_comp_name = "list_comp_list";
   ParameterPtr list_param = list_header_block->func_graph()->add_parameter();
-  constexpr auto list_param_name = "list";
-  list_param->set_name(list_param_name);
-  if (list_param->debug_info() != nullptr) {
-    list_param->debug_info()->set_name(list_param_name);
-  }
-  auto empty_list = std::vector<ValuePtr>();
-  AnfNodePtr empty_list_node = NewValueNode(std::make_shared<ValueList>(empty_list));
-  top_block->Jump(list_header_block, {iter_anf_node, empty_list_node});
+  list_param->set_name(list_comp_name);
+  MS_EXCEPTION_IF_NULL(list_param->debug_info());
+  list_param->debug_info()->set_name(list_comp_name);
+
+  // param 2: whether any valid element has been got.
+  ParameterPtr valid_elt_got = list_header_block->func_graph()->add_parameter();
+
+  // Create hasNext conditional node.
+  constexpr auto less_module_name = "mindspore.ops.composite.multitype_ops.less_impl";
+  ValuePtr less_op = prim::GetPythonOps("less", less_module_name);
+  CNodePtr cond_apply = list_header_block->func_graph()->NewCNodeInOrder({NewValueNode(less_op), iter_idx, iter_len});
 
   // Create body graph.
   FunctionBlockPtr list_body_block = MakeFunctionBlock(MakeTraceInfo<TraceForBody>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(list_body_block);
   list_body_block->AddPrevBlock(list_header_block);
-  AnfNodePtr op_next = top_block->MakeResolveOperation(NAMED_PRIMITIVE_NEXT);
-  MS_EXCEPTION_IF_NULL(list_body_block->func_graph());
-  CNodePtr next_apply = list_body_block->func_graph()->NewCNodeInOrder({op_next, iter_param});
-  AnfNodePtr op_getitem = top_block->MakeResolveOperation(NAMED_PRIMITIVE_GETITEM);
-  CNodePtr item_apply =
-    list_body_block->func_graph()->NewCNodeInOrder({op_getitem, next_apply, NewValueNode(static_cast<int64_t>(0))});
-  CNodePtr new_iter =
-    list_body_block->func_graph()->NewCNodeInOrder({op_getitem, next_apply, NewValueNode(static_cast<int64_t>(1))});
 
   // Save the `target` in a variable.
   py::object gen_target_node = python_adapter::GetPyObjAttr(generator_node, "target");
-  WriteAssignVars(list_body_block, gen_target_node, item_apply);
+  auto target_var = list_body_block->func_graph()->NewCNodeInOrder({op_getitem, iter_anf_node, iter_idx});
+  WriteAssignVars(list_body_block, gen_target_node, target_var);
 
-  auto ifs_new_list = ParseListCompIfs(list_body_block, list_param, node, generator_node);
-  list_body_block->Jump(list_header_block, {new_iter, ifs_new_list});
+  // Create `i = i + 1`.
+  constexpr auto add_module_name = "mindspore.ops.composite.multitype_ops.add_impl";
+  ValuePtr add_op = prim::GetPythonOps("add", add_module_name);
+  auto add_one = NewValueNode(static_cast<int64_t>(1));
+  CNodePtr next_iter_idx = list_body_block->func_graph()->NewCNodeInOrder({NewValueNode(add_op), iter_idx, add_one});
+  list_body_block->WriteVariable(iter_idx->name(), next_iter_idx);
+
+  // Call the header graph with params: {iter_idx, list_param, valid_elt_got}.
+  AnfNodePtr last_list;
+  AnfNodePtr last_valid_elt_got;
+  if (current_generator_num == generators_num) {
+    auto empty_list = std::vector<ValuePtr>();
+    last_list = NewValueNode(std::make_shared<ValueList>(empty_list));
+    last_valid_elt_got = NewValueNode(false);
+    last_list->debug_info()->set_name(list_comp_name);
+    top_block->Jump(list_header_block, {NewValueNode(static_cast<int64_t>(0)), last_list, last_valid_elt_got});
+    top_block->Mature();
+  } else {
+    last_list = outer_header_block->func_graph()->parameters()[1];
+    last_valid_elt_got = outer_header_block->func_graph()->parameters()[2];
+    block->Jump(list_header_block, {NewValueNode(static_cast<int64_t>(0)), last_list, last_valid_elt_got});
+  }
+
+  // Ifs_node.
+  ParseListCompIfs(list_header_block, list_body_block, next_iter_idx, node, generators_num, generators_node,
+                   generator_node);
 
   // Create after graph.
   FunctionBlockPtr list_after_block =
     MakeFunctionBlock(MakeTraceInfo<TraceForAfter>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(list_after_block);
   list_after_block->AddPrevBlock(list_header_block);
-  // Return the list in after graph.
-  MS_EXCEPTION_IF_NULL(list_after_block->func_graph());
-  list_after_block->func_graph()->set_output(list_param);
 
   // Run the branches.
   (void)list_header_block->ConditionalJump(cond_apply, list_body_block, list_after_block);
 
-  top_block->Mature();
   list_header_block->Mature();
   list_body_block->Mature();
-  list_after_block->Mature();
+
+  // if current generator is the first generator.
+  if (current_generator_num == generators_num) {
+    auto empty = std::vector<ValuePtr>();
+    AnfNodePtr empty_output = NewValueNode(std::make_shared<ValueList>(empty));
+
+    FunctionBlockPtr not_empty_block =
+      MakeFunctionBlock(MakeTraceInfo<TraceIfStmtTrueBranch>(list_after_block->func_graph()->debug_info()));
+    FunctionBlockPtr empty_block =
+      MakeFunctionBlock(MakeTraceInfo<TraceIfStmtTrueBranch>(list_after_block->func_graph()->debug_info()));
+    MS_EXCEPTION_IF_NULL(not_empty_block);
+    MS_EXCEPTION_IF_NULL(empty_block);
+
+    not_empty_block->AddPrevBlock(list_after_block);
+    empty_block->AddPrevBlock(list_after_block);
+    not_empty_block->func_graph()->set_output(list_param);
+    empty_block->func_graph()->set_output(empty_output);
+    list_after_block->ConditionalJump(valid_elt_got, not_empty_block, empty_block);
+
+    list_after_block->Mature();
+    empty_block->Mature();
+    not_empty_block->Mature();
+  } else {
+    // Jump to outer generator.
+    AnfNodePtr outer_iter_idx = outer_header_block->func_graph()->parameters()[0];
+    CNodePtr outer_next_iter_idx =
+      outer_header_block->func_graph()->NewCNodeInOrder({NewValueNode(add_op), outer_iter_idx, add_one});
+    list_after_block->Jump(outer_header_block, {outer_next_iter_idx, list_param, valid_elt_got});
+    list_after_block->Mature();
+  }
   return top_block;
 }
 
-AnfNodePtr Parser::ParseListCompIfs(const FunctionBlockPtr &list_body_block, const ParameterPtr &list_param,
-                                    const py::object &node, const py::object &generator_node) {
-  // Handle ifs attribute.
+void Parser::ParseListCompIfs(const FunctionBlockPtr &list_header_block, const FunctionBlockPtr &list_body_block,
+                              const CNodePtr &next_iter_idx, const py::object &node, const size_t generators_num,
+                              const py::list &generators_node, const py::object &generator_node) {
+  // Handle ifs attribute of the first generator.
   py::list ifs_node = python_adapter::GetPyObjAttr(generator_node, "ifs");
   AnfNodePtr ifs_bool_node;
   if (ifs_node.empty()) {
@@ -3513,41 +3568,49 @@ AnfNodePtr Parser::ParseListCompIfs(const FunctionBlockPtr &list_body_block, con
     MakeFunctionBlock(MakeTraceInfo<TraceIfStmtTrueBranch>(list_body_block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(if_true_block);
   if_true_block->AddPrevBlock(list_body_block);
-  // Handle elt attribute in body block.
-  py::object elt_obj = python_adapter::GetPyObjAttr(node, "elt");
-  AnfNodePtr elt_node = ParseExprNode(list_body_block, elt_obj);
-  // Append the element.
-  std::vector<AnfNodePtr> list_vec;
-  AnfNodePtr make_list_op = list_body_block->MakeResolveOperation(NAMED_PRIMITIVE_MAKELIST);
-  (void)list_vec.emplace_back(make_list_op);
-  (void)list_vec.emplace_back(elt_node);
-  CNodePtr list_app = list_body_block->func_graph()->NewCNodeInOrder(std::move(list_vec));
-  std::string add_module_name = "mindspore.ops.composite.multitype_ops.add_impl";
+
+  // Decide whether to recursively call ParseListCompIter based on generators_node.size().
+  size_t current_generator_num = generators_node.size();
+  if (list_header_block->func_graph()->parameters().size() < 3) {
+    MS_LOG(EXCEPTION) << "Invalid list header block without enough parameters.";
+  }
+  AnfNodePtr list_param = list_header_block->func_graph()->parameters()[1];
+  AnfNodePtr valid_elt_got = list_header_block->func_graph()->parameters()[2];
+  constexpr auto add_module_name = "mindspore.ops.composite.multitype_ops.add_impl";
   ValuePtr add_op = prim::GetPythonOps("add", add_module_name);
-  CNodePtr new_list = list_body_block->func_graph()->NewCNodeInOrder({NewValueNode(add_op), list_param, list_app});
-  // Return new list in true branch graph.
-  if_true_block->func_graph()->set_output(new_list);
+  if (current_generator_num == 1) {
+    // Handle elt attribute in body block.
+    py::object elt_obj = python_adapter::GetPyObjAttr(node, "elt");
+    AnfNodePtr elt_node = ParseExprNode(list_body_block, elt_obj);
+    // Append the element.
+    std::vector<AnfNodePtr> list_vec;
+    AnfNodePtr make_list_op = list_body_block->MakeResolveOperation(NAMED_PRIMITIVE_MAKELIST);
+    (void)list_vec.emplace_back(make_list_op);
+    (void)list_vec.emplace_back(elt_node);
+    CNodePtr list_app = list_body_block->func_graph()->NewCNodeInOrder(std::move(list_vec));
+    CNodePtr new_list = list_body_block->func_graph()->NewCNodeInOrder({NewValueNode(add_op), list_param, list_app});
+    // Jump to header block for next.
+    if_true_block->Jump(list_header_block, {next_iter_idx, new_list, NewValueNode(true)});
+  } else {
+    py::list rest_generators_node;
+    for (size_t i = 1; i < generators_node.size(); i++) {
+      rest_generators_node.append(generators_node[i]);
+    }
+    // Recursively call ParseListCompIter.
+    ParseListCompIter(if_true_block, node, rest_generators_node, generators_num, list_header_block);
+  }
 
   // Create if-false graph.
   FunctionBlockPtr if_false_block =
     MakeFunctionBlock(MakeTraceInfo<TraceIfStmtFalseBranch>(list_body_block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(if_false_block);
   if_false_block->AddPrevBlock(list_body_block);
-  // Return original list in false branch graph.
-  MS_EXCEPTION_IF_NULL(if_false_block->func_graph());
-  if_false_block->func_graph()->set_output(list_param);
+  // Skip current iter_idx, jump to header block for next.
+  if_false_block->Jump(list_header_block, {next_iter_idx, list_param, valid_elt_got});
 
-  // We don't want to create a header graph, where to get and wrap the result of Switch().
-  // So just call ConditionalJump() to set Switch() as output, and reset it later, as tricky.
-  (void)list_body_block->ConditionalJump(ifs_bool_node, if_true_block, if_false_block);
-  // Output is Switch() result, i.e. updated list.
-  auto switch_apply_node = list_body_block->func_graph()->output();
-  auto ifs_new_list = switch_apply_node;
-  // Since we call ConditionalJump() above, to reset the Return as null before call Jump().
-  list_body_block->func_graph()->set_return(nullptr);
+  list_body_block->ConditionalJump(ifs_bool_node, if_true_block, if_false_block);
   if_true_block->Mature();
   if_false_block->Mature();
-  return ifs_new_list;
 }
 
 // A ListComp contains: `elt` and `generators`.
@@ -3566,10 +3629,6 @@ AnfNodePtr Parser::ParseListComp(const FunctionBlockPtr &block, const py::object
 
   // Handle generators attribute.
   py::list generators_node = python_adapter::GetPyObjAttr(node, "generators");
-  if (generators_node.size() != 1) {
-    MS_EXCEPTION(TypeError) << "The 'generators' supports 1 'comprehension' in ListComp/GeneratorExp, but got "
-                            << generators_node.size() << " comprehensions.";
-  }
   py::object generator_node = generators_node[0];
   auto generator_node_type = ast_->GetNodeType(generator_node);
   auto generator_node_name = generator_node_type->node_name();
@@ -3579,9 +3638,8 @@ AnfNodePtr Parser::ParseListComp(const FunctionBlockPtr &block, const py::object
                                << generator_node_name;
   }
 
-  // Parse ListComp's `iter` and add `elt` in it.
-  auto top_block = ParseListCompIter(block, node, generator_node);
-
+  size_t generators_num = generators_node.size();
+  auto top_block = ParseListCompIter(block, node, generators_node, generators_num, block);
   // Call the top graph and return the list.
   auto call_function_node = NewValueNode(top_block->func_graph());
   std::vector<AnfNodePtr> func_call_nodes;

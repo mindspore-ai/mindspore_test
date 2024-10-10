@@ -13,8 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """ test ListComp and GeneratorExp """
-import pytest
-
 from mindspore import context, jit
 
 
@@ -68,8 +66,6 @@ def test_list_comp():
     assert get_list_comp_2() == (1, 4, 9, 16, 25)
     assert get_list_comp_3() == (4, 16, 36, 64, 100)
     assert get_list_comp_4() == (36, 64, 100)
-    with pytest.raises(TypeError) as ex:
-        get_list_comp_5()
-    assert "The 'generators' supports 1 'comprehension' in ListComp/GeneratorExp" in str(ex.value)
+    assert get_list_comp_5() == (1, 2, 3, 4, 5, 6)
     assert get_generator_exp_1() == (1, 2, 3, 4, 5)
     assert get_generator_exp_2() == (36, 64, 100)

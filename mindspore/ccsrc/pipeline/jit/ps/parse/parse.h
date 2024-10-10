@@ -253,9 +253,11 @@ class Parser {
   // Process ListComp expression.
   AnfNodePtr ParseListComp(const FunctionBlockPtr &block, const py::object &node);
   FunctionBlockPtr ParseListCompIter(const FunctionBlockPtr &block, const py::object &node,
-                                     const py::object &generator_node);
-  AnfNodePtr ParseListCompIfs(const FunctionBlockPtr &list_body_block, const ParameterPtr &list_param,
-                              const py::object &node, const py::object &generator_node);
+                                     const py::list &generators_node, const size_t generators_num,
+                                     const FunctionBlockPtr &outer_header_block);
+  void ParseListCompIfs(const FunctionBlockPtr &list_header_block, const FunctionBlockPtr &list_body_block,
+                        const CNodePtr &next_iter_idx, const py::object &node, const size_t generators_num,
+                        const py::list &generators_node, const py::object &generator_node);
   AnfNodePtr ParseJoinedStr(const FunctionBlockPtr &block, const py::object &node);
   AnfNodePtr ParseFormattedValue(const FunctionBlockPtr &block, const py::object &node);
   AnfNodePtr ParseStarred(const FunctionBlockPtr &block, const py::object &node);
