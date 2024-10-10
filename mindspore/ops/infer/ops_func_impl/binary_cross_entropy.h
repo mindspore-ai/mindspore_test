@@ -31,7 +31,7 @@ class OPS_API BinaryCrossEntropyFuncImpl : public OpFuncImpl {
   TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
 
  private:
-  const std::set<TypePtr> valid_types_{kFloat16, kFloat32, kBFloat16};
+  const std::set<TypeId> valid_types_{kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
 };
 }  // namespace ops
 }  // namespace mindspore
