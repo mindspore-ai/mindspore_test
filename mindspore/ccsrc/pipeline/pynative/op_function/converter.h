@@ -53,21 +53,15 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
 struct FunctionParameter {
   explicit FunctionParameter(const std::string &fmt);
   bool check(const py::object &obj);
-  void set_default_str(const std::string &str);
-  py::object get_default_value();
+  void set_default_obj(const std::string &str);
+  const py::object &get_default_value() { return default_obj; }
 
   ops::OP_DTYPE type_;  // type of parameter
   std::vector<ops::OP_DTYPE> cast_types_;
-  bool default_none_;
+  py::object default_obj;
   bool optional_;  // if has default value
   bool allow_none_;
   std::string name_;  // parameter name
-  std::vector<int64_t> default_intlist;
-  std::string default_string;
-  bool default_bool;
-  int64_t default_int;
-  double default_double;
-  double default_complex[2];
 };
 
 // single overload
@@ -86,13 +80,24 @@ struct FunctionSignature {
 // parser util
 struct PythonArgParser {
   explicit PythonArgParser(std::vector<std::string> fmts);
-  const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *arg_list);
+  inline const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
 
  private:
   std::vector<FunctionSignature> signatures_;  // all overloads
   std::string function_name_;
   size_t max_args_;  // max num of args
 };
+
+inline const FunctionSignature &PythonArgParser::parse(const py::list &args, const py::dict &kwargs,
+                                                       py::list *python_args) {
+  for (auto &signature : signatures_) {
+    python_args->attr("clear")();
+    if (signature.parse(args, kwargs, python_args)) {
+      return signature;
+    }
+  }
+  MS_LOG(EXCEPTION) << "Matching failed. Please check the parameter list.";
+}
 
 class Converter {
  public:

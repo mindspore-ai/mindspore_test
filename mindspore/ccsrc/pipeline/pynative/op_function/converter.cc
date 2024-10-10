@@ -453,16 +453,6 @@ PythonArgParser::PythonArgParser(std::vector<std::string> fmts) : max_args_(0) {
   }
 }
 
-const FunctionSignature &PythonArgParser::parse(const py::list &args, const py::dict &kwargs, py::list *python_args) {
-  for (auto &signature : signatures_) {
-    python_args->attr("clear")();
-    if (signature.parse(args, kwargs, python_args)) {
-      return signature;
-    }
-  }
-  MS_LOG(EXCEPTION) << "Matching failed. Please check the parameter list.";
-}
-
 bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::list *python_args) {
   size_t nargs = args ? args.size() : 0;
   size_t nkwargs = kwargs ? kwargs.size() : 0;
@@ -470,7 +460,6 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
   if (nargs > max_args_) {
     return false;
   }
-
   for (auto &param : params_) {
     bool is_kwd = false;
     py::object obj;
@@ -565,8 +554,7 @@ ops::OP_DTYPE GetOpDtype(const std::string &type_str) {
   return it->second;
 }
 
-FunctionParameter::FunctionParameter(const std::string &fmt)
-    : default_none_(false), optional_(false), allow_none_(false) {
+FunctionParameter::FunctionParameter(const std::string &fmt) : optional_(false), allow_none_(false) {
   auto space = fmt.find(' ');
   if (space == std::string::npos) {
     MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << fmt;
@@ -593,9 +581,9 @@ FunctionParameter::FunctionParameter(const std::string &fmt)
     auto type_str = name_str.substr(eq + 1);
     if (type_str == "None") {
       allow_none_ = true;
-      default_none_ = true;
+      default_obj = py::none();
     } else {
-      set_default_str(type_str);
+      set_default_obj(type_str);
     }
   } else {
     optional_ = false;
@@ -679,7 +667,7 @@ bool is_scalar_list(const py::object &obj) {
 
 static inline std::vector<int64_t> parse_list_int(const std::string &s) {
   if (s.empty()) return std::vector<int64_t>();
-  if (s[0] != '[' || s[0] != '(') {
+  if (s[0] != '[' && s[0] != '(') {
     return std::vector<int64_t>{std::stol(s)};
   }
   auto args = std::vector<int64_t>();
@@ -753,51 +741,6 @@ bool FunctionParameter::check(const py::object &obj) {
   return true;
 }
 
-void FunctionParameter::set_default_str(const std::string &str) {
-  switch (type_) {
-    case ops::OP_DTYPE::DT_INT:
-      default_int = atol(str.c_str());
-      break;
-    case ops::OP_DTYPE::DT_FLOAT:
-      default_double = atof(str.c_str());
-      break;
-    case ops::OP_DTYPE::DT_BOOL:
-      default_bool = (str == "True" || str == "true");
-      break;
-    case ops::OP_DTYPE::DT_NUMBER:
-      default_double = atof(str.c_str());
-      break;
-    case ops::OP_DTYPE::DT_TUPLE_INT:
-      default_intlist = parse_list_int(str);
-      break;
-    case ops::OP_DTYPE::DT_TUPLE_TENSOR:
-      if (str != "None") {
-        MS_LOG(EXCEPTION) << "default value for Tensor must be none, got: " << str;
-      }
-      break;
-    case ops::OP_DTYPE::DT_STR:
-      default_string = str;
-      break;
-    case ops::OP_DTYPE::DT_TENSOR:
-      if (str != "None") {
-        MS_LOG(EXCEPTION) << "default value for Tensor must be None, but got: " << str;
-      }
-      break;
-    case ops::OP_DTYPE::DT_LIST_INT:
-      default_intlist = parse_list_int(str);
-      break;
-    case ops::OP_DTYPE::DT_LIST_FLOAT:
-      if (str != "None") {
-        MS_LOG(EXCEPTION) << "Defaults not supported for float[]";
-      }
-      break;
-    default:
-      MS_LOG(EXCEPTION) << "The" << type_ << " is an unknown type "
-                        << ", or the default value cannot be set.";
-      break;
-  }
-}
-
 template <typename T>
 py::object get_py_listint(const std::vector<int64_t> &vec) {
   T list_py(vec.size());
@@ -807,35 +750,78 @@ py::object get_py_listint(const std::vector<int64_t> &vec) {
   return list_py;
 }
 
-py::object FunctionParameter::get_default_value() {
-  if (default_none_) {
-    return py::none();
+std::optional<py::int_> parse_int_str(const std::string &str) {
+  char *str_end;
+  auto defalut_int = strtol(str.c_str(), &str_end, 0);
+  return (*str_end == 0) ? std::optional<py::int_>(py::int_(defalut_int)) : std::nullopt;
+}
+
+std::optional<py::bool_> parse_bool_str(const std::string &str) {
+  if (str == "True" || str == "true" || str == "False" || str == "false") {
+    return std::optional<py::bool_>(py::bool_((str == "True" || str == "true")));
   }
+  return std::nullopt;
+}
+
+py::object parse_number(const std::string &str) {
+  auto cast_bool = parse_bool_str(str);
+  if (cast_bool.has_value()) {
+    return cast_bool.value();
+  }
+  auto cast_int = parse_int_str(str);
+  if (cast_int.has_value()) {
+    return cast_int.value();
+  }
+  return py::float_(atof(str.c_str()));
+}
+
+void FunctionParameter::set_default_obj(const std::string &str) {
   switch (type_) {
     case ops::OP_DTYPE::DT_INT:
-      return py::int_(default_int);
+      default_obj = py::int_(atol(str.c_str()));
+      break;
     case ops::OP_DTYPE::DT_FLOAT:
-      return py::float_(default_double);
+      default_obj = py::float_(atof(str.c_str()));
+      break;
     case ops::OP_DTYPE::DT_BOOL:
-      return py::bool_(default_bool);
+      default_obj = py::bool_((str == "True" || str == "true"));
+      break;
     case ops::OP_DTYPE::DT_NUMBER:
-      return py::float_(default_double);
+      default_obj = parse_number(str);
+      break;
+    case ops::OP_DTYPE::DT_TUPLE_INT:
+      default_obj = get_py_listint<py::tuple>(parse_list_int(str));
+      break;
     case ops::OP_DTYPE::DT_TUPLE_TENSOR:
       // now only support default=None
-      return py::none();
-    case ops::OP_DTYPE::DT_TENSOR:
-      // now only support default=None
-      return py::none();
+      if (str != "None") {
+        MS_LOG(EXCEPTION) << "default value for Tensor must be none, got: " << str;
+      }
+      default_obj = py::none();
+      break;
     case ops::OP_DTYPE::DT_STR:
-      return py::str(default_string);
+      default_obj = py::str(str);
+      break;
+    case ops::OP_DTYPE::DT_TENSOR:
+      if (str != "None") {
+        MS_LOG(EXCEPTION) << "default value for Tensor must be None, but got: " << str;
+      }
+      default_obj = py::none();
+      break;
     case ops::OP_DTYPE::DT_LIST_INT:
-      return get_py_listint<py::list>(default_intlist);
-    case ops::OP_DTYPE::DT_TUPLE_INT:
-      return get_py_listint<py::tuple>(default_intlist);
+      default_obj = get_py_listint<py::list>(parse_list_int(str));
+      break;
+    case ops::OP_DTYPE::DT_LIST_FLOAT:
+      if (str != "None") {
+        MS_LOG(EXCEPTION) << "Defaults not supported for float[]";
+      }
+      default_obj = py::none();
+      break;
     default:
-      MS_LOG(EXCEPTION) << "Cannot get default value for type " << type_;
+      MS_LOG(EXCEPTION) << "The" << type_ << " is an unknown type "
+                        << ", or the default value cannot be set.";
+      break;
   }
-  return py::none();
 }
 
 // Declare template to compile corresponding method.

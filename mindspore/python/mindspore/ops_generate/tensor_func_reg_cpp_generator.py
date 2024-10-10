@@ -65,7 +65,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
             'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'py::object res = fn(*arg_list);\n'
+            'py::object res = fn(*py_args, **py_kwargs);\n'
             'return res;\n'
         )
         self.arg_handler_template = Template(
@@ -85,15 +85,15 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG = template.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG
         # The format of arg_handler_map is {arg_handler_name : list of supported types}.
         # The first one of type list is the target dtype. Types corresponds to type_str_map.
-        self.arg_handler_map = {"to_2d_paddings": "tuple[int]|list[int]|int",
-                                "dtype_to_type_id": "int|type",
-                                "to_kernel_size": "tuple[int]|list[int]|int",
-                                "to_strides": "tuple[int]|list[int]|int",
-                                "str_to_enum": "int|str",
-                                "to_pair": "tuple[int]|list[int]|int|float",
+        self.arg_handler_map = {"to_2d_paddings": "int|tuple[int]|list[int]",
+                                "dtype_to_type_id": "type",
+                                "to_kernel_size": "int|tuple[int]|list[int]",
+                                "to_strides": "int|tuple[int]|list[int]",
+                                "str_to_enum": "str",
+                                "to_pair": "int|tuple[int]|list[int]|float",
                                 "to_dilations": "tuple[int]|list[int]|int",
-                                "to_output_padding": "tuple[int]|list[int]|int",
-                                "to_rates": "tuple[int]|list[int]|int"}
+                                "to_output_padding": "int|tuple[int]|list[int]",
+                                "to_rates": "int|tuple[int]|list[int]"}
 
     def generate(self, work_path, func_protos_data):
         """
@@ -152,11 +152,13 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
             signature_str = self._generate_single_signature_str(func_proto.op_proto)
             if class_name not in cls_names:
+                max_size = len(func_proto.op_proto.op_args)
                 func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name)
                 cls_names.add(class_name)
                 func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
                                                                          device_dispatcher=device_dispatcher_str,
-                                                                         signatures=signature_str)
+                                                                         signatures=signature_str,
+                                                                         max_args=max_size)
             func_def_body_str += self.func_def_reg.replace(func_name=func_name,
                                                            class_name=class_name)
         return func_header_body_str, func_call_body_str, func_def_body_str
@@ -220,9 +222,14 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         signatures_str = self._generate_func_signatures_str(func_protos)
         dispatch_cases_str = self._get_dispatch_cases(func_protos)
+        max_size = 0
+        for tensor_proto in func_protos:
+            op_proto = tensor_proto.op_proto
+            max_size = max(len(op_proto.op_args), max_size)
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG.replace(class_name=func_api_name.capitalize(),
                                                                                  signatures=signatures_str,
-                                                                                 dispatch_cases=dispatch_cases_str)
+                                                                                 dispatch_cases=dispatch_cases_str,
+                                                                                 max_args=max_size)
         return overload_func_call_str
 
     def _generate_func_signatures_str(self, func_protos) -> str:
