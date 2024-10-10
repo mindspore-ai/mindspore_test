@@ -51,6 +51,7 @@ __all__ = [
 
 import mindspore.ops.operations as P
 
+_GROPU_SIZE_CACHE = {}
 
 @jit_class
 class CommHandle(CommHandle_):
@@ -303,7 +304,10 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=F
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the input tensor must be tensor")
     group = _get_group(group)
-    group_size = get_group_size(group)
+    global _GROPU_SIZE_CACHE
+    if group not in _GROPU_SIZE_CACHE:
+        _GROPU_SIZE_CACHE[group] = get_group_size(group)
+    group_size = _GROPU_SIZE_CACHE[group]
     output = inner_comm_all_gather_op(tensor, group_size, group)
     return _deal_comm_outputs(output, async_op)
 
@@ -372,7 +376,10 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter_tensor, the input tensor must be tensor")
     group = _get_group(group)
-    rank_size = get_group_size(group)
+    global _GROPU_SIZE_CACHE
+    if group not in _GROPU_SIZE_CACHE:
+        _GROPU_SIZE_CACHE[group] = get_group_size(group)
+    rank_size = _GROPU_SIZE_CACHE[group]
     output = inner_comm_reduce_scatter_op(tensor, rank_size, op, group)
     return _deal_comm_outputs(output, async_op)
 
@@ -1220,7 +1227,10 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
 
     send_flatten_tensor = cat(send_flatten_tensor)
     group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
-    rank_size = get_group_size(group)
+    global _GROPU_SIZE_CACHE
+    if group not in _GROPU_SIZE_CACHE:
+        _GROPU_SIZE_CACHE[group] = get_group_size(group)
+    rank_size = _GROPU_SIZE_CACHE[group]
     output = inner_comm_all_to_all_v_op(send_flatten_tensor, group, send_numel_list, recv_numel_list,
                                         rank_size, False)
     output, handle = _deal_comm_outputs(output, async_op)
@@ -1234,15 +1244,20 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
 
 def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group):
     """get numel list for all_to_all_single."""
+    global _GROPU_SIZE_CACHE
     if _is_split_sizes_empty(input_split_sizes):
-        _world_size = get_group_size(group)
+        if group not in _GROPU_SIZE_CACHE:
+            _GROPU_SIZE_CACHE[group] = get_group_size(group)
+        _world_size = _GROPU_SIZE_CACHE[group]
         if tensor.shape[0] % _world_size != 0:
             raise ValueError("input shape at dim 0 must be divided by world_size, "
                              f"but got {tensor.shape[0]} and {_world_size}.")
         _split_size = tensor.shape[0] // _world_size
         input_split_sizes = (_split_size,) * _world_size
     if _is_split_sizes_empty(output_split_sizes):
-        _world_size = get_group_size(group)
+        if group not in _GROPU_SIZE_CACHE:
+            _GROPU_SIZE_CACHE[group] = get_group_size(group)
+        _world_size = _GROPU_SIZE_CACHE[group]
         shape_dim_0 = None
         if isinstance(output_shape, Tensor):
             shape_dim_0 = output_shape.shape[0]
@@ -1353,7 +1368,10 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
         _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group)
     _input = tensor.reshape(-1)
     group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
-    rank_size = get_group_size(group)
+    global _GROPU_SIZE_CACHE
+    if group not in _GROPU_SIZE_CACHE:
+        _GROPU_SIZE_CACHE[group] = get_group_size(group)
+    rank_size = _GROPU_SIZE_CACHE[group]
     result = inner_comm_all_to_all_v_op(_input, group, send_numel_list, recv_numel_list, rank_size, split_sizes_empty)
     result, handle = _deal_comm_outputs(result, async_op)
     if any(recv_numel_list):
