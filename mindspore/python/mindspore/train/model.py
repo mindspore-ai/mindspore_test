@@ -197,6 +197,7 @@ initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))
             return func(self, *args, **kwargs)
     return wrapper
 
+
 def _check_tft():
     """Check if TFT is supported"""
     tft_env = os.getenv("MS_ENABLE_TFT")
@@ -212,7 +213,6 @@ def _check_tft():
         jit_level = context.get_context("jit_level")
         if jit_level == "O2" and "UCE:1" in tft_env:
             raise ValueError("TFT is not supported when using jit_level == O2")
-
 
 
 def _append_ccae(callbacks):
