@@ -1,0 +1,16 @@
+#deprecated cumsum
+cumsum:
+  args:
+    x:
+      dtype: tensor
+    axis:
+      dtype: int
+      arg_handler: dtype_to_type_id
+      default: None
+    dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
+  returns:
+    output:
+      dtype: tensor

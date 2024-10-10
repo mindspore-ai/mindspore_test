@@ -56,7 +56,7 @@ deprecated_tensor_method_map = {
     # 19 ceil
 
     # 20 chunk
-
+    "chunk": "deprecated_tensor_chunk",
     # 21 clamp
 
     # 22 clip
@@ -66,7 +66,7 @@ deprecated_tensor_method_map = {
     # 24 cumprod
 
     # 25 cumsum
-
+    "cumsum": "deprecated_tensor_cumsum",
     # 26 dim
 
     # 27 div
@@ -84,7 +84,7 @@ deprecated_tensor_method_map = {
     # 33 expand_as
 
     # 34 flatten
-
+    "flatten": "deprecated_tensor_flatten",
     # 35 flip
 
     # 36 float

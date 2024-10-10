@@ -31,7 +31,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, flatten_mint, sub_mint)
+from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -957,11 +957,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bincount')(self, weights, minlength)
 
-    def chunk(self, chunks, axis=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.chunk`.
-        """
-        return tensor_operator_registry.get('chunk')(self, chunks, axis)
 
     @item_mint
     def item(self, index=None):
@@ -2052,12 +2047,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("positive")(self)
 
-    @flatten_mint
-    def flatten(self, order='C', *, start_dim=0, end_dim=-1):
-        r"""
-        For details, please refer to :func:`mindspore.ops.flatten`.
-        """
-        return tensor_operator_registry.get('flatten')(self, order, start_dim=start_dim, end_dim=end_dim)
 
     def float_power(self, other):
         r"""
@@ -2264,23 +2253,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         if self.shape == ():
             return (self, Tensor(0))
         return tensor_operator_registry.get('argmin_with_value')(self, axis, keep_dims)
-
-    def cumsum(self, axis=None, dtype=None):
-        """
-        For details, please refer to :func:`mindspore.ops.cumsum`.
-        """
-        x = self
-        original_dtype = x.dtype
-        # If original tensor is int, and has precision less then int32, convert to int32
-        if x.dtype in (mstype.bool_, mstype.int8, mstype.int16, mstype.uint8, mstype.int16):
-            x = x.astype(mstype.int32)
-        if axis is None:
-            x = x.ravel()
-            axis = 0
-        validator.check_axis_in_range(axis, x.ndim)
-        if dtype is not None and original_dtype != dtype:
-            return tensor_operator_registry.get('cumsum')()(x, axis).astype(dtype, copy=False)
-        return tensor_operator_registry.get('cumsum')()(x, axis)
 
     def cummin(self, axis):
         r"""
