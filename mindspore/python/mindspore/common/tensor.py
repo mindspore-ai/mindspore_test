@@ -3161,6 +3161,42 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bernoulli')(self, p, seed)
 
+    def random_(self, from_=0, to=None, *, generator=None):
+        r"""
+        Fill the tensor with numbers sampled from a discrete uniform distribution over an interval :math:`[from_, to)`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            from_ (int, optional): the lower bound of the generated random number. Default: 0.
+            to (int, optional): the upper bound of the generated random number. By default it's the upper limit of
+                the input data type. Default: ``None``.
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None``, uses the default pseudorandom number generator.
+
+        Returns:
+            `self`.
+
+        Raises:
+            TypeError: If `from_` or `to` is not integer.
+            ValueError: If `from_` >= `to`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
+            >>> from_ = 0
+            >>> to = 5
+            >>> print(a.random_(low, high).shape)
+            (2, 3)
+        """
+        return tensor_operator_registry.get('random_')(self, from_=from_, to=to, generator=generator)
+
     def random_categorical(self, num_sample, seed=0, dtype=mstype.int64):
         r"""
         For details, please refer to :func:`mindspore.ops.random_categorical`.

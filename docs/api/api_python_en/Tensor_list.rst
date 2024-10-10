@@ -277,6 +277,7 @@
     mindspore.Tensor.prod
     mindspore.Tensor.ptp
     mindspore.Tensor.rad2deg
+    mindspore.Tensor.random_
     mindspore.Tensor.random_categorical
     mindspore.Tensor.ravel
     mindspore.Tensor.real

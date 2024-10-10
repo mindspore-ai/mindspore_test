@@ -16,10 +16,10 @@
 #ifndef MINDSPORE_CORE_OPS_OP_UTILS_TYPE_DISPATCH_H
 #define MINDSPORE_CORE_OPS_OP_UTILS_TYPE_DISPATCH_H
 
-#include "ir/dtype/type_id.h"
-#include "ir/dtype.h"
 #include <cstdint>
 #include <complex>
+#include "ir/dtype/type_id.h"
+#include "ir/dtype.h"
 #include "base/float16.h"
 #include "base/bfloat16.h"
 
@@ -82,8 +82,8 @@ using MS_TYPE_TO_CPP_TYPE = typename MsTypeToCppType<T>::type;
 #define TYPE_SWITCH_FLOATING_CASES(...)             \
   TYPE_SWITCH_CASE(kNumberTypeDouble, __VA_ARGS__)  \
   TYPE_SWITCH_CASE(kNumberTypeFloat, __VA_ARGS__)   \
-  TYPE_SWITCH_CASE(kNumberTypeFloat64, __VA_ARGS__)   \
-  TYPE_SWITCH_CASE(kNumberTypeFloat32, __VA_ARGS__)   \
+  TYPE_SWITCH_CASE(kNumberTypeFloat64, __VA_ARGS__) \
+  TYPE_SWITCH_CASE(kNumberTypeFloat32, __VA_ARGS__) \
   TYPE_SWITCH_CASE(kNumberTypeFloat16, __VA_ARGS__) \
   TYPE_SWITCH_CASE(kNumberTypeBFloat16, __VA_ARGS__)
 

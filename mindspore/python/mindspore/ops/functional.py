@@ -21,7 +21,7 @@ from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
 from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext
-from mindspore.ops.function.random_func import uniform_ext
+from mindspore.ops.function.random_func import random_, uniform_ext
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
 from mindspore.ops.operations._sequence_ops import TensorToTuple
@@ -205,6 +205,7 @@ setattr(tensor_operator_registry, 'bitwise_right_shift', bitwise_right_shift)
 setattr(tensor_operator_registry, 'ger', ger)
 setattr(tensor_operator_registry, 'reduce_max', P.ReduceMax)
 setattr(tensor_operator_registry, 'reduce_min', P.ReduceMin)
+setattr(tensor_operator_registry, 'random_', random_)
 setattr(tensor_operator_registry, 'random_categorical', random_categorical)
 setattr(tensor_operator_registry, 'mirror_pad', P.MirrorPad)
 setattr(tensor_operator_registry, 'minimum', minimum)
