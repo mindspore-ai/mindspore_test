@@ -15,7 +15,6 @@
  */
 
 #include "src/litert/kernel/cpu/fp32_grad/adam_weight_decay.h"
-#include <cmath>
 #include <string>
 #include "schema/model_generated.h"
 #include "src/litert/kernel_registry.h"
@@ -126,7 +125,7 @@ int AdamWeightDecayCPUKernel::OptimizerStep() {
     size_t end = length;
     ret = AdamWeightDecayFp32(weight, m, v, learning_rate, beta1, beta2, eps, decay, grad_sum_, start, end);
     std::fill(grad_sum_, grad_sum_ + length, 0);
-    OptimizerKernel::OptimizerStep();
+    (void)OptimizerKernel::OptimizerStep();
   }
   return ret;
 }

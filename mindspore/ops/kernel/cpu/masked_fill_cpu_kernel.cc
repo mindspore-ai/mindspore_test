@@ -45,7 +45,7 @@ bool MaskedFillCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
 int MaskedFillCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
   int ret = KRET_OK;
-  if ((ret = NativeCpuKernelMod::Resize(inputs, outputs)) != 0) {
+  if ((ret = NativeCpuKernelMod::Resize(inputs, outputs)) != KRET_OK) {
     return ret;
   }
   ShapeVector input_shape = inputs.at(kIndex0)->GetShapeVector();

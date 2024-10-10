@@ -24,6 +24,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
+constexpr size_t k2D = 2;
 constexpr size_t k3D = 3;
 constexpr size_t k4D = 4;
 constexpr size_t kInputsNum = 1;
@@ -74,6 +75,10 @@ int AdaptiveAvgPool2DCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
                       << input_dims;
   }
   output_size_data_ = GetValue<std::vector<int64_t>>(primitive_->GetAttr(ops::kOutputSize));
+  if (output_size_data_.size() != k2D) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the elements number of 'output_size' should be 2,but got "
+                      << output_size_data_;
+  }
   return KRET_OK;
 }
 
