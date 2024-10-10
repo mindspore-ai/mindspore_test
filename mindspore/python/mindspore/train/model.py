@@ -138,9 +138,6 @@ def _handle_tft(func):
             uce_env = "UCE:1" in tft_env
             while True:
                 try:
-                    if "initial_step" in kwargs:
-                        logger.info("uce wrapper restart train initial_epoch: {}, initial_step: {} \
-".format(kwargs["initial_epoch"], kwargs["initial_step"]))
                     return func(self, *args, **kwargs)
                 except RuntimeError as e:
                     logger.info("uce wrapper caught RuntimeError")
@@ -170,9 +167,27 @@ def _handle_tft(func):
                     initial_epoch = int(repair_step/self.batch_num)
                     initial_step = repair_step % self.batch_num
                     kwargs["initial_epoch"] = initial_epoch
-                    kwargs["initial_step"] = initial_step
+
+                    train_dataset = args[1]
+                    dataset_sink_mode = args[3] if len(args) > 3 else kwargs.get('dataset_sink_mode', True)
+                    sink_size = args[4] if len(args) > 4 else kwargs.get('sink_size', -1)
+
+                    cb_initial_step = 0
+                    if dataset_sink_mode:
+                        train_dataset.set_init_step(initial_epoch)
+                        dataset_size = train_dataset.get_dataset_size()
+                        if sink_size != -1:
+                            cb_initial_step = initial_epoch * sink_size + initial_step
+                        else:
+                            cb_initial_step = initial_epoch * dataset_size + initial_step
+                    else:
+                        train_dataset.set_init_step(initial_step)
+                        cb_initial_step = initial_step
+
+                    kwargs["initial_step"] = cb_initial_step
+
                     logger.info("uce wrapper repair complete  \
-initial_epoch: {}, initial_step: {} ".format(kwargs["initial_epoch"], kwargs["initial_step"]))
+initial_epoch: {}, cb_initial_step: {} ".format(initial_epoch, cb_initial_step))
                     continue
                 except BaseException as e:
                     logger.info("uce wrapper caught BaseException error")
@@ -857,12 +872,9 @@ class Model:
         """
         if self._parameter_broadcast:
             self._train_network.set_broadcast_flag()
-        if initial_step != 0:
-            train_dataset.set_init_step(initial_step)
-        elif dataset_sink_mode and sink_size == 1:
-            train_dataset.set_init_step(initial_epoch)
 
         cb_params = _InternalCallbackParam()
+        cb_params.cur_step_num = initial_step
         cb_params.train_network = self._train_network
         cb_params.epoch_num = epoch - initial_epoch
         if dataset_sink_mode and sink_size > 0:
@@ -899,22 +911,22 @@ class Model:
             self._check_reuse_dataset(train_dataset)
             if not dataset_sink_mode:
                 self._train_process(epoch, train_dataset, list_callback, cb_params, initial_epoch,
-                                    valid_infos, initial_step)
+                                    valid_infos)
             elif context.get_context("device_target") == "CPU":
                 logger.info("The CPU cannot support dataset sink mode currently."
                             "So the training process will be performed with dataset not sink.")
                 self._train_process(epoch, train_dataset, list_callback, cb_params, initial_epoch,
-                                    valid_infos, initial_step)
+                                    valid_infos)
             else:
                 self._train_dataset_sink_process(epoch, train_dataset, list_callback,
-                                                 cb_params, sink_size, initial_epoch, valid_infos, initial_step)
+                                                 cb_params, sink_size, initial_epoch, valid_infos)
 
     @staticmethod
     def _should_eval(epoch, validation_freq):
         return epoch % validation_freq == 0 if isinstance(validation_freq, int) else epoch in validation_freq
 
     def _train_dataset_sink_process(self, epoch, train_dataset, list_callback=None, cb_params=None,
-                                    sink_size=-1, initial_epoch=0, valid_infos=None, initial_step=0):
+                                    sink_size=-1, initial_epoch=0, valid_infos=None):
         """
         Training process. The data would be passed to network through dataset channel.
 
@@ -944,12 +956,6 @@ class Model:
             train_dataset.__total_batch__ = epoch * sink_size
 
         cb_params.sink_size = sink_size
-        cb_params.cur_step_num = 0
-        if sink_size != -1:
-            cb_params.cur_step_num = initial_epoch * sink_size + initial_step
-        else:
-            cb_params.cur_step_num = initial_epoch * dataset_size + initial_step
-
         cb_params.dataset_sink_mode = True
         run_context = RunContext(cb_params)
         list_callback.on_train_begin(run_context)
@@ -959,7 +965,6 @@ class Model:
             dataset_helper = train_dataset._dataset_helper
 
         self.epoch_iter = 0
-
         self._check_enable_recovery()
         # Used to check whether need perform recovery for process which is restarted.
         self._check_need_load_ckpt(cb_params, dataset_size, sink_size)
@@ -1161,7 +1166,7 @@ class Model:
             _set_recovery_context(need_reset=False)
 
     def _train_process(self, epoch, train_dataset, list_callback=None, cb_params=None, initial_epoch=0,
-                       valid_infos=None, initial_step=0):
+                       valid_infos=None):
         """
         Training process. The data would be passed to network directly.
 
@@ -1181,7 +1186,6 @@ class Model:
                                                   dataset=train_dataset,
                                                   dataset_sink_mode=False,
                                                   epoch_num=epoch)
-        cb_params.cur_step_num = initial_step
         cb_params.dataset_sink_mode = False
         run_context = RunContext(cb_params)
         list_callback.on_train_begin(run_context)
