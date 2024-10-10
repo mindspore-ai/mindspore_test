@@ -458,6 +458,17 @@ class BACKEND_EXPORT KernelExecutor {
     return kernel_mod->GetLaunchIgnoredInputAddressIdx();
   }
 
+  virtual bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const {
+    MS_EXCEPTION_IF_NULL(node);
+    auto kernel_mod = AnfAlgo::GetKernelMod(node);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+    auto ignored_input_list = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+    if (std::find(ignored_input_list.begin(), ignored_input_list.end(), input_idx) != ignored_input_list.end()) {
+      return true;
+    }
+    return false;
+  }
+
  protected:
   DeviceContext *device_context_{nullptr};
 };

@@ -87,6 +87,10 @@ class GeKernelExecutor : public KernelExecutor {
     return ignore_input_list;
   }
 
+  bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx) const {
+    return AnfAlgo::IsLaunchIgnoredInputAddressIdx(node, input_idx);
+  }
+
  private:
   static void DoSomas(const FuncGraphPtr &graph);
   static void DoStreamAssign(const KernelGraphPtr &kernel_graph,
