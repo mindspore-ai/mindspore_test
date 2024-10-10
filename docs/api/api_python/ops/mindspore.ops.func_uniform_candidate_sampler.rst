@@ -12,7 +12,7 @@
         - Ascend后端暂不支持动态shape场景。
 
     参数：
-        - **true_classes** (Tensor) - 输入Tensor，目标类，其shape为 :math:`(batch\_size, num\_true)` 。
+        - **true_classes** (Tensor) - 输入Tensor，目标类，其shape为 :math:`(batch\_size, num\_true)` 。其元素值范围需要在 :math:`[0, range\_max)` 。
         - **num_true** (int) - 每个训练样本的目标类数。
         - **num_sampled** (int) - 随机采样的类数。 `sampled_candidates` 的shape将为 `num_sampled` 。如果 `unique` 为 ``True`` ，则 `num_sampled` 必须小于或等于 `range_max` 。
         - **unique** (bool) - 表示一个batch中的所有采样类是否唯一。
