@@ -26,7 +26,7 @@ import shutil
 import stat
 import threading
 from threading import Thread, RLock
-from multiprocessing import Process
+from multiprocessing import Pool
 from collections import defaultdict, OrderedDict
 from io import BytesIO
 
@@ -2847,11 +2847,25 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
     return merged_parameter
 
 
+def _gather_tasks(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
+                  output_format, name_map):
+    """gather transform tasks"""
+    tasks = []
+    for rank in range(0, dst_device_num):
+        tasks.append(
+            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map))
+    return tasks
+
+
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
                                 train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
-                                format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None):
+                                format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
+                                output_format='safetensors', name_map=None, max_process_num=64):
     """
     Load checkpoint into net for distributed predication. Used in the case of distributed inference.
+
+    Note:
+        `output_format` will only take effect when `format` is set to `safetensors` and `network` is set to `None`.
 
     Args:
         network (Cell): Network for distributed predication.
@@ -2880,6 +2894,11 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         rank_id (int): The logical sequence number of the card. In non save mode, it is automatically obtained
                        globally by initializing the network; In save mode, save the file according to the input
                        sequence number. If it is not input, save the entire file.
+        output_format (str, optional): Control the format of the output checkpoint after conversion.
+            It can be set to either "ckpt" or "safetensors". Default: "safetensors".
+        name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
+            dictionary before loading or saving the segmented weights into the network. Default: None.
+        max_process_num (int): Maximum number of processes. Default: 64.
 
     Raises:
         TypeError: The type of inputs do not match the requirements.
@@ -2983,9 +3002,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         ...
         [ 1.6067538  1.6244187  1.5384722 ...  1.5449994  1.6195512  1.6176052]]
     """
-    if format not in ['safetensors', 'ckpt']:
+    if format not in ['safetensors', 'ckpt'] or output_format not in ['safetensors', 'ckpt']:
         raise ValueError(
-            f"For 'load_distributed_checkpoint', 'format' must be 'ckpt' or 'safetensors', but got {format}.")
+            f"For 'load_distributed_checkpoint', 'format' and 'output_format' "
+            f"must be 'ckpt' or 'safetensors', but got {format}.")
 
     if format == 'safetensors':
         if unified_safetensors_dir is None:
@@ -3000,35 +3020,29 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
             raise ValueError(f"For 'load_distributed_checkpoint', strict_load and dec_mode must be default "
                              f"when format is 'safetensors'.")
         if network is not None:
-            rank_id = get_rank()
-            _load_parallel_checkpoint(unified_safetensors_dir, predict_strategy, network, rank_id=rank_id)
+            try:
+                rank_id = get_rank()
+            except RuntimeError:
+                rank_id = 0
+                logger.warning(f"Get rank failed, default loading weight for rank 0.")
+            _load_parallel_checkpoint(
+                (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map))
         else:
             if dst_safetensors_dir is None:
                 raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
                                  f"when network is None.")
             if rank_id is not None:
-                _load_parallel_checkpoint(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                                          rank_id)
+                _load_parallel_checkpoint((unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                                           rank_id, output_format, name_map))
             else:
                 dst_strategy_dict = _build_searched_strategy(predict_strategy)
                 dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
                 dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
                 dst_device_num = dst_stage_device_num * dst_stage_num
-                processes = []
-                activate_processes = 0
-                for rank in range(0, dst_device_num):
-                    p = Process(target=_load_parallel_checkpoint, args=(
-                        unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank))
-                    p.start()
-                    processes.append(p)
-                    activate_processes += 1
-                    max_processes = 64
-                    if activate_processes >= max_processes:
-                        p = processes.pop(0)
-                        p.join()
-                        activate_processes -= 1
-                for p in processes:
-                    p.join()
+                tasks = _gather_tasks(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                                      dst_device_num, output_format, name_map)
+                with Pool(processes=max_process_num) as pool:
+                    list(pool.imap(_load_parallel_checkpoint, tasks))
         return
 
     network = Validator.check_isinstance("network", network, nn.Cell)
