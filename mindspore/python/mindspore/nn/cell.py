@@ -540,14 +540,6 @@ class Cell(Cell_):
                             f"{default_args} default argument, total {positional_args + default_args}, "
                             f"but got {len(args)}.")
 
-    def _reset_hook(self):
-        self._forward_pre_hook = None
-        self._forward_hook = None
-        self._backward_pre_hook = None
-        self._cell_backward_pre_hook = None
-        self._backward_hook = None
-        self._cell_backward_hook = None
-
     def _hook_fn_registered(self):
         '''Hook function in graph mode'''
         # Check super().__init__() in graph mode.
@@ -561,7 +553,6 @@ class Cell(Cell_):
             self._is_recursion_hook = True
             for cell in self.cells():
                 if cell._hook_fn_registered():
-                    cell._reset_hook()
                     return True
         return False
 

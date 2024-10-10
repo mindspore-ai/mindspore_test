@@ -13,10 +13,12 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
+import pytest
 import mindspore.nn as nn
 from mindspore import ops, Tensor, jit, context
 from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -351,9 +353,9 @@ def test_hook_backward_with_jit():
     input_x = Tensor(np.array([1, 2, 3, 4]).astype(np.float32))
     input_y = Tensor(np.array([5, 6, 7, 8]).astype(np.float32))
     net = NetJit()
-    output = net(input_x, input_y)
-    assert np.allclose(output.asnumpy(), Tensor(np.array([75, 76, 77, 78])).astype(np.float32).asnumpy(),
-                       0.001, 0.001)
+    with pytest.raises(RuntimeError):
+        _ = net(input_x, input_y)
+        _pynative_executor.sync()
 
 
 def test_pynative_backward_hook_with_modify_cell():

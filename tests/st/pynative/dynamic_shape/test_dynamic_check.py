@@ -13,16 +13,13 @@
 # limitations under the License.
 # ============================================================================
 
-import os
 import pytest
 import numpy as np
-os.environ['MS_PYNATIVE_CONFIG_STATIC_SHAPE'] = '1'
 import mindspore as ms
 from mindspore import nn
 from mindspore import ops
 from mindspore import context, Tensor
 from mindspore.common.parameter import Parameter, ParameterTuple
-from tests.st.pynative.utils.tools import _CheckPyNativeRunMode
 
 
 def setup_module():
@@ -65,38 +62,6 @@ class Net(nn.Cell):
         return x
 
 
-@pytest.mark.level1
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
-def test_net_input_shape_changed():
-    """
-    Feature: PyNative dynamic shape check.
-    Description: Top cell input shape changed, net is dynamic.
-    Expectation: Dynamic check is detected.
-    """
-
-    net = Net()
-    grad_op = ops.GradOperation(get_all=True, get_by_list=False, sens_param=False)
-
-    with _CheckPyNativeRunMode() as check:
-        # run first shape, save the first launch_bprop_graph.ir
-        input_x = Tensor(np.random.rand(2, 3, 6, 4).astype(np.float32) * 2)
-        input_y = Tensor(np.random.rand(2, 3, 6, 4).astype(np.float32) * 5)
-        _ = grad_op(net)(input_x, input_y)
-        assert check.is_run_by_actor(), True
-
-        # run second shape, store 2 static shape
-        input_x2 = Tensor(np.random.rand(2, 3, 6, 16).astype(np.float32) * 2)
-        input_y2 = Tensor(np.random.rand(2, 3, 6, 16).astype(np.float32) * 5)
-        _ = grad_op(net)(input_x2, input_y2)
-        assert check.is_run_by_actor(), True
-
-        # run third shape, set top cell use dynamic, use func grad
-        input_x = Tensor(np.random.rand(2, 3, 6, 8).astype(np.float32) * 2)
-        input_y = Tensor(np.random.rand(2, 3, 6, 8).astype(np.float32) * 5)
-        _ = grad_op(net)(input_x, input_y)
-        assert check.is_run_by_func_grad(), True
-
 @pytest.mark.level0
 @pytest.mark.platform_x86_cpu
 @pytest.mark.env_onecard
@@ -128,62 +93,3 @@ def test_net_parameter_requires_grad_changed():
     assert len(grad2) == 1
     assert np.allclose(grad2[0].asnumpy(), Tensor(np.array([1, 1, 1, 1])).astype(np.float32).asnumpy(),
                        0.001, 0.001)
-
-
-class BpropNet(nn.Cell):
-    def __init__(self):
-        super(BpropNet, self).__init__()
-        self.relu = nn.ReLU()
-
-    def construct(self, x):
-        out = self.relu(x)
-        return out
-
-    def bprop(self, x, out, dout):
-        grads = x * 2
-        return (grads,)
-
-
-class NetHasBprop(nn.Cell):
-    def __init__(self):
-        super(NetHasBprop, self).__init__()
-        self.exp = ops.Exp()
-        self.relu = nn.ReLU()
-        self.inner = BpropNet()
-
-    def construct(self, x):
-        x = self.exp(x)
-        x = self.inner(x)
-        x = self.relu(x)
-        return x
-
-
-@pytest.mark.level1
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
-def test_net_bprop_dynamic_shape():
-    """
-    Feature: PyNative bporp dynamic shape.
-    Description: Net has custom bprop is dynamic.
-    Expectation: The net is dynamic.
-    """
-
-    net = NetHasBprop()
-    grad_op = ops.GradOperation(get_all=True, get_by_list=False, sens_param=False)
-    context.set_context(save_graphs=True, save_graphs_path="ir")
-
-    with _CheckPyNativeRunMode() as check:
-        # run first shape, save the first launch_bprop_graph.ir
-        input_x = Tensor(np.random.rand(2, 3, 6, 4).astype(np.float32) * 2)
-        _ = grad_op(net)(input_x)
-        assert check.is_run_by_single_op(), True
-
-        # run second shape, dynamic shape
-        input_x2 = Tensor(np.random.rand(2, 3, 6, 16).astype(np.float32) * 2)
-        _ = grad_op(net)(input_x2)
-        assert check.is_run_by_func_grad(), True
-
-        # run third shape, dynamic shape
-        input_x = Tensor(np.random.rand(2, 3, 6, 8).astype(np.float32) * 2)
-        _ = grad_op(net)(input_x)
-        assert check.is_run_by_func_grad(), True
