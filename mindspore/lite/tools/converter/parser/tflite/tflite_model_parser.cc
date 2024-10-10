@@ -22,6 +22,7 @@
 #include <utility>
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "utils/convert_utils_base.h"
 #include "include/registry/node_parser_registry.h"
 #include "ops/primitive_c.h"
 #include "ir/func_graph.h"
@@ -784,7 +785,7 @@ void TfliteModelParser::ConvertInputTensor(const std::unique_ptr<tflite::SubGrap
       continue;
     }
     if (input_idx < 0) {
-      input_idx += tflite_subgraph->tensors.size();
+      input_idx += SizeToLong(tflite_subgraph->tensors.size());
     }
     const auto &input_tensor = tflite_subgraph->tensors[input_idx];
     MS_CHECK_PTR_IF_NULL(input_tensor);
