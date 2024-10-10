@@ -1608,12 +1608,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('broadcast_to')(self, x.shape)
 
-    def exp(self):
-        """
-        For details, please refer to :func:`mindspore.ops.exp`.
-        """
-        return tensor_operator_registry.get('exp')(self)
-
     def real(self):
         r"""
         For details, please refer to :func:`mindspore.ops.real`.
@@ -1656,12 +1650,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.tan`.
         """
         return tensor_operator_registry.get('tan')(self)
-
-    def tanh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.tanh`.
-        """
-        return tensor_operator_registry.get('tanh')(self)
 
     def cosh(self):
         r"""
@@ -3949,12 +3937,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("eigvals")()(self)
 
-    def erf(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.erf`.
-        """
-        return tensor_operator_registry.get("erf")(self)
-
     def erfc(self):
         r"""
         For details, please refer to :func:`mindspore.ops.erfc`.
@@ -4376,12 +4358,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Alias for :func:`mindspore.Tensor.div`.
         """
         return tensor_operator_registry.get('div')(self, value, rounding_mode=rounding_mode)
-
-    def eq(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.eq`.
-        """
-        return tensor_operator_registry.get('equal')(self, other)
 
     def equal(self, other):
         r"""

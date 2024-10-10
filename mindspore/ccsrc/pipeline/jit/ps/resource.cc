@@ -276,7 +276,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"isreal", std::string("isreal")},                                  // isreal()
        {"minimum", std::string("minimum")},                                // P.Minimum()
        {"cosh", std::string("cosh")},                                      // P.Cosh()
-       {"tanh", std::string("tanh")},                                      // P.Tanh()
        {"rad2deg", std::string("rad2deg")},                                // F.rad2deg()
        {"deg2rad", std::string("deg2rad")},                                // F.deg2rad()
        {"dot", std::string("dot")},                                        // composite.dot()
@@ -335,7 +334,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"triu", std::string("triu")},                                      // triu()
        {"subtract", std::string("subtract")},                              // true_divide()
        {"sum_to_size", std::string("sum_to_size")},                        // sum_to_size()
-       {"exp", std::string("exp")},                                        // P.Exp()
        {"repeat", std::string("repeat")},                                  // C.repeat_elements
        {"bernoulli", std::string("bernoulli")},                            // P.Bernoulli()
        {"floor", std::string("floor")},                                    // P.floor
@@ -371,7 +369,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"dsplit", std::string("dsplit")},                                  // dplit
        {"random_categorical", std::string("random_categorical")},          // P.RandomCategorical
        {"xlogy", std::string("xlogy")},                                    // P.Xlogy()
-       {"erf", std::string("erf")},                                        // P.Erf()
        {"erfc", std::string("erfc")},                                      // P.Erfc()
        {"argmax_with_value", std::string("argmax_with_value")},            // P.ArgMaxWithValue
        {"argmin_with_value", std::string("argmin_with_value")},            // P.ArgMinWithValue
@@ -425,7 +422,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"cumprod", std::string("cumprod")},                                // cumprod()
        {"div", std::string("div")},                                        // div()
        {"divide", std::string("div")},                                     // divide()
-       {"eq", std::string("eq")},                                          // eq()
        {"equal", std::string("equal")},                                    // equal()
        {"expm1", std::string("expm1")},                                    // expm1()
        {"eig", std::string("eig")},                                        // eig()

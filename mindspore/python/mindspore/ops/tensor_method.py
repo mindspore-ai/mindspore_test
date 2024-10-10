@@ -18,8 +18,8 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.auto_generate import add, max_
-from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar
-from mindspore.ops.function.math_func import mean, ceil, cos
+from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar, erf, exp, tanh
+from mindspore.ops.function.math_func import mean, ceil, cos, eq
 from mindspore.ops.function.array_func import argmax
 from mindspore.ops.function.array_func import max as max_func
 
@@ -70,3 +70,19 @@ def tensor_ceil(input):
 
 def tensor_cos(input):
     return cos(input)
+
+
+def tensor_eq(input, other):
+    return eq(input, other)
+
+
+def tensor_erf(input):
+    return erf(input)
+
+
+def tensor_exp(input):
+    return exp(input)
+
+
+def tensor_tanh(input):
+    return tanh(input)

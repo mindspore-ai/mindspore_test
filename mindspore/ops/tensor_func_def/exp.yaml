@@ -1,0 +1,6 @@
+exp:
+  op_yaml: exp_op.yaml
+  py_method: tensor_exp
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

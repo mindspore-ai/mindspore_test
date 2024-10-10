@@ -1,0 +1,6 @@
+eq:
+  op_yaml: equal_op.yaml
+  py_method: tensor_eq
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
