@@ -575,7 +575,8 @@ size_t StageComputing::GetDynamicMemoryParsing(size_t l, size_t b, size_t m, siz
                        FP_dropout * sbh / t);
   float A_intermediate = A_norm + A_MHA + A_FF;
   float nodes = static_cast<float>(num_devices_) / 8;
-  float A_input = ((p > 1 && nodes == 1) ? m : ceil(nodes / 4)) * sbh / t;
+  float A_input =
+    ((p > 1 && std::fabs(nodes - 1) <= std::numeric_limits<float>::epsilon()) ? m : ceil(nodes / 4)) * sbh / t;
   float n_Checkpoints = num_layers_ / 1.5;
   float full_recompute_size = n_Checkpoints * A_input + (l / n_Checkpoints) * A_intermediate;
 
