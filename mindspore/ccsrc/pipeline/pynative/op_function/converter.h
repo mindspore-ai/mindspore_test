@@ -58,11 +58,11 @@ struct FunctionParameter {
 
   ops::OP_DTYPE type_;  // type of parameter
   std::vector<ops::OP_DTYPE> cast_types_;
+  bool default_none_;
   bool optional_;  // if has default value
   bool allow_none_;
-  int size_;          // size of vec type
   std::string name_;  // parameter name
-  std::optional<std::vector<int64_t>> default_intlist;
+  std::vector<int64_t> default_intlist;
   std::string default_string;
   bool default_bool;
   int64_t default_int;

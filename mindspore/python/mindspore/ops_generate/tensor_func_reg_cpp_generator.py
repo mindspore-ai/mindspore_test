@@ -68,6 +68,17 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.TENSOR_FUNC_HEADER_BODY = template.TENSOR_FUNC_HEADER_BODY
         self.TENSOR_FUNC_CALL_BODY = template.TENSOR_FUNC_CALL_BODY
         self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG = template.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG
+        # The format of arg_handler_map is {arg_handler_name : list of supported types}.
+        # The first one of type list is the target dtype. Types corresponds to type_str_map.
+        self.arg_handler_map = {"to_2d_paddings": "tuple[int]|list[int]|int",
+                                "dtype_to_type_id": "int|type",
+                                "to_kernel_size": "tuple[int]|list[int]|int",
+                                "to_strides": "tuple[int]|list[int]|int",
+                                "str_to_enum": "int|str",
+                                "to_pair": "tuple[int]|list[int]|int|float",
+                                "to_dilations": "tuple[int]|list[int]|int",
+                                "to_output_padding": "tuple[int]|list[int]|int",
+                                "to_rates": "tuple[int]|list[int]|int"}
 
     def generate(self, work_path, func_protos_data):
         """
@@ -231,10 +242,18 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if not first_arg:
                 single_arg = ', '
             first_arg = False
-            arg_dtype = arg.arg_dtype
-            for cast_type in arg.type_cast:
-                arg_dtype += '|'
-                arg_dtype += cast_type
+            arg_handler = arg.arg_handler
+            if arg_handler != '':
+                if arg_handler in self.arg_handler_map:
+                    arg_dtype = self.arg_handler_map[arg_handler]
+                else:
+                    raise ValueError("Generate failed. Check if {} is registered in TensorFuncRegCppGenerator."
+                                     .format(arg_handler))
+            else:
+                arg_dtype = arg.arg_dtype
+                for cast_type in arg.type_cast:
+                    arg_dtype += '|'
+                    arg_dtype += cast_type
             arg_name = arg.arg_name
             single_arg += f"{arg_dtype} {arg_name}"
             if arg.as_init_arg:
@@ -295,7 +314,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         callback_python_template = Template(
             'MS_LOG(INFO) << "${info}";\n'
             'py::function fn = python_adapter::GetPyFn(\"${python_module}\", \"${python_func}\");\n'
-            'py::object res = fn(*args);\n'
+            'py::object res = fn(*arg_list);\n'
             'return res;\n'
         )
         if getattr(func_proto, device) == 'aclnn':
@@ -330,6 +349,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         for idx, op_arg in enumerate(op_args):
             arg_handler = op_arg.arg_handler
             if arg_handler:
-                cc_arg_handler = ''.join(word.capitalize() for word in arg_handler.split('_'))
-                arg_handler_processor += f"args[{idx}] = (*pynative::{cc_arg_handler}(args, kIndex{idx}))->value();\n"
+                func_str = ''.join(word.capitalize() for word in arg_handler.split('_'))
+                arg_handler_processor += f"arg_list[{idx}] = (*pynative::{func_str}(arg_list, kIndex{idx}))->value();\n"
         return arg_handler_processor

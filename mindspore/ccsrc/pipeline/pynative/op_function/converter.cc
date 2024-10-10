@@ -565,7 +565,8 @@ ops::OP_DTYPE GetOpDtype(const std::string &type_str) {
   return it->second;
 }
 
-FunctionParameter::FunctionParameter(const std::string &fmt) : optional_(false), allow_none_(false), size_(0) {
+FunctionParameter::FunctionParameter(const std::string &fmt)
+    : default_none_(false), optional_(false), allow_none_(false) {
   auto space = fmt.find(' ');
   if (space == std::string::npos) {
     MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << fmt;
@@ -592,8 +593,10 @@ FunctionParameter::FunctionParameter(const std::string &fmt) : optional_(false),
     auto type_str = name_str.substr(eq + 1);
     if (type_str == "None") {
       allow_none_ = true;
+      default_none_ = true;
+    } else {
+      set_default_str(type_str);
     }
-    set_default_str(type_str);
   } else {
     optional_ = false;
     name_ = name_str;
@@ -674,12 +677,9 @@ bool is_scalar_list(const py::object &obj) {
   return true;
 }
 
-static inline std::optional<std::vector<int64_t>> parse_list_int(const std::string &s, int64_t size) {
+static inline std::vector<int64_t> parse_list_int(const std::string &s) {
   if (s.empty()) return std::vector<int64_t>();
   if (s[0] != '[' || s[0] != '(') {
-    if (s == "None") {
-      return std::nullopt;
-    }
     return std::vector<int64_t>{std::stol(s)};
   }
   auto args = std::vector<int64_t>();
@@ -768,7 +768,7 @@ void FunctionParameter::set_default_str(const std::string &str) {
       default_double = atof(str.c_str());
       break;
     case ops::OP_DTYPE::DT_TUPLE_INT:
-      default_intlist = parse_list_int(str, size_);
+      default_intlist = parse_list_int(str);
       break;
     case ops::OP_DTYPE::DT_TUPLE_TENSOR:
       if (str != "None") {
@@ -784,7 +784,7 @@ void FunctionParameter::set_default_str(const std::string &str) {
       }
       break;
     case ops::OP_DTYPE::DT_LIST_INT:
-      default_intlist = parse_list_int(str, size_);
+      default_intlist = parse_list_int(str);
       break;
     case ops::OP_DTYPE::DT_LIST_FLOAT:
       if (str != "None") {
@@ -808,7 +808,9 @@ py::object get_py_listint(const std::vector<int64_t> &vec) {
 }
 
 py::object FunctionParameter::get_default_value() {
-  py::list list_py;
+  if (default_none_) {
+    return py::none();
+  }
   switch (type_) {
     case ops::OP_DTYPE::DT_INT:
       return py::int_(default_int);
@@ -827,15 +829,9 @@ py::object FunctionParameter::get_default_value() {
     case ops::OP_DTYPE::DT_STR:
       return py::str(default_string);
     case ops::OP_DTYPE::DT_LIST_INT:
-      if (!default_intlist.has_value()) {
-        return py::none();
-      }
-      return get_py_listint<py::list>(default_intlist.value());
+      return get_py_listint<py::list>(default_intlist);
     case ops::OP_DTYPE::DT_TUPLE_INT:
-      if (!default_intlist.has_value()) {
-        return py::none();
-      }
-      return get_py_listint<py::tuple>(default_intlist.value());
+      return get_py_listint<py::tuple>(default_intlist);
     default:
       MS_LOG(EXCEPTION) << "Cannot get default value for type " << type_;
   }
