@@ -1,4 +1,4 @@
-    transpose_ext:
+transpose_ext:
     description: |
         Interchange two axes of a tensor.
 
@@ -29,4 +29,4 @@
             >>> output = mint.transpose(input, 0, 2)
             >>> print(output.shape)
             (4, 3, 2)
-            
+        
