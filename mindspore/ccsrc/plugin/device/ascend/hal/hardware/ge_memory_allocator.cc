@@ -209,16 +209,6 @@ void AllocParameterMemory(const KernelGraphPtr &kernel_graph, DeviceContext *dev
     SetKernelInfo(parameter);
   }
   runtime::DeviceAddressUtils::CreateParameterDeviceAddress(device_context, kernel_graph);
-  if (kernel_graph->has_flag(kFlagGeKernel)) {
-    return;
-  }
-  // call AssignStaticMemoryInput recursively
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto runtime_instance = device::KernelRuntimeManager::Instance().GetKernelRuntime(kAscendDevice, device_id);
-  MS_EXCEPTION_IF_NULL(runtime_instance);
-  runtime_instance->AssignStaticMemoryInput(*kernel_graph.get());
 }
 
 void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManager *res_manager) {
