@@ -2619,7 +2619,9 @@ def intersect1d(ar1, ar2, assume_unique=False, return_indices=False):
 
     if return_indices:
         ar1_indices = F.masked_select(concat_sort_indices[:-1], mask_res)
-        ar2_indices = F.masked_select(concat_sort_indices[1:], mask_res) - array1.size
+        ar2_indices = F.masked_select(concat_sort_indices[1:], mask_res)
+        if ar2_indices.shape[0] > 0:
+            ar2_indices = ar2_indices - array1.size
         if not assume_unique:
             ar1_indices = ind1.index_select(0, ar1_indices)
             ar2_indices = ind2.index_select(0, ar2_indices)
