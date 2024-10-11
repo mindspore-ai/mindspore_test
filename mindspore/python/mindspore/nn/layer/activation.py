@@ -975,10 +975,10 @@ class GELU(Cell):
         Tensor, with the same type and shape as the `x`.
     
     Note:
-        When calculating the input gradient of GELU with an input value of infinity, there are differences 
-        in the output of the backward between Ascend and GPU.
-        when x is -inf, the computation result of Ascend is 0, and the computation result of GPU is Nan.
-        when x is inf, the computation result of Ascend is dy, and the computation result of GPU is Nan.
+        when calculating the input gradient of GELU with an input value of infinity, there are differences 
+        in the output of the backward between ``Ascend`` and ``GPU``.
+        when x is -inf, the computation result of ``Ascend`` is 0, and the computation result of ``GPU`` is Nan.
+        when x is inf, the computation result of ``Ascend`` is dy, and the computation result of ``GPU`` is Nan.
         In mathematical terms, the result of Ascend has higher precision.
 
     Raises:
