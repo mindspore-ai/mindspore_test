@@ -63,15 +63,14 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   auto tensor_add = common::AnfAlgo::GetInputNode(utils::cast<CNodePtr>(rms_norm_node), 0);
   auto shape1 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 0);
   auto shape2 = common::AnfAlgo::GetPrevNodeOutputInferShape(tensor_add, 1);
-  if (shape1 != shape2) {
-    return nullptr;
-  }
   auto rms_x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 0);
   auto rms_gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(rms_norm_node, 1);
   auto scale_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
   auto offset_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 2);
-  if (rms_x_dtype != kNumberTypeFloat16 || rms_gamma_dtype != kNumberTypeFloat16 || scale_dtype != kNumberTypeFloat16 ||
-      offset_dtype != kNumberTypeInt8) {
+  FuncGraphManagerPtr mng = graph->manager();
+  MS_EXCEPTION_IF_NULL(mng);
+  if (shape1 != shape2 || mng->node_users()[tuple_get_item_node].size() != 1 || rms_x_dtype != kNumberTypeFloat16 ||
+      rms_gamma_dtype != kNumberTypeFloat16 || scale_dtype != kNumberTypeFloat16 || offset_dtype != kNumberTypeInt8) {
     return nullptr;
   }
 
@@ -94,7 +93,6 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   prim->set_attr("sqrt_mode", sqrt_mode);
   prim->set_attr("rounding_mode", rounding_mode);
   prim->set_attr("dst_type", dst_type);
-
   std::vector<AnfNodePtr> inputs = {NewValueNode(prim), x1, x2, gamma, scale_fp32, offset_int32, eps};
   auto add_rms_norm_quant = graph->NewCNode(inputs);
   MS_EXCEPTION_IF_NULL(add_rms_norm_quant);
@@ -125,14 +123,11 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   quant_result_shapes.push_back(tensor_quant_shape);
   add_result_types.push_back(tensor_add_type);
   add_result_shapes.push_back(tensor_add_shape);
-
   common::AnfAlgo::SetOutputTypeAndDetailShape(types, shapes, add_rms_norm_quant.get());
   add_rms_norm_quant->set_scope(node->scope());
-
   auto build_info = GenerateKernelBuildInfo(add_rms_norm_quant);
   AnfAlgo::SetSelectKernelBuildInfo(build_info, add_rms_norm_quant.get());
 
-  FuncGraphManagerPtr manager = graph->manager();
   auto prim_getitem_2 = std::make_shared<Primitive>("TupleGetItem");
   std::vector<AnfNodePtr> add_result_inputs = {NewValueNode(prim_getitem_2), add_rms_norm_quant,
                                                NewValueNode(static_cast<int64_t>(2))};
@@ -141,7 +136,7 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   add_result->set_scope(tensor_add->scope());
   build_info = GenerateKernelBuildInfo(add_result);
   AnfAlgo::SetSelectKernelBuildInfo(build_info, add_result.get());
-  (void)manager->Replace(tensor_add, add_result);
+  (void)mng->Replace(tensor_add, add_result);
 
   auto prim_getitem_0 = std::make_shared<Primitive>("TupleGetItem");
   std::vector<AnfNodePtr> quant_result_inputs = {NewValueNode(prim_getitem_0), add_rms_norm_quant,
