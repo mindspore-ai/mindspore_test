@@ -171,6 +171,8 @@ class TfliteNodeParser {
     }
 
     constexpr size_t k2DMultipler = 2;
+    MS_CHECK_TRUE_MSG(count % k2DMultipler == 0 && count > 1, RET_ERROR,
+                      "Element count is invalid! element count " << count << ", shape " << tensor->shape);
     (*vec).resize(count / k2DMultipler, std::vector<T>(k2DMultipler));
     switch (tensor->type) {
       case tflite::TensorType_UINT8: {

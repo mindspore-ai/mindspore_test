@@ -269,7 +269,9 @@ void PackWeightManager::FreePackWeight(std::string runner_id, std::string model_
     MS_LOG(INFO) << "model id is empty.";
     return;
   }
-  pack_weight_->FreePackWeight(model_id);
+  if (pack_weight_ != nullptr) {
+    pack_weight_->FreePackWeight(model_id);
+  }
   auto it = find(model_ids_.begin(), model_ids_.end(), model_id);
   if (it != model_ids_.end()) {
     model_ids_.erase(it);

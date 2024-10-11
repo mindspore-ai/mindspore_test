@@ -37,7 +37,6 @@ int ConcatOpenCLKernel::RunAxis0() {
   auto allocator_ = ocl_runtime_->GetAllocator();
   ImageSize img_size;
   auto dst_data = out_tensors_[0]->data();
-  MS_ASSERT(dst_data);
   auto dst_origin = cl::array<cl::size_type, 3U>{0, 0, 0};
   auto *out_image = allocator_->GetImage(dst_data);
   for (size_t i = 0; i < in_tensors_.size(); i++) {
@@ -52,6 +51,7 @@ int ConcatOpenCLKernel::RunAxis0() {
     if (ocl_runtime_->GetDefaultCommandQueue()->enqueueCopyImage(*input_image, *out_image, src_origin, dst_origin,
                                                                  region) != CL_SUCCESS) {
       MS_LOG(WARNING) << "enqueueCopyImage failed.";
+      return RET_ERROR;
     }
     dst_origin[1] += region[1];
   }
