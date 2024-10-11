@@ -126,19 +126,22 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         single_op_func_data = {}
         for _, func_protos in func_protos_data.items():
             if len(func_protos) == 1:
-                func_name = func_protos[0].op_proto.op_name
+                func_name = func_protos[0].func_name
                 if func_name not in single_op_func_data:
                     single_op_func_data[func_name] = func_protos[0]
 
+        cls_names = set()
         for func_name, func_proto in single_op_func_data.items():
             func_name = func_proto.func_name
             class_name = func_proto.op_proto.op_class.name
-            func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name)
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
             signature_str = self._generate_single_signature_str(func_proto.op_proto)
-            func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
-                                                                     device_dispatcher=device_dispatcher_str,
-                                                                     signatures=signature_str)
+            if class_name not in cls_names:
+                func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name)
+                cls_names.add(class_name)
+                func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
+                                                                         device_dispatcher=device_dispatcher_str,
+                                                                         signatures=signature_str)
             func_def_body_str += self.func_def_reg.replace(func_name=func_name,
                                                            class_name=class_name)
         return func_header_body_str, func_call_body_str, func_def_body_str
