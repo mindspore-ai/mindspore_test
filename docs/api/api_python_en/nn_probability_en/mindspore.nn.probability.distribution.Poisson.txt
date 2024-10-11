@@ -1,5 +1,4 @@
-.. py:method:: rate
-    :property:
+.. py:property:: rate
 
     Return rate parameter.
 

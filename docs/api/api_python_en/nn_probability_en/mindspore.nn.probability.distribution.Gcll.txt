@@ -1,13 +1,11 @@
-.. py:method:: loc
-    :property:
+.. py:property:: loc
 
     Return the loc parameter of the distribution.
 
     Returns
         Tensor, the loc parameter of the distribution.
 
-.. py:method:: scale
-    :property:
+.. py:property:: scale
 
     Return the scale parameter of the distribution.
 

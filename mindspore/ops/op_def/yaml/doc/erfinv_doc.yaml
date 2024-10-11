@@ -1,6 +1,6 @@
 erfinv:
   description: |
-    Returns the result of the inverse error function with `input`, which is defined in the range `(-1, 1)` as:
+    Returns the result of the inverse error function with `input`. It is defined in the range `(-1, 1)` as:
 
     .. math::
 

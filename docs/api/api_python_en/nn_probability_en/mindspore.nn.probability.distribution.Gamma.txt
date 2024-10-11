@@ -1,13 +1,11 @@
-.. py:method:: concentration
-    :property:
+.. py:property:: concentration
 
     Return the concentration, aka the alpha parameter, of the distribution.
 
     Returns
         Tensor, concentration.
 
-.. py:method:: rate
-    :property:
+.. py:property:: rate
 
     Return the rate, aka the beta parameter, of the distribution.
 

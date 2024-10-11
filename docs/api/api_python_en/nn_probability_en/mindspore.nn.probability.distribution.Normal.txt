@@ -1,13 +1,11 @@
-.. py:method:: mean
-    :property:
+.. py:property:: mean
 
     Return the mean of the distribution.
 
     Returns
         Tensor, the mean of the distribution.
 
-.. py:method:: sd
-    :property:
+.. py:property:: sd
 
     Return the standard deviation of the distribution.
 
