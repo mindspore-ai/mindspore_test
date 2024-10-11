@@ -1,5 +1,4 @@
-.. py:method:: probs
-    :property:
+.. py:property:: probs
 
     Return the probability of success.
 

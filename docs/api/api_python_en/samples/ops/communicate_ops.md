@@ -506,6 +506,7 @@ import numpy as np
 import mindspore as ms
 from mindspore.communication import init
 import mindspore.ops as ops
+import mindspore.nn as nn
 
 ms.set_context(mode=ms.GRAPH_MODE)
 init()

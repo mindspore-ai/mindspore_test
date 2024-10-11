@@ -1,29 +1,25 @@
-.. py:method:: bijector
-    :property:
+.. py:property:: bijector
 
     Return the bijector.
 
     Returns
         Bijector, the bijector.
 
-.. py:method:: distribution
-    :property:
+.. py:property:: distribution
 
     Return the distribution before transformation.
 
     Returns
         Distribution, the distribution before transformation.
 
-.. py:method:: dtype
-    :property:
+.. py:property:: dtype
 
     Return the data type of distribution.
 
     Returns
         mindspore.dtype, the data type of distribution.
 
-.. py:method:: is_linear_transformation
-    :property:
+.. py:property:: is_linear_transformation
 
     Return whether the bijector is linear.
 

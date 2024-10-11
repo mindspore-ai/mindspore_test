@@ -1,13 +1,11 @@
-.. py:method:: concentration0
-    :property:
+.. py:property:: concentration0
 
     Return concentration0, aka the beta parameter of the Beta distribution. 
 
     Returns
         Tensor, the value of concentration0.
 
-.. py:method:: concentration1
-    :property:
+.. py:property:: concentration1
 
     Return concentration1, aka the alpha parameter of the Beta distribution. 
 

@@ -1,5 +1,4 @@
-.. py:method:: sharpness
-    :property:
+.. py:property:: sharpness
 
     Return the sharpness parameter of the distribution.
 

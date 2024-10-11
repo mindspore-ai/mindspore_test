@@ -1,13 +1,11 @@
-.. py:method:: shift
-    :property:
+.. py:property:: shift
 
     Return the shift parameter of the bijector.
 
     Returns
         Tensor, the shift parameter of the bijector.
 
-.. py:method:: scale
-    :property:
+.. py:property:: scale
 
     Return the scale parameter of the bijector.
 

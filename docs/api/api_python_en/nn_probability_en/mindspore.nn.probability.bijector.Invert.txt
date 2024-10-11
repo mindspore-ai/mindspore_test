@@ -1,5 +1,4 @@
-.. py:method:: bijector
-    :property:
+.. py:property:: bijector
 
     Return base bijector. 
 

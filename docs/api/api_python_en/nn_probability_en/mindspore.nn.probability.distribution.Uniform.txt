@@ -1,13 +1,11 @@
-.. py:method:: high
-    :property:
+.. py:property:: high
 
     Return the upper bound of the distribution.
 
     Returns
         Tensor, the upper bound of the distribution.
 
-.. py:method:: low
-    :property:
+.. py:property:: low
 
     Return the upper bound of the distribution.
 

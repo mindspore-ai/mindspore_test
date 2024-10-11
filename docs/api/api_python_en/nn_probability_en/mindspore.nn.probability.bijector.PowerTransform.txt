@@ -1,5 +1,4 @@
-.. py:method:: power
-    :property:
+.. py:property:: power
 
     Return the power index.
 
