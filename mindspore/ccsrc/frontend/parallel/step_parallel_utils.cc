@@ -37,6 +37,7 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/node_info.h"
+#include "frontend/parallel/graph_util/graph_utils.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/node_check.h"
 #include "frontend/parallel/parameter_manager.h"
@@ -48,6 +49,7 @@
 #include "ir/tensor.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -62,6 +64,7 @@ namespace mindspore {
 namespace parallel {
 using mindspore::tensor::Tensor;
 size_t TOTAL_OPS = 0;
+static const std::set<std::string> INVALID_LOSS_OPS = {GET_NEXT, VIRTUALLOSS, LOAD, UPDATESTATE};
 // g_RefMap, for CNode B input i is a RefKey[Parameter C],
 // it will be one item in map with key: C, and value: (B, i)
 std::map<AnfNodePtr, std::pair<AnfNodePtr, int64_t>> g_RefMap;
@@ -3404,5 +3407,251 @@ void ObtainInOutStrategy(const StrategyMap &stra_map, const PrimitivePtr &prim, 
   CheckStrategyAndShape(*in_strategy, op_info);
 }
 
+TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info) {
+  TensorLayouts ret;
+  auto loss_cnode = node_info.loss_node;
+  MS_EXCEPTION_IF_NULL(loss_cnode);
+
+  ValueNodePtr prim_anf_node = loss_cnode->input(0)->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(prim_anf_node);
+  PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(prim);
+
+  if (INVALID_LOSS_OPS.find(prim->name()) != INVALID_LOSS_OPS.end()) {
+    MS_LOG(WARNING) << "The loss name is: " << prim->name() << ", do nothing for split sens now";
+    return ret;
+  }
+
+  OperatorInfoPtr operator_info = loss_cnode->user_data<OperatorInfo>();
+  if (!operator_info) {
+    return ret;
+  }
+
+  TensorInfo loss_grad_tensor_info;
+  size_t op_output_size = operator_info->outputs_tensor_info().size();
+  MS_LOG(INFO) << "The loss name is " << operator_info->name() << ", the has tuple item is  "
+               << node_info.has_tuple_getitem << ", the output size is  " << op_output_size << ", the dout_index is  "
+               << node_info.dout_index;
+
+  if ((op_output_size == 0) || (op_output_size <= LongToSize(node_info.dout_index))) {
+    MS_LOG_WITH_NODE(EXCEPTION, loss_cnode)
+      << "The index is  " << node_info.dout_index << ", but the size of outputs is  " << op_output_size;
+  }
+
+  if (!node_info.has_tuple_getitem && (op_output_size > 1)) {
+    MS_LOG_WITH_NODE(EXCEPTION, loss_cnode) << "Currently, it is not supported that the sens is a tuple.";
+  }
+
+  loss_grad_tensor_info = operator_info->outputs_tensor_info()[LongToSize(node_info.dout_index)];
+  ret.push_back(loss_grad_tensor_info.tensor_layout());
+  return ret;
+}
+
+LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph) {
+  LossNodeInfo loss_node_info;
+  MS_EXCEPTION_IF_NULL(func_graph);
+  CNodePtr return_node = func_graph->get_return();
+  MS_EXCEPTION_IF_NULL(return_node);
+  if (return_node->size() < 2) {
+    MS_LOG_WITH_NODE(EXCEPTION, return_node) << "Failure: " << return_node->DebugString() << " size is smaller than 2";
+  }
+  auto pre_node_pair = GetRealKernelNode(return_node->input(1), -1, nullptr);
+  auto pre_node = pre_node_pair.first;
+  MS_EXCEPTION_IF_NULL(pre_node);
+  auto pre_cnode = pre_node->cast<CNodePtr>();
+
+  if (pre_cnode == nullptr || !IsValueNode<Primitive>(pre_cnode->input(0))) {
+    return loss_node_info;
+  }
+  if (!IsValueNode<Primitive>(pre_cnode->input(0))) {
+    MS_LOG(DEBUG) << "pre_cnode:" << pre_cnode->ToString();
+    return loss_node_info;
+  }
+  auto current_prim = GetValueNode<PrimitivePtr>(pre_cnode->input(0));
+  // notice: the GetNext op has not input
+  if (INVALID_LOSS_OPS.find(current_prim->name()) != INVALID_LOSS_OPS.end()) {
+    MS_LOG(INFO) << "The loss is: " << current_prim->name();
+    loss_node_info.loss_node = pre_cnode;
+    return loss_node_info;
+  }
+
+  // return -> tuple_getitem -> loss
+  if (pre_node_pair.second != -1) {
+    loss_node_info.has_tuple_getitem = true;
+    loss_node_info.dout_index = pre_node_pair.second;
+    loss_node_info.loss_node = pre_cnode;
+    return loss_node_info;
+  }
+
+  // return -> make_tuple
+  if (current_prim->name() == MAKE_TUPLE) {
+    // functional parallelism return multiple result, including label, which donot need grad
+    if (std::find_if(pre_cnode->inputs().begin(), pre_cnode->inputs().end(), [](const auto &input) {
+          return IsPrimitiveCNode(input, prim::kPrimStopGradient);
+        }) != pre_cnode->inputs().end()) {
+      return loss_node_info;
+    }
+    loss_node_info.has_make_tuple = true;
+    loss_node_info.dout_index = -1;
+    loss_node_info.loss_node = pre_cnode;
+    return loss_node_info;
+  }
+
+  // return -> loss
+  loss_node_info.loss_node = pre_cnode;
+  MS_LOG(DEBUG) << "The loss name is " << current_prim->name();
+  loss_node_info.loss_node->AddPrimalAttr(FLASH_LOSS_NODE, MakeValue<std::string>("True"));
+  return loss_node_info;
+}
+
+static std::vector<AnfNodePtr> FindRootForwardCNode(const FuncGraphPtr &graph,
+                                                    const std::vector<AnfNodePtr> &all_nodes) {
+  MS_EXCEPTION_IF_NULL(graph);
+  std::vector<AnfNodePtr> root_forward_nodes;
+  auto loss_cnode = FindLossCNode(graph).loss_node;
+  if (loss_cnode == nullptr) {
+    return root_forward_nodes;
+  }
+
+  auto loss_cnode_id = loss_cnode->UniqueIdThroughCopy();
+  for (auto &node : all_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    auto root_node_id = node->UniqueIdThroughCopy();
+    if (loss_cnode_id == root_node_id) {
+      root_forward_nodes = DeepLinkedGraphSearch(cnode);
+      break;
+    }
+  }
+  return root_forward_nodes;
+}
+
+static void SetForwardFlag(const std::vector<AnfNodePtr> &all_nodes) {
+  for (auto &node : all_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (!IsValueNode<Primitive>(cnode->input(0))) {
+      continue;
+    }
+
+    // CNode is globally unique.
+    MS_LOG(DEBUG) << "Set forward flag " << cnode->DebugString() << ".";
+    cnode->set_in_forward_flag(true);
+  }
+}
+
+static void SetForwardFlag(const AnfNodeSet &all_nodes) {
+  for (auto &node : all_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (!IsValueNode<Primitive>(cnode->input(0))) {
+      continue;
+    }
+
+    // CNode is globally unique.
+    cnode->set_in_forward_flag(true);
+  }
+}
+
+void MarkForwardCNode(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto ret = root->get_return();
+  MS_EXCEPTION_IF_NULL(ret);
+  auto all_nodes = TopoSort(ret, SuccDeeperSimple);
+  auto graph_set = FindForwardGraphByRootNodes(all_nodes);
+
+  if (graph_set.empty()) {
+    MS_LOG(INFO) << "Can not find the forward graph, so mark the ops in root graph";
+    auto fgs = root->manager()->func_graphs();
+    for (auto fg = fgs.cbegin(); fg != fgs.cend(); ++fg) {
+      SetForwardFlag((*fg)->nodes());
+    }
+  } else {
+    for (auto func_graph = graph_set.cbegin(); func_graph != graph_set.cend(); ++func_graph) {
+      MS_LOG(INFO) << "The sub graph size of root is " << root->func_graphs_used().size();
+      auto return_node = (*func_graph)->get_return();
+      MS_EXCEPTION_IF_NULL(return_node);
+      auto all_dfs_nodes = DeepLinkedGraphSearch(return_node);
+      SetForwardFlag(all_dfs_nodes);
+      auto root_forward_nodes = FindRootForwardCNode(*func_graph, all_nodes);
+      if (root_forward_nodes.empty()) {
+        continue;
+      }
+      // Mark forward flag for the nodes in root graph.
+      SetForwardFlag(root_forward_nodes);
+    }
+  }
+}
+
+static FuncGraphPtr PynativeParallelGraph(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {
+  FuncGraphPtr real_graph = root;
+  for (auto &node : all_nodes) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    if (!IsValueNode<Primitive>(cnode->input(0))) {
+      continue;
+    }
+    auto expect_shard_prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    if (expect_shard_prim->name() != SHARD) {
+      continue;
+    }
+    real_graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
+  }
+  return real_graph;
+}
+
+void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes) {
+  auto real_graph = PynativeParallelGraph(root, all_nodes);
+  auto out_pair = GetRealKernelNode(real_graph->output(), -1, nullptr, false);
+  auto out_node = out_pair.first;
+  MS_EXCEPTION_IF_NULL(out_node);
+  OperatorParams params;
+  OperatorAttrs attrs;
+  OperatorArgs args = std::make_pair(attrs, params);
+  Operator op = std::make_pair(VIRTUAL_OUTPUT, args);
+  if (IsPrimitiveCNode(out_node, prim::kPrimMakeTuple)) {
+    auto tuple = out_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(tuple);
+    for (size_t i = 1; i < tuple->size(); ++i) {
+      auto cur_input = tuple->input(i);
+      Shapes shape_outputs = GetNodeShape(cur_input);
+      if (shape_outputs[0].empty()) {
+        continue;
+      }
+      InsertNode(op, tuple, i, cur_input, tuple->func_graph(), VIRTUAL_OUTPUT);
+      auto virtual_output_abstract = cur_input->abstract()->Clone();
+      std::shared_ptr<abstract::BaseShape> virtual_output_shape = std::make_shared<abstract::Shape>(shape_outputs[0]);
+      virtual_output_abstract->set_shape(virtual_output_shape);
+      auto virtual_output_node = tuple->input(i);
+      virtual_output_node->set_abstract(virtual_output_abstract);
+    }
+  } else {
+    Shapes shape_outputs = GetNodeShape(out_node);
+    if (shape_outputs[0].empty() || out_node->isa<Parameter>()) {
+      return;
+    }
+    auto node_input = CreateInput(op, out_node, VIRTUAL_OUTPUT);
+    auto cur_graph = out_node->cast<CNodePtr>()->func_graph();
+    MS_EXCEPTION_IF_NULL(cur_graph);
+    auto new_node = cur_graph->NewCNode(node_input);
+    auto manager = cur_graph->manager();
+    (void)manager->Replace(out_node, new_node);
+    auto virtual_output_abstract = out_node->abstract()->Clone();
+    std::shared_ptr<abstract::BaseShape> virtual_output_shape = std::make_shared<abstract::Shape>(shape_outputs[0]);
+    virtual_output_abstract->set_shape(virtual_output_shape);
+    new_node->set_abstract(virtual_output_abstract);
+  }
+}
 }  // namespace parallel
 }  // namespace mindspore

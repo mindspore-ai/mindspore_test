@@ -41,6 +41,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_splitter.h"
 #include "frontend/parallel/tensor_layout/shared_parameter.h"
+#include "frontend/parallel/strategy_utils.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "include/common/utils/comm_manager.h"
@@ -661,7 +662,7 @@ OperatorInfoPtr PipelineTransformer::CreateOpInfo(const CNodePtr &cnode, int tup
     MS_LOG_WITH_NODE(EXCEPTION, temp_node) << "Node: " << temp_node->DebugString() << " is not a Pipeline Care Node.";
   }
   if (IsPrimitiveCNode(temp_node, prim::kPrimVirtualDataset)) {
-    SetVirtualDatasetStrategy(temp_node);
+    StrategyUtils::SetVirtualDatasetStrategy(temp_node);
   }
 
   auto prim = GetValueNode<PrimitivePtr>(temp_node->input(0));

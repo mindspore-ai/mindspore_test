@@ -39,6 +39,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/step_auto_parallel.h"
 #include "frontend/parallel/parameter_manager.h"
+#include "frontend/parallel/strategy_utils.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
@@ -527,22 +528,6 @@ bool ModifySoftmaxReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const Fun
   return true;
 }
 
-static bool CheckExtractInformation(const CNodePtr &cnode) {
-  if ((cnode == nullptr) || !IsValueNode<Primitive>(cnode->input(0))) {
-    return false;
-  }
-
-  ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
-  PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
-  if ((prim->name() == MAKE_TUPLE) || (prim->name() == MAKE_LIST) || (prim->name() == RECEIVE)) {
-    return false;
-  }
-  if (!IsParallelCareNode(cnode)) {
-    return false;
-  }
-  return true;
-}
-
 void InitRefMap(const FuncGraphPtr &root) {
   auto manager = root->manager();
   auto node_list = TopoSort(root->get_return());
@@ -745,7 +730,7 @@ void ExtractGraphInformation(const std::vector<AnfNodePtr> &all_nodes) {
   SetStridedSliceSplitStrategy(all_nodes);
   for (auto &node : all_nodes) {
     auto cnode = node->cast<CNodePtr>();
-    if (!CheckExtractInformation(cnode) || IsPrimitiveCNode(node, prim::kPrimSend) ||
+    if (!StrategyUtils::CheckExtractInformation(cnode) || IsPrimitiveCNode(node, prim::kPrimSend) ||
         IsPrimitiveCNode(node, std::make_shared<Primitive>("PadV3")) ||
         IsPrimitiveCNode(node, std::make_shared<Primitive>("StridedSlice")) ||
         IsPrimitiveCNode(node, std::make_shared<Primitive>("Sort")) ||
@@ -754,7 +739,7 @@ void ExtractGraphInformation(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
 
-    SetVirtualDatasetStrategy(cnode);
+    StrategyUtils::SetVirtualDatasetStrategy(cnode);
     ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
 

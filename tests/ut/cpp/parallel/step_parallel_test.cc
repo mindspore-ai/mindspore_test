@@ -20,6 +20,8 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "frontend/parallel/parallel_processor.h"
+#include "frontend/parallel/parallel_preprocessor.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "common/py_func_graph_fetcher.h"
 #include "include/common/debug/draw.h"
@@ -415,7 +417,7 @@ TEST_F(TestStepParallel, DISABLED_ExtractInformation) {
   FuncGraphPtr graph = *graphs.begin();
   auto ret = graph->get_return();
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
-  ExtractInformation(all_nodes);
+  ParallelPreprocessor::ExtractInformation(all_nodes);
 }
 
 /// Feature: test ExtractInformation in auto parallel.
@@ -427,7 +429,7 @@ TEST_F(TestStepParallel, ExtractInformation2) {
   FuncGraphPtr graph = *graphs.begin();
   auto ret = graph->get_return();
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
-  EXPECT_THROW({ ExtractInformation(all_nodes); }, std::runtime_error);
+  EXPECT_THROW({ ParallelPreprocessor::ExtractInformation(all_nodes); }, std::runtime_error);
 }
 
 /// Feature: test ExtractInformation in auto parallel.
@@ -439,7 +441,7 @@ TEST_F(TestStepParallel, ExtractInformation3) {
   FuncGraphPtr graph = *graphs.begin();
   auto ret = graph->get_return();
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
-  EXPECT_THROW({ ExtractInformation(all_nodes); }, std::runtime_error);
+  EXPECT_THROW({ ParallelPreprocessor::ExtractInformation(all_nodes); }, std::runtime_error);
 }
 
 /// Feature: test ForwardCommunication.
@@ -464,7 +466,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication1) {
   FuncGraphPtr graph = *graphs.begin();
   auto ret = graph->get_return();
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
-  ExtractInformation(all_nodes);
+  ParallelPreprocessor::ExtractInformation(all_nodes);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
       continue;
@@ -473,7 +475,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication1) {
     FuncGraphPtr func_graph = node->func_graph();
     PrimitivePtr prim = cnode->input(0)->cast<ValueNodePtr>()->value()->cast<PrimitivePtr>();
     if (prim->name() == "MatMul") {
-      ForwardCommunication(op_list, cnode);
+      ParallelProcessor::ForwardCommunication(op_list, cnode);
     }
   }
   AnfNodeSet after_nodes = manager->all_nodes();
@@ -506,7 +508,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication2) {
   FuncGraphPtr graph = *graphs.begin();
   auto ret = graph->get_return();
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
-  ExtractInformation(all_nodes);
+  ParallelPreprocessor::ExtractInformation(all_nodes);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
       continue;
@@ -516,7 +518,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication2) {
     func_graph->set_manager(nullptr);
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0));
     if (prim->name() == "MatMul") {
-      EXPECT_THROW({ ForwardCommunication(op_list, cnode); }, std::runtime_error);
+      EXPECT_THROW({ ParallelProcessor::ForwardCommunication(op_list, cnode); }, std::runtime_error);
       break;
     }
   }
@@ -532,7 +534,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication3) {
   FuncGraphPtr graph = *graphs.begin();
   auto ret = graph->get_return();
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
-  ExtractInformation(all_nodes);
+  ParallelPreprocessor::ExtractInformation(all_nodes);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
       continue;
@@ -546,7 +548,7 @@ TEST_F(TestStepParallel, DISABLED_ForwardCommunication3) {
       OperatorArgs args = std::make_pair(attrs, operator_param);
       Operator op = std::make_pair("ABC", args);
       OperatorVector op_list = {op};
-      EXPECT_THROW({ ForwardCommunication(op_list, cnode); }, std::runtime_error);
+      EXPECT_THROW({ ParallelProcessor::ForwardCommunication(op_list, cnode); }, std::runtime_error);
       break;
     }
   }
@@ -583,7 +585,7 @@ TEST_F(TestStepParallel, DISABLED_GetTensorInLayout) {
   node1->set_user_data<OperatorInfo>(matmul_info);
   TensorLayout tensorlayout_e;
   Shape array = {64, 64};
-  TensorLayout tensorlayout = GetTensorInLayout(node1, {-1});
+  TensorLayout tensorlayout = ParallelProcessor::GetTensorInLayout(node1, {-1});
   Shape tensor_shape_test = tensorlayout.tensor_shape().array();
   ASSERT_EQ(array, tensor_shape_test);
 }
