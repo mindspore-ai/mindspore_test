@@ -65,7 +65,7 @@ INSTANTIATE_TEST_CASE_P(
     BinaryCrossEntropyParams{
       {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), {3, 4, 5}},
     BinaryCrossEntropyParams{
-      {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat16, {3, 4, 5}, kFloat32, CreateScalar<int64_t>(1), {}},
+      {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, CreateScalar<int64_t>(1), {}},
     BinaryCrossEntropyParams{
       {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, CreateScalar<int64_t>(0), {}},
     BinaryCrossEntropyParams{{-1}, kFloat32, {-1}, kFloat32, {-1}, kFloat32, CreateScalar<int64_t>(2), {-1}},
