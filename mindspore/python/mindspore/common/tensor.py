@@ -1681,12 +1681,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.acos()
 
-    def cos(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.cos`.
-        """
-        return tensor_operator_registry.get('cos')(self)
-
     def cov(self, *, correction=1, fweights=None, aweights=None):
         r"""
         For details, please refer to :func:`mindspore.ops.cov`.
@@ -1716,12 +1710,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Alias for :func:`mindspore.Tensor.abs`.
         """
         return self.abs()
-
-    def ceil(self):
-        """
-        For details, please refer to :func:`mindspore.ops.ceil`.
-        """
-        return tensor_operator_registry.get('ceil')(self)
 
     def floor(self):
         """
@@ -2863,12 +2851,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('minimum')(self, other)
 
-    def clamp(self, min=None, max=None):
-        r"""
-        For details, please refer to :func:`mindspore.ops.clamp`.
-        """
-        return tensor_operator_registry.get('clamp')(self, min, max)
-
     def clamp_(self, min=None, max=None):
         r"""
         Clamps tensor values between the specified minimum value and maximum value.
@@ -2927,12 +2909,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             [ 5. 11.  6. 20.]]
         """
         return tensor_operator_registry.get('clamp_')(self, min, max)
-
-    def clip(self, min=None, max=None):
-        r"""
-        Alias for :func:`mindspore.Tensor.clamp`.
-        """
-        return self.clamp(min, max)
 
     def init_data(self, slice_index=None, shape=None, opt_shard_group=None):
         """

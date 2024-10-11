@@ -1,0 +1,6 @@
+ceil:
+  op_yaml: ceil_op.yaml
+  py_method: tensor_ceil
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

@@ -288,7 +288,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"fill_diagonal", std::string("fill_diagonal")},                    // P.FillDiagonal()
        {"uniform", std::string("uniform")},                                // P.UniformExt()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
-       {"clip", std::string("clamp")},                                     // clamp()
        {"__bool__", std::string("tensor_bool")},                           // C.tensor_bool
        {"argmin", std::string("argmin")},                                  // P.Argmax()
        {"resize", std::string("resize")},                                  // P.Reshape()
@@ -339,7 +338,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"exp", std::string("exp")},                                        // P.Exp()
        {"repeat", std::string("repeat")},                                  // C.repeat_elements
        {"bernoulli", std::string("bernoulli")},                            // P.Bernoulli()
-       {"ceil", std::string("ceil")},                                      // P.Ceil
        {"floor", std::string("floor")},                                    // P.floor
        {"floor_divide", std::string("floor_divide")},                      // floor_divide
        {"flip", std::string("flip")},                                      // flip
@@ -381,7 +379,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"topk", std::string("topk")},                                      // P.TopK()
        {"top_k", std::string("top_k")},                                    // P.TopK()
        {"isfinite", std::string("isfinite")},                              // P.isfinite()
-       {"cos", std::string("cos")},                                        // cos()
        {"cov", std::string("cov")},                                        // cov()
        {"acos", std::string("acos")},                                      // acos()
        {"arccos", std::string("acos")},                                    // acos()
