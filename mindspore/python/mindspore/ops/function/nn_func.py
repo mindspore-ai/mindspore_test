@@ -29,7 +29,6 @@ import mindspore.common.dtype as mstype
 from mindspore.ops.function.math_func import logsumexp
 from mindspore.ops.function.random_func import _get_seed, _set_prim_op_user_data
 from mindspore.common.tensor import Tensor
-from mindspore.common.parameter import Parameter
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
@@ -8498,8 +8497,6 @@ def embedding(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, sca
           [ 5.49015924e-02,  3.47811311e-01, -1.89771220e-01],
           [ 2.09307984e-01, -2.24846993e-02,  3.40124398e-01]]]
     """
-    if not isinstance(weight, Parameter):
-        raise TypeError(f"For Embedding, the weight must be a mindspore.Parameter, but got {type(weight)}.")
     return embedding_op(input, weight, padding_idx, max_norm, norm_type, scale_grad_by_freq)
 
 
