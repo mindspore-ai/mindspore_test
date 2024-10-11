@@ -104,6 +104,15 @@ SymbolPtr StridedSlice::GetSlicingLengthForPositiveStrides(IntSymbolPtr start, I
     end = Emit(std::make_shared<ScalarAdd>(end, x_dim))->as_sptr<IntSymbol>();
   } else if (!end->is_greater_equal(0)) {
     // the "end" may be positive or negative, so the result length is unknown.
+    if (start->EqualsTo(kSym0) && strides->EqualsTo(kSym1) && x_dim->remainder() == 0 && end->remainder() == 0) {
+      // in this special case, the divisor can be set for output symbol.
+      auto ret = GenVInt()->as_sptr<IntSymbol>();
+      auto x_div = x_dim->HasData() ? x_dim->value() : x_dim->divisor();
+      auto d = std::gcd(x_div, end->divisor());
+      ret->SetDivisorRemainder(d, 0);
+      MS_LOG(DEBUG) << "Set divisor " << d << " to " << ret->ToString();
+      return ret;
+    }
     return GenVInt();
   }
   end = Emit(std::make_shared<ScalarMin>(end, x_dim))->as_sptr<IntSymbol>();
