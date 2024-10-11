@@ -30,6 +30,7 @@ REGISTER_ACL_OP(UpsampleNearest3d).set_run_mode(false);
 REGISTER_ACL_OP(CheckValid).set_run_mode(false);
 REGISTER_ACL_OP(SpaceToDepth).set_run_mode(false);
 REGISTER_ACL_OP(Renorm).set_run_mode(false);
+REGISTER_ACL_OP(NLLLoss).set_run_mode(false);
 
 REGISTER_ACL_OP(HistogramFixedWidth).set_extra_supported_datatype({ge::DT_DOUBLE});
 
