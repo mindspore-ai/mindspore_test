@@ -29,6 +29,7 @@ from ops_def_cc_generator import OpsDefCcGenerator
 from ops_primitive_h_generator import OpsPrimitiveHGenerator
 from lite_ops_cpp_generator import LiteOpsCcGenerator, LiteOpsHGenerator
 from ops_name_h_generator import OpsNameHGenerator
+from functional_map_cpp_generator import FunctionalMapCppGenerator
 
 from op_proto import OpProto
 from tensor_func_proto import load_func_protos_from_yaml
@@ -134,6 +135,10 @@ def gen_tensor_func_code(work_path, func_protos):
     generator = TensorFuncRegCppGenerator()
     generator.generate(work_path, func_protos)
 
+def gen_functional_map_code(work_path, func_protos):
+    generator = FunctionalMapCppGenerator()
+    generator.generate(work_path, func_protos)
+
 
 def main():
     current_path = os.path.dirname(os.path.realpath(__file__))
@@ -168,6 +173,8 @@ def main():
     generate_aclnn_reg_file(work_path, op_protos)
     # generate tensor_py func code
     gen_tensor_func_code(work_path, func_protos)
+    # generate functional map code
+    gen_functional_map_code(work_path, func_protos)
 
 
 def load_ops_yaml_to_op_protos(ops_yaml_data):

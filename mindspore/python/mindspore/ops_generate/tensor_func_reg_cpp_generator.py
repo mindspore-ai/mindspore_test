@@ -57,10 +57,16 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '  return py::none();\n'
             '}'
         )
-        self.aclnn_return_template = Template(
+        self.pyboost_return_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
             'return ToPython(Tensor${class_name}Register::GetOp()(arg_list));\n'
+        )
+        self.callback_python_template = Template(
+            'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
+            'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
+            'py::object res = fn(*arg_list);\n'
+            'return res;\n'
         )
 
         self.TENSOR_FUNC_CC_REG = template.TENSOR_FUNC_CC_REG
@@ -314,27 +320,17 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         Returns:
             str: Generated device dispatcher string.
         """
-        callback_python_template = Template(
-            'MS_LOG(INFO) << "${info}";\n'
-            'py::function fn = python_adapter::GetPyFn(\"${python_module}\", \"${python_func}\");\n'
-            'py::object res = fn(*arg_list);\n'
-            'return res;\n'
-        )
-        if getattr(func_proto, device) == 'aclnn':
+        func_proto_device = getattr(func_proto, device)
+        if func_proto_device == 'pyboost':
             arg_handler_processor_str = self._get_arg_handler_processor(func_proto)
-            return self.aclnn_return_template.replace(arg_handler_processor=arg_handler_processor_str,
-                                                      class_name=func_proto.op_proto.op_class.name)
+            return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
+                                                        class_name=func_proto.op_proto.op_class.name)
 
-        python_module_and_func = getattr(func_proto, device)
-        if '.' not in python_module_and_func:
-            return (f'MS_LOG(ERROR) << "Callback python module and func is: {python_module_and_func}";\n'
-                    f'return py::none();')
-        last_doc_index = python_module_and_func.rindex('.')
-        python_module = python_module_and_func[:last_doc_index]
-        python_func = python_module_and_func[last_doc_index + 1:]
-        return callback_python_template.replace(info=python_module_and_func,
-                                                python_module=python_module,
-                                                python_func=python_func)
+        if func_proto_device == 'py_method':
+            return self.callback_python_template.replace(py_method=func_proto.py_method)
+
+        raise TypeError("Only support pyboost or python_method.")
+
 
     def _get_arg_handler_processor(self, func_proto):
         """

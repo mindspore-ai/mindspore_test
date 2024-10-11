@@ -419,3 +419,7 @@ UPDATE_OUTPUT_SHAPE_AND_SIZE = """
 TUPLE_TENSOR_NOT_SUPPORTED = Template("""
     It is not supported for ${op_name} with tuple[tensor] inputs when using auto generate.
     Please provide a KernelMod name in yaml and using python gen_aclnn_implement.py -n xx manually.""")
+
+FUNCTIONAL_MAP_CPP_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./mindspore/ccsrc/pipeline/pynative/op_function/template/functional_map_h.tpl'))

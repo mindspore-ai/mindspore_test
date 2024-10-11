@@ -1,5 +1,6 @@
 argmax:
-    op_name: argmax_ext
-    Ascend: aclnn
-    CPU: python
-    GPU: python
+  op_yaml: argmax_ext_op.yaml
+  py_method: tensor_argmax
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method

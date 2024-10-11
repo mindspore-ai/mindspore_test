@@ -1,5 +1,6 @@
 mean:
-    op_name: mean_ext
-    Ascend: aclnn
-    CPU: mindspore.ops.function.math_func.mean
-    GPU: mindspore.ops.function.math_func.mean
+  op_yaml: mean_ext_op.yaml
+  py_method: tensor_mean
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method

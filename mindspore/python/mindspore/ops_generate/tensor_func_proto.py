@@ -21,12 +21,17 @@ class TensorFuncProto:
     """
     Represents a tensor function prototype with associated function name, operation prototype, and target devices.
     """
+
     def __init__(self,
                  func_name,
                  op_proto,
-                 ascend, gpu, cpu):
+                 py_method,
+                 ascend,
+                 gpu,
+                 cpu):
         self.func_name = func_name
         self.op_proto = op_proto
+        self.py_method = py_method
         self.ascend = ascend
         self.gpu = gpu
         self.cpu = cpu
@@ -43,17 +48,32 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos):
     for func_name, tensor_func_data in tensor_func_yaml_data.items():
         func_data_list = [tensor_func_data] if isinstance(tensor_func_data, dict) else tensor_func_data
         for func_data in func_data_list:
-            op_name = func_data.get('op_name', '')
-            if op_name == '':
-                raise TypeError('For generating tensor functions, op name should not be empty')
+            op_name = _get_op_name_from_op_yaml(func_data)
             op_proto = op_protos_dict.get(op_name, None)
             if op_proto is None:
                 raise TypeError("For generating tensor functions, op_proto should not be empty")
+            py_method = func_data.get('py_method', '')
+            if py_method == '':
+                raise TypeError('For generating tensor functions, py method should not be empty')
             ascend = func_data.get('Ascend', 'aclnn')
             gpu = func_data.get('GPU', 'aclnn')
             cpu = func_data.get('CPU', 'aclnn')
             tensor_func_proto = TensorFuncProto(func_name=func_name,
                                                 op_proto=op_proto,
-                                                ascend=ascend, gpu=gpu, cpu=cpu)
+                                                py_method=py_method,
+                                                ascend=ascend,
+                                                gpu=gpu,
+                                                cpu=cpu)
             func_protos[func_name].append(tensor_func_proto)
     return func_protos
+
+
+def _get_op_name_from_op_yaml(func_data: dict) -> str:
+    """Extracts the operation name from the given YAML function data."""
+    op_yaml = func_data.get('op_yaml', '')
+    if op_yaml == '':
+        raise TypeError('For generating tensor functions, op yaml should not be empty')
+    op_name = op_yaml.replace('_op.yaml', '')
+    if op_name == '':
+        raise TypeError('For generating tensor functions, op name should not be empty')
+    return op_name

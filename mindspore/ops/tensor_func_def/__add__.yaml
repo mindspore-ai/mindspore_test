@@ -1,5 +1,6 @@
 __add__:
-    op_name: add
-    Ascend: aclnn
-    CPU: python
-    GPU: python
+  op_yaml: add_ext_op.yaml
+  py_method: tensor_add
+  Ascend: pyboost
+  CPU: py_method
+  GPU: py_method
