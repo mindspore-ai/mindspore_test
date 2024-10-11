@@ -26,6 +26,12 @@ mindspore.nn.GELU
           :math:`0.5 * x * (1 + tanh(\sqrt(2 / \pi) * (x + 0.044715 * x^3)))` ，
 
           否则为： :math:`x * P(X <= x) = 0.5 * x * (1 + erf(x / \sqrt(2)))`，其中P(X) ~ N(0, 1) 。
+    
+    .. note::
+        在计算gelu的输入梯度时，当输入为inf，Ascend与GPU在反向传播输出之间存在差异。
+        当输入x为-inf时，Ascend的计算结果为0，GPU的计算结果为nan。
+        当输入x为inf时，Ascend的计算结果为梯度dy，GPU的计算结果为nan。
+        数学意义上，Ascend的计算结果精度更高。
 
     输入：
         - **x** (Tensor) - 用于计算GELU的Tensor。数据类型为float16、float32或float64。shape是 :math:`(N,*)` ， :math:`*` 表示任意的附加维度数。
