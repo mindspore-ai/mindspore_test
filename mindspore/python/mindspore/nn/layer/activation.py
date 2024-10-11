@@ -974,6 +974,13 @@ class GELU(Cell):
     Outputs:
         Tensor, with the same type and shape as the `x`.
 
+    Note:
+        when calculating the input gradient of GELU with an input value of infinity, there are differences
+        in the output of the backward between ``Ascend`` and ``GPU``.
+        when x is -inf, the computation result of ``Ascend`` is 0, and the computation result of ``GPU`` is Nan.
+        when x is inf, the computation result of ``Ascend`` is dy, and the computation result of ``GPU`` is Nan.
+        In mathematical terms, the result of Ascend has higher precision.
+
     Raises:
         TypeError: If dtype of `x` is not one of float16, float32, or float64.
 
