@@ -37,13 +37,15 @@ class TensorFuncProto:
         self.cpu = cpu
 
 
-def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos):
+def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_protos):
     """
     Loads tensor function prototypes from YAML data and returns them as a dictionary.
     """
     op_protos_dict = {}
     for op_proto in op_protos:
         op_protos_dict[op_proto.op_name] = op_proto
+    for deprecated_op_proto in deprecated_op_protos:
+        op_protos_dict[deprecated_op_proto.op_name] = deprecated_op_proto
     func_protos = defaultdict(list)
     for func_name, tensor_func_data in tensor_func_yaml_data.items():
         func_data_list = [tensor_func_data] if isinstance(tensor_func_data, dict) else tensor_func_data
@@ -73,7 +75,10 @@ def _get_op_name_from_op_yaml(func_data: dict) -> str:
     op_yaml = func_data.get('op_yaml', '')
     if op_yaml == '':
         raise TypeError('For generating tensor functions, op yaml should not be empty')
-    op_name = op_yaml.replace('_op.yaml', '')
+    if 'deprecated' in op_yaml:
+        op_name = op_yaml.replace('/', '_').replace('_op.yaml', '')
+    else:
+        op_name = op_yaml.replace('_op.yaml', '')
     if op_name == '':
         raise TypeError('For generating tensor functions, op name should not be empty')
     return op_name

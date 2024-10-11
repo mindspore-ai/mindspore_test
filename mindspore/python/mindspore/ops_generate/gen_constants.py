@@ -62,6 +62,7 @@ CC_LICENSE = f"""/**
 OP_DEF_AUTO_GENERATE_PATH = "op_def/auto_generate"
 MS_OP_DEF_AUTO_GENERATE_PATH = "mindspore/ops/op_def/auto_generate"
 MS_OP_DEF_YAML_PATH = "mindspore/ops/op_def/yaml"
+MS_OP_DEPRECATED_DEF_YAML_PATH = "mindspore/ops/op_def/deprecated"
 MS_TENSOR_YAML_PATH = "mindspore/ops/tensor_func_def"
 PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"

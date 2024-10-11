@@ -151,6 +151,9 @@ class PyboostFunctionsGenerator(BaseGenerator):
         op_set = set()
         for _, tensor_func_protos in tensor_func_protos_data.items():
             for func_proto in tensor_func_protos:
+                # deprecated op should not be registered
+                if 'deprecated' in func_proto.op_proto.op_name:
+                    continue
                 op_set.add((func_proto.op_proto.op_class.name, func_proto.op_proto.op_name))
         for op in op_set:
             class_name, op_name = op

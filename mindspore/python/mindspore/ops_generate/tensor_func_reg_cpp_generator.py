@@ -192,6 +192,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         overload_tensor_func_header_body_str = ''
         for tensor_proto in func_protos:
+            if 'deprecated' in tensor_proto.op_proto.op_name:
+                continue
             overload_tensor_func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
                 class_name=tensor_proto.op_proto.op_class.name)
         return overload_tensor_func_header_body_str
@@ -330,7 +332,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             return self.callback_python_template.replace(py_method=func_proto.py_method)
 
         raise TypeError("Only support pyboost or python_method.")
-
 
     def _get_arg_handler_processor(self, func_proto):
         """

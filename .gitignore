@@ -118,6 +118,7 @@ mindspore/lite/test/do_test/
 # auto gen code files
 auto_generate/
 mindspore/python/mindspore/ops_generate/ops.yaml
+mindspore/python/mindspore/ops_generate/deprecated_ops.yaml
 mindspore/python/mindspore/ops_generate/ops_doc.yaml
 mindspore/python/mindspore/ops_generate/tensor_func.yaml
 mindspore/python/mindspore/ops_generate/inner_ops.yaml

@@ -14,10 +14,14 @@
 # ============================================================================
 """Tensor method for overload."""
 
+from mindspore.ops import operations as P
+from mindspore.ops import functional as F
+from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.auto_generate import add
 from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar
 from mindspore.ops.function.math_func import mean
 from mindspore.ops.function.array_func import argmax
+from mindspore.ops.function.array_func import max as max_func
 
 
 def tensor_clamp_tensor(input, min=None, max=None):
@@ -38,3 +42,15 @@ def tensor_argmax(input, dim=None, keepdim=False):
 
 def tensor_add(input, other, alpha=1):
     return add(input, other)
+
+
+def tensor_max(input, axis=None, keepdims=False, initial=None, where=None, return_indices=False):
+    if isinstance(axis, (list, tuple)):
+        reduce_max = P.ReduceMax
+        maximum = F.maximum
+        return utils.reduce_(input, reduce_max(keepdims), cmp_fn=maximum, axis=axis, keepdims=keepdims,
+                             initial=initial, where=where)
+    values, indices = max_func(input, axis, keepdims, initial=initial, where=where)
+    if not return_indices:
+        return values
+    return values, indices

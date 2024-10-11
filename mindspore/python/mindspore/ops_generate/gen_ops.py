@@ -135,6 +135,7 @@ def gen_tensor_func_code(work_path, func_protos):
     generator = TensorFuncRegCppGenerator()
     generator.generate(work_path, func_protos)
 
+
 def gen_functional_map_code(work_path, func_protos):
     generator = FunctionalMapCppGenerator()
     generator.generate(work_path, func_protos)
@@ -145,7 +146,7 @@ def main():
     work_path = os.path.join(current_path, '../../../../')
 
     # merge ops yaml
-    doc_yaml_path, ops_yaml_path, tensor_yaml_path = merge_ops_yaml(work_path)
+    doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path = merge_ops_yaml(work_path)
 
     # make auto_generate dir
     cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
@@ -157,9 +158,12 @@ def main():
     # read ops definition str and doc str
     ops_yaml_dict = safe_load_yaml(ops_yaml_path)
     doc_yaml_dict = safe_load_yaml(doc_yaml_path)
+    deprecated_ops_yaml_dict = safe_load_yaml(deprecated_ops_yaml_path)
     tensor_yaml_dict = safe_load_yaml(tensor_yaml_path)
+
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
-    func_protos = load_func_protos_from_yaml(tensor_yaml_dict, op_protos)
+    deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
+    func_protos = load_func_protos_from_yaml(tensor_yaml_dict, op_protos, deprecated_op_protos)
 
     # generate ops python files
     generate_ops_py_files(work_path, op_protos, doc_yaml_dict, "gen")
@@ -177,20 +181,19 @@ def main():
     gen_functional_map_code(work_path, func_protos)
 
 
-def load_ops_yaml_to_op_protos(ops_yaml_data):
-    """
-    Converts YAML operator data to OpProto objects.
-
-    Args:
-        ops_yaml_data (dict): YAML data containing operator definitions.
-
-    Returns:
-        List[OpProto]: A list of OpProto objects created from the YAML data.
-    """
 def load_op_protos_from_ops_yaml(ops_yaml_data):
     op_protos = []
     for operator_name, operator_data in ops_yaml_data.items():
         op_proto = OpProto.load_from_yaml(operator_name, operator_data)
+        op_protos.append(op_proto)
+    return op_protos
+
+
+def load_deprecated_op_protos_from_ops_yaml(ops_yaml_data):
+    op_protos = []
+    for operator_name, operator_data in ops_yaml_data.items():
+        op_proto = OpProto.load_from_yaml(operator_name, operator_data)
+        op_proto.op_name = 'deprecated_' + operator_name
         op_protos.append(op_proto)
     return op_protos
 
@@ -215,11 +218,15 @@ def merge_ops_yaml(work_path):
     doc_yaml_dir_path = os.path.join(ops_yaml_dir_path, "doc")
     merge_files(doc_yaml_dir_path, doc_yaml_path, '*doc.yaml')
 
-    tensor_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor.yaml')
+    tensor_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_func.yaml')
     tensor_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_YAML_PATH)
     merge_files(tensor_yaml_dir_path, tensor_yaml_path, '*.yaml')
 
-    return doc_yaml_path, ops_yaml_path, tensor_yaml_path
+    deprecated_ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'deprecated_ops.yaml')
+    deprecated_ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEPRECATED_DEF_YAML_PATH)
+    merge_files(deprecated_ops_yaml_dir_path, deprecated_ops_yaml_path, '*_op.yaml')
+
+    return doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path
 
 
 if __name__ == "__main__":
@@ -228,3 +235,4 @@ if __name__ == "__main__":
     # pylint: disable=broad-except
     except Exception as e:
         logging.critical("Auto generate failed, err info: %s", e)
+        raise e
