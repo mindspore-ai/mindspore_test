@@ -51,4 +51,18 @@ def test_get_param_list_when_first_dim_sharded_3():
     first_dim_sharded_device_index = 0
     rank = 5
     ret = _get_param_list_when_first_dim_sharded(device_arrange, first_dim_sharded_device_index, rank)
-    assert ret == [1, 3, 5, 7]
+    assert ret == [0, 1, 2, 3, 4, 5, 6, 7]
+
+
+def test_get_param_list_when_first_dim_sharded_4():
+    """
+    Feature: test _get_param_list_when_first_dim_sharded.
+    Description: 8 rank, first dim sharded 2 with device arrangement index 0.
+    Expectation: Correct param list.
+    """
+    device_arrange = [64, 8]
+    first_dim_sharded_device_index = 1
+    rank = 19
+    ret = _get_param_list_when_first_dim_sharded(device_arrange, first_dim_sharded_device_index, rank)
+
+    assert ret == [16, 17, 18, 19, 20, 21, 22, 23]

@@ -548,16 +548,14 @@ def _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple):
 
 def _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_sharded_device_index, rank):
     """Calculate rank list for optimizer parallel when first dim of parameter is sharded by other parallel method"""
+    total_device_num = 1
+    for n in device_arrangement:
+        total_device_num *= n
+    if first_dim_sharded_device_index != len(device_arrangement) - 1:
+        return list(range(0, total_device_num))
     first_dim_sharded_size = device_arrangement[-1 - first_dim_sharded_device_index]
-    param_total_list = []
-    sharded_stride = 1
-    for n in device_arrangement[::-1][:first_dim_sharded_device_index]:
-        sharded_stride *= n
-    repeate_num = 1
-    for n in device_arrangement[::-1][first_dim_sharded_device_index + 1:]:
-        repeate_num *= n
-    offset = rank % (first_dim_sharded_size * sharded_stride) // sharded_stride * sharded_stride
-    for i in range(0, repeate_num):
-        start = first_dim_sharded_size * sharded_stride * i + offset
-        param_total_list.extend(range(start, start + sharded_stride))
+    range_size = total_device_num // first_dim_sharded_size
+    offset = rank % range_size
+    start = rank - offset
+    param_total_list = list(range(start, start + range_size))
     return param_total_list
