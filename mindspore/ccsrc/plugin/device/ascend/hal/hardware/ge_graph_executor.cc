@@ -776,6 +776,7 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
     ++ge_index;
   }
 
+  std::set<uint32_t> inputs_index;
   std::vector<std::pair<uint32_t, uint32_t>> kg_io_indexes;
   for (auto in_out_index : io_indexes) {
     if (in_out_index.first >= graph_inputs.size() || in_out_index.second >= graph_outputs.size()) {
@@ -787,12 +788,12 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
     session::AnfWithOutIndex origin_node = std::make_pair(graph_inputs[in_out_index.first], 0);
     session::AnfWithOutIndex final_node = graph_outputs[in_out_index.second];
     if (origin_node.first == final_node.first) {
-      if (origin_node.first->isa<Parameter>() &&
-          common::AnfAlgo::IsParameterWeight(origin_node.first->cast<ParameterPtr>())) {
+      if (inputs_index.find(in_out_index.first) == inputs_index.end()) {
         kg_io_indexes.emplace_back(
           std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
-        MS_LOG(INFO) << "The origin node is same as final node, node: " << origin_node.first->fullname_with_scope();
+        inputs_index.insert(in_out_index.first);
       }
+      MS_LOG(INFO) << "The origin node is same as final node, node: " << origin_node.first->fullname_with_scope();
       continue;
     }
 
@@ -810,8 +811,12 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
     }
 
     ref_out_in_map.emplace(final_node, origin_node);
-    kg_io_indexes.emplace_back(
-      std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
+    if (inputs_index.find(in_out_index.first) == inputs_index.end()) {
+      kg_io_indexes.emplace_back(
+        std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
+      inputs_index.insert(in_out_index.first);
+    }
+
     MS_LOG(INFO) << "Convert io_index [" << in_out_index.first << ", " << in_out_index.second
                  << "] to ref_out_in_map, final_node: " << final_node.first->fullname_with_scope()
                  << ", index:" << final_node.second << ", origin_node: " << origin_node.first->fullname_with_scope()
