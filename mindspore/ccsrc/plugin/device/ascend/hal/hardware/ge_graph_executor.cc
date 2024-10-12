@@ -600,8 +600,9 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
   std::map<std::string, ShapeVector> origin_shape;
   const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
   auto name = GetGraphName(graph);
+  auto init_compile_cache = compile_cache_context.init_compile_cache();
   bool has_cache = CacheFileExists(name);
-  if (use_compile_cache && has_cache) {
+  if (use_compile_cache && init_compile_cache && has_cache) {
     MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
     if (!BuildFakeGraph(graph)) {
       return false;
@@ -846,7 +847,10 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
     auto &compile_cache_context = CompileCacheContext::GetInstance();
     auto use_compile_cache = compile_cache_context.UseCompileCache();
-    if (use_compile_cache) {
+    auto init_compile_cache = compile_cache_context.init_compile_cache();
+    auto name = GetGraphName(graph);
+    bool has_cache = CacheFileExists(name);
+    if (use_compile_cache && init_compile_cache && has_cache) {
       MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
 
       if (!BuildFakeGraph(kg)) {
