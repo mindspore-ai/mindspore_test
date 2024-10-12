@@ -3015,11 +3015,18 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                 dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
                 dst_device_num = dst_stage_device_num * dst_stage_num
                 processes = []
+                activate_processes = 0
                 for rank in range(0, dst_device_num):
                     p = Process(target=_load_parallel_checkpoint, args=(
                         unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank))
                     p.start()
                     processes.append(p)
+                    activate_processes += 1
+                    max_processes = 64
+                    if activate_processes >= max_processes:
+                        p = processes.pop(0)
+                        p.join()
+                        activate_processes -= 1
                 for p in processes:
                     p.join()
         return
