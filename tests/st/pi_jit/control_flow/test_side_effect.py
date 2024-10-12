@@ -1,17 +1,18 @@
-
-#Copyright 2023 Huawei Technologies Co., Ltd
-#Licensed under the Apache License, Version 2.0 (the "License");
-#you may not use this file except in compliance with the License.
-#You may obtain a copy of the License at
-#http://www.apache.org/licenses/LICENSE-2.0
-#Unless required by applicable law or agreed to in writing, software
-#distributed under the License is distributed on an "AS IS" BASIS,
-#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#See the License for the specific language governing permissions and
-#limitations under the License.
-#============================================================================
+# Copyright 2023 Huawei Technologies Co., Ltd
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
 
 ''' test resolve of side effect in pijit , by break_count_ judge is support side effect handing'''
+
+from dataclasses import dataclass
 import pytest
 from mindspore import jit, Tensor, context, ops
 from mindspore.nn import Cell, ReLU
@@ -22,6 +23,22 @@ import types
 import numpy
 from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_executed_by_graph_mode
+
+
+def assert_no_graph_break(func, call_count: int = None):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    if call_count is not None:
+        assert jcr['code']['call_count_'] == call_count
+
+
+def assert_graph_break(func, break_count: int = 1):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == break_count
 
 
 class NetAssign0002(Cell):
@@ -42,10 +59,12 @@ def test_store_subscr_side_effect_1():
     Description: wipe out graph_break in store subscr has args
     Expectation: no exception
     """
+
     def func(x):
         x[0] = Tensor([1, 2])
         x[1] = Tensor([1, 2])
         return x
+
     jit(function=func, capture_mode="bytecode")([Tensor([1]), Tensor([1])])
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
@@ -65,10 +84,12 @@ def test_store_subscr_side_effect_2():
     Description: wipe out graph_break in store subscr no args
     Expectation: no exception
     """
+
     def func():
         x = [Tensor([1]), Tensor([1])]
         x[0] = Tensor([1, 2])
         return x
+
     jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
@@ -82,9 +103,11 @@ def test_del_subscr_side_effect_3():
     Description: wipe out graph_break in store subscr no args
     Expectation: no exception
     """
+
     def func(arg):
         del arg[0]
         return arg
+
     jit(function=func, capture_mode="bytecode")([Tensor([1]), Tensor([1])])
     jcr = get_code_extra(func)
     new_code = jcr["code"]["compiled_code_"]
@@ -104,10 +127,12 @@ def test_dict_pop_side_effect_4():
     Description: wipe out graph_break in dict pop no args
     Expectation: no exception
     """
+
     def func():
         d = {"a": Tensor([1, 2]), "b": Tensor([1, 2])}
         d.pop("b")
         return d
+
     jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
@@ -121,9 +146,11 @@ def test_dict_pop_side_effect_5():
     Description: wipe out graph_break in dict pop as args
     Expectation: no exception
     """
+
     def func(d):
         d.pop("b")
         return d
+
     jit(function=func, capture_mode="bytecode")({"a": Tensor([1, 2]), "b": Tensor([1, 2])})
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
@@ -137,11 +164,13 @@ def test_store_global_side_effect_6():
     Description: wipe out graph_break in store global no args
     Expectation: no exception
     """
+
     def func():
         global tmp
         tmp = Tensor([1])
         tmp *= 2
         return tmp
+
     jit(function=func, capture_mode="bytecode")()
     jcr = get_code_extra(func)
     context.set_context(mode=context.PYNATIVE_MODE)
@@ -155,6 +184,7 @@ def test_del_global_side_effect_7():
     Description: wipe out graph_break in dict pop no args
     Expectation: NameError
     """
+
     def func():
         global tmp
         tmp = Tensor([1])
@@ -175,6 +205,7 @@ def test_fix_bug_store_subscr_side_effect_1():
     Description: wipe out graph_break in store subscr has args
     Expectation: no exception
     """
+
     def func(net):
         x = [Tensor([1, 2]), Tensor([2, 3])]
         y = Tensor([5, 6])
@@ -198,17 +229,18 @@ def test_modify_mix1(test_optimize):
     Description: Test list append, list set item, dict set item
     Expectation: No exception
     """
+
     def func(arg):
         x = []
         y = {}
         y['z'] = 1  # not need track, same as `y = {'z' : 1}`
-        x.append(y) # not need track, same as `x = [y]`
+        x.append(y)  # not need track, same as `x = [y]`
         y['x'] = x  # must be record, y is referenced by x
-        x.append(y) # must be record, x is referenced by y
+        x.append(y)  # must be record, x is referenced by y
         y['y'] = y  # must be record, make dict can't do this
         res = arg + x[-1]['z']
         if test_optimize:
-            return res # no side_effect
+            return res  # no side_effect
         return y, res
 
     excepted = func(Tensor([1]))
@@ -224,6 +256,7 @@ def test_modify_mix2():
     Description: Test dict.pop, delete dict item
     Expectation: No exception
     """
+
     def func(x):
         x['a'] = 0
         y = {}
@@ -232,7 +265,7 @@ def test_modify_mix2():
         del x['remove']
         return res
 
-    x1 = {'param' : Tensor([1]), 'remove' : 1}
+    x1 = {'param': Tensor([1]), 'remove': 1}
     x2 = {**x1}
     excepted = func(x1)
     result = jit(function=func, capture_mode="bytecode")(x2)
@@ -280,12 +313,13 @@ def test_object_consistency():
     Description: Test the modification of same object from multiple source
     Expectation: No exception
     """
+
     @jit(capture_mode="bytecode")
     def object_consistency(x, y):
         x.f = y.get
         y.test = x
         y.list.append(1)
-        test = x.y.test.f() # recognize x.y is y
+        test = x.y.test.f()  # recognize x.y is y
         x.y.list[0] = 0
         return test
 
@@ -309,6 +343,7 @@ def test_object_consistency2():
     Description: Test the modification of same object from multiple source
     Expectation: No exception
     """
+
     @jit(capture_mode="bytecode")
     def func(x, y):
         x.append(1)
@@ -336,6 +371,7 @@ def test_tensor_assign(assign_fn):
     Description: Test side-effect rollback. Test side-effect restore
     Expectation: No exception
     """
+
     @jit(capture_mode="bytecode")
     def func(x, y, assign, rand):
         a = x + y
@@ -407,6 +443,7 @@ def test_subgraph_side_effect_of_dict():
     Description: Test dict set item
     Expectation: No exception
     """
+
     def fn2(d: dict):
         d['x'] *= 2
         return d['x'] + 1
@@ -445,6 +482,7 @@ class Net1(mindspore.nn.Cell):
     def update_memory(self):
         self.memory = self.memory + 1
         return self.memory
+
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_subgraph_side_effect_of_store_attr():
@@ -488,6 +526,7 @@ class Net2(mindspore.nn.Cell):
         self.memory_b = self.memory_b * 2
         return self.memory_a
 
+
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_side_effect_of_store_attr_in_deep_subgraph():
     """
@@ -519,6 +558,7 @@ class Net3(mindspore.nn.Cell):
     def construct(self, x: Tensor):
         y = self.net(x)
         return x + y
+
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_side_effect_of_store_attr_in_nested_cell():
@@ -586,6 +626,7 @@ def test_list_setitem():
     Description: Test list setitem
     Expectation: No exception
     """
+
     def fn(x: Tensor, axis: int):
         lst = [1] * len(x.shape)
         lst[axis + 1] = -1
@@ -610,6 +651,7 @@ def test_list_setitem_by_inplace_add():
     Description: Test list setitem by inplace operation
     Expectation: No exception
     """
+
     def fn(lst: list, i: int, x: Tensor):
         lst[i - 1] += ops.abs(x)
         return lst
@@ -639,6 +681,7 @@ def test_list_setitem_in_subgraph():
     Description: Test list setitem
     Expectation: No exception
     """
+
     def fn2(lst: list):
         lst[0] *= 2
         return lst[0] + 2
@@ -672,6 +715,7 @@ def test_tensor_setitem_by_slice():
     Description: Test Tensor setitem by slice
     Expectation: No exception
     """
+
     def fn(x: Tensor, indices: tuple, y: int):
         x[:, indices] = y
         return x
@@ -726,3 +770,210 @@ def test_graph_reusing_for_store_int_attr_outside_of_jit():
         else:
             assert jcr['phase_'] == phase  # reusing the first graph
         assert jcr['call_count_'] == (i + 1)
+
+
+class Net6(mindspore.nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.a = None
+
+    def construct(self, x: Tensor):
+        i = self.inner(x)
+        return ops.mul(x, i)
+
+    def inner(self, x: Tensor):
+        self.a = self.create_tuple(x)
+        return len(self.a)
+
+    def create_tuple(self, x: Tensor):
+        return ops.add(x, 1), ops.sub(x, 1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_return_const_value_and_has_tuple_side_effect():
+    """
+    Feature: Side-effect handle
+    Description: 1.subgraph has side effect and side effect node is a tuple; 2.subgraph return const value.
+    Expectation: No exception
+    """
+    net1 = Net6()
+    x = Tensor([1, 2, 3])
+    o1 = net1(x)
+
+    net2 = Net6()
+    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = net2(x)
+
+    match_array(o1, o2)
+    assert type(net1.a) is tuple and type(net2.a) is tuple
+    assert len(net1.a) == 2 and len(net2.a) == 2
+    match_array(net1.a[0], net2.a[0])
+    match_array(net1.a[1], net2.a[1])
+    assert_no_graph_break(net2.construct)
+
+
+@dataclass
+class MyData:
+    id: int
+    tensor: Tensor
+
+
+class Net7(mindspore.nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.a = None
+
+    def construct(self, x: Tensor):
+        data = self.inner(x)
+        print('graph break', end='')
+        return data.id * data.tensor
+
+    def inner(self, x: Tensor):
+        self.a, b = self.create_tuple(x)
+        return MyData(len(b), b)
+
+    def create_tuple(self, x: Tensor):
+        return ops.add(x, 1), ops.sub(x, 1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_return_user_defined_class_and_has_side_effect():
+    """
+    Feature: Side-effect handle
+    Description: 1.subgraph has side effect; 2.subgraph return user defined class.
+    Expectation: No exception
+    """
+    net1 = Net7()
+    x = Tensor([1, 2, 3])
+    o1 = net1(x)
+
+    net2 = Net7()
+    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = net2(x)
+
+    match_array(o1, o2)
+    match_array(net1.a, net2.a)
+    assert_graph_break(net2.construct)
+
+
+class Net8(mindspore.nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.a = 0
+
+    def construct(self, x: Tensor):
+        x = ops.add(x, 1)
+        y = self.inner(x)
+        return x + y
+
+    def inner(self, x: Tensor):
+        a, b = self.create_tuple(x)
+        self.a += a  # because of subgraph break, should reset the side-effect operation in subgraph
+        print('graph break', end='')
+        return b * 2
+
+    def create_tuple(self, x: Tensor):
+        return ops.add(x, 1), ops.sub(x, 1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_and_reset_side_effect_node_1():
+    """
+    Feature: Side-effect handle
+    Description: 1.subgraph has side effect; 2.subgraph has graph break.
+    Expectation: No exception
+    """
+    net1 = Net8()
+    x = Tensor([1, 2, 3])
+    o1 = net1(x)
+
+    net2 = Net8()
+    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = net2(x)
+
+    match_array(o1, o2)
+    match_array(net1.a, net2.a)
+    assert_graph_break(net2.construct)
+
+
+class Net9(mindspore.nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.a = 0
+
+    def construct(self, x: Tensor):
+        x = ops.add(x, 1)
+        y = self.inner(x)
+        return x + y
+
+    def inner(self, x: Tensor):
+        self.a += ops.add(x, 1)  # because of subgraph break, should reset the side-effect operation in subgraph
+        b = ops.sub(x, 1)
+        print('graph break', end='')
+        return b * 2
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_and_reset_side_effect_node_2():
+    """
+    Feature: Side-effect handle
+    Description: 1.subgraph has side effect; 2.subgraph has graph break.
+    Expectation: No exception
+    """
+    net1 = Net9()
+    x = Tensor([1, 2, 3])
+    o1 = net1(x)
+
+    net2 = Net9()
+    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = net2(x)
+
+    match_array(o1, o2)
+    match_array(net1.a, net2.a)
+    assert_graph_break(net2.construct)
+
+
+class Net10(mindspore.nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.a = 0
+
+    def construct(self, x: Tensor):
+        self.a += x
+        x = ops.add(x, 1)
+        y = self.inner(x)
+        return x + y
+
+    def inner(self, x: Tensor):
+        self.a += ops.add(x, 1)  # because of subgraph break, should reset the side-effect operation in subgraph
+        b = self.inner_with_side_effect_1(x)
+        print('graph break', end='')
+        return b * 2
+
+    def inner_with_side_effect_1(self, x: Tensor):
+        self.a += x  # because of subgraph break, should reset the side-effect operation in subgraph
+        return self.inner_with_side_effect_2(x)
+
+    def inner_with_side_effect_2(self, x: Tensor):
+        self.a += (2 * x)  # because of subgraph break, should reset the side-effect operation in subgraph
+        return ops.sub(x, 1)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_break_and_reset_side_effect_node_3():
+    """
+    Feature: Side-effect handle
+    Description: 1.subgraph has side effect; 2.subgraph has graph break.
+    Expectation: No exception
+    """
+    net1 = Net10()
+    x = Tensor([1, 2, 3])
+    o1 = net1(x)
+
+    net2 = Net10()
+    net2.construct = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = net2(x)
+
+    match_array(o1, o2)
+    match_array(net1.a, net2.a)
+    assert_graph_break(net2.construct)

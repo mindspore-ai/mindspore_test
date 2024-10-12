@@ -911,6 +911,10 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   auto sequence = abstract->cast<abstract::AbstractSequencePtr>();
   auto func_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_)->FGBuilder();
   auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
+  if (graph_node == nullptr) {
+    MS_LOG(DEBUG) << "Cannot find anf node of sequence: " << node->ToString();
+    return node;
+  }
   auto func_graph = func_graph_builder->graph(true);
   bool is_tuple = abstract->isa<abstract::AbstractTuple>();
   auto mutated_node = graph_->NewValueNode(nullptr, is_tuple ? BUILD_TUPLE : BUILD_LIST, sequence->size(), {});
