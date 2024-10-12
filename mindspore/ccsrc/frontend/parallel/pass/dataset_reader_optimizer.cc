@@ -336,7 +336,8 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (ms_context == nullptr) {
     return;
   }
-  if (ms_context->get_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL) == 0) {
+  auto opt_level = ms_context->get_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL);
+  if (opt_level == 0) {
     return;
   }
   if (graph == nullptr) {
@@ -381,6 +382,15 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
     (void)opt_shard_comm_list.emplace_back(all_gather_cnode);
   }
   if (opt_shard_comm_list.empty()) {
+    return;
+  }
+  if (opt_level == 2) {
+    for (const auto &opt_shard_comm : opt_shard_comm_list) {
+      std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), opt_shard_comm->input(1), broadcast_op};
+      auto depend_node = graph->NewCNode(depend_inputs);
+      depend_node->set_abstract(opt_shard_comm->input(1)->abstract()->Clone());
+      (void)manager->Replace(opt_shard_comm->input(1), depend_node);
+    }
     return;
   }
   std::vector<AnfNodePtr> make_tuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
