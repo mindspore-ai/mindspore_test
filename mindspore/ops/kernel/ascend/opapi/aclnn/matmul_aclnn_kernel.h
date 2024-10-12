@@ -37,6 +37,7 @@ class MMAclnnKernelMod : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
+  int8_t cube_math_type_;
   std::pair<KernelTensor *, bool> input_a_;
   std::pair<KernelTensor *, bool> input_b_;
 };
@@ -52,6 +53,8 @@ class MMExtAclnnKernelMod : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+
+  int8_t cube_math_type_;
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -34,6 +34,7 @@ void ConvolutionGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &
   transposed_ = transform::ConvertKernelTensor<bool>(inputs[kIndex7]);
   output_padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex8]);
   groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
+  cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32());
   const auto &output_mask_vec = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex10]);
   output_mask_.clear();
   std::transform(output_mask_vec.begin(), output_mask_vec.end(), std::back_inserter(output_mask_),
@@ -43,8 +44,8 @@ void ConvolutionGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &
   bias_size_ = {dout_shape[1]};
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], bias_size_, stride_, padding_, dilation_,
-                        transposed_, output_padding_, groups_, output_mask_, OpApiUtil::GetCubeMathType(),
-                        outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
+                        transposed_, output_padding_, groups_, output_mask_, cube_math_type_, outputs[kIndex0],
+                        outputs[kIndex1], outputs[kIndex2]);
 }
 
 bool ConvolutionGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
@@ -52,7 +53,7 @@ bool ConvolutionGradAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], bias_size_, stride_, padding_,
-        dilation_, transposed_, output_padding_, groups_, output_mask_, OpApiUtil::GetCubeMathType(), outputs[kIndex0],
+        dilation_, transposed_, output_padding_, groups_, output_mask_, cube_math_type_, outputs[kIndex0],
         outputs[kIndex1], outputs[kIndex2]);
   return true;
 }

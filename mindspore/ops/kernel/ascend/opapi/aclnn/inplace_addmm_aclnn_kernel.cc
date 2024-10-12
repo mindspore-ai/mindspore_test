@@ -24,8 +24,9 @@ namespace kernel {
 
 void InplaceAddmmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
+  cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowMatmulHF32());
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-                        OpApiUtil::GetCubeMathType());
+                        cube_math_type_);
 }
 
 bool InplaceAddmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
@@ -33,7 +34,7 @@ bool InplaceAddmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &input
                                         const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-        OpApiUtil::GetCubeMathType());
+        cube_math_type_);
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(InplaceAddmm, InplaceAddmmAclnnKernelMod);

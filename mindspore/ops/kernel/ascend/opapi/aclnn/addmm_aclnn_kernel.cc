@@ -76,8 +76,9 @@ void AddmmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
       MS_LOG(EXCEPTION) << "Addmm alpha only support bool, float32, float64 and int64, but got "
                         << TypeIdToString(alpha_dtype_id);
   }
+  cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowMatmulHF32());
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], beta_, alpha_, outputs[kIndex0],
-                        OpApiUtil::GetCubeMathType());
+                        cube_math_type_);
 }
 
 bool AddmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
@@ -85,7 +86,7 @@ bool AddmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], beta_, alpha_, outputs[kIndex0],
-        OpApiUtil::GetCubeMathType());
+        cube_math_type_);
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(Addmm, AddmmAclnnKernelMod);

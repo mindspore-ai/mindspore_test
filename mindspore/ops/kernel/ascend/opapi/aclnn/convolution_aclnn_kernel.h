@@ -38,6 +38,7 @@ class ConvolutionAscend : public AclnnKernelMod {
   std::vector<int64_t> padding_;
   std::vector<int64_t> dilation_;
   int64_t groups_{0};
+  int8_t cube_math_type_{0};
   bool transposed_{false};
   std::vector<int64_t> output_padding_;
 };

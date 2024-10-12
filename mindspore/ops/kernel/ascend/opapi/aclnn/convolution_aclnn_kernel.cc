@@ -34,16 +34,17 @@ void ConvolutionAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inpu
   transposed_ = transform::ConvertKernelTensor<bool>(inputs[kIndex6]);
   output_padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex7]);
   groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex8]);
+  cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32());
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, padding_, dilation_, transposed_,
-                        output_padding_, groups_, outputs[kIndex0], OpApiUtil::GetCubeMathType());
+                        output_padding_, groups_, outputs[kIndex0], cube_math_type_);
 }
 
 bool ConvolutionAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, padding_, dilation_,
-        transposed_, output_padding_, groups_, outputs[kIndex0], OpApiUtil::GetCubeMathType());
+        transposed_, output_padding_, groups_, outputs[kIndex0], cube_math_type_);
   return true;
 }
 

@@ -52,6 +52,10 @@ static const std::unordered_map<std::string, aclCubeMathType> kCubeMathType = {
 static const std::unordered_map<uint8_t, aclCubeMathType> kSelectMoreMathType = {
   {0b01, KEEP_DTYPE}, {0b00, FORCE_FP16}, {0b11, FORCE_HF32}, {0b10, ALLOW_FP32_DOWN_PRECISION}};
 
+static const std::unordered_map<std::string, bool> kMatmulEnableHf32 = {{"", false}, {"0", false}, {"1", true}};
+
+static const std::unordered_map<std::string, bool> kConvEnableHf32 = {{"", true}, {"0", false}, {"1", true}};
+
 std::mutex set_opt_mutex;
 
 aclError SetCompileopt(aclCompileOpt opt, const char *value) { return CALL_ASCEND_API(aclSetCompileopt, opt, value); }
@@ -72,6 +76,28 @@ void *GetAclFunc(const std::string &lib_path, const std::string &func_name) {
   }
   return func;
 }
+
+bool IsMatmulHf32Enable() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto allow_matmul_hf32 = ms_context->get_param<std::string>(MS_CTX_MATMUL_ALLOW_HF32);
+  auto iter = kMatmulEnableHf32.find(allow_matmul_hf32);
+  if (iter == kMatmulEnableHf32.end()) {
+    MS_LOG(EXCEPTION) << "Unexpected env MS_CTX_MATMUL_ALLOW_HF32, which is " << allow_matmul_hf32;
+  }
+  return iter->second;
+}
+
+bool IsConvHf32Enable() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto allow_conv_hf32 = ms_context->get_param<std::string>(MS_CTX_CONV_ALLOW_HF32);
+  auto iter = kConvEnableHf32.find(allow_conv_hf32);
+  if (iter == kConvEnableHf32.end()) {
+    MS_LOG(EXCEPTION) << "Unexpected env MS_CTX_CONV_ALLOW_HF32, which is " << allow_conv_hf32;
+  }
+  return iter->second;
+}
 }  // namespace
 
 aclCubeMathType OpApiUtil::GetCubeMathType(bool use_hf32) {
@@ -90,6 +116,16 @@ aclCubeMathType OpApiUtil::GetCubeMathType(bool use_hf32) {
     return kSelectMoreMathType.at(select_mode);
   }
   return AclUtil::KeepOriginDType() ? KEEP_DTYPE : ALLOW_FP32_DOWN_PRECISION;
+}
+
+bool OpApiUtil::IsAllowMatmulHF32() {
+  static bool is_allow_matmul_hf32 = IsMatmulHf32Enable();
+  return is_allow_matmul_hf32;
+}
+
+bool OpApiUtil::IsAllowConvHF32() {
+  static bool is_allow_conv_hf32 = IsConvHf32Enable();
+  return is_allow_conv_hf32;
 }
 
 void OpApiUtil::GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std::string> *input_formats,

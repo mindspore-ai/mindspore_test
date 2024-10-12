@@ -79,7 +79,7 @@ tensor::BaseTensorPtr BatchMatMulAscendCustomize(const std::shared_ptr<OpRunner>
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
     // cubeMathType: 0 - KEEP_DTYPE, 1 - ALLOW_FP32_DOWN_PRECISION
-    auto cube_math_type = GetCubeMathType();
+    auto cube_math_type = GetCubeMathType(IsAllowMatmulHF32());
     LAUNCH_ACLNN(aclnnMatmul, device_context, op->stream_id(), input_tensor_, mat2_tensor_, outputs[0], cube_math_type);
     MS_LOG(DEBUG) << "Run device task BatchMatMul end";
   }));
