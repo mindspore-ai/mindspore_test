@@ -38,7 +38,7 @@ struct LiteKernelArgs {
 class SingleOpInferSession : public InferSession {
  public:
   SingleOpInferSession() = default;
-  ~SingleOpInferSession() override = default;
+  ~SingleOpInferSession() override;
   Status Init(const std::shared_ptr<Context> &context, const ConfigInfos &config_info = {}) override;
   Status AscendInit(const std::shared_ptr<Context> &context);
   static void AscendFinalize();
@@ -70,6 +70,7 @@ class SingleOpInferSession : public InferSession {
   Status InitInputOutputData(const std::vector<tensor::Tensor> &inputs, std::vector<tensor::Tensor> *outputs);
   Status InitVariableWeights(const std::vector<std::shared_ptr<tensor::Tensor>> &weights,
                              std::vector<kernel::KernelTensor *> *kernel_weights);
+  void DestoryKernelTensor(LiteKernelArgs args);
 
   std::vector<MutableTensorImplPtr> inputs_;
   std::vector<std::string> input_names_;

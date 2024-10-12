@@ -153,6 +153,23 @@ void SingleOpInferSession::SetCustomAscendOpAttrs(const kernel::BaseOperatorPtr 
   }
 }
 
+void SingleOpInferSession::DestoryKernelTensor(LiteKernelArgs args) {
+  for (auto input : args.inputs) {
+    if (input != nullptr) {
+      delete input;
+    }
+  }
+  args.inputs.clear();
+  for (auto output : args.outputs) {
+    if (output != nullptr) {
+      delete output;
+    }
+  }
+  args.outputs.clear();
+}
+
+SingleOpInferSession::~SingleOpInferSession() { DestoryKernelTensor(kernel_args_); }
+
 std::tuple<kernel::KernelModPtr, LiteKernelArgs> SingleOpInferSession::BuildCustomAscendKernelImpl(
   const CNodePtr &cnode) {
   auto kernel_name = lite::kNameCustomAscend;
@@ -200,7 +217,7 @@ std::tuple<kernel::KernelModPtr, LiteKernelArgs> SingleOpInferSession::BuildCust
   }
   for (size_t i = 0; i < outputs.size(); i++) {
     auto &output = outputs[i];
-    auto kernel_tensor = new (std::nothrow) kernel::KernelTensor();
+    kernel::KernelTensor *kernel_tensor = nullptr;
     auto it = kernel_tensor_map.find(output);
     if (it != kernel_tensor_map.end()) {  // use input as output
       kernel_tensor = it->second;
@@ -215,14 +232,17 @@ std::tuple<kernel::KernelModPtr, LiteKernelArgs> SingleOpInferSession::BuildCust
   auto ret = kernel_mod->Init(op->GetPrim(), args.inputs, args.outputs);
   MS_LOG(INFO) << "SingleOpInferSession::Kernels ret " << ret;
   if (!ret) {
+    DestoryKernelTensor(args);
     MS_LOG(ERROR) << "kernel init failed " << kernel_name;
     return std::make_tuple(nullptr, LiteKernelArgs{});
   }
   if (is_multi_model_sharing_mem_prepare_) {
+    DestoryKernelTensor(args);
     MS_LOG(INFO) << "is multi model sharing mem prepare";
     return std::make_tuple(nullptr, LiteKernelArgs{});
   }
   if (args.inputs.size() > 0) {
+    delete args.inputs.back();
     args.inputs.pop_back();
   }
   return std::make_tuple(kernel_mod, args);

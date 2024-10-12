@@ -394,6 +394,7 @@ bool ModelProcess::InitInputsBuffer() {
       aclFormat input_format = CALL_ASCEND_API(aclmdlGetInputFormat, model_desc_, i);
       aclTensorDesc *desc = CALL_ASCEND_API(aclCreateTensorDesc, data_type, dims.dimCount, dims.dims, input_format);
       ret = CALL_ASCEND_API(aclmdlSetDatasetTensorDesc, inputs_, desc, i);
+      (void)CALL_ASCEND_API(aclDestroyTensorDesc, desc);
       if (ret != ACL_ERROR_NONE) {
         MS_LOG(ERROR) << "aclmdlSetDatasetTensorDesc failed, ret = " << ret;
         return false;
@@ -861,7 +862,8 @@ bool ModelProcess::ResizeDynamicInputShape(const std::vector<ShapeVector> &new_s
 
     aclTensorDesc *input_desc =
       CALL_ASCEND_API(aclCreateTensorDesc, ACL_FLOAT, new_shapes[i].size(), &new_shapes[i][0], ACL_FORMAT_NCHW);
-    auto ret = aclmdlSetDatasetTensorDesc(inputs_, input_desc, i);
+    auto ret = CALL_ASCEND_API(aclmdlSetDatasetTensorDesc, inputs_, input_desc, i);
+    (void)CALL_ASCEND_API(aclDestroyTensorDesc, input_desc);
     input_infos_[i].dynamic_acl_tensor_desc = input_desc;
     if (ret != ACL_ERROR_NONE) {
       MS_LOG(ERROR) << "Acl set dataset tensor desc failed";
@@ -896,6 +898,7 @@ bool ModelProcess::ResizeDynamicInputShapeRange(const std::vector<ShapeVector> &
     aclTensorDesc *input_desc =
       CALL_ASCEND_API(aclCreateTensorDesc, ACL_FLOAT, new_shapes[i].size(), &new_shapes[i][0], ACL_FORMAT_NCHW);
     auto ret = CALL_ASCEND_API(aclmdlSetDatasetTensorDesc, inputs_, input_desc, i);
+    (void)CALL_ASCEND_API(aclDestroyTensorDesc, input_desc);
     if (ret != ACL_ERROR_NONE) {
       MS_LOG(ERROR) << "Acl set dataset tensor desc failed";
       return false;
@@ -1463,6 +1466,7 @@ bool ModelProcess::InitUpdateWeightBuffer(const std::vector<KernelTensor *> &ker
     aclFormat input_format = CALL_ASCEND_API(aclmdlGetInputFormat, model_weight_desc_, i);
     aclTensorDesc *desc = CALL_ASCEND_API(aclCreateTensorDesc, data_type, shape.size(), shape.data(), input_format);
     acl_ret = CALL_ASCEND_API(aclmdlSetDatasetTensorDesc, weight_inputs_, desc, i);
+    (void)CALL_ASCEND_API(aclDestroyTensorDesc, desc);
     if (acl_ret != ACL_ERROR_NONE) {
       MS_LOG(ERROR) << "aclmdlSetDatasetTensorDesc failed, ret = " << acl_ret << "!";
       return false;
