@@ -360,5 +360,6 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
 #endif
 #endif
 }
+void DebugActor::Finalize() { DumpJsonParser::GetInstance().PrintUnusedKernel(); }
 }  // namespace runtime
 }  // namespace mindspore

@@ -75,6 +75,9 @@ class DebugActor : public ActorBase {
   static inline uint64_t current_step{1};
 
  private:
+  // Print unused Kernel.
+  void Finalize() override;
+
   // class members
   uint32_t exec_order_ = 0;
   int step_count_ = 0;
