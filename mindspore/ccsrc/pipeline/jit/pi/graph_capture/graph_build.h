@@ -394,6 +394,10 @@ class MindGraphBuilder : public GraphBuilder {
   py::object HandleMSCallable(CallNode *call_node, const py::object &callable_info, const py::object &original_callable,
                               StopTraceReason *stop_reason);
 
+  // Collect side effect nodes that need to be returned from current graph.
+  void CollectSideEffectOutputs();
+  // Roll back the side effect nodes generated in current graph (and all its subgraphs).
+  void RollbackSideEffectRecords();
   FuncGraphPtr BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder, const std::vector<ValueNode *> &args,
                                  CallNode *call_node);
   bool FGAddOutput(bool is_top_graph);

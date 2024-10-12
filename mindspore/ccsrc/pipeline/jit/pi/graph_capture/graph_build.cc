@@ -21,6 +21,7 @@
 #include <vector>
 #include <utility>
 #include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include "pipeline/jit/pi/runtime.h"
 #include "pipeline/jit/pi/graph_capture/loop_unrolling.h"
@@ -1869,7 +1870,11 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
     MS_LOG(WARNING) << "Set Unknown Reason to " << instr.ToString() << " at bci " << cur_bci_;
   }
 
-  if (instr.op() == RETURN_VALUE || !infer_succ) {
+  if (instr.op() == RETURN_VALUE) {
+    return false;
+  }
+  if (!infer_succ) {
+    MS_LOG(INFO) << "Function " << graph_->GetCodeName() << " break graph at: " << instr.ToString();
     return false;
   }
 
@@ -2662,10 +2667,13 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
   MS_LOG(INFO) << "new subgraph->TraceRun end: " << py::str(func);
 
   call_node->SetSubGraph(sg->GetGraph());
+  sg->CollectSideEffectOutputs();
   auto sub_ret = sg->GetGraph()->GetRetVal();
   if (sub_ret == nullptr) {
     MS_LOG(INFO) << "Subgraph ret value is NULL!";
-  } else if (!CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject())) {
+    sg->RollbackSideEffectRecords();
+  } else if (!CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject()) && sg->side_effect_outputs_.empty()) {
+    // If there are side effect outputs, we need to build sub-graph and add these nodes as graph outputs.
     MS_LOG(INFO) << "Subgraph ret value is const type, will not build subgraph";
     call_node->SetVobj(sub_ret->GetVobj());
     auto ret_wrapper = FGBuilder()->AddLocalVariable(sub_ret->GetVobj()->GetPyObject());
@@ -2679,6 +2687,7 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
 
     const FuncGraphPtr &sub_graph = BuildSubFuncGraph(sg, args, call_node);
     if (sub_graph == nullptr) {
+      sg->RollbackSideEffectRecords();
       return StopTraceReason::kTrace_Fail;
     }
     auto callable_obj = GetPyObject(call_node->input(0));
@@ -2690,6 +2699,44 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
     graph_->GuardInlinedFunc(call_node);
   }
   return reason;
+}
+
+void MindGraphBuilder::CollectSideEffectOutputs() {
+  const auto &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
+  std::copy_if(side_effect_nodes.begin(), side_effect_nodes.end(), std::back_inserter(side_effect_outputs_),
+               [this](ValueNode *node) { return node->GetGraph() == graph_; });
+}
+
+namespace {
+void CollectAllSubGraphs(Graph *cur_graph, std::unordered_set<Graph *> *graphs) {
+  for (auto node : cur_graph->GetTracedNodes()) {
+    if (node->GetType() == ValueNode::Call) {
+      auto call_node = static_cast<CallNode *>(node);
+      if (call_node->GetSubGraph() != nullptr) {
+        graphs->insert(call_node->GetSubGraph());
+        CollectAllSubGraphs(call_node->GetSubGraph(), graphs);
+      }
+    }
+  }
+}
+}  // namespace
+
+void MindGraphBuilder::RollbackSideEffectRecords() {
+  if (side_effect_outputs_.empty()) {
+    return;
+  }
+  std::unordered_set<Graph *> graphs{graph_};
+  CollectAllSubGraphs(graph_, &graphs);
+
+  std::set<ValueNode *> new_side_effect_nodes;
+  for (const auto &pair : graph_->GetSideEffect()->nodes()) {
+    ValueNode *node = pair.first;
+    // Exclude the side-effect nodes generated in current graph (and all its subgraphs).
+    if (graphs.find(node->GetGraph()) == graphs.end()) {
+      new_side_effect_nodes.insert(node);
+    }
+  }
+  graph_->GetSideEffect()->ResetRecord(new_side_effect_nodes);
 }
 
 FuncGraphPtr MindGraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder,
@@ -4245,7 +4292,7 @@ bool MindGraphBuilder::FGAddOutput(bool is_top_graph) {
   }
   ValueNode *ret = GetGraph()->GetRetVal();
   if (FGBuilder()->AddOutput(ret->abstract_wrapper(), is_top_graph)) {
-    MS_LOG(INFO) << "Add output success for value node: " << ret->ToString();
+    MS_LOG(DEBUG) << "Add output success for value node: " << ret->ToString();
   } else {
     MS_LOG(INFO) << "Add output fail for value node: " << ret->ToString();
     return false;
@@ -4264,22 +4311,10 @@ bool MindGraphBuilder::FGAddOutput(bool is_top_graph) {
 }
 
 bool MindGraphBuilder::FGAddSideEffectOutput(bool is_top_graph) {
-  const std::set<ValueNode *> &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
-  for (ValueNode *node : side_effect_nodes) {
-    if (node->GetGraph() != graph_) {
-      continue;  // This side effect node wasn't created by current graph, skip it.
-    }
-    if (!node->has_abstract_wrapper()) {
-      MS_LOG(INFO) << "Side effect node doesn't have abstract wrapper! " << node->ToString();
-      return false;
-    }
-    side_effect_outputs_.push_back(node);
-  }
-
   for (ValueNode *node : side_effect_outputs_) {
     bool succ = FGBuilder()->AddOutput(node->abstract_wrapper(), is_top_graph);
     if (succ) {
-      MS_LOG(INFO) << "Add side effect output success: " << node->ToString();
+      MS_LOG(DEBUG) << "Add side effect output success: " << node->ToString();
     } else {
       MS_LOG(INFO) << "Add side effect output failed: " << node->ToString();
       return false;
