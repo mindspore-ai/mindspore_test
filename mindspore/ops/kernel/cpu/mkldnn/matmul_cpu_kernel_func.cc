@@ -92,7 +92,14 @@ int MatMulCpuKernelFunc::Resize(const std::vector<KernelTensor *> &inputs, const
     dim_k = a_shape[rank - 1];
   }
 
-  dims src_dims, weights_dims, bias_dims, dst_dims, a_strides, b_strides, o_strides, bias_strides;
+  dims src_dims;
+  dims weights_dims;
+  dims bias_dims;
+  dims dst_dims;
+  dims a_strides;
+  dims b_strides;
+  dims o_strides;
+  dims bias_strides;
   if (batch > 1) {
     src_dims = {batch, dim_m, dim_k};
     weights_dims = {batch, dim_k, dim_n};

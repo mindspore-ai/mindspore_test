@@ -83,6 +83,10 @@ int AdaptiveAvgPool3DGradCPUKernelMod::Resize(const std::vector<KernelTensor *> 
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the dimensions of the 2st input shape should be 1, but got "
                       << input_shape_size;
   }
+  if (SizeToLong(input_1_shape_size) != orig_input_shape_dim_sizes_[0]) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the dimensions of the 1st input shape should be equal to "
+                      << orig_input_shape_dim_sizes_[0] << ", but got " << input_1_shape_size;
+  }
   grad_input_dim_sizes_ = outputs.at(kIndex0)->GetDeviceShapeVector();
   return KRET_OK;
 }

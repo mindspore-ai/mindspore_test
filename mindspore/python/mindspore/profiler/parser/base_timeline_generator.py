@@ -91,7 +91,7 @@ class BaseTimelineGenerator:
     _framework_dir = "FRAMEWORK"
     _op_range_name = "op_range_{}"
 
-    __col_names__ = ['op_name', 'stream_id', 'start_time', 'duration']
+    _col_names = ['op_name', 'stream_id', 'start_time', 'duration']
 
     def __init__(self, device_target, model):
         self._tid_dict = {

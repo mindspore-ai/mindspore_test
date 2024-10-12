@@ -109,6 +109,7 @@ class FillInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
                           const std::vector<AbstractBasePtr> &input_args) const override {
+    MS_EXCEPTION_IF_NULL(primitive);
     std::vector<size_t> inputsIndex{kIndex0, kIndex1, kIndex2};
     if (input_args.size() == kIndex2) {
       inputsIndex[kIndex1] = kIndex0;
@@ -123,7 +124,6 @@ class FillInfer : public abstract::OpInferBase {
     if (input_args[inputsIndex[kIndex1]]->GetType()->object_type() != kObjectTypeTensorType) {
       MS_EXCEPTION(TypeError) << "For '" << prim_name << "', input[1] must be tensor.";
     }
-    MS_EXCEPTION_IF_NULL(primitive);
     const uint32_t kInputDims = 1;
     auto shape_arg = input_args[inputsIndex[1]];
     MS_EXCEPTION_IF_NULL(shape_arg);

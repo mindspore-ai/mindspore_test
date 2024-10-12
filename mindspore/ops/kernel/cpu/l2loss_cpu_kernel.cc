@@ -50,6 +50,8 @@ bool L2LossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
                                       const std::vector<kernel::KernelTensor *> &outputs) {
   T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
   T *result_addr = GetDeviceAddress<T>(outputs, kIndex0);
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(result_addr);
   *result_addr = static_cast<T>(0);
   if (tensor_size_ == 0) {
     MS_LOG(WARNING) << kernel_name_ << " input shape contain 0, input_shape: " << input_shape_;

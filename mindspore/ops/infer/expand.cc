@@ -94,8 +94,8 @@ std::vector<int64_t> ExpandInferOutShape(std::vector<int64_t> output_shape, std:
 }
 
 abstract::ShapePtr ExpandInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  auto prim_name = primitive->name();
   MS_EXCEPTION_IF_NULL(primitive);
+  auto prim_name = primitive->name();
   auto x_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape())[kShape];
   auto shape_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[1]->GetShape())[kShape];
   if (IsDynamicRank(x_shape) || IsDynamicRank(shape_shape)) {

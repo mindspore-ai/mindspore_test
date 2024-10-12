@@ -137,7 +137,8 @@ class PadV3GradHelperGpuKernel : public GpuKernelHelperBase {
     mode_ = attr_ptr_->mode;
 
     for (int64_t i = kMaxPadDim; i > 0; --i) {
-      int64_t before, after;
+      int64_t before;
+      int64_t after;
       if (i > SizeToLong(paddings_switched_.size()) / kPaddingSize) {
         before = 0;
         after = 0;
