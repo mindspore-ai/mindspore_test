@@ -3,29 +3,6 @@ include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
 
-set(ASCEND_RPATH ${ASCEND_RPATH}:/usr/local/Ascend/nnae/latest/lib64)
-set(ASCEND_RPATH ${ASCEND_RPATH}:/usr/local/Ascend/ascend-toolkit/latest/lib64)
-set(ASCEND_RPATH ${ASCEND_RPATH}:/usr/local/Ascend/latest/lib64)
-set(ASCEND_RPATH ${ASCEND_RPATH}:/usr/local/Ascend/nnae/latest/lib64/plugin/opskernel/)
-set(ASCEND_RPATH ${ASCEND_RPATH}:/usr/local/Ascend/latest/lib64/plugin/opskernel/)
-set(ASCEND_RPATH ${ASCEND_RPATH}:/usr/local/Ascend/ascend-toolkit/latest/lib64/plugin/opskernel)
-if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
-    set(ASCEND_RPATH
-${ASCEND_RPATH}:/usr/local/Ascend/nnae/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/x86_64)
-    set(ASCEND_RPATH
-${ASCEND_RPATH}:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/x86_64)
-    set(ASCEND_RPATH
-${ASCEND_RPATH}:/usr/local/Ascend/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/x86_64)
-else()
-    set(ASCEND_RPATH
-${ASCEND_RPATH}:/usr/local/Ascend/nnae/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64)
-    set(ASCEND_RPATH
-${ASCEND_RPATH}:/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64)
-    set(ASCEND_RPATH
-${ASCEND_RPATH}:/usr/local/Ascend/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64)
-endif()
-
-
 ### check dvm binary file ###
 set(DVM_LIB)
 if(ENABLE_DVM)
@@ -105,7 +82,7 @@ target_link_libraries(mindspore_ascend PRIVATE securec d_collective)
 target_link_libraries(mindspore_ascend PRIVATE multi_ascend_collective)
 target_link_libraries(mindspore_ascend PRIVATE mindspore::ssl mindspore::crypto)
 set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH
-        ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${MS_KERNELS_INTERNAL_LIB_PATH}:${ASCEND_RPATH})
+        ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend:${ORIGIN_PATH}/../:${MS_KERNELS_INTERNAL_LIB_PATH})
 
 include(${CMAKE_SOURCE_DIR}/cmake/dependency_graphengine.cmake)
 
@@ -165,5 +142,5 @@ target_link_libraries(mindspore_ascend PRIVATE ${adump_server})
 
 if(ENABLE_MPI)
     set_target_properties(_ascend_mpi PROPERTIES INSTALL_RPATH
-        ${ORIGIN_PATH}:${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin/:${ASCEND_RPATH})
+        ${ORIGIN_PATH}:${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin/)
 endif()
