@@ -233,23 +233,6 @@ endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 # duplicate, should be remove after backend decoupling is done
     set(MINDSPORE_SHARED_LIB_RPATH $ORIGIN)
-    if(MODE_ASCEND_ACL)
-        set(MINDSPORE_SHARED_LIB_RPATH ${MINDSPORE_SHARED_LIB_RPATH}:/usr/local/Ascend/nnae/latest/lib64)
-        set(MINDSPORE_SHARED_LIB_RPATH ${MINDSPORE_SHARED_LIB_RPATH}:/usr/local/Ascend/ascend-toolkit/latest/lib64)
-        set(MINDSPORE_SHARED_LIB_RPATH ${MINDSPORE_SHARED_LIB_RPATH}:/usr/local/Ascend/latest/lib64)
-        set(MINDSPORE_SHARED_LIB_RPATH
-            ${MINDSPORE_SHARED_LIB_RPATH}:/usr/local/Ascend/opp/op_impl/built-in/ai_core/tbe/op_tiling)
-        set(MINDSPORE_SHARED_LIB_RPATH
-            ${MINDSPORE_SHARED_LIB_RPATH}:/usr/local/Ascend/nnae/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling)
-        set(MINDSPORE_SHARED_LIB_RPATH "${MINDSPORE_SHARED_LIB_RPATH}\
-            :/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling")
-        set(MINDSPORE_SHARED_LIB_RPATH
-            ${MINDSPORE_SHARED_LIB_RPATH}:/usr/local/Ascend/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling)
-        set(MINDSPORE_SHARED_LIB_RPATH "${MINDSPORE_SHARED_LIB_RPATH}\
-            :/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling")
-        set(MINDSPORE_SHARED_LIB_RPATH
-            ${MINDSPORE_SHARED_LIB_RPATH}:/usr/local/Ascend/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling)
-    endif()
     if(BUILD_LITE)
         set_target_properties(mslite_shared_lib PROPERTIES INSTALL_RPATH ${MINDSPORE_SHARED_LIB_RPATH})
     else()

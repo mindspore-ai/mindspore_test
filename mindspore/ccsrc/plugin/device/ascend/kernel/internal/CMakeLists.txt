@@ -23,7 +23,7 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
 
     target_link_libraries(mindspore_internal_kernels PRIVATE mindspore_ascend ms_kernels_internal)
     set_target_properties(mindspore_internal_kernels PROPERTIES INSTALL_RPATH
-        ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend/:${ORIGIN_PATH}/../:${ME_KERNELS_INTERNAL_LIB_PATH}:${ASCEND_RPATH})
+        ${ORIGIN_PATH}:${ORIGIN_PATH}/ascend/:${ORIGIN_PATH}/../:${ME_KERNELS_INTERNAL_LIB_PATH})
     set_target_properties(lowlatency_collective PROPERTIES INSTALL_RPATH
                     ${ORIGIN_PATH}/ms_kernels_internal/lccl/lib)
 endif()
