@@ -312,6 +312,10 @@ bool CheckOverFlow(const DeviceContext *device_context, std::vector<device::Devi
   uint32_t set_overflow_num = DumpJsonParser::GetInstance().overflow_number();
   uint32_t overflow_cont = OverflowCounter::GetInstance().getCount();
   bool is_overflow = false;
+  bool sync_ok = device_context->device_res_manager_->SyncAllStreams();
+  if (!sync_ok) {
+    MS_LOG(EXCEPTION) << "Sync stream error! Overflow check op launcher failed";
+  }
   if (set_overflow_num == 0) {
     is_overflow = datadump::CalCheckOverflow(device_context, kernel_tensors, stream_id);
   } else if (overflow_cont < set_overflow_num) {
