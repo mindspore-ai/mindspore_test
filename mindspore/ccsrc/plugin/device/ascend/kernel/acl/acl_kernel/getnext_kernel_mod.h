@@ -34,6 +34,9 @@ class GetNextAclKernelMod : public AclKernelMod {
   // Already update output shape and size in Resize, just skip UpdateOutputShapeAndSize impl.
   void UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &inputs,
                                 const std::vector<KernelTensor *> &outputs) override {}
+
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 };
 }  // namespace kernel
 }  // namespace mindspore

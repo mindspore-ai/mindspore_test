@@ -44,7 +44,6 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
     std::vector<device::DataQueueItem> data;
     RetryPeakItemFromDataQueue(nullptr, wingman_queue, &data);
     MS_EXCEPTION_IF_NULL(wingman_queue);
-    (void)wingman_queue->Pop();
     MS_EXCEPTION_IF_CHECK_FAIL(outputs.size() == data.size(), "Size of output is not equal to size of data");
 
     output_size_list_.clear();
@@ -88,5 +87,15 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   }
   return 0;
 }
+
+bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
+                                 const std::vector<KernelTensor *> &workspace,
+                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+  MS_EXCEPTION_IF_NULL(wingman_queue);
+  (void)wingman_queue->Pop();
+  return AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
+}
+
 }  // namespace kernel
 }  // namespace mindspore
