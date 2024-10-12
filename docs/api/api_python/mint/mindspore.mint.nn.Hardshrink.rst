@@ -25,6 +25,7 @@ mindspore.mint.nn.Hardshrink
         - **input** (Tensor) - Hard Shrink的输入。支持数据类型：
 
           - Ascend：float16、float32、bfloat16。
+
     输出：
         Tensor，shape和数据类型与输入相同。
 
