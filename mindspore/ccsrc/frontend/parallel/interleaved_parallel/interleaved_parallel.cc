@@ -624,6 +624,40 @@ int64_t RemoveVirtualConverterEndInCall(const FuncGraphManagerPtr &manager, cons
   return tuple_index;
 }
 
+void InsertVirtualConverterEnd(const FuncGraphPtr &root, const FuncGraphPtr &func_graph, const CNodePtr &fg_node,
+                               int64_t tuple_index, size_t size) {
+  auto manager = root->manager();
+  auto parent_graph = fg_node->func_graph();
+  auto node_users = manager->node_users();
+  auto fg_node_users = node_users.at(fg_node);
+  for (const auto &fg_user_pair : fg_node_users) {
+    if (!IsPrimitiveCNode(fg_user_pair.first, prim::kPrimTupleGetItem)) {
+      continue;
+    }
+    auto get_item_node = fg_user_pair.first->cast<CNodePtr>();
+    auto index_value = get_item_node->input(kIndex2)->cast<ValueNodePtr>()->value();
+    auto index = GetValue<int64_t>(index_value);
+    if (index == tuple_index) {
+      std::vector<AnfNodePtr> virtual_end_inputs{NewValueNode(prim::kPrimVirtualConverterEnd)};
+      for (size_t i = 0; i < size; ++i) {
+        auto new_get_item_node_inputs = get_item_node->inputs();
+        auto new_index = index + int64_t(i);
+        new_get_item_node_inputs[kIndex2] = NewValueNode(MakeValue<int64_t>(new_index));
+        auto new_get_item_node = func_graph->NewCNode(new_get_item_node_inputs);
+        virtual_end_inputs.push_back(new_get_item_node);
+      }
+      auto new_virtual_end = func_graph->NewCNode(virtual_end_inputs);
+      (void)manager->Replace(get_item_node, new_virtual_end);
+    } else if (index > tuple_index) {
+      auto new_index = index + int64_t(size);
+      auto new_tuple_getitem_inputs = get_item_node->inputs();
+      new_tuple_getitem_inputs[kIndex2] = NewValueNode(MakeValue<int64_t>(new_index));
+      auto new_tuple_getitem = parent_graph->NewCNode(new_tuple_getitem_inputs);
+      (void)manager->Replace(get_item_node, new_tuple_getitem);
+    }
+  }
+}
+
 void MoveVirtualConverterEndOutsideCallFunc(const FuncGraphPtr &root) {
   auto all_nodes = TopoSort(root->get_return(), SuccDeeperSimple);
   auto manager = root->manager();
@@ -638,64 +672,41 @@ void MoveVirtualConverterEndOutsideCallFunc(const FuncGraphPtr &root) {
     auto end_users = GetOutputNodesWithFilter(virtual_end, [&](const AnfNodePtr &anode) {
       return IsPrimitiveCNode(anode, prim::kPrimMakeTuple) || IsPrimitiveCNode(anode, prim::kPrimDepend);
     });
-    if (end_users.size() == 1 && IsPrimitiveCNode(end_users.front().first, prim::kPrimReturn)) {
-      // Move down virtual_converter_end
-      auto tuple_index = RemoveVirtualConverterEndInCall(manager, virtual_end);
-      auto is_tuple_output = tuple_index >= 0;
-      auto func_graph = virtual_end->func_graph();
-      auto fg_map = func_graph->func_graph_cnodes_index();
-      auto interleave_size = virtual_end->size() - 1;
-      for (auto &fg_use : fg_map) {
-        auto fg_node = fg_use.first->first->cast<CNodePtr>();
-        auto parent_graph = fg_node->func_graph();
-        auto node_users = manager->node_users();
-        auto fg_node_users = node_users.at(fg_node);
-        // insert virtual_converter_end at call
-        if (is_tuple_output) {
-          for (const auto &fg_user_pair : fg_node_users) {
-            if (!IsPrimitiveCNode(fg_user_pair.first, prim::kPrimTupleGetItem)) {
-              continue;
-            }
-            auto get_item_node = fg_user_pair.first->cast<CNodePtr>();
-            auto index_value = get_item_node->input(kIndex2)->cast<ValueNodePtr>()->value();
-            auto index = GetValue<int64_t>(index_value);
-            if (index == tuple_index) {
-              std::vector<AnfNodePtr> virtual_end_inputs{NewValueNode(prim::kPrimVirtualConverterEnd)};
-              for (size_t i = 0; i < interleave_size; ++i) {
-                auto new_get_item_node_inputs = get_item_node->inputs();
-                auto new_index = index + int64_t(i);
-                new_get_item_node_inputs[kIndex2] = NewValueNode(MakeValue<int64_t>(new_index));
-                auto new_get_item_node = func_graph->NewCNode(new_get_item_node_inputs);
-                virtual_end_inputs.push_back(new_get_item_node);
-              }
-              auto new_virtual_end = func_graph->NewCNode(virtual_end_inputs);
-              (void)manager->Replace(get_item_node, new_virtual_end);
-            } else if (index > tuple_index) {
-              auto new_index = index + int64_t(interleave_size);
-              auto new_tuple_getitem_inputs = get_item_node->inputs();
-              new_tuple_getitem_inputs[kIndex2] = NewValueNode(MakeValue<int64_t>(new_index));
-              auto new_tuple_getitem = parent_graph->NewCNode(new_tuple_getitem_inputs);
-              (void)manager->Replace(get_item_node, new_tuple_getitem);
-            }
-          }
+
+    if (end_users.size() != 1 || !IsPrimitiveCNode(end_users.front().first, prim::kPrimReturn)) {
+      continue;
+    }
+    // Move down virtual_converter_end
+    auto tuple_index = RemoveVirtualConverterEndInCall(manager, virtual_end);
+    auto is_tuple_output = tuple_index >= 0;
+    auto func_graph = virtual_end->func_graph();
+    auto fg_map = func_graph->func_graph_cnodes_index();
+    auto interleave_size = virtual_end->size() - 1;
+    for (auto &fg_use : fg_map) {
+      auto fg_node = fg_use.first->first->cast<CNodePtr>();
+      auto parent_graph = fg_node->func_graph();
+      auto node_users = manager->node_users();
+      auto fg_node_users = node_users.at(fg_node);
+      // insert virtual_converter_end at call
+      if (is_tuple_output) {
+        InsertVirtualConverterEnd(root, func_graph, fg_node, tuple_index, interleave_size);
+        continue;
+      }
+
+      std::vector<AnfNodePtr> virtual_end_inputs{NewValueNode(prim::kPrimVirtualConverterEnd)};
+      for (size_t i = 0; i < interleave_size; ++i) {
+        std::vector<AnfNodePtr> get_item_inputs{NewValueNode(prim::kPrimTupleGetItem), fg_node,
+                                                NewValueNode(MakeValue<int64_t>(i))};
+        auto get_item_node = parent_graph->NewCNode(get_item_inputs);
+        virtual_end_inputs.push_back(get_item_node);
+      }
+      auto virtual_end_new = parent_graph->NewCNode(virtual_end_inputs);
+      for (const auto &fg_user_pair : fg_node_users) {
+        if (IsPrimitiveCNode(fg_user_pair.first, prim::kPrimUpdateState)) {
+          manager->SetEdge(fg_user_pair.first, fg_user_pair.second, virtual_end_new->input(kIndex1));
           continue;
         }
-
-        std::vector<AnfNodePtr> virtual_end_inputs{NewValueNode(prim::kPrimVirtualConverterEnd)};
-        for (size_t i = 0; i < interleave_size; ++i) {
-          std::vector<AnfNodePtr> get_item_inputs{NewValueNode(prim::kPrimTupleGetItem), fg_node,
-                                                  NewValueNode(MakeValue<int64_t>(i))};
-          auto get_item_node = parent_graph->NewCNode(get_item_inputs);
-          virtual_end_inputs.push_back(get_item_node);
-        }
-        auto virtual_end_new = parent_graph->NewCNode(virtual_end_inputs);
-        for (const auto &fg_user_pair : fg_node_users) {
-          if (IsPrimitiveCNode(fg_user_pair.first, prim::kPrimUpdateState)) {
-            manager->SetEdge(fg_user_pair.first, fg_user_pair.second, virtual_end_new->input(kIndex1));
-            continue;
-          }
-          manager->SetEdge(fg_user_pair.first, fg_user_pair.second, virtual_end_new);
-        }
+        manager->SetEdge(fg_user_pair.first, fg_user_pair.second, virtual_end_new);
       }
     }
   }

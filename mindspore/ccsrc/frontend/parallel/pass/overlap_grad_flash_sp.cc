@@ -139,6 +139,35 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *do
   }
 }
 
+void SetFlashIndex(const CNodePtr &node, std::map<std::string, AnfNodePtr> *grad_send_qkv_map,
+                   std::map<std::string, AnfNodePtr> *grad_recv_qkv_map,
+                   std::map<std::string, AnfNodePtr> *grad_send_oml_map,
+                   std::map<std::string, AnfNodePtr> *grad_recv_oml_map) {
+  MS_EXCEPTION_IF_NULL(grad_send_qkv_map);
+  MS_EXCEPTION_IF_NULL(grad_recv_qkv_map);
+  MS_EXCEPTION_IF_NULL(grad_send_oml_map);
+  MS_EXCEPTION_IF_NULL(grad_recv_oml_map);
+  if (IsPrimitiveCNode(node, prim::kPrimSend) && node->HasPrimalAttr(FLASH_INDEX) &&
+      node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+    auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
+    if (GetValue<std::string>(node->GetPrimalAttr(FLASH_SP_COMM_TYPE)) == FLASH_SP_COMM_QKV) {
+      (*grad_recv_qkv_map).insert({flash_index, node});
+    } else {
+      (*grad_recv_oml_map).insert({flash_index, node});
+    }
+  }
+
+  if (IsPrimitiveCNode(node, prim::kPrimReceive) && node->HasPrimalAttr(FLASH_INDEX) &&
+      node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+    auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
+    if (GetValue<std::string>(node->GetPrimalAttr(FLASH_SP_COMM_TYPE)) == FLASH_SP_COMM_QKV) {
+      (*grad_send_qkv_map).insert({flash_index, node});
+    } else {
+      (*grad_send_oml_map).insert({flash_index, node});
+    }
+  }
+}
+
 void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<std::string, AnfNodePtr> *fa_map,
                     std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map,
                     std::map<std::string, AnfNodePtr> *grad_send_qkv_map,
@@ -167,27 +196,7 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
       (*grad_fa_map)[flash_index] = node;
     }
-
-    if (IsPrimitiveCNode(node, prim::kPrimSend) && node->HasPrimalAttr(FLASH_INDEX) &&
-        node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
-      if (GetValue<std::string>(node->GetPrimalAttr(FLASH_SP_COMM_TYPE)) == FLASH_SP_COMM_QKV) {
-        (*grad_recv_qkv_map).insert({flash_index, node});
-      } else {
-        (*grad_recv_oml_map).insert({flash_index, node});
-      }
-    }
-
-    if (IsPrimitiveCNode(node, prim::kPrimReceive) && node->HasPrimalAttr(FLASH_INDEX) &&
-        node->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-      auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
-      if (GetValue<std::string>(node->GetPrimalAttr(FLASH_SP_COMM_TYPE)) == FLASH_SP_COMM_QKV) {
-        (*grad_send_qkv_map).insert({flash_index, node});
-      } else {
-        (*grad_send_oml_map).insert({flash_index, node});
-      }
-    }
-
+    SetFlashIndex(node, grad_recv_qkv_map, grad_recv_oml_map, grad_send_qkv_map, grad_send_oml_map);
     FindFAGradInputNode(node, dout_map, softmax_max_map, softmax_sum_map, attention_out_map);
   }
 }

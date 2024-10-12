@@ -1339,15 +1339,19 @@ static CNodePtr SkipTrivialNodesMoveUp(CNodePtr node) {
   }
 }
 
+static bool NeedGradient(const ParameterPtr &param_ptr) {
+  if (param_ptr->param_info() && param_ptr->param_info()->requires_grad()) {
+    return true;
+  }
+  return false;
+}
+
 static void DoInsertMirrorOps(const FuncGraphPtr &root, const MirrorOps &mirror_ops, const CNodePtr &node) {
   FuncGraphPtr func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  auto mirror_size = mirror_ops.size();
-  if (IsPrimitiveCNode(node, prim::kPrimSend)) {
-    mirror_size = 1;
-  }
+  auto mirror_size = IsPrimitiveCNode(node, prim::kPrimSend) ? 1 : mirror_ops.size();
 
   for (size_t index = 1; index <= mirror_size; ++index) {
     OperatorVector backward_op = mirror_ops[index - 1];
@@ -1368,7 +1372,7 @@ static void DoInsertMirrorOps(const FuncGraphPtr &root, const MirrorOps &mirror_
     bool is_shared_param = false;
     if (param_ptr) {
       param_name = param_ptr->name();
-      if (!param_ptr->param_info() || !param_ptr->param_info()->requires_grad()) {
+      if (!NeedGradient(param_ptr)) {
         MS_LOG(INFO) << param_name << " do not need gradient. Skip inserting mirror.";
         continue;
       }
@@ -4065,6 +4069,23 @@ void LoadStrategyFromFile(const std::vector<AnfNodePtr> &all_nodes) {
   MS_LOG(INFO) << "End load strategies from file";
 }
 
+bool ReorderForPipelineSplitAndGradAccu(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager,
+                                        const std::string &parallel_mode) {
+  // control whether use model_parallel mode
+  if (!IsAutoParallelCareGraph(root) || (root->has_flag(SEMI_AUTO_PARALLEL_RUN_ONCE_ONLY)) || HasNestedMetaFg(root)) {
+    if (!root->has_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY)) {
+      MS_LOG(INFO) << "Strategies would be ignored in " << parallel_mode
+                   << ", shard() only valid in [semi_]auto_parallel.";
+      root->set_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY, true);
+    }
+    auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
+    ReorderForPipelineSplit(root, manager, pipeline_stages);
+    ReorderForGradAccumulation(root, manager);
+    return true;
+  }
+  return false;
+}
+
 bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) {
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
@@ -4093,18 +4114,8 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   if (IsTraining(manager)) {
     root->set_flag(kTraining, true);
   }
-  // assume no change to graph
-  bool changes = false;
-  // control whether use model_parallel mode
-  if (!IsAutoParallelCareGraph(root) || (root->has_flag(SEMI_AUTO_PARALLEL_RUN_ONCE_ONLY)) || HasNestedMetaFg(root)) {
-    if (!root->has_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY)) {
-      MS_LOG(INFO) << "Strategies would be ignored in " << parallel_mode
-                   << ", shard() only valid in [semi_]auto_parallel.";
-      root->set_flag(CHECK_SET_STRATEGY_VALID_ONCE_ONLY, true);
-    }
-    ReorderForPipelineSplit(root, manager, pipeline_stages);
-    ReorderForGradAccumulation(root, manager);
-    return changes;
+  if (ReorderForPipelineSplitAndGradAccu(root, manager, parallel_mode)) {
+    return false;
   }
 
   MSLogTime msTime;
@@ -4177,7 +4188,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   msTime.End();
   uint64_t time = msTime.GetRunTimeUS();
   MS_LOG(INFO) << "Now leaving step parallel, used time: " << time << " us";
-  return changes;
+  return false;
 }
 }  // namespace parallel
 }  // namespace mindspore
