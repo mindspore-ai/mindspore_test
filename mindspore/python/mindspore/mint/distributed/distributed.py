@@ -24,7 +24,7 @@ def init_process_group(backend="hccl",
                        world_size=-1,
                        rank=-1,
                        store=None,
-                       pg_option=None,
+                       pg_options=None,
                        device_id=None):
     """
     Init collective communication lib. And create a default collective communication group.
@@ -46,7 +46,7 @@ def init_process_group(backend="hccl",
         store (Store, invalid): Key/Value store accessible to all workers, used to exchange connection/address
                                 information. Provides parameters consistent with pytorch, but is not currently support,
                                 setting is invalid.
-        pg_option (ProcessGroupOptions, invalid): process group options specifying what additional options need to be
+        pg_options (ProcessGroupOptions, invalid): process group options specifying what additional options need to be
                                                   passed in during the construction of specific process group. Provides
                                                   parameters consistent with pytorch, but is not currently support,
                                                   setting is invalid.
@@ -86,8 +86,8 @@ def init_process_group(backend="hccl",
         logger.warning("timeout is ignored, setting is invalid")
     if store is not None:
         logger.warning("store is ignored, setting is invalid")
-    if pg_option is not None:
-        logger.warning("pg_option is ignored, setting is invalid")
+    if pg_options is not None:
+        logger.warning("pg_options is ignored, setting is invalid")
     if device_id is not None:
         logger.warning("device_id is ignored, setting is invalid")
     if rank != -1:
