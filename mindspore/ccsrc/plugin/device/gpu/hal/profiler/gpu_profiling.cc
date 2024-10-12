@@ -618,13 +618,9 @@ void GPUProfiler::RecordFrameWorkInfo(const CNodePtr &kernel) {
 }
 
 void GPUProfiler::RecordFrameWorkInfo(const std::string &op_name, const std::vector<BaseShapePtr> &input_shapes) {
-  auto begin_iter = op_name.rfind('/') + 1;
-  auto end_iter = op_name.rfind('-');
-  if (begin_iter != std::string::npos && end_iter != std::string::npos && begin_iter < end_iter) {
-    cur_kernel_info_.op_type = op_name.substr(begin_iter, end_iter - begin_iter);
-    cur_kernel_info_.op_name = op_name.substr(begin_iter, op_name.length() - begin_iter);
-    cur_kernel_info_.graph_id = 0;
-  }
+  cur_kernel_info_.op_type = op_name;
+  cur_kernel_info_.op_name = op_name;
+  cur_kernel_info_.graph_id = 0;
 
   size_t input_size = input_shapes.size();
   for (uint32_t i = 0; i < input_size; i++) {
