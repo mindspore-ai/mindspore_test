@@ -127,19 +127,11 @@ void GeAdapterInfo::InitOutputSupportedDataType() {
 void GeAdapterInfo::GetGeAttrValueByMsAttrValue(const std::string &attr_name, ValuePtr *ms_value) {
   MS_EXCEPTION_IF_NULL(ms_value);
   // class Value is a abstract class
-  auto iter = get_attr_cache_.find({attr_name, *ms_value});
-  if (iter != get_attr_cache_.end()) {
-    *ms_value = iter->second;
-    return;
-  }
-
   int ret = 0;
-  auto old_value = *ms_value;
   ret = adapter_->getAttr(attr_name, ms_value);
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "failed to get attr:" << attr_name << " for primitive " << info_.op_type;
   }
-  get_attr_cache_[{attr_name, old_value}] = *ms_value;
 }
 
 void GeAdapterInfo::GetGeAttrValueByMsInputValue(const uint32_t &input_idx, ValuePtr *ms_value) {
