@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,7 +115,10 @@ void KernelActor::Init() {
     data->data_ = output_device_tensors_[IntToSize(data_arrow->from_output_index_)];
     ++output_data_index;
   }
+  this->InitMultiStreamInfo();
+}
 
+void KernelActor::InitMultiStreamInfo() {
   auto device_context = device_contexts_[0];
   // cpu kernel does not need multi stream process, and gpu kernel has not adapt it currently.
   if (device_context->GetDeviceType() == device::DeviceType::kCPU ||
@@ -135,7 +138,11 @@ void KernelActor::Init() {
   if (cnode == nullptr) {
     return;
   }
-
+  constexpr char kRuntimeMc2Event[] = "mc2_event";
+  bool match_mc2_pattern = std::string::npos != kernel_->fullname_with_scope().find("_all_gather_matmul") ||
+                           std::string::npos != kernel_->fullname_with_scope().find("_matmul_reduce_scatter") ||
+                           std::string::npos != kernel_->fullname_with_scope().find("MatMulAllReduce-");
+  is_mc2_kernel_ = !common::IsDisableRuntimeConfig(kRuntimeMc2Event) && match_mc2_pattern;
   // shape depend need kernel is cnode.
   InitShapeDependInfo();
 
@@ -1104,6 +1111,10 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
   // Update output_kernel_tensors_ with task id on stream.
   auto multi_stream_controller = device::MultiStreamController::GetInstance();
   auto task_id_on_stream = multi_stream_controller->LaunchTaskIdOnStream(device_context, stream_id);
+  // Adapter for mc2 kernel, need more process later.
+  if (is_mc2_kernel_) {
+    multi_stream_controller->DispatchRecordWaitEvent(device_context, kDefaultStreamIndex, kWorldGroupStreamIndex);
+  }
   MS_LOG(DEBUG) << "device context : " << device_context
                 << ", name : " << device_context->device_context_key().device_name_ << ", stream id : " << stream_id
                 << ", actor name : " << GetAID().Name() << ", task_id_on_stream : " << task_id_on_stream << ".";
