@@ -127,27 +127,36 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
     return debug_info_ss.str();
   }
   // Read the lines one by one.
-  constexpr auto kLinesize = 200;
-  char line[kLinesize];
+  constexpr auto line_str_size = 4096;
+  char *line = new char[line_str_size];
   int line_num = 0;
-  file_out = fgets(line, kLinesize, file);
-  line[strcspn(line, "\n")] = '\0';
+  file_out = fgets(line, line_str_size, file);
+  if (strlen(line) != line_str_size - 1 || line[strlen(line) - 1] == '\n') {
+    line[strcspn(line, "\n")] = '\0';
+  } else {
+    MS_LOG(ERROR) << "Line " << line_num << " of file " << file_name_.c_str() << " exceed the buffuer size.";
+  }
   while (line_num != line_ - 1 && file_out != NULL) {
     if (tip == kSourceSectionTipNextLineHere && line_num >= start_line - 1) {
       section_debug_info_ss << line << "\n";
     }
-    file_out = fgets(line, kLinesize, file);
-    line[strcspn(line, "\n")] = '\0';
-    ++line_num;
+    file_out = fgets(line, line_str_size, file);
+    if (strlen(line) != line_str_size - 1 || line[strlen(line) - 1] == '\n') {
+      line[strcspn(line, "\n")] = '\0';
+      ++line_num;
+    } else {
+      MS_LOG(ERROR) << "Line " << line_num << " of file " << file_name_.c_str() << " exceed the buffuer size.";
+    }
   }
   fclose(file);
   // Store the line string as cache.
   line_str_ = line;
+  delete[] line;
   if (tip == kSourceSectionTipNextLineHere) {
-    section_debug_info_ss << HighlightLine(line, column_, column_end_, line_end_ == line_, tip) << std::endl;
+    section_debug_info_ss << HighlightLine(line_str_, column_, column_end_, line_end_ == line_, tip) << std::endl;
     return section_debug_info_ss.str();
   }
-  debug_info_ss << HighlightLine(line, column_, column_end_, line_end_ == line_, tip) << std::endl;
+  debug_info_ss << HighlightLine(line_str_, column_, column_end_, line_end_ == line_, tip) << std::endl;
   return debug_info_ss.str();
 }
 
