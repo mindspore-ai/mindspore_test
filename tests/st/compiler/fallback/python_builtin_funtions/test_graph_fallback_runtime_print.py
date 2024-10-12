@@ -87,9 +87,9 @@ def test_fallback_print_asnumpy():
     check_output(cap.output, patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
-def test_fallback_print_asnumpy_custom_class():
+def test_fallback_print_asnumpy_custom_class_ascend():
     """
     Feature: JIT Fallback
     Description: Test print in fallback runtime
@@ -117,7 +117,7 @@ def test_fallback_print_asnumpy_custom_class():
         sys.stdout.flush()
         time.sleep(0.1)
 
-    patterns = {'[1 2 3 4]\n1\n'}
+    patterns = {'[1 2 3 4]\nTensor(shape=[], dtype=Int64, value=1)\n'}
     check_output(cap.output, patterns)
 
 

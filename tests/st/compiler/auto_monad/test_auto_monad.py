@@ -871,7 +871,7 @@ def test_multi_assign_addn():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_multi_assign_print():
     """
     Feature: Auto monad feature.
@@ -911,9 +911,9 @@ def test_multi_assign_print():
         np.testing.assert_almost_equal(
             net.para2.data.asnumpy(), expect_para2.asnumpy())
 
-    patterns = {'Tensor(shape=[], dtype=Int32, value=9)\n\n'
-                'Tensor(shape=[], dtype=Int32, value=9)\n\n'
-                'Tensor(shape=[], dtype=Int32, value=81)\n\n'}
+    patterns = {'Tensor(shape=[], dtype=Int32, value=9)\n'
+                'Tensor(shape=[], dtype=Int32, value=9)\n'
+                'Tensor(shape=[], dtype=Int32, value=81)\n'}
     check_output(cap.output, patterns)
 
 
@@ -1690,7 +1690,7 @@ def test_multi_abs_add_assign():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_print_assign_print():
     """
     Feature: Auto Monad
@@ -1728,10 +1728,10 @@ def test_print_assign_print():
         sys.stdout.flush()
         time.sleep(0.1)
 
-    patterns = {'param_1:\nTensor(shape=[], dtype=Int32, value=1)\n\n'
-                'res:\nTensor(shape=[], dtype=Int32, value=10)\n\n'
-                'param_2:\nTensor(shape=[], dtype=Int32, value=5)\n\n'
-                'param_3:\nTensor(shape=[], dtype=Int32, value=3)\n\n'}
+    patterns = {'param_1:\nTensor(shape=[], dtype=Int32, value=1)\n'
+                'res:\nTensor(shape=[], dtype=Int32, value=10)\n'
+                'param_2:\nTensor(shape=[], dtype=Int32, value=5)\n'
+                'param_3:\nTensor(shape=[], dtype=Int32, value=3)\n'}
     check_output(cap.output, patterns)
     np.testing.assert_array_equal(out.asnumpy(), expect.asnumpy())
 
