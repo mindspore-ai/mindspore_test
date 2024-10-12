@@ -66,7 +66,6 @@ bool MultiAscendCommunicationGroup::Finalize() {
 void *MultiAscendCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
   MS_EXCEPTION_IF_NULL(hccl_group_);
   void *root_info = hccl_group_->GenerateRootInfo(root_info_size);
-  MS_EXCEPTION_IF_NULL(root_info);
   return root_info;
 }
 

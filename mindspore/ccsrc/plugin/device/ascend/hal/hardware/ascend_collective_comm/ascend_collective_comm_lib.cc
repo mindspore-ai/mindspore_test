@@ -263,6 +263,11 @@ bool AscendCollectiveCommLib::CreateCommunicationGroup(const std::string &group_
   AscendCommunicationGroupPtr group = std::make_shared<AscendCommunicationGroup>(
     group_name, group_ranks, global_rank_id_, local_group_rank, local_group_size);
   CHECK_IF_NULL(group);
+  if (group_name != kHCCLGlobalGroupName) {
+    auto global_comm = HcclCommunicator(kHCCLGlobalGroupName);
+    MS_EXCEPTION_IF_NULL(global_comm);
+    group->SetGlobalComm(global_comm);
+  }
   groups_[group_name] = group;
 
   // If using hccl CM, we reuse rank table launching interfaces.

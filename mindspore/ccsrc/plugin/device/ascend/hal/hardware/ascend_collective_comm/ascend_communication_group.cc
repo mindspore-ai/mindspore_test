@@ -15,6 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_communication_group.h"
+#include <algorithm>
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "utils/ms_context.h"
@@ -30,7 +31,9 @@ AscendCommunicationGroup::AscendCommunicationGroup(const std::string &name, cons
                                                    uint32_t local_group_size)
     : CommunicationGroup(name, group_ranks, global_rank, local_group_rank, local_group_size),
       unique_id_({}),
-      comm_(nullptr) {
+      comm_(nullptr),
+      global_comm_(nullptr),
+      config_({}) {
   auto ret = memset_s(inner_comm_name_, INNER_COMM_NAME_MAX_LENGTH, 0x00, INNER_COMM_NAME_MAX_LENGTH);
   if (ret != EOK) {
     MS_LOG(ERROR) << "memset_s errorno: " << ret;
@@ -51,7 +54,6 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   (void)CALL_ASCEND_API(aclrtSetDevice, device_id);
-  unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
   uint32_t group_rank;
   auto group_size = size_;
   if (!common::GetEnv(kSimulationLevel).empty()) {
@@ -60,11 +62,49 @@ bool AscendCommunicationGroup::Initialize(void *root_info) {
   } else {
     group_rank = GetGroupRank(global_rank_);
   }
-  if (HcclCommInitRootInfo(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank), &comm_) !=
-      static_cast<int32_t>(HCCL_SUCCESS)) {
-    const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
-    MS_LOG(ERROR) << "HcclCommInitRootInfo failed. " + error_message;
-    return false;
+
+  std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
+  if (!rank_table_file_path.empty()) {
+    // Initialize HCCL communicator by rank table if the rank table is configured. Note that HCCL initialization apis
+    // for global comm and sub comm are different when using rank table.
+    if (name_ == kHCCLGlobalGroupName) {
+      // Initialize global communicator by 'HcclCommInitClusterInfoConfig'.
+      MS_LOG(INFO) << "Start to initialize communicator by HcclCommInitClusterInfoConfig for " << name_;
+      HcclCommConfigInit(&config_);
+      if (HcclCommInitClusterInfoConfig(static_cast<const char *>(rank_table_file_path.c_str()),
+                                        static_cast<uint32_t>(global_rank_), &config_,
+                                        &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
+        const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
+        MS_LOG(ERROR) << "HcclCommInitClusterInfoConfig failed. " + error_message;
+        return false;
+      }
+      MS_LOG(INFO) << "End to initialize communicator by HcclCommInitClusterInfoConfig for " << name_;
+    } else {
+      // split sub communicator from global communicator by 'HcclCreateSubCommConfig'.
+      MS_LOG(INFO) << "Start to initialize communicator by HcclCreateSubCommConfig for " << name_;
+      MS_EXCEPTION_IF_NULL(global_comm_);
+      HcclCommConfigInit(&config_);
+      std::hash<std::string> to_hash;
+      size_t sub_comm_id = to_hash(name_);
+      if (HcclCreateSubCommConfig(&global_comm_, static_cast<uint32_t>(group_size), group_ranks_.data(),
+                                  static_cast<uint64_t>(sub_comm_id), static_cast<uint32_t>(group_rank), &config_,
+                                  &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
+        const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
+        MS_LOG(ERROR) << "HcclCreateSubCommConfig failed. " + error_message;
+        return false;
+      }
+      MS_LOG(INFO) << "End to initialize communicator by HcclCreateSubCommConfig for " << name_;
+    }
+  } else {
+    MS_LOG(INFO) << "Start to initialize communicator by HcclCommInitRootInfo for " << name_;
+    unique_id_ = *(static_cast<HcclRootInfo *>(root_info));
+    if (HcclCommInitRootInfo(static_cast<uint32_t>(group_size), &unique_id_, static_cast<uint32_t>(group_rank),
+                             &comm_) != static_cast<int32_t>(HCCL_SUCCESS)) {
+      const string &error_message = ErrorManagerAdapter::GetErrorMessage(true);
+      MS_LOG(ERROR) << "HcclCommInitRootInfo failed. " + error_message;
+      return false;
+    }
+    MS_LOG(INFO) << "End to initialize communicator by HcclCommInitRootInfo for " << name_;
   }
   // Get HCCL comm name which is used in graph sink mode for GE.
   if (HcclGetCommName(comm_, inner_comm_name_) != static_cast<int32_t>(HCCL_SUCCESS)) {

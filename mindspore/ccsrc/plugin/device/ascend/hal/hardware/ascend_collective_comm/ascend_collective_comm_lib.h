@@ -31,7 +31,6 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-constexpr char kHCCLGlobalGroupName[] = "hccl_world_group";
 
 class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib {
  public:

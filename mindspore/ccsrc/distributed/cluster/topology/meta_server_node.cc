@@ -238,7 +238,7 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
     (void)time(&(node_info->last_update));
     nodes_[node_id] = node_info;
     MS_LOG(WARNING) << "The new node: " << node_id << "(role: " << role << ")"
-                    << ", rank id: " << rank_id << ", device id: " << node_info->device_id
+                    << ", rank id: " << rank_id << ", device id: " << device_id
                     << ", hostname: " << node_info->host_name << ", ip: " << host_ip
                     << " is registered successfully. Currently registered node number: " << nodes_.size()
                     << ", expected node number: " << total_node_num_;
@@ -521,7 +521,8 @@ void MetaServerNode::UpdateTopoState() {
 
 bool MetaServerNode::TransitionToInitialized() {
   if (nodes_.size() == total_node_num_) {
-    // If RANK_TABLE_FILE is set, reassign rank ids based on provided rank table file.
+    // If env RANK_TABLE_FILE is set, reassign rank ids based on provided rank table file. Any irregular behavior of the
+    // rank table file will make rank ids not be reassigned.
     if (!ReassignNodeRankFromRanktablefile()) {
       // After all nodes are successfully registered, reassign rank ids so they could be continuous.
       ReassignNodeRank();
