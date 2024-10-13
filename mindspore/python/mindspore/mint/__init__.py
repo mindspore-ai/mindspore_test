@@ -405,6 +405,9 @@ from mindspore.ops.auto_generate import count_nonzero
 # 697
 from mindspore.ops.function.math_func import float_power_ext as float_power
 
+# 708
+from mindspore.ops.function.math_func import std_ext as std
+
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
 
@@ -2221,6 +2224,9 @@ __all__ = [
 
     # 697
     'float_power',
+
+    # 708
+    'std',
 
     # 887
     'log2',

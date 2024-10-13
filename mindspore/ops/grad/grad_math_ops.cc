@@ -4322,6 +4322,22 @@ REG_BPROP_BUILDER("MeanExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims), ib->OutZeros(dtype)};
 });
 
+REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto correction = ib->GetInput(kIndex2);
+  auto keep_dims = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<float>(2.0)})});
+  auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+  grad_var = ib->MaskedFill(grad_var, equal_zero, ib->Tensor(0.0, ib->GetDtype(grad_var)));
+
+  auto grad = VarGrad(ib, input, axis, grad_var, correction, keep_dims);
+  return {grad, ib->OutZeros(axis), ib->OutZeros(correction), ib->OutZeros(keep_dims)};
+});
+
 REG_BPROP_BUILDER("SumExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
