@@ -16,6 +16,7 @@
 
 #include "pybind_api/ir/arg_handler.h"
 #include "pipeline/pynative/pynative_utils.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 
@@ -37,8 +38,7 @@ Int64ImmPtr ConvertInt(const py::object &obj) {
   return PyCast<int64_t, Int64Imm>(obj);
 }
 
-Int64ImmPtr ToDtype(const py::list &python_args, size_t i) {
-  const py::object &obj = python_args[i];
+Int64ImmPtr ToDtype(const py::object &obj) {
   auto convert = ConvertInt(obj);
   if (convert != nullptr) {
     return convert;
@@ -50,12 +50,29 @@ Int64ImmPtr ToDtype(const py::list &python_args, size_t i) {
   return nullptr;
 }
 
-std::optional<Int64ImmPtr> DtypeToTypeId(const py::list &python_args, size_t i) {
-  const py::object &obj = python_args[i];
+std::optional<Int64ImmPtr> DtypeToTypeId(const std::string &op_name, const std::string &arg_name,
+                                         const py::object &obj) {
   if (py::isinstance<py::none>(obj)) {
     return std::nullopt;
   }
-  return std::make_optional(ToDtype(python_args, i));
+  if (!py::isinstance<mindspore::Type>(obj)) {
+    MS_LOG(EXCEPTION) << "For '" << op_name << "', the input '" << arg_name << "' should be mindspore dtype, but got "
+                      << obj << ".";
+  }
+  return std::make_optional(ToDtype(obj));
+}
+
+std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::string &arg_name, const py::object &obj) {
+  if (py::isinstance<py::none>(obj)) {
+    return std::nullopt;
+  }
+  if (!py::isinstance<py::str>(obj)) {
+    MS_LOG(EXCEPTION) << "For '" << op_name << "', the input '" << arg_name << "' should be a str, but got "
+                      << py::str(obj.get_type()) << ".";
+  }
+  auto string_value = obj.cast<std::string>();
+  auto enum_value = mindspore::ops::StringToEnumImpl(op_name, arg_name, string_value);
+  return std::make_optional(std::make_shared<Int64Imm>(enum_value));
 }
 
 }  // namespace pynative

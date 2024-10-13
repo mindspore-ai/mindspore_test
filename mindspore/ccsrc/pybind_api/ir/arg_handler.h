@@ -26,7 +26,10 @@ namespace mindspore {
 
 namespace pynative {
 
-std::optional<Int64ImmPtr> DtypeToTypeId(const py::list &python_args, size_t i);
+std::optional<Int64ImmPtr> DtypeToTypeId(const std::string &op_name, const std::string &arg_name,
+                                         const py::object &obj);
+
+std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::string &arg_name, const py::object &obj);
 
 }  // namespace pynative
 }  // namespace mindspore
