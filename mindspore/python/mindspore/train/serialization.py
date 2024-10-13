@@ -3090,10 +3090,9 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
             if first_dim_shard_size != 1:
                 param_total_list = _get_param_list_when_first_dim_sharded(device_arrangement, first_dim_shard_idx, rank)
             if shard_size > 0:
-                shard_total_list = []
-                for i in range(0, ckpt_file_len, shard_size):
-                    shard_total_list.append(param_total_list[i:i + shard_size])
-                param_total_list = shard_total_list[rank // shard_size]
+                rank_index = param_total_list.index(rank)
+                start = rank_index // shard_size * shard_size
+                param_total_list = param_total_list[start:start + shard_size]
             if shard_stride > 0:
                 param_stride = []
                 # merge pre parameter
