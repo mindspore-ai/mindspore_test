@@ -247,6 +247,7 @@ class KernelActor : public DebugAwareActor {
   void InitInputInfo();
   void InitOutputInfo();
   void InitWorkspaceInfo();
+  void InitMultiStreamInfo();
   void InitShapeDependInfo();
   void InitIsMonadInput();
 
@@ -308,6 +309,7 @@ class KernelActor : public DebugAwareActor {
 
   bool is_output_kernel_{false};
   std::vector<bool> is_monad_input_;
+  bool is_mc2_kernel_{false};
 };
 
 using KernelActorPtr = std::shared_ptr<KernelActor>;
