@@ -67,6 +67,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
 #include "plugin/device/ascend/optimizer/ge/avg_pool_grad_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/insert_depend_for_all_gather.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/shape_reshape_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/split_concat_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
@@ -153,6 +154,7 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulReduceScatterFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllGatherMatmulFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::InsertDependForOptShardAllGather>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::CentralizationMindIR>());
 }
 
