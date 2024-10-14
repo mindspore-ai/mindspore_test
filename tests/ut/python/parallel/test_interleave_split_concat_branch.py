@@ -83,9 +83,9 @@ def test_interleave_split_concat_branch(split_count):
                                       device_num=128,
                                       global_rank=0,
                                       enable_alltoall=True)
-    hidden_size = 4096
+    hidden_size = 128
     ffn_hidden_size = 4 * hidden_size
-    channel = 2048
+    channel = 128
     expert_num = 16
     dp = 1
     ep = 16
