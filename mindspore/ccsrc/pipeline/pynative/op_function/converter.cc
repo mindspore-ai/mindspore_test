@@ -793,6 +793,13 @@ py::object parse_number(const std::string &str) {
   return py::float_(atof(str.c_str()));
 }
 
+std::string remove_quotes(const std::string &str) {
+  if (str.size() >= 2 && str.front() == '\'' && str.back() == '\'') {
+    return str.substr(1, str.size() - 2);
+  }
+  return str;
+}
+
 void FunctionParameter::set_default_obj(const std::string &str) {
   switch (type_) {
     case ops::OP_DTYPE::DT_INT:
@@ -818,7 +825,7 @@ void FunctionParameter::set_default_obj(const std::string &str) {
       default_obj = py::none();
       break;
     case ops::OP_DTYPE::DT_STR:
-      default_obj = py::str(str);
+      default_obj = py::str(remove_quotes(str));
       break;
     case ops::OP_DTYPE::DT_TENSOR:
       if (str != "None") {
