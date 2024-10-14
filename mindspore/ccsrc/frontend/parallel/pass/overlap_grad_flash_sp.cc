@@ -196,7 +196,7 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(FLASH_INDEX));
       (*grad_fa_map)[flash_index] = node;
     }
-    SetFlashIndex(node, grad_recv_qkv_map, grad_recv_oml_map, grad_send_qkv_map, grad_send_oml_map);
+    SetFlashIndex(node, grad_send_qkv_map, grad_recv_qkv_map, grad_send_oml_map, grad_recv_oml_map);
     FindFAGradInputNode(node, dout_map, softmax_max_map, softmax_sum_map, attention_out_map);
   }
 }
