@@ -174,7 +174,7 @@ def test_matmul_qkv_1408_128_128(m, k, mstype, is_dyn):
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('m', [16, 1024])
 @pytest.mark.parametrize('k', [4096])
-@pytest.mark.parametrize('mstype', [ms.float16])
+@pytest.mark.parametrize('mstype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dyn', [False, True])
 @pytest.mark.env_onecard
 def test_matmul_qkv_11008_4096_4096(m, k, mstype, is_dyn):
@@ -190,7 +190,7 @@ def test_matmul_qkv_11008_4096_4096(m, k, mstype, is_dyn):
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('m', [32, 256])
 @pytest.mark.parametrize('k', [8192])
-@pytest.mark.parametrize('mstype', [ms.float16])
+@pytest.mark.parametrize('mstype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dyn', [False, True])
 @pytest.mark.env_onecard
 def test_matmul_ffn_3584_3584(m, k, mstype, is_dyn):
