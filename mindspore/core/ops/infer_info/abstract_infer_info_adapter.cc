@@ -31,6 +31,13 @@ BaseShapePtr AbstractInferInfoAdapter::GetShapePtr() {
   return shape_ptr_.value();
 }
 
+TypePtr AbstractInferInfoAdapter::GetTypePtr() {
+  RETURN_IF_OPTIONAL_HAS_VALUE(type_ptr_);
+  type_ptr_ = abs_->GetType();
+  MS_EXCEPTION_IF_NULL(type_ptr_.value());
+  return type_ptr_.value();
+}
+
 ShapeVector AbstractInferInfoAdapter::GetShape() {
   if (MS_UNLIKELY(IsSequence())) {
     MS_LOG(EXCEPTION) << "Calling GetType on a sequence, " << BaseDebugInfo();
@@ -44,7 +51,7 @@ ShapeVector AbstractInferInfoAdapter::GetShape() {
   } else if (shape_ptr->isa<abstract::NoShape>()) {
     return {};
   } else {
-    MS_LOG(EXCEPTION) << "Try to get shape from unsupported type: " << shape_ptr->ToString();
+    MS_LOG(EXCEPTION) << "Try to get shape from unsupported type: " << shape_ptr->ToString() << ". " << BaseDebugInfo();
   }
 }
 
@@ -59,8 +66,7 @@ TypeId AbstractInferInfoAdapter::GetType() {
   if (MS_UNLIKELY(IsNone())) {
     MS_LOG(EXCEPTION) << "Calling GetType on a None object, " << BaseDebugInfo();
   }
-  auto type_ptr = abs_->GetType();
-  MS_EXCEPTION_IF_NULL(type_ptr);
+  const auto &type_ptr = GetTypePtr();
   if (type_ptr->isa<TensorType>()) {
     auto tensor_type = type_ptr->cast<TensorTypePtr>();
     return tensor_type->element()->type_id();
@@ -74,14 +80,13 @@ TypeId AbstractInferInfoAdapter::GetType() {
 
 bool AbstractInferInfoAdapter::IsNone() {
   RETURN_IF_OPTIONAL_HAS_VALUE(is_none_);
-  is_none_ = abs_->isa<abstract::AbstractNone>();
+  is_none_ = GetTypePtr()->isa<TypeNone>();
   return is_none_.value();
 }
 
 bool AbstractInferInfoAdapter::IsSequence() {
   RETURN_IF_OPTIONAL_HAS_VALUE(is_sequence_);
-  is_sequence_ =
-    (abs_->GetType()->object_type() == kObjectTypeTuple) || (abs_->GetType()->object_type() == kObjectTypeList);
+  is_sequence_ = (GetTypePtr()->object_type() == kObjectTypeTuple) || (GetTypePtr()->object_type() == kObjectTypeList);
   return is_sequence_.value();
 }
 
@@ -112,7 +117,7 @@ InferInfoPtrList AbstractInferInfoAdapter::GetSequenceElements() {
     auto sequence_shape_ptr = abs_->GetShape()->cast<abstract::SequenceShapePtr>();
     MS_EXCEPTION_IF_NULL(sequence_shape_ptr);
     const auto &shapes = sequence_shape_ptr->shape();
-    auto type_ptr = abs_->GetType();
+    const auto &type_ptr = GetTypePtr();
     TypePtrList types;
     if (type_ptr->isa<Tuple>()) {
       types = type_ptr->cast<TuplePtr>()->elements();
@@ -154,4 +159,6 @@ ValuePtr AbstractInferInfoAdapter::GetValuePtr() {
 AbstractBasePtr AbstractInferInfoAdapter::GetAbstractPtr() { return abs_; }
 
 const std::string &AbstractInferInfoAdapter::BaseDebugInfo() { return base_debug_info_; }
+
+std::string AbstractInferInfoAdapter::DebugInfo() { return BaseDebugInfo() + " -> " + GetAbstractPtr()->ToString(); }
 }  // namespace mindspore::ops

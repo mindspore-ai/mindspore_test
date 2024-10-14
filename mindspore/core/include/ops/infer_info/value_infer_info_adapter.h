@@ -33,7 +33,7 @@ class MS_CORE_API ValueInferInfoAdapter : public InferInfo {
   ValueInferInfoAdapter() = delete;
   ValueInferInfoAdapter(const ValuePtr &value, const std::string &op_type, const std::string &arg_name)
       : value_(value), op_type_(op_type), arg_name_(arg_name) {
-    base_debug_info_ = "op type: " + op_type_ + ", input: " + arg_name_;
+    base_debug_info_ = "op type: [" + op_type_ + "], arg name: [" + arg_name_ + "]";
   }
 
   // Shape
@@ -52,6 +52,8 @@ class MS_CORE_API ValueInferInfoAdapter : public InferInfo {
   bool IsDynamicSequence() override;
   std::vector<InferInfoPtr> GetSequenceElements() override;
   InferInfoPtr GetDynamicSequenceElement() override;
+
+  std::string DebugInfo() override;
 
  private:
   ValuePtr GetValuePtr() override;

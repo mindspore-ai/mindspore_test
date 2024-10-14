@@ -33,7 +33,7 @@ class MS_CORE_API AbstractInferInfoAdapter : public InferInfo {
   AbstractInferInfoAdapter() = delete;
   AbstractInferInfoAdapter(const AbstractBasePtr &abs, const std::string &op_type, const std::string &arg_name)
       : abs_(abs), op_type_(op_type), arg_name_(arg_name) {
-    base_debug_info_ = "op type: " + op_type_ + ", input index: " + arg_name_;
+    base_debug_info_ = "op type: [" + op_type_ + "], arg name: [" + arg_name_ + "]";
   }
 
   // Shape
@@ -53,11 +53,14 @@ class MS_CORE_API AbstractInferInfoAdapter : public InferInfo {
   std::vector<InferInfoPtr> GetSequenceElements() override;
   InferInfoPtr GetDynamicSequenceElement() override;
 
+  std::string DebugInfo() override;
+
  private:
   const std::string &BaseDebugInfo() override;
   ValuePtr GetValuePtr() override;
   AbstractBasePtr GetAbstractPtr() override;
   BaseShapePtr GetShapePtr();
+  TypePtr GetTypePtr();
 
   const AbstractBasePtr abs_;
   const std::string op_type_;
@@ -65,6 +68,7 @@ class MS_CORE_API AbstractInferInfoAdapter : public InferInfo {
   std::string base_debug_info_;
 
   std::optional<BaseShapePtr> shape_ptr_;
+  std::optional<TypePtr> type_ptr_;
   std::optional<bool> is_dynamic_seq_;
   std::optional<bool> is_none_;
   std::optional<bool> is_sequence_;

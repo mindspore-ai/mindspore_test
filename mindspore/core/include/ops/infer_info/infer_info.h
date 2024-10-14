@@ -89,6 +89,8 @@ class MS_CORE_API InferInfo {
   virtual std::vector<InferInfoPtr> GetSequenceElements() = 0;
   virtual InferInfoPtr GetDynamicSequenceElement() = 0;
 
+  virtual std::string DebugInfo() = 0;
+
  protected:
   virtual ValuePtr GetValuePtr() = 0;
   virtual AbstractBasePtr GetAbstractPtr() = 0;
