@@ -4506,7 +4506,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('mul')(self, value)
 
-    def nan_to_num(self, nan=0.0, posinf=None, neginf=None):
+    def nan_to_num(self, nan=None, posinf=None, neginf=None):
         """
         For details, please refer to :func:`mindspore.ops.nan_to_num`.
         """
