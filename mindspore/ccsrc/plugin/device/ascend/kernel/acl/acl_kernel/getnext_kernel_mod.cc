@@ -41,9 +41,9 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
   std::vector<std::vector<int64_t>> new_output_shapes;
   if (is_dynamic_) {
     auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+    MS_EXCEPTION_IF_NULL(wingman_queue);
     std::vector<device::DataQueueItem> data;
     RetryPeakItemFromDataQueue(nullptr, wingman_queue, &data);
-    MS_EXCEPTION_IF_NULL(wingman_queue);
     MS_EXCEPTION_IF_CHECK_FAIL(outputs.size() == data.size(), "Size of output is not equal to size of data");
 
     output_size_list_.clear();
@@ -91,10 +91,13 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
 bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  auto wingman_queue = device::GetTdtWingManQueue(primitive_);
-  MS_EXCEPTION_IF_NULL(wingman_queue);
-  (void)wingman_queue->Pop();
-  return AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
+  auto ret = AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
+  if (ret) {
+    auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+    MS_EXCEPTION_IF_NULL(wingman_queue);
+    (void)wingman_queue->Pop();
+  }
+  return ret;
 }
 
 }  // namespace kernel
