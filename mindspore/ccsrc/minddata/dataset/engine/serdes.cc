@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,9 @@ Status Serdes::SaveJSONToFile(const nlohmann::json &json_string, const std::stri
 
     ChangeFileMode(whole_path.value(), S_IRUSR | S_IWUSR);
   } catch (const std::exception &err) {
-    file.close();
+    if (file.is_open()) {
+      file.close();
+    }
     RETURN_STATUS_UNEXPECTED("Invalid data, failed to save json string into file: " + file_name +
                              ", error message: " + err.what());
   }

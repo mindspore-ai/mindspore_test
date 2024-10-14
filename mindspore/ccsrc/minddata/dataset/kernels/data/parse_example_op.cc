@@ -94,6 +94,9 @@ uint8_t PeekTag(protobuf::io::CodedInputStream *stream) {
   if (!stream->GetDirectBufferPointer(&ptr, &size)) {
     return 0;
   }
+  if (ptr == nullptr) {
+    return 0;
+  }
   return *static_cast<const uint8_t *>(ptr);
 }
 
@@ -166,13 +169,21 @@ class Feature {
   }
 
   static std::string *construct_at_end(LimitedArraySlice<std::string> *bytes_list) {
+    if (bytes_list == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "LimitedArraySlice is nullptr.";
+    }
     if (bytes_list->EndDistance() <= 0) {
       return nullptr;
     }
     return &bytes_list->construct_at_end();
   }
 
-  static std::string *construct_at_end(std::vector<std::string> *bytes_list) { return &bytes_list->emplace_back(); }
+  static std::string *construct_at_end(std::vector<std::string> *bytes_list) {
+    if (bytes_list == nullptr) {
+      MS_EXCEPTION(RuntimeError) << "String vector is nullptr.";
+    }
+    return &bytes_list->emplace_back();
+  }
 
   template <typename Result>
   bool ParseBytesList(Result *bytes_list) const {
@@ -360,6 +371,9 @@ using Example = std::vector<FeatureMapEntry>;
 }  // namespace parsed
 
 inline bool SkipExtraneousTag(protobuf::io::CodedInputStream *stream) {
+  if (stream == nullptr) {
+    MS_EXCEPTION(RuntimeError) << "CodedInputStream is nullptr.";
+  }
   uint32_t data;
   uint64_t dummy;
   constexpr uint32_t kVarint = 0;
@@ -581,6 +595,7 @@ inline Status ReportUnexpectedDataShape(const StringPiece &feature_name) {
 
 Status CreateUint8TensorFromString(const std::vector<std::string> &bytes_list, std::shared_ptr<Tensor> *column_tensor,
                                    const TensorShape &column_shape, const std::string &column_name) {
+  RETURN_UNEXPECTED_IF_NULL(column_tensor);
   dsize_t total_size =
     std::accumulate(bytes_list.begin(), bytes_list.end(), 0,
                     [](dsize_t size, const std::string &str) { return size + static_cast<dsize_t>(str.size()); });
@@ -615,6 +630,7 @@ Status ParseExampleOp::Compute(const TensorRow &input, TensorRow *output) {
 Status ParseSingleKnownShapeColumn(const parsed::Feature &feature, std::shared_ptr<Tensor> *column_tensor,
                                    const StringPiece &feature_name, const ColDescriptor &column_descriptor,
                                    const DataType &example_dtype) {
+  RETURN_UNEXPECTED_IF_NULL(column_tensor);
   const size_t num_elements = column_descriptor.Shape().NumOfElements();
   switch (example_dtype.value()) {
     case DataType::DE_INT64: {
@@ -669,6 +685,7 @@ Status ParseSingleKnownShapeColumn(const parsed::Feature &feature, std::shared_p
 Status ParseSingleVarLenColumn(const parsed::Feature &feature, std::shared_ptr<Tensor> *column_tensor,
                                const StringPiece &feature_name, const ColDescriptor &column_descriptor,
                                const DataType &example_dtype) {
+  RETURN_UNEXPECTED_IF_NULL(column_tensor);
   std::vector<std::string> bytes_list;
   TensorVector<float> float_list;
   SmallVector<int64_t> int64_list;
@@ -738,6 +755,7 @@ Status ParseSingleVarLenColumn(const parsed::Feature &feature, std::shared_ptr<T
 }
 
 Status ParseExampleOp::ParseSingleExample(const TensorRow &raw_bytes, TensorRow *parsed_row) {
+  RETURN_UNEXPECTED_IF_NULL(parsed_row);
   const auto filename = raw_bytes.getPath().empty() ? "" : raw_bytes.getPath()[0];
   const auto tensor_iterator = raw_bytes[0]->begin<std::string_view>();
 
@@ -956,6 +974,7 @@ void ParallelFor(const std::function<void(size_t)> &function, const size_t task_
 
 Status FillAndCopyVarLenTensor(const std::vector<std::vector<VarLenTensorBuffer>> &minibatch_row_buffer,
                                std::shared_ptr<Tensor> *column_tensor, const size_t column_index) {
+  RETURN_UNEXPECTED_IF_NULL(column_tensor);
   ptrdiff_t buffer_offset = 0;
   for (const auto &minibatch_row : minibatch_row_buffer) {
     const auto &minibatch_tensor = minibatch_row[column_index].numeric_tensor;
@@ -975,6 +994,7 @@ Status FillAndCopyVarLenTensor(const std::vector<std::vector<VarLenTensorBuffer>
 Status FillAndCopyVarLenString(const std::vector<std::vector<VarLenTensorBuffer>> &minibatch_row_buffer,
                                std::shared_ptr<Tensor> *column_tensor, const size_t column_index,
                                const ColDescriptor &column_descriptor, dsize_t batch_size) {
+  RETURN_UNEXPECTED_IF_NULL(column_tensor);
   std::vector<std::string> string_buffer;
   dsize_t element_size = 0;
   for (const auto &minibatch_row : minibatch_row_buffer) {
@@ -1008,6 +1028,7 @@ Status FillAndCopyVarLenString(const std::vector<std::vector<VarLenTensorBuffer>
 Status MergeDenseVarLenMiniBatches(const std::vector<std::vector<VarLenTensorBuffer>> &varlen_dense_buffers,
                                    TensorRow *parsed_row, int32_t column_index, const DataSchema &data_schema,
                                    dsize_t batch_size) {
+  RETURN_UNEXPECTED_IF_NULL(parsed_row);
   const ColDescriptor &column_descriptor = data_schema.Column(column_index);
   if (column_descriptor.HasKnownShape()) {
     return Status::OK();
@@ -1027,6 +1048,7 @@ Status MergeDenseVarLenMiniBatches(const std::vector<std::vector<VarLenTensorBuf
 }
 
 Status ParseExampleOp::ParallelParseExample(const TensorRow &raw_bytes, TensorRow *parsed_row) {
+  RETURN_UNEXPECTED_IF_NULL(parsed_row);
   Tensor::TensorIterator tensor_iterator = raw_bytes[0]->begin<std::string_view>();
   RETURN_IF_NOT_OK(ConstructColumnMap(std::string(*tensor_iterator)));
   parsed_row->reserve(data_schema_.NumColumns());
@@ -1140,6 +1162,8 @@ Status ParseSerializedKnownShapeColumn(const parsed::Feature &feature, TensorRow
                                        const int32_t column_index, const size_t tensor_index,
                                        const StringPiece &feature_name, const ColDescriptor &column_descriptor,
                                        const DataType &example_dtype) {
+  RETURN_UNEXPECTED_IF_NULL(parsed_row);
+  RETURN_UNEXPECTED_IF_NULL(string_col_map);
   std::shared_ptr<Tensor> &column_tensor = (*parsed_row)[column_index];
   if (example_dtype != column_descriptor.Type()) {
     const std::string msg =
@@ -1201,6 +1225,7 @@ Status ParseSerializedKnownShapeColumn(const parsed::Feature &feature, TensorRow
 
 Status PushStringToBuffer(const std::vector<std::string> &bytes_list, VarLenTensorBuffer *varlen_tensor_buffer,
                           const ColDescriptor &column_descriptor) {
+  RETURN_UNEXPECTED_IF_NULL(varlen_tensor_buffer);
   if (column_descriptor.Type().value() == DataType::DE_STRING) {
     // check that each sample contains the same number of strings
     if (varlen_tensor_buffer->string_length != 0) {
@@ -1235,6 +1260,7 @@ Status PushStringToBuffer(const std::vector<std::string> &bytes_list, VarLenTens
 Status ParseSerializedVarLenColumn(const parsed::Feature &feature, VarLenTensorBuffer *varlen_tensor_buffer,
                                    const StringPiece &feature_name, const ColDescriptor &column_descriptor,
                                    const DataType &example_dtype) {
+  RETURN_UNEXPECTED_IF_NULL(varlen_tensor_buffer);
   bool type_cast_flag = false;
   if (example_dtype != column_descriptor.Type()) {
     const std::string msg =
@@ -1328,6 +1354,7 @@ Status ParseExampleOp::ParseSerializedExample(const std::string &example_bytes, 
                                               std::unordered_map<int32_t, std::vector<std::string>> *string_column_map,
                                               std::vector<VarLenTensorBuffer> *varlen_tensor_vector,
                                               const size_t tensor_index) {
+  RETURN_UNEXPECTED_IF_NULL(varlen_tensor_vector);
   parsed::Example parsed_example;
   CHECK_FAIL_RETURN_UNEXPECTED(ParseExample(example_bytes, &parsed_example),
                                "Failed to parse example bytes: " + example_bytes);
