@@ -863,7 +863,6 @@ bool ModelProcess::ResizeDynamicInputShape(const std::vector<ShapeVector> &new_s
     aclTensorDesc *input_desc =
       CALL_ASCEND_API(aclCreateTensorDesc, ACL_FLOAT, new_shapes[i].size(), &new_shapes[i][0], ACL_FORMAT_NCHW);
     auto ret = CALL_ASCEND_API(aclmdlSetDatasetTensorDesc, inputs_, input_desc, i);
-    (void)CALL_ASCEND_API(aclDestroyTensorDesc, input_desc);
     input_infos_[i].dynamic_acl_tensor_desc = input_desc;
     if (ret != ACL_ERROR_NONE) {
       MS_LOG(ERROR) << "Acl set dataset tensor desc failed";
