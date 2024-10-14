@@ -339,12 +339,20 @@ void SetStridedSliceStrategy(const AnfNodePtr &node) {
       input_strategy.push_back(1);
     }
     static const auto skip_redis = (common::GetEnv("PIPELINE_SLICE_SKIP_REDISTRIBUTION") == "1");
+    auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
     if (skip_redis && !full_batch && input_strategy.size() > 0) {
       auto dim = shape_list[1][0][0];
-      if (dev_num <= dim && ((dim % dev_num) == 0)) {
-        input_strategy[0] = dev_num;
-      } else if (dim < dev_num && ((dev_num % dim) == 0)) {
-        input_strategy[0] = dim;
+      if (!data_stra.empty()) {
+        auto cur_input_stra = data_stra.at(i);
+        if (dim % cur_input_stra.at(0) == 0) {
+          input_strategy[0] = cur_input_stra.at(0);
+        }
+      } else {
+        if (dev_num <= dim && ((dim % dev_num) == 0)) {
+          input_strategy[0] = dev_num;
+        } else if (dim < dev_num && ((dev_num % dim) == 0)) {
+          input_strategy[0] = dim;
+        }
       }
       auto prim = GetCNodePrimitive(node);
       if (prim->HasAttr("out_shard_size")) {
