@@ -18,6 +18,8 @@ Profiler util.
 This module provides the utils.
 """
 import os
+import time
+from functools import wraps
 
 # one sys count takes 10 ns, 1 ms has 100000 system count
 import re
@@ -26,6 +28,32 @@ import stat
 
 from mindspore import log as logger
 
+
+def timeit(custom_message=None):
+    """
+    Decorator to measure the execution time of a function.
+
+    Args:
+        custom_message (str, optional): Custom message to display. If not provided, the function name will be used.
+
+    Returns:
+        The result of the decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            result = func(*args, **kwargs)
+            execution_time = time.perf_counter() - start_time
+
+            message = custom_message or func.__name__
+            print(f"[{os.getpid()}] {message}, cost time {execution_time:.2f} s", flush=True)
+
+            return result
+
+        return wrapper
+
+    return decorator
 
 def to_int(param, param_name):
     """
