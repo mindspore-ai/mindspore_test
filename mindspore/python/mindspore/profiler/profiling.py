@@ -66,6 +66,8 @@ from mindspore.profiler.parser.ascend_integrate_generator import AscendIntegrate
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.parser.ascend_analysis.constant import Constant
+from mindspore.profiler.common.util import timeit
+
 
 INIT_OP_NAME = 'Default/InitDataSetQueue'
 
@@ -1481,6 +1483,7 @@ class Profiler:
         else:
             MultiProcessPool().add_async_job(self._ascend_graph_analyse_inner)
 
+    @timeit("Profiler analyse done")
     def _ascend_graph_analyse_inner(self, offline_path=None):
         """Ascend graph mode analyse."""
         job_id = self._get_profiling_job_id(offline_path)

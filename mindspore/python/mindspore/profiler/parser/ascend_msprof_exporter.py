@@ -24,6 +24,7 @@ from subprocess import Popen, PIPE
 import csv
 from mindspore import log as logger
 from mindspore.profiler.common.util import get_newest_file
+from mindspore.profiler.common.util import timeit
 
 
 class AscendMsprofExporter:
@@ -167,6 +168,7 @@ class AscendMsprofExporter:
             logger.warning('Get the drvVersion error, use single-export mode instead. detail : %s', err)
             return False
 
+    @timeit("CANN export done")
     def export(self, model_iteration_dict=None):
         """start_time is the time to collect PROF data"""
 
