@@ -3,12 +3,12 @@ mindspore.ops.primitive
 
 operators that can be used for constructor function of Cell
 
-For more information about dynamic shape support status, please refer to `Dynamic Shape Support Status of primitive Interface <https://mindspore.cn/docs/en/master/note/dynamic_shape_primitive.html>`_ .
+For more information about dynamic shape support status, please refer to `Dynamic Shape Support Status of primitive Interface <https://mindspore.cn/docs/en/master/api_python/dynamic_shape_primitive.html>`_ .
 
-For more information about the support for the bfloat16 data type, please refer to `Support List <https://mindspore.cn/docs/en/master/note/bfloat16_support.html>`_ .
+For more information about the support for the bfloat16 data type, please refer to `Support List <https://mindspore.cn/docs/en/master/api_python/bfloat16_support.html>`_ .
 
 For the details about the usage constraints of each operator in the operator parallel process,
-refer to `Usage Constraints During Operator Parallel <https://www.mindspore.cn/docs/en/master/note/operator_list_parallel.html>`_ .
+refer to `Usage Constraints During Operator Parallel <https://www.mindspore.cn/docs/en/master/api_python/operator_list_parallel.html>`_ .
 
 The module import method is as follows:
 
