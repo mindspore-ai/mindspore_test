@@ -1236,6 +1236,9 @@ std::string PyParser::BuilidPyInputTypeString(const py::object &obj) {
   if (py::isinstance<py::none>(obj)) {
     return "None";
   }
+  if (py::isinstance<mindspore::Type>(obj)) {
+    return "mindspore.dtype";
+  }
 
   if (py::isinstance<py::tuple>(obj) || py::isinstance<py::list>(obj)) {
     std::stringstream ss;

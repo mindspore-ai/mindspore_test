@@ -156,6 +156,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name)
                 cls_names.add(class_name)
                 func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
+                                                                         func_name=func_name,
                                                                          device_dispatcher=device_dispatcher_str,
                                                                          signatures=signature_str,
                                                                          max_args=max_size)
@@ -227,6 +228,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             op_proto = tensor_proto.op_proto
             max_size = max(len(op_proto.op_args), max_size)
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG.replace(class_name=func_api_name.capitalize(),
+                                                                                 func_name=func_api_name,
                                                                                  signatures=signatures_str,
                                                                                  dispatch_cases=dispatch_cases_str,
                                                                                  max_args=max_size)

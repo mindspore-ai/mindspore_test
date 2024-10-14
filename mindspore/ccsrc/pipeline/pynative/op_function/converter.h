@@ -79,8 +79,9 @@ struct FunctionSignature {
 
 // parser util
 struct PythonArgParser {
-  explicit PythonArgParser(std::vector<std::string> fmts);
+  explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
   inline const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
+  std::string parse_error(const py::list &args, const py::dict &kwargs);
 
  private:
   std::vector<FunctionSignature> signatures_;  // all overloads
@@ -96,7 +97,7 @@ inline const FunctionSignature &PythonArgParser::parse(const py::list &args, con
       return signature;
     }
   }
-  MS_LOG(EXCEPTION) << "Matching failed. Please check the parameter list.";
+  MS_EXCEPTION(TypeError) << parse_error(args, kwargs);
 }
 
 class Converter {

@@ -437,7 +437,8 @@ ValueTuplePtr Converter::ConvertValueTupleByCastDtype(const py::list &python_arg
   return nullptr;
 }
 
-PythonArgParser::PythonArgParser(std::vector<std::string> fmts) : max_args_(0) {
+PythonArgParser::PythonArgParser(std::vector<std::string> fmts, const std::string &function_name)
+    : function_name_(function_name), max_args_(0) {
   int index = 0;
   for (auto &stmt : fmts) {
     signatures_.emplace_back(stmt, index);
@@ -448,9 +449,26 @@ PythonArgParser::PythonArgParser(std::vector<std::string> fmts) : max_args_(0) {
       max_args_ = signature.max_args_;
     }
   }
-  if (signatures_.size() > 0) {
-    function_name_ = signatures_[0].name_;
+}
+
+std::string PythonArgParser::parse_error(const py::list &args, const py::dict &kwargs) {
+  std::vector<std::string> arg_info_list;
+  for (const auto &py_arg : args) {
+    (void)arg_info_list.emplace_back(
+      PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(py_arg)));
   }
+  for (const auto &py_kwarg : kwargs) {
+    std::string kwarg_info = py::str(py_kwarg.first);
+    kwarg_info += "=";
+    kwarg_info += PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(py_kwarg.second));
+    (void)arg_info_list.emplace_back(kwarg_info);
+  }
+  std::string result = std::accumulate(
+    arg_info_list.begin(), arg_info_list.end(), std::string(),
+    [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
+  std::stringstream ss;
+  ss << "Failed calling " << function_name_ << " with \"" << function_name_ << "(" << result << ")\"." << std::endl;
+  return ss.str();
 }
 
 bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::list *python_args) {
