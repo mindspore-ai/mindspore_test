@@ -41,7 +41,7 @@ STATUS ParseInt8GivenIntTensorFill(const onnx::NodeProto &onnx_node, PrimitiveCP
     return RET_OK;
   }
   ShapeVector shape_vector(shape.begin(), shape.end());
-  if (INT_MUL_OVERFLOW_THRESHOLD(data_count, sizeof(int64_t), SIZE_MAX)) {
+  if (INT_MUL_OVERFLOW_THRESHOLD(static_cast<size_t>(data_count), sizeof(int64_t), SIZE_MAX)) {
     MS_LOG(ERROR) << "data_size overflow";
     return RET_ERROR;
   }
