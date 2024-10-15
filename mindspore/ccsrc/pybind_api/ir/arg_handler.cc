@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <vector>
+#include <tuple>
+#include <string>
 #include "pybind_api/ir/arg_handler.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
@@ -73,6 +77,79 @@ std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::stri
   auto string_value = obj.cast<std::string>();
   auto enum_value = mindspore::ops::StringToEnumImpl(op_name, arg_name, string_value);
   return std::make_optional(std::make_shared<Int64Imm>(enum_value));
+}
+
+std::vector<int> ToPair(const std::string &op_name, const std::string &arg_name, const py::object &arg_val) {
+  if (py::isinstance<py::int_>(arg_val) || py::isinstance<py::float_>(arg_val)) {
+    int value = arg_val.cast<int>();
+    return {value, value};
+  }
+  if (py::isinstance<py::list>(arg_val) || py::isinstance<py::tuple>(arg_val)) {
+    std::vector<int> values;
+    auto items = py::cast<std::vector<py::object>>(arg_val);
+    std::transform(items.begin(), items.end(), std::back_inserter(values),
+                   [](const py::object &item) { return item.cast<int>(); });
+    return values;
+  }
+  MS_LOG(EXCEPTION) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
+                    << py::str(arg_val).cast<std::string>() << ".";
+}
+
+std::vector<int> To2dPaddings(const std::string &op_name, const std::string &arg_name, const py::object &pad) {
+  if (py::isinstance<py::int_>(pad)) {
+    int value = pad.cast<int>();
+    return {value, value};
+  }
+  if (py::isinstance<py::list>(pad) || py::isinstance<py::tuple>(pad)) {
+    std::vector<int> values;
+    auto items = py::cast<std::vector<py::object>>(pad);
+    std::transform(items.begin(), items.end(), std::back_inserter(values),
+                   [](const py::object &item) { return item.cast<int>(); });
+    return values;
+  }
+  MS_LOG(EXCEPTION) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
+                    << py::str(pad).cast<std::string>() << ".";
+}
+
+std::vector<int> ToVector(const std::string &op_name, const std::string &arg_name, const py::object &arg) {
+  if (py::isinstance<py::int_>(arg)) {
+    int value = arg.cast<int>();
+    return {value, value};
+  }
+  if (py::isinstance<py::list>(arg) || py::isinstance<py::tuple>(arg)) {
+    if (py::len(arg) == 4) {
+      py::list arg_list = arg.cast<py::list>();
+      return {arg_list[2].cast<int>(), arg_list[3].cast<int>()};
+    }
+    std::vector<int> values;
+    auto items = py::cast<std::vector<py::object>>(arg);
+    std::transform(items.begin(), items.end(), std::back_inserter(values),
+                   [](const py::object &item) { return item.cast<int>(); });
+    return values;
+  }
+  MS_LOG(EXCEPTION) << "For '" << op_name << "', the value of '" << arg_name << "' is invalid: '"
+                    << py::str(arg).cast<std::string>() << ".";
+}
+
+std::vector<int> ToKernelSize(const std::string &op_name, const std::string &arg_name, const py::object &kernel_size) {
+  return ToVector(op_name, arg_name, kernel_size);
+}
+
+std::vector<int> ToStrides(const std::string &op_name, const std::string &arg_name, const py::object &stride) {
+  return ToVector(op_name, arg_name, stride);
+}
+
+std::vector<int> ToDilations(const std::string &op_name, const std::string &arg_name, const py::object &dilation) {
+  return ToVector(op_name, arg_name, dilation);
+}
+
+std::vector<int> ToOutputPadding(const std::string &op_name, const std::string &arg_name,
+                                 const py::object &output_padding) {
+  return ToVector(op_name, arg_name, output_padding);
+}
+
+std::vector<int> ToRates(const std::string &op_name, const std::string &arg_name, const py::object &rates) {
+  return ToVector(op_name, arg_name, rates);
 }
 
 }  // namespace pynative

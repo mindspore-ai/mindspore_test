@@ -28,7 +28,7 @@ import gen_constants as K
 from base_generator import BaseGenerator
 
 
-class OpHeaderFileGenerator(BaseGenerator):
+class OpsDefHGenerator(BaseGenerator):
     """
     Generates header files for operator definitions.
 

@@ -68,9 +68,13 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'py::object res = fn(*py_args, **py_kwargs);\n'
             'return res;\n'
         )
-        self.arg_handler_template = Template(
+        self.arg_handler_prt_template = Template(
             "arg_list[${idx}] = "
             "(*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
+        )
+        self.arg_handler_template = Template(
+            "arg_list[${idx}] = "
+            "pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]);\n"
         )
         self.arg_handler_optional_template = Template(
             'if (!py::isinstance<py::none>(arg_list[${idx}])) {\n'
@@ -394,15 +398,20 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if arg_handler:
                 func_name = func_proto.func_name
                 op_arg_name = op_arg.arg_name
-                arg_handler_str = self.arg_handler_template.replace(func_str=func_str,
-                                                                    func_name=func_name,
-                                                                    op_arg_name=op_arg_name,
-                                                                    idx=idx)
+                if func_str in ("StrToEnum", "DtypeToTypeId"):
+                    arg_handler_str = self.arg_handler_prt_template.replace(func_str=func_str,
+                                                                            func_name=func_name,
+                                                                            op_arg_name=op_arg_name,
+                                                                            idx=idx)
+                else:
+                    arg_handler_str = self.arg_handler_template.replace(func_str=func_str,
+                                                                        func_name=func_name,
+                                                                        op_arg_name=op_arg_name,
+                                                                        idx=idx)
+
                 if op_arg.default == "None":
                     arg_handler_str = self.arg_handler_optional_template.replace(idx=idx,
                                                                                  arg_handler_str=arg_handler_str)
-                else:
-                    pass
                 arg_handler_processor.append(arg_handler_str)
 
         return arg_handler_processor

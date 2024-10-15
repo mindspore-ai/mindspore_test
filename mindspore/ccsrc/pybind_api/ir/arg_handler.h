@@ -19,6 +19,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 #include "ir/scalar.h"
 #include "include/common/pybind_api/api_register.h"
 
@@ -30,6 +31,21 @@ std::optional<Int64ImmPtr> DtypeToTypeId(const std::string &op_name, const std::
                                          const py::object &obj);
 
 std::optional<Int64ImmPtr> StrToEnum(const std::string &op_name, const std::string &arg_name, const py::object &obj);
+
+std::vector<int> ToPair(const std::string &op_name, const std::string &arg_name, const py::object &arg_val);
+
+std::vector<int> To2dPaddings(const std::string &op_name, const std::string &arg_name, const py::object &pad);
+
+std::vector<int> ToKernelSize(const std::string &op_name, const std::string &arg_name, const py::object &kernel_size);
+
+std::vector<int> ToStrides(const std::string &op_name, const std::string &arg_name, const py::object &stride);
+
+std::vector<int> ToDilations(const std::string &op_name, const std::string &arg_name, const py::object &dilation);
+
+std::vector<int> ToOutputPadding(const std::string &op_name, const std::string &arg_name,
+                                 const py::object &output_padding);
+
+std::vector<int> ToRates(const std::string &op_name, const std::string &arg_name, const py::object &rates);
 
 }  // namespace pynative
 }  // namespace mindspore

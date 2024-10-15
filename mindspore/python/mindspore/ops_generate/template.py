@@ -251,7 +251,7 @@ def ${func_name}(${func_args}):
     return ${func_impl_name}_impl(${input_args})\n\n""")
 
 OP_PROTO_TEMPLATE = Template("""
-${class_name}FuncImpl g${class_name}FuncImpl;
+${func_impl_declaration}
 OpDef g${class_name} = {
   /*.name_=*/"${class_name}",
   /*.args_=*/ {
@@ -266,7 +266,7 @@ OpDef g${class_name} = {
   /*.indexes_ =*/ {
     ${indexes}
   },
-  /*.func_impl_=*/g${class_name}FuncImpl,
+  /*.func_impl_=*/${func_impl_define},
   /*.enable_dispatch_ =*/${enable_dispatch},
   /*.is_view_ =*/${is_view},
 };
@@ -423,6 +423,10 @@ TUPLE_TENSOR_NOT_SUPPORTED = Template("""
 FUNCTIONAL_MAP_CC_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./mindspore/ccsrc/pipeline/pynative/op_function/template/functional_map_cc.tpl'))
+
+FUNCTIONAL_MAP_H_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 f'./mindspore/ccsrc/pipeline/pynative/op_function/template/functional_map_h.tpl'))
 
 ADD_TENSOR_DOCS_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_docs_py.tpl'))

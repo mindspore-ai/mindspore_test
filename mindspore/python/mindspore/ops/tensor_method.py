@@ -17,7 +17,7 @@
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
-from mindspore.ops.auto_generate import add
+from mindspore.ops.auto_generate import add, max_
 from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar
 from mindspore.ops.function.math_func import mean
 from mindspore.ops.function.array_func import argmax
@@ -40,11 +40,19 @@ def tensor_argmax(input, dim=None, keepdim=False):
     return argmax(input, dim, keepdim)
 
 
+def deprecated_tensor_argmax(input, axis=None, keepdims=False):
+    return argmax(input, axis, keepdims)
+
+
 def tensor_add(input, other, alpha=1):
     return add(input, other)
 
 
-def tensor_max(input, axis=None, keepdims=False, *, initial=None, where=None, return_indices=False):
+def tensor_max(input):
+    return max_(input)
+
+
+def deprecated_tensor_max(input, axis=None, keepdims=False, *, initial=None, where=None, return_indices=False):
     if isinstance(axis, (list, tuple)):
         reduce_max = P.ReduceMax
         maximum = F.maximum

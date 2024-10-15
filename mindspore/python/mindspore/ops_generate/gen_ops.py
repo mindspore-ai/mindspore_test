@@ -15,6 +15,7 @@
 """
 Generate operator definition from ops.yaml
 """
+import copy
 import logging
 import os
 import shutil
@@ -26,6 +27,7 @@ from op_def_py_generator import OpDefPyGenerator
 from aclnn_kernel_register_auto_cc_generator import AclnnKernelRegisterAutoCcGenerator
 from cpp_create_prim_instance_helper_generator import CppCreatePrimInstanceHelperGenerator
 from ops_def_cc_generator import OpsDefCcGenerator
+from ops_def_h_generator import OpsDefHGenerator
 from ops_primitive_h_generator import OpsPrimitiveHGenerator
 from lite_ops_cpp_generator import LiteOpsCcGenerator, LiteOpsHGenerator
 from ops_name_h_generator import OpsNameHGenerator
@@ -65,6 +67,11 @@ def call_ops_def_cc_generator(work_path, op_protos):
     generator.generate(work_path, op_protos)
 
 
+def call_ops_def_h_generator(work_path, op_protos):
+    generator = OpsDefHGenerator()
+    generator.generate(work_path, op_protos)
+
+
 def call_ops_primitive_h_generator(work_path, op_protos):
     generator = OpsPrimitiveHGenerator()
     generator.generate(work_path, op_protos)
@@ -85,23 +92,38 @@ def call_ops_name_h_generator(work_path, op_protos):
     h_generator.generate(work_path, op_protos)
 
 
-def generate_ops_cc_files(work_path, op_protos):
+def generate_ops_cc_files(work_path, op_protos, op_protos_with_deprecated):
     """
     Generate ops c++ file from yaml.
     """
-    call_ops_def_cc_generator(work_path, op_protos)
+    call_ops_def_cc_generator(work_path, op_protos_with_deprecated)
+    call_ops_def_h_generator(work_path, op_protos_with_deprecated)
     call_ops_primitive_h_generator(work_path, op_protos)
     call_lite_ops_h_generator(work_path, op_protos)
     call_lite_ops_cc_generator(work_path, op_protos)
     call_ops_name_h_generator(work_path, op_protos)
 
 
-def generate_create_instance_helper_file(work_path, op_protos):
+def get_tensor_op_protos_with_deprecated(func_protos, op_protos):
+    """
+    Get op_protos with deprecated op_protos from func_protos.
+    """
+    tensor_op_protos = copy.deepcopy(op_protos)
+    for _, item in func_protos.items():
+        for func_proto in item:
+            op_name = func_proto.op_proto.op_name
+            if "deprecated" in func_proto.op_proto.op_name:
+                func_proto.op_proto.op_class.name = ''.join(word.capitalize() for word in op_name.split('_'))
+                tensor_op_protos.append(func_proto.op_proto)
+    return tensor_op_protos
+
+
+def generate_create_instance_helper_file(work_path, op_protos_with_deprecated):
     """
     Generate C++ helper file from yaml.
     """
     generator = CppCreatePrimInstanceHelperGenerator()
-    generator.generate(work_path, op_protos)
+    generator.generate(work_path, op_protos_with_deprecated)
 
 
 def generate_aclnn_reg_file(work_path, op_protos):
@@ -172,13 +194,15 @@ def main():
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
     deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
     func_protos, alias_func_mapping = load_func_protos_from_yaml(tensor_yaml_dict, op_protos, deprecated_op_protos)
+    # for generate tensor method deprecated in graph mode
+    op_protos_with_deprecated = get_tensor_op_protos_with_deprecated(func_protos, op_protos)
 
     # generate ops python files
     generate_ops_py_files(work_path, op_protos, doc_yaml_dict, "gen")
     # generate ops c++ files
-    generate_ops_cc_files(work_path, op_protos)
+    generate_ops_cc_files(work_path, op_protos, op_protos_with_deprecated)
     # generate create prim instance helper file
-    generate_create_instance_helper_file(work_path, op_protos)
+    generate_create_instance_helper_file(work_path, op_protos_with_deprecated)
     # generate pyboost code
     gen_pyboost_code(work_path, op_protos, doc_yaml_dict, func_protos)
     # generate aclnn kernelmod register

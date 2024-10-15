@@ -18,6 +18,7 @@ Generates C++ functional map header files for graph mode.
 
 import os
 import template
+import pyboost_utils
 import gen_constants as K
 from gen_utils import save_file
 from base_generator import BaseGenerator
@@ -33,8 +34,13 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Initializes the generator with templates for the functional map.
         """
         self.function_map_cc_template = template.FUNCTIONAL_MAP_CC_TEMPLATE
+        self.function_map_h_template = template.FUNCTIONAL_MAP_H_TEMPLATE
         self.class_to_method_template = template.Template("{\"${class_name}\", \"${method_name}\"}")
         self.functional_map_template = template.Template("{\"${func_api_name}\", {${class_to_method_str}}},")
+        self.k_prim_op_template = template.Template("prim::kPrim${camel_op_name}")
+        self.deprecated_method_decl_template = template.Template(
+            "auto ${dep_op_name} = std::make_shared<prim::DeprecatedTensorMethod>(\"${dep_op_name}\", \"${op_name}\");")
+        self.functional_method_map_template = template.Template("{\"${op_name}\", {${sort_func_method_list_str}}},")
 
         self.arg_handler_map = {"to_2d_paddings": ["tuple[int]", "list[int]", "int"],
                                 "dtype_to_type_id": ["int", "type"],
@@ -66,12 +72,17 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Returns:
             None
         """
+        dep_method_decl_list = self._get_dep_method_decl_list(func_protos_data)
+        functional_method_map_list = self._get_functional_method_map(func_protos_data, alias_func_mapping)
         functional_map_list = self._get_functional_map_list(func_protos_data, alias_func_mapping)
         funcs_sig_map_list = self._get_func_sigs_list(func_protos_data, alias_func_mapping)
-        functional_map_cc_code = self.function_map_cc_template.replace(functional_map=functional_map_list,
+        functional_map_cc_code = self.function_map_cc_template.replace(deprecated_method_decl=dep_method_decl_list,
+                                                                       functional_method_map=functional_method_map_list,
+                                                                       functional_map=functional_map_list,
                                                                        func_sigs_map=funcs_sig_map_list)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         save_file(save_path, "functional_map.cc", functional_map_cc_code)
+        save_file(save_path, "functional_map.h", self.function_map_h_template.replace())
 
     def _get_functional_map_list(self, func_protos_data, alias_func_mapping):
         """
@@ -219,3 +230,69 @@ class FunctionalMapCppGenerator(BaseGenerator):
             else:
                 raise ValueError(f"Invalid type {arg_type} in api: {func_api_name} {arg_name}.")
         return generalized_type_list
+
+    def _get_dep_method_decl_list(self, func_protos_data):
+        """
+        Extracts and generates declarations for deprecated methods from the provided function prototypes.
+
+        Args:
+            func_protos_data (dict): A dictionary where keys are function API names and values are lists
+                of function prototypes. Each prototype contains an operation name.
+
+        Returns:
+            list: A list of strings, each representing a declaration for a deprecated method.
+        """
+        deprecated_method_decl_list = []
+        for func_api_name, func_protos in func_protos_data.items():
+            for func_proto in func_protos:
+                op_name = func_proto.op_proto.op_name
+                if not op_name.startswith("deprecated"):
+                    continue
+
+                deprecated_method_name = ''.join(word.capitalize() for word in op_name.split('_'))
+                deprecated_method_decl_list.append(
+                    self.deprecated_method_decl_template.replace(dep_op_name=deprecated_method_name,
+                                                                 op_name=func_api_name))
+
+        return deprecated_method_decl_list
+
+    def _get_functional_method_map(self, func_protos_data, alias_func_mapping):
+        """
+            Generates a list of functional method maps from the provided function prototypes and alias mappings.
+
+            Args:
+                func_protos_data (dict): A dictionary where keys are function API names and values are lists
+                    of function prototypes.
+                alias_func_mapping (dict): A dictionary mapping function API names to their aliases.
+
+            Returns:
+                list: A list of strings, each representing a functional method map.
+        """
+        def get_sort_func_method_list(func_protos):
+            """
+            Retrieves a sorted list of operator primitives, prioritizing deprecated operators.
+            """
+            func_method_list = []
+            for func_proto in func_protos:
+                k_op_name = pyboost_utils.get_op_name(func_proto.op_proto.op_name, func_proto.op_proto.op_class.name)
+                if k_op_name.startswith("Deprecated"):
+                    func_method_list.append(k_op_name)
+                else:
+                    func_method_list.append(self.k_prim_op_template.replace(camel_op_name=k_op_name))
+
+            func_method_list.sort(key=lambda x: x.startswith("Deprecated"), reverse=True)
+            return func_method_list
+
+        deprecated_method_decl_list = []
+        for func_api_name, func_protos in func_protos_data.items():
+            sort_func_method_list = get_sort_func_method_list(func_protos)
+            deprecated_method_decl_list.append(
+                self.functional_method_map_template.replace(op_name=func_api_name,
+                                                            sort_func_method_list_str=sort_func_method_list))
+
+            if func_api_name in alias_func_mapping:
+                deprecated_method_decl_list.append(
+                    self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
+                                                                sort_func_method_list_str=sort_func_method_list))
+
+        return deprecated_method_decl_list

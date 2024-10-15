@@ -38,6 +38,9 @@ class OpsDefCcGenerator(BaseGenerator):
         Initializes templates for generating C++ operator definitions.
         """
         self.include_template = template.Template("""#include "${path}/${operator_name}.h\"\n""")
+        self.func_impl_declaration_template = template.Template("${class_name}FuncImpl g${class_name}FuncImpl;")
+        self.empty_func_impl_declaration_template = template.Template("static OpFuncImpl g${class_name}FuncImpl;")
+        self.func_impl_define_template = template.Template("g${class_name}FuncImpl")
         self.OP_PROTO_TEMPLATE = template.OP_PROTO_TEMPLATE
         self.CC_OPS_DEF_TEMPLATE = template.Template(K.CC_OPS_DEF)
 
@@ -54,7 +57,13 @@ class OpsDefCcGenerator(BaseGenerator):
 
         for op_proto in op_protos:
             operator_name = op_proto.op_name
-            gen_include += self.include_template.replace(path=K.MS_OPS_FUNC_IMPL_PATH, operator_name=operator_name)
+            class_name = op_proto.op_class.name
+            if "deprecated" not in operator_name:
+                gen_include += self.include_template.replace(path=K.MS_OPS_FUNC_IMPL_PATH, operator_name=operator_name)
+                func_impl_declaration_str = self.func_impl_declaration_template.replace(class_name=class_name)
+            else:
+                func_impl_declaration_str = self.empty_func_impl_declaration_template.replace(class_name=class_name)
+            func_impl_define = self.func_impl_define_template.replace(class_name=class_name)
 
             # process input
             args_dict, cc_index_str, input_args_str = process_input_args(op_proto)
@@ -62,16 +71,20 @@ class OpsDefCcGenerator(BaseGenerator):
             # Process outputs.
             return_args_str = get_cc_op_def_return(args_dict, op_proto)
 
-            class_name = op_proto.op_class.name
+
             inputs_args = self.process_args(op_proto.op_args)
             signature_code = generate_cc_op_signature(op_proto.op_args_signature, inputs_args)
             enable_dispatch = "true" if op_proto.op_dispatch and op_proto.op_dispatch.enable else "false"
             is_view = "true" if op_proto.op_view else "false"
-            op_def_cc = self.OP_PROTO_TEMPLATE.replace(class_name=class_name, input_args=input_args_str,
-                                                       return_args=return_args_str, signatures=signature_code,
+            op_def_cc = self.OP_PROTO_TEMPLATE.replace(class_name=class_name,
+                                                       input_args=input_args_str,
+                                                       return_args=return_args_str,
+                                                       signatures=signature_code,
                                                        indexes=cc_index_str,
                                                        enable_dispatch=enable_dispatch,
-                                                       is_view=is_view)
+                                                       is_view=is_view,
+                                                       func_impl_declaration=func_impl_declaration_str,
+                                                       func_impl_define=func_impl_define)
             gen_cc_code += op_def_cc
             if op_proto.op_view:
                 view_op_def = op_def_cc.replace(class_name, class_name + "View")
