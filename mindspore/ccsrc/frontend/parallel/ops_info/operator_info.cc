@@ -1491,10 +1491,11 @@ Status OperatorInfo::InitWithAutoRepeatCalc(const StrategyPtr &in_strategy, cons
 }
 
 Status OperatorInfo::CheckInputLayout() {
-  MS_LOG(ERROR) << "Current op " << name_
-                << " does not support config layout. Please check "
-                   "https://www.mindspore.cn/docs/zh-CN/master/note/operator_list_parallel.html to get limitation "
-                   "and more details";
+  MS_LOG(ERROR)
+    << "Current op " << name_
+    << " does not support config layout. Please check "
+       "https://www.mindspore.cn/docs/zh-CN/master/api_python/operator_list_parallel.html to get limitation "
+       "and more details";
   // Check self_define_shard attribute
   if (!self_define_shard_) {
     MS_LOG(ERROR) << "Please set add_prim_attr('self_define_shard', True) to " << name_
