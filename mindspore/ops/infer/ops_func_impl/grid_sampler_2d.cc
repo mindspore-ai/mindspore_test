@@ -89,7 +89,9 @@ TypePtr GridSampler2DFuncImpl::InferType(const PrimitivePtr &prim,
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   bool is_ascend = (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
-  if (is_ascend && input_x_type->type_id() == kNumberTypeFloat16) {
+  auto tensor_type = input_x_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(tensor_type);
+  if (is_ascend && tensor_type->element()->type_id() == kNumberTypeFloat16) {
     MS_EXCEPTION(TypeError) << "GridSampler2D doesn't support float16 on ascend.";
   }
   return input_x_type->Clone();
