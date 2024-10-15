@@ -39,7 +39,7 @@ def compile_custom_run(workspace_dir):
         shutil.rmtree(dst_compiler_path)
         shutil.copytree(custom_compiler_path, dst_compiler_path)
 
-    op_path, _ = os.path.split(__file__)
+    op_path, _ = os.path.split(os.path.abspath(__file__))
     op_host_path = os.path.join(op_path, 'op_host')
     op_kernel_path = os.path.join(op_path, 'op_kernel')
     command = [
