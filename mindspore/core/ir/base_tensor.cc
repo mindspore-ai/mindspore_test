@@ -351,15 +351,6 @@ abstract::AbstractBasePtr BaseTensor::ToAbstract() {
   return abs_tensor;
 }
 
-abstract::AbstractBasePtr BaseTensor::GetAbstractCache() {
-  auto abs = abstract_.lock();
-  if (abs != nullptr) {
-    MS_LOG(DEBUG) << "Get cached abstract " << abs->ToString() << " real tensor shape is " << shape_;
-    return abs;
-  }
-  return ToAbstract();
-}
-
 std::string BaseTensor::GetShapeAndDataTypeInfo() const {
   std::ostringstream buf;
   buf << "Tensor shape:[" << shape() << "]" << this->Dtype()->ToString();
@@ -436,7 +427,6 @@ TypeId BaseTensor::set_data_type(TypeId data_type) {
 }
 
 size_t BaseTensor::set_shape(const ShapeVector &shape) {
-  abstract_.reset();
   if (DataSize() != SizeOf(shape)) {
     data_ = MakeTensorData(data_type_, shape);
   }

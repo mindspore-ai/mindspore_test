@@ -48,10 +48,7 @@ class COMMON_EXPORT AbstractConverter {
     }
     return ConvertAbstract(t.value());
   }
-  void clear() { abstract_cache_.clear(); }
-
- private:
-  AbstractCache abstract_cache_;
+  void clear() {}
 };
 }  // namespace pynative
 }  // namespace mindspore

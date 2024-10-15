@@ -20,7 +20,7 @@
 
 namespace mindspore {
 namespace pynative {
-void AbstractConverter::CacheAbstract(const AbstractBasePtr &abstract) { abstract_cache_.Push(abstract); }
+void AbstractConverter::CacheAbstract(const AbstractBasePtr &abstract) {}
 
 AbstractBasePtr AbstractConverter::ConvertAbstract(const ValuePtr &t) {
   MS_EXCEPTION_IF_NULL(t);
@@ -40,8 +40,6 @@ AbstractBasePtr AbstractConverter::ConvertAbstract(const BaseTensorPtr &t) {
   MS_EXCEPTION_IF_NULL(t);
   auto abs = t->ToAbstract();
   abs->set_value(kValueAny);
-  t->set_abstract(abs);
-  abstract_cache_.Push(abs);
   return abs;
 }
 
@@ -53,9 +51,6 @@ AbstractBasePtr AbstractConverter::ConvertAbstract(const ValueTuplePtr &t) {
     auto abs = val->ToAbstract();
     if (val->isa<tensor::BaseTensor>()) {
       abs->set_value(kValueAny);
-      auto tensor = val->cast<tensor::BaseTensorPtr>();
-      tensor->set_abstract(abs);
-      abstract_cache_.Push(abs);
     }
     abs_list[i] = abs;
   }

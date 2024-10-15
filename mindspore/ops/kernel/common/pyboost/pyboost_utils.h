@@ -38,7 +38,6 @@ using AbstractConverter = pynative::AbstractConverter;
 using AddressInfoPair = std::pair<std::vector<kernel::KernelTensor *>, device::DeviceAddressPtrList>;
 using BaseTensor = tensor::BaseTensor;
 using BaseTensorPtr = tensor::BaseTensorPtr;
-AbstractBasePtr BACKEND_EXPORT ToAbstractNoValue(const BaseTensorPtr &tensor);
 
 class BACKEND_EXPORT PyBoostUtils {
  public:
