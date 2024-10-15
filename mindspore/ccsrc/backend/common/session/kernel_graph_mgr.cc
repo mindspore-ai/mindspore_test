@@ -582,8 +582,9 @@ nlohmann::json SaveAnfKernelInfo(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(device_kernel_info);
   nlohmann::json out_in_ref_json;
   const auto &out_in_ref = device_kernel_info->out_in_ref_map();
-  (void)(std::for_each(out_in_ref.begin(), out_in_ref.end(),
-                       [&out_in_ref_json](const auto &iter) { out_in_ref_json[iter.first] = iter.second; }));
+  (void)(std::for_each(out_in_ref.begin(), out_in_ref.end(), [&out_in_ref_json](const auto &iter) {
+    out_in_ref_json[std::to_string(iter.first)] = iter.second;
+  }));
   if (!out_in_ref_json.empty()) {
     single_json[kOutInRef] = out_in_ref_json;
   }
