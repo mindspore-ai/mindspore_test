@@ -91,6 +91,14 @@ REG_FALLBACK_BUILDER("FlattenExt").SetBody(BODYFUNC(ib) {
   return {out};
 });
 
+REG_FALLBACK_BUILDER("ViewAs").SetBody(BODYFUNC(ib) {
+  NodePtr input = ib->GetInput(kIndex0);
+  NodePtr other = ib->GetInput(kIndex1);
+  auto shape = ib->Shape(other);
+  auto out = ib->Reshape(input, shape);
+  return {out};
+});
+
 REG_FALLBACK_BUILDER("Ones").SetBody(BODYFUNC(ib) {
   auto size = ib->GetInput(kIndex0);
   auto dtype = ib->GetInput(kIndex1);

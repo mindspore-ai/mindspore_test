@@ -1,0 +1,31 @@
+view_as:
+    description: |
+        Change the shape of the input tensor based on the shape of other.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input tensor.
+            other (Tensor): The shape of return tensor is same as the shape of other.
+
+        Returns:
+            Tensor, which has the same shape of other.
+
+        Raises:
+            TypeError: If `input` is not a tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([[1, 2, 3], [2, 3, 4]], dtype=np.float32))
+            >>> other = Tensor(np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32))
+            >>> output = ops.view_as(input, other)
+            >>> print(output)
+            [[1. 2.]
+             [3. 2.]
+             [3. 4.]]
