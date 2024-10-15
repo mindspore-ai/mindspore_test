@@ -596,8 +596,7 @@ class Cell(Cell_):
         strategy for others will be set by sharding propagation.
         in_strategy and out_strategy define the input and output layout respectively.
         in_strategy/out_strategy should be a tuple, each element of which corresponds to the desired layout of
-        this input/output, and None represents data_parallel,
-        which can refer to the description of `mindspore.ops.Primitive.shard`.
+        this input/output, which can refer to the description of `mindspore.ops.Primitive.shard`.
         The parallel strategies of remaining operators are derived from the strategy specified by the input and output.
 
         Note:
@@ -606,8 +605,8 @@ class Cell(Cell_):
             If the input contain Parameter, its strategy should be set in `in_strategy`.
 
         Args:
-            in_strategy (tuple): Define the layout of inputs, each element of the tuple should be a tuple or None. Tuple
-                             defines the layout of the corresponding input and None represents a data parallel strategy.
+            in_strategy (tuple): Define the layout of inputs, each element of the tuple should be a tuple. Tuple
+                                 defines the layout of the corresponding input.
             out_strategy (Union[None, tuple]): Define the layout of outputs similar with in_strategy.
                                                It is not in use right now. Default: ``None`` .
             parameter_plan (Union[dict, None]): Define the layout for the specified parameters. Each element in dict
@@ -642,7 +641,7 @@ class Cell(Cell_):
             ...   def __init__(self):
             ...     self.block1 = Block()
             ...     self.block2 = Block()
-            ...     self.block2_shard = self.block2.shard(in_strategy=((2, 1),), out_strategy=(None,),
+            ...     self.block2_shard = self.block2.shard(in_strategy=((2, 1),),
             ...                                           parameter_plan={'self.block2.shard.dense1.weight': (4, 1)})
             ...   def construct(self, x):
             ...     x = self.block1(x)
