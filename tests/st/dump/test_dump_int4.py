@@ -140,7 +140,7 @@ def run_dump_int4(dump_scene):
             del os.environ['ENABLE_MS_GE_DUMP']
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @security_off_wrap
 def test_acl_dump_int4():
     """
@@ -152,7 +152,7 @@ def test_acl_dump_int4():
     run_dump_int4("acl_dump")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @security_off_wrap
 def test_ge_dump_int4():
     """
