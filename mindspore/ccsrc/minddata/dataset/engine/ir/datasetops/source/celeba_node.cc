@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,6 @@ Status CelebANode::GetShardId(int32_t *shard_id) {
 // Get Dataset size
 Status CelebANode::GetDatasetSize(const std::shared_ptr<DatasetSizeGetter> &size_getter, bool estimate,
                                   int64_t *dataset_size) {
-  int64_t num_rows, sample_size;
   std::ifstream partition_file;
   std::string line;
   Path folder_path(dataset_dir_);
@@ -138,6 +137,7 @@ Status CelebANode::GetDatasetSize(const std::shared_ptr<DatasetSizeGetter> &size
 
   std::string rows_num;
   (void)getline(attr_file, rows_num);
+  int64_t num_rows;
   try {
     num_rows = static_cast<int64_t>(std::stoul(rows_num));  // First line is rows number in attr file
   } catch (std::invalid_argument &e) {
@@ -203,7 +203,7 @@ Status CelebANode::GetDatasetSize(const std::shared_ptr<DatasetSizeGetter> &size
     partition_file.close();
     return s;
   }
-  sample_size = sampler_rt->CalculateNumSamples(num_rows);
+  int64_t sample_size = sampler_rt->CalculateNumSamples(num_rows);
   if (sample_size == -1) {
     s = size_getter->DryRun(shared_from_this(), &sample_size);
     if (s != Status::OK()) {
