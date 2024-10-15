@@ -721,6 +721,19 @@ bool AscendDeviceAddress::SyncDeviceToDevice(const ShapeVector &shape, size_t si
   return true;
 }
 
+bool AscendDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
+  MS_EXCEPTION_IF_NULL(src_device_addr);
+  if (format() == src_device_addr->format() && type_id() == src_device_addr->type_id()) {
+    return AsyncDeviceToDevice(ShapeVector(), src_device_addr->GetSize(), src_device_addr->type_id(),
+                               src_device_addr->GetPtr(), src_device_addr->format());
+  }
+  MS_LOG(INFO) << "Can not copy from device to device directly, format or type is different, src(format:"
+               << src_device_addr->format() << ", type_id:" << TypeIdLabel(src_device_addr->type_id())
+               << "), dst(format:" << format() << ", type_id:" << TypeIdLabel(type_id())
+               << ", use the intermediate Tensor copy instead.";
+  return SyncDeviceToDeviceWithDiffFormatType(src_device_addr);
+}
+
 bool AscendDeviceAddress::AsyncDeviceToDevice(const ShapeVector & /* shape */, size_t size, TypeId type,
                                               const void *src_ptr, const std::string &format) const {
   MS_LOG(DEBUG) << "AsyncDeviceToDevice, dst(format:" << DeviceAddress::format()

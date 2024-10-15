@@ -17,6 +17,7 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_utils.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
@@ -422,13 +423,24 @@ void OutputActor::UpdateOutputDeviceAddress() {
           << ") memory isn't enough and alloc failed in output actor, kernel name: "
           << output_node->fullname_with_scope() << ", alloc size: " << tensor_device_address->GetSize() << "B.";
       }
-      MS_LOG(DEBUG) << "Sync device data from device tensor: " << device_tensor
-                    << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
-      if (!tensor_device_address->SyncDeviceToDevice(device_tensor)) {
-        MS_LOG_WITH_NODE(EXCEPTION, output_node)
-          << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
-          << ", output node: " << output_node->fullname_with_scope();
+      if (common::IsDisableRuntimeConfig(common::kRuntimeCopyAsync)) {
+        MS_LOG(DEBUG) << "Sync device data from device tensor: " << device_tensor
+                      << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
+        if (!tensor_device_address->SyncDeviceToDevice(device_tensor)) {
+          MS_LOG_WITH_NODE(EXCEPTION, output_node)
+            << "Sync device to device failed, device type: " << tensor_device_address->GetDeviceType()
+            << ", output node: " << output_node->fullname_with_scope();
+        }
+      } else {
+        MS_LOG(DEBUG) << "Async device data from device tensor: " << device_tensor
+                      << ", to device tensor: " << tensor_device_address << ", size: " << device_tensor->GetSize();
+        if (!tensor_device_address->AsyncDeviceToDevice(device_tensor)) {
+          MS_LOG_WITH_NODE(EXCEPTION, output_node)
+            << "Async device to device failed, device type: " << tensor_device_address->GetDeviceType()
+            << ", output node: " << output_node->fullname_with_scope();
+        }
       }
+
     } else {
       MS_LOG(DEBUG) << "Swap ptr:" << device_tensor->GetPtr() << " from device tensor:" << device_tensor
                     << " device type:" << device_tensor->GetDeviceType() << " to :" << tensor_device_address
