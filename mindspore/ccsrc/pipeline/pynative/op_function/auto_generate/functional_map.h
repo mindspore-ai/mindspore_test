@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
+#ifndef MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H
+#define MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H
+
 #include <map>
 #include <vector>
 #include <string>
+#include <utility>
 
 namespace mindspore::ops {
-std::map<std::string, std::vector<std::pair<std::string, std::string>>> functional_convert_map = {
-  ${functional_map}
-};
+extern std::map<std::string, std::vector<std::pair<std::string, std::string>>> functional_convert_map;
+extern std::map<std::string, std::vector<std::string>> func_signature_map;
 }  // namespace mindspore::ops
+#endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H

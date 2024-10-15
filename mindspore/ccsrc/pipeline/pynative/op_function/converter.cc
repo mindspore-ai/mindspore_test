@@ -18,6 +18,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/pynative/pynative_utils.h"
+#include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 
 namespace mindspore {
 namespace pynative {
@@ -468,6 +469,18 @@ std::string PythonArgParser::parse_error(const py::list &args, const py::dict &k
     [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
   std::stringstream ss;
   ss << "Failed calling " << function_name_ << " with \"" << function_name_ << "(" << result << ")\"." << std::endl;
+  ss << "The valid calling should be:\n";
+  auto it = mindspore::ops::func_signature_map.find(function_name_);
+  if (it != mindspore::ops::func_signature_map.end()) {
+    const std::vector<std::string> &valid_arg_options = it->second;
+    for (const std::string &arg_option : valid_arg_options) {
+      ss << "\"" << arg_option << "\""
+         << "\n";
+    }
+    ss << std::endl;
+  } else {
+    MS_LOG(EXCEPTION) << "Valid arg options are not correctly generated." << std::endl;
+  }
   return ss.str();
 }
 
