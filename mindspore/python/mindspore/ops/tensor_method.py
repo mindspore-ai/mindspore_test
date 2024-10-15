@@ -44,7 +44,7 @@ def tensor_add(input, other, alpha=1):
     return add(input, other)
 
 
-def tensor_max(input, axis=None, keepdims=False, initial=None, where=None, return_indices=False):
+def tensor_max(input, axis=None, keepdims=False, *, initial=None, where=None, return_indices=False):
     if isinstance(axis, (list, tuple)):
         reduce_max = P.ReduceMax
         maximum = F.maximum
