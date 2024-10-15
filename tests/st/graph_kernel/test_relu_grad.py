@@ -51,9 +51,10 @@ def run_relu_grad(shape1, shape2, dtype):
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_relu_grad_gpu():
     """
-    Feature: todo
-    Description: todo
-    Expectation: todo
+    Feature: Test the precision of ReluGrad on GPU
+    Description: Test the correctness of ReluGrad on GPU for different shapes and data types
+    Expectation: The output of ReluGrad with graph kernel enabled should be consistent with the
+    output when graph kernel is disabled
     """
     context.set_context(mode=context.GRAPH_MODE)
     run_relu_grad((4, 3), (4, 3), np.int32)
@@ -63,10 +64,29 @@ def test_relu_grad_gpu():
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_relu_grad_ascend():
     """
-    Feature: todo
-    Description: todo
-    Expectation: todo
+    Feature: Test the precision of ReluGrad on Ascend
+    Description: Test the correctness of ReluGrad on Ascend for different shapes and data types
+    Expectation: The output of ReluGrad with graph kernel enabled should be consistent with the
+    output when graph kernel is disabled
     """
     context.set_context(mode=context.GRAPH_MODE)
     run_relu_grad((4, 3), (4, 3), np.int32)
     run_relu_grad((12, 1), (12, 1), np.float16)
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_relu_grad_corner_case_ascend():
+    """
+    Feature: Test the behavor of ReluGrad with NAN input
+    Description: Test the behavior of ReluGrad when y_backprop contains NAN values on Ascend
+    Expectation: The output of ReluGrad with graph kernel enabled should be consistent with the
+    output when graph kernel is disabled
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    y_backprop = Tensor(np.full((5, 5), np.nan).astype(np.float32))
+    x = Tensor(np.zeros((5, 5)).astype(np.float32))
+    expect = get_output(y_backprop, x, False)
+    output = get_output(y_backprop, x, True)
+
+    expect_np = expect.asnumpy().copy()
+    output_np = output.asnumpy().copy()
+    assert np.allclose(expect_np, output_np, rtol=0.0001, atol=0.0001, equal_nan=True)
