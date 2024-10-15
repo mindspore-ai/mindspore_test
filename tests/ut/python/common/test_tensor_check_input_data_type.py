@@ -52,47 +52,38 @@ def test_convert_to_tensor_by_sequence():
     Expectation: Throw ValueError.
     """
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[3], [[4]]])
-    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
-    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[3], [[4]]] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[[3]], [4]])
-    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
-    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[[3]], [4]] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[3], [4, 5]])
-    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
-    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[3], [4, 5]] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[3], [[4, 5]]])
-    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
-    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[3], [[4, 5]]] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[[3]], [[4, 5]]])
-    assert "the sequence has an inhomogeneous shape after 2 dimensions." in str(ex.value)
-    assert "The detected shape was (2, 1) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[[3]], [[4, 5]]] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[], [4]])
-    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
-    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[], [4]] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[4], []])
-    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
-    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[4], []] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([[], None])
-    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
-    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [[], None] that contain unsupported element." in str(ex.value)
 
-    with pytest.raises(ValueError) as ex:
+    with pytest.raises(TypeError) as ex:
         Tensor([None, []])
-    assert "the sequence has an inhomogeneous shape after 1 dimensions." in str(ex.value)
-    assert "The detected shape was (2,) + inhomogeneous part." in str(ex.value)
+    assert "For Tensor, the input_data is [None, []] that contain unsupported element." in str(ex.value)
