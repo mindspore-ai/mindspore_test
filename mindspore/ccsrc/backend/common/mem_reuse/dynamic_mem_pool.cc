@@ -27,7 +27,11 @@
 
 namespace mindspore {
 namespace device {
+#if !defined(_WIN32) && !defined(_WIN64)
 thread_local AllocatorDebugInfo DynamicMemAllocatorDebugInfo::debug_info_;
+#else
+AllocatorDebugInfo DynamicMemAllocatorDebugInfo::debug_info_;
+#endif
 
 static const std::map<DynamicMemBufStatus, std::string> kBufStatusString = {
   {DynamicMemBufStatus::kMemBufIdle, "idle"},
