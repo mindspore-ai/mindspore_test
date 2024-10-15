@@ -57,11 +57,11 @@ const char kPersistentMemPoolType[] = "persistent_mem_pool";
 
 // The status of memory buf.
 enum class DynamicMemBufStatus : int { kMemBufIdle, kMemBufUsed, kMemBufEagerFree, kMemBufUsedByEvent };
-const std::string &DynamicMemBufStatusToString(DynamicMemBufStatus status);
+BACKEND_EXPORT const std::string &DynamicMemBufStatusToString(DynamicMemBufStatus status);
 
 // Memory allocator type is used to record the memory classification statistics information.
 enum class AllocatorType : int { kWeight, kConstantValue, kKernelOutput, kGraphOutput, kWorkspace, kOther };
-const std::string &AllocatorTypeToString(AllocatorType allocator_type);
+BACKEND_EXPORT const std::string &AllocatorTypeToString(AllocatorType allocator_type);
 
 // The Comparator of device address from small to large.
 using DeviceMemPtr = void(*);
@@ -96,6 +96,8 @@ struct pair_hash {
   }
 };
 
+struct MemBuf;
+
 // Interface of dynamic memory pool.
 class BACKEND_EXPORT DynamicMemPool {
  public:
@@ -107,15 +109,26 @@ class BACKEND_EXPORT DynamicMemPool {
   // The main program entry of memory alloc.
   virtual DeviceMemPtr AllocTensorMem(size_t size, bool from_persistent_mem = false, bool need_recycle = false,
                                       uint32_t stream_id = kDefaultStreamIndex) = 0;
+
   // The main program entry of continuous memory alloc.
   virtual std::vector<DeviceMemPtr> AllocContinuousTensorMem(const std::vector<size_t> &size_list,
                                                              uint32_t stream_id = kDefaultStreamIndex) = 0;
   // The main program entry of memory free.
   virtual void FreeTensorMem(const DeviceMemPtr &device_addr) = 0;
+
+  virtual bool DoFreeTensorMem(const DeviceMemPtr &device_addr) { return false; }
+
   // The main program entry of part memorys free and part memorys keep.
   virtual void FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs,
                                   const std::vector<DeviceMemPtr> &keep_addrs,
                                   const std::vector<size_t> &keep_addr_sizes) = 0;
+
+  // Help method for dynamic memory proxy.
+  virtual std::vector<MemBuf *> DoFreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs,
+                                                     const std::vector<DeviceMemPtr> &keep_addrs,
+                                                     const std::vector<size_t> &keep_addr_sizes) {
+    return {};
+  }
 
   // Element in vector : memory_stream_id, address
   virtual bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
@@ -123,10 +136,13 @@ class BACKEND_EXPORT DynamicMemPool {
                            const DeviceEventPtr &event) {
     return false;
   }
+
   virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) {
     return false;
   }
+
   virtual bool WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) { return false; }
+
   virtual bool SyncAllEvents() { return false; }
 
   // The real size by memory alloc aligned.
@@ -136,25 +152,33 @@ class BACKEND_EXPORT DynamicMemPool {
     }
     return ((size + kDynamicMemAlignSize - 1) / kDynamicMemAlignSize) * kDynamicMemAlignSize;
   }
+
   // Calculate memory block required alloc size when adding the memory block.
   virtual size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle = false) {
     return kDynamicMemAllocUnitSize;
   }
+
   // Set mem pool block size
   virtual void SetMemPoolBlockSize(size_t available_device_mem_size) {}
+
   // Get the minimum memory unit size using for dynamic extend.
   virtual size_t MemAllocUnitSize(bool from_persistent_mem) const { return kDynamicMemAllocUnitSize; }
+
   virtual void SetMemAllocUintSize(size_t common_size, size_t persist_size = kDynamicMemAllocUnitSize) {}
 
   virtual void *GetMinUsingMemoryAddr() const { return nullptr; }
 
   // The related interface of device memory real operation, needs override by device type.
   virtual size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr) = 0;
+
   virtual bool FreeDeviceMem(const DeviceMemPtr &addr) = 0;
 
   virtual size_t free_mem_size() { return 0; }
+
   virtual uint64_t total_mem_size() const { return 0; }
+
   virtual size_t GetMaxUsedMemSize() const { return 0; }
+
   virtual size_t GetVmmUsedMemSize() const { return 0; }
 
   // The related interface of device memory eager free.
@@ -162,58 +186,87 @@ class BACKEND_EXPORT DynamicMemPool {
 
   // Display the brief state information of memory block and memory buf.
   virtual void DumpDynamicMemPoolStateInfo() {}
+
   // Display the detailed debug information of memory block and memory buf.
   virtual void DumpDynamicMemPoolDebugInfo() {}
 
   // The statistics information.
   virtual size_t TotalMemStatistics() const = 0;
+
   virtual size_t TotalUsedMemStatistics() const = 0;
+
   virtual size_t TotalUsedByEventMemStatistics() const = 0;
+
   virtual size_t TotalIdleMemStatistics() const = 0;
+
   virtual size_t TotalEagerFreeMemStatistics() const = 0;
+
   virtual size_t UsedMemPeakStatistics() const = 0;
+
   virtual size_t MaxMemAllocatedStatistics() const = 0;
+
   virtual size_t MaxMemReservedStatistics() const = 0;
+
   virtual size_t ActualPeakStatistics() const = 0;
+
   virtual std::unordered_map<std::string, std::size_t> BlockCountsStatistics() const = 0;
+
   virtual std::unordered_map<std::string, std::size_t> BlockUnitSizeStatistics() const = 0;
+
   virtual std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
   CommonMemBlocksInfoStatistics() const = 0;
+
   virtual std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
   PersistentMemBlocksInfoStatistics() const = 0;
+
   virtual void ResetMaxMemReserved() = 0;
+
   virtual void ResetMaxMemAllocated() = 0;
 
   virtual std::string GetMemoryPoolType() const { return "Other"; }
 
- protected:
   virtual const bool IsEnableEagerFree() const { return false; }
+
   virtual const bool IsEnableVmm() const { return false; }
+
+  virtual void SetEnableVmm(bool enable_vmm) {}
+
   virtual const bool SyncAllStreams() { return false; }
+
   virtual size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) { return 0; }
+
   virtual size_t FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const size_t size) { return 0; }
+
   virtual size_t MmapDeviceMem(size_t size, DeviceMemPtr addr) { return 0; }
+
   virtual const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() { return {0, 0}; }
+
+  virtual bool IsEnableTimeEvent() { return false; }
+
+  virtual void SetEnableTimeEvent(bool enable_time_event) {}
 };
 
 // Recording information for debugging the memory allocator.
-struct AllocatorDebugInfo {
+struct BACKEND_EXPORT AllocatorDebugInfo {
   std::string name_{"Unknown"};
   AllocatorType type_{AllocatorType::kOther};
   int input_index_{-1};
   int output_index_{-1};
+  uint8_t run_mode_{0};
 };
 
-class DynamicMemAllocatorDebugInfo {
+class BACKEND_EXPORT DynamicMemAllocatorDebugInfo {
  public:
   static AllocatorDebugInfo &GetDebugInfo() noexcept { return debug_info_; }
 
   // Set the debug info when memory alloc.
-  static void SetDebugInfo(const std::string &name, AllocatorType type, int input_index = -1, int output_index = -1) {
+  static void SetDebugInfo(const std::string &name, AllocatorType type, int input_index = -1, int output_index = -1,
+                           uint8_t run_mode = 0) {
     debug_info_.name_ = name;
     debug_info_.type_ = type;
     debug_info_.input_index_ = input_index;
     debug_info_.output_index_ = output_index;
+    debug_info_.run_mode_ = run_mode;
   }
 
  private:
@@ -222,7 +275,11 @@ class DynamicMemAllocatorDebugInfo {
   DynamicMemAllocatorDebugInfo(const DynamicMemAllocatorDebugInfo &) = delete;
   DynamicMemAllocatorDebugInfo &operator=(const DynamicMemAllocatorDebugInfo &) = delete;
 
+#if !defined(_WIN32) && !defined(_WIN64)
   static thread_local AllocatorDebugInfo debug_info_;
+#else
+  static AllocatorDebugInfo debug_info_;
+#endif
 };
 
 using TaskIdOnStreamEvent = std::pair<int64_t, DeviceEventPtr>;

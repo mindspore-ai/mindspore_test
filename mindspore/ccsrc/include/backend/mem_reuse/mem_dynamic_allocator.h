@@ -33,7 +33,7 @@
 #include <tuple>
 
 #include "utils/ms_utils.h"
-#include "include/backend/mem_reuse/dynamic_mem_pool.h"
+#include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
 #include "include/backend/visible.h"
 #include "include/common/utils/stream_util.h"
 #include "ir/device_event.h"

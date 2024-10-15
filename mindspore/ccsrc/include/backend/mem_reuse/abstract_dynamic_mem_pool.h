@@ -70,7 +70,7 @@ class Lock {
   std::atomic_flag locked = ATOMIC_FLAG_INIT;
 };
 
-class LockGuard {
+class BACKEND_EXPORT LockGuard {
  public:
   explicit LockGuard(const Lock &lock);
   ~LockGuard();
@@ -311,6 +311,10 @@ class MemBufAllocator {
     ss << "Mem buf allocator, is persistent : " << is_persistent_ << ", stream id : " << stream_id_ << ".";
     return ss.str();
   }
+
+  uint32_t stream_id() { return stream_id_; }
+
+  bool is_persistent() { return is_persistent_; }
 #ifndef ENABLE_TEST
 
  protected:
@@ -350,15 +354,15 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
                               uint32_t stream_id = kDefaultStreamIndex) override;
 
   // Alloc mem buf from mem pool, return mem buf and its allocator
-  std::pair<MemBuf *, MemBufAllocator *> AllocMemBuf(size_t align_size, bool from_persistent_mem = false,
-                                                     uint32_t stream_id = kDefaultStreamIndex);
+  virtual std::pair<MemBuf *, MemBufAllocator *> AllocMemBuf(size_t align_size, bool from_persistent_mem = false,
+                                                             uint32_t stream_id = kDefaultStreamIndex);
 
   // The main program entry of continuous memory alloc.
   std::vector<DeviceMemPtr> AllocContinuousTensorMem(const std::vector<size_t> &size_list,
                                                      uint32_t stream_id = kDefaultStreamIndex) override;
   // The main program entry of memory free.
   void FreeTensorMem(const DeviceMemPtr &device_addr) override;
-  virtual bool DoFreeTensorMem(const DeviceMemPtr &device_addr);
+  bool DoFreeTensorMem(const DeviceMemPtr &device_addr) override;
   // The main program entry of part memory free and part memory keep.
   void FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs, const std::vector<DeviceMemPtr> &keep_addrs,
                           const std::vector<size_t> &keep_addr_sizes) override;
@@ -375,6 +379,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   bool SyncAllEvents() override;
   bool DoSyncAllEvents();
 
+  size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle = false) override;
   void SetMemAllocUintSize(size_t common_size, size_t persist_size = kDynamicMemAllocUnitSize) override {
     common_unit_size_ = common_size;
     persist_unit_size_ = persist_size;
@@ -408,14 +413,24 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   void ResetMaxMemReserved() override;
   void ResetMaxMemAllocated() override;
 
+  const bool IsEnableVmm() const override { return enable_vmm_; }
+
+  void SetEnableVmm(bool enable_vmm) override { enable_vmm_ = enable_vmm; }
+
+  // Get method for proxy.
+  std::unordered_map<void *, std::pair<MemBuf *, MemBufAllocator *>> &addr_mem_buf_allocators() {
+    return addr_mem_buf_allocators_;
+  }
+
+  const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
+
+  MemStat &mem_stat() { return mem_stat_; }
+
+  Lock &lock() { return lock_; }
+
  protected:
   MemBufAllocatorPtr GenerateAllocator(bool is_persistent, uint32_t stream_id);
   inline MemBufAllocator *GetMemBufAllocator(size_t size, bool from_persistent_mem, uint32_t stream_id);
-
- protected:
-  const bool IsEnableVmm() const override { return enable_vmm_; }
-  void SetEnableVmm(bool enable_vmm) { enable_vmm_ = enable_vmm; }
-  const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 #ifndef ENABLE_TEST
 
  protected:
@@ -437,44 +452,90 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   Lock lock_;
 };
 
-class BACKEND_EXPORT SimpleDynamicMemPool : public DynamicMemPool {
- public:
-  DeviceMemPtr AllocTensorMem(size_t size, bool from_persistent_mem = false, bool need_recycle = false,
-                              uint32_t stream_id = kDefaultStreamIndex) override {
-    return nullptr;
-  }
-  std::vector<DeviceMemPtr> AllocContinuousTensorMem(const std::vector<size_t> &size_list,
-                                                     uint32_t stream_id = kDefaultStreamIndex) override {
-    return {};
-  }
-  void FreeTensorMem(const DeviceMemPtr &device_addr) override {}
-  void FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs, const std::vector<DeviceMemPtr> &keep_addrs,
-                          const std::vector<size_t> &keep_addr_sizes) override {}
-  void ReleaseDeviceRes() override {}
-  size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr) override { return 0; }
-  bool FreeDeviceMem(const DeviceMemPtr &addr) override { return false; }
+struct BACKEND_EXPORT MemoryTimeEvent {
+  // Creation time of address in ns.
+  uint64_t created_at_{0};
 
-  size_t TotalMemStatistics() const override { return 0; }
-  size_t TotalUsedMemStatistics() const override { return 0; }
-  size_t TotalUsedByEventMemStatistics() const override { return 0; }
-  size_t TotalIdleMemStatistics() const override { return 0; }
-  size_t TotalEagerFreeMemStatistics() const override { return 0; }
-  size_t UsedMemPeakStatistics() const override { return 0; }
-  size_t MaxMemAllocatedStatistics() const override { return 0; }
-  size_t MaxMemReservedStatistics() const override { return 0; }
-  size_t ActualPeakStatistics() const override { return 0; }
-  std::unordered_map<std::string, std::size_t> BlockCountsStatistics() const override { return {}; }
-  std::unordered_map<std::string, std::size_t> BlockUnitSizeStatistics() const override { return {}; }
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> CommonMemBlocksInfoStatistics()
-    const override {
-    return {};
+  // Device address.
+  void *addr_{nullptr};
+
+  // Size of memory allocation.
+  size_t size_{0};
+
+  // Whether allocation from persistent memory.
+  uint8_t from_persistent_{false};
+
+  // Whether allocated memory is persistent.
+  uint8_t is_persistent_{false};
+
+  // Stream id of address.
+  uint32_t stream_id_{0};
+
+  // pynative or graph or ge.
+  uint8_t run_mode_{0};
+
+  // Used size of memory pool.
+  size_t used_size_{0};
+
+  // Peak size of memory pool.
+  size_t peak_size_{0};
+
+  // Allocate size of memory pool.
+  size_t alloc_size_{0};
+
+  // Memory size that referred by event.
+  size_t used_by_event_size_{0};
+
+  // Eager free memory size.
+  size_t eager_free_size_{0};
+
+  // Owner of this address.
+  std::string owner_;
+
+  // Data type of this address.
+  uint8_t alloc_type_;
+
+  std::string ToJson() {
+    JsonBuilder builder;
+    builder.Append("created_at_", created_at_);
+    builder.Append("addr_", addr_);
+    builder.Append("size_", size_);
+    builder.Append("from_persistent_", from_persistent_);
+    builder.Append("stream_id_", stream_id_);
+    builder.Append("run_mode_", run_mode_);
+    builder.Append("used_size_", used_size_);
+    builder.Append("peak_size_", peak_size_);
+    builder.Append("alloc_size_", alloc_size_);
+    builder.Append("used_by_event_size_", used_by_event_size_);
+    builder.Append("eager_free_size_", eager_free_size_);
+    builder.Append("owner_", owner_);
+    builder.Append("alloc_type_", alloc_type_);
+    return builder.ToString();
   }
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> PersistentMemBlocksInfoStatistics()
-    const override {
-    return {};
-  }
-  void ResetMaxMemReserved() override {}
-  void ResetMaxMemAllocated() override {}
+};
+using MemoryTimeEventPtr = std::shared_ptr<MemoryTimeEvent>;
+
+class BACKEND_EXPORT AbstractEnhancedDynamicMemPool : public AbstractDynamicMemPool {
+ public:
+  AbstractEnhancedDynamicMemPool();
+  AbstractEnhancedDynamicMemPool(const AbstractEnhancedDynamicMemPool &) = delete;
+  AbstractEnhancedDynamicMemPool &operator=(const AbstractEnhancedDynamicMemPool &) = delete;
+  ~AbstractEnhancedDynamicMemPool() override = default;
+
+  // Report memory pool stat info for enhanced processing.
+  virtual void ReportMemoryPoolInfo();
+
+  bool IsEnableTimeEvent() override { return enable_time_event_; }
+
+  void SetEnableTimeEvent(bool enable_time_event) override { enable_time_event_ = enable_time_event; }
+
+  virtual MemoryTimeEventPtr GenAllocateMemoryTimeEvent(const void *addr, size_t size, uint32_t stream_id,
+                                                        bool from_persistent, bool is_persistent);
+
+  virtual MemoryTimeEventPtr GenFreeMemoryTimeEvent(const void *addr);
+
+ private:
+  std::atomic<bool> enable_time_event_{false};
 };
 }  // namespace device
 }  // namespace mindspore
