@@ -19,7 +19,7 @@
 from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
-from mindspore.ops.function.array_func import chunk_ext
+from mindspore.ops.function.array_func import chunk_ext, zero_
 from mindspore.ops.function.math_func import all, argmax_ext
 from mindspore.ops.function.random_func import uniform_ext
 from mindspore.ops import operations as P
@@ -227,6 +227,7 @@ setattr(tensor_operator_registry, 'vsplit', vsplit)
 setattr(tensor_operator_registry, 'hsplit', hsplit)
 setattr(tensor_operator_registry, 'dsplit', dsplit)
 setattr(tensor_operator_registry, 'zeros_like', zeros_like)
+setattr(tensor_operator_registry, 'zero_', zero_)
 setattr(tensor_operator_registry, 'scalar_to_tensor', scalar_to_tensor)
 setattr(tensor_operator_registry, 'stop_gradient', stop_gradient)
 setattr(tensor_operator_registry, 'masked_fill', masked_fill)
