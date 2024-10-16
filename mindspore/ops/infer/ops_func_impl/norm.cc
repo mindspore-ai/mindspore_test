@@ -18,24 +18,22 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "infer/ops_func_impl/reduce_arithmetic.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/check_convert_utils.h"
-
 namespace mindspore {
 namespace ops {
-BaseShapePtr NormFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  return NormInferShape(primitive, input_args);
+ShapeArray NormFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return NormInferShape(primitive, input_infos);
 }
 
-TypePtr NormFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  if (input_args[kInputIndex4]->GetType()->isa<TypeNone>()) {
-    return input_args[0]->GetType()->Clone();
+std::vector<TypeId> NormFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto input_type = input_infos[kInputIndex0]->GetType();
+  if (input_infos[kInputIndex4]->IsNone()) {
+    return {input_type};
   }
-  auto dtype_ptr = GetScalarValue<int64_t>(input_args[kInputIndex4]->GetValue());
-  if (!dtype_ptr.has_value()) {
-    return input_args[0]->GetType()->Clone();
+  auto dtype_opt = input_infos[kInputIndex4]->GetScalarValue<int64_t>();
+  if (!dtype_opt.has_value()) {
+    return {input_type};
   }
-  return std::make_shared<TensorType>(TypeIdToType(static_cast<TypeId>(dtype_ptr.value())));
+  return {static_cast<TypeId>(dtype_opt.value())};
 }
 }  // namespace ops
 }  // namespace mindspore

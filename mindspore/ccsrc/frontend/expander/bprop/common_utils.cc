@@ -913,4 +913,87 @@ NodePtr MatrixTransposeExt(BpropBuilder *ib, const NodePtr &x) {
 }
 
 NodePtr Adjoint(BpropBuilder *ib, const NodePtr &x) { return MatrixTranspose(ib, ib->Conj(x)); }
+
+NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePtr &p, const NodePtr &dim_node,
+                       const NodePtr &keepdim, const NodePtr &out_node, const NodePtr &dout_node) {
+  auto dim = dim_node;
+  auto dim_type = dim->abstract()->BuildType();
+  if (dim_type->isa<TypeNone>()) {
+    dim = ib->Value<std::vector<int64_t>>({});
+  }
+  auto keepdim_value = GetScalarValue<bool>(keepdim->BuildValue());
+  auto input = input_node;
+  float p_value = GetValue<float>(p->BuildValue());
+  auto tensor_zero = ib->Tensor(0, input->dtype());
+  auto input_shape = ib->GetShape(input);
+  auto out = out_node;
+  auto dout = dout_node;
+  if (!keepdim_value.has_value()) {
+    auto true_branch = [&](Emitter *e) -> NodePtrList {
+      return {GetUnsqueezeTensor(e, input, dim, true, {out, dout})};
+    };
+    auto false_branch = [&](Emitter *e) -> NodePtrList {
+      return {GetUnsqueezeTensor(e, input, dim, false, {out, dout})};
+    };
+    auto keepdim_true = ib->Equal(keepdim, ib->Value<bool>(true));
+    auto outputs = ib->Conditional(keepdim_true, true_branch, false_branch);
+    out = ib->TupleGetItem(outputs, 0);
+    dout = ib->TupleGetItem(outputs, 1);
+  } else {
+    auto out_dout = GetUnsqueezeTensor(ib, input, dim, keepdim_value.value(), {out, dout});
+    out = out_dout[0];
+    dout = out_dout[1];
+  }
+  if (p_value == 0.0) {
+    return ib->OutZeros(input);
+  }
+  if (p_value == 1.0) {
+    return ib->Mul(dout, ib->Sign(input));
+  }
+  if (p_value == 2.0) {
+    auto scale_v = ib->Div(dout, out);
+    auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+    scale_v = ib->MaskedFill(scale_v, equal_zero, ib->Tensor(0.0, ib->GetDtype(scale_v)));
+    return ib->Mul(input, scale_v);
+  }
+  if (std::isinf(p_value)) {
+    auto input_abs = ib->Abs(input);
+    auto input_sgn = ib->Sign(input);
+    auto input_typeid = ib->GetDtypeId(input);
+    // For Primitive 'IsNan', input's dtype cannot be bfloat16.
+    if (input_typeid == kNumberTypeBFloat16) {
+      input = ib->Cast(input, kFloat32);
+      out = ib->Cast(out, kFloat32);
+    }
+    auto input_nan = ib->Emit("IsNan", {input});
+    auto out_nan = ib->Emit("IsNan", {out});
+    auto input_and_out_nan = ib->LogicalAnd(input_nan, out_nan);
+    auto equal_max = ib->Cast(ib->LogicalOr(ib->Equal(input_abs, out), input_and_out_nan), input->dtype());
+    auto input_scaled = ib->Mul(input_sgn, equal_max);
+    auto max_cnt = ib->SumExt(ib->NotEqual(equal_max, tensor_zero), dim, ib->Value(true), ib->EmitValue(kNone));
+    auto scale_v = ib->Div(dout, max_cnt);
+    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
+    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    auto grad_input = ib->Mul(input_scaled, scale_v);
+    if (input_typeid == kNumberTypeBFloat16) {
+      grad_input = ib->Cast(grad_input, kBFloat16);
+    }
+    return grad_input;
+  }
+  if (p_value < 2.0) {
+    auto input_abs = ib->Abs(input);
+    auto input_sgn = ib->Sign(input);
+    auto input_scaled = ib->Mul(ib->PowTensorScalar(input_abs, ib->Value(p_value - 1)), input_sgn);
+    auto scale_v = ib->Div(dout, ib->PowTensorScalar(out, ib->Value(p_value - 1)));
+    auto equal_zero = ib->Equal(input_scaled, tensor_zero);
+    scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+    return ib->Mul(input_scaled, scale_v);
+  }
+  auto input_abs = ib->Abs(input);
+  auto input_scaled = ib->Mul(ib->PowTensorScalar(input_abs, ib->Value(p_value - 2)), input);
+  auto scale_v = ib->Div(dout, ib->PowTensorScalar(out, ib->Value(p_value - 1)));
+  auto equal_zero = ib->Equal(input_scaled, tensor_zero);
+  scale_v = ib->MaskedFill(scale_v, equal_zero, tensor_zero);
+  return ib->Mul(input_scaled, scale_v);
+}
 }  // namespace mindspore::expander::bprop

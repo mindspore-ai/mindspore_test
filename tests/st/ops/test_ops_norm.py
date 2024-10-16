@@ -44,7 +44,7 @@ def norm_ext_forward_dyn(x):
     return norm_ext(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('p', [-np.inf, -1.0, 0, 2.0, 4.0, np.inf])
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_norm_forward(mode, p):

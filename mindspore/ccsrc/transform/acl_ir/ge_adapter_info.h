@@ -187,7 +187,6 @@ class GeAdapterInfo {
   GeTensorInfo info_;
   // max MindSpore input index in op prototype of INPUT_MAP and DYN_INPUT_MAP
   int max_input_ms_proto_idx_ = INT_MIN;
-  std::unordered_map<std::pair<uint32_t, ValuePtr>, ValuePtr, ValuePairHasher> get_input_attr_cache_;
 };
 
 using GeAdapterInfoPtr = std::shared_ptr<GeAdapterInfo>;
