@@ -1,0 +1,14 @@
+atan2:
+  - op_yaml: atan2_ext_op.yaml
+    py_method: tensor_atan2
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/atan2_op.yaml
+    py_method: tensor_atan2
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
