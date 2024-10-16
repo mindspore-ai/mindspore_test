@@ -387,7 +387,7 @@ AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, P
       res = Resource::Current()->pool()->New<AbstractObject>(type, h);
       break;
   }
-  res->SetTypeObject(o == nullptr ? tp : Py_TYPE(o));
+  res->SetTypeObject(o == nullptr ? (tp == nullptr ? res->GetTypeObject() : tp) : Py_TYPE(o));
   return res;
 }
 
@@ -1120,11 +1120,13 @@ std::string AbstractTuple::ToString() const {
 std::string AbstractDict::ToString() const {
   std::stringstream s;
   s << this->AObject::ToString();
-  if (k_type_ != AObject::kTypeAnyValue) {
-    s << "k:<" << GetTypeDesc(k_type_) << '>';
-  }
-  if (v_type_ != AObject::kTypeAnyValue) {
-    s << "v:<" << GetTypeDesc(v_type_) << '>';
+  if (!IsElementValid()) {
+    s << "<" << GetTypeDesc(AObject::kTypeAnyValue) << ">";
+  } else if (size() == 0) {
+    s << "<>";
+  } else {
+    s << '<' << (k_type_ != AObject::kTypeAnyValue ? GetTypeDesc(k_type_) : "MultiType") << ","
+      << (v_type_ != AObject::kTypeAnyValue ? GetTypeDesc(v_type_) : "MultiType") << '>';
   }
   if (this->IsElementValid()) {
     if (value_.ptr() != nullptr) {
@@ -1132,8 +1134,6 @@ std::string AbstractDict::ToString() const {
     } else {
       s << "size=" << this->size();
     }
-  } else {
-    s << "<" << GetTypeDesc(AObject::kTypeAnyValue) << ">";
   }
   return s.str();
 }

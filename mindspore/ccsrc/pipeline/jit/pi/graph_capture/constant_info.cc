@@ -74,7 +74,9 @@ std::string PyObjToString(const py::object &obj) {
 std::string ConstantInfo::ToString() const {
   auto Limit = [](const std::string &s) {
     constexpr size_t limit = 120;
-    return s.size() < limit ? s : s.substr(0, limit) + "...";
+    auto str = s.size() < limit ? s : s.substr(0, limit) + "...";
+    std::replace(str.begin(), str.end(), '\n', ' ');
+    return str;
   };
   std::stringstream s;
   if (type() != nullptr) {
