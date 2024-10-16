@@ -26,7 +26,7 @@ deprecated_tensor_method_map = {
     # 4 __abs__
 
     # 5 add
-
+    "add": "deprecated_tensor_add",
     # 6 all
 
     # 7 allclose
