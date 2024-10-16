@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ from mindspore import Tensor
 
 
 class Net(nn.Cell):
-    def construct(self, x):
-        return x.neg()
+    def construct(self, x, mask):
+        return x.masked_select(mask)
 
 
 @arg_mark(
@@ -31,15 +31,16 @@ class Net(nn.Cell):
     card_mark='onecard',
     essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_tensor_neg(mode):
+def test_tensor_masked_select(mode):
     """
-    Feature: tensor.neg
-    Description: Verify the result of tensor.neg
+    Feature: tensor.masked_select
+    Description: Verify the result of tensor.masked_select
     Expectation: success
     """
     ms.set_context(mode=mode)
-    x = Tensor(np.array([1, 2, -1, 2, 0, -3.5]), ms.float32)
+    x = Tensor(np.array([1, 2, 3, 4]), ms.int64)
+    mask = Tensor(np.array([1, 0, 1, 0]), ms.bool_)
     net = Net()
-    output_x = net(x)
-    expect_x = Tensor(np.array([-1, -2, 1, -2, 0, 3.5]), ms.float32)
+    output_x = net(x, mask)
+    expect_x = Tensor(np.array([1, 3]), ms.int64)
     assert np.allclose(output_x.asnumpy(), expect_x.asnumpy())

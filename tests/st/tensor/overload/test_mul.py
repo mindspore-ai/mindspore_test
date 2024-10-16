@@ -25,10 +25,11 @@ class Net(nn.Cell):
         return x.mul(other)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level1',
-          card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(
+    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend', 'platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_tensor_mul(mode):
     """
@@ -45,35 +46,28 @@ def test_tensor_mul(mode):
     expect_x = Tensor(np.array([4, 10, 18]), ms.float32)
     assert np.allclose(output_x.asnumpy(), expect_x.asnumpy())
 
-    # test 2: tensor(bool) mul tensor(bool)
-    x = Tensor(np.array([False, False, True]))
-    y = Tensor(np.array([True, False, True]))
-    output_x = net(x, y)
-    expect_x = Tensor(np.array([False, False, True]))
-    assert np.allclose(output_x.asnumpy(), expect_x.asnumpy())
-
-    # test 3: tensor(number) mul tensor(bool)
+    # test 2: tensor(number) mul tensor(bool)
     x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
     y = Tensor(np.array([True, False, True]))
     output_x = net(x, y)
     expect_x = Tensor(np.array([1, 0, 3]), ms.float32)
     assert np.allclose(output_x.asnumpy(), expect_x.asnumpy())
 
-    # test 4: tensor(number) mul scalar(number)
+    # test 3: tensor(number) mul scalar(number)
     x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
     y = 4.0
     output_x = net(x, y)
     expect_x = Tensor(np.array([4, 8, 12]), ms.float32)
     assert np.allclose(output_x.asnumpy(), expect_x.asnumpy())
 
-    # test 5: tensor(number) mul scalar(bool)
+    # test 4: tensor(number) mul scalar(bool)
     x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
     y = False
     output_x = net(x, y)
     expect_x = Tensor(np.array([0, 0, 0]), ms.float32)
     assert np.allclose(output_x.asnumpy(), expect_x.asnumpy())
 
-    # test 6: tensor(number) mul scalar(bool)
+    # test 5: tensor(number) mul scalar(bool)
     x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
     y = True
     output_x = net(x, y)

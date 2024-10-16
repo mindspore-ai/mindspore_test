@@ -161,7 +161,7 @@ from mindspore.ops.function.math_func import  logical_or
 # 63 masked_select
 
 # 64 matmul
-
+from mindspore.ops.auto_generate import matmul_ext
 # 65 max
 from mindspore.ops.auto_generate import max_
 from mindspore.ops.function.array_func import max as max_func
@@ -569,10 +569,17 @@ def tensor_logical_or(input, other):
 # 62 masked_fill
 
 # 63 masked_select
+def tensor_masked_select(tensor, mask):
+    return F.masked_select(tensor, mask)
+
 
 # 64 matmul
-def tensor_matmul(input, other):
-    return F.matmul(input, other)
+def tensor_matmul(input, mat2):
+    return matmul_ext(input, mat2)
+
+
+def deprecated_tensor_matmul(input, tensor2):
+    return F.matmul(input, tensor2)
 
 
 # 65 max

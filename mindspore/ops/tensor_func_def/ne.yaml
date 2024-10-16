@@ -1,6 +1,2 @@
 ne:
-  op_yaml: not_equal_op.yaml
-  py_method: tensor_ne
-  Ascend: pyboost
-  CPU: pyboost
-  GPU: pyboost
+  alias: not_equal

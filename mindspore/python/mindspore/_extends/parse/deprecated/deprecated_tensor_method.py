@@ -144,7 +144,7 @@ deprecated_tensor_method_map = {
     # 63 masked_select
 
     # 64 matmul
-
+    "matmul": "deprecated_tensor_matmul",
     # 65 max
     "max": "deprecated_tensor_max",
     # 66 maximum

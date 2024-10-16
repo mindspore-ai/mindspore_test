@@ -3406,12 +3406,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_is_int(seed, 'seed')
         return tensor_operator_registry.get('random_categorical')(self, num_sample, seed, dtype)
 
-    def masked_select(self, mask):
-        """
-        For details, please refer to :func:`mindspore.ops.masked_select`.
-        """
-        return tensor_operator_registry.get('masked_select')(self, mask)
-
     def gather_elements(self, dim, index):
         """
         For details, please refer to :func:`mindspore.ops.gather_elements`.

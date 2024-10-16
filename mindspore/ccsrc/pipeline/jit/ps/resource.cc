@@ -224,7 +224,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"swapdims", std::string("swapdims")},                              // P.transpose()
        {"narrow", std::string("narrow")},                                  // narrow()
        {"masked_fill", std::string("masked_fill")},                        // masked_fill()
-       {"masked_select", std::string("masked_select")},                    // masked_select()
        {"nonzero", std::string("nonzero")},                                // nonzero()
        {"expand_dims", std::string("expand_dims")},                        // P.expand_dims()
        {"squeeze", std::string("squeeze")},                                // P.squeeze()
