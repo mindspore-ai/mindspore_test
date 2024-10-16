@@ -91,6 +91,7 @@ void ExitActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
     return;
   }
 
+  last_step_created_device_tensors_.clear();
   // 1.Send output in base class.
   ControlActor::SendOutput(context);
 
@@ -141,7 +142,6 @@ void ExitActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
                             IntToSize(arrow->to_input_index_), context);
     }
   }
-  last_step_created_device_tensors_.clear();
 }
 
 void ExitActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const context) {
