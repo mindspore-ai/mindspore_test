@@ -51,7 +51,7 @@ from mindspore.ops.auto_generate import add_ext, add
 # 8 any
 
 # 9 arctan2
-
+from mindspore.ops.function.math_func import arctan2
 # 10 argmax
 from mindspore.ops.function.array_func import argmax
 # 11 argmin
@@ -59,7 +59,7 @@ from mindspore.ops.function.math_func import argmin
 # 12 argsort
 
 # 13 atan2
-
+from mindspore.ops.function.math_func import atan2
 # 14 bfloat16
 
 # 15 bmm
@@ -404,6 +404,9 @@ def deprecated_tensor_add(input, other):
 # 8 any
 
 # 9 arctan2
+def tensor_arctan2(input, other):
+    return arctan2(input, other)
+
 
 # 10 argmax
 def tensor_argmax(input, dim=None, keepdim=False):
@@ -426,6 +429,9 @@ def deprecated_tensor_argmin(input, axis=None, keepdims=False):
 # 12 argsort
 
 # 13 atan2
+def tensor_atan2(input, other):
+    return atan2(input, other)
+
 
 # 14 bfloat16
 

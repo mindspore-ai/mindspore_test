@@ -34,7 +34,7 @@ deprecated_tensor_method_map = {
     # 8 any
 
     # 9 arctan2
-
+    "arctan2": "tensor_arctan2",
     # 10 argmax
     "argmax": "deprecated_tensor_argmax",
     # 11 argmin
@@ -42,7 +42,7 @@ deprecated_tensor_method_map = {
     # 12 argsort
 
     # 13 atan2
-
+    "atan2": "tensor_atan2",
     # 14 bfloat16
 
     # 15 bmm

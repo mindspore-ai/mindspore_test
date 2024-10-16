@@ -841,12 +841,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('atan')(self)
 
-    def arctan2(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.arctan2`.
-        """
-        return tensor_operator_registry.get('atan2')(self, other)
-
     def cauchy(self, median=0.0, sigma=1.0):
         r"""
         Fills the tensor with numbers drawn from the Cauchy distribution. It is
@@ -1411,12 +1405,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         if axis is None:
             axis = ()
         return tensor_operator_registry.get('any')(self, axis, keep_dims)
-
-    def atan2(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.atan2`.
-        """
-        return tensor_operator_registry.get('atan2')(self, other)
 
     def baddbmm(self, batch1, batch2, beta=1, alpha=1):
         r"""
