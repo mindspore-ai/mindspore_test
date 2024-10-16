@@ -477,5 +477,33 @@ TEST_F(TestAbstractDynamicMemPool, test_memory_reserved_dize) {
   mem_pool->ReleaseDeviceRes();
   EXPECT_EQ(mem_pool->ReservedMemorySize(), 0);
 }
+
+class LinearDynamicMemPoolWithoutVmm : public LinearDynamicMemPool {
+ public:
+  LinearDynamicMemPoolWithoutVmm() {
+    SetEnableVmm(false);
+  }
+
+  uint64_t total_mem_size() const override { return 100 * kGBToByte; }
+};
+
+/// Feature: test persistent mem block limit for abstract dynamic mem pool.
+/// Description: test persistent mem block limit.
+/// Expectation: all interface work normally and can not throw exception.
+TEST_F(TestAbstractDynamicMemPool, test_persistent_block_limit) {
+  auto mem_pool = std::make_shared<LinearDynamicMemPoolWithoutVmm>();
+  std::vector<void *> addrs;
+  for (size_t i = 0; i < 10; i++) {
+    (void)addrs.emplace_back(mem_pool->AllocTensorMem(kGBToByte, true));
+  }
+  const auto &allocators_map = mem_pool->stream_id_allocators_;
+  EXPECT_EQ(allocators_map.size(), 2);
+  auto persistent_allocators_it = allocators_map.find(std::make_pair(true, 0));
+  EXPECT_TRUE(persistent_allocators_it != allocators_map.end());
+  EXPECT_TRUE(persistent_allocators_it->second->mem_blocks_.size() == 1);
+  auto common_allocators_it = allocators_map.find(std::make_pair(false, 0));
+  EXPECT_TRUE(common_allocators_it != allocators_map.end());
+  EXPECT_TRUE(common_allocators_it->second->mem_blocks_.size() == 9);
+}
 }  // namespace device
 }  // namespace mindspore
