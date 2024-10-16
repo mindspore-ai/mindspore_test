@@ -222,7 +222,7 @@ CNodePtr CreateAlltoAllVUnifyMindIRNode(const FuncGraphPtr &graph, const AnfNode
     atav_node->set_abstract(origin_node->abstract());
   } else {
     int64_t flatten_size =
-      std::accumulate(origin_output_shapes.cbegin(), origin_output_shapes.cend(), 0,
+      std::accumulate(origin_output_shapes.cbegin(), origin_output_shapes.cend(), (int64_t)0,
                       [](const int64_t &acc, const ShapeVector &shape) { return acc + SizeToLong(SizeOf(shape)); });
     auto shape = flatten_size == 0 ? ShapeVector{} : ShapeVector{flatten_size};
     common::AnfAlgo::SetOutputInferTypeAndShape({data_type}, {shape}, atav_node.get());
