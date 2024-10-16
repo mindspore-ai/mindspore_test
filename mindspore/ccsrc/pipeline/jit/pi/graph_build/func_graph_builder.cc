@@ -158,6 +158,16 @@ bool FunctionShouldBeParseInAst(const py::object &obj) {
   }
   return func_names.find(py::cast<std::string>(obj.attr("__name__"))) != func_names.end();
 }
+
+bool IsTensorOrNumber(const AbstractBasePtr &abs) {
+  if (abs->isa<abstract::AbstractTensor>()) {
+    return true;
+  }
+  if (abs->isa<abstract::AbstractScalar>() && abs->BuildType()->isa<Number>()) {
+    return true;
+  }
+  return false;
+}
 }  // namespace
 
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
@@ -865,11 +875,11 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_v
 }
 
 AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                                   const AbstractWrapperPtrList &inputs, bool need_unpack) {
+                                                   const AbstractWrapperPtrList &inputs) {
   AbstractWrapperPtr ret;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
-    ret = HandleGrad(key, forward_fg, inputs, need_unpack);
+    ret = HandleGrad(key, forward_fg, inputs);
   } catch (const std::exception &e) {
     MS_LOG(INFO) << "Failed to build grad node with key: " << key << ". The exception:\n" << e.what();
   }
@@ -886,7 +896,7 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key
 //     return grad_result_node
 //   final node for evaluated: fg(other_inputs, forward_inputs)
 AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                                const AbstractWrapperPtrList &inputs, bool need_unpack) {
+                                                const AbstractWrapperPtrList &inputs) {
   auto fake_node = ReadLocalVariable(key);
   if (fake_node == nullptr || !fake_node->isa<CNode>()) {
     MS_LOG(INFO) << "Failed to find corresponding fake GradOperation node for key: " << key;
@@ -928,21 +938,15 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
   }
   auto grad_net_node = fg->NewCNodeInOrder(grad_net_node_inputs);
   std::vector<AnfNodePtr> grad_result_node_inputs;
-  if (need_unpack) {
-    auto unpack_call_op = NewValueNode(std::make_shared<prim::UnpackCall>(parse::NAMED_METAGRAPH_UNPACKCALL));
-    grad_result_node_inputs.push_back(unpack_call_op);
-    grad_result_node_inputs.push_back(grad_net_node);
-    for (size_t i = 0; i < inputs.size(); ++i) {
-      (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
-    }
-  } else {
-    grad_result_node_inputs.push_back(grad_net_node);
-    for (size_t i = 0; i < inputs.size(); ++i) {
-      (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
-    }
+  grad_result_node_inputs.push_back(grad_net_node);
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
   }
   auto grad_result_node = fg->NewCNodeInOrder(grad_result_node_inputs);
   fg->set_output(grad_result_node);
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG)) {
+    DumpIR("pijit_grad_fg.ir", fg);
+  }
   std::vector<AnfNodePtr> final_node_input = {NewValueNode(fg)};
   std::vector<AbstractBasePtr> final_node_abs;
   for (size_t i = 1; i < fake_node_inputs.size(); ++i) {
@@ -975,10 +979,126 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
     // has_aux for GradOperation will change the output of forward fg.
     forward_fg->set_output(origin_forward_fg_output);
   }
-
   auto abstract_wrapper = std::make_shared<AbstractWrapper>(final_node->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, final_node);
+  MS_LOG(INFO) << "Build final node " << final_node->DebugString() << " with abstract " << final_abs->ToString();
   return abstract_wrapper;
+}
+
+bool FuncGraphBuilder::CheckInvalidGradForwardOutput(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  if (abs->isa<abstract::AbstractSequence>()) {
+    auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
+    const auto &elements = abs_seq->elements();
+    return std::any_of(elements.begin(), elements.end(),
+                       [](const auto &e) { return CheckInvalidGradForwardOutput(e); });
+  }
+  if (abs->isa<abstract::AbstractDictionary>()) {
+    auto abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
+    const auto &key_value_elements = abs_dict->elements();
+    return std::any_of(key_value_elements.begin(), key_value_elements.end(),
+                       [](const auto &pair) { return CheckInvalidGradForwardOutput(pair.second); });
+  }
+  return !IsTensorOrNumber(abs);
+}
+
+AnfNodePtr FuncGraphBuilder::BuildFilterNode(const AnfNodePtr &node, const AbstractBasePtr &abs,
+                                             const FuncGraphPtr &fg) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(abs);
+  if (IsTensorOrNumber(abs)) {
+    return node;
+  }
+  if (abs->isa<abstract::AbstractSequence>()) {
+    auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
+    const auto &abs_seq_elements = abs_seq->elements();
+    auto seq_prim = abs->isa<abstract::AbstractList>() ? prim::kPrimMakeList : prim::kPrimMakeTuple;
+    auto getitem_prim = abs->isa<abstract::AbstractList>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+    AnfNodePtrList new_sequence_inputs = {NewValueNode(seq_prim)};
+    for (size_t i = 0; i < abs_seq_elements.size(); ++i) {
+      const auto &element_abs = abs_seq_elements[i];
+      AnfNodePtrList cur_getitem_inputs = {NewValueNode(getitem_prim), node, NewValueNode(static_cast<int64_t>(i))};
+      auto cur_node = fg->NewCNodeInOrder(cur_getitem_inputs);
+      auto filter_cur_node = BuildFilterNode(cur_node, element_abs, fg);
+      if (filter_cur_node == nullptr) {
+        continue;
+      }
+      (void)new_sequence_inputs.emplace_back(filter_cur_node);
+    }
+    if (new_sequence_inputs.size() == 1) {
+      return nullptr;
+    }
+    return fg->NewCNodeInOrder(new_sequence_inputs);
+  }
+  if (abs->isa<abstract::AbstractDictionary>()) {
+    auto abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
+    const auto &key_value_elements = abs_dict->elements();
+    AnfNodePtrList new_sequence_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+    for (size_t i = 0; i < key_value_elements.size(); ++i) {
+      const auto &cur_pair = key_value_elements[i];
+      auto cur_key = NewValueNode(cur_pair.first->BuildValue());
+      AnfNodePtrList cur_getitem_inputs = {NewValueNode(prim::kPrimDictGetItem), node, cur_key};
+      auto cur_node = fg->NewCNodeInOrder(cur_getitem_inputs);
+      auto filter_cur_node = BuildFilterNode(cur_node, cur_pair.second, fg);
+      if (filter_cur_node == nullptr) {
+        continue;
+      }
+      (void)new_sequence_inputs.emplace_back(filter_cur_node);
+    }
+    if (new_sequence_inputs.size() == 1) {
+      return nullptr;
+    }
+    return fg->NewCNodeInOrder(new_sequence_inputs);
+  }
+  return nullptr;
+}
+
+FuncGraphPtr FuncGraphBuilder::BuildCallForwardGraphForGrad(const FuncGraphPtr &fg, const std::vector<size_t> &arg_len,
+                                                            bool is_cell, bool need_filter) {
+  MS_LOG(INFO) << "Build outer fg for vargs scene.";
+  auto origin_forward_abs = fg->output()->abstract();
+  MS_EXCEPTION_IF_NULL(origin_forward_abs);
+  MS_LOG(INFO) << "origin forward abs: " << origin_forward_abs->ToString();
+
+  AnfNodePtrList call_forward_inputs = {NewValueNode(fg)};
+  auto outer_fg = std::make_shared<FuncGraph>();
+  constexpr auto args_index = 0;
+  constexpr auto vargs_index = 1;
+  // Eliminate self input for cell when building grad graph.
+  size_t input_offset = is_cell ? 1 : 0;
+  for (size_t i = 0 + input_offset; i < arg_len[args_index]; ++i) {
+    (void)call_forward_inputs.emplace_back(outer_fg->add_parameter());
+  }
+  if (arg_len[vargs_index] != 0) {
+    AnfNodePtrList vargs_tuple = {NewValueNode(prim::kPrimMakeTuple)};
+    for (size_t i = 0; i < arg_len[vargs_index]; ++i) {
+      (void)vargs_tuple.emplace_back(outer_fg->add_parameter());
+    }
+    auto vargs_node = outer_fg->NewCNodeInOrder(vargs_tuple);
+    (void)call_forward_inputs.emplace_back(vargs_node);
+  }
+  // This is a tmp way to fix empty kwargs.
+  if (fg->parameters().size() == call_forward_inputs.size()) {
+    (void)call_forward_inputs.emplace_back(NewValueNode(0));
+  }
+  auto call_forward_node = outer_fg->NewCNodeInOrder(call_forward_inputs);
+  if (!need_filter) {
+    outer_fg->set_output(call_forward_node);
+    return outer_fg;
+  }
+
+  auto filter_fg = std::make_shared<FuncGraph>();
+  auto input = filter_fg->add_parameter();
+  auto filter_fg_output = BuildFilterNode(input, origin_forward_abs, filter_fg);
+  if (filter_fg_output != nullptr) {
+    filter_fg->set_output(filter_fg_output);
+    auto filter_node = outer_fg->NewCNodeInOrder({NewValueNode(filter_fg), call_forward_node});
+    outer_fg->set_output(filter_node);
+  } else {
+    MS_LOG(WARNING) << "Build filter fg failed.";
+    outer_fg->set_output(call_forward_node);
+  }
+  return outer_fg;
 }
 
 AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value,
