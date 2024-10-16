@@ -4162,11 +4162,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('mvlgamma')(self, p)
 
-    def matmul(self, tensor2):
-        r"""
-        For details, please refer to :func:`mindspore.ops.matmul`.
-        """
-        return tensor_operator_registry.get('matmul')(self, tensor2)
 
     def inner(self, other):
         r"""

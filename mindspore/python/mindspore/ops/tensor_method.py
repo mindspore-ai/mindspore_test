@@ -571,6 +571,9 @@ def tensor_logical_or(input, other):
 # 63 masked_select
 
 # 64 matmul
+def tensor_matmul(input, other):
+    return F.matmul(input, other)
+
 
 # 65 max
 def tensor_max(input):
