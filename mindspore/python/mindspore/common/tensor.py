@@ -32,7 +32,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, flatten_mint,
-                                               max_mint, mean_mint, split_mint, sub_mint)
+                                               mean_mint, split_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -2424,75 +2424,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.clone`.
         """
         return tensor_operator_registry.get("clone")(self)
-
-    @max_mint
-    def max(self, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
-        """
-        Return the maximum of a tensor or maximum along an axis.
-
-        Note:
-            When `axis` is ``None``, `keepdims` and subsequent parameters
-            have no effect. At the same time, the index is fixed to return 0.
-
-        Args:
-            axis (Union[None, int, list, tuple of ints], optional): Axis or
-                axes along which to operate. By default, flattened input is used. If
-                this is a tuple of ints, the maximum is selected over multiple axes,
-                instead of a single axis or all the axes as before. Default: ``None`` .
-            keepdims (bool, optional):
-                If this is set to ``True`` , the axes which are reduced are left in the
-                result as dimensions with size one. With this option, the result will
-                broadcast correctly against the input array. Default: ``False`` .
-
-        Keyword Args:
-            initial (scalar, optional):
-                The minimum value of an output element. Must be present to allow
-                computation on empty slice. Default: ``None`` .
-            where (bool Tensor, optional):
-                A boolean tensor which is broadcasted to match the dimensions of array,
-                and selects elements to include in the reduction. If non-default value
-                is passed, initial must also be provided. Default: ``True`` .
-            return_indices (bool, optional): Whether to return the index of the maximum value.
-                Default: ``False`` . If `axis` is a list or tuple of ints, it must be ``False`` .
-
-        Returns:
-            Tensor or scalar, maximum of input tensor. If `axis` is ``None`` , the result is a scalar
-            value. If `axis` is given, the result is a tensor of dimension ``self.ndim - 1``.
-
-        Raises:
-            TypeError: If arguments have types not specified above.
-
-        See also:
-            - :func:`mindspore.Tensor.argmin`: Return the indices of the minimum values along an axis.
-            - :func:`mindspore.Tensor.argmax`: Return the indices of the maximum values along an axis.
-            - :func:`mindspore.Tensor.min`: Return the minimum of a tensor or minimum along an axis.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> a = Tensor(np.arange(4).reshape((2, 2)).astype('float32'))
-            >>> output = a.max()
-            >>> print(output)
-            3.0
-            >>> value, indices = a.max(axis=0, return_indices=True)
-            >>> print(value)
-            [2. 3.]
-            >>> print(indices)
-            [1 1]
-        """
-        if isinstance(axis, (list, tuple)):
-            reduce_ = tensor_operator_registry.get("reduce")
-            reduce_max = tensor_operator_registry.get("reduce_max")
-            maximum = tensor_operator_registry.get("maximum")
-            return reduce_(self, reduce_max(keepdims), cmp_fn=maximum, axis=axis, keepdims=keepdims,
-                           initial=initial, where=where)
-        values, indices = tensor_operator_registry.get("max")(self, axis, keepdims, initial=initial, where=where)
-        if not return_indices:
-            return values
-        return values, indices
 
     def scatter_add(self, indices, updates):
         """

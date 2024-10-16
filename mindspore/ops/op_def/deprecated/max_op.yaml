@@ -14,8 +14,9 @@ max:
       dtype: number
       default: None
     where:
-      dtype: tensor
-      default: None
+      dtype: bool
+      type_cast: tensor
+      default: True
     return_indices:
       dtype: bool
       default: False

@@ -577,7 +577,7 @@ def tensor_max(input):
     return max_(input)
 
 
-def deprecated_tensor_max(input, axis=None, keepdims=False, *, initial=None, where=None, return_indices=False):
+def deprecated_tensor_max(input, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
     if isinstance(axis, (list, tuple)):
         reduce_max = P.ReduceMax
         maximum = F.maximum
