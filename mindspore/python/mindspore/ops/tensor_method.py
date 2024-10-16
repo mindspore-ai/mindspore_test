@@ -622,6 +622,9 @@ def tensor_minimum(input, other):
 
 
 # 70 mul
+def tensor_mul(input, other):
+    return F.mul(input, other)
+
 
 # 71 nan_to_num
 def tensor_nan_to_num(input, nan=0.0, posinf=None, neginf=None):

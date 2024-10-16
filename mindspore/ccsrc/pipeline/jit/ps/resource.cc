@@ -427,7 +427,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"inner", std::string("inner")},                                    // inner()
        {"msort", std::string("msort")},                                    // msort()
        {"mm", std::string("mm")},                                          // mm()
-       {"mul", std::string("mul")},                                        // mul()
        {"multiply", std::string("multiply")},                              // multiply()
        {"nansum", std::string("nansum")},                                  // nansum()
        {"nanmean", std::string("nanmean")},                                // nanmean()

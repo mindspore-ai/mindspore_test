@@ -4304,11 +4304,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('msort')(self)
 
-    def mul(self, value):
-        r"""
-        For details, please refer to :func:`mindspore.ops.mul`.
-        """
-        return tensor_operator_registry.get('mul')(self, value)
 
     def ne(self, other):
         r"""
