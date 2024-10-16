@@ -43,7 +43,7 @@ size_t Reshape::FindUnknownDim(const SymbolPtrList &symbols) {
     if (item->is_negative()) {
       unknown_dim_idx = i;
       break;
-    } else if (!item->is_positive()) {
+    } else if (!item->is_greater_equal(0)) {
       // unknown positive or negative
       notpositive_symbol_cnt++;
       notpositive_symbol_idx = i;
@@ -92,7 +92,7 @@ SymbolPtr Reshape::Eval() {
     return GenVList();
   }
   if (std::all_of(shape->symbols().begin(), shape->symbols().end(),
-                  [](const SymbolPtr &s) { return s->as<IntSymbol>()->is_positive(); })) {
+                  [](const SymbolPtr &s) { return s->as<IntSymbol>()->is_greater_equal(0); })) {
     // all items of "shape" are positive,
     DoNotEvalOnRun();
     return input(1);
@@ -113,7 +113,7 @@ SymbolPtr Reshape::Eval() {
   SymbolPtrList result = shape->symbols();
   if (unknown_dim_idx == out_symbols.size()) {
     for (size_t i = 0; i < result.size(); i++) {
-      if (!result[i]->as<IntSymbol>()->is_positive()) {
+      if (!result[i]->as<IntSymbol>()->is_greater_equal(0)) {
         result[i] = GenVInt();
       }
     }
