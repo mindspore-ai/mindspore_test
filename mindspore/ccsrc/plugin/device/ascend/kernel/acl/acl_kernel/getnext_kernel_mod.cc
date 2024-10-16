@@ -91,13 +91,13 @@ int GetNextAclKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
 bool GetNextAclKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  auto ret = AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
-  if (ret) {
-    auto wingman_queue = device::GetTdtWingManQueue(primitive_);
-    MS_EXCEPTION_IF_NULL(wingman_queue);
+  auto wingman_queue = device::GetTdtWingManQueue(primitive_);
+  MS_EXCEPTION_IF_NULL(wingman_queue);
+  if (wingman_queue->Size() > 0) {
     (void)wingman_queue->Pop();
   }
-  return ret;
+
+  return AclKernelMod::Launch(inputs, workspace, outputs, stream_ptr);
 }
 
 }  // namespace kernel
