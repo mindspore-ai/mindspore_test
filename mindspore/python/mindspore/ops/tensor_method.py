@@ -633,6 +633,9 @@ def tensor_nan_to_num(input, nan=0.0, posinf=None, neginf=None):
 # 73 ne
 
 # 74 neg
+def tensor_neg(input):
+    return F.neg(input)
+
 
 # 75 negative
 

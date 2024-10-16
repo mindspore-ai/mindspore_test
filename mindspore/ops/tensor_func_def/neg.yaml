@@ -1,0 +1,6 @@
+neg:
+  op_yaml: neg_op.yaml
+  py_method: tensor_neg
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

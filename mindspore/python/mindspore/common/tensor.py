@@ -4310,12 +4310,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('mul')(self, value)
 
-    def neg(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.neg`.
-        """
-        return tensor_operator_registry.get('neg')(self)
-
     def ne(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.ne`.
