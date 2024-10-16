@@ -1317,6 +1317,41 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('add')(self, other)
 
+    def add_(self, other, *, alpha=1):
+        """
+        inplace update self by following compute:
+            self = self + other * alpha.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+            The `other` tensor must be broadcastable with the `self` tensor. It may be of a different data type.
+
+        Args:
+            other (Tensor): the source tensor Add to self Tensor.
+            alpha (Number): no effect currently.
+
+        Returns:
+            Return self Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> a = Tensor(np.ones((2,3)).astype("float32"))
+            >>> b = Tensor(np.ones((2,3)).astype("float32"))
+            >>> a.add_(b)
+            >>> print(a)
+            [[2. 2. 2.]
+            [2. 2. 2.]]
+        """
+        if isinstance(other, (int, float)):
+            ret = tensor_operator_registry.get("adds_")(self, other, alpha)
+        else:
+            ret = tensor_operator_registry.get("add_")(self, other, alpha)
+        return ret
+
     def subtract(self, other, *, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.subtract`.
