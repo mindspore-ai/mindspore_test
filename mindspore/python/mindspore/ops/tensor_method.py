@@ -617,6 +617,9 @@ def deprecated_tensor_min(input, axis=None, keepdims=False, *, initial=None, whe
 
 
 # 69 minimum
+def tensor_minimum(input, other):
+    return F.minimum(input, other)
+
 
 # 70 mul
 

@@ -1,0 +1,50 @@
+minimum:
+  description: |
+    minimum(self, other) -> Tensor
+    
+    Computes the minimum of input tensors element-wise.
+
+    Note:
+        - The `self` and `other` comply with the implicit type conversion rules to make the data types
+          consistent.
+        - The `other` can be a tensor or a scalar.
+        - When the `self` and `other` are two tensors, dtypes of them cannot be bool at the same time.
+        - When the `other` is a scalar, the scalar must be a constant.
+        - Shapes of them are supposed to be broadcast.
+        - If one of the elements being compared is a NaN, then that element is returned.
+
+    .. math::
+        output_i = \min(tensor_i, other_i)
+
+    Args:
+        self (Tensor): A tensor whose data type is number or bool.
+        other (Union[Tensor, Number, bool]): The input is a number or
+            a bool or a tensor whose data type is number or bool.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting,
+        and the data type is the one with higher precision or higher digits among `tensor` and `other`.
+
+    Raises:
+        TypeError: If the `other` is not one of the following: Tensor, Number, bool.
+        ValueError: If `tensor` and `other` are not the same shape after broadcast.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> # case 1 : same data type
+        >>> x = Tensor(np.array([1.0, 5.0, 3.0]), mindspore.float32)
+        >>> y = Tensor(np.array([4.0, 2.0, 6.0]), mindspore.float32)
+        >>> output = x.minimum(y)
+        >>> print(output)
+        [1. 2. 3.]
+        >>> # case 2 : different data type
+        >>> x = Tensor(np.array([1.0, 5.0, 3.0]), mindspore.int32)
+        >>> y = Tensor(np.array([4.0, 2.0, 6.0]), mindspore.float32)
+        >>> output = x.minimum(y)
+        >>> print(output.dtype)
+        Float32

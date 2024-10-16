@@ -2679,12 +2679,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         return self.max(axis, keepdims) - self.min(axis, keepdims)
 
-    def minimum(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.minimum`.
-        """
-        return tensor_operator_registry.get('minimum')(self, other)
-
     def clamp_(self, min=None, max=None):
         r"""
         Clamps tensor values between the specified minimum value and maximum value.

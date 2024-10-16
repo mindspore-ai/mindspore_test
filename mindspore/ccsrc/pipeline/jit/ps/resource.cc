@@ -267,7 +267,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"isneginf", std::string("isneginf")},                              // isneginf()
        {"isposinf", std::string("isposinf")},                              // isposinf()
        {"isreal", std::string("isreal")},                                  // isreal()
-       {"minimum", std::string("minimum")},                                // P.Minimum()
        {"cosh", std::string("cosh")},                                      // P.Cosh()
        {"rad2deg", std::string("rad2deg")},                                // F.rad2deg()
        {"deg2rad", std::string("deg2rad")},                                // F.deg2rad()
