@@ -45,11 +45,11 @@ from mindspore.ops.auto_generate import abs
 # 5 add
 from mindspore.ops.auto_generate import add_ext, add
 # 6 all
-
+from mindspore.ops.auto_generate import all
 # 7 allclose
 
 # 8 any
-
+from mindspore.ops.function.math_func import any
 # 9 arctan2
 from mindspore.ops.function.math_func import arctan2
 # 10 argmax
@@ -400,10 +400,18 @@ def deprecated_tensor_add(input, other):
 
 
 # 6 all
+def tensor_all(x, axis=None, keep_dims=False):
+    return all(x, axis, keep_dims)
+
 
 # 7 allclose
 
 # 8 any
+def tensor_any(x, axis=None, keep_dims=False):
+    if axis is None:
+        axis = ()
+    return any(x, axis, keep_dims)
+
 
 # 9 arctan2
 def tensor_arctan2(input, other):

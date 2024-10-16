@@ -1386,11 +1386,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('adjoint')(self)
 
-    def all(self, axis=None, keep_dims=False):
-        r"""
-        For details, please refer to :func:`mindspore.ops.all`.
-        """
-        return tensor_operator_registry.get('all')(self, axis, keep_dims)
 
     def angle(self):
         r"""
@@ -1398,13 +1393,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('angle')(self)
 
-    def any(self, axis=None, keep_dims=False):
-        r"""
-        For details, please refer to :func:`mindspore.ops.any`.
-        """
-        if axis is None:
-            axis = ()
-        return tensor_operator_registry.get('any')(self, axis, keep_dims)
 
     def baddbmm(self, batch1, batch2, beta=1, alpha=1):
         r"""
