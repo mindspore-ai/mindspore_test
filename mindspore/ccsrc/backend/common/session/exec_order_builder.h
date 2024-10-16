@@ -24,6 +24,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "utils/hash_map.h"
+#include "utils/hash_set.h"
 
 namespace mindspore::session {
 
@@ -48,6 +49,8 @@ class ExecOrderBuilder {
   void BuildByBFS();
   void BuildByDFS();
 
+  void EnqueEagerDepend(const AnfNodePtr &node, std::deque<AnfNodePtr> *visit_queue);
+
   void EnqueueReadyNodes(const AnfNodePtr &node, std::deque<AnfNodePtr> *visit_queue, bool comm_first = true);
 
   bool PrintLoopNodesIfExist(const AnfNodePtr &node, std::set<AnfNodePtr> *visited_nodes,
@@ -65,6 +68,7 @@ class ExecOrderBuilder {
   std::stack<AnfNodePtr> independent_nodes_;
   mindspore::HashMap<AnfNodePtr, size_t> node_input_num_;
   mindspore::HashMap<AnfNodePtr, size_t> node_output_num_;
+  mindspore::HashSet<AnfNodePtr> eager_visited_nodes_;
   NodeUser node_input_edges_;
   NodeUser *node_output_edges_{nullptr};
   mindspore::HashMap<AnfNodePtr, bool> trivial_nodes_;
