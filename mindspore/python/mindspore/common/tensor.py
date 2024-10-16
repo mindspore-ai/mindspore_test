@@ -4203,11 +4203,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         return tensor_operator_registry.get('msort')(self)
 
 
-    def ne(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.ne`.
-        """
-        return tensor_operator_registry.get('ne')(self, other)
 
     def new_zeros(self, size, dtype=None):
         r"""

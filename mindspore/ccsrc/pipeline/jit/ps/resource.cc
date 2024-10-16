@@ -428,7 +428,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"nansum", std::string("nansum")},                                  // nansum()
        {"nanmean", std::string("nanmean")},                                // nanmean()
        {"nanmedian", std::string("nanmedian")},                            // nanmedian()
-       {"ne", std::string("ne")},                                          // ne()
        {"new_zeros", std::string("new_zeros")},                            // new_zeros()
        {"zero_", std::string("zero_")},                                    // zero_()
        {"new_ones", std::string("new_ones")},                              // new_ones()
