@@ -198,6 +198,7 @@ def test_base_grad_operation_4():
     assert np.allclose(pynative_res[1][0].asnumpy(), pijit_res[1][0].asnumpy())
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_5():
     """
@@ -455,7 +456,6 @@ def test_base_grad_operation_with_keywords_args_2():
     jit_mode_pi_disable()
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_with_vargs():
     """
@@ -578,6 +578,7 @@ def test_functional_grad_2():
     assert np.allclose(pynative_res[1].asnumpy(), pijit_res[1].asnumpy())
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad_3():
     """
@@ -623,6 +624,7 @@ def test_functional_grad_3():
     assert len(pynative_res[1]) == 1 and len(pijit_res[1]) == 1
     assert np.allclose(pynative_res[1][0].asnumpy(), pijit_res[1][0].asnumpy())
     jit_mode_pi_disable()
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad_4():
@@ -671,6 +673,7 @@ def test_functional_grad_4():
     assert np.allclose(pynative_res[1][1].asnumpy(), pijit_res[1][1].asnumpy())
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad_5():
     """
@@ -715,6 +718,7 @@ def test_functional_grad_5():
     assert np.allclose(pynative_res[1].asnumpy(), pijit_res[1].asnumpy())
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_second_grad_operation():
     """
@@ -758,6 +762,120 @@ def test_second_grad_operation():
     jit_mode_pi_enable()
     pijit_res = sec_grad_net(a)
     jcr = get_code_extra(SecGradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
+    jit_mode_pi_disable()
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_with_invalid_output():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            ret = x + y
+            return ret, "a", slice(x, 1, 2)
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.grad_op = GradOperation(False, False, False)
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
+    jit_mode_pi_disable()
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_with_invalid_output_2():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, *args):
+            ret = args[0] + args[1]
+            return ret, "a", slice(args[0], 1, 2), {"1": args[0]}
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.grad_op = GradOperation(False, False, False)
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
+    jit_mode_pi_disable()
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_with_invalid_output_3():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, *args, **kwargs):
+            ret = args[0] + args[1]
+            return ret, "a", slice(args[0], 1, 2), {"1": args[0]}
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.grad_op = GradOperation(False, False, False)
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()

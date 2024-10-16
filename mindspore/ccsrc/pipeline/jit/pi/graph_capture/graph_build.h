@@ -385,7 +385,8 @@ class MindGraphBuilder : public GraphBuilder {
   void FGAddTopInputs();
   bool FGAddInputs(const std::vector<ValueNode *> &args);
 
-  std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
+  std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr,
+                                      const GraphBuilderPtr &subgraph = nullptr);
   bool IsGradCallable(ValueNode *node);
   py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
 
