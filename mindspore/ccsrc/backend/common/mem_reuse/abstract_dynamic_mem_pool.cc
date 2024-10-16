@@ -381,9 +381,7 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
     if (!enable_vmm_ && from_persistent_mem) {
       auto another_allocator = GetMemBufAllocator(align_size, !from_persistent_mem, stream_id);
       mem_buf = another_allocator->Malloc(align_size);
-      if (MS_UNLIKELY(mem_buf != nullptr)) {
-        allocator = another_allocator;
-      }
+      allocator = another_allocator;
     }
 
     if (MS_UNLIKELY(mem_buf == nullptr)) {
