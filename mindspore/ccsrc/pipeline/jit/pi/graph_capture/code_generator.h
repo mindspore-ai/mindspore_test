@@ -74,16 +74,6 @@ class CodeGenerator {
   std::vector<std::unique_ptr<Instr>> MoveCode() { return std::move(code_.co_code); }
   const py::dict &GetGlobals() const { return globals_; }
   const std::unordered_map<ValueNode *, int> &GetLocalsMap() const { return locals_map_; }
-  std::unordered_map<ValueNode *, int> &GetLocalsMap() { return locals_map_; }
-  bool EarseLocal(ValueNode *item) {
-    auto it = GetLocalsMap().find(item);
-    if (it != GetLocalsMap().end()) {
-      locals_map_.erase(it);
-    } else {
-      return false;
-    }
-    return true;
-  }
   const Code &GetCode() const { return code_; }
   void SetArgsInfo(int argcount, int kwonlyargcount) {
     code_.co_argcount = argcount;
@@ -98,8 +88,12 @@ class CodeGenerator {
   void SetCodeName(const std::string &name) { code_.co_name = name; }
   void SetFileName(const py::object &file) { code_.co_filename = file; }
 
+  void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
+  void ClearAlive() { nodes_alive_.clear(); }
   void MarkAlive(ValueNode *node) { nodes_alive_[node] = INT_MAX; }
   void MarkAlive();
+  // make the node same as other node, use same local index, if the node not in locals, try to load it
+  void MakeSameLocal(ValueNode *new_node, ValueNode *old_node);
   void NewInstr(int op, int arg = 0, int line = -1);
   void AddInstrs(std::vector<std::unique_ptr<Instr>> &&list);
   void AddInstr(std::unique_ptr<Instr> &&instr);
@@ -229,6 +223,8 @@ class CodeBreakGenerator {
   void CallCapturedCode(CodeGenerator *code_gen);
 
   void FixInterpretOuput(CodeGenerator *code_gen);
+
+  void HandleOutputOpt(CodeGenerator *code_gen);
 
   // make function of untracked bytecode, build restore frame operations of untracked bytecode
   py::object MakeUntrackedCode(int untracked_bci, int untracked_stack_effect) const;

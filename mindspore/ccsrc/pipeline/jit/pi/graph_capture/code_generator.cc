@@ -508,6 +508,17 @@ void CodeGenerator::MarkAlive() {
   }
 }
 
+void CodeGenerator::MakeSameLocal(ValueNode *node, ValueNode *other_node) {
+  auto iter = locals_map_.find(node);
+  if (iter != locals_map_.end()) {
+    locals_map_[other_node] = iter->second;
+    locals_map_.erase(node);
+    return;
+  }
+  LoadValue(node);
+  NewInstr(STORE_FAST, AllocLocal(other_node, 0));
+}
+
 int CodeGenerator::AllocLocal(ValueNode *node, int index) {
   auto iter = locals_map_.find(node);
   if (iter != locals_map_.end()) {
@@ -579,9 +590,12 @@ void CodeGenerator::LoadValue(ValueNode *node) {
   }
   if (missing_value_to_undefine_) {
     std::stringstream name;
+    const size_t limit = 40;
     auto abs = node->abstract_wrapper() == nullptr ? nullptr : node->abstract_wrapper()->abstract();
-    name << "<missing value " << (node->GetOpcode() <= 0 ? "" : Opcode(node->GetOpcode()).name())
-         << ": mindspore::AbstractBase * at " << abs.get();
+    auto str = abs == nullptr ? "<NULL>" : abs->ToString();
+    str = str.size() < limit ? str : str.substr(0, limit) + "...";
+    std::replace(str.begin(), str.end(), '\n', ' ');
+    name << "<missing value " << (node->GetOpcode() <= 0 ? "" : Opcode(node->GetOpcode()).name()) << " -> " << str;
     NewInstr(LOAD_NAME);
     code_.co_code.back()->set_name(name.str());
     return;
@@ -779,34 +793,52 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
     return;
   }
   MS_EXCEPTION_IF_CHECK_FAIL(extra_local_ != -1, "can't find graph output");
-  code_gen->NewInstr(LOAD_FAST, extra_local_);
   if (captured_.outputs.size() > 1) {
-    code_gen->NewInstr(UNPACK_SEQUENCE, captured_.outputs.size());
-  }
-  std::for_each(captured_.outputs.begin(), captured_.outputs.end(), [code_gen](ValueNode *i) {
     // fill interpret local map
-    code_gen->NewInstr(STORE_FAST, code_gen->AllocLocal(i));
-  });
+    code_gen->NewInstr(LOAD_FAST, extra_local_);
+    code_gen->NewInstr(UNPACK_SEQUENCE, captured_.outputs.size());
+    for (auto i : captured_.outputs) {
+      code_gen->MarkAlive(i);
+      code_gen->NewInstr(STORE_FAST, code_gen->AllocLocal(i, 0));
+    }
+  } else {
+    code_gen->MarkAlive(captured_.outputs[0]);
+    code_gen->MakeSameLocal(nullptr, captured_.outputs[0]);
+  }
   // reconstruct interpret values if need
-  auto index = interpret_.operations.size() + 1;
-  std::for_each(outputs_optimize_.operations.begin(), outputs_optimize_.operations.end(),
-                [code_gen, &index](ValueNode *input) {
-                  // fill interpret local map
-                  auto target = code_gen->GetLocalsMap().find(input);
-                  if (target == code_gen->GetLocalsMap().end()) {
-                    code_gen->MarkAlive(input);
-                    code_gen->BuildOper(input, SizeToInt(index));
-                  }
-                  index++;
-                });
-  // bind the value node to the node that replaced it so that bytecode can be generated correctly
-  // avoid missing value
-  std::for_each(replaced_nodes_.begin(), replaced_nodes_.end(), [code_gen](auto item) {
-    std::unordered_map<ValueNode *, int> &local_map = code_gen->GetLocalsMap();
-    MS_EXCEPTION_IF_CHECK_FAIL(local_map.find(item.second) != local_map.end(),
-                               item.second->ToString() + " should be a local var.");
-    local_map[item.first] = local_map.at(item.second);
-  });
+  HandleOutputOpt(code_gen);
+}
+
+void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
+  if (outputs_optimize_.operations.empty()) {
+    return;
+  }
+  cg->ClearAlive();
+  auto handle_replaced = [this, &cg](bool is_pre) {
+    if (replaced_nodes_.empty()) {
+      return;
+    }
+    for (const auto &node : interpret_.outputs) {
+      auto iter = replaced_nodes_.find(node);
+      if (iter == replaced_nodes_.end()) {
+        continue;
+      }
+      if (is_pre) {
+        cg->MarkAlive(iter->second);
+        continue;
+      }
+      bool not_a_local = cg->GetLocalsMap().find(iter->second) == cg->GetLocalsMap().end();
+      if (not_a_local && iter->second->GetOpcode() != LOAD_CONST) {
+        MS_LOG(INTERNAL_EXCEPTION) << iter->second->ToString() << " should be a local var.";
+      }
+      cg->MakeSameLocal(iter->second, node);
+    }
+  };
+  handle_replaced(true);
+  std::swap(interpret_.operations, outputs_optimize_.operations);
+  cg->Build();
+  std::swap(interpret_.operations, outputs_optimize_.operations);
+  handle_replaced(false);
 }
 
 void CodeBreakGenerator::RestoreStack(CodeGenerator *code_gen) const {
