@@ -290,7 +290,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
        {"clip", std::string("clamp")},                                     // clamp()
        {"__bool__", std::string("tensor_bool")},                           // C.tensor_bool
-       {"argmax", std::string("argmax")},                                  // P.Argmax()
        {"argmin", std::string("argmin")},                                  // P.Argmax()
        {"resize", std::string("resize")},                                  // P.Reshape()
        {"crop_and_resize", std::string("crop_and_resize")},                // P.crop_and_resize

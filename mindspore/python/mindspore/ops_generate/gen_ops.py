@@ -30,6 +30,7 @@ from ops_primitive_h_generator import OpsPrimitiveHGenerator
 from lite_ops_cpp_generator import LiteOpsCcGenerator, LiteOpsHGenerator
 from ops_name_h_generator import OpsNameHGenerator
 from functional_map_cpp_generator import FunctionalMapCppGenerator
+from add_tensor_docs_generator import AddTensorDocsGenerator
 
 from op_proto import OpProto
 from tensor_func_proto import load_func_protos_from_yaml
@@ -141,12 +142,18 @@ def gen_functional_map_code(work_path, func_protos):
     generator.generate(work_path, func_protos)
 
 
+def gen_tensor_docs_code(work_path, tensor_docs_data):
+    generator = AddTensorDocsGenerator()
+    generator.generate(work_path, tensor_docs_data)
+
+
 def main():
     current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
 
     # merge ops yaml
-    doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path = merge_ops_yaml(work_path)
+    doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path, tensor_doc_yaml_path \
+        = merge_ops_yaml(work_path)
 
     # make auto_generate dir
     cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
@@ -160,6 +167,7 @@ def main():
     doc_yaml_dict = safe_load_yaml(doc_yaml_path)
     deprecated_ops_yaml_dict = safe_load_yaml(deprecated_ops_yaml_path)
     tensor_yaml_dict = safe_load_yaml(tensor_yaml_path)
+    tensor_doc_yaml_dict = safe_load_yaml(tensor_doc_yaml_path)
 
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
     deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
@@ -179,6 +187,8 @@ def main():
     gen_tensor_func_code(work_path, func_protos)
     # generate functional map code
     gen_functional_map_code(work_path, func_protos)
+    # generate _tensor_docs.py that attaches docs to tensor func APIs when import mindspore
+    gen_tensor_docs_code(work_path, tensor_doc_yaml_dict)
 
 
 def load_op_protos_from_ops_yaml(ops_yaml_data):
@@ -208,25 +218,29 @@ def merge_ops_yaml(work_path):
     Returns:
         tuple: Paths to the merged documentation and operators YAML files.
     """
-    ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops.yaml')
     ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEF_YAML_PATH)
+    ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops.yaml')
     infer_ops_yaml_dir_path = os.path.join(ops_yaml_dir_path, "infer")
     merge_files(ops_yaml_dir_path, ops_yaml_path, '*op.yaml')
     merge_files_append(infer_ops_yaml_dir_path, ops_yaml_path, '*op.yaml')
 
-    doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops_doc.yaml')
     doc_yaml_dir_path = os.path.join(ops_yaml_dir_path, "doc")
+    doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops_doc.yaml')
     merge_files(doc_yaml_dir_path, doc_yaml_path, '*doc.yaml')
 
-    tensor_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_func.yaml')
     tensor_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_YAML_PATH)
+    tensor_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_func.yaml')
     merge_files(tensor_yaml_dir_path, tensor_yaml_path, '*.yaml')
 
-    deprecated_ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'deprecated_ops.yaml')
     deprecated_ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEPRECATED_DEF_YAML_PATH)
+    deprecated_ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'deprecated_ops.yaml')
     merge_files(deprecated_ops_yaml_dir_path, deprecated_ops_yaml_path, '*_op.yaml')
 
-    return doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path
+    tensor_doc_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_DOC_YAML_PATH)
+    tensor_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_doc.yaml')
+    merge_files(tensor_doc_yaml_dir_path, tensor_doc_yaml_path, '*doc.yaml')
+
+    return doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path, tensor_doc_yaml_path
 
 
 if __name__ == "__main__":

@@ -64,6 +64,7 @@ MS_OP_DEF_AUTO_GENERATE_PATH = "mindspore/ops/op_def/auto_generate"
 MS_OP_DEF_YAML_PATH = "mindspore/ops/op_def/yaml"
 MS_OP_DEPRECATED_DEF_YAML_PATH = "mindspore/ops/op_def/deprecated"
 MS_TENSOR_YAML_PATH = "mindspore/ops/tensor_func_def"
+MS_TENSOR_DOC_YAML_PATH = "mindspore/ops/tensor_func_def/doc"
 PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"
 PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/function/auto_generate"
@@ -71,6 +72,7 @@ PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/
 RUNTIME_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/runtime/pynative/op_function/auto_generate"
 TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/"
 TENSOR_FUNC_DEF_YAML_PATH = "mindspore/ops/tensor_func_def"
+ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 
 # infer
 MS_OPS_FUNC_IMPL_PATH = "mindspore/ops/infer/ops_func_impl"

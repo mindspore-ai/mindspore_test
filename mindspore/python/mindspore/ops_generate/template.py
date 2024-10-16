@@ -423,3 +423,6 @@ TUPLE_TENSOR_NOT_SUPPORTED = Template("""
 FUNCTIONAL_MAP_CC_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./mindspore/ccsrc/pipeline/pynative/op_function/template/functional_map_cc.tpl'))
+
+ADD_TENSOR_DOCS_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_docs_py.tpl'))

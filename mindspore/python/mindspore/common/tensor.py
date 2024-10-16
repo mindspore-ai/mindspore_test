@@ -2302,13 +2302,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return self
         return tensor_operator_registry.get('cast')(self, dtype)
 
-    def argmax(self, axis=None, keepdims=False):
-        """
-        For details, please refer to :func:`mindspore.ops.argmax`.
-        """
-        out = tensor_operator_registry.get('argmax')(self, axis, keepdims)
-        return out
-
     def argmin(self, axis=None, keepdims=False):
         """
         For details, please refer to :func:`mindspore.ops.argmin`.

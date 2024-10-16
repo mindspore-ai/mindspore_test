@@ -43,6 +43,7 @@ void RegStress(py::module *m);
 void RegSendRecv(py::module *m);
 void RegCleanTdtChannel(py::module *m);
 void RegTFT(py::module *m);
+void RegTensorDoc(py::module *m);
 
 namespace hal {
 void RegStream(py::module *m);
