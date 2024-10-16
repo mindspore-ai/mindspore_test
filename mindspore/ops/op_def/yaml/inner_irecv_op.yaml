@@ -1,8 +1,6 @@
 #operator inner irecv
 inner_comm_irecv:
     args:
-        input:
-            dtype: tensor
         tag:
             dtype: int
         src:

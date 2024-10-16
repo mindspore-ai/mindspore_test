@@ -189,22 +189,20 @@ REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFU
   return {dx, ib->OutZeros(rank_size), ib->OutZeros(op), ib->OutZeros(group)};
 });
 
-REG_BPROP_BUILDER("InnerCommIrecv").SetUnusedInputs({i0, i3, i5, i6}).SetBody(BODYFUNC(ib) {
-  auto input = ib->GetInput(kIndex0);
-  auto tag = ib->GetInput(kIndex1);
-  auto rank = ib->GetInput(kIndex2);
-  auto shape = ib->GetInput(kIndex3);
-  auto group = ib->GetInput(kIndex4);
-  auto dtype_node = ib->GetInput(kIndex5);
-  auto dout = ib->GetInput(kIndex7);
+REG_BPROP_BUILDER("InnerCommIrecv").SetUnusedInputs({i2, i4, i5}).SetBody(BODYFUNC(ib) {
+  auto tag = ib->GetInput(kIndex0);
+  auto rank = ib->GetInput(kIndex1);
+  auto shape = ib->GetInput(kIndex2);
+  auto group = ib->GetInput(kIndex3);
+  auto dtype_node = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
 
   auto out_tensor = ib->Tensor(0.0, kFloat16);
-  auto dtype = ib->GetDtype(input);
 
   auto send_out =
     ib->Emit(kSendOpName, {dout},
              {{"sr_tag", tag->BuildValue()}, {"dest_rank", rank->BuildValue()}, {"group", group->BuildValue()}});
-  auto dx = ib->Depend(ib->Cast(out_tensor, dtype), send_out);
+  auto dx = ib->Depend(ib->Cast(out_tensor, dtype_node), send_out);
 
   return {
     dx, ib->OutZeros(tag), ib->OutZeros(rank), ib->OutZeros(shape), ib->OutZeros(group), ib->OutZeros(dtype_node)};

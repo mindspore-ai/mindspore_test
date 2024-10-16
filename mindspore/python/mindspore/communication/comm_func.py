@@ -1012,7 +1012,7 @@ def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
     tensor = _contiguous(tensor)
     shape = tensor.shape
     dtype = tensor.dtype
-    output, _ = _deal_comm_outputs(inner_comm_irecv_op(tensor, tag, _src, shape, group, dtype), False)
+    output, _ = _deal_comm_outputs(inner_comm_irecv_op(tag, _src, shape, group, dtype), False)
     return output
 
 
@@ -1144,7 +1144,7 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
     tensor = _contiguous(tensor)
     shape = tensor.shape
     dtype = tensor.dtype
-    output = inner_comm_irecv_op(tensor, tag, _src, shape, group, dtype)
+    output = inner_comm_irecv_op(tag, _src, shape, group, dtype)
     return _deal_comm_outputs(output, True)
 
 

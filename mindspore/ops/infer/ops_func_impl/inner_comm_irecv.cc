@@ -22,7 +22,7 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr InnerCommIrecvFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  auto shape_opt = GetArrayValue<int64_t>(input_args[kInputIndex3]);
+  auto shape_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]);
   MS_CHECK_VALUE(shape_opt.has_value(), primitive->name() + " error: shape input should has valid value.");
 
   return std::make_shared<abstract::TensorShape>(shape_opt.value().ToVector());
@@ -30,7 +30,7 @@ BaseShapePtr InnerCommIrecvFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr InnerCommIrecvFuncImpl::InferType(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  auto dtype_ptr = GetScalarValue<int64_t>(input_args[kInputIndex5]->GetValue());
+  auto dtype_ptr = GetScalarValue<int64_t>(input_args[kInputIndex4]->GetValue());
   MS_CHECK_VALUE(dtype_ptr.has_value(), primitive->name() + " error: dtype input should has valid value.");
   auto type = TypeIdToType(static_cast<TypeId>(dtype_ptr.value()));
   return std::make_shared<TensorType>(type);

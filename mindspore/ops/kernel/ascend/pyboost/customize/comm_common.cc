@@ -67,7 +67,7 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
 
   if (post_func) {
     post_func(comm_handle->event(), comm_stream_id);
-  } else {
+  } else if (input_tensor != nullptr) {
     // Default post function
     runtime::DeviceAddressUtils::ProcessCrossStreamAddressWithEvent(
       op->primitive()->name(), device_context, comm_stream_id, comm_handle->event(), input_tensor, op->output(0));
