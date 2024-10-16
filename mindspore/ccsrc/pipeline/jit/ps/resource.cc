@@ -429,7 +429,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"mm", std::string("mm")},                                          // mm()
        {"mul", std::string("mul")},                                        // mul()
        {"multiply", std::string("multiply")},                              // multiply()
-       {"nan_to_num", std::string("nan_to_num")},                          // nan_to_num()
        {"nansum", std::string("nansum")},                                  // nansum()
        {"nanmean", std::string("nanmean")},                                // nanmean()
        {"nanmedian", std::string("nanmedian")},                            // nanmedian()

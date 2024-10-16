@@ -1,0 +1,6 @@
+nan_to_num:
+  op_yaml: nan_to_num_op.yaml
+  py_method: tensor_nan_to_num
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

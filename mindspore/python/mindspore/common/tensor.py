@@ -4310,12 +4310,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('mul')(self, value)
 
-    def nan_to_num(self, nan=None, posinf=None, neginf=None):
-        """
-        For details, please refer to :func:`mindspore.ops.nan_to_num`.
-        """
-        return tensor_operator_registry.get('nan_to_num')(self, nan, posinf, neginf)
-
     def neg(self):
         r"""
         For details, please refer to :func:`mindspore.ops.neg`.
