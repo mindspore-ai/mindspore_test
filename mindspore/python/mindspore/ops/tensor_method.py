@@ -18,6 +18,7 @@ from mindspore import _checkparam as validator
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
+from mindspore.ops.composite.multitype_ops._compile_utils import sequence_to_tensor
 # 1 common import
 
 # 2 common import
@@ -42,7 +43,7 @@ from mindspore.ops.auto_generate import cast
 # 4 __abs__
 
 # 5 add
-
+from mindspore.ops.auto_generate import add_ext, add
 # 6 all
 
 # 7 allclose
@@ -385,6 +386,15 @@ def tensor_masked_fill(input_x, mask, value):
 # 4 __abs__
 
 # 5 add
+def tensor_add_ext(input, other, alpha=1):
+    return add_ext(input, other, alpha)
+
+
+def deprecated_tensor_add(input, other):
+    if isinstance(other, (tuple, list)):
+        other = sequence_to_tensor(other, F.dtype(input))
+    return add(input, other)
+
 
 # 6 all
 

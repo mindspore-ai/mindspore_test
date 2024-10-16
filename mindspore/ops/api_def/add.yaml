@@ -1,0 +1,21 @@
+add:
+  - op_yaml: add_op.yaml
+    py_method: deprecated_tensor_add
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method
+
+  - op_yaml: add_ext_op.yaml
+    py_method: tensor_add_ext
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method
+
+  - op_yaml: deprecated/add_op.yaml
+    py_method: deprecated_tensor_add
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: method
