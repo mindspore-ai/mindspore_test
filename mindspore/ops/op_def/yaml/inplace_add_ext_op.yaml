@@ -1,0 +1,23 @@
+#operator inplace_add_ext
+inplace_add_ext:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: tensor
+    alpha:
+      dtype: number
+      default: 1
+  args_signature:
+    rw_wirte: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  class:
+    name: InplaceAddExt
+  dispatch:
+    enable: True
+    Ascend: InplaceAddExtAscend
