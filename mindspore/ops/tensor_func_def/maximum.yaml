@@ -1,0 +1,6 @@
+maximum:
+  op_yaml: maximum_op.yaml
+  py_method: tensor_maximum
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

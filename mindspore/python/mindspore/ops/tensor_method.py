@@ -590,6 +590,9 @@ def deprecated_tensor_max(input, axis=None, keepdims=False, *, initial=None, whe
 
 
 # 66 maximum
+def tensor_maximum(input, other):
+    return F.maximum(input, other)
+
 
 # 67 mean
 def tensor_mean(x, axis=None, keep_dims=False, dtype=None):

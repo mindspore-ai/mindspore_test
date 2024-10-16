@@ -4298,12 +4298,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('matrix_power')(self, n)
 
-    def maximum(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.maximum`.
-        """
-        return tensor_operator_registry.get('maximum')(self, other)
-
     def mm(self, mat2):
         r"""
         For details, please refer to :func:`mindspore.ops.mm`.

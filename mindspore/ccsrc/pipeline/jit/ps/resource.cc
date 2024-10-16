@@ -426,7 +426,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"mvlgamma", std::string("mvlgamma")},                              // mvlgamma()
        {"matmul", std::string("matmul")},                                  // matmul()
        {"inner", std::string("inner")},                                    // inner()
-       {"maximum", std::string("maximum")},                                // maximum()
        {"msort", std::string("msort")},                                    // msort()
        {"mm", std::string("mm")},                                          // mm()
        {"mul", std::string("mul")},                                        // mul()
