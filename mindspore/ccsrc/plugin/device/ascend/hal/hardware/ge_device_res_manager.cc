@@ -599,8 +599,15 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
     char *ptr = reinterpret_cast<char *>(device_ptr);
     for (size_t i = 0; i < tensor_list.size(); ++i) {
       const auto &tensor = tensor_list[i];
+      auto format = Format::DEFAULT_FORMAT;
+      if (tensor->device_address() != nullptr) {
+        const auto temp_device_address = tensor->device_address();
+        auto const src_device_address = std::dynamic_pointer_cast<const AscendDeviceAddress>(temp_device_address);
+        MS_EXCEPTION_IF_NULL(src_device_address);
+        format = FromStrToEnum(src_device_address->format());
+      }
       auto device_address = CreateDeviceAddress(reinterpret_cast<void *>(ptr), before_padding_sizes[i], tensor->shape(),
-                                                Format::ND, tensor->data_type(), device_name, device_id, stream_id);
+                                                format, tensor->data_type(), device_name, device_id, stream_id);
       MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                     << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
       MS_EXCEPTION_IF_NULL(device_address);
@@ -643,7 +650,14 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
   for (size_t i = 0; i < tensor_list.size(); ++i) {
     const auto &tensor = tensor_list[i];
     const auto &ptr = device_ptr_list[i];
-    auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), Format::ND,
+    auto format = Format::DEFAULT_FORMAT;
+    if (tensor->device_address() != nullptr) {
+      const auto temp_device_address = tensor->device_address();
+      auto const src_device_address = std::dynamic_pointer_cast<const AscendDeviceAddress>(temp_device_address);
+      MS_EXCEPTION_IF_NULL(src_device_address);
+      format = FromStrToEnum(src_device_address->format());
+    }
+    auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), format,
                                               tensor->data_type(), device_name, device_id, stream_id);
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
                   << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
