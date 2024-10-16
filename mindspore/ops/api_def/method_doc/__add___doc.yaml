@@ -1,0 +1,10 @@
+__add__:
+  description: |
+    __add__(other) -> Tensor
+    
+    Alias for :func:`Tensor.add`.
+    
+    .. method:: Tensor.__add__(other, alpha=1) -> Tensor
+        :noindex:
+    
+    Alias for :func:`Tensor.add`.
