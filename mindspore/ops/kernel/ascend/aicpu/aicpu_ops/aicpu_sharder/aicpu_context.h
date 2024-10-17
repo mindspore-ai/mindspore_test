@@ -33,7 +33,7 @@ typedef struct {
 } aicpuContext_t;
 
 enum AicpuRunMode : uint32_t {
-  PROCESS_PCIE_MODE = 0,    // 1910/1980/1951 dc, with host mode
+  PROCESS_PCIE_MODE = 0,    // ascend dc, with host mode
   PROCESS_SOCKET_MODE = 1,  // MDC
   THREAD_MODE = 2,          // ctrlcpu/minirc/lhisi
   INVALID_MODE,
