@@ -19,6 +19,7 @@ from mindspore.communication import init, get_rank
 from mindspore.common.initializer import initializer
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindspore.train import Model, CheckpointConfig, ModelCheckpoint
+from mindspore.train._utils import get_parameter_redundancy
 
 ms.set_context(mode=ms.GRAPH_MODE)
 ms.set_context(max_device_memory="28GB")
@@ -151,3 +152,26 @@ def test_remove_redundancy_save_False_load_False():
     load_param_into_net(model.train_network, param_dict, remove_redundancy=False)
     print("distribute network parameter broadcast.", flush=True)
     model.train(1, dataset)
+
+
+def test_remove_redundancy_strategy():
+    '''
+    Feature: save strategy ckpt and test get_parameter_redundancy.
+    Description: Test get_parameter_redundancy.
+    Expectation: success.
+    '''
+    print("distribute network shard.", flush=True)
+    strategy_path = "./stra1.ckpt"
+    ms.set_auto_parallel_context(strategy_ckpt_save_file=strategy_path)
+    net = Network()
+    print("distribute network create dataset.", flush=True)
+    dataset = create_dataset(32)
+    optim = nn.SGD(net.trainable_params(), 1e-2)
+    loss = nn.CrossEntropyLoss()
+    rank_id = get_rank()
+    config = CheckpointConfig(remove_redundancy=False)
+    cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_get_redundancy", config=config)
+    print("distribute network train.", flush=True)
+    model = Model(net, loss_fn=loss, optimizer=optim)
+    model.train(1, dataset, callbacks=cbpoint_cb)
+    get_parameter_redundancy(strategy_path)

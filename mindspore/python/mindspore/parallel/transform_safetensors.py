@@ -476,15 +476,74 @@ def _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_fi
         p.join()
 
 
+def _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num):
+    """Obtain the specified redundant group."""
+    redundancy_tuple = redundancy_dict.get(param_name)
+    for rank_list in redundancy_tuple:
+        for rank in rank_list:
+            if rank_num % device_num == rank % device_num:
+                return set(rank_list)
+    return set()
+
+
+def _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict, redundancy_dict,
+                                    needed_rank, device_num):
+    """Find the rank_id under redundant groups."""
+    for param_name in pipe_param_list:
+        rank_num = int(needed_rank)
+        redundancy_ranks = _count_redundancy_list(rank_num, param_name, redundancy_dict, device_num)
+        open_file_id = None
+        if single_param_dict.get(param_name) is None:
+            continue
+        for real_rank in single_param_dict[param_name]:
+            for redundancy_rank in redundancy_ranks:
+                if real_rank % device_num == redundancy_rank % device_num:
+                    open_file_id = real_rank
+                    break
+        if open_file_id is not None:
+            output = file_dict[open_file_id].get_tensor(param_name)
+            saftensor_dict[param_name] = output
+        else:
+            raise ValueError(f"For _transform_safetensors_single, {param_name} should be in "
+                             f"{redundancy_ranks}, but in {single_param_dict[param_name]}.")
+
+
 def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
                                   dst_stage_device_num,
                                   src_strategy_dict, dst_strategy_dict, origin_src_strategy_list,
                                   origin_dst_strategy_list,
                                   ckpt_prefix, dst_safetensors_dir, output_format,
-                                  _transform_param_list, pipe_param_list=None, file_index=None, unified_flag=False):
+                                  _transform_param_list, pipe_param_list=None, file_index=None, unified_flag=False,
+                                  src_strategy_file=None):
     """
     Transforms safetensors files to a specified format without using parallel processing.
     """
+    if src_strategy_file is not None:
+        from mindspore.train._utils import get_parameter_redundancy
+        redundancy_dict_tmp = get_parameter_redundancy(src_strategy_file)
+        redundancy_dict = {}
+        device_num = 0
+        for param_name, redundancy in redundancy_dict_tmp.items():
+            if device_num == 0:
+                device_num = max(max(redundancy)) + 1
+            origin_param_name = param_name
+            pipeline_stage = 0
+            if "-" in param_name:
+                pipeline_stage, origin_param_name = param_name.split("-")
+                pipeline_stage = int(pipeline_stage)
+            redundancy_new = tuple(
+                (tuple(x + pipeline_stage * device_num for x in subtuple)) for subtuple in redundancy)
+            redundancy_dict[origin_param_name] = redundancy_new
+        file_dict = {}
+        single_param_dict = {}
+        for file_id, _ in all_safetensor_files_map.items():
+            f = safe_open(all_safetensor_files_map.get(file_id), framework="np")
+            file_dict[file_id] = f
+            for param_name in f.keys():
+                if param_name not in single_param_dict.keys():
+                    single_param_dict[param_name] = {file_id}
+                else:
+                    single_param_dict[param_name].add(file_id)
     src_strategy_list_keys = _convert_to_list(src_strategy_dict).keys() if src_strategy_dict else []
     dst_strategy_list_keys = _convert_to_list(dst_strategy_dict).keys() if dst_strategy_dict else []
     for needed_rank_list_key, transform_rank_list in needed_rank_list_map.items():
@@ -494,19 +553,23 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
         for needed_rank in needed_rank_list:
             if pipe_param_list:
                 saftensor_dict = dict()
-                with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
-                    if not unified_flag:
-                        all_param_name_set = set(f.keys())
-                        src_param_name_set = set(src_strategy_list_keys)
-                        dst_param_name_set = set(dst_strategy_list_keys)
-                        hyper_param_set = all_param_name_set - (src_param_name_set & dst_param_name_set)
-                        pipe_param_list.extend(list(hyper_param_set))
-                    for param_name in pipe_param_list:
-                        if param_name not in f.keys():
-                            # param not in ckpt file, check reason
-                            continue
-                        output = f.get_tensor(param_name)
-                        saftensor_dict[param_name] = output
+                if src_strategy_file is not None:
+                    _find_remove_redundancy_rank_id(pipe_param_list, single_param_dict, file_dict, saftensor_dict,
+                                                    redundancy_dict, needed_rank, device_num)
+                else:
+                    with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
+                        if not unified_flag:
+                            all_param_name_set = set(f.keys())
+                            src_param_name_set = set(src_strategy_list_keys)
+                            dst_param_name_set = set(dst_strategy_list_keys)
+                            hyper_param_set = all_param_name_set - (src_param_name_set & dst_param_name_set)
+                            pipe_param_list.extend(list(hyper_param_set))
+                        for param_name in pipe_param_list:
+                            if param_name not in f.keys():
+                                # param not in ckpt file, check reason
+                                continue
+                            output = f.get_tensor(param_name)
+                            saftensor_dict[param_name] = output
             else:
                 saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
             for param_name, param in saftensor_dict.items():
@@ -527,7 +590,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
             local_rank_id = transform_rank % dst_stage_device_num
             transform_param_dict = _transform_parallel_safetensor(local_rank_id, param_total_dict,
                                                                   param_attr_dict, src_strategy_list, dst_strategy_list,
-                                                                  param_total_dict_keys)
+                                                                  param_total_dict_keys, src_strategy_file)
             if file_index is not None:
                 save_safetensor_file = f"part{file_index}.{output_format}"
                 save_safetensor_file_dir = dst_safetensors_dir
@@ -674,7 +737,7 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     save_file(transform_param_dict, save_safetensor_file_name)
 
 
-def _collect_safetensor_files(src_safetensors_dir, format='safetensors'):
+def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_suffix=None):
     """
     Collects all safetensors files from the specified directory and its subdirectories.
     """
@@ -692,7 +755,10 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors'):
                            format(safetensor_dir))
             continue
         rank_id = int(rank_id_str)
-        safetensor_file_name = os.path.join(safetensor_dir, f"*.{format}")
+        if file_suffix is None:
+            safetensor_file_name = os.path.join(safetensor_dir, f"*.{format}")
+        else:
+            safetensor_file_name = os.path.join(safetensor_dir, f"*{file_suffix}.{format}")
         rank_ckpts = glob.glob(safetensor_file_name)
         rank_ckpts.sort()
         for safetensor_file in rank_ckpts:
@@ -727,7 +793,7 @@ def load_file_by_param_name(filename, parme_name_list):
 
 
 def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, src_strategy_list,
-                                   dst_strategy_list, param_total_dict_keys=None):
+                                   dst_strategy_list, param_total_dict_keys=None, src_strategy_file=None):
     """
     Transform model parallel dimension for distributed safetensor files.
     """
@@ -779,7 +845,7 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
 
         # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
         device_list = list(range(0, np.prod(from_tensor_layout[0])))
-        if rank_id % device_num not in param_attr_dict[param_name]:
+        if rank_id % device_num not in param_attr_dict[param_name] and src_strategy_file is None:
             raise ValueError("The safetensor of rank {} is missing.".format(rank_id % device_num))
         param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
                                                                             device_list, rank_id)
@@ -801,7 +867,7 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
     return transform_param_dict
 
 
-def unified_safetensors(src_dir, src_strategy_file, dst_dir):
+def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None):
     """
     Merge multiple safetensor files into a unified safetensor file.
 
@@ -809,6 +875,10 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir):
         src_dir (str): Source weight saving directory.
         src_strategy_file (str): Source weight segmentation strategy file.
         dst_dir (str): Target save directory.
+        merge_with_redundancy (bool, optional): Whether the merged source weight files are de-duplicated and
+            saved safetensors files. Default: ``True``, indicating that the merged source weight files are complete.
+        file_suffix (str, optional): Specify the filename suffix for merging safetensors files. Default: ``None``,
+            meaning all safetensors files in the source weight directory will be merged.
 
     Raises:
         ValueError: If the safetensors file of rank is missing.
@@ -827,8 +897,8 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir):
     _make_dir(dst_dir, "path")
     if os.path.isfile(src_dir):
         raise ValueError("For 'unified_safetensors', the 'src_dir' can not be a file.")
-    all_safetensor_files_map = _collect_safetensor_files(src_dir)
-    all_ckpt_files_map = _collect_safetensor_files(src_dir, format='ckpt')
+    all_safetensor_files_map = _collect_safetensor_files(src_dir, format="safetensors", file_suffix=file_suffix)
+    all_ckpt_files_map = _collect_safetensor_files(src_dir, format="ckpt", file_suffix=file_suffix)
     if all_safetensor_files_map and all_ckpt_files_map:
         raise ValueError("For 'unified_safetensors', the 'src_dir' cannot contain "
                          "both ckpt file and safetensors file simultaneously")
@@ -851,7 +921,11 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir):
         total_size += os.path.getsize(file_name) / 1024 / 1024 / 1024
     split_num = math.ceil(total_size / 3)
 
-    name_list = list(layout_map.keys())
+    name_list = []
+    for name in list(layout_map.keys()):
+        if name.startswith("accu_grads"):
+            continue
+        name_list.append(name)
     split_list = _split_list(name_list, split_num)
 
     all_safetensor_files_map = _collect_safetensor_files(src_dir)
@@ -878,12 +952,14 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir):
     res = [i for i in range(split_num)]
     res = _split_list(res, max_process)
     processes = []
-
+    src_strategy_name = None
+    if not merge_with_redundancy:
+        src_strategy_name = src_strategy_file
     for i in range(max_process):
         p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
             needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
             src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
-            "", dst_dir, "safetensors", None, split_list, res[i], True))
+            "", dst_dir, "safetensors", None, split_list, res[i], True, src_strategy_name))
         p.start()
         processes.append(p)
     for p in processes:
@@ -897,13 +973,13 @@ def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor
                                             origin_dst_strategy_list,
                                             ckpt_prefix, dst_safetensors_dir, output_format,
                                             _transform_param_list, pipe_param_list=None, file_index=None,
-                                            unified_flag=False):
+                                            unified_flag=False, src_strategy_file=None):
     for i in file_index:
         _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
                                       dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
                                       origin_src_strategy_list,
                                       origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir, output_format,
-                                      _transform_param_list, pipe_param_list[i], i, unified_flag)
+                                      _transform_param_list, pipe_param_list[i], i, unified_flag, src_strategy_file)
 
 
 def _split_list(split_list, split_num):
