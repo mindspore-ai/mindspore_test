@@ -25,31 +25,9 @@
 
 namespace mindspore {
 namespace hal {
-CommHandlePy::~CommHandlePy() {
-  static const std::string kProfilerNameDestroyHandle = "~Handle";
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kDefault,
-                                     kProfilerNameDestroyHandle, false, false);
-  if (comm_handle_ == nullptr) {
-    return;
-  }
-  // The handle may be destroyed in other thread, so cannot do this in pipeline.
-  runtime::Pipeline::Get().WaitForward();
-  auto device_ctx = comm_handle_->device_ctx();
-  auto event = comm_handle_->event();
-  if (event == nullptr) {
-    return;
-  }
-  MS_LOG(DEBUG) << "DestroyEvent, event:" << event;
-  if (device_ctx != nullptr && device_ctx->initialized()) {
-    device_ctx->device_res_manager_->DestroyEvent(event);
-    MS_LOG(DEBUG) << "DestroyEvent done, event:" << event;
-  }
-}
+CommHandlePy::~CommHandlePy() {}
 
 void CommHandlePy::Wait() {
-  static const std::string kProfilerNameHandleWait = "HandleWait";
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kDefault,
-                                     kProfilerNameHandleWait, false, false);
   if (comm_handle_ == nullptr) {
     return;
   }
@@ -63,6 +41,16 @@ void CommHandlePy::Wait() {
         runtime::OpExecutor::DispatchLaunchTask([comm_handle, cur_stream_id]() {
           MS_EXCEPTION_IF_NULL(comm_handle);
           comm_handle->WaitDeviceEvent(cur_stream_id);
+
+          auto event = comm_handle->event();
+          if (event == nullptr) {
+            return;
+          }
+          auto device_ctx = comm_handle->device_ctx();
+          if (device_ctx != nullptr && device_ctx->initialized()) {
+            device_ctx->device_res_manager_->DestroyEvent(event);
+            MS_LOG(DEBUG) << "DestoryEvent done, event: " << event;
+          }
         });
 
         comm_handle->ReleaseMultiStreamEvent(cur_stream_id);
