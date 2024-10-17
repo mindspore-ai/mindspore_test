@@ -2248,6 +2248,76 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("tensor_scatter_add")(self, indices, updates)
 
+    def scatter_add_(self, dim, index, src):
+        """
+        Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`.
+
+        For a 3-D tensor, the operation updates `self` as follows:
+
+        .. code-block::
+
+            self[index[i][j][k]][j][k] += src[i][j][k]  # if dim == 0
+
+            self[i][index[i][j][k]][k] += src[i][j][k]  # if dim == 1
+
+            self[i][j][index[i][j][k]] += src[i][j][k]  # if dim == 2
+
+        Args:
+            dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`self`).
+            index (Tensor): The index of `self` to do scatter operation whose data type must
+              be mindspore.int32 or mindspore.int64. Same rank as `self`. Except for the dimension
+              specified by `dim`, size of each dimension of `index` must be less than or equal to the size of
+              the corresponding dimension of `self`.
+            src (Tensor): The tensor doing the scatter operation with `self`, has the same type as `self` and
+              the size of each dimension must be greater than or equal to that of `index`.
+
+        Returns:
+            Tensor, has the same shape and type as `self`.
+
+        Raises:
+            TypeError: If `index` is neither int32 nor int64.
+            ValueError: If anyone of the rank among `self`, `index` and `src` is less than 1.
+            ValueError: If the ranks of `self`, `index` and `src` are not the same.
+            ValueError: The size of any dimension of `index` except the dimension specified by `dim` is
+                greater than the size of the corresponding dimension of `self`.
+            ValueError: If the size of any dimension of `src` is less than that of `index`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([[1, 2, 3, 4, 5]]), dtype=ms.float32)
+            >>> src = Tensor(np.array([[8, 8]]), dtype=ms.float32)
+            >>> index = Tensor(np.array([[2, 4]]), dtype=ms.int64)
+            >>> out = input.scatter_add_(1, index, src)
+            >>> print(out)
+            [[1. 2. 11. 4. 13.]]
+            >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+            >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+            >>> index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
+            >>> out = input.scatter_add_(0, index, src)
+            >>> print(out)
+            [[1. 2. 3. 0. 0.]
+            [0. 0. 0. 0. 0.]
+            [4. 5. 6. 0. 0.]
+            [0. 0. 0. 0. 0.]
+            [7. 8. 9. 0. 0.]]
+            >>> input = Tensor(np.zeros((5, 5)), dtype=ms.float32)
+            >>> src = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), dtype=ms.float32)
+            >>> index = Tensor(np.array([[0, 2, 4], [0, 2, 4], [0, 2, 4]]), dtype=ms.int64)
+            >>> out = input.scatter_add_(1, index, src)
+            >>> print(out)
+            [[1. 0. 2. 0. 3.]
+            [4. 0. 5. 0. 6.]
+            [7. 0. 8. 0. 9.]
+            [0. 0. 0. 0. 0.]
+            [0. 0. 0. 0. 0.]]
+        """
+        return tensor_operator_registry.get("inplace_scatter_add")(self, dim, index, src)
+
     def scatter_sub(self, indices, updates):
         """
         Creates a new tensor by subtracting the values from the positions in self tensor indicated by

@@ -27,6 +27,7 @@ from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _r
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
 from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op
+from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
 
 from ... import _checkparam as validator
 from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
@@ -3009,6 +3010,13 @@ def tensor_scatter_add(x, indices, updates):
     index, the updated result will be the sum of all values.
     """
     return F.tensor_scatter_add(x, indices, updates)
+
+
+def inplace_scatter_add(input, dim, index, src):
+    """
+    Add all elements in `src` to the index specified by `index` to `self` along dimension specified by `dim`.
+    """
+    return inplace_scatter_add_(input, dim, index, src)
 
 
 def tensor_scatter_sub(x, indices, updates):

@@ -3783,7 +3783,7 @@ def scatter_add_ext(input, dim, index, src):
 
     Args:
         input (Tensor): The target tensor. The rank must be at least 1.
-        dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`input`). Default: ``0``.
+        dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`input`).
         index (Tensor): The index of `input` to do scatter operation whose data type must be mindspore.int32 or
             mindspore.int64. Same rank as `input`. Except for the dimension specified by `dim`,
             the size of each dimension of `index` must be less than or equal to the size of
@@ -3796,10 +3796,10 @@ def scatter_add_ext(input, dim, index, src):
 
     Raises:
         TypeError: If `index` is neither int32 nor int64.
-        ValueError: If anyone of the rank among `input`, `index` and `src` less than 1.
+        ValueError: If anyone of the rank among `input`, `index` and `src` is less than 1.
         ValueError: If the rank of `input`, `index` and `src` is not the same.
-        ValueError: If, outside dimension `dim`, the size of any dimension of `index` is greater than the size of
-            the corresponding dimension of `input` .
+        ValueError: The size of any dimension of `index` except the dimension specified by `dim` is
+            greater than the size of the corresponding dimension of `input`.
         ValueError: If the size of any dimension of `src` is less than that of `index`.
 
     Supported Platforms:
