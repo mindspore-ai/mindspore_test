@@ -134,6 +134,9 @@ class KernelActor : public DebugAwareActor {
   }
   std::vector<DeviceTensor *> GetOutputDeviceTensors() { return output_device_tensors_; }
 
+  // Reset state for UCE.
+  void ResetState() override;
+
  protected:
   void Init() override;
   void Run(OpContext<DeviceTensor> *const context) override;

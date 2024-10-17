@@ -263,5 +263,10 @@ void EntranceActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
     }
   }
 }
+
+void EntranceActor::ResetState() {
+  is_loop_body_execution_ = false;
+  ControlActor::ResetState();
+}
 }  // namespace runtime
 }  // namespace mindspore

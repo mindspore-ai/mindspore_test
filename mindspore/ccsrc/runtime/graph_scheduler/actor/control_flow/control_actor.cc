@@ -729,5 +729,35 @@ void ControlActor::MergeEmptyAddressDeviceAddress(OpContext<DeviceTensor> *const
   (*device_tensor) = new_device_tensor.get();
   MS_LOG(DEBUG) << "actor:" << GetAID() << " create new device address:" << new_device_tensor << " for empty addr list";
 }
+
+void ControlActor::ResetState() {
+  MS_LOG(INFO) << "Start free control actor " << GetAID();
+  while (!memory_free_lists_.empty()) {
+    auto device_tensors = memory_free_lists_.front();
+    memory_free_lists_.pop();
+    MS_LOG(WARNING) << "device tensors size: " << device_tensors.size();
+    for (auto device_tensor : device_tensors) {
+      if (device_tensor == nullptr || device_tensor->GetPtr() == nullptr) {
+        continue;
+      }
+      // Weight can not be free.
+      if ((device_tensor->ref_count() == SIZE_MAX) && (device_tensor->dynamic_ref_count() == INT32_MAX)) {
+        continue;
+      }
+      auto held_by_nodes = device_tensor->held_by_nodes();
+      if (!held_by_nodes.empty()) {
+        FreeMemoryByValueNode(held_by_nodes, device_tensor);
+        continue;
+      }
+      const auto &device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+        {device_tensor->device_name(), device_tensor->device_id()});
+      MS_EXCEPTION_IF_NULL(device_context);
+      FreeMemoryByDeviceContext(device_tensor, device_context);
+    }
+  }
+  created_device_tensors_.clear();
+  last_step_created_device_tensors_.clear();
+  MS_LOG(INFO) << "End free control actor " << GetAID();
+}
 }  // namespace runtime
 }  // namespace mindspore

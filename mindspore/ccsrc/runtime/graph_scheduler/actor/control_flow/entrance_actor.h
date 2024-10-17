@@ -55,6 +55,8 @@ class EntranceActor : public ControlActor {
 
   const std::vector<AID> &loop_body_input_control_arrow_aids() const { return loop_body_input_control_arrow_aids_; }
 
+  void ResetState() override;
+
  protected:
   void Run(OpContext<DeviceTensor> *const context) override;
   void FetchInput(OpContext<DeviceTensor> *const context) override;

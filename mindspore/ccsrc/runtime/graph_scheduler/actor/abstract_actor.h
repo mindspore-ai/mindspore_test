@@ -139,6 +139,9 @@ class AbstractActor : public OpActor<DeviceTensor> {
   AbstractActor *memory_free_insert_position() const { return memory_free_insert_position_; }
   const std::vector<const DeviceContext *> &device_contexts() { return device_contexts_; }
 
+  // Reset state for UCE.
+  virtual void ResetState() { MS_LOG(INFO) << "Actor " << GetAID().Name() << " no need to reset state."; }
+
  protected:
   friend class GraphScheduler;
   friend class ControlNodeScheduler;

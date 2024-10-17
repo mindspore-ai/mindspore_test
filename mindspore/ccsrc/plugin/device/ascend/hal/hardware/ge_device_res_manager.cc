@@ -824,6 +824,9 @@ void GeDeviceResManager::UceMemRepair(int32_t device_id) {
 
 void GeDeviceResManager::StopDevice(int32_t device_id) {
   UCEException::GetInstance().set_force_stop_flag(true);
+  // Wait 1 s to avoid stop device and suspension occur at the same time.
+  const int64_t kTimeToWait = 1;
+  std::this_thread::sleep_for(std::chrono::seconds(kTimeToWait));
   MS_LOG(INFO) << "Device id [" << device_id << "] stop device.";
   uint32_t timeout = 0;
   auto ret = CALL_ASCEND_API(aclrtDeviceTaskAbort, device_id, timeout);
