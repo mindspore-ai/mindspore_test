@@ -20,6 +20,8 @@ from mindspore.common.tensor import Tensor
 from mindspore.nn.optim.optimizer import Optimizer
 from mindspore.ops.operations.manually_defined._inner import TensorReport
 from mindspore import ops, context
+from mindspore.common.parameter import Parameter
+import mindspore.common.dtype as mstype
 
 class OptTFTWrapper(Optimizer):
     r"""
@@ -61,9 +63,9 @@ class OptTFTWrapper(Optimizer):
     """
 
     def __init__(self, opt, **kwargs):
-        super(OptTFTWrapper, self).__init__(opt.learning_rate, opt._parameters) # pylint: disable=W0212
         if not isinstance(opt, Optimizer):
             raise TypeError(f"For 'OptTFTWrapper', the argument 'opt' must be Optimizer type, " f"but got {type(opt)}.")
+        super(OptTFTWrapper, self).__init__(opt.learning_rate, opt._parameters) # pylint: disable=W0212
         tft_env = os.getenv("MS_ENABLE_TFT", "")
         if ("TTP:1" not in tft_env) and ("UCE:1" not in tft_env):
             raise ValueError("MindIO TFT regitster need custom switch on[MS_ENABLE_TFT='{TTP:1,UCE:1}']!")
@@ -74,13 +76,9 @@ class OptTFTWrapper(Optimizer):
         self.opt = opt
         self.report = TensorReport()
         self.depend = ops.Depend()
-        self.g_one = Tensor([0.1])
-        # enable consistent check by default, only disable when enable_consistent_check is False
-        self.use_allreduce = kwargs.get("enable_consistent_check", True)
-
-        if self.use_allreduce:
-            self.allreduce_sum = ops.AllReduce()
-            self.allreduce_sum.add_prim_attr("tft_report_before", True)
+        self.allreduce_sum = ops.AllReduce()
+        self.allreduce_sum.add_prim_attr("tft_report_before", True)
+        self.tft_g_one_flag = Parameter(Tensor([1], dtype=mstype.int32))
 
         self.param_rank = opt.param_rank
         self.optim_filter = opt.optim_filter
@@ -118,10 +116,9 @@ class OptTFTWrapper(Optimizer):
         self.enable_tuple_broaden = opt.enable_tuple_broaden
 
     def construct(self, gradients):
-        g_one = self.depend(self.g_one, gradients)
-        if self.use_allreduce is True:
-            g_one_res = self.allreduce_sum(g_one)
-        else:
-            g_one_res = g_one
-        self.report("tft_report", g_one_res)
-        return self.opt(gradients)
+        tft_g_one_flag = self.depend(self.tft_g_one_flag, gradients)
+        self.tft_g_one_flag = self.allreduce_sum(tft_g_one_flag)
+
+        grads = self.depend(gradients, self.report("tft_report", self.tft_g_one_flag))
+        opt_ret = self.opt(grads)
+        return opt_ret

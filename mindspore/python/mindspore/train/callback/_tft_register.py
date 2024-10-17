@@ -21,6 +21,7 @@ from mindspore import _checkparam as Validator
 from mindspore.train.callback._callback import Callback
 from mindspore import context
 from mindspore.common.parameter import Parameter
+from mindspore.common.tensor import Tensor
 from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
@@ -29,6 +30,9 @@ from mindspore._c_expression import clean_tdt_channel
 from mindspore._c_expression import send_recv
 from mindspore._c_expression import CollectiveManager
 from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
+from mindspore._c_expression import Tensor as Tensor_
+import mindspore
+import mindspore.common.dtype as mstype
 
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
     """ Common func to generate ckpt dir name."""
@@ -39,6 +43,9 @@ def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
 def _save_checkpoint_on_failure(step, save_info, args, cb_ctx):
     """ Callback used for TFT save ckpt function when errors occur."""
     logger.info("Enter _save_checkpoint_on_failure function")
+    if not cb_ctx._is_params_consistent():    # pylint: disable=W0212
+        raise RuntimeError("Can't save parameters, because they are left in inconsistent state!")
+
     ckpt_save_path = cb_ctx.ckpt_save_path
     cb_params = args
     cur_rank = get_rank()
@@ -82,8 +89,6 @@ def _tft_exit_cb(ctx):
     logger.error("Enter mindio ttp exit process, which means other ranks occur exception, check other ranks' logs!")
     _tft_sem_post()
     os._exit(1)   # pylint: disable=W0212
-
-
 
 def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_ctx):
     """ Callback used for TFT repair function."""
@@ -129,6 +134,8 @@ def _tft_stop_callback(cb_ctx):
     """ Callback used for TFT stop function."""
     logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
     _stop_device(cb_ctx.device_id)
+    if not cb_ctx._is_params_consistent():    # pylint: disable=W0212
+        raise RuntimeError("Can't stop device, because training parameters are left in inconsistent state!")
     logger.info("Finish _tft_stop_callback")
 
 
@@ -260,9 +267,22 @@ class TFTRegister(Callback):
         self._controller_ip = ctrl_ip
         self._controller_rank_id = ctrl_rank_id
         self._controller_port = ctrl_port
+        self.cb_params = None
         self.device_id = context.get_context("device_id")
         self._init_tft()
         self.ckpt_save_path = ckpt_save_path
+        self.assign = mindspore.ops.Assign()
+        self.g_one = Parameter(Tensor([1], dtype=mstype.int32))
+        self.s1 = mindspore.hal.Stream()
+
+    def _is_params_consistent(self):
+        for key, param in self.cb_params.train_network.parameters_and_names():
+            if "tft_g_one_flag" in key:
+                with mindspore.hal.StreamCtx(self.s1):
+                    tft_g_one_flag = Tensor(Tensor_.move_to(param, "CPU", False))
+                self.s1.synchronize()
+                return int(tft_g_one_flag) == 1
+        return False
 
     def _set_tft_optimizer_replica(self, run_context):
         """ set Mindio TFT optimizer replica info, used internal. """
@@ -328,12 +348,14 @@ class TFTRegister(Callback):
             self.has_init_replica = True
             self._set_tft_optimizer_replica(run_context)
         cb_params = run_context.original_args()
-        if cb_params.optimizer is not None:
-            self.global_step = int(cb_params.optimizer.global_step.data)
-        else:
-            self.global_step = int(cb_params.network.optimizer.global_step.data)
         logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
         self.tft.tft_end_updating_os(cb_params.cur_step_num)
+        if cb_params.optimizer is not None:
+            self.global_step = int(cb_params.optimizer.global_step.data)
+            self.assign(cb_params.optimizer.tft_g_one_flag, self.g_one)
+        else:
+            self.global_step = int(cb_params.network.optimizer.global_step.data)
+            self.assign(cb_params.network.optimizer.tft_g_one_flag, self.g_one)
         logger.info("END Set optimizer finish step status to TFT.")
 
 
@@ -344,6 +366,7 @@ class TFTRegister(Callback):
             raise ValueError("TFT feature doesn't support sink_size > 1.")
         logger.info("Set set args to TFT.")
         self.tft.tft_set_step_args(cb_params)
+        self.cb_params = cb_params
 
     def end(self, run_context):
         cur_rank = get_rank()

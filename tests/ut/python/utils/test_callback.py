@@ -640,52 +640,53 @@ def test_mindio_ttp_adapter():
     Description: Test tft register callback.
     Expectation: run success.
     """
-    # case1: not set MS_ENABLE_TFT, raise ERROR
-    with pytest.raises(ValueError):
-        mindio_cb = TFTRegister(
-            ctrl_rank_id=0,
-            ctrl_ip="192.168.0.1",
-            ctrl_port=8080,
-            ckpt_save_path='./ckpt'
-        )
-    os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1}'
-    # case2: not in Ascend GE, raise ERROR
-    with pytest.raises(ValueError):
-        mindio_cb = TFTRegister(
-            ctrl_rank_id=0,
-            ctrl_ip="192.168.0.1",
-            ctrl_port=8080,
-            ckpt_save_path='./ckpt'
-        )
-    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
-    #case 3: not have TFT package, raise ERROR
-    with pytest.raises(ModuleNotFoundError):
-        mindio_cb = TFTRegister(
-            ctrl_rank_id=0,
-            ctrl_ip="192.168.0.1",
-            ctrl_port=8080,
-            ckpt_save_path='./ckpt'
-        )
-    _mock = mock.Mock()
-    modules = {"mindio_ttp": _mock, "mindio_ttp.framework_ttp": _mock.module}
-    with mock.patch.dict("sys.modules", modules):
-        def new_init_tft(cls):
-            pass
-
-        with mock.patch.object(TFTRegister, "_init_tft", new=new_init_tft):
+    with mock.patch("mindspore.hal.Stream", return_value={"test": 1}):
+        # case1: not set MS_ENABLE_TFT, raise ERROR
+        with pytest.raises(ValueError):
             mindio_cb = TFTRegister(
                 ctrl_rank_id=0,
                 ctrl_ip="192.168.0.1",
                 ctrl_port=8080,
                 ckpt_save_path='./ckpt'
             )
-            cb_params = _InternalCallbackParam()
-            cb_params.cur_epoch_num = 4
-            cb_params.epoch_num = 4
-            cb_params.cur_step_num = 2
-            cb_params.dataset_sink_mode = True
-            cb_params.sink_size = 2
-            run_context = RunContext(cb_params)
-            # case4: if sink_size > 1, raise error
-            with pytest.raises(ValueError):
-                mindio_cb.on_train_begin(run_context)
+        os.environ["MS_ENABLE_TFT"] = '{TFT:1,UCE:1}'
+        # case2: not in Ascend GE, raise ERROR
+        with pytest.raises(ValueError):
+            mindio_cb = TFTRegister(
+                ctrl_rank_id=0,
+                ctrl_ip="192.168.0.1",
+                ctrl_port=8080,
+                ckpt_save_path='./ckpt'
+            )
+        context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
+        #case 3: not have TFT package, raise ERROR
+        with pytest.raises(ModuleNotFoundError):
+            mindio_cb = TFTRegister(
+                ctrl_rank_id=0,
+                ctrl_ip="192.168.0.1",
+                ctrl_port=8080,
+                ckpt_save_path='./ckpt'
+            )
+        _mock = mock.Mock()
+        modules = {"mindio_ttp": _mock, "mindio_ttp.framework_ttp": _mock.module}
+        with mock.patch.dict("sys.modules", modules):
+            def new_init_tft(cls):
+                pass
+
+            with mock.patch.object(TFTRegister, "_init_tft", new=new_init_tft):
+                mindio_cb = TFTRegister(
+                    ctrl_rank_id=0,
+                    ctrl_ip="192.168.0.1",
+                    ctrl_port=8080,
+                    ckpt_save_path='./ckpt'
+                )
+                cb_params = _InternalCallbackParam()
+                cb_params.cur_epoch_num = 4
+                cb_params.epoch_num = 4
+                cb_params.cur_step_num = 2
+                cb_params.dataset_sink_mode = True
+                cb_params.sink_size = 2
+                run_context = RunContext(cb_params)
+                # case4: if sink_size > 1, raise error
+                with pytest.raises(ValueError):
+                    mindio_cb.on_train_begin(run_context)
