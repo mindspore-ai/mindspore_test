@@ -64,7 +64,7 @@ int AffineGridCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  output_size_dims_ = inputs[1]->GetDeviceShapeVector();
+  output_size_dims_ = inputs[kIndex1]->GetDeviceShapeVector();
   output_type_ = outputs[0]->dtype_id();
   return KRET_OK;
 }
@@ -73,14 +73,14 @@ template <typename T>
 void AffineGridCpuKernelMod::LaunchKernel_3D(const std::vector<kernel::KernelTensor *> &inputs,
                                              const std::vector<kernel::KernelTensor *> &outputs) {
   std::vector<int64_t> out_shape;
-  auto data_theta = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  auto data_theta = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
   MS_EXCEPTION_IF_NULL(data_theta);
-  auto output_size_data = inputs[1]->GetValueWithCheck<std::vector<int64_t>>();
+  auto output_size_data = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
   auto output_y = reinterpret_cast<T *>(outputs[0]->device_ptr());
   MS_EXCEPTION_IF_NULL(output_y);
-  size_t N = static_cast<size_t>(output_size_data[0]);
-  size_t H = static_cast<size_t>(output_size_data[2]);
-  size_t W = static_cast<size_t>(output_size_data[3]);
+  size_t N = static_cast<size_t>(output_size_data[kIndex0]);
+  size_t H = static_cast<size_t>(output_size_data[kIndex2]);
+  size_t W = static_cast<size_t>(output_size_data[kIndex3]);
   out_shape.push_back(N);
   out_shape.push_back(H);
   out_shape.push_back(W);
@@ -142,15 +142,15 @@ template <typename T>
 void AffineGridCpuKernelMod::LaunchKernel_4D(const std::vector<kernel::KernelTensor *> &inputs,
                                              const std::vector<kernel::KernelTensor *> &outputs) {
   std::vector<int64_t> out_shape;
-  auto data_theta = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  auto data_theta = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
   MS_EXCEPTION_IF_NULL(data_theta);
-  auto output_size_data = inputs[1]->GetValueWithCheck<std::vector<int64_t>>();
+  auto output_size_data = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
   auto output_y = reinterpret_cast<T *>(outputs[0]->device_ptr());
   MS_EXCEPTION_IF_NULL(output_y);
-  size_t N = static_cast<size_t>(output_size_data[0]);
-  size_t D = static_cast<size_t>(output_size_data[2]);
-  size_t H = static_cast<size_t>(output_size_data[3]);
-  size_t W = static_cast<size_t>(output_size_data[4]);
+  size_t N = static_cast<size_t>(output_size_data[kIndex0]);
+  size_t D = static_cast<size_t>(output_size_data[kIndex2]);
+  size_t H = static_cast<size_t>(output_size_data[kIndex3]);
+  size_t W = static_cast<size_t>(output_size_data[kIndex4]);
   out_shape.push_back(N);
   out_shape.push_back(D);
   out_shape.push_back(H);

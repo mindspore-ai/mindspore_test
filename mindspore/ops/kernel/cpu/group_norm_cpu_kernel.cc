@@ -51,7 +51,7 @@ int GroupNormCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
 
   auto x_shape = inputs[kIndex0]->GetShapeVector();
-  auto batch = x_shape[0];
+  auto batch = x_shape[kIndex0];
   auto num_groups = inputs[kIndex1]->GetValueWithCheck<int64_t>();
 
   num_channel_ = x_shape[1];
@@ -59,7 +59,13 @@ int GroupNormCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                       ? 1
                       : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(), 1, std::multiplies<int64_t>()));
   eps_ = inputs[kIndex4]->GetValueWithCheck<float_t>();
+  if (num_groups == 0) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', 'num_groups' can not be zero.";
+  }
   inner_size_ = LongToSize(num_channel_ * HxW_ / num_groups);
+  if (inner_size_ == 0) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', 'inner_size_' can not be zero.";
+  }
   outter_size_ = LongToSize(batch * num_groups);
   return ret;
 }

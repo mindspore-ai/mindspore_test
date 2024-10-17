@@ -91,7 +91,7 @@ bool PdistGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                   << kPdistGradOutputsNum << ", but get " << inputs.size() << " and " << outputs.size();
     return false;
   }
-  auto x_dtype_ = inputs[1]->dtype_id();
+  auto x_dtype_ = inputs[kIndex1]->dtype_id();
   switch (x_dtype_) {
     case kNumberTypeFloat32:
       kernel_func_ = &PdistGradCpuKernelMod::LaunchKernel<float>;
@@ -112,7 +112,7 @@ int PdistGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return ret;
   }
   const int THIRD_ELEMENT_INDEX = 2;
-  auto x_shape = inputs[1]->GetShapeVector();
+  auto x_shape = inputs[kIndex1]->GetShapeVector();
   x_dim_ = static_cast<int64_t>(x_shape.size());
   col_ = x_shape[x_dim_ - 1];
   temp_ = x_shape[x_dim_ - 1] * x_shape[x_dim_ - THIRD_ELEMENT_INDEX];
@@ -122,12 +122,12 @@ int PdistGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 template <typename T>
 bool PdistGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                          const std::vector<kernel::KernelTensor *> &outputs) {
-  T *grad = static_cast<T *>(inputs[0]->device_ptr());
-  T *x = static_cast<T *>(inputs[1]->device_ptr());
-  T *dist = static_cast<T *>(inputs[2]->device_ptr());
-  T *y = static_cast<T *>(outputs[0]->device_ptr());
-  auto output_addr = reinterpret_cast<char *>(outputs[0]->device_ptr());
-  auto output_size = outputs[0]->size();
+  T *grad = static_cast<T *>(inputs[kIndex0]->device_ptr());
+  T *x = static_cast<T *>(inputs[kIndex1]->device_ptr());
+  T *dist = static_cast<T *>(inputs[kIndex2]->device_ptr());
+  T *y = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto output_addr = reinterpret_cast<char *>(outputs[kIndex0]->device_ptr());
+  auto output_size = outputs[kIndex0]->size();
   while (output_size > 0) {
     auto copy_size = std::min(output_size, static_cast<size_t>(INT32_MAX));
     auto ret = memset_s(output_addr, output_size, 0, copy_size);

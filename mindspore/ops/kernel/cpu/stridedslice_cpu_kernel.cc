@@ -58,9 +58,9 @@ int StridedSliceCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
 
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kStridedSliceOutputsNum, kernel_name_);
-  input_shape_ = inputs[0]->GetShapeVector();
-  dtype_ = inputs[0]->dtype_id();
-  output_shape_ = outputs[0]->GetShapeVector();
+  input_shape_ = inputs[kIndex0]->GetShapeVector();
+  dtype_ = inputs[kIndex0]->dtype_id();
+  output_shape_ = outputs[kIndex0]->GetShapeVector();
   if (input_shape_.size() > DIMENSION_8D || input_shape_.empty()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', the dimension of 'input_x' must be in range [1D, 8D], but got "
                   << input_shape_.size() << "D.";
@@ -235,23 +235,23 @@ bool StridedSliceCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
                       << ", but got " << inputs.size();
   }
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kStridedSliceOutputsNum, kernel_name_);
-  auto input_addr = reinterpret_cast<uint8_t *>(inputs[0]->device_ptr());
-  auto output_addr = reinterpret_cast<uint8_t *>(outputs[0]->device_ptr());
+  auto input_addr = GetDeviceAddress<uint8_t>(inputs, kIndex0);
+  auto output_addr = GetDeviceAddress<uint8_t>(outputs, kIndex0);
 
   // for begin, end, stride are tensors
   std::vector<int64_t> begin;
   std::vector<int64_t> end;
   std::vector<int64_t> stride;
-  auto begin_ptr = reinterpret_cast<S *>(inputs[kIndex1]->device_ptr());
-  auto end_ptr = reinterpret_cast<S *>(inputs[kIndex2]->device_ptr());
-  auto strides_ptr = reinterpret_cast<S *>(inputs[kIndex3]->device_ptr());
-  for (int64_t i = 0; i < begin_shape_[0]; i++) {
+  auto begin_ptr = GetDeviceAddress<S>(inputs, kIndex1);
+  auto end_ptr = GetDeviceAddress<S>(inputs, kIndex2);
+  auto strides_ptr = GetDeviceAddress<S>(inputs, kIndex3);
+  for (int64_t i = 0; i < begin_shape_[kIndex0]; i++) {
     begin.push_back(static_cast<int64_t>(begin_ptr[i]));
   }
-  for (int64_t i = 0; i < end_shape_[0]; i++) {
+  for (int64_t i = 0; i < end_shape_[kIndex0]; i++) {
     end.push_back(static_cast<int64_t>(end_ptr[i]));
   }
-  for (int64_t i = 0; i < stride_shape_[0]; i++) {
+  for (int64_t i = 0; i < stride_shape_[kIndex0]; i++) {
     stride.push_back(static_cast<int64_t>(strides_ptr[i]));
   }
   InitSliceParam(&begin, &end, &stride, inputs);

@@ -54,35 +54,36 @@ bool FillCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &i
                                     const std::vector<kernel::KernelTensor *> &outputs) {
   T value_data(0);
   if (x_type_id_ == kNumberTypeInt8) {
-    value_data = static_cast<T>(*reinterpret_cast<int8_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<int8_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeInt16) {
-    value_data = static_cast<T>(*reinterpret_cast<int16_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<int16_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeInt32) {
-    value_data = static_cast<T>(*reinterpret_cast<int32_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<int32_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeInt64) {
-    value_data = static_cast<T>(*reinterpret_cast<int64_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<int64_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeUInt8) {
-    value_data = static_cast<T>(*reinterpret_cast<uint8_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<uint8_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeUInt16) {
-    value_data = static_cast<T>(*reinterpret_cast<uint16_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<uint16_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeUInt32) {
-    value_data = static_cast<T>(*reinterpret_cast<uint32_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<uint32_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeUInt64) {
-    value_data = static_cast<T>(*reinterpret_cast<uint64_t *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<uint64_t>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeFloat16) {
-    value_data = static_cast<T>(static_cast<float>(*reinterpret_cast<float16 *>(inputs[kIndex1]->device_ptr())));
+    value_data = static_cast<T>(static_cast<float>(*GetDeviceAddress<float16>(inputs, kIndex1)));
   } else if (x_type_id_ == kNumberTypeFloat32) {
-    value_data = static_cast<T>(*reinterpret_cast<float *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<float>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeFloat64) {
-    value_data = static_cast<T>(*reinterpret_cast<double *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<double>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeBool) {
-    value_data = static_cast<T>(*reinterpret_cast<bool *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<T>(*GetDeviceAddress<bool>(inputs, kIndex1));
   } else {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' "
                   << "cannot convert datatype between complex and real number!";
   }
   const auto output = outputs[kIndex0];
   auto *output_data = reinterpret_cast<T *>(output->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_data);
   size_t lens = static_cast<size_t>(output->size() / sizeof(T));
   auto task = [output_data, value_data](const size_t start, const size_t end) {
     for (size_t i = start; i < end; i++) {
@@ -99,10 +100,10 @@ bool FillCpuKernelMod::LaunchKernel<std::complex<float>>(const std::vector<kerne
                                                          const std::vector<kernel::KernelTensor *> &outputs) {
   std::complex<float> value_data{0, 0};
   if (x_type_id_ == kNumberTypeComplex64) {
-    value_data = *reinterpret_cast<std::complex<float> *>(inputs[kIndex1]->device_ptr());
+    value_data = *GetDeviceAddress<std::complex<float>>(inputs, kIndex1);
   } else if (x_type_id_ == kNumberTypeComplex128) {
-    value_data =
-      static_cast<std::complex<float>>(*reinterpret_cast<std::complex<double> *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<std::complex<float>>(*GetDeviceAddress<std::complex<double>>(inputs, kIndex1));
+
   } else {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' "
                   << "cannot convert datatype between complex and real number!";
@@ -125,16 +126,16 @@ bool FillCpuKernelMod::LaunchKernel<std::complex<double>>(const std::vector<kern
                                                           const std::vector<kernel::KernelTensor *> &outputs) {
   std::complex<double> value_data{0, 0};
   if (x_type_id_ == kNumberTypeComplex64) {
-    value_data =
-      static_cast<std::complex<double>>(*reinterpret_cast<std::complex<float> *>(inputs[kIndex1]->device_ptr()));
+    value_data = static_cast<std::complex<double>>(*GetDeviceAddress<std::complex<float>>(inputs, kIndex1));
   } else if (x_type_id_ == kNumberTypeComplex128) {
-    value_data = *reinterpret_cast<std::complex<double> *>(inputs[kIndex1]->device_ptr());
+    value_data = *GetDeviceAddress<std::complex<double>>(inputs, kIndex1);
   } else {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' "
                   << "cannot convert datatype between complex and real number!";
   }
   const auto output = outputs[kIndex0];
   auto *output_data = reinterpret_cast<std::complex<double> *>(output->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_data);
   size_t lens = static_cast<size_t>(output->size() / sizeof(std::complex<double>));
   auto task = [output_data, value_data](const size_t start, const size_t end) {
     for (size_t i = start; i < end; i++) {

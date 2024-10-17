@@ -77,12 +77,12 @@ void UniqueCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                       << ", but got: " << outputs.size();
   }
   auto params = std::make_shared<UniqueParam<DataType, IndexType>>();
-  params->input_ = reinterpret_cast<DataType *>(inputs[0]->device_ptr());
-  params->input_idx_ = reinterpret_cast<IndexType *>(workspace[0]->device_ptr());
-  params->workspace_ = reinterpret_cast<DataType *>(workspace[1]->device_ptr());
-  params->workspace_idx_ = reinterpret_cast<IndexType *>(workspace[kWorkSpaceIndex]->device_ptr());
-  params->output_ = reinterpret_cast<DataType *>(outputs[0]->device_ptr());
-  params->inverse_idx_ = reinterpret_cast<IndexType *>(outputs[1]->device_ptr());
+  params->input_ = GetDeviceAddress<DataType>(inputs, kIndex0);
+  params->input_idx_ = GetDeviceAddress<IndexType>(workspace, kIndex0);
+  params->workspace_ = GetDeviceAddress<DataType>(workspace, kIndex1);
+  params->workspace_idx_ = GetDeviceAddress<IndexType>(workspace, kWorkSpaceIndex);
+  params->output_ = GetDeviceAddress<DataType>(outputs, kIndex0);
+  params->inverse_idx_ = GetDeviceAddress<IndexType>(outputs, kIndex1);
   params->input_size_ = input_size_;
   params->output_size_ = 0;
 

@@ -60,9 +60,9 @@ const int kXSizeW4D = 4;
 bool AffineGridGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
   align_corners_ = GetValue<bool>(primitive_->GetAttr("align_corners"));
-  auto type_id = inputs[0]->dtype_id();
+  auto type_id = inputs[kIndex0]->dtype_id();
   input_info_.push_back(type_id);
-  type_id = inputs[1]->dtype_id();
+  type_id = inputs[kIndex1]->dtype_id();
   input_info_.push_back(type_id);
   return true;
 }
@@ -72,14 +72,14 @@ int AffineGridGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
   if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
-  x_size_dims_ = inputs[1]->GetValueWithCheck<std::vector<int64_t>>().size();
+  x_size_dims_ = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>().size();
   return KRET_OK;
 }
 
 template <typename T, typename T0>
 void AffineGridGradCpuKernelMod::LaunchKernel_3D(const std::vector<kernel::KernelTensor *> &inputs,
                                                  const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_size_data = reinterpret_cast<T0 *>(inputs[1]->device_ptr());
+  auto x_size_data = reinterpret_cast<T0 *>(inputs[kIndex1]->device_ptr());
   MS_EXCEPTION_IF_NULL(x_size_data);
 
   int64_t H = x_size_data[kXSizeH3D];
@@ -112,7 +112,7 @@ void AffineGridGradCpuKernelMod::LaunchKernel_3D(const std::vector<kernel::Kerne
 template <typename T0>
 Eigen::MatrixXf AffineGridGradCpuKernelMod::make_base_grid_3D(const std::vector<kernel::KernelTensor *> &inputs,
                                                               Eigen::VectorXf vecX, Eigen::VectorXf vecY) {
-  auto x_size_data = reinterpret_cast<T0 *>(inputs[1]->device_ptr());
+  auto x_size_data = reinterpret_cast<T0 *>(inputs[kIndex1]->device_ptr());
   MS_EXCEPTION_IF_NULL(x_size_data);
   int64_t H = x_size_data[kXSizeH3D];
   int64_t W = x_size_data[kXSizeW3D];
@@ -134,13 +134,13 @@ Eigen::MatrixXf AffineGridGradCpuKernelMod::make_base_grid_3D(const std::vector<
 template <typename T, typename T0>
 void AffineGridGradCpuKernelMod::DoCompute_3D(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<kernel::KernelTensor *> &outputs, Eigen::MatrixXf all) {
-  auto data_y_grad = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  auto data_y_grad = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
   MS_EXCEPTION_IF_NULL(data_y_grad);
-  auto x_size_data = reinterpret_cast<T0 *>(inputs[1]->device_ptr());
+  auto x_size_data = reinterpret_cast<T0 *>(inputs[kIndex1]->device_ptr());
   MS_EXCEPTION_IF_NULL(x_size_data);
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto output = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
   MS_EXCEPTION_IF_NULL(output);
-  int64_t N = x_size_data[0];
+  int64_t N = x_size_data[kIndex0];
   int64_t H = x_size_data[kXSizeH3D];
   int64_t W = x_size_data[kXSizeW3D];
 
@@ -173,7 +173,7 @@ void AffineGridGradCpuKernelMod::DoCompute_3D(const std::vector<kernel::KernelTe
 template <typename T, typename T0>
 void AffineGridGradCpuKernelMod::LaunchKernel_4D(const std::vector<kernel::KernelTensor *> &inputs,
                                                  const std::vector<kernel::KernelTensor *> &outputs) {
-  auto x_size_data = reinterpret_cast<T0 *>(inputs[1]->device_ptr());
+  auto x_size_data = reinterpret_cast<T0 *>(inputs[kIndex1]->device_ptr());
   MS_EXCEPTION_IF_NULL(x_size_data);
   int64_t D = x_size_data[kXSizeD4D];
   int64_t H = x_size_data[kXSizeH4D];
@@ -216,7 +216,7 @@ template <typename T0>
 Eigen::MatrixXf AffineGridGradCpuKernelMod::make_base_grid_4D(const std::vector<kernel::KernelTensor *> &inputs,
                                                               Eigen::VectorXf vecX, Eigen::VectorXf vecY,
                                                               Eigen::VectorXf vecZ) {
-  auto x_size_data = reinterpret_cast<T0 *>(inputs[1]->device_ptr());
+  auto x_size_data = reinterpret_cast<T0 *>(inputs[kIndex1]->device_ptr());
   MS_EXCEPTION_IF_NULL(x_size_data);
   int64_t D = x_size_data[kXSizeD4D];
   int64_t H = x_size_data[kXSizeH4D];
@@ -241,13 +241,13 @@ Eigen::MatrixXf AffineGridGradCpuKernelMod::make_base_grid_4D(const std::vector<
 template <typename T, typename T0>
 void AffineGridGradCpuKernelMod::DoCompute_4D(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<kernel::KernelTensor *> &outputs, Eigen::MatrixXf all) {
-  auto data_y_grad = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  auto data_y_grad = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
   MS_EXCEPTION_IF_NULL(data_y_grad);
-  auto x_size_data = reinterpret_cast<T0 *>(inputs[1]->device_ptr());
+  auto x_size_data = reinterpret_cast<T0 *>(inputs[kIndex1]->device_ptr());
   MS_EXCEPTION_IF_NULL(x_size_data);
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto output = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
   MS_EXCEPTION_IF_NULL(output);
-  int64_t N = x_size_data[0];
+  int64_t N = x_size_data[kIndex0];
   int64_t D = x_size_data[kXSizeD4D];
   int64_t H = x_size_data[kXSizeH4D];
   int64_t W = x_size_data[kXSizeW4D];
@@ -295,7 +295,7 @@ bool AffineGridGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
 bool AffineGridGradCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                         const std::vector<KernelTensor *> &outputs) {
   constexpr int INPUTSNUM = 1;
-  TypeId input_type = input_info_[0];
+  TypeId input_type = input_info_[kIndex0];
   TypeId x_size_type = input_info_[INPUTSNUM];
   switch (input_type) {
     AFFINEGRIDGRAD_LAUNCH_CASE(kNumberTypeFloat16, float16, x_size_type, inputs, outputs)

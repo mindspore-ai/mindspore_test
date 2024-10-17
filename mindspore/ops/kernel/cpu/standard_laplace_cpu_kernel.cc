@@ -40,7 +40,7 @@ bool StandardLaplaceCpuKernelMod::Launch(const std::vector<kernel::KernelTensor 
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kStandardLaplaceOutputsNum, kernel_name_);
 
   // Init output address.
-  auto output = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  auto output = GetDeviceAddress<float>(outputs, kIndex0);
 
   // Init sample number.
   size_t num_sample = outputs[kIndex0]->size() / sizeof(float);
