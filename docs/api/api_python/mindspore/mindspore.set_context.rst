@@ -161,6 +161,8 @@ mindspore.set_context
             - 3：包括级别2的所有优化，并打开更多的优化，如SitchingFusion、ParallelFusion等。在某些场景下，该级别的优化激进且不稳定。使用此级别时要小心。
 
           - **dump_as_text**：将关键过程的详细信息生成文本文件保存到"graph_kernel_dump"目录里。默认值： ``False`` 。
+          - **enable_cluster_ops**：把对应算子加入参与融合的算子集合。例如，通过设置 ``--enable_cluster_ops=MatMul`` 可以让MatMul算子参与融合。
+          - **enable_pass/disable_pass**：使能/禁用用户指定的融合pass。详见 `自定义融合Pass <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/fusion_pass.html>`_ 。
 
         - **enable_reduce_precision** (bool) - 表示是否开启降低精度计算。默认值： ``True`` 。设置为 ``True`` 时，不支持用户指定的精度，且精度将自动更改。设置为 ``False`` 时，如果未指定用例的精度，则会报错并退出。
         - **aoe_tune_mode** (str) - 表示启动AOE调优，默认不设置。设置为 ``online`` 时，将启动在线调优，设置为 ``offline`` 时，将为离线调优保存GE图 。
