@@ -678,7 +678,6 @@ def test_create_namedtuple_and_return_in_subgraph():
     assert_executed_by_graph_mode(fn)
 
 
-@pytest.mark.skip('fix later')
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_create_namedtuple_and_put_it_in_nested_structures_then_return_in_subgraph():
     """
