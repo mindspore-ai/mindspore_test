@@ -20,7 +20,6 @@ import sys
 import time
 import subprocess
 import glob
-from copy import deepcopy
 from pathlib import Path
 from abc import abstractmethod, ABCMeta
 from packaging import version
@@ -260,45 +259,6 @@ class AscendEnvChecker(EnvChecker):
     def __init__(self, library_path):
         self.library_path = library_path
         self.version = ["7.3", "7.5"]
-        atlas_nnae_version = "/usr/local/Ascend/nnae/latest/compiler/version.info"
-        atlas_toolkit_version = "/usr/local/Ascend/ascend-toolkit/latest/compiler/version.info"
-        hisi_fwk_version = "/usr/local/Ascend/latest/compiler/version.info"
-        if os.path.exists(atlas_nnae_version):
-            # atlas default path
-            self.fwk_path = "/usr/local/Ascend/nnae/latest"
-            self.op_impl_path = "/usr/local/Ascend/nnae/latest/opp/built-in/op_impl/ai_core/tbe"
-            self.tbe_path = self.fwk_path + "/lib64"
-            self.cce_path = self.fwk_path + "/compiler/ccec_compiler/bin"
-            self.fwk_version = atlas_nnae_version
-            self.op_path = "/usr/local/Ascend/nnae/latest/opp"
-            self.aicpu_path = "/usr/local/Ascend/nnae/latest"
-        elif os.path.exists(atlas_toolkit_version):
-            # atlas default path
-            self.fwk_path = "/usr/local/Ascend/ascend-toolkit/latest"
-            self.op_impl_path = "/usr/local/Ascend/ascend-toolkit/latest/opp/built-in/op_impl/ai_core/tbe"
-            self.tbe_path = self.fwk_path + "/lib64"
-            self.cce_path = self.fwk_path + "/compiler/ccec_compiler/bin"
-            self.fwk_version = atlas_toolkit_version
-            self.op_path = "/usr/local/Ascend/ascend-toolkit/latest/opp"
-            self.aicpu_path = "/usr/local/Ascend/ascend-toolkit/latest"
-        elif os.path.exists(hisi_fwk_version):
-            # hisi default path
-            self.fwk_path = "/usr/local/Ascend/latest"
-            self.op_impl_path = "/usr/local/Ascend/latest/opp/built-in/op_impl/ai_core/tbe"
-            self.tbe_path = self.fwk_path + "/lib64"
-            self.cce_path = self.fwk_path + "/compiler/ccec_compiler/bin"
-            self.fwk_version = hisi_fwk_version
-            self.op_path = "/usr/local/Ascend/latest/opp"
-            self.aicpu_path = "/usr/local/Ascend/latest"
-        else:
-            # custom or unknown environment
-            self.fwk_path = ""
-            self.op_impl_path = ""
-            self.tbe_path = ""
-            self.cce_path = ""
-            self.fwk_version = ""
-            self.op_path = ""
-            self.aicpu_path = ""
 
         # env
         self.path = os.getenv("PATH")
@@ -306,12 +266,12 @@ class AscendEnvChecker(EnvChecker):
         self.ld_lib_path = os.getenv("LD_LIBRARY_PATH")
         self.ascend_opp_path = os.getenv("ASCEND_OPP_PATH")
         self.ascend_aicpu_path = os.getenv("ASCEND_AICPU_PATH")
+        self.compiler_version = self.ascend_opp_path.split("opp")[0] + "compiler/version.info"
 
         # check content
         self.path_check = "/compiler/ccec_compiler/bin"
         self.python_path_check = "opp/built-in/op_impl/ai_core/tbe"
         self.ld_lib_path_check_fwk = "/lib64"
-        self.ld_lib_path_check_addons = "/add-ons"
         self.ascend_opp_path_check = "/op"
         self.v = ""
 
@@ -322,24 +282,6 @@ class AscendEnvChecker(EnvChecker):
         else:
             os.environ[env_name] = env_value + ":" + os.environ[env_name]
 
-    @staticmethod
-    def _check_and_set_env(env_name, env_value, is_append=False):
-        """check and set environment variable by its name"""
-        if env_value is None:
-            return True
-
-        if not Path(env_value).is_dir():
-            logger.error(
-                f"No such directory: {env_value}. Please check if Ascend AI software package (Ascend Data Center"
-                " Solution) is installed correctly.")
-            return False
-
-        if is_append:
-            AscendEnvChecker._concat_variable(env_name, env_value)
-        else:
-            os.environ[env_name] = env_value
-        return True
-
     def check_custom_version(self):
         """custom op version check"""
         custom_ascendc_soc_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -349,10 +291,10 @@ class AscendEnvChecker(EnvChecker):
             logger.debug(f"The path {custom_ascendc_soc_dir} of the custom ascend c operator does not exist.")
             return False
 
-        if not Path(self.fwk_version).is_file():
+        if not Path(self.compiler_version).is_file():
             return True
 
-        cur_version = self._read_version(self.fwk_version)
+        cur_version = self._read_version(self.compiler_version)
         custom_version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                            "../lib/plugin/ascend/custom_ascendc_ops/version.info")
         with open(custom_version_path, 'r') as f:
@@ -372,14 +314,14 @@ class AscendEnvChecker(EnvChecker):
         self._check_env()
 
     def check_version(self):
-        if not Path(self.fwk_version).is_file():
+        if not Path(self.compiler_version).is_file():
             logger.warning("Using custom Ascend AI software package (Ascend Data Center Solution) path, package "
                            "version checking is skipped. Please make sure Ascend AI software package (Ascend Data "
                            "Center Solution) version is supported. For details, refer to the installation guidelines "
                            "https://www.mindspore.cn/install")
             return
 
-        v = self._read_version(self.fwk_version)
+        v = self._read_version(self.compiler_version)
         if v not in self.version:
             v_list = str([x for x in self.version])
             logger.warning(f"MindSpore version {__version__} and Ascend AI software package (Ascend Data Center "
@@ -438,46 +380,10 @@ class AscendEnvChecker(EnvChecker):
         akg_dir = os.path.join(plugin_dir, "ascend")
         AscendEnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
 
-        if not self.tbe_path:
-            self._check_env()
-            return
-
-        try:
-            origin_path = deepcopy(sys.path)
-            import te  # pylint: disable=unused-import
-        # pylint: disable=broad-except
-        except Exception:
-            sys.path = deepcopy(origin_path)
-            if Path(self.tbe_path).is_dir():
-                os.environ['LD_LIBRARY_PATH'] = self.tbe_path + ":" + os.environ['LD_LIBRARY_PATH']
-            else:
-                logger.error(
-                    f"No such directory: {self.tbe_path}. Please check if Ascend AI software package (Ascend Data "
-                    "Center Solution) is installed correctly.")
-                return
+        self._check_env()
 
         # check te version after set te env
         self.check_deps_version()
-
-        if Path(self.op_impl_path).is_dir():
-            # python path for sub process
-            AscendEnvChecker._concat_variable('PYTHONPATH', self.op_impl_path)
-            # sys path for this process
-            sys.path.append(self.op_impl_path)
-
-            os.environ['TBE_IMPL_PATH'] = self.op_impl_path
-        else:
-            logger.error(
-                f"No such directory: {self.op_impl_path}. Please check if Ascend AI software package (Ascend Data "
-                "Center Solution) is installed correctly.")
-            return
-
-        if not AscendEnvChecker._check_and_set_env('PATH', self.cce_path, True):
-            return
-        if not AscendEnvChecker._check_and_set_env('ASCEND_OPP_PATH', self.op_path):
-            return
-        if not AscendEnvChecker._check_and_set_env('ASCEND_AICPU_PATH', self.aicpu_path):
-            return
 
     def _check_env(self):
         """ascend dependence path check"""
@@ -492,8 +398,7 @@ class AscendEnvChecker(EnvChecker):
                 "Environment Variable PYTHONPATH is set. For details, refer to the installation guidelines: "
                 "https://www.mindspore.cn/install")
 
-        if self.ld_lib_path is None or not (self.ld_lib_path_check_fwk in self.ld_lib_path and
-                                            self.ld_lib_path_check_addons in self.ld_lib_path):
+        if self.ld_lib_path is None or not self.ld_lib_path_check_fwk in self.ld_lib_path:
             logger.warning("Can not find driver so(need by mindspore-ascend). Please check whether the "
                            "Environment Variable LD_LIBRARY_PATH is set. For details, refer to the installation "
                            "guidelines: https://www.mindspore.cn/install")
