@@ -567,6 +567,9 @@ TensorPtr TensorPy::ConvertBytesToTensor(const py::bytes &bytes_obj, const py::t
 
 py::array TensorPy::SyncAsNumpy(const Tensor &tensor) {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kAsnumpy);
+  // Asnumpy should be a read-only operation and should not modify the original Tensor.
+  runtime::Pipeline::Get().WaitAll();
+  Tensor tensor_for_copy(tensor);
   {
     py::gil_scoped_release gil_release;
 
@@ -579,21 +582,19 @@ py::array TensorPy::SyncAsNumpy(const Tensor &tensor) {
                               << numpy_version << ", please upgrade numpy version.";
     }
 
-    if (tensor.get_copy_done_flag()) {
-      const_cast<Tensor &>(tensor).set_copy_done_flag(false);
-      if (tensor.need_release_device_mem()) {
-        const_cast<Tensor &>(tensor).set_device_address(nullptr);
-      }
-      return AsNumpy(tensor);
+    // To be deleted
+    if (!tensor.get_copy_done_flag()) {
+      tensor_for_copy.data_sync();
     }
-    tensor.data_sync();
+    const_cast<Tensor &>(tensor).set_copy_done_flag(false);
 
+    // To be deleted
     // Release device address of graph output tensor.
     if (tensor.need_release_device_mem()) {
       const_cast<Tensor &>(tensor).set_device_address(nullptr);
     }
   }
-  return AsNumpy(tensor);
+  return AsNumpy(tensor_for_copy);
 }
 
 py::array TensorPy::AsNumpy(const Tensor &tensor) {
