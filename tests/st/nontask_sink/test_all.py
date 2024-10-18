@@ -169,7 +169,7 @@ def test_hccl_all_to_all_v():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
 def test_entry_hccl_allreduce_fusion_by_attr():
     """
     Feature: msrun allreduce fusion test case.

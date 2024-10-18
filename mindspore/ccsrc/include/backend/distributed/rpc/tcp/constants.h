@@ -86,7 +86,7 @@ constexpr int IP_LEN_MAX = 128;
 
 // The timeout(second) window for compute graph nodes to receive message from other nodes. Default: 600 seconds.
 constexpr char kEnvReceiveMsgTimeOut[] = "MS_RECEIVE_MSG_TIMEOUT";
-static const size_t kDefaultReceiveMsgTimeOut = 300;
+static const size_t kDefaultReceiveMsgTimeOut = 15;
 
 // Kill the process for safe exiting.
 inline void KillProcess(const std::string &ret) {
