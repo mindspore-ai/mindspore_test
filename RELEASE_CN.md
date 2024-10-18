@@ -2,6 +2,541 @@
 
 [View English](./RELEASE.md)
 
+## MindSpore 2.4.0 Release Notes
+
+### 主要特性及增强
+
+#### Dataset
+
+- [STABLE] 修改 [mindspore.dataset.GeneratorDataset](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/dataset/mindspore.dataset.GeneratorDataset.html)、[mindspore.dataset.Dataset.map](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.map.html)及 [mindspore.dataset.Dataset.batch](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/dataset/dataset_method/batch/mindspore.dataset.Dataset.batch.html)接口中 `max_rowsize` 参数的默认值为None，以默认开启共享内存的动态分配，此时共享内存将随输入数据实时申请并加速数据处理，用户无需再事先调整该参数大小。
+- [BETA] 数据处理支持独立进程模式，此模式下将减少训练进程与数据读取进程的GIL锁冲突，以提升动态图模式下的性能。可以通过环境变量 `MS_INDEPENDENT_DATASET`启动或关闭此模式。
+
+#### Ascend
+
+- [STABLE] 自定义算子支持昇腾动态图场景Pyboost执行模式，降低了算子调用开销。
+- [STABLE] 昇腾Print算子支持输出超大tensor或print调用密集的场景，用户可以通过`MS_DUMP_SLICE_SIZE`和`MS_DUMP_WAIT_TIME`环境变量指定切片大小和超时时间以支持不同场景。
+- [STABLE] 统一确定性计算设置，用户可以通过仅设置 `mindspore.set_context(deterministic="ON")`来使能昇腾确定性计算。
+- [STABLE] 支持集合通信异常监控，监测到通信异常后，快速退出训练，避免超时等待。
+- [STABLE] 支持[亚健康设备优雅退出](https://www.mindspore.cn/docs/zh-CN/r2.4.0/model_train/train_availability/graceful_exit.html)功能。训练框架检测到集群存在亚健康设备配置信息时，保存CKPT并统一结束集群训练进程。
+
+#### Runtime
+
+- [STABLE] O0/O1模式下支持后端编译缓存，前端编译缓存开启时默认开启。
+- [STABLE] O0/O1模式下支持 aclnnAllGatherMatmul、aclnnMatmulReduceScatter 和 aclnnMatmulAllReduce 算子，提升性能。
+- [STABLE] O0/O1模式下支持通过export MS_DISABLE_HEARTBEAT=1关闭集群心跳配置，降低Scheduler负载。
+- [STABLE] O0/O1模式下支持通信算子融合。
+- [STABLE] O2模式下支持虚拟内存，支持碎片整理功能，Ascend后端默认使能。
+- [STABLE] 设备内存占用动态申请，支持单卡多用户使用，Ascend后端默认使能。
+- [STABLE] O1模式下优化图算融合编译性能，默认使能。
+- [STABLE] O1模式下支持kernel packet融合优化，提升动态shape网络执行性能，默认使能。
+- [BETA] O1模式下支持MatMul后向融合（epilogue fuse）Elementwise算子。通过`mindspore.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")`使能。
+- [BETA] O1模式下支持用户控制图算融合优化范围，用户通过graph_kernel_flags的enable_pass/disable_pass选项控制打开或者关闭对应融合算子。
+- [BETA] O0模式下支持GPTO执行序优化模块，通过mindspore.set_context(exec_order="gpto")使能。
+
+#### PyNative
+
+- [STABLE] [mindspore.nn.Cell.register_backward_hook](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.register_backward_hook)/[mindspore.nn.Cell.register_forward_hook](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.register_forward_hook)对应的hook函数入参cell_id变更为cell的python对象。
+- [STABLE] 新增[Cell.register_backward_pre_hook](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.register_backward_pre_hook)接口，该API在Cell上注册反向传播的钩子函数，当每次计算完成该Cell的梯度时都会调用该钩子函数。
+- [STABLE] 优化PyNative流程AICPU类算子下发缓存，提升API执行性能。
+- [STABLE] 新增动态图下将一组Tensor占用的设备内存转换为一块连续的内存功能。
+
+#### FrontEnd
+
+- [STABLE] 在故障恢复场景，支持权重去冗余保存和加载。
+- [STABLE] 混合精度训练，支持[auto模式](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/amp/mindspore.amp.auto_mixed_precision.html#mindspore.amp.auto_mixed_precision)。
+- [STABLE] 支持对safetensors格式的保存、加载，以及并行场景下基于safetensors的离线汇聚和分布式加载。
+- [BETA] 新增循环大算子接口 [mindspore.ops.WhileLoop](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.WhileLoop.html)、[mindspore.ops.ForiLoop](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.ForiLoop.html)、[mindspore.ops.Scan](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.Scan.html)，优化循环编译时间。
+- [BETA] 图模式下支持算子传入关键字参数。
+
+#### Parallel
+
+- [STABLE] [mindspore.ops.TensorDump](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.TensorDump.html)算子支持分布式并行的场景，用户可通过配置TensorDump算子的 `input_output`属性决定打印输入/输出分片；新增接口[mindspore.ops.tensordump](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.tensordump.html)。
+- [STABLE] msrun支持根据传入的rank table file来自定义rank id，支持通过 `--rank_table_file`传入的json文件来重排rank id。
+- [STABLE] 支持昇腾单机内高性能通信库LCCL，用户可通过 `MS_ENABLE_LCCL` 环境变量在昇腾后端训练场景下使能LCCL通信库。
+- [STABLE] 策略传播算法适配LLaMA/Mixtral类网络，减少用户配置LLaMA/Mixtral网络时切分策略的工作量。
+- [STABLE] 支持高维张量并行,用户可通过配置[mindspore.ops.MatMul](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.MatMul.html)/[mindspore.ops.BatchMatMul](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.BatchMatMul.html)算子的input_layout切换1D/2D/3D张量切分模式。
+- [STABLE] 模拟编译在SIMULATION_LEVEL=0和SIMULATION_LEVEL=1运行方式jit_level为O0/O1时，不占用硬件资源。
+- [STABLE] BatchMatMul模型并行引入的Allreduce在后续跟切分操作时，如果在parallel_speed_up_json中开启enable_allreduce_slice_to_reducescatter，根据匹配规则，自动化转换为ReduceScatter以减少通信量。
+- [STABLE] [mindspore.nn.Cell.shard](https://www.mindspore.cn/docs/zh-CN/master/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.shard)和[mindspore.shard](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/mindspore/mindspore.shard.html)支持用户配置mindspore.Layout类型的策略及各参数的切分策略parameter_plan。
+- [BETA] SAPP支持在手工预配置算子并行切分策略后全自动生成剩余算子策略。用户通过打开 `MS_INTERFERED_SAPP` 环境变量来激活 `.shard()` 预配置的并行切分策略。
+- [BETA] [mindspore.ops.Custom](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/ops/mindspore.ops.Custom.html)算子支持配置切分策略。
+
+#### Inference
+
+- [STABLE] 新增Qwen2和LLaMA3.1系列大模型支持训推一体架构，实现脚本、分布式策略和运行时的统一，通过融合大算子降低推理时延，有效提升网络吞吐量。
+- [STABLE] 支持并行解码服务化部署，实现LLaMA系列大模型LookAhead投机推理。
+- [BETA] 支持SLoRA服务化部署，实现大模型多微调权重调度推理。
+
+#### Dump
+
+- [STABLE] 优化[Dump文档](https://www.mindspore.cn/docs/zh-CN/r2.4.0/model_train/debug/dump.html)，按照设备类型和优化等级划分使用方式。
+- [STABLE] Ascend O0/O1模式下支持异步Dump，包括异步Tensor、溢出、统计信息（host和device模式）。
+- [STABLE] 溢出Dump支持配置最大溢出个数。
+- [STABLE] Ascend O2模式下支持set dump。
+- [STABLE] 支持qint4x2量化类型Dump。
+
+### API 变更
+
+#### 新增API
+
+- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/zh-CN/r2.4.0/api_python/mindspore.mint.html) API新增了大量的functional、nn接口。mint接口当前是实验性接口，在图编译模式为O0和PyNative模式下性能比ops更优。当前暂不支持图下沉模式及CPU、GPU后端，后续会逐步完善。
+
+  | mindspore.mint             |                                  |                              |                            |
+  | :------------------------- | :------------------------------- | :--------------------------- | :------------------------- |
+  | mindspore.mint.full        | mindspore.mint.repeat_interleave | mindspore.mint.linspace      | mindspore.mint.scatter     |
+  | mindspore.mint.tril        | mindspore.mint.argmin            | mindspore.mint.sign          | mindspore.mint.remainder   |
+  | mindspore.mint.flatten     | mindspore.mint.asin              | mindspore.mint.arcsin        | mindspore.mint.sinh        |
+  | mindspore.mint.arcsinh     | mindspore.mint.atan              | mindspore.mint.arctan        | mindspore.mint.atanh       |
+  | mindspore.mint.arctanh     | mindspore.mint.acos              | mindspore.mint.arccos        | mindspore.mint.acosh       |
+  | mindspore.mint.arccosh     | mindspore.mint.erfc              | mindspore.mint.expm1         | mindspore.mint.log1p       |
+  | mindspore.mint.logical_xor | mindspore.mint.round             | mindspore.mint.tan           | mindspore.mint.trace       |
+  | mindspore.mint.trunc       | mindspore.mint.cross             | mindspore.mint.masked_select | mindspore.mint.bitwise_and |
+  | mindspore.mint.bitwise_or  | mindspore.mint.bitwise_xor       | mindspore.mint.cosh          | mindspore.mint.cummax      |
+  | mindspore.mint.cummin      | mindspore.mint.median            | mindspore.mint.roll          | mindspore.mint.sinc        |
+  | mindspore.mint.sinh        | mindspore.mint.xlogy             |                              |                            |
+
+  | mindspore.mint.nn             |
+  | :---------------------------- |
+  | mindspore.mint.nn.ReLU        |
+  | mindspore.mint.nn.Hardsigmoid |
+  | mindspore.mint.nn.AvgPool2d   |
+  | mindspore.mint.nn.MSELoss     |
+  | mindspore.mint.nn.LogSoftmax  |
+  | mindspore.mint.nn.Mish        |
+  | mindspore.mint.nn.PReLU       |
+  | mindspore.mint.nn.SELU        |
+  | mindspore.mint.nn.Softshrink  |
+  | mindspore.mint.nn.Hardshrink  |
+  | mindspore.mint.nn.Hardswish   |
+  | mindspore.mint.nn.L1Loss      |
+
+  | mindspore.mint.nn.functional             |
+  | :--------------------------------------- |
+  | mindspore.mint.nn.functional.hardsigmoid |
+  | mindspore.mint.nn.functional.log_softmax |
+  | mindspore.mint.nn.functional.mish        |
+  | mindspore.mint.nn.functional.prelu       |
+  | mindspore.mint.nn.functional.selu        |
+  | mindspore.mint.nn.functional.softshrink  |
+  | mindspore.mint.nn.functional.hardshrink  |
+  | mindspore.mint.nn.functional.hardswish   |
+  | mindspore.mint.nn.functional.l1_loss     |
+  |                                          |
+
+#### 接口变更
+
+- 接口名称：mindspore.dataset.GeneratorDataset
+
+  变更内容：参数 `max_rowsize`默认值从 `6`变更为 `None`，以默认开启共享内存动态分配。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  class GeneratorDataset(source,
+                         column_names=None,
+                         column_types=None,
+                         schema=None,
+                         num_samples=None,
+                         num_parallel_workers=1,
+                         shuffle=None,
+                         sampler=None,
+                         num_shards=None,
+                         shard_id=None,
+                         python_multiprocessing=True,
+                         max_rowsize=6)
+  </pre>
+  </td>
+  <td><pre>
+  class GeneratorDataset(source,
+                         column_names=None,
+                         column_types=None,
+                         schema=None,
+                         num_samples=None,
+                         num_parallel_workers=1,
+                         shuffle=None,
+                         sampler=None,
+                         num_shards=None,
+                         shard_id=None,
+                         python_multiprocessing=True,
+                         max_rowsize=None)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.dataset.Dataset.batch
+
+  变更内容：参数 `max_rowsize`默认值从 `16`变更为 `None`，以默认开启共享内存动态分配。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def batch(input_dataset,
+            batch_size,
+            drop_remainder=False,
+            num_parallel_workers=None,
+            per_batch_map=None,
+            input_columns=None,
+            output_columns=None,
+            python_multiprocessing=False,
+            max_rowsize=16)
+  </pre>
+  </td>
+  <td><pre>
+  def batch(input_dataset,
+            batch_size,
+            drop_remainder=False,
+            num_parallel_workers=None,
+            per_batch_map=None,
+            input_columns=None,
+            output_columns=None,
+            python_multiprocessing=False,
+            max_rowsize=None)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.dataset.Dataset.map
+
+  变更内容：参数 `max_rowsize`默认值从 `16`变更为 `None`，以默认开启共享内存动态分配。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def map(input_dataset,
+          operations=None,
+          input_columns=None,
+          output_columns=None,
+          num_parallel_workers=None,
+          python_multiprocessing=False,
+          cache=None,
+          callbacks=None,
+          max_rowsize=16, offload=None)
+  </pre>
+  </td>
+  <td><pre>
+  def map(input_dataset,
+          operations=None,
+          input_columns=None,
+          output_columns=None,
+          num_parallel_workers=None,
+          python_multiprocessing=False,
+          cache=None,
+          callbacks=None,
+          max_rowsize=None, offload=None)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.ops.TensorDump
+
+  变更内容：新增参数 `input_output`，控制打印行为。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  class TensorDump()
+  </pre>
+  </td>
+  <td><pre>
+  class TensorDump(input_output='out')
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：MindSpore Dump Tensor保存的文件格式
+
+  变更内容：Dump得到的npy文件，会将原始Tensor的dtype信息添加到文件名中。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  {op_type}.{op_name}.{task_id}.{stream_id}.
+  {timestamp}.{input_output_index}.{slot}.
+  {format}.npy
+  </pre>
+  </td>
+  <td><pre>
+  {op_type}.{op_name}.{task_id}.{stream_id}.
+  {timestamp}.{input_output_index}.{slot}.
+  {format}.{dtype}.npy
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+#### 非兼容性接口变更
+
+- 接口名称：mindspore.nn.Cell.register_backward_hook(hook_fn)
+
+  变更内容：hook_fn的入参由cell_id变更为cell对象。
+
+  说明：对原有hook，可以在hook_fn中通过id(cell)获取原有的cell_id。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def register_backward_hook(hook_fn)
+  入参hook_fn(cell_id,
+             grad_input, grad_output)
+             -> New grad_output or None
+  </pre>
+  </td>
+  <td><pre>
+  def register_backward_hook(hook_fn)
+  入参hook_fn(cell,
+             grad_input, grad_output)
+             -> New grad_input or None
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.nn.Cell.register_forward_hook(hook_fn)
+
+  变更内容：hook_fn的入参由cell_id变更为cell对象。
+
+  说明：对原有hook，可以在hook_fn中通过id(cell)获取原有的cell_id。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def register_forward_hook(hook_fn)
+  入参hook_fn(cell_id, inputs, outputs)-> New outputs or None
+  </pre>
+  </td>
+  <td><pre>
+  def register_forward_hook(hook_fn)
+  入参hook_fn(cell, inputs, outputs)-> New outputs or None
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.communication.comm_func.all_reduce
+
+  变更内容：all_reduce新增入参async_op，返回值从Tensor变更为Tensor和CommHandle组成的tuple。
+
+  说明：async_op表示all_reduce是否开启多流并行，默认值是False。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_reduce(tensor,
+                 op=ReduceOp.SUM,
+                 group=GlobalComm.WORLD_COMM_GROUP)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def all_reduce(tensor,
+                 op=ReduceOp.SUM,
+                 group=GlobalComm.WORLD_COMM_GROUP,
+                 async_op=False)
+                 ->tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.communication.comm_func.all_gather_into_tensor
+
+  变更内容：all_reduce新增入参async_op，返回值从Tensor变更为Tensor和CommHandle组成的tuple。
+
+  说明：async_op表示all_gather_into_tensor是否开启多流并行，默认值是False。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_gather_into_tensor(tensor,
+                             group=GlobalComm.
+                             WORLD_COMM_GROUP)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def all_gather_into_tensor(tensor,
+                             group=GlobalComm.
+                             WORLD_COMM_GROUP,
+                             async_op=False)->
+                             tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.communication.comm_func.reduce_scatter_tensor
+
+  变更内容：all_reduce新增入参async_op，返回值从Tensor变更为Tensor和CommHandle组成的tuple。
+
+  说明：async_op表示reduce_scatter_tensor是否开启多流并行，默认值是False。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def reduce_scatter_tensor(tensor,
+                            op=ReduceOp.SUM,
+                            group=GlobalComm.
+                            WORLD_COMM_GROUP)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def reduce_scatter_tensor(tensor,
+                            op=ReduceOp.SUM,
+                            group=GlobalComm.WORLD_COMM_GROUP,
+                            async_op=False)->
+                            tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.communication.comm_func.isend
+
+  变更内容：返回值从Tensor变更为Handle。
+
+  说明：isend默认开启多流并行。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def isend(tensor,
+            dst=0,group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def isend(tensor,
+            dst=0,group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->CommHandle
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.communication.comm_func.irecv
+
+  变更内容：返回值从Tensor变更为Handle。
+
+  说明：irecv默认开启多流并行。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def irecv(tensor,
+            src=0, group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def irecv(tensor,
+            src=0,
+            group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->CommHandle
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.communication.comm_func.all_to_all_with_output_shape
+
+  变更内容：all_to_all_with_output_shape新增入参async_op，返回值从Tensor变更为Tensor和CommHandle组成的tuple。
+
+  说明：async_op表示all_to_all_with_output_shape是否开启多流并行，默认值是False。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_to_all_with_output_shape(output_shape_list,
+                                   input_tensor_list,
+                                   group=None)->tuple(Tensor)
+  </pre>
+  </td>
+  <td><pre>
+  def all_to_all_with_output_shape(output_shape_list,
+                                   input_tensor_list,
+                                   group=None,
+                                   async_op=False)->
+                                   tuple(tuple(Tensor),
+                                   CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- 接口名称：mindspore.communication.comm_func.all_to_all_single_with_output_shape
+
+  变更内容：all_to_all_single_with_output_shape新增入参async_op，返回值从Tensor变更为Tensor和CommHandle组成的tuple。
+
+  说明：async_op表示all_to_all_single_with_output_shape是否开启多流并行，默认值是False。
+
+  <table>
+  <tr>
+  <td style="text-align:center"> 原接口 </td> <td style="text-align:center"> v2.4.0接口 </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_to_all_single_with_output_shape(output_shape,
+                                          tensor, output_split_sizes=None,
+                                          input_split_sizes=None,
+                                          group=None)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def all_to_all_single_with_output_shape(output_shape,
+                                          tensor, output_split_sizes=None,
+                                          input_split_sizes=None,
+                                          group=None, async_op=False)->
+                                          tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+### 贡献者
+
+anyrenwei,bantao,baochong,Bellatan,BJ-WANG,caifubi,candanzg,candyhong,Carey,cccc1111,ccsszz,changzherui,chengbin,chengfeng27,chengxb7532,chenjianping,chenweifeng,chujinjin,dairenjie,DavidFFFan,DeshiChen,dingjinshan,emmmmtang,fanyi20,fary86,fengyixing,fix-dryrun,fuchao,fuhouyu,gaoyong10,gengdongjie,gent1e,GuoZhibin,guozhijian,halo,hangq,haozhang,hedongdong,Henry Shi,HighCloud,Hongxing,huandong1,huangbingjian,HuangLe02,huangziling,huda,huiliang166,hujiahui8,huoxinyou,jiangchenglin3,jianghui58,jiangshanfeng,jiaorui,jiaxueyu,jijiarong,jjfeing,JoeyLin,jshawjc,jxl,kairui_kou,kisnwang,kk,lanzhineng,LiangZhibo,lichen,limingqi107,lionelchang,liubuyu,liujunzhu,liuluobin,liyejun,LLLRT,looop5,luochao60,luoxuewei,luoyang,machenggui,maning202007,maoyuanpeng1,Margaret_wangrui,MengXiangyu,mengyuanli,moran,Mrtutu,mylinchi,NaCN,nomindcarry,panzhihui,paolopoggi,pengqi,pierreleca,qiuleilei,qiuyufeng,qiuzhongya,r1chardf1d0,shaoshengqi,shen_haochen,shenhaojing,shenwei41,shihlCST,shilishan,shiro-zzz,shiziyang,shop-pin,shunyuanhan,shuqian0,stavewu,superxf,suteng,tanghuikang,tangmengcheng,tan-wei-cheng,tan-wei-cheng-3260,tianxiaodong,TronZhang,TuDouNi,VectorSL,vincen45,wang_ziqi,wanghenchang,wangjie,wangshaocong,weiyang,wtobill,wudawei,wujueying,wwwbby,xfan233,XianglongZeng,xiaotianci,xiaoxin_zhang,xiaoxiongzhu,xiaoxuanKL,xiaoyao,XinDu,xuxinglei,xuzhubin,yanghaoran,yanglong,yangzhenzhang,yanx,Yanzhi_YI,yao_yf,yefeng,yide12,yihangchen,YijieChen,YingLai Lin,ylw,yuanpeng2024,yuanqi,yuchaojie,Yuheng Wang,YuJianfeng,YukioZzz,yyuse,zangqx,ZeyuHan,zhangbuxue,zhanghaibo,zhangminli,zhangqinghua,zhangyanhui,ZhangZGC,zhangzhen,zhanzhan,zhengzuohe,zhouyaqiang0,zhuguodong,zichun_ye,zjun,zong_shuai,ZPaC,zuochuanyong,zyli2020,程超,蛋蛋de忧桑,狄新凯,范吉斌,冯一航,付国华,胡彬,宦晓玲,黄勇,黄卓,康伟,李良灿,李林杰,李寅杰3,刘崇鸣,刘思铭,刘涛Liu,刘勇琪,刘子涵,吕浩宇,吕昱峰（Nate.River）,钱丹,十一雷,孙昊辰,王禹程,王振邦,王梓润,吴大维,熊攀,徐安越,许子豪,俞涵,云骑士,张峻源,张王泽,张栩浩,赵文璇,周莉莉,朱家兴,邹文祥
+
 ## MindSpore 2.3.1 Release Notes
 
 ### 主要特性及增强

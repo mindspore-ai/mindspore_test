@@ -2,6 +2,541 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.4.0 Release Notes
+
+### Major Features and Improvements
+
+#### Dataset
+
+- [STABLE] Modify the default value of the `max_rowsize` parameter in the interface [mindspore.dataset.GeneratorDataset](https://www.mindspore.cn/docs/en/r2.4.0/api_python/dataset/mindspore.dataset.GeneratorDataset.html), [mindspore.dataset.Dataset.map](https://www.mindspore.cn/docs/en/r2.4.0/api_python/dataset/dataset_method/operation/mindspore.dataset.Dataset.map.html), and [mindspore.dataset.Dataset.batch](https://www.mindspore.cn/docs/en/r2.4.0/api_python/dataset/dataset_method/batch/mindspore.dataset.Dataset.batch.html) to None to enable dynamic allocation of shared memory by default, in which case the shared memory will be requested in real time with the input data and accelerate the data processing, so the user does not need to adjust the size of this parameter in advance.
+- [BETA] Data processing supports the independent process mode, which will reduce the GIL lock conflict between the training process and the data reading process to improve the performance in dynamic graph mode. This mode can be enabled or disabled via the environment variable `MS_INDEPENDENT_DATASET`.
+
+#### Ascend
+
+- [STABLE] Customized operators support the Ascend Dynamics graph scenario Pyboost execution mode, which reduces operator call overhead.
+- [STABLE] The Ascend Print operator supports scenarios where the output is oversized tensor or print calls are intensive, and users can specify the slice size and timeout time to support different scenarios via the `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME` environment variables.
+- [STABLE] Unified deterministic computation settings. Users can enable ascending deterministic computation by only setting `mindspore.set_context(deterministic="ON")`.
+- [STABLE] Supports aggregate communication anomaly monitoring, quickly exits training after monitoring communication anomalies to avoid timeout waiting.
+- [STABLE] Supports the [graceful exit function for sub-healthy devices](https://www.mindspore.cn/docs/en/r2.4.0/model_train/train_availability/graceful_exit.html). When the training framework detects the presence of sub-healthy device configuration information in the cluster, it saves the CKPT and uniformly ends the cluster training process.
+
+#### Runtime
+
+- [STABLE] Backend compilation cache is supported in O0/O1 mode and is turned on by default when frontend compilation cache is turned on.
+- [STABLE] The aclnnAllGatherMatmul, aclnnMatmulReduceScatter, and aclnnMatmulAllReduce algorithms are supported in O0/O1 modes to improve performance.
+- [STABLE] O0/O1 modes support to disable cluster heartbeat configuration by export MS_DISABLE_HEARTBEAT=1 to reduce scheduler load.
+- [STABLE] O0/O1 modes support communication arithmetic fusion.
+- [STABLE] Virtual memory support in O2 mode, defragmentation support, which is enabled in Ascend backend by default.
+- [STABLE] Dynamic request for device memory occupation, support single card multi-user use, which is enabled in Ascend backend by default.
+- [STABLE] Optimize graph fusion compilation performance in O1 mode, enabled by default.
+- [STABLE] Support kernel packet fusion optimization in O1 mode to improve the performance of dynamic shape network execution, enabled by default.
+- [BETA] Epilogue fusion between the MatMul and Elementwise operator is supported in O1 mode. Enable via `mindspore.set_context(graph_kernel_flags="--enable_cluster_ops=MatMul")`.
+- [BETA] O1 mode supports user-controlled graph fusion optimization scope, user can control to turn on or off the corresponding fusion operator via the enable_pass/disable_pass option of graph_kernel_flags.
+- [BETA] The GPTO execution order optimization module is supported in O0 mode and is enabled through mindspore.set_context(exec_order="gpto").
+
+#### PyNative
+
+- [STABLE] Parameter cell_id of Hook function corresponding to [mindspore.nn.Cell.register_backward_hook](https://www.mindspore.cn/docs/en/r2.4.0/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.register_backward_hook) and [mindspore.nn.Cell.register_forward_hook](https://www.mindspore.cn/docs/en/r2.4.0/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.register_forward_hook) is changed to cell's python object.
+- [STABLE] Added [Cell.register_backward_pre_hook](https://www.mindspore.cn/docs/en/r2.4.0/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.register_backward_pre_hook) interface, this API registers the backward propagation hook function on a Cell, which is called each time the gradient of that Cell is computed.
+- [STABLE] Optimize the PyNative process AICPU class operator downstream cache to improve API execution performance.
+- [STABLE] Added the function of converting the device memory occupied by a group of Tensor to a contiguous piece of memory under dynamic graph.
+
+#### FrontEnd
+
+- [STABLE] Weight de-redundancy saving and loading is supported in fault recovery scenarios.
+- [STABLE] Mixed precision training with support for [auto mode](https://www.mindspore.cn/docs/en/r2.4.0/api_python/amp/mindspore.amp.auto_mixed_precision.html#mindspore.amp.auto_mixed_precision).
+- [STABLE] Support saving and loading of safetensors format, as well as offline aggregation and distributed loading based on safetensors in parallel scenarios.
+- [BETA] Added new cyclic arithmetic interface [mindspore.ops.WhileLoop](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.WhileLoop.html), [mindspore.ops.ForiLoop](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.ForiLoop.html), and [mindspore.ops.Scan](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.Scan.html), optimizing loop compilation time.
+- [BETA] The graph mode supports the operator passing keyword arguments.
+
+#### Parallel
+
+- [STABLE] [mindspore.ops.TensorDump](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.TensorDump.html) operator supports distributed parallel scenarios, and users can decide to print input/output slices by configuring the TensorDump operator's `input_output` attribute; add new interface [mindspore.ops.tensordump](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.tensordump.html).
+- [STABLE] msrun supports customizing the rank id based on the passing rank table file, and supports rearranging the rank id via the `--rank_table_file` passing json file.
+- [STABLE] Supports LCCL, a high-performance communication library in Ascend stand-alone. Users can enable LCCL in Ascend back-end training scenarios via the `MS_ENABLE_LCCL` environment variable.
+- [STABLE] The strategy propagation algorithm is adapted to LLaMA/Mixtral networks, which reduces the workload of users in configuring the sharding strategy for LLaMA/Mixtral networks.
+- [STABLE] Support high dimensional tensor parallelism, user can configure [mindspore.ops.MatMul](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.MatMul.html) and [mindspore.oops.BatchMatMul](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.BatchMatMul.html) input_layout switching 1D/2D/3D tensor slice mode.
+- [STABLE] Simulation compilation does not consume hardware resources when SIMULATION_LEVEL=0 and SIMULATION_LEVEL=1 runtime jit_level is O0/O1.
+- [STABLE] Allreduce introduced in parallel by the BatchMatMul model is automatically converted to a ReduceScatter to reduce communication according to the matching rules if enable_allreduce_slice_to_reducescatter is turned on in parallel_speed_up_json when it follows the slice operation.
+- [STABLE] [mindspore.nn.Cell.shard](https://www.mindspore.cn/docs/en/master/api_python/nn/mindspore.nn.Cell.html#mindspore.nn.Cell.shard) and [mindspore.shard](https://www.mindspore.cn/docs/en/r2.4.0/api_python/mindspore/mindspore.shard.html) support user-configurable policies of type mindspore.Layout and sharding strategy for each parameter parameter_plan.
+- [BETA] SAPP supports fully automatic generation of residual arithmetic policies after manual preconfiguration of arithmetic parallel sharding strategy. The user activates the `.shard()` preconfigured parallel sharding strategy by turning on the `MS_INTERFERED_SAPP` environment variable.
+- The [BETA] [mindspore.ops.Custom](https://www.mindspore.cn/docs/en/r2.4.0/api_python/ops/mindspore.ops.Custom.html) operator supports configuring the sharding strategy.
+
+#### Inference
+
+- [STABLE] New Qwen2 and LLaMA3.1 series of large models support training and inference architecture, realize the unification of script, distributed policy and runtime, reduce the inference delay by fusing large operators, and effectively improve the network throughput.
+- [STABLE] Support parallel decoding service-oriented deployment to realize LookAhead speculative inference for large models of LLaMA series.
+- [BETA] Support SLoRA service-oriented deployment, realizing multi-trimming weight scheduling inference for large models.
+
+#### Dump
+
+- [STABLE] Optimize [Dump](https://www.mindspore.cn/docs/en/r2.4.0/model_train/debug/dump.html) for use by device type and optimization level.
+- [STABLE] Asynchronous Dump support in Ascend O0/O1 mode, including asynchronous Tensor, overflow, and statistics (host and device modes).
+- [STABLE] Overflow Dump supports configuring the maximum number of overflows.
+- [STABLE] Ascend O2 mode supports set dump.
+- [STABLE] Support qint4 x 2 quantization type Dump.
+
+### API Change
+
+#### New API
+
+- [STABLE] [mindspore.mint](https://www.mindspore.cn/docs/en/r2.4.0/api_python/mindspore.mint.html) APIs add a large number of functional, nn interfaces. mint interfaces are currently experimental interfaces, performance is better than ops in graph compilation mode O0 and PyNative mode. Currently does not support graph sink mode and CPU, GPU backend. It will be gradually improved.
+
+  | mindspore.mint             |                                  |                              |                            |
+  | :------------------------- | :------------------------------- | :--------------------------- | :------------------------- |
+  | mindspore.mint.full        | mindspore.mint.repeat_interleave | mindspore.mint.linspace      | mindspore.mint.scatter     |
+  | mindspore.mint.tril        | mindspore.mint.argmin            | mindspore.mint.sign          | mindspore.mint.remainder   |
+  | mindspore.mint.flatten     | mindspore.mint.asin              | mindspore.mint.arcsin        | mindspore.mint.sinh        |
+  | mindspore.mint.arcsinh     | mindspore.mint.atan              | mindspore.mint.arctan        | mindspore.mint.atanh       |
+  | mindspore.mint.arctanh     | mindspore.mint.acos              | mindspore.mint.arccos        | mindspore.mint.acosh       |
+  | mindspore.mint.arccosh     | mindspore.mint.erfc              | mindspore.mint.expm1         | mindspore.mint.log1p       |
+  | mindspore.mint.logical_xor | mindspore.mint.round             | mindspore.mint.tan           | mindspore.mint.trace       |
+  | mindspore.mint.trunc       | mindspore.mint.cross             | mindspore.mint.masked_select | mindspore.mint.bitwise_and |
+  | mindspore.mint.bitwise_or  | mindspore.mint.bitwise_xor       | mindspore.mint.cosh          | mindspore.mint.cummax      |
+  | mindspore.mint.cummin      | mindspore.mint.median            | mindspore.mint.roll          | mindspore.mint.sinc        |
+  | mindspore.mint.sinh        | mindspore.mint.xlogy             |                              |                            |
+
+  | mindspore.mint.nn             |
+  | :---------------------------- |
+  | mindspore.mint.nn.ReLU        |
+  | mindspore.mint.nn.Hardsigmoid |
+  | mindspore.mint.nn.AvgPool2d   |
+  | mindspore.mint.nn.MSELoss     |
+  | mindspore.mint.nn.LogSoftmax  |
+  | mindspore.mint.nn.Mish        |
+  | mindspore.mint.nn.PReLU       |
+  | mindspore.mint.nn.SELU        |
+  | mindspore.mint.nn.Softshrink  |
+  | mindspore.mint.nn.Hardshrink  |
+  | mindspore.mint.nn.Hardswish   |
+  | mindspore.mint.nn.L1Loss      |
+
+  | mindspore.mint.nn.functional             |
+  | :--------------------------------------- |
+  | mindspore.mint.nn.functional.hardsigmoid |
+  | mindspore.mint.nn.functional.log_softmax |
+  | mindspore.mint.nn.functional.mish        |
+  | mindspore.mint.nn.functional.prelu       |
+  | mindspore.mint.nn.functional.selu        |
+  | mindspore.mint.nn.functional.softshrink  |
+  | mindspore.mint.nn.functional.hardshrink  |
+  | mindspore.mint.nn.functional.hardswish   |
+  | mindspore.mint.nn.functional.l1_loss     |
+  |                                          |
+
+#### Interface Changes
+
+- Interface name: mindspore.dataset.GeneratorDataset
+
+  Changed: The default value of parameter `max_rowsize` is changed from `6` to `None` to enable dynamic allocation of shared memory by default.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  class GeneratorDataset(source,
+                         column_names=None,
+                         column_types=None,
+                         schema=None,
+                         num_samples=None,
+                         num_parallel_workers=1,
+                         shuffle=None,
+                         sampler=None,
+                         num_shards=None,
+                         shard_id=None,
+                         python_multiprocessing=True,
+                         max_rowsize=6)
+  </pre>
+  </td>
+  <td><pre>
+  class GeneratorDataset(source,
+                         column_names=None,
+                         column_types=None,
+                         schema=None,
+                         num_samples=None,
+                         num_parallel_workers=1,
+                         shuffle=None,
+                         sampler=None,
+                         num_shards=None,
+                         shard_id=None,
+                         python_multiprocessing=True,
+                         max_rowsize=None)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.dataset.Dataset.batch
+
+  Changed: The default value of parameter `max_rowsize` is changed from `16` to `None` to enable dynamic allocation of shared memory by default.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def batch(input_dataset,
+            batch_size,
+            drop_remainder=False,
+            num_parallel_workers=None,
+            per_batch_map=None,
+            input_columns=None,
+            output_columns=None,
+            python_multiprocessing=False,
+            max_rowsize=16)
+  </pre>
+  </td>
+  <td><pre>
+  def batch(input_dataset,
+            batch_size,
+            drop_remainder=False,
+            num_parallel_workers=None,
+            per_batch_map=None,
+            input_columns=None,
+            output_columns=None,
+            python_multiprocessing=False,
+            max_rowsize=None)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.dataset.Dataset.map
+
+  Changed: The default value of parameter `max_rowsize` is changed from `16` to `None` to enable dynamic allocation of shared memory by default.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def map(input_dataset,
+          operations=None,
+          input_columns=None,
+          output_columns=None,
+          num_parallel_workers=None,
+          python_multiprocessing=False,
+          cache=None,
+          callbacks=None,
+          max_rowsize=16, offload=None)
+  </pre>
+  </td>
+  <td><pre>
+  def map(input_dataset,
+          operations=None,
+          input_columns=None,
+          output_columns=None,
+          num_parallel_workers=None,
+          python_multiprocessing=False,
+          cache=None,
+          callbacks=None,
+          max_rowsize=None, offload=None)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.ops.TensorDump
+
+  Changed: New parameter `input_output` to control printing behavior.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  class TensorDump()
+  </pre>
+  </td>
+  <td><pre>
+  class TensorDump(input_output='out')
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: File formats saved by MindSpore Dump Tensor
+
+  Changed: The npy file obtained by Dump adds the dtype information of the original Tensor to the filename.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  {op_type}.{op_name}.{task_id}.{stream_id}.
+  {timestamp}.{input_output_index}.{slot}.
+  {format}.npy
+  </pre>
+  </td>
+  <td><pre>
+  {op_type}.{op_name}.{task_id}.{stream_id}.
+  {timestamp}.{input_output_index}.{slot}.
+  {format}.{dtype}.npy
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+#### Non-compatible Interface Changes
+
+- Interface name: mindspore.nn.Cell.register_backward_hook(hook_fn)
+
+  Changed: The input parameter of hook_fn is changed from cell_id to cell object.
+
+  Descriptions: For the original hook, you can get the original cell_id by id(cell) in hook_fn.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def register_backward_hook(hook_fn)
+  Parameter hook_fn(cell_id,
+             grad_input, grad_output)
+             -> New grad_output or None
+  </pre>
+  </td>
+  <td><pre>
+  def register_backward_hook(hook_fn)
+  Parameter hook_fn(cell,
+             grad_input, grad_output)
+             -> New grad_input or None
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.nn.Cell.register_forward_hook(hook_fn)
+
+  Changed: The input parameter of hook_fn is changed from cell_id to cell object.
+
+  Descriptions: For the original hook, you can get the original cell_id by id(cell) in hook_fn.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def register_forward_hook(hook_fn)
+  Parameter hook_fn(cell_id, inputs, outputs)-> New outputs or None
+  </pre>
+  </td>
+  <td><pre>
+  def register_forward_hook(hook_fn)
+  Parameter hook_fn(cell, inputs, outputs)-> New outputs or None
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.communication.comm_func.all_reduce
+
+  Changed: all_reduce adds a new parameter async_op, and the return value is changed from Tensor to a tuple consisting of Tensor and CommHandle.
+
+  Descriptions: async_op indicates whether all_reduce has multi-stream parallelism turned on, and the default value is False.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_reduce(tensor,
+                 op=ReduceOp.SUM,
+                 group=GlobalComm.WORLD_COMM_GROUP)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def all_reduce(tensor,
+                 op=ReduceOp.SUM,
+                 group=GlobalComm.WORLD_COMM_GROUP,
+                 async_op=False)
+                 ->tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.communication.comm_func.all_gather_into_tensor
+
+  Changed: all_reduce adds a new parameter async_op, and the return value is changed from Tensor to a tuple consisting of Tensor and CommHandle.
+
+  Descriptions: async_op indicates whether all_gather_into_tensor has multi-stream parallelism turned on, and the default value is False.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_gather_into_tensor(tensor,
+                             group=GlobalComm.
+                             WORLD_COMM_GROUP)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def all_gather_into_tensor(tensor,
+                             group=GlobalComm.
+                             WORLD_COMM_GROUP,
+                             async_op=False)->
+                             tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.communication.comm_func.reduce_scatter_tensor
+
+  Changed: all_reduce adds a new parameter async_op, and the return value is changed from Tensor to a tuple consisting of Tensor and CommHandle.
+
+  Descriptions: async_op indicates whether reduce_scatter_tensor has multi-stream parallelism turned on, and the default value is False.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def reduce_scatter_tensor(tensor,
+                            op=ReduceOp.SUM,
+                            group=GlobalComm.
+                            WORLD_COMM_GROUP)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def reduce_scatter_tensor(tensor,
+                            op=ReduceOp.SUM,
+                            group=GlobalComm.WORLD_COMM_GROUP,
+                            async_op=False)->
+                            tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.communication.comm_func.isend
+
+  Changed: The return value is changed from Tensor to Handle.
+
+  Descriptions: isend enables multi-stream parallelism by default.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def isend(tensor,
+            dst=0,group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def isend(tensor,
+            dst=0,group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->CommHandle
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.communication.comm_func.irecv
+
+  Changed: The return value is changed from Tensor to Handle.
+
+  Descriptions: irecv enables multi-stream parallelism by default.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def irecv(tensor,
+            src=0, group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def irecv(tensor,
+            src=0,
+            group=GlobalComm.
+            WORLD_COMM_GROUP, tag=0)->CommHandle
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.communication.comm_func.all_to_all_with_output_shape
+
+  Changed: all_to_all_with_output_shape adds a new parameter async_op, and the return value is changed from Tensor to a tuple consisting of Tensor and CommHandle.
+
+  Descriptions: async_op indicates whether all_to_all_with_output_shape enables multi-stream parallelism, the default value is False.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_to_all_with_output_shape(output_shape_list,
+                                   input_tensor_list,
+                                   group=None)->tuple(Tensor)
+  </pre>
+  </td>
+  <td><pre>
+  def all_to_all_with_output_shape(output_shape_list,
+                                   input_tensor_list,
+                                   group=None,
+                                   async_op=False)->
+                                   tuple(tuple(Tensor),
+                                   CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+- Interface name: mindspore.communication.comm_func.all_to_all_single_with_output_shape
+
+  Changed: all_to_all_single_with_output_shape adds a new parameter async_op, and the return value is changed from Tensor to a tuple consisting of Tensor and CommHandle.
+
+  Descriptions: async_op indicates whether all_to_all_single_with_output_shape enables multi-stream parallelism, the default value is False.
+
+  <table>
+  <tr>
+  <td style="text-align:center"> Original interface </td> <td style="text-align:center"> v2.4.0 interface </td>
+  </tr>
+  <tr>
+  <td><pre>
+  def all_to_all_single_with_output_shape(output_shape,
+                                          tensor, output_split_sizes=None,
+                                          input_split_sizes=None,
+                                          group=None)->Tensor
+  </pre>
+  </td>
+  <td><pre>
+  def all_to_all_single_with_output_shape(output_shape,
+                                          tensor, output_split_sizes=None,
+                                          input_split_sizes=None,
+                                          group=None, async_op=False)->
+                                          tuple(Tensor, CommHandle)
+  </pre>
+  </td>
+  </tr>
+  </table>
+
+### Contributors
+
+anyrenwei,bantao,baochong,Bellatan,BJ-WANG,caifubi,candanzg,candyhong,Carey,cccc1111,ccsszz,changzherui,chengbin,chengfeng27,chengxb7532,chenjianping,chenweifeng,chujinjin,dairenjie,DavidFFFan,DeshiChen,dingjinshan,emmmmtang,fanyi20,fary86,fengyixing,fix-dryrun,fuchao,fuhouyu,gaoyong10,gengdongjie,gent1e,GuoZhibin,guozhijian,halo,hangq,haozhang,hedongdong,Henry Shi,HighCloud,Hongxing,huandong1,huangbingjian,HuangLe02,huangziling,huda,huiliang166,hujiahui8,huoxinyou,jiangchenglin3,jianghui58,jiangshanfeng,jiaorui,jiaxueyu,jijiarong,jjfeing,JoeyLin,jshawjc,jxl,kairui_kou,kisnwang,kk,lanzhineng,LiangZhibo,lichen,limingqi107,lionelchang,liubuyu,liujunzhu,liuluobin,liyejun,LLLRT,looop5,luochao60,luoxuewei,luoyang,machenggui,maning202007,maoyuanpeng1,Margaret_wangrui,MengXiangyu,mengyuanli,moran,Mrtutu,mylinchi,NaCN,nomindcarry,panzhihui,paolopoggi,pengqi,pierreleca,qiuleilei,qiuyufeng,qiuzhongya,r1chardf1d0,shaoshengqi,shen_haochen,shenhaojing,shenwei41,shihlCST,shilishan,shiro-zzz,shiziyang,shop-pin,shunyuanhan,shuqian0,stavewu,superxf,suteng,tanghuikang,tangmengcheng,tan-wei-cheng,tan-wei-cheng-3260,tianxiaodong,TronZhang,TuDouNi,VectorSL,vincen45,wang_ziqi,wanghenchang,wangjie,wangshaocong,weiyang,wtobill,wudawei,wujueying,wwwbby,xfan233,XianglongZeng,xiaotianci,xiaoxin_zhang,xiaoxiongzhu,xiaoxuanKL,xiaoyao,XinDu,xuxinglei,xuzhubin,yanghaoran,yanglong,yangzhenzhang,yanx,Yanzhi_YI,yao_yf,yefeng,yide12,yihangchen,YijieChen,YingLai Lin,ylw,yuanpeng2024,yuanqi,yuchaojie,Yuheng Wang,YuJianfeng,YukioZzz,yyuse,zangqx,ZeyuHan,zhangbuxue,zhanghaibo,zhangminli,zhangqinghua,zhangyanhui,ZhangZGC,zhangzhen,zhanzhan,zhengzuohe,zhouyaqiang0,zhuguodong,zichun_ye,zjun,zong_shuai,ZPaC,zuochuanyong,zyli2020,程超,蛋蛋de忧桑,狄新凯,范吉斌,冯一航,付国华,胡彬,宦晓玲,黄勇,黄卓,康伟,李良灿,李林杰,李寅杰3,刘崇鸣,刘思铭,刘涛Liu,刘勇琪,刘子涵,吕浩宇,吕昱峰（Nate.River）,钱丹,十一雷,孙昊辰,王禹程,王振邦,王梓润,吴大维,熊攀,徐安越,许子豪,俞涵,云骑士,张峻源,张王泽,张栩浩,赵文璇,周莉莉,朱家兴,邹文祥
+
 ## MindSpore 2.3.1 Release Notes
 
 ### Major Features and Improvements
@@ -171,6 +706,7 @@ When converting Ascend backend models, the [input_shape](https://www.mindspore.c
 - Interface name: `Profiler`
 
   Changes: The performance data file generated by parsing is streamlined to save space. Delete the FRAMEWORK directory data and other redundant data after exporting the performance data. Retain only the deliverables of the profiler and the original performance data in the PROF_XXX directory to save space. Data simplification mode can be turned off by configuring the `data_simplification` parameter to `False`, which will be consistent with the performance data files generated by the historical version.
+
 - Interface name: The `saved_data` field in the configuration file of the dump function is `"tensor"`.
 
   Changes: The name of the file to be dumped to disks is changed. `"/"` is replaced with `"_"`, and the operator name is changed to the global name of the operator.
@@ -202,6 +738,7 @@ When converting Ascend backend models, the [input_shape](https://www.mindspore.c
   </td>
   </tr>
   </table>
+
 - Interface name: The `saved_data` field in the Dump function configuration file is `"statistic"`.
 
   Changes: By default, `'max'`, `'min'`, `'avg'`, `'count'`, `'negative zero count'`, `'positive zero count'`, `'nan count'`,  `'negative inf count'` ,`'positive inf count'`,`'zero count'` and `'md5'`. In the 2.3 version, the `'max'`, `'min'`, and `'l2norm'` statistical items are saved by default. You can customize statistical items by configuring `'statistic_category'`.
@@ -2627,7 +3164,7 @@ The original cloud inference integrated through MindSpore training can be change
 #### PyNative
 
 - The default mode of MindSpore is switched to PyNative. If you want to manually set the mode, please refer to [Computational Graph](https://www.mindspore.cn/tutorials/en/r2.0.0-alpha/advanced/compute_graph.html).
-- Support dynamic shape without padding, three networks are supported as demos: Transformer-GPU, YOLOV5-GPU, ASR-Ascend. Transformer-GPU and YOLOV5-GPU can be downloaded from [models](https://gitee.com/mindspore/models/tree/dynamic_shape). Only the following operators are available on Ascend backend: Add、Assign、BatchMatMul、BiasAdd、BiasAddGrad、Cast、Conv2D、Conv2DBackpropFilter、Conv2DBackpropInput、CTCLoss、Div、Dropout、DropoutDoMask、Equal、ExpandDims、Gather、GetNext、LayerNorm、LayerNormGrad、LessEqual、Load、Log、LogicalAnd、LogicalNot、LogicalOr、LogSoftmax、LogSoftmaxGrad、MatMul、Maximum、Mul、Neg、NotEqual、NPUAllocFloatStatus、NPUClearFloatStatus、OneHot、RealDiv、Reciprocal、ReduceMean、ReduceSum、ReLU、ReluGrad、Reshape、Select、Softmax、StridedSlice、Sub、Tile、Transpose、UnsortedSegmentSum、ZerosLike。The remaining operators have not been fully verified, please use them as appropriate.
+- Support dynamic shape without padding, three networks are supported as demos: Transformer-GPU, YOLOV5-GPU, ASR-Ascend. Transformer-GPU and YOLOV5-GPU can be downloaded from [models](https://gitee.com/mindspore/models/tree/dynamic_shape). Only the following operators are available on Ascend backend: Add、Assign、BatchMatMul、BiasAdd、BiasAddGrad、Cast、Conv2D、Conv2DBackpropFilter、Conv2DBackpropInput、CTCLoss、Div、Dropout、DropoutDoMask、Equal、ExpandDims、Gather、GetNext、LayerNorm、LayerNormGrad、LessEqual、Load、Log、LogicalAnd、LogicalNot、LogicalOr、LogSoftmax、LogSoftmaxGrad、MatMul、Maximum、Mul、Neg、NotEqual、NPUAllocFloatStatus、NPUClearFloatStatus、OneHot、RealDiv、Reciprocal、ReduceMean、ReduceSum、ReLU、ReluGrad、Reshape、Select、Softmax、StridedSlice、Sub、Tile、Transpose、UnsortedSegmentSum、ZerosLike. The remaining operators have not been fully verified, please use them as appropriate.
 
 #### DataSet
 
@@ -2646,7 +3183,7 @@ The original cloud inference integrated through MindSpore training can be change
 
   Scatter Operators:ScatterAdd,ScatterDiv,ScatterMax,ScatterMul,ScatterNdAdd,ScatterNdSub,ScatterNdUpdate,ScatterSub,TensorScatterAdd,TensorScatterDiv,TensorScatterMax,TensorScatterMax,TensorScatterMul,TensorScatterAdd,TensorScatterUpdate.
 
-- Add new apis `transform_checkpoints` and `transform_checkpoint_by_rank` to transfer the distributed checkpoint files by strategy files. Please refer to [Distributed Resilience Training and Inference](https://www.mindspore.cn/tutorials/experts/en/r2.0.0-alpha/parallel/resilience_train_and_predict.html)。
+- Add new apis `transform_checkpoints` and `transform_checkpoint_by_rank` to transfer the distributed checkpoint files by strategy files. Please refer to [Distributed Resilience Training and Inference](https://www.mindspore.cn/tutorials/experts/en/r2.0.0-alpha/parallel/resilience_train_and_predict.html).
 
 ### API Change
 
