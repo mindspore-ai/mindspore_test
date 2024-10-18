@@ -24,7 +24,7 @@ import logging
 import gen_utils
 from pyboost_utils import AclnnUtils, get_dtypes
 from gen_constants import MS_OPS_KERNEL_PATH
-
+import gen_constants as K
 auto_gen = ''
 
 
@@ -239,6 +239,58 @@ def check_op_registed(op_name, manual=False):
     global manual_registed_ops
     class_name = ''.join(word.capitalize() for word in op_name.split('_'))
     return (class_name in manual_registed_ops) if manual else (class_name in registed_ops)
+
+def generate_aclnn_reg_code(yaml_data):
+    """generate aclnn register code"""
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    work_path = os.path.join(current_path, '../../../../')
+    ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, "ops.yaml")
+    yaml_str = gen_utils.safe_load_yaml(ops_yaml_path)
+
+    reg_code = f"""
+#include "{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_mod.h"
+
+namespace mindspore {{
+namespace kernel {{
+"""
+    for operator_name, operator_data in yaml_data.items():
+        dispatch = operator_data.get("dispatch")
+        if not dispatch or not dispatch.get("enable"):
+            continue
+        Ascend = dispatch.get("Ascend")
+        if Ascend is not None:  # KernelMod is provided by yaml, don't auto generate it.
+            continue
+        if check_op_registed(operator_name):
+            logging.warning("Kernel {%s} is already registered.", operator_name)
+            continue
+        _, _, none_tensor_exist = get_dtypes(operator_data)
+        if none_tensor_exist:
+            gen_aclnn_kernel(operator_name, yaml_str, auto=True)
+            continue
+        class_name = ''.join(word.capitalize() for word in operator_name.split('_'))
+        op_class = operator_data.get("class")
+        if op_class and op_class.get("name") is not None:
+            class_name = op_class.get("name")
+        inputs_outputs_num = len(operator_data.get("args")) + len(operator_data.get("returns"))
+        aclnn_name = AclnnUtils.get_aclnn_interface(class_name)
+        reg_code += f"""
+MS_ACLNN_COMMON_KERNEL_FACTORY_REG({class_name}, {aclnn_name}, {inputs_outputs_num});"""
+    reg_code += f"""
+}}  // namespace kernel
+}}  // namespace mindspore
+"""
+    return reg_code
+
+
+def generate_aclnn_reg_file(work_path, yaml_str):
+    """
+    Generate nnacl kernelmod register
+    """
+    tmp_register_file = work_path + f'{MS_OPS_KERNEL_PATH}/ascend/opapi/tmp_aclnn_kernel_register.cc'
+    register_file = work_path + f'{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_register_auto.cc'
+    reg_code = generate_aclnn_reg_code(yaml_str)
+    gen_utils.write_file(tmp_register_file, gen_utils.cc_license_str + reg_code)
+    gen_utils.check_change_and_replace_file(register_file, tmp_register_file)
 
 
 def main(op_name, need_update_shape):
