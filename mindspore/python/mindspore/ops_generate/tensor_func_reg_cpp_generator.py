@@ -106,91 +106,118 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         The function constructs C++ registration strings from the provided tensor function prototypes
         and writes the output to the specified work path.
         """
-        func_header_body_str = ''
-        func_call_body_str = ''
-        func_def_body_str = ''
+        func_header_body_list = []
+        func_call_body_list = []
+        func_def_body_list = []
 
-        func_header_body_str, func_call_body_str, func_def_body_str = (
-            self._get_single_op_str(func_protos_data, func_header_body_str, func_call_body_str, func_def_body_str))
+        alias_func_mapping, single_op_func_data, overload_op_func_data = self._categorize_func_data(func_protos_data)
+        self._get_single_op_str(
+            single_op_func_data, alias_func_mapping, func_header_body_list, func_call_body_list, func_def_body_list)
+        self._get_overload_op_str(
+            overload_op_func_data, alias_func_mapping, func_header_body_list, func_call_body_list, func_def_body_list)
 
-        func_header_body_str, func_call_body_str, func_def_body_str = (
-            self._get_overload_op_str(func_protos_data, func_header_body_str, func_call_body_str, func_def_body_str))
+        func_cc_reg = self.TENSOR_FUNC_CC_REG.replace(func_call_body=func_call_body_list,
+                                                      func_def_body=func_def_body_list)
+        func_header_reg = self.TENSOR_FUNC_HEADER_REG.replace(func_header_body=func_header_body_list)
 
-        func_cc_reg = self.TENSOR_FUNC_CC_REG.replace(func_call_body=func_call_body_str,
-                                                      func_def_body=func_def_body_str)
-        func_header_reg = self.TENSOR_FUNC_HEADER_REG.replace(func_header_body=func_header_body_str)
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.h", func_header_reg)
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.cc", func_cc_reg)
 
-    def _get_single_op_str(self, func_protos_data,
-                           func_header_body_str,
-                           func_call_body_str,
-                           func_def_body_str):
+    def _categorize_func_data(self, func_protos_data):
+        """
+        Categorizes function prototypes into single-operation, overloaded, and alias operations.
+
+        Args:
+            func_protos_data (dict): Dictionary where keys are function API names and values are lists of
+                                     function prototypes associated with each API.
+
+        Returns:
+            tuple:
+                - alias_func_mapping (dict): Mapping from alias function names to their corresponding func names.
+                - single_op_func_data (dict): Function prototypes for operations with a single definition.
+                - overload_op_func_data (dict): Function prototypes for operations with overloaded definitions.
+        """
+        single_op_func_data = {}
+        overload_op_func_data = {}
+        alias_func_mapping = {}
+        for func_api_name, func_protos in func_protos_data.items():
+            if len(func_protos) == 1:
+                if func_protos[0].alias is not None:
+                    alias_func_mapping[func_protos[0].alias] = func_api_name
+                    continue
+                func_name = func_protos[0].func_name
+                if func_name not in single_op_func_data:
+                    single_op_func_data[func_name] = func_protos[0]
+            if len(func_protos) > 1:
+                overload_op_func_data[func_api_name] = func_protos
+
+        return alias_func_mapping, single_op_func_data, overload_op_func_data
+
+
+    def _get_single_op_str(self, single_op_func_data,
+                           alias_func_mapping,
+                           func_header_body_list,
+                           func_call_body_list,
+                           func_def_body_list):
         """
         Generates C++ strings for single operation function registrations.
 
         Args:
-            func_protos_data (dict): Dictionary of tensor function prototypes.
-            func_header_body_str (str): Header body string to append generated code to.
-            func_call_body_str (str): Function call body string to append generated code to.
-            func_def_body_str (str): Function definition body string to append generated code to.
+            single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
+            alias_func_mapping (dict): Dictionary mapping alias names to func names.
+            func_header_body_list (list): A list containing header body strings.
+            func_call_body_list (list): A list containing function call body strings
+            func_def_body_list (list): A list containing function definition body strings.
 
         Returns:
             tuple: Updated header body, call body, and definition body strings.
         """
-        single_op_func_data = {}
-        for _, func_protos in func_protos_data.items():
-            if len(func_protos) == 1:
-                func_name = func_protos[0].func_name
-                if func_name not in single_op_func_data:
-                    single_op_func_data[func_name] = func_protos[0]
-
-        cls_names = set()
         for func_name, func_proto in single_op_func_data.items():
             func_name = func_proto.func_name
             class_name = func_proto.op_proto.op_class.name
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
             signature_str = self._generate_single_signature_str(func_proto.op_proto)
-            if class_name not in cls_names:
-                max_size = len(func_proto.op_proto.op_args)
-                func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name)
-                cls_names.add(class_name)
-                func_call_body_str += self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
-                                                                         func_name=func_name,
-                                                                         device_dispatcher=device_dispatcher_str,
-                                                                         signatures=signature_str,
-                                                                         max_args=max_size)
-            func_def_body_str += self.func_def_reg.replace(func_name=func_name,
-                                                           class_name=class_name)
-        return func_header_body_str, func_call_body_str, func_def_body_str
+            max_size = len(func_proto.op_proto.op_args)
+            func_header_body_list.append(self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name))
+            func_call_body_list.append(self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
+                                                                          func_name=func_name,
+                                                                          device_dispatcher=device_dispatcher_str,
+                                                                          signatures=signature_str,
+                                                                          max_args=max_size))
+            func_def_body_list.append(self.func_def_reg.replace(func_name=func_name,
+                                                                class_name=class_name))
+            if func_name in alias_func_mapping:
+                func_def_body_list.append(self.func_def_reg.replace(func_name=alias_func_mapping[func_name],
+                                                                    class_name=class_name))
 
-    def _get_overload_op_str(self, func_protos_data,
-                             func_header_body_str,
-                             func_call_body_str,
-                             func_def_body_str):
+    def _get_overload_op_str(self, overload_op_func_data,
+                             alias_func_mapping,
+                             func_header_body_list,
+                             func_call_body_list,
+                             func_def_body_list):
         """
         Generates C++ strings for overloaded operation function registrations.
 
         Args:
-            func_protos_data (dict): Dictionary of tensor function prototypes.
-            func_header_body_str (str): Header body string to append generated code to.
-            func_call_body_str (str): Function call body string to append generated code to.
-            func_def_body_str (str): Function definition body string to append generated code to.
+            overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
+            alias_func_mapping (dict): Dictionary mapping alias names to func names.
+            func_header_body_list (list): A list containing header body strings.
+            func_call_body_list (list): A list containing function call body strings
+            func_def_body_list (list): A list containing function definition body strings.
 
         Returns:
             tuple: Updated header body, call body, and definition body strings.
         """
-        overload_op_func_data = {}
-        for func_api_name, func_protos in func_protos_data.items():
-            if len(func_protos) > 1:
-                overload_op_func_data[func_api_name] = func_protos
-
         for func_api_name, func_protos in overload_op_func_data.items():
-            func_header_body_str += self._get_overload_tensor_func_header_body_str(func_protos)
-            func_call_body_str += self._get_overload_func_call_str(func_api_name, func_protos)
-            func_def_body_str += self.func_def_reg.replace(func_name=func_api_name,
-                                                           class_name=func_api_name.capitalize())
-        return func_header_body_str, func_call_body_str, func_def_body_str
+            func_header_body_list.append(self._get_overload_tensor_func_header_body_str(func_protos))
+            func_call_body_list.append(self._get_overload_func_call_str(func_api_name, func_protos))
+            func_def_body_list.append(self.func_def_reg.replace(func_name=func_api_name,
+                                                                class_name=func_api_name.capitalize()))
+            if func_api_name in alias_func_mapping:
+                alias_func_name = alias_func_mapping[func_api_name]
+                func_def_body_list.append(self.func_def_reg.replace(func_name=alias_func_name,
+                                                                    class_name=func_api_name.capitalize()))
+
 
     def _get_overload_tensor_func_header_body_str(self, func_protos):
         """

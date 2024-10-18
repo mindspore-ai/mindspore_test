@@ -65,37 +65,83 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Returns:
             None
         """
-        functional_map_list = self._get_functional_map_list(func_protos_data)
-        funcs_list = self._get_func_sigs_list(func_protos_data)
+        func_protos_data, alias_func_mapping = self._exclude_alias_func(func_protos_data)
+
+        functional_map_list = self._get_functional_map_list(func_protos_data, alias_func_mapping)
+        funcs_sig_map_list = self._get_func_sigs_list(func_protos_data, alias_func_mapping)
         functional_map_cc_code = self.function_map_cc_template.replace(functional_map=functional_map_list,
-                                                                       func_sigs_map=funcs_list)
+                                                                       func_sigs_map=funcs_sig_map_list)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         save_file(save_path, "functional_map.cc", functional_map_cc_code)
 
-    def _get_functional_map_list(self, func_protos_data):
+    def _exclude_alias_func(self, func_protos_data):
+        """
+        Exclude and alias tensor func APIs.
+
+        Args:
+            func_protos_data (dict): Dictionary where keys are function API names and values are lists of
+                                     function prototypes associated with each API.
+
+        Returns:
+            tuple:
+                - func_data (dict): Function prototypes except for alias tensor APIs.
+                - alias_func_mapping (dict): Mapping from alias function names to their corresponding op names.
+
+        """
+        func_data = {}
+        alias_func_mapping = {}
+        for func_api_name, func_protos in func_protos_data.items():
+            if len(func_protos) == 1:
+                if func_protos[0].alias is not None:
+                    print(f"mapping {func_protos[0].alias} to {func_api_name}")
+                    alias_func_mapping[func_protos[0].alias] = func_api_name
+                    continue
+                func_name = func_protos[0].func_name
+                if func_name not in func_data:
+                    func_data[func_name] = [func_protos[0]]
+            if len(func_protos) > 1:
+                func_data[func_api_name] = func_protos
+
+        return func_data, alias_func_mapping
+
+    def _get_functional_map_list(self, func_protos_data, alias_func_mapping):
         """
         Generates a list of functional map strings needed for generating the function_map.cc file.
 
-        Args: func_protos_data (dict): A dictionary mapping function API names to a list of function prototype data.
-        Each prototype contains class names and corresponding Python methods.
+        Args:
+            func_protos_data (dict): A dictionary mapping function API names to a list of function prototype data.
+            Each prototype contains class names and corresponding Python methods.
+            alias_func_mapping (dict): Mapping from alias function names to their corresponding op names.
 
         Returns: list: A list of functional map strings, where each string represents the mapping of a function API
         name to its associated class-to-method pairs.
         """
-        functional_map_list = []
-        for func_api_name, func_protos in func_protos_data.items():
+        def get_class_to_method_list(func_protos):
+            """
+            Get a str representation of a list of class names and corresponding Python methods.
+            """
             class_to_method_list = []
             for func_proto in func_protos:
                 class_name = func_proto.op_proto.op_class.name
                 class_to_method_list.append(
                     self.class_to_method_template.replace(class_name=class_name,
                                                           method_name=func_proto.py_method))
+            return class_to_method_list
 
-            functional_map_list.append(self.functional_map_template.replace(func_api_name=func_api_name,
-                                                                            class_to_method_str=class_to_method_list))
+        functional_map_list = []
+        for func_api_name, func_protos in func_protos_data.items():
+            class_to_method_list = get_class_to_method_list(func_protos)
+            functional_map_list.append(
+                self.functional_map_template.replace(func_api_name=func_api_name,
+                                                     class_to_method_str=class_to_method_list))
+            if func_api_name in alias_func_mapping:
+                class_to_method_list = get_class_to_method_list(func_protos)
+                functional_map_list.append(
+                    self.functional_map_template.replace(func_api_name=alias_func_mapping[func_api_name],
+                                                         class_to_method_str=class_to_method_list))
         return functional_map_list
 
-    def _get_func_sigs_list(self, func_protos_data):
+    def _get_func_sigs_list(self, func_protos_data, alias_func_mapping):
         """
         Generates a list of function signatures for each function API name based on the provided prototype data.
 
@@ -110,6 +156,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
         for func_api_name, func_protos in func_protos_data.items():
             func_signatures = self._generate_func_signatures_str(func_api_name, func_protos)
             funcs_list.append(func_signatures)
+            if func_api_name in alias_func_mapping:
+                func_signatures = self._generate_func_signatures_str(alias_func_mapping[func_api_name], func_protos)
+                funcs_list.append(func_signatures)
+
         return funcs_list
 
     def _generate_func_signatures_str(self, func_api_name, func_protos) -> str:
@@ -145,8 +195,6 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Returns:
             str: Generated function signature string.
         """
-        if func_api_name.startswith("__"):
-            func_api_name = func_api_name[2: -2]
         args_str = f'"{func_api_name}('
         first_arg = True
         arg_valid_types = []

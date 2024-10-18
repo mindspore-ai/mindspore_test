@@ -148,17 +148,16 @@ class PyboostFunctionsGenerator(BaseGenerator):
                  function classes.
         """
         function_class_register = ''
-        op_set = set()
         for _, tensor_func_protos in tensor_func_protos_data.items():
             for func_proto in tensor_func_protos:
+                if func_proto.alias is not None:
+                    continue
                 # deprecated op should not be registered
                 if 'deprecated' in func_proto.op_proto.op_name:
                     continue
-                op_set.add((func_proto.op_proto.op_class.name, func_proto.op_proto.op_name))
-        for op in op_set:
-            class_name, op_name = op
-            function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,
-                                                                          op_name=op_name)
+                class_name, op_name = func_proto.op_proto.op_class.name, func_proto.op_proto.op_name
+                function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,
+                                                                              op_name=op_name)
         return function_class_register
 
     def _generate_parser_func(self, op_proto: OpProto) -> str:
