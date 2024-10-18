@@ -122,7 +122,7 @@ NodePtr MaybeMultiply(BpropBuilder *ib, const TypePtr &input_type, const NodePtr
       MS_EXCEPTION(TypeError) << "For Baddbmm grad " << arg_name << "'s type is wrong!";
     }
   }
-  auto out = is_one ? t : ib->Mul(ib->ScalarToTensor(s, input_type), t);
+  auto out = is_one ? t : ib->Emit("Muls", {t, s});
   return out;
 }
 
