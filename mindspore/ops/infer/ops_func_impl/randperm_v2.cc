@@ -27,6 +27,7 @@
 #include "infer/ops_func_impl/randperm_v2.h"
 
 namespace mindspore::ops {
+namespace {
 bool CheckForOverflow(TypeId tpyeId, int64_t n) {
   constexpr int64_t max_float16 = 65504;
   int64_t max = 0;
@@ -63,6 +64,7 @@ bool CheckForOverflow(TypeId tpyeId, int64_t n) {
   }
   return n > max;
 }
+}  // namespace
 
 BaseShapePtr RandpermV2FuncImpl::InferShape(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {

@@ -31,7 +31,7 @@ from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
     NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
-    Randn, RandnLike, RandInt, RandIntLike
+    Randn, RandnLike, RandInt, RandIntLike, RandpermExt
 
 normal_tensor_tensor_op = NormalTensorTensor()
 normal_tensor_float_op = NormalTensorFloat()
@@ -43,6 +43,7 @@ real_div_ = P.RealDiv()
 reshape_ = P.Reshape()
 shape_ = P.Shape()
 top_k_ = P.TopK()
+randperm_ext_ = RandpermExt()
 uniform_ = UniformExt()
 rand_ext_ = RandExt()
 rand_like_ext_ = RandLikeExt()
@@ -1567,6 +1568,47 @@ def randint_like(input, low, high, seed=None, *, dtype=None):
     return cast_(output, dtype)
 
 
+def randperm_ext(n, *, generator=None, dtype=mstype.int64):
+    r"""
+    Generates random permutation of integers from 0 to n-1.
+
+    .. warning::
+        - This is an experimental API that is subject to change or deletion.
+
+
+    Args:
+        n (Union[Tensor, int]): size of the permutation. int or Tensor with shape: () or (1,) and
+            data type int64. The value of `n` must be greater than zero.
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+        dtype (mindspore.dtype, optional): The type of output. Default: mstype.int64.
+
+    Returns:
+        Tensor with shape (n,) and type `dtype`.
+
+    Raises:
+        TypeError: If `dtype` is not supported.
+        ValueError: If `n` is a negative or 0 element.
+        ValueError: If `n` is larger than the maximal data of the set dtype.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> from mindspore import dtype as mstype
+        >>> n = 4
+        >>> output = ops.randperm_ext(n, dtype=mstype.int64)
+        >>> print(output.shape)
+        (4,)
+    """
+    if not generator:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return randperm_ext_(n, seed, offset, dtype)
+
+
 @_function_forbid_reuse
 def poisson(shape, mean, seed=None):
     r"""
@@ -1849,7 +1891,8 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
     return multinomial_ext_(input, num_samples, replacement, seed, offset)
 
 
