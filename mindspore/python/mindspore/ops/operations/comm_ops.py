@@ -1292,8 +1292,6 @@ class Barrier(PrimitiveWithInfer):
     Raises:
         TypeError: If `group` is not a str.
         RuntimeError: If backend is invalid, or distributed initialization fails.
-        ValueError: If the local rank id of the calling process in the group
-                    is larger than the group's rank size.
 
     Supported Platforms:
         ``Ascend``

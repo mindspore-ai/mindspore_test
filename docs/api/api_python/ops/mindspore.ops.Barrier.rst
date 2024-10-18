@@ -10,9 +10,8 @@ mindspore.ops.Barrier
         - **group** (str，可选) - 表示通信域。默认值： ``GlobalComm.WORLD_COMM_GROUP`` 。
 
     异常：
-        - **TypeError** - 首个输入的数据类型不为Tensor，`op` 或 `group` 不是str。
+        - **TypeError** - `group` 不为str。
         - **RuntimeError** - 后端无效，或者分布式初始化失败。
-        - **ValueError** - 调用进程的rank id大于本通信组的rank大小。
 
     样例：
 
