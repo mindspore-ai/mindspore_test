@@ -1508,6 +1508,11 @@ def set_context(**kwargs):
                 Be caution when using this level.
 
             - dump_as_text: dumps detail info as text files. Default: ``False`` .
+            - enable_cluster_ops: Add user-specified operator to the set of operators involved in fusion. For example,
+              by setting ``--enable_cluster_ops=MatMul``, MatMul operator can be included in the fusion process.
+            - enable_pass/disable_pass: Enable/disable user-specified custom fusion passes. See details in
+              `Custom Fusion Pass
+              <https://www.mindspore.cn/docs/en/master/model_train/custom_program/fusion_pass.html>`_.
 
         enable_reduce_precision (bool): Whether to enable precision reduction.
             If the operator does not support the user-specified precision, the precision will
