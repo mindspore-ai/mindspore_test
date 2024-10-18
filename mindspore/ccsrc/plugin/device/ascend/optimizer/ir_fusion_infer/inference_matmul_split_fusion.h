@@ -50,6 +50,7 @@ class InferenceMatmulSplitFusion : public Pass {
   std::string GetFusionPatternName(const CNodePtr &cnode) const;
   std::string GetSplitFusionPatternName(const CNodePtr &cnode) const;
   bool CheckMatMulDataFormat(const CNodePtr &matmul_cnode) const;
+  bool CheckSplitSize(const AnfNodePtr &weight_cnode, const CNodePtr &split_cnode) const;
   size_t GetSplitSizeLen(const CNodePtr &split_cnode) const;
   PrimitivePtr CreateMatmulSplitPrim(const CNodePtr &split_cnode, size_t split_size_len, const std::string &) const;
   CNodePtr CreateGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &split_cnode,
