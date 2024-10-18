@@ -37,7 +37,11 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   const auto amsgrad_imm = GetValue<bool>(amsgrad);
   const auto maximize_imm = GetValue<bool>(maximize);
 
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), var, m, v, max_v, grad, step);
+  if (amsgrad_imm) {
+    PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), var, m, v, max_v, grad, step);
+  } else {
+    PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), var, m, v, grad, step);
+  }
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   PyBoostUtils::DispatchRun(
@@ -45,12 +49,19 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
                                                   decay_imm, epsilon_imm, amsgrad_imm, maximize_imm]() {
       auto device_context = op->device_context();
 
-      PyBoostUtils::MallocOpInputs(device_context, var, m, v, max_v, grad, step);
-      PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
-
       MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-      LAUNCH_ACLNN(aclnnApplyAdamWV2, device_context, op->stream_id(), var, m, v, max_v, grad, step, lr_imm, beta1_imm,
-                   beta2_imm, decay_imm, epsilon_imm, amsgrad_imm, maximize_imm);
+      if (amsgrad_imm) {
+        PyBoostUtils::MallocOpInputs(device_context, var, m, v, max_v, grad, step);
+        PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
+        LAUNCH_ACLNN(aclnnApplyAdamWV2, device_context, op->stream_id(), var, m, v, max_v, grad, step, lr_imm,
+                     beta1_imm, beta2_imm, decay_imm, epsilon_imm, amsgrad_imm, maximize_imm);
+      } else {
+        PyBoostUtils::MallocOpInputs(device_context, var, m, v, grad, step);
+        PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
+        LAUNCH_ACLNN(aclnnApplyAdamWV2, device_context, op->stream_id(), var, m, v, nullptr, grad, step, lr_imm,
+                     beta1_imm, beta2_imm, decay_imm, epsilon_imm, amsgrad_imm, maximize_imm);
+      }
+
       MS_LOG(DEBUG) << op->primitive()->name() << " Launch end";
     }));
   return std::make_tuple(var, m, v);
