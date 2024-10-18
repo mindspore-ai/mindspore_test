@@ -4389,24 +4389,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.dtype in mstype.signed_type
 
-    def logical_and(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logical_and`.
-        """
-        return tensor_operator_registry.get('logical_and')(self, other)
-
-    def logical_not(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logical_not`.
-        """
-        return tensor_operator_registry.get('logical_not')(self)
-
-    def logical_or(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logical_or`.
-        """
-        return tensor_operator_registry.get('logical_or')(self, other)
-
     def logical_xor(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.logical_xor`.

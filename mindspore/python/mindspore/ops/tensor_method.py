@@ -147,11 +147,11 @@ from mindspore.ops.function.math_func import le
 # 56 log2
 
 # 57 logical_and
-
+from mindspore.ops.function.math_func import  logical_and
 # 58 logical_not
-
+from mindspore.ops.function.math_func import  logical_not
 # 59 logical_or
-
+from mindspore.ops.function.math_func import  logical_or
 # 60 long
 
 # 61 lt
@@ -532,10 +532,19 @@ def tensor_log(input):
 # 56 log2
 
 # 57 logical_and
+def tensor_logical_and(input, other):
+    return logical_and(input, other)
+
 
 # 58 logical_not
+def tensor_logical_not(input):
+    return logical_not(input)
+
 
 # 59 logical_or
+def tensor_logical_or(input, other):
+    return logical_or(input, other)
+
 
 # 60 long
 
