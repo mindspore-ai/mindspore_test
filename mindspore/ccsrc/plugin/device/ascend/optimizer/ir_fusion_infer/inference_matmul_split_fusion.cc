@@ -175,6 +175,29 @@ bool InferenceMatmulSplitFusion::CheckMatMulDataFormat(const CNodePtr &matmul_cn
   return false;
 }
 
+bool InferenceMatmulSplitFusion::CheckSplitSize(const AnfNodePtr &weight_cnode, const CNodePtr &split_cnode) const {
+  size_t num_split = GetSplitSizeLen(split_cnode);
+  if (num_split == 0) {
+    MS_LOG(DEBUG) << "split size num is zero";
+    return false;
+  }
+
+  auto split_size = split_cnode->input(kIndex2)->cast<ValueNodePtr>();
+  auto split_size_shape = GetValue<std::vector<int64_t>>(split_size->value());
+  auto weight_shape = BaseShapeToShape(AnfAlgo::GetOutputDetailShape(weight_cnode, 0));
+  unsigned int total_size = 0;
+  for (size_t i = 0; i < num_split; i++) {
+    total_size += split_size_shape[i];
+  }
+  const int64_t axis_n = 0;
+  if (weight_shape[axis_n] != total_size) {
+    MS_LOG(DEBUG) << "check split size failed";
+    return false;
+  }
+  MS_LOG(DEBUG) << "check split size pass";
+  return true;
+}
+
 size_t InferenceMatmulSplitFusion::GetSplitSizeLen(const CNodePtr &split_cnode) const {
   auto split_size = split_cnode->input(kIndex2)->cast<ValueNodePtr>();
   if (split_size == nullptr || !split_size->isa<ValueNode>()) {
@@ -228,7 +251,8 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitNode(const FuncGraphPtr &f
   auto input_w = matmul_cnode->input(kIndex2);
   MS_CHECK_TRUE_RET(input_w != nullptr, nullptr);
   const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
-  if (!CheckSupportDataType(input_x, support_dtype) || !CheckMatMulDataFormat(matmul_cnode)) {
+  if (!CheckSupportDataType(input_x, support_dtype) || !CheckMatMulDataFormat(matmul_cnode) ||
+      !CheckSplitSize(input_w, split_cnode)) {
     return nullptr;
   }
 
@@ -280,7 +304,8 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulBiasAddSplitNode(const FuncGrap
   auto input_bias = biasAdd_cnode->input(kIndex2);
   MS_EXCEPTION_IF_NULL(input_bias);
   const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
-  if (!CheckSupportDataType(matmul_x, support_dtype) || !CheckMatMulDataFormat(matmul_cnode)) {
+  if (!CheckSupportDataType(matmul_x, support_dtype) || !CheckMatMulDataFormat(matmul_cnode) ||
+      !CheckSplitSize(matmul_w, split_cnode)) {
     return nullptr;
   }
 
@@ -362,7 +387,9 @@ CNodePtr InferenceMatmulSplitFusion::CreateQuantbatchmatmulSplitNode(const FuncG
   auto input_scale = qbmm_cnode->input(kIndex3);
   MS_EXCEPTION_IF_NULL(input_scale);
   const std::set<TypeId> support_dtype = {kNumberTypeInt8};
-  if (!CheckSupportDataType(input_x, support_dtype) || !CheckMatMulDataFormat(qbmm_cnode)) {
+  const std::set<TypeId> support_output_dtype = {kNumberTypeFloat16};
+  if (!CheckSupportDataType(input_x, support_dtype) || !CheckSupportDataType(qbmm_cnode, support_output_dtype) ||
+      !CheckMatMulDataFormat(qbmm_cnode) || !CheckSplitSize(input_w, split_cnode)) {
     return nullptr;
   }
 
@@ -451,7 +478,8 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulSplitSiluNode(const FuncGraphPt
   auto weight_node = matmul_cnode->input(kIndex2);
   MS_EXCEPTION_IF_NULL(weight_node);
   const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeBFloat16};
-  if (!CheckSupportDataType(x_node, support_dtype) || !CheckMatMulDataFormat(matmul_cnode)) {
+  if (!CheckSupportDataType(x_node, support_dtype) || !CheckMatMulDataFormat(matmul_cnode) ||
+      !CheckSplitSize(weight_node, split_cnode)) {
     return nullptr;
   }
   size_t split_size_len = GetSplitSizeLen(split_cnode);
@@ -509,7 +537,8 @@ CNodePtr InferenceMatmulSplitFusion::CreateMatmulBiasAddSplitSiluNode(const Func
   auto input_bias = biasAdd_cnode->input(kIndex2);
   MS_EXCEPTION_IF_NULL(input_bias);
   const std::set<TypeId> support_dtype = {kNumberTypeFloat16};
-  if (!CheckSupportDataType(matmul_input, support_dtype) || !CheckMatMulDataFormat(matmul_cnode)) {
+  if (!CheckSupportDataType(matmul_input, support_dtype) || !CheckMatMulDataFormat(matmul_cnode) ||
+      !CheckSplitSize(input_w, split_cnode)) {
     return nullptr;
   }
   size_t split_len = GetSplitSizeLen(split_cnode);
@@ -573,7 +602,8 @@ CNodePtr InferenceMatmulSplitFusion::CreateQuantbatchmatmulSplitSiluNode(const F
   auto input_scale = qbmm_cnode->input(kIndex3);
   MS_EXCEPTION_IF_NULL(input_scale);
   const std::set<TypeId> support_dtype = {kNumberTypeInt8};
-  if (!CheckSupportDataType(qbmm_x, support_dtype) || !CheckMatMulDataFormat(qbmm_cnode)) {
+  if (!CheckSupportDataType(qbmm_x, support_dtype) || !CheckMatMulDataFormat(qbmm_cnode) ||
+      !CheckSplitSize(qbmm_w, split_cnode)) {
     return nullptr;
   }
   size_t split_size_len = GetSplitSizeLen(split_cnode);
