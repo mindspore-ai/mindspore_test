@@ -85,15 +85,23 @@ bool OnnxDeformConv2dAdjust::Adjust(const FuncGraphPtr &func_graph) {
     if (!opt::CheckPrimitiveType(cnode, prim::kPrimDeformableConv2d)) {
       continue;
     }
-
+    PrimitivePtr src_prim = nullptr;
+    if (opt::GetPrimFromCnode(cnode, &src_prim) != RET_OK) {
+      MS_LOG(ERROR) << "Get prim failed!";
+      return false;
+    }
+    MS_CHECK_TRUE_MSG(src_prim != nullptr, false, "src_prim is nullptr!");
+    if (src_prim->HasAttr("keep_origin")) {
+      bool keep_origin = GetValue<bool>(src_prim->GetAttr("keep_origin"));
+      if (keep_origin) {
+        continue;
+      }
+    }
     MS_CHECK_TRUE_RET(cnode->size() >= opt::kInputSizeFive, RET_ERROR);
     auto offset_input = cnode->input(opt::kInputIndexTwo);
     MS_CHECK_TRUE_RET(offset_input != nullptr, false);
     auto shape_node = NewShapeOpNode(func_graph, offset_input);
-    if (shape_node == nullptr) {
-      MS_LOG(ERROR) << "create shape node failed.";
-      return false;
-    }
+    MS_CHECK_TRUE_MSG(shape_node != nullptr, false, "Create shape node failed!");
     MS_CHECK_TRUE_MSG(cnode->abstract() != nullptr, false, "CNode->abstract() return nullptr!");
     shape_node->set_abstract(cnode->abstract()->Clone());
 

@@ -1332,19 +1332,81 @@ CNodePtr GenGatherNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_n
   }
   ops::Gather gather_node;
   auto gather_prim = gather_node.GetPrim();
-  MS_CHECK_TRUE_RET(gather_prim != nullptr, nullptr);
+  MS_CHECK_TRUE_MSG(gather_prim != nullptr, nullptr, "gather_prim is nullptr!");
   auto cnode = func_graph->NewCNode(gather_prim, {input_node, indices_node, axis_node});
-  MS_ASSERT(cnode != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, nullptr, "cnode is nullptr!");
   auto manager = Manage(func_graph);
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(manager != nullptr, nullptr, "manager is nullptr!");
   manager->SetEdge(cnode, 1, input_node);
   manager->SetEdge(cnode, kInputIndexTwo, indices_node);
   manager->SetEdge(cnode, kInputIndexThree, axis_node);
   cnode->set_fullname_with_scope(cnode_name);
   auto quant_params_holder = std::make_shared<lite::QuantParamHolder>(kInputSizeThree, 1);
-  MS_CHECK_TRUE_RET(quant_params_holder != nullptr, nullptr);
+  MS_CHECK_TRUE_MSG(quant_params_holder != nullptr, nullptr, "quant_params_holder is nullptr!");
   gather_prim->AddAttr("quant_params", quant_params_holder);
   return cnode;
+}
+
+CNodePtr GenShapeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node, const string &node_name) {
+  if (func_graph == nullptr || input_node == nullptr) {
+    MS_LOG(ERROR) << "input parameter is nullptr, which is invalid!";
+    return nullptr;
+  }
+  ops::Shape shape_node;
+  auto shape_prim = shape_node.GetPrim();
+  MS_CHECK_TRUE_MSG(shape_prim != nullptr, nullptr, "shape_prim is nullptr!");
+  auto cnode = func_graph->NewCNode(shape_prim, {input_node});
+  MS_CHECK_TRUE_MSG(cnode != nullptr, nullptr, "cnode is nullptr!");
+  cnode->set_fullname_with_scope(node_name);
+  if (input_node->abstract() != nullptr) {
+    cnode->set_abstract(input_node->abstract()->Clone());
+  }
+  return cnode;
+}
+
+CNodePtr GenDivNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node, const std::vector<int> &input1,
+                    const string &node_name) {
+  if (func_graph == nullptr || input_node == nullptr) {
+    MS_LOG(ERROR) << "input parameter is nullptr, which is invalid!";
+    return nullptr;
+  }
+  ops::Div div_node;
+  auto div_prim = div_node.GetPrim();
+  MS_CHECK_TRUE_RET(div_prim != nullptr, nullptr);
+  auto input1_node = BuildIntVecValueNode(func_graph, input1);
+  if (input1_node == nullptr) {
+    MS_LOG(ERROR) << "Make input1 node failed!";
+    return nullptr;
+  }
+  auto cnode = func_graph->NewCNode(div_prim, {input_node, input1_node});
+  MS_CHECK_TRUE_MSG(cnode != nullptr, nullptr, "cnode is nullptr!");
+  cnode->set_fullname_with_scope(node_name);
+  if (input_node->abstract() != nullptr) {
+    cnode->set_abstract(input_node->abstract()->Clone());
+  }
+  return cnode;
+}
+
+CNodePtr GenReshapeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node, const AnfNodePtr &shape_node,
+                        const std::string &cnode_name) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(input_node != nullptr, nullptr);
+  auto reshape_prim = std::make_shared<ops::Reshape>();
+  if (reshape_prim == nullptr) {
+    MS_LOG(ERROR) << "create reshape failed!";
+    return nullptr;
+  }
+  auto prim_c = reshape_prim->GetPrim();
+  ValueNodePtr value_node = NewValueNode(prim_c);
+  MS_CHECK_TRUE_MSG(value_node != nullptr, nullptr, "Create value_node return nullptr!");
+  std::vector<AnfNodePtr> op_inputs = {value_node, input_node, shape_node};
+  auto reshape_cnode = func_graph->NewCNode(op_inputs);
+  MS_CHECK_TRUE_MSG(reshape_cnode != nullptr, nullptr, "Create cnode return nullptr!");
+  reshape_cnode->set_fullname_with_scope(cnode_name);
+  if (input_node->abstract() != nullptr) {
+    reshape_cnode->set_abstract(input_node->abstract()->Clone());
+  }
+  return reshape_cnode;
 }
 
 CNodePtr GenGatherNodeDynamicIndex(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node,
@@ -1397,6 +1459,9 @@ CNodePtr GenConcatNode(const FuncGraphPtr &func_graph, const std::vector<AnfNode
   auto quant_params_holder = std::make_shared<lite::QuantParamHolder>(input_node_vec.size(), 1);
   MS_CHECK_TRUE_RET(quant_params_holder != nullptr, nullptr);
   concat_prim->AddAttr("quant_params", quant_params_holder);
+  if (input_node_vec[0]->abstract() != nullptr) {
+    cnode->set_abstract(input_node_vec[0]->abstract()->Clone());
+  }
   return cnode;
 }
 
@@ -1913,6 +1978,24 @@ const float GetFloatParameterValue(const EquivPtr &equiv, const VarPtr &input) {
     return value;
   }
   return *static_cast<float *>(param_value_lite->data_c());
+}
+
+STATUS GetPrimFromCnode(const CNodePtr &cnode, PrimitivePtr *prim_ptr) {
+  CHECK_NULL_RETURN(cnode);
+  CHECK_NULL_RETURN(prim_ptr);
+  CHECK_NULL_RETURN(cnode->input(0));
+
+  auto value_node = cnode->input(0)->cast<ValueNodePtr>();
+  if (value_node == nullptr) {
+    MS_LOG(ERROR) << "Value node[" << cnode->fullname_with_scope() << "] is nullptr.";
+    return lite::RET_ERROR;
+  }
+  *prim_ptr = GetValueNode<PrimitivePtr>(value_node);
+  if (*prim_ptr == nullptr) {
+    MS_LOG(ERROR) << "Value node[" << cnode->fullname_with_scope() << "] cast to primitive failed.";
+    return lite::RET_ERROR;
+  }
+  return lite::RET_OK;
 }
 
 };  // namespace opt

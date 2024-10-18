@@ -52,7 +52,11 @@ mindspore::HashMap<std::string, std::string> IOFormatMap::io_format_map_ = {{"BN
                                                                             {"DeformableOffsetsGrad", "format"},
                                                                             {"ExtractVolumePatches", "format"},
                                                                             {"DeformableConv2d", "NCHW"},
-                                                                            {"Conv2DTransposeV2", "NCHW"}};
+                                                                            {"Conv2DTransposeV2", "NCHW"},
+                                                                            {"Col2Im", "NCHW"},
+                                                                            {"SpaceToDepth", "NCHW"},
+                                                                            {"Pooling", "NCHW"},
+                                                                            {"AvgPoolV2", "NCHW"}};
 mindspore::HashMap<std::string, std::string> &IOFormatMap::get() { return io_format_map_; }
 }  // namespace transform
 }  // namespace mindspore
