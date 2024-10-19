@@ -1553,7 +1553,8 @@ def set_context(**kwargs):
             which means use the default num.
         runtime_num_threads(int): The thread pool number of cpu kernel used in runtime,
             which must bigger than or equal to 0. Default value is ``30`` , if you run many processes at
-            the same time, you should set the value smaller to avoid thread contention.
+            the same time, you should set the value smaller to avoid thread contention. If set runtime_num_threads to 1,
+            the runtime asynchronous pipeline capability cannot be enabled, which may affect performance.
         disable_format_transform (bool): Whether to disable the automatic format transform function from NCHW to NHWC.
             When the network training performance of fp16 is worse than fp32, `disable_format_transform` can be set to
             ``True`` to try to improve training performance. Default: ``False`` .
