@@ -106,7 +106,7 @@ from mindspore.ops.auto_generate import exp
 # 36 float
 
 # 37 floor
-
+from mindspore.ops.function.math_func import floor
 # 38 gather
 from mindspore.ops.auto_generate import gather
 from mindspore.ops.function.array_func import gather_ext
@@ -472,6 +472,9 @@ def tensor_exp(input):
 # 36 float
 
 # 37 floor
+def tensor_floor(input):
+    return floor(input)
+
 
 # 38 gather
 def tensor_gather_ext(input, dim, index):
@@ -702,7 +705,6 @@ def tensor_sigmoid(input):
 # 107 tanh
 def tensor_tanh(input):
     return tanh(input)
-
 
 # 108 tile
 

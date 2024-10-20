@@ -1,0 +1,6 @@
+floor:
+  op_yaml: floor_op.yaml
+  py_method: tensor_floor
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

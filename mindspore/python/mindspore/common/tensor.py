@@ -1693,12 +1693,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.abs()
 
-    def floor(self):
-        """
-        For details, please refer to :func:`mindspore.ops.floor`.
-        """
-        return tensor_operator_registry.get('floor')(self)
-
     def floor_(self):
         r"""
         Rounds a tensor down to the closest integer element-wise.
