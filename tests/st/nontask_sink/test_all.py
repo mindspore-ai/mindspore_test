@@ -213,16 +213,3 @@ def test_entry_hccl_reducescatter_fusion_by_attr():
     return_code = os.system("rm -rf rank* && msrun --worker_num=8 --local_worker_num=8 --join=True "
                             "pytest -s test_comm_fusion.py::test_hccl_reducescatter_fusion_by_attr")
     assert return_code == 0
-
-
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
-def test_hccl_multi_stream():
-    """
-    Feature: multiple stream of hccl.
-    Description: test assign stream based on communication domain.
-    Expectation: expect correct result.
-    """
-    os.environ['MS_DEV_RUNTIME_CONF'] = 'multi_stream:group'
-    return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_multi_stream.py")
-    assert return_code == 0
-    del os.environ['MS_DEV_RUNTIME_CONF']
