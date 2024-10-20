@@ -51,6 +51,7 @@ class AscendKernelRuntime : public KernelRuntime {
   DeviceAddressPtr GetInternalDeviceAddress(const session::KernelGraph &graph, const AnfNodePtr &node) override;
   void GetShadowBackendNodeMap(const session::KernelGraph &graph,
                                std::map<AnfNodePtr, AnfNodePtr> *shadow_backend_node_map) override;
+  size_t GetCommunicationStreamIDByGroup(const std::string &group) override;
 #ifndef ENABLE_SECURITY
   void PreInit() override;
 #endif

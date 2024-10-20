@@ -702,6 +702,18 @@ void AscendKernelRuntime::CreateDefaultStream() {
   MS_EXCEPTION_IF_NULL(backward_recv_stream_);
 }
 
+size_t AscendKernelRuntime::GetCommunicationStreamIDByGroup(const std::string &group) {
+  auto res = group_comm_stream_.find(group);
+  if (res != group_comm_stream_.end()) {
+    return res->second;
+  }
+  size_t group_stream_id;
+  AscendStreamMng::GetInstance().CreateStream(&group_stream_id);
+  group_comm_stream_.insert(std::pair(group, group_stream_id));
+  MS_LOG(DEBUG) << "Create new stream " << group_stream_id << " for hccl group " << group;
+  return group_stream_id;
+}
+
 bool AscendKernelRuntime::InitDevice() {
   SetRtDevice(device_id_);
 
