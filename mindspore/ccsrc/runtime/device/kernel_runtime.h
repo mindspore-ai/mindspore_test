@@ -124,7 +124,6 @@ class BACKEND_EXPORT KernelRuntime {
   virtual void *copy_data_stream() const { return nullptr; }
   virtual void *communication_stream() const { return nullptr; }
   virtual size_t communication_stream_id() const { return communication_stream_id_; }
-  virtual size_t GetCommunicationStreamIDByGroup(const std::string & /**/) { return communication_stream_id(); }
   void UpdateRefNodeOutputMem(const session::KernelGraph &graph) const;
   void UpdateSingleRefNodeMem(const CNodePtr &kernel, const session::KernelGraph &graph, bool reverse) const;
   virtual DeviceAddressPtr AssignExtraStaticMem(const TensorPtr &tensor, const AnfNodePtr &node, size_t index);
@@ -223,7 +222,6 @@ class BACKEND_EXPORT KernelRuntime {
   void *backward_recv_stream_{nullptr};
   void *swap_in_steam_{nullptr};
   void *swap_out_steam_{nullptr};
-  std::map<std::string, size_t> group_comm_stream_{};
   std::shared_ptr<MemoryManager> mem_manager_{nullptr};
   std::map<uint32_t, std::pair<std::map<AnfNodePtr, std::vector<std::function<void()>>>,
                                std::map<AnfNodePtr, std::vector<std::function<void()>>>>>

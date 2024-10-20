@@ -510,18 +510,6 @@ size_t GeDeviceResManager::GetCommunicationStreamID() const {
   return runtime_instance_->communication_stream_id();
 }
 
-size_t GeDeviceResManager::GetCommunicationStreamIDByGroup(const std::string &group) const {
-  if (!BindDeviceToCurrentThread(false)) {
-    MS_LOG(ERROR) << "Bind context to current thread failed";
-    return false;
-  }
-  if (runtime_instance_ == nullptr) {
-    MS_LOG(WARNING) << "runtime_instance_ is nullptr, can not to get communication stream by group";
-    return GetCommunicationStreamID();
-  }
-  return runtime_instance_->GetCommunicationStreamIDByGroup(group);
-}
-
 void GeDeviceResManager::SetCurrentStreamId(size_t stream_id) {
   if (!BindDeviceToCurrentThread(false)) {
     MS_LOG(ERROR) << "Bind context to current thread failed";

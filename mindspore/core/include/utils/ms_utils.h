@@ -91,8 +91,6 @@ const char kRuntimeParalletAssignAddOpt[] = "parallel_assignadd_opt";
 const char kRuntimeGeKernel[] = "ge_kernel";
 const char kAclnnViewOp[] = "MS_DEV_VIEW_OP";
 const char kRuntimeCache[] = "backend_compile_cache";
-const char kRuntimeMultStreamValueGroup[] = "group";
-
 // Runtime debug config.
 const char kRuntimeSynchronize[] = "synchronize";
 const char kRuntimeMemoryTrack[] = "memory_track";

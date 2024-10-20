@@ -21,7 +21,6 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/comm_utils.h"
 #include "runtime/pipeline/pipeline.h"
-#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -46,13 +45,7 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   // Need to bind context if the comm_op is the first op launched in this thread.
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
 
-  size_t comm_stream_id;
-  if (common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream) ==
-      common::kRuntimeMultStreamValueGroup) {
-    comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(group_str);
-  } else {
-    comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamID();
-  }
+  auto comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamID();
 
   [device_context, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id, op_name, launch_func]() {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,

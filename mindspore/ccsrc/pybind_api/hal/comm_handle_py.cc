@@ -26,9 +26,6 @@
 namespace mindspore {
 namespace hal {
 CommHandlePy::~CommHandlePy() {
-  static const std::string kProfilerNameDestroyHandle = "~Handle";
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kDefault,
-                                     kProfilerNameDestroyHandle, false, false);
   if (comm_handle_ == nullptr) {
     return;
   }
@@ -47,9 +44,6 @@ CommHandlePy::~CommHandlePy() {
 }
 
 void CommHandlePy::Wait() {
-  static const std::string kProfilerNameHandleWait = "HandleWait";
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kDefault,
-                                     kProfilerNameHandleWait, false, false);
   if (comm_handle_ == nullptr) {
     return;
   }

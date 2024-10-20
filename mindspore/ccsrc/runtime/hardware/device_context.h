@@ -280,8 +280,6 @@ class BACKEND_EXPORT DeviceResManager {
 
   virtual size_t GetCommunicationStreamID() const { return kDefaultStreamIndex; };
 
-  virtual size_t GetCommunicationStreamIDByGroup(const std::string &group) const { return GetCommunicationStreamID(); };
-
   // Destroy a stream bound to the input parameter "stream_id".
   virtual bool DestroyStream(size_t stream_id) const { return false; }
 
