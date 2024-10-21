@@ -4350,7 +4350,7 @@ def _cross_entropy_for_class_indices(input, target, weight, ingore_index, reduct
         else:
             smooth_loss = -input.sum(class_dim)
         ignore_mask = ops.eq(target, ingore_index)
-        smooth_loss = masked_fill_op(smooth_loss, ignore_mask, 0.0)
+        smooth_loss = masked_fill_op(smooth_loss, ignore_mask, 0)
         if reduction == "mean":
             true_mask = ~ignore_mask
             if  weight is not None:
@@ -4390,7 +4390,7 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
           l_n = - w_{y_n} \log \frac{\exp(x_{n,y_n})}{\sum_{c=1}^C \exp(x_{n,c})}
           \cdot \mathbb{1}\{y_n \not= \text{ignore_index}\}
 
-      where :math:`x` is the inputs, :math:`y` is the target, :math:`w` is the weight, N is the batch size,
+      where :math:`x` is the inputs, :math:`y` is the target, :math:`w` is the weight, :math:`N` is the batch size,
       :math:`c` belonging to :math:`[0, C-1]` is class index, where :math:`C` is the number of classes.
 
       If `reduction` is not ``None`` (default ``'mean'`` ), then
@@ -4435,11 +4435,12 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
             :math:`(N, d_1, d_2, ..., d_K)` , data type must be int32 or int64. For probabilities, tensor of shape
             :math:`(N,)` , :math:`(N, C)` or :math:`(N, C, d_1, d_2, ..., d_K)` , data type must be float16 or float32
             or bfloat16(only supported by Atlas A2 training series products).
-        weight (Tensor): A rescaling weight applied to the loss of each batch element.
+        weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, the shape is :math:`(C,)`, data type must be float16 or float32 or bfloat16(only supported by
             Atlas A2 training series products). Default: ``None`` .
-        ignore_index (int): Specifies a target value that is ignored and does not contribute to the input gradient.
-            Only valid in class indices, please set it to a negative number in probabilities. Default: ``-100`` .
+        ignore_index (int, optional): Specifies a target value that is ignored and does not contribute to the input
+            gradient. Only valid in class indices, please set it to a negative number in probabilities.
+            Default: ``-100`` .
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
 
@@ -4447,26 +4448,27 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
             - ``'mean'``: compute and return the weighted mean of elements in the output.
             - ``'sum'``: the output elements will be summed.
 
-        label_smoothing (float): Label smoothing values, a regularization tool used to prevent the model
+        label_smoothing (float, optional): Label smoothing values, a regularization tool used to prevent the model
             from overfitting when calculating Loss. The value range is [0.0, 1.0]. Default value: ``0.0`` .
 
     Returns:
-        Tensor, the computed loss value.
+        Tensor, the data type is the same as `input` .
 
     Supported Platforms:
         ``Ascend``
 
     Examples:
         >>> import mindspore as ms
+        >>> from mindspore import ops, Tensor
         >>> import numpy as np
         >>> # Case 1: Indices labels
-        >>> inputs = ms.Tensor(np.random.randn(3, 5), ms.float32)
-        >>> target = ms.Tensor(np.array([1, 0, 4]), ms.int32)
-        >>> output = ms.ops.cross_entropy_ext(inputs, target)
+        >>> inputs = Tensor(np.random.randn(3, 5), ms.float32)
+        >>> target = Tensor(np.array([1, 0, 4]), ms.int32)
+        >>> output = ops.cross_entropy_ext(inputs, target)
         >>> # Case 2: Probability labels
-        >>> inputs = ms.Tensor(np.random.randn(3, 5), ms.float32)
-        >>> target = ms.Tensor(np.random.randn(3, 5), ms.float32)
-        >>> output = ms.ops.cross_entropy_ext(inputs, target)
+        >>> inputs = Tensor(np.random.randn(3, 5), ms.float32)
+        >>> target = Tensor(np.random.randn(3, 5), ms.float32)
+        >>> output = ops.cross_entropy_ext(inputs, target)
     """
     if not isinstance(input, Tensor) or not isinstance(target, Tensor):
         raise TypeError(

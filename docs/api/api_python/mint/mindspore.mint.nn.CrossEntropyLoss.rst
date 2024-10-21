@@ -35,7 +35,7 @@ mindspore.mint.nn.CrossEntropyLoss
           \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad
           l_n = - \sum_{c=1}^C w_c \log \frac{\exp(x_{n,c})}{\sum_{i=1}^C \exp(x_{n,i})} y_{n,c}
 
-      其中， :math:`x` 表示预测值， :math:`y` 表示目标值， :math:`w` 表示权重，N表示batch size， :math:`c` 限定范围为 :math:`[0, C-1]` ，表示类索引，其中 :math:`C` 表示类的数量。
+      其中， :math:`x` 表示预测值， :math:`y` 表示目标值， :math:`w` 表示权重， :math:`N`表示batch size， :math:`c` 限定范围为 :math:`[0, C-1]` ，表示类索引，其中 :math:`C` 表示类的数量。
 
       若reduction不为 ``'none'`` （默认为 ``'mean'`` ），则
 
@@ -51,14 +51,14 @@ mindspore.mint.nn.CrossEntropyLoss
     参数：
         - **weight** (Tensor, 可选) - 指定各类别的权重。若值不为 ``None`` ，则shape为 :math:`(C,)`。
           数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。默认值： ``None`` 。
-        - **ignore_index** (int) - 指定target中需要忽略的值(一般为填充值)，使其不对梯度产生影响。仅在目标值为类别索引下生效，在类别概率下请设置为负数。默认值： ``-100`` 。
-        - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
+        - **ignore_index** (int, 可选) - 指定target中需要忽略的值(一般为填充值)，使其不对梯度产生影响。仅在目标值为类别索引下生效，在类别概率下请设置为负数。默认值： ``-100`` 。
+        - **reduction** (str, 可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
           - ``''none'``：不应用规约方法。
           - ``'mean'``：计算输出元素的加权平均值。
           - ``'sum'``：计算输出元素的总和。
 
-        - **label_smoothing** (float) - 标签平滑值，用于计算Loss时防止模型过拟合的正则化手段。取值范围为[0.0, 1.0]。默认值： ``0.0`` 。
+        - **label_smoothing** (float, 可选) - 标签平滑值，用于计算Loss时防止模型过拟合的正则化手段。取值范围为[0.0, 1.0]。默认值： ``0.0`` 。
 
     输入：
         - **input** (Tensor) - 输入预测值，shape为 :math:`(N)` 或 :math:`(N, C)` 或 :math:`(N, C, H, W)`
