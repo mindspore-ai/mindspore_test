@@ -46,6 +46,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "infer/cxx_api/mul_fusion.h"
 
 namespace mindspore {
 namespace opt {
@@ -1413,6 +1414,32 @@ CNodePtr GenTupleGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &inp
   MS_ASSERT(tuple_cnode != nullptr);
   tuple_cnode->set_fullname_with_scope(input->fullname_with_scope() + "_getitem_" + std::to_string(index));
   return tuple_cnode;
+}
+
+CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, const float mul_scale) {
+  MS_LOG(INFO) << "create mul_fusion node start.";
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(input_cnode != nullptr, nullptr);
+  auto mul_fusion_op = std::make_unique<ops::MulFusion>();
+  MS_CHECK_TRUE_RET(mul_fusion_op != nullptr, nullptr);
+  auto mul_fusion_prim_c = mul_fusion_op->GetPrim();
+  MS_CHECK_TRUE_RET(mul_fusion_prim_c != nullptr, nullptr);
+  auto scale_node = BuildFloatValueParameterNode(func_graph, mul_scale, input_cnode->fullname_with_scope() + "_scale");
+  if (scale_node == nullptr) {
+    MS_LOG(ERROR) << "scale_node is nullptr!";
+    return nullptr;
+  }
+  auto cnode = func_graph->NewCNode(mul_fusion_prim_c, {input_cnode, scale_node});
+  if (cnode == nullptr) {
+    MS_LOG(ERROR) << "cnode is nullptr!";
+    return nullptr;
+  }
+  cnode->set_fullname_with_scope(cnode->fullname_with_scope() + "_mul_fusion");
+  if (input_cnode->abstract() != nullptr) {
+    cnode->set_abstract(input_cnode->abstract()->Clone());
+  }
+  MS_LOG(INFO) << "create mul_fusion node end.";
+  return cnode;
 }
 
 STATUS FetchShapeFromAbstract(const abstract::AbstractBasePtr &abstract, ShapeVector *shape) {
