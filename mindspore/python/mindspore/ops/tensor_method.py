@@ -812,6 +812,9 @@ def deprecated_tensor_where(input, condition, y):
 # 147 isinf
 
 # 148 not_equal
+def tensor_not_equal(input, other):
+    return F.ne(input, other)
+
 
 # 149 triu
 

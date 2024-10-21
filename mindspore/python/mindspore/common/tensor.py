@@ -4242,12 +4242,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ne')(self, other)
 
-    def not_equal(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.not_equal`.
-        """
-        return tensor_operator_registry.get('not_equal')(self, other)
-
     def new_zeros(self, size, dtype=None):
         r"""
         Return a tensor of `size` filled with zeros.
