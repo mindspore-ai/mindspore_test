@@ -1574,18 +1574,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('real')(self)
 
-    def sqrt(self):
-        """
-        For details, please refer to :func:`mindspore.ops.sqrt`.
-        """
-        return tensor_operator_registry.get('sqrt')(self)
-
-    def square(self):
-        """
-        For details, please refer to :func:`mindspore.ops.square`.
-        """
-        return tensor_operator_registry.get('square')(self)
-
     @sub_mint
     def sub(self, y):
         r"""
@@ -4115,12 +4103,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.sgn`.
         """
         return tensor_operator_registry.get('sgn')(self)
-
-    def sin(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sin`.
-        """
-        return tensor_operator_registry.get('sin')(self)
 
     def sinc(self):
         r"""

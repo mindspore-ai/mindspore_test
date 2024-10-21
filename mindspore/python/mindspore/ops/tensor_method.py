@@ -229,7 +229,7 @@ from mindspore.ops.auto_generate import rsqrt
 # 94 sigmoid
 from mindspore.ops.auto_generate import sigmoid
 # 95 sin
-
+from mindspore.ops.auto_generate import sin
 # 96 size
 
 # 97 sort
@@ -237,9 +237,9 @@ from mindspore.ops.function.array_func import sort, sort_ext
 # 98 split
 from mindspore.ops.function.array_func import split
 # 99 sqrt
-
+from mindspore.ops.auto_generate import sqrt
 # 100 square
-
+from mindspore.ops.auto_generate import square
 # 101 squeeze
 
 # 102 std
@@ -800,6 +800,9 @@ def tensor_sigmoid(input):
 
 
 # 95 sin
+def tensor_sin(input):
+    return sin(input)
+
 
 # 96 size
 
@@ -818,8 +821,14 @@ def deprecated_tensor_split(input, split_size_or_sections, axis=0):
 
 
 # 99 sqrt
+def tensor_sqrt(x):
+    return sqrt(x)
+
 
 # 100 square
+def tensor_square(input):
+    return square(input)
+
 
 # 101 squeeze
 
