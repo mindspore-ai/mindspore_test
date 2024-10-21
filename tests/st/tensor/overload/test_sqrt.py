@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,34 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from math import pi
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore import Tensor
 
 
 class Net(nn.Cell):
     def construct(self, x):
-        return x.sin()
+        return x.sqrt()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level2',
-          card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_tensor_sin(mode):
+def create_random_tensor(shape=(10,), low=0.0, high=1.0):
     """
-    Feature: tensor.sin
-    Description: Verify the result of sin
+    Randomly create a 1*10 Tensor
+    """
+    random_array = np.random.uniform(low, high, shape)
+    random_tensor = ms.Tensor(random_array, ms.float32)
+    return random_array, random_tensor
+
+
+@arg_mark(
+    plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend', 'platform_ascend910b'],
+    level_mark='level0',
+    card_mark='onecard',
+    essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_tensor_sqrt(mode):
+    """
+    Feature: tensor.sqrt
+    Description: Verify the result of sqrt
     Expectation: success
     """
     ms.set_context(mode=mode)
-    x = Tensor(np.array([-pi/6, pi/6, pi*10]), ms.float32)
+    x_np, x_ms = create_random_tensor()
     net = Net()
-    output = net(x)
-    expect_output = np.array([-0.5, 0.5, 0], dtype=np.float32)
+    output = net(x_ms)
+    expect_output = np.sqrt(x_np)
     assert np.allclose(output.asnumpy(), expect_output, rtol=5e-3, atol=1e-4)
