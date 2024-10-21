@@ -384,9 +384,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __pos__(self):
         return self
 
-    def __abs__(self):
-        return tensor_operator_registry.get('abs')(self)
-
     def __and__(self, other):
         if isinstance(other, (int, bool, float, Tensor)):
             return tensor_operator_registry.get('bitwise_and')(self, other)
@@ -1649,18 +1646,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.asin`.
         """
         return tensor_operator_registry.get('asin')(self)
-
-    def abs(self):
-        """
-        For details, please refer to :func:`mindspore.ops.abs`.
-        """
-        return tensor_operator_registry.get('abs')(self)
-
-    def absolute(self):
-        """
-        Alias for :func:`mindspore.Tensor.abs`.
-        """
-        return self.abs()
 
     def floor_(self):
         r"""
