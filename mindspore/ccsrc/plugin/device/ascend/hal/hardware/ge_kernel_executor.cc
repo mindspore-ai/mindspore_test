@@ -970,7 +970,7 @@ kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_nam
 }
 
 void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
-                                      const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
+                                      const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) const {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -984,7 +984,7 @@ void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
   if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
-    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), sched_events);
+    AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), sched_events, res_manager_);
   }
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();

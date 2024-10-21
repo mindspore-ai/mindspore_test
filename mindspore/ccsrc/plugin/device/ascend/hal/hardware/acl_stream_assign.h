@@ -29,6 +29,7 @@
 #include <utility>
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/contract.h"
+#include "runtime/hardware/device_context.h"
 
 namespace mindspore {
 namespace device {
@@ -58,7 +59,8 @@ class AclStreamAssign {
   AclStreamAssign &operator=(const AclStreamAssign &) = delete;
 
   void AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
-                    const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events);
+                    const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events,
+                    DeviceResManager *device_res_manager);
   void CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph);
 
  private:

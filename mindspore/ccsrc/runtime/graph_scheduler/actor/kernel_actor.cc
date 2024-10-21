@@ -141,8 +141,11 @@ void KernelActor::InitMultiStreamInfo() {
   constexpr char kRuntimeMc2Event[] = "mc2_event";
   bool match_mc2_pattern = std::string::npos != kernel_->fullname_with_scope().find("_all_gather_matmul") ||
                            std::string::npos != kernel_->fullname_with_scope().find("_matmul_reduce_scatter") ||
+                           std::string::npos != kernel_->fullname_with_scope().find("MatmulReduceScatter-") ||
+                           std::string::npos != kernel_->fullname_with_scope().find("AllGatherMatmul-") ||
                            std::string::npos != kernel_->fullname_with_scope().find("MatMulAllReduce-");
-  is_mc2_kernel_ = !common::IsDisableRuntimeConfig(kRuntimeMc2Event) && match_mc2_pattern;
+  is_mc2_kernel_ = (common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream) != "group") &&
+                   !common::IsDisableRuntimeConfig(kRuntimeMc2Event) && match_mc2_pattern;
   // shape depend need kernel is cnode.
   InitShapeDependInfo();
 
