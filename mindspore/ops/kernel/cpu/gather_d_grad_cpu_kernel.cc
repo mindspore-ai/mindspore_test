@@ -95,9 +95,9 @@ template <typename I, typename T>
 bool GatherDGradV2CpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &,
                                              const std::vector<kernel::KernelTensor *> &outputs) {
-  auto *index = reinterpret_cast<I *>(inputs[kIndex2]->device_ptr());
-  auto *grad = reinterpret_cast<T *>(inputs[kIndex3]->device_ptr());
-  auto out = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *index = GetDeviceAddress<I>(inputs, kIndex2);
+  auto *grad = GetDeviceAddress<T>(inputs, kIndex3);
+  auto out = GetDeviceAddress<T>(outputs, 0);
 
   dim_value_ = inputs[kIndex1]->GetValueWithCheck<int64_t>();
   if (dim_value_ < 0) {
@@ -118,7 +118,7 @@ bool GatherDGradV2CpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTen
   }
   // memset_s does not support data that more than 2GB.
   auto output_size = LongToSize(get_element_num(output_shape_)) * sizeof(T);
-  auto output_addr = reinterpret_cast<char *>(outputs[0]->device_ptr());
+  auto output_addr = GetDeviceAddress<char>(outputs, 0);
   while (output_size > 0) {
     auto copy_size = std::min(output_size, static_cast<size_t>(INT32_MAX));
     auto ret = memset_s(output_addr, output_size, 0, copy_size);

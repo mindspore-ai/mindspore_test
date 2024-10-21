@@ -75,9 +75,9 @@ void ReduceStdCpuKernelMod::RunReduceStd(const std::vector<kernel::KernelTensor 
   if (input_size > kReduceSmallVectorSize) {
     MS_LOG(EXCEPTION) << "For reduce std, the input size should be < " << kReduceSmallVectorSize;
   }
-  T *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  T *output_std_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  T *output_mean_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, 0);
+  T *output_std_addr = GetDeviceAddress<T>(outputs, 0);
+  T *output_mean_addr = GetDeviceAddress<T>(outputs, 1);
   float mean = 0.0;
   for (size_t i = 0; i < input_size; ++i) {
     mean += static_cast<float>(input_addr[i]);

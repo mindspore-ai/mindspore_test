@@ -27,11 +27,11 @@ constexpr size_t kBceGradOutputsNum = 1;
 template <typename T>
 void BinaryCrossEntropyGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                       const std::vector<KernelTensor *> &outputs) {
-  const auto *input_x = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  const auto *input_y = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  const auto *dloss = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  const T *weight = reinterpret_cast<T *>(inputs[3]->device_ptr());
-  auto *dx = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const auto *input_x = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *input_y = GetDeviceAddress<T>(inputs, kIndex1);
+  const auto *dloss = GetDeviceAddress<T>(inputs, kIndex2);
+  const T *weight = reinterpret_cast<T *>(inputs[kIndex3]->device_ptr());  // weight might be nullptr
+  auto *dx = GetDeviceAddress<T>(outputs, kIndex0);
   auto epsilon = static_cast<T>(1e-12);
   auto one = static_cast<T>(1);
 

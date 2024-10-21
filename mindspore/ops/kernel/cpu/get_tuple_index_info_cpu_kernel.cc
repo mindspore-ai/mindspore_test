@@ -66,7 +66,7 @@ static inline void CheckCopy(void *dest, size_t destMax, const void *src, size_t
 bool GetTupleIndexInfoCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &workspace,
                                                  const std::vector<KernelTensor *> &outputs) {
-  const auto *input1 = static_cast<int64_t *>(inputs[kIndex1]->device_ptr());
+  const auto *input1 = GetDeviceAddress<int64_t>(inputs, kIndex1);
   ShapeVector broadcast_shape;
   ShapeVector final_shape;
   ShapeVector index_tensor_new_shape;

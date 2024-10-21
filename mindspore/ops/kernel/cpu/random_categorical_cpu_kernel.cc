@@ -140,13 +140,11 @@ bool RandomCategoricalCpuKernel::LaunchKernel(const std::vector<kernel::KernelTe
   MS_EXCEPTION_IF_NULL(inputs[1]);
   MS_EXCEPTION_IF_NULL(outputs[0]);
 
-  T1 *input_tensor = reinterpret_cast<T1 *>(inputs[kIndex0]->device_ptr());
-  int num_sample = reinterpret_cast<int *>(inputs[kIndex1]->device_ptr())[0];
-  int input_seed = reinterpret_cast<int *>(inputs[kIndex2]->device_ptr())[0];
-  T2 *output = reinterpret_cast<T2 *>(outputs[kIndex0]->device_ptr());
+  T1 *input_tensor = GetDeviceAddress<T1>(inputs, kIndex0);
+  int num_sample = GetDeviceAddress<int>(inputs, kIndex1)[0];
+  int input_seed = GetDeviceAddress<int>(inputs, kIndex2)[0];
+  T2 *output = GetDeviceAddress<T2>(outputs, kIndex0);
 
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  MS_EXCEPTION_IF_NULL(output);
   int batch_size = input_shape_[0];
   int num_classes = input_shape_[input_shape_.size() - 1];
 

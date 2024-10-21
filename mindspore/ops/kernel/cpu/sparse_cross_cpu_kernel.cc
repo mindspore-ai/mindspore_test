@@ -323,9 +323,9 @@ bool SparseCrossCpuKernelMod::SparseCrossCann(const std::vector<std::vector<int6
                                               const std::vector<std::vector<int64_t>> &shapes_list_in,
                                               const std::vector<std::vector<S>> &dense_list_in,
                                               const std::vector<kernel::KernelTensor *> &outputs) const {
-  auto indices_out = static_cast<int64_t *>(outputs[kOutputindecs]->device_ptr());
-  auto values_out = static_cast<int64_t *>(outputs[kOutputValue]->device_ptr());
-  auto out_shape = static_cast<int64_t *>(outputs[kOutputShape]->device_ptr());
+  auto indices_out = GetDeviceAddress<int64_t>(outputs, kOutputindecs);
+  auto values_out = GetDeviceAddress<int64_t>(outputs, kOutputValue);
+  auto out_shape = GetDeviceAddress<int64_t>(outputs, kOutputShape);
   uint32_t batch_size = 0;
   if (shapes_list_in.size() > 0) {
     batch_size = shapes_list_in[0][0];
@@ -437,7 +437,7 @@ bool SparseCrossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
       shapes_list_in[i].push_back(*(input1_ptr + j));
     }
   }
-  uint32_t d_n = inputs.size() - sizen * 3;
+  uint32_t d_n = inputs.size() - sizen * kIndex3;
   std::vector<std::vector<int64_t>> denses_list_in(d_n);
   for (uint32_t i = 0; i < d_n; ++i) {
     auto input2_ptr = static_cast<int64_t *>(inputs[kInputdense * sizen + i]->device_ptr());

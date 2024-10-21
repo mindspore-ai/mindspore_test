@@ -44,8 +44,8 @@ bool ErfinvCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
                                       const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kErfinvInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kErfinvOutputsNum, kernel_name_);
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
   size_t total = inputs[0]->size() / sizeof(T);
   auto task = [&input, &output](size_t start, size_t end) {
     // coefficient of the rational approximation on range [-0,7, 0.7]
@@ -68,14 +68,14 @@ bool ErfinvCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
         if (input[i] <= static_cast<T>(0.7) || input[i] >= static_cast<T>(-0.7)) {
           // erfinv(y) = (a0*y + a1*y^3 + a2*y^5 + a3*y^7) / (1+ b0*y^2 + b1*y^4 + b2*y^6 + b3*y^8); -0.7<=y<=0.7
           w = input[i] * input[i];
-          nm = (((a[3] * w + a[2]) * w + a[1]) * w + a[0]);
-          dm = ((((b[3] * w + b[2]) * w + b[1]) * w + b[0]) * w + static_cast<T>(1.0));
+          nm = (((a[kIndex3] * w + a[kIndex2]) * w + a[1]) * w + a[0]);
+          dm = ((((b[kIndex3] * w + b[kIndex2]) * w + b[1]) * w + b[0]) * w + static_cast<T>(1.0));
           output[i] = input[i] * nm / dm;
         } else {
           // w = sqrt(-log(1-y)/2), erfinv(y) = (c0 + c1*w + c2*w^2 + c3*w^3) / (1 + d0*w+ d1*w^2); 0<=y<0.7
           // w = sqrt(-log(1+y)/2), erfinv(y) = (-c0 - c1*w - c2*w^2 - c3*w^3) / (1 + d0*w + d1*w^2); -0.7<y<0
           w = sqrt(-std::log((static_cast<T>(1.0) - std::abs(input[i])) / static_cast<T>(2.0)));
-          nm = ((c[3] * w + c[2]) * w + c[1]) * w + c[0];
+          nm = ((c[kIndex3] * w + c[kIndex2]) * w + c[1]) * w + c[0];
           dm = (d[1] * w + d[0]) * w + static_cast<T>(1.0);
           output[i] = std::copysign(nm, input[i]) / dm;
         }

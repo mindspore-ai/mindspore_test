@@ -148,14 +148,14 @@ void IndexFillCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
                                          const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
-  T *input_0 = static_cast<T *>(inputs[0]->device_ptr());
-  int32_t *input_1 = static_cast<int32_t *>(inputs[1]->device_ptr());
-  int32_t *input_2 = static_cast<int32_t *>(inputs[2]->device_ptr());
-  T *input_3 = static_cast<T *>(inputs[3]->device_ptr());
-  T *output_0 = static_cast<T *>(outputs[0]->device_ptr());
+  T *input_0 = GetDeviceAddress<T>(inputs, kIndex0);
+  int32_t *input_1 = GetDeviceAddress<int32_t>(inputs, kIndex1);
+  int32_t *input_2 = GetDeviceAddress<int32_t>(inputs, kIndex2);
+  T *input_3 = GetDeviceAddress<T>(inputs, kIndex3);
+  T *output_0 = GetDeviceAddress<T>(outputs, 0);
   int32_t x_dim_nums = static_cast<int32_t>(x_shape_.size());
   int32_t data_num = static_cast<int32_t>(inputs[0]->size() / sizeof(T));
-  uint32_t index_num = inputs[2]->size() / sizeof(int32_t);
+  uint32_t index_num = inputs[kIndex2]->size() / sizeof(int32_t);
   int32_t cur_dim = *input_1;
   if (cur_dim < 0) {
     *input_1 = *input_1 + x_dim_nums;

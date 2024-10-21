@@ -280,9 +280,9 @@ T IgammaGradASingle(const T &a, const T &x) {
 template <typename T>
 void IgammaGradACpuKernelMod::BcastCompute(const std::vector<kernel::KernelTensor *> &inputs,
                                            const std::vector<kernel::KernelTensor *> &outputs) {
-  auto a_data_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto x_data_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto z_data_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto a_data_addr = GetDeviceAddress<T>(inputs, 0);
+  auto x_data_addr = GetDeviceAddress<T>(inputs, 1);
+  auto z_data_addr = GetDeviceAddress<T>(outputs, 0);
   size_t data_num = get_element_num(z_shape_);
   auto output_shape = CPUKernelUtils::GetBroadcastShape(a_shape_, x_shape_);
   BroadcastIterator iter(a_shape_, x_shape_, output_shape);
@@ -355,9 +355,9 @@ void IgammaGradACpuKernelMod::SpecialCompute(int64_t type, int64_t start, int64_
 template <typename T>
 void IgammaGradACpuKernelMod::NoBcastCompute(const std::vector<kernel::KernelTensor *> &inputs,
                                              const std::vector<kernel::KernelTensor *> &outputs) {
-  auto in0 = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto in1 = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto out0 = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto in0 = GetDeviceAddress<T>(inputs, 0);
+  auto in1 = GetDeviceAddress<T>(inputs, 1);
+  auto out0 = GetDeviceAddress<T>(outputs, 0);
   auto in0_elements_nums = get_element_num(a_shape_);
   auto in1_elements_nums = get_element_num(x_shape_);
   auto data_num = get_element_num(z_shape_);

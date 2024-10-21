@@ -56,7 +56,7 @@ int ConcatOffsetV1CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
 template <typename T>
 bool ConcatOffsetV1CpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<kernel::KernelTensor *> &outputs) {
-  auto axis = static_cast<int64_t>(*static_cast<int32_t *>(inputs[kIndex0]->device_ptr()));
+  auto axis = static_cast<int64_t>(*GetDeviceAddress<int32_t>(inputs, kIndex0));
   int64_t input_0_elem_num = input0_[0];
   if (axis >= input_0_elem_num || axis < -input_0_elem_num) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', the 'axis' must be fall in range [-" << input_0_elem_num << ", "
@@ -72,7 +72,7 @@ bool ConcatOffsetV1CpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   size_t input_tensor_num = inputs.size() - kConcatOffsetV1AxisNum;
   size_t elem_num = LongToSize(output_[kIndex0]);
   int32_t offset = 0;
-  auto input0_addr = static_cast<int32_t *>(inputs[1]->device_ptr());
+  auto input0_addr = static_cast<int32_t *>(inputs[kIndex1]->device_ptr());
   for (size_t i = 0; i < input_tensor_num; ++i) {
     auto input_i_addr = static_cast<int32_t *>(inputs[i + 1]->device_ptr());
     auto output_i_addr = static_cast<int32_t *>(outputs[i]->device_ptr());

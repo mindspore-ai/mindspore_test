@@ -157,9 +157,9 @@ template <typename T>
 bool MedianCpuKernelMod::GlobalMedianCompute(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
   constexpr bool dtype_support_nan = std::is_same_v<T, float> || std::is_same_v<T, double>;
-  auto *input0 = static_cast<T *>(inputs[0]->device_ptr());
-  auto *output0 = static_cast<T *>(outputs[0]->device_ptr());
-  auto *output1 = static_cast<T *>(outputs[1]->device_ptr());
+  auto *input0 = GetDeviceAddress<T>(inputs, 0);
+  auto *output0 = GetDeviceAddress<T>(outputs, 0);
+  auto *output1 = GetDeviceAddress<T>(outputs, 1);
   *output1 = 0;
   output_num_elements_ = 1;
   if constexpr ((!dtype_support_nan)) {
@@ -183,9 +183,9 @@ template <typename T>
 bool MedianCpuKernelMod::MedianCompute(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &workspace,
                                        const std::vector<KernelTensor *> &outputs) {
-  auto *input0 = static_cast<T *>(inputs[0]->device_ptr());
-  auto *output0 = static_cast<T *>(outputs[0]->device_ptr());
-  auto *output1 = static_cast<int64_t *>(outputs[1]->device_ptr());
+  auto *input0 = GetDeviceAddress<T>(inputs, 0);
+  auto *output0 = GetDeviceAddress<T>(outputs, 0);
+  auto *output1 = GetDeviceAddress<int64_t>(outputs, 1);
   if (input_dim_ == 0) {
     output_num_elements_ = 1;
     *output0 = *input0;
@@ -196,8 +196,8 @@ bool MedianCpuKernelMod::MedianCompute(const std::vector<KernelTensor *> &inputs
     axis_ += static_cast<int>(input_dim_);
   }
   size_t dim_data_num = static_cast<size_t>(input_shape_[axis_]);
-  auto temp_median_vec = static_cast<T *>(workspace[kWorkSpaceTempMedianVecIndex]->device_ptr());
-  auto temp_median_index_vec = static_cast<int64_t *>(workspace[kWorkSpaceTempMedianIndexVecIndex]->device_ptr());
+  auto temp_median_vec = GetDeviceAddress<T>(workspace, kWorkSpaceTempMedianVecIndex);
+  auto temp_median_index_vec = GetDeviceAddress<int64_t>(workspace, kWorkSpaceTempMedianIndexVecIndex);
   size_t group = 1;
   size_t jump = 1;
   if (axis_ != 0) {
@@ -247,9 +247,9 @@ template <typename T>
 bool MedianCpuKernelMod::MedianComputeIgnoreNan(const std::vector<KernelTensor *> &inputs,
                                                 const std::vector<KernelTensor *> &workspace,
                                                 const std::vector<KernelTensor *> &outputs) {
-  auto *input0 = static_cast<T *>(inputs[0]->device_ptr());
-  auto *output0 = static_cast<T *>(outputs[0]->device_ptr());
-  auto *output1 = static_cast<int64_t *>(outputs[1]->device_ptr());
+  auto *input0 = GetDeviceAddress<T>(inputs, 0);
+  auto *output0 = GetDeviceAddress<T>(outputs, 0);
+  auto *output1 = GetDeviceAddress<int64_t>(outputs, 1);
   if (input_dim_ == 0) {
     output_num_elements_ = 1;
     *output0 = *input0;
@@ -260,8 +260,8 @@ bool MedianCpuKernelMod::MedianComputeIgnoreNan(const std::vector<KernelTensor *
     axis_ += static_cast<int>(input_dim_);
   }
   size_t dim_data_num = static_cast<size_t>(input_shape_[axis_]);
-  auto temp_median_vec = static_cast<T *>(workspace[kWorkSpaceTempMedianVecIndex]->device_ptr());
-  auto temp_median_index_vec = static_cast<int64_t *>(workspace[kWorkSpaceTempMedianIndexVecIndex]->device_ptr());
+  auto temp_median_vec = GetDeviceAddress<T>(workspace, kWorkSpaceTempMedianVecIndex);
+  auto temp_median_index_vec = GetDeviceAddress<int64_t>(workspace, kWorkSpaceTempMedianIndexVecIndex);
   size_t group = 1;
   size_t jump = 1;
   if (axis_ != 0) {

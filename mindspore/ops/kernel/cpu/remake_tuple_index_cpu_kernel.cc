@@ -46,7 +46,6 @@ int RemakeTupleIndexCpuKernelMod::Resize(const std::vector<KernelTensor *> &inpu
     return ret;
   }
   valid_tensor_num_ = GetShapes(inputs)[0].size();
-
   if (valid_tensor_num_ == 0) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', input tensor number should not be zero.";
   }

@@ -74,13 +74,13 @@ int NormalizeSliceInfoCpuKernelMod::Resize(const std::vector<KernelTensor *> &in
 
 bool NormalizeSliceInfoCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) const {
-  const auto start_addr = static_cast<int64_t *>(inputs[kIndex1]->device_ptr());
-  const auto stop_addr = static_cast<int64_t *>(inputs[kIndex2]->device_ptr());
-  const auto step_addr = static_cast<int64_t *>(inputs[kIndex3]->device_ptr());
+  const auto start_addr = GetDeviceAddress<int64_t>(inputs, kIndex1);
+  const auto stop_addr = GetDeviceAddress<int64_t>(inputs, kIndex2);
+  const auto step_addr = GetDeviceAddress<int64_t>(inputs, kIndex3);
 
-  auto output_start_attr = static_cast<int64_t *>(outputs[kIndex0]->device_ptr());
-  auto output_stop_attr = static_cast<int64_t *>(outputs[kIndex1]->device_ptr());
-  auto output_step_attr = static_cast<int64_t *>(outputs[kIndex2]->device_ptr());
+  auto output_start_attr = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto output_stop_attr = GetDeviceAddress<int64_t>(outputs, kIndex1);
+  auto output_step_attr = GetDeviceAddress<int64_t>(outputs, kIndex2);
 
   auto output_arg_size = outputs[kIndex0]->size();
   int64_t dim_size = data_shape_[0];
@@ -91,7 +91,7 @@ bool NormalizeSliceInfoCpuKernelMod::LaunchKernel(const std::vector<KernelTensor
   }
   bool start_by_none_init = init_by_none_[0] == 1;
   bool stop_by_none_init = init_by_none_[1] == 1;
-  bool step_by_none_init = init_by_none_[2] == 1;
+  bool step_by_none_init = init_by_none_[kIndex2] == 1;
 
   int64_t start = start_addr[0];
   int64_t stop = stop_addr[0];

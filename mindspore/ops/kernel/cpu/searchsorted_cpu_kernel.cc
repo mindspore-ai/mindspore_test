@@ -73,9 +73,9 @@ template <typename S, typename T>
 bool SearchSortedCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                             const std::vector<kernel::KernelTensor *> &outputs) {
   CheckParam<S, T>(inputs, outputs);
-  auto sequence = reinterpret_cast<S *>(inputs[kIndex0]->device_ptr());
-  auto values = reinterpret_cast<S *>(inputs[kIndex1]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto sequence = GetDeviceAddress<S>(inputs, kIndex0);
+  auto values = GetDeviceAddress<S>(inputs, kIndex1);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
   size_t elem_num = inputs[kIndex1]->size() / sizeof(S);
   size_t seq_dim = sequence_shape_.size();
   const size_t scalar_size = 1;

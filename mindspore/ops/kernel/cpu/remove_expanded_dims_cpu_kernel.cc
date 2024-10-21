@@ -68,9 +68,9 @@ int RemoveExpandedDimsCpuKernelMod::Resize(const std::vector<KernelTensor *> &in
 bool RemoveExpandedDimsCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &workspace,
                                                   const std::vector<KernelTensor *> &outputs) {
-  const auto has_false_val_addr = reinterpret_cast<size_t *>(inputs[kIndex2]->device_ptr());
-  const auto broadcast_shape_val_addr = reinterpret_cast<int64_t *>(inputs[kIndex3]->device_ptr());
-  const auto idx_advanced_val_addr = reinterpret_cast<int64_t *>(inputs[kIndex4]->device_ptr());
+  const auto has_false_val_addr = GetDeviceAddress<size_t>(inputs, kIndex2);
+  const auto broadcast_shape_val_addr = GetDeviceAddress<int64_t>(inputs, kIndex3);
+  const auto idx_advanced_val_addr = GetDeviceAddress<int64_t>(inputs, kIndex4);
 
   bool has_false = has_false_val_addr[0] > 0;
   ShapeVector broadcast_shape;
@@ -81,9 +81,9 @@ bool RemoveExpandedDimsCpuKernelMod::LaunchKernel(const std::vector<KernelTensor
   }
 
   int64_t idx_advanced = idx_advanced_val_addr[0];
-  auto indices_output_addr = reinterpret_cast<int64_t *>(outputs[kIndex0]->device_ptr());
-  auto new_value_shape_output_addr = reinterpret_cast<int64_t *>(outputs[kIndex1]->device_ptr());
-  auto new_idx_output_addr = reinterpret_cast<int64_t *>(outputs[kIndex2]->device_ptr());
+  auto indices_output_addr = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto new_value_shape_output_addr = GetDeviceAddress<int64_t>(outputs, kIndex1);
+  auto new_idx_output_addr = GetDeviceAddress<int64_t>(outputs, kIndex2);
   ShapeVector data_shape = data_shapes_[0];
   ShapeVector value_shape = data_shapes_[1];
   size_t valid_tensor_nums = 0;
