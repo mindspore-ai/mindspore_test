@@ -121,7 +121,7 @@ from mindspore.ops.function.math_func import greater
 # 43 index_put
 
 # 44 index_select
-
+from mindspore.ops.function.array_func import index_select
 # 45 int
 
 # 46 inverse
@@ -501,6 +501,9 @@ def tensor_greater(input, other):
 # 43 index_put
 
 # 44 index_select
+def deprecated_tensor_index_select(input, axis, index):
+    return index_select(input, axis, index)
+
 
 # 45 int
 

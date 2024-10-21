@@ -104,7 +104,7 @@ deprecated_tensor_method_map = {
     # 43 index_put
 
     # 44 index_select
-
+    "index_select": "deprecated_tensor_index_select",
     # 45 int
 
     # 46 inverse

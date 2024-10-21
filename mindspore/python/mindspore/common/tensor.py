@@ -2352,12 +2352,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('index_fill')(self, axis, index, value)
 
-    def index_select(self, axis, index):
-        """
-        For details, please refer to :func:`mindspore.ops.index_select`.
-        """
-        return tensor_operator_registry.get('index_select')(self, axis, index)
-
     def inplace_update(self, v, indices):
         """
         For details, please refer to :func:`mindspore.ops.inplace_update`.

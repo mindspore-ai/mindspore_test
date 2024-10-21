@@ -238,7 +238,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"cummin", std::string("cummin")},                                  // cummin()
        {"cummax", std::string("cummax")},                                  // cummax()
        {"index_fill", std::string("index_fill")},                          // index_fill()
-       {"index_select", std::string("index_select")},                      // index_select()
        {"copy", std::string("copy")},                                      // copy()
        {"copysign", std::string("copysign")},                              // copysign()
        {"inplace_update", std::string("inplace_update")},                  // P.InplaceUpdateV2
