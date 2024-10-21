@@ -1776,8 +1776,8 @@ void SetOriginObject(const AnfNodePtr &node, const AnfNodeConfigPtr &out_conf) {
     return;
   }
   auto vnode = node->cast<ValueNodePtr>();
-  if (vnode->value()->has_user_data("origin_object")) {
-    auto origin_object = vnode->value()->user_data<py::object>("origin_object");
+  if (vnode->has_user_data("origin_object")) {
+    auto origin_object = vnode->user_data<py::object>("origin_object");
     out_conf->node()->set_user_data<py::object>("origin_object", origin_object);
   }
 }
@@ -2064,13 +2064,6 @@ py::object GetOriginObj(const AnfNodePtr &node) {
   py::object origin_obj;
   if (node->has_user_data("origin_object")) {
     return *node->user_data<py::object>("origin_object");
-  }
-  if (!node->isa<ValueNode>()) {
-    return origin_obj;
-  }
-  auto vnode = node->cast<ValueNodePtr>();
-  if (vnode->value()->has_user_data("origin_object")) {
-    return *vnode->value()->user_data<py::object>("origin_object");
   }
   return origin_obj;
 }

@@ -307,6 +307,9 @@ AnfNodePtr ConvertObjectToNode(const AnfNodePtr &origin_node, const py::object &
   }
   ConvertLoadedGraph(func_graph, convert_result);
   AnfNodePtr output = NewValueNode(convert_result);
+  if (convert_result->isa<ValueDictionary>()) {
+    output->set_user_data<py::object>("origin_object", std::make_shared<py::object>(obj));
+  }
   if (convert_result->isa<tensor::Tensor>()) {
     output = GetMixedPrecisionCastHelp(func_graph, output);
     if (HasConstArgAttr(obj)) {
