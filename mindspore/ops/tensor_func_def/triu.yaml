@@ -1,0 +1,6 @@
+triu:
+  op_yaml: triu_op.yaml
+  py_method: tensor_triu
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

@@ -321,7 +321,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"square", std::string("square")},                                  // P.Square()
        {"sub", std::string("sub")},                                        // P.Sub()
        {"true_divide", std::string("true_divide")},                        // true_divide()
-       {"triu", std::string("triu")},                                      // triu()
        {"subtract", std::string("subtract")},                              // true_divide()
        {"sum_to_size", std::string("sum_to_size")},                        // sum_to_size()
        {"repeat", std::string("repeat")},                                  // C.repeat_elements

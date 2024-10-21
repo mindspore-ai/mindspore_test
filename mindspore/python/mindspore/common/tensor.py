@@ -1366,17 +1366,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('div')(self, value, rounding_mode=None)
 
-    def triu(self, diagonal=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.triu`.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
-        """
-        validator.check_value_type('diagonal', diagonal, [int], 'triu')
-        return tensor_operator_registry.get('triu')(self, diagonal)
-
     def addbmm(self, batch1, batch2, *, beta=1, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.addbmm`.

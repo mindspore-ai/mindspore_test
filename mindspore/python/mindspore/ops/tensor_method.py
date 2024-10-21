@@ -817,6 +817,9 @@ def tensor_not_equal(input, other):
 
 
 # 149 triu
+def tensor_triu(input, diagonal=0):
+    return F.triu(input, diagonal)
+
 
 # 150 __eq__
 
