@@ -39,7 +39,7 @@ from mindspore.ops.auto_generate import cast
 # 2 masked_fill
 
 # 3 abs
-
+from mindspore.ops.auto_generate import abs
 # 4 __abs__
 
 # 5 add
@@ -384,7 +384,8 @@ def tensor_masked_fill(input_x, mask, value):
 
 
 # 3 abs
-
+def tensor_abs(input):
+    return abs(input)
 # 4 __abs__
 
 # 5 add
