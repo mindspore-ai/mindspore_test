@@ -61,9 +61,11 @@ class SplitWithSizeFrontendFuncImpl : public OpFrontendFuncImpl {
         axis += rank;
       }
       size_t pos = LongToSize(axis);
-      int64_t sum_split_size = std::accumulate(split_size.ToVector().begin(), split_size.ToVector().end(), 0);
-      if (output_shape[pos] > 0 && sum_split_size != output_shape[pos]) {
-        MS_EXCEPTION(ValueError) << "split_size's length must be equal with dimIndex";
+      if (!split_size.HasUnknownValue() && input_shape[pos] != abstract::Shape::kShapeDimAny) {
+        int64_t sum_split_size = std::accumulate(split_size.ToVector().begin(), split_size.ToVector().end(), 0);
+        if (input_shape[pos] > 0 && sum_split_size != input_shape[pos]) {
+          MS_EXCEPTION(ValueError) << "split_size's length must be equal with dimIndex";
+        }
       }
       for (size_t i = 0; i < split_size.size(); ++i) {
         if (split_size.IsValueUnknown(i)) {
