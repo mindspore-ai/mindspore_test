@@ -761,12 +761,6 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   /// \return Abstract of Tensor.
   abstract::AbstractBasePtr ToAbstract() override;
 
-  /// \brief Get Abstract cache. The value of the abstract is null.
-  /// Only used by InferShape in PyNative mode.
-  ///
-  /// \return Abstract of tensor.
-  abstract::AbstractBasePtr GetAbstractCache();
-
   /// \brief It is different from 'operator==' which just compares shape/type/address,
   /// it does real value comparison.
   ///
@@ -933,11 +927,6 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   /// \return BaseTensor storage info, the value is nullptr default.
   const TensorStorageInfoPtr storage_info() const;
 
-  /// \brief Set tensor abstract.
-  ///
-  /// \param[in] abstract The abstract of tensor.
-  void set_abstract(const std::weak_ptr<abstract::AbstractBase> &abstract) { abstract_ = abstract; }
-
   /// \brief Set synchronization status.
   ///
   /// \param[in] sync_status The input synchronization status.
@@ -1007,7 +996,6 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   mutable DeviceSyncPtr device_sync_{nullptr};
   mutable TensorSyncStatus sync_status_{kNeedSyncHostToDevice};
   AutoGradMetaDataPtr auto_grad_meta_data_{nullptr};
-  std::weak_ptr<abstract::AbstractBase> abstract_;
   TensorDataPtr data_{nullptr};
   // Tensor base shape which contain dynamic shape info.
   BaseShapePtr base_shape_ptr_{nullptr};

@@ -191,22 +191,6 @@ tensor::BaseTensorPtr GetContiguousTensor(const tensor::BaseTensorPtr &input_ten
   }
   return contiguous_tensor;
 }
-
-void UnsetValueAbstractCache(const ValuePtr &value) {
-  if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
-    tensor->set_abstract(std::weak_ptr<abstract::AbstractBase>());
-  } else if (value->isa<tensor::BaseTensor>()) {
-    auto tensor = value->cast<tensor::BaseTensorPtr>();
-    tensor->set_abstract(std::weak_ptr<abstract::AbstractBase>());
-  } else if (value->isa<ValueSequence>()) {
-    const auto &seq = value->cast<ValueSequencePtr>();
-    auto elements = seq->value();
-    for (const auto &element : elements) {
-      UnsetValueAbstractCache(element);
-    }
-  }
-}
 }  // namespace
 
 AbstractBasePtr Common::SetAbstractValueToAnyValue(const AbstractBasePtr &abs) {
@@ -1096,11 +1080,8 @@ void AutoGrad::CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBa
   MS_EXCEPTION_IF_NULL(v);
   MS_EXCEPTION_IF_NULL(abs);
 
-  if (v->isa<tensor::BaseTensor>()) {
-    auto tensor = v->cast<tensor::BaseTensorPtr>();
-    tensor->set_abstract(abs);
-    kGradAbstractConverter.CacheAbstract(abs);
-  } else if (v->isa<ValueSequence>()) {
+  // Just check size.
+  if (v->isa<ValueSequence>()) {
     const auto &value_seq = v->cast<ValueSequencePtr>();
     const auto &abs_seq = abs->cast<abstract::AbstractSequencePtr>();
     if (abs_seq == nullptr) {
@@ -1109,9 +1090,6 @@ void AutoGrad::CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBa
     size_t value_size = value_seq->size();
     if (value_size != abs_seq->size()) {
       MS_LOG(EXCEPTION) << "Abstract size " << abs_seq->size() << " is not equal to value size " << value_size;
-    }
-    for (size_t i = 0; i < value_size; ++i) {
-      CacheOutputAbstract(value_seq->value()[i], abs_seq->elements()[i]);
     }
   }
 }
@@ -1696,7 +1674,6 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&
       auto device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
       runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output);
       output->data_sync(true);
-      output->set_abstract(std::weak_ptr<abstract::AbstractBase>());
     }
     for (const auto &input : op_inputs) {
       if (input->isa<tensor::BaseTensor>()) {
@@ -1704,7 +1681,6 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&
         auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
         runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
       }
-      UnsetValueAbstractCache(input);
     }
   }
 }
