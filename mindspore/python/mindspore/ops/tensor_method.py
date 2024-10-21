@@ -111,7 +111,7 @@ from mindspore.ops.auto_generate import exp
 from mindspore.ops.auto_generate import gather
 from mindspore.ops.function.array_func import gather_ext
 # 39 greater
-
+from mindspore.ops.function.math_func import greater
 # 40 greater_equal
 
 # 41 gt
@@ -488,6 +488,9 @@ def deprecated_tensor_gather(input, input_indices, axis, batch_dims=0):
 
 
 # 39 greater
+def tensor_greater(input, other):
+    return greater(input, other)
+
 
 # 40 greater_equal
 

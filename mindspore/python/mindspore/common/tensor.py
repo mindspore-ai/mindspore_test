@@ -1566,12 +1566,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
-    def gt(self, x):
-        """
-        For details, please refer to :func:`mindspore.ops.gt`.
-        """
-        return tensor_operator_registry.get('gt')(self, x)
-
     def ge(self, x):
         """
         For details, please refer to :func:`mindspore.ops.ge`.
@@ -4174,12 +4168,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         check_is_number(alpha, (int, float))
         source = tensor_operator_registry.get('__mul__')(source, alpha)
         return tensor_operator_registry.get('index_add')(self, indices=index, y=source, axis=dim)
-
-    def greater(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.greater`.
-        """
-        return tensor_operator_registry.get('greater')(self, other)
 
     def greater_equal(self, other):
         r"""

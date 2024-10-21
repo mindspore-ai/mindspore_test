@@ -196,7 +196,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"__gt__", std::string("gt")},                                      // C.gt
        {"__le__", std::string("le")},                                      // C.le
        {"__ge__", std::string("ge")},                                      // C.ge
-       {"gt", std::string("gt")},                                          // P.Greater
        {"ge", std::string("ge")},                                          // P.GreaterEqual
        {"expand_as", std::string("expand_tensor_as")},                     // C.expand_as
        {"broadcast_to", std::string("broadcast_to")},                      // P.BroadcastTo
@@ -419,7 +418,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"type_as", std::string("type_as")},                                // astype()
        {"dim", prim::kPrimRank},                                           // P.Rank()
        {"index_add", std::string("index_add")},                            // index_add()
-       {"greater", std::string("greater")},                                // greater()
        {"greater_equal", std::string("greater_equal")},                    // greater_equal()
        {"igamma", std::string("igamma")},                                  // igamma()
        {"igammac", std::string("igammac")},                                // igammac()
