@@ -2497,6 +2497,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("copy_")(self, src)
 
+    def clone(self):
+        """
+        For details, please refer to :func:`mindspore.ops.clone`.
+        """
+        return tensor_operator_registry.get("clone")(self)
+
     @max_mint
     def max(self, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
         """

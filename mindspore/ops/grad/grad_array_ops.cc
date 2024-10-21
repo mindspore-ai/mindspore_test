@@ -1030,6 +1030,11 @@ REG_BPROP_BUILDER("Identity").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dout};
 });
 
+REG_BPROP_BUILDER("Clone").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto dout = ib->GetInput(kIndex2);
+  return {dout};
+});
+
 REG_BPROP_BUILDER("Range").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("Arange").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
