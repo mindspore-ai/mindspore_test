@@ -1499,7 +1499,7 @@ def multinomial(input, num_samples, replacement=True, seed=None):
 
     Returns:
         Tensor, has the same rows with input. The number of sampled indices of each row is `num_samples`.
-        The dtype is float32.
+        The dtype is int32.
 
     Raises:
         TypeError: If `input` is not a Tensor whose dtype is not float32.
