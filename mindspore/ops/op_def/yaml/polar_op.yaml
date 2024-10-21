@@ -1,0 +1,17 @@
+#operator polar
+polar:
+    args:
+        abs:
+            dtype: tensor
+        angle:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: Polar
+    function:
+        name: polar_ext
+    dispatch:
+        enable: True
+

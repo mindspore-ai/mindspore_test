@@ -1,0 +1,41 @@
+polar:
+    description: |
+        Converts polar coordinates to Cartesian coordinates.
+
+        Returns a complex tensor, its elements are Cartesian coordinates constructed with the polar
+        coordinates which is specified by radial distance `abs` and polar angle `angle`.
+
+        .. warning::
+            This is an experimental optimizer API that is subject to change.
+
+        .. math::
+
+            y_{i} =  abs_{i} * \cos(angle_{i}) + abs_{i} * \sin(angle_{i}) * j
+
+        Args:
+            - **abs** (Tensor) - Radial distance. Tensor of any dimension,
+              must be one of the following types: float32.
+
+            - **angle** (Tensor) - Polar angle. It has the same shape and dtype as `abs`.
+
+        Returns:
+            Tensor, has the same shape and data type as `abs`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> import mindspore.mint as mint
+            >>> x1 = Tensor(np.array([1, 2]), mindspore.float32)
+            >>> x2 = Tensor(np.array([3, 4]), mindspore.float32)
+            >>> output = mint.polar(x1, x2)
+            >>> print(output)
+            [-0.9899925 +0.14112001j -1.30728724-1.51360499j]
+            >>> x1 = Tensor(2.1, mindspore.float32)
+            >>> x2 = Tensor(2.1, mindspore.float32)
+            >>> output = mint.polar(x1, x2)
+            >>> print(output)
+            (-1.0601766+1.8127397j)
