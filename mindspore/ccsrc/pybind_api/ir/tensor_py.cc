@@ -568,7 +568,9 @@ TensorPtr TensorPy::ConvertBytesToTensor(const py::bytes &bytes_obj, const py::t
 py::array TensorPy::SyncAsNumpy(const Tensor &tensor) {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kAsnumpy);
   // Asnumpy should be a read-only operation and should not modify the original Tensor.
-  runtime::Pipeline::Get().WaitAll();
+  if (tensor.need_pipeline_sync()) {
+    runtime::Pipeline::Get().WaitAll();
+  }
   Tensor tensor_for_copy(tensor);
   {
     py::gil_scoped_release gil_release;
