@@ -360,7 +360,7 @@ AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract
     return NewValueNode(fg);
   }
   auto value = abstract->BuildValue();
-  if (value != kValueAny) {
+  if (!value->ContainsValueAny()) {
     auto ret = NewValueNode(value);
     ret->set_abstract(abstract);
     return ret;
@@ -634,7 +634,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNodeCallFunctionKw(const py::object &cal
   }
   auto key_tuple_abstract = key_abstract->cast<abstract::AbstractTuplePtr>();
   auto key_tuple_value = key_tuple_abstract->BuildValue();
-  if (key_tuple_value == kValueAny) {
+  if (key_tuple_value->ContainsValueAny()) {
     MS_LOG(INFO) << "Key abstract should be constant but got: " << key_abstract->ToString();
     return nullptr;
   }
@@ -1129,7 +1129,7 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
   }
 
   auto value = abs->BuildValue();
-  if (value != kValueAny) {
+  if (!value->ContainsValueAny()) {
     MS_LOG(INFO) << "Build value node for node: " << new_node->DebugString() << " with abstract " << abs->ToString();
     new_node = NewValueNode(value);
   }
