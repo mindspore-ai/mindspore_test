@@ -1445,11 +1445,32 @@ py::object TensorIndex::GetItemByList(const ShapeVector &data_shape, const Tenso
   constexpr int max_data_dim = 8;
   int64_t data_dim = SizeToLong(data_shape.size());
   JudgeDataDim(data_dim, min_data_dim, max_data_dim);
-  bool use_gather = std::all_of(tensor_index.list().begin(), tensor_index.list().end(),
-                                [](auto &x) { return py::isinstance<py::int_>(x) || py::isinstance<py::bool_>(x); });
-  if (use_gather) {
+  bool all_int_bool = true;
+  bool all_int = true;
+  py::list int_index_list_;
+  for (size_t i = 0; i < tensor_index.list_.size(); i++) {
+    py::object index = tensor_index.list_[i];
+    const auto is_int = py::isinstance<py::int_>(index);
+    const auto is_bool = py::isinstance<py::bool_>(index);
+    if (is_int && !is_bool) {
+      int_index_list_.append(CheckRange(index, data_shape[0]));
+    } else {
+      all_int = false;
+    }
+    if (!is_int && !is_bool) {
+      all_int_bool = false;
+      break;
+    }
+  }
+  // use Gather ops when all element in list is int or bool
+  if (all_int_bool) {
     if (data_shape.empty()) {
       MS_EXCEPTION(TypeError) << "Cannot iterate over a scalar tensor.";
+    }
+    // optimize performance when all elements in list are int
+    if (all_int && !int_index_list_.empty()) {
+      return py::make_tuple(TensorPy::MakeTensor(int_index_list_),
+                            py::make_tuple(static_cast<int>(ValueTransferType::kGather)), py::make_tuple(py::none()));
     }
     TensorIndex tuple_index = SequenceToTensor(tensor_index, data_shape[0]);
     if (tuple_index.IsBoolean() && !tuple_index.boolean()) {
