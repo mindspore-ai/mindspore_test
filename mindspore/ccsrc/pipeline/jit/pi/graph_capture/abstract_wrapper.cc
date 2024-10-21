@@ -330,6 +330,6 @@ bool AbstractWrapper::IsConstant() const {
   if (abstract_->isa<abstract::AbstractFunction>()) {
     return true;
   }
-  return abstract_->BuildValue() != kValueAny;
+  return !abstract_->BuildValue()->ContainsValueAny();
 }
 }  // namespace mindspore
