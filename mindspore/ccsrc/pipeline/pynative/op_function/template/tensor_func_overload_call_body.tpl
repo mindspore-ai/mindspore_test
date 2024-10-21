@@ -12,5 +12,6 @@ py::object Tensor${class_name}(const py::args &py_args, const py::kwargs &py_kwa
   switch (sig.index_) {
     ${dispatch_cases}
   }
+  return py::none();
 }
 
