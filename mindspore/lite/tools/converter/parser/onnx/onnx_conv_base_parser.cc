@@ -58,8 +58,8 @@ STATUS ParseDilations(std::vector<int64_t> *dilation, int *conv_dims, const onnx
     case kNumDim3:
       *conv_dims = CONV3D_DIM;
       // The length requirement for strides is 5, and the first two values are used for padding
-      dilation->push_back(onnx_node_attr.ints(kIndex0));
-      dilation->push_back(onnx_node_attr.ints(kIndex1));
+      dilation->push_back(1);
+      dilation->push_back(1);
       dilation->push_back(onnx_node_attr.ints(kIndex0));
       dilation->push_back(onnx_node_attr.ints(kIndex1));
       dilation->push_back(onnx_node_attr.ints(kIndex2));
@@ -168,8 +168,8 @@ STATUS ParseStrides(std::vector<int64_t> *strides, int *conv_dims, const onnx::A
     case kNumDim3:
       *conv_dims = CONV3D_DIM;
       // The length requirement for strides is 5, and the first two values are used for padding
-      strides->push_back(onnx_node_attr.ints(kIndex0));
-      strides->push_back(onnx_node_attr.ints(kIndex1));
+      strides->push_back(1);
+      strides->push_back(1);
       strides->push_back(onnx_node_attr.ints(kIndex0));
       strides->push_back(onnx_node_attr.ints(kIndex1));
       strides->push_back(onnx_node_attr.ints(kIndex2));
