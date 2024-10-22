@@ -157,7 +157,7 @@ from mindspore.ops.function.math_func import  logical_or
 # 61 lt
 
 # 62 masked_fill
-
+from mindspore.ops.auto_generate import masked_fill
 # 63 masked_select
 
 # 64 matmul
@@ -367,6 +367,9 @@ def tensor_to(input, dtype):
 
 
 # 2 masked_fill
+def tensor_masked_fill(input_x, mask, value):
+    return masked_fill(input_x, mask, value)
+
 
 # 3 abs
 

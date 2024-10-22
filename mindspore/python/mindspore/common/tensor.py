@@ -2486,18 +2486,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('fill_diagonal')(fill_value, wrap)(self)
 
-    def masked_fill(self, mask, value):
-        """
-        For details, please refer to :func:`mindspore.ops.masked_fill`.
-        """
-        if isinstance(value, (float, int)):
-            value = tensor_operator_registry.get("scalar_to_tensor")(value, self.dtype)
-        if not isinstance(mask, Tensor):
-            raise TypeError("For 'Tensor.masked_fill', the type of the argument 'mask' must be Tensor, but "
-                            "got {}.".format(type(mask)))
-        validator.check_type_name('mask', mask.dtype, [mstype.bool_], "Tensor")
-        return tensor_operator_registry.get("masked_fill")(self, mask, value)
-
     def ptp(self, axis=None, keepdims=False):
         """
         The name of the function comes from the acronym for "peak to peak". Calculate the difference between the
