@@ -223,7 +223,7 @@ from mindspore.ops.auto_generate import trunc
 # 89
 from mindspore.ops.auto_generate import argsort_ext as argsort
 # 90
-
+from mindspore.ops.auto_generate import isinf
 # 91
 
 # 92
@@ -1945,7 +1945,7 @@ __all__ = [
     # 89
     'argsort',
     # 90
-
+    'isinf',
     # 91
 
     # 92

@@ -40,7 +40,8 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              LinSpace, MatrixDeterminant, LogMatrixDeterminant, Erfinv, Conj,
                              Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
-                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc, Sign, Polar)
+                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc, Sign, Polar,
+                             IsInf)
 
 
 def _infer_shape_reduce(x, axis, keep_dims, prim_name):
@@ -1975,42 +1976,6 @@ class IsNan(Primitive):
     @prim_attr_register
     def __init__(self):
         """Initialize IsNan"""
-        self.init_prim_io_names(inputs=['x'], outputs=['output'])
-
-
-class IsInf(Primitive):
-    r"""
-    Determines which elements are inf or -inf for each position.
-
-    Refer to :func:`mindspore.ops.isinf` for more details.
-
-    Inputs:
-        - **x** (Tensor) - The input tensor.
-
-    Outputs:
-        Tensor, has the same shape of input, and the dtype is bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> is_inf = ops.IsInf()
-        >>> x = Tensor(np.array([np.log(-1), 1, np.log(0)]), mindspore.float32)
-        >>> output = is_inf(x)
-        >>> print(output)
-        [False False True]
-        >>> x = Tensor(2.1, mindspore.float64)
-        >>> output = is_inf(x)
-        >>> print(output)
-        False
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize IsInf"""
         self.init_prim_io_names(inputs=['x'], outputs=['output'])
 
 
