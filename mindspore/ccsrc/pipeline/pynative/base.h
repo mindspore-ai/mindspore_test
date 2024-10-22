@@ -69,8 +69,6 @@ struct AsyncStatus {
 
 struct OpGradInfo {
   ~OpGradInfo() {
-    // Dict value will hold python object which need gil.
-    py::gil_scoped_acquire gil;
     input_value.clear();
     out_value = nullptr;
   }

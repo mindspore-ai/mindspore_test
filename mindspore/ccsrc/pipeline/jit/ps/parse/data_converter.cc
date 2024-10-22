@@ -359,7 +359,6 @@ ValuePtr ConvertDict(const py::object &obj, bool use_signature) {
     (void)key_values.emplace_back(key, value);
   }
   auto res = std::make_shared<ValueDictionary>(key_values);
-  res->set_user_data<py::object>("origin_object", std::make_shared<py::object>(obj));
   return res;
 }
 
