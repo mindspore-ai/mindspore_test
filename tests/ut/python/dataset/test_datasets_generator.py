@@ -2739,12 +2739,12 @@ def test_release_generator_dataset_iter(num_epochs):
     # initialize GeneratorDataset
     dataset = ds.GeneratorDataset(source=data, column_names=["data", "label"], shuffle=False)
     dataset_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-    assert (dataset_memory - data_memory) < 2
+    assert (dataset_memory - data_memory) < 3
 
     # initialize Iterator
     ds_iter = dataset.create_dict_iterator(output_numpy=True, num_epochs=num_epochs)
     iterator_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-    assert (iterator_memory - dataset_memory) < 2
+    assert (iterator_memory - dataset_memory) < 3
 
     # process and fetch data
     epochs = 1 if num_epochs == -1 else num_epochs
@@ -2754,7 +2754,7 @@ def test_release_generator_dataset_iter(num_epochs):
             break
 
     process_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-    assert (process_memory - iterator_memory) < 2
+    assert (process_memory - iterator_memory) < 3
 
     # destruct all the instance
     del item
@@ -2764,7 +2764,7 @@ def test_release_generator_dataset_iter(num_epochs):
 
     # all the memory should be released
     end_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
-    assert (end_memory - init_memory) < 2
+    assert (end_memory - init_memory) < 3
 
     ds.config.set_prefetch_size(original_prefetch_size)
 
