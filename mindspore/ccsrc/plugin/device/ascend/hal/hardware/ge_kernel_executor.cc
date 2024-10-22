@@ -1169,28 +1169,33 @@ bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const vector<Kernel
 }
 
 void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
-  MS_EXCEPTION_IF_NULL(kernel);
+  static std::string env = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC");
+  if (env != "1") {
+    return;
+  }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto env = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC");
-  int execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (env == "1" && ms_context->get_param<bool>(MS_CTX_NEED_CKPT) && (execution_mode != kPynativeMode)) {
-    auto kg = std::dynamic_pointer_cast<session::KernelGraph>(kernel->func_graph());
-    auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
-    auto save_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
-    auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
-    MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
-                  << ", last_triggered_step:" << last_triggered_step;
-    if (cur_step >= (last_triggered_step + save_steps) && kg != nullptr) {
-      if (SkipOrResetCopyAction()) {
-        MS_LOG(INFO) << "Enable async d2h copy";
-        SavePrevStepWeight(kg->GetRootWeights(), AscendStreamMng::GetInstance().GetCopyStream());
-      }
-      if (common::AnfAlgo::HasNodeAttr(kFromRefGraph, kernel) &&
-          common::AnfAlgo::GetNodeAttr<bool>(kernel, kFromRefGraph) && SkipOrResetSyncAction()) {
-        MS_LOG(INFO) << "Ref op sync once action";
-        SyncCopyStream(AscendStreamMng::GetInstance().GetCopyStream());
-      }
+  auto execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
+  auto need_async_ckpt = ms_context->get_param<bool>(MS_CTX_NEED_CKPT);
+  if (execution_mode == kPynativeMode || !need_async_ckpt) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(kernel);
+  auto kg = std::dynamic_pointer_cast<session::KernelGraph>(kernel->func_graph());
+  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
+  auto save_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
+  auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
+  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
+                << ", last_triggered_step:" << last_triggered_step;
+  if (cur_step >= (last_triggered_step + save_steps) && kg != nullptr) {
+    if (SkipOrResetCopyAction()) {
+      MS_LOG(INFO) << "Enable async d2h copy";
+      SavePrevStepWeight(kg->GetRootWeights(), AscendStreamMng::GetInstance().GetCopyStream());
+    }
+    if (common::AnfAlgo::HasNodeAttr(kFromRefGraph, kernel) &&
+        common::AnfAlgo::GetNodeAttr<bool>(kernel, kFromRefGraph) && SkipOrResetSyncAction()) {
+      MS_LOG(INFO) << "Ref op sync once action";
+      SyncCopyStream(AscendStreamMng::GetInstance().GetCopyStream());
     }
   }
 }
@@ -1201,11 +1206,6 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
   // launch kernel
   uint64_t start_time = 0;
   PROFILER_START(start_time);
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
-    MsException::Instance().CheckException();
-  }
   DoAsyncCkpt(kernel);
   if (nop_op_to_memcpy_.find(kernel) != nop_op_to_memcpy_.end()) {
     if (!MemoryCopyAsync(kernel, inputs, outputs)) {

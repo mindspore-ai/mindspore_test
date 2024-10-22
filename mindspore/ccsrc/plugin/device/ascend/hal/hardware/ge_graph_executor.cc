@@ -1115,26 +1115,34 @@ std::vector<GeTensor> GeGraphExecutor::CreateOutputGeTensorList(const std::vecto
 }
 
 void GeGraphExecutor::DoAsyncCkpt(const FuncGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
+  static std::string env = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC");
+  if (env != "1") {
+    return;
+  }
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  auto env = common::GetEnv("MS_ENABLE_CKPT_D2H_ASYNC");
-  if (env == "1" && ms_context->get_param<bool>(MS_CTX_NEED_CKPT) && kg != nullptr) {
-    auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
-    auto save_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
-    auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
-    MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
-                  << ", last_triggered_step:" << last_triggered_step;
-    if (cur_step >= (last_triggered_step + save_steps)) {
-      if (SkipOrResetCopyAction()) {
-        MS_LOG(INFO) << "Enable async d2h copy";
-        SavePrevStepWeight(kg->GetRootWeights(), ResManager()->GetCopyDataStream());
-      }
-      if (kg->has_attr(kIsRefGraph) && GetValue<bool>(kg->get_attr(kIsRefGraph)) && SkipOrResetSyncAction()) {
-        MS_LOG(INFO) << "Ref graph sync once action";
-        SyncCopyStream(ResManager()->GetCopyDataStream());
-      }
+  auto need_async_ckpt = ms_context->get_param<bool>(MS_CTX_NEED_CKPT);
+  if (!need_async_ckpt) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(graph);
+  auto kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
+  if (kg == nullptr) {
+    return;
+  }
+  auto cur_step = ms_context->get_param<int>(MS_CTX_CUR_STEP_NUM);
+  auto save_steps = ms_context->get_param<int>(MS_CTX_SAVE_CKPT_STEPS);
+  auto last_triggered_step = ms_context->get_param<int>(MS_CTX_LAST_TRIGGERED_STEP);
+  MS_LOG(DEBUG) << "cur_step:" << cur_step << ", save_steps: " << save_steps
+                << ", last_triggered_step:" << last_triggered_step;
+  if (cur_step >= (last_triggered_step + save_steps)) {
+    if (SkipOrResetCopyAction()) {
+      MS_LOG(INFO) << "Enable async d2h copy";
+      SavePrevStepWeight(kg->GetRootWeights(), ResManager()->GetCopyDataStream());
+    }
+    if (kg->has_attr(kIsRefGraph) && GetValue<bool>(kg->get_attr(kIsRefGraph)) && SkipOrResetSyncAction()) {
+      MS_LOG(INFO) << "Ref graph sync once action";
+      SyncCopyStream(ResManager()->GetCopyDataStream());
     }
   }
 }
@@ -1145,11 +1153,6 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
-    MsException::Instance().CheckException();
-  }
   DoAsyncCkpt(graph);
   if (IsEnableRefMode()) {
     if (!RunGraphRefMode(graph, inputs)) {
