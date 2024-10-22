@@ -1894,12 +1894,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('pow')(self, exponent)
 
-    def log(self):
-        """
-        For details, please refer to :func:`mindspore.ops.log`.
-        """
-        return tensor_operator_registry.get('log')(self)
-
     def log10(self):
         r"""
         For details, please refer to :func:`mindspore.ops.log10`.

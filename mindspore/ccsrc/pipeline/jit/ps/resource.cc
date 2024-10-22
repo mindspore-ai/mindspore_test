@@ -259,7 +259,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"ndimension", std::string("ndim_")},                               // ndimension()
        {"min", std::string("min")},                                        // P.reduce_min()
        {"pow", std::string("pow")},                                        // P.Pow()
-       {"log", std::string("log")},                                        // P.Log()
        {"nelement", std::string("numel")},                                 // numel()
        {"numel", std::string("numel")},                                    // numel()
        {"permute", std::string("permute")},                                // permute()

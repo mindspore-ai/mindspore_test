@@ -522,6 +522,9 @@ def tensor_le(input, other):
 # 54 less_equal
 
 # 55 log
+def tensor_log(input):
+    return F.log(input)
+
 
 # 56 log2
 
