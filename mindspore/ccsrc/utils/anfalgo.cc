@@ -2048,6 +2048,55 @@ AnfNodePtr AnfAlgo::GetTupleIndexes(const AnfNodePtr &node, std::vector<size_t> 
   return node;
 }
 
+bool AnfAlgo::CheckStridedSliceForwardOrBackWardIsNopNode(const CNodePtr &cnode) {
+  if (IsDynamicShape(cnode)) {
+    return false;
+  }
+  ShapeVector inp_shape = GetPrevNodeOutputInferShape(cnode, 0);
+  ShapeVector out_shape = GetOutputInferShape(cnode, 0);
+  constexpr size_t NO_ATTR_INP_NUM_AT_LEAST = 10;
+  constexpr size_t ATTR_NUM = 5;
+  ShapeVector attrs_val;
+  auto inp_num = cnode->size();
+  // If the following masks are all inputs, the forward input number is 10 and the backward input number is 11.
+  if (inp_num >= NO_ATTR_INP_NUM_AT_LEAST) {
+    auto begin_mask = GetValue<int64_t>(cnode->input(inp_num - kIndex5)->cast<ValueNodePtr>()->value());
+    auto end_mask = GetValue<int64_t>(cnode->input(inp_num - kIndex4)->cast<ValueNodePtr>()->value());
+    auto ellipsis_mask = GetValue<int64_t>(cnode->input(inp_num - kIndex3)->cast<ValueNodePtr>()->value());
+    auto new_axis_mask = GetValue<int64_t>(cnode->input(inp_num - kIndex2)->cast<ValueNodePtr>()->value());
+    auto shrink_axis_mask = GetValue<int64_t>(cnode->input(inp_num - kIndex1)->cast<ValueNodePtr>()->value());
+    attrs_val = {begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask};
+  } else if (HasNodeAttr(kAttrBeginMask, cnode) && HasNodeAttr(kAttrEndMask, cnode) &&
+             HasNodeAttr(kAttrEllipsisMask, cnode) && HasNodeAttr(kAttrNewAxisMask, cnode) &&
+             HasNodeAttr(kAttrShrinkAxisMask, cnode)) {
+    auto begin_mask = GetNodeAttr<int64_t>(cnode, kAttrBeginMask);
+    auto end_mask = GetNodeAttr<int64_t>(cnode, kAttrEndMask);
+    auto ellipsis_mask = GetNodeAttr<int64_t>(cnode, kAttrEllipsisMask);
+    auto new_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrNewAxisMask);
+    auto shrink_axis_mask = GetNodeAttr<int64_t>(cnode, kAttrShrinkAxisMask);
+    attrs_val = {begin_mask, end_mask, ellipsis_mask, new_axis_mask, shrink_axis_mask};
+  }
+  if (attrs_val.size() != ATTR_NUM) {
+    return false;
+  }
+  if (inp_shape.size() != out_shape.size()) {
+    return false;
+  }
+  for (size_t idx = 0; idx < inp_shape.size(); ++idx) {
+    if (inp_shape[idx] != out_shape[idx]) {
+      return false;
+    }
+  }
+  if (attrs_val[kIndex0] != 0 || attrs_val[kIndex1] != 0 || attrs_val[kIndex2] != 0 || attrs_val[kIndex3] != 0) {
+    return false;
+  }
+  for (size_t idx = 0; idx < inp_shape.size(); ++idx) {
+    if (((LongToSize(attrs_val[kIndex4]) >> idx) & 1) != 0 && inp_shape[idx] != 1) {
+      return false;
+    }
+  }
+  return true;
+}
 bool AnfAlgo::IsNopNode(const AnfNodePtr &node) {
   static mindspore::HashSet<std::string> nop_nodes = {prim::kPrimReshape->name(),
                                                       kExpandDimsOpName,
@@ -2079,7 +2128,11 @@ bool AnfAlgo::IsNopNode(const AnfNodePtr &node) {
   if (AnfAlgo::HasNodeAttr(kAttrNopOp, cnode)) {
     is_nop_node = AnfAlgo::GetNodeAttr<bool>(cnode, kAttrNopOp);
   }
-  if (nop_nodes.find(AnfAlgo::GetCNodeName(cnode)) == nop_nodes.end() && !is_nop_node) {
+  auto node_name = AnfAlgo::GetCNodeName(cnode);
+  if (node_name == "StridedSlice" || node_name == "StridedSliceGrad") {
+    return CheckStridedSliceForwardOrBackWardIsNopNode(cnode);
+  }
+  if (nop_nodes.find(node_name) == nop_nodes.end() && !is_nop_node) {
     return false;
   }
 
