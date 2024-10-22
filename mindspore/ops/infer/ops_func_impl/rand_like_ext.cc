@@ -42,11 +42,8 @@ TypeIdList RandLikeExtFuncImpl::InferType(const PrimitivePtr &primitive, const I
   if (prim_name == kNameRandIntLike) {
     CheckRandIntRange(input_infos[kInputIndex1], input_infos[kInputIndex2], prim_name,
                       (output_type == kNumberTypeBool));
-  } else {
-    CheckAndConvertUtils::CheckTypeIdValid(
-      "dtype", output_type, {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16},
-      primitive->name());
   }
+  CheckAndConvertUtils::CheckTypeIdValid("dtype", output_type, common_mint_valid_type_ids_with_bool, primitive->name());
   return {output_type};
 }
 }  // namespace ops

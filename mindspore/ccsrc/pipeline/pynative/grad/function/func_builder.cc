@@ -704,8 +704,6 @@ NodePtr FuncBuilder::GeLUGrad(const NodePtr &dy, const NodePtr &x, const NodePtr
 
 NodePtr FuncBuilder::GeLU(const NodePtr &input) { return NativeFunc::GeLU(input); }
 
-NodePtr FuncBuilder::Generator(const NodePtr &cmd, const NodePtr &inputs) { return NativeFunc::Generator(cmd, inputs); }
-
 NodePtr FuncBuilder::GridSampler2DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
                                        const NodePtr &interpolation_mode, const NodePtr &padding_mode,
                                        const NodePtr &align_corners) {

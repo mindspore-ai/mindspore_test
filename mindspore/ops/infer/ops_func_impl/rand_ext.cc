@@ -30,8 +30,13 @@
 namespace mindspore {
 namespace ops {
 void CheckRandIntRange(const InferInfoPtr &from, const InferInfoPtr &to, const std::string &name, bool output_bool) {
-  auto from_value = from->GetScalarValueWithCheck<int64_t>();
-  auto to_value = to->GetScalarValueWithCheck<int64_t>();
+  auto from_opt = from->GetScalarValue<int64_t>();
+  auto to_opt = to->GetScalarValue<int64_t>();
+  if (!from_opt.has_value() || !to_opt.has_value()) {
+    return;
+  }
+  auto from_value = from_opt.value();
+  auto to_value = to_opt.value();
   MS_ASSERT_TRUE(from_value < to_value) << "For " << name << ", expected 'from' is less than 'to', but got "
                                         << from_value << " and " << to_value;
   if (output_bool) {
@@ -49,11 +54,8 @@ TypeIdList RandExtFuncImpl ::InferType(const PrimitivePtr &primitive, const Infe
   auto infer_type = static_cast<TypeId>(dtype->GetScalarValueWithCheck<int64_t>());
   if (prim_name == kNameRandInt) {
     CheckRandIntRange(input_infos[kInputIndex0], input_infos[kInputIndex1], prim_name, (infer_type == kNumberTypeBool));
-  } else {
-    CheckAndConvertUtils::CheckTypeIdValid(
-      "dtype", infer_type, {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16},
-      primitive->name());
   }
+  CheckAndConvertUtils::CheckTypeIdValid("dtype", infer_type, common_mint_valid_type_ids_with_bool, primitive->name());
   return {infer_type};
 }
 }  // namespace ops
