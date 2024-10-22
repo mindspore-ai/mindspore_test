@@ -911,10 +911,6 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   auto sequence = abstract->cast<abstract::AbstractSequencePtr>();
   auto func_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_)->FGBuilder();
   auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
-  if (graph_node == nullptr) {
-    MS_LOG(DEBUG) << "Cannot find anf node of sequence: " << node->ToString();
-    return node;
-  }
   auto func_graph = func_graph_builder->graph(true);
   bool is_tuple = abstract->isa<abstract::AbstractTuple>();
   auto mutated_node = graph_->NewValueNode(nullptr, is_tuple ? BUILD_TUPLE : BUILD_LIST, sequence->size(), {});
@@ -1087,9 +1083,16 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
       continue;
     }
 
+    // Every node that appears here should have a corresponding anf node in top func graph.
+    // Unfortunately, due to some defectuve side-effect node processing, they do not have
+    // This issue must be fixed, just pass-by and reminder here
+    // This code will be redundant after the issue fixed.
+    bool is_not_in_top_graph = (func_graph_builder->GetNodeByWrapper(node->abstract_wrapper()) == nullptr);
+
     // Contains data whose type is not supported by the graph, analyze its inputs
-    if (!IsValidOutput(node)) {
-      MS_LOG(INFO) << "Invalid output : " << node->ToString();
+    if (!IsValidOutput(node) || is_not_in_top_graph) {
+      auto msg = (is_not_in_top_graph ? "Not in top graph node : " : "Invalid output : ");
+      MS_LOG(INFO) << msg << node->ToString();
       AddNodeWithoutDuplicate(&GetCaptureInfo(), node);
       if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
         GRAPH_JIT_LOG_F("This call node will executed in pynative : [%s]", node->ToString().c_str());
@@ -1114,11 +1117,11 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
     auto sequence = MutateSequenceNode(node);
     for (auto iter = sequence->getInputs().begin(); iter != sequence->getInputs().end(); iter++) {
       auto input = *iter;
+      maybe_update_nodes_[input].push_back(node);
       auto wrapper = input->abstract_wrapper();
       if (wrapper == nullptr || !wrapper->abstract()->isa<abstract::AbstractNone>()) {
         if (std::find(nodes.begin(), nodes.end(), input) == nodes.end()) {
           nodes.push_back(input);
-          maybe_update_nodes_[input].push_back(node);
         }
       }
     }

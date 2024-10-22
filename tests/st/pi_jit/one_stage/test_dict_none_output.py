@@ -33,6 +33,15 @@ def create_dict_with_nested_tuple(x):
 def create_nested_dict_with_tuple(x):
     return {'x' : x, 'dict': {'x' : x, 'tuple': (x * x, None)}}
 
+def create_tuple(x):
+    return (x, x, x)
+
+def create_dict(x):
+    return {'x' : x, '2x' : x * 2}
+
+def create_nested_dict_tuple_with_call(x):
+    return create_dict(create_tuple(create_dict(create_tuple(x))))
+
 def check_func_compile_state(func):
     jcr = get_code_extra(func.__wrapped__)
     assert jcr is not None
@@ -192,6 +201,22 @@ def test_dict_with_nested_tuple(func, x):
 @pytest.mark.parametrize('func', [create_nested_dict_with_tuple])
 @pytest.mark.parametrize('x', [Tensor([1, 2, 3, 4, 5, 6])])
 def test_nested_dict_with_tuple(func, x):
+    """
+    Feature: ALL TO ALL
+    Description: test cases for return tuple contain None in graph
+    Expectation: the result correct, no cracked graph
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    res = func(x)
+    wrapped_func = jit(func, mode='PIJit')
+    ms_res = wrapped_func(x,)
+    result_compare(res, ms_res)
+    check_func_compile_state(wrapped_func)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('func', [create_nested_dict_tuple_with_call])
+@pytest.mark.parametrize('x', [Tensor([1, 2, 3, 4, 5, 6])])
+def test_nested_dict_tuple_with_call(func, x):
     """
     Feature: ALL TO ALL
     Description: test cases for return tuple contain None in graph
