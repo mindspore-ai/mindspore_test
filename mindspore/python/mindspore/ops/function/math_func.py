@@ -7554,12 +7554,18 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         >>> print(ops.function.math_func.norm_ext(x, 2.0))
         38.327538
     """
+    if (dim is not None) or keepdim or (dtype is not None):
+        raise ValueError(f"For `norm_ext`, the value of `dim`, `keepdim` and `dtype` must be default value currently.")
+
     if isinstance(p, (int, float)):
         if float(p) in [0.0, 1.0, 2.0, 3.0]:
             return norm_op(input, p, dim, keepdim, dtype)
-        if dtype is None:
+        if input.dtype in [mstype.bfloat16, mstype.float16, mstype.float32]:
             return lp_norm_v2_op(input, p, dim, keepdim, 0.0)
+        dtype = input.dtype
+        input = ops.cast(input, mstype.float32)
         return ops.cast(lp_norm_v2_op(input, p, dim, keepdim, 0.0), dtype)
+
     if p == 'fro':
         if isinstance(dim, (list, tuple)) and len(dim) > 2:
             raise ValueError(f"For `norm_ext`, the size of `dim` cannot be greater than 2 "
