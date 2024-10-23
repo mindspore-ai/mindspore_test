@@ -56,7 +56,7 @@ Status DvppGaussianBlurOp::Compute(const std::shared_ptr<DeviceTensorAscend910B>
   const auto kKernelSizeOne = 1;
   const auto kKernelSizeThree = 3;
   const auto kKernelSizeFive = 5;
-  for (const float &k : kernel_size) {
+  for (const int64_t &k : kernel_size) {
     if (k != kKernelSizeOne && k != kKernelSizeThree && k != kKernelSizeFive) {
       auto error =
         "DvppGaussianBlur: the value of gaussian kernel only supports [1, 3, 5], but got " + std::to_string(k);

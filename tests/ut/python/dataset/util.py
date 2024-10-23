@@ -68,12 +68,12 @@ def _compare_to_golden_dict(golden_ref_dir, result_dict, check_pillow_version=Fa
     """
     golden_array = np.load(golden_ref_dir, allow_pickle=True)['arr_0']
     # Note: The version of PILLOW that is used in Jenkins CI is compared with below
-    if check_pillow_version and PIL.__version__ >= '9.0.0':
+    if check_pillow_version and int(PIL.__version__.split(".")[0]) >= 9:
         try:
             np.testing.assert_equal(result_dict, dict(golden_array))
         except AssertionError:
             logger.warning(
-                "Results from Pillow >= 9.0.0 is incompatibale with Pillow < 9.0.0, need more validation.")
+                "Results from Pillow >= 9.0.0 is incompatible with Pillow < 9.0.0, need more validation.")
     elif check_pillow_version:
         # Note: The version of PILLOW that is used in Jenkins CI is >= 9.0.0 and
         #       some of the md5 results files that are generated with PILLOW 7.2.0
