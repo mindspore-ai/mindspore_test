@@ -392,10 +392,6 @@ bool FuncGraphBuilder::IsParameterSequence(const py::object &object) {
 
 AbstractBasePtr FuncGraphBuilder::BuildAbstractForInputObject(const py::object &object) {
   if (object.ptr() == nullptr) {
-    MS_LOG(INFO) << "Get top graph arg input failed.";
-    return nullptr;
-  }
-  if (py::isinstance<Cell>(object) || PyFunction_Check(object.ptr()) || PyMethod_Check(object.ptr())) {
     return nullptr;
   }
   auto value = ConvertPyObjToValue(object);
