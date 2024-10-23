@@ -5,6 +5,9 @@ mindspore.mint.linspace
 
     返回一个在区间 `start` 和 `end` （包括 `start` 和 `end` ）内均匀分布的，包含 `steps` 个值的一维Tensor。
 
+    .. warning::
+        Atlas训练系列产品暂不支持int16数据类型。
+
     .. math::
         \begin{aligned}
         &step = (end - start)/(steps - 1)\\

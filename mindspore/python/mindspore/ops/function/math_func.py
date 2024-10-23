@@ -2761,6 +2761,9 @@ def linspace_ext(start, end, steps, *, dtype=None):
         &output = [start, start+step, start+2*step, ... , end]
         \end{aligned}
 
+    .. warning::
+        Atlas training series does not support int16 dtype currently.
+
     Args:
         start (Union[float, int]): Start value of interval.
             It can be a float or integer.
