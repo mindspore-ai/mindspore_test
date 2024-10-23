@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_COUNT_NONZERO_H_
-#define MINDSPORE_CORE_OPS_COUNT_NONZERO_H_
-#include <memory>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NESCALAR_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NESCALAR_H_
+
 #include <vector>
-#include "abstract/abstract_value.h"
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
-#include "ops/primitive_c.h"
-#include "utils/check_convert_utils.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameCountNonZero = "CountNonZero";
-class OPS_API CountNonZero : public BaseOperator {
+class OPS_API NeScalarFuncImpl : public OpFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(CountNonZero);
-  CountNonZero() : BaseOperator(kNameCountNonZero) { InitIOName({"x"}, {"y"}); }
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_COUNT_NONZERO_H_
+
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NESCALAR_H_

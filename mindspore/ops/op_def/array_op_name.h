@@ -21,7 +21,6 @@ namespace mindspore {
 // Arrays
 constexpr auto kTopKOpName = "TopK";
 constexpr auto kLeftShiftOpName = "LeftShift";
-constexpr auto kCountNonZeroOpName = "CountNonZero";
 constexpr auto kFillDiagonalOpName = "FillDiagonal";
 constexpr auto kSegmentMaxOpName = "SegmentMax";
 constexpr auto kSegmentSumOpName = "SegmentSum";
