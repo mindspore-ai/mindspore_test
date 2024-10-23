@@ -477,8 +477,10 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
     PyNativeAlgo::AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
   // Add graph din
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  ValuePtrList flatten_outputs;
+  PyNativeAlgo::DataConvert::FlattenValueSeqArg(op_output_, false, true, &flatten_outputs);
   auto ir_builder = FuncBuilder(name_, device_target, nullptr);
-  auto real_dout = LazeUpdateZeroGradient(grads, &ir_builder, op_output_);
+  auto real_dout = LazeUpdateZeroGradient(grads, &ir_builder, std::make_shared<ValueTuple>(flatten_outputs));
 
   // If output is jit and has dict output. Key and value will converte into tuples for inputs
   if (!graph_call_condition_.jit_out_has_dict_) {
@@ -678,7 +680,7 @@ bool FuncGrad::KPynativeWithFProp(const GradParamPtr &grad_param) {
     MS_LOG(EXCEPTION) << "High grad not support pyboost call";
   }
   ValuePtrList flatten_outputs;
-  PyNativeAlgo::DataConvert::FlattenValueSeqArg(grad_param->op_grad_info->out_value, false, false, &flatten_outputs);
+  PyNativeAlgo::DataConvert::FlattenValueSeqArg(grad_param->op_grad_info->out_value, false, true, &flatten_outputs);
   size_t flatten_output_size = flatten_outputs.size();
   auto fn = BuildGraphBackwardNode(grad_param, flatten_output_size);
   auto variable = std::make_shared<FuncVariable>(fn, false);
@@ -775,7 +777,9 @@ BackwardNodePtr FuncGrad::BuildGraphBackwardNode(const GradParamPtr &grad_param,
     bprop_graph->ToString(), bprop_graph, input_args, grad_param->op_grad_info->out_value, flatten_output_size,
     grad_param->graph_cache_key, grad_param->is_control_flow, grad_param->is_jit_graph,
     grad_param->use_dynamic_shape_process, grad_param->jit_out_has_dict);
-  auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(grad_param->op_grad_info->input_value);
+  ValuePtrList flatten_inputs;
+  PyNativeAlgo::DataConvert::FlattenValueSeqArg(std::make_shared<ValueTuple>(grad_param->op_grad_info->input_value),
+                                                false, true, &flatten_inputs);
   ConstructParameterNodes(flatten_inputs);
   UpdateNextEdges(fn, flatten_inputs);
   return fn;

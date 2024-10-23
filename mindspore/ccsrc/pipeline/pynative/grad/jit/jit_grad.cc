@@ -40,13 +40,33 @@ const mindspore::HashSet<std::string> kExpanderWhiteList{
   kPrintOpName,
 };
 
+py::tuple ConvertDictArgs(const py::object &args) {
+  if (!py::isinstance<py::tuple>(args)) {
+    MS_LOG(EXCEPTION) << "Args should be tuple but got: " << py::str(args);
+  }
+  auto tuple_args = py::cast<py::tuple>(args);
+  py::list new_args;
+  for (const auto &e : tuple_args) {
+    auto element = py::cast<py::object>(e);
+    if (py::isinstance<py::dict>(element)) {
+      MS_LOG(INFO) << "Convert dict input " << py::str(element) << " to tuple with values.";
+      new_args.append(py::reinterpret_steal<py::tuple>(PyDict_Values(element.ptr())));
+    } else {
+      new_args.append(element);
+    }
+  }
+  return py::cast<py::tuple>(new_args);
+}
+
 FrontendOpRunInfoPtr GetOpRunInfo(const py::object &out, const py::args &args, const std::string &graph_phase,
                                   bool modify_output, const FuncGraphPtr &jit_forward_graph, ValuePtr *added_out_v) {
   auto op_run_info = std::make_shared<FrontendOpRunInfo>();
   op_run_info->requires_grad = true;
   op_run_info->is_jit_input = true;
   op_run_info->base_op_run_info.op_name = graph_phase;
-  PyNativeAlgo::PyParser::ParseOpInputByPythonObj(op_run_info, args);
+  // Dict input for graph should be converted to tuple after compile.
+  const auto &new_args = ConvertDictArgs(args);
+  PyNativeAlgo::PyParser::ParseOpInputByPythonObj(op_run_info, new_args);
   // Set input abs
   const auto &original_params = jit_forward_graph->parameters();
   for (size_t i = 0; i < op_run_info->input_size; ++i) {

@@ -941,6 +941,13 @@ class MS_CORE_API BaseTensor : public MetaTensor {
     auto_grad_meta_data_ = auto_grad_meta_data;
   }
 
+  /// \brief Check whether the tensor is used in auto grad.
+  ///
+  /// \return Boolean indicate whether the tensor is used in auto grad.
+  bool HasAutoGrad() const {
+    return auto_grad_meta_data_ != nullptr && auto_grad_meta_data_->input_type() == InputType::kOpOutput;
+  }
+
   /// \brief Get tensor storage info.
   ///
   /// \return BaseTensor storage info, the value is nullptr default.

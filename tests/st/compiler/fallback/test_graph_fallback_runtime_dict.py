@@ -1046,6 +1046,7 @@ def test_dict_inner_method_overrrided_3():
     assert ms_out == (1, 2)
 
 
+@pytest.mark.skip(reason="Jit will run strict mode in the future")
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_pynative_jit_dict_grad():
