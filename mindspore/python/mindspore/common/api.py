@@ -48,7 +48,7 @@ from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcas
 from mindspore import _checkparam as Validator
 from mindspore._checkparam import is_stub_tensor
 from mindspore.common._utils import is_shape_unknown
-from mindspore.common.mutable import mutable
+from mindspore.common.mutable import mutable, _check_element_type
 from mindspore.common._register_for_adapter import ms_adapter_registry
 from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, update_auto_dynamic_shape_phase, \
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
@@ -307,7 +307,21 @@ def _get_compile_cache_dep_files():
     return compile_cache_dep_files
 
 
-def _restore_mutable_attr(args_list, compile_args):
+def _contains_auto_grad_tensor(obj):
+    """Check object is or contains auto grad tensor element"""
+    if isinstance(obj, PythonTensor):
+        return obj._has_auto_grad()
+    if isinstance(obj, (tuple, list)):
+        for element in obj:
+            if _contains_auto_grad_tensor(element):
+                return True
+    if isinstance(obj, dict):
+        for key in obj:
+            if _contains_auto_grad_tensor(obj[key]):
+                return True
+    return False
+
+def _add_mutable_attr(args_list, compile_args, is_grad):
     """Restore the mutable attr for every arg."""
     new_compile_args = ()
     for idx, arg in enumerate(args_list):
@@ -318,7 +332,12 @@ def _restore_mutable_attr(args_list, compile_args):
             else:
                 new_compile_args += (mutable(compile_args[idx], False),)
         else:
-            new_compile_args += (compile_args[idx],)
+            if is_grad and _contains_auto_grad_tensor(arg):
+                if not _check_element_type(arg):
+                    raise RuntimeError("Input \"%s\" contains tensor with gradient but can not mutable." % (str(arg)))
+                new_compile_args += (mutable(compile_args[idx], False),)
+            else:
+                new_compile_args += (compile_args[idx],)
     return new_compile_args
 
 
@@ -607,8 +626,10 @@ class _MindsporeFunctionExecutor:
         compile_args = get_auto_dynamic_shape_args_with_check_input_signature(compile_args, key_id,
                                                                               self.input_signature)
 
-        # Restore the mutable attr for every arg.
-        compile_args = _restore_mutable_attr(args, compile_args)
+        # Add mutable for compile_args for two scene:
+        # 1) Origin args is mutable.
+        # 2) Args contains sequence with gradient tensor.
+        compile_args = _add_mutable_attr(args, compile_args, _pynative_executor.requires_grad())
         self._compile_args = compile_args
         generate_name, echo_function_name = self._get_generate_name()
         # The full Function name

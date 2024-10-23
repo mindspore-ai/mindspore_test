@@ -1182,6 +1182,7 @@ void RegMetaTensor(const py::module *m) {
                               )mydelimiter")
     .def("_set_user_data", &TensorPy::SetUserData)
     .def("_get_user_data", &TensorPy::GetUserData)
+    .def("_has_auto_grad", &Tensor::HasAutoGrad)
     .def("set_cast_dtype", &Tensor::set_cast_dtype, py::arg("dtype") = nullptr)
     .def("data_sync", &Tensor::data_sync)
     .def("wait_pipeline", &Tensor::ExecuteLazyTask)

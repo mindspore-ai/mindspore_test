@@ -2623,6 +2623,21 @@ ValuePtr AnfAlgo::ValueToScalar(const ValuePtr &value, TypeId type_id) {
 }
 
 namespace {
+void FlattenValueSequence(ValuePtrList *value_list, const ValuePtr &value) {
+  if (value->isa<tensor::BaseTensor>()) {
+    (void)value_list->emplace_back(value);
+    return;
+  }
+  if (!value->isa<ValueSequence>()) {
+    return;
+  }
+  auto value_seq = value->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(value_seq);
+  for (const auto &i : value_seq->value()) {
+    FlattenValueSequence(value_list, i);
+  }
+}
+
 void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
   MS_EXCEPTION_IF_NULL(value_list);
   for (size_t i = 0; i < ref_list.size(); ++i) {
@@ -2637,6 +2652,10 @@ void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
       auto csr_tensor = utils::cast<tensor::CSRTensorPtr>(ref_list[i]);
       MS_EXCEPTION_IF_NULL(csr_tensor);
       (void)value_list->emplace_back(csr_tensor);
+    } else if (utils::isa<ValueSequencePtr>(ref_list[i])) {
+      auto value_seq = utils::cast<ValueSequencePtr>(ref_list[i]);
+      MS_EXCEPTION_IF_NULL(value_seq);
+      FlattenValueSequence(value_list, value_seq);
     } else {
       MS_LOG(EXCEPTION) << "The ref value " << ref_list[i].ToString() << " is not a vector ref or a tensor!";
     }
