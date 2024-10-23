@@ -4639,12 +4639,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('argsort')(self, axis, descending)
 
-    def trunc(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.trunc`.
-        """
-        return tensor_operator_registry.get('trunc')(self)
-
     def where(self, condition, y):
         r"""
         For details, please refer to :func:`mindspore.ops.where`.

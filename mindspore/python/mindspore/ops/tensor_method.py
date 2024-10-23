@@ -680,6 +680,9 @@ def tensor_tanh(input):
 # 112 tril
 
 # 113 trunc
+def tensor_trunc(input):
+    return F.trunc(input)
+
 
 # 114 type
 

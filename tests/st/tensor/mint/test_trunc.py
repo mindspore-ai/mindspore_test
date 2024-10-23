@@ -27,15 +27,15 @@ class TruncNet(nn.Cell):
         return x.trunc()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level2',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
           card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
 def test_f_trunc(mode):
     """
-    Feature: tensor.sub()
-    Description: Verify the result of tensor.sub
+    Feature: tensor.trunc()
+    Description: Verify the result of tensor.trunc
     Expectation: success
     """
     os.environ["MS_TENSOR_API_ENABLE_MINT"] = '1'
@@ -46,4 +46,23 @@ def test_f_trunc(mode):
     expected = np.array([3, 0, 0, -3], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
     del os.environ["MS_TENSOR_API_ENABLE_MINT"]
-    
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_trunc_graph_mode():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.trunc.
+    Expectation: Run success
+    """
+    @ms.jit
+    def func_trunc(x):  # pylint: disable=redefined-builtin
+        return x.trunc()
+
+    x_np = np.array([3.4742, 0.5466, -0.8008, -3.9079])
+    x = ms.Tensor(x_np, ms.float32)
+    out = func_trunc(x)
+    expect = np.trunc(x_np)
+    assert np.allclose(out.asnumpy(), expect, rtol=5e-3, atol=1e-4)

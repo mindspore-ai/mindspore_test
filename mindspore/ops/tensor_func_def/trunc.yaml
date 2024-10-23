@@ -1,0 +1,6 @@
+trunc:
+  op_yaml: trunc_op.yaml
+  py_method: tensor_trunc
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
