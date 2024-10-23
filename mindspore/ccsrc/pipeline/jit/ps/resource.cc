@@ -434,7 +434,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"sign", std::string("sign")},                                      // sign()
        {"signbit", std::string("signbit")},                                // signbit()
        {"sinh", std::string("sinh")},                                      // sinh()
-       {"sort", std::string("sort")},                                      // sort()
        {"cauchy", std::string("cauchy")},                                  // P.cauchy()
        {"log_normal", std::string("log_normal")},                          // P.LogNormalReverse()
        {"argsort", std::string("argsort")},                                // argsort()

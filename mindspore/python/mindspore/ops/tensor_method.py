@@ -229,7 +229,7 @@ from mindspore.ops.auto_generate import sigmoid
 # 96 size
 
 # 97 sort
-
+from mindspore.ops.function.array_func import sort, sort_ext
 # 98 split
 from mindspore.ops.function.array_func import split
 # 99 sqrt
@@ -704,6 +704,12 @@ def tensor_sigmoid(input):
 # 96 size
 
 # 97 sort
+def deprecated_tensor_sort(input_x, axis=-1, descending=False):
+    return sort(input_x, axis, descending)
+
+
+def tensor_sort_ext(input, *, dim=-1, descending=False, stable=False):
+    return sort_ext(input, dim=dim, descending=descending, stable=stable)
 
 # 98 split
 def deprecated_tensor_split(input, split_size_or_sections, axis=0):
