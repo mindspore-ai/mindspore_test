@@ -30,7 +30,7 @@ mindspore.ops.multinomial
         - **seed** (int, 可选) - 随机数种子，用于生成随机数(伪随机数)，必须是非负数。默认值： ``None`` 。
 
     返回：
-        Tensor，与输入有相同的行数。每行的采样索引数为 `num_samples` 。数据类型为float32。
+        Tensor，与输入有相同的行数。每行的采样索引数为 `num_samples` 。数据类型为int32。
 
     异常：
         - **TypeError** - 如果 `input` 不是数据类型不是float32的Tensor。
