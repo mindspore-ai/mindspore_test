@@ -507,8 +507,7 @@ ValuePtr AutoGradUtil::BuildSpecialValueGrad(const ValuePtr &value, const tensor
     return WrapCOOTensor(coo_tensor, BuildSpecialValueGrad(coo_tensor->GetValues(), grad, func_builder, type));
   }
   MS_LOG(INFO) << "For value " << value->ToString() << ", the type is not tensor or scalar";
-  auto fake_tensor = std::make_shared<tensor::Tensor>(0, value->type());
-  return BuildSpecialValueGrad(fake_tensor, grad, func_builder, type);
+  return std::make_shared<tensor::Tensor>(0);
 }
 
 AnfNodePtr AutoGradUtil::BuildSpecialNode(const KernelGraphPtr &tape, const ValuePtr &value,
