@@ -114,8 +114,20 @@ class FrameStates {
 
 class Graph {
  public:
+  struct BreakInfo {
+    Instr *break_point_;
+    ValueNode *break_point_node_;
+    std::vector<int> alive_locals_;
+    std::vector<ValueNode *> alive_nodes_;
+    int bci_;
+    StopTraceReason reason_;
+  };
+
   Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf);
   virtual ~Graph() {}
+
+  const auto &break_info() const { return break_info_; }
+  void set_break_info(const BreakInfo &info) { break_info_ = info; }
 
   ValueNode *GetGeneratorResult() const { return generator_result_; }
   void SetGeneratorResult(ValueNode *generator_result) { generator_result_ = generator_result; }
@@ -125,9 +137,12 @@ class Graph {
   PyCodeObject *GetCodeObj() const { return reinterpret_cast<PyCodeObject *>(co_.ptr()); }
   const py::object &GetGlobals() const { return f_globals_; }
 
-  void StopTraceAt(int bci, StopTraceReason reason) { stop_trace_info_ = {bci, reason}; }
-  int GetStopTraceBci() const { return stop_trace_info_.bci; }
-  StopTraceReason GetStopTraceReason() const { return stop_trace_info_.reason; }
+  void StopTraceAt(int bci, StopTraceReason reason) {
+    break_info_.bci_ = bci;
+    break_info_.reason_ = reason;
+  }
+  int GetStopTraceBci() const { return break_info_.bci_; }
+  StopTraceReason GetStopTraceReason() const { return break_info_.reason_; }
   const char *GetModuleName() const { return module_name_; }
 
   auto &GetCFG() { return cfg_; }
@@ -184,7 +199,7 @@ class Graph {
   void SetSideEffect(const std::shared_ptr<SideEffect> &handler);
 
   // collect alive node, output bitmap
-  std::vector<ValueNode *> CollectAliveNode(int bci, std::vector<int> * = nullptr, BitMap * = nullptr) const;
+  std::vector<ValueNode *> CollectAliveNode(int bci, std::vector<int> * = nullptr) const;
 
   // collect alive node, clear the bit if alive local is unbound
   static std::vector<ValueNode *> CollectAliveNode(const FrameStates &, BitMap *, std::vector<int> * = nullptr);
@@ -223,10 +238,7 @@ class Graph {
 
   const char *module_name_;
 
-  struct StopTraceInfo {
-    int bci;  // trace stopped bci
-    StopTraceReason reason;
-  } stop_trace_info_;
+  BreakInfo break_info_;
 
   Allocator alloc_;
 

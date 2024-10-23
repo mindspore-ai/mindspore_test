@@ -35,7 +35,8 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
       guard_(nullptr),
       prune_branch_count_(0),
       func_graph_builder_(nullptr) {
-  stop_trace_info_ = {-1, StopTraceReason::kNonStopTrace};
+  break_info_.bci_ = -1;
+  break_info_.reason_ = StopTraceReason::kNonStopTrace;
   if (!co) {
     frame_states_[0] = std::make_unique<FrameStates>();  // emplace empty frame
     module_name_ = "";
@@ -524,16 +525,13 @@ std::vector<TracePtr> Graph::TraceValueNodeClosure(ValueNode *node, bool *ret, i
   return list;
 }
 
-std::vector<ValueNode *> Graph::CollectAliveNode(int bci, std::vector<int> *ids, BitMap *map) const {
+std::vector<ValueNode *> Graph::CollectAliveNode(int bci, std::vector<int> *ids) const {
   std::vector<ValueNode *> result;
   if (bci == -1) {
     result = {this->GetRetVal()};
   } else {
     BitMap alive = this->GetCFG()->GetLiveness()->CollectAlive(bci);
     result = CollectAliveNode(this->GetFrame(bci), &alive, ids);
-    if (map != nullptr) {
-      *map = std::move(alive);
-    }
   }
   if (GetSideEffect()->IsEmpty()) {
     return result;

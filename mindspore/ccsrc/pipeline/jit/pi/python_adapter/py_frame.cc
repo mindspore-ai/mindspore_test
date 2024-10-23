@@ -124,7 +124,7 @@ namespace pijit {
 EvalFrameObject *FrameConvert(PyFrameObject *f) { return GetEvalFrame(f); }
 
 // copy a function helper for EvalNewCode
-static PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code) {
+PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code) {
   PyObject *tmp = reinterpret_cast<PyObject *>(new_code);
   tmp = PyFunction_New(tmp, old_func->func_globals);
   PyFunctionObject *op = reinterpret_cast<PyFunctionObject *>(tmp);

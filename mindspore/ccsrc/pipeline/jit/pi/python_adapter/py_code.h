@@ -29,6 +29,7 @@ namespace py = pybind11;
  */
 class PyCodeWrapper {
  public:
+  PyCodeWrapper() = default;
   explicit PyCodeWrapper(PyCodeObject *co) : ptr_(co) {}
   explicit PyCodeWrapper(const py::handle &ptr);
 

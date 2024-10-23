@@ -86,6 +86,7 @@ class PyFrameWrapper {
 };
 
 EvalFrameObject *FrameConvert(PyFrameObject *);
+PyFunctionObject *FunctionNew(PyFunctionObject *old_func, PyCodeObject *new_code);
 
 }  // namespace pijit
 }  // namespace mindspore

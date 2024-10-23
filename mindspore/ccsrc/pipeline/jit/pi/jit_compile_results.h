@@ -154,7 +154,8 @@ inline JitCompileResults *GetJitCompileResults(PyCodeObject *code) {
   return nullptr;
 }
 
-inline JitCompileResults *GetJitCompileResults(PyObject *code) {
+inline JitCompileResults *GetJitCompileResults(const py::handle &h) {
+  PyObject *code = h.ptr();
   code = PyMethod_Check(code) ? PyMethod_GET_FUNCTION(code) : code;
   code = PyFunction_Check(code) ? PyFunction_GET_CODE(code) : code;
   return PyCode_Check(code) ? GetJitCompileResults(reinterpret_cast<PyCodeObject *>(code)) : nullptr;
@@ -167,7 +168,8 @@ inline void SetJitCompileResults(PyCodeObject *code, JitCompileResults *ptr) {
   }
 }
 
-inline JitCompileResults *CreateJitCompileResults(PyObject *code) {
+inline JitCompileResults *CreateJitCompileResults(const py::handle &h) {
+  PyObject *code = h.ptr();
   code = PyMethod_Check(code) ? PyMethod_GET_FUNCTION(code) : code;
   code = PyFunction_Check(code) ? PyFunction_GET_CODE(code) : code;
   return PyCode_Check(code) ? JitCompileResults::Create(reinterpret_cast<PyCodeObject *>(code)) : nullptr;

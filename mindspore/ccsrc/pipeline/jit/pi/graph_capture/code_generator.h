@@ -289,6 +289,9 @@ class CodeBreakGenerator {
   // make call operations of untracked bytecode for each branch
   void BreakAtIf(CodeGenerator *code_gen) const;
 
+  // generate specialize code if break point is call
+  bool BreakAtCall(CodeGenerator *code_gen) const;
+
   void RestoreStack(CodeGenerator *code_gen) const;
 
   void RestoreLocals(CodeGenerator *code_gen, bool load) const;
@@ -330,6 +333,9 @@ class CodeBreakGenerator {
   std::map<ValueNode *, ValueNode *> replaced_nodes_;
 
   GraphInputInfo graph_inputs_info_;
+
+  // break point info
+  ValueNode *break_point_node_;
 
   // break bci alive locals
   std::vector<int> alive_locals_;
