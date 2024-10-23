@@ -1,0 +1,29 @@
+#operator roi_align_ext
+roi_align_ext:
+  args:
+    input:
+      dtype: tensor
+    boxes:
+      dtype: tensor
+    output_size:
+      dtype: tuple[int]
+      type_cast: int
+    spatial_scale:
+      dtype: float
+      default: 1.0
+    sampling_ratio:
+      dtype: int
+      default: -1
+    aligned:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor
+  class:
+      name: RoiAlignExt
+  function:
+    name: roi_align
+  dispatch:
+    enable: True
+    Ascend: RoiAlignExtAscend

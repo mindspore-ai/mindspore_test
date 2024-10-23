@@ -1,0 +1,31 @@
+#operator roi_align_grad_ext
+roi_align_grad_ext:
+  args:
+    dout:
+      dtype: tensor
+    boxes:
+      dtype: tensor
+    input_shape:
+      dtype: tuple[int]
+    output_size:
+      dtype: tuple[int]
+      type_cast: int
+    spatial_scale:
+      dtype: float
+      default: 1.0
+    sampling_ratio:
+      dtype: int
+      default: -1
+    aligned:
+      dtype: bool
+      default: False
+  returns:
+    grad_input:
+      dtype: tensor
+  class:
+      name: RoiAlignGradExt
+  function:
+    name: roi_align_grad
+  dispatch:
+    enable: True
+    Ascend: RoiAlignGradExtAscend

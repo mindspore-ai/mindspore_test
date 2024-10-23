@@ -1,0 +1,48 @@
+roi_align_ext:
+    description: |
+        Region of Interest Align (RoI Align) operation.
+
+        RoI Align calculates each sampling point by bilinear interpolation of nearby grid points on the feature map.
+        Refer to the paper `Mask R-CNN <https://arxiv.org/abs/1703.06870>`_.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor [N, C, H, W]): Input features, shape :math:`(N, C, H, W)` . The data type supports float32.
+            boxes (Tensor [K, 5]): shape :math:`(K, 5)`. The data type supports float32.
+                `K` is the quantity of RoI. The size of the second dimension must be `5` , representing :math:`(image\_index, x1, y1, x2, y2)` .
+                `image_index` represents the index of the image, `x1` and `y1` correspond to the upper left corner coordinate values of RoI, 
+                `x2` and `y2` correspond to the lower right corner coordinate values of RoI. The coordinates need to satisfy: `0 <= x1 < x2` and `0 <= y1 < y2` .
+            output_size (Union [int, tuple (int)]): The output size after performing pooling, :math:`(pooled\_height, pooled\_width)` .
+            spatial_scale (float, optional): The scaling factor that maps the box coordinates to the input coordinates. Default: ``1.0`` .
+                If the height of RoI is `ori_h` in the original image and `fea_h` in the input feature map, then `spatial_scale` should be `fea_h / ori_h` .
+            sampling_ratio (int, optional): The number of samples. Default: ``-1`` . If it is greater than 0, use :math:`sampling\_ratio x sampling\_ratio` ,
+                If less than or equal to 0, use :math:`ceil(roi\_height / output\_height) x ceil(roi\_width / output\_width)` .
+            aligned (bool, optional): If the value is `False` , use the legacy implementation. If the value is ``True`` ,
+                the pixel offset box will adjust its coordinates by -0.5 to better align with two adjacent pixel indices. Default: ``False`` .
+
+        Returns:
+            Tensor, shape :math:`(K, C, output\_size[0], output\_size[1])` .
+
+        Raises:
+            TypeError: `sampling_ratio` is not int.
+            TypeError: `spatial_scale` is not float.
+            TypeError: `input` or `boxes` is not Tensor.
+            TypeError: `aligned` is not bool.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([[[[1., 2.], [3., 4.]]]]), mindspore.float32)
+            >>> boxes = Tensor(np.array([[0, 0.2, 0.2, 0.3, 0.3]]), mindspore.float32)
+            >>> output_size = (2, 2)
+            >>> spatial_scale, sampling_ratio, aligned = 0.25, 2, True
+            >>> output = ops.roi_align(input, boxes, output_size, spatial_scale, sampling_ratio, aligned)
+            >>> print(output)
+            [[1.1875 1.3125]
+             [1.4375 1.5625]]

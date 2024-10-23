@@ -171,6 +171,7 @@ from .array_func import (
     view_as,
     type_as,
     expand_as,
+    roi_align,
 )
 from .parameter_func import (
     assign,
