@@ -457,11 +457,16 @@ void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *contex
       if (used_inputs.find(i) == used_inputs.end()) {
         auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(input_value);
         context->inputs[i] = fake_value;
+        py::list origin_inputs = context->original_inputs.cast<py::list>();
+        origin_inputs[i] = py::none();
+        MS_LOG(DEBUG) << "Clear input value" << i << "device address";
       }
     }
     if (used_inputs.find(input_size) == used_inputs.end()) {
       auto fake_value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(context->output);
       context->output = fake_value;
+      context->original_output = py::none();
+      MS_LOG(DEBUG) << "Clear output value device address";
     }
   }
 
