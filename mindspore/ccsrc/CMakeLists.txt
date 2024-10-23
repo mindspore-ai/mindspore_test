@@ -8,6 +8,11 @@ include_directories(${CMAKE_BINARY_DIR})
 
 set(MS_OPS_KERNEL_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel")
 
+if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
+    string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REPLACE " -fvisibility=hidden" " -fvisibility=default" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
 if(ENABLE_CPU)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cpu_compile_config.cmake)
 endif()
@@ -238,6 +243,13 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore proto_input -Wl,-noall_load mindspore_core
             mindspore_ops mindspore_common mindspore_backend)
+    if(${ENABLE_TESTCASES})
+        target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore -Wl,-noall_load mindspore_core
+            mindspore_ops mindspore_common mindspore_backend proto_input)
+    else()
+        target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore proto_input -Wl,-noall_load mindspore_core
+            mindspore_ops mindspore_common mindspore_backend)
+    endif()
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     if(ENABLE_CPU AND NOT WIN32)

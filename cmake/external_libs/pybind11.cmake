@@ -74,6 +74,10 @@ if(PYBIND_DISABLE_GIL_CHECK)
     add_definitions(-DPYBIND11_NO_ASSERT_GIL_HELD_INCREF_DECREF)
 endif()
 
+if(ENABLE_TESTCASES)
+    add_definitions(-DPYBIND11_NAMESPACE=pybind11)
+endif()
+
 if(NOT "${PYBIND11_PATCH_FILE}" STREQUAL "")
     mindspore_add_pkg(pybind11
         VER ${PYBIND_VERSION}

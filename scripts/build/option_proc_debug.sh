@@ -32,6 +32,7 @@ build_option_proc_t()
 {
   if [[ "X$OPTARG" == "Xon" || "X$OPTARG" == "Xut" ]]; then
     export RUN_TESTCASES="on"
+    export ENABLE_HIDDEN="off"
   elif [[ "X$OPTARG" == "Xoff" ]]; then
     export RUN_TESTCASES="off"
   else
