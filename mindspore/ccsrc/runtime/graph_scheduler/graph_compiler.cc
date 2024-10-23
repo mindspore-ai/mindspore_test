@@ -1053,14 +1053,12 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
     AnfAlgo::AddOutInRefToGraph(graph);
 
     // Optimize the nop node.
-    if (!run_in_pynative) {
-      OptimizeNopNode(graph.get());
+    OptimizeNopNode(graph.get());
 #ifdef ENABLE_DUMP_IR
-      if (context->CanDump(kIntroductory)) {
-        DumpIR("hwopt_comm_after_eliminate_nopnode_" + graph->ToString() + ".ir", graph, true);
-      }
-#endif
+    if (context->CanDump(kIntroductory)) {
+      DumpIR("hwopt_comm_after_eliminate_nopnode_" + graph->ToString() + ".ir", graph, true);
     }
+#endif
 
     session_->RecurseSetSummaryNodesForAllGraphs(graph.get());
     // Update needed dump kernels for mindRT.
