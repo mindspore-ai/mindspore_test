@@ -51,8 +51,8 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
 };
 // information of single parameter
 struct FunctionParameter {
-  explicit FunctionParameter(const std::string &fmt);
-  bool check(const py::object &obj);
+  explicit FunctionParameter(const std::string &signature_str);
+  bool check(const py::object &obj) const;
   void set_default_obj(const std::string &str);
   const py::object &get_default_value() { return default_obj; }
 
@@ -66,8 +66,9 @@ struct FunctionParameter {
 
 // single overload
 struct FunctionSignature {
-  explicit FunctionSignature(const std::string &fmt, int index);
+  explicit FunctionSignature(const std::string &signature_str, int index);
   // bind with real args
+  bool CheckParamValid(const py::object &obj, const FunctionParameter &param);
   bool parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
 
   std::string name_;
@@ -79,7 +80,7 @@ struct FunctionSignature {
 
 // parser util
 struct PythonArgParser {
-  explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
+  explicit PythonArgParser(std::vector<std::string> signature_strs, const std::string &function_name);
   inline const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
   std::string parse_error(const py::list &args, const py::dict &kwargs);
 
