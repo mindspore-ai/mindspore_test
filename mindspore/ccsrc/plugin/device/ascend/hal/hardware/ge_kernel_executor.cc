@@ -87,6 +87,8 @@ std::string GetKernelTypeStr(const KernelType &kernel_type) {
     type = "internal_kernel";
   } else if (kernel_type == KernelType::AKG_KERNEL) {
     type = "akg_kernel";
+  } else if (kernel_type == KernelType::RT_KERNEL) {
+    type = "rt_kernel";
   }
   return type;
 }
