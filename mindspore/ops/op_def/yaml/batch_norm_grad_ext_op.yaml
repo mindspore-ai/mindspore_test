@@ -27,6 +27,9 @@ batch_norm_grad_ext:
       dtype: float
       default: 1e-5
       prim_init: True
+    output_mask:
+      dtype: tuple[int]
+      default: (1, 1, 1)
   returns:
     dx:
       dtype: tensor

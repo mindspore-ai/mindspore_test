@@ -16,6 +16,9 @@ layer_norm_grad_ext:
       dtype: tensor
     beta:
       dtype: tensor
+    output_mask:
+      dtype: tuple[int]
+      default: (1, 1, 1)
   returns:
     pd_x:
       dtype: tensor

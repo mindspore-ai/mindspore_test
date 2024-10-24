@@ -1184,11 +1184,14 @@ REG_BPROP_BUILDER("LayerNormExt").FreeUselessValues_IO({i4}, {i0}).SetBody(BODYF
        normalized_shape_ptr->isa<tensor::BaseTensor>())) {
     is_shape_mutable = false;
   }
+  std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), gamma->need_compute_grad_out(),
+                                          beta->need_compute_grad_out()};
+  auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
   auto result = ib->LayerNormGradExt(ib->TupleGetItem(dout, 0), x, normalized_shape, ib->TupleGetItem(out, 1),
-                                     ib->TupleGetItem(out, 2), gamma, beta);
-  auto d_x = x->need_compute_grad_out() ? ib->TupleGetItem(result, 0) : ib->OutZeros(x);
-  auto d_gamma = gamma->need_compute_grad_out() ? ib->TupleGetItem(result, 1) : ib->OutZeros(gamma);
-  auto d_beta = beta->need_compute_grad_out() ? ib->TupleGetItem(result, 2) : ib->OutZeros(beta);
+                                     ib->TupleGetItem(out, 2), gamma, beta, output_mask);
+  auto d_x = ib->TupleGetItem(result, 0);
+  auto d_gamma = ib->TupleGetItem(result, 1);
+  auto d_beta = ib->TupleGetItem(result, 2);
   auto grad_normalized_shape = ib->OutZeros(normalized_shape);
   auto grad_eps = ib->OutZeros(eps);
   if (is_shape_mutable) {
@@ -2101,11 +2104,14 @@ REG_BPROP_BUILDER("BatchNormExt").FreeUselessValues_IO({i2}, {i0}).SetBody(BODYF
   auto out = ib->GetInput(kIndex8);
   auto dout = ib->GetInput(kIndex9);
   auto is_training_value_ptr = training->BuildValue();
+  std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), weight->need_compute_grad_out(),
+                                          bias->need_compute_grad_out()};
+  auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
   auto result = ib->BatchNormGradExt(ib->TupleGetItem(dout, 0), x, weight, running_mean, running_var,
-                                     ib->TupleGetItem(out, 1), ib->TupleGetItem(out, 2), training, eps);
-  auto d_x = x->need_compute_grad_out() ? ib->TupleGetItem(result, 0) : ib->OutZeros(x);
-  auto d_weight = weight->need_compute_grad_out() ? ib->TupleGetItem(result, 1) : ib->OutZeros(weight);
-  auto d_bias = bias->need_compute_grad_out() ? ib->TupleGetItem(result, 2) : ib->OutZeros(bias);
+                                     ib->TupleGetItem(out, 1), ib->TupleGetItem(out, 2), training, eps, output_mask);
+  auto d_x = ib->TupleGetItem(result, 0);
+  auto d_weight = ib->TupleGetItem(result, 1);
+  auto d_bias = ib->TupleGetItem(result, 2);
   return {d_x,
           d_weight,
           d_bias,

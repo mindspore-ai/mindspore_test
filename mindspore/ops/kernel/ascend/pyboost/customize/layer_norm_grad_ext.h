@@ -30,7 +30,8 @@ namespace pyboost {
 void LayerNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
                                      const BaseTensorPtr &x_tensor, const ValueTuplePtr &normalized_shape,
                                      const BaseTensorPtr &mean_tensor, const BaseTensorPtr &variance_tensor,
-                                     const BaseTensorPtr &gamma_tensor, const BaseTensorPtr &beta_tensor);
+                                     const BaseTensorPtr &gamma_tensor, const BaseTensorPtr &beta_tensor,
+                                     const ValueTuplePtr &output_mask);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

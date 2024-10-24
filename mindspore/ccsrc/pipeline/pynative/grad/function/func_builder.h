@@ -91,7 +91,8 @@ class FuncBuilder : public BpropBuilder {
                        const NodePtr &epsilon) override;
   NodePtr BatchNormGradExt(const NodePtr &dout, const NodePtr &input, const NodePtr &weight,
                            const NodePtr &running_mean, const NodePtr &running_var, const NodePtr &saved_mean,
-                           const NodePtr &saved_rstd, const NodePtr &training, const NodePtr &eps) override;
+                           const NodePtr &saved_rstd, const NodePtr &training, const NodePtr &eps,
+                           const NodePtr &output_mask) override;
   NodePtr BinaryCrossEntropyGrad(const NodePtr &input, const NodePtr &target, const NodePtr &grad_output,
                                  const NodePtr &weight, const NodePtr &reduction) override;
   NodePtr BinaryCrossEntropy(const NodePtr &input, const NodePtr &target, const NodePtr &weight,
@@ -193,7 +194,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr LayerNormExt(const NodePtr &input, const NodePtr &normalized_shape, const NodePtr &weight,
                        const NodePtr &bias, const NodePtr &eps) override;
   NodePtr LayerNormGradExt(const NodePtr &dy, const NodePtr &x, const NodePtr &normalized_shape, const NodePtr &mean,
-                           const NodePtr &variance, const NodePtr &gamma, const NodePtr &beta) override;
+                           const NodePtr &variance, const NodePtr &gamma, const NodePtr &beta,
+                           const NodePtr &output_mask) override;
   NodePtr LeakyReLUExt(const NodePtr &input, const NodePtr &negative_slope) override;
   NodePtr LeakyReLUGradExt(const NodePtr &dy, const NodePtr &input, const NodePtr &negative_slope,
                            const NodePtr &is_result) override;

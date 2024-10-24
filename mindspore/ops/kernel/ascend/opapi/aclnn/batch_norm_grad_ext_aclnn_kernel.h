@@ -36,6 +36,7 @@ class BatchNormGradExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
   int64_t axis_;
+  std::vector<uint8_t> output_mask_{};
 };
 }  // namespace kernel
 }  // namespace mindspore
