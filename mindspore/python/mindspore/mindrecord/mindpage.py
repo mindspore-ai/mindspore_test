@@ -19,7 +19,7 @@ This module is to support reading page from MindRecord.
 from .shardsegment import ShardSegment
 from .shardutils import check_parameter
 from .common.exceptions import ParamValueError, ParamTypeError, MRMDefineCategoryError
-from .config import _get_enc_key, _get_dec_mode, decrypt, verify_file_hash
+from .config import _get_enc_key, _get_dec_mode, decrypt
 
 __all__ = ['MindPage']
 
@@ -68,10 +68,6 @@ class MindPage:
             decrypt_filename = decrypt(file_name, _get_enc_key(), _get_dec_mode())
             file_name = decrypt_filename
             decrypt(index_file_name, _get_enc_key(), _get_dec_mode())
-
-            # verify integrity check
-            verify_file_hash(file_name)
-            verify_file_hash(file_name + ".db")
         else:
             file_names_decrypted = []
             for item in file_name:
@@ -80,10 +76,6 @@ class MindPage:
                 decrypt_filename = decrypt(item, _get_enc_key(), _get_dec_mode())
                 file_names_decrypted.append(decrypt_filename)
                 decrypt(index_file_name, _get_enc_key(), _get_dec_mode())
-
-                # verify integrity check
-                verify_file_hash(decrypt_filename)
-                verify_file_hash(decrypt_filename + ".db")
             file_name = file_names_decrypted
 
         self._segment.open(file_name, num_consumer)

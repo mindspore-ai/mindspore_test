@@ -25,7 +25,7 @@ import mindspore.dataset as ds
 from mindspore import dtype as mstype
 import mindspore.dataset.transforms as transforms
 from mindspore import log as logger
-from mindspore.mindrecord import FileWriter, set_enc_key, set_enc_mode, set_hash_mode
+from mindspore.mindrecord import FileWriter, set_enc_key, set_enc_mode
 
 TFRECORD_FILES = "../data/mindrecord/testTFRecordData/dummy.tfrecord"
 FILES_NUM = 1
@@ -648,8 +648,8 @@ def test_case_all_types():
     remove_file(mindrecord_filename)
 
 
-def save_with_encode_and_hash_check(file_name, enc_key, enc_mode, hash_mode):
-    """Save with encode and hash check"""
+def save_with_encode(file_name, enc_key, enc_mode):
+    """Save with encode"""
 
     ## single file
     if os.path.exists(file_name):
@@ -659,7 +659,6 @@ def save_with_encode_and_hash_check(file_name, enc_key, enc_mode, hash_mode):
 
     set_enc_key(enc_key)
     set_enc_mode(enc_mode)
-    set_hash_mode(hash_mode)
 
     d1 = ds.GeneratorDataset(generator_1d, ["data"], shuffle=False)
     d1.save(file_name)
@@ -674,19 +673,16 @@ def save_with_encode_and_hash_check(file_name, enc_key, enc_mode, hash_mode):
         os.remove("{}".format(file_name + ".db"))
 
     set_enc_key(None)
-    set_hash_mode(None)
 
 
-def test_case_with_encode_and_hash_check():
+def test_case_with_encode():
     """
     Feature: Save op
-    Description: Save with encode and hash check
+    Description: Save with encode
     Expectation: Success
     """
     file_name = './'
     file_name += os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
 
-    save_with_encode_and_hash_check(file_name, None, "AES-CBC", None)
-    save_with_encode_and_hash_check(file_name, "abcdefghijklmnop01234567", "AES-CBC", None)
-    save_with_encode_and_hash_check(file_name, None, "AES-CBC", "sha3_384")
-    save_with_encode_and_hash_check(file_name, "89012345abcdefgh", "SM4-CBC", "sha512")
+    save_with_encode(file_name, None, "AES-GCM")
+    save_with_encode(file_name, "abcdefghijklmnop01234567", "AES-GCM")

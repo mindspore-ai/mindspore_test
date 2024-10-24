@@ -80,7 +80,7 @@ from ..core.validator_helpers import replace_none
 from ..core.py_util_helpers import ExceptionHandler
 from ..transforms.py_transforms_util import FuncWrapper, Implementation
 from ..vision.transforms import ToNumpy
-from ...mindrecord.config import _get_enc_key, _get_enc_mode, _get_hash_mode, encrypt, append_hash_to_file
+from ...mindrecord.config import _get_enc_key, _get_enc_mode, encrypt
 
 try:
     context = import_module("mindspore.context")
@@ -1557,8 +1557,8 @@ class Dataset:
             >>> d1 = ds.GeneratorDataset(generator_1d, ["data"], shuffle=False)
             >>> d1.save('/path/to/save_file')
         """
-        if (_get_enc_key() is not None or _get_hash_mode() is not None) and num_files > 1:
-            raise RuntimeError("When encode mode or hash check is enabled, " +
+        if _get_enc_key() is not None and num_files > 1:
+            raise RuntimeError("When encode mode is enabled, " +
                                "the automatic sharding function is unavailable.")
 
         ir_tree, api_tree = self.create_ir_tree()
@@ -1570,10 +1570,6 @@ class Dataset:
         runtime_context.AssignConsumer(consumer)
 
         consumer.Save()
-
-        if _get_hash_mode() is not None:
-            append_hash_to_file(file_name)
-            append_hash_to_file(file_name + ".db")
 
         if _get_enc_key() is not None:
             encrypt(file_name, _get_enc_key(), _get_enc_mode())
