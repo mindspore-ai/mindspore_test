@@ -60,11 +60,12 @@ bool GetSizeByDtype(aclDataType data_type, size_t *size) {
 static TypeId TransToDataType(aclDataType data_type) {
   static const std::map<aclDataType, enum TypeId> data_type_map = {
     {ACL_FLOAT16, TypeId::kNumberTypeFloat16}, {ACL_FLOAT, TypeId::kNumberTypeFloat32},
-    {ACL_DOUBLE, TypeId::kNumberTypeFloat64},  {ACL_INT8, TypeId::kNumberTypeInt8},
-    {ACL_INT16, TypeId::kNumberTypeInt16},     {ACL_INT32, TypeId::kNumberTypeInt32},
-    {ACL_INT64, TypeId::kNumberTypeInt64},     {ACL_UINT8, TypeId::kNumberTypeUInt8},
-    {ACL_UINT16, TypeId::kNumberTypeUInt16},   {ACL_UINT32, TypeId::kNumberTypeUInt32},
-    {ACL_UINT64, TypeId::kNumberTypeUInt64},   {ACL_BOOL, TypeId::kNumberTypeBool},
+    {ACL_BF16, TypeId::kNumberTypeBFloat16},   {ACL_DOUBLE, TypeId::kNumberTypeFloat64},
+    {ACL_INT8, TypeId::kNumberTypeInt8},       {ACL_INT16, TypeId::kNumberTypeInt16},
+    {ACL_INT32, TypeId::kNumberTypeInt32},     {ACL_INT64, TypeId::kNumberTypeInt64},
+    {ACL_UINT8, TypeId::kNumberTypeUInt8},     {ACL_UINT16, TypeId::kNumberTypeUInt16},
+    {ACL_UINT32, TypeId::kNumberTypeUInt32},   {ACL_UINT64, TypeId::kNumberTypeUInt64},
+    {ACL_BOOL, TypeId::kNumberTypeBool},
   };
   auto it = data_type_map.find(data_type);
   if (it == data_type_map.end()) {
