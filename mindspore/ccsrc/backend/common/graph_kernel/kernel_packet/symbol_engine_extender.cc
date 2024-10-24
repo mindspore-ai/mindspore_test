@@ -211,11 +211,9 @@ AnfNodePtrList SymbolEngineExtender::FindCandidates(const CNodePtr &base_node) {
 ValuePtr SymbolEngineExtender::FindOnlyDependShapeInputs(const FuncGraphPtr &fg) const {
   const auto &params = fg->parameters();
   std::vector<bool> only_depend_shape(params.size(), true);
-  auto engine = fg->symbol_engine();
-  MS_EXCEPTION_IF_NULL(engine);
   // depend value when infer
   for (size_t i = 0; i < params.size(); i++) {
-    if (engine->IsDependValue(params[i])) {
+    if (params[i]->abstract()->GetSymbolicValue() != nullptr) {
       only_depend_shape[i] = false;
     }
   }

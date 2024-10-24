@@ -34,15 +34,12 @@ class MS_CORE_API SymbolEngine : public Base {
   MS_DECLARE_PARENT(SymbolEngine, Base)
 
   virtual bool Infer(const AbstractBasePtrList &inputs) = 0;
-  virtual bool IsDependValue(const AnfNodePtr &node) = 0;
-  virtual bool IsDependShape(const AnfNodePtr &node) = 0;
-  virtual bool SupportInfer() = 0;
-  virtual void QuerySymbolExpr(const AnfNodePtr &node,
-                               std::unordered_map<std::string, std::string> *symbol_expr_map) = 0;
+  bool SupportInfer() { return support_infer_; }
   FuncGraphPtr func_graph() const { return func_graph_.lock(); }
 
  protected:
   FuncGraphWeakPtr func_graph_;
+  bool support_infer_{true};
 };
 }  // namespace symshape
 using SymbolEnginePtr = std::shared_ptr<symshape::SymbolEngine>;
