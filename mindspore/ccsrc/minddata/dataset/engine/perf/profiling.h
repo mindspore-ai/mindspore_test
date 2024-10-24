@@ -155,7 +155,7 @@ class ProfilingManager {
   /// This method should be called once, calling it for another tree without resetting the ProfilingManager would fail.
   /// \param tree_adapter pointer the adapter that owns the ExecutionTree
   /// \return Status the status code returned
-  Status RegisterTree(const TreeAdapter *tree_adapter);
+  Status RegisterTree(ExecutionTree *tree);
 
   /// Reset the ProfilingManager. This method is sued when we want to profile another tree in the same process.
   /// \return Status the status code returned
