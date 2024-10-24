@@ -155,6 +155,9 @@ class BACKEND_EXPORT DeviceAddressUtils {
                                                                  const device::DeviceAddressPtr &old_device_address,
                                                                  bool is_sync);
 
+  // Convert view tensor to contiguous tensor.
+  static tensor::BaseTensorPtr TensorContiguous(const tensor::BaseTensorPtr &tensor);
+
   template <typename... T>
   static void ProcessCrossStreamAddress(const std::string &op_name, const DeviceContext *device_context,
                                         size_t op_stream_id, const T &... args) {

@@ -611,10 +611,7 @@ void Common::StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info) {
   kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
   for (size_t i = 0; i < op_run_info->input_size; i++) {
     op_run_info->op_grad_info->input_value[i] = StubNodeToValueInner(op_run_info->op_grad_info->input_value[i]);
-    if (!op_run_info->is_view_op && !IsVmOp(op_run_info->base_op_run_info.op_name)) {
-      op_run_info->op_grad_info->input_value[i] =
-        ConvertToContiguousValue(op_run_info->op_grad_info->input_value[i], op_run_info->requires_grad);
-    }
+    // Contiguous tensor in Backend RunOp.
     kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
     runtime::DeviceAddressUtils::CreateKernelTensor(op_run_info->op_grad_info->input_value[i]);
   }

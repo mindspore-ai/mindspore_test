@@ -121,8 +121,7 @@ void SetDeviceAddress(const AnfNodePtr &input_node, const tensor::BaseTensorPtr 
   if (tensor_address != nullptr && tensor_address != node_address) {
     auto address = tensor_address;
     if (tensor_address->GetTensorStorageInfo() != nullptr) {
-      address = DeviceAddressUtils::ConvertContiguousDeviceAddress(device_context, tensor_address, is_sync);
-      input_tensor->set_device_address(address);
+      MS_EXCEPTION(RuntimeError) << "Not support view tensor.";
     }
     AnfAlgo::SetOutputAddr(address, 0, input_node.get());
   }
@@ -958,10 +957,7 @@ void DynamicOpRunner::UpdateInputDeviceAddress(const OpCompilerInfoPtr &op_compi
     common::AnfAlgo::SetOutputInferTypeAndShape({input_tensor->data_type()}, {input_tensor->shape()}, input_node.get());
     if (device_address != nullptr) {
       if (device_address->GetTensorStorageInfo() != nullptr) {
-        auto new_device_address =
-          DeviceAddressUtils::ConvertContiguousDeviceAddress(device_context, device_address, is_sync);
-        input_edge->address_ = new_device_address;
-        input_tensor->set_device_address(new_device_address);
+        MS_EXCEPTION(RuntimeError) << "Not support view tensor for " << op_compiler_info->graph_info_;
       } else {
         // Always use tensor address as kernel address.
         input_edge->address_ = device_address;

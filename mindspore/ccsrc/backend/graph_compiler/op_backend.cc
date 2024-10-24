@@ -62,6 +62,7 @@ void WaitTasksFinish() {
 void OpBackend::Run(const BackendOpRunInfoPtr &op_run_info, const std::string &device_name, uint32_t device_id,
                     VectorRef *outputs) {
   MS_EXCEPTION_IF_NULL(op_run_info);
+  ViewBackend::ContiguousInputByRunInfo(op_run_info);
   if (op_run_info->base_op_run_info.use_dynamic_shape_process) {
     RunInnerDynamic(op_run_info, device_name, device_id, outputs);
   } else {
@@ -542,6 +543,23 @@ tensor::BaseTensorPtr PostRunOp::CreateOutputTensorDynamicImpl(const OpCompilerI
     tensor->data_sync(false);
   }
   return tensor;
+}
+
+void ViewBackend::ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info) {
+  auto &inputs = op_run_info->base_op_run_info.expanded_input_values;
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    const auto &input = inputs[i];
+    if (!input->isa<tensor::BaseTensor>()) {
+      continue;
+    }
+    auto tensor = input->cast<tensor::BaseTensorPtr>();
+    if (tensor->storage_info() == nullptr) {
+      continue;
+    }
+
+    auto contiguous_tensor = runtime::DeviceAddressUtils::TensorContiguous(tensor);
+    inputs[i] = contiguous_tensor;
+  }
 }
 
 void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_info,

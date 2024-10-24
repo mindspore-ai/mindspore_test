@@ -43,6 +43,8 @@ class BACKEND_EXPORT ViewBackend {
 
   void AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, DeviceContext *device_context,
                             bool is_cpu_address_exist) const;
+
+  static void ContiguousInputByRunInfo(const BackendOpRunInfoPtr &op_run_info);
 };
 
 class BACKEND_EXPORT PostRunOp {
