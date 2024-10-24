@@ -34,6 +34,7 @@ class ReshapeExtKernel : public RtKernel {
 };
 
 MS_REG_RTKERNEL(reshapeext, ReshapeExtKernel);
+MS_REG_RTKERNEL(reshape, ReshapeExtKernel);
 }  // namespace kernel
 }  // namespace mindspore
 
