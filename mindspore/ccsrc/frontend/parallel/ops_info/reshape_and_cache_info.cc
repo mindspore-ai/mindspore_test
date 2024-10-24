@@ -88,7 +88,7 @@ Status ReshapeAndCacheInfo::CheckStrategy(const StrategyPtr &strategy) {
     return FAILED;
   }
 
-  if (strategy_key_cache.at(3) != 1 || strategy_value_cache.at(3) != 1) {
+  if (strategy_key_cache.size() == 4 && (strategy_key_cache.at(3) != 1 || strategy_value_cache.at(3) != 1)) {
     MS_LOG(ERROR) << name_ << ": Invalid strategy: The num_head can't be shard, but got"
                   << " key_cache's num_blocks strategy: " << strategy_key_cache.at(3)
                   << ", value_cache's num_blocks strategy: " << strategy_value_cache.at(3);
@@ -110,8 +110,13 @@ Status ReshapeAndCacheInfo::InferDevMatrixShape() {
 }
 
 Status ReshapeAndCacheInfo::InferTensorMap() {
+  auto input_strategies = strategy()->GetInputDim();
+  auto cache = input_strategies.at(2);
   Shape kv_update_tensor_map{4, 1, 0};
-  Shape cache_tensor_map{-1, -1, 0, -1};
+  Shape cache_tensor_map{-1, -1, 0};
+  if (cache.size() == 4) {
+    cache_tensor_map.push_back(-1);
+  }
   Shape slot_tensor_map{-1};
   inputs_tensor_map_.emplace_back(kv_update_tensor_map);
   inputs_tensor_map_.emplace_back(kv_update_tensor_map);
