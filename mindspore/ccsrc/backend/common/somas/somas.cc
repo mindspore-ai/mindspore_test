@@ -90,6 +90,11 @@ void SetSomasResult(std::vector<std::pair<size_t, size_t>> &&output_somas_result
   }
 }
 
+bool ShouldSkipNode(const SomasNodePtr &node) {
+  return node->GetType() != kCommunicationNode ||
+         node->scope_full_name_.find(kMatMulAllReduceOpName) != std::string::npos;
+}
+
 void MergeBlocks(std::vector<Block> *block_list, std::stack<Block> *merged_blocks) {
   MS_EXCEPTION_IF_NULL(block_list);
   MS_EXCEPTION_IF_NULL(merged_blocks);
@@ -1239,7 +1244,7 @@ void Somas::UnReuseNodeProcess(const session::KernelGraph &graph) {
 void Somas::CommunicationNodeProcess() {
   for (const auto &node : nodes_list_) {
     MS_EXCEPTION_IF_NULL(node);
-    if (node->GetType() != kCommunicationNode) {
+    if (ShouldSkipNode(node)) {
       continue;
     }
 
