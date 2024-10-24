@@ -330,7 +330,10 @@ AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::Op
 
 bool ValidateArgSpecialType(const std::string &op_name, const AbstractBasePtr &abs, const ops::OpInputArg &op_arg);
 
-std::string BuildArgsTypeString(const AbstractBasePtr &arg_abs);
+AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const std::vector<AnfNodePtr> &args_list,
+                                            const std::vector<ops::OpInputArg> &op_args,
+                                            const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
+                                            const FuncGraphPtr &graph);
 
 // Process the primitive's arguments (such as dtype auto-cast, add argument with default-value...),
 // then generate the primitive CNode and add it to graph.

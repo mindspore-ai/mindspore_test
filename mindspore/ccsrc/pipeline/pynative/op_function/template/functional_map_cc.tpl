@@ -19,19 +19,14 @@
 #include <map>
 #include <vector>
 #include <string>
+#include "frontend/operator/composite/functional_overload.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::ops {
-/*
 ${deprecated_method_decl}
 
 std::map<std::string, std::vector<ValuePtr>> functional_method_map = {
   ${functional_method_map}
-};
-*/
-
-std::map<std::string, std::vector<std::pair<std::string, std::string>>> functional_convert_map = {
-  ${functional_map}
 };
 
 std::map<std::string, std::vector<std::string>> func_signature_map = {

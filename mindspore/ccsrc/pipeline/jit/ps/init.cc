@@ -18,8 +18,8 @@
 #include <stack>
 #include "kernel/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
-#include "pipeline/jit/ps/static_analysis/functional_utils.h"
 #include "frontend/operator/composite/composite.h"
+#include "frontend/operator/composite/functional_overload.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "utils/symbolic.h"
 #include "include/common/pybind_api/api_register.h"

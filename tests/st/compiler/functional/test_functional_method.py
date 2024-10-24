@@ -117,3 +117,49 @@ def test_method_clamp_exception():
     with pytest.raises(TypeError) as raise_info:
         func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), 4)
     assert "Failed calling clamp with" in str(raise_info.value)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_method_max():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.max.
+    Expectation: Run success
+    """
+    @ms.jit
+    def func(x):
+        return x.max()
+
+    x = ms.Tensor([1, 2, 3, 4, 5])
+    assert func(x).asnumpy() == ms.Tensor(5).asnumpy()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_method_max_keyword():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.max.
+    Expectation: Run success
+    """
+    @ms.jit
+    def func(x):
+        return x.max(keepdims=False)
+
+    x = ms.Tensor([1, 2, 3, 4, 5])
+    assert func(x).asnumpy() == ms.Tensor(5).asnumpy()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_method_max_keyword_any():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.max.
+    Expectation: Run success
+    """
+    @ms.jit
+    def func(x, y):
+        return x.max(return_indices=bool(y.asnumpy()))
+
+    x = ms.Tensor([1, 2, 3, 4, 5])
+    y = ms.Tensor(False)
+    assert func(x, y).asnumpy() == ms.Tensor(5).asnumpy()

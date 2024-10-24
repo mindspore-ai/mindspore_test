@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "pipeline/jit/ps/static_analysis/functional_utils.h"
+#include "frontend/operator/composite/functional_overload.h"
 
 #include <set>
 #include <map>
@@ -23,6 +23,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "ops/op_def.h"
 #include "ir/core_ops_primitive.h"
 #include "frontend/operator/ops.h"
@@ -37,7 +38,7 @@
 namespace mindspore {
 void RegFunctional(const py::module *m) {
   (void)py::class_<Functional, std::shared_ptr<Functional>>(*m, "Functional_")
-    .def(py::init<py::str &>())
+    .def(py::init<py::str &, py::bool_ &>())
     .def_property_readonly("name", &Functional::name, "Get functional name.");
 }
 
@@ -45,22 +46,6 @@ namespace prim {
 namespace {
 size_t GetHashIdForFunctionalCache(const std::string &functional_name, const AbstractBasePtrList &args_abs_list) {
   return hash_combine(std::hash<std::string>()(functional_name), AbstractBasePtrListHash(args_abs_list));
-}
-
-std::string BuildFunctionalErrorMsg(const std::string &functional_name, const std::vector<std::string> &op_type_list) {
-  // Get inputs format.
-  std::stringstream inputs_ss;
-  for (const auto &type : op_type_list) {
-    inputs_ss << type << ", ";
-  }
-  constexpr size_t truncate_offset = 2;
-  auto inputs_str = inputs_ss.str();
-  inputs_str = inputs_str.empty() ? "" : inputs_str.replace(inputs_str.end() - truncate_offset, inputs_str.end(), "");
-  // Error message.
-  std::stringstream ss;
-  ss << "Failed calling " << functional_name << " with \"" << functional_name << "(" << inputs_str << ")\".\n";
-  // A list of correct candiadtes should be provided later.
-  return ss.str();
 }
 
 bool MatchExpectedDtype(const ops::OP_DTYPE &input_dtype, const ops::OP_DTYPE &expected_dtype) {
@@ -222,17 +207,129 @@ bool MatchPrimitiveArgs(const std::string &prim_name, const abstract::AbstractBa
   }
   return true;
 }
+
+std::string GetPrimName(const ValuePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
+  if (prim->isa<Primitive>()) {
+    return prim->cast<PrimitivePtr>()->name();
+  }
+  if (prim->isa<DeprecatedTensorMethod>()) {
+    return prim->cast<DeprecatedTensorMethodPtr>()->name();
+  }
+  MS_LOG(INTERNAL_EXCEPTION) << "Expect Primitive or MetaFuncGraph, but got " << prim->ToString();
+}
+
+std::string BuildOtherTypeString(const TypePtr &arg_type) {
+  std::stringstream ss;
+  if (arg_type->isa<Keyword>()) {
+    auto kw_type = arg_type->cast_ptr<Keyword>();
+    ss << kw_type->GetKey() << "=" << BuildArgsTypeString(kw_type->GetValue());
+    return ss.str();
+  }
+  if (arg_type->isa<Tuple>()) {
+    auto tuple_type = arg_type->cast_ptr<Tuple>();
+    if (tuple_type->dynamic_len()) {
+      return "tuple";
+    }
+    ss << "tuple<";
+    for (size_t i = 0; i < tuple_type->size(); ++i) {
+      if (i != 0) {
+        ss << ", ";
+      }
+      ss << BuildArgsTypeString(tuple_type->elements()[i]);
+    }
+    ss << ">";
+    return ss.str();
+  }
+  if (arg_type->isa<List>()) {
+    auto list_type = arg_type->cast_ptr<List>();
+    if (list_type->dynamic_len()) {
+      return "list";
+    }
+    ss << "list<";
+    for (size_t i = 0; i < list_type->size(); ++i) {
+      if (i != 0) {
+        ss << ", ";
+      }
+      ss << BuildArgsTypeString(list_type->elements()[i]);
+    }
+    ss << ">";
+    return ss.str();
+  }
+  return arg_type->ToString();
+}
 }  // namespace
 
-std::map<size_t, std::pair<std::string, std::string>> &GetFunctionalConvertCache() {
-  static std::map<size_t, std::pair<std::string, std::string>> functional_convert_cache;
+std::string BuildArgsTypeString(const TypePtr &arg_type) {
+  MS_EXCEPTION_IF_NULL(arg_type);
+  if (arg_type->isa<Bool>()) {
+    return "bool";
+  }
+  if (arg_type->isa<Int>() || arg_type->isa<UInt>()) {
+    return "int";
+  }
+  if (arg_type->isa<Float>() || arg_type->isa<BFloat>()) {
+    return "float";
+  }
+  if (arg_type->isa<String>()) {
+    return "string";
+  }
+  if (arg_type->isa<TypeNone>()) {
+    return "None";
+  }
+  if (arg_type->isa<TensorType>()) {
+    return "Tensor";
+  }
+  return BuildOtherTypeString(arg_type);
+}
+
+std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list) {
+  std::string result = std::accumulate(
+    arg_info_list.begin(), arg_info_list.end(), std::string(),
+    [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
+  std::stringstream ss;
+  ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
+  ss << "The valid calling should be:\n";
+  auto it = ops::func_signature_map.find(function_name);
+  if (it != ops::func_signature_map.end()) {
+    const std::vector<std::string> &valid_arg_options = it->second;
+    for (const std::string &arg_option : valid_arg_options) {
+      ss << "\"" << arg_option << "\"\n";
+    }
+    ss << std::endl;
+  } else {
+    MS_LOG(EXCEPTION) << "Valid arg options are not correctly generated." << std::endl;
+  }
+  return ss.str();
+}
+
+FuncGraphPtr DeprecatedTensorMethod::GenerateFuncGraph(const abstract::AbstractBasePtrList &) {
+  static const std::string module_path = "mindspore._extends.parse.deprecated.deprecated_tensor_method";
+  static const std::string method_map = "deprecated_tensor_method_map";
+  py::dict map_obj = python_adapter::GetPyFn(module_path, method_map);
+  const auto &method_name = method();
+  if (!map_obj.contains(py::str(method_name))) {
+    MS_LOG(INTERNAL_EXCEPTION) << "As a deprecated Tensor method, '" << method_name
+                               << "' should be registered in _extends/parse/deprecated/deprecated_tensor_method.py::"
+                               << method_map;
+  }
+  std::string function_name = map_obj[py::str(method_name)].cast<std::string>();
+  auto value = prim::GetPythonOps(function_name, parse::PYTHON_MOD_OPS_TENSOR_METHOD_MODULE);
+  if (!value->isa<FuncGraph>()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Expect FuncGraph, but got " << value->ToString();
+  }
+  return value->cast<FuncGraphPtr>();
+}
+
+std::map<size_t, ValuePtr> &GetFunctionalConvertCache() {
+  static std::map<size_t, ValuePtr> functional_convert_cache;
   return functional_convert_cache;
 }
 
 bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name) {
   // Check if tensor.
   if (NormalizeTypeId(type_id) != kObjectTypeTensorType ||
-      ops::functional_convert_map.find(method_name) == ops::functional_convert_map.end()) {
+      ops::functional_method_map.find(method_name) == ops::functional_method_map.end()) {
     return false;
   }
   // Check for duplicate definitions.
@@ -240,58 +337,69 @@ bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name) {
       !pipeline::Resource::GetAttrPtr(type_id, method_name).empty()) {
     MS_LOG(INTERNAL_EXCEPTION)
       << "There are duplicate definitions of Tensor." << method_name
-      << " in graph mode. Please remove the definition in mindspore/ccsrc/pipeline/jit/ps/resource.cc.";
+      << " in graph mode. Please remove the definition in mindspore/ccsrc/pipeline/jit/ps/resource.cc";
   }
   return true;
 }
 
-ValuePtr GetTensorPyMethod(const std::string &prim_name, const std::string &method_name) {
-  if (method_name.empty()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Primitive[" << prim_name << "] has not defined py_method.";
-  }
-  return prim::GetPythonOps(method_name, parse::PYTHON_MOD_OPS_TENSOR_METHOD_MODULE);
-}
-
-std::pair<std::string, std::string> ConvertFunctionalToPrimitive(const std::string &functional_name,
-                                                                 const abstract::AbstractBasePtrList &args_abs_list) {
+ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
+                                        const abstract::AbstractBasePtrList &args_abs_list) {
   // Check cache.
   auto hash_id = GetHashIdForFunctionalCache(functional_name, args_abs_list);
   auto cache_iter = GetFunctionalConvertCache().find(hash_id);
   if (cache_iter != GetFunctionalConvertCache().end()) {
-    MS_LOG(DEBUG) << "Get functional cache: " << functional_name << ". Primitive name: " << cache_iter->second.first
-                  << ", py::method: " << cache_iter->second.second;
+    MS_LOG(DEBUG) << "Get functional cache: " << functional_name
+                  << ", primitive name: " << cache_iter->second->ToString();
     return cache_iter->second;
   }
   // Convert Function to Primitive.
-  auto iter = ops::functional_convert_map.find(functional_name);
-  if (iter == ops::functional_convert_map.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "No matching Functional[" << functional_name << "] found.";
-  }
-  auto prim_list = iter->second;
-  if (prim_list.empty()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Functional[" << functional_name << "] is missing primitive list.";
+  auto iter = ops::functional_method_map.find(functional_name);
+  if (iter == ops::functional_method_map.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Functional[" << functional_name << "] does not support overloading.";
   }
   // Find matching Primitive.
   MS_LOG(DEBUG) << "Start looking for matched primitive for Functional[" << functional_name << "].";
-  std::string match_prim_name;
-  std::string match_py_method;
-  for (const auto &[prim_name, py_method] : prim_list) {
+  ValuePtr match_prim = nullptr;
+  auto prim_list = iter->second;
+  for (const auto &prim : prim_list) {
+    auto prim_name = GetPrimName(prim);
     if (MatchPrimitiveArgs(prim_name, args_abs_list)) {
-      match_prim_name = prim_name;
-      match_py_method = py_method;
+      match_prim = prim;
       break;
     }
   }
-  if (match_prim_name.empty()) {
-    std::vector<std::string> op_type_list;
-    (void)std::transform(args_abs_list.cbegin(), args_abs_list.cend(), std::back_inserter(op_type_list),
-                         [](const AbstractBasePtr &op_abs) { return BuildArgsTypeString(op_abs); });
-    MS_EXCEPTION(TypeError) << BuildFunctionalErrorMsg(functional_name, op_type_list);
+  if (match_prim == nullptr) {
+    std::vector<std::string> arg_info_list;
+    (void)std::transform(args_abs_list.cbegin(), args_abs_list.cend(), std::back_inserter(arg_info_list),
+                         [](const AbstractBasePtr &op_abs) { return BuildArgsTypeString(op_abs->BuildType()); });
+    MS_EXCEPTION(TypeError) << BuildFunctionalErrorMsg(functional_name, arg_info_list);
   }
-  GetFunctionalConvertCache()[hash_id] = std::make_pair(match_prim_name, match_py_method);
-  MS_LOG(DEBUG) << "Convert Functional[" << functional_name << "] to Primitive[" << match_prim_name
-                << "], py_method: " << match_py_method;
-  return {match_prim_name, match_py_method};
+  MS_LOG(DEBUG) << "Convert Functional[" << functional_name << "] to Primitive: " << match_prim->ToString();
+  GetFunctionalConvertCache()[hash_id] = match_prim;
+  return match_prim;
+}
+
+AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, const AnfNodePtrList &inputs_list,
+                                        const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode,
+                                        const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func) {
+  auto prim = TransformFunctionalToPrimitive(functional_name, args_abs_list);
+  auto prim_name = GetPrimName(prim);
+  const auto &op_def = ops::GetOpDef(prim_name);
+  MS_EXCEPTION_IF_NULL(op_def);
+  auto func_graph = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto prim_inputs_list =
+    abstract::GeneratePrimitiveDefaultArgs(prim_name, inputs_list, op_def->args_, eval_func, func_graph);
+  if (prim->isa<Primitive>()) {
+    auto do_trans = std::make_shared<prim::DoTransPrimitiveFunction>(prim->cast<PrimitivePtr>());
+    (void)prim_inputs_list.insert(prim_inputs_list.begin(), NewValueNode(do_trans));
+  } else {
+    (void)prim_inputs_list.insert(prim_inputs_list.begin(), NewValueNode(prim));
+  }
+  auto prim_node = func_graph->NewCNodeInOrder(prim_inputs_list);
+  MS_LOG(DEBUG) << "Convert Functional[" << functional_name << "]: " << cnode->DebugString()
+                << " to Primitive: " << prim_node->DebugString();
+  return prim_node;
 }
 
 AnfNodePtr ConvertFunctionalToPyExecute(const std::string &functional_name, const AnfNodePtrList &inputs_list,
