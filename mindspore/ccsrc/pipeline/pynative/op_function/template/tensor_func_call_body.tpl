@@ -1,4 +1,4 @@
-py::object Tensor${class_name}(const py::args &py_args, const py::kwargs &py_kwargs) {
+py::object TensorMethod${class_name}(const py::args &py_args, const py::kwargs &py_kwargs) {
   static mindspore::pynative::PythonArgParser parser({
     ${signatures}
   }, "${func_name}");

@@ -44,6 +44,8 @@ class StubTensorConverter {
 
 ${func_header_body}
 
+${func_def_list}
+
 void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class);
 }  // namespace tensor
 }  // namespace mindspore
