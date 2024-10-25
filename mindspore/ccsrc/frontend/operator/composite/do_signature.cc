@@ -141,6 +141,12 @@ void CheckPrimInputType(const ValuePtr &function, const AbstractBasePtrList &arg
   std::vector<ops::OpInputArg> op_call_args;
   (void)std::copy_if(op_args.cbegin(), op_args.cend(), std::back_inserter(op_call_args),
                      [](const ops::OpInputArg &arg) { return !arg.as_init_arg_; });
+  auto args_size = args_abs_list.size() - GetAbstractMonadNum(args_abs_list);
+  if (args_size > op_call_args.size()) {
+    MS_EXCEPTION(TypeError) << "For Operator[" << prim_name
+                            << "], the number of inputs should be less than or equal to " << op_call_args.size()
+                            << ", but got " << args_size << ".";
+  }
   for (size_t i = 0; i < args_abs_list.size(); ++i) {
     auto abs = args_abs_list[i];
     auto op_arg = op_call_args[i];
