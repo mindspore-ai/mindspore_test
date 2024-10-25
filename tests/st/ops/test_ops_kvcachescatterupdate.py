@@ -14,11 +14,9 @@
 # ============================================================================
 
 import numpy as np
-import pytest
-import mindspore as ms
 from mindspore.ops.auto_generate import KVCacheScatterUpdate
 from mindspore.common.parameter import Parameter
-from mindspore import context, Tensor, jit, JitConfig
+from mindspore import Tensor, jit, JitConfig
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -80,8 +78,7 @@ def test_kvcachescatterupdate_forward_mode():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
-def test_scatter_value(mode):
+def test_scatter_value():
     """
     Feature: Test kv_cache_scatter_update with static shape in GE.
     Description: call kv_cache_scatter_update with valid input.
@@ -95,19 +92,9 @@ def test_scatter_value(mode):
     updates_shape = [1, 5, 128, 1]
     updates = np.random.uniform(low=1, high=10, size=updates_shape).astype(np.float32)
 
-    if mode == 'pynative':
-        context.set_context(mode=ms.PYNATIVE_MODE)
-        output = kvcachescatterupdate_forward_func(Tensor(var), Tensor(indices), Tensor(updates), -1, 'update')
-    elif mode == 'KBK':
-        context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(kvcachescatterupdate_forward_func,
-                      jit_config=JitConfig(jit_level="O0")))(Parameter(Tensor(var), "var"),
-                                                             Tensor(indices), Tensor(updates), -1, 'update')
-    else:
-        context.set_context(mode=ms.GRAPH_MODE)
-        output = (jit(kvcachescatterupdate_forward_func,
-                      jit_config=JitConfig(jit_level="O2")))(Parameter(Tensor(var), "var"),
-                                                             Tensor(indices), Tensor(updates), -1, 'update')
+    output = (jit(kvcachescatterupdate_forward_func,
+                  jit_config=JitConfig(jit_level="O2")))(Parameter(Tensor(var), "var"),
+                                                         Tensor(indices), Tensor(updates), -1, 'update')
     expect_value = expect_func(var, indices, updates, -1)
     assert np.allclose(output.asnumpy(), expect_value)
 
