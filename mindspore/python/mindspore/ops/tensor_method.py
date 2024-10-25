@@ -129,7 +129,7 @@ from mindspore.ops.function.array_func import gather_ext
 # 47 is_contiguous
 
 # 48 isclose
-
+from mindspore.ops.function.math_func import isclose
 # 49 isfinite
 
 # 50 isnan
@@ -505,6 +505,9 @@ def deprecated_tensor_gather(input, input_indices, axis, batch_dims=0):
 # 47 is_contiguous
 
 # 48 isclose
+def tensor_isclose(input, x2, rtol=1e-05, atol=1e-08, equal_nan=False):
+    return isclose(input, x2, rtol, atol, equal_nan)
+
 
 # 49 isfinite
 

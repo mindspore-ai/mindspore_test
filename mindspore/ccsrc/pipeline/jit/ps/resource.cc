@@ -293,7 +293,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"diagonal", std::string("diagonal")},                              // P.Eye()
        {"diagonal_scatter", std::string("diagonal_scatter")},              // diagonal_scatter()
        {"i0", std::string("i0")},                                          // F.i0()
-       {"isclose", std::string("isclose")},                                // P.IsClose()
        {"is_floating_point", std::string("is_floating_point")},            // is_floating_point()
        {"is_signed", std::string("is_signed")},                            // is_signed()
        {"is_complex", std::string("is_complex")},                          // F.is_complex()
