@@ -595,8 +595,8 @@ def tensor_maximum(input, other):
 
 
 # 67 mean
-def tensor_mean(x, axis=None, keep_dims=False, dtype=None):
-    return mean(x, axis, keep_dims)
+def tensor_mean(input, axis=None, keep_dims=False, dtype=None):
+    return mean(input, axis, keep_dims)
 
 
 # 68 min

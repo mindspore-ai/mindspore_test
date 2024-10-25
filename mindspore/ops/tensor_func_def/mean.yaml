@@ -1,6 +1,6 @@
 mean:
   op_yaml: mean_ext_op.yaml
-  py_method: tensor_mean
+  py_method: tensor_mean # callback to python function "def tensor_mean"
   Ascend: pyboost
   CPU: py_method
   GPU: py_method

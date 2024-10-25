@@ -31,8 +31,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, flatten_mint,
-                                               mean_mint, split_mint, sub_mint)
+from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, flatten_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -1871,13 +1870,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('log2')(self)
 
-    @mean_mint
-    def mean(self, axis=None, keep_dims=False):
-        """
-        For details, please refer to :func:`mindspore.ops.mean`.
-        """
-        return tensor_operator_registry.get('mean')(self, axis, keep_dims)
-
     def amin(self, axis=None, keepdims=False, *, initial=None, where=None):
         """
         For details, please refer to :func:`mindspore.ops.amin`.
@@ -3634,13 +3626,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.xdivy`.
         """
         return tensor_operator_registry.get("xdivy")(self, y)
-
-    @split_mint
-    def split(self, split_size_or_sections, axis=0):
-        """
-        For details, please refer to :func:`mindspore.ops.split`.
-        """
-        return tensor_operator_registry.get('split')(self, split_size_or_sections, axis)
 
     def tensor_split(self, indices_or_sections, axis=0):
         """
