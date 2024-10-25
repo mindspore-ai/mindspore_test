@@ -370,7 +370,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"tile", std::string("tile")},                                      // P.Tile
        {"topk", std::string("topk")},                                      // P.TopK()
        {"top_k", std::string("top_k")},                                    // P.TopK()
-       {"isfinite", std::string("isfinite")},                              // P.isfinite()
        {"cov", std::string("cov")},                                        // cov()
        {"acos", std::string("acos")},                                      // acos()
        {"arccos", std::string("acos")},                                    // acos()
