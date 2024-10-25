@@ -21,9 +21,5 @@ kv_cache_scatter_update:
     returns:
         out:
             dtype: tensor
-            inplace: var
     class:
         name: KVCacheScatterUpdate
-    dispatch:
-        enable: True
-        Ascend: KVCacheScatterUpdateAscend
