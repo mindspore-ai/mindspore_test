@@ -74,6 +74,16 @@ TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/"
 TENSOR_FUNC_DEF_YAML_PATH = "mindspore/ops/tensor_func_def"
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 
+# yaml keys def
+OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'dispatch', 'labels'}
+ARG_KEYS = {'dtype', 'default', 'prim_init', 'type_cast', 'arg_handler'}
+RETURN_KEYS = {'dtype', 'inplace', 'type_cast'}
+ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}
+CLASS_KEYS = {'name', 'disable'}
+FUNCTION_KEYS = {'name', 'disable'}
+DISPATCH_KEYS = {'enable', 'is_comm_op', 'Ascend', 'GPU', 'CPU'}
+TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'alias', 'Ascend', 'GPU', 'CPU'}
+
 # infer
 MS_OPS_FUNC_IMPL_PATH = "mindspore/ops/infer/ops_func_impl"
 
@@ -85,7 +95,6 @@ MS_OPS_KERNEL_PATH = "mindspore/ops/kernel"
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
 
 MS_COMMON_PYBOOST_KERNEL_PATH = os.path.join(MS_OPS_KERNEL_PATH, "common/pyboost")
-
 
 OP_NAME_OP_DEF = """
 #ifndef MINDSPORE_CORE_OP_NAME_H_

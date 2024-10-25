@@ -9,7 +9,7 @@ inplace_adds_ext:
       dtype: number
       default: 1
   args_signature:
-    rw_wirte: input
+    rw_write: input
   returns:
     output:
       dtype: tensor

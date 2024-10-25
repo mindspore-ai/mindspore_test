@@ -15,6 +15,8 @@
 
 """Op Proto module for defining operator prototypes and their arguments."""
 
+import gen_constants as K
+
 
 class OpArg:
     """
@@ -163,20 +165,25 @@ class OpProto:
         Returns:
             OpProto: An instance of OpProto representing the operator.
         """
+        # check op keys
+        check_validation(op_name, op_data)
         # get op args
-        op_args = get_op_args(op_data)
+        op_args = get_op_args(op_name, op_data)
         # get op return args
-        op_returns = get_op_returns(op_data)
+        op_returns = get_op_returns(op_name, op_data)
         # get op args signature
-        op_args_signature = get_op_args_signature(op_data)
+        op_args_signature = get_op_args_signature(op_name, op_data)
         # get op class
         op_class = get_op_class(op_name, op_data)
         # get op function
         op_function = get_op_function(op_name, op_data)
         # get op dispatch
-        op_dispatch = get_op_dispatch(op_data)
+        op_dispatch = get_op_dispatch(op_name, op_data)
         # get op view
         op_view = op_data.get('view', False)
+        if not isinstance(op_view, bool):
+            raise TypeError(
+                f'The view value should be bool, but get {type(op_view)}, op name is {op_name}.')
         # get op labels
         op_labels = op_data.get('labels', None)
         # get op deprecated
@@ -187,7 +194,7 @@ class OpProto:
         return op_proto
 
 
-def get_op_args_signature(op_data):
+def get_op_args_signature(op_name, op_data):
     """
     Retrieves the argument signature from the operation data.
 
@@ -199,6 +206,8 @@ def get_op_args_signature(op_data):
     """
     op_args_signature = op_data.get('args_signature', None)
     if op_args_signature is not None:
+        args_signature_keys = op_args_signature.keys()
+        check_op_yaml_keys(op_name, set(args_signature_keys), K.ARG_SIGNATURE_KEYS)
         rw_write = op_args_signature.get('rw_write', None)
         rw_read = op_args_signature.get('rw_read', None)
         rw_ref = op_args_signature.get('rw_ref', None)
@@ -207,7 +216,7 @@ def get_op_args_signature(op_data):
     return None
 
 
-def check_validation(op_data: dict):
+def check_validation(op_name: str, op_data: dict):
     """
     Validates the operator data to ensure it contains necessary keys.
 
@@ -217,13 +226,17 @@ def check_validation(op_data: dict):
     Raises:
         TypeError: If the required keys 'args' or 'returns' are missing.
     """
+    # check keys
+    check_op_yaml_keys(op_name, set(op_data.keys()), K.OP_KEYS)
+
+    # Those keys must in yaml
     if 'args' not in op_data.keys():
-        raise TypeError("op define need key 'args'")
+        raise TypeError(f"Op define miss key 'args', op name is {op_name}")
     if 'returns' not in op_data.keys():
-        raise TypeError("op define need key 'returns'")
+        raise TypeError(f"Op define miss key 'returns', op name is {op_name}")
 
 
-def get_op_args(op_data):
+def get_op_args(op_name, op_data):
     """
     Retrieves the arguments for the operator from the operation data.
 
@@ -233,11 +246,11 @@ def get_op_args(op_data):
     Returns:
         list: A list of OpArg instances representing the arguments of the operator.
     """
-    # 参数校验
-    check_validation(op_data)
     args_dict = op_data.get('args')
     op_args = []
     for arg_name in args_dict.keys():
+        arg_keys = args_dict[arg_name].keys()
+        check_op_yaml_keys(op_name, set(arg_keys), K.ARG_KEYS)
         arg_dtype = args_dict[arg_name]['dtype']
         if arg_dtype == 'TypeId':
             arg_dtype = 'int'
@@ -264,7 +277,7 @@ def get_op_args(op_data):
     return op_args
 
 
-def get_op_returns(op_data):
+def get_op_returns(op_name, op_data):
     """
     Retrieves the return values for the operator from the operation data.
 
@@ -277,6 +290,8 @@ def get_op_returns(op_data):
     op_return_args = []
     return_dict = op_data['returns']
     for return_name in return_dict.keys():
+        return_keys = return_dict[return_name].keys()
+        check_op_yaml_keys(op_name, set(return_keys), K.RETURN_KEYS)
         inplace = ''
         if 'inplace' in return_dict[return_name]:
             inplace = return_dict[return_name]['inplace']
@@ -288,7 +303,7 @@ def get_op_returns(op_data):
     return op_return_args
 
 
-def get_op_dispatch(op_data):
+def get_op_dispatch(op_name, op_data):
     """
     Retrieves the dispatch information for the operator from the operation data.
 
@@ -299,9 +314,14 @@ def get_op_dispatch(op_data):
         OpDispatch: An instance of OpDispatch containing the dispatch information.
     """
     op_dispatch = op_data.get('dispatch', {})
+    dispatch_keys = op_dispatch.keys()
+    check_op_yaml_keys(op_name, set(dispatch_keys), K.DISPATCH_KEYS)
     if not op_dispatch:
         return None
     enable = op_dispatch.get('enable', False)
+    if not isinstance(enable, bool):
+        raise TypeError(
+            f'The dispatch enable value should be bool, but get {type(enable)}, op name is {op_name}.')
     is_comm_op = op_dispatch.get('is_comm_op', False)
     ascend = op_dispatch.get('Ascend', 'default')
     cpu = op_dispatch.get('CPU', 'default')
@@ -321,7 +341,12 @@ def get_op_class(op_name, op_data) -> OpClass:
         OpClass: An instance of OpClass containing the class information for the operator.
     """
     op_class = op_data.get('class', {})
+    class_keys = op_class.keys()
+    check_op_yaml_keys(op_name, set(class_keys), K.CLASS_KEYS)
     is_disable = op_class.get('disable', False)
+    if not isinstance(is_disable, bool):
+        raise TypeError(
+            f'The class disable value should be bool, but get {type(is_disable)}, op name is {op_name}.')
     class_name = op_class.get('name', convert_python_func_name_to_c(op_name))
     return OpClass(disable=is_disable, name=class_name)
 
@@ -338,9 +363,22 @@ def get_op_function(op_name, op_data) -> OpFunction:
         OpFunction: An instance of OpFunction containing the function information for the operator.
     """
     op_function = op_data.get('function', {})
+    function_keys = op_function.keys()
+    check_op_yaml_keys(op_name, set(function_keys), K.FUNCTION_KEYS)
     is_disable = op_function.get('disable', False)
+    if not isinstance(is_disable, bool):
+        raise TypeError(
+            f'The function disable value should be bool, but get {type(is_disable)}, op name is {op_name}.')
     function_name = op_function.get('name', op_name)
     return OpFunction(disable=is_disable, name=function_name)
 
+
 def convert_python_func_name_to_c(func_name: str) -> str:
     return ''.join(word.capitalize() for word in func_name.split('_'))
+
+
+def check_op_yaml_keys(op_name: str, input_keys: set, compare_keys: set):
+    diff_keys = input_keys - compare_keys
+    if diff_keys:
+        raise TypeError(
+            f'The definition of keys in yaml has faults, op name is {op_name}, wrong keys are {diff_keys}.')
