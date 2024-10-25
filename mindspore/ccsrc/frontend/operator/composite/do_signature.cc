@@ -434,7 +434,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
       }
       // If sig is SignatureEnumRW::kRWRef, not do anything.
     } else if (IsTypeRef(sig, type)) {
-      RaiseExceptionForCheckParameter(func_name, i, type->ToString());
+      RaiseExceptionForCheckParameter(func_name, i, type->ToString(), function);
     }
     MS_LOG(DEBUG) << "Function " << func_name << "'s input " << i << " " << param->DebugString(2) << " abs "
                   << args_abs_list[i]->ToString() << " type " << type->ToString() << ".";
@@ -497,9 +497,12 @@ void RaiseExceptionForConvertRefDtype(const ValuePtr &func, const std::string &r
                           << ", which cannot be converted to data type " << target_type << " automatically.\n";
 }
 
-void RaiseExceptionForCheckParameter(const std::string &func_name, size_t i, const std::string &source_type) {
-  MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter, but "
-                          << source_type << ".";
+void RaiseExceptionForCheckParameter(const std::string &func_name, size_t i, const std::string &source_type,
+                                     const ValuePtr &function) {
+  if (!function->isa<Primitive>() || !function->cast<PrimitivePtr>()->inplace_prim()) {
+    MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter, but "
+                            << source_type << ".";
+  }
 }
 }  // namespace prim
 }  // namespace mindspore
