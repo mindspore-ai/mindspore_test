@@ -150,8 +150,6 @@ class PyboostFunctionsGenerator(BaseGenerator):
         function_class_register = ''
         for _, tensor_func_protos in tensor_func_protos_data.items():
             for func_proto in tensor_func_protos:
-                if func_proto.alias is not None:
-                    continue
                 # deprecated op should not be registered
                 if 'deprecated' in func_proto.op_proto.op_name:
                     continue

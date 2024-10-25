@@ -132,14 +132,14 @@ def generate_arg_handler_files(work_path):
     check_change_and_replace_file(dst_arg_dtype_cast_path, tmp_arg_dtype_cast_path)
 
 
-def gen_tensor_func_code(work_path, func_protos):
+def gen_tensor_func_code(work_path, func_protos, alias_func_mapping):
     generator = TensorFuncRegCppGenerator()
-    generator.generate(work_path, func_protos)
+    generator.generate(work_path, func_protos, alias_func_mapping)
 
 
-def gen_functional_map_code(work_path, func_protos):
+def gen_functional_map_code(work_path, func_protos, alias_func_mapping):
     generator = FunctionalMapCppGenerator()
-    generator.generate(work_path, func_protos)
+    generator.generate(work_path, func_protos, alias_func_mapping)
 
 
 def gen_tensor_docs_code(work_path, tensor_docs_data):
@@ -171,7 +171,7 @@ def main():
 
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
     deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
-    func_protos = load_func_protos_from_yaml(tensor_yaml_dict, op_protos, deprecated_op_protos)
+    func_protos, alias_func_mapping = load_func_protos_from_yaml(tensor_yaml_dict, op_protos, deprecated_op_protos)
 
     # generate ops python files
     generate_ops_py_files(work_path, op_protos, doc_yaml_dict, "gen")
@@ -184,9 +184,9 @@ def main():
     # generate aclnn kernelmod register
     generate_aclnn_reg_file(work_path, op_protos)
     # generate tensor_py func code
-    gen_tensor_func_code(work_path, func_protos)
+    gen_tensor_func_code(work_path, func_protos, alias_func_mapping)
     # generate functional map code
-    gen_functional_map_code(work_path, func_protos)
+    gen_functional_map_code(work_path, func_protos, alias_func_mapping)
     # generate _tensor_docs.py that attaches docs to tensor func APIs when import mindspore
     gen_tensor_docs_code(work_path, tensor_doc_yaml_dict)
 

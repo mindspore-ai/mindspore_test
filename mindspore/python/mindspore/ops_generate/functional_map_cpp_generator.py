@@ -54,55 +54,24 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "type": "mstype",
                                 "None": "None"}
 
-    def generate(self, work_path, func_protos_data):
+    def generate(self, work_path, func_protos_data, alias_func_mapping):
         """
         Generates the functional map header file.
 
         Args:
             work_path (str): The directory path to save the generated file.
             func_protos_data (dict): A dictionary mapping function API names to their prototype data.
+            alias_func_mapping (dict): A dictionary mapping function name to its alias function names.
 
         Returns:
             None
         """
-        func_protos_data, alias_func_mapping = self._exclude_alias_func(func_protos_data)
-
         functional_map_list = self._get_functional_map_list(func_protos_data, alias_func_mapping)
         funcs_sig_map_list = self._get_func_sigs_list(func_protos_data, alias_func_mapping)
         functional_map_cc_code = self.function_map_cc_template.replace(functional_map=functional_map_list,
                                                                        func_sigs_map=funcs_sig_map_list)
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         save_file(save_path, "functional_map.cc", functional_map_cc_code)
-
-    def _exclude_alias_func(self, func_protos_data):
-        """
-        Exclude and alias tensor func APIs.
-
-        Args:
-            func_protos_data (dict): Dictionary where keys are function API names and values are lists of
-                                     function prototypes associated with each API.
-
-        Returns:
-            tuple:
-                - func_data (dict): Function prototypes except for alias tensor APIs.
-                - alias_func_mapping (dict): Mapping from alias function names to their corresponding op names.
-
-        """
-        func_data = {}
-        alias_func_mapping = {}
-        for func_api_name, func_protos in func_protos_data.items():
-            if len(func_protos) == 1:
-                if func_protos[0].alias is not None:
-                    print(f"mapping {func_protos[0].alias} to {func_api_name}")
-                    alias_func_mapping[func_protos[0].alias] = func_api_name
-                    continue
-                func_name = func_protos[0].func_name
-                if func_name not in func_data:
-                    func_data[func_name] = [func_protos[0]]
-            if len(func_protos) > 1:
-                func_data[func_api_name] = func_protos
-
-        return func_data, alias_func_mapping
 
     def _get_functional_map_list(self, func_protos_data, alias_func_mapping):
         """
@@ -111,11 +80,12 @@ class FunctionalMapCppGenerator(BaseGenerator):
         Args:
             func_protos_data (dict): A dictionary mapping function API names to a list of function prototype data.
             Each prototype contains class names and corresponding Python methods.
-            alias_func_mapping (dict): Mapping from alias function names to their corresponding op names.
+            alias_func_mapping (dict): A dictionary mapping function name to its alias function names.
 
         Returns: list: A list of functional map strings, where each string represents the mapping of a function API
         name to its associated class-to-method pairs.
         """
+
         def get_class_to_method_list(func_protos):
             """
             Get a str representation of a list of class names and corresponding Python methods.

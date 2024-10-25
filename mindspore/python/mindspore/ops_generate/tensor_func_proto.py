@@ -23,14 +23,12 @@ class TensorFuncProto:
     """
 
     def __init__(self,
-                 alias=None,
-                 func_name=None,
-                 op_proto=None,
-                 py_method=None,
-                 ascend=None,
-                 gpu=None,
-                 cpu=None):
-        self.alias = alias
+                 func_name,
+                 op_proto,
+                 py_method,
+                 ascend,
+                 gpu,
+                 cpu):
         self.func_name = func_name
         self.op_proto = op_proto
         self.py_method = py_method
@@ -49,12 +47,12 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_p
     for deprecated_op_proto in deprecated_op_protos:
         op_protos_dict[deprecated_op_proto.op_name] = deprecated_op_proto
     func_protos = defaultdict(list)
+    alias_func_mapping = defaultdict(list)
     for func_name, tensor_func_data in tensor_func_yaml_data.items():
         func_data_list = [tensor_func_data] if isinstance(tensor_func_data, dict) else tensor_func_data
         for func_data in func_data_list:
             if 'alias' in func_data:
-                tensor_func_proto = TensorFuncProto(alias=func_data['alias'])
-                func_protos[func_name].append(tensor_func_proto)
+                alias_func_mapping[func_data['alias']].append(func_name)
                 continue
             op_name = _get_op_name_from_op_yaml(func_data)
             op_proto = op_protos_dict.get(op_name, None)
@@ -73,7 +71,7 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_p
                                                 gpu=gpu,
                                                 cpu=cpu)
             func_protos[func_name].append(tensor_func_proto)
-    return func_protos
+    return func_protos, alias_func_mapping
 
 
 def _get_op_name_from_op_yaml(func_data: dict) -> str:
