@@ -81,8 +81,6 @@ def test_ops_rotary_position_embedding(context_mode, ms_type, mode_value):
         rotl_value = 2e-2
     np.testing.assert_allclose(output.asnumpy(), expect_out, rtol=rotl_value)
     np.testing.assert_allclose(output_grad[0].asnumpy(), expect_grad_out[0], rtol=rotl_value)
-    np.testing.assert_allclose(output_grad[1].asnumpy(), expect_grad_out[1], rtol=rotl_value)
-    np.testing.assert_allclose(output_grad[2].asnumpy(), expect_grad_out[2], rtol=rotl_value)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')

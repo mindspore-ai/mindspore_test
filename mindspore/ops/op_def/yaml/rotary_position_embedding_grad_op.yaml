@@ -24,3 +24,4 @@ rotary_position_embedding_grad:
     disable: True
   dispatch:
     enable: True
+    Ascend: RotaryPositionEmbeddingGradAscend
