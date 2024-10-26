@@ -8,7 +8,7 @@ rotary_position_embedding:
 
         Args:
             x (Tensor): 4D tensor, with float16, bfloat16 or float32 data type.
-            cos (Tensor): 4D tensor, has the same type as `x` , in range of [-1, 1].
+            cos (Tensor): 4D constant, has the same type as `x` , in range of [-1, 1].
             sin (Tensor): Same with `cos` .
             mode (int): An optional attribute. Used to select a calculation mode. 0: rotate_half(GPT-NeoX style); 1: rotate_interleaved(GPT-J style). Defaults to ``0`` .
 
@@ -24,7 +24,6 @@ rotary_position_embedding:
 
                 11SD, B1SD, BNSD; D < 896 and D is an Even. B, N < 1000;
 
-                B * N <= 1024 if gradient calculation of cos/sin is used.
               - Supported layout: 11SD, B1SD, BNSD;
 
                 D < 896 and D is an Even.
