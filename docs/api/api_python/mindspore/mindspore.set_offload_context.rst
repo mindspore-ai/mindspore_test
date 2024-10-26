@@ -16,7 +16,7 @@ mindspore.set_offload_context
           - offload_disk_size：设置可用于offload到磁盘的大小，格式只支持"xxGB"形式字符串。
           - hbm_ratio：策略相关参数，策略在用户设置的最大显存基础上能够使用的比例，小数，值范围(0,1]，默认值： ``1.0`` 。
           - cpu_ratio：策略相关参数，策略在用户设置的最大host侧内存基础上能够使用的比例，小数，值范围(0,1]，默认值： ``1.0`` 。
-          - enable_pinned_mem：是否开启Pinned Memory，开启后可加速HBM-DDR之间的拷贝，会影响系统虚拟内存。Bool类型。默认值： ``True``。
+          - enable_pinned_mem：是否开启Pinned Memory，开启后可加速片上内存-DDR之间的拷贝，会影响系统虚拟内存。Bool类型。默认值： ``True``。
           - enable_aio：是否开启AIO，开启后可加速DDR-NVME之间的拷贝。Bool类型。默认值： ``True`` 。
           - aio_block_size：AIO中blocksize值，格式只支持"xxGB"形式字符串。
           - aio_queue_size：AIO中depth值，刷新磁盘等待队列最大值, 取值需为整数。

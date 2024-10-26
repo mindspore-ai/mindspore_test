@@ -243,8 +243,8 @@ class Profiler:
 
         l2_cache (bool, optional): (Ascend only) Whether to collect l2 cache data, collect when True.
             Default: ``False`` .
-        hbm_ddr (bool, optional): (Ascend only) Whether to collect HBM/DDR read and write rate data, collect when True.
-            Default: ``False`` .
+        hbm_ddr (bool, optional): (Ascend only) Whether to collect On-Chip Memory/DDR read and write rate data,
+            collect when True. Default: ``False`` .
         pcie (bool, optional): (Ascend only) Whether to collect PCIe bandwidth data, collect when True.
             Default: ``False`` .
         sync_enable (bool, optional): (GPU only) Whether the profiler collects operators in a synchronous way.

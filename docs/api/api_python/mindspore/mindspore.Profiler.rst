@@ -30,7 +30,7 @@ mindspore.Profiler
           - 6: L2Cache，包含write_cache_hit, write_cache_miss_allocate, r0_read_cache_hit, r1_read_cache_hit等。本功能仅支持Atlas A2 训练系列产品。
 
         - **l2_cache** (bool, 可选) -（仅限Ascend）是否收集l2缓存数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
-        - **hbm_ddr** (bool, 可选) -（仅限Ascend）是否收集HBM/DDR内存读写速率数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
+        - **hbm_ddr** (bool, 可选) -（仅限Ascend）是否收集片上内存/DDR内存读写速率数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **pcie** (bool, 可选) -（仅限Ascend）是否收集PCIe带宽数据，当值为 ``True`` 时，收集这些数据。默认值： ``False`` 。
         - **sync_enable** (bool, 可选) -（仅限GPU）Profiler是否用同步的方式收集算子耗时，默认值： ``True`` 。
 
