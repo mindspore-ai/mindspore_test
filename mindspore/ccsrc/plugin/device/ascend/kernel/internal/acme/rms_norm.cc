@@ -31,8 +31,5 @@ acme::AcmeOpPtr AcmeRmsNorm::CreateKernel(const acme::InputsImmutableInfoList &i
   norm_param.eps = ms_inputs[kIndex2]->GetValueWithCheck<float>();
   return acme::CreateRmsNormOp(inputs_ii, outputs_ii, norm_param, acme::kAcmeRmsNormOpName);
 }
-MS_ACME_KERNEL_FACTORY_REG(RmsNorm, acme::kAcmeRmsNormOpName, AcmeRmsNorm);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(RmsNorm, INPUT_NUM_2, INDEX_0, INDEX_1);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(RmsNorm, OUTPUT_NUM_2, INDEX_0, INDEX_1);
 }  // namespace kernel
 }  // namespace mindspore

@@ -83,7 +83,8 @@ Status PagedAttentionInfo::CheckStrategy(const StrategyPtr &strategy) {
     return FAILED;
   }
 
-  if ((strategy_key_cache.at(3) != strategy_value_cache.at(3)) || (strategy_key_cache.at(3) != 1)) {
+  if (strategy_key_cache.size() == 4 &&
+      ((strategy_key_cache.at(3) != strategy_value_cache.at(3)) || (strategy_key_cache.at(3) != 1))) {
     MS_LOG(ERROR) << name_ << ": Invalid strategy: The head_dim can't be shard, but got"
                   << " query's strategy: " << strategy_query << ", key_cache's strategy: " << strategy_key_cache
                   << ", value_cache's strategy: " << strategy_value_cache;
@@ -121,7 +122,11 @@ Status PagedAttentionInfo::InferTensorMap() {
   const int kQLensIndex = 8;
 
   Shape query_tensor_map{4, 1, 0};
-  Shape cache_tensor_map{-1, -1, 0, -1};
+  Shape cache_tensor_map{-1, -1, 0};
+  auto cache = input_strategies.at(2);
+  if (cache.size() == 4) {
+    cache_tensor_map.push_back(-1);
+  }
   Shape block_tensor_map{4, -1};
   Shape context_tensor_map{-1};
 
