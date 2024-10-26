@@ -32,6 +32,7 @@ from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
+from mindspore._checkparam import twice
 from mindspore.ops.composite.multitype_ops._constexpr_utils import raise_value_error
 from mindspore.ops.operations.nn_ops import MaxUnpool2D, MaxUnpool3D
 from mindspore.ops.operations.nn_ops import FractionalMaxPoolWithFixedKsize, FractionalMaxPool3DWithFixedKsize
@@ -51,7 +52,7 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op)
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, ConstantPadND, MaxPoolWithIndices, \
-    PromptFlashAttention, MaxPoolWithMask
+    PromptFlashAttention, MaxPoolWithMask, ConvolutionStr
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
@@ -5948,41 +5949,18 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         (10, 32, 30, 30)
     """
 
-    def _convolution_same(input, weight, bias, dilation, groups):
-        """ convolution when mode is 'same' """
-        if isinstance(dilation, int):
-            dilation = (dilation,) * 2
-        validator.check_int(len(weight.shape), 4, validator.EQ, "weight.shape", 'conv2d')
-        validator.check_int(len(dilation), 2, validator.EQ, "dilation", 'conv2d')
-
-        # Calc padding info
-        need_pad_nd, pad_l, pad_r = _get_pad_info(dilation, weight)
-        if not need_pad_nd:
-            conv = _get_cache_prim(Convolution)(stride, pad_l, dilation, False, (0, 0), groups)
-            return conv(input, weight, bias)
-
-        # Calc pad nd info
-        pad_nd, pad_l = _get_pad_nd_info(pad_l, pad_r)
-        pad_nd_op = _get_cache_prim(ConstantPadND)()
-        padded_input = pad_nd_op(input, pad_nd, 0)
-        conv = _get_cache_prim(Convolution)(stride, pad_l, dilation, False, (0, 0), groups)
-        return conv(padded_input, weight, bias)
-
+    if isinstance(stride, int):
+        stride = twice(stride)
+    if isinstance(dilation, int):
+        dilation = twice(dilation)
     if isinstance(padding, int):
-        padding = (padding,) * 2
-
+        padding = twice(padding)
     if isinstance(padding, (tuple, list)):
-        conv = _get_cache_prim(Convolution)(stride, padding, dilation, False, (0, 0), groups)
-        return conv(input, weight, bias)
+        conv = _get_cache_prim(Convolution)()
+        return conv(input, weight, bias, stride, padding, dilation, False, (0, 0), groups)
     if isinstance(padding, str):
-        if padding == 'valid':
-            conv = _get_cache_prim(Convolution)(stride, (0, 0), dilation, False, (0, 0), groups)
-            return conv(input, weight, bias)
-        if padding == 'same':
-            _check_stride_when_same_mode(stride)
-            return _convolution_same(input, weight, bias, dilation, groups)
-        raise ValueError(f"For conv2d, the parameter 'padding' must be 'same' or 'valid' when " \
-                         f"the type of 'padding' is string.")
+        conv = _get_cache_prim(ConvolutionStr)()
+        return conv(input, weight, bias, stride, padding, dilation, False, (0, 0), groups)
     raise TypeError(f"For conv2d, the parameter 'padding' must be a tuple/list " \
                     f"or a string, but got {type(padding)}")
 

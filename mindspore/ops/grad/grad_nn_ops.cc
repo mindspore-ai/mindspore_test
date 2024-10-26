@@ -479,8 +479,8 @@ REG_BPROP_BUILDER("Convolution").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto bias = ib->GetInput(kIndex2);
-  auto pad_value = ib->GetInput(kIndex3);
-  auto stride_value = ib->GetInput(kIndex4);
+  auto stride_value = ib->GetInput(kIndex3);
+  auto pad_value = ib->GetInput(kIndex4);
   auto dilation_value = ib->GetInput(kIndex5);
   auto transposed_value = ib->GetInput(kIndex6);
   auto output_padding_value = ib->GetInput(kIndex7);
@@ -492,11 +492,136 @@ REG_BPROP_BUILDER("Convolution").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
   auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
 
   auto conv2d_grad_out =
-    ib->ConvolutionGrad(ib->GetInput(kIndex10), x, w, bias, pad_value, stride_value, dilation_value, transposed_value,
+    ib->ConvolutionGrad(ib->GetInput(kIndex10), x, w, bias, stride_value, pad_value, dilation_value, transposed_value,
                         output_padding_value, group_value, output_mask);
   auto dx = ib->TupleGetItem(conv2d_grad_out, kIndex0);
   auto dw = ib->TupleGetItem(conv2d_grad_out, kIndex1);
   auto dbias = ib->TupleGetItem(conv2d_grad_out, kIndex2);
+  return {dx,
+          dw,
+          dbias,
+          ib->OutZeros(stride_value),
+          ib->OutZeros(pad_value),
+          ib->OutZeros(dilation_value),
+          ib->OutZeros(transposed_value),
+          ib->OutZeros(output_padding_value),
+          ib->OutZeros(group_value)};
+});
+
+REG_BPROP_BUILDER("ConvolutionStr").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto w = ib->GetInput(kIndex1);
+  auto bias = ib->GetInput(kIndex2);
+  auto stride_value = ib->GetInput(kIndex3);
+  auto pad_value = ib->GetInput(kIndex4);
+  auto dilation_value = ib->GetInput(kIndex5);
+  auto transposed_value = ib->GetInput(kIndex6);
+  auto output_padding_value = ib->GetInput(kIndex7);
+  auto group_value = ib->GetInput(kIndex8);
+
+  auto bias_type = bias->abstract()->BuildType();
+  bool bias_mask = bias_type->isa<TypeNone>() ? false : bias->need_compute_grad_out();
+  std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), w->need_compute_grad_out(), bias_mask};
+  auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
+
+  auto stride_values = GetValue<std::vector<int64_t>>(stride_value->BuildValue());
+  auto dilation_values = GetValue<std::vector<int64_t>>(dilation_value->BuildValue());
+
+  auto pad_values = pad_value->BuildValue();
+  auto pad_int_value = GetValue<int64_t>(pad_values);
+
+  std::vector<int64_t> pad_vector = {0, 0};
+  NodePtr conv2d_grad_out;
+  NodePtr dx;
+
+  if (pad_int_value == PadMode::SAME) {
+    auto k = ib->GetRank(w);
+
+    auto dim = static_cast<size_t>(k - 2);
+    auto weight_sizes = GetValue<std::vector<int64_t>>(ib->Shape(w)->BuildValue());
+    auto input_sizes = GetValue<std::vector<int64_t>>(ib->Shape(x)->BuildValue());
+
+    std::vector<int64_t> padding_l;
+    std::vector<int64_t> padding_r;
+    bool symmetric_padding = true;
+    for (size_t i = 0; i < dim; ++i) {
+      auto stride = stride_values.size() == 1 ? stride_values[0] : stride_values[i];
+      auto dilation = dilation_values.size() == 1 ? dilation_values[0] : dilation_values[i];
+      auto inputSize = input_sizes[i + 2];
+      auto kernelSize = weight_sizes[i + 2];
+      auto total_padding = dilation * (kernelSize - 1);
+      if (stride > 2 && (total_padding % 2 == 1)) {
+        auto wiggle_room = inputSize % stride - 1;
+        if (wiggle_room > 0) {
+          --total_padding;
+        }
+      }
+      auto left = total_padding / 2;
+      auto right = total_padding - left;
+
+      padding_l.push_back(left);
+      padding_r.push_back(right);
+      if (left != right) {
+        symmetric_padding = false;
+      }
+    }
+    if (symmetric_padding) {
+      pad_vector = padding_l;
+      conv2d_grad_out =
+        ib->ConvolutionGrad(ib->GetInput(kIndex10), x, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)),
+                            dilation_value, transposed_value, output_padding_value, group_value, output_mask);
+
+      dx = ib->TupleGetItem(conv2d_grad_out, 0);
+    } else {
+      std::vector<int64_t> pad_nd(2 * dim, 0);
+      for (size_t i = 0; i < dim; ++i) {
+        auto delta_pad = padding_r[i] - padding_l[i];
+        auto pad_idx = 2 * (dim - 1 - i);  // F.pad goes from last dim to first
+        if (delta_pad > 0) {
+          pad_nd[pad_idx + 1] = delta_pad;
+        } else {
+          pad_nd[pad_idx] = delta_pad;
+          padding_l[i] = padding_r[i];
+        }
+      }
+
+      auto zero = ib->EmitValue(MakeValue<int64_t>(0));
+      auto pad_nd_new = ib->EmitValue(MakeValue(pad_nd));
+      auto x_new = ib->Emit("ConstantPadND", {x, pad_nd_new, zero});
+
+      pad_vector = padding_l;
+      auto new_dout = ib->Emit("ZerosLikeExt", {x_new, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x_new)))});
+
+      auto new_dout_shape = GetValue<std::vector<int64_t>>(ib->Shape(new_dout)->BuildValue());
+      auto x_new_shape = GetValue<std::vector<int64_t>>(ib->Shape(x_new)->BuildValue());
+      auto w_shape = GetValue<std::vector<int64_t>>(ib->Shape(w)->BuildValue());
+      auto bias_shape = GetValue<std::vector<int64_t>>(ib->Shape(bias)->BuildValue());
+
+      auto output_padding_values = GetValue<std::vector<int64_t>>(output_padding_value->BuildValue());
+      auto output_masks = GetValue<std::vector<int64_t>>(output_mask->BuildValue());
+
+      conv2d_grad_out =
+        ib->ConvolutionGrad(ib->GetInput(kIndex10), x_new, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)),
+                            dilation_value, transposed_value, output_padding_value, group_value, output_mask);
+
+      auto dout = ib->TupleGetItem(conv2d_grad_out, 0);
+      (void)std::transform(pad_nd.begin(), pad_nd.end(), pad_nd.begin(), [](const int64_t &c) { return -c; });
+      NodePtr neg_pad = ib->Value<ShapeVector>(pad_nd);
+      dx = ib->ConstantPadND(dout, neg_pad, zero);
+    }
+  } else if (pad_int_value == PadMode::VALID) {
+    pad_vector = {0, 0};
+    conv2d_grad_out =
+      ib->ConvolutionGrad(ib->GetInput(kIndex10), x, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)),
+                          dilation_value, transposed_value, output_padding_value, group_value, output_mask);
+    dx = ib->TupleGetItem(conv2d_grad_out, 0);
+
+  } else {
+    MS_LOG(EXCEPTION) << "Input padding string must be one of {'same', 'valid'}";
+  }
+
+  auto dw = ib->TupleGetItem(conv2d_grad_out, 1);
+  auto dbias = ib->TupleGetItem(conv2d_grad_out, 2);
   return {dx,
           dw,
           dbias,

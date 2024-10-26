@@ -33,12 +33,17 @@ class Net(Cell):
     def __init__(self, conv2d_weight, out_channel, kernel_size, pad_mode, stride, dilation=1, group=1, pad=0,
                  strategy1=None, strategy2=None):
         super().__init__()
-        self.conv2d = _get_cache_prim(Convolution)(stride, pad, dilation, False, (0, 0), group).shard(strategy1)
+        self.conv2d = _get_cache_prim(Convolution)().shard(strategy1)
         self.neg = P.Neg().shard(strategy2)
         self.conv2d_weight = Parameter(conv2d_weight, "w1")
+        self.stride = stride
+        self.pad = pad
+        self.dilation = dilation
+        self.group = group
 
     def construct(self, x, b):
-        out = self.conv2d(x, self.conv2d_weight)
+        out = self.conv2d(x, self.conv2d_weight, None, self.stride, self.pad, self.dilation, False, (0, 0),
+                          self.group)
         out = self.neg(out)
         return out
 

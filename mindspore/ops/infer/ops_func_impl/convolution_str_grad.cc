@@ -14,36 +14,38 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/convolution_grad.h"
+#include "infer/ops_func_impl/convolution_str_grad.h"
 #include <string>
 #include <set>
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr size_t kConvolutionGradInputArgsSize = 11;
-constexpr size_t kConvolutionGradInputDims = 4;
+constexpr size_t kConvolutionStrGradInputArgsSize = 11;
+constexpr size_t kConvolutionStrGradInputDims = 4;
 }  // namespace
-BaseShapePtr ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  if (input_args.size() != kConvolutionGradInputArgsSize) {
-    MS_LOG(EXCEPTION) << "input args size should be " << kConvolutionGradInputArgsSize << ", but got "
+BaseShapePtr ConvolutionStrGradFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                    const std::vector<AbstractBasePtr> &input_args) const {
+  MS_EXCEPTION_IF_NULL(primitive);
+  if (input_args.size() != kConvolutionStrGradInputArgsSize) {
+    MS_LOG(EXCEPTION) << "input args size should be " << kConvolutionStrGradInputArgsSize << ", but got "
                       << input_args.size();
   }
 
   auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
   auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
   auto dout_shape_ptr = input_args[kInputIndex0]->GetShape();
+  MS_EXCEPTION_IF_NULL(dout_shape_ptr);
   const auto &dout_shape = dout_shape_ptr->GetShapeVector();
 
   auto get_bias_grad_shape = [dout_shape]() {
-    if (IsDynamicRank(dout_shape) || IsDynamic(dout_shape)) {
+    if (IsDynamicRank(dout_shape)) {
       return abstract::Shape::kShapeDimAny;
     }
-    if (dout_shape.size() != kConvolutionGradInputDims) {
-      MS_LOG(EXCEPTION) << "dout_shape size should be " << kConvolutionGradInputDims << ", but got "
+    if (dout_shape.size() != kConvolutionStrGradInputDims) {
+      MS_LOG(EXCEPTION) << "dout_shape size should be " << kConvolutionStrGradInputDims << ", but got "
                         << dout_shape.size();
     }
     return dout_shape[1];
@@ -54,8 +56,8 @@ BaseShapePtr ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
     x_shape_ptr, weight_shape_ptr, std::make_shared<abstract::Shape>(bias_grad_shape)});
 }
 
-TypePtr ConvolutionGradFuncImpl::InferType(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr ConvolutionStrGradFuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type_ptr = input_args[kInputIndex1]->GetType();
   auto weight_type_ptr = input_args[kInputIndex2]->GetType();
   return std::make_shared<Tuple>(std::vector<TypePtr>{x_type_ptr, weight_type_ptr, x_type_ptr});

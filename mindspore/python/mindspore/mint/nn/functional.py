@@ -49,7 +49,7 @@ from mindspore.ops.functional import relu
 # 14
 from mindspore.ops.function.nn_func import dropout_ext as dropout
 # 15
-
+from mindspore.ops.function.nn_func import conv2d_ext as conv2d
 # 16
 from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
 # 18
@@ -485,7 +485,7 @@ __all__ = [
     # 14
     'dropout',
     # 15
-
+    'conv2d',
     # 16
     'log_softmax',
     # 17

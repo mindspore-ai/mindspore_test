@@ -1,6 +1,8 @@
-#operator convolution
-convolution:
+#operator convolution_str_grad
+convolution_str_grad:
   args:
+    dout:
+      dtype: tensor
     input:
       dtype: tensor
     weight:
@@ -11,17 +13,14 @@ convolution:
     stride:
       dtype: tuple[int]
       default: 1
-      type_cast: int, list[int]
       arg_handler: to_strides
     padding:
-      dtype: tuple[int]
-      default: 0
-      type_cast: int, list[int]
-      arg_handler: to_2d_paddings
+      dtype: int
+      default: "'valid'"
+      arg_handler: str_to_enum
     dilation:
       dtype: tuple[int]
       default: 1
-      type_cast: int, list[int]
       arg_handler: to_dilations
     transposed:
       dtype: bool
@@ -29,18 +28,23 @@ convolution:
     output_padding:
       dtype: tuple[int]
       default: 0
-      type_cast: int, list[int]
       arg_handler: to_output_padding
     groups:
       dtype: int
       default: 1
+    output_mask:
+      dtype: tuple[int]
+      default: ()
   returns:
-    output:
+    dx:
+      dtype: tensor
+    dw:
+      dtype: tensor
+    dbias:
       dtype: tensor
   class:
-      name: Convolution
+      name: ConvolutionStrGrad
   function:
       disable: True
   dispatch:
     enable: True
-    Ascend: ConvolutionAscend
