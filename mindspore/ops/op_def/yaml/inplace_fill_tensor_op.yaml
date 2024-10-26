@@ -1,0 +1,14 @@
+#operator inplace_fill_tensor
+inplace_fill_tensor:
+    args:
+        input:
+            dtype: tensor
+        value:
+            dtype: tensor
+    returns:
+        out:
+            dtype: tensor
+            inplace: input
+    dispatch:
+        enable: True
+        Ascend: InplaceFillTensorAscend
