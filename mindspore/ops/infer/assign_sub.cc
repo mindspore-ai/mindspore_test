@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2021-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,8 @@ TypePtr AssignSubInferType(const PrimitivePtr &primitive, const std::vector<Abst
   (void)types.emplace("val", input_args[0]->GetType());
   (void)types.emplace("value", input_args[1]->GetType());
   // check_scalar_or_tensor_types_same
-  return CheckAndConvertUtils::CheckTensorTypeSame(types, common_valid_types, "AssignSub");
+  (void)CheckAndConvertUtils::CheckTensorTypeSame(types, common_valid_types, "AssignSub");
+  return input_args[0]->GetType();
 }
 }  // namespace
 

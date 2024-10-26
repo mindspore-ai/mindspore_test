@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2021 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,8 @@ using RWSignaturePtr = std::shared_ptr<DoSignatureMetaFuncGraph>;
 // shared with pynative
 void RaiseExceptionForConvertRefDtype(const ValuePtr &func, const std::string &ref_type, const std::string &target_type,
                                       size_t index);
-void RaiseExceptionForCheckParameter(const std::string &func_name, size_t i, const std::string &source_type);
+void RaiseExceptionForCheckParameter(const std::string &func_name, size_t i, const ValuePtr &function,
+                                     const SignatureEnumRW &sig, const TypePtr &type);
 
 std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
                                                  const ValuePtr &function, const AbstractBasePtrList &args_abs_list,

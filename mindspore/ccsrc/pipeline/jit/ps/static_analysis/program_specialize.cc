@@ -1024,7 +1024,13 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   }
   const EvalResultPtr &conf_eval_result = GetEvalResult(conf);
   MS_EXCEPTION_IF_NULL(conf_eval_result);
-  new_node->set_abstract(conf_eval_result->abstract());
+  if (conf_eval_result->abstract() != nullptr && conf_eval_result->abstract()->inplace_abstract() != nullptr) {
+    MS_LOG(DEBUG) << "Use inplace abstract, " << conf_eval_result->abstract()->inplace_abstract()->ToString();
+    new_node->set_abstract(conf_eval_result->abstract()->inplace_abstract());
+  } else {
+    new_node->set_abstract(conf_eval_result->abstract());
+  }
+
   MS_EXCEPTION_IF_NULL(new_node->abstract());
 
   // Update PartialAbstractClosure's bound node.
