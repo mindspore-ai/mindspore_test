@@ -119,7 +119,8 @@ def run_dump_int4(dump_scene):
         int4_input_file_path = os.popen(find_int4_input_cmd).read()
         int4_input_file_path = int4_input_file_path.replace('\n', '')
         dump_int4 = np.load(int4_input_file_path)
-        np.testing.assert_allclose(dump_int4, np_int8_data, rtol=1e-3)
+        expect_data = np_int8_data.flatten()[:dump_int4.size].reshape(dump_int4.shape)
+        np.testing.assert_allclose(dump_int4, expect_data, rtol=1e-3)
         find_statistic_cmd = 'find {0} -name "statistic.csv"'.format(dump_path)
         statistic_file = os.popen(find_statistic_cmd).read()
         statistic_file = statistic_file.replace('\n', '')
@@ -134,8 +135,8 @@ def run_dump_int4(dump_scene):
             int4_num = len(int4_statistics)
             assert int4_num == 1
             for statistic_item in int4_statistics:
-                assert statistic_item['Max Value'] == '7'
-                assert statistic_item['Min Value'] == '-2'
+                assert statistic_item['Max Value'] == str(expect_data.max())
+                assert statistic_item['Min Value'] == str(expect_data.min())
         if dump_scene == 'ge_dump':
             del os.environ['ENABLE_MS_GE_DUMP']
 

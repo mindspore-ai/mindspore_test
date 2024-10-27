@@ -15,6 +15,7 @@
  */
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_WEIGHT_QUANT_BATCH_MATMUL_ACLNN_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_WEIGHT_QUANT_BATCH_MATMUL_ACLNN_KERNEL_MOD_H_
+#include <memory>
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
@@ -37,6 +38,7 @@ class WeightQuantBatchMatmulV2Ascend : public AclnnKernelMod {
 
   std::pair<KernelTensor *, bool> input_x_;
   std::pair<KernelTensor *, bool> input_weight_;
+  std::shared_ptr<KernelTensor> weight_;
 };
 }  // namespace kernel
 }  // namespace mindspore
