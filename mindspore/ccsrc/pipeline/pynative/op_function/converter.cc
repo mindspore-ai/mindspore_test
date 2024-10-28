@@ -439,11 +439,11 @@ ValueTuplePtr Converter::ConvertValueTupleByCastDtype(const py::list &python_arg
   return nullptr;
 }
 
-PythonArgParser::PythonArgParser(std::vector<std::string> signature_strs, const std::string &function_name)
+PythonArgParser::PythonArgParser(std::vector<std::string> fmts, const std::string &function_name)
     : function_name_(function_name), max_args_(0) {
   int index = 0;
-  for (auto &sig : signature_strs) {
-    signatures_.emplace_back(sig, index);
+  for (auto &stmt : fmts) {
+    signatures_.emplace_back(stmt, index);
     index++;
   }
   for (auto &signature : signatures_) {
@@ -453,29 +453,29 @@ PythonArgParser::PythonArgParser(std::vector<std::string> signature_strs, const 
   }
 }
 
-std::string PythonArgParser::parse_error(const py::list &args, const py::dict &kwargs) {
-  std::vector<std::string> arg_info_list;
+std::string PythonArgParser::parse_error(const py::list &args, const py::dict &kwargs, const bool &is_method) {
+  std::vector<std::string> type_list = is_method ? std::vector<std::string>{"Tensor"} : std::vector<std::string>{};
   for (const auto &py_arg : args) {
-    (void)arg_info_list.emplace_back(
+    (void)type_list.emplace_back(
       PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(py_arg)));
   }
   for (const auto &py_kwarg : kwargs) {
     std::string kwarg_info = py::str(py_kwarg.first);
     kwarg_info += "=";
     kwarg_info += PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(py_kwarg.second));
-    (void)arg_info_list.emplace_back(kwarg_info);
+    (void)type_list.emplace_back(kwarg_info);
   }
-  return prim::BuildFunctionalErrorMsg(function_name_, arg_info_list);
+  return prim::BuildFunctionalErrorMsg(function_name_, type_list);
 }
 
 template <typename T, typename U>
-bool check_slice_type(const py::object &obj, const size_t &start_index) {
+bool check_list_type(const py::object &obj) {
   if (!py::isinstance<T>(obj)) {
     return false;
   }
   auto seq = py::cast<T>(obj);
   size_t size = seq.size();
-  for (size_t i = start_index; i < size; ++i) {
+  for (size_t i = 0; i < size; ++i) {
     if (!py::isinstance<U>(seq[i])) {
       return false;
     }
@@ -483,35 +483,21 @@ bool check_slice_type(const py::object &obj, const size_t &start_index) {
   return true;
 }
 
-template <typename T>
-py::object slice_int_list(const py::object &obj, const size_t &start_index) {
+template <typename T, typename U>
+bool check_item_type(const py::object &obj, const size_t &index) {
+  if (!py::isinstance<T>(obj)) {
+    return false;
+  }
   auto seq = py::cast<T>(obj);
-  size_t size = seq.size();
-  py::list intlist(size - 1);
-  for (size_t i = start_index; i < size; ++i) {
-    if (!py::isinstance<py::int_>(seq[i])) {
-      MS_LOG(EXCEPTION) << "Invalid data type of input list";
-    }
-    intlist[i - 1] = seq[i];
+  if (!py::isinstance<U>(seq[index])) {
+    return false;
   }
-  return intlist;
-}
-
-py::object params_to_intlist(const py::object &obj, const size_t &start_index) {
-  if (py::isinstance<py::int_>(obj)) {
-    return obj;
-  } else if (py::isinstance<py::list>(obj)) {
-    return slice_int_list<py::list>(obj, start_index);
-  } else if (py::isinstance<py::tuple>(obj)) {
-    return slice_int_list<py::tuple>(obj, start_index);
-  } else {
-    MS_LOG(EXCEPTION) << "Input obj should be int, tuple[int] or list[int]";
-  }
+  return true;
 }
 
 bool check_args_as_intlist(const py::object &obj, bool as_intlist) {
-  return as_intlist && (py::isinstance<py::int_>(obj) || check_slice_type<py::list, py::int_>(obj, kIndex1) ||
-                        check_slice_type<py::tuple, py::int_>(obj, kIndex1));
+  return as_intlist && (py::isinstance<py::int_>(obj) || check_item_type<py::list, py::int_>(obj, kIndex0) ||
+                        check_item_type<py::tuple, py::int_>(obj, kIndex0));
 }
 
 bool FunctionSignature::CheckParamValid(const py::object &obj, const FunctionParameter &param) {
@@ -531,7 +517,7 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
   size_t nkwargs = kwargs ? kwargs.size() : 0;
   size_t arg_pos = 0;
   bool as_intlist =
-    (params_[1].type_ == OP_DTYPE::DT_LIST_INT || params_[1].type_ == OP_DTYPE::DT_TUPLE_INT) && (max_args_ == 2);
+    (max_args_ == 1) && (params_[0].type_ == OP_DTYPE::DT_LIST_INT || params_[0].type_ == OP_DTYPE::DT_TUPLE_INT);
 
   if (nargs > max_args_ && !as_intlist) {
     return false;
@@ -549,7 +535,7 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
         nkwargs--;
       }
     }
-    bool check_arg_as_intlist = (arg_pos == 1) && as_intlist && !is_kwd;
+    bool check_arg_as_intlist = !is_kwd && (arg_pos++ == 0) && as_intlist;
     if (!obj) {
       if (!param.optional_) {
         return false;
@@ -558,33 +544,30 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
     } else if (CheckParamValid(obj, param)) {
       python_args->append(obj);
     } else if (check_args_as_intlist(args, check_arg_as_intlist)) {
-      python_args->append(params_to_intlist(args, kIndex1));
+      // tensor.reshape(1, 2, 3) as tensor.reshape((1, 2, 3))
+      python_args->append(args);
+      arg_pos = nargs;
     } else {
       return false;
-    }
-
-    if (!is_kwd) {
-      arg_pos++;
     }
   }
   return nkwargs == 0;
 }
 
-FunctionSignature::FunctionSignature(const std::string &signature_str, int index)
-    : min_args_(0), max_args_(0), index_(index) {
-  auto open_paren = signature_str.find('(');
+FunctionSignature::FunctionSignature(const std::string &fmt, int index) : min_args_(0), max_args_(0), index_(index) {
+  auto open_paren = fmt.find('(');
   if (open_paren == std::string::npos) {
     MS_LOG(EXCEPTION) << "parse failed";
   }
-  name_ = signature_str.substr(0, open_paren);
+  name_ = fmt.substr(0, open_paren);
 
   auto last_offset = open_paren + 1;
   bool done = false;
   while (!done) {
-    auto offset = signature_str.find(", ", last_offset);
+    auto offset = fmt.find(", ", last_offset);
     auto next_offset = offset + 2;
     if (offset == std::string::npos) {
-      offset = signature_str.find(')', last_offset);
+      offset = fmt.find(')', last_offset);
       done = true;
       next_offset = offset + 1;
       if (offset == last_offset) {
@@ -597,7 +580,7 @@ FunctionSignature::FunctionSignature(const std::string &signature_str, int index
       MS_LOG(EXCEPTION) << "parse failed";
     }
 
-    auto param_str = signature_str.substr(last_offset, offset - last_offset);
+    auto param_str = fmt.substr(last_offset, offset - last_offset);
     last_offset = next_offset;
     params_.emplace_back(param_str);
   }
@@ -618,12 +601,12 @@ ops::OP_DTYPE GetOpDtype(const std::string &type_str) {
   return it->second;
 }
 
-FunctionParameter::FunctionParameter(const std::string &signature_str) : optional_(false), allow_none_(false) {
-  auto space = signature_str.find(' ');
+FunctionParameter::FunctionParameter(const std::string &fmt) : optional_(false), allow_none_(false) {
+  auto space = fmt.find(' ');
   if (space == std::string::npos) {
-    MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << signature_str;
+    MS_LOG(EXCEPTION) << "Parse function parameter failed! missing type:" << fmt;
   }
-  auto types_str = signature_str.substr(0, space);
+  auto types_str = fmt.substr(0, space);
   cast_types_ = std::vector<ops::OP_DTYPE>{};
   std::istringstream iss(types_str);
   std::string substring;
@@ -637,7 +620,7 @@ FunctionParameter::FunctionParameter(const std::string &signature_str) : optiona
     }
   }
 
-  auto name_str = signature_str.substr(space + 1);
+  auto name_str = fmt.substr(space + 1);
   auto eq = name_str.find('=');
   if (eq != std::string::npos) {
     name_ = name_str.substr(0, eq);
@@ -696,11 +679,6 @@ bool check_bool_list(const py::object &obj) {
     }
   }
   return true;
-}
-
-template <typename T, typename U>
-bool check_list_type(const py::object &obj) {
-  return check_slice_type<T, U>(obj, kIndex0);
 }
 
 template <typename T>

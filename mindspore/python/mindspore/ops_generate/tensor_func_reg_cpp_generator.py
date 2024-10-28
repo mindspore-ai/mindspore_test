@@ -82,7 +82,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '}\n'
         )
         self.header_func_def_template = Template(
-            'py::object TensorMethod${class_name}(const py::args &py_args, const py::kwargs &py_kwargs);')
+            'py::object TensorMethod${class_name}(const py::object &self, '
+            'const py::args &py_args, '
+            'const py::kwargs &py_kwargs);'
+        )
 
         self.TENSOR_FUNC_CC_REG = template.TENSOR_FUNC_CC_REG
         self.TENSOR_FUNC_HEADER_REG = template.TENSOR_FUNC_HEADER_REG
@@ -100,6 +103,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                 "to_dilations": "tuple[int]|list[int]|int",
                                 "to_output_padding": "int|tuple[int]|list[int]",
                                 "to_rates": "int|tuple[int]|list[int]"}
+        self.input_args_name = {"input", "x", "input_x"}
 
     def generate(self, work_path, func_protos_data, alias_func_mapping):
         """
@@ -180,14 +184,20 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             class_name = func_proto.op_proto.op_class.name
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
             signature_str = self._generate_single_signature_str(func_proto.op_proto)
-            max_size = len(func_proto.op_proto.op_args)
+            op_args = func_proto.op_proto.op_args
+            max_size = len(op_args)
+            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
+            if len(self_index) != 1:
+                raise ValueError(
+                    f'There must be only one field named \'input\'. But got {len(self_index)} in {func_name}')
             func_header_body_list.append(self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name))
             func_header_def_list.append(self.header_func_def_template.replace(class_name=class_name))
             func_call_body_list.append(self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
                                                                           func_name=func_name,
                                                                           device_dispatcher=device_dispatcher_str,
                                                                           signatures=signature_str,
-                                                                          max_args=max_size))
+                                                                          max_args=max_size,
+                                                                          self_index=self_index))
             func_def_body_list.append(self.func_def_reg.replace(func_name=func_name,
                                                                 class_name=class_name))
             if func_name in alias_func_mapping:
@@ -266,14 +276,21 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         signatures_str = self._generate_func_signatures_str(func_protos)
         dispatch_cases_str = self._get_dispatch_cases(func_protos)
         max_size = 0
+        self_index = 0
         for tensor_proto in func_protos:
             op_proto = tensor_proto.op_proto
-            max_size = max(len(op_proto.op_args), max_size)
+            op_args = op_proto.op_args
+            max_size = max(len(op_args), max_size)
+            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
+            if len(self_index) != 1:
+                raise ValueError(
+                    f'There must be only one field named \'input\'. But got {len(self_index)} in {func_api_name}')
         overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG.replace(class_name=func_api_name.capitalize(),
                                                                                  func_name=func_api_name,
                                                                                  signatures=signatures_str,
                                                                                  dispatch_cases=dispatch_cases_str,
-                                                                                 max_args=max_size)
+                                                                                 max_args=max_size,
+                                                                                 self_index=self_index)
         return overload_func_call_str
 
     def _generate_func_signatures_str(self, func_protos) -> str:
@@ -309,6 +326,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         args_str = f'"{op_proto.op_class.name}('
         first_arg = True
         for _, arg in enumerate(op_proto.op_args):
+            if arg.arg_name == 'input':
+                continue
             single_arg = ''
             if not first_arg:
                 single_arg = ', '

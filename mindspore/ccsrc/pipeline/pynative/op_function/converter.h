@@ -51,7 +51,7 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
 };
 // information of single parameter
 struct FunctionParameter {
-  explicit FunctionParameter(const std::string &signature_str);
+  explicit FunctionParameter(const std::string &fmt);
   bool check(const py::object &obj) const;
   void set_default_obj(const std::string &str);
   const py::object &get_default_value() { return default_obj; }
@@ -66,7 +66,7 @@ struct FunctionParameter {
 
 // single overload
 struct FunctionSignature {
-  explicit FunctionSignature(const std::string &signature_str, int index);
+  explicit FunctionSignature(const std::string &fmt, int index);
   // bind with real args
   bool CheckParamValid(const py::object &obj, const FunctionParameter &param);
   bool parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
@@ -80,9 +80,10 @@ struct FunctionSignature {
 
 // parser util
 struct PythonArgParser {
-  explicit PythonArgParser(std::vector<std::string> signature_strs, const std::string &function_name);
-  inline const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
-  std::string parse_error(const py::list &args, const py::dict &kwargs);
+  explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
+  inline const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *python_args,
+                                        const bool &is_method);
+  std::string parse_error(const py::list &args, const py::dict &kwargs, const bool &is_method);
 
  private:
   std::vector<FunctionSignature> signatures_;  // all overloads
@@ -91,14 +92,14 @@ struct PythonArgParser {
 };
 
 inline const FunctionSignature &PythonArgParser::parse(const py::list &args, const py::dict &kwargs,
-                                                       py::list *python_args) {
+                                                       py::list *python_args, const bool &is_method) {
   for (auto &signature : signatures_) {
     python_args->attr("clear")();
     if (signature.parse(args, kwargs, python_args)) {
       return signature;
     }
   }
-  MS_EXCEPTION(TypeError) << parse_error(args, kwargs);
+  MS_EXCEPTION(TypeError) << parse_error(args, kwargs, is_method);
 }
 
 class Converter {
