@@ -30,8 +30,8 @@
 
 namespace mindspore::ops {
 namespace {
-size_t CheckShapeAndGetNormalizedAxisValue(const PrimitivePtr &primitive, const ShapeVector &input_shape,
-                                           const AbstractBasePtr &axis_abstract) {
+size_t CheckShapeAndGetNormalizedDimValue(const PrimitivePtr &primitive, const ShapeVector &input_shape,
+                                          const AbstractBasePtr &dim_abstract) {
   if (MS_UNLIKELY(IsDynamic(input_shape))) {
     MS_EXCEPTION(ValueError) << "For Primitive[" << primitive->name()
                              << "], input shape should not be dynamic in this phase, but got " << input_shape;
@@ -40,35 +40,35 @@ size_t CheckShapeAndGetNormalizedAxisValue(const PrimitivePtr &primitive, const 
   size_t input_rank = input_shape.size();
   MS_CHECK_VALUE(input_rank > 0,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("input rank", input_rank, kGreaterThan, 0, primitive));
-  auto axis_value = axis_abstract->GetValue();
-  auto axis_res = GetScalarValue<int64_t>(axis_value);
-  if (MS_UNLIKELY(!axis_res.has_value())) {
+  auto dim_value = dim_abstract->GetValue();
+  auto dim_opt = GetScalarValue<int64_t>(dim_value);
+  if (MS_UNLIKELY(!dim_opt.has_value())) {
     MS_EXCEPTION(ValueError) << "For Primitive[" << primitive->name()
-                             << "], should has valid axis value for this phase!";
+                             << "], should has valid dim value for this phase!";
   }
-  auto axis_temp = axis_res.value();
-  MS_CHECK_VALUE(-SizeToLong(input_rank) <= axis_temp && axis_temp < SizeToLong(input_rank),
+  auto dim_temp = dim_opt.value();
+  MS_CHECK_VALUE(-SizeToLong(input_rank) <= dim_temp && dim_temp < SizeToLong(input_rank),
                  CheckAndConvertUtils::FormatCheckInRangeMsg(
-                   "axis", axis_temp, kIncludeLeft, {-SizeToLong(input_rank), SizeToLong(input_rank)}, primitive));
-  return LongToSize(axis_temp < 0 ? SizeToLong(input_rank) + axis_temp : axis_temp);
+                   "dim", dim_temp, kIncludeLeft, {-SizeToLong(input_rank), SizeToLong(input_rank)}, primitive));
+  return LongToSize(dim_temp < 0 ? dim_temp + SizeToLong(input_rank) : dim_temp);
 }
 }  // namespace
 BaseShapePtr UnstackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
-  auto axis = CheckShapeAndGetNormalizedAxisValue(primitive, input_shape, input_args[kInputIndex1]);
+  const auto &input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
+  auto dim = CheckShapeAndGetNormalizedDimValue(primitive, input_shape, input_args[kInputIndex1]);
 
   auto input_rank = input_shape.size();
   ShapeVector element_shape;
   element_shape.reserve(input_rank - 1);
   for (size_t i = 0; i < input_rank; ++i) {
-    if (MS_UNLIKELY(i == axis)) {
+    if (MS_UNLIKELY(i == dim)) {
       continue;
     }
     element_shape.push_back(input_shape[i]);
   }
 
-  auto element_size = LongToSize(input_shape[axis]);
+  auto element_size = LongToSize(input_shape[dim]);
   abstract::BaseShapePtrList out_shapes{};
   out_shapes.reserve(element_size);
   for (size_t i = 0; i < element_size; ++i) {
@@ -80,9 +80,9 @@ BaseShapePtr UnstackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr UnstackExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
-  auto axis = CheckShapeAndGetNormalizedAxisValue(primitive, input_shape, input_args[kInputIndex1]);
-  auto element_size = LongToSize(input_shape[axis]);
+  const auto &input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
+  auto dim = CheckShapeAndGetNormalizedDimValue(primitive, input_shape, input_args[kInputIndex1]);
+  auto element_size = LongToSize(input_shape[dim]);
 
   auto input_type = input_args[kInputIndex0]->GetType();
   TypePtrList types;

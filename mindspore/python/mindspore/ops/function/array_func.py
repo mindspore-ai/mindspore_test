@@ -66,7 +66,7 @@ from mindspore.ops._utils.utils import ms_arrange
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
-    inplace_fill_scalar, expand_as
+    inplace_fill_scalar, expand_as, unstack_ext_op
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
@@ -2049,6 +2049,44 @@ def unbind(input, dim=0):
     """
     _unstack = _get_cache_prim(P.Unstack)(dim)
     return _unstack(input)
+
+
+def unbind_ext(input, dim=0):
+    r"""
+    Unbind a tensor dimension in specified axis.
+
+    Given a tensor of shape :math:`(n_1, n_2, ..., n_R)` and unbinding it in the specified `dim`,
+    multiple tensors with shape :math:`(n_1, n_2, ..., n_{dim}, n_{dim+2}, ..., n_R)` are returned.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor to unbind, with a shape of :math:`(n_1, n_2, ..., n_R)`.
+            The rank of the tensor must be greater than 0.
+        dim (int, optional): Dimension along which to unbind. The range is [-R, R). Default: ``0`` .
+
+    Returns:
+        A tuple of tensors, the shape of each objects is the same.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not an int.
+        ValueError: If `dim` is out of the range [-R, R).
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))
+        >>> output = ops.unbind_ext(input, dim=0)
+        >>> print(output)
+        (Tensor(shape=[3], dtype=Int64, value=[1, 2, 3]), Tensor(shape=[3], dtype=Int64, value=[4, 5, 6]),
+        Tensor(shape=[3], dtype=Int64, value=[7, 8, 9]))
+    """
+    return unstack_ext_op(input, dim)
 
 
 def unsqueeze(input, dim):

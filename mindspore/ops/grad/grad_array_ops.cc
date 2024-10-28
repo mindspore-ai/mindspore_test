@@ -1121,6 +1121,13 @@ REG_BPROP_BUILDER("Unstack").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("UnstackExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto dim = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->StackExt(dout, dim);
+  return {dx, ib->OutZeros(dim)};
+});
+
 REG_BPROP_BUILDER("StackExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex3);
   auto axis_node = ib->GetInput(kIndex1);

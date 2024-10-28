@@ -1,17 +1,14 @@
 #operator unstack_ext
 unstack_ext:
     args:
-        input_x:
+        input:
             dtype: tensor
-        axis:
+        dim:
             dtype: int
             default: 0
-            prim_init: True
     returns:
         output:
             dtype: tuple[tensor]
-    class:
-        disable: True
     function:
         disable: True
     view: True
