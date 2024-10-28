@@ -40,6 +40,10 @@ class AbstractWrapper {
   std::string ToString() const;
   AbstractBasePtr abstract() const { return abstract_; }
   bool IsConstant() const;
+  size_t size() const;
+  bool IsDict() const;
+
+  std::vector<py::object> GetDictKeysObject() const;
 
   static py::object ConvertToPyObject(const AbstractWrapperPtr &wrapper);
   static py::object ConvertToPyObject(const AbstractBasePtr &abstract);

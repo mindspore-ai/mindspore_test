@@ -17,6 +17,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
+#include <algorithm>
 
 #include "ir/cell.h"
 #include "ir/core_ops_primitive.h"
@@ -366,5 +367,40 @@ bool AbstractWrapper::IsConstant() const {
     return true;
   }
   return !abstract_->BuildValue()->ContainsValueAny();
+}
+
+size_t AbstractWrapper::size() const {
+  MS_EXCEPTION_IF_NULL(abstract_);
+  if (!abstract_->isa<abstract::AbstractSequence>() && !abstract_->isa<abstract::AbstractDictionary>()) {
+    MS_LOG(EXCEPTION) << "Can not get size for current wrapper: " << ToString();
+  }
+  if (abstract_->isa<abstract::AbstractSequence>()) {
+    return abstract_->cast<abstract::AbstractSequencePtr>()->size();
+  }
+  return abstract_->cast<abstract::AbstractDictionaryPtr>()->size();
+}
+
+bool AbstractWrapper::IsDict() const {
+  if (abstract_ == nullptr) {
+    return false;
+  }
+  return abstract_->isa<abstract::AbstractDictionary>();
+}
+
+std::vector<py::object> AbstractWrapper::GetDictKeysObject() const {
+  if (!IsDict()) {
+    MS_LOG(EXCEPTION) << "Can not get keys non-dict abstract wrapper: " << ToString();
+  }
+  auto dict_abstract = abstract_->cast<abstract::AbstractDictionaryPtr>();
+  const auto &pairs = dict_abstract->elements();
+  std::vector<py::object> ret;
+  std::transform(pairs.begin(), pairs.end(), std::back_inserter(ret), [](const auto &e) {
+    if (e.first->BuildValue() == kValueAny) {
+      MS_LOG(INFO) << "Encounter non-constant dictionary key abstract " << e.first->ToString();
+      return py::object();
+    }
+    return ConvertToPyObject(e.first);
+  });
+  return ret;
 }
 }  // namespace mindspore
