@@ -11,7 +11,7 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
     auto node = stub::MakeTopNode(top_type);
     auto comm_handle_py = std::make_shared<hal::CommHandlePy>(runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target));
     auto comm_handle_py_obj = py::cast(comm_handle_py);
-    const auto &output_obj = py::make_tuple(node.first, comm_handle_py_obj);    
+    const auto &output_obj = py::make_tuple(node.first, comm_handle_py_obj);
     kernel::pyboost::CommHandlePtr comm_handle{nullptr};
     bool is_ascend = op_run_info->base_op_run_info.device_target == kAscendDevice;
     if (!is_ascend) {
@@ -21,7 +21,7 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
 
     comm_handle_py->comm_handle()->CreateEvent();
     comm_handle = comm_handle_py->comm_handle();
-    
+
     GilReleaseWithCheck release_gil;
     op_run_info->stub_output = node.second;
     op_run_info->source_type = converter.source_type();

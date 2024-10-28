@@ -8,7 +8,11 @@ py::object TensorMethod${class_name}(const py::object &self, const py::args &py_
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   std::string backend = ms_context->get_param < std::string > (MS_CTX_DEVICE_TARGET);
-  ${device_dispatcher}
-  return py::none();
+  #ifndef ENABLE_TEST
+    ${device_dispatcher}
+    return py::none();
+  #else
+    ${ut_body}
+  #endif
 }
 

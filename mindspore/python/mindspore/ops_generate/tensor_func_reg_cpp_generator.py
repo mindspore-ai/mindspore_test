@@ -42,8 +42,12 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.func_def_reg = Template("tensor_class->def(\"${func_name}\", TensorMethod${class_name});\n")
         self.single_case_template = Template(
             'case ${case_id}:\n'
-            '  ${device_dispatcher}'
+            '  ${device_dispatcher}\n'
             '  break;\n'
+        )
+        self.single_case_in_ut_template = Template(
+            'case ${case_id}:\n'
+            '  ${device_dispatcher}\n'
         )
         self.device_dispatcher_template = Template(
             'if (backend == kAscendDevice || backend == kDavinciDevice) {\n'
@@ -68,6 +72,12 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             'py::object res = fn(self, *py_args, **py_kwargs);\n'
             'return res;\n'
         )
+        self.callback_python_in_ut_template = Template(
+            'MS_LOG(INFO) << "Callback python method in UT: ${py_method}";\n'
+            'fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
+            'res = fn(self, *py_args, **py_kwargs);\n'
+            'break;\n'
+        )
         self.arg_handler_prt_template = Template(
             "arg_list[${idx}] = "
             "(*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
@@ -91,7 +101,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.TENSOR_FUNC_HEADER_REG = template.TENSOR_FUNC_HEADER_REG
         self.TENSOR_FUNC_HEADER_BODY = template.TENSOR_FUNC_HEADER_BODY
         self.TENSOR_FUNC_CALL_BODY = template.TENSOR_FUNC_CALL_BODY
-        self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG = template.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG
+        self.TENSOR_FUNC_OVERLOAD_CALL_BODY = template.TENSOR_FUNC_OVERLOAD_CALL_BODY
+        self.TENSOR_FUNC_UT_BODY = template.TENSOR_FUNC_UT_BODY
+        self.TENSOR_FUNC_UT_OVERLOAD_BODY = template.TENSOR_FUNC_UT_OVERLOAD_BODY
         # The format of arg_handler_map is {arg_handler_name : list of supported types}.
         # The first one of type list is the target dtype. Types corresponds to type_str_map.
         self.arg_handler_map = {"to_2d_paddings": "int|tuple[int]|list[int]",
@@ -165,7 +177,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
         return single_op_func_data, overload_op_func_data
 
-
     def _get_single_op_str(self, single_op_func_data, alias_func_mapping):
         """
         Generates C++ strings for single operation function registrations.
@@ -190,6 +201,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if len(self_index) != 1:
                 raise ValueError(
                     f'There must be only one field named \'input\'. But got {len(self_index)} in {func_name}')
+            ut_body = self.TENSOR_FUNC_UT_BODY.replace(py_method=func_proto.py_method)
             func_header_body_list.append(self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name))
             func_header_def_list.append(self.header_func_def_template.replace(class_name=class_name))
             func_call_body_list.append(self.TENSOR_FUNC_CALL_BODY.replace(class_name=class_name,
@@ -197,7 +209,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                           device_dispatcher=device_dispatcher_str,
                                                                           signatures=signature_str,
                                                                           max_args=max_size,
-                                                                          self_index=self_index))
+                                                                          self_index=self_index,
+                                                                          ut_body=ut_body))
             func_def_body_list.append(self.func_def_reg.replace(func_name=func_name,
                                                                 class_name=class_name))
             if func_name in alias_func_mapping:
@@ -243,7 +256,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                         class_name=formatted_class_name))
         return func_header_body_list, func_header_def_list, func_call_body_list, func_def_body_list
 
-
     def _get_overload_tensor_func_header_body_str(self, func_protos):
         """
         Generates C++ header body string for overloaded tensor functions.
@@ -274,7 +286,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             str: Generated call body string for the overloaded functions.
         """
         signatures_str = self._generate_func_signatures_str(func_protos)
-        dispatch_cases_str = self._get_dispatch_cases(func_protos)
+        dispatch_cases = self._get_dispatch_cases(func_protos)
+        ut_dispatch_cases = self._get_ut_dispatch_cases(func_protos)
+        ut_overload_body = self.TENSOR_FUNC_UT_OVERLOAD_BODY.replace(ut_dispatch_cases=ut_dispatch_cases)
+
         max_size = 0
         self_index = 0
         for tensor_proto in func_protos:
@@ -285,12 +300,13 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if len(self_index) != 1:
                 raise ValueError(
                     f'There must be only one field named \'input\'. But got {len(self_index)} in {func_api_name}')
-        overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY_REG.replace(class_name=func_api_name.capitalize(),
-                                                                                 func_name=func_api_name,
-                                                                                 signatures=signatures_str,
-                                                                                 dispatch_cases=dispatch_cases_str,
-                                                                                 max_args=max_size,
-                                                                                 self_index=self_index)
+        overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(class_name=func_api_name.capitalize(),
+                                                                             func_name=func_api_name,
+                                                                             signatures=signatures_str,
+                                                                             dispatch_cases=dispatch_cases,
+                                                                             max_args=max_size,
+                                                                             self_index=self_index,
+                                                                             ut_overload_body=ut_overload_body)
         return overload_func_call_str
 
     def _generate_func_signatures_str(self, func_protos) -> str:
@@ -370,6 +386,25 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                                                     device_dispatcher=device_dispatcher_str)
         dispatch_cases_str += 'default:\n'
         dispatch_cases_str += '  return py::none();'
+        return dispatch_cases_str
+
+    def _get_ut_dispatch_cases(self, func_protos):
+        """
+        Generates C++ switch-case statements for dispatching tensor function calls.
+
+        Args:
+            func_protos (list): List of TensorFuncProto objects representing the function prototypes.
+
+        Returns:
+            str: Generated switch-case dispatch statements.
+        """
+        dispatch_cases_str = ''
+        for idx, func_proto in enumerate(func_protos):
+            device_dispatcher_str = self.callback_python_in_ut_template.replace(py_method=func_proto.py_method)
+            dispatch_cases_str += self.single_case_in_ut_template.replace(case_id=idx,
+                                                                          device_dispatcher=device_dispatcher_str)
+        dispatch_cases_str += 'default:\n'
+        dispatch_cases_str += '  res = py::none();'
         return dispatch_cases_str
 
     def _get_device_dispatchers_str(self, func_proto):
