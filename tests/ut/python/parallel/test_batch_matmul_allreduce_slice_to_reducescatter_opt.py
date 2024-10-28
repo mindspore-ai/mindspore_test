@@ -80,7 +80,7 @@ def test_batch_matmul_opt(has_bias):
         dir_name = dir_name + "_bias_true"
     set_test_context(dir_name)
 
-    hidden_size = 4096
+    hidden_size = 64
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
     expert_num = 16
@@ -107,7 +107,7 @@ def test_batch_matmul_opt_with_mp_larger_than_ep(has_bias):
         dir_name = dir_name + "_bias_true"
     set_test_context(dir_name)
 
-    hidden_size = 4096
+    hidden_size = 64
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
     expert_num = 16
@@ -133,7 +133,7 @@ def test_batch_matmul_opt_with_outer_dp(has_bias):
         dir_name = dir_name + "_bias_true"
     set_test_context(dir_name)
 
-    hidden_size = 4096
+    hidden_size = 64
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
     expert_num = 16
@@ -158,7 +158,7 @@ def test_batch_matmul_opt_with_sp(has_bias):
         dir_name = dir_name + "_bias_true"
     set_test_context(dir_name)
 
-    hidden_size = 4096
+    hidden_size = 64
     ffn_hidden_size = 4 * hidden_size
     channel = 2256
     expert_num = 16
