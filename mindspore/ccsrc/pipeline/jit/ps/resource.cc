@@ -458,7 +458,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"cauchy", std::string("cauchy")},                                  // P.cauchy()
        {"log_normal", std::string("log_normal")},                          // P.LogNormalReverse()
        {"argsort", std::string("argsort")},                                // argsort()
-       {"where", std::string("where")},                                    // where()
        {"imag", std::string("imag")},                                      // imag()
        {"diff", std::string("diff")},                                      // diff()
        {"frac", std::string("frac")},                                      // frac()

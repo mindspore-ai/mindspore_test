@@ -26,10 +26,10 @@ class Net(nn.Cell):
         return x.where(condition, y)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
-          level_mark='level2',
+@arg_mark(plat_marks=['platform_cpu', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
           card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_tensor_where(mode):
     """

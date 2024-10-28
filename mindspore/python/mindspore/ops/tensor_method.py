@@ -278,7 +278,7 @@ from mindspore.ops.auto_generate import tanh
 # 121 contiguous
 
 # 122 where
-
+from mindspore.ops.function.array_func import where as where_func
 # 123 div_
 
 # 124 fill_
@@ -701,6 +701,9 @@ def tensor_trunc(input):
 # 121 contiguous
 
 # 122 where
+def tensor_where(input, condition, y):
+    return where_func(condition, input, y)
+
 
 # 123 div_
 

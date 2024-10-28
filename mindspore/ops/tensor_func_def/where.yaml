@@ -1,0 +1,6 @@
+where:
+  op_yaml: select_op.yaml
+  py_method: tensor_where
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
