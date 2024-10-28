@@ -81,6 +81,7 @@ class InterleavedScheduler : public PipelineScheduler {
   void OptimizerShardCommReorder();
   void ParameterReorder(const std::vector<BorderPair> &sorted_fwd_begin, const std::vector<BorderPair> &sorted_bwd_end);
   void GetBackwardBorderNode(const CNodePtr &cnode);
+  void GetChunkNumMicroSize(const std::vector<AnfNodePtr> &all_nodes);
   std::vector<BorderPair> SortBetweenMicro(const std::vector<Border> &borders, bool is_backward);
   std::vector<Border> fwd_begin_;
   std::vector<Border> fwd_end_;

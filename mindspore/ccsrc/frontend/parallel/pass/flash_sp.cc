@@ -2621,7 +2621,7 @@ std::vector<AnfNodePtr> GetLastFAInputCNodeVector(const CNodePtr cnode, const st
 
 bool AttachCommTupleNodeToFA(const std::map<int, std::vector<AnfNodePtr>> &index_make_tuple_input_map,
                              std::map<int, std::vector<AnfNodePtr>> *index_fa_input_bprop_getitem_map,
-                             const FuncGraphPtr &grad_graph, const FuncGraphManagerPtr &manager) {
+                             const FuncGraphManagerPtr &manager) {
   for (auto &index_fa_bprop_getitem_vector : *index_fa_input_bprop_getitem_map) {
     auto index = index_fa_bprop_getitem_vector.first;
 
@@ -2629,11 +2629,17 @@ bool AttachCommTupleNodeToFA(const std::map<int, std::vector<AnfNodePtr>> &index
     if (make_tuple_input_it == index_make_tuple_input_map.end()) {
       continue;
     }
-    auto make_tuple = grad_graph->NewCNode(make_tuple_input_it->second);
+    std::vector<AnfNodePtr> make_tuple_input = make_tuple_input_it->second;
+    FuncGraphPtr grad_graph = make_tuple_input[kIndex1]->func_graph();
+    MS_EXCEPTION_IF_NULL(grad_graph);
+    auto make_tuple = grad_graph->NewCNode(make_tuple_input);
     MS_EXCEPTION_IF_NULL(make_tuple);
 
     auto fa_bprop_getitem_vector = index_fa_bprop_getitem_vector.second;
     for (auto fa_bprop_getitem : fa_bprop_getitem_vector) {
+      if (grad_graph != fa_bprop_getitem->func_graph()) {
+        MS_LOG(EXCEPTION) << "Got wrong grad subgraph when attaching RA/FlashSP grad send/recv tp the grad FA inputs.";
+      }
       std::vector<AnfNodePtr> attach_node_input = {NewValueNode(prim::kPrimDepend), fa_bprop_getitem, make_tuple};
       auto attach_node = grad_graph->NewCNode(attach_node_input);
       MS_EXCEPTION_IF_NULL(attach_node);
@@ -2646,8 +2652,7 @@ bool AttachCommTupleNodeToFA(const std::map<int, std::vector<AnfNodePtr>> &index
 
 void ProcessIndexMakeTupleInputMap(const AnfNodePtr &node, const CNodePtr &forward_cnode,
                                    const NodeUsersMap &node_users_map, const std::string &origin_index,
-                                   std::map<int, std::vector<AnfNodePtr>> *index_make_tuple_input_map,
-                                   FuncGraphPtr *grad_graph) {
+                                   std::map<int, std::vector<AnfNodePtr>> *index_make_tuple_input_map) {
   MS_LOG(INFO) << "Start to Handle the RA/FlashSP Send/Recv grad attaching for the forward comm node: "
                << forward_cnode->DebugString();
   auto comm_bprop_get_item = GetDoutGetItemByFuncGraphNode(node, node_users_map);
@@ -2658,15 +2663,15 @@ void ProcessIndexMakeTupleInputMap(const AnfNodePtr &node, const CNodePtr &forwa
     index_make_tuple_input_map->insert({fa_index, new_make_tuple_input});
   } else {
     auto &make_tuple_input = index_make_tuple_input_map->at(GetFaIndex(origin_index));
+    FuncGraphPtr graph1 = comm_bprop_get_item->func_graph();
+    MS_EXCEPTION_IF_NULL(graph1);
+    if (graph1 != make_tuple_input[kIndex1]->func_graph()) {
+      MS_LOG(EXCEPTION) << "The grad send/recv node does not belong to the same grad subgraph.";
+    }
     make_tuple_input.emplace_back(comm_bprop_get_item);
   }
   MS_LOG(INFO) << "Find the comm bprop getitem node to be attached: " << comm_bprop_get_item->DebugString()
                << ", the corresponding forward node: " << forward_cnode->DebugString();
-  if (*grad_graph == nullptr) {
-    *grad_graph = comm_bprop_get_item->func_graph();
-  } else if (*grad_graph != comm_bprop_get_item->func_graph()) {
-    MS_LOG(EXCEPTION) << "Got Wrong Grad graph when attaching RA/FlashSP Send/Recv grad.";
-  }
 }
 
 bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) {
@@ -2683,7 +2688,6 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
   MS_EXCEPTION_IF_NULL(ret_after);
   auto all_nodes = DeepScopedGraphSearch(ret_after);
   const auto &node_users_map = manager->node_users();
-  FuncGraphPtr grad_graph;
   std::map<int, std::vector<AnfNodePtr>> index_fa_input_bprop_getitem_map;
   std::map<int, std::vector<AnfNodePtr>> index_make_tuple_input_map;
 
@@ -2723,8 +2727,7 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
     if (!IsPrimitiveCNode(forward_cnode, prim::kPrimReceive)) {
       continue;
     }
-    ProcessIndexMakeTupleInputMap(node, forward_cnode, node_users_map, origin_index, &index_make_tuple_input_map,
-                                  &grad_graph);
+    ProcessIndexMakeTupleInputMap(node, forward_cnode, node_users_map, origin_index, &index_make_tuple_input_map);
   }
 
   if (index_fa_input_bprop_getitem_map.empty()) {
@@ -2732,7 +2735,7 @@ bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr
     return false;
   }
 
-  return AttachCommTupleNodeToFA(index_make_tuple_input_map, &index_fa_input_bprop_getitem_map, grad_graph, manager);
+  return AttachCommTupleNodeToFA(index_make_tuple_input_map, &index_fa_input_bprop_getitem_map, manager);
 }
 }  // namespace parallel
 }  // namespace mindspore
