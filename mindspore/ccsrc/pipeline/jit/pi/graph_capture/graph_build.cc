@@ -371,6 +371,12 @@ static void GenUnpackValue(const std::function<void(int, int)> &gen_item, int cn
 }
 
 Py_ssize_t GetIterableSize(const ValueNode *iterable) {
+  if (iterable->has_abstract_wrapper()) {
+    MS_LOG(DEBUG) << "Get iterable size from abstract wrapper.";
+    return iterable->abstract_wrapper()->size();
+  }
+
+  MS_LOG(DEBUG) << "Get iterable size from python object.";
   int op = iterable->GetOpcode();
   if (op == BUILD_LIST || op == BUILD_TUPLE) {
     return iterable->getInputs().size();
@@ -411,6 +417,18 @@ bool GraphBuilder::DoUnpack(const Instr &instr) {
   } else if (iterable->IsConstantValue()) {
     std::vector<ValueNode *> nodes = UnpackConstObject(iterable->GetVobj()->GetPyObject());
     std::for_each(nodes.begin(), nodes.end(), [this](ValueNode *i) { this->push(i); });
+  } else if (iterable->has_abstract_wrapper() && iterable->abstract_wrapper()->IsDict()) {
+    const auto &keys = iterable->abstract_wrapper()->GetDictKeysObject();
+    for (const auto &key : keys) {
+      if (key.ptr() == nullptr) {
+        MS_LOG(INFO) << "Failed to build key object for unpack.";
+        return false;
+      }
+      if (!py::isinstance<py::str>(key)) {
+        MS_LOG(WARNING) << "Unpack dictionary key " << py::str(key) << ", not string";
+      }
+      DoLoadConst({LOAD_CONST, -1, py::object(key)});
+    }
   } else {
     for (Py_ssize_t index = 0; index < size; ++index) {
       push(iterable);
@@ -2680,10 +2698,11 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
   call_node->SetSubGraph(sg->GetGraph());
   sg->CollectSideEffectOutputs();
   auto sub_ret = sg->GetGraph()->GetRetVal();
-  if (sub_ret == nullptr) {
-    MS_LOG(INFO) << "Subgraph ret value is NULL!";
+  if (sub_ret == nullptr || !sub_ret->has_abstract_wrapper()) {
+    MS_LOG(INFO) << "Failed to build subgraph for call node " << call_node->ToString();
     sg->RollbackSideEffectRecords();
-  } else if (!CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject()) && sg->side_effect_outputs_.empty()) {
+  } else if (sg->side_effect_outputs_.empty() && sub_ret->abstract_wrapper()->IsConstant() &&
+             !CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject())) {
     // If there are side effect outputs, we need to build sub-graph and add these nodes as graph outputs.
     MS_LOG(INFO) << "Subgraph ret value is const type, will not build subgraph";
     call_node->SetVobj(sub_ret->GetVobj());

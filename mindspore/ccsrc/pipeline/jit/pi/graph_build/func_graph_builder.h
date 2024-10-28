@@ -277,6 +277,8 @@ class FuncGraphBuilder {
 
   void UpdateParameterFuncGraph(const AnfNodePtr &node);
 
+  static void SetParameterName(const ParameterPtr &param);
+
   FuncGraphPtr graph_{nullptr};
   bool has_set_output_{false};
   HashMap<AbstractWrapperPtr, AnfNodePtr> key_to_node_;

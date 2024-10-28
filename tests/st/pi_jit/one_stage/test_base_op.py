@@ -22,6 +22,7 @@ from mindspore import ops
 from mindspore import Tensor, Parameter
 from mindspore import context
 from mindspore.common import dtype
+from mindspore.common import mutable
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
 from mindspore._c_expression import get_code_extra
@@ -1048,6 +1049,93 @@ def test_attr_as_inputs_3():
     assert np.all(ret.asnumpy() == np.array([4, 5, 6]))
     jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_sequence_with_variable():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return x + y, y
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y):
+        a, b = inner(x, y)
+        return a, b
+
+    input_x = Tensor([1, 2, 3])
+    input_y = mutable(3)
+    ret = foo(input_x, input_y)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert np.all(ret[0].asnumpy() == np.array([4, 5, 6]))
+    assert ret[1] == 3
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_sequence_with_variable_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return x + y, y
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y):
+        a, b = inner(x, y)
+        return a, b
+
+    input_x = mutable(1)
+    input_y = mutable(3)
+    ret = foo(input_x, input_y)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert ret[0] == 4
+    assert ret[1] == 3
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_unpack_sequence_with_variable_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def inner(x, y):
+        return {"1": x + y, "2": y}
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y):
+        a, b = inner(x, y)
+        return a, b, x + 1
+
+    input_x = mutable(1)
+    input_y = mutable(3)
+    ret = foo(input_x, input_y)
+    assert isinstance(ret, tuple)
+    assert len(ret) == 3
+    assert ret[0] == "1"
+    assert ret[1] == "2"
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
