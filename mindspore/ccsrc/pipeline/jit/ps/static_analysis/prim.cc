@@ -104,7 +104,9 @@ AnfNodePtr GetNodeAfterTypeConversion(const AnfNodePtr &node, const ops::OpInput
   auto convert_fg = dyn_cast<FuncGraph>(convert_func);
   MS_EXCEPTION_IF_NULL(convert_fg);
   convert_fg->set_manager(fg->manager());
-  return fg->NewCNodeInOrder({NewValueNode(convert_fg), node, NewValueNode(OpDtypeToInt(op_arg.arg_dtype_))});
+  auto res = fg->NewCNodeInOrder({NewValueNode(convert_fg), node, NewValueNode(OpDtypeToInt(op_arg.arg_dtype_))});
+  res->set_debug_info(node->debug_info());
+  return res;
 }
 
 AnfNodePtr GetNodeAfterArgHandler(const AnfNodePtr &node, const std::string &op_name, const ops::OpInputArg &op_arg,
@@ -121,14 +123,18 @@ AnfNodePtr GetNodeAfterArgHandler(const AnfNodePtr &node, const std::string &op_
   if (arg_handler_func->isa<Primitive>()) {
     auto arg_handler_fg = dyn_cast<Primitive>(arg_handler_func);
     MS_EXCEPTION_IF_NULL(arg_handler_fg);
-    return fg->NewCNodeInOrder(
-      {NewValueNode(arg_handler_fg), NewValueNode(op_name), NewValueNode(op_arg.arg_name_), node});
+    auto res =
+      fg->NewCNodeInOrder({NewValueNode(arg_handler_fg), NewValueNode(op_name), NewValueNode(op_arg.arg_name_), node});
+    res->set_debug_info(node->debug_info());
+    return res;
   }
   auto arg_handler_fg = dyn_cast<FuncGraph>(arg_handler_func);
   MS_EXCEPTION_IF_NULL(arg_handler_fg);
   arg_handler_fg->set_manager(fg->manager());
-  return fg->NewCNodeInOrder(
-    {NewValueNode(arg_handler_fg), NewValueNode(op_name), NewValueNode(op_arg.arg_name_), node});
+  auto res =
+    fg->NewCNodeInOrder({NewValueNode(arg_handler_fg), NewValueNode(op_name), NewValueNode(op_arg.arg_name_), node});
+  res->set_debug_info(node->debug_info());
+  return res;
 }
 
 bool CheckTypeIdAndShapeEqual(const AbstractBasePtr &left, const AbstractBasePtr &right) {
@@ -2762,7 +2768,9 @@ AnfNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim,
                                         const std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> &args_pair,
                                         const AnalysisEnginePtr &engine, const AnfNodeConfigPtr &out_conf,
                                         bool is_preprocessed) {
-  auto graph = out_conf->node()->func_graph();
+  auto node = out_conf->node();
+  MS_EXCEPTION_IF_NULL(node);
+  auto graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(graph);
 
   auto eval_func = [&engine, &out_conf](const AnfNodePtr &node) {
@@ -2774,8 +2782,9 @@ AnfNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim,
   };
 
   auto new_cnode = CheckAndConvertPrimitiveArgs(prim, graph, args_pair, eval_func, is_preprocessed);
-  MS_LOG(DEBUG) << "Convert primitive args: " << prim->name() << ". node: " << out_conf->node()->DebugString()
+  MS_LOG(DEBUG) << "Convert primitive args: " << prim->name() << ". node: " << node->DebugString()
                 << ", new_node: " << new_cnode->DebugString();
+  new_cnode->set_debug_info(node->debug_info());
   return new_cnode;
 }
 
