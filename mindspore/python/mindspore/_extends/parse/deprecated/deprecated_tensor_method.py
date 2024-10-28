@@ -152,7 +152,7 @@ deprecated_tensor_method_map = {
     # 67 mean
 
     # 68 min
-
+    "min": "deprecated_tensor_min",
     # 69 minimum
 
     # 70 mul

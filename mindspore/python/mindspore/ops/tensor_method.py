@@ -170,7 +170,8 @@ from mindspore.ops.function.array_func import max as max_func
 # 67 mean
 from mindspore.ops.function.math_func import mean
 # 68 min
-
+from mindspore.ops.auto_generate import min_
+from mindspore.ops.function.array_func import min as min_func
 # 69 minimum
 
 # 70 mul
@@ -587,6 +588,21 @@ def tensor_mean(x, axis=None, keep_dims=False, dtype=None):
 
 
 # 68 min
+def tensor_min(input):
+    return min_(input)
+
+
+def deprecated_tensor_min(input, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
+    if isinstance(axis, (list, tuple)):
+        reduce_min = P.ReduceMin()
+        minimum = F.minimum
+        return utils.reduce_(input, reduce_min(keepdims), cmp_fn=minimum, axis=axis, keepdims=keepdims,
+                             initial=initial, where=where)
+    values, indices = min_func(input, axis, keepdims, initial=initial, where=where)
+    if not return_indices:
+        return values
+    return values, indices
+
 
 # 69 minimum
 

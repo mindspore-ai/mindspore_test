@@ -257,7 +257,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"matrix_power", std::string("matrix_power")},                      // P.MatrixPower()
        {"det", std::string("det")},                                        // matrix_determinant()
        {"ndimension", std::string("ndim_")},                               // ndimension()
-       {"min", std::string("min")},                                        // P.reduce_min()
        {"pow", std::string("pow")},                                        // P.Pow()
        {"nelement", std::string("numel")},                                 // numel()
        {"numel", std::string("numel")},                                    // numel()
