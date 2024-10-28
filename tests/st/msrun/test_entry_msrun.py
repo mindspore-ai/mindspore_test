@@ -15,6 +15,7 @@
 import os
 import subprocess
 import json
+import socket
 import mindspore as ms
 from tests.mark_utils import arg_mark
 
@@ -190,3 +191,78 @@ def test_msrun_with_rank_table_wrong_device_num():
     assert result.find("Rank_id [1] corresponds to Device_id [1]") != -1
     assert result.find("Rank_id [2] corresponds to Device_id [2]") != -1
     assert result.find("Rank_id [3] corresponds to Device_id [3]") != -1
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='unessential')
+def test_msrun_tail_all_renamed_worker_log():
+    """
+    Feature: 'msrun' launch utility.
+    Description: Launch distributed training job with dynamic cluster using msrun with argument
+                 "--tail_worker_log" and "--worker_log_name", then check whether log files are renamed.
+    Expectation: All workers are spawned, their log files are successfully renamed.
+    """
+    ms.set_context(jit_level='O0')
+    os.environ['GLOG_v'] = str(2)
+
+    return_code = os.system(
+        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 "\
+        "--join=True --log_dir=./tail_all_with_rename --worker_log_name={ip}{hostname} "\
+        "test_msrun_only_init.py --device_target=Ascend "\
+        "--dataset_path=/home/workspace/mindspore_dataset/mnist > ./all_workers.txt 2>&1"
+    )
+    hostname = socket.gethostname()
+    ip = socket.gethostbyname(socket.gethostname())
+    worker_0 = ip + hostname + "_0.log"
+    worker_1 = ip + hostname + "_1.log"
+    worker_2 = ip + hostname + "_2.log"
+    worker_3 = ip + hostname + "_3.log"
+
+    result_tail_all = subprocess.getoutput("grep -rna ' This node ' ./all_workers.txt")
+    result_rename_0 = subprocess.getoutput(['find', './tail_all_with_rename', '-name', worker_0])
+    result_rename_1 = subprocess.getoutput(['find', './tail_all_with_rename', '-name', worker_1])
+    result_rename_2 = subprocess.getoutput(['find', './tail_all_with_rename', '-name', worker_2])
+    result_rename_3 = subprocess.getoutput(['find', './tail_all_with_rename', '-name', worker_3])
+
+    assert return_code == 0
+    assert result_tail_all.find("This node 0 rank id: 0") != -1
+    assert result_tail_all.find("This node 1 rank id: 1") != -1
+    assert result_tail_all.find("This node 2 rank id: 2") != -1
+    assert result_tail_all.find("This node 3 rank id: 3") != -1
+    assert result_rename_0 != -1
+    assert result_rename_1 != -1
+    assert result_rename_2 != -1
+    assert result_rename_3 != -1
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
+def test_msrun_tail_specified_worker_log():
+    """
+    Feature: 'msrun' launch utility.
+    Description: Launch distributed training job with dynamic cluster using msrun with argument "--tail_worker_log"
+                 and not set argument "--worker_log_name", then check whether log files are renamed.
+    Expectation: All workers are spawned, specified worker log files are successfully output to console.
+    """
+    ms.set_context(jit_level='O0')
+    os.environ['GLOG_v'] = str(2)
+
+    return_code = os.system(
+        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 "\
+        "--join=True --tail_worker_log=0,1 --log_dir=./tail_single_without_rename test_msrun_only_init.py "\
+        "--device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist "\
+        "> ./single_worker.txt 2>&1"
+    )
+    result_tail_single = subprocess.getoutput("grep -rna ' This node ' ./single_worker.txt")
+    result_rename_0 = subprocess.getoutput("find ./tail_all_with_rename -name worker_0.log")
+    result_rename_1 = subprocess.getoutput("find ./tail_all_with_rename -name worker_1.log")
+    result_rename_2 = subprocess.getoutput("find ./tail_all_with_rename -name worker_2.log")
+    result_rename_3 = subprocess.getoutput("find ./tail_all_with_rename -name worker_3.log")
+
+    assert return_code == 0
+    assert result_tail_single.find("This node 0 rank id: 0") != -1
+    assert result_tail_single.find("This node 1 rank id: 1") != -1
+    assert result_tail_single.find("This node 2 rank id: 2") == -1
+    assert result_tail_single.find("This node 3 rank id: 3") == -1
+    assert result_rename_0 != -1
+    assert result_rename_1 != -1
+    assert result_rename_2 != -1
+    assert result_rename_3 != -1

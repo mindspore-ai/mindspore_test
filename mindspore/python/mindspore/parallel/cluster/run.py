@@ -103,6 +103,19 @@ def get_args():
              "'rank table file manner' but to help support other features."
     )
     parser.add_argument(
+        "--worker_log_name",
+        default="",
+        type=str,
+        help="specifies the worker log output file name, the default name will be worker_[rankid]."
+    )
+    parser.add_argument(
+        "--tail_worker_log",
+        default="-1",
+        type=str,
+        help="tail worker log output to console, or tail the specified worker log "
+             "(e.g. --tail_log=0 tail the worker 0 log to console)."
+    )
+    parser.add_argument(
         "task_script",
         type=str,
         help="The full path to the script that will be launched in distributed manner, followed "

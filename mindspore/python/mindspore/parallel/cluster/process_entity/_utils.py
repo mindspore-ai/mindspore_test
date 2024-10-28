@@ -18,6 +18,8 @@ import json
 import socket
 import mindspore.log as logger
 
+CURRENT_IP = None
+
 def _generate_cmd(cmd, cmd_args, output_name):
     """
     Generates a command string to execute a Python script in the background, r
@@ -67,6 +69,20 @@ def _generate_url(addr, port):
     return url
 
 
+def _get_local_ip(ip_address):
+    """
+    Get current IP address.
+
+    """
+    global CURRENT_IP
+    if CURRENT_IP is None:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((ip_address, 0))
+        CURRENT_IP = s.getsockname()[0]
+        s.close()
+    return CURRENT_IP
+
+
 def _is_local_ip(ip_address):
     """
     Check if the current input IP address is a local IP address.
@@ -75,13 +91,8 @@ def _is_local_ip(ip_address):
     p = os.popen("ip -j addr")
     addr_info_str = p.read()
     p.close()
+    current_ip = _get_local_ip(ip_address)
     if not addr_info_str:
-        # This means this host has no "ip -j addr" command.
-        # We use socket module to get local ip address.
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect((ip_address, 0))
-        current_ip = s.getsockname()[0]
-        s.close()
         return current_ip == ip_address
 
     addr_infos = json.loads(addr_info_str)
