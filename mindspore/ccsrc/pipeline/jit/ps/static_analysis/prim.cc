@@ -1295,6 +1295,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
 
 AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrList &args) {
   if (op_def_ != nullptr) {
+    MS_LOG(DEBUG) << "prim_func_: " << prim_func_->ToString();
     if (op_def_->func_impl_.GeneralInferRegistered()) {
       return ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
     } else {
@@ -1307,7 +1308,16 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       }
       auto type = op_def_->func_impl_.InferType(prim_func_, args);
       auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
-      return MakeAbstract(shape, type);
+      auto res = MakeAbstract(shape, type);
+      if (prim_func_->inplace_prim()) {
+        MS_LOG(DEBUG) << "Inplace prim infer";
+        auto tensor_abs = dyn_cast<abstract::AbstractTensor>(res);
+        MS_EXCEPTION_IF_NULL(tensor_abs);
+        std::stringstream ss;
+        ss << tensor_abs.get();
+        return std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>(ss.str()));
+      }
+      return res;
     }
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Find infer function failed, primitive: " << prim_func_->ToString();

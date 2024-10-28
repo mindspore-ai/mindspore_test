@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -394,6 +394,8 @@ BuiltInTypeMap &GetMethodMap() {
        {"sigmoid", std::string("sigmoid")},                                // P.Sigmoid()
        {"addr", std::string("addr")},                                      // addr()
        {"add", std::string("add")},                                        // P.Add()
+       {"add_", std::string("add_")},                                      // add_()
+       {"sub_", std::string("sub_")},                                      // sub_()
        {"addbmm", std::string("addbmm")},                                  // addbmm()
        {"addmm", std::string("addmm")},                                    // addmm()
        {"addmv", std::string("addmv")},                                    // addmv()

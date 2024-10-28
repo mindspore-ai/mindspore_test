@@ -300,6 +300,8 @@ class AssignSub(Primitive):
         """Initialize AssignSub"""
         self.init_prim_io_names(inputs=['val', 'value'], outputs=['val'])
         self.add_prim_attr('side_effect_mem', True)
+        self.add_prim_attr('inplace_prim', True)
+        self.add_prim_attr('inplace_input', (1, 0))
 
 
 class _Reduce(PrimitiveWithCheck):

@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,9 +227,22 @@ void CSE::AddReplicatedNode(const AnfNodePtr &node, const AnfNodePtr &main) {
   (void)replicated_nodes_.emplace(node, main);
 }
 
+bool CheckAbstractSame(const AnfNodePtr &main, const AnfNodePtr &node) {
+  auto main_abs = main->abstract();
+  auto node_abs = node->abstract();
+  if (main_abs == nullptr || node_abs == nullptr) {
+    return true;
+  }
+  return main_abs->hash() == node_abs->hash();
+}
+
 bool CSE::CheckReplace(const AnfNodePtr &main, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(main);
   MS_EXCEPTION_IF_NULL(node);
+  // If the abstracts of the two nodes are not the same, they should not be merged by CSE.
+  if (!CheckAbstractSame(main, node)) {
+    return false;
+  }
   if (main->isa<ValueNode>() && node->isa<ValueNode>()) {
     auto main_value = GetValueNode(main);
     auto node_value = GetValueNode(node);
