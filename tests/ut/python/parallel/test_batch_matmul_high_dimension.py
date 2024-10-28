@@ -324,6 +324,24 @@ def test_matmul_3D_TP_transpose_b():
     )
     compile_net(net)
 
+def test_matmul_3D_TP_transpose_b_plit_cp():
+    """
+    Feature: 2D/3D tensor parllel.
+    Description: test 3D TP, two matmul and the Weight is transposed.
+    Expectation: compile done without error.
+    """
+    context.set_auto_parallel_context(
+        parallel_mode="semi_auto_parallel", device_num=16, global_rank=0
+    )
+    layout = Layout((2, 2, 2, 2), ("cp", "z", "x", "y"))
+    net = Net(
+        _w1_trans_s,
+        _w2_trans_s,
+        True,
+        (layout(("cp", "z", "x"), "y"), layout("x", ("y", "z"))),
+        (layout(("cp", "z", "y"), "x"), layout("y", ("x", "z")))
+    )
+    compile_net(net)
 
 def test_matmul_3D_TP_reduce_2D():
     """
