@@ -211,7 +211,7 @@ from mindspore.ops.function.math_func import remainder
 # 87 repeat_interleave
 from mindspore.ops.function.array_func import repeat_interleave
 # 88 reshape
-
+from mindspore.ops.auto_generate import reshape
 # 89 round
 
 # 90 rsqrt
@@ -649,6 +649,10 @@ def tensor_repeat_interleave(input, repeats, dim=None):
 
 
 # 88 reshape
+def tensor_reshape(input, *shape):
+    new_shape = validator.check_reshape_shp(shape)
+    return reshape(input, new_shape)
+
 
 # 89 round
 
