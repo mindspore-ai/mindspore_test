@@ -23,7 +23,7 @@ import logging
 import gen_utils
 from gen_utils import (py_licence_str, cc_license_str, check_change_and_replace_file, merge_files,
                        merge_files_append, safe_load_yaml, convert_dtype_str, write_file)
-from pyboost_utils import get_pyboost_name, is_pyboost_enable, AclnnUtils, get_dtypes
+from pyboost_utils import get_pyboost_name, is_pyboost_enable
 import template
 from template import CppTemplate
 from gen_pyboost_func import gen_pyboost_code

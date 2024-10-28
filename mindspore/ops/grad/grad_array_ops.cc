@@ -1784,6 +1784,31 @@ REG_BPROP_BUILDER("BroadcastTo").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(
   return {dx, ib->OutZeros(ib->GetInput(kIndex1))};
 });
 
+REG_BPROP_BUILDER("ExpandAs").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto input_shape = ib->GetShape(input);
+  auto dout = ib->GetInput(kIndex3);
+  auto dout_shape = ib->GetShape(dout);
+
+  bool input_dynamic = IsDynamic(input_shape) || IsDynamic(dout_shape);
+  if (!input_dynamic && input_shape == dout_shape) {
+    return {dout, ib->OutZeros(ib->GetInput(kIndex1))};
+  }
+
+  auto input_shape_node = ib->Shape(input);
+  auto broadcast_axes = ib->BroadcastGradientArgs(dout, input);
+  MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
+  auto reduction_axes = broadcast_axes[kIndex1];
+  NodePtr reduced_grad = nullptr;
+
+  // Different from the reverse implementation of BroadcastTo,
+  // the original ReduceSum not uses the aclnn operator.
+  reduced_grad = ib->SumExt(dout, reduction_axes, ib->Value(true));
+  auto dx = ib->Reshape(reduced_grad, input_shape_node);
+
+  return {dx, ib->OutZeros(ib->GetInput(kIndex1))};
+});
+
 REG_BPROP_BUILDER("SpaceToDepth").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex2);
   return {ib->Emit("DepthToSpace", {dout},

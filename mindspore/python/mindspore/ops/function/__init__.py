@@ -169,6 +169,7 @@ from .array_func import (
     arange_ext,
     view_as,
     type_as,
+    expand_as,
 )
 from .parameter_func import (
     assign,
