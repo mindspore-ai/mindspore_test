@@ -11,7 +11,7 @@ mindspore.ops.rotary_position_embedding
 
     参数：
         - **x** (Tensor) - 4维Tensor，数据类型float16、bfloat16、float32。
-        - **cos** (Tensor) - 4维Tensor，数据类型和 `x` 一致。取值范围为[-1,1]。
+        - **cos** (Tensor) - 4维常量，数据类型和 `x` 一致。取值范围为[-1,1]。
         - **sin** (Tensor) - 和 `cos` 相同。
         - **mode** (int) - 可选属性，选择计算模式。0表示rotate_half（GPT-NeoX style）， 1表示rotate_interleaved（GPT-J style）。默认值： ``0`` 。
 
@@ -27,7 +27,6 @@ mindspore.ops.rotary_position_embedding
 
             D < 896，且为2的倍数；B，N < 1000；
 
-            当需要计算cos/sin的反向梯度时，B*N <= 1024
           - layout支持：BNSD、BSND、SBND；
 
             B * N < 1000；D < 896，且D为2的倍数
