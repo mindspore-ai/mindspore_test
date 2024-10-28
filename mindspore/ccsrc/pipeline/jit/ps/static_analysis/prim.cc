@@ -3025,6 +3025,7 @@ EvalResultPtr FunctionalEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
                                             const ConfigPtr &, const AnfNodeConfigPtr &out_conf) {
   auto cnode = out_conf->node()->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(cnode->debug_info()));
   auto func_graph = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   // Convert functional inputs.
