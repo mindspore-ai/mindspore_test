@@ -266,6 +266,7 @@ def test_msrun_tail_specified_worker_log():
     assert result_rename_1 != -1
     assert result_rename_2 != -1
     assert result_rename_3 != -1
+<<<<<<< HEAD
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
@@ -302,3 +303,5 @@ def test_msrun_with_wrong_hostname():
     os.system(cmd)
     result = subprocess.getoutput("grep -rn 'DNS resolution failed' ./hostname_abnormal_msrun.log")
     assert result.find("Name or service not known") != -1
+=======
+>>>>>>> 35b8fe76844 (msrun log)
