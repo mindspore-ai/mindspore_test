@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_PASS_DATASET_READER_OPTIMIZER_H_
 
 #include <vector>
+#include <set>
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/manager.h"
@@ -42,10 +43,12 @@ class DatasetReaderOptimizer {
   RankList InferReapteDataRankThroughDataStrategy(const Strategies &data_stra);
   RankList InferRepeatRankListWithinStage();
   AnfNodePtr FindDatasetParameter(const AnfNodePtr &node, const NodeUsersMap &node_users_map);
-  RankList FindAllStageIdUsedDataParameter(const AnfNodePtr &node, const NodeUsersMap &node_users_map);
+  void FindAllStageIdUsedDataParameter(const AnfNodePtr &node, const NodeUsersMap &node_users_map,
+                                       std::set<int64_t> *const data_used_stage);
   RankList InferRepeatRankList(const RankList &within_stage, const RankList &between_stage);
-  void InsertBroadcast(const NodeUsersMap &node_user_map, const RankList &rank_list, int64_t index);
-  AnfNodePtr CreateZeroNode(const AnfNodePtr &node);
+  void InsertBroadcast(const RankList &rank_list);
+  bool CreateZeroNode(const Shapes &shapes, const std::vector<TypePtr> &types,
+                      std::vector<AnfNodePtr> *const input_vec);
   std::vector<CNodePtr> broadcast_ops;
   int64_t opt_level_ = 0;
   FuncGraphManagerPtr manager_ = nullptr;
