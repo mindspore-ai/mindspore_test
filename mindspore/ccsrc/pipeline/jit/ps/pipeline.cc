@@ -1299,15 +1299,19 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   opt::SavePassesConfig(root_func_name);
   // Save the compiled graph to MsPipeLine.
   SaveCompiledGraph(phase_);
+  PROF_START(ParallelPostProcess);
   if (is_parallel_mode) {
     ParallelPostProcess(phase_, use_compile_cache);
   }
+  PROF_END(ParallelPostProcess);
 #ifdef ENABLE_DUMP_IR
   mindspore::RDR::Snapshot();
 #endif
+  PROF_START(CleanCompileRes);
   CleanCompileRes(resource);
   EventMessage::PrintCompileEndMsg(phase_, obj_desc_);
   PhaseManager::GetInstance().ClearPhase();
+  PROF_END(CleanCompileRes);
   MS_LOG(INFO) << "Finish compiling.";
   PROF_END(compile_graph);
   return true;

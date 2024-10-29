@@ -612,6 +612,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
     GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
     if (op_selected_type[kGeOpSelect].count(op_name) == 0) {
       (void)op_selected_type[kGeOpSelect].insert(op_name);
+      MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select GE kernel.";
       MS_LOG(INFO) << op_name << " select GE kernel.";
     }
     return result;
