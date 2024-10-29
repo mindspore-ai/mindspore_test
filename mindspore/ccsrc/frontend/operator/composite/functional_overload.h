@@ -45,7 +45,7 @@ class DeprecatedTensorMethod : public MetaFuncGraph {
 using DeprecatedTensorMethodPtr = std::shared_ptr<DeprecatedTensorMethod>;
 
 bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name);
-std::map<size_t, ValuePtr> &GetFunctionalConvertCache();
+std::map<size_t, std::pair<ValuePtr, bool>> &GetFunctionalConvertCache();
 std::string BuildArgsTypeString(const TypePtr &arg_abs);
 std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list);
 AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, const AnfNodePtrList &inputs_list,
