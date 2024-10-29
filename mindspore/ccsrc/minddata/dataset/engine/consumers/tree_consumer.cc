@@ -201,6 +201,13 @@ Status IteratorConsumer::GetNextAsVector(std::vector<TensorPtr> *const out) {
     return Status::OK();
   }
 
+  if (res.Timer()->Enabled()) {
+#ifndef ENABLE_ANDROID
+    // VL_MD is 10900
+    MS_VLOG(VL_MD) << res.Timer()->Summary();
+#endif
+  }
+
   // Filter meta column
   std::vector<size_t> to_keep_indices;
   for (const auto &colMap : tree_adapter_->GetColumnNameMap()) {
@@ -238,6 +245,13 @@ Status IteratorConsumer::GetNextAsMap(std::unordered_map<std::string, TensorPtr>
     RETURN_IF_NOT_OK(
       CollectPipelineInfo("IteratorConsumer", "GetNextAsMap", start_time, {{"TensorRowFlags", res.FlagName()}}));
     return Status::OK();
+  }
+
+  if (res.Timer()->Enabled()) {
+#ifndef ENABLE_ANDROID
+    // VL_MD is 10900
+    MS_VLOG(VL_MD) << res.Timer()->Summary();
+#endif
   }
 
   // Populate the out map from the row and return it

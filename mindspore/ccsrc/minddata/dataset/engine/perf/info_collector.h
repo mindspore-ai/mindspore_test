@@ -27,6 +27,8 @@ enum InfoLevel : uint8_t { kDeveloper = 0, kUser = 1 };
 enum InfoType : uint8_t { kAll = 0, kMemory = 1, kTime = 2 };
 enum TimeType : uint8_t { kStart = 0, kEnd = 1, kStamp = 2 };
 
+double GetMilliTimeStamp();
+
 uint64_t GetSyscnt();
 
 Status CollectPipelineInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
