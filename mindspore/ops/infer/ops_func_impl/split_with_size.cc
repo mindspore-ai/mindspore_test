@@ -24,10 +24,6 @@ namespace mindspore {
 namespace ops {
 namespace {
 constexpr size_t KrelNum = 1;
-std::vector<int64_t> CaculateSplitSize(const AbstractBasePtr &input_abs) {
-  std::vector<int64_t> split_size = GetArrayValue<int64_t>(input_abs).value().ToVector();
-  return split_size;
-}
 }  // namespace
 BaseShapePtr SplitWithSizeFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const std::vector<AbstractBasePtr> &input_args) const {
@@ -49,15 +45,26 @@ BaseShapePtr SplitWithSizeFuncImpl::InferShape(const PrimitivePtr &primitive,
     axis += rank;
   }
   size_t pos = LongToSize(axis);
-  auto split_size = CaculateSplitSize(input_args[kIndex1]);
-  int64_t sum_split_size = std::accumulate(split_size.begin(), split_size.end(), 0);
-  MS_CHECK_VALUE(sum_split_size == input_shape[pos],
-                 CheckAndConvertUtils::FormatCheckIntegerMsg("sum_split_size", sum_split_size, kEqual,
-                                                             SizeToLong(input_shape[pos]), primitive));
+  auto split_size_opt = GetArrayValue<int64_t>(input_args[kIndex1]);
+  if (MS_UNLIKELY(!split_size_opt.has_value())) {
+    MS_LOG(EXCEPTION) << "split_size's value is Unknown";
+  }
+  auto split_size_value = split_size_opt.value();
+  if (!split_size_value.HasUnknownValue() && input_shape[pos] != abstract::Shape::kShapeDimAny) {
+    auto split_size = split_size_value.ToVector();
+    int64_t sum_split_size = std::accumulate(split_size.begin(), split_size.end(), 0);
+    MS_CHECK_VALUE(sum_split_size == input_shape[pos],
+                   CheckAndConvertUtils::FormatCheckIntegerMsg("sum_split_size", sum_split_size, kEqual,
+                                                               SizeToLong(input_shape[pos]), primitive));
+  }
 
   auto output_shape = input_shape;
-  for (const int64_t &size : split_size) {
-    output_shape[pos] = size;
+  for (size_t i = 0; i < split_size_value.size(); i++) {
+    if (split_size_value.IsValueUnknown(i)) {
+      output_shape[pos] = abstract::Shape::kShapeDimAny;
+    } else {
+      output_shape[pos] = split_size_value[i];
+    }
     abstract::ShapePtr output = std::make_shared<abstract::Shape>(output_shape);
     (void)output_list.emplace_back(output);
   }
@@ -67,13 +74,17 @@ BaseShapePtr SplitWithSizeFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr SplitWithSizeFuncImpl::InferType(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
   auto &prim_name = primitive->name();
-  auto split_size = CaculateSplitSize(input_args[kIndex1]);
+  auto split_size_opt = GetArrayValue<int64_t>(input_args[kIndex1]);
+  if (MS_UNLIKELY(!split_size_opt.has_value())) {
+    MS_LOG(EXCEPTION) << "split_size's value is Unknown.";
+  }
+  auto split_size_value = split_size_opt.value();
   auto infer_type = input_args[kIndex0]->GetType();
   static const std::set<TypePtr> valid_types = {kInt8,    kInt16,   kInt32,     kInt64,      kFloat16,
                                                 kFloat32, kFloat64, kComplex64, kComplex128, kBool};
   auto type = CheckAndConvertUtils::CheckTensorTypeValid("input", infer_type, valid_types, prim_name);
   std::vector<TypePtr> type_tuple;
-  for (size_t i = 0; i < split_size.size(); i++) {
+  for (size_t i = 0; i < split_size_value.size(); i++) {
     (void)type_tuple.emplace_back(type->Clone());
   }
   return std::make_shared<Tuple>(type_tuple);

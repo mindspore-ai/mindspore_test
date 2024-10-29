@@ -197,7 +197,7 @@ def test_f_split_ext_list_backward(context_mode):
     assert grads.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
 def test_f_split_ext_dynamic():
     """
     Feature: test dynamic split.
