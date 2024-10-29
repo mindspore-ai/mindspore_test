@@ -36,7 +36,7 @@ bool AdaptiveMaxPool2dCpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
 }
 
 bool AdaptiveMaxPool2dCpuKernelMod::ResizedInputSize(const std::vector<KernelTensor *> &inputs) {
-  auto input_shape = inputs[0]->GetShapeVector();
+  auto input_shape = inputs[kIndex0]->GetShapeVector();
   size_t rank = static_cast<size_t>(input_shape.size());
   if (rank != ops::kFormatCHWShapeSize && rank != ops::kFormatNCHWShapeSize) {
     MS_LOG(ERROR) << "For primitive[AdaptiveMaxPool2D], the shape size of input argument[input_x] must "

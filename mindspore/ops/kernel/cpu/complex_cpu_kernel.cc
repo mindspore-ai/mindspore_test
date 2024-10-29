@@ -65,9 +65,9 @@ int ComplexCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const
     return ret;
   }
 
-  real_shape_ = inputs[0]->GetShapeVector();
-  image_shape_ = inputs[1]->GetShapeVector();
-  out_shape_ = outputs[0]->GetShapeVector();
+  real_shape_ = inputs[kIndex0]->GetShapeVector();
+  image_shape_ = inputs[kIndex1]->GetShapeVector();
+  out_shape_ = outputs[kIndex0]->GetShapeVector();
 
   is_null_input_ = CHECK_SHAPE_NULL(real_shape_, kernel_name_, "real") ||
                    CHECK_SHAPE_NULL(image_shape_, kernel_name_, "image") ||

@@ -51,9 +51,9 @@ int NLLLossGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   auto reduction = inputs[kReductionIdx]->GetValueWithCheck<int64_t>();
   reduction_type_ = static_cast<Reduction>(reduction);
   ignore_index_ = inputs[kIgnoreIndexIdx]->GetValueWithCheck<int64_t>();
-  auto logits_shape = inputs[0]->GetShapeVector();
-  nllloss_param_.batch_ = LongToInt(logits_shape[0]);
-  nllloss_param_.class_num_ = LongToInt(logits_shape[1]);
+  auto logits_shape = inputs[kIndex0]->GetShapeVector();
+  nllloss_param_.batch_ = LongToInt(logits_shape[kIndex0]);
+  nllloss_param_.class_num_ = LongToInt(logits_shape[kIndex1]);
   return KRET_OK;
 }
 
@@ -64,18 +64,18 @@ bool NLLLossGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
   CHECK_KERNEL_INPUTS_NUM(kNLLLossGradInputsNum, inputs.size(), kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(kNLLLossGradOutputsNum, outputs.size(), kernel_name_);
 
-  const auto *logits = reinterpret_cast<float *>(inputs[0]->device_ptr());
-  const auto *loss_grad = reinterpret_cast<float *>(inputs[1]->device_ptr());
-  const auto *labels = static_cast<T *>(inputs[2]->device_ptr());
-  const auto *weight = reinterpret_cast<float *>(inputs[3]->device_ptr());
-  const auto *total_weight = reinterpret_cast<float *>(inputs[4]->device_ptr());
-  auto *logits_grad = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  const auto *logits = reinterpret_cast<float *>(inputs[kIndex0]->device_ptr());
+  const auto *loss_grad = reinterpret_cast<float *>(inputs[kIndex1]->device_ptr());
+  const auto *labels = static_cast<T *>(inputs[kIndex2]->device_ptr());
+  const auto *weight = reinterpret_cast<float *>(inputs[kIndex3]->device_ptr());
+  const auto *total_weight = reinterpret_cast<float *>(inputs[kIndex4]->device_ptr());
+  auto *logits_grad = reinterpret_cast<float *>(outputs[kIndex0]->device_ptr());
 
   if (logits == nullptr || loss_grad == nullptr || labels == nullptr || weight == nullptr || total_weight == nullptr) {
     MS_LOG(ERROR) << "For NLLLossGrad, it does not support NULL input";
   }
-  auto ret =
-    memset_s(logits_grad, outputs[0]->size(), 0, nllloss_param_.batch_ * nllloss_param_.class_num_ * sizeof(float));
+  auto ret = memset_s(logits_grad, outputs[kIndex0]->size(), 0,
+                      nllloss_param_.batch_ * nllloss_param_.class_num_ * sizeof(float));
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memset_s failed, ret=" << ret;
   }
@@ -90,9 +90,9 @@ bool NLLLossGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
     int index = i * nllloss_param_.class_num_ + labels[i];
     float n_weight = weight[labels[i]];
     if (reduction_type_ == Reduction::REDUCTION_SUM) {
-      logits_grad[index] = -loss_grad[0] * n_weight;
+      logits_grad[index] = -loss_grad[kIndex0] * n_weight;
     } else if (reduction_type_ == Reduction::MEAN) {
-      logits_grad[index] = -loss_grad[0] * n_weight / *total_weight;
+      logits_grad[index] = -loss_grad[kIndex0] * n_weight / *total_weight;
     } else {
       logits_grad[index] = -loss_grad[i] * n_weight;
     }

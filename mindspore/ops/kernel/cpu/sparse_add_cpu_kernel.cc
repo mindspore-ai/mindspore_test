@@ -67,7 +67,7 @@ int SparseAddCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (ret == KRET_UNKNOWN_OUT_SHAPE) {
     MS_LOG(EXCEPTION) << "Resize failed for op: " << kernel_name();
   }
-  auto dims = inputs.at(0)->GetShapeVector()[1];
+  auto dims = inputs.at(0)->GetShapeVector()[kIndex1];
   if (dims >= 0) {
     indices_column_ = LongToSize(dims);
   }

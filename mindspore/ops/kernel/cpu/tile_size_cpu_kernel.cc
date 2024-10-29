@@ -47,10 +47,10 @@ template <typename T>
 bool TileSizeCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs,
                                         const std::vector<KernelTensor *> &) const {
-  const auto shape_addr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  const auto out_shape_addr = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
-  const auto ndim_addr = reinterpret_cast<T *>(inputs[kIndex2]->device_ptr());
-  auto output_addr = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  const auto shape_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto out_shape_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  const auto ndim_addr = GetDeviceAddress<T>(inputs, kIndex2);
+  auto output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   auto output_size = outputs[kIndex0]->size();
 
   std::vector<T> out(*ndim_addr, 1);

@@ -97,7 +97,7 @@ int SparseMatrixTransposeCpuKernelMod::Resize(const std::vector<KernelTensor *> 
   auto input_dense_shape = inputs.at(kIndex0)->GetShapeVector();
   rank_x_ = static_cast<size_t>(input_dense_shape[0]);
   if (rank_x_ != kRankWithOutBatch && rank_x_ != kRankWithBatch) {
-    MS_LOG(EXCEPTION) << "For SparseMatrixTranspose,the rank must be 2 or 3, but got" << rank_x_ << "!";
+    MS_LOG(EXCEPTION) << "For SparseMatrixTranspose,the rank must be 2 or 3, but got " << rank_x_ << "!";
   }
   std::vector<int64_t> x_batch_pointers_shape = inputs.at(kInputIndex1)->GetShapeVector();
   std::vector<int64_t> x_row_pointers_shape = inputs.at(kInputIndex2)->GetShapeVector();

@@ -36,7 +36,7 @@ constexpr size_t kScalarIndex = 0;
 
 bool ApplyAdamWithAmsgradV2CpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                               const std::vector<KernelTensor *> &outputs) {
-  dtype_ = inputs[0]->dtype_id();
+  dtype_ = inputs[kIndex0]->dtype_id();
   batch_rank_ = ops::get_batch_rank(primitive_);
 
   if (inputs.size() != kApplyAdamWithAmsgradV2InputsNum || outputs.size() != kApplyAdamWithAmsgradV2OutputsNum) {
@@ -105,27 +105,31 @@ int ApplyAdamWithAmsgradV2CpuKernelMod::Resize(const std::vector<KernelTensor *>
   int64_t temp_elements_ = std::accumulate(var_shape.begin(), var_shape.end(), int64_t(1), std::multiplies<int64_t>());
   input_elements_ = static_cast<size_t>(temp_elements_ / batch_size_);
 
-  return 0;
+  return KRET_OK;
 }
 
 template <typename T>
 void ApplyAdamWithAmsgradV2CpuKernelMod::LaunchApplyAdamWithAmsgradV2(const std::vector<KernelTensor *> &inputs,
                                                                       const std::vector<KernelTensor *> &) {
-  T *var = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *m = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
-  T *v = reinterpret_cast<T *>(inputs[kIndex2]->device_ptr());
-  T *vhat = reinterpret_cast<T *>(inputs[kIndex3]->device_ptr());
-  T *beta1_power = reinterpret_cast<T *>(inputs[kIndex4]->device_ptr());
-  T *beta2_power = reinterpret_cast<T *>(inputs[kIndex5]->device_ptr());
-  T *lr = reinterpret_cast<T *>(inputs[kIndex6]->device_ptr());
-  T *beta1 = reinterpret_cast<T *>(inputs[kIndex7]->device_ptr());
-  T *beta2 = reinterpret_cast<T *>(inputs[kIndex8]->device_ptr());
-  T *epsilon = reinterpret_cast<T *>(inputs[kIndex9]->device_ptr());
-  T *gradient = reinterpret_cast<T *>(inputs[kIndex10]->device_ptr());
+  T *var = GetDeviceAddress<T>(inputs, kIndex0);
+  T *m = GetDeviceAddress<T>(inputs, kIndex1);
+  T *v = GetDeviceAddress<T>(inputs, kIndex2);
+  T *vhat = GetDeviceAddress<T>(inputs, kIndex3);
+  T *beta1_power = GetDeviceAddress<T>(inputs, kIndex4);
+  T *beta2_power = GetDeviceAddress<T>(inputs, kIndex5);
+  T *lr = GetDeviceAddress<T>(inputs, kIndex6);
+  T *beta1 = GetDeviceAddress<T>(inputs, kIndex7);
+  T *beta2 = GetDeviceAddress<T>(inputs, kIndex8);
+  T *epsilon = GetDeviceAddress<T>(inputs, kIndex9);
+  T *gradient = GetDeviceAddress<T>(inputs, kIndex10);
 
   T ONE = static_cast<T>(1.0);
   for (int64_t b = 0; b < batch_size_; b++) {
     // multithreading
+    if (std::equal_to<T>()(beta1_power[b], ONE)) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name_
+                        << "', 'beta1_power' must not be 1, but got 'beta1_power': " << beta1_power[b];
+    }
     T new_lr = lr[b] * static_cast<T>(std::sqrt(static_cast<double>(ONE - beta2_power[b]))) / (ONE - beta1_power[b]);
     auto task = [this, &var, &m, &v, &vhat, &gradient, new_lr, &beta1, &beta2, &epsilon](size_t start, size_t end) {
       T one = static_cast<T>(1.0);

@@ -38,8 +38,8 @@ bool DataFormatVecPermuteCpuKernelMod::Init(const std::vector<KernelTensor *> &i
 
   src_format_ = GetValue<std::string>(primitive_->GetAttr(ops::kSrcFormat));
   dst_format_ = GetValue<std::string>(primitive_->GetAttr(ops::kDstFormat));
-  input_type_ = inputs[0]->dtype_id();
-  output_type_ = outputs[0]->dtype_id();
+  input_type_ = inputs[kIndex0]->dtype_id();
+  output_type_ = outputs[kIndex0]->dtype_id();
   return true;
 }
 
@@ -50,8 +50,8 @@ int DataFormatVecPermuteCpuKernelMod::Resize(const std::vector<KernelTensor *> &
     return ret;
   }
 
-  input_shape_ = inputs[0]->GetDeviceShapeVector();
-  output_shape_ = outputs[0]->GetDeviceShapeVector();
+  input_shape_ = inputs[kIndex0]->GetDeviceShapeVector();
+  output_shape_ = outputs[kIndex0]->GetDeviceShapeVector();
   dim_ = input_shape_.size();
   return KRET_OK;
 }
@@ -61,8 +61,8 @@ bool DataFormatVecPermuteCpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
                                                     const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kDataFormatVecPermuteInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kDataFormatVecPermuteOutputsNum, kernel_name_);
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
   size_t dim1 = 1;
   size_t dim2 = 2;
   if (dim_ == dim1) {

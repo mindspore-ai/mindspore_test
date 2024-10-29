@@ -43,15 +43,15 @@ int ArrayLenCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (ret != 0) {
     return ret;
   }
-  input_shape_ = inputs[0]->GetShapeVector();
+  input_shape_ = inputs[kIndex0]->GetShapeVector();
   return KRET_OK;
 }
 
 bool ArrayLenCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
                                   const std::vector<kernel::KernelTensor *> &,
                                   const std::vector<kernel::KernelTensor *> &outputs) {
-  auto output_addr = reinterpret_cast<int *>(outputs[0]->device_ptr());
-  output_addr[0] = input_shape_[0];
+  auto output_addr = GetDeviceAddress<int>(outputs, kIndex0);
+  output_addr[kIndex0] = input_shape_[kIndex0];
   return true;
 }
 

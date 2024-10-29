@@ -61,7 +61,7 @@ int RaggedTensorToTensorCpuKernelMod::Resize(const std::vector<KernelTensor *> &
   }
   values_shape_ = inputs[kValueInputIndex]->GetShapeVector();
   default_values_shape_ = inputs[kDefaultValueInputIndex]->GetShapeVector();
-  output_shape_ = outputs[0]->GetShapeVector();
+  output_shape_ = outputs[kIndex0]->GetShapeVector();
   if (ragged_rank_ + values_shape_.size() != output_shape_.size()) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_
                       << "', row partition size plus 'values' rank should be equal to 'shape' rank: "
@@ -162,6 +162,7 @@ void RaggedTensorToTensorCpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
       if (row_partition_types_[0] == "FIRST_DIM_SIZE") {
         kernel::KernelTensor *row_partition = inputs[i + kFirstPartitionInputIndex];
         auto row_partition_ptr = reinterpret_cast<TYPE1 *>(row_partition->device_ptr());
+        MS_EXCEPTION_IF_NULL(row_partition_ptr);
         auto row_partition_shape = row_partition_shape_list_[i];
         Eigen::DSizes<Eigen::DenseIndex, 1> row_partition_dsize(row_partition_shape[0]);
         TYPE1_flat rowET(row_partition_ptr, row_partition_dsize);
@@ -169,6 +170,7 @@ void RaggedTensorToTensorCpuKernelMod::LaunchKernel(const std::vector<kernel::Ke
       } else {
         kernel::KernelTensor *row_partition = inputs[i - 1 + kFirstPartitionInputIndex];
         auto row_partition_ptr = reinterpret_cast<TYPE1 *>(row_partition->device_ptr());
+        MS_EXCEPTION_IF_NULL(row_partition_ptr);
         auto row_partition_shape = row_partition_shape_list_[i - 1];
         Eigen::DSizes<Eigen::DenseIndex, 1> row_partition_dsize(row_partition_shape[0]);
         TYPE1_flat rowET(row_partition_ptr, row_partition_dsize);
@@ -220,6 +222,7 @@ void RaggedTensorToTensorCpuKernelMod::GetFirstDimension(const std::vector<kerne
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', cannot handle 'VALUE_ROWIDS' in first dimension.";
   } else if (first_partition_type == "FIRST_DIM_SIZE") {
     TYPE1 *first_dim_pt = reinterpret_cast<TYPE1 *>(first_partition_tensor->device_ptr());
+    MS_EXCEPTION_IF_NULL(first_dim_pt);
     *first_dim = first_dim_pt[0];
   } else if (first_partition_type == "ROW_SPLITS") {
     *first_dim = firstPartitionShape[0] - 1;
@@ -318,12 +321,15 @@ template <typename TYPE1, typename TYPE2>
 bool RaggedTensorToTensorCpuKernelMod::SetOutput(const std::vector<kernel::KernelTensor *> &inputs,
                                                  const std::vector<kernel::KernelTensor *> &outputs,
                                                  const vector<TYPE1> &output_index) {
-  auto output_tensor_ptr = reinterpret_cast<TYPE2 *>(outputs[0]->device_ptr());
+  auto output_tensor_ptr = reinterpret_cast<TYPE2 *>(outputs[kIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(output_tensor_ptr);
   size_t output_element_sum = SizeToLong(SizeOf(output_shape_));
   auto default_value_tensor = inputs[kDefaultValueInputIndex];
   TYPE2 *default_value_pt = reinterpret_cast<TYPE2 *>(default_value_tensor->device_ptr());
+  MS_EXCEPTION_IF_NULL(default_value_pt);
   auto values_tensor = inputs[kValueInputIndex];
   auto values_tensor_ptr = reinterpret_cast<TYPE2 *>(values_tensor->device_ptr());
+  MS_EXCEPTION_IF_NULL(values_tensor_ptr);
   if (values_shape_.size() == 1) {
     Eigen::DSizes<Eigen::DenseIndex, 1> output_tensor_dsize(output_element_sum);
     TYPE2_flat outputET(output_tensor_ptr, output_tensor_dsize);
@@ -353,7 +359,9 @@ bool RaggedTensorToTensorCpuKernelMod::SetOutput(const std::vector<kernel::Kerne
     }
     BroadcastIterator iter(default_values_shape_, output_shape_, broadcast_shape);
     TYPE2 *default_value_addr = reinterpret_cast<TYPE2 *>(inputs[kDefaultValueInputIndex]->device_ptr());
-    TYPE2 *output_addr = reinterpret_cast<TYPE2 *>(outputs[0]->device_ptr());
+    TYPE2 *output_addr = reinterpret_cast<TYPE2 *>(outputs[kIndex0]->device_ptr());
+    MS_EXCEPTION_IF_NULL(default_value_addr);
+    MS_EXCEPTION_IF_NULL(output_addr);
 
     iter.SetPos(0);
     for (size_t i = 0; i < output_element_sum; ++i) {

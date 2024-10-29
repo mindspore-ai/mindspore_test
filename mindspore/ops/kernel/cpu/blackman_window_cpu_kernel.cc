@@ -48,8 +48,8 @@ template <typename T1, typename T2>
 bool BlackmanWindowCpuKernelMod::BlackmanWindowKernelFunc(const std::vector<kernel::KernelTensor *> &inputs,
                                                           const std::vector<kernel::KernelTensor *> &,
                                                           const std::vector<kernel::KernelTensor *> &outputs) const {
-  auto input = static_cast<T1 *>(inputs[0]->device_ptr());
-  auto output = static_cast<T2 *>(outputs[0]->device_ptr());
+  auto input = static_cast<T1 *>(inputs[kIndex0]->device_ptr());
+  auto output = static_cast<T2 *>(outputs[kIndex0]->device_ptr());
 
   if (*input < 0) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', input window_length should be >= 0, but got " << *input;

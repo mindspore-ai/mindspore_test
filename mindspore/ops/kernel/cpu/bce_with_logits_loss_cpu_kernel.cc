@@ -33,6 +33,10 @@ using KernelRunFunc = BCEWithLogitsLossCpuKernelMod::KernelRunFunc;
 }  // namespace
 bool BCEWithLogitsLossCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
+  constexpr size_t input_num = 5;
+  constexpr size_t output_num = 1;
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), input_num, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), output_num, kernel_name_);
   if (inputs.empty() || outputs.empty()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', it got empty inputs or outputs, which is invalid.";
     return false;
@@ -104,10 +108,15 @@ void BCEWithLogitsLossCpuKernelMod::RunTask(int task_id) {
   auto per_weight = reinterpret_cast<float *>(weight_);
   auto per_post_weight = reinterpret_cast<float *>(post_weight_);
   auto *per_output = reinterpret_cast<float *>(output_);
-
+  MS_EXCEPTION_IF_NULL(per_logits);
+  MS_EXCEPTION_IF_NULL(per_label);
+  MS_EXCEPTION_IF_NULL(per_weight);
+  MS_EXCEPTION_IF_NULL(per_post_weight);
+  MS_EXCEPTION_IF_NULL(per_output);
   float *per_reduction_sum = nullptr;
   if (is_reduction_) {
     per_reduction_sum = reinterpret_cast<float *>(reduction_output_) + task_id;
+    MS_EXCEPTION_IF_NULL(per_reduction_sum);
   }
   if (!is_broadcast_) {
     per_logits += start;
@@ -155,6 +164,7 @@ int BCERun(void *c_data, int task_id, float, float) {
     return -1;
   }
   auto bce_kernel = reinterpret_cast<BCEWithLogitsLossCpuKernelMod *>(c_data);
+  MS_EXCEPTION_IF_NULL(bce_kernel);
   bce_kernel->RunTask(task_id);
   return 0;
 }
@@ -169,7 +179,7 @@ bool BCEWithLogitsLossCpuKernelMod::LaunchKernel(const std::vector<KernelTensor 
   MS_EXCEPTION_IF_NULL(weight_type);
   if (weight_type->isa<TypeNone>()) {
     // weight_ = ones_like(logits)
-    auto output_addr = reinterpret_cast<float *>(workspace[weight_workspace_index_]->device_ptr());
+    auto output_addr = GetDeviceAddress<float>(workspace, weight_workspace_index_);
     size_t output_size = workspace[weight_workspace_index_]->size() / sizeof(float);
     auto task = [this, output_addr](size_t start, size_t end) {
       for (size_t i = start; i < end; i++) {
@@ -186,7 +196,7 @@ bool BCEWithLogitsLossCpuKernelMod::LaunchKernel(const std::vector<KernelTensor 
   MS_EXCEPTION_IF_NULL(pos_weight_type);
   if (pos_weight_type->isa<TypeNone>()) {
     // post_weight_ = ones_like(logits)
-    auto output_addr = reinterpret_cast<float *>(workspace[pos_weight_workspace_index_]->device_ptr());
+    auto output_addr = GetDeviceAddress<float>(workspace, pos_weight_workspace_index_);
     size_t output_size = workspace[pos_weight_workspace_index_]->size() / sizeof(float);
     auto task = [this, output_addr](size_t start, size_t end) {
       for (size_t i = start; i < end; i++) {
@@ -220,8 +230,10 @@ bool BCEWithLogitsLossCpuKernelMod::LaunchKernel(const std::vector<KernelTensor 
   // Do Small Reduction.
   if (is_reduction_) {
     auto output = reinterpret_cast<float *>(output_);
+    MS_EXCEPTION_IF_NULL(output);
     output[0] = 0.0f;
     auto reduction_output = reinterpret_cast<float *>(reduction_output_);
+    MS_EXCEPTION_IF_NULL(reduction_output);
     for (size_t i = 0; i < thread_num_; ++i) {
       output[0] += reduction_output[i];
     }

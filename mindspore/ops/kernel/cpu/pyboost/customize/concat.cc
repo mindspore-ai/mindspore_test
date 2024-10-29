@@ -29,7 +29,6 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 void ConcatCpuCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &tensors, const Int64ImmPtr &axis) {
-  MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, tensors, axis);
   std::vector<tensor::BaseTensorPtr> tensors_vector = ConvertValueTupleToVector<tensor::BaseTensorPtr>(tensors);
 

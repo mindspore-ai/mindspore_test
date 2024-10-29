@@ -38,6 +38,8 @@ constexpr size_t kListDiffOutputNum = 2;
 }  // namespace
 
 bool ListDiffCPUKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kListDiffInputNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kListDiffOutputNum, kernel_name_);
   TypeId x_type = inputs.at(kIndex0)->dtype_id();
   TypeId y_type = inputs.at(kIndex1)->dtype_id();
   out_type_ = outputs.at(kIndex0)->dtype_id();
@@ -120,8 +122,6 @@ bool ListDiffCPUKernelMod::LaunchKernel(const std::vector<KernelTensor *> &input
 bool ListDiffCPUKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &workspace,
                                   const std::vector<KernelTensor *> &outputs) {
-  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kListDiffInputNum, kernel_name_);
-  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kListDiffOutputNum, kernel_name_);
   bool result = false;
   switch (out_type_) {
     LIST_DIFF_COMPUTE_CASE(kNumberTypeInt8, int8_t)

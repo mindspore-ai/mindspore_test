@@ -78,12 +78,12 @@ template <typename T>
 
 void SparseMatrixSoftmaxCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                                    const std::vector<kernel::KernelTensor *> &) {
-  auto *input_logits_values = reinterpret_cast<T *>(inputs[logits_values]->device_ptr());
-  auto *input_logits_dense_shape = reinterpret_cast<int *>(inputs[logits_dense_shape]->device_ptr());
-  auto *input_logits_col_indices = reinterpret_cast<int *>(inputs[logits_col_indices]->device_ptr());
+  auto *input_logits_values = GetDeviceAddress<T>(inputs, logits_values);
+  auto *input_logits_dense_shape = GetDeviceAddress<int>(inputs, logits_dense_shape);
+  auto *input_logits_col_indices = GetDeviceAddress<int>(inputs, logits_col_indices);
   T total = 0;
-  T MAX = input_logits_values[0];
-  int row_index = input_logits_dense_shape[0];
+  T MAX = input_logits_values[kIndex0];
+  int row_index = input_logits_dense_shape[kIndex0];
   int start = 0;
   for (int i = 1; i <= row_index; i++) {
     int single_index = (input_logits_col_indices[i] - input_logits_col_indices[i - 1]);

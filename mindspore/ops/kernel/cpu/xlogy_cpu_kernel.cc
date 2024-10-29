@@ -43,6 +43,9 @@ void XlogySameShapeTask(float16 *x_addr, float16 *y_addr, float16 *output_addr, 
   Eigen::half *ex_addr = reinterpret_cast<Eigen::half *>(x_addr);
   Eigen::half *ey_addr = reinterpret_cast<Eigen::half *>(y_addr);
   Eigen::half *eo_addr = reinterpret_cast<Eigen::half *>(output_addr);
+  MS_EXCEPTION_IF_NULL(ex_addr);
+  MS_EXCEPTION_IF_NULL(ey_addr);
+  MS_EXCEPTION_IF_NULL(eo_addr);
   Eigen::Map<Eigen::Array<Eigen::half, -1, 1>> x_v(ex_addr + start, end - start);
   Eigen::Map<Eigen::Array<Eigen::half, -1, 1>> y_v(ey_addr + start, end - start);
   Eigen::Map<Eigen::Array<Eigen::half, -1, 1>> o_v(eo_addr + start, end - start);
@@ -58,10 +61,10 @@ bool XlogyCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &
   if (has_null_input_) {
     return true;
   }
-  auto x_addr = static_cast<T *>(inputs[0]->device_ptr());
-  auto y_addr = static_cast<T *>(inputs[1]->device_ptr());
-  auto output_addr = static_cast<T *>(outputs[0]->device_ptr());
-  size_t output_size = outputs[0]->size() / sizeof(T);
+  auto x_addr = static_cast<T *>(inputs[kIndex0]->device_ptr());
+  auto y_addr = static_cast<T *>(inputs[kIndex1]->device_ptr());
+  auto output_addr = static_cast<T *>(outputs[kIndex0]->device_ptr());
+  size_t output_size = outputs[kIndex0]->size() / sizeof(T);
   auto sameShapeTask = [&x_addr, &y_addr, &output_addr](size_t start, size_t end) {
     XlogySameShapeTask(x_addr, y_addr, output_addr, start, end);
   };
@@ -91,9 +94,9 @@ bool XlogyCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
 bool XlogyCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), INPUT_NUM, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), OUTPUT_NUM, kernel_name_);
-  auto x_type = inputs[0]->dtype_id();
-  auto y_type = inputs[1]->dtype_id();
-  auto out_type = outputs[0]->dtype_id();
+  auto x_type = inputs[kIndex0]->dtype_id();
+  auto y_type = inputs[kIndex1]->dtype_id();
+  auto out_type = outputs[kIndex0]->dtype_id();
   if (!(x_type == y_type && x_type == out_type)) {
     MS_LOG(ERROR) << "Xlogy need same input and output data type, but got X type:" << x_type << " Y type:" << y_type
                   << " out type:" << out_type;

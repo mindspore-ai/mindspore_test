@@ -60,10 +60,10 @@ bool MapUniformCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
                                           const std::vector<kernel::KernelTensor *> &,
                                           const std::vector<kernel::KernelTensor *> &outputs) {
   MS_LOG(INFO) << "Input size: " << batch_size_;
-  auto input_x = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto per_group_size = *reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto group_num = *reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto output_x = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input_x = GetDeviceAddress<T>(inputs, kIndex0);
+  auto per_group_size = *GetDeviceAddress<T>(inputs, kIndex1);
+  auto group_num = *GetDeviceAddress<T>(inputs, kIndex2);
+  auto output_x = GetDeviceAddress<T>(outputs, kIndex0);
   if (group_num <= 0) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the 'group_num' must be greater than 0, but got " << group_num;
   }

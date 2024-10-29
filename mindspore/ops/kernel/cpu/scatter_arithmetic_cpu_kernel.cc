@@ -70,13 +70,13 @@ int ScatterArithmeticCpuKernelMod::Resize(const std::vector<KernelTensor *> &inp
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of outputs must be 1, but got "
                         << output_size_list_.size();
     }
-    output_size_list_[0] = input_shape_null ? 0 : output_size_list_[0];
+    output_size_list_[kIndex0] = input_shape_null ? 0 : output_size_list_[kIndex0];
     return KRET_OK;
   }
 
   first_dim_size_ = 1;
   if (!input_shape.empty()) {
-    first_dim_size_ = LongToInt(input_shape[0]);
+    first_dim_size_ = LongToInt(input_shape[kIndex0]);
   }
   int64_t size_tmp = 1;
   for (size_t i = 1; i < input_shape.size(); i++) {
@@ -110,10 +110,10 @@ bool ScatterArithmeticCpuKernelMod::LaunchKernel(const std::vector<kernel::Kerne
   };
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kScatterArithmeticInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kScatterArithmeticOutputsNum, kernel_name_);
-  auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *indices = static_cast<S *>(inputs[1]->device_ptr());
-  auto *updates = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *indices = static_cast<S *>(inputs[kIndex1]->device_ptr());
+  auto *updates = GetDeviceAddress<T>(inputs, kIndex2);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
   auto func_iter = scatter_arithmetic_func_map.find(kernel_name_);
   if (func_iter == scatter_arithmetic_func_map.end()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', the current operator does not support this operation.";
@@ -166,7 +166,7 @@ bool ScatterArithmeticCpuKernelMod::LaunchKernel(const std::vector<kernel::Kerne
   // are different. Therefore, in order to adapt to the old runtime, the content of the input needs to be copied to
   // output. After removing the old runtime, the following copy logic code can be deleted.
   if (input != output) {
-    auto bufferSize = outputs[0]->size();
+    auto bufferSize = outputs[kIndex0]->size();
     auto ret = memcpy_s(output, bufferSize, input, input_size_ * sizeof(T));
     if (ret != EOK) {
       MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', memory copy failed. Error no: " << ret;

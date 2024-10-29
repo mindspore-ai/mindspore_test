@@ -26,6 +26,8 @@ constexpr size_t kOutputNum = 1;
 
 bool TraceGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
   values_type_ = inputs.at(kIndex0)->dtype_id();
   return true;
 }
@@ -47,8 +49,6 @@ int TraceGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 bool TraceGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
                                    const std::vector<kernel::KernelTensor *> &,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kInputNum, kernel_name_);
-  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kOutputNum, kernel_name_);
   switch (values_type_) {
     case kNumberTypeInt8:
       LaunchKernel<int8_t>(inputs, outputs);
@@ -93,11 +93,8 @@ template <typename T>
 void TraceGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   T *grad = GetDeviceAddress<T>(inputs, kIndex0);
-  MS_EXCEPTION_IF_NULL(grad);
   auto shape = GetDeviceAddress<int64_t>(inputs, kIndex1);
-  MS_EXCEPTION_IF_NULL(shape);
   T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
-  MS_EXCEPTION_IF_NULL(output_addr);
 
   if (memset_s(output_addr, outputs[0]->size(), 0, outputs[0]->size()) != EOK) {
     MS_LOG(EXCEPTION) << "Failed to init output memory.";
