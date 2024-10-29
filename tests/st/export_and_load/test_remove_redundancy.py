@@ -212,6 +212,27 @@ def test_remove_redundancy_1_1_dp(mode):
 @pytest.mark.platform_x86_ascend_training
 @pytest.mark.env_single
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_get_strategy_redundancy(mode):
+    '''
+    Feature: save strategy ckpt and test get_parameter_redundancy.
+    Description: Test get_parameter_redundancy.
+    Expectation: success.
+    '''
+    for i in range(8):
+        os.mkdir(f"device{i}_get_redundancy")
+    set_port()
+    ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
+                    "pytest -s remove_redundancy.py::test_remove_redundancy_strategy")
+    assert ret == 0
+    for i in range(8):
+        shutil.rmtree(f"device{i}_get_redundancy")
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.platform_x86_ascend_training
+@pytest.mark.env_single
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_algorithm(mode):
     """
     Feature: Verify the redundancy removal algorithm.

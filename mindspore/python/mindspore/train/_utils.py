@@ -310,8 +310,66 @@ def parse_strategy_ckpt(file_name):
 
         for ele in param.parallel_layouts.tensor_map[0].ListFields()[0][1]:
             tensor_map.append(ele)
-        layout_dict[param.param_name] = [dev_matrix, tensor_map]
+        layout_dict[param.param_name] = [dev_matrix, tensor_map, param.parallel_layouts.opt_weight_shard_step,
+                                         param.parallel_layouts.opt_weight_shard_size]
     return layout_dict
+
+
+def _get_strategy_opt_shard(param_redundancy_dict, parameter_layout_opt_shard):
+    """Strategy ckpt append opt shard."""
+    for key, value in parameter_layout_opt_shard.items():
+        if value[1] not in (-1, 0):
+            opt_para_num = value[1]
+            param_redundancy_ranks = param_redundancy_dict.get(key)
+            res = []
+            for param_ranks in param_redundancy_ranks:
+                if len(param_ranks) % opt_para_num == 0:
+                    for i in range(0, opt_para_num):
+                        res.append(param_ranks[i::opt_para_num])
+            param_redundancy_dict[key] = tuple(res)
+
+
+def _get_layout_opt_shard(layout_obj, param_redundancy_dict):
+    """Layout ckpt append opt shard."""
+    for key, value in layout_obj.items():
+        if value[5]:
+            world_groups = ("hccl_world_group", "nccl_world_group", "mccl_world_group")
+            if value[5] in world_groups:
+                opt_para_num = get_group_size()
+            elif "-" in value[5]:
+                opt_para_str = value[5].split("-")[0]
+                opt_para_num = int(opt_para_str)
+            else:
+                raise ValueError(f"For get_parameter_redundancy, the format of the parallel communication domain for "
+                                 f"the optimizer is incorrect.")
+            param_redundancy_ranks = param_redundancy_dict.get(key)
+            res = []
+            for param_ranks in param_redundancy_ranks:
+                if len(param_ranks) % opt_para_num == 0:
+                    for i in range(0, opt_para_num):
+                        res.append(param_ranks[i::opt_para_num])
+            param_redundancy_dict[key] = tuple(res)
+
+
+def _get_parameter_redundancy_without_opt_shard(parameter_layout, param_redundancy_dict, initial_rank):
+    """Get parameter redundancy without opt shard."""
+    for key, (slices, deploy_loc, *_) in parameter_layout.items():
+        redundancy_matrix = np.zeros(shape=slices + [len(slices)], dtype=np.int8)
+        for i in deploy_loc:
+            internal_slice = tuple(slice(None) for _ in range(i))
+            for j in range(slices[-i - 1]):
+                if i == -1:
+                    continue
+                else:
+                    redundancy_matrix[(..., j) + internal_slice + (i,)] = j
+        locate_list = redundancy_matrix.reshape((-1, len(slices))).tolist()
+        redundancy_dict = {}
+        for index, locate in enumerate(locate_list):
+            redundancy_dict.setdefault(tuple(locate), []).append(index + initial_rank)
+        redundancy_list = []
+        for _, indices in sorted(redundancy_dict.items()):
+            redundancy_list.append(tuple(indices))
+        param_redundancy_dict[key] = tuple(redundancy_list)
 
 
 def get_parameter_redundancy(layout_obj, initial_rank=0):
@@ -334,7 +392,12 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
          'param4': ((0, 4, 8, 12), (1, 5, 9, 13), (2, 6, 10, 14), (3, 7, 11, 15))}
     """
     if isinstance(layout_obj, str):
-        parameter_layout = parse_strategy_ckpt(layout_obj)
+        parameter_layout_total = parse_strategy_ckpt(layout_obj)
+        parameter_layout = {}
+        parameter_layout_opt_shard = {}
+        for key, value in parameter_layout_total.items():
+            parameter_layout[key] = value[0:2]
+            parameter_layout_opt_shard[key] = value[2:]
     elif isinstance(layout_obj, Cell):
         from mindspore.communication.management import get_process_group_ranks
         groups_ranks = (tuple(get_process_group_ranks()),)
@@ -346,37 +409,14 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
             parameter_layout[k] = v[:2]
 
     param_redundancy_dict = {}
-    for key, (slices, deploy_loc, *_) in parameter_layout.items():
-        redundancy_matrix = np.zeros(shape=slices + [len(slices)], dtype=np.int8)
-        for i in deploy_loc:
-            internal_slice = tuple(slice(None) for _ in range(i))
-            for j in range(slices[-i - 1]):
-                if i == -1:
-                    continue
-                else:
-                    redundancy_matrix[(..., j) + internal_slice + (i,)] = j
-        locate_list = redundancy_matrix.reshape((-1, len(slices))).tolist()
-        redundancy_dict = {}
-        for index, locate in enumerate(locate_list):
-            redundancy_dict.setdefault(tuple(locate), []).append(index + initial_rank)
-        redundancy_list = []
-        for _, indices in sorted(redundancy_dict.items()):
-            redundancy_list.append(tuple(indices))
-        param_redundancy_dict[key] = tuple(redundancy_list)
-    if isinstance(layout_obj, str):
-        return param_redundancy_dict
 
-    for key, value in layout_obj.items():
-        if value[5]:
-            world_groups = ("hccl_world_group", "nccl_world_group", "mccl_world_group")
-            opt_para_num = int(value[5][0]) if value[5] not in world_groups else get_group_size()
-            param_redundancy_ranks = param_redundancy_dict.get(key)
-            res = []
-            for param_ranks in param_redundancy_ranks:
-                if len(param_ranks) % opt_para_num == 0:
-                    for i in range(0, opt_para_num):
-                        res.append(param_ranks[i::opt_para_num])
-            param_redundancy_dict[key] = tuple(res)
+    _get_parameter_redundancy_without_opt_shard(parameter_layout, param_redundancy_dict, initial_rank)
+
+    if isinstance(layout_obj, str):
+        _get_strategy_opt_shard(param_redundancy_dict, parameter_layout_opt_shard)
+    else:
+        _get_layout_opt_shard(layout_obj, param_redundancy_dict)
+
     return param_redundancy_dict
 
 
