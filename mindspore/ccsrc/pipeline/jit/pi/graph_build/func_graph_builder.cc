@@ -326,7 +326,7 @@ AnfNodePtr FuncGraphBuilder::ReadLocalVariable(const AbstractWrapperPtr &abstrac
   return iter->second;
 }
 
-AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper) {
+AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper, bool only_find) {
   // Search the predecessors of the current builder for the local parameter with BFS.
   if (abstract_wrapper == nullptr || abstract_wrapper->abstract() == nullptr) {
     return nullptr;
@@ -350,6 +350,10 @@ AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract
         builder_queue.push(cur_pred_builder);
       }
     }
+  }
+  MS_LOG(DEBUG) << "can't find the AnfNode of by wrapper(" << abstract_wrapper.get() << ")";
+  if (only_find) {
+    return nullptr;
   }
   // Build ValueNode for constant abstract.
   // Need to handle tuple/list/dict with FuncGraphAbstractClosure scene later.

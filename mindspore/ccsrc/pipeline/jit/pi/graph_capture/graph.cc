@@ -20,6 +20,7 @@
 #include <string>
 #include <regex>
 #include <utility>
+#include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "pipeline/jit/pi/runtime.h"
 
 namespace mindspore {
@@ -31,7 +32,8 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
       f_globals_(py::cast<py::object>(globals)),
       conf_(conf),
       guard_(nullptr),
-      prune_branch_count_(0) {
+      prune_branch_count_(0),
+      func_graph_builder_(nullptr) {
   stop_trace_info_ = {-1, StopTraceReason::kNonStopTrace};
   if (!co) {
     frame_states_[0] = std::make_unique<FrameStates>();  // emplace empty frame
@@ -621,50 +623,31 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
   return true;
 }
 
-static std::string TraceInferFailed(ValueNode *node, int depth = 0) {
-  std::string prefix(IntToSize(depth) << 1, ' ');
-  std::stringstream s;
-  s << prefix << node << " ";
-  switch (node->GetType()) {
-    case AbstractNode::Call:
-    case AbstractNode::Value: {
-      s << "bci " << node->bci() << " " << Opcode(node->GetOpcode()).name() << " " << node->GetOparg();
-      if (Opcode(node->GetOpcode()).HasName()) {
-        s << " " << node->GetName();
-      }
-      break;
-    }
-    case AbstractNode::Param: {
-      s << "Parameter " << node->GetOparg();
-      break;
-    }
-    case AbstractNode::CellVar:
-    case AbstractNode::FreeVar: {
-      s << "Closure " << node->GetOparg();
-      break;
-    }
-    case AbstractNode::kUnbound: {
-      s << "(kUnboundLocal)";
-      break;
-    }
-    default: {
-      break;
-    }
+static void PrintValueNode(std::ostream *out, FuncGraphBuilder *fg, ValueNode *node, const std::string &prefix) {
+  auto &s = *out;
+  if (fg == nullptr) {
+    s << "<no func_graph>";
+    return;
   }
-  s << " object is ";
-  PyObject *op = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
-  if (op != nullptr) {
-    s << AObject::ToString(op);
-    return s.str();
+  auto anf_node = fg->GetNodeByWrapper(node->abstract_wrapper(), true);
+  s << prefix << node->ToString();
+  if (anf_node != nullptr) {
+    void *addr = anf_node.get();
+    bool is_any = (*mindspore::kValueAny == *anf_node->abstract()->mindspore::abstract::AbstractBase::BuildValue());
+    bool is_cnst = node->IsConstantValue();
+    auto abs = anf_node->abstract()->ToString();
+    std::replace(abs.begin(), abs.end(), '\n', ' ');
+    s << " AnfNode(" << addr << ") [" << anf_node->DebugString(1) << " {" << abs << "}] is_constant "
+      << (is_cnst == is_any ? " == " : " != ") << " is_any";
+  } else if (node->IsConstantValue()) {
+    s << " Is Constant";
+  } else {
+    s << " Not find AnfNode";
   }
-  s << "<NULL>:" << std::endl;
-  for (size_t i = 0; i < node->getInputs().size(); ++i) {
-    s << prefix << " " << TraceInferFailed(node->input(i), depth + 1) << std::endl;
-  }
-  return s.str();
+  s << std::endl;
 }
 
-static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
+static void PrintCallNode(std::ostream *os, FuncGraphBuilder *fg, CallNode *node, int depth) {
   std::string prefix(depth * kTwo, ' ');
   auto &s = *os;
   s << prefix << "{ inline stat " << GetInlineReasonDesc(node->GetInlineReason());
@@ -672,6 +655,7 @@ static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
     s << ", has extra operations to handle parameters:" << std::endl;
     for (const auto &ex : node->GetParams()) {
       s << prefix << "  " << ex->ToString() << std::endl;
+      PrintValueNode(&s, fg, ex, prefix);
     }
   }
   s << std::endl;
@@ -681,48 +665,94 @@ static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
   s << prefix << "}" << std::endl;
 }
 
+static void PrintGraphFrame(std::ostream *out, FuncGraphBuilder *fg, const FrameStates &f, const std::string &prefix) {
+  auto &s = *out;
+  s << "locals:" << std::endl;
+  for (const auto &node : f.GetLocals()) {
+    if (node != &ValueNode::kUnboundLocal) {
+      PrintValueNode(&s, fg, node, prefix);
+    }
+  }
+  s << "stacks:" << std::endl;
+  for (auto iter = f.GetStacks().rbegin(), end = f.GetStacks().rend(); iter != end; ++iter) {
+    PrintValueNode(&s, fg, *iter, prefix);
+  }
+  s << "cell free:" << std::endl;
+  for (const auto &node : f.GetClosures()) {
+    PrintValueNode(&s, fg, node, prefix);
+  }
+}
+
 std::string Graph::ToString(int depth) const {
   std::stringstream s;
   std::string prefix(depth << 1, ' ');
   std::string code_name = co_.ptr() != nullptr ? std::string(py::str(co_.ptr())) : "<no code>";
 
-  s << prefix << "*** Trace Nodes [" << code_name << "] ***\n";
+  s << prefix << "*** Trace Nodes [" << code_name << "] ***" << std::endl;
   if (depth == 0) {
-    s << prefix << "Frame:\n" << GetFrame(0).ToString();
+    PrintGraphFrame(&s, func_graph_builder().get(), GetFrame(0), prefix);
+    s << std::endl;
   }
 
-  s << prefix << "Graph " << this << " Nodes:\n";
+  s << prefix << "Graph " << this << " Nodes:" << std::endl;
   for (auto i : GetTracedNodes()) {
-    s << prefix << i->ToString() << "\n";
-    if (i->GetType() != AbstractNode::Call) {
-      continue;
+    PrintValueNode(&s, func_graph_builder().get(), i, prefix);
+    if (i->GetType() == AbstractNode::Call) {
+      PrintCallNode(&s, func_graph_builder().get(), static_cast<CallNode *>(i), depth);
     }
-    PrintCallNode(&s, static_cast<CallNode *>(i), depth);
   }
   if (GetRetVal()) {
-    s << prefix << "Return the Node " << GetRetVal() << "\n";
+    s << prefix << "Return the Node " << GetRetVal() << std::endl;
   }
-  s << prefix << GetStopTraceReasonDesc(GetStopTraceReason()) << "\n";
-  s << prefix << "break bci: " << GetStopTraceBci() << "\n\n";
+  s << prefix << GetStopTraceReasonDesc(GetStopTraceReason()) << std::endl;
+  s << prefix << "break bci: " << GetStopTraceBci();
+  if (GetStopTraceBci() != -1) {
+    const auto &instr = cfg_->instr_pool()[GetStopTraceBci()];
+    s << " " << instr->ToString() << " line " << instr->line() << " at " << PyUnicode_AsUTF8(GetCodeObj()->co_filename);
+  }
+  s << std::endl << std::endl;
 
   if (depth == 0) {
-    std::string break_info;
-    if (GetRetVal()) {
-      PyObject *op = GetRetVal()->GetVobj() ? GetRetVal()->GetVobj()->GetPyObject().ptr() : nullptr;
-      if (op == nullptr) {
-        break_info = TraceInferFailed(GetRetVal());
-      }
-    } else {
-      break_info = this->DumpBreakInfo();
-    }
-    if (!break_info.empty()) {
-      s << prefix << std::regex_replace(break_info, std::regex("\n"), "\n" + prefix) << "\n";
-    }
+    this->DumpBreakInfo(&s);
   }
   return s.str();
 }
 
-void DumpUnsupportedByteCodeInfo(std::stringstream &s, Opcode op, int arg) {
+static void TraceInferFailed(std::ostream *out, ValueNode *node, int depth = 0) {
+  auto &s = *out;
+  std::string prefix(IntToSize(depth) << 1, ' ');
+  s << prefix << node << " ";
+  switch (node->GetType()) {
+    case AbstractNode::Call:
+    case AbstractNode::Value:
+      s << "ValueNode " << node;
+      break;
+    case AbstractNode::Param:
+      s << "Parameter (" << node->GetOparg() << ")" << node;
+      break;
+    case AbstractNode::CellVar:
+    case AbstractNode::FreeVar:
+      s << "Closure (" << node->GetOparg() << ")" << node;
+      break;
+    case AbstractNode::kUnbound:
+      s << "(kUnboundLocal)";
+      break;
+    default:
+      break;
+  }
+  s << " object is ";
+  PyObject *op = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+  if (op != nullptr) {
+    s << AObject::ToString(op);
+    return;
+  }
+  s << "<NULL>:" << std::endl;
+  for (size_t i = 0; i < node->getInputs().size(); ++i) {
+    TraceInferFailed(out, node->input(i), depth + 1);
+  }
+}
+
+void DumpUnsupportedByteCodeInfo(std::ostream &s, Opcode op, int arg) {
   if (op == SETUP_WITH || op == SETUP_FINALLY) {
     s << op.name() << " " << arg << " is skipped in break_graph or a exception happened.\n";
   } else {
@@ -730,17 +760,20 @@ void DumpUnsupportedByteCodeInfo(std::stringstream &s, Opcode op, int arg) {
   }
 }
 
-std::string Graph::DumpBreakInfo() const {
-  if (GetStopTraceBci() == -1) {
-    return std::string();
+void Graph::DumpBreakInfo(std::ostream *out) const {
+  auto &s = *out;
+  if (GetRetVal()) {
+    TraceInferFailed(out, GetRetVal());
   }
-  std::stringstream s;
+  if (GetStopTraceBci() == -1) {
+    return;
+  }
   const auto &f = GetFrame(GetStopTraceBci());
   const auto &nodes = GetTracedNodes();
   const auto &instrs = cfg_->instr_pool();
   int break_bci = GetStopTraceBci();
 
-  s << "graph break at: " << break_bci << ":\n";
+  s << "graph break at: " << break_bci << " " << instrs[break_bci]->ToString() << std::endl;
   std::vector<ValueNode *> parameters;
   if (nodes.size() == 0 || nodes.back()->bci() < break_bci) {
     // break at unsupported bytecode
@@ -749,24 +782,16 @@ std::string Graph::DumpBreakInfo() const {
     DumpUnsupportedByteCodeInfo(s, op, arg);
     if (op == POP_JUMP_IF_FALSE || op == POP_JUMP_IF_TRUE || op == JUMP_IF_FALSE_OR_POP || op == JUMP_IF_TRUE_OR_POP ||
         op == FOR_ITER || op == UNPACK_SEQUENCE || op == UNPACK_EX) {
-      parameters.push_back(f.Peek(0));
+      arg = 0;
     } else if (op == CALL_FUNCTION_EX) {
       arg = (arg & 0x01) + 1;
     } else if (op == CALL_FUNCTION_KW) {
       arg++;
     } else {
-      return s.str();
+      return;
     }
-    if (op.IsCall()) {
-      for (int i = arg; i >= 0; --i) {
-        parameters.push_back(f.Peek(i));
-        AObject *v = f.Peek(i)->GetVobj();
-        // just print the first infer failed value
-        if (v == nullptr || v->GetPyObject().ptr() == nullptr) {
-          parameters = {f.Peek(i)};
-          break;
-        }
-      }
+    for (int i = arg; i >= 0; --i) {
+      parameters.push_back(f.Peek(i));
     }
   } else {
     auto iter = std::find_if(nodes.begin(), nodes.end(), [break_bci](ValueNode *n) { return n->bci() == break_bci; });
@@ -775,9 +800,8 @@ std::string Graph::DumpBreakInfo() const {
   }
   // print traced value
   for (auto node : parameters) {
-    s << TraceInferFailed(node) << "\n";
+    TraceInferFailed(out, node);
   }
-  return s.str();
 }
 
 std::string FrameStates::ToString() const {
