@@ -28,7 +28,7 @@ from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, L
 # 2
 
 # 3
-
+from mindspore.nn.layer.basic import Identity
 # 4
 
 # 5
@@ -529,7 +529,7 @@ __all__ = [
     # 2
 
     # 3
-
+    'Identity',
     # 4
 
     # 5

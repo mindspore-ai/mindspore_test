@@ -579,11 +579,15 @@ class Identity(Cell):
     r"""
     A placeholder identity operator that returns the same as input.
 
+    Args:
+        args (Any): Any argument.
+        kwargs (Any): Any keyword argument.
+
     Inputs:
-        - **x** (Any) - The input of Identity.
+        - **input** (Any) - The input of Identity.
 
     Outputs:
-        The same as `x`.
+        The same as `input`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -592,19 +596,19 @@ class Identity(Cell):
         >>> import mindspore
         >>> from mindspore import Tensor, nn
         >>> import numpy as np
-        >>> x = Tensor(np.array([1, 2, 3, 4]), mindspore.int64)
+        >>> input = Tensor(np.array([1, 2, 3, 4]), mindspore.int64)
         >>> net = nn.Identity()
-        >>> output = net(x)
+        >>> output = net(input)
         >>> print(output)
         [1 2 3 4]
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         """Initialize Identity."""
         super(Identity, self).__init__()
 
-    def construct(self, x):
-        return x
+    def construct(self, input):
+        return input
 
 
 class Dense(Cell):
