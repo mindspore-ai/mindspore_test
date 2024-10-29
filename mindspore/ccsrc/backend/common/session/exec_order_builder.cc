@@ -18,6 +18,7 @@
 #include <string>
 #include <functional>
 #include "mindspore/ops/op_def/ascend_op_name.h"
+#include "ir/core_ops_primitive.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 
@@ -60,6 +61,7 @@ void ExecOrderBuilder::Build(FuncGraph *graph, std::vector<CNodePtr> *execution_
   execution_order_ = execution_order;
   node_output_edges_ = node_user;
   node_output_edges_->clear();
+  eager_visited_nodes_.clear();
   ClearLinkInfo();
   BuildLinkInfo();
   FindIndependentNodes();
@@ -256,13 +258,49 @@ void ExecOrderBuilder::FindIndependentNodes() {
   }
 }
 
-void ExecOrderBuilder::EnqueueReadyNodes(const AnfNodePtr &node, std::deque<AnfNodePtr> *visit_queue, bool comm_first) {
-  MS_EXCEPTION_IF_NULL(visit_queue);
+void ExecOrderBuilder::EnqueEagerDepend(const AnfNodePtr &node, std::deque<AnfNodePtr> *visit_queue) {
   MS_EXCEPTION_IF_NULL(visit_queue);
   MS_EXCEPTION_IF_NULL(node_output_edges_);
   auto it = node_output_edges_->find(node);
   if (it == node_output_edges_->end()) {
     return;
+  }
+
+  for (const auto &output_node : it->second) {
+    MS_EXCEPTION_IF_NULL(output_node);
+    if (!IsPrimitiveCNode(output_node, prim::kPrimDepend)) {
+      continue;
+    }
+    auto depend_node = output_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(depend_node);
+    if (!depend_node->HasAttr(kAttrEagerDepend)) {
+      continue;
+    }
+
+    auto input_num_iter = node_input_num_.find(output_node);
+    if (input_num_iter == node_input_num_.end() || input_num_iter->second == 0) {
+      continue;
+    }
+    input_num_iter->second--;
+    (void)eager_visited_nodes_.emplace(node);
+    if (input_num_iter->second > 0) {
+      continue;
+    }
+    visit_queue->push_back(output_node);
+  }
+}
+
+void ExecOrderBuilder::EnqueueReadyNodes(const AnfNodePtr &node, std::deque<AnfNodePtr> *visit_queue, bool comm_first) {
+  MS_EXCEPTION_IF_NULL(visit_queue);
+  MS_EXCEPTION_IF_NULL(node_output_edges_);
+  auto it = node_output_edges_->find(node);
+  if (it == node_output_edges_->end()) {
+    return;
+  }
+
+  bool eager_visited = false;
+  if (!eager_visited_nodes_.empty() && eager_visited_nodes_.find(node) != eager_visited_nodes_.end()) {
+    eager_visited = true;
   }
 
   std::vector<AnfNodePtr> active_nodes;
@@ -272,6 +310,15 @@ void ExecOrderBuilder::EnqueueReadyNodes(const AnfNodePtr &node, std::deque<AnfN
     if (input_num_iter == node_input_num_.end() || input_num_iter->second == 0) {
       continue;
     }
+
+    if (eager_visited && IsPrimitiveCNode(output_node, prim::kPrimDepend)) {
+      auto depend_node = output_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(depend_node);
+      if (depend_node->HasAttr(kAttrEagerDepend)) {
+        continue;
+      }
+    }
+
     input_num_iter->second--;
     if (input_num_iter->second > 0) {
       continue;
@@ -371,8 +418,10 @@ void ExecOrderBuilder::BuildByBFS() {
           EnqueueReadyNodes(pending_node, &high_priority_to_visit, false);
         }
         pending_node = node;
+        EnqueEagerDepend(node, &high_priority_to_visit);
       } else if (is_comm) {
         delay_visit.push_back(node);
+        EnqueEagerDepend(node, &high_priority_to_visit);
       } else {
         EnqueueReadyNodes(node, handle_queue_ptr);
       }
