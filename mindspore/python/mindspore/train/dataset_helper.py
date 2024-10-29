@@ -15,6 +15,7 @@
 """Dataset help for minddata dataset"""
 from __future__ import absolute_import
 
+import os
 import math
 import copy
 
@@ -264,7 +265,14 @@ def connect_network_with_dataset(network, dataset_helper):
     queue_name = dataset.__transfer_dataset__.queue_name
     # In pipeline parallel, some stages have no GetNext, should not get in.
     use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
-    if _dynamic_sink_scenario(dataset, dataset_iter, is_dynamic) and not use_pipeline_parallel:
+
+    # temp env to disable dynamic feature of sink size 1
+    dynamic_sink1_env = os.getenv("MS_DEV_DYNAMIC_SINK1", None)
+    dynamic_sink1 = True
+    if dynamic_sink1_env and dynamic_sink1_env.strip() in ['False', 'false']:
+        dynamic_sink1 = False
+
+    if _dynamic_sink_scenario(dataset, dataset_iter, is_dynamic) and not use_pipeline_parallel and dynamic_sink1:
         dataset_types, dataset_shapes = dataset_helper.get_data_info()
         # Need to do full_batch for shapes which also do in the _DatasetIterMSLoopSink
         if _need_to_full():
