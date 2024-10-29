@@ -145,6 +145,7 @@ Status MindRecordOp::WorkerEntry(int32_t worker_id) {
   TaskManager::FindMe()->Post();
   std::unique_ptr<IOBlock> io_block;
 
+  double row_timer_start = GetMilliTimeStamp();
   RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerGet"));
   RETURN_IF_NOT_OK(worker_in_queues_[worker_id]->PopFront(&io_block));
   RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", io_block->FlagName()}}));
@@ -192,8 +193,10 @@ Status MindRecordOp::WorkerEntry(int32_t worker_id) {
       RETURN_IF_NOT_OK(GetRowFromReader(&fetched_row, row_id, worker_id));
       RETURN_IF_NOT_OK(
         CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", {{"TensorRowFlags", io_block->FlagName()}}));
+      fetched_row.TimerRecord(NameWithID(), RowTimer::kWorkerTime, {GetMilliTimeStamp() - row_timer_start});
       RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(std::move(fetched_row)));
     }
+    row_timer_start = GetMilliTimeStamp();
     RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerGet"));
     RETURN_IF_NOT_OK(worker_in_queues_[worker_id]->PopFront(&io_block));
     RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", io_block->FlagName()}}));
@@ -207,7 +210,9 @@ Status MindRecordOp::GetRowFromReader(TensorRow *fetched_row, uint64_t row_id, i
   *fetched_row = {};
   auto task_content_ptr = std::make_shared<mindrecord::TASK_CONTENT>(
     mindrecord::TaskType::kCommonTask, std::vector<std::tuple<std::vector<uint8_t>, mindrecord::json>>());
+  double row_timer_start = GetMilliTimeStamp();
   RETURN_IF_NOT_OK(shard_reader_->GetNextById(row_id, worker_id, &task_content_ptr));
+  fetched_row->TimerRecord(NameWithID(), RowTimer::kIOTime, {GetMilliTimeStamp() - row_timer_start});
   auto task_type = task_content_ptr->first;
   auto tupled_buffer = task_content_ptr->second;
   if (task_type == mindrecord::TaskType::kPaddedTask) {

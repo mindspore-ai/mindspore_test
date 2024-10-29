@@ -283,9 +283,11 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
   std::vector<std::shared_ptr<MapJob>> job_list;
 
   RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerGet"));
+  double row_timer_start = 0;
   // Fetch next data row and map job list
   RETURN_IF_NOT_OK(FetchNextWork(worker_id, &in_row, &job_list));
   RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", in_row.FlagName()}}));
+  row_timer_start = GetMilliTimeStamp();
   RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerProcess"));
 
   // Now that init work is done, drop into the main fetching loop.
@@ -313,6 +315,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
       RETURN_IF_NOT_OK(WorkerCompute(in_row, &out_row, job_list));
 #endif
       RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", {{"TensorRowFlags", in_row.FlagName()}}));
+      out_row.TimerRecord(NameWithID(), RowTimer::kWorkerTime, {GetMilliTimeStamp() - row_timer_start}, &in_row);
       // Push the row onto the connector for next operator to consume.
       RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(std::move(out_row)));
     }
@@ -320,6 +323,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
     // Fetch next data row and map job list
     RETURN_IF_NOT_OK(FetchNextWork(worker_id, &in_row, &job_list));
     RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", in_row.FlagName()}}));
+    row_timer_start = GetMilliTimeStamp();
     RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerProcess"));
   }
 
