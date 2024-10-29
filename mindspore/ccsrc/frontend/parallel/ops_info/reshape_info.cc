@@ -922,7 +922,7 @@ int64_t ReshapeInfo::GetSWCIndexByInputLayoutWithMiniComm(const TensorLayout &in
 
 bool ReshapeInfo::CheckStrategyConsistencyByOutputLayout(int64_t swc_index, const TensorLayout &output_layout) const {
   if (swc_index == -1 || swc_index >= SizeToLong(strategy_cost_.size())) {
-    MS_LOG(ERROR) << "The strategy_index: " << swc_index << " is out of range.";
+    MS_LOG(WARNING) << "The strategy_index: " << swc_index << " is out of range.";
     return false;
   }
   const auto &swc = strategy_cost_[LongToSize(swc_index)];
@@ -937,7 +937,7 @@ bool ReshapeInfo::CheckStrategyConsistencyByOutputLayout(int64_t swc_index, cons
 
 bool ReshapeInfo::CheckStrategyConsistencyByInputLayout(int64_t swc_index, const TensorLayout &input_layout) const {
   if (swc_index == -1 || swc_index >= SizeToLong(strategy_cost_.size())) {
-    MS_LOG(ERROR) << "The strategy_index: " << swc_index << " is out of range.";
+    MS_LOG(WARNING) << "The strategy_index: " << swc_index << " is out of range.";
     return false;
   }
   const auto &swc = strategy_cost_[LongToSize(swc_index)];
