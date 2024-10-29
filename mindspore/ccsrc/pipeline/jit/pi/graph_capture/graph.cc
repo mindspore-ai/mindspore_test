@@ -74,9 +74,10 @@ bool Graph::PrepareParameter(ValueNode *node) {
     }
     while (node->GetType() == ValueNode::Call) {
       auto g = static_cast<CallNode *>(node)->GetSubGraph();
-      if (g != nullptr && g->GetRetVal() != nullptr) {
-        node = g->GetRetVal();
+      if (g == nullptr || g->GetRetVal() == nullptr) {
+        return false;
       }
+      node = g->GetRetVal();
     }
     if (opcode != LOAD_ATTR && opcode != BINARY_SUBSCR) {
       return false;

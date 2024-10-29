@@ -4226,14 +4226,12 @@ void MindGraphBuilder::FGAddTopInputs() {
     if (FGBuilder()->IsParameterSequence(cur_object)) {
       MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
       graph_->GuardValueNode(cur, GuardLevel::GDeduce);
-      cur->SetOpcode(LOAD_CONST);
       return;
     }
     auto ret = FGBuilder()->AddTopGraphArgInput(cur_object);
     if (ret == nullptr) {
       MS_LOG(INFO) << "erased arguments";
       graph_->GuardValueNode(cur, GuardLevel::GDeduce);
-      cur->SetOpcode(LOAD_CONST);
       return;
     }
     cur->set_abstract_wrapper(ret);
@@ -5156,6 +5154,32 @@ AbstractWrapperPtr MindGraphBuilder::HandleGetShapeOfDynamicLengthTensor(const A
   return FGBuilder()->AddNode(prim::kPrimShape, input_abstract_wrapper);
 }
 
+static bool IsMutableAttribute(ValueNode *node) {
+  const auto &attr_names = node->GetGraph()->Config().attr_as_param_list();
+  if (attr_names.find(node->GetName()) == attr_names.end()) {
+    return false;
+  }
+  auto op = node->GetVobj()->GetPyObject().ptr();
+  if (op == nullptr) {
+    return false;
+  }
+  // for mutable tuple and list, PyList_Check, PyTuple_Check
+  // ... not implement
+
+  // now, only support these scalar types
+  if (PyLong_Check(op) || PyFloat_Check(op) || PyBool_Check(op)) {
+    return true;
+  }
+  // now, for Tensor, mindspore.common.Parameter and mindspore._c_expression.Tensor as func input is unsupported
+  if (!IsPybindType<tensor::Tensor, false>(Py_TYPE(op)) && py::isinstance<tensor::Tensor>(op)) {
+    constexpr char name[] = "Parameter";
+    constexpr auto len = sizeof(name) - 1;
+    std::string type_name = Py_TYPE(op)->tp_name;
+    return type_name.size() < len ? true : (0 != type_name.compare(type_name.size() - len, len, name));
+  }
+  return false;
+}
+
 ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
   if (IsNamedtupleGetElem(target_node, instr.name())) {
     return HandleNamedtupleGetElem(instr, target_node);
@@ -5173,19 +5197,19 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
     }
   }
 
-  const auto &attr_names = graph_->Config().attr_as_param_list();
-  const auto &cur_name = instr.name();
-  if (std::any_of(attr_names.begin(), attr_names.end(), [&cur_name](const auto &name) { return cur_name == name; })) {
+  if (IsMutableAttribute(attr_node) && root()->GetGraph()->PrepareParameter(attr_node)) {
+    const auto &cur_name = instr.name();
     MS_LOG(INFO) << "Try adding attribute " << cur_name << " as graph input";
     auto abstract_wrapper = FGBuilder()->AddAttributeInput(attr_obj);
     if (abstract_wrapper != nullptr) {
       graph_attr_node = attr_node;
       graph_attr_node->set_abstract_wrapper(abstract_wrapper);
-      root()->GetGraph()->PrepareParameter(attr_node);
+      // tensor must be guard dtype
+      bool is_tensor = attr_node->GetVobj()->GetType() == AObject::kTypeTensor;
+      graph_->GuardValueNode(attr_node, is_tensor ? GuardLevel::GDeduce : GuardLevel::GType);
       return graph_attr_node;
-    } else {
-      MS_LOG(ERROR) << "Failed to add attribute " << cur_name << " as input failed.";
     }
+    MS_LOG(INTERNAL_EXCEPTION) << "Failed to add scalar or Tensor " << cur_name << " as input.";
   }
 
   // If the attr_obj can convert to anf node directly, return the origin attr node.
