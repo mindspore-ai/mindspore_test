@@ -168,6 +168,7 @@ void ClusterContext::InitClusterConfig() {
 }
 
 bool ClusterContext::BuildCluster() {
+  PROF_START(BuildCluster);
   // Get node_id from environment configuration or uuid generator.
   node_id_ = common::GetEnv(kNodeId);
   if (node_id_.length() == 0) {
@@ -192,9 +193,12 @@ bool ClusterContext::BuildCluster() {
   };
   size_t retry_num = node_base_->topo_timeout() / topology::kExecuteInterval;
   EXECUTE_WITH_RETRY(check_func, retry_num, topology::kExecuteInterval, "Topology build timed out.");
-
+  PROF_END(BuildCluster);
   MS_LOG(WARNING) << "Cluster is successfully initialized.";
+
+  PROF_START(PostBuildCluster);
   PostProcess();
+  PROF_END(PostBuildCluster);
   return true;
 }
 

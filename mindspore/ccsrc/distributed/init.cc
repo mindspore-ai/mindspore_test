@@ -32,6 +32,7 @@ using mindspore::debug::tft::TFTWaitSem;
 
 bool Initialize() {
   // If this process participates in the cluster building, we need to initialize cluster context.
+  PROF_START(distributed_cluster_init);
   if (common::UseDynamicCluster()) {
     if (!InitializeCluster()) {
       MS_LOG(EXCEPTION)
@@ -42,7 +43,9 @@ bool Initialize() {
         << kSchedWorkerAddrNotConsistentError;
     }
   }
+  PROF_END(distributed_cluster_init);
 
+  PROF_START(distributed_collective_init);
   // Initialize the collective manager regardless of whether the cluster is initialized or not.
   if (!InitializeCollective()) {
     MS_LOG(EXCEPTION)
@@ -50,6 +53,7 @@ bool Initialize() {
          "spawned. You can run command: 'grep -rn -E 'ERROR|CRITICAL' -C 10' in your log directory to filter out error "
          "info.";
   }
+  PROF_END(distributed_collective_init);
 
   // If this is a scheduler node, it does not need to execute other codes like graph compiling and running. We should
   // finalize it immediately.
