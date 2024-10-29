@@ -82,6 +82,9 @@ class ControlActor : public MemoryAwareActor {
   void set_start_time(double start_time) { start_time_ = start_time; }
   const AnfNodePtr &node() const { return node_; }
 
+  // Reset state for UCE.
+  void ResetState() override;
+
  protected:
   friend class ControlNodeScheduler;
   friend class SchedulerHelper;

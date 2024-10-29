@@ -1218,8 +1218,18 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
-      if (!UCEException::GetInstance().get_has_throw_error()) {
-        res_manager_->ResetStreamAndCtx();
+      if (UCEException::GetInstance().enable_uce()) {
+        auto rts_code = aclrt_get_last_error(thread_level);
+        MS_LOG(ERROR) << "Launch kernel failed, get last error is " << rts_code;
+        if (rts_code == ACL_ERROR_RT_DEVICE_MEM_ERROR && !UCEException::GetInstance().get_has_throw_error()) {
+          UCEException::GetInstance().set_uce_flag(true);
+        }
+        if (rts_code == ACL_ERROR_RT_DEVICE_TASK_ABORT) {
+          UCEException::GetInstance().set_force_stop_flag(true);
+        }
+        if (!UCEException::GetInstance().get_has_throw_error()) {
+          res_manager_->ResetStreamAndCtx();
+        }
       }
       return false;
     }

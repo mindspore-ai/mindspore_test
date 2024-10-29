@@ -377,6 +377,11 @@ void KernelActor::RunWithMultiPipeline(OpContext<DeviceTensor> *const context) {
   // 2. Push run task to pipeline.
   // Note: dynamic value or static shape also need push task into infer actor to make sure correct kernel execution
   // order.
+  if (IsRunningFailed(context)) {
+    MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_->fullname_with_scope();
+    return;
+  }
+
   Async(kernel_async_infer_aid_, &KernelAsyncInferActor::InferShape, context, this);
 
   // The computed depend kernel should wait output shape update after kernel launch.
@@ -1337,5 +1342,36 @@ void KernelActor::SetInputDeviceTensor(DeviceTensor *input_device_tensor, size_t
   input_kernel_tensors_for_infer_[input_index] = input_device_tensor->kernel_tensor();
 }
 
+void KernelActor::ResetState() {
+  MS_EXCEPTION_IF_NULL(kernel_);
+  MS_LOG(INFO) << "Kernel actor " << kernel_->fullname_with_scope() << " start to reset state.";
+  auto device_context = const_cast<DeviceContext *>(device_contexts_[0]);
+  MS_LOG(INFO) << "Free output_device_tensor, list size: " << output_device_tensors_.size();
+  for (auto device_tensor : output_device_tensors_) {
+    if ((device_tensor->ref_count() == SIZE_MAX) && (device_tensor->dynamic_ref_count() == INT32_MAX)) {
+      continue;
+    }
+    if (device_tensor != nullptr && device_tensor->GetPtr() != nullptr) {
+      auto held_by_nodes = device_tensor->held_by_nodes();
+      if (held_by_nodes.empty()) {
+        FreeMemoryByDeviceContext(device_tensor, device_context);
+      } else {
+        FreeMemoryByValueNode(held_by_nodes, device_tensor);
+      }
+    }
+  }
+  MS_LOG(INFO) << "Free workspace_device_tensor, list size: " << workspace_device_tensors_.size();
+  for (auto device_tensor : workspace_device_tensors_) {
+    if (device_tensor != nullptr && device_tensor->GetPtr() != nullptr) {
+      auto held_by_nodes = device_tensor->held_by_nodes();
+      if (held_by_nodes.empty()) {
+        FreeMemoryByDeviceContext(device_tensor, device_context);
+      } else {
+        FreeMemoryByValueNode(held_by_nodes, device_tensor);
+      }
+    }
+  }
+  MS_LOG(INFO) << "Kernel actor " << kernel_->fullname_with_scope() << " end to reset state.";
+}
 }  // namespace runtime
 }  // namespace mindspore

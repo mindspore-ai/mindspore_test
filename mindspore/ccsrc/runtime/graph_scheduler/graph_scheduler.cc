@@ -890,29 +890,89 @@ void CheckUceBeforeGraphRun(ActorSet *const actor_set) {
   }
 }
 
-void ProcessUceError(ActorSet *const actor_set) {
+void ClearControlActorDataForUce(ActorSet *const actor_set) {
+  MS_LOG(INFO) << "Start to clean control actors data.";
+  if (actor_set->control_actors_ != nullptr) {
+    for (auto &entrance_actor : actor_set->control_actors_->entrance_actors_) {
+      if (entrance_actor == nullptr) {
+        continue;
+      }
+      entrance_actor->ResetState();
+    }
+    for (auto &gather_actor : actor_set->control_actors_->gather_actors_) {
+      if (gather_actor == nullptr) {
+        continue;
+      }
+      gather_actor->ResetState();
+    }
+    for (auto &switch_actor : actor_set->control_actors_->switch_actors_) {
+      if (switch_actor == nullptr) {
+        continue;
+      }
+      switch_actor->ResetState();
+    }
+    for (auto &stack_actor : actor_set->control_actors_->stack_actors_) {
+      if (stack_actor == nullptr) {
+        continue;
+      }
+      stack_actor->ResetState();
+    }
+  }
+  MS_LOG(INFO) << "End to clean control actors data.";
+}
+
+void ClearKernelActorDataForUce(ActorSet *const actor_set) {
+  MS_LOG(INFO) << "Start to clean kernel actors data.";
+  for (auto &kernel_actor : actor_set->kernel_actors_) {
+    if (kernel_actor == nullptr) {
+      continue;
+    }
+    for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
+      MS_EXCEPTION_IF_NULL(output_device_tensor);
+      output_device_tensor->ResetRefCount();
+    }
+    kernel_actor->ResetState();
+  }
+  for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
+    if (super_kernel_actor == nullptr) {
+      continue;
+    }
+    for (auto &kernel_actor : super_kernel_actor->kernel_actors()) {
+      if (kernel_actor == nullptr) {
+        continue;
+      }
+      for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
+        MS_EXCEPTION_IF_NULL(output_device_tensor);
+        output_device_tensor->ResetRefCount();
+      }
+      kernel_actor->ResetState();
+    }
+  }
+  MS_LOG(INFO) << "End to clean kernel actors data.";
+}
+
+void GraphScheduler::ProcessUceError(ActorSet *const actor_set) {
   if (!UCEException::GetInstance().enable_uce()) {
     return;
   }
 
   if (UCEException::GetInstance().get_has_throw_error()) {
-    MS_LOG(WARNING) << "There is a UCE error or ForceStop error, reset the actor state.";
-    for (auto &kernel_actor : actor_set->kernel_actors_) {
-      for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
-        output_device_tensor->ResetRefCount();
-      }
+    if (UCEException::GetInstance().get_force_stop_flag()) {
+      MS_LOG(WARNING) << "There is a ForceStop error, reset the actor state.";
     }
-    for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
-      for (auto &kernel_actor : super_kernel_actor->kernel_actors()) {
-        for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
-          output_device_tensor->ResetRefCount();
-        }
-      }
+    if (UCEException::GetInstance().get_uce_flag()) {
+      MS_LOG(WARNING) << "There is a UCE error, reset the actor state.";
     }
+    MS_LOG(WARNING) << "Clear state start.";
+    ClearKernelActorDataForUce(actor_set);
+    ClearControlActorDataForUce(actor_set);
+
     actor_set->loop_count_actor_->ResetState();
     actor_set->output_actor_->ResetState();
     actor_set->is_execution_failed_ = false;
+    ClearActorData(actor_set);
     MsException::Instance().ResetException();
+    MS_LOG(WARNING) << "Clear state end.";
   }
 
   if (UCEException::GetInstance().get_uce_flag()) {
