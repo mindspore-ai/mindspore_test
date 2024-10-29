@@ -161,5 +161,18 @@ inline std::string FormatEnumToString(mindspore::Format format) {
   }
   return names[format];
 }
+
+inline Format FromStrToEnum(const std::string &format_str) {
+  if (format_str == "DefaultFormat") {
+    return mindspore::Format::DEFAULT_FORMAT;
+  }
+  const auto &names = GetFormatNames();
+  for (size_t i = 0; i < names.size(); ++i) {
+    if (names[i] == format_str) {
+      return static_cast<mindspore::Format>(i);
+    }
+  }
+  return mindspore::Format::DEFAULT_FORMAT;
+}
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_MINDAPI_BASE_FORMAT_H_
