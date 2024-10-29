@@ -65,41 +65,68 @@ void SetForSwitchInline(const NotNull<KernelGraphPtr> &kernel_graph, const CNode
                 << " for kernel graph:" << kernel_graph->ToString();
 }
 
-void AddStreamIdForCommunicationOp(const AnfNodePtr &node, bool is_pp_interleave) {
-  MS_EXCEPTION_IF_NULL(node);
+void AddStreamIdForSendRecv(const AnfNodePtr &node, bool is_pp_interleave) {
   static const auto enable_less_mem_vpp = common::GetEnv("ENABLE_LESS_MEM_VPP");
   if (!is_pp_interleave || enable_less_mem_vpp != "1") {
-    AnfAlgo::SetStreamId(kWorldGroupStreamIndex, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
-  } else {
-    auto cnode = node->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(cnode);
-    if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kSendOpName))) {
-      if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-        AnfAlgo::SetStreamId(kBackwardSendStreamIndex, node.get());
-        common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardSendStreamIndex), node);
-      } else {
-        AnfAlgo::SetStreamId(kForwardSendStreamIndex, node.get());
-        common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardSendStreamIndex), node);
-      }
-    } else if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kReceiveOpName))) {
-      if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-        AnfAlgo::SetStreamId(kBackwardReceiveStreamIndex, node.get());
-        common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardReceiveStreamIndex), node);
-      } else {
-        AnfAlgo::SetStreamId(kForwardReceiveStreamIndex, node.get());
-        common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardReceiveStreamIndex), node);
-      }
-    } else {
-      AnfAlgo::SetStreamId(kWorldGroupStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
-    }
+    return;
   }
+  MS_EXCEPTION_IF_NULL(node);
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kSendOpName))) {
+    if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      AnfAlgo::SetStreamId(kBackwardSendStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardSendStreamIndex), node);
+    } else {
+      AnfAlgo::SetStreamId(kForwardSendStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardSendStreamIndex), node);
+    }
+    MS_LOG(INFO) << "Set stream id for vpp send op " << node->fullname_with_scope()
+                 << ", stream id: " << AnfAlgo::GetStreamId(node);
+  } else if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kReceiveOpName))) {
+    if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
+      AnfAlgo::SetStreamId(kBackwardReceiveStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardReceiveStreamIndex), node);
+    } else {
+      AnfAlgo::SetStreamId(kForwardReceiveStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardReceiveStreamIndex), node);
+    }
+    MS_LOG(INFO) << "Set stream id for vpp recv op " << node->fullname_with_scope()
+                 << ", stream id: " << AnfAlgo::GetStreamId(node);
+  }
+}
+
+void AddStreamIdForCommunicationOp(const AnfNodePtr &node, bool is_pp_interleave) {
+  MS_EXCEPTION_IF_NULL(node);
+  AnfAlgo::SetStreamId(kWorldGroupStreamIndex, node.get());
+  common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kWorldGroupStreamIndex), node);
+  AddStreamIdForSendRecv(node, is_pp_interleave);
+}
+
+void AddStreamIdByGroup(const AnfNodePtr &node, bool is_pp_interleave, DeviceResManager *device_res_manager) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    MS_LOG(EXCEPTION) << "Node is not a cnode: " << node->DebugString();
+  }
+  auto cnode = node->cast<CNodePtr>();
+  if (!common::AnfAlgo::HasNodeAttr(kAttrGroup, cnode)) {
+    AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+  } else {
+    auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+    size_t comm_stream_id = device_res_manager->GetCommunicationStreamIDByGroup(group_name);
+    AnfAlgo::SetStreamId(comm_stream_id, node.get());
+    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(comm_stream_id), node);
+    MS_LOG(INFO) << "Set stream id by group " << comm_stream_id << " for node " << node->fullname_with_scope()
+                 << ", group: " << group_name;
+  }
+  AddStreamIdForSendRecv(node, is_pp_interleave);
 }
 }  // namespace
 
 void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
-                                   const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
+                                   const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events,
+                                   DeviceResManager *device_res_manager) {
   auto kernels = kernel_graph->execution_order();
   if (kernels.empty()) {
     return;
@@ -132,11 +159,15 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     auto parallel_context = parallel::ParallelContext::GetInstance();
     MS_EXCEPTION_IF_NULL(parallel_context);
     auto is_pp_interleave = parallel_context->pipeline_interleave();
-    if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
-      AddStreamIdForCommunicationOp(node, is_pp_interleave);
+    if (common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream) == "group") {
+      AddStreamIdByGroup(node, is_pp_interleave, device_res_manager);
     } else {
-      AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+      if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
+        AddStreamIdForCommunicationOp(node, is_pp_interleave);
+      } else {
+        AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
+        common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+      }
     }
     stream_ids.insert(AnfAlgo::GetStreamId(node));
   }

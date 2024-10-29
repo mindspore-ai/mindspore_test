@@ -35,6 +35,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/debug/common.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/utils/compile_cache_context.h"
 #ifdef ENABLE_DUMP_IR
 #include "debug/rdr/string_recorder.h"
 #endif
@@ -226,7 +227,7 @@ size_t Somas::GetCommunicationReservedSize() const { return 0; }
 void Somas::CommunicationTensorProcess(const std::vector<SomasTensorPtr> &tensors) const {}
 
 bool Somas::GetEnableCacheFlag(const session::KernelGraph &graph) const {
-  return graph.execution_order().size() >= kCachedResultThreshold;
+  return graph.execution_order().size() >= kCachedResultThreshold && CompileCacheEnable();
 }
 
 std::pair<bool, std::string> Somas::GetDebugConfig() const {
@@ -332,6 +333,7 @@ void Somas::SaveSomasResult(const session::KernelGraph &graph) {
 
   std::string filename = Common::GetCompilerCachePath() + "/somas_meta/somas_graph_" +
                          std::to_string(graph.graph_id()) + "_" + hash_id_ + ".json";
+  MS_LOG(INFO) << "Save Somas Cache file " << filename;
   (void)Common::SaveStringToFile(filename, somas_json.dump());
 }
 

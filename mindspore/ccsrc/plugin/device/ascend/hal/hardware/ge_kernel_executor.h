@@ -93,8 +93,8 @@ class GeKernelExecutor : public KernelExecutor {
 
  private:
   static void DoSomas(const FuncGraphPtr &graph);
-  static void DoStreamAssign(const KernelGraphPtr &kernel_graph,
-                             const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events);
+  void DoStreamAssign(const KernelGraphPtr &kernel_graph,
+                      const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) const;
   // launch
   bool MemoryCopyAsync(const CNodePtr &node, const vector<KernelTensor *> &inputs,
                        const vector<KernelTensor *> &outputs) const;
