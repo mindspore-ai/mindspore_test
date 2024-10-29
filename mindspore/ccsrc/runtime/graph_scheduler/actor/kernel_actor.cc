@@ -1173,7 +1173,7 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
       MS_LOG(DEBUG) << "Input kernel tensor device ptr is nullptr.";
       continue;
     }
-    (void)cross_stream_addresses_.emplace_back(input_kernel_tensor->stream_id(), input_kernel_tensor->device_ptr());
+    (void)cross_stream_addresses_.emplace_back(kDefaultStreamIndex, input_kernel_tensor->device_ptr());
     if (!is_multi_stream_safe_) {
       (void)cross_stream_kernel_tensors.emplace_back(input_kernel_tensor);
     }
@@ -1218,6 +1218,9 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
 void KernelActor::ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *const context) {
   auto stream_id = kernel_info_->stream_id();
   if (stream_id != kDefaultStreamIndex) {
+    for (const auto &workspace_kernel_tensor : workspace_kernel_tensors_) {
+      cross_stream_addresses_.emplace_back(kDefaultStreamIndex, workspace_kernel_tensor->device_ptr());
+    }
     for (const auto &input_kernel_tensor : input_kernel_tensors_) {
       if (input_kernel_tensor->stream_id() == stream_id) {
         cross_stream_addresses_.emplace_back(kDefaultStreamIndex, input_kernel_tensor->device_ptr());
