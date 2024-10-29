@@ -688,7 +688,9 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   CacheGraphOutputToActor(graph_compiler_info);
   UpdateDeviceAddressByRefInternalParameter(graph_compiler_info);
   start_time_1 = profiler::GetClockSyscnt();
+  PROF_START(GraphSchedulerLink);
   Link(actor_set.get(), graph_compiler_info);
+  PROF_END(GraphSchedulerLink);
 
   // Process continuous memory and set flag for data prepare actor.
   ProcessContinuousMemoryInfo(actor_set, graph_compiler_info);
@@ -1330,7 +1332,9 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
     }
 
     if (graph->is_graph_run_mode() || graph->is_any_type_input()) {
+      PROF_START(GraphSchedulerLinkSinkMode);
       LinkDataArrowInSinkMode(graph, graph_compiler_info, &auto_monad_actors);
+      PROF_END(GraphSchedulerLinkSinkMode);
     } else {
       // In the control flow, the communication nodes need to be guaranteed to be executed in order. The order
       // within the kernel graph group needs to add control arrows between the communication nodes, and the order
@@ -1338,8 +1342,10 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
       // grouped by group name. And this is not required in non-control flow, the default unified group name is used.
       std::vector<CNodePtr> communication_nodes;
       const auto &group_name = (parser->IsInited() ? parser->FetchGroupNameByKernelGraph(graph) : default_group_name);
+      PROF_START(GraphSchedulerLinkNoSinkMode);
       LinkDataArrowInNonSinkMode(graph, graph_compiler_info, &auto_monad_actors, &communication_nodes,
                                  is_include_rpc(graph_compiler_info));
+      PROF_END(GraphSchedulerLinkNoSinkMode);
       (void)group_name_to_communication_nodes[group_name].first.insert(
         group_name_to_communication_nodes[group_name].first.end(), communication_nodes.begin(),
         communication_nodes.end());

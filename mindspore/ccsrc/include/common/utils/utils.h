@@ -850,6 +850,7 @@ static inline double GetCurrentUSec() {
       std::cout << oss.str() << std::endl;                                                                     \
     }                                                                                                          \
     MS_LOG(INFO) << oss.str();                                                                                 \
+    MS_VLOG(VL_FLOW) << oss.str();                                                                             \
   } while (0)
 
 #define PROF_MULTI_DEFINE(stage)       \
