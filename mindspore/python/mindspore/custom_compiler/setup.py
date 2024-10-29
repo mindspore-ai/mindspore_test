@@ -274,7 +274,7 @@ class CustomOOC():
         else:
             with open('build.log', 'r') as file:
                 for line in file:
-                    logger.debug(line.strip())
+                    logger.error(line.strip())
             raise RuntimeError("Compile failed! Please see build.log in current directory for detail info.")
 
     def compile(self):
