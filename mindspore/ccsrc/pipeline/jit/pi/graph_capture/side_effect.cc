@@ -192,14 +192,9 @@ std::vector<ValueNode *> SideEffect::GetKeepAlive(const Entry &e) const {
   if (Opcode(opcode).IsCall() && type >= kBuiltinMethod) {
     alive[0] = GetSelfFromKnownMethod(node);  // replace function
   }
-  auto erase_iter = alive.begin();
-  for (auto iter = erase_iter; iter != alive.end(); ++iter) {
-    if (!IsNonLocalValue(*iter)) {
-      *erase_iter = GetSource(*iter);
-      ++erase_iter;
-    }
+  for (auto iter = alive.begin(); iter != alive.end(); ++iter) {
+    *iter = GetSource(*iter);
   }
-  alive.erase(erase_iter, alive.end());
   return alive;
 }
 
