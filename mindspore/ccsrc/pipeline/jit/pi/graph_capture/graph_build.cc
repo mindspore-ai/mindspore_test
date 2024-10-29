@@ -2535,7 +2535,20 @@ MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f), s
   fg_builder_->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
   co_name_ = name;
 
+  graph_->set_func_graph_builder(fg_builder_);
   this->FGAddTopInputs();
+}
+
+MindGraphBuilder::MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
+    : GraphBuilder(r, p, co, globals), side_effect_outputs_() {
+  std::vector<std::string> comments;
+  auto location = co ? std::make_shared<Location>(py::cast<std::string>(co->co_filename), co->co_firstlineno, 0,
+                                                  co->co_firstlineno, 0, "", std::move(comments))
+                     : std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::move(comments));
+  MS_EXCEPTION_IF_NULL(location);
+  TraceGuard trace_guard(location);
+  fg_builder_ = std::make_shared<FuncGraphBuilder>();
+  graph_->set_func_graph_builder(fg_builder_);
 }
 
 namespace {

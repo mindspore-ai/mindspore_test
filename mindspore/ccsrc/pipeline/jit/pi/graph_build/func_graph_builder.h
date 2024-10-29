@@ -207,7 +207,7 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr AddTopGraphKwargsInputs(const py::object &vargs);
 
-  AnfNodePtr GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper);
+  AnfNodePtr GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper, bool only_find = false);
 
   AbstractWrapperPtr AddAttributeInput(const py::object &object);
 

@@ -336,16 +336,7 @@ class GraphBuilder {
 class MindGraphBuilder : public GraphBuilder {
  public:
   explicit MindGraphBuilder(const PyFrameWrapper &f);
-  MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-      : GraphBuilder(r, p, co, globals), side_effect_outputs_() {
-    std::vector<std::string> comments;
-    auto location = co ? std::make_shared<Location>(py::cast<std::string>(co->co_filename), co->co_firstlineno, 0,
-                                                    co->co_firstlineno, 0, "", std::move(comments))
-                       : std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::move(comments));
-    MS_EXCEPTION_IF_NULL(location);
-    TraceGuard trace_guard(location);
-    fg_builder_ = std::make_shared<FuncGraphBuilder>();
-  }
+  MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
   bool trace_flag() override { return true; }
   mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
   void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,

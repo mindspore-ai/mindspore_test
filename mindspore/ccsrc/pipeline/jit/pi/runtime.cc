@@ -498,6 +498,9 @@ static void GraphCapture(JitCompileResults *jcr) {
     return;
   }
   if (g->GetGraph()->ShouldNeverCompile()) {
+    if (jcr->conf()->GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+      GRAPH_JIT_LOG_F("===> graph break after loop unrolling\n%s\n", g->GetGraph()->ToString(1).c_str());
+    }
     jcr->set_stat(JitCompileResults::NEVER_COMPILE);
     return;
   }

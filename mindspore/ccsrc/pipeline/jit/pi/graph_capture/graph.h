@@ -31,6 +31,9 @@
 #include "utils/convert_utils_base.h"
 
 namespace mindspore {
+
+class FuncGraphBuilder;
+
 namespace pijit {
 
 class OptCode;
@@ -177,8 +180,6 @@ class Graph {
 
   std::string ToString(int depth = 0) const;
 
-  std::string DumpBreakInfo() const;
-
   void SetParent(Graph *parent) { parent_ = parent; }
   Graph *GetParent() const { return parent_; }
 
@@ -195,7 +196,11 @@ class Graph {
   const auto &prepare() const { return prepare_; }
   bool PrepareParameter(ValueNode *node);
 
+  void set_func_graph_builder(const std::shared_ptr<FuncGraphBuilder> &ptr) { func_graph_builder_ = ptr; }
+  const auto &func_graph_builder() const { return func_graph_builder_; }
+
  private:
+  void DumpBreakInfo(std::ostream *out) const;
   std::unique_ptr<CFG> cfg_;
   std::vector<LoopInfo *> loops_;
 
@@ -236,6 +241,8 @@ class Graph {
     std::vector<ValueNode *> inputs_;
     std::vector<ValueNode *> operations_;
   } prepare_;
+
+  std::shared_ptr<FuncGraphBuilder> func_graph_builder_;
 };
 }  // namespace pijit
 }  // namespace mindspore
