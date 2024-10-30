@@ -58,9 +58,13 @@ bool UniqueDimAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
 
 void UniqueDimAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
-  outputs[kIndex0]->SetShapeVector(output_shapes_[kIndex0]);
-  outputs[kIndex1]->SetShapeVector(output_shapes_[kIndex1]);
-  outputs[kIndex2]->SetShapeVector(output_shapes_[kIndex2]);
+  for (size_t i = 0; i < output_shapes_.size(); ++i) {
+    outputs[i]->SetShapeVector(output_shapes_[i]);
+    size_t dtype_byte = GetTypeByte(TypeIdToType(outputs[i]->dtype_id()));
+    size_t update_size = LongToSize(
+      std::accumulate(output_shapes_[i].begin(), output_shapes_[i].end(), dtype_byte, std::multiplies<int64_t>()));
+    outputs[i]->set_size(update_size);
+  }
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(UniqueDim, UniqueDimAscend);
