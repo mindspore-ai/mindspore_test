@@ -138,8 +138,9 @@ class FunctionalMapCppGenerator(BaseGenerator):
             func_signatures = self._generate_func_signatures_str(func_api_name, func_protos)
             funcs_list.append(func_signatures)
             if func_api_name in alias_func_mapping:
-                func_signatures = self._generate_func_signatures_str(alias_func_mapping[func_api_name], func_protos)
-                funcs_list.append(func_signatures)
+                for alias_api_name in alias_func_mapping[func_api_name]:
+                    func_signatures = self._generate_func_signatures_str(alias_api_name, func_protos)
+                    funcs_list.append(func_signatures)
 
         return funcs_list
 
