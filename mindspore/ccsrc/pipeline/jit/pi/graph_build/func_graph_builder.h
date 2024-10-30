@@ -215,6 +215,10 @@ class FuncGraphBuilder {
 
   size_t origin_top_input_num() const { return origin_top_input_num_; }
 
+  // filter FakeNodeKey
+  static bool IsValidScalar(const AbstractBasePtr &abs);
+  static bool IsValidTensor(const AbstractBasePtr &abs);
+
  private:
   static bool CheckCallable(const ValuePtr &value, const AbstractBasePtr &abs);
 

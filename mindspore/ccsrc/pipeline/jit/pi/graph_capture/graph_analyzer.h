@@ -81,10 +81,11 @@ class GraphAnalyzer {
      */
     Info outputs_optimize_;
 
+    // a map of reconstruct alive node
     std::map<ValueNode *, ValueNode *> replaced_nodes_;
 
     /**
-     * for interpret inputs, it's ordered and same as original function.
+     * for interpret inputs, it's ordered and same as original function arguments.
      * if not break graph, outputs is return value, else outputs is ordered by stack values and alive locals.
      */
     Info interpret_;
@@ -159,13 +160,21 @@ class MindGraphAnalyzer : public GraphAnalyzer {
   void CollectCapturedAndInterpret() override;
   bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
   void ResetSideEffectRecord() const override;
+  void UpdateUseDefNode();
+  void Validate();
+
+  bool SkipAddGraphOutput(ValueNode *node);
+
+  // find or insert
+  ValueNode *GetBuiltinMethodNode(std::vector<ValueNode *> *operations, const std::string &method,
+                                  const std::string &cls_method = "");
+
   GraphBuilderPtr graph_builder_ = nullptr;
 
  private:
   ValueNode *MutateSequenceNode(ValueNode *node);
   ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
   std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);
-  std::map<ValueNode *, std::vector<ValueNode *>> maybe_update_nodes_;
 };
 }  // namespace pijit
 }  // namespace mindspore
