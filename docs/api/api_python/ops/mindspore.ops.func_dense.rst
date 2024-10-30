@@ -9,7 +9,8 @@ mindspore.ops.dense
         output = input * weight^{T} + bias
 
     .. warning::
-        这是一个实验性API，后续可能修改或删除。
+        - 这是一个实验性API，后续可能修改或删除。
+        - 在PYNATIVE模式下，如果 `bias` 不是1D， `input` 不可以大于6D。
 
     参数：
         - **input** (Tensor) - 输入Tensor，shape是 :math:`(*, in\_channels)`，其中 :math:`*` 表示任意的附加维度。
@@ -23,3 +24,4 @@ mindspore.ops.dense
         - **TypeError** - `input` 不是Tensor。
         - **TypeError** - `weight` 不是Tensor。
         - **TypeError** - `bias` 不是Tensor。
+        - **RuntimeError** - 在PYNATIVE模式下， `bias` 不是1D且 `input` 大于6D。
