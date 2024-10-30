@@ -1167,6 +1167,8 @@ bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &pa
   MS_EXCEPTION_IF_NULL(resource);
   size_t counter = 0;
   for (auto &pass : passes) {
+    std::string pass_name = pass.first;
+    MsProfileStatGuard stat_guard(std::move(pass_name), "compile_irpass", true);
     ProcessStatus::GetInstance().RecordStart(pass.first);
     uint64_t start_time = profiler::GetClockSyscnt();
     auto profile_context = MsProfile::GetProfile()->Step(pass.first);
