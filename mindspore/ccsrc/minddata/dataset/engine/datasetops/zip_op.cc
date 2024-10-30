@@ -44,6 +44,8 @@ Status ZipOp::getNextZippedRow(TensorRow *const new_zip_row, int32_t *skip_child
       return Status::OK();
     } else {
       MS_LOG(DEBUG) << "Zip operator got row from child " << i << ". Num cols: " << new_row.size() << ".";
+      // TODO(ly): set to last row time, but actually they should be added together
+      new_row.CopyTimerTo(new_zip_row);
       new_zip_row->insert(new_zip_row->end(), new_row.begin(), new_row.end());
     }
   }

@@ -18,8 +18,10 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_CORE_TENSOR_ROW_H_
 
 #include <deque>
+#include <map>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include "minddata/dataset/core/tensor.h"
@@ -30,6 +32,44 @@ namespace dataset {
 class TensorRow;                             // A set of Tensor pointers with an id
 using TensorTable = std::vector<TensorRow>;  // The table of tensors is a vector of rows
 using TensorQTable = std::deque<TensorRow>;  // A different flavour of tensor table, this one has queue functionality
+
+class RowTimer {
+ public:
+  RowTimer() = default;
+  ~RowTimer() = default;
+
+  static const char kMaxTime[];
+  static const char kMinTime[];
+  static const char kWorkerTime[];
+  static const char kMaxIOTime[];
+  static const char kMinIOTime[];
+  static const char kIOTime[];
+  static const char kLoadTensorTime[];
+  static const char kThroughputTime[];
+  static const char kPushToDeviceTime[];
+  static const char kRowCount[];
+
+  // time_info {max: [], min: [], avg: [], worker_time: []}
+  using time_info = std::map<std::string, std::vector<double>>;
+
+  // time_table {op1: time_table, op2: time_table2, ...}
+  std::map<std::string, time_info> time_table_;
+
+  // op order sequential
+  std::vector<std::string> op_order_;
+
+  // return time table
+  const std::map<std::string, time_info> &TimeTable() { return time_table_; }
+
+  // status to indicate on or off
+  bool Enabled();
+
+  // record to time info
+  void Record(const std::string &op_name, const std::string &info_name, const std::vector<double> &duration);
+
+  // test
+  std::string Summary(const std::vector<std::string> &specified_op = {});
+};
 
 class TensorRow {
  public:
@@ -276,12 +316,20 @@ class TensorRow {
 
   explicit TensorRow(TensorRowFlags flag);
 
+  std::shared_ptr<RowTimer> Timer() const { return timer_; }
+
+  void CopyTimerTo(TensorRow *out) const;
+
+  void TimerRecord(const std::string &op_name, const std::string &info_name, const std::vector<double> &duration,
+                   TensorRow *copy_from = nullptr);
+
  protected:
   row_id_type id_;
   std::vector<std::string> path_;
   std::vector<std::shared_ptr<Tensor>> row_;
 
   TensorRowFlags tensor_row_flag_;
+  std::shared_ptr<RowTimer> timer_;
 
  private:
   /// Validate data type of TensorRow for conversions.

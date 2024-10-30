@@ -211,6 +211,7 @@ Status GeneratorOp::operator()() {
     bool eoe = false;
     TensorRow new_row;
     {
+      double row_timer_start = GetMilliTimeStamp();
       RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "AcquireGIL"));
       py::gil_scoped_acquire gil_acquire;
       RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "AcquireGIL"));
@@ -225,6 +226,7 @@ Status GeneratorOp::operator()() {
         RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "__next__"));
         RETURN_IF_NOT_OK(PyRowToTensorRow(generator_.attr("__next__")(), &new_row));
         RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "__next__"));
+        new_row.TimerRecord(NameWithID(), RowTimer::kWorkerTime, {GetMilliTimeStamp() - row_timer_start});
 #ifndef ENABLE_SECURITY
         auto end = ProfilingTime::GetCurMilliSecond();
         if ((end - start) / num_parallel_workers_ > kGetItemTimeOutMilliSeconds) {

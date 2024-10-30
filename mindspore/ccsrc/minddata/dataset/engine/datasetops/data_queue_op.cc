@@ -200,6 +200,7 @@ Status DataQueueOp::FilterMetadata(TensorRow *row) const {
   std::sort(to_keep_indices.begin(), to_keep_indices.end());
   (void)std::transform(to_keep_indices.begin(), to_keep_indices.end(), std::back_inserter(output),
                        [&tmp](const auto &it) { return std::move(tmp[it]); });
+  row->CopyTimerTo(&output);
   *row = std::move(output);
   return Status::OK();
 }
@@ -472,6 +473,7 @@ Status DataQueueOp::SendDataToAscend() {
   int32_t connector_capacity = 0;
 #endif
   bool is_break_loop = false;
+  double row_timer_start = 0;
 
   std::shared_ptr<ConfigManager> cfg = GlobalContext::config_manager();
   int64_t sending_num = cfg->sending_batches();  // Get the current sending_num
@@ -497,7 +499,9 @@ Status DataQueueOp::SendDataToAscend() {
   batch_record_start = ProfilingTime::GetCurMilliSecond();
 #endif
   TensorRow curr_row;
+  row_timer_start = GetMilliTimeStamp();
   RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&curr_row));
+  curr_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
   first_fetch_flag_ = true;
 
   MS_LOG(INFO) << "Begin to send data to device, channel name: " << channel_name_;
@@ -529,6 +533,7 @@ Status DataQueueOp::SendDataToAscend() {
         is_break_loop = true;
         continue;
       }
+      row_timer_start = GetMilliTimeStamp();
       RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "PushToAscend"));
       if (!enable_prefetch_cache_pipeline_) {
 #ifdef ENABLE_DUMP_IR
@@ -548,6 +553,13 @@ Status DataQueueOp::SendDataToAscend() {
       }
 #endif
       RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToAscend", {{"TensorRowFlags", curr_row.FlagName()}}));
+      curr_row.TimerRecord(NameWithID(), RowTimer::kPushToDeviceTime, {GetMilliTimeStamp() - row_timer_start});
+      if (curr_row.Timer()->Enabled()) {
+#ifndef ENABLE_ANDROID
+        // VL_MD is 10900
+        MS_VLOG(VL_MD) << curr_row.Timer()->Summary();
+#endif
+      }
       PrintEndInfoWhenFirstBatch(&first_push_flag_);
 #ifndef ENABLE_SECURITY
       ProfilingRecorder(is_profiling_enable, profiling_node, send_batch, tdt_cost, &batch_start_time, &end_time,
@@ -573,7 +585,9 @@ Status DataQueueOp::SendDataToAscend() {
 #ifndef ENABLE_SECURITY
       RecordProfilingData(is_profiling_enable, false, &connector_size, &connector_capacity, &send_batch);
 #endif
+      row_timer_start = GetMilliTimeStamp();
       RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&curr_row));
+      curr_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
 #ifndef ENABLE_SECURITY
       uint64_t batch_fetch_end = ProfilingTime::GetCurMilliSecond();
 #endif
@@ -598,7 +612,9 @@ Status DataQueueOp::SendDataToAscend() {
 #ifndef ENABLE_SECURITY
     RecordProfilingData(is_profiling_enable, true, &connector_size, &connector_capacity, &send_batch);
 #endif
+    row_timer_start = GetMilliTimeStamp();
     RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&curr_row));
+    curr_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
   }
 
   if (enable_prefetch_cache_pipeline_) {

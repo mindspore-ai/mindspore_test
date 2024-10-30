@@ -15,6 +15,7 @@
  */
 #include "minddata/dataset/engine/datasetops/batch_op.h"
 
+#include <limits>
 #include <utility>
 
 #include "utils/ms_utils.h"
@@ -293,6 +294,55 @@ Status BatchOp::ConvertRowsToTensor(const std::unique_ptr<TensorQTable> *tensor_
   return Status::OK();
 }
 
+TensorRow TimeSumOfBatch(const TensorQTable &tensor_deque) {
+  TensorRow collection;
+  if (!collection.Timer()->Enabled()) {
+    return collection;
+  }
+
+  auto first_row = (tensor_deque).front();
+  auto timer = first_row.Timer();
+  std::vector<std::string> pipeline_op = timer->op_order_;
+
+  for (auto &op : pipeline_op) {
+    double time_max = 0;
+    double time_min = std::numeric_limits<double>::max();
+    double time_avg = 0;
+    double io_time_max = 0;
+    double io_time_min = std::numeric_limits<double>::max();
+    double io_time_avg = 0;
+    bool has_io_time = false;
+    for (auto &row : tensor_deque) {
+      double row_time = row.Timer()->time_table_[op][RowTimer::kWorkerTime].front();
+      time_max = (row_time > time_max) ? row_time : time_max;
+      time_min = (row_time < time_min) ? row_time : time_min;
+      time_avg += row_time / tensor_deque.size();
+      if (row.Timer()->time_table_[op].find(RowTimer::kIOTime) != row.Timer()->time_table_[op].end()) {
+        double mr_io_time = row.Timer()->time_table_[op][RowTimer::kIOTime].front();
+        io_time_max = (mr_io_time > io_time_max) ? mr_io_time : io_time_max;
+        io_time_min = (mr_io_time < io_time_min) ? mr_io_time : io_time_min;
+        io_time_avg += mr_io_time / tensor_deque.size();
+        has_io_time = true;
+      }
+    }
+    collection.TimerRecord(op, RowTimer::kMaxTime, {time_max});
+    collection.TimerRecord(op, RowTimer::kMinTime, {time_min});
+    collection.TimerRecord(op, RowTimer::kWorkerTime, {time_avg});
+    // deal with dataset.batch.batch case
+    double accumulate_row = tensor_deque.size();
+    if (timer->time_table_[op].find(RowTimer::kRowCount) != timer->time_table_[op].end()) {
+      accumulate_row *= timer->time_table_[op][RowTimer::kRowCount].front();
+    }
+    collection.TimerRecord(op, RowTimer::kRowCount, {accumulate_row});
+    if (has_io_time) {
+      collection.TimerRecord(op, RowTimer::kIOTime, {io_time_avg});
+      collection.TimerRecord(op, RowTimer::kMaxIOTime, {io_time_max});
+      collection.TimerRecord(op, RowTimer::kMinIOTime, {io_time_min});
+    }
+  }
+  return collection;
+}
+
 Status BatchOp::WorkerEntry(int32_t workerId) {
   TaskManager::FindMe()->Post();
   // let Python layer know the worker id of this thread
@@ -302,17 +352,22 @@ Status BatchOp::WorkerEntry(int32_t workerId) {
   std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> table_pair;
 
   RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerGet"));
+  double row_timer_start = 0;
   RETURN_IF_NOT_OK(worker_in_queues_[workerId]->PopFront(&table_pair));
   RETURN_IF_NOT_OK(
     CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", table_pair.second.FlagName()}}));
+  row_timer_start = GetMilliTimeStamp();
   RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerProcess"));
 
   while (table_pair.second.ctrl_ != BatchCtrl::kQuit) {
     if (table_pair.second.ctrl_ == BatchCtrl::kNoCtrl) {
       TensorRow batched_tensor_row;
+      auto collection = TimeSumOfBatch(*(table_pair.first));
       RETURN_IF_NOT_OK(MakeBatchedRow(std::move(table_pair), &batched_tensor_row));
       RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess",
                                         {{"TensorRowFlags", TensorRow(TensorRow::kFlagNone).FlagName()}}));
+      batched_tensor_row.TimerRecord(NameWithID(), RowTimer::kWorkerTime, {GetMilliTimeStamp() - row_timer_start},
+                                     &collection);
       RETURN_IF_NOT_OK(worker_out_queues_[workerId]->EmplaceBack(std::move(batched_tensor_row)));
     } else if (table_pair.second.ctrl_ == BatchCtrl::kEOE) {
       RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess",
@@ -333,6 +388,7 @@ Status BatchOp::WorkerEntry(int32_t workerId) {
     RETURN_IF_NOT_OK(worker_in_queues_[workerId]->PopFront(&table_pair));
     RETURN_IF_NOT_OK(
       CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", table_pair.second.FlagName()}}));
+    row_timer_start = GetMilliTimeStamp();
     RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerProcess"));
   }
   RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess",

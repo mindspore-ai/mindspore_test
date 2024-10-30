@@ -19,6 +19,12 @@
 #include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore::dataset {
+double GetMilliTimeStamp() {
+  auto now = std::chrono::high_resolution_clock::now();
+  int64_t us = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+  return static_cast<double>(us) / 1000.;
+}
+
 Status CollectPipelineInfoStart(const std::string &event, const std::string &stage,
                                 const std::map<std::string, std::string> &custom_info) {
 #if !defined(ENABLE_SECURITY) && !defined(ENABLE_ANDROID)
