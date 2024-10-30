@@ -266,8 +266,10 @@ class AscendEnvChecker(EnvChecker):
         self.ld_lib_path = os.getenv("LD_LIBRARY_PATH")
         self.ascend_opp_path = os.getenv("ASCEND_OPP_PATH")
         self.ascend_aicpu_path = os.getenv("ASCEND_AICPU_PATH")
-        self.compiler_version = self.ascend_opp_path.split("opp")[0] + "compiler/version.info"
-
+        if not self.ascend_opp_path is None:
+            self.compiler_version = self.ascend_opp_path.split("opp")[0] + "compiler/version.info"
+        else:
+            self.compiler_version = ""
         # check content
         self.path_check = "/compiler/ccec_compiler/bin"
         self.python_path_check = "opp/built-in/op_impl/ai_core/tbe"
