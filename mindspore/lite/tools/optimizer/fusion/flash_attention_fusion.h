@@ -31,6 +31,7 @@ struct FlashAttentionParm {
   int64_t seq_threshold = 0;
   int inner_precise = 1;
   int sparse_mode = 0;
+  string implement_mode = "ascendC";
 };
 /*
  *
@@ -66,6 +67,16 @@ class FlashAttentionFusion : public MultiplePatternProcessPass {
 
  private:
   std::map<std::string, std::map<std::string, std::string>> op_attrs_map_;
+
+  CNodePtr CreateTikFlashAttentionCnodeForBNSD(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                               const AnfNodePtr &q, const AnfNodePtr &k, const AnfNodePtr &v,
+                                               float scale_value) const;
+
+  CNodePtr CreateFlashAttentionCnodeForBNSD(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &q,
+                                            const AnfNodePtr &k, const AnfNodePtr &v, const AnfNodePtr &atten_mask,
+                                            int64_t num_heads, int64_t next_token, float scale_value,
+                                            const std::shared_ptr<FlashAttentionParm> &fa_parm,
+                                            int64_t num_key_value_heads) const;
 
   CNodePtr CreatePromptFlashAttentionCnodeForBNSD(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                   const AnfNodePtr &q, const AnfNodePtr &k, const AnfNodePtr &v,
