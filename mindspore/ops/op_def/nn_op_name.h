@@ -29,6 +29,7 @@ constexpr auto kMultilabelMarginLossGradOpName = "MultilabelMarginLossGrad";
 constexpr auto kTripletMarginLossOpName = "TripletMarginLoss";
 
 constexpr auto kLayerNormOpName = "LayerNorm";
+constexpr auto kLayerNormExtOpName = "LayerNormExt";
 constexpr auto kLayerNormGradOpName = "LayerNormGrad";
 constexpr auto kLayerNormV3OpName = "LayerNormV3";
 constexpr auto kLayerNormGradV3OpName = "LayerNormGradV3";
@@ -60,6 +61,7 @@ constexpr auto kChannelShuffleOpName = "ChannelShuffle";
 constexpr auto kBiasAddOpName = "BiasAdd";
 constexpr auto kBiasAddGradOpName = "BiasAddGrad";
 constexpr auto kBatchNormOpName = "BatchNorm";
+constexpr auto kBatchNormExtOpName = "BatchNormExt";
 constexpr auto kBatchNormGradOpName = "BatchNormGrad";
 constexpr auto kBatchNormGradGradOpName = "BatchNormGradGrad";
 constexpr auto kBatchNormGradWithActivationOpName = "BatchNormGradWithActivation";
