@@ -74,7 +74,14 @@ def _exec_datagraph(exec_dataset, dataset_size, phase='dataset', create_data_inf
         queue_name = str("")
 
     use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
-    if use_pipeline_parallel:
+
+    # temp env to disable dynamic feature of sink size 1
+    dynamic_sink1_env = os.getenv("MS_DEV_DYNAMIC_SINK1", None)
+    dynamic_sink1 = True
+    if dynamic_sink1_env and dynamic_sink1_env.strip() in ['False', 'false']:
+        dynamic_sink1 = False
+
+    if use_pipeline_parallel or not dynamic_sink1:
         create_data_info_queue = False
 
     exec_dataset = exec_dataset.device_que(send_epoch_end=send_epoch_end,
