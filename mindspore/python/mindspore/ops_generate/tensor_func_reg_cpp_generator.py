@@ -65,7 +65,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
             'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'py::object res = fn(*py_args, **py_kwargs);\n'
+            'py::object res = fn(self, *py_args, **py_kwargs);\n'
             'return res;\n'
         )
         self.arg_handler_prt_template = Template(
@@ -326,7 +326,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         args_str = f'"{op_proto.op_class.name}('
         first_arg = True
         for _, arg in enumerate(op_proto.op_args):
-            if arg.arg_name == 'input':
+            if arg.arg_name in self.input_args_name:
                 continue
             single_arg = ''
             if not first_arg:
