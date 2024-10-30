@@ -267,6 +267,17 @@ ATTR_MAP(NonMaxSuppressionV3) = {{"offset", ATTR_DESC(offset, AnyTraits<int>())}
 OUTPUT_MAP(NonMaxSuppressionV3) = {{0, OUTPUT_DESC(selected_indices)}};
 REG_ADPT_DESC(NonMaxSuppressionV3, prim::kPrimNonMaxSuppressionV3->name(), ADPT_DESC(NonMaxSuppressionV3))
 
+// NonMaxSuppressionV6
+INPUT_MAP(NonMaxSuppressionV6) = {{1, INPUT_DESC(boxes)},
+                                  {2, INPUT_DESC(scores)},
+                                  {3, INPUT_DESC(max_output_size)},
+                                  {4, INPUT_DESC(iou_threshold)},
+                                  {5, INPUT_DESC(score_threshold)}};
+ATTR_MAP(NonMaxSuppressionV6) = {{"center_point_box", ATTR_DESC(center_point_box, AnyTraits<int>())},
+                                 {"max_boxes_size", ATTR_DESC(max_boxes_size, AnyTraits<int>())}};
+OUTPUT_MAP(NonMaxSuppressionV6) = {{0, OUTPUT_DESC(selected_indices)}};
+REG_ADPT_DESC(NonMaxSuppressionV6, kNameNonMaxSuppression, ADPT_DESC(NonMaxSuppressionV6))
+
 // AdjustSaturation
 INPUT_MAP(AdjustSaturation) = {{1, INPUT_DESC(images)}, {2, INPUT_DESC(scale)}};
 ATTR_MAP(AdjustSaturation) = EMPTY_ATTR_MAP;
