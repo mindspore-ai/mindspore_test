@@ -4243,12 +4243,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('erfinv')(self)
 
-    def less_equal(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.less_equal`.
-        """
-        return tensor_operator_registry.get('less_equal')(self, other)
-
     def lcm(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.lcm`.
@@ -4400,12 +4394,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             False
         """
         return self.dtype in mstype.signed_type
-
-    def le(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.le`.
-        """
-        return tensor_operator_registry.get('le')(self, other)
 
     def less(self, other):
         r"""

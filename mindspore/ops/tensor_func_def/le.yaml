@@ -1,0 +1,6 @@
+le:
+  op_yaml: less_equal
+  py_method: tensor_le
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost

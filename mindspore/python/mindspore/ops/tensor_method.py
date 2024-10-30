@@ -137,7 +137,7 @@ from mindspore.ops.function.array_func import gather_ext
 # 51 item
 
 # 52 le
-
+from mindspore.ops.function.math_func import le
 # 53 less
 
 # 54 less_equal
@@ -513,6 +513,9 @@ def deprecated_tensor_gather(input, input_indices, axis, batch_dims=0):
 # 51 item
 
 # 52 le
+def tensor_le(input, other):
+    return le(input, other)
+
 
 # 53 less
 
