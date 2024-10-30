@@ -30,9 +30,11 @@ class LlamaBoost(AtbBoostBase):
         self.acl_encoder_operation_inputs = [None] * self.in_tensor_length
         self.acl_decoder_operation_inputs = [None] * self.in_tensor_length
         self.atb_encoder_operation = LlmBoostBinder(
-            "ATB", "llama_parallel_DecoderModel")
+            "ATB", "llama_parallel_DecoderModel"
+        )
         self.atb_decoder_operation = LlmBoostBinder(
-            "ATB", "llama_parallel_DecoderModel")
+            "ATB", "llama_parallel_DecoderModel"
+        )
 
     def init(self):
         """set param"""
@@ -46,8 +48,12 @@ class LlamaBoost(AtbBoostBase):
             "isFA": False,
             "isBF16": self.dtype == mstype.bfloat16,
             "packQuantType": [[1, 1] for _ in range(self.num_layers)],
-            "linearQuantType": [[0, -1, -1, 0, 0, -1, 0] for _ in range(self.num_layers)],
-            "linearTransposeType": [[1, -1, -1, 1, 1, -1, 1] for i in range(self.num_layers)],
+            "linearQuantType": [
+                [0, -1, -1, 0, 0, -1, 0] for _ in range(self.num_layers)
+            ],
+            "linearTransposeType": [
+                [1, -1, -1, 1, 1, -1, 1] for i in range(self.num_layers)
+            ],
             "isEmbeddingParallel": False,
             "isLmHeadParallel": not self.config.parallel_config.vocab_emb_dp,
             "lmHeadTransposeType": 1,
@@ -55,51 +61,56 @@ class LlamaBoost(AtbBoostBase):
             "kvQuant": self.kv_quant is not None,
             "rank": self.rank_id,
             "worldSize": self.device_num,
-            "backend": "lccl",
+            "backend": self.config.communication_backend,
             "rankTableFile": "",
             "positionEmbeddingType": self.position_embedding_type,
             "hiddenSize": self.config.hidden_size,
             "gemma": False,
-            "enableAddNorm": True,
+            "enableAddNorm": False,
             "supportCompressHead": False,
         }
         encoder_param = {
-            **coder_param, "isPrefill": True,
+            **coder_param,
+            "isPrefill": True,
             "supportLcoc": True,
             "supportSpeculate": False,
-            "skipWordEmbedding": False
+            "skipWordEmbedding": False,
         }
         decoder_param = {
-            **coder_param, "isPrefill": False, "supportLcoc": False,
-            "supportSpeculate": False
+            **coder_param,
+            "isPrefill": False,
+            "supportLcoc": False,
+            "supportSpeculate": False,
         }
         self.atb_encoder_operation.init(json.dumps({**encoder_param}))
         self.atb_decoder_operation.init(json.dumps({**decoder_param}))
 
+    # pylint: disable=C0330
     def _prepare_inputs(
-            self,
-            prefill=None,
-            input_ids=None,
-            position_ids=None,
-            cos_embed=None,
-            sin_embed=None,
-            attention_mask=None,
-            block_tables=None,
-            slots=None,
-            input_lengths=None,
-            lm_head_indices=None,
-            seqLen=None,
-            **kwargs
+        self,
+        prefill=None,
+        input_ids=None,
+        position_ids=None,
+        cos_embed=None,
+        sin_embed=None,
+        attention_mask=None,
+        block_tables=None,
+        slots=None,
+        input_lengths=None,
+        lm_head_indices=None,
+        seqLen=None,
+        **kwargs
     ):
         """prepare inputs"""
-        self.acl_param = json.dumps({
-            "seqLen": seqLen,
-        })
-        self.acl_decoder_operation_inputs[0] = self.cast(
-            input_ids, mstype.int64)
+        self.acl_param = json.dumps(
+            {
+                "seqLen": seqLen,
+            }
+        )
+
+        self.acl_decoder_operation_inputs[0] = input_ids
         self.acl_decoder_operation_inputs[1] = self.placeholder
-        self.acl_decoder_operation_inputs[2] = self.cast(
-            position_ids, mstype.int32)
+        self.acl_decoder_operation_inputs[2] = position_ids
         self.acl_decoder_operation_inputs[3] = cos_embed
         self.acl_decoder_operation_inputs[4] = sin_embed
         self.acl_decoder_operation_inputs[5] = attention_mask
@@ -108,8 +119,6 @@ class LlamaBoost(AtbBoostBase):
         self.acl_decoder_operation_inputs[8] = self.placeholder
         self.acl_decoder_operation_inputs[9] = self.placeholder
         self.acl_decoder_operation_inputs[10] = self.placeholder
-        self.acl_decoder_operation_inputs[11] = self.cast(
-            input_lengths, mstype.int32)
-        self.acl_decoder_operation_inputs[12] = self.cast(
-            lm_head_indices, mstype.int64)
+        self.acl_decoder_operation_inputs[11] = input_lengths
+        self.acl_decoder_operation_inputs[12] = lm_head_indices
         return self.acl_decoder_operation_inputs, self.acl_param

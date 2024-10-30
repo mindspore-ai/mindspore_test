@@ -28,11 +28,12 @@ AtbBoostBuilder::~AtbBoostBuilder() {}
 void AtbBoostBuilder::Initialize() {
   // load atb adapter so when called atb boost
   std::string err_msg = "";
-  std::string atb_model_path_env = common::GetEnv("ATB_MODEL_HOME_PATH");
-  if (atb_model_path_env == "") {
-    MS_LOG(EXCEPTION) << "ATB_MODEL_HOME_PATH is not set";
+  std::string atb_speed_home_path_env = common::GetEnv("ATB_SPEED_HOME_PATH");
+  if (atb_speed_home_path_env == "") {
+    MS_LOG(EXCEPTION)
+      << "ATB_SPEED_HOME_PATH is not set, you need to run the `source set_env.sh` command in the atb_models path.";
   }
-  const std::string atb_model_path = atb_model_path_env;
+  const std::string atb_model_path = atb_speed_home_path_env;
   std::string atb_model_libs_path = atb_model_path + "/lib";
 
   std::string atb_core_lib_path = atb_model_libs_path + "/" + "libatb_speed_core.so";
