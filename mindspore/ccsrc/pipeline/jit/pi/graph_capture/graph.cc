@@ -623,22 +623,28 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
   return true;
 }
 
+static void PrintAnfNode(std::ostream *out, mindspore::AnfNode *anf_node, const std::string &prefix) {
+  auto &s = *out;
+  std::string str;
+  str += anf_node->DebugString(1) + " ";
+  str += anf_node->abstract() == nullptr ? "<NULL>" : anf_node->abstract()->ToString();
+  std::replace(str.begin(), str.end(), '\n', ' ');
+  s << " AnfNode(" << anf_node << ") [" << str << "]";
+}
+
 static void PrintValueNode(std::ostream *out, FuncGraphBuilder *fg, ValueNode *node, const std::string &prefix) {
   auto &s = *out;
+  s << prefix << node->ToString();
   if (fg == nullptr) {
-    s << "<no func_graph>";
+    s << "<FuncGraphBuilder is nullptr>" << std::endl;
     return;
   }
-  auto anf_node = fg->GetNodeByWrapper(node->abstract_wrapper(), true);
-  s << prefix << node->ToString();
+  auto anf_node = fg->FindNodeByWrapper(node->abstract_wrapper());
   if (anf_node != nullptr) {
-    void *addr = anf_node.get();
     bool is_any = (*mindspore::kValueAny == *anf_node->abstract()->mindspore::abstract::AbstractBase::BuildValue());
     bool is_cnst = node->IsConstantValue();
-    auto abs = anf_node->abstract()->ToString();
-    std::replace(abs.begin(), abs.end(), '\n', ' ');
-    s << " AnfNode(" << addr << ") [" << anf_node->DebugString(1) << " {" << abs << "}] is_constant "
-      << (is_cnst == is_any ? " == " : " != ") << " is_any";
+    PrintAnfNode(out, anf_node.get(), prefix);
+    s << " is_constant " << (is_cnst == is_any ? "==" : "!=") << " is_any";
   } else if (node->IsConstantValue()) {
     s << " Is Constant";
   } else {
@@ -665,8 +671,10 @@ static void PrintCallNode(std::ostream *os, FuncGraphBuilder *fg, CallNode *node
   s << prefix << "}" << std::endl;
 }
 
-static void PrintGraphFrame(std::ostream *out, FuncGraphBuilder *fg, const FrameStates &f, const std::string &prefix) {
+void Graph::PrintFrame(std::ostream *out, const std::string &prefix) const {
   auto &s = *out;
+  const auto &f = GetFrame(0);
+  auto *fg = func_graph_builder_.get();
   s << "locals:" << std::endl;
   for (const auto &node : f.GetLocals()) {
     if (node != &ValueNode::kUnboundLocal) {
@@ -690,7 +698,7 @@ std::string Graph::ToString(int depth) const {
 
   s << prefix << "*** Trace Nodes [" << code_name << "] ***" << std::endl;
   if (depth == 0) {
-    PrintGraphFrame(&s, func_graph_builder().get(), GetFrame(0), prefix);
+    PrintFrame(&s, prefix);
     s << std::endl;
   }
 

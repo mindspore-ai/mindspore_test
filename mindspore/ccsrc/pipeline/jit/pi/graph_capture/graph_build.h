@@ -338,7 +338,7 @@ class MindGraphBuilder : public GraphBuilder {
   explicit MindGraphBuilder(const PyFrameWrapper &f);
   MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals);
   bool trace_flag() override { return true; }
-  mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
+  mindspore::FuncGraphBuilderPtr FGBuilder() const { return graph_->func_graph_builder(); }
   void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);
   void FGAddNode(CallNode *call_node, const ValuePtr &callable_value, const AbstractWrapperPtrList &args,
@@ -422,7 +422,6 @@ class MindGraphBuilder : public GraphBuilder {
   bool ConvertClassType(const py::object &callable_info, CallNode *call_node, StopTraceReason *stop_reason);
   std::pair<bool, py::object> ConvertBuiltInMethodOrFunction(const py::object &callable_info) const;
 
-  mindspore::FuncGraphBuilderPtr fg_builder_{nullptr};
   std::string co_name_;
   // Side effect outputs of this graph (including the side effect outputs of all its sub-graphs).
   std::vector<ValueNode *> side_effect_outputs_;
