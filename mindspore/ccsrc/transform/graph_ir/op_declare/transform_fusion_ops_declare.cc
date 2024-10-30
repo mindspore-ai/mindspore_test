@@ -95,4 +95,13 @@ ATTR_MAP(GroupNormSilu) = {{"activate_silu", ATTR_DESC(activate_silu, AnyTraits<
                            {"num_groups", ATTR_DESC(num_groups, AnyTraits<int64_t>())}};
 OUTPUT_MAP(GroupNormSilu) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(mean)}, {2, OUTPUT_DESC(rstd)}};
 REG_ADPT_DESC(GroupNormSilu, kNameGroupNormSilu, ADPT_DESC(GroupNormSilu))
+
+// GroupNorm
+INPUT_MAP(GroupNorm) = {{1, INPUT_DESC(x)}, {3, INPUT_DESC(gamma)}, {4, INPUT_DESC(beta)}};
+INPUT_ATTR_MAP(GroupNorm) = {{2, ATTR_DESC(num_groups, AnyTraits<int64_t>())},
+                             {5, ATTR_DESC(eps, AnyTraits<float>())},
+                             {6, ATTR_DESC(is_training, AnyTraits<bool>())}};
+ATTR_MAP(GroupNorm) = EMPTY_ATTR_MAP;
+OUTPUT_MAP(GroupNorm) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(mean)}, {2, OUTPUT_DESC(variance)}};
+REG_ADPT_DESC(GroupNorm, "GroupNorm", ADPT_DESC(GroupNorm))
 }  // namespace mindspore::transform

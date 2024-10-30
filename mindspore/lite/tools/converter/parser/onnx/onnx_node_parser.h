@@ -82,6 +82,9 @@ class OnnxNodeParser {
 
   static std::string GetOnnxModelFile() { return model_file_; }
 
+  static void SetTypeAndValueForBFloat(const onnx::TensorProto &onnx_tensor, std::vector<float> *value,
+                                       size_t data_count);
+
   static void SetTypeAndValueForFloat(const onnx::TensorProto &onnx_tensor, std::vector<float> *value,
                                       size_t data_count);
 

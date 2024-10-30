@@ -817,6 +817,7 @@ STATUS TransFilterFormat(const tensor::TensorPtr &tensor, schema::Format src_for
     trans_func = {{kNumberTypeFloat32, DoTransposeData<float>},
                   {kNumberTypeUInt8, DoTransposeData<uint8_t>},
                   {kNumberTypeInt8, DoTransposeData<int8_t>},
+                  {kNumberTypeBFloat16, DoTransposeData<bfloat16>},
                   {kNumberTypeFloat16, DoTransposeData<float16>}};
   auto data_type = tensor->data_type();
   auto iter = trans_func.find(data_type);

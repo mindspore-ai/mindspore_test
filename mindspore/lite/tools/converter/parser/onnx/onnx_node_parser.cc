@@ -39,6 +39,7 @@ static std::unordered_map<int, mindspore::TypeId> kOnnxTypeTransferMap = {
   {onnx::TensorProto_DataType_FLOAT16, mindspore::kNumberTypeFloat16},
   {onnx::TensorProto_DataType_FLOAT, mindspore::kNumberTypeFloat32},
   {onnx::TensorProto_DataType_DOUBLE, mindspore::kNumberTypeFloat64},
+  {onnx::TensorProto_DataType_BFLOAT16, mindspore::kNumberTypeBFloat16},
   {onnx::TensorProto_DataType_BOOL, mindspore::kNumberTypeBool}};
 }  // namespace
 
@@ -169,6 +170,13 @@ TypeId OnnxNodeParser::GetDataTypeFromOnnx(onnx::TensorProto_DataType onnx_type)
   return iter->second;
 }
 
+void OnnxNodeParser::SetTypeAndValueForBFloat(const onnx::TensorProto &onnx_tensor, std::vector<float> *value,
+                                              size_t data_count) {
+  for (size_t i = 0; i < data_count; i++) {
+    value->push_back(static_cast<float>(reinterpret_cast<const bfloat16 *>(onnx_tensor.raw_data().data())[i]));
+  }
+}
+
 void OnnxNodeParser::SetTypeAndValueForFloat(const onnx::TensorProto &onnx_tensor, std::vector<float> *value,
                                              size_t data_count) {
   for (size_t i = 0; i < data_count; i++) {
@@ -229,6 +237,10 @@ STATUS OnnxNodeParser::SetDataTypeAndValue(const onnx::TensorProto &onnx_tensor,
     case onnx::TensorProto_DataType_BOOL:
       *type = GetDataTypeFromOnnx(onnx::TensorProto_DataType_BOOL);
       SetTypeAndValueForBool(onnx_tensor, value, data_count);
+      break;
+    case onnx::TensorProto_DataType_BFLOAT16:
+      *type = GetDataTypeFromOnnx(onnx::TensorProto_DataType_BFLOAT16);
+      SetTypeAndValueForBFloat(onnx_tensor, value, data_count);
       break;
     default:
       MS_LOG(ERROR) << "The data type is not supported.";
