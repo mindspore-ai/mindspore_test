@@ -70,8 +70,9 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
       return std::make_tuple(ws_size, executor, cache, release_func, update_func);                \
     }                                                                                             \
     uint64_t hash_id = mindspore::transform::AclnnHash(api_str, args...);                         \
-    if (hash_id != 0 && hash_map_.count(hash_id) != 0) {                                          \
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id]);                   \
+    auto iter = hash_map_.find(hash_id);                                                          \
+    if (hash_id != 0 && iter != hash_map_.end()) {                                                \
+      hash_cache_.splice(hash_cache_.begin(), hash_cache_, iter->second);                         \
       auto cur_run = hash_cache_.front();                                                         \
       const auto &ws_size = std::get<3>(cur_run);                                                 \
       const auto &executor = std::get<1>(cur_run);                                                \

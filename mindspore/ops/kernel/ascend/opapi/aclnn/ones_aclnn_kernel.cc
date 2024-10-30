@@ -32,8 +32,7 @@ namespace kernel {
 
 void OnesAscendCall::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                       const std::vector<KernelTensor *> &outputs) {
-  auto return_value = GEN_EXECUTOR(op_type_, outputs[kIndex0]);
-  UpdateWorkspace(return_value);
+  GetWorkspaceForResize(outputs[kIndex0]);
 }
 
 bool OnesAscendCall::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,

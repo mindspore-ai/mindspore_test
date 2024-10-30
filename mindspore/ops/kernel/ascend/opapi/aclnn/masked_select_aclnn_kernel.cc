@@ -25,8 +25,7 @@ namespace mindspore {
 namespace kernel {
 void MaskedSelectAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                   const std::vector<KernelTensor *> &outputs) {
-  auto return_value = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0]);
-  UpdateWorkspace(return_value);
+  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], outputs[kIndex0]);
 }
 
 bool MaskedSelectAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
