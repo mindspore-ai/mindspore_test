@@ -101,25 +101,34 @@ void InterleavedScheduler::GetBackwardBorderNode(const CNodePtr &cnode) {
     }
   }
 }
-
-void InterleavedScheduler::GetBorderNode() {
-  auto all_nodes = DeepScopedGraphSearch(root_->get_return());
+void InterleavedScheduler::GetChunkNumMicroSize(const std::vector<AnfNodePtr> &all_nodes) {
   for (auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+      continue;
+    }
     auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
     chunk_num_ = (chunk + 1) > chunk_num_ ? (chunk + 1) : chunk_num_;
     auto micro = GetValue<int64_t>(cnode->GetPrimalAttr(MICRO));
     micro_size_ = (micro + 1) > micro_size_ ? (micro + 1) : micro_size_;
   }
+}
+
+void InterleavedScheduler::GetBorderNode() {
+  auto all_nodes = DeepScopedGraphSearch(root_->get_return());
+  GetChunkNumMicroSize(all_nodes);
   for (auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
+    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+      continue;
+    }
     auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
     auto micro = GetValue<int64_t>(cnode->GetPrimalAttr(MICRO));
     Border border = {cnode, chunk, micro};

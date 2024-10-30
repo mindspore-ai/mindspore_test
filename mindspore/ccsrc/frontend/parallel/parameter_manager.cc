@@ -667,7 +667,7 @@ void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
       MS_EXCEPTION_IF_NULL(cloned_abstract);
       // from pipeline or grad accumulation
       if (param_name.find(ACCU_GRADS) != std::string::npos) {
-        auto slice_shape = cloned_from_parameter->user_data<TensorLayout>()->slice_shape().array();
+        auto slice_shape = cloned_from_parameter->user_data<TensorLayout>()->base_slice_shape().array();
         auto opt_shard_group = tensor_layout->opt_shard_group();
         auto opt_shard_shape = cloned_from_parameter->user_data<TensorLayout>()->opt_shard_slice_shape();
         std::shared_ptr<abstract::BaseShape> parallel_shape = nullptr;

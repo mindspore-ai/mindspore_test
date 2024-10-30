@@ -65,21 +65,31 @@ void GpipeInterleavedScheduler::GetBackwardBorderNode(const CNodePtr &cnode) {
   }
 }
 
-void GpipeInterleavedScheduler::GetBorderNode() {
-  auto all_nodes = DeepScopedGraphSearch(root_->get_return());
+void GpipeInterleavedScheduler::GetChunkNum(const std::vector<AnfNodePtr> &all_nodes) {
   for (auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+      continue;
+    }
     auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
     chunk_num_ = (chunk + 1) > chunk_num_ ? (chunk + 1) : chunk_num_;
   }
+}
+
+void GpipeInterleavedScheduler::GetBorderNode() {
+  auto all_nodes = DeepScopedGraphSearch(root_->get_return());
+  GetChunkNum(all_nodes);
   for (auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
+      continue;
+    }
     auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
     auto micro = GetValue<int64_t>(cnode->GetPrimalAttr(MICRO));
     micro_size_ = (micro + 1) > micro_size_ ? (micro + 1) : micro_size_;
