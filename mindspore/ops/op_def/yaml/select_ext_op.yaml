@@ -13,3 +13,5 @@ select_ext:
     view: True
     class:
         name: SelectExt
+    dispatch:
+        enable: True
