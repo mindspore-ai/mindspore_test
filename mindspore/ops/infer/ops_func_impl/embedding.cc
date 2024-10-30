@@ -15,11 +15,14 @@
  */
 
 #include "infer/ops_func_impl/embedding.h"
-#include <vector>
 #include <memory>
+#include <vector>
+#include <utility>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "utils/log_adapter.h"
+#include "utils/shape_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -27,27 +30,27 @@ BaseShapePtr EmbeddingFuncImpl::InferShape(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   auto input_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
   auto &weight_shape = input_args[kIndex1]->GetShape()->GetShapeVector();
-  int64_t last_dim = abstract::Shape::kShapeDimAny;
-  auto constexpr kWeightRank = 2;
 
-  if (!IsDynamicRank(weight_shape)) {
+  int64_t embedding_dim = abstract::Shape::kShapeDimAny;
+  if (MS_LIKELY(!IsDynamicRank(weight_shape))) {
+    auto constexpr kWeightRank = 2;
     MS_CHECK_VALUE(weight_shape.size() == kWeightRank,
                    CheckAndConvertUtils::FormatCheckIntegerMsg("shape of weight", weight_shape.size(), kEqual,
                                                                kWeightRank, primitive));
-    last_dim = weight_shape.back();
+    embedding_dim = weight_shape.back();
   }
 
-  if (IsDynamic(input_shape)) {
+  if (MS_UNLIKELY(IsDynamicRank(input_shape))) {
     return std::make_shared<abstract::Shape>(input_shape);
   }
 
-  input_shape.emplace_back(last_dim);
+  input_shape.emplace_back(embedding_dim);
   return std::make_shared<abstract::Shape>(input_shape);
 }
 
 TypePtr EmbeddingFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex1]->GetType()->Clone();
+  return input_args[kIndex1]->GetType();
 }
 
 int32_t EmbeddingFuncImpl::CheckValidation(const PrimitivePtr &primitive,
@@ -57,8 +60,8 @@ int32_t EmbeddingFuncImpl::CheckValidation(const PrimitivePtr &primitive,
     return OP_CHECK_RETRY;
   }
 
-  auto num_weights = weight_shape[0];
-  if (num_weights <= 0) {
+  auto num_embedding = weight_shape[0];
+  if (num_embedding <= 0) {
     MS_EXCEPTION(ValueError) << "For primitive[" << primitive->name()
                              << "], the first dim of weight.shape must be greater than 0, but got shape: "
                              << weight_shape << ".";
@@ -66,18 +69,50 @@ int32_t EmbeddingFuncImpl::CheckValidation(const PrimitivePtr &primitive,
 
   auto padding_idx_type = input_args[kIndex2]->GetType();
   if (!padding_idx_type->isa<TypeNone>()) {
-    auto value = input_args[kIndex2]->GetValue();
-    auto padding_idx_opt = GetScalarValue<int64_t>(value);
+    auto padding_idx_opt = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
     if (!padding_idx_opt.has_value()) {
       return OP_CHECK_RETRY;
     }
     auto padding_idx_value = padding_idx_opt.value();
-    MS_CHECK_VALUE(padding_idx_value < num_weights && padding_idx_value >= -num_weights,
+    MS_CHECK_VALUE(padding_idx_value < num_embedding && padding_idx_value >= -num_embedding,
                    CheckAndConvertUtils::FormatCheckInRangeMsg("padding_idx", padding_idx_value, kIncludeLeft,
-                                                               {-num_weights, num_weights}, primitive));
+                                                               {-num_embedding, num_embedding}, primitive));
   }
 
   return OP_CHECK_SUCCESS;
+}
+
+ShapeArray EmbeddingFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  auto input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto input_shape = input_tensor->shape();
+
+  auto weight_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(weight_tensor);
+  auto &weight_shape = weight_tensor->shape();
+
+  auto constexpr kWeightRank = 2;
+  MS_CHECK_VALUE(weight_shape.size() == kWeightRank,
+                 CheckAndConvertUtils::FormatCheckIntegerMsg("shape of weight", weight_shape.size(), kEqual,
+                                                             kWeightRank, primitive));
+
+  auto num_embedding = weight_shape[0];
+  auto padding_idx_opt = GetScalarValue<int64_t>(input_values[kIndex2]);
+  MS_ASSERT(padding_idx_opt.has_value());
+  auto padding_idx_value = padding_idx_opt.value();
+  MS_CHECK_VALUE(padding_idx_value < num_embedding && padding_idx_value >= -num_embedding,
+                 CheckAndConvertUtils::FormatCheckInRangeMsg("padding_idx", padding_idx_value, kIncludeLeft,
+                                                             {-num_embedding, num_embedding}, primitive));
+
+  auto embedding_dim = weight_shape.back();
+  input_shape.emplace_back(embedding_dim);
+  return {std::move(input_shape)};
+}
+
+TypePtrList EmbeddingFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  auto weight_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(weight_tensor);
+  return {weight_tensor->Dtype()};
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -38,6 +38,8 @@ typedef enum : int8_t {
 class OpApiUtil {
  public:
   static aclCubeMathType GetCubeMathType(bool use_hf32 = false);
+  static bool IsAllowMatmulHF32();
+  static bool IsAllowConvHF32();
 
   static void GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std::string> *input_formats,
                                       std::vector<std::string> *output_formats,

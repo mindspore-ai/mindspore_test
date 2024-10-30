@@ -33,7 +33,11 @@ class InplaceAddmmAclnnKernelMod : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+
+ private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+
+  int8_t cube_math_type_;
 };
 }  // namespace kernel
 }  // namespace mindspore

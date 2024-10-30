@@ -44,7 +44,7 @@ tensor::BaseTensorPtr InplaceAddmmAscendCustomize(const std::shared_ptr<OpRunner
       // Malloc for output tensors
 
       // cubeMathType: 0 - KEEP_DTYPE, 1 - ALLOW_FP32_DOWN_PRECISION
-      auto cube_math_type = GetCubeMathType();
+      auto cube_math_type = GetCubeMathType(IsAllowMatmulHF32());
       LAUNCH_ACLNN(aclnnInplaceAddmm, device_context, op->stream_id(), input_tensor, mat1_tensor, mat2_tensor, beta,
                    alpha, cube_math_type);
       MS_LOG(DEBUG) << "Run device task InplaceAddmm end";

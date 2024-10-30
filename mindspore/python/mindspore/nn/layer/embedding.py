@@ -164,11 +164,11 @@ class Embedding(Cell):
 
 class EmbeddingExt(Cell):
     r"""
-    Embedding layer.
-    Retrieve the word embeddings in weight stored in the layer using indices specified in `input`.
+    The value in `input` is used as the index, and the corresponding embedding vector is queried from `weight` .
 
     .. warning::
-        On Ascend, the behavior is unpredictable when the value of `input` is invalid.
+        - This is an experimental API that is subject to change or deletion.
+        - On Ascend, the behavior is unpredictable when the value of `input` is invalid.
 
     Args:
         num_embeddings (int): Size of the dictionary of embeddings.
@@ -183,14 +183,22 @@ class EmbeddingExt(Cell):
         norm_type (float, optional): Indicated the value of p in p-norm. Default ``2.0``.
         scale_grad_by_freq (bool, optional): If ``True`` the gradients will be scaled by the inverse of frequency
             of the index in `input`. Default ``False``.
-        _weight (Tensor, optional): Used to initialize the weight of Embedding. If ``None``, the weight will be
+        sparse (bool, optional): If ``True``, gradient w.r.t. `weight` matrix will be a sparse tensor which
+            has not been supported. Default: ``False``.
+        _weight (Tensor, optional): Used to initialize the `weight` of Embedding. If ``None``, the weight will be
             initialized from normal distribution :math:`{N}(\text{sigma=1.0}, \text{mean=0.0})`. Default ``None``.
-        dtype (mindspore.dtype, optional) : Dtype of Parameters. It is meaningless when `_weight` is not None.
-            Default: ``mindspore.float32``.
+        _freeze(bool, optional): If `weight` , the learnable weights of this module, should be freezed.
+            Default: ``False``.
+        dtype (mindspore.dtype, optional) : Dtype of Embedding's `weight` . It is meaningless when `_weight` is
+            not None. Default: ``None``.
+
+    Variables:
+        weight (Parameter): The learnable weights of this module of shape (num_embeddings, embedding_dim), which
+            initialized from :math:`{N}(\text{sigma=1.0}, \text{mean=0.0})` or `_weight` .
 
     Inputs:
         - **input** (Tensor) - The indices used to lookup in the embedding vector. The data type must be
-          mindspore.int32 or mindspore.int64, and the value should be in range `[0, num_embeddings)`.
+          int32 or int64, and the value should be in range `[0, num_embeddings)`.
 
     Outputs:
         Tensor, has the same data type as weight, the shape is :math:`(*input.shape, embedding\_dim)`.
@@ -202,6 +210,7 @@ class EmbeddingExt(Cell):
         TypeError: If `max_norm` is not a float.
         TypeError: If `norm_type` is not a float.
         TypeError: If `scale_grad_by_freq` is not a bool.
+        ValueError: If `weight.shape` is invalid.
         TypeError: If `dtype` is not one of mindspore.dtype.
 
     Supported Platforms:
@@ -212,7 +221,7 @@ class EmbeddingExt(Cell):
         >>> import numpy as np
         >>> from mindspore import Tensor, nn
         >>> input = Tensor([[1, 0, 1, 1], [0, 0, 1, 0]])
-        >>> embedding = nn.mint.nn.Embedding(num_embeddings=10, embedding_dim=3)
+        >>> embedding = nn.EmbeddingExt(num_embeddings=10, embedding_dim=3)
         >>> output = embedding(input)
         >>> print(output)
         [[[-0.0024154  -0.01203444  0.00811537]
@@ -226,23 +235,30 @@ class EmbeddingExt(Cell):
     """
 
     def __init__(self, num_embeddings, embedding_dim, padding_idx=None, max_norm=None, norm_type=2.0,
-                 scale_grad_by_freq=False, _weight=None, dtype=mstype.float32):
+                 scale_grad_by_freq=False, sparse=False, _weight=None, _freeze=False, dtype=None):
         """Initialize Embedding."""
         super().__init__()
+        self.sparse = Validator.check_value_type('sparse', sparse, [bool], self.cls_name)
+        if self.sparse:
+            raise ValueError("For Embedding, the scenerio, where `sparse` is True, has not be supported.")
         self.num_embeddings = Validator.check_value_type(
             'num_embeddings', num_embeddings, [int], self.cls_name)
         self.embedding_dim = Validator.check_value_type(
             'embedding_dim', embedding_dim, [int], self.cls_name)
+        self.dtype = dtype if dtype is not None else mstype.float32
         Validator.check_subclass(
-            "dtype", dtype, mstype.number_type, self.cls_name)
-        self.dtype = dtype
+            "dtype", self.dtype, mstype.number_type, self.cls_name)
         self.padding_idx = padding_idx
         if _weight is None:
-            init_tensor = Tensor(shape=[num_embeddings, embedding_dim], dtype=dtype, init=Normal(1, 0))
+            init_tensor = Tensor(shape=[num_embeddings, embedding_dim], dtype=self.dtype, init=Normal(1, 0))
             init_tensor = self._zero_weight_by_index(init_tensor)
-            self.weight = Parameter(init_tensor, name='weight')
+            self.weight = Parameter(init_tensor, name='weight', requires_grad=not _freeze)
         else:
-            self.weight = Parameter(_weight)
+            if _weight.shape != (num_embeddings, embedding_dim):
+                raise ValueError(f"For Embedding, shape of weight should be match with num_embeddings "
+                                 f"and embedding_dim, but got weight.shape: {_weight.shape}, "
+                                 f"and (num_embeddings, embedding_dim): ({num_embeddings}, {embedding_dim})")
+            self.weight = Parameter(_weight, name='weight', requires_grad=not _freeze)
 
         self.max_norm = max_norm
         if max_norm is not None:

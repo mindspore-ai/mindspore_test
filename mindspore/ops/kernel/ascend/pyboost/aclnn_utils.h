@@ -191,7 +191,11 @@ struct MemBlock {
   const DeviceContext *device_context_;
 };
 using MemBlockPtr = std::shared_ptr<MemBlock>;
-int8_t GetCubeMathType();
+
+int8_t GetCubeMathType(bool use_hf32 = false);
+bool IsAllowMatmulHF32();
+bool IsAllowConvHF32();
+
 std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::BaseTensorPtr &seed, const tensor::BaseTensorPtr &offset,
                                                  int64_t step = 10);
 }  // namespace pyboost

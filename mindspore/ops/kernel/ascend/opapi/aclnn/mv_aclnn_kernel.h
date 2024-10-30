@@ -36,6 +36,8 @@ class MvAclnnKernelMod : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+
+  int8_t cube_math_type_;
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -28,7 +28,9 @@ void BMMAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inpu
 
   input_a_ = std::pair<KernelTensor *, bool>(inputs[kIndex0], trans_a);
   input_b_ = std::pair<KernelTensor *, bool>(inputs[kIndex1], trans_b);
-  GetWorkspaceForResize(input_a_, input_b_, outputs[kIndex0], OpApiUtil::GetCubeMathType());
+  cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowMatmulHF32());
+
+  GetWorkspaceForResize(input_a_, input_b_, outputs[kIndex0], cube_math_type_);
 }
 
 bool BMMAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
@@ -36,21 +38,24 @@ bool BMMAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const 
   MS_EXCEPTION_IF_NULL(stream_ptr);
   input_a_.first = inputs[kIndex0];
   input_b_.first = inputs[kIndex1];
-  RunOp(stream_ptr, workspace, input_a_, input_b_, outputs[kIndex0], OpApiUtil::GetCubeMathType());
+  RunOp(stream_ptr, workspace, input_a_, input_b_, outputs[kIndex0], cube_math_type_);
   return true;
 }
+
 void BMMExtAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], OpApiUtil::GetCubeMathType());
+  cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowMatmulHF32());
+  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], cube_math_type_);
 }
 
 bool BMMExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &workspace,
                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], OpApiUtil::GetCubeMathType());
+  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], cube_math_type_);
   return true;
 }
+
 MS_ACLNN_KERNEL_FACTORY_REG(BatchMatMulExt, BMMExtAclnnKernelMod);
 MS_ACLNN_KERNEL_FACTORY_REG(BatchMatMul, BMMAclnnKernelMod);
 }  // namespace kernel

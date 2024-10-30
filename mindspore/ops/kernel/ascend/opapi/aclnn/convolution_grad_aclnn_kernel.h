@@ -42,6 +42,7 @@ class ConvolutionGradAscend : public AclnnKernelMod {
   std::vector<uint8_t> output_mask_;
   int64_t groups_{0};
   bool transposed_{false};
+  int8_t cube_math_type_{0};
   std::vector<int64_t> output_padding_;
 };
 }  // namespace kernel

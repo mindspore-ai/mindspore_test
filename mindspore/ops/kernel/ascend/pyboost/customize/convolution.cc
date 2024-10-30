@@ -57,7 +57,7 @@ tensor::BaseTensorPtr ConvolutionAscendCustomize(const std::shared_ptr<OpRunner>
       PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
       LAUNCH_ACLNN(aclnnConvolution, device_context, op->stream_id(), input_tensor, weight_tensor, bias_tensor,
                    stride_vector, pad_vector, dilation_vector, transposed_imm, output_padding_vector, group_imm,
-                   outputs[0], GetCubeMathType());
+                   outputs[0], GetCubeMathType(IsAllowConvHF32()));
       MS_LOG(DEBUG) << "Run device task Convolution end";
     }));
   return op->output(0);

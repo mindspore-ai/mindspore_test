@@ -23,19 +23,20 @@ namespace mindspore {
 namespace kernel {
 
 void BaddbmmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                           const std::vector<KernelTensor *> &outputs) {
+                                             const std::vector<KernelTensor *> &outputs) {
   beta_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex3]);
   alpha_ = transform::ConvertKernelTensor<ScalarPtr>(inputs[kIndex4]);
+  cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowMatmulHF32());
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], beta_, alpha_, outputs[kIndex0],
-                        OpApiUtil::GetCubeMathType());
+                        cube_math_type_);
 }
 
 bool BaddbmmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
-                                 const std::vector<KernelTensor *> &workspace,
-                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+                                   const std::vector<KernelTensor *> &workspace,
+                                   const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], beta_, alpha_, outputs[kIndex0],
-        OpApiUtil::GetCubeMathType());
+        cube_math_type_);
   return true;
 }
 MS_ACLNN_KERNEL_FACTORY_REG(Baddbmm, BaddbmmAclnnKernelMod);
