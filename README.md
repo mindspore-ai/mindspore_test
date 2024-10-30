@@ -275,15 +275,17 @@ Project stable branches will be in one of the following states:
 | Development | 3 months      | Features are under development.                  |
 | Maintained  | 6 - 12 months | All bugfixes are appropriate. Releases produced. |
 | Unmaintained| 0 - 3 months  | All bugfixes are appropriate. No Maintainers and No Releases produced.                                                 |
-| End Of Life (EOL) |  N/A |  Branch no longer accepting changes.    |
+| End Of Life (EOL) |  N/A |  Version no longer accepting changes.    |
 
 ## Maintenance status
 
-| **Branch** | **Status**   | **Initial Release Date** | **Next Phase**                         | **EOL Date**|
+| **Version** | **Status**   | **Initial Release Date** | **Next Phase**                         | **EOL Date**|
 |------------|--------------|--------------------------|----------------------------------------|-------------|
-| **r2.2**   | Maintained   | 2023-10-18               | Unmaintained <br> 2024-10-18 estimated |             |
-| **r2.1**   | Maintained   | 2023-07-29               | Unmaintained <br> 2024-07-29 estimated |             |
-| **r2.0**   | Maintained   | 2023-06-15               | Unmaintained <br> 2024-06-15 estimated |             |
+| **r2.4**   | Maintained   | 2024-10-30               | Unmaintained <br> 2025-10-30 estimated | 2025-10-30  |
+| **r2.3**   | Maintained   | 2024-07-15               | Unmaintained <br> 2025-07-15 estimated | 2025-07-15  |
+| **r2.2**   | End Of Life  | 2023-10-18               |                                        | 2024-10-18  |
+| **r2.1**   | End Of Life  | 2023-07-29               |                                        | 2024-07-29  |
+| **r2.0**   | End Of Life  | 2023-06-15               |                                        | 2024-06-15  |
 | **r1.10**  | End Of Life  | 2023-02-02               |                                        | 2024-02-02  |
 | **r1.9**   | End Of Life  | 2022-10-26               |                                        | 2023-10-26  |
 | **r1.8**   | End Of Life  | 2022-07-29               |                                        | 2023-07-29  |
