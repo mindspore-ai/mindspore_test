@@ -48,6 +48,10 @@ bool NonZeroAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 void NonZeroAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &,
                                              const std::vector<KernelTensor *> &outputs) {
   outputs[kIndex0]->SetShapeVector(outputs_shape_[kIndex0]);
+  size_t dtype_byte = GetTypeByte(TypeIdToType(outputs[kIndex0]->dtype_id()));
+  size_t update_size = LongToSize(std::accumulate(outputs_shape_[kIndex0].begin(), outputs_shape_[kIndex0].end(),
+                                                  dtype_byte, std::multiplies<int64_t>()));
+  outputs[kIndex0]->set_size(update_size);
 }
 MS_ACLNN_KERNEL_FACTORY_REG(NonZero, NonZeroAscend);
 }  // namespace kernel

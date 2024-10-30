@@ -81,6 +81,10 @@ void DynamicStitchKernelMod::UpdateOutputShapeAndSize(const std::vector<KernelTe
   // common::AnfAlgo::SetOutputInferTypeAndShape({data_type}, {output_shape}, kernel_node_.lock().get());
   outputs[0]->SetShapeVector(output_shape);
   MS_LOG(DEBUG) << "Run PostExecute for dynamicstitch, real output shape is " << output_shape;
+  size_t dtype_byte = GetTypeByte(TypeIdToType(outputs[0]->dtype_id()));
+  size_t update_size =
+    LongToSize(std::accumulate(output_shape.begin(), output_shape.end(), dtype_byte, std::multiplies<int64_t>()));
+  outputs[0]->set_size(update_size);
 }
 
 void DynamicStitchKernelMod::ResetResource() noexcept {

@@ -47,6 +47,9 @@ bool MaskedSelectAclnnKernelMod::Launch(const std::vector<KernelTensor *> &input
 void MaskedSelectAclnnKernelMod::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &,
                                                           const std::vector<KernelTensor *> &outputs) {
   outputs[kIndex0]->SetShapeVector(outputs_shape_[kIndex0]);
+  size_t type_size = UnitSizeInBytes(outputs[kIndex0]->dtype_id());
+  size_t size = SizeOf(outputs_shape_[kIndex0]) * type_size;
+  outputs[kIndex0]->set_size(size);
 }
 MS_ACLNN_KERNEL_FACTORY_REG(MaskedSelect, MaskedSelectAclnnKernelMod);
 }  // namespace kernel
