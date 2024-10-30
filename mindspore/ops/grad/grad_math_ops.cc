@@ -4257,5 +4257,24 @@ REG_BPROP_BUILDER("Outer").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   grad[0] = ib->Reshape(grad[0], ib->Shape(input));
   return grad;
 });
+
+REG_BPROP_BUILDER("Dot").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  NodePtr grad_input = nullptr;
+  NodePtr grad_other = nullptr;
+  if (input->need_compute_grad_out()) {
+    auto other_type = ib->GetDtypeId(other);
+    auto is_complex = other_type == kNumberTypeComplex64 || other_type == kNumberTypeComplex128;
+    grad_input = ib->Mul(dout, is_complex ? ib->Emit("Conj", {other}) : other);
+  }
+  if (other->need_compute_grad_out()) {
+    auto input_type = ib->GetDtypeId(input);
+    auto is_complex = input_type == kNumberTypeComplex64 || input_type == kNumberTypeComplex128;
+    grad_other = ib->Mul(dout, is_complex ? ib->Emit("Conj", {input}) : input);
+  }
+  return {grad_input, grad_other};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

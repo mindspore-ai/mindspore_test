@@ -115,12 +115,12 @@ def error_status_log():
     print(f"\n[ERROR]: TEST_OP catch a error during testing. the error status info is: {DEBUG_STATUS_INFO}."
           f"\nPlease use these parameters to quickly reproduce the error:")
     # disable_mode
-    if 'GRAPH_MODE' in DEBUG_STATUS_INFO:
+    if 'GRAPH_MODE_O0' in DEBUG_STATUS_INFO:
+        print("disable_mode=['GRAPH_MODE', 'PYNATIVE_MODE']")
+    elif 'GRAPH_MODE' in DEBUG_STATUS_INFO:
         print("disable_mode=['PYNATIVE_MODE', 'GRAPH_MODE_O0']")
     elif 'PYNATIVE_MODE' in DEBUG_STATUS_INFO:
         print("disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0']")
-    elif 'GRAPH_MODE_O0' in DEBUG_STATUS_INFO:
-        print("disable_mode=['GRAPH_MODE', 'PYNATIVE_MODE']")
     # disable_tensor_dynamic_type
     if 'DYNAMIC_SHAPE' in DEBUG_STATUS_INFO:
         print("disable_tensor_dynamic_type='DYNAMIC_RANK'")
@@ -136,7 +136,7 @@ def error_status_log():
     # disable_resize
     if 'Resize' not in DEBUG_STATUS_INFO:
         print("disable_resize=True")
-    print("For more information, set dump_ir=True to get ir graphs.")
+    print("For more information, set dump_ir=True or debug_info=True to get ir graphs.")
 
 
 def debug_log_args(args, tag='', print_tensor=False):
@@ -450,7 +450,7 @@ def replace_diff_len_tuple_from_run_inputs(compile_inputs, run_inputs):
 
 
 def run_with_dynamic_resize(prim, inputs_seq, mode_name, dump_ir, ir_path, expect_resize, ignore_output_index,
-                            inplace_update):
+                            inplace_update, tensor_dynamic_type):
     """test resize"""
     print(f"Start testing with [{mode_name}] [Resize]...")
     out_actual = None
@@ -458,7 +458,10 @@ def run_with_dynamic_resize(prim, inputs_seq, mode_name, dump_ir, ir_path, expec
     if dump_ir:
         context.set_context(save_graphs=IR_LEVEL, save_graphs_path=ir_path)
 
-    compile_inputs = convert_tensor_to_dynamic(inputs_seq[0], 'DYNAMIC_RANK')
+    if 'DYNAMIC_RANK' in tensor_dynamic_type:
+        compile_inputs = convert_tensor_to_dynamic(inputs_seq[0], 'DYNAMIC_RANK')
+    else:
+        compile_inputs = convert_tensor_to_dynamic(inputs_seq[0], 'DYNAMIC_SHAPE')
     compile_inputs = replace_nontensor_with_help_tensor(compile_inputs)
     compile_inputs = convert_sequence_of_tensor_to_mutable(compile_inputs)
     run_inputs = replace_nontensor_with_help_tensor(inputs_seq[0])
@@ -575,7 +578,7 @@ def run_with_dynamic(prim, inputs_seq, mode_name, disable_tensor_dynamic_type, d
         expect_resize = expect_second[0] if grad else expect_second
         set_debug_status_info(mode_name, 'Resize')
         run_with_dynamic_resize(prim, inputs_seq, mode_name, dump_ir,
-                                ir_path, expect_resize, ignore_output_index, inplace_update)
+                                ir_path, expect_resize, ignore_output_index, inplace_update, tensor_dynamic_type)
 
     if has_tensor(inputs_seq[0]):
         # Test dynamic Tensor with no mutable inputs
