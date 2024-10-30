@@ -401,7 +401,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"baddbmm", std::string("baddbmm")},                                // baddbmm
        {"bmm", std::string("bmm")},                                        // bmm()
        {"value", std::string("value_")},                                   // P.Load(param, U)
-       {"to", std::string("to")},                                          // to()
        {"bool", std::string("to_bool")},                                   // bool()
        {"float", std::string("to_float")},                                 // float()
        {"half", std::string("to_half")},                                   // half()

@@ -4003,35 +4003,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bmm')(self, mat2)
 
-    def to(self, dtype):
-        r"""
-        Performs tensor dtype conversion.
-
-        Args:
-            dtype (Number): The valid data type of the output tensor. Only constant value is allowed.
-
-        Returns:
-            Tensor, converted to the specified `dtype`.
-
-        Raises:
-            TypeError: If `dtype` is not a Number.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
-            >>> input_x = Tensor(input_np)
-            >>> dtype = mindspore.int32
-            >>> output = input_x.to(dtype)
-            >>> print(output.dtype)
-            Int32
-        """
-        return tensor_operator_registry.get('to')(self, dtype)
-
     def type(self, dtype=None):
         r"""
         Change the dtype of the Tensor to the `dtype` . Return the type if `dtype` is ``None`` .
@@ -4104,7 +4075,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Bool
         """
-        return tensor_operator_registry.get('bool')(self, mstype.bool_)
+        return self.to(mstype.bool_)
 
     def float(self):
         r"""
@@ -4125,7 +4096,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Float32
         """
-        return tensor_operator_registry.get('float')(self, mstype.float32)
+        return self.to(mstype.float32)
 
     def half(self):
         r"""
@@ -4146,7 +4117,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Float16
         """
-        return tensor_operator_registry.get('half')(self, mstype.float16)
+        return self.to(mstype.float16)
 
     def int(self):
         r"""
@@ -4167,7 +4138,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Int32
         """
-        return tensor_operator_registry.get('int')(self, mstype.int32)
+        return self.to(mstype.int32)
 
     def byte(self):
         r"""
@@ -4188,7 +4159,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             uint8
         """
-        return tensor_operator_registry.get('byte')(self, mstype.uint8)
+        return self.to(mstype.uint8)
 
     def long(self):
         r"""
@@ -4209,7 +4180,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Int64
         """
-        return tensor_operator_registry.get('long')(self, mstype.int64)
+        return self.to(mstype.int64)
 
     def short(self):
         r"""
@@ -4231,7 +4202,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> output
             Tensor(shape=[5], dtype=Int16, value= [1, 2, 3, 4, 5])
         """
-        return tensor_operator_registry.get('cast')(self, mstype.int16)
+        return self.to(mstype.int16)
 
     def cholesky(self, upper=False):
         r"""
