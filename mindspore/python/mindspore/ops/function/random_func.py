@@ -30,7 +30,8 @@ from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
-    NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt
+    NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
+    Randn, RandnLike, RandInt, RandIntLike
 
 normal_tensor_tensor_op = NormalTensorTensor()
 normal_tensor_float_op = NormalTensorFloat()
@@ -46,6 +47,10 @@ uniform_ = UniformExt()
 rand_ext_ = RandExt()
 rand_like_ext_ = RandLikeExt()
 multinomial_ext_ = MultinomialExt()
+randn_ = Randn()
+randn_like_ = RandnLike()
+randint_ = RandInt()
+randint_like_ = RandIntLike()
 generator_step_ = Tensor(10, mstype.int64)
 
 
@@ -287,7 +292,8 @@ def uniform_ext(tensor, a, b, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
     return uniform_(tensor, a, b, seed, offset)
 
 
@@ -755,7 +761,8 @@ def normal_ext(mean=0.0, std=1.0, size=None, generator=None):
     """
     if generator is None:
         generator = default_generator
-    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
 
     is_mean_tensor = isinstance(mean, Tensor)
     is_std_tensor = isinstance(std, Tensor)
@@ -1129,7 +1136,8 @@ def rand_ext(*size, generator=None, dtype=None):
     """
     if not generator:
         generator = default_generator
-    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
     return rand_ext_(size, seed, offset, dtype)
 
 
@@ -1163,8 +1171,172 @@ def rand_like_ext(input, *, dtype=None):
         >>> print(ops.function.random_func.rand_like_ext(a, dtype=ms.float32).shape)
         (2, 3)
     """
-    seed, offset = default_generator._step(generator_step_)  # pylint: disable=protected-access
+    seed, offset = default_generator._step(  # pylint: disable=protected-access
+        generator_step_)
     return rand_like_ext_(input, seed, offset, dtype)
+
+
+@_function_forbid_reuse
+def randn_ext(*size, generator=None, dtype=None):
+    r"""
+    Returns a new tensor filled with numbers from the normal distribution over an interval :math:`[0, 1)`
+    based on the given shape and dtype.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        size (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)` or :math:`2`.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
+            `mindspore.float32` will be applied. Default: ``None`` .
+
+    Returns:
+        Tensor, with the designated shape and dtype, filled with random numbers from the normal distribution on
+        the interval :math:`[0, 1)`.
+
+    Raises:
+        ValueError: If `dtype` is not a `mstype.float_type` type.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> print(ops.function.random_func.randn_ext(2, 3).shape)
+        (2, 3)
+    """
+    if not generator:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return randn_(size, seed, offset, dtype)
+
+
+@_function_forbid_reuse
+def randn_like_ext(input, *, dtype=None):
+    r"""
+    Returns a new tensor filled with numbers from the normal distribution over an interval :math:`[0, 1)`
+    based on the given dtype and shape of the input tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Input Tensor to specify the output shape and its default dtype.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype, it must be float type. If None,
+            the same dtype of `input` will be applied. Default: ``None`` .
+
+    Returns:
+        Tensor, with the designated shape and dtype, filled with random numbers from the normal distribution on
+        the interval :math:`[0, 1)`.
+
+    Raises:
+        ValueError: If `dtype` is not a `mstype.float_type` type.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor, ops
+        >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
+        >>> print(ops.function.random_func.randn_like_ext(a, dtype=ms.float32).shape)
+        (2, 3)
+    """
+    seed, offset = default_generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return randn_like_(input, seed, offset, dtype)
+
+
+@_function_forbid_reuse
+def randint_ext(low, high, size, *, generator=None, dtype=None):
+    r"""
+    Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
+    based on the given shape and dtype.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        low (int): the lower bound of the generated random number
+        high (int): the upper bound of the generated random number
+        size (Union[tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)`.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
+            `mindspore.int64` will be applied. Default: ``None`` .
+
+    Returns:
+        Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
+        the interval :math:`[low, high)`.
+
+    Raises:
+        TypeError: If `size` is not a tuple.
+        TypeError: If `low` or `high` is not integer.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> print(ops.function.random_func.randint_ext(0, 5, (2, 3)).shape)
+        (2, 3)
+    """
+    if not generator:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return randint_(low, high, size, seed, offset, dtype)
+
+
+@_function_forbid_reuse
+def randint_like_ext(input, low, high, *, dtype=None):
+    r"""
+    Returns a new tensor filled with integer numbers from the uniform distribution over an interval :math:`[low, high)`
+    based on the given dtype and shape of the input tensor.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Input Tensor to specify the output shape and its default dtype.
+        low (int): the lower bound of the generated random number
+        high (int): the upper bound of the generated random number
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): Designated tensor dtype. If None,
+            the same dtype of `input` will be applied. Default: ``None`` .
+
+    Returns:
+        Tensor, with the designated shape and dtype, filled with random numbers from the uniform distribution on
+        the interval :math:`[low, high)`.
+
+    Raises:
+        TypeError: If `low` or `high` is not integer.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor, ops
+        >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
+        >>> low = 0
+        >>> high = 5
+        >>> print(ops.function.random_func.randint_like_ext(a, low, high, dtype=ms.int32).shape)
+        (2, 3)
+    """
+    seed, offset = default_generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return randint_like_(input, low, high, seed, offset, dtype)
 
 
 @_function_forbid_reuse
@@ -1675,7 +1847,6 @@ def multinomial_ext(input, num_samples, replacement=False, *, generator=None):
         >>> # [[0 0 0 0 0 0 0 0 1 0]
         >>> #  [1 1 1 1 1 0 1 1 1 1]]
     """
-
     if generator is None:
         generator = default_generator
     seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access

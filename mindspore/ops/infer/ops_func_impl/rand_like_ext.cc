@@ -16,32 +16,35 @@
 
 #include "infer/ops_func_impl/rand_like_ext.h"
 #include <memory>
+#include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace ops {
-TypePtr RandLikeExtFuncImpl::InferType(const PrimitivePtr &primitive,
-                                       const std::vector<AbstractBasePtr> &input_args) const {
+void CheckRandIntRange(const InferInfoPtr &from, const InferInfoPtr &to, const std::string &name, bool output_bool);
+
+ShapeArray RandLikeExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex0]->GetShape()};
+}
+
+TypeIdList RandLikeExtFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   auto prim_name = primitive->name();
-  auto dtype_type = input_args[kInputIndex3]->GetType();
-  TypePtr output_type;
-  if (!dtype_type->isa<TypeNone>()) {
-    auto dtype_ptr = input_args[kInputIndex3]->GetValue();
-    if (!dtype_ptr->isa<Int64Imm>()) {
-      MS_EXCEPTION(TypeError) << "For '" << prim_name
-                              << "', 'dtype' must be a TypeId, but got an invalid type: " << dtype_ptr->ToString()
-                              << ".";
-    }
-    auto val = GetValue<int64_t>(dtype_ptr);
-    output_type = TypeIdToType(static_cast<TypeId>(val));
+  auto &dtype = input_infos[dtype_idx_];
+  TypeId output_type;
+  if (!dtype->IsNone()) {
+    output_type = static_cast<TypeId>(dtype->GetScalarValueWithCheck<int64_t>());
   } else {
-    output_type = input_args[kIndex0]->GetType();
+    output_type = input_infos[kIndex0]->GetType();
   }
-  CheckAndConvertUtils::CheckTypeValid("dtype", output_type, {kFloat16, kFloat32, kFloat64, kBFloat16},
-                                       primitive->name());
-  return output_type;
+  if (prim_name == kNameRandIntLike) {
+    CheckRandIntRange(input_infos[kInputIndex1], input_infos[kInputIndex2], prim_name,
+                      (output_type == kNumberTypeBool));
+  }
+  CheckAndConvertUtils::CheckTypeIdValid("dtype", output_type, common_mint_valid_type_ids_with_bool, primitive->name());
+  return {output_type};
 }
 }  // namespace ops
 }  // namespace mindspore

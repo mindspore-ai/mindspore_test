@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/rand_ext.h"
+#include "kernel/ascend/pyboost/customize/randint.h"
 #include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -23,28 +23,27 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RandExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &shape,
+tensor::BaseTensorPtr RandIntAscendCustomize(const std::shared_ptr<OpRunner> &op, const Int64ImmPtr low,
+                                             const Int64ImmPtr high, const ValueTuplePtr &shape,
                                              const BaseTensorPtr &seed, const BaseTensorPtr &offset,
                                              const std::optional<Int64ImmPtr> &dtype) {
-  OpRunner::InferOpOutput(op, shape, seed, offset, dtype);
+  OpRunner::InferOpOutput(op, low, high, shape, seed, offset, dtype);
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
+  auto low_imm = GetValueWithCheck<int64_t>(low);
+  auto high_imm = GetValueWithCheck<int64_t>(high);
   auto device_context = op->device_context();
   auto outputs = op->outputs();
   PyBoostUtils::PrepareOpOutputs(device_context, op->stream_id(), outputs);
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, seed_imm, offset_imm]() {
-    auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
-    // Malloc for input tensors
-
-    // Malloc for output tensors
-    PyBoostUtils::MallocOpOutputs(device_context, outputs);
-    constexpr double from_imm = 0.0;
-    constexpr double to_imm = 1.0;
-    LAUNCH_ACLNN(aclnnInplaceUniform, device_context, op->stream_id(), outputs[kIndex0], from_imm, to_imm, seed_imm,
-                 offset_imm);
-  }));
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, seed_imm, offset_imm, low_imm, high_imm]() {
+      auto device_context = op->device_context();
+      const auto &outputs = op->outputs();
+      PyBoostUtils::MallocOpOutputs(device_context, outputs);
+      LAUNCH_ACLNN(aclnnInplaceRandom, device_context, op->stream_id(), outputs[kIndex0], low_imm, high_imm, seed_imm,
+                   offset_imm);
+    }));
   return outputs[kIndex0];
 }
 }  // namespace pyboost

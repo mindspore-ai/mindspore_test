@@ -323,6 +323,10 @@ from mindspore.ops.auto_generate import expm1
 from mindspore.ops.function.array_func import eye
 from mindspore.ops.function.random_func import rand_ext as rand
 from mindspore.ops.function.random_func import rand_like_ext as rand_like
+from mindspore.ops.function.random_func import randn_ext as randn
+from mindspore.ops.function.random_func import randn_like_ext as randn_like
+from mindspore.ops.function.random_func import randint_ext as randint
+from mindspore.ops.function.random_func import randint_like_ext as randint_like
 # 210
 from mindspore.ops.auto_generate import floor
 # 231
@@ -1980,6 +1984,10 @@ __all__ = [
     'median',
     'rand',
     'rand_like',
+    'randn',
+    'randn_like',
+    'randint',
+    'randint_like',
     # 210
     'floor',
     # 231

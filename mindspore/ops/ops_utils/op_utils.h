@@ -75,6 +75,14 @@ const std::set<TypeId> common_valid_type_ids_with_complex = {
   kNumberTypeUInt16,  kNumberTypeUInt32,    kNumberTypeUInt64,     kNumberTypeFloat16, kNumberTypeFloat32,
   kNumberTypeFloat64, kNumberTypeComplex64, kNumberTypeComplex128, kNumberTypeBFloat16};
 
+const std::set<TypeId> common_mint_valid_type_ids = {kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,
+                                                     kNumberTypeInt64,   kNumberTypeUInt8,   kNumberTypeFloat16,
+                                                     kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
+
+const std::set<TypeId> common_mint_valid_type_ids_with_bool = {
+  kNumberTypeInt8, kNumberTypeInt16,   kNumberTypeInt32,   kNumberTypeInt64,   kNumberTypeUInt8,
+  kNumberTypeBool, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
+
 const std::set<TypeId> common_valid_type_ids_with_complex_and_bool = {
   kNumberTypeInt8,    kNumberTypeInt16,     kNumberTypeInt32,      kNumberTypeInt64,   kNumberTypeUInt8,
   kNumberTypeUInt16,  kNumberTypeUInt32,    kNumberTypeUInt64,     kNumberTypeFloat16, kNumberTypeFloat32,

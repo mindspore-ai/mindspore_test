@@ -30,6 +30,7 @@ constexpr int32_t OP_CHECK_RETRY = -1;
 
 namespace ops {
 using abstract::AbstractBasePtr;
+using TypeIdList = std::vector<TypeId>;
 
 /// \brief This class is a collection of functions related to operator, such as InferShape, InferType, Check, etc.
 class MIND_API OpFuncImpl {
@@ -87,7 +88,7 @@ class MIND_API OpFuncImpl {
   /// \param[in] input_infos Operator's input InferInfo list.
   ///
   /// \return The inferred output type id.
-  virtual std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  virtual TypeIdList InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
     MS_LOG(EXCEPTION) << "Not implement exception";
   }
 

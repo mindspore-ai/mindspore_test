@@ -62,6 +62,15 @@ class MS_CORE_API InferInfo {
   }
 
   template <class T>
+  T GetScalarValueWithCheck() {
+    const auto &opt = GetScalarValue<T>();
+    if (!opt.has_value()) {
+      MS_LOG(EXCEPTION) << "Unable to get scalar value, " << BaseDebugInfo();
+    }
+    return opt.value();
+  }
+
+  template <class T>
   std::optional<ArrayValue<T>> GetArrayValue() {
     if (MS_UNLIKELY(IsNone())) {
       MS_LOG(EXCEPTION) << "Calling GetArrayValue on a None object, " << BaseDebugInfo();
@@ -79,6 +88,8 @@ class MS_CORE_API InferInfo {
   virtual bool IsDynamicSequence() = 0;
   virtual std::vector<InferInfoPtr> GetSequenceElements() = 0;
   virtual InferInfoPtr GetDynamicSequenceElement() = 0;
+
+  virtual std::string DebugInfo() = 0;
 
  protected:
   virtual ValuePtr GetValuePtr() = 0;

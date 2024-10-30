@@ -16,5 +16,3 @@ generator:
         side_effect_mem: True
     function:
         disable: True
-    dispatch:
-        enable: True

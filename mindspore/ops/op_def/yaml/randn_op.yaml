@@ -1,5 +1,5 @@
-#operator rand_ext
-rand_ext:
+#operator randn
+randn:
     args:
         shape:
             dtype: tuple[int]
@@ -18,4 +18,4 @@ rand_ext:
         disable: True
     dispatch:
         enable: True
-        Ascend: RandExtAscend
+        Ascend: RandnAscend

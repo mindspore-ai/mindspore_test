@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/rand_ext.h"
+#include "kernel/ascend/pyboost/customize/randn_like.h"
 #include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -23,26 +23,30 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr RandExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const ValueTuplePtr &shape,
-                                             const BaseTensorPtr &seed, const BaseTensorPtr &offset,
-                                             const std::optional<Int64ImmPtr> &dtype) {
-  OpRunner::InferOpOutput(op, shape, seed, offset, dtype);
+tensor::BaseTensorPtr RandnLikeAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor_tensor,
+                                               const BaseTensorPtr &seed, const BaseTensorPtr &offset,
+                                               const std::optional<Int64ImmPtr> &dtype) {
+  OpRunner::InferOpOutput(op, tensor_tensor, seed, offset, dtype);
+
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
   auto device_context = op->device_context();
   auto outputs = op->outputs();
+  PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), tensor_tensor);
+
   PyBoostUtils::PrepareOpOutputs(device_context, op->stream_id(), outputs);
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, seed_imm, offset_imm]() {
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, tensor_tensor, seed_imm, offset_imm]() {
     auto device_context = op->device_context();
     const auto &outputs = op->outputs();
+    constexpr float mean_imm = 0.0;
+    constexpr float std_imm = 1.0;
     // Malloc for input tensors
-
+    PyBoostUtils::MallocOpInputs(device_context, tensor_tensor);
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
-    constexpr double from_imm = 0.0;
-    constexpr double to_imm = 1.0;
-    LAUNCH_ACLNN(aclnnInplaceUniform, device_context, op->stream_id(), outputs[kIndex0], from_imm, to_imm, seed_imm,
+
+    LAUNCH_ACLNN(aclnnInplaceNormal, device_context, op->stream_id(), outputs[kIndex0], mean_imm, std_imm, seed_imm,
                  offset_imm);
   }));
   return outputs[kIndex0];

@@ -100,4 +100,6 @@ ValuePtr ValueInferInfoAdapter::GetValuePtr() { return value_; }
 AbstractBasePtr ValueInferInfoAdapter::GetAbstractPtr() { return nullptr; }
 
 const std::string &ValueInferInfoAdapter::BaseDebugInfo() { return base_debug_info_; }
+
+std::string ValueInferInfoAdapter::DebugInfo() { return BaseDebugInfo() + " -> " + GetValuePtr()->ToString(); }
 }  // namespace mindspore::ops

@@ -45,5 +45,6 @@ bool RandExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
 }
 
 MS_ACLNN_KERNEL_FACTORY_REG(RandExt, RandExtAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(RandLikeExt, RandExtAscend);
 }  // namespace kernel
 }  // namespace mindspore

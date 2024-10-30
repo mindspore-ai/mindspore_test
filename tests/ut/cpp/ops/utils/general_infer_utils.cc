@@ -38,6 +38,17 @@
 namespace mindspore::ops {
 static bool is_sequence_input(const InferInfoParam &param) { return param.shape.index() == kSequenceParamVaIndex; }
 
+static AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId type, const ValuePtr &value) {
+  if (value == mindspore::kNone) {
+    return std::make_shared<abstract::AbstractNone>();
+  }
+  auto abs = abstract::MakeAbstract(shape, type);
+  if (value) {
+    abs->set_value(value);
+  }
+  return abs;
+}
+
 InferInfoPtr param_to_abstract_info(InferInfoParam param, const std::string &op_type, const std::string &arg_name) {
   AbstractBasePtr abs;
   if (is_sequence_input(param)) {
@@ -46,10 +57,7 @@ InferInfoPtr param_to_abstract_info(InferInfoParam param, const std::string &op_
     const auto &types = std::get<std::vector<TypeId>>(param.type);
     const auto &values = std::get<ValuePtrList>(param.value);
     for (size_t i = 0; i < shapes.size(); ++i) {
-      auto abs_ = abstract::MakeAbstract(shapes[i], types[i]);
-      if (values[i]) {
-        abs_->set_value(values[i]);
-      }
+      auto abs_ = MakeAbstract(shapes[i], types[i], values[i]);
       abs_list.push_back(abs_);
     }
     abstract::AbstractSequencePtr sequence_abs = std::make_shared<abstract::AbstractList>(abs_list);
@@ -60,11 +68,8 @@ InferInfoPtr param_to_abstract_info(InferInfoParam param, const std::string &op_
     }
     abs = sequence_abs;
   } else {
-    abs = abstract::MakeAbstract(std::get<ShapeVector>(param.shape), std::get<TypeId>(param.type));
-    auto value = std::get<ValuePtr>(param.value);
-    if (value) {
-      abs->set_value(value);
-    }
+    abs =
+      MakeAbstract(std::get<ShapeVector>(param.shape), std::get<TypeId>(param.type), std::get<ValuePtr>(param.value));
   }
   return std::make_unique<AbstractInferInfoAdapter>(abs, op_type, arg_name);
 }

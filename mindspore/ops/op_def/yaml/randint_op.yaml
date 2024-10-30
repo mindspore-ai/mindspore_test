@@ -1,8 +1,13 @@
-#operator rand_ext
-rand_ext:
+#operator randint
+randint:
     args:
+        low:
+            dtype: int
+        high:
+            dtype: int
         shape:
             dtype: tuple[int]
+            type_cast: list[int]
         seed:
             dtype: tensor
         offset:
@@ -14,8 +19,10 @@ rand_ext:
     returns:
         output:
             dtype: tensor
+    class:
+        name: RandInt
     function:
         disable: True
     dispatch:
         enable: True
-        Ascend: RandExtAscend
+        Ascend: RandIntAscend

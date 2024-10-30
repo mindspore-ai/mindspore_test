@@ -40,6 +40,19 @@
     }                                    \
   } while (0)
 
+#define MS_AMBIGUOUS_ELSE_BLOCKER_ \
+  switch (0)                       \
+  case 0:                          \
+  default:
+#define MS_ASSERT_TRUE(cond) \
+  MS_AMBIGUOUS_ELSE_BLOCKER_ \
+  if ((cond))                \
+    ;                        \
+  else                       \
+    MS_LOG(EXCEPTION)
+
+#define MS_ASSERT_FALSE(cond) MS_ASSERT_TRUE(!cond)
+
 namespace mindspore::ops {
 MS_CORE_API std::set<int64_t> GetInputDependValueList(const PrimitivePtr &op_prim);
 
