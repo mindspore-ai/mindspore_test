@@ -180,22 +180,30 @@ bool CollectiveManager::Initialize() {
     comm_lib_instance_ = device_comm_lib_instance_;
   } else {
     // Step 1: Initialize host side collective communication.
+    PROF_START(InitHostCommlib);
     RETURN_IF_FALSE_WITH_LOG(InitHostCommlib(), "Failed to initialize host communication library.");
+    PROF_END(InitHostCommlib);
     comm_lib_instance_ = host_comm_lib_instance_;
 
     // Step 2, 3 and 4 are for device communication library. So if the training job is only launched on CPU, they will
     // not be necessary.
     // Step 2: Assign local rank id(device id) for this process.
+    PROF_START(AssignLocalRank);
     RETURN_IF_FALSE_WITH_LOG(AssignLocalRank(), "Failed to assign local rank id.");
+    PROF_END(AssignLocalRank);
 
     // Step 3: Initialize device side collective communication.
+    PROF_START(InitDeviceBackend);
     RETURN_IF_FALSE_WITH_LOG(InitDeviceCommLib(), "Failed to initialize device communication library.");
+    PROF_END(InitDeviceBackend);
 
     // Step 4: Create global communication group.
     MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
     auto group_name = device_comm_lib_instance_->global_group_name();
+    PROF_START(CreateGlobalCommunicationGroup);
     RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_),
                              "Failed to create group " + group_name);
+    PROF_END(CreateGlobalCommunicationGroup);
   }
   MS_LOG(INFO) << "Start initializing hccl watchdog on device side...";
   RETURN_IF_FALSE_WITH_LOG(
@@ -306,6 +314,7 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                                                  const std::vector<uint32_t> &group_ranks) {
+  PROF_START(distributed_create_group);
   MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
@@ -330,24 +339,31 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
                            "GetLocalGroupRankAndSize failed for group " + group_name);
   MS_EXCEPTION_IF_NULL(host_comm_lib_instance_);
   // Step 1: Create communication group on host side.
+  PROF_START(CreateCommunicationGroupOnHostSide);
   RETURN_IF_FALSE_WITH_LOG(
     host_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
     "Failed to create host communication group" + group_name);
+  PROF_END(CreateCommunicationGroupOnHostSide);
 
   // Step 2: Create communication group on device side.
+  PROF_START(CreateCommunicationGroupOnDeviceSide);
   RETURN_IF_FALSE_WITH_LOG(
     device_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_group_rank, local_group_size),
     "Failed to create device communication group" + group_name);
+  PROF_END(CreateCommunicationGroupOnDeviceSide);
 
   // Step 3: Generate device information of the root node.
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
   MS_EXCEPTION_IF_NULL(group);
   size_t root_info_size = 0;
+  PROF_START(GenerateRootInfo);
   void *root_info = group->GenerateRootInfo(&root_info_size);
+  PROF_END(GenerateRootInfo);
   MS_EXCEPTION_IF_NULL(root_info);
 
   bool ret = false;
   // Step 4: Broadcast the device root information to all nodes on host side.
+  PROF_START(BroadcastUniqueID);
   while (!ret) {
     RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
                              "Broadcast for device root info failed on the host side.");
@@ -364,6 +380,7 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     }
     MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
   }
+  PROF_END(BroadcastUniqueID);
 
   // Step 5: Initialize communication group on the device side.
   std::function<bool()> init_device_comm_group_func = [&, this]() {
@@ -375,12 +392,16 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
 
   // Timeout limit in seconds to wait finish initializing device communication group.
   int64_t comm_init_timout = GetCommunicatorInitTimeout();
+  PROF_START(InitDeviceCommunicator);
   // Initialize communication group on the device side in thread with timeout limit.
   ret = ExecuteFuncInThread(init_device_comm_group_func, comm_init_timout, "init_device_comm_group_func",
                             "to initialize communicator for group " + group_name);
+  PROF_END(InitDeviceCommunicator);
   if (!ret) {
     MS_LOG(ERROR) << "Failed to create comm group on device side for " << group_name;
   }
+
+  PROF_END(distributed_create_group);
   MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
   return ret;
 }
