@@ -365,6 +365,9 @@ from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
 # 610
 from mindspore.ops.function.math_func import nan_to_num
 
+# 695
+from mindspore.ops.auto_generate import count_nonzero
+
 
 def add(input, other, *, alpha=1):
     r"""
@@ -2011,6 +2014,9 @@ __all__ = [
 
     # 610
     'nan_to_num',
+
+    # 695
+    'count_nonzero',
 ]
 
 setattr(tensor_operator_registry_for_mint, 'add', add)

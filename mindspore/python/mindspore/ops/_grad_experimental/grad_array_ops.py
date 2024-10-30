@@ -38,7 +38,6 @@ from mindspore.ops.operations.array_ops import SegmentMean
 from mindspore.ops.operations.array_ops import AffineGrid
 from mindspore.ops.operations.array_ops import MaskedScatter
 from mindspore.ops.operations.array_ops import MaskedSelect
-from mindspore.ops.operations.array_ops import CountNonZero
 from mindspore.ops.operations.random_ops import LogNormalReverse
 from mindspore.ops.operations.random_ops import ParameterizedTruncatedNormal
 from mindspore.ops.operations import _inner_ops as inner
@@ -121,16 +120,6 @@ def get_bprop_masked_scatter(self):
         dupdates = scatter_update(dupdates, scatter_indices, dupdates_val)
         dupdates = reshape(dupdates, shape(updates))
         return F.cast(dx, x.dtype), zeros_like(mask), F.cast(dupdates, updates.dtype)
-
-    return bprop
-
-
-@bprop_getters.register(CountNonZero)
-def get_bprop_countnonzero(self):
-    """Grad definition for CountNonZero"""
-
-    def bprop(x, out, dout):
-        return (zeros_like(x),)
 
     return bprop
 
