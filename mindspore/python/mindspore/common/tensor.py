@@ -4389,18 +4389,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.dtype in mstype.signed_type
 
-    def less(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.less`.
-        """
-        return tensor_operator_registry.get('less')(self, other)
-
-    def lt(self, other):
-        """
-        Alias for :func:`mindspore.Tensor.less`.
-        """
-        return self.less(other)
-
     def logical_and(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.logical_and`.

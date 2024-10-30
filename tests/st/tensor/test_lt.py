@@ -26,6 +26,10 @@ class Net(nn.Cell):
         output = x.lt(other)
         return output
 
+class NetLess(nn.Cell):
+    def construct(self, x, other):
+        output = x.less(other)
+        return output
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level2',
@@ -44,4 +48,23 @@ def test_lt(mode):
     y = ms.Tensor(np.array([1, 1, 4]), ms.int32)
     out = net(x, y)
     expect_output = np.array([False, False, True], np.bool_)
+    assert (out.asnumpy() == expect_output).any()
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level2',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_less(mode):
+    """
+    Feature: Tensor.less
+    Description: Verify the result of Tensor.less
+    Expectation: success
+    """
+    ms.set_context(mode=mode)
+    net = NetLess()
+    x = ms.Tensor(np.array([1, 2, 3]), ms.int32)
+    y = ms.Tensor(np.array([1, 1, 4]), ms.int32)
+    expect_output = np.array([False, False, True], np.bool_)
+    out = net(x, y)
     assert (out.asnumpy() == expect_output).any()

@@ -430,8 +430,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"igammac", std::string("igammac")},                                // igammac()
        {"isinf", std::string("isinf")},                                    // isinf()
        {"isnan", std::string("isnan")},                                    // isnan()
-       {"less", std::string("less")},                                      // less()
-       {"lt", std::string("less")},                                        // lt()
        {"logical_and", std::string("logical_and")},                        // logical_and()
        {"logical_not", std::string("logical_not")},                        // logical_not()
        {"logical_or", std::string("logical_or")},                          // logical_or()

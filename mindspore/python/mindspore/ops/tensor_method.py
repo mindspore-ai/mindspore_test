@@ -518,6 +518,9 @@ def tensor_le(input, other):
 
 
 # 53 less
+def tensor_less(input, other):
+    return F.less(input, other)
+
 
 # 54 less_equal
 
