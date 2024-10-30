@@ -71,6 +71,7 @@ TensorRow ProjectOp::Project(const TensorRow &row) {
   // Now if columns changed after map, we don't know which column we should keep,
   // so temporarily we don't support print file_path after ProjectOp.
   new_row.setPath({});
+  row.CopyTimerTo(&new_row);
   return new_row;
 }
 

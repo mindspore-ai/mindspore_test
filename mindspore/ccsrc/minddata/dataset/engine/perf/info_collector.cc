@@ -27,6 +27,12 @@ uint64_t GetSyscnt() {
   return time_cnt;
 }
 
+double GetMilliTimeStamp() {
+  auto now = std::chrono::high_resolution_clock::now();
+  int64_t us = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+  return static_cast<double>(us) / 1000.;
+}
+
 Status CollectPipelineInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
                            const std::map<std::string, std::string> &custom_info) {
 #if !defined(ENABLE_SECURITY) && !defined(ENABLE_ANDROID)
