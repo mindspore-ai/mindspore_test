@@ -29,10 +29,8 @@ class QwenBoost(AtbBoostBase):
         self.in_tensor_length = 12
         self.acl_encoder_operation_inputs = [None] * self.in_tensor_length
         self.acl_decoder_operation_inputs = [None] * self.in_tensor_length
-        self.atb_encoder_operation = LlmBoostBinder(
-            "ATB", "qwen_DecoderModel")
-        self.atb_decoder_operation = LlmBoostBinder(
-            "ATB", "qwen_DecoderModel")
+        self.atb_encoder_operation = LlmBoostBinder("ATB", "qwen_DecoderModel")
+        self.atb_decoder_operation = LlmBoostBinder("ATB", "qwen_DecoderModel")
 
     def init(self):
         """set param"""
@@ -42,7 +40,9 @@ class QwenBoost(AtbBoostBase):
             "withEmbedding": True,
             "isEmbeddingParallel": True,
             "isLmHeadParallel": True,
-            "linearTransposeType": [[1, -1, -1, 1, 1, -1, 1] for i in range(self.num_layers)],
+            "linearTransposeType": [
+                [1, -1, -1, 1, 1, -1, 1] for i in range(self.num_layers)
+            ],
             "lmHeadTransposeType": 1,
             "supportSwiGLU": not self.need_nz,
             "rmsNormEps": self.config.rms_norm_eps,
@@ -52,40 +52,56 @@ class QwenBoost(AtbBoostBase):
             "numKeyValueHeadsPerRank": self.n_kv_heads // self.device_num,
             "rank": self.rank_id,
             "worldSize": self.device_num,
-            "backend": "lccl",
+            "backend": self.config.communication_backend,
             "packQuantType": [[1, 1] for _ in range(self.num_layers)],
-            "linearQuantType": [[0, -1, -1, 0, 0, -1, 0] for _ in range(self.num_layers)],
+            "linearQuantType": [
+                [0, -1, -1, 0, 0, -1, 0] for _ in range(self.num_layers)
+            ],
             "kvQuant": self.kv_quant is not None,
         }
         encoder_param = {**param_dict, "isPrefill": True, "supportLcoc": False}
-        decoder_param = {**param_dict, "isPrefill": False,
-                         "supportLcoc": False, "supportSpeculate": False}
+        decoder_param = {
+            **param_dict,
+            "isPrefill": False,
+            "supportLcoc": False,
+            "supportSpeculate": False,
+        }
         self.atb_encoder_operation.init(json.dumps({**encoder_param}))
         self.atb_decoder_operation.init(json.dumps({**decoder_param}))
 
+    # pylint: disable=C0330
     def _prepare_inputs(
-            self,
-            prefill=None,
-            input_ids=None,
-            position_ids=None,
-            cos_embed=None,
-            sin_embed=None,
-            attention_mask=None,
-            block_tables=None,
-            slots=None,
-            input_lengths=None,
-            lm_head_indices=None,
-            seqLen=None,
-            **kwargs
+        self,
+        prefill=None,
+        input_ids=None,
+        position_ids=None,
+        cos_embed=None,
+        sin_embed=None,
+        attention_mask=None,
+        block_tables=None,
+        slots=None,
+        input_lengths=None,
+        lm_head_indices=None,
+        seqLen=None,
+        **kwargs
     ):
         """prepare inputs"""
-        self.acl_param = json.dumps({
-            "seqLen": seqLen,
-        })
-        self.acl_decoder_operation_inputs[0] = self.cast(
-            input_ids, mstype.int64)
-        self.acl_decoder_operation_inputs[1] = self.cast(
-            position_ids, mstype.int32)
+        self.acl_param = json.dumps(
+            {
+                "seqLen": seqLen,
+            }
+        )
+        if input_ids.dtype != mstype.int64:
+            input_ids = self.cast(input_ids, mstype.int64)
+        if position_ids != mstype.int32:
+            position_ids = self.cast(position_ids, mstype.int32)
+        if input_lengths != mstype.int32:
+            input_lengths = self.cast(input_lengths, mstype.int32)
+        if lm_head_indices != mstype.int64:
+            lm_head_indices = self.cast(lm_head_indices, mstype.int64)
+
+        self.acl_decoder_operation_inputs[0] = input_ids
+        self.acl_decoder_operation_inputs[1] = position_ids
         self.acl_decoder_operation_inputs[2] = cos_embed
         self.acl_decoder_operation_inputs[3] = sin_embed
         self.acl_decoder_operation_inputs[4] = attention_mask
@@ -93,9 +109,7 @@ class QwenBoost(AtbBoostBase):
         self.acl_decoder_operation_inputs[6] = slots
         self.acl_decoder_operation_inputs[7] = self.placeholder
         self.acl_decoder_operation_inputs[8] = self.placeholder
-        self.acl_decoder_operation_inputs[9] = self.cast(
-            input_lengths, mstype.int32)
-        self.acl_decoder_operation_inputs[10] = self.cast(
-            lm_head_indices, mstype.int64)
+        self.acl_decoder_operation_inputs[9] = input_lengths
+        self.acl_decoder_operation_inputs[10] = lm_head_indices
         self.acl_decoder_operation_inputs[11] = self.placeholder
         return self.acl_decoder_operation_inputs, self.acl_param
