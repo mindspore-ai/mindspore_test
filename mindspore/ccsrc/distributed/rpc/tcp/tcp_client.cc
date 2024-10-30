@@ -124,10 +124,11 @@ MessageBase *TCPClient::ReceiveSync(std::unique_ptr<MessageBase> &&msg, uint32_t
     // This means we should use default ReceiveMsgTimeOut as timeout.
     timeout = receive_timeout_;
   }
+
+  std::unique_lock<std::mutex> lock(mutex_);
+  received_message_ = nullptr;
   bool retval = tcp_comm_->Send(msg.release(), nullptr, true);
   if (retval) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    received_message_ = nullptr;
     bool res =
       wait_msg_cond_.wait_for(lock, std::chrono::seconds(timeout), [this] { return received_message_ != nullptr; });
     if (res) {

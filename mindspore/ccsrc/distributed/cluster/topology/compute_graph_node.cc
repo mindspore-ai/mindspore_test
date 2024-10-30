@@ -204,6 +204,7 @@ bool ComputeGraphNode::Register() {
   auto message = CreateMessage(server_url, MessageName::kRegistration, content);
   MS_EXCEPTION_IF_NULL(message);
 
+  MS_VLOG(VL_DISTRIBUTED_TRACE) << "Start register.";
   MessageBase *response = hb_client_->ReceiveSync(std::move(message));
   if (response == nullptr) {
     return false;
@@ -279,7 +280,7 @@ bool ComputeGraphNode::Heartbeat() {
       std::string content = hb_msg.SerializeAsString();
       auto message = CreateMessage(server_url, MessageName::kHeartbeat, content);
       MS_EXCEPTION_IF_NULL(message);
-
+      MS_VLOG(VL_DISTRIBUTED_TRACE) << "Start heart beat.";
       MessageBase *response = hb_client_->ReceiveSync(std::move(message));
       if (response == nullptr) {
         MS_LOG(ERROR)
@@ -321,6 +322,7 @@ bool ComputeGraphNode::Heartbeat() {
         }
         delete response;
       }
+      MS_VLOG(VL_DISTRIBUTED_TRACE) << "End heart beat.";
 
       uint32_t interval = IntToUint(distrib(gen));
       MS_LOG(DEBUG) << "Heart beat interval " << interval;
