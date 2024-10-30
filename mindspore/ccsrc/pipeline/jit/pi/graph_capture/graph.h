@@ -201,6 +201,8 @@ class Graph {
 
  private:
   void DumpBreakInfo(std::ostream *out) const;
+  void PrintFrame(std::ostream *out, const std::string &prefix) const;
+
   std::unique_ptr<CFG> cfg_;
   std::vector<LoopInfo *> loops_;
 

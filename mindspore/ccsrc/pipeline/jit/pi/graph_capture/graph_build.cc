@@ -2531,11 +2531,11 @@ MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f), s
   auto location = std::make_shared<Location>(file, first_line, 0, first_line, 0, "", std::move(comments));
   MS_EXCEPTION_IF_NULL(location);
   TraceGuard trace_guard(location);
-  fg_builder_ = std::make_shared<FuncGraphBuilder>(true);
-  fg_builder_->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
+  auto fg_builder = std::make_shared<FuncGraphBuilder>(true);
+  fg_builder->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
   co_name_ = name;
 
-  graph_->set_func_graph_builder(fg_builder_);
+  graph_->set_func_graph_builder(fg_builder);
   this->FGAddTopInputs();
 }
 
@@ -2547,8 +2547,8 @@ MindGraphBuilder::MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObjec
                      : std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::move(comments));
   MS_EXCEPTION_IF_NULL(location);
   TraceGuard trace_guard(location);
-  fg_builder_ = std::make_shared<FuncGraphBuilder>();
-  graph_->set_func_graph_builder(fg_builder_);
+  auto fg_builder = std::make_shared<FuncGraphBuilder>();
+  graph_->set_func_graph_builder(fg_builder);
 }
 
 namespace {
@@ -2795,10 +2795,10 @@ bool MindGraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output,
         return false;
       }
       // Build the mapping from sub-graph's ValueNode to parent-graph's AnfNode.
-      AnfNodePtr side_effect_anf_node = fg_builder_->ReadLocalVariable(side_effect_output);
+      AnfNodePtr side_effect_anf_node = FGBuilder()->ReadLocalVariable(side_effect_output);
       MS_EXCEPTION_IF_NULL(side_effect_anf_node);
       AbstractWrapperPtr side_effect_abs = subgraph_builder->side_effect_outputs_[i]->abstract_wrapper();
-      fg_builder_->UpdateNodesMap(side_effect_abs, side_effect_anf_node);
+      FGBuilder()->UpdateNodesMap(side_effect_abs, side_effect_anf_node);
     }
     (void)std::copy(subgraph_builder->side_effect_outputs_.begin(), subgraph_builder->side_effect_outputs_.end(),
                     std::back_inserter(side_effect_outputs_));
@@ -2808,8 +2808,8 @@ bool MindGraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output,
 
 AbstractWrapperPtr MindGraphBuilder::FGTupleGetItem(const AbstractWrapperPtr &tuple, int index) {
   MS_EXCEPTION_IF_NULL(tuple);
-  AbstractWrapperPtr idx = fg_builder_->AddLocalVariable(py::int_(index));
-  AbstractWrapperPtr ret = fg_builder_->AddNode(prim::kPrimTupleGetItem, {tuple, idx});
+  AbstractWrapperPtr idx = FGBuilder()->AddLocalVariable(py::int_(index));
+  AbstractWrapperPtr ret = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {tuple, idx});
   if (ret == nullptr || ret->abstract() == nullptr) {
     MS_LOG(INFO) << "Failed to do tuple getitem, index: " << index << ", tuple: " << tuple->ToString();
     return nullptr;
@@ -4223,13 +4223,13 @@ void MindGraphBuilder::FGAddTopInputs() {
       return; /* LOAD_DEREF */
     }
     auto cur_object = cur->GetVobj()->GetPyObject();
-    if (fg_builder_->IsParameterSequence(cur_object)) {
+    if (FGBuilder()->IsParameterSequence(cur_object)) {
       MS_LOG(WARNING) << "Get Parameter as function inputs, recompile if it's id changed";
       graph_->GuardValueNode(cur, GuardLevel::GDeduce);
       cur->SetOpcode(LOAD_CONST);
       return;
     }
-    auto ret = fg_builder_->AddTopGraphArgInput(cur_object);
+    auto ret = FGBuilder()->AddTopGraphArgInput(cur_object);
     if (ret == nullptr) {
       MS_LOG(INFO) << "erased arguments";
       graph_->GuardValueNode(cur, GuardLevel::GDeduce);
@@ -4244,8 +4244,8 @@ void MindGraphBuilder::FGAddTopInputs() {
       return; /* LOAD_DEREF */
     }
     auto cur_object = cur->GetVobj()->GetPyObject();
-    auto ret = is_var_keywords ? fg_builder_->AddTopGraphKwargsInputs(cur_object)
-                               : fg_builder_->AddTopGraphVargsInputs(cur_object);
+    auto ret = is_var_keywords ? FGBuilder()->AddTopGraphKwargsInputs(cur_object)
+                               : FGBuilder()->AddTopGraphVargsInputs(cur_object);
     if (ret == nullptr) {
       return;
     }
@@ -4318,7 +4318,7 @@ bool MindGraphBuilder::FGAddOutput(bool is_top_graph) {
       return false;
     }
   }
-  MS_LOG(INFO) << "Add graph output success, total outputs num: " << fg_builder_->GetOutputSize()
+  MS_LOG(INFO) << "Add graph output success, total outputs num: " << FGBuilder()->GetOutputSize()
                << ", side effect num: " << side_effect_outputs_.size();
   return true;
 }
@@ -4943,7 +4943,7 @@ py::object MindGraphBuilder::HandleConstantFoldFunc(const std::vector<py::object
 
   py::object result = call_node->GetVobj()->GetPyObject();
   if (result.ptr() != nullptr) {
-    const AbstractWrapperPtr &abs_wrapper = fg_builder_->AddLocalVariable(result);
+    const AbstractWrapperPtr &abs_wrapper = FGBuilder()->AddLocalVariable(result);
     call_node->set_abstract_wrapper(abs_wrapper);
     *stop_reason = StopTraceReason::kNonStopTrace;
   } else {
@@ -5052,7 +5052,7 @@ AbstractWrapperPtr MindGraphBuilder::MakeNamedtupleInGraph(const CallNode *call_
     return nullptr;
   }
   // 2.There is no primitive for making namedtuple, so we use MakeTuple to create tuple (not namedtuple) in graph.
-  const AbstractWrapperPtr &abs_wrapper = fg_builder_->AddNode(prim::kPrimMakeTuple, elems);
+  const AbstractWrapperPtr &abs_wrapper = FGBuilder()->AddNode(prim::kPrimMakeTuple, elems);
   if (abs_wrapper == nullptr || abs_wrapper->abstract() == nullptr) {
     return nullptr;
   }
@@ -5061,11 +5061,11 @@ AbstractWrapperPtr MindGraphBuilder::MakeNamedtupleInGraph(const CallNode *call_
   if (new_abs == nullptr) {
     return nullptr;
   }
-  AnfNodePtr node = fg_builder_->ReadLocalVariable(abs_wrapper);
+  AnfNodePtr node = FGBuilder()->ReadLocalVariable(abs_wrapper);
   MS_EXCEPTION_IF_NULL(node);
   node->set_abstract(new_abs);
   AbstractWrapperPtr new_abs_wrapper = std::make_shared<AbstractWrapper>(new_abs);
-  fg_builder_->UpdateNodesMap(new_abs_wrapper, node);
+  FGBuilder()->UpdateNodesMap(new_abs_wrapper, node);
   return new_abs_wrapper;
 }
 
@@ -5098,7 +5098,7 @@ bool MindGraphBuilder::CollectNamedtupleElements(const CallNode *call_node, cons
   for (ValueNode *node : element_nodes) {
     if (!node->has_abstract_wrapper()) {
       // The ValueNode of namedtuple's default argument doesn't have abstract wrapper.
-      const AbstractWrapperPtr &abs_wrapper = fg_builder_->AddLocalVariable(node->GetVobj()->GetPyObject());
+      const AbstractWrapperPtr &abs_wrapper = FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject());
       if (abs_wrapper == nullptr || abs_wrapper->abstract() == nullptr) {
         return false;
       }
@@ -5139,7 +5139,7 @@ abstract::AbstractNamedTuplePtr ConvertToAbstractNamedTuple(const AbstractBasePt
 // Fix dynamic shape tensor get shape issue.
 // Guard and Renormalize strategy should be refactored later.
 AbstractWrapperPtr MindGraphBuilder::HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper) {
-  auto anf_node = fg_builder_->ReadLocalVariable(abstract_wrapper);
+  auto anf_node = FGBuilder()->ReadLocalVariable(abstract_wrapper);
   if (anf_node == nullptr || anf_node->abstract() == nullptr) {
     return nullptr;
   }
@@ -5153,7 +5153,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleGetShapeOfDynamicLengthTensor(const A
     return nullptr;
   }
   AbstractWrapperPtrList input_abstract_wrapper = {abstract_wrapper};
-  return fg_builder_->AddNode(prim::kPrimShape, input_abstract_wrapper);
+  return FGBuilder()->AddNode(prim::kPrimShape, input_abstract_wrapper);
 }
 
 ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
@@ -5177,7 +5177,7 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
   const auto &cur_name = instr.name();
   if (std::any_of(attr_names.begin(), attr_names.end(), [&cur_name](const auto &name) { return cur_name == name; })) {
     MS_LOG(INFO) << "Try adding attribute " << cur_name << " as graph input";
-    auto abstract_wrapper = fg_builder_->AddAttributeInput(attr_obj);
+    auto abstract_wrapper = FGBuilder()->AddAttributeInput(attr_obj);
     if (abstract_wrapper != nullptr) {
       graph_attr_node = attr_node;
       graph_attr_node->set_abstract_wrapper(abstract_wrapper);
@@ -5189,7 +5189,7 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
   }
 
   // If the attr_obj can convert to anf node directly, return the origin attr node.
-  auto abstract_wrapper = fg_builder_->AddAttrPythonObject(attr_obj);
+  auto abstract_wrapper = FGBuilder()->AddAttrPythonObject(attr_obj);
   graph_attr_node = attr_node;
   if (abstract_wrapper != nullptr) {
     graph_attr_node->set_abstract_wrapper(abstract_wrapper);
@@ -5262,7 +5262,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleMultiOp(const Instr &instr, const std
     MS_LOG(INFO) << "Can not find operation for " << instr.ToString();
     return nullptr;
   }
-  auto wrapper = fg_builder_->AddMultiNode(op_name, HandleInputArgs(p));
+  auto wrapper = FGBuilder()->AddMultiNode(op_name, HandleInputArgs(p));
   return wrapper;
 }
 
@@ -5282,7 +5282,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
       MS_LOG(DEBUG) << "BUILD_CONST_KEY_MAP case, need to pack values.";
       AbstractWrapperPtrList value_inputs_wrapper;
       (void)std::copy(inputs_wrapper.begin(), inputs_wrapper.end() - 1, std::back_inserter(value_inputs_wrapper));
-      auto value_wrapper = fg_builder_->AddNode(prim::kPrimMakeTuple, value_inputs_wrapper);
+      auto value_wrapper = FGBuilder()->AddNode(prim::kPrimMakeTuple, value_inputs_wrapper);
       inputs_wrapper = {inputs_wrapper.back(), value_wrapper};
     } else {
       MS_LOG(DEBUG) << "BUILD_KEY_MAP case, need to pack keys and values.";
@@ -5296,8 +5296,8 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
         key_inputs_wrapper.push_back(inputs_wrapper[2 * i]);
         value_inputs_wrapper.push_back(inputs_wrapper[2 * i + 1]);
       }
-      auto key_wrapper = fg_builder_->AddNode(prim::kPrimMakeTuple, key_inputs_wrapper);
-      auto value_wrapper = fg_builder_->AddNode(prim::kPrimMakeTuple, value_inputs_wrapper);
+      auto key_wrapper = FGBuilder()->AddNode(prim::kPrimMakeTuple, key_inputs_wrapper);
+      auto value_wrapper = FGBuilder()->AddNode(prim::kPrimMakeTuple, value_inputs_wrapper);
       inputs_wrapper = {key_wrapper, value_wrapper};
     }
   }
@@ -5308,7 +5308,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
       (void)inputs_wrapper.emplace_back(FGBuilder()->AddLocalVariable(py::int_(1)));
     }
   }
-  auto wrapper = fg_builder_->AddNode(primitive, inputs_wrapper);
+  auto wrapper = FGBuilder()->AddNode(primitive, inputs_wrapper);
   return wrapper;
 }
 
@@ -5323,7 +5323,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildStringOp(const PrimitivePtr &pri
   }
   AbstractWrapperPtr result_str = inputs_wrapper[0];
   for (size_t i = 1; i < inputs_wrapper.size(); ++i) {
-    const AbstractWrapperPtr &concated_str = fg_builder_->AddNode(primitive, {result_str, inputs_wrapper[i]});
+    const AbstractWrapperPtr &concated_str = FGBuilder()->AddNode(primitive, {result_str, inputs_wrapper[i]});
     if (concated_str == nullptr || concated_str->abstract() == nullptr) {
       MS_LOG(INFO) << "Failed to do string concat. Left string: " << result_str->ToString()
                    << ". Right string is inputs[" << i << "]: " << inputs_wrapper[i]->ToString();
@@ -5359,7 +5359,7 @@ bool MindGraphBuilder::DoGetItem(const Instr &instr) {
   push(r);
   if (GraphBuilder::DoGetItem(instr)) {
     auto v = seek(0);
-    o = fg_builder_->AddLocalVariable(v->GetVobj()->GetPyObject());
+    o = FGBuilder()->AddLocalVariable(v->GetVobj()->GetPyObject());
     if (o != nullptr) {
       v->set_abstract_wrapper(o);
       return true;
@@ -5470,7 +5470,7 @@ bool MindGraphBuilder::DoContainsOp(const Instr &instr) {
 
 bool MindGraphBuilder::DoLoadConst(const Instr &instr) {
   const py::object &const_obj = instr.cnst();
-  const AbstractWrapperPtr &abs = fg_builder_->AddLocalVariable(const_obj);
+  const AbstractWrapperPtr &abs = FGBuilder()->AddLocalVariable(const_obj);
   auto node = NewValueNode(AObject::Convert(const_obj), instr, {});
   node->set_abstract_wrapper(abs);
   push(node);
