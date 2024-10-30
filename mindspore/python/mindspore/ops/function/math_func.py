@@ -7521,7 +7521,7 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        input (Tensor): The input of LogSigmoid with data type of bfloat16, float16 or float32.
+        input (Tensor): The input of norm with data type of bfloat16, float16 or float32.
             The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
         p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
             behavior. Default: ``fro`` .
@@ -7557,6 +7557,9 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
         >>> print(ops.function.math_func.norm_ext(x, 2.0))
         38.327538
     """
+    if not isinstance(input, (Tensor, Tensor_)):
+        raise TypeError(f"For `norm_ext`, the `input` must be Tensor!, but get {type(input)}.")
+
     if (dim is not None) or keepdim or (dtype is not None):
         raise ValueError(f"For `norm_ext`, the value of `dim`, `keepdim` and `dtype` must be default value currently.")
 
