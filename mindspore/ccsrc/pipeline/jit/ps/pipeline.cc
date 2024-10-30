@@ -1498,7 +1498,7 @@ void CacheFuncGraph(const ResourcePtr &resource) {
     return;
   }
   {
-    MsProfileStatGuard stat_guard("SaveCacheFuncGraph");
+    MsProfileStatGuard stat_guard("SaveCacheFuncGraph", "compile_cache", true);
     resource->CacheFuncGraph();
   }
 }
@@ -1644,6 +1644,8 @@ void Pipeline::Run() {
   ProfileExecute(MsProfile::GetProfile(), [this, &user_graph, &last_compile_action, &already_print_profile]() {
     size_t i = 0;
     for (auto &action : actions_) {
+      std::string action_name = action.first;
+      MsProfileStatGuard stat_guard(std::move(action_name), "compile_action", true);
 #ifdef ENABLE_TIMELINE
       DumpTime &dump_time = DumpTime::GetInstance();
       dump_time.Record(action.first, GetTime(), true);
