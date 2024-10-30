@@ -58,17 +58,6 @@ bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
   return prims_should_fallback_in_runtime.find(prim->name()) != prims_should_fallback_in_runtime.end();
 }
 
-bool IsValidScalar(const AbstractBasePtr &abs) {
-  auto build_type = abs->BuildType();
-  if (build_type->isa<String>()) {
-    auto value = abs->BuildValue()->cast<StringImmPtr>();
-    const auto &str = value->value();
-    const std::string fake_prefix = "FakeNodeKey";
-    return str.substr(0, fake_prefix.size()) != fake_prefix;
-  }
-  return build_type->isa<String>() || build_type->isa<Number>();
-}
-
 bool Mutable(const py::object &obj, const ValuePtr &value = nullptr) {
   // If a tensor has been set const arg, it should not be mutable.
   if (value != nullptr && value->isa<tensor::MetaTensor>()) {
@@ -276,6 +265,25 @@ bool FuncGraphBuilder::CheckCallable(const ValuePtr &value, const AbstractBasePt
   return true;
 }
 
+bool FuncGraphBuilder::IsValidScalar(const AbstractBasePtr &abs) {
+  if (!abs->isa<abstract::AbstractScalar>()) {
+    return false;
+  }
+  auto build_type = abs->BuildType();
+  if (build_type->isa<String>()) {
+    auto value = abs->BuildValue()->cast<StringImmPtr>();
+    const auto &str = value->value();
+    const std::string fake_prefix = "FakeNodeKey";
+    return str.substr(0, fake_prefix.size()) != fake_prefix;
+  }
+  return build_type->isa<String>() || build_type->isa<Number>();
+}
+
+bool FuncGraphBuilder::IsValidTensor(const AbstractBasePtr &abs) {
+  return abs->isa<abstract::AbstractTensor>() || abs->isa<abstract::AbstractRowTensor>() ||
+         abs->isa<abstract::AbstractMapTensor>();
+}
+
 bool FuncGraphBuilder::CheckGraphOutput(const AbstractBasePtr &abs) {
   if (abs == nullptr) {
     return false;
@@ -284,15 +292,10 @@ bool FuncGraphBuilder::CheckGraphOutput(const AbstractBasePtr &abs) {
     return false;
   }
   if (abs->isa<abstract::AbstractSequence>()) {
-    const auto elements = abs->cast<abstract::AbstractSequencePtr>()->elements();
-    return std::all_of(elements.begin(), elements.end(),
-                       [](const AbstractBasePtr &elem) { return CheckGraphOutput(elem); });
+    const auto &elements = abs->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::all_of(elements.begin(), elements.end(), CheckGraphOutput);
   }
-  if (abs->isa<abstract::AbstractScalar>()) {
-    return IsValidScalar(abs);
-  }
-  return abs->isa<abstract::AbstractTensor>() || abs->isa<abstract::AbstractRowTensor>() ||
-         abs->isa<abstract::AbstractMapTensor>();
+  return IsValidScalar(abs) || IsValidTensor(abs);
 }
 
 void FuncGraphBuilder::AddLocalVariableNode(const AbstractWrapperPtr &wrapper, const AnfNodePtr &node) {

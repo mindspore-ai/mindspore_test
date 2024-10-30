@@ -27,6 +27,13 @@
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
 
+#define ADD_NODE(container, node)                                                \
+  do {                                                                           \
+    auto _tmp_node = (node);                                                     \
+    (container).push_back(_tmp_node);                                            \
+    MS_LOG(INFO) << "Add [" << _tmp_node->ToString() << "] to " << (#container); \
+  } while (0)
+
 namespace mindspore {
 namespace pijit {
 
@@ -558,18 +565,21 @@ void GraphAnalyzer::CapturedInfo::clear() {
 
 std::string GraphAnalyzer::CapturedInfo::Info::ToString() {
   std::stringstream s;
-  s << "inputs: \n";
+  s << "inputs: {" << std::endl;
   for (auto i : inputs) {
-    s << i->ToString() << "\n";
+    s << "  " << i->ToString() << std::endl;
   }
-  s << "operations: \n";
+  s << "}" << std::endl;
+  s << "operations: {" << std::endl;
   for (auto i : operations) {
-    s << i->ToString() << "\n";
+    s << "  " << i->ToString() << std::endl;
   }
-  s << "outputs: \n";
+  s << "}" << std::endl;
+  s << "outputs: {" << std::endl;
   for (auto i : outputs) {
-    s << i->ToString() << "\n";
+    s << "  " << i->ToString() << std::endl;
   }
+  s << "}" << std::endl;
   return s.str();
 }
 
@@ -713,6 +723,8 @@ void MindGraphAnalyzer::Analyze() {
   OptimizeSideEffectRecord();
 
   auto origin_stop_bci = graph_->GetStopTraceBci();
+  // assume all values is captured to func_graph
+  GetCaptureInfo().captured_.operations = collect_trace_nodes();
   UseDefAnalyze();
 
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
@@ -747,6 +759,7 @@ void MindGraphAnalyzer::Analyze() {
   ResetSideEffectRecord();
   CollectCapturedAndInterpret();
   CollectGraphInputs();
+  Validate();
 
   need_interpret_ = true;
   if (graph_->GetStopTraceBci() != -1 || !GetCaptureInfo().interpret_.operations.empty()) {
@@ -767,12 +780,6 @@ void MindGraphAnalyzer::Analyze() {
   need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
 }
 
-inline bool IsScalar(const AbstractBasePtr &abstract) {
-  // The abstract of InterpretedObject is also AbstractScalar (type is External), we need to exclude it.
-  return abstract->isa<abstract::AbstractScalar>() &&
-         !abstract->cast<abstract::AbstractScalarPtr>()->GetType()->isa<External>();
-}
-
 // check whether the node can be added to the output of the graph
 // or can be added to the output of the graph through transformation
 // support : none, scalar, tensor, tuple, list, dict, and combination during them
@@ -782,8 +789,7 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
   }
   if (abstract->isa<abstract::AbstractSequence>()) {
     const auto elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
-    return std::all_of(elements.begin(), elements.end(),
-                       [](const AbstractBasePtr &elem) { return IsValidGraphOutput(elem); });
+    return std::all_of(elements.begin(), elements.end(), IsValidGraphOutput);
   }
   if (abstract->isa<abstract::AbstractDictionary>()) {
     const auto elements = abstract->cast<abstract::AbstractDictionaryPtr>()->elements();
@@ -791,8 +797,7 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
       return IsValidGraphOutput(elem.first) && IsValidGraphOutput(elem.second);
     });
   }
-  return abstract->isa<abstract::AbstractNone>() || IsScalar(abstract) || abstract->isa<abstract::AbstractTensor>() ||
-         abstract->isa<abstract::AbstractRowTensor>() || abstract->isa<abstract::AbstractMapTensor>();
+  return FuncGraphBuilder::IsValidScalar(abstract) || FuncGraphBuilder::IsValidTensor(abstract);
 }
 
 inline bool IsValidOutput(const ValueNode *node) {
@@ -800,61 +805,12 @@ inline bool IsValidOutput(const ValueNode *node) {
          IsValidGraphOutput(node->abstract_wrapper()->abstract());
 }
 
-inline std::vector<ValueNode *> CollectInputs(const ValueNode *node, std::vector<const ValueNode *> *visited,
-                                              bool recursive = true) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(visited);
-  std::vector<ValueNode *> inputs;
-  if (std::find(visited->begin(), visited->end(), node) != visited->end()) {
-    return inputs;
+std::vector<ValueNode *> CollectInputs(const std::vector<ValueNode *> &nodes) {
+  std::set<ValueNode *> inputs;
+  for (const auto &node : nodes) {
+    inputs.insert(node->getInputs().begin(), node->getInputs().end());
   }
-  visited->push_back(node);
-  std::for_each(node->getInputs().begin(), node->getInputs().end(), [recursive, &inputs, &visited](const auto &input) {
-    if (recursive) {
-      auto sub_inputs = CollectInputs(input, visited, recursive);
-      inputs.insert(inputs.end(), sub_inputs.begin(), sub_inputs.end());
-    }
-    inputs.push_back(input);
-  });
-  return inputs;
-}
-
-std::vector<ValueNode *> CollectInputs(std::vector<ValueNode *> *nodes, bool recursive = true) {
-  MS_EXCEPTION_IF_NULL(nodes);
-  std::vector<ValueNode *> inputs;
-  std::vector<const ValueNode *> visited;
-  std::for_each(nodes->begin(), nodes->end(), [recursive, &inputs, &visited](const auto &node) {
-    auto node_inputs = CollectInputs(node, &visited, recursive);
-    inputs.insert(inputs.end(), node_inputs.begin(), node_inputs.end());
-  });
-  std::sort(inputs.begin(), inputs.end());
-  inputs.erase(std::unique(inputs.begin(), inputs.end()), inputs.end());
-  return inputs;
-}
-
-void AddNodeWithoutDuplicate(GraphAnalyzer::CapturedInfo *info, ValueNode *node, bool to_captured = false,
-                             bool to_outputs = false) {
-  MS_EXCEPTION_IF_NULL(info);
-  MS_EXCEPTION_IF_NULL(node);
-  MS_LOG(INFO) << "Add [" << node->ToString() << "] to " << (to_captured ? "captured_." : "outputs_optimize_.")
-               << (to_outputs ? "outputs." : "operations.");
-  auto &category = to_captured ? info->captured_ : info->outputs_optimize_;
-  auto &operations = category.operations;
-  if (std::find(operations.begin(), operations.end(), node) == operations.end()) {
-    operations.push_back(node);
-  }
-  if (to_outputs) {
-    category.outputs.push_back(node);
-  }
-  if (to_captured) {
-    return;
-  }
-  auto &nodes = info->captured_.operations;
-  auto inputs = CollectInputs(&nodes, false);
-  if (std::find(inputs.begin(), inputs.end(), node) != inputs.end()) {
-    return;
-  }
-  nodes.erase(std::remove(nodes.begin(), nodes.end(), node), nodes.end());
+  return std::vector<ValueNode *>(inputs.begin(), inputs.end());
 }
 
 void ReplaceSequenceNoneElementWithConst(ValueNode *node, Graph *graph) {
@@ -874,25 +830,6 @@ void ReplaceSequenceNoneElementWithConst(ValueNode *node, Graph *graph) {
   }
 }
 
-void UpdateUseDefOrder(std::vector<ValueNode *> *nodes) {
-  MS_EXCEPTION_IF_NULL(nodes);
-  std::list<ValueNode *> node_list(nodes->begin(), nodes->end());
-  nodes->clear();
-  while (!node_list.empty()) {
-    auto front = node_list.front();
-    node_list.pop_front();
-    auto inputs = front->getInputs();
-    auto independent = std::all_of(inputs.begin(), inputs.end(), [&node_list](const auto &input) {
-      return std::find(node_list.begin(), node_list.end(), input) == node_list.end();
-    });
-    if (inputs.empty() || independent) {
-      nodes->push_back(front);
-    } else {
-      node_list.push_back(front);
-    }
-  }
-}
-
 ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   MS_EXCEPTION_IF_NULL(node);
   auto abstract_wrapper = node->abstract_wrapper();
@@ -907,47 +844,35 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   if (opcode == BUILD_LIST || opcode == BUILD_TUPLE) {
     return node;
   }
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), node, true);
+  auto &captured = GetCaptureInfo().captured_;
   auto sequence = abstract->cast<abstract::AbstractSequencePtr>();
   auto func_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_)->FGBuilder();
   auto graph_node = func_graph_builder->GetNodeByWrapper(abstract_wrapper);
   auto func_graph = func_graph_builder->graph(true);
   bool is_tuple = abstract->isa<abstract::AbstractTuple>();
-  auto mutated_node = graph_->NewValueNode(nullptr, is_tuple ? BUILD_TUPLE : BUILD_LIST, sequence->size(), {});
-  mutated_node->set_abstract_wrapper(std::make_shared<AbstractWrapper>(sequence));
-  PrimitivePtr prim = is_tuple ? prim::kPrimMakeTuple : prim::kPrimMakeList;
-  auto graph_sequence = func_graph->NewCNodeInOrder(prim, {});
-  graph_sequence->set_abstract(abstract);
-  func_graph_builder->AddLocalVariableNode(mutated_node->abstract_wrapper(), graph_sequence);
-  prim = is_tuple ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
+
+  auto mutated_node = graph_->NewValueNode(node->GetVobj(), is_tuple ? BUILD_TUPLE : BUILD_LIST, sequence->size(), {});
+  mutated_node->set_abstract_wrapper(std::make_shared<AbstractWrapper>(abstract));  // used to remove duplicate data
+  auto prim = is_tuple ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
   for (size_t index = 0; index < sequence->size(); index++) {
-    auto graph_item = func_graph->NewCNodeInOrder(prim, {graph_node, NewValueNode(SizeToLong(index))});
+    auto graph_index = NewValueNode(SizeToLong(index));
+    auto graph_item = func_graph->NewCNodeInOrder(prim, {graph_node, graph_index});
     graph_item->set_abstract(sequence->elements()[index]);
-    graph_sequence->add_input(graph_item);
     auto item_abstract_wrapper = std::make_shared<AbstractWrapper>(sequence->elements()[index]);
+    auto index_abstract_wrapper = std::make_shared<AbstractWrapper>(graph_index->abstract());
     func_graph_builder->AddLocalVariableNode(item_abstract_wrapper, graph_item);
+    func_graph_builder->AddLocalVariableNode(index_abstract_wrapper, graph_index);
+
     auto bc_index = graph_->NewValueNode(AObject::Convert(py::int_(index)), LOAD_CONST, -1, {});
-    bc_index->set_abstract_wrapper(std::make_shared<AbstractWrapper>(MakeValue(index)->ToAbstract()));
+    bc_index->set_abstract_wrapper(index_abstract_wrapper);
     auto bc_item = graph_->NewValueNode(AObject::Convert(item_abstract_wrapper), BINARY_SUBSCR, 0, {node, bc_index});
     bc_item->set_abstract_wrapper(item_abstract_wrapper);
-    AddNodeWithoutDuplicate(&GetCaptureInfo(), bc_index, true);
-    AddNodeWithoutDuplicate(&GetCaptureInfo(), bc_item, true);
+
+    ADD_NODE(captured.operations, bc_index);
+    ADD_NODE(captured.operations, bc_item);
     mutated_node->AddInput(bc_item);
-    maybe_update_nodes_[bc_item].push_back(mutated_node);
   }
   ReplaceSequenceNoneElementWithConst(mutated_node, graph_);
-
-  if (abstract->isa<abstract::AbstractNamedTuple>()) {
-    AddNodeWithoutDuplicate(&GetCaptureInfo(), mutated_node, true);
-    mutated_node = MutateNamedtupleNode(mutated_node, node);
-  }
-
-  if (maybe_update_nodes_.find(node) != maybe_update_nodes_.end()) {
-    auto update_nodes = maybe_update_nodes_.at(node);
-    std::for_each(update_nodes.begin(), update_nodes.end(), [node, mutated_node](ValueNode *element) {
-      std::replace(element->getInputs().begin(), element->getInputs().end(), node, mutated_node);
-    });
-  }
   GetCaptureInfo().replaced_nodes_[node] = mutated_node;
   return mutated_node;
 }
@@ -958,21 +883,19 @@ ValueNode *MindGraphAnalyzer::MutateNamedtupleNode(ValueNode *tuple_node, ValueN
   MS_EXCEPTION_IF_NULL(namedtuple_node->GetVobj());
   // Delete the abstract wrapper, then it will be executed in pynative.
   tuple_node->set_abstract_wrapper(nullptr);
-  // Add LOAD_CONST of namedtuple._make() method. It will be executed in pynative.
-  PyTypeObject *namedtuple_type = namedtuple_node->GetVobj()->GetTypeObject();
+  auto namedtuple_type = reinterpret_cast<PyObject *>(namedtuple_node->GetVobj()->GetTypeObject());
   MS_EXCEPTION_IF_NULL(namedtuple_type);
-  auto type = py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(namedtuple_type));
-  py::object make_method = py::getattr(type, "_make");
-  auto method_node = graph_->NewValueNode(AObject::Convert(make_method), LOAD_CONST, -1, {});
+  auto method_node = graph_->NewValueNode(AObject::Convert(namedtuple_type), LOAD_CONST, -1, {});
 
-  // Create namedtuple, it will be executed in pynative.
-  ValueNode *mutated_node = graph_->NewCallNode(CALL_FUNCTION, 1, {method_node, tuple_node});
-
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), method_node, true);
-  maybe_update_nodes_[tuple_node].push_back(mutated_node);
+  // Create namedtuple, it will be executed in pynative. eval 'namedtuple(*tuple)' expression.
+  ValueNode *mutated_node = graph_->NewCallNode(CALL_FUNCTION_EX, 0, {method_node, tuple_node});
+  mutated_node->SetVobj(namedtuple_node->GetVobj());  // used to remove duplicate data
+  GetCaptureInfo().replaced_nodes_[namedtuple_node] = mutated_node;
+  // add to interpret
   return mutated_node;
 }
 
+// return keys and values
 std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode *node) {
   MS_EXCEPTION_IF_NULL(node);
   auto abstract_wrapper = node->abstract_wrapper();
@@ -982,7 +905,10 @@ std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode 
   if (!abstract->isa<abstract::AbstractDictionary>()) {
     return std::make_pair(node, nullptr);
   }
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), node, true);
+  auto &captured = GetCaptureInfo().captured_;
+  auto &interpret = GetCaptureInfo().interpret_;
+  auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
+
   auto dict = abstract->cast<abstract::AbstractDictionaryPtr>();
   AbstractBasePtrList key_abstracts;
   AbstractBasePtrList value_abstracts;
@@ -998,41 +924,38 @@ std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode 
   MS_EXCEPTION_IF_NULL(graph_node);
   auto func_graph = func_graph_builder->graph(true);
   auto keys = func_graph->NewCNodeInOrder(prim::kPrimDictGetKeys, {graph_node});
-  keys->set_abstract(keys_wrapper->abstract());
-  func_graph_builder->AddLocalVariableNode(keys_wrapper, keys);
-  auto load_dict = graph_->NewValueNode(nullptr, LOAD_GLOBAL, 0, {});
-  load_dict->SetName("dict");
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_dict, true);
-  auto load_attr = graph_->NewValueNode(nullptr, LOAD_ATTR, 0, {load_dict});
-  load_attr->SetName("keys");
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_attr, true);
-  auto bc_keys = graph_->NewCallNode(CALL_FUNCTION, 1, {load_attr, node});
-  bc_keys->set_abstract_wrapper(keys_wrapper);
-
   auto values = func_graph->NewCNodeInOrder(prim::kPrimDictGetValues, {graph_node});
+  keys->set_abstract(keys_wrapper->abstract());
   values->set_abstract(values_wrapper->abstract());
+  func_graph_builder->AddLocalVariableNode(keys_wrapper, keys);
   func_graph_builder->AddLocalVariableNode(values_wrapper, values);
-  load_attr = graph_->NewValueNode(nullptr, LOAD_ATTR, 0, {load_dict});
-  load_attr->SetName("values");
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_attr, true);
-  auto bc_values = graph_->NewCallNode(CALL_FUNCTION, 1, {load_attr, node});
+
+  // find unique node for builtin method
+  ValueNode *dict_keys_method = GetBuiltinMethodNode(&captured.operations, "keys", "dict");
+  ValueNode *dict_values_method = GetBuiltinMethodNode(&captured.operations, "values", "dict");
+  ValueNode *zip_method = GetBuiltinMethodNode(&interpret.operations, "zip");    // always interpret
+  ValueNode *dict_method = GetBuiltinMethodNode(&interpret.operations, "dict");  // always interpret
+  // use 'dict(zip(dict.keys(obj), dict.value(obj)))' to restore dict
+  // consider use expression 'dict(dict.items(obj))'
+  auto bc_keys = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_keys_method, node});
+  bc_keys->set_abstract_wrapper(keys_wrapper);
+  bc_keys->SetVobj(AObject::Convert(keys_wrapper));
+  auto bc_values = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_values_method, node});
   bc_values->set_abstract_wrapper(values_wrapper);
-  auto load_zip = graph_->NewValueNode(nullptr, LOAD_GLOBAL, 0, {});
-  load_zip->SetName("zip");
-  auto call_zip = graph_->NewCallNode(CALL_FUNCTION, 2, {load_zip, bc_keys, bc_values});
-  maybe_update_nodes_[bc_keys].push_back(call_zip);
-  maybe_update_nodes_[bc_values].push_back(call_zip);
-  ValueNode *make_dict = graph_->NewCallNode(CALL_FUNCTION, 1, {load_dict, call_zip});
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), make_dict);
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), call_zip);
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_zip);
-  AddNodeWithoutDuplicate(&GetCaptureInfo(), load_dict);
-  if (maybe_update_nodes_.find(node) != maybe_update_nodes_.end()) {
-    auto update_nodes = maybe_update_nodes_.at(node);
-    std::for_each(update_nodes.begin(), update_nodes.end(), [node, make_dict](ValueNode *element) {
-      std::replace(element->getInputs().begin(), element->getInputs().end(), node, make_dict);
-    });
-  }
+  bc_values->SetVobj(AObject::Convert(values_wrapper));
+  auto call_zip = graph_->NewCallNode(CALL_FUNCTION, 2, {zip_method, bc_keys, bc_values});
+  auto make_dict = graph_->NewCallNode(CALL_FUNCTION, 1, {dict_method, call_zip});
+  make_dict->set_abstract_wrapper(std::make_shared<AbstractWrapper>(abstract));
+  make_dict->SetVobj(node->GetVobj());
+
+  // keys and values is graph values
+  ADD_NODE(captured.operations, bc_keys);
+  ADD_NODE(captured.operations, bc_values);
+  // call zip and call dict is interpret operations
+  // add it reverse execute order, later reverse it
+  ADD_NODE(outputs_optimize.operations, make_dict);
+  ADD_NODE(outputs_optimize.operations, call_zip);
+
   GetCaptureInfo().replaced_nodes_[node] = make_dict;
   return std::make_pair(bc_keys, bc_values);
 }
@@ -1044,42 +967,26 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
   MS_EXCEPTION_IF_NULL(func_graph_builder);
   func_graph_builder->ClearOutputNodes();
   auto &captured = GetCaptureInfo().captured_;
-  auto &values = GetCaptureInfo().interpret_.values;
   captured.outputs.clear();
   auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
-  std::list<ValueNode *> nodes(aliveNodes.begin(), aliveNodes.end());
+
+  // use order set as work list
+  mindspore::CompactSet<ValueNode *> nodes;
+  nodes.insert(aliveNodes.begin(), aliveNodes.end());
   while (!nodes.empty()) {
-    auto node = nodes.front();
-    nodes.pop_front();
+    auto node = *nodes.begin();
+    nodes.erase(nodes.begin());
+    Opcode opcode(node->GetOpcode());
     MS_LOG(INFO) << "Start analyze : " << node->ToString() << " abs : "
                  << (node->abstract_wrapper() == nullptr ? "nullptr"
                                                          : node->abstract_wrapper()->abstract()->ToString());
-    // If the value can get from local, no need to add to graph output.
-    if (IsNonLocalValue(node)) {
-      MS_LOG(INFO) << "Skip non local value used as graph output: " << node->ToString();
+    if (SkipAddGraphOutput(node)) {
       continue;
     }
-
-    // This node is defined out of the graph
-    if (std::find(values.begin(), values.end(), node) != values.end()) {
-      continue;
-    }
-
-    // This node has been added to the output
-    if (std::find(captured.outputs.begin(), captured.outputs.end(), node) != captured.outputs.end()) {
-      continue;
-    }
-
-    // This node has been handle
-    auto &handled_nodes = outputs_optimize.operations;
-    if (std::find(handled_nodes.begin(), handled_nodes.end(), node) != handled_nodes.end()) {
-      continue;
-    }
-
     // add output for func_graph
     if (func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
       MS_LOG(INFO) << "Add graph output : " << node->ToString();
-      AddNodeWithoutDuplicate(&GetCaptureInfo(), node, true, true);
+      ADD_NODE(captured.outputs, node);  // must be equal as FuncGraph outputs
       continue;
     }
 
@@ -1090,47 +997,41 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
     bool is_not_in_top_graph = (func_graph_builder->GetNodeByWrapper(node->abstract_wrapper()) == nullptr);
 
     // Contains data whose type is not supported by the graph, analyze its inputs
-    if (!IsValidOutput(node) || is_not_in_top_graph) {
+    if (!IsValidOutput(node) || is_not_in_top_graph || opcode.IsBuildOp()) {
       auto msg = (is_not_in_top_graph ? "Not in top graph node : " : "Invalid output : ");
       MS_LOG(INFO) << msg << node->ToString();
-      AddNodeWithoutDuplicate(&GetCaptureInfo(), node);
       if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
         GRAPH_JIT_LOG_F("This call node will executed in pynative : [%s]", node->ToString().c_str());
       }
-      auto inputs = node->getInputs();
-      std::for_each(inputs.begin(), inputs.end(), [this, &nodes, node](ValueNode *input) {
-        if (std::find(nodes.begin(), nodes.end(), input) == nodes.end()) {
-          nodes.push_back(input);
-          maybe_update_nodes_[input].push_back(node);
-        }
-      });
+      // reverse order add, has been removed duplicated
+      ADD_NODE(outputs_optimize.operations, node);
+      nodes.insert(node->getInputs().begin(), node->getInputs().end());
       continue;
     }
-
-    auto pair = MutateDictNode(node);
-    if (pair.second != nullptr) {
-      nodes.push_back(pair.first);
-      nodes.push_back(pair.second);
-      continue;
-    }
-
-    auto sequence = MutateSequenceNode(node);
-    for (auto iter = sequence->getInputs().begin(); iter != sequence->getInputs().end(); iter++) {
-      auto input = *iter;
-      maybe_update_nodes_[input].push_back(node);
-      auto wrapper = input->abstract_wrapper();
-      if (wrapper == nullptr || !wrapper->abstract()->isa<abstract::AbstractNone>()) {
-        if (std::find(nodes.begin(), nodes.end(), input) == nodes.end()) {
-          nodes.push_back(input);
-        }
+    MS_EXCEPTION_IF_CHECK_FAIL(node->abstract_wrapper() && node->abstract_wrapper()->abstract(),
+                               "Error check at IsValidOutput");
+    if (node->abstract_wrapper()->abstract()->isa<abstract::AbstractDictionary>()) {
+      // try to add keys and value to graph outputs, here is sequence, continue to handle sequence
+      auto pair = MutateDictNode(node);
+      nodes.insert(pair.first);
+      nodes.insert(pair.second);
+    } else if (node->abstract_wrapper()->abstract()->isa<abstract::AbstractSequence>()) {
+      auto sequence = MutateSequenceNode(node);  // transform to build_list or build_tuple
+      if (node->abstract_wrapper()->abstract()->isa<abstract::AbstractNamedTuple>()) {
+        // specialize for named tuple, 1: graph output tuple, 2: python reconstruct namedtuple
+        ADD_NODE(outputs_optimize.operations, MutateNamedtupleNode(sequence, node));
       }
+      // reverse order add, has been removed duplicated
+      ADD_NODE(outputs_optimize.operations, sequence);
+      nodes.insert(sequence->getInputs().begin(), sequence->getInputs().end());
+    } else {
+      MS_LOG(INTERNAL_EXCEPTION) << "the node can't add graph out and not handle by output optimize, it's missing ["
+                                 << node->ToString();
     }
-    MS_LOG(INFO) << "Add to output opt : " << node->ToString();
-    AddNodeWithoutDuplicate(&GetCaptureInfo(), sequence);
   }
-  outputs_optimize.inputs = CollectInputs(&outputs_optimize.operations);
-  UpdateUseDefOrder(&outputs_optimize.operations);
-  UpdateUseDefOrder(&captured.operations);
+  std::reverse(outputs_optimize.operations.begin(), outputs_optimize.operations.end());
+  // avoid missing value, update use-def at last, update all inputs use new node
+  UpdateUseDefNode();
   return true;
 }
 
@@ -1146,9 +1047,12 @@ void MindGraphAnalyzer::UpdateCapturedOrder() {
 void MindGraphAnalyzer::CollectCapturedAndInterpret() {
   CollectCapturedInputs();
 
+  GetCaptureInfo().outputs_optimize_.inputs = CollectInputs(GetCaptureInfo().outputs_optimize_.operations);
   GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
   GetCaptureInfo().interpret_.outputs = graph_->CollectAliveNode(graph_->GetStopTraceBci(), &alive_locals_);
-  GetCaptureInfo().interpret_.operations = graph_->prepare().operations_;
+  const auto &prepare = graph_->prepare().operations_;
+  auto &interpret = GetCaptureInfo().interpret_.operations;
+  interpret.insert(interpret.begin(), prepare.begin(), prepare.end());
 
   // remove side-effect node
   auto is_remove = [this](ValueNode *node) {
@@ -1162,22 +1066,6 @@ void MindGraphAnalyzer::CollectCapturedAndInterpret() {
 }
 
 void MindGraphAnalyzer::UseDefAnalyze() {
-  // assume all values is captured to func_graph
-  auto collect_trace_nodes = [this]() {
-    const auto &nodes = graph_->GetTracedNodes();
-    if (graph_->GetStopTraceBci() == -1) {
-      return nodes;
-    }
-    std::vector<ValueNode *> result;
-    for (const auto &node : nodes) {
-      if (node->bci() >= graph_->GetStopTraceBci()) {
-        break;
-      }
-      result.push_back(node);
-    }
-    return result;
-  };
-  GetCaptureInfo().captured_.operations = collect_trace_nodes();
   // UD analyze: alive nodes analysis
   std::vector<ValueNode *> aliveLocals = GetAliveLocals(graph_);
   if (!aliveLocals.empty()) {
@@ -1216,6 +1104,252 @@ void MindGraphAnalyzer::ResetSideEffectRecord() const {
     }
   }
   this->GraphAnalyzer::ResetSideEffectRecord();
+}
+
+// specialize simple data, not all equal
+static bool IsDuplicateData(const AbstractBasePtr &left, const AbstractBasePtr &right) {
+  if (left == nullptr || right == nullptr || left->tid() != right->tid()) {
+    return false;
+  }
+  // first check ptr
+  if (left == right) {
+    return true;
+  }
+  // check type
+  if (left->isa<abstract::AbstractTensor>()) {
+    return false;  // tensor always not duplicate
+  }
+  if (left->isa<abstract::AbstractSequence>()) {
+    const auto &arr_l = left->cast<abstract::AbstractSequencePtr>()->elements();
+    const auto &arr_r = right->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::equal(arr_l.begin(), arr_l.end(), arr_r.begin(), arr_r.end(), IsDuplicateData);
+  }
+  if (left->isa<abstract::AbstractDictionary>()) {
+    const auto &arr_l = left->cast<abstract::AbstractDictionaryPtr>()->elements();
+    const auto &arr_r = right->cast<abstract::AbstractDictionaryPtr>()->elements();
+    auto comp = [](const abstract::AbstractElementPair &a, const abstract::AbstractElementPair &b) {
+      return IsDuplicateData(a.first, b.first) && IsDuplicateData(a.second, b.second);
+    };
+    return std::equal(arr_l.begin(), arr_l.end(), arr_r.begin(), arr_r.end(), comp);
+  }
+  if (left->isa<abstract::AbstractScalar>()) {
+    return left->BuildValue() != kValueAny && *left == *right;
+  }
+  return false;  // invalid output
+}
+
+static ValueNode *FindDuplicateData(const std::vector<ValueNode *> &nodes, size_t end_idx, ValueNode *node) {
+  MS_EXCEPTION_IF_CHECK_FAIL(end_idx <= nodes.size(), "error arguments");
+  const auto end_iter = nodes.begin() + end_idx;
+  auto iter = std::find(nodes.begin(), end_iter, node);
+  if (iter != end_iter) {
+    return *iter;
+  }
+  iter = std::find_if(nodes.begin(), end_iter, [&node](ValueNode *k) {
+    auto left = node->abstract_wrapper() ? node->abstract_wrapper()->abstract() : nullptr;
+    auto right = k->abstract_wrapper() ? k->abstract_wrapper()->abstract() : nullptr;
+    return IsDuplicateData(left, right) || (node->GetVobj() != nullptr && node->GetVobj() == k->GetVobj());
+  });
+  if (iter != end_iter) {
+    return *iter;
+  }
+  return nullptr;
+}
+
+bool MindGraphAnalyzer::SkipAddGraphOutput(ValueNode *node) {
+  const auto &values = GetCaptureInfo().interpret_.values;
+  const auto &captured = GetCaptureInfo().captured_;
+  const auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
+  const auto &replaced = GetCaptureInfo().replaced_nodes_;
+  // If the value can get from local, no need to add to graph output.
+  if (IsNonLocalValue(node)) {
+    MS_LOG(INFO) << "Skip non local value used as graph output: " << node->ToString();
+    return true;
+  }
+  // This node is defined out of the graph
+  if (std::find(values.begin(), values.end(), node) != values.end()) {
+    return true;
+  }
+  // This node has been added to the output
+  if (std::find(captured.outputs.begin(), captured.outputs.end(), node) != captured.outputs.end()) {
+    return true;
+  }
+  // This node has been handle
+  auto &handled_nodes = outputs_optimize.operations;
+  if (std::find(handled_nodes.begin(), handled_nodes.end(), node) != handled_nodes.end()) {
+    return true;
+  }
+
+  if (node->abstract_wrapper() && node->abstract_wrapper()->IsConstant()) {
+    PyObject *op = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+    if (op == nullptr) {
+      return false;  // constant value no python object, can't make instruction
+    } else if (CheckConstPyObject(op)) {
+      // now, only python constant
+      if (PyUnicode_Check(op) && !FuncGraphBuilder::IsValidScalar(node->abstract_wrapper()->abstract())) {
+        // filter FakeNodeKey
+        return false;
+      }
+      node->ClearInputs();
+      node->SetOpcode(LOAD_CONST);
+      return true;
+    }
+  }
+  // remove duplicate data
+  auto duplicate_data = FindDuplicateData(captured.outputs, captured.outputs.size(), node);
+  if (duplicate_data == nullptr) {
+    duplicate_data = FindDuplicateData(outputs_optimize.outputs, outputs_optimize.outputs.size(), node);
+  }
+  if (duplicate_data != nullptr) {
+    GetCaptureInfo().replaced_nodes_[node] = duplicate_data;
+    MS_LOG(INFO) << "skip same data: [" << node->ToString() << "] and [" << duplicate_data->ToString();
+    return true;
+  }
+  MS_EXCEPTION_IF_CHECK_FAIL(replaced.find(node) == replaced.end(), "duplicate node");
+  return false;
+}
+
+ValueNode *MindGraphAnalyzer::GetBuiltinMethodNode(std::vector<ValueNode *> *out, const std::string &name,
+                                                   const std::string &cls) {
+  PyObject *builtin_module = PyEval_GetBuiltins();
+  MS_EXCEPTION_IF_NULL(builtin_module);
+  if (PyModule_Check(builtin_module)) {
+    builtin_module = PyModule_GetDict(builtin_module);
+    MS_EXCEPTION_IF_NULL(builtin_module);
+  }
+  py::object builtin_object;
+  if (cls.empty()) {
+    auto method = PyDict_GetItemString(builtin_module, name.c_str());
+    builtin_object = py::reinterpret_borrow<py::object>(method);
+  } else {
+    auto cls_object = PyDict_GetItemString(builtin_module, cls.c_str());
+    MS_EXCEPTION_IF_NULL(cls_object);
+    auto method = PyObject_GetAttrString(cls_object, name.c_str());
+    builtin_object = py::reinterpret_steal<py::object>(method);
+  }
+  MS_EXCEPTION_IF_NULL(builtin_object.ptr());
+  auto method_node = graph_->NewValueNode(AObject::Convert(builtin_object), LOAD_CONST, 0, {});
+  out->push_back(method_node);
+  return method_node;
+}
+
+// validate use-def, debug only
+void MindGraphAnalyzer::Validate() {
+  if (!graph_->Config().GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
+    return;
+  }
+  MS_LOG(INFO) << "start validate the results of analysis";
+  // now, interpret.operations is validate by GraphBuilder, here double check
+  // now, captured.operations is all instructions of function, here check graph inputs
+  // now, output_optimize is part of instructions of function and other new operations, here check nodes use-def
+  const auto &info = GetCaptureInfo();
+  const auto &start_locals = graph_->GetFrame(0).GetLocals();
+  const auto &graph_inputs = graph_->prepare().inputs_;
+  const auto &graph_outputs = info.captured_.outputs;
+  std::set<ValueNode *> graph_values{graph_inputs.begin(), graph_inputs.end()};
+  std::set<ValueNode *> py_locals{start_locals.begin(), start_locals.end()};
+  auto not_py_locals = [&py_locals](ValueNode *v) {
+    return py_locals.find(v) == py_locals.end() && !IsNonLocalValue(v);
+  };
+  auto validate = [](const std::vector<ValueNode *> &nodes, std::set<ValueNode *> *locals) -> ValueNode * {
+    // for each node, check it's input is in locals
+    auto not_found = [&locals](ValueNode *v) { return locals->find(v) == locals->end() && !IsNonLocalValue(v); };
+    for (const auto &node : nodes) {
+      auto iter = std::find_if(node->getInputs().begin(), node->getInputs().end(), not_found);
+      if (iter != node->getInputs().end()) {
+        return *iter;
+      }
+      locals->insert(node);  // add current node to following node to find
+    }
+    return nullptr;
+  };
+
+  ValueNode *node;
+  // validate interpret, the interpret operations inputs, must be in py_locals
+  node = validate(info.interpret_.operations, &py_locals);
+  if (node != nullptr) {
+    MS_LOG(ERROR) << "the interpret node inputs can't find in locals, or it's order is incorrect [" << node->ToString();
+    return;
+  }
+  // after interpret, the inputs of graph must be in py_locals
+  auto iter = std::find_if(graph_values.begin(), graph_values.end(), not_py_locals);
+  if (iter != graph_values.end()) {
+    MS_LOG(ERROR) << "all inputs of graph must be in interpret locals, but not found [" << (*iter)->ToString();
+    return;
+  }
+  // validate captured, the captured operations inputs, must be in py_locals
+  node = validate(info.captured_.operations, &graph_values);
+  if (node != nullptr) {
+    // maybe missing if sub-graph has side-effect
+    MS_LOG(ERROR) << "the graph node inputs can't find in graph, or it's order is incorrect [" << node->ToString();
+    return;
+  }
+  // check outputs is duplicate
+  for (size_t i = 0, size = graph_outputs.size(); i < size; ++i) {
+    node = FindDuplicateData(graph_outputs, i, graph_outputs[i]);
+    if (node != nullptr) {
+      MS_LOG(ERROR) << "find abstract is duplicate [" << node->ToString() << "] and [" << graph_outputs[i]->ToString();
+    }
+  }
+  // update py_locals after graph execute
+  py_locals.insert(graph_outputs.begin(), graph_outputs.end());
+  // validate outputs_optimize
+  node = validate(info.outputs_optimize_.operations, &py_locals);
+  if (node != nullptr) {
+    MS_LOG(ERROR) << "the outputs_optimize node input is missing [" << node->ToString();
+    return;
+  }
+}
+
+void MindGraphAnalyzer::UpdateUseDefNode() {
+  auto &map = GetCaptureInfo().replaced_nodes_;
+  if (map.empty()) {
+    return;
+  }
+  auto latest = [&map](ValueNode *node) {
+    int limit = 10000;
+    for (auto iter = map.find(node); limit > 0 && iter != map.end(); iter = map.find(node), --limit) {
+      node = iter->second;
+    }
+    MS_EXCEPTION_IF_CHECK_FAIL(limit > 0, "maybe circle map");
+    return node;
+  };
+  auto &nodes = GetCaptureInfo().outputs_optimize_.operations;
+  bool changed;
+  do {
+    changed = false;
+    // for each node check it's inputs
+    for (auto node_iter = nodes.begin(); node_iter != nodes.end(); ++node_iter) {
+      auto node = *node_iter;
+      auto &in = node->getInputs();
+      auto in_iter = std::find_if(in.begin(), in.end(), [&map](ValueNode *k) { return map.find(k) != map.end(); });
+      if (in_iter == in.end()) {
+        continue;  // not find, do nothing
+      }
+      // collect latest node
+      std::vector<ValueNode *> new_in = node->getInputs();
+      for (; in_iter != in.end(); ++in_iter) {
+        new_in[in_iter - in.begin()] = latest(*in_iter);
+      }
+      // if node is a a new node, update inputs
+      if (node->GetLineNo() < 0) {
+        in = std::move(new_in);
+        continue;
+      }
+      Opcode opcode(node->GetOpcode());
+      ValueNode *new_node;
+      if (opcode.IsCall()) {
+        new_node = graph_->NewCallNode(opcode, node->GetOparg(), std::move(new_in));
+        new_node->SetVobj(node->GetVobj());
+      } else {
+        new_node = graph_->NewValueNode(node->GetVobj(), opcode, node->GetOparg(), std::move(new_in), node->GetName());
+      }
+      *node_iter = new_node;
+      map[node] = new_node;
+      changed = true;
+      MS_LOG(ERROR) << "add copy node for " << node << " new " << new_node;
+    }
+  } while (changed);
 }
 
 }  // namespace pijit

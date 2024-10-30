@@ -1,5 +1,5 @@
+import dis
 import pytest
-import sys
 from mindspore import jit, context, Tensor
 from mindspore._c_expression import get_code_extra
 from ..share.utils import match_array
@@ -17,9 +17,6 @@ def create_tuple_with_dict(x):
 def create_tuple_with_recursive(x):
     t = (x, x * x, x *100)
     return (t, {'x' : x, 'none': None, 't': t})
-
-def create_dict(x):
-    return {'x' : x, '2x': x * 2}
 
 def create_dict_with_none(x):
     return {'x' : x, 'none': None}
@@ -227,4 +224,8 @@ def test_nested_dict_tuple_with_call(func, x):
     wrapped_func = jit(func, mode='PIJit')
     ms_res = wrapped_func(x,)
     result_compare(res, ms_res)
+
+    jcr = get_code_extra(func)
+    ops = [i.opname for i in dis.get_instructions(jcr['code']['compiled_code_'])]
+    assert "UNPACK_SEQUENCE" not in ops
     check_func_compile_state(wrapped_func)

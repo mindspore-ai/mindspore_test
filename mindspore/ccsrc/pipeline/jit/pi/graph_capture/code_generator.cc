@@ -610,8 +610,12 @@ void CodeGenerator::LoadConst(const py::object &cnst) {
     code_.co_code.back()->set_cnst(cnst);
     return;
   }
-  std::string key = GenerateObjectKey(cnst);
-  MapAdd(GetGlobals(), key, cnst);
+  py::object name = py::getattr(cnst, "__qualname__", nullptr);
+  if (name.ptr() == nullptr) {
+    name = py::getattr(cnst, "__name__", nullptr);
+  }
+  std::string key = name.ptr() && PyUnicode_Check(name.ptr()) ? name.cast<std::string>() : GenerateObjectKey(cnst);
+  MapAdd(GetGlobals(), key, cnst, &key);
   NewInstr(LOAD_GLOBAL);
   code_.co_code.back()->set_name(key);
 }
@@ -810,14 +814,11 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
 }
 
 void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
-  if (outputs_optimize_.operations.empty()) {
+  if (replaced_nodes_.empty() && outputs_optimize_.operations.empty()) {
     return;
   }
   cg->ClearAlive();
   auto handle_replaced = [this, &cg](bool is_pre) {
-    if (replaced_nodes_.empty()) {
-      return;
-    }
     for (const auto &node : interpret_.outputs) {
       auto iter = replaced_nodes_.find(node);
       if (iter == replaced_nodes_.end()) {
