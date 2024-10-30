@@ -32,7 +32,7 @@ from mindspore.parallel._parallel_serialization import _get_device_num_from_stra
 from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_tensor_layout, \
     _get_needed_rank_transform_operator_map_by_layouts, \
     _generate_transform_operator_stack, _apply_tensor_transform_operators, _construct_tensor_layout_for_opt_shard, \
-    _extract_layout_item, _load_tensor_shape
+    _extract_layout_item, _load_tensor_shape, _apply_operator
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
 
@@ -375,12 +375,10 @@ def _transform_stage_safetensors(src_strategy_dict, dst_strategy_dict, ckpt_pref
             if int(needed_rank) not in all_safetensor_files_map:
                 raise ValueError("The safetensor file of rank{} is needed for converting rank{}'s safetensor, "
                                  "but it is missing.".format(needed_rank, rank))
-    if process_num > len(needed_rank_list_map):
+    dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
+    if not (len(needed_rank_list_map) == 1 and dst_stage_num > 1) and process_num > len(needed_rank_list_map):
         ms.log.warning("The value of process_num cannot be greater than that of needed_rank_list_map.")
         process_num = len(needed_rank_list_map)
-    dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
-    if len(needed_rank_list_map) == 1 and dst_stage_num > 1:
-        process_num = dst_stage_num
     _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
                                          dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
                                          origin_src_strategy_list, origin_dst_strategy_list, ckpt_prefix,
@@ -987,6 +985,43 @@ def _split_list(split_list, split_num):
     return [array.tolist() for array in split_array]
 
 
+def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num):
+    """apply safetensors object operators"""
+    level = transform_operator_stack[-1][1]
+    level_operators = []
+    while True:
+        if not transform_operator_stack or (level != transform_operator_stack[-1][1]):
+            tmp_tensor_dict = {}
+            if not level_operators:
+                continue
+            op_name = level_operators[0][2][0]
+            for operator_pair in level_operators:
+                rank_id = operator_pair[0]
+                cur_level = operator_pair[1]
+                operator = operator_pair[2]
+                if operator[0] != op_name:
+                    raise ValueError("The operator in the same level should be equal in the transform tensor operator "
+                                     "list, but the find {} and {} in level {}".format(op_name, operator[0], cur_level))
+                if operator[0] != "AllConcat":
+                    sf_obj = _apply_operator(operator[0])(sf_obj, operator)
+                    continue
+                for rank in operator[1][:-1]:
+                    if rank % device_num not in sf_obj:
+                        raise ValueError("The checkpoint file of rank {} is missing.".format(rank % device_num))
+                allgather_list = [sf_obj for _ in operator[1][:-1]]
+                tmp_tensor_dict[rank_id % device_num] = _apply_operator(operator[0])(allgather_list, operator)
+            if op_name == "AllConcat":
+                for rank, value in tmp_tensor_dict.items():
+                    sf_obj = value
+            level_operators.clear()
+        if not transform_operator_stack:
+            break
+        operator_pair = transform_operator_stack.pop()
+        level = operator_pair[1]
+        level_operators.append(operator_pair)
+    return sf_obj
+
+
 def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None, dst_safetensors_dir=None,
                               rank_id=None):
     """load parallel safetensors by merged file."""
@@ -1006,7 +1041,9 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
         param_list = param_name_map.keys()
 
     total_param = dict()
-
+    dst_stage_device_num = np.prod(dst_strategy_list.get(list(dst_strategy_list.keys())[0])[0]) if dst_strategy_list \
+                                                                                                   is not None else 1
+    local_rank_id = rank_id % dst_stage_device_num
     for param_name in param_list:
         if param_name not in param_name_map:
             continue
@@ -1015,19 +1052,54 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
             if param_name not in f.keys():
                 continue
             sf_obj = f.get_slice(param_name)
-        param_dict = dict()
-        param_dict[param_name] = sf_obj
 
+        tensor_shape = sf_obj.get_shape()
+        from_dev_matrix = [1]
+        from_tensor_map = [-1] * len(tensor_shape)
+        from_opt_shard_step = 0
+        from_opt_shard_size = 0
         if dst_strategy_list is not None:
             if param_name not in dst_strategy_list:
                 continue
-            slice_op, shape = _get_slice(rank_id, sf_obj, param_name, dst_strategy_list)
+            to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size = _extract_layout_item(
+                dst_strategy_list.get(param_name))
+
+            device_num = np.prod(from_dev_matrix)
+            param_strategy = _get_tensor_strategy(from_dev_matrix, from_tensor_map)
+            origin_tensor_shape = ()
+            for i, item in enumerate(tensor_shape):
+                if i == 0 and from_opt_shard_size > 0:
+                    origin_tensor_shape += (item * param_strategy[i] * from_opt_shard_size,)
+                    continue
+                origin_tensor_shape += (item * param_strategy[i],)
+
+            from_dev_matrix, from_tensor_map, from_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
+                from_dev_matrix, from_tensor_map, from_opt_shard_step, from_opt_shard_size, origin_tensor_shape)
+            to_dev_matrix, to_tensor_map, to_full_tensor_shape = _construct_tensor_layout_for_opt_shard(
+                to_dev_matrix_origin, to_tensor_map_origin, to_opt_shard_step, to_opt_shard_size, origin_tensor_shape)
+            # Convert tensor layout to same device num
+            from_tensor_layout, to_tensor_layout = _construct_from_to_tensor_layout(from_full_tensor_shape,
+                                                                                    from_dev_matrix,
+                                                                                    from_tensor_map,
+                                                                                    to_full_tensor_shape,
+                                                                                    to_dev_matrix, to_tensor_map)
+
+            # when the from_layout is less devices, the safetensor_map for map[device_num] should using map[0]
+            device_list = list(range(0, np.prod(from_tensor_layout[0])))
+            param_rank_map = _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_tensor_layout,
+                                                                                device_list, local_rank_id)
+
+            from_info_tuple = (from_opt_shard_size, from_dev_matrix, from_tensor_map, from_full_tensor_shape)
+            to_info_tuple = (to_opt_shard_size, to_dev_matrix_origin, to_tensor_map_origin, origin_tensor_shape)
+            _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
+            transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
+
+            slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj[:], device_num)
         else:
-            slice_op, shape = slice(None, None, None), None
-        slice_param = sf_obj[slice_op]
-        if shape is not None:
-            slice_param = slice_param.reshape(shape)
+            slice_param = sf_obj[:]
+
         total_param[param_name] = ms.Parameter(slice_param)
+
     if 'hyper_param.safetensors' in file_list:
         hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
         with safe_open(hyper_parameter_file_name, framework="np") as f:
