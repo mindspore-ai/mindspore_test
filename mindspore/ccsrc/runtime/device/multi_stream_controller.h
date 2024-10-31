@@ -125,6 +125,8 @@ class BACKEND_EXPORT MultiStreamController {
   bool SyncAllStreams(const DeviceContext *device_context);
   bool SyncNotDefaultStreams(const DeviceContext *device_context);
 
+  bool WaitMultiStream(const DeviceContext *device_context, size_t wait_stream_id);
+
  private:
   std::unordered_map<const DeviceContext *, TaskIdOnStreamManager> task_id_on_stream_manager_;
   std::unordered_map<const DeviceContext *, std::unordered_map<uint32_t, std::mutex>> stream_mutexes_;
