@@ -21,15 +21,16 @@ mindspore.ops.TensorDump
           - 如果input_output参数设置为'all'，保存的数据将包含算子A的输出分片以及算子B的输入分片。
           - 如果input_output参数设置为'in'，保存的数据将仅包含算子B的输入分片。
 
-          当input_output参数被配置为'all'或'in'时，生成的输入分片所对应的npy文件命名格式为：id_fileName_cNodeID_dumpMode_rankID.npy。
+          当input_output参数被配置为'all'或'in'时，生成的输入分片所对应的npy文件命名格式为：id_fileName_cNodeID_dumpMode_rankID_dtype.npy。
 
-          当input_output参数被配置为'all'或'out'时，生成的输出分片所对应的npy文件命名格式为：id_fileName.npy。
+          当input_output参数被配置为'all'或'out'时，生成的输出分片所对应的npy文件命名格式为：id_fileName_dtype.npy。
 
           - id：一个自增的ID。
           - fileName：参数file的值 （若该参数传入时是一个使用者指定的路径，则fileName的值为路径的最后一级）。
           - cNodeID：该Tensordump节点在step_parallel_end.ir文件中的节点编号。
           - dumpMode：input_output参数的值。
           - rankID：逻辑卡号。
+          - dtype：原始的数据类型。bfloat16类型数据保存在.npy文件中会被转换成float32。
 
     输入：
         - **file** (str) - 要保存的文件路径。
