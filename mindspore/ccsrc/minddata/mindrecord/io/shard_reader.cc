@@ -1766,6 +1766,26 @@ const std::vector<int64_t> *ShardReader::GetSampleIds() {
 
 LoadMode ShardReader::GetLoadMode() const { return load_mode_; }
 
+void ShardReader::GetSampleIdsByRandomAccess() {
+  if (all_sampler_ids_.empty()) {
+    if (GetLoadMode() != mindrecord::LoadMode::kSlow) {
+      auto vector_ids = GetSampleIds();
+      all_sampler_ids_.insert(all_sampler_ids_.end(), vector_ids->begin(), vector_ids->end());
+    } else {
+      if (all_sampler_ids_.empty()) {
+        while (true) {
+          auto next_sample_ids = GetNextSampleIds();
+          if (next_sample_ids.empty()) {
+            break;
+          } else {
+            all_sampler_ids_.insert(all_sampler_ids_.end(), next_sample_ids.begin(), next_sample_ids.end());
+          }
+        }
+      }
+    }
+  }
+}
+
 std::vector<int64_t> ShardReader::GetNextSampleIds() { return tasks_.GetNextSampleIds(); }
 }  // namespace mindrecord
 }  // namespace mindspore

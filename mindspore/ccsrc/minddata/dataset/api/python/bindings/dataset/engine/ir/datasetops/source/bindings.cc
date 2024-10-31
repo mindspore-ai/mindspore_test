@@ -544,8 +544,32 @@ PYBIND_REGISTER(
         minddata->SetSampleBytes(&sample_bytes);
         THROW_IF_ERROR(minddata->ValidateParams());
         return minddata;
-      }));
+      }))
+      .def("Build", [](MindDataNode &self) {
+        std::vector<std::shared_ptr<DatasetOp>> node_ops;
+        THROW_IF_ERROR(self.Build(&node_ops));
+        auto mindrecord_op = std::dynamic_pointer_cast<MindRecordOp>(node_ops[0]);
+        THROW_IF_ERROR(mindrecord_op->ShardReaderLaunch());
+        return mindrecord_op;
+      });
   }));
+
+PYBIND_REGISTER(MindRecordOp, 0, ([](const py::module *m) {
+                  (void)py::class_<MindRecordOp, std::shared_ptr<MindRecordOp>>(*m, "MindRecordOp")
+                    .def("__getitem__", [](MindRecordOp &self, size_t index) {
+                      auto out = self[index];
+                      std::vector<TensorPtr> row;
+                      row = out.getRow();
+                      {
+                        py::gil_scoped_acquire gil_acquire;
+                        py::list result;
+                        for (const auto &el : row) {
+                          result.append(el);
+                        }
+                        return result;
+                      }
+                    });
+                }));
 
 PYBIND_REGISTER(MnistNode, 2, ([](const py::module *m) {
                   (void)py::class_<MnistNode, DatasetNode, std::shared_ptr<MnistNode>>(*m, "MnistNode",
