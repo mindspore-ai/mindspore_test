@@ -250,7 +250,7 @@ std::optional<std::string> FileUtils::GetRealPath(const char *path) {
   }
 #else
   if (strlen(path) >= PATH_MAX || realpath(path, real_path) == nullptr) {
-    MS_LOG(ERROR) << "Get realpath failed, path[" << path << "]";
+    MS_LOG(WARNING) << "Get realpath failed, path[" << path << "]";
     return std::nullopt;
   }
 #endif

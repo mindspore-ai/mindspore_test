@@ -48,7 +48,7 @@ class BACKEND_EXPORT KernelAsyncLaunchActor : public ActorBase {
   KernelAsyncLaunchActor() : ActorBase("KernelAsyncLaunchActor") {}
   DISABLE_COPY_AND_ASSIGN(KernelAsyncLaunchActor);
 
-  void GetThreadId() { thread_id_ = std::this_thread::get_id(); }
+  void GetThreadId();
 
   // The thread id of exclusive thread used by this actor.
   std::thread::id thread_id_;
