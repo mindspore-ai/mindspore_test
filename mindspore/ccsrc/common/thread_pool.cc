@@ -24,7 +24,16 @@ namespace mindspore {
 namespace common {
 constexpr size_t kYieldThreshold = 1000;
 
-ThreadPool::ThreadPool() : max_thread_num_(std::thread::hardware_concurrency()) {}
+ThreadPool::ThreadPool() {
+  constexpr size_t LOWER_BOUND = 1;
+  constexpr size_t UPPER_BOUND = 24;
+  size_t cnt = std::thread::hardware_concurrency() / 8;
+  cnt = std::min(cnt, UPPER_BOUND);
+  cnt = (cnt > 1 && cnt % 2 != 0) ? cnt - 1 : cnt;
+  cnt = std::max(cnt, LOWER_BOUND);
+  this->max_thread_num_ = cnt;
+  MS_LOG(INFO) << "Set max_thread_num_ to " << this->max_thread_num_;
+}
 
 void ThreadPool::SyncRunLoop(const std::shared_ptr<ThreadContext> &context) {
   if (context == nullptr) {

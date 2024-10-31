@@ -2896,8 +2896,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             self.slice_shape_of_persistent_data_ = data_shape
             self.slice_num_of_persistent_data_ = slice_num_of_persistent_data
 
+        from mindspore.common.initializer import Zero as ZeroInitializer
+
         try:
-            data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(self.dtype))
+            if isinstance(self.init, ZeroInitializer):
+                data = np.zeros(data_shape, dtype=mstype.dtype_to_nptype(self.dtype))
+            else:
+                data = np.ndarray(data_shape, dtype=mstype.dtype_to_nptype(self.dtype))
         except ValueError as e:
             msg = "Error shape={}".format(shape)
             logger.critical(msg)
@@ -2932,9 +2937,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                     np.random.seed(self._np_seed)
                     self.init.seed, _ = self.seed
 
-        with seed_context(self.init):
-            if slice_num_of_persistent_data == 1:
-                self.init(data)
+        if not isinstance(self.init, ZeroInitializer):
+            with seed_context(self.init):
+                if slice_num_of_persistent_data == 1:
+                    self.init(data)
         self.init = None
 
         # At embedding cache scenes. When size of tensor is out of range, we store data to persistent storage
@@ -4749,7 +4755,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('lu_solve')(self, LU_data, LU_pivots)
 
-
     def nextafter(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.nextafter`.
@@ -4763,14 +4768,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_value_type('some', some, bool, 'Tensor.qr')
         return tensor_operator_registry.get('qr')(self, 'reduced' if some else 'complete')
 
-
     def ormqr(self, input2, input3, left=True, transpose=False):
         r"""
         For details, please refer to :func:`mindspore.ops.ormqr`,
         Args `input2` and `input3` correspond to the args `tau` and `other` of :func:`mindspore.ops.ormqr`.
         """
         return tensor_operator_registry.get('ormqr')(self, input2, input3, left, transpose)
-
 
     def masked_scatter(self, mask, x):
         r"""
@@ -4811,7 +4814,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             [5. 6. 3. 7.]
         """
         return tensor_operator_registry.get('masked_scatter')()(self, mask, x)
-
 
     def index_put(self, indices, values, accumulate=False):
         r"""
@@ -4865,7 +4867,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         _index_put = tensor_operator_registry.get('index_put')(0 if accumulate is False else 1)
         return _index_put(self, values, indices)
 
-
     def move_to(self, to, blocking=True):
         r"""
         Copy Tensor to target device synchronously or asynchronously, default synchronously. only support PyNative mode.
@@ -4900,7 +4901,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         if mode != context.PYNATIVE_MODE:
             raise ValueError(f"The method of 'move_to' only supported in pynative mode, but got: {mode}.")
         return Tensor(Tensor_.move_to(self, to, blocking), device="CPU" if to == "CPU" else None)
-
 
     def _offload(self):
         r"""
