@@ -117,6 +117,12 @@ class MindRecordOp : public MappableLeafOp {
   /// @return Name of the current Op
   std::string Name() const override { return "MindRecordOp"; }
 
+  // The Launch method of shard_reader_ needs to be called when using the dataset[index] behavior
+  // @return
+  Status ShardReaderLaunch();
+
+  TensorRow operator[](size_t index);
+
  private:
   Status GetRowFromReader(TensorRow *fetched_row, uint64_t row_id, int32_t worker_id);
 
@@ -160,6 +166,12 @@ class MindRecordOp : public MappableLeafOp {
   /// \param TensorRow row - loaded row
   /// \return Status The status code returned
   Status LoadTensorRowPullMode(row_id_type row_id, TensorRow *row) override;
+
+  /// Calculate sampler id based on index to return corresponding data
+  /// \param size_t index - indexing of dataset
+  /// \param TensorRow row - Get data after sampler based on index
+  /// @return Status The status code returned
+  Status GetRowByIndex(size_t index, TensorRow *row);
 
  private:
   std::vector<std::string> dataset_file_;                  // dataset files

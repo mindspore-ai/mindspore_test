@@ -1766,6 +1766,39 @@ const std::vector<int64_t> *ShardReader::GetSampleIds() {
 
 LoadMode ShardReader::GetLoadMode() const { return load_mode_; }
 
+void ShardReader::GetSampleIdsByRandomAccess() {
+  if (all_sampler_ids_.empty()) {
+    if (GetLoadMode() != mindrecord::LoadMode::kSlow) {
+      auto vector_ids = GetSampleIds();
+      all_sampler_ids_ = *vector_ids;
+    } else {
+      while (true) {
+        auto next_sample_ids = GetNextSampleIds();
+        if (next_sample_ids.empty()) {
+          break;
+        } else {
+          all_sampler_ids_.insert(all_sampler_ids_.end(), next_sample_ids.begin(), next_sample_ids.end());
+        }
+      }
+    }
+  }
+}
+
+Status ShardReader::GetMappedIndex(size_t index, size_t *mapped_index) {
+  GetSampleIdsByRandomAccess();
+  if (all_sampler_ids_.empty()) {
+    // Note, all_sampler_ids_.empty() is okay and will just give no sample ids.
+    MS_LOG(EXCEPTION) << "[Internal ERROR] Init Sampler failed as sample_ids is empty, here ShardReader did not "
+                         "provide a valid sample ids vector via MindRecordOp.";
+  }
+  if (index >= all_sampler_ids_.size()) {
+    MS_LOG(EXCEPTION) << "Input index is not within the required interval of [0, " << all_sampler_ids_.size() - 1
+                      << "], but got " << index << ".";
+  }
+  *mapped_index = all_sampler_ids_[index];
+  return Status::OK();
+}
+
 std::vector<int64_t> ShardReader::GetNextSampleIds() { return tasks_.GetNextSampleIds(); }
 }  // namespace mindrecord
 }  // namespace mindspore

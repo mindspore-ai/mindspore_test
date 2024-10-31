@@ -198,6 +198,37 @@ Status GeneratorOp::CheckNumSamples() const {
   return Status::OK();
 }
 
+Status GeneratorOp::CalculatedSampleId() {
+  RETURN_IF_NOT_OK(InitSampler());
+  py::gil_scoped_acquire gil_acquire;
+  if (Py_IsInitialized() == 0) {
+    RETURN_STATUS_ERROR(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized.");
+  }
+  try {
+    py::array sample_ids;
+    RETURN_IF_NOT_OK(sampler_->GetAllIdsThenReset(&sample_ids));
+    auto buf_info = sample_ids.request();
+    auto ptr_sample = static_cast<int64 *>(buf_info.ptr);
+    for (size_t i = 0; i < buf_info.size; i++) {
+      sample_ids_.push_back(ptr_sample[i]);
+    }
+  } catch (const py::error_already_set &e) {
+    RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, e.what());
+  }
+  return Status::OK();
+}
+
+Status GeneratorOp::GetMappedIndex(int64_t index, int64_t *out_index) {
+  if (index > sample_ids_.size() - 1) {
+    RETURN_STATUS_UNEXPECTED("Index [" + std::to_string(index) + "] exceeded the number of data samples.");
+  }
+  if (index < 0) {
+    RETURN_STATUS_UNEXPECTED("Index [" + std::to_string(index) + "] can not be a negative number.");
+  }
+  *out_index = sample_ids_[index];
+  return Status::OK();
+}
+
 // Entry point for Generator, called by launch()
 // Note that this function is very easy to break because of the Python GIL mechanism
 // The master thread has the following workflow

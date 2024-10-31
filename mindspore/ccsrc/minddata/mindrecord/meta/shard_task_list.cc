@@ -218,8 +218,9 @@ ShardTask ShardTaskList::GetTaskByID(int64_t id) {
 
 int64_t ShardTaskList::GetTaskSampleByID(int64_t id) { return sample_ids_[id]; }
 
-int64_t ShardTaskList::GetRandomTaskID() {
+int64_t ShardTaskList::GetRandomTaskID(uint32_t seed) {
   std::mt19937 gen = GetRandomDevice();
+  gen.seed(seed);
   std::uniform_int_distribution<> dis(0, sample_ids_.size() - 1);
   return dis(gen);
 }

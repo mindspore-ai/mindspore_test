@@ -178,8 +178,10 @@ Status ShardShuffle::Execute(ShardTaskList &tasks) {
           CHECK_FAIL_RETURN_UNEXPECTED_MR(
             no_of_samples_ > 0,
             "Invalid input, 'num_samples' should be positive but got: " + std::to_string(no_of_samples_));
+          uint32_t local_seed = shuffle_seed_;
           for (uint32_t i = 0; i < no_of_samples_; ++i) {
-            new_tasks.AssignTask(tasks, tasks.GetRandomTaskID());
+            new_tasks.AssignTask(tasks, tasks.GetRandomTaskID(local_seed));
+            local_seed++;
           }
 
           ShardTaskList::TaskListSwap(tasks, new_tasks);

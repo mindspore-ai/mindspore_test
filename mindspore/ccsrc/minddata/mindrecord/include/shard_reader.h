@@ -215,6 +215,9 @@ class MINDRECORD_API ShardReader {
   /// \brief get next sample ids in slow load mode
   std::vector<int64_t> GetNextSampleIds();
 
+  /// \brief mindrecord returns the sample id when using random access
+  Status GetMappedIndex(size_t index, size_t *mapped_index);
+
  protected:
   /// \brief sqlite call back function
   static int SelectCallback(void *p_data, int num_fields, char **p_fields, char **p_col_names);
@@ -318,6 +321,9 @@ class MINDRECORD_API ShardReader {
   Status GetMeta(const std::string &file_path, std::shared_ptr<json> meta_data_ptr,
                  std::shared_ptr<std::vector<std::string>> *addresses_ptr);
 
+  /// \brief mindrecord gets sample id when using random access
+  void GetSampleIdsByRandomAccess();
+
  protected:
   uint64_t header_size_;                       // header size
   uint64_t page_size_;                         // page size
@@ -365,6 +371,7 @@ class MINDRECORD_API ShardReader {
   // 1 : 41  -  shard1 has 26 samples
   // 2 : 58  -  shard2 has 17 samples
   std::vector<int64_t> shard_sample_count_;
+  std::vector<int64_t> all_sampler_ids_ = {};  // mindrecord saves sample id when using random access
 };
 }  // namespace mindrecord
 }  // namespace mindspore

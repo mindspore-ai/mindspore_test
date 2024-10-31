@@ -348,6 +348,11 @@ Status MindRecordOp::RegisterAndLaunchThreads() {
   return Status::OK();
 }
 
+Status MindRecordOp::ShardReaderLaunch() {
+  RETURN_IF_NOT_OK(shard_reader_->Launch(true));
+  return Status::OK();
+}
+
 Status MindRecordOp::CountTotalRows(const std::vector<std::string> dataset_path, bool load_dataset,
                                     const std::shared_ptr<ShardOperator> &op, int64_t *count, int64_t num_padded) {
   RETURN_UNEXPECTED_IF_NULL(op);
@@ -441,6 +446,23 @@ Status MindRecordOp::InitPullMode() {
 
 Status MindRecordOp::LoadTensorRowPullMode(row_id_type row_id, TensorRow *row) {
   return GetRowFromReader(row, row_id, 0);
+}
+
+Status MindRecordOp::GetRowByIndex(size_t index, TensorRow *row) {
+  RETURN_UNEXPECTED_IF_NULL(row);
+  size_t real_index = 0;
+  RETURN_IF_NOT_OK(shard_reader_->GetMappedIndex(index, &real_index));
+  RETURN_IF_NOT_OK(GetRowFromReader(row, real_index, 0));
+  return Status::OK();
+}
+
+TensorRow MindRecordOp::operator[](size_t index) {
+  TensorRow row;
+  auto status = GetRowByIndex(index, &row);
+  if (status.IsError()) {
+    MS_LOG(EXCEPTION) << status.ToString();
+  }
+  return row;
 }
 
 }  // namespace dataset

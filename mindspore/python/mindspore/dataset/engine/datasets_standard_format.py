@@ -33,6 +33,7 @@ from .datasets import UnionBaseDataset, SourceDataset, MappableDataset, Shuffle,
 from .datasets_user_defined import GeneratorDataset
 from .obs.obs_mindrecord_dataset import MindRecordFromOBS
 from .validators import check_csvdataset, check_minddataset, check_tfrecorddataset, check_obsminddataset
+from ..core.validator_helpers import type_check
 from ...mindrecord.config import _get_enc_key, _get_dec_mode, _get_hash_mode, decrypt, verify_file_hash
 
 
@@ -300,6 +301,22 @@ class MindDataset(MappableDataset, UnionBaseDataset):
                     self.new_padded_sample[k] = v.tobytes()
                 else:
                     self.new_padded_sample[k] = v
+
+    def __deepcopy__(self, memodict):
+        if id(self) in memodict:
+            return memodict[id(self)]
+        return self.__safe_deepcopy__(memodict, exclude=("mindrecord_op"))
+
+    def __getitem__(self, index):
+        type_check(index, (int,), "index")
+        if index < 0:
+            raise ValueError("index cannot be negative, but got {0}.".format(index))
+        if not hasattr(self, "mindrecord_op"):
+            minddata_node = cde.MindDataNode(
+                self.dataset_files, self.columns_list, self.sampler, self.new_padded_sample,
+                self.num_padded, shuffle_to_shuffle_mode(self.shuffle_option))
+            self.mindrecord_op = minddata_node.Build()
+        return [t.as_array() for t in self.mindrecord_op[index]]
 
 
 class TFRecordDataset(SourceDataset, UnionBaseDataset):

@@ -124,7 +124,7 @@ class MINDRECORD_API ShardTaskList {
 
   int64_t GetTaskSampleByID(int64_t id);
 
-  int64_t GetRandomTaskID();
+  int64_t GetRandomTaskID(uint32_t seed);
 
   static ShardTaskList Combine(std::vector<ShardTaskList> &category_tasks, bool replacement,  // NOLINT
                                int64_t num_elements, int64_t num_samples);
