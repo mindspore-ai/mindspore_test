@@ -321,6 +321,7 @@ from mindspore.ops.auto_generate import erfc
 from mindspore.ops.auto_generate import expm1
 # 208
 from mindspore.ops.function.array_func import eye
+from mindspore.ops.function.random_func import randperm_ext as randperm
 from mindspore.ops.function.random_func import rand_ext as rand
 from mindspore.ops.function.random_func import rand_like_ext as rand_like
 from mindspore.ops.function.random_func import randn_ext as randn
@@ -1158,7 +1159,8 @@ def item(input):
     if not isinstance(input, Tensor):
         raise TypeError(f"the input must be a Tensor, but got {type(input)}")
     if input.size != 1:
-        raise RuntimeError("a Tensor with {} elements cannot be converted to Scalar".format(input.size))
+        raise RuntimeError(
+            "a Tensor with {} elements cannot be converted to Scalar".format(input.size))
     return input.asnumpy().item()
 
 
@@ -1983,6 +1985,7 @@ __all__ = [
 
     # 256
     'median',
+    'randperm',
     'rand',
     'rand_like',
     'randn',
@@ -2040,7 +2043,8 @@ setattr(tensor_operator_registry_for_mint, 'item', item)
 setattr(tensor_operator_registry_for_mint, 'max', max)
 setattr(tensor_operator_registry_for_mint, 'mean', mean)
 setattr(tensor_operator_registry_for_mint, 'min', min)
-setattr(tensor_operator_registry_for_mint, 'repeat_interleave', repeat_interleave)
+setattr(tensor_operator_registry_for_mint,
+        'repeat_interleave', repeat_interleave)
 setattr(tensor_operator_registry_for_mint, 'ne', ne)
 setattr(tensor_operator_registry_for_mint, 'round', round)
 setattr(tensor_operator_registry_for_mint, 'sin', sin)

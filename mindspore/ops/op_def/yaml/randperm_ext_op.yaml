@@ -1,0 +1,21 @@
+#operator randperm_ext
+randperm_ext:
+    args:
+        n:
+            dtype: int
+        seed:
+            dtype: tensor
+        offset:
+            dtype: tensor
+        dtype:
+            dtype: TypeId
+            default: mstype.int64
+            arg_handler: dtype_to_type_id
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: RandpermExtAscend
