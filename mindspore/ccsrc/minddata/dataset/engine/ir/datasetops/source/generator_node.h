@@ -24,6 +24,7 @@
 #ifdef ENABLE_PYTHON
 #include "minddata/dataset/api/python/python_mp.h"
 #endif
+#include "minddata/dataset/engine/datasetops/source/generator_op.h"
 #include "minddata/dataset/engine/ir/datasetops/dataset_node.h"
 #include "minddata/dataset/engine/ir/datasetops/epoch_ctrl_node.h"
 #include "minddata/dataset/engine/ir/datasetops/repeat_node.h"
