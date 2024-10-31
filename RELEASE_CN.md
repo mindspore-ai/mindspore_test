@@ -517,16 +517,19 @@
   <tr>
   <td><pre>
   def all_to_all_single_with_output_shape(output_shape,
-                                          tensor, output_split_sizes=None,
+                                          tensor,
+                                          output_split_sizes=None,
                                           input_split_sizes=None,
                                           group=None)->Tensor
   </pre>
   </td>
   <td><pre>
   def all_to_all_single_with_output_shape(output_shape,
-                                          tensor, output_split_sizes=None,
+                                          tensor,
+                                          output_split_sizes=None,
                                           input_split_sizes=None,
-                                          group=None, async_op=False)->
+                                          group=None,
+                                          async_op=False)->
                                           tuple(Tensor, CommHandle)
   </pre>
   </td>
