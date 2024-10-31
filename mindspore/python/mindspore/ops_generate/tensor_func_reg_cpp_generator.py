@@ -233,16 +233,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         func_header_body_list, func_header_def_list = [], []
         func_call_body_list, func_def_body_list = [], []
 
-        def format_func_api_name(func_api_name):
-            """
-            Generates formatted string for function names, e.g., add_ext -> AddExt.
-            """
-            if '_' in func_api_name:
-                formatted_func_api_name = ''.join([name.capitalize() for name in func_api_name.split('_')])
-            else:
-                formatted_func_api_name = func_api_name.capitalize()
-            return formatted_func_api_name
-
         for func_api_name, func_protos in overload_op_func_data.items():
             formatted_class_name = format_func_api_name(func_api_name)
             func_header_body_list.append(self._get_overload_tensor_func_header_body_str(func_protos))
@@ -300,7 +290,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if len(self_index) != 1:
                 raise ValueError(
                     f'There must be only one field named \'input\'. But got {len(self_index)} in {func_api_name}')
-        overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(class_name=func_api_name.capitalize(),
+        formatted_class_name = format_func_api_name(func_api_name)
+        overload_func_call_str = self.TENSOR_FUNC_OVERLOAD_CALL_BODY.replace(class_name=formatted_class_name,
                                                                              func_name=func_api_name,
                                                                              signatures=signatures_str,
                                                                              dispatch_cases=dispatch_cases,
@@ -483,3 +474,14 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 arg_handler_processor.append(arg_handler_str)
 
         return arg_handler_processor
+
+
+def format_func_api_name(func_api_name):
+    """
+    Generates formatted string for function names, e.g., add_ext -> AddExt.
+    """
+    if '_' in func_api_name:
+        formatted_func_api_name = ''.join([name.capitalize() for name in func_api_name.split('_')])
+    else:
+        formatted_func_api_name = func_api_name.capitalize()
+    return formatted_func_api_name
