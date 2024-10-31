@@ -1747,6 +1747,7 @@ __all__ = [
     # 31
     'cummax',
     'cummin',
+    'einsum',
     'sub',
     # 33
     'split',
