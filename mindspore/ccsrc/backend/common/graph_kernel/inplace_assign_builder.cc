@@ -24,6 +24,7 @@
 #include <vector>
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
+#include "backend/common/pass/insert_type_transform_op.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -88,6 +89,14 @@ void InplaceAssignBuilder::CorrectKernelBuildInfo(
   auto new_selected_info = BuildSelectKernelBuildInfo(
     new_inputs_format, new_inputs_type, origin_kernel_build_info->GetAllOutputFormats(),
     origin_kernel_build_info->GetAllOutputDeviceTypes(), origin_kernel_build_info->processor());
+  // The number of inputs is changed here, must set kernel object type explicitly.
+  auto composite_cnode = composite_node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(composite_cnode);
+  std::vector<kernel::KernelObjectType> input_obj_type;
+  std::vector<kernel::KernelObjectType> output_obj_type;
+  opt::GenerateKernelObjectTypeForNewCNode(composite_cnode, &input_obj_type, &output_obj_type);
+  new_selected_info->SetInputsKernelObjectType(input_obj_type);
+  new_selected_info->SetOutputsKernelObjectType(output_obj_type);
   AnfAlgo::SetSelectKernelBuildInfo(new_selected_info, composite_node.get());
 }
 
