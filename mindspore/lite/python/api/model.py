@@ -93,6 +93,9 @@ def set_env(func):
                                                             "vendors", "mslite_tbe_and_aicpu")
         if os.path.exists(mslite_ascend_tbe_custom_kernel_path):
             if os.getenv('ASCEND_CUSTOM_OPP_PATH'):
+                if mslite_ascend_tbe_custom_kernel_path in os.environ['ASCEND_CUSTOM_OPP_PATH']:
+                    logging.info("mslite ascend tbe custom kernel path found.")
+                    return func(*args, **kwargs)
                 os.environ['ASCEND_CUSTOM_OPP_PATH'] = mslite_ascend_tbe_custom_kernel_path + ":" + \
                                                        os.environ['ASCEND_CUSTOM_OPP_PATH']
             else:
@@ -102,6 +105,9 @@ def set_env(func):
                 "mslite tbe_and_aicpu custom kernel path not found")
         if os.path.exists(mslite_ascend_ascendc_custom_kernel_path):
             if os.getenv('ASCEND_CUSTOM_OPP_PATH'):
+                if mslite_ascend_ascendc_custom_kernel_path in os.environ['ASCEND_CUSTOM_OPP_PATH']:
+                    logging.info("mslite ascend ascendc custom kernel path found.")
+                    return func(*args, **kwargs)
                 os.environ['ASCEND_CUSTOM_OPP_PATH'] = mslite_ascend_ascendc_custom_kernel_path + ":" + \
                                                        os.environ['ASCEND_CUSTOM_OPP_PATH']
             else:
