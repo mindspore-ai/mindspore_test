@@ -697,7 +697,7 @@ REG_BPROP_BUILDER("Dense").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
         dx = ib->OutZeros(x);
       }
       if (w->need_compute_grad_out()) {
-        dw = ib->Mv(ib->Transpose(x, ib->Value(ShapeVector{1, 0})), dout);
+        dw = ib->Emit("MatMulExt", {ib->Transpose(x, ib->Value(ShapeVector{1, 0})), dout});
         if (is_complex) {
           dw = ib->Emit("Conj", {dw});
         }

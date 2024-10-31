@@ -625,6 +625,9 @@ class Dense(Cell):
     data type as the :math:`X` created by the layer, and :math:`\text{bias}` is a bias vector
     with the same data type as the :math:`X` created by the layer (only if has_bias is True).
 
+    .. warning::
+        In PYNATIVE mode, if `bias` is ``False`` , the `x` cannot be greater than 6D.
+
     Args:
         in_channels (int): The number of channels in the input space.
         out_channels (int): The number of channels in the output space.
@@ -639,6 +642,8 @@ class Dense(Cell):
             layer. Both activation name, e.g. 'relu', and mindspore activation function, e.g. mindspore.ops.ReLU(),
             are supported. Default: ``None`` .
         dtype (:class:`mindspore.dtype`): Data type of Parameter. Default: ``mstype.float32`` .
+            When `weight_init` is Tensor, Parameter has the same data type as `weight_init` ,
+            in other cases, Parameter has the same data type as `dtype`, the same goes for `bias_init`.
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(*, in\_channels)`. The `in_channels` in `Args` should be equal
@@ -655,6 +660,7 @@ class Dense(Cell):
                     is not equal to `out_channels` or shape[1] of `weight_init` is not equal to `in_channels`.
         ValueError: If length of shape of `bias_init` is not equal to 1
                     or shape[0] of `bias_init` is not equal to `out_channels`.
+        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PYNATIVE mode.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -756,6 +762,9 @@ class Linear(Cell):
     .. math::
         \text{outputs} = X * kernel + bias
 
+    .. warning::
+        In PYNATIVE mode, if `bias` is ``False`` , the `x` cannot be greater than 6D.
+
     where :math:`X` is the input tensors, :math:`\text{kernel}` is a weight matrix with the same
     data type as the :math:`X` created by the layer, and :math:`\text{bias}` is a bias vector
     with the same data type as the :math:`X` created by the layer (only if has_bias is True).
@@ -771,6 +780,9 @@ class Linear(Cell):
             same as `x`. The values of str refer to the function `initializer`. Default: ``None`` ,
             bias will be initialized using Uniform.
         dtype (:class:`mindspore.dtype`): Data type of Parameter. Default: ``None`` .
+            If `dtype` is ``None`` , `dtype` is set to ``mstype.float32`` when initializing the method.
+            When `weight_init` is Tensor, Parameter has the same data type as `weight_init` ,
+            in other cases, Parameter has the same data type as `dtype`, the same goes for `bias_init`.
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(*, in\_features)`. The `in_features` in `Args` should be equal
@@ -786,6 +798,7 @@ class Linear(Cell):
                     is not equal to `out_features` or shape[1] of `weight_init` is not equal to `in_features`.
         ValueError: If length of shape of `bias_init` is not equal to 1
                     or shape[0] of `bias_init` is not equal to `out_features`.
+        RuntimeError: If `bias` is ``False`` and `x` is greater than 6D in PYNATIVE mode.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

@@ -12,6 +12,9 @@ mindspore.nn.Dense
 
     其中  :math:`X` 是输入Tensor， :math:`\text{activation}` 是激活函数， :math:`\text{kernel}` 是一个权重矩阵，其数据类型与 :math:`X` 相同， :math:`\text{bias}` 是一个偏置向量，其数据类型与 :math:`X` 相同（仅当has_bias为True时）。
 
+    .. warning::
+        在PYNATIVE模式下，如果 `bias` 为 ``False``， `x` 不可以大于6D。
+
     参数：
         - **in_channels** (int) - Dense层输入Tensor的空间维度。
         - **out_channels** (int) - Dense层输出Tensor的空间维度。
@@ -20,6 +23,7 @@ mindspore.nn.Dense
         - **has_bias** (bool) - 是否使用偏置向量 :math:`\text{bias}` 。默认值： ``True`` 。
         - **activation** (Union[str, Cell, Primitive, None]) - 应用于全连接层输出的激活函数。可指定激活函数名，如'relu'，或具体激活函数，如 :class:`mindspore.nn.ReLU` 。默认值： ``None`` 。
         - **dtype** (:class:`mindspore.dtype`) - Parameter的数据类型。默认值： ``mstype.float32`` 。
+          当 `weight_init` 是Tensor时，Parameter的数据类型与 `weight_init` 数据类型一致，其他情况Parameter的数据类型跟 `dtype` 一致，同理 `bias_init` 。
 
     输入：
         - **x** (Tensor) - shape为 :math:`(*, in\_channels)` 的Tensor。参数中的 `in_channels` 应等于输入中的 :math:`in\_channels` 。
@@ -33,3 +37,4 @@ mindspore.nn.Dense
         - **TypeError** - `activation` 不是str、Cell、Primitive或者None。
         - **ValueError** - `weight_init` 的shape长度不等于2，`weight_init` 的shape[0]不等于 `out_channels`，或者 `weight_init` 的shape[1]不等于 `in_channels`。
         - **ValueError** - `bias_init` 的shape长度不等于1或 `bias_init` 的shape[0]不等于 `out_channels`。
+        - **RuntimeError** - 在PYNATIVE模式下， `bias` 为 ``False`` 且 `x` 大于6D。
