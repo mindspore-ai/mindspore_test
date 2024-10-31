@@ -36,15 +36,26 @@ void AdamWAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   amsgrad_ = transform::ConvertKernelTensor<bool>(inputs[kIndex11]);
   maximize_ = transform::ConvertKernelTensor<bool>(inputs[kIndex12]);
   // Infer function has confirmed the actual dtype of output
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-                        inputs[kIndex5], lr_, beta1_, beta2_, decay_, eps_, amsgrad_, maximize_);
+  if (amsgrad_) {
+    GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
+                          inputs[kIndex5], lr_, beta1_, beta2_, decay_, eps_, amsgrad_, maximize_);
+  } else {
+    GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], nullptr, inputs[kIndex4], inputs[kIndex5],
+                          lr_, beta1_, beta2_, decay_, eps_, amsgrad_, maximize_);
+  }
 }
 
 bool AdamWAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                          const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-        inputs[kIndex5], lr_, beta1_, beta2_, decay_, eps_, amsgrad_, maximize_);
+  if (amsgrad_) {
+    RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
+          inputs[kIndex5], lr_, beta1_, beta2_, decay_, eps_, amsgrad_, maximize_);
+  } else {
+    RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], nullptr, inputs[kIndex4],
+          inputs[kIndex5], lr_, beta1_, beta2_, decay_, eps_, amsgrad_, maximize_);
+  }
+
   return true;
 }
 
