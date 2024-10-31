@@ -41,6 +41,7 @@ namespace {
 auto const kEnableInterleave = "enable_interleave";
 auto const kSplitConcatDepend = "split_concat_depend";
 auto const kInterleaveBranchId = "interleave_branch_id";
+auto const kInterleaveScopeId = "interleave_scope_id";
 auto const kInterleaveSharedBranchId = 0;
 auto const kGradFlag = "Gradients";
 auto const kDefaultCostThreshold = 15;
@@ -50,6 +51,7 @@ struct InterLeaveScope {
   CNodePtr split{nullptr};
   CNodePtr concat{nullptr};
   bool forward{false};
+  size_t scope_id{0};
 };
 
 using InterLeaveScopePtr = std::shared_ptr<InterLeaveScope>;
@@ -78,8 +80,10 @@ inline bool IsForwardNode(const CNodePtr &node) {
 void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePtr &seed_node, size_t branch_id) {
   MS_EXCEPTION_IF_NULL(interleave_scope);
   MS_EXCEPTION_IF_NULL(seed_node);
+  auto scope_id_value = MakeValue<size_t>(interleave_scope->scope_id);
   auto branch_id_value = MakeValue<size_t>(branch_id);
   static auto kSharedBranchIdValue = MakeValue<size_t>(kInterleaveSharedBranchId);
+  seed_node->AddAttr(kInterleaveScopeId, scope_id_value);
   seed_node->AddAttr(kInterleaveBranchId, branch_id_value);
   std::queue<CNodePtr> to_visit;
   to_visit.emplace(seed_node);
@@ -104,6 +108,12 @@ void PropagateBranchId(const InterLeaveScopePtr &interleave_scope, const CNodePt
         continue;
       }
 
+      if (!input_cnode->HasAttr(kInterleaveScopeId)) {
+        input_cnode->AddAttr(kInterleaveScopeId, scope_id_value);
+      } else if (GetValue<size_t>(input_cnode->GetAttr(kInterleaveScopeId)) != interleave_scope->scope_id) {
+        continue;
+      }
+
       if (!input_cnode->HasAttr(kInterleaveBranchId)) {
         input_cnode->AddAttr(kInterleaveBranchId, branch_id_value);
         to_visit.emplace(input_cnode);
@@ -122,7 +132,6 @@ mindspore::HashMap<CNodePtr, size_t> GetBranchNodesRefCount(const InterLeaveScop
                                                             const CNodePtr &seed_node, size_t branch_id) {
   MS_EXCEPTION_IF_NULL(interleave_scope);
   MS_EXCEPTION_IF_NULL(seed_node);
-  bool is_backward_scope = !interleave_scope->forward;
   auto seen = NewSeenGeneration();
   mindspore::HashMap<CNodePtr, size_t> ref_count;
   std::queue<CNodePtr> to_visit;
@@ -148,7 +157,8 @@ mindspore::HashMap<CNodePtr, size_t> GetBranchNodesRefCount(const InterLeaveScop
         continue;
       }
 
-      if (is_backward_scope && IsForwardNode(input_cnode)) {
+      if (!input_cnode->HasAttr(kInterleaveScopeId) ||
+          GetValue<size_t>(input_cnode->GetAttr(kInterleaveScopeId)) != interleave_scope->scope_id) {
         continue;
       }
 
@@ -172,7 +182,6 @@ std::vector<CNodePtr> GetBranchOrderedNodes(const InterLeaveScopePtr &interleave
                                             size_t branch_id) {
   MS_EXCEPTION_IF_NULL(interleave_scope);
   MS_EXCEPTION_IF_NULL(seed_node);
-  bool is_backward_scope = !interleave_scope->forward;
   auto seen = NewSeenGeneration();
   mindspore::HashMap<CNodePtr, size_t> ref_count = GetBranchNodesRefCount(interleave_scope, seed_node, branch_id);
   std::vector<CNodePtr> ordered_nodes;
@@ -202,7 +211,8 @@ std::vector<CNodePtr> GetBranchOrderedNodes(const InterLeaveScopePtr &interleave
 
       auto input_cnode = input->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(input_cnode);
-      if (is_backward_scope && IsForwardNode(input_cnode)) {
+      if (!input_cnode->HasAttr(kInterleaveScopeId) ||
+          GetValue<size_t>(input_cnode->GetAttr(kInterleaveScopeId)) != interleave_scope->scope_id) {
         continue;
       }
 
@@ -569,6 +579,7 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
 
   // Use unique id set to find correspond backward ops
   std::set<std::string> target_unique_id_set;
+  size_t scope_id = 0;
   for (const auto &child_graph : manager->func_graphs()) {
     auto graph_orders = child_graph->GetOrderedCnodes();
     std::vector<CNodePtr> origin_nodes_topological(graph_orders.cbegin(), graph_orders.cend());
@@ -606,6 +617,7 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
         current_scope = std::make_shared<InterLeaveScope>();
         current_scope->split = node;
         current_scope->forward = forward;
+        current_scope->scope_id = ++scope_id;
         scope_stack.push(current_scope);
       }
 
