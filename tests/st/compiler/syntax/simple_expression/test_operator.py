@@ -437,3 +437,25 @@ def test_make_slice_scalar():
     with pytest.raises(Exception, match="Slice indices must be integers or bool."):
         ret = net(x)
         print("ret:", ret)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')      
+def test_abs_abnormal():
+    """
+    Feature: Check the number of inputs of abs.
+    Description: The number input of abs is one.
+    Expectation: The number input of abs is one.
+    """
+    class Net(Cell):
+        def construct(self, x, y):
+            return P.Abs()(x, y)
+
+    x = ms.Tensor([1])
+    y = ms.Tensor([2])
+    net = Net()
+    with pytest.raises(TypeError) as raise_info:
+        net(x, y)
+    assert "For Operator[Abs], the number of inputs should be less than or equal to 1, but got 2" \
+        in str(raise_info.value)
+        
