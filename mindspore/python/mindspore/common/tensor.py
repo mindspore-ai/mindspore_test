@@ -4956,20 +4956,13 @@ def _check_tensor_input(input_data=None, dtype=None, shape=None, init=None):
         raise ValueError("init, dtype and shape must have values at the same time.")
 
     if input_data is not None:
-        if isinstance(input_data, np.ndarray) and input_data.ndim >= 1 and input_data.size == 0:
-            raise ValueError("input_data can not contain zero dimension.")
         if isinstance(input_data, (tuple, list)):
             try:
-                np_data = np.array(input_data)
+                _ = np.array(input_data)
             except ValueError as e:
                 if "The requested array has an inhomogeneous shape" in str(e):
                     raise TypeError(f"For Tensor, the input_data is {input_data} that contain unsupported element.")
                 raise
-            if np_data.ndim >= 1 and np_data.size == 0:
-                raise ValueError("input_data can not contain zero dimension.")
-
-    if shape is not None and not (hasattr(init, "__enable_zero_dim__") and init.__enable_zero_dim__) and 0 in shape:
-        raise ValueError("Shape can not contain zero value.")
 
 
 def _check_tensor_dynamic_shape(dtype=None, shape=None, init=None):

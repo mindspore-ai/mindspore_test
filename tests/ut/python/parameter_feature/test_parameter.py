@@ -980,3 +980,13 @@ def test_unexpected_keyword_argument():
         Net()(1, 2)
     except RuntimeError as e:
         assert "Got an unexpected keyword argument" in str(e)
+
+
+def test_set_data_with_different_shape():
+    """
+    Feature: set data.
+    Description: Set data with different shape with origin parameter.
+    Expectation: Success.
+    """
+    x = Parameter(Tensor(np.ones(shape=(2, 3), dtype=np.float32)), name="param")
+    x.set_data(Tensor(np.ones(shape=(4, 5), dtype=np.float32)))

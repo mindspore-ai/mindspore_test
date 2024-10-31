@@ -845,16 +845,10 @@ class Parameter(Tensor_):
                         f"Use .set_dtype(xxx) to change the dtype.")
 
     @staticmethod
-    def _set_data_check_input_valid(current_shape, data_shape, current_tensor_is_init, incoming_tensor_is_init,
-                                    from_ckpt, slice_shape=False, slice_num=1):
+    def _set_data_check_input_valid(current_tensor_is_init, incoming_tensor_is_init, from_ckpt):
         if not from_ckpt and incoming_tensor_is_init and not current_tensor_is_init:
             raise TypeError("The original tensor data is initialized, but the argument 'data' is not initialized."
                             "Please initialize 'data' before call this method.")
-        if tuple(current_shape) != tuple(data_shape):
-            # If Slice create Parameter shape can be change.
-            if not slice_shape and slice_num == 1:
-                raise ValueError(f"Can not change the shape of Parameter which has been initialized."
-                                 f" Current shape is {current_shape}, and incoming is {data_shape}.")
 
     @staticmethod
     def _from_tensor(tensor, *args, **kwargs):
@@ -901,8 +895,7 @@ class Parameter(Tensor_):
         # both not init.
         incoming_tensor_is_init = isinstance(data, Tensor) and not data.has_init
         current_tensor_is_init = isinstance(self, Tensor) and not self.has_init
-        Parameter._set_data_check_input_valid(self.shape, data.shape, current_tensor_is_init, incoming_tensor_is_init,
-                                              self.from_ckpt, slice_shape, self.slice_num)
+        Parameter._set_data_check_input_valid(current_tensor_is_init, incoming_tensor_is_init, self.from_ckpt)
         if self.dtype != data.dtype:
             if mstype.implicit_conversion_seq.get(self.dtype) < mstype.implicit_conversion_seq.get(data.dtype):
                 self._raise_type_error(data.dtype)
