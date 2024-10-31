@@ -19,4 +19,5 @@
 deprecated_tensor_method_map = {
     "max": "deprecated_tensor_max",
     "argmax": "deprecated_tensor_argmax",
+    "gather": "deprecated_tensor_gather",
 }

@@ -31,7 +31,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (repeat_interleave_mint, add_mint, item_mint, isnan_mint, flatten_mint,
+from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, flatten_mint,
                                                max_mint, mean_mint, min_mint, split_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
@@ -3356,14 +3356,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_value_type('indices', indices, (Tensor, Tensor_,), 'Tensor.gather_nd')
         return tensor_operator_registry.get('gather_nd')(self, indices)
 
-    def gather(self, input_indices, axis, batch_dims=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.gather`.
-        """
-        validator.check_is_int(axis, 'axis')
-        validator.check_is_int(batch_dims, "batch_dims")
-        return tensor_operator_registry.get('gather')(self, input_indices, axis, batch_dims)
-
     def uniform(self, from_=0., to=1., generator=None):
         r"""
         Generates random numbers in the half-open interval [from\_, to).
@@ -3654,13 +3646,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             if rep != 0:
                 repeated_subs.append(tensor_operator_registry.get('repeat_elements')(sub, rep, axis))
         return tensor_operator_registry.get('concatenate')(repeated_subs, axis)
-
-    @repeat_interleave_mint
-    def repeat_interleave(self, repeats, dim=None):
-        """
-        For details, please refer to :func:`mindspore.ops.repeat_interleave`.
-        """
-        return tensor_operator_registry.get('repeat_interleave')(self, repeats, dim)
 
     def bernoulli(self, p=0.5, seed=None):
         r"""

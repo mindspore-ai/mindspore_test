@@ -14,6 +14,7 @@
 # ============================================================================
 """Tensor method for overload."""
 
+from mindspore import _checkparam as validator
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
@@ -21,6 +22,8 @@ from mindspore.ops.auto_generate import add, max_
 from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar, erf, exp, tanh
 from mindspore.ops.function.math_func import mean, ceil, cos, eq
 from mindspore.ops.function.array_func import argmax
+from mindspore.ops.function.array_func import repeat_interleave, gather_ext
+from mindspore.ops.auto_generate import gather
 from mindspore.ops.function.array_func import max as max_func
 
 
@@ -86,3 +89,20 @@ def tensor_exp(input):
 
 def tensor_tanh(input):
     return tanh(input)
+
+
+def tensor_gather_ext(input, dim, index):
+    return gather_ext(input, dim, index)
+
+
+def deprecated_tensor_gather(input, input_indices, axis, batch_dims=0):
+    r"""
+    For details, please refer to :func:`mindspore.ops.gather`.
+    """
+    validator.check_is_int(axis, 'axis')
+    validator.check_is_int(batch_dims, "batch_dims")
+    return gather(input, input_indices, axis, batch_dims)
+
+
+def tensor_repeat_interleave(input, repeats, dim=None):
+    return repeat_interleave(input, repeats, dim)
