@@ -140,9 +140,5 @@ bool InternalFlashAttentionScore::Init(const std::vector<KernelTensor *> &inputs
   MS_LOG(INFO) << "Force op '" << kernel_name_ << "' to be resized to update op param 'seq_len'";
   return InternalKernelMod::Init(inputs, outputs);
 }
-
-MS_INTERNAL_KERNEL_FACTORY_REG(FlashAttentionScore, InternalFlashAttentionScore);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FlashAttentionScore, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_2, INDEX_3, INDEX_6);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(FlashAttentionScore, OUTPUT_NUM_1, INDEX_3);
 }  // namespace kernel
 }  // namespace mindspore
