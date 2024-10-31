@@ -258,10 +258,13 @@ void ReduceCpuKernelFunc<T>::HandleInputAxis() {
     }
   });
 
-  // Delete the duplicate axis.
+  // Check the duplicate axis.
   sort(axis_.begin(), axis_.end());
-  auto last = std::unique(axis_.begin(), axis_.end());
-  axis_.erase(last, axis_.end());
+  for (size_t i = 1; i < axis_.size(); i++) {
+    if (axis_[i] == axis_[i - 1]) {
+      MS_LOG(EXCEPTION) << "dim=" << axis_[i] << " appears multiple times in the list of dims";
+    }
+  }
   if constexpr (std::is_same<T, float>::value) {
     SpecialExcute();
   }

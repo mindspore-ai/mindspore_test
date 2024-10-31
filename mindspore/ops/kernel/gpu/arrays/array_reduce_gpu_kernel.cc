@@ -220,6 +220,15 @@ void ArrayReduceGpuKernelMod::FormatAxis(const size_t &dims, const std::vector<i
     for (int i = 0; i < dims_len; i++) {
       axis_fill.push_back(i);
     }
+  } else {
+    // check duplicate axis
+    std::unordered_set<int64_t> temp_axis;
+    for (size_t i = 0; i < axis.size(); i++) {
+      if (temp_axis.count(axis[i]) != 0) {
+        MS_LOG(EXCEPTION) << "dim=" << axis[i] << " appears multiple times in the list of dims";
+      }
+      temp_axis.insert(axis[i]);
+    }
   }
   for (size_t i = 0; i < axis_fill.size(); i++) {
     int index = axis_fill[i];
