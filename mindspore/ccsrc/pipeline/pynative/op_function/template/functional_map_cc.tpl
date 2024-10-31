@@ -25,11 +25,17 @@
 namespace mindspore::ops {
 ${deprecated_method_decl}
 
-std::map<std::string, std::vector<ValuePtr>> functional_method_map = {
+std::map<std::string, std::vector<ValuePtr>> tensor_method_overload_map = {
   ${functional_method_map}
 };
 
-std::map<std::string, std::vector<std::string>> func_signature_map = {
+std::map<std::string, std::vector<ValuePtr>> mint_overload_map = {
+};
+
+std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map = {
   ${func_sigs_map}
+};
+
+std::map<std::string, std::vector<std::string>> mint_overload_signature_map = {
 };
 }  // namespace mindspore::ops

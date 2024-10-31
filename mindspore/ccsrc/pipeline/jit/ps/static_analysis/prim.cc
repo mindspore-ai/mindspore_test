@@ -2076,7 +2076,8 @@ EvalResultPtr GetEvaluatedValueForFunctionalMethod(const AnalysisEnginePtr &engi
   MS_EXCEPTION_IF_NULL(out_conf->node());
   FuncGraphPtr func_graph = out_conf->node()->func_graph();
   // Create node: {Partial, Functional(method_name), Tensor}
-  auto functional = std::make_shared<Functional>(method_name, true);
+  auto functional = std::make_shared<Functional>(method_name);
+  functional->set_is_method(true);
   auto data_node_conf = dyn_cast_ptr<abstract::AnfNodeConfig>(data_conf);
   MS_EXCEPTION_IF_NULL(data_node_conf);
   auto data_node = data_node_conf->node();
@@ -3022,9 +3023,6 @@ EvalResultPtr PrimInstanceEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
 
 EvalResultPtr FunctionalEvaluator::EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list,
                                             const ConfigPtr &, const AnfNodeConfigPtr &out_conf) {
-  if (!is_method_) {
-    MS_LOG(EXCEPTION) << "Functional overloading in mint is not supported yet.";
-  }
   auto cnode = out_conf->node()->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   auto func_graph = cnode->func_graph();
@@ -3050,13 +3048,10 @@ EvalResultPtr FunctionalEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
                                << " is not equal to abstract size " << args_abs_list.size();
   }
   AnfNodePtr new_cnode = nullptr;
-  // Check if contains Any.
+  // Check if contains Any and convert to PyExecute node.
   if (ContainsAbstractAny(args_abs_list)) {
-    // Convert to PyExecute node.
-    MS_LOG(DEBUG) << "Functional[" << name_ << "] receives arguments that contain Any.";
-    new_cnode = prim::ConvertFunctionalToPyExecute(name_, inputs_list, args_abs_list, cnode);
+    new_cnode = prim::ConvertFunctionalToPyExecute(name_, inputs_list, args_abs_list, cnode, is_method_);
   } else {
-    // Convert Functional to Primitive.
     auto eval_func = [&engine, &out_conf](const AnfNodePtr &node) {
       AnfNodeConfigPtr config = engine->MakeConfig(node, out_conf->context(), out_conf->func_graph());
       MS_EXCEPTION_IF_NULL(config);
@@ -3064,7 +3059,7 @@ EvalResultPtr FunctionalEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
       MS_EXCEPTION_IF_NULL(eval_result);
       return eval_result->abstract();
     };
-    new_cnode = prim::ConvertFunctionalToPrimitive(name_, inputs_list, args_abs_list, cnode, eval_func);
+    new_cnode = prim::ConvertFunctionalToPrimitive(name_, inputs_list, args_abs_list, cnode, eval_func, is_method_);
   }
   constexpr auto debug_recursive_level = 2;
   MS_LOG(DEBUG) << "Convert Functional[" << name_ << "]. Origin cnode: " << cnode->DebugString(debug_recursive_level)
@@ -5202,7 +5197,8 @@ class DoUnpackCallEvaluator : public TransitionPrimEvaluator {
         return nullptr;
       }
       const auto &method_name = partial_fn_abs->cast<FunctionalAbstractClosurePtr>()->name();
-      auto functional = std::make_shared<Functional>(method_name, true);
+      auto functional = std::make_shared<Functional>(method_name);
+      functional->set_is_method(true);
       // Get x.
       constexpr auto index_input = 1;
       auto op_node = cnode->input(index_input);

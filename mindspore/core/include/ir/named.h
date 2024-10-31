@@ -209,13 +209,14 @@ using MindIRSymbolPtr = std::shared_ptr<MindIRSymbol>;
 class MS_CORE_API Functional : public Named {
  public:
   /// \brief The default constructor for Functional.
-  explicit Functional(const std::string &name, bool is_method) : Named(name), is_method_(is_method) {}
+  explicit Functional(const std::string &name) : Named(name) {}
   /// \brief The destructor of Functional.
   ~Functional() override = default;
   MS_DECLARE_PARENT(Functional, Named);
 
   abstract::AbstractBasePtr ToAbstract() override;
   std::string ToString() const override { return "Functional_" + name(); }
+  void set_is_method(bool flag) { is_method_ = flag; }
   bool is_method() const { return is_method_; }
 
  private:

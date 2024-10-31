@@ -454,7 +454,7 @@ PythonArgParser::PythonArgParser(std::vector<std::string> fmts, const std::strin
 }
 
 std::string PythonArgParser::parse_error(const py::list &args, const py::dict &kwargs, const bool &is_method) {
-  std::vector<std::string> type_list = is_method ? std::vector<std::string>{"Tensor"} : std::vector<std::string>{};
+  std::vector<std::string> type_list;
   for (const auto &py_arg : args) {
     (void)type_list.emplace_back(
       PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(py_arg)));
@@ -465,7 +465,7 @@ std::string PythonArgParser::parse_error(const py::list &args, const py::dict &k
     kwarg_info += PyNativeAlgo::PyParser::BuilidPyInputTypeString(py::reinterpret_borrow<py::object>(py_kwarg.second));
     (void)type_list.emplace_back(kwarg_info);
   }
-  return prim::BuildFunctionalErrorMsg(function_name_, type_list);
+  return prim::BuildFunctionalErrorMsg(function_name_, type_list, is_method);
 }
 
 template <typename T, typename U>

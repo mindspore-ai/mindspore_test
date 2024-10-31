@@ -38,14 +38,16 @@
 namespace mindspore {
 void RegFunctional(const py::module *m) {
   (void)py::class_<Functional, std::shared_ptr<Functional>>(*m, "Functional_")
-    .def(py::init<py::str &, py::bool_ &>())
+    .def(py::init<py::str &>())
     .def_property_readonly("name", &Functional::name, "Get functional name.");
 }
 
 namespace prim {
 namespace {
-size_t GetHashIdForFunctionalCache(const std::string &functional_name, const AbstractBasePtrList &args_abs_list) {
-  return hash_combine(std::hash<std::string>()(functional_name), AbstractBasePtrListHash(args_abs_list));
+size_t GetHashIdForFunctionalCache(const std::string &functional_name, const AbstractBasePtrList &args_abs_list,
+                                   bool is_method) {
+  return hash_combine(
+    {std::hash<std::string>()(functional_name), AbstractBasePtrListHash(args_abs_list), std::hash<bool>{}(is_method)});
 }
 
 bool MatchExpectedDtype(const ops::OP_DTYPE &input_dtype, const ops::OP_DTYPE &expected_dtype) {
@@ -183,7 +185,7 @@ bool MatchPrimitiveWithPackArgs(const ops::OpDefPtr &op_def, const std::vector<o
 }
 
 bool MatchPrimitiveArgs(const std::string &prim_name, const abstract::AbstractBasePtrList &args_abs_list,
-                        bool *need_pack) {
+                        bool is_method, bool *need_pack) {
   const auto &op_def = ops::GetOpDef(prim_name);
   if (op_def == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Cannot find OpDef of Primitive[" << prim_name << "].";
@@ -194,7 +196,7 @@ bool MatchPrimitiveArgs(const std::string &prim_name, const abstract::AbstractBa
   GetOpDtypeList(prim_name, args_abs_list, &position_args_dtype, &keyword_args_dtype);
   // If there is a single positional IntArray argument, allow a var-args stype IntArray,
   // so x.reshape(2, 3) behaves as x.reshape((2, 3)).
-  if (keyword_args_dtype.empty() && MatchPrimitiveWithPackArgs(op_def, position_args_dtype, need_pack)) {
+  if (is_method && keyword_args_dtype.empty() && MatchPrimitiveWithPackArgs(op_def, position_args_dtype, need_pack)) {
     return true;
   }
   // Check args size.
@@ -309,15 +311,17 @@ std::string BuildArgsTypeString(const TypePtr &arg_type) {
   return BuildOtherTypeString(arg_type);
 }
 
-std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list) {
+std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list,
+                                    bool is_method) {
   std::string result = std::accumulate(
     arg_info_list.begin(), arg_info_list.end(), std::string(),
     [](const std::string &a, const std::string &b) -> std::string { return a.empty() ? b : a + ", " + b; });
   std::stringstream ss;
   ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
   ss << "The valid calling should be:\n";
-  auto it = ops::func_signature_map.find(function_name);
-  if (it != ops::func_signature_map.end()) {
+  const auto &signature_map = is_method ? ops::tensor_method_overload_signature_map : ops::mint_overload_signature_map;
+  auto it = signature_map.find(function_name);
+  if (it != signature_map.end()) {
     const std::vector<std::string> &valid_arg_options = it->second;
     for (const std::string &arg_option : valid_arg_options) {
       ss << "\"" << arg_option << "\"\n";
@@ -355,7 +359,7 @@ std::map<size_t, std::pair<ValuePtr, bool>> &GetFunctionalConvertCache() {
 bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name) {
   // Check if tensor.
   if (NormalizeTypeId(type_id) != kObjectTypeTensorType ||
-      ops::functional_method_map.find(method_name) == ops::functional_method_map.end()) {
+      ops::tensor_method_overload_map.find(method_name) == ops::tensor_method_overload_map.end()) {
     return false;
   }
   // Check for duplicate definitions.
@@ -369,9 +373,10 @@ bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name) {
 }
 
 ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
-                                        const abstract::AbstractBasePtrList &args_abs_list, bool *need_pack) {
+                                        const abstract::AbstractBasePtrList &args_abs_list, bool is_method,
+                                        bool *need_pack) {
   // Check cache.
-  auto hash_id = GetHashIdForFunctionalCache(functional_name, args_abs_list);
+  auto hash_id = GetHashIdForFunctionalCache(functional_name, args_abs_list, is_method);
   const auto &cache_iter = GetFunctionalConvertCache().find(hash_id);
   if (cache_iter != GetFunctionalConvertCache().end()) {
     const auto &prim = cache_iter->second.first;
@@ -380,17 +385,18 @@ ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
     return prim;
   }
   // Convert Function to Primitive.
-  const auto &iter = ops::functional_method_map.find(functional_name);
-  if (iter == ops::functional_method_map.end()) {
+  const auto &overload_map = is_method ? ops::tensor_method_overload_map : ops::mint_overload_map;
+  const auto &iter = overload_map.find(functional_name);
+  if (iter == overload_map.end()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Functional[" << functional_name << "] does not support overloading.";
   }
+  const auto &prim_list = iter->second;
   // Find matching Primitive.
   MS_LOG(DEBUG) << "Start looking for matched primitive for Functional[" << functional_name << "].";
   ValuePtr match_prim = nullptr;
-  auto prim_list = iter->second;
   for (const auto &prim : prim_list) {
     const auto &prim_name = GetPrimName(prim);
-    if (MatchPrimitiveArgs(prim_name, args_abs_list, need_pack)) {
+    if (MatchPrimitiveArgs(prim_name, args_abs_list, is_method, need_pack)) {
       match_prim = prim;
       break;
     }
@@ -399,15 +405,14 @@ ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
     std::vector<std::string> arg_info_list;
     (void)std::transform(args_abs_list.cbegin(), args_abs_list.cend(), std::back_inserter(arg_info_list),
                          [](const AbstractBasePtr &op_abs) { return BuildArgsTypeString(op_abs->BuildType()); });
-    MS_EXCEPTION(TypeError) << BuildFunctionalErrorMsg(functional_name, arg_info_list);
+    MS_EXCEPTION(TypeError) << BuildFunctionalErrorMsg(functional_name, arg_info_list, is_method);
   }
   MS_LOG(DEBUG) << "Convert Functional[" << functional_name << "] to Primitive: " << match_prim->ToString();
   GetFunctionalConvertCache()[hash_id] = std::make_pair(match_prim, *need_pack);
   return match_prim;
 }
 
-AnfNodePtrList GeneratePrimitivePackArgs(const std::string &functional_name, const AnfNodePtrList &inputs_list,
-                                         const ops::OpDefPtr &op_def, const FuncGraphPtr &func_graph) {
+AnfNodePtrList GeneratePrimitivePackArgs(const AnfNodePtrList &inputs_list, const FuncGraphPtr &func_graph) {
   constexpr auto index_data = 0;
   constexpr auto index_args = 1;
   AnfNodePtrList pack_args{NewValueNode(prim::kPrimMakeTuple)};
@@ -418,9 +423,10 @@ AnfNodePtrList GeneratePrimitivePackArgs(const std::string &functional_name, con
 
 AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, const AnfNodePtrList &inputs_list,
                                         const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode,
-                                        const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func) {
+                                        const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
+                                        bool is_method) {
   bool need_pack = false;
-  auto prim = TransformFunctionalToPrimitive(functional_name, args_abs_list, &need_pack);
+  auto prim = TransformFunctionalToPrimitive(functional_name, args_abs_list, is_method, &need_pack);
   auto prim_name = GetPrimName(prim);
   const auto &op_def = ops::GetOpDef(prim_name);
   MS_EXCEPTION_IF_NULL(op_def);
@@ -435,7 +441,7 @@ AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, cons
   }
   AnfNodePtrList args_node_list;
   if (need_pack) {
-    args_node_list = GeneratePrimitivePackArgs(functional_name, inputs_list, op_def, func_graph);
+    args_node_list = GeneratePrimitivePackArgs(inputs_list, func_graph);
   } else {
     args_node_list =
       abstract::GeneratePrimitiveDefaultArgs(prim_name, inputs_list, op_def->args_, eval_func, func_graph);
@@ -449,16 +455,30 @@ AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, cons
 }
 
 AnfNodePtr ConvertFunctionalToPyExecute(const std::string &functional_name, const AnfNodePtrList &inputs_list,
-                                        const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode) {
-  // Convert Functional node to PyExectue("x.method_name(arg1, arg2)", local_keys, local_values)
+                                        const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode,
+                                        bool is_method) {
+  MS_LOG(DEBUG) << "Functional[" << functional_name << "] receives arguments that contain Any.";
   std::stringstream script_buffer;
   constexpr auto index_fn = 0;
   std::string data_str = fallback::ConvertRealStrToUnicodeStr(functional_name, index_fn);
-  script_buffer << data_str << "." << functional_name + "(";
   auto fn_node = inputs_list[index_fn];
   auto fn_key_node = NewValueNode(std::make_shared<StringImm>(data_str));
   std::vector<AnfNodePtr> keys_inputs{NewValueNode(prim::kPrimMakeTuple), fn_key_node};
   std::vector<AnfNodePtr> values_inputs{NewValueNode(prim::kPrimMakeTuple), fn_node};
+  if (is_method) {
+    // Convert Functional node to PyExectue("x.method_name(arg1, arg2)", local_keys, local_values)
+    script_buffer << data_str << "." << functional_name + "(";
+  } else {
+    // Convert Functional node to PyExectue("mint.xxx(x, arg1, arg2)", local_keys, local_values)
+    script_buffer << functional_name << "(" << data_str << ", ";
+    py::object py_functional = python_adapter::GetPyFn("mindspore.mint", functional_name);
+    if (py::isinstance<py::none>(py_functional)) {
+      MS_LOG(INTERNAL_EXCEPTION) << functional_name << " is not a function of mindspore.mint";
+    }
+    auto functional_node = NewValueNode(std::make_shared<parse::InterpretedObject>(py_functional));
+    (void)keys_inputs.emplace_back(NewValueNode(std::make_shared<StringImm>(functional_name)));
+    (void)values_inputs.emplace_back(functional_node);
+  }
   for (size_t index = 1; index < inputs_list.size(); ++index) {
     auto internal_arg = fallback::ConvertRealStrToUnicodeStr(functional_name, index);
     if (args_abs_list[index]->isa<abstract::AbstractKeywordArg>()) {

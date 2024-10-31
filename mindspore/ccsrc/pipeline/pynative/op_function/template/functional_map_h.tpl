@@ -24,7 +24,9 @@
 #include "ir/anf.h"
 
 namespace mindspore::ops {
-extern std::map<std::string, std::vector<ValuePtr>> functional_method_map;
-extern std::map<std::string, std::vector<std::string>> func_signature_map;
+extern std::map<std::string, std::vector<ValuePtr>> tensor_method_overload_map;
+extern std::map<std::string, std::vector<ValuePtr>> mint_overload_map;
+extern std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map;
+extern std::map<std::string, std::vector<std::string>> mint_overload_signature_map;
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H

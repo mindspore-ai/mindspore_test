@@ -47,12 +47,15 @@ using DeprecatedTensorMethodPtr = std::shared_ptr<DeprecatedTensorMethod>;
 bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name);
 std::map<size_t, std::pair<ValuePtr, bool>> &GetFunctionalConvertCache();
 std::string BuildArgsTypeString(const TypePtr &arg_abs);
-std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list);
+std::string BuildFunctionalErrorMsg(const std::string &function_name, const std::vector<std::string> &arg_info_list,
+                                    bool is_method);
 AnfNodePtr ConvertFunctionalToPrimitive(const std::string &functional_name, const AnfNodePtrList &inputs_list,
                                         const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode,
-                                        const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func);
+                                        const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
+                                        bool is_method);
 AnfNodePtr ConvertFunctionalToPyExecute(const std::string &functional_name, const AnfNodePtrList &inputs_list,
-                                        const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode);
+                                        const AbstractBasePtrList &args_abs_list, const CNodePtr &cnode,
+                                        bool is_method);
 }  // namespace prim
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_OPERATOR_COMPOSITE_FUNCTIONAL_OVERLOAD_H_
