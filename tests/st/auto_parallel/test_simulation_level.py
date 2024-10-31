@@ -15,7 +15,9 @@
 import os
 import numpy as np
 import mindspore.nn as nn
+import mindspore.dataset as ds
 from mindspore import context, Tensor
+from mindspore.train import Model
 from mindspore.common.api import _cell_graph_executor
 from mindspore.nn import TrainOneStepCell, WithLossCell, Momentum
 from mindspore.communication.management import init, create_group, destroy_group, get_group_size, get_rank, \
@@ -219,5 +221,31 @@ def test_run_graph():
     train_net = TrainOneStepCell(net, optimizer)
     train_net.set_train()
     train_net(input_, label_)
+    context.reset_auto_parallel_context()
+    os.environ["MS_SIMULATION_LEVEL"] = ""
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_build_model_with_dataset():
+    """
+    Feature: simulation level.
+    Description: run graph when set simulation level 1.
+    Expectation: no exception.
+    """
+    os.environ["MS_SIMULATION_LEVEL"] = "1"
+    os.environ["RANK_SIZE"] = "32"
+    os.environ["RANK_ID"] = "1"
+    init()
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    net = DenseNet()
+    net.fc1.matmul.shard(((4, 1), (8, 1)))
+    optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    loss_fn = nn.SoftmaxCrossEntropyWithLogits()
+    data_list = []
+    for _ in range(8):
+        data_list.append((np.ones([32, 128]).astype(np.float32), np.zeros([32, 128]).astype(np.float32)))
+    dataset = ds.GeneratorDataset(data_list, ["input", "label"])
+    model = Model(net, loss_fn, optimizer)
+    model.build(dataset)
     context.reset_auto_parallel_context()
     os.environ["MS_SIMULATION_LEVEL"] = ""

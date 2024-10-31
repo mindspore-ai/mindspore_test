@@ -83,6 +83,18 @@ void LoadAcltdtApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl tdt api success!";
 }
 
+void LoadSpecialSimulationTdtApi() {
+  acltdtQueryChannelSize_ = [](const acltdtChannelHandle *handle, size_t *ret_size_ptr) {
+    if (handle == nullptr) {
+      MS_LOG(INFO) << "Empty handle!";
+    }
+    if (ret_size_ptr != nullptr) {
+      *ret_size_ptr = 1;
+    }
+    return ACL_SUCCESS;
+  };
+}
+
 void LoadSimulationTdtApi() {
   ASSIGN_SIMU(acltdtAddDataItem);
   ASSIGN_SIMU(acltdtCreateChannel);
@@ -106,6 +118,7 @@ void LoadSimulationTdtApi() {
   ASSIGN_SIMU(acltdtReceiveTensor);
   ASSIGN_SIMU(acltdtSendTensor);
   ASSIGN_SIMU(acltdtStopChannel);
+  LoadSpecialSimulationTdtApi();
 }
 }  // namespace transform
 }  // namespace mindspore
