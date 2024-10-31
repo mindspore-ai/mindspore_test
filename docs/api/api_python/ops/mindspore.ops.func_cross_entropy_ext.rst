@@ -48,6 +48,10 @@
               \text{if reduction} = \text{'sum'.}
               \end{cases}
 
+    .. note::
+        动态shape，动态rank和可变常量输入不支持在 `严格图模式(jit_syntax_level=mindspore.STRICT)
+        <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 下执行。
+
     参数：
         - **input** (Tensor) - 输入预测值，shape为 :math:`(N)` 或 :math:`(N, C)` 或 :math:`(N, C, H, W)`
           (针对二维数据)，或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`input` 需为对数概率。数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。

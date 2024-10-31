@@ -4426,6 +4426,11 @@ def cross_entropy_ext(input, target, weight=None, ingore_index=-100, reduction='
               \text{if reduction} = \text{'sum'.}
               \end{cases}
 
+    Note:
+        Dynamic shape, dynamic rank and variable constant input are not supported in `strict graph mode
+        (jit_syntax_level=mindspore.STRICT)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
     Args:
         input (Tensor): :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
             in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)`.

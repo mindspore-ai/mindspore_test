@@ -48,6 +48,10 @@ mindspore.mint.nn.CrossEntropyLoss
               \text{if reduction} = \text{'sum'.}
               \end{cases}
 
+    .. note::
+        动态shape，动态rank和可变常量输入不支持在 `严格图模式(jit_syntax_level=mindspore.STRICT)
+        <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ 下执行。
+
     参数：
         - **weight** (Tensor, 可选) - 指定各类别的权重。若值不为 ``None`` ，则shape为 :math:`(C,)`。
           数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。默认值： ``None`` 。

@@ -309,6 +309,11 @@ class CrossEntropyLoss(Cell):
               \text{if reduction} = \text{'sum'.}
               \end{cases}
 
+    Note:
+        Dynamic shape, dynamic rank and variable constant input are not supported in `strict graph mode
+        (jit_syntax_level=mindspore.STRICT)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
     Args:
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, the shape is :math:`(C,)`, data type must be float16 or float32 or bfloat16(only supported by
