@@ -1139,7 +1139,7 @@ REG_BPROP_BUILDER("Eye").SetUnusedInputs({i0, i1, i3, i4}).SetBody(BODYFUNC(ib) 
   return {ib->OutZeros(n), ib->OutZeros(m), ib->OutZeros(t)};
 });
 
-REG_BPROP_BUILDER("Select").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Select").SetUnusedInputs({i1, i2, i3}).SetBody(BODYFUNC(ib) {
   auto cond = ib->GetInput(kIndex0);
   auto x = ib->GetInput(kIndex1);
   auto y = ib->GetInput(kIndex2);
@@ -2073,12 +2073,12 @@ DEF_PURE_SHAPE_CALC(g_select_ext)
     return {size, size};
   });
 
-REG_BPROP_BUILDER("SelectExt").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SelectExt").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto index = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  auto res = ib->ShapeCalc(g_select_ext, {x, axis, index}, {1, 2, 3});
+  auto res = ib->ShapeCalc(g_select_ext, {x, axis, index}, {1, 2});
   auto dout_expand = ib->Emit("ExpandDims", {dout, axis});
   auto dx = ib->Emit(kConcatOpName,
                      {ib->MakeTuple({ib->Emit("Zeros", {res[0], ib->Value<int64_t>(ib->GetDtypeId(dout))}), dout_expand,
