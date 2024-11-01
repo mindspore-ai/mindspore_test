@@ -14,7 +14,6 @@
 # ============================================================================
 
 import numpy as np
-import pytest
 import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore.ops import operations as P
@@ -81,7 +80,7 @@ def test_stridedslice_dynamic_rank():
     begin_ms = Tensor(begin_mask, mstype.int64)
     end_ms = Tensor(end_mask, mstype.int64)
     strides_ms = Tensor(strides_mask, mstype.int64)
-    axis_ms = Tensor(np.array([0, 0, 1, 1]))
+    axis_ms = Tensor(np.array([0, 1]))
 
     net = StridedSliceDynamicRank()
     out = net(x, begin_ms, end_ms, strides_ms, axis_ms)
