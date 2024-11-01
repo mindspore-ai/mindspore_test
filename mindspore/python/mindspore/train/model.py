@@ -905,6 +905,7 @@ class Model:
             epoch = 1
         cb_params.last_save_ckpt_step = None
         cb_params.latest_ckpt_file = None
+        cb_params.loss_scale_mananger = self._loss_scale_manager
 
         # build callback list
         with _CallbackManager(callbacks) as list_callback:
