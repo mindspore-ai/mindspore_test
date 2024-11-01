@@ -32,18 +32,51 @@ namespace mindspore {
 namespace expander {
 namespace bprop {
 class BpropBuilder;
-
 using BpropBuilderFunc = std::function<NodePtrList(BpropBuilder *)>;
+class PynativeCallback {
+ public:
+  virtual const std::string &opname() const = 0;
+  virtual ValuePtr *GetInput(size_t index) const = 0;
+  virtual ValuePtrList *GetInputs() const = 0;
+  virtual ValuePtr *GetOutput() const = 0;
+  virtual bool IsConstantInput(size_t index) const = 0;
+
+  /// \brief Free device address of tensor without changing its shape and dtype.
+  /// \param value[in/out] the tensor value. after calling, the value will be replaced by a new object.
+  virtual void FreeDeviceAddress(ValuePtr *value) const = 0;
+
+  /// \brief Free device address of input tensors
+  /// \param indices index of inputs to be free. if empty, ALL inputs will be free.
+  void FreeInputDeviceAddress(const std::vector<size_t> &indices = {}) const;
+
+  /// \brief Free device address of output tensors
+  /// \param indices index of outputs to be free. if empty, ALL outputs will be free.
+  void FreeOutputDeviceAddress(const std::vector<size_t> &indices = {}) const;
+
+  /// \brief Free device address of input and output tensors
+  /// \param inputs_idx index of inputs to be free. if empty, ALL inputs will be free.
+  /// \param outputs_idx index of outputs to be free. if empty, ALL outputs will be free.
+  void FreeIODeviceAddress(const std::vector<size_t> &inputs_idx, const std::vector<size_t> &outputs_idx) const {
+    FreeInputDeviceAddress(inputs_idx);
+    FreeOutputDeviceAddress(outputs_idx);
+  }
+
+  /// \brief Deprecated. free input and/or output tensors.
+  void DeprecatedFreeDeviceAddress(const mindspore::HashSet<size_t> &indices) const;
+};
+using FreeUselessValueFunc = std::function<void(const PynativeCallback &)>;
+#define FREE_FUNC(cb) [](const PynativeCallback &cb) -> void
+
 struct COMMON_EXPORT BpropHandle {
-  BpropBuilderFunc func;
+  BpropBuilderFunc func = nullptr;
   mindspore::HashSet<size_t> unused_inputs;
+  FreeUselessValueFunc free_useless_value_func = nullptr;
 };
 
 class COMMON_EXPORT BpropBuilder : public Emitter {
  public:
   BpropBuilder(const std::string &name, const ExpanderInferPtr &infer)
       : Emitter(infer, std::make_shared<Scope>(std::string("Bprop/grad") + name)), name_(name) {}
-  BpropBuilder();
 
   /// \brief Run irbuilder to generate a graph
   NodePtrList Run(const NodePtrList &inputs, const mindspore::HashMap<std::string, ValuePtr> &attrs,
@@ -152,36 +185,69 @@ class COMMON_EXPORT BpropIRBuilderFactory {
     return (iter == registry_.end()) ? nullptr : &(iter->second);
   }
 
+  class RegHelper {
+   public:
+    explicit RegHelper(const std::string &name) : name_(name) {}
+    ~RegHelper() = default;
+    const RegHelper &SetBody(const BpropBuilderFunc &func) const {
+      BpropIRBuilderFactory::Instance().RegBuilder(name_, func);
+      return *this;
+    }
+    // DEPRECATED. use FreeUselessValues/FreeUselessValues_IO/FreeUselessValues_I/FreeUselessValues_O instead.
+    const RegHelper &SetUnusedInputs(const std::initializer_list<size_t> &unused_inputs) const {
+      BpropIRBuilderFactory::Instance().RegUnusedInputs(name_, unused_inputs);
+      return *this;
+    }
+    /// \brief Register a function to free unused values before bprop execution. (pynative mode)
+    const RegHelper &FreeUselessValues(const FreeUselessValueFunc &func) const {
+      BpropIRBuilderFactory::Instance().RegFreeUselessValues(name_, func);
+      return *this;
+    }
+    /// \brief Set the unused input indices.
+    /// \param inputs_idx unused index of inputs. if empty, ALL inputs will be free.
+    const RegHelper &FreeUselessValues_I(const std::initializer_list<size_t> &inputs_idx = {}) const {
+      BpropIRBuilderFactory::Instance().RegFreeUselessValues(
+        name_, [inputs_idx](const PynativeCallback &cb) { cb.FreeInputDeviceAddress(inputs_idx); });
+      return *this;
+    }
+    /// \brief Set the unused output indices.
+    /// \param outputs_idx unused index of outputs. if empty, ALL outputs will be free.
+    const RegHelper &FreeUselessValues_O(const std::initializer_list<size_t> &outputs_idx = {}) const {
+      BpropIRBuilderFactory::Instance().RegFreeUselessValues(
+        name_, [outputs_idx](const PynativeCallback &cb) { cb.FreeOutputDeviceAddress(outputs_idx); });
+      return *this;
+    }
+    /// \brief Set the unused input and output indices.
+    /// \param inputs_idx unused index of inputs. if empty, ALL inputs will be free.
+    /// \param outputs_idx unused index of outputs. if empty, ALL outputs will be free.
+    const RegHelper &FreeUselessValues_IO(const std::initializer_list<size_t> &inputs_idx,
+                                          const std::initializer_list<size_t> &outputs_idx) const {
+      BpropIRBuilderFactory::Instance().RegFreeUselessValues(
+        name_,
+        [inputs_idx, outputs_idx](const PynativeCallback &cb) { cb.FreeIODeviceAddress(inputs_idx, outputs_idx); });
+      return *this;
+    }
+
+   private:
+    std::string name_;
+  };
+
+ private:
   void RegBuilder(const std::string &name, const BpropBuilderFunc &func) { registry_[name].func = func; }
   void RegUnusedInputs(const std::string &name, const mindspore::HashSet<size_t> &unused) {
     registry_[name].unused_inputs = unused;
   }
+  void RegFreeUselessValues(const std::string &name, const FreeUselessValueFunc &func) {
+    registry_[name].free_useless_value_func = func;
+  }
 
- private:
   HashMap<std::string, BpropHandle> registry_;
-};
-
-class BpropIRBuilderRegHelper {
- public:
-  explicit BpropIRBuilderRegHelper(const std::string &name) : name_(name) {}
-  ~BpropIRBuilderRegHelper() = default;
-  const BpropIRBuilderRegHelper &SetBody(const BpropBuilderFunc &func) const {
-    BpropIRBuilderFactory::Instance().RegBuilder(name_, func);
-    return *this;
-  }
-  const BpropIRBuilderRegHelper &SetUnusedInputs(const std::initializer_list<size_t> &unused_inputs) const {
-    BpropIRBuilderFactory::Instance().RegUnusedInputs(name_, unused_inputs);
-    return *this;
-  }
-
- private:
-  std::string name_;
 };
 
 #define BPROP_EXPANDER_JOIN(x, y) x##y
 #define BPROP_EXPANDER_UNIQUE_NAME(prefix, cnt) BPROP_EXPANDER_JOIN(prefix, cnt)
 #define REG_BPROP_BUILDER(name) \
-  const BpropIRBuilderRegHelper BPROP_EXPANDER_UNIQUE_NAME(g_bprop, __COUNTER__) = BpropIRBuilderRegHelper(name)
+  const auto BPROP_EXPANDER_UNIQUE_NAME(g_bprop, __COUNTER__) = BpropIRBuilderFactory::RegHelper(name)
 #define BODYFUNC(v) [](BpropBuilder * (v)) -> NodePtrList
 
 #ifdef _MSC_VER

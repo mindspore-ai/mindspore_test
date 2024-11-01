@@ -588,8 +588,31 @@ class DiagonalShapeCalc : public ShapeCalcFunctor {
 
 REG_FUNCTOR("ShapeCalc_Diagonal", DiagonalShapeCalc);
 
+void FreeTensorsOfMul(const PynativeCallback &cb) {
+  cb.FreeOutputDeviceAddress();
+  // For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
+  // so if y is a valuenode, the dy is useless, we can free x in ahead.
+  auto &inputs = *cb.GetInputs();
+  if (cb.IsConstantInput(kIndex0) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
+    cb.FreeDeviceAddress(&inputs[kIndex1]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
+  }
+  if (cb.IsConstantInput(kIndex1) && inputs[kIndex0]->isa<tensor::BaseTensor>()) {
+    cb.FreeDeviceAddress(&inputs[kIndex0]);
+    MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << cb.opname();
+  }
+}
+
+void FreeTensorsOfDiv(const PynativeCallback &cb) {
+  cb.FreeInputDeviceAddress({kIndex0});
+  // For operators like Div, the dy does not rely on output node, so if y is a valuenode, we can free output.
+  if (cb.IsConstantInput(kIndex1)) {
+    cb.FreeOutputDeviceAddress();
+  }
+}
+
 REG_BPROP_BUILDERS_BEGIN(GradMathOps)
-REG_BPROP_BUILDER("MatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MatMul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto trans_a = ib->GetInput(kIndex2);
@@ -877,7 +900,7 @@ REG_BPROP_BUILDER("SubExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return ret;
 });
 
-REG_BPROP_BUILDER("Mul").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Mul").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -896,7 +919,7 @@ REG_BPROP_BUILDER("Mul").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return BinopGradCommon(ib, x, y, bc_dx, bc_dy);
 });
 
-REG_BPROP_BUILDER("Sub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -911,7 +934,7 @@ REG_BPROP_BUILDER("Sub").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   return BinopGradCommon(ib, x, y, dx, dy);
 });
 
-REG_BPROP_BUILDER("Div").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Div").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
@@ -932,7 +955,7 @@ REG_BPROP_BUILDER("Div").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return result;
 });
 
-REG_BPROP_BUILDER("DivMod").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("DivMod").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto rounding_mode = ib->GetInput(kIndex2);
@@ -1010,7 +1033,7 @@ REG_BPROP_BUILDER("Asin").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("AsinExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AsinExt").FreeUselessValues_O().SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
   auto x_dtype_id = ib->GetDtypeId(x);
@@ -1753,7 +1776,7 @@ REG_BPROP_BUILDER("Neg").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {-dout};
 });
 
-REG_BPROP_BUILDER("RealDiv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("RealDiv").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto x_dtype_id = ib->GetDtypeId(x);

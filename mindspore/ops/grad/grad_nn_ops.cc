@@ -427,8 +427,11 @@ class ExtractImagePatchesShapeCalc : public ShapeCalcFunctor {
 };
 REG_FUNCTOR("ShapeCalc_ExtractImagePatches", ExtractImagePatchesShapeCalc);
 
+// implements the function to free useless values which defined in other files.
+void FreeTensorsOfMul(const PynativeCallback &cb);
+
 REG_BPROP_BUILDERS_BEGIN(GradNnOps)
-REG_BPROP_BUILDER("Conv2D").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Conv2D").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -1169,7 +1172,7 @@ REG_BPROP_BUILDER("GroupNorm").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   return {d_x, grad_group, d_gamma, d_beta, grad_epsilon};
 });
 
-REG_BPROP_BUILDER("LayerNormExt").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("LayerNormExt").FreeUselessValues_IO({i4}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto normalized_shape = ib->GetInput(kIndex1);
   auto gamma = ib->GetInput(kIndex2);
@@ -1197,7 +1200,7 @@ REG_BPROP_BUILDER("LayerNormExt").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   return {d_x, grad_normalized_shape, d_gamma, d_beta, grad_eps};
 });
 
-REG_BPROP_BUILDER("LayerNorm").SetUnusedInputs({i2, i5}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("LayerNorm").FreeUselessValues_IO({i2, i5}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto gamma = ib->GetInput(kIndex1);
   auto begin_norm_axis = ib->GetInput(kIndex3);
@@ -2078,7 +2081,7 @@ REG_BPROP_BUILDER("InstanceNorm").SetUnusedInputs({i2, i3, i4}).SetBody(BODYFUNC
   return {dx, dgamma, dbeta, ib->OutZeros(mean), ib->OutZeros(variance)};
 });
 
-REG_BPROP_BUILDER("BatchNormExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("BatchNormExt").FreeUselessValues_IO({i2}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto weight = ib->GetInput(kIndex1);
   auto bias = ib->GetInput(kIndex2);
@@ -2105,7 +2108,7 @@ REG_BPROP_BUILDER("BatchNormExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
           ib->OutZeros(eps)};
 });
 
-REG_BPROP_BUILDER("BatchNorm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("BatchNorm").FreeUselessValues_IO({i2}, {i0, i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto scale = ib->GetInput(kIndex1);
   auto bias = ib->GetInput(kIndex2);
