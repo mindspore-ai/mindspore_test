@@ -49,7 +49,9 @@ std::string GetAscendPath() {
   const std::string kLatest = "latest";
   auto pos = path_tmp.find(kLatest);
   if (pos == std::string::npos) {
-    MS_EXCEPTION(ValueError) << "Get ascend path failed, please check the run package.";
+    MS_EXCEPTION(ValueError)
+      << "Get ascend path failed, please check whether CANN packages are installed correctly, \n"
+         "and environment variables are set by source ${LOCAL_ASCEND}/ascend-toolkit/set_env.sh.";
   }
   return path_tmp.substr(0, pos) + kLatest + "/";
 }
