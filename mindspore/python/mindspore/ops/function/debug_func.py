@@ -94,9 +94,9 @@ def tensordump(file_name, tensor, mode='out'):
     - If the mode is 'all', the dump data contains both OpA's output slice and OpB's input slice.
     - If the mode is 'in', the dump data contains only OpB's input slice.
 
-    For mode 'all' or 'in', the input slice npy file format is: id_fileName_cNodeID_dumpMode_rankID.npy.
+    For mode 'all' or 'in', the input slice npy file format is: id_fileName_cNodeID_dumpMode_rankID_dtype.npy.
 
-    For mode 'out' or 'all' the output slice npy file format is: id_filename.npy.
+    For mode 'out' or 'all' the output slice npy file format is: id_filename_dtype.npy.
 
     - id: An auto increment ID.
     - fileName: Value of the parameter file_name
@@ -104,6 +104,7 @@ def tensordump(file_name, tensor, mode='out'):
     - cNodeID: The cnode ID in ir graph of step_parallel_end.ir.
     - dumpMode: Value of the parameter mode.
     - rankID: Logical device id.
+    - dtype: The original data type. Data of type bfloat16 stored in the .npy file will be converted to float32.
 
     Note:
         - The operator of tensordump doesn't support in control flow.

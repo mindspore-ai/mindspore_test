@@ -26,6 +26,7 @@ from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
 from mindspore._checkparam import check_hook_fn
+from mindspore.ops import operations as P
 
 
 SUMMARY_TENSOR_CACHE = []
@@ -257,10 +258,10 @@ class TensorDump(Primitive):
             - If the input_output is 'in', the dump data contains only OpB's input slice.
 
             For input_output is 'all' or 'in', the input slice npy file format is:
-            id_fileName_cNodeID_dumpMode_rankID.npy.
+            id_fileName_cNodeID_dumpMode_rankID_dtype.npy.
 
             For input_output is 'out' or 'all' the output slice npy file format is:
-            id_fileName.npy.
+            id_fileName.npy_dtype.
 
             - id: An auto increment ID.
             - fileName: Value of the parameter file
@@ -268,6 +269,7 @@ class TensorDump(Primitive):
             - cNodeID: The node ID of the Tensordump node in the step_parallel_end.ir file.
             - dumpMode: Value of the parameter input_output.
             - rankID: Logical device id.
+            - dtype: The original data type. Data of type bfloat16 stored in the .npy file will be converted to float32.
 
     Inputs:
         - **file** (str) - The path of the file to be saved.
@@ -325,13 +327,17 @@ class TensorDump(Primitive):
         validator.check_value_type('input_x', input_x, [Tensor], self.__class__.__name__)
         global TENSORDUMP_ID
         npy_suffix = ".npy"
+        dtype = input_x.dtype
+        if dtype == mstype.bfloat16:
+            input_x = P.Cast()(input_x, mstype.float32)
         directory, filename = os.path.split(file)
         if directory and not os.path.exists(directory):
             os.makedirs(directory, mode=0o700, exist_ok=True)
-        new_filename = f"{TENSORDUMP_ID}_{filename}"
+        if filename.endswith(npy_suffix):
+            filename = filename[:-len(npy_suffix)]
+        new_filename = f"{TENSORDUMP_ID}_{filename}_{dtype}"
         new_file = os.path.join(directory, new_filename)
-        if not new_file.endswith(npy_suffix):
-            new_file += npy_suffix
+        new_file += npy_suffix
         if os.path.exists(new_file):
             os.chmod(new_file, stat.S_IWUSR)
         np.save(new_file, input_x.asnumpy())

@@ -26,6 +26,11 @@ namespace mindspore::device::ascend {
 namespace {
 
 void SaveTensor2NPY(std::string file_name, mindspore::tensor::TensorPtr tensor_ptr) {
+  if (tensor_ptr->data_type_c() == TypeId::kNumberTypeBFloat16) {
+    std::shared_ptr<mindspore::tensor::Tensor> bfloat16_tensor = nullptr;
+    bfloat16_tensor = std::make_shared<mindspore::tensor::Tensor>(*tensor_ptr, TypeId::kNumberTypeFloat32);
+    tensor_ptr = bfloat16_tensor;
+  }
   std::string npy_header = GenerateNpyHeader(tensor_ptr->shape(), tensor_ptr->data_type());
   if (!npy_header.empty()) {
     ChangeFileMode(file_name, S_IWUSR);
@@ -101,7 +106,7 @@ void AsyncFileWriter::WorkerThread() {
   }
 }
 
-std::string TensorDumpUtils::TensorNameToArrayName(const std::string &tensor_path) {
+std::string TensorDumpUtils::TensorNameToArrayName(const std::string &tensor_path, const std::string &data_type) {
   static size_t name_id = 0;
   std::string npy_suffix{".npy"};
   std::string separator{"_"};
@@ -112,10 +117,12 @@ std::string TensorDumpUtils::TensorNameToArrayName(const std::string &tensor_pat
     parent_path = ".";
   }
   std::optional<std::string> realpath = FileUtils::CreateNotExistDirs(parent_path.value());
-  std::optional<std::string> new_file_name = std::to_string(name_id++) + separator + file_name.value();
-  if (!EndsWith(new_file_name.value(), npy_suffix)) {
-    new_file_name.value() += npy_suffix;
+  if (EndsWith(file_name.value(), npy_suffix)) {
+    file_name = file_name.value().substr(0, file_name.value().length() - npy_suffix.length());
   }
+  std::optional<std::string> new_file_name =
+    std::to_string(name_id++) + separator + file_name.value() + separator + data_type;
+  new_file_name.value() += npy_suffix;
   std::optional<std::string> new_file_path;
   FileUtils::ConcatDirAndFileName(&realpath, &new_file_name, &new_file_path);
   MS_LOG(INFO) << "For 'TensorDump' ops, dump file path is " << new_file_path.value();
@@ -135,12 +142,13 @@ void TensorDumpUtils::AsyncSaveDatasetToNpyFile(const ScopeAclTdtDataset &datase
     return;
   }
 
-  auto file_name = TensorNameToArrayName(tensor_name);
   for (auto data_elem : dataset.GetDataItems()) {
     if (std::holds_alternative<std::string>(data_elem)) {
       MS_LOG(WARNING) << "Ignore data of string type: " << std::get<std::string>(data_elem);
     }
     auto tensor_ptr = std::get<mindspore::tensor::TensorPtr>(data_elem);
+    std::string data_type = TypeIdToType(tensor_ptr->data_type())->ToString();
+    auto file_name = TensorNameToArrayName(tensor_name, data_type);
     file_writer.Submit(std::bind(SaveTensor2NPY, file_name, tensor_ptr));
   }
 }

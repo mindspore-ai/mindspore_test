@@ -14,7 +14,7 @@ def find_npy_files(folder_path):
     result = {}
     for file in folder_path.glob('*.npy'):
         file_name = file.stem
-        file_name_without_id = file_name.split('_')[-1]
+        file_name_without_id = file_name.split('_')[-2]
         result[file_name_without_id] = str(file.absolute())
     return result
 
@@ -139,3 +139,35 @@ def test_tensordump_when_jit(mode):
     assert np.allclose(x1.asnumpy(), np.load(name2file["add"]))
     assert np.allclose(x2.asnumpy(), np.load(name2file["div"]))
     assert np.allclose(x3.asnumpy(), np.load(name2file["mul"]))
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_bfloat16():
+    """
+    Feature: Check TensorDump ops
+    Description: Check TensorDump ops when the data type is bfloat16.
+    Expectation: pass
+    """
+
+    class Net(nn.Cell):
+        def __init__(self, path):
+            super(Net, self).__init__()
+            self.dump = ops.TensorDump()
+            self.path = str(path / "add")
+
+        def construct(self, x):
+            x += 1
+            self.dump(self.path, x)
+            return x
+
+    ms.set_context(device_target="Ascend", mode=ms.GRAPH_MODE)
+    temp_dir = tempfile.TemporaryDirectory(suffix="TensorDump")
+    path = Path(temp_dir.name)
+    x = ms.Tensor(np.array([[1, 2, 3, 4], [5, 6, 7, 8]]), ms.bfloat16)
+    net = Net(path)
+    net(x)
+    time.sleep(0.1)
+    filename = "0_add_BFloat16.npy"
+    add = np.load(str(path) + "/" + filename)
+    result = np.array([[2, 3, 4, 5], [6, 7, 8, 9]]).astype(np.float32)
+    assert np.allclose(add, result)
