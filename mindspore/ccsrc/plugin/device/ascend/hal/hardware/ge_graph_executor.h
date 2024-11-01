@@ -109,6 +109,10 @@ class GeGraphExecutor : public GraphExecutor {
                                 void *stream);
   void AllocGEFixMemory() const;
   void InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const;
+  void FreeGeTensorMemory() {
+    input_datas_.clear();
+    output_datas_.clear();
+  }
 
  private:
   bool RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs);

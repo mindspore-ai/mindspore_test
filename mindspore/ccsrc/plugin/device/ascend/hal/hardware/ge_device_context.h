@@ -74,6 +74,7 @@ class GeDeviceContext : public DeviceInterface<GeGraphExecutor, GeKernelExecutor
   void FinalizeDump() const;
 
   std::unique_ptr<AscendDeprecatedInterface> deprecated_interface_;
+  transform::GeAllocatorPtr ge_allocator_;
 };
 }  // namespace ascend
 }  // namespace device
