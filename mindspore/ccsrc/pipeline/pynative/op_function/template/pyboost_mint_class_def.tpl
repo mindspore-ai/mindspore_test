@@ -1,9 +1,9 @@
 class ${class_name}Functional : public Functional {
  public:
-  ${class_name}Functional() : Functional("${func_name}", false) {};
+  ${class_name}Functional() : Functional("${func_name}") {};
   ~${class_name}Functional() = default;
   py::object Call(const py::object &self, const py::args &args, const py::kwargs &kwargs) {
-    static mindspore::pynative::PythonArgParser parser({
+    static PythonArgParser parser({
       ${signatures}
     }, "${func_name}");
     py::list arg_list;

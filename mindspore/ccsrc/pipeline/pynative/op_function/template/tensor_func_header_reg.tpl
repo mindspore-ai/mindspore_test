@@ -46,7 +46,7 @@ ${func_header_body}
 
 ${func_def_list}
 
-inline py::object ToPython(const py::object &object);
+inline py::object ToPython(const py::object &object) { return StubTensorConverter::GetInstance().ToPython(object); };
 
 void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class);
 }  // namespace tensor

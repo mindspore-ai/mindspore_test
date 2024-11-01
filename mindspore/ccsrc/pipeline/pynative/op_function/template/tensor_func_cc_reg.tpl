@@ -53,8 +53,6 @@ py::object StubTensorConverter::ToPython(const py::object &object) {
   return impl_->Convert(object);
 }
 
-py::object ToPython(const py::object &object) { return StubTensorConverter::GetInstance().ToPython(object); }
-
 ${func_call_body}
 
 void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class) {
