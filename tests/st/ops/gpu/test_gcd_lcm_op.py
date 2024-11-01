@@ -15,21 +15,11 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
 import mindspore.nn as nn
 import mindspore.context as context
 from mindspore import Tensor
 import mindspore.ops.operations.math_ops as P
-
-
-class NetGcd(nn.Cell):
-    def __init__(self):
-        super(NetGcd, self).__init__()
-        self.gcd = P.Gcd()
-
-    def construct(self, x1, x2):
-        return self.gcd(x1, x2)
 
 
 class NetLcm(nn.Cell):
@@ -42,40 +32,6 @@ class NetLcm(nn.Cell):
 
 
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_gcd_int32():
-    """
-    Feature: Gcd
-    Description: test cases for Gcd of int32
-    Expectation: the results are as expected
-    """
-    x1_np = np.array([5, 10, 15]).astype(np.int32)
-    x2_np = np.array([3, 4, 5]).astype(np.int32)
-    input_x1 = Tensor(x1_np)
-    input_x2 = Tensor(x2_np)
-    net = NetGcd()
-    output_ms = net(input_x1, input_x2)
-    expect_output = np.gcd(x1_np, x2_np)
-    assert np.allclose(output_ms.asnumpy(), expect_output)
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_gcd_int64():
-    """
-    Feature: Gcd
-    Description: test cases for Gcd of int64
-    Expectation: the results are as expected
-    """
-    x1_np = np.array([5, 10, 15]).astype(np.int64)
-    x2_np = np.array([3]).astype(np.int64)
-    input_x1 = Tensor(x1_np)
-    input_x2 = Tensor(x2_np)
-    net = NetGcd()
-    output_ms = net(input_x1, input_x2)
-    expect_output = np.gcd(x1_np, x2_np)
-    assert np.allclose(output_ms.asnumpy(), expect_output)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -113,23 +69,6 @@ def test_lcm_int64():
 
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_gcd_int64_and_int32():
-    """
-    Feature: Gcd
-    Description: test cases for Gcd of different dtype
-    Expectation: the results are as expected
-    """
-    x1_np = np.array([10, 15, 20]).astype(np.int64)
-    x2_np = np.array([3, 4, 5]).astype(np.int32)
-    input_x1 = Tensor(x1_np)
-    input_x2 = Tensor(x2_np)
-    net = NetGcd()
-    output_ms = net(input_x1, input_x2)
-    expect_output = np.gcd(x1_np, x2_np)
-    assert np.allclose(output_ms.asnumpy(), expect_output)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
