@@ -320,7 +320,7 @@ int AdjustInputsAndAttrsForPFA(const FuncGraphManagerPtr &manager, const CNodePt
   // Create new primitive and inherit the origin attributes.
   for (const auto &attr : attrs_adjust_pfa) {
     if (origin_attrs_custom.count(attr) == 0) {
-      MS_LOG(ERROR) << "Origin primitive: Custom has no attribute : " << attr << ", pad none for PromptFlashAttention.";
+      MS_LOG(INFO) << "Origin primitive: Custom has no attribute : " << attr << ", pad none for PromptFlashAttention.";
       auto none_attribute = NewValueNode(std::make_shared<None>());
       none_attribute->set_abstract(std::make_shared<abstract::AbstractNone>());
       manager->AddEdge(cnode, none_attribute);
