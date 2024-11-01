@@ -394,8 +394,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"sigmoid", std::string("sigmoid")},                                // P.Sigmoid()
        {"addr", std::string("addr")},                                      // addr()
        {"add", std::string("add")},                                        // P.Add()
-       {"add_", std::string("add_")},                                      // add_()
-       {"sub_", std::string("sub_")},                                      // sub_()
        {"addbmm", std::string("addbmm")},                                  // addbmm()
        {"addmm", std::string("addmm")},                                    // addmm()
        {"addmv", std::string("addmv")},                                    // addmv()

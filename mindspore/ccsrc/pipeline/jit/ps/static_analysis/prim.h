@@ -46,6 +46,7 @@ class PrimitiveFunctionEvaluator final : public TrivialPrimEvaluator {
   bool inplace_prim() const override { return prim_func_->inplace_prim(); }
 
  private:
+  AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const AbstractBasePtrList &input_args);
   AbstractBasePtr CheckAndInfer(const AbstractBasePtrList &args);
   void CheckArgsSizeAndType(const AbstractBasePtrList &args);
   PrimitivePtr prim_func_;

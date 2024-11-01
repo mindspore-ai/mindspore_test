@@ -98,11 +98,6 @@ TypeInfoPair GetTypeInfo(const std::vector<TypePtr> &input_types) {
   return type_info_pair;
 }
 
-bool IsTypeRef(const SignatureEnumRW &sig, const TypePtr &type) {
-  return sig == SignatureEnumRW::kRWWrite &&
-         !((type->type_id() == kObjectTypeRef) || (type->type_id() == kObjectTypeRefKey));
-}
-
 void CheckSigSize(const ValuePtr &function, const size_t &sig_size, const bool &has_var,
                   const AbstractBasePtrList &args_abs_list, const std::string &func_name) {
   if (sig_size > 0) {
@@ -433,8 +428,9 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
         (void)write_indices.insert(i);
       }
       // If sig is SignatureEnumRW::kRWRef, not do anything.
-    } else if (IsTypeRef(sig, type)) {
-      RaiseExceptionForCheckParameter(func_name, i, type->ToString(), function);
+    } else if (IfRaiseExceptionForCheckParameter(func_name, function, sig, type)) {
+      MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter or a Tensor, "
+                              << "but got " << type->ToString() << ".";
     }
     MS_LOG(DEBUG) << "Function " << func_name << "'s input " << i << " " << param->DebugString(2) << " abs "
                   << args_abs_list[i]->ToString() << " type " << type->ToString() << ".";
@@ -497,12 +493,15 @@ void RaiseExceptionForConvertRefDtype(const ValuePtr &func, const std::string &r
                           << ", which cannot be converted to data type " << target_type << " automatically.\n";
 }
 
-void RaiseExceptionForCheckParameter(const std::string &func_name, size_t i, const std::string &source_type,
-                                     const ValuePtr &function) {
-  if (!function->isa<Primitive>() || !function->cast<PrimitivePtr>()->inplace_prim()) {
-    MS_EXCEPTION(TypeError) << "Function " << func_name << "'s input " << i << " should be a Parameter, but "
-                            << source_type << ".";
+bool IfRaiseExceptionForCheckParameter(const std::string &func_name, const ValuePtr &function,
+                                       const SignatureEnumRW &sig, const TypePtr &type) {
+  auto is_type_ref = (sig == SignatureEnumRW::kRWWrite) &&
+                     !((type->type_id() == kObjectTypeRef) || (type->type_id() == kObjectTypeRefKey) ||
+                       (type->type_id() == kMetaTypeNone));
+  if (is_type_ref && (!function->isa<Primitive>() || !function->cast<PrimitivePtr>()->inplace_prim())) {
+    return true;
   }
+  return false;
 }
 }  // namespace prim
 }  // namespace mindspore

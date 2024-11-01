@@ -18,6 +18,7 @@ import numpy as np
 import torch
 import mindspore as ms
 from mindspore import Tensor, nn, context, Parameter
+from mindspore.ops import operations as P
 
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs, GradOfAllParams
@@ -25,17 +26,16 @@ from tests.st.pynative.utils import GradOfAllInputs, GradOfAllParams
 
 context.set_context(mode=ms.GRAPH_MODE)
 
-
 class LeafAddInplaceNet(nn.Cell):
     def construct(self, x, y):
-        x.add_(y)
+        P.AssignAdd()(x, y)
         return x
 
 
 class AddInplaceNet(nn.Cell):
     def construct(self, x, y):
         z = x + y
-        z.add_(x)
+        P.AssignAdd()(z, x)
         out = z * x
         return out
 
@@ -44,7 +44,7 @@ class AddInplaceNet1(nn.Cell):
     def construct(self, x, y):
         z = x + y
         out = z + x
-        z.add_(x)
+        P.AssignAdd()(z, x)
         return out
 
 
@@ -52,7 +52,7 @@ class AddInplaceNet2(nn.Cell):
     def construct(self, x, y):
         z = x + y
         out = z * x
-        z.add_(x)
+        P.AssignAdd()(z, x)
         return out
 
 
@@ -127,7 +127,7 @@ def torch_tensor_inplace_after_forward_add_backward_error(x, y):
 
 
 @pytest.mark.skip(reason="Unsupported")
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_leaf_add_grad():
     """
@@ -152,7 +152,7 @@ def test_tensor_inplace_leaf_add_grad():
 
 
 @pytest.mark.skip(reason="Unsupported")
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_add_grad():
     """
@@ -174,7 +174,7 @@ def test_tensor_inplace_add_grad():
 
 
 @pytest.mark.skip(reason="Unsupported")
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_grad():
     """
@@ -197,7 +197,7 @@ def test_tensor_inplace_after_forward_add_grad():
 
 
 @pytest.mark.skip(reason="Unsupported")
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_grad_error():
     """
@@ -222,7 +222,7 @@ def test_tensor_inplace_after_forward_add_grad_error():
 
 
 @pytest.mark.skip(reason="Unsupported")
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_param_grad():
     """
@@ -246,7 +246,7 @@ def test_tensor_inplace_after_forward_add_param_grad():
 
 
 @pytest.mark.skip(reason="Unsupported")
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_param_grad_error():
     """

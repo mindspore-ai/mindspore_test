@@ -140,8 +140,9 @@ PrimitivePy::PrimitivePy(const py::object &python_obj)
   (void)Primitive::SetAttrs(adapter_->attrs_);
   Primitive::set_prim_type(adapter_->prim_type_);
   Primitive::set_const_prim(adapter_->const_prim_);
-  auto inplace_attr = Primitive::GetAttr("inplace_prim");
-  if (inplace_attr != nullptr && GetValue<bool>(inplace_attr)) {
+  bool exist_rw_write = std::any_of(adapter_->signatures_.begin(), adapter_->signatures_.end(),
+                                    [](const Signature &sig) { return sig.rw == SignatureEnumRW::kRWWrite; });
+  if (exist_rw_write) {
     Primitive::set_inplace_prim(true);
     MS_LOG(DEBUG) << "Has inplace attr, " << adapter_->name_;
   }

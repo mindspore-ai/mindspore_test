@@ -20,8 +20,8 @@ from tests.mark_utils import arg_mark
 
 context.set_context(mode=ms.GRAPH_MODE)
 
-
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add():
     """
     Feature: Support tensor inplace.
@@ -30,7 +30,7 @@ def test_tensor_inplace_add():
     """
     class Net(nn.Cell):
         def construct(self, x, y):
-            x.add_(y)
+            P.AssignAdd()(x, y)
             return x
 
     input_x = ms.Tensor(2, dtype=ms.int32)
@@ -41,7 +41,30 @@ def test_tensor_inplace_add():
     assert out == 5
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_add_input_parameter():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            P.AssignAdd()(x, y)
+            return x
+
+    input_x = Parameter(ms.Tensor(2, dtype=ms.int32), name='input_x')
+    input_y = ms.Tensor(3, dtype=ms.int32)
+    net = Net()
+    out = net(input_x, input_y)
+    print("out:", out)
+    assert input_x == 5
+    assert out == 5
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_sub_inplace_add():
     """
     Feature: Support tensor inplace.
@@ -52,7 +75,7 @@ def test_tensor_inplace_sub_inplace_add():
     class Net(nn.Cell):
         def construct(self, x, y):
             z = x - y
-            x.add_(y)
+            P.AssignAdd()(x, y)
             return x, z
 
     input_x = ms.Tensor(2, dtype=ms.int32)
@@ -64,7 +87,8 @@ def test_tensor_inplace_sub_inplace_add():
     assert out[1] == -1
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_sub_inplace_add_add():
     """
     Feature: Support tensor inplace.
@@ -75,7 +99,7 @@ def test_tensor_inplace_sub_inplace_add_add():
     class Net(nn.Cell):
         def construct(self, x, y):
             z = x - y
-            z.add_(y)
+            P.AssignAdd()(z, y)
             w = z + y
             return w
 
@@ -87,7 +111,8 @@ def test_tensor_inplace_sub_inplace_add_add():
     assert out == 5
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_sub_inplace_add_add_twice():
     """
     Feature: Support tensor inplace.
@@ -99,7 +124,7 @@ def test_tensor_inplace_sub_inplace_add_add_twice():
         def construct(self, x, y):
             z = x - y
             z1 = x - y
-            z.add_(y)
+            P.AssignAdd()(z, y)
             w = z + y
             return w, z1
 
@@ -112,7 +137,8 @@ def test_tensor_inplace_sub_inplace_add_add_twice():
     assert out[1] == -1
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_sub_inplace_add_inplace_sub():
     """
     Feature: Support tensor inplace.
@@ -123,9 +149,9 @@ def test_tensor_sub_inplace_add_inplace_sub():
     class Net(nn.Cell):
         def construct(self, x, y):
             z = x - y
-            z.add_(y)
+            P.AssignAdd()(z, y)
             w = z + y
-            z.sub_(x)
+            P.AssignSub()(z, x)
             return w, z
 
     input_x = ms.Tensor(2, dtype=ms.int32)
@@ -137,7 +163,8 @@ def test_tensor_sub_inplace_add_inplace_sub():
     assert out[1] == 0
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_func_sub():
     """
     Feature: Support tensor inplace.
@@ -146,7 +173,7 @@ def test_tensor_inplace_add_func_sub():
     """
     class Net(nn.Cell):
         def add_func(self, x1, y1):
-            x1.add_(y1)
+            P.AssignAdd()(x1, y1)
             return x1
 
         def construct(self, x, y):
@@ -165,7 +192,8 @@ def test_tensor_inplace_add_func_sub():
     assert out[1] == -2
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_func_sub_control_flow():
     """
     Feature: Support tensor inplace.
@@ -175,7 +203,7 @@ def test_tensor_inplace_add_func_sub_control_flow():
     class Net(nn.Cell):
         def add_func(self, x1, y1):
             if x1 != y1:
-                x1.add_(y1)
+                P.AssignAdd()(x1, y1)
             else:
                 x1 = y1 - x1
             return x1
@@ -196,7 +224,8 @@ def test_tensor_inplace_add_func_sub_control_flow():
     assert out[1] == 2
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_func_sub_control_flow_2():
     """
     Feature: Support tensor inplace.
@@ -214,7 +243,7 @@ def test_tensor_inplace_add_func_sub_control_flow_2():
         def construct(self, x, y):
             if x < y:
                 z = self.func(x, y)
-                z.add_(y)
+                P.AssignAdd()(z, y)
             else:
                 z = x + y
             y = P.Sub()(z, y)
@@ -228,7 +257,8 @@ def test_tensor_inplace_add_func_sub_control_flow_2():
     assert out == 1
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_sub_func_3():
     """
     Feature: Support tensor inplace.
@@ -242,7 +272,7 @@ def test_tensor_inplace_add_sub_func_3():
             return y1 - x1
 
         def construct(self, x, y):
-            x.add_(y)
+            P.AssignAdd()(x, y)
             z = self.func(x, y)
             return z
 
@@ -254,7 +284,8 @@ def test_tensor_inplace_add_sub_func_3():
     assert out == -2
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_multi_inplace_ops():
     """
     Feature: Support tensor inplace.
@@ -264,9 +295,9 @@ def test_tensor_inplace_multi_inplace_ops():
     class Net(nn.Cell):
         def construct(self, x, y):
             if x > y:
-                x.add_(y)
+                P.AssignAdd()(x, y)
             else:
-                y.sub_(x)
+                P.AssignSub()(y, x)
             return x, y
 
     input_x = ms.Tensor(2, dtype=ms.int32)
@@ -279,7 +310,8 @@ def test_tensor_inplace_multi_inplace_ops():
     assert out[1] == 1
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_parameter():
     """
     Feature: Support tensor inplace.
@@ -292,9 +324,9 @@ def test_tensor_inplace_add_parameter():
             self.param = Parameter(Tensor(1, dtype=ms.int32), name='param')
 
         def construct(self, x, y):
-            x.add_(y)
+            P.AssignAdd()(x, y)
             self.param = x * 2 + y
-            x.sub_(y)
+            P.AssignSub()(x, y)
             return self.param, x
 
     input_x = ms.Tensor(2, dtype=ms.int32)
@@ -306,7 +338,8 @@ def test_tensor_inplace_add_parameter():
     assert out[1] == 2
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_control_flow_multi():
     """
     Feature: Support tensor inplace.
@@ -319,10 +352,10 @@ def test_tensor_inplace_add_control_flow_multi():
             self.param = Parameter(Tensor(1, dtype=ms.int32), name='param')
 
         def construct(self, x, y):
-            x.add_(y)
+            P.AssignAdd()(x, y)
             if x * 2 > y:
-                x.add_(y - self.param)
-            y.sub_(x)
+                P.AssignAdd()(x, y - self.param)
+            P.AssignSub()(y, x)
             return y
 
     input_x = ms.Tensor(2, dtype=ms.int32)
@@ -333,7 +366,8 @@ def test_tensor_inplace_add_control_flow_multi():
     assert out == -4
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_inplace_add_control_flow_multi_2():
     """
     Feature: Support tensor inplace.
@@ -347,9 +381,9 @@ def test_tensor_inplace_add_control_flow_multi_2():
 
         def construct(self, x, y):
             if x * 2 > y:
-                x.add_(y - self.param)
+                P.AssignAdd()(x, y - self.param)
                 z = x + y
-                z.sub_(self.param)
+                P.AssignSub()(z, self.param)
             else:
                 z = x - y
             return z

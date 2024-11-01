@@ -4476,11 +4476,3 @@ def _getitem(data, index):
 
 def _setitem(data, index, value):
     return multitype_ops.setitem(data, index, value)
-
-
-def add_(input, other):
-    return P.AssignAdd()(input, other)
-
-
-def sub_(input, other):
-    return P.AssignSub()(input, other)

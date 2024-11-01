@@ -11,8 +11,7 @@ assign_add:
         dtype_group: (variable, value)
     labels:
         side_effect_mem: True
-        inplace_prim: True
-        inplace_input: (1, 0)
     returns:
         output:
             dtype: tensor
+            inplace: variable
