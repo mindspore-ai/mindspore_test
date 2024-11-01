@@ -55,6 +55,7 @@ if(MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/serialization.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/func_graph_utils.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/delegate/comm_group_info.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/delegate/factory.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/delegate/plugin/tensorrt_executor_plugin.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/delegate/plugin/litert_executor_plugin.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/delegate/plugin/ascend_ge_executor_plugin.cc
