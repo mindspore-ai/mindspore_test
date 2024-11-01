@@ -112,7 +112,7 @@ def compile_net(net, *inputs):
 
 
 class Net(nn.Cell):
-    def __init__(self, num_heads, scale_value=1.0, pre_tokens=2147483547, next_tokens=0, input_layout='BSH',
+    def __init__(self, num_heads, scale_value=1.0, pre_tokens=2147483647, next_tokens=0, input_layout='BSH',
                  num_key_value_heads=0, strategy=None, sparse_mode=0, set_atten_mask_as_constant=False):
         super(Net, self).__init__()
         self.fa_op = P.PromptFlashAttention(num_heads=num_heads, scale_value=scale_value, pre_tokens=pre_tokens,

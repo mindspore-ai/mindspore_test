@@ -25,7 +25,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/ops_func_impl/incre_flash_attention.h"
-#include "infer/prompt_flash_attention.h"
+#include "infer/ops_func_impl/prompt_flash_attention.h"
 #include "infer/cxx_api/pad_fusion.h"
 #include "infer/slice.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
@@ -1412,7 +1412,9 @@ CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBNSD(
   }
   // add attr
   prompt_flash_attention_prim->AddAttr("num_heads", api::MakeValue(num_heads));
-  prompt_flash_attention_prim->AddAttr("input_layout", api::MakeValue("BNSD"));
+  prompt_flash_attention_prim->AddAttr(
+    "input_layout",
+    api::MakeValue(static_cast<mindspore::ops::FASInputLayoutMode>(mindspore::ops::FASInputLayoutMode::BNSD)));
   prompt_flash_attention_prim->AddAttr("next_tokens", api::MakeValue(next_token));
   prompt_flash_attention_prim->AddAttr("scale_value", api::MakeValue(scale_value));
   prompt_flash_attention_prim->AddAttr("num_key_value_heads", api::MakeValue(num_key_value_heads));
@@ -1524,7 +1526,9 @@ CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBNSDWithPse(
   }
   // add attr
   prompt_flash_attention_prim->AddAttr("num_heads", api::MakeValue(num_heads));
-  prompt_flash_attention_prim->AddAttr("input_layout", api::MakeValue("BNSD"));
+  prompt_flash_attention_prim->AddAttr(
+    "input_layout",
+    api::MakeValue(static_cast<mindspore::ops::FASInputLayoutMode>(mindspore::ops::FASInputLayoutMode::BNSD)));
   prompt_flash_attention_prim->AddAttr("next_tokens", api::MakeValue(next_token));
   prompt_flash_attention_prim->AddAttr("scale_value", api::MakeValue(scale_value));
   prompt_flash_attention_prim->AddAttr("num_key_value_heads", api::MakeValue(num_key_value_heads));
@@ -1583,7 +1587,9 @@ CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBSH(
   }
   // add attr
   prompt_flash_attention_prim->AddAttr("num_heads", api::MakeValue(num_heads));
-  prompt_flash_attention_prim->AddAttr("input_layout", api::MakeValue("BSH"));
+  prompt_flash_attention_prim->AddAttr(
+    "input_layout",
+    api::MakeValue(static_cast<mindspore::ops::FASInputLayoutMode>(mindspore::ops::FASInputLayoutMode::BSH)));
   prompt_flash_attention_prim->AddAttr("next_tokens", api::MakeValue(next_token));
   prompt_flash_attention_prim->AddAttr("scale_value", api::MakeValue(scale_value));
   prompt_flash_attention_prim->AddAttr("num_key_value_heads", api::MakeValue(num_heads));
@@ -1630,7 +1636,9 @@ CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBNSDBSND(
   }
   // add attr
   prompt_flash_attention_prim->AddAttr("num_heads", api::MakeValue(num_heads));
-  prompt_flash_attention_prim->AddAttr("input_layout", api::MakeValue("BNSD_BSND"));
+  prompt_flash_attention_prim->AddAttr(
+    "input_layout",
+    api::MakeValue(static_cast<mindspore::ops::FASInputLayoutMode>(mindspore::ops::FASInputLayoutMode::BNSD_BSND)));
   prompt_flash_attention_prim->AddAttr("next_tokens", api::MakeValue(next_token));
   prompt_flash_attention_prim->AddAttr("scale_value", api::MakeValue(scale_value));
   prompt_flash_attention_prim->AddAttr("num_key_value_heads", api::MakeValue(num_heads));

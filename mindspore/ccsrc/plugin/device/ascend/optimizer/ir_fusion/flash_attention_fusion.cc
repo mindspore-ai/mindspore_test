@@ -20,10 +20,11 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/lite_ops.h"
-#include "infer/prompt_flash_attention.h"
 #include "infer/ops_func_impl/incre_flash_attention.h"
 #include "infer/cxx_api/pad_fusion.h"
 #include "infer/slice.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore::opt {
 namespace {
@@ -119,7 +120,9 @@ CNodePtr FlashAttentionFusion::CreatePromptFlashAttentionCnodeForBNSD(
 
   // add attr
   prompt_flash_attention_prim->AddAttr("num_heads", api::MakeValue(num_heads));
-  prompt_flash_attention_prim->AddAttr("input_layout", api::MakeValue("BNSD"));
+  prompt_flash_attention_prim->AddAttr(
+    "input_layout",
+    api::MakeValue(static_cast<mindspore::ops::FASInputLayoutMode>(mindspore::ops::FASInputLayoutMode::BNSD)));
   prompt_flash_attention_prim->AddAttr("next_tokens", api::MakeValue(next_token));
   prompt_flash_attention_prim->AddAttr("scale_value", api::MakeValue(scale_value));
   prompt_flash_attention_prim->AddAttr("num_key_value_heads", api::MakeValue(num_key_value_heads));

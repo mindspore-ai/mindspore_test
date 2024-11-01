@@ -10,9 +10,9 @@ fused_infer_attention_score:
             scale_value (float): The scale value indicating the scale coefficient, which is used as the scalar of Muls in the calculation.
                 Generally, the value is 1.0 / (D ** 0.5). Default: ``1.0``.
             pre_tokens (int): Parameter for sparse computation, represents how many tokens are counted forward.
-                Default: ``2147483547``. Invalid when Q_S is 1.
+                Default: ``2147483647``. Invalid when Q_S is 1.
             next_tokens (int): Parameter for sparse computation, represents how many tokens are counted backward.
-                Default: ``2147483547``. Invalid when Q_S is 1.
+                Default: ``2147483647``. Invalid when Q_S is 1.
             input_layout (str): Specifies the layout of input `query`, key and value. "BSH", "BNSD" or "BSND" is supported.
                 Default "BSH".
             num_key_value_heads (int): head numbers of key/value which are used in GQA algorithm. Default: ``0``.

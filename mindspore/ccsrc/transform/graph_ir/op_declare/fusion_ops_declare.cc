@@ -21,28 +21,29 @@
 namespace mindspore::transform {
 // PromptFlashAttention
 INPUT_MAP(PromptFlashAttention) = {
-  {1, INPUT_DESC(query)},
-  {2, INPUT_DESC(key)},
-  {3, INPUT_DESC(value)},
-  {4, INPUT_DESC(atten_mask)},             // optional input
-  {5, INPUT_DESC(actual_seq_lengths)},     // optional input
-  {6, INPUT_DESC(actual_seq_lengths_kv)},  // optional input
-  {7, INPUT_DESC(pse_shift)},              // optional input
-  {8, INPUT_DESC(deq_scale1)},             // optional input
-  {9, INPUT_DESC(quant_scale1)},           // optional input
-  {10, INPUT_DESC(deq_scale2)},            // optional input
-  {11, INPUT_DESC(quant_scale2)},          // optional input
-  {12, INPUT_DESC(quant_offset2)}          // optional input
+  {kIndex1, INPUT_DESC(query)},
+  {kIndex2, INPUT_DESC(key)},
+  {kIndex3, INPUT_DESC(value)},
+  {kIndex4, INPUT_DESC(atten_mask)},             // optional input
+  {kIndex5, INPUT_DESC(actual_seq_lengths)},     // optional input
+  {kIndex6, INPUT_DESC(actual_seq_lengths_kv)},  // optional input
+  {kIndex7, INPUT_DESC(pse_shift)},              // optional input
+  {kIndex8, INPUT_DESC(deq_scale1)},             // optional input
+  {kIndex9, INPUT_DESC(quant_scale1)},           // optional input
+  {kIndex10, INPUT_DESC(deq_scale2)},            // optional input
+  {kIndex11, INPUT_DESC(quant_scale2)},          // optional input
+  {kIndex12, INPUT_DESC(quant_offset2)}          // optional input
 };
-ATTR_MAP(PromptFlashAttention) = {{"num_heads", ATTR_DESC(num_heads, AnyTraits<int64_t>())},
-                                  {"pre_tokens", ATTR_DESC(pre_tokens, AnyTraits<int64_t>())},
-                                  {"next_tokens", ATTR_DESC(next_tokens, AnyTraits<int64_t>())},
-                                  {"input_layout", ATTR_DESC(input_layout, AnyTraits<std::string>())},
-                                  {"num_key_value_heads", ATTR_DESC(num_key_value_heads, AnyTraits<int64_t>())},
-                                  {"scale_value", ATTR_DESC(scale_value, AnyTraits<float>())},
-                                  {"sparse_mode", ATTR_DESC(sparse_mode, AnyTraits<int64_t>())},
-                                  {"inner_precise", ATTR_DESC(inner_precise, AnyTraits<int64_t>())}};
-OUTPUT_MAP(PromptFlashAttention) = {{0, OUTPUT_DESC(attention_out)}};
+ATTR_MAP(PromptFlashAttention) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(PromptFlashAttention) = {{kIndex13, ATTR_DESC(num_heads, AnyTraits<int64_t>())},
+                                        {kIndex14, ATTR_DESC(scale_value, AnyTraits<float>())},
+                                        {kIndex15, ATTR_DESC(pre_tokens, AnyTraits<int64_t>())},
+                                        {kIndex16, ATTR_DESC(next_tokens, AnyTraits<int64_t>())},
+                                        {kIndex17, ATTR_DESC(input_layout, AnyTraits<FASInputLayoutMode>())},
+                                        {kIndex18, ATTR_DESC(num_key_value_heads, AnyTraits<int64_t>())},
+                                        {kIndex19, ATTR_DESC(sparse_mode, AnyTraits<int64_t>())},
+                                        {kIndex20, ATTR_DESC(inner_precise, AnyTraits<int64_t>())}};
+OUTPUT_MAP(PromptFlashAttention) = {{kIndex0, OUTPUT_DESC(attention_out)}};
 REG_ADPT_DESC(PromptFlashAttention, "PromptFlashAttention", ADPT_DESC(PromptFlashAttention))
 
 // IncreFlashAttention

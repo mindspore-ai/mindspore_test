@@ -59,7 +59,7 @@ class PromptFlashAttentionInfo : public OperatorInfo {
   int64_t dp_;
   int64_t mp_;
   int64_t sp_;
-  bool attn_sp_shard_;
+  bool atten_sp_shard_;
   int64_t sparse_mode_;
   int64_t pre_tokens_;
   int64_t next_tokens_;
@@ -68,7 +68,7 @@ class PromptFlashAttentionInfo : public OperatorInfo {
   int64_t dev_matrix_n1_dim_;
   std::vector<bool> optinal_inputs_;
   size_t atten_mask_rank_ = 0;
-  size_t padding_mask_rank_ = 0;
+  size_t pse_shift_rank_ = 0;
   bool CheckStrategyOnIndex(int64_t strategy, int64_t true_value, const std::string &dim_name,
                             const std::string &input_name);
   int GetSqueezedIndex(size_t original_index);
@@ -77,7 +77,7 @@ class PromptFlashAttentionInfo : public OperatorInfo {
   Status CheckAttenMaskStrategy(const StrategyPtr &strategy, size_t input_index);
   std::vector<Shape> optinal_tensor_map_;
   std::vector<Shape> optinal_op_strategies_;
-  bool is_attn_mask_compressed_ = false;
+  bool is_atten_mask_compressed_ = false;
   bool need_update_op_attrs_mode_ = false;
   void SetOptinalInputs();
 };

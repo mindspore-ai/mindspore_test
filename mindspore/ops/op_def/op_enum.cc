@@ -190,7 +190,8 @@ REG_STRING_TO_ENUM_COMMON(fas_input_layout_mode, StrToEnumMap{{"BSH", FASInputLa
                                                               {"TND", FASInputLayoutMode::TND},
                                                               {"TH", FASInputLayoutMode::TH},
                                                               {"NSD", FASInputLayoutMode::NSD},
-                                                              {"SH", FASInputLayoutMode::SH}})
+                                                              {"SH", FASInputLayoutMode::SH},
+                                                              {"BNSD_BSND", FASInputLayoutMode::BNSD_BSND}})
 
 // DriverName
 REG_STRING_TO_ENUM_COMMON(driver_name, StrToEnumMap{{"GELS", DriverName::GELS},
