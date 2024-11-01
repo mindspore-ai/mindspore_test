@@ -314,7 +314,7 @@ def connect_network_with_dataset(network, dataset_helper):
             aux.__shape_type__ = str(dataset_types) + str(dataset_shapes)
 
     if _dynamic_sink_data(dataset, dataset_iter) and _dynamic_sink_exception_scenario(dataset_iter, is_dynamic) and \
-        not use_pipeline_parallel:
+        not use_pipeline_parallel and dynamic_sink1:
         dataset_helper.get_data_info()
     network.add_flags(sink_mode=True)
     return network
