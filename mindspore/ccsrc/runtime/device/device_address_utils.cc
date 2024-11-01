@@ -92,18 +92,7 @@ device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const DeviceConte
 }
 
 Format GetFormatByTensorShape(const DeviceContext *device_context, const ShapeVector &tensor_shape) {
-  if (device_context->device_context_key().device_name_ != kAscendDevice) {
-    return Format::DEFAULT_FORMAT;
-  }
-
-  switch (tensor_shape.size()) {
-    case kShape4dDims:
-      return Format::NCHW;
-    case kShape5dDims:
-      return Format::NCDHW;
-    default:
-      return Format::ND;
-  }
+  return Format::DEFAULT_FORMAT;
 }
 
 void SetHeteInfoForParamDeviceAddress(const ParameterPtr &parameter, const KernelTensorPtr &kernel_tensor) {
