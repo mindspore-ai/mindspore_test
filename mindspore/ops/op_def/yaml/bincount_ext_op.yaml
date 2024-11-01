@@ -1,0 +1,18 @@
+#operator bincount_ext
+bincount_ext:
+  args:
+    input:
+      dtype: tensor
+    weights:
+      dtype: tensor
+      default: None
+    minlength:
+      dtype: int
+      type_cast: tensor
+      default: 0
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: BincountExtAscend

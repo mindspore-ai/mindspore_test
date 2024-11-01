@@ -1,0 +1,42 @@
+bincount_ext:
+  description: |
+    Count the occurrences of each value in the input.
+
+    If `minlength` is not specified, the length of the output Tensor is the maximum value in the input plus one.
+    If `minlength` is specified, the length of the output Tensor is the maximum value between `minlength` or
+    the maximum value in the input plus one.
+
+    Each value in the output Tensor represents the number of occurrences of that index value in the input.
+    If `weights` is specified, the output results are weighted, 
+    i.e., :math:`out[n] += weight[i]` instead of :math:`out[n] += 1`.
+    
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        - **input** (Tensor) - A one-dimensional Tensor.
+        - **weights** (Tensor, optional) - Weights with the same shape as the input. Default: `None`.
+        - **minlength** (int, optional) - The minimum length of output Tensor. Should be non-negative. Default: `0`.
+
+    Returns:
+        Tensor, If input is non-empty, the output shape is :math:`(max(max(input)+1, minlength), )`,
+        otherwise the shape is :math:`(0, )`.
+
+    Raises:
+        - **TypeError** - If `input` or `weights` is not a Tensor.
+        - **ValueError** - If `input` contains negative values.
+        - **ValueError** - If `input` is not one-dimensional or `input` and `weights` do not have the same shape.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import mint
+        >>> print(mint.bincount(np.arange(5)))
+        [1. 1. 1. 1. 1.]
+        >>> print(mint.bincount(np.array([0, 1, 1, 3, 2, 1, 7])))
+        [1. 3. 1. 1. 0. 0. 0. 1.]
+        >>> w = np.array([0.3, 0.5, 0.2, 0.7, 1., -0.6]) # weights
+        >>> x = np.array([0, 1, 1, 2, 2, 2])
+        >>> print(mint.bincount(x,  weights=w, minlength=5))
+        [0.3 0.7 1.1 0.0 0.0]
