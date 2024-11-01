@@ -40,6 +40,59 @@ NodePtrList BpropBuilder::Run(const NodePtrList &inputs, const mindspore::HashMa
   return handle.func(this);
 }
 
+void PynativeCallback::DeprecatedFreeDeviceAddress(const mindspore::HashSet<size_t> &indices) const {
+  auto &inputs = *GetInputs();
+  for (auto idx : indices) {
+    if (idx < inputs.size()) {
+      FreeDeviceAddress(&inputs[idx]);
+      MS_LOG(DEBUG) << "Clear device address for input[" << idx << "] of " << opname();
+    } else {
+      FreeDeviceAddress(GetOutput());
+      MS_LOG(DEBUG) << "Clear device address for output of " << opname();
+    }
+  }
+}
+
+void PynativeCallback::FreeInputDeviceAddress(const std::vector<size_t> &indices) const {
+  auto &inputs = *GetInputs();
+  if (indices.empty()) {
+    MS_LOG(DEBUG) << "Clear device address for inputs of " << opname();
+    for (auto &v : inputs) {
+      FreeDeviceAddress(&v);
+    }
+    return;
+  }
+  for (auto idx : indices) {
+    if (idx >= inputs.size()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "For " << opname() << ", the index " << idx << " is out of range of input num "
+                                 << inputs.size();
+    }
+    FreeDeviceAddress(&inputs[idx]);
+    MS_LOG(DEBUG) << "Clear device address for input[" << idx << "] of " << opname();
+  }
+}
+
+void PynativeCallback::FreeOutputDeviceAddress(const std::vector<size_t> &indices) const {
+  auto output = GetOutput();
+  if (indices.empty()) {
+    MS_LOG(DEBUG) << "Clear device address for output of " << opname();
+    FreeDeviceAddress(output);
+    return;
+  }
+  auto seq = (*output)->cast<ValueSequencePtr>();
+  MS_EXCEPTION_IF_NULL(seq);
+  ValuePtrList outs{seq->value()};
+  for (auto idx : indices) {
+    if (idx >= outs.size()) {
+      MS_LOG(INTERNAL_EXCEPTION) << "For " << opname() << ", the index " << idx << " is out of range of output num "
+                                 << outs.size();
+    }
+    FreeDeviceAddress(&outs[idx]);
+  }
+  MS_LOG(DEBUG) << "Clear device address for output of " << opname();
+  *output = std::make_shared<ValueTuple>(outs);
+}
+
 class BroadcastGradientArgsShapeCalc : public ShapeCalcFunctor {
  public:
   // cppcheck-suppress unknownMacro
