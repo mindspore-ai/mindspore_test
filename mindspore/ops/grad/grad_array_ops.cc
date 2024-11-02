@@ -1767,6 +1767,14 @@ REG_BPROP_BUILDER("Cast").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   return {dx_, ib->OutZeros(t)};
 });
 
+REG_BPROP_BUILDER("TypeAs").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto y = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  NodePtr dx = ib->Emit("TypeAs", {dout, x});
+  return {dx, ib->OutZeros(y)};
+});
+
 REG_BPROP_BUILDER("ExpandDims").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);

@@ -1,0 +1,38 @@
+type_as:
+    description: | 
+        Returns first input tensor cast to the type of the with the second input tensor.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Note:
+            When converting complex numbers to boolean type, the imaginary part of the complex number is not
+            taken into account. As long as the real part is non-zero, it returns True; otherwise, it returns False.
+
+        Args:
+            input (Tensor): The shape of tensor is :math:`(x_0, x_1, ..., x_R)`. The tensor whose data type is to be converted.
+            other (Tensor): The shape of tensor is :math:`(x_0, x_1, ..., x_R)`. The tensor whose data type is specified.
+
+        Returns:
+            Tensor, the shape of tensor is the same as `input`, :math:`(x_0, x_1, ..., x_R)`.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If `other` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
+            >>> input = Tensor(input_np)
+            >>> other_np = np.random.randn(2, 3, 4).astype(np.int32)
+            >>> other = Tensor(input_np)
+            >>> output = ops.type_as(input, other)
+            >>> print(output.dtype)
+            Int32
+            >>> print(output.shape)
+            (2, 3, 4, 5)

@@ -168,6 +168,7 @@ from .array_func import (
     deepcopy,
     arange_ext,
     view_as,
+    type_as,
 )
 from .parameter_func import (
     assign,
