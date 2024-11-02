@@ -53,6 +53,8 @@ PrimitiveCPtr OnnxPromptFlashAttentionParser::Parse(const onnx::GraphProto &onnx
     } else if (attribute_name == "inner_precise") {
       int64_t inner_precise = onnx_node_attr.i();
       prim_c->AddAttr("inner_precise", MakeValue<int64_t>(inner_precise));
+    } else if (attribute_name == "input_layout") {
+      prim_c->AddAttr("input_layout", MakeValue<std::string>(onnx_node_attr.s()));
     }
   }
   auto next_token_res_ptr = prim_c->GetAttr("next_tokens");
