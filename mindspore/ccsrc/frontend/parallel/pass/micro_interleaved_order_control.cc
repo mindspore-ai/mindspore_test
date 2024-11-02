@@ -161,6 +161,27 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
   return true;
 }
 
+void SetEdgeForDepend(const NodeUsersMap &node_users, const FuncGraphManagerPtr &manager, const CNodePtr &comm_node,
+                      const CNodePtr depend_node, bool use_replace) {
+  const auto &users = node_users.find(comm_node);
+  if (users == node_users.end()) {
+    return;
+  }
+  for (const auto &pair : users->second) {
+    if (IsPrimitiveCNode(pair.first, prim::kPrimMatMul) && IsDwMatMul(pair.first->cast<CNodePtr>())) {
+      continue;
+    }
+    if (!pair.first->cast<CNodePtr>()) {
+      continue;
+    }
+    if (use_replace) {
+      (void)manager->Replace(comm_node, depend_node);
+    } else {
+      manager->SetEdge(pair.first, pair.second, depend_node);
+    }
+  }
+}
+
 void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_a, const CNodePtr &comm_node_b,
                   const CNodePtr &next_comm_node_a) {
   MS_LOG(INFO) << "comm_node_a:" << comm_node_a->fullname_with_scope()
@@ -172,6 +193,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   auto next_comm_node_a_input_node = next_comm_node_a->input(kIndex1)->cast<CNodePtr>();
   auto comm_node_b_input_node = comm_node_b->input(kIndex1)->cast<CNodePtr>();
 
+  auto node_users = manager->node_users();
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   const bool not_o2 = context->GetJitLevel() != kAttrJitLevelO2;
@@ -184,6 +206,9 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
       }
     }
   }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  const auto grad_comm_opt_enabled = ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT);
 
   // comm_node_b_input -> depend -> comm_node_a_output
   if (IsPrimitiveCNode(comm_node_a->input(kIndex1), prim::kPrimMatMul)) {
@@ -196,9 +221,9 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   MS_EXCEPTION_IF_NULL(depend_node1);
   depend_node1->set_abstract(comm_node_a->abstract()->Clone());
   depend_node1->AddAttr("micro_interleaved_depend1", MakeValue(true));
-  (void)manager->Replace(comm_node_a, depend_node1);
+  SetEdgeForDepend(node_users, manager, comm_node_a, depend_node1, !grad_comm_opt_enabled);
   // next_comm_node_a_input -> depend -> comm_node_b_output
-  for (const auto &pair : manager->node_users()[comm_node_b]) {
+  for (const auto &pair : node_users[comm_node_b]) {
     if (IsPrimitiveCNode(pair.first, prim::kPrimMatMul)) {
       auto comm_id = comm_node_b->UniqueId();
       comm_node_b->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
@@ -211,7 +236,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
   MS_EXCEPTION_IF_NULL(depend_node2);
   depend_node2->AddAttr("micro_interleaved_depend2", MakeValue(true));
   depend_node2->set_abstract(comm_node_b->abstract()->Clone());
-  (void)manager->Replace(comm_node_b, depend_node2);
+  SetEdgeForDepend(node_users, manager, comm_node_b, depend_node2, !grad_comm_opt_enabled);
 
   if (not_o2) {
     if (comm_node_a_user != nullptr) {
@@ -220,7 +245,7 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
       MS_EXCEPTION_IF_NULL(depend_node5);
       depend_node5->set_abstract(comm_node_b->abstract()->Clone());
       depend_node5->AddAttr("micro_interleaved_depend5", MakeValue(true));
-      (void)manager->Replace(comm_node_b, depend_node5);
+      SetEdgeForDepend(node_users, manager, comm_node_b, depend_node5, !grad_comm_opt_enabled);
     }
 
     std::vector<AnfNodePtr> depend4_inputs{NewValueNode(prim::kPrimDepend), comm_node_a, comm_node_b};
