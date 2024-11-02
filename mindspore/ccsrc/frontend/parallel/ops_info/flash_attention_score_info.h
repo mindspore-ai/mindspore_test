@@ -116,6 +116,7 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   Status ComputeReplaceGraphForLoadBalance(const CNodePtr &cnode);
   Status ReplaceActualSeqLenForSplitSeqInTnd(const CNodePtr &cnode);
   void CheckDynamicShape();
+  Status GetAttrsForRA();
   void InitFromInput();
   int64_t head_num_ = 1;
   float keep_prob_ = 1.0;
@@ -143,6 +144,7 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   bool enable_ring_attention_ = false;
   bool enable_flash_sp_ = false;
   bool enable_ra_send_recv_ = false;
+  bool enable_ra_cp_ = false;
   int64_t input_layout_;  // "BSH": 0; "BNSD": 1;
   int64_t sparse_mode_;
   bool kv_split_ = false;

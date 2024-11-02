@@ -840,11 +840,7 @@ bool OverlapRecomputeAllGatherAndFlashAttentionGradPass(const ResourcePtr &resou
 
 bool OverlapGradRingAttentionPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
-  if (parallel::OverlapGradRingAttention(resource->func_graph())) {
-    FuncGraphPtr func_graph = resource->func_graph();
-    FuncGraphPtr new_fg = LiftingClone(func_graph);
-    resource->set_func_graph(new_fg);
-  }
+  parallel::OverlapGradRingAttention(resource->func_graph());
   return true;
 }
 
