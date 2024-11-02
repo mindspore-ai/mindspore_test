@@ -167,6 +167,7 @@ from .array_func import (
     top_k,
     deepcopy,
     arange_ext,
+    view_as,
 )
 from .parameter_func import (
     assign,

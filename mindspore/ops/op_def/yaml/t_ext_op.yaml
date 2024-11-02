@@ -1,0 +1,13 @@
+#operator t_ext
+t_ext:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: TExt
+  dispatch:
+    enable: True
+    Ascend: TExtAscend
