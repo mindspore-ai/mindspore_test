@@ -401,6 +401,7 @@ from .math_func import (
     remainder,
     remainder_ext,
     iou,
+    rotated_iou,
     bmm,
     trapz,
     cholesky,

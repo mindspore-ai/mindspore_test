@@ -51,7 +51,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
-                                         bincount_ext)
+                                         bincount_ext, rotated_iou_op)
 
 
 
@@ -11953,6 +11953,77 @@ def round(input, *, decimals=0):
     """
     return round_op(input, decimals)
 
+def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0):
+    r"""
+    Calculate the overlap area between rotated rectangles.
+
+    .. note::
+        The input data types supported by the Ascend platform include
+        bfloat16, float16, float32.
+
+    Args:
+        boxes (Tensor): The first set of rectangles which has a
+            shape of :math:`(B, N, 5)`.
+        query_boxes (Tensor): The second set of rectangles which
+            has a shape of :math:`(B, K, 5)`.
+        trans (bool): Distinguish the rectangles representations
+            of boxes and query_boxes. If ``True``, the format of boxes
+            and query_boxes is ``'xyxyt'``, else the format is ``'xywht'``.
+            The default value is ``False``.
+        mode (int): Distinguish the calculation mode. If the value
+            is ``1``, the calculation mode is ``'iof'``, else the
+            calculation mode is ``'iou'``. The default value is ``0``.
+        is_cross (bool): If ``True``, use cross-calculation, else use
+            one-to-one calculation. The default value is ``True``.
+        v_threshold (float): Provide condition relaxation for
+            intersection calculation. The default value is ``0.0``.
+        e_threshold (float): Provide condition relaxation for
+            intersection calculation. The default value is ``0.0``.
+
+    Returns:
+        Tensor, the shape is :math:`(B, N, K)`.
+
+    Raises:
+        TypeError: If `boxes` is not a Tensor.
+        TypeError: If `query_boxes` is not a Tensor.
+        ValueError: If `boxes` and `query_boxes` do not has same first dim.
+        ValueError: If the third dimension of `boxes` or `query_boxes` is not ``5``.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> a = np.random.uniform(0,1,(2,2,5)).astype(np.float16)
+        >>> b = np.random.uniform(0,1,(2,3,5)).astype(np.float16)
+        >>> box1 = Tensor(a)
+        >>> box2 = Tensor(b)
+        >>> output = ops.rotated_iou(box1, box2, trans=False, mode=0, is_cross=True)
+    """
+    origin_dtype = boxes.dtype
+    if (origin_dtype != mstype.float16 and origin_dtype != mstype.float32
+            and origin_dtype != mstype.bfloat16):
+        raise ValueError(f"input boxes type is illegal.")
+
+    if (query_boxes.dtype != mstype.float16 and query_boxes.dtype != mstype.float32
+            and query_boxes.dtype != mstype.bfloat16):
+        raise ValueError(f"input query_boxes type is illegal.")
+
+    boxes_perm = (0, 2, 1)
+    boxes_cp = permute(boxes, boxes_perm)
+    if boxes_cp.dtype == mstype.float16 or boxes_cp.dtype == mstype.bfloat16:
+        boxes_cp = cast_(boxes_cp, mstype.float32)
+
+    query_boxes_perm = (0, 2, 1)
+    query_boxes_cp = permute(query_boxes, query_boxes_perm)
+    if query_boxes_cp.dtype == mstype.float16 or query_boxes_cp.dtype == mstype.bfloat16:
+        query_boxes_cp = cast_(query_boxes_cp, mstype.float32)
+
+    iou = rotated_iou_op(boxes_cp, query_boxes_cp, trans, mode, is_cross, v_threshold, e_threshold)
+    return cast_(iou, origin_dtype)
+
 
 __all__ = [
     'addn',
@@ -12176,6 +12247,7 @@ __all__ = [
     'signbit',
     'accumulate_n',
     'iou',
+    'rotated_iou',
     'baddbmm',
     'baddbmm_ext',
     'bmm',

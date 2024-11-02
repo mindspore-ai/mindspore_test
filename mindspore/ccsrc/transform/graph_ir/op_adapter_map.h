@@ -298,6 +298,7 @@ constexpr const char kNameL2Normalize[] = "L2Normalize";
 constexpr const char kNameL2NormalizeGrad[] = "L2NormalizeGrad";
 constexpr const char kNameSoftmax[] = "Softmax";
 constexpr const char kNameIOU[] = "IOU";
+constexpr const char kNameRotatedIou[] = "RotatedIou";
 constexpr const char kNameBoundingBoxDecode[] = "BoundingBoxDecode";
 constexpr const char kNameBoundingBoxEncode[] = "BoundingBoxEncode";
 constexpr const char kNameSlice[] = "Slice";

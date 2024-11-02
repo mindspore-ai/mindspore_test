@@ -260,6 +260,12 @@ std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<GECoordinateTr
   return GECoordinateTransformMode::ConvertEnumToString(mode_id);
 }
 
+std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<GERotatedIouMode>) {
+  MS_EXCEPTION_IF_NULL(value);
+  int64_t mode_id = GetCastIntegralValue<int64_t>(value);
+  return GERotatedIouMode::ConvertEnumToString(mode_id);
+}
+
 std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<GEEnumToStr>,
                            const std::vector<std::string> &enum_string) {
   MS_EXCEPTION_IF_NULL(value);
