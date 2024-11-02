@@ -15,7 +15,7 @@
 """Test Tensor check_input_data_type"""
 import pytest
 import numpy as np
-
+import mindspore as ms
 from mindspore import Tensor
 
 
@@ -87,3 +87,26 @@ def test_convert_to_tensor_by_sequence():
     with pytest.raises(TypeError) as ex:
         Tensor([None, []])
     assert "For Tensor, the input_data is [None, []] that contain unsupported element." in str(ex.value)
+
+
+def test_tensor_with_empty_shape():
+    """
+    Feature: Check the empty shape of input_data for Tensor.
+    Description: Create tensor with empty shape.
+    Expectation: Success.
+    """
+    a = Tensor([])
+    assert a.shape == (0,)
+    assert a.dtype == ms.float32
+    a = Tensor([[[], []], [[], []]], dtype=ms.int32)
+    assert a.shape == (2, 2, 0)
+    assert a.dtype == ms.int32
+    a = Tensor(np.ones(shape=(2, 0, 3), dtype=np.float16))
+    assert a.shape == (2, 0, 3)
+    assert a.dtype == ms.float16
+    a = Tensor(np.array([[[], []], [[], []], [[], []]]), dtype=ms.uint8)
+    assert a.shape == (3, 2, 0)
+    assert a.dtype == ms.uint8
+    a = Tensor(shape=(1, 0, 3), dtype=ms.bfloat16, init=ms.common.initializer.One())
+    assert a.shape == (1, 0, 3)
+    assert a.dtype == ms.bfloat16

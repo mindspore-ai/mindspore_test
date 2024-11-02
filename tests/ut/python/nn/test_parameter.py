@@ -219,9 +219,8 @@ def test_parameter_lazy_init():
     # check the type
     with pytest.raises(TypeError):
         para.set_data(Tensor(np.zeros((1, 2, 3))))
-    # check the shape
-    with pytest.raises(ValueError):
-        para.set_data(Tensor(np.zeros((1, 2))))
+    # expect different shape ok
+    para.set_data(Tensor(np.zeros((1, 2)).astype(np.float32)))
     # expect change ok
     para.set_data(Tensor(np.zeros((1, 2, 3)).astype(np.float32)))
     assert np.array_equal(para.data.asnumpy(), np.zeros((1, 2, 3)))
