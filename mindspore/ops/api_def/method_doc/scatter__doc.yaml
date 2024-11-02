@@ -1,0 +1,274 @@
+scatter_:
+  description: |
+    scatter_(dim, index, src) -> Tensor
+
+    Update the value in `src` to update `self` according to the specified `index`.
+
+    Index the dimension `self` selected by `dim` using `index` , traverse the other
+    dimensions in sequence, update the value of `src` to `self` , and return `self` .
+
+    This operator is the inverse of the in-place version of :func:`mindspore.Tensor.gather` .
+
+    This operation provides another three overloads to support parameter `reduce` and scalar value.
+
+    Here's an example using a 3-dimension tensor.
+
+    .. code-block::
+
+        self[index[i][j][k]][j][k] = src[i][j][k]  # if dim == 0
+
+        self[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
+
+    .. warning::
+        - If multiple indexes point to the same position in `self` , the final value of
+          this position in `self` is uncertain.
+        - On Ascend, behavior is unpredictable when the value of `index` is not in the
+          range `[-self.shape[dim], self.shape[dim])` in forward.
+        - This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        The inverse gradient from `self` to `src` can be calculated only when
+        the shape of src is the same as that of `index`.
+
+    Args:
+        dim (int): Which axis to scatter. Accepted range is `[-r, r)` where `r` is the rank of `self` .
+        index (Tensor): The index to access `self` on the target axis specified by `dim` whose dtype must be int32
+            or int64. If it is an empty Tensor, no operations is performed and directly returns `self` . Otherwise,
+            its rank must be the same as `self` and the value range of each element must be `[-s, s)`
+            where `s` is the size of `self` along axis `dim` .
+        src (Tensor): The data to doing the update operation with `self` . It should have the same dtype and rank
+            as `self` .
+
+    Returns:
+        Tensor, the modified `self` itself.
+
+    Raises:
+        TypeError: If type of `self` , `index` or `src` is unsupported.
+        RuntimeError: If `dim` is out of the range `[-r, r)` .
+        RuntimeError: If rank of `self` is larger than 8.
+        RuntimeError: If dtype of tensor `self` , `index` or `src` is unsupported.
+        RuntimeError: If dtype of `self` is not equal to the dtype of `src` .
+        RuntimeError: If `self` , `index`, or `src` have different ranks and `index` is not an empty tensor.
+        RuntimeError: If there is a dimension `d` that makes `index.size(d) > src.size(d)` .
+        RuntimeError: If there is a dimension `d` that makes `index.size(d) > self.size(d)` .
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import tensor, int64, float32
+        >>> from mindspore.ops import scatter_
+        >>> this_tensor = tensor([[1, 2], [3, 4]], dtype=float32)
+        >>> index = tensor([[1, 0], [1, 0]], dtype=int64)
+        >>> src = tensor([[4, 3], [2, 1]], dtype=float32)
+        >>> scatter_(this_tensor, 1, index, src)
+        >>> print(this_tensor)
+        [[3., 4.],
+         [1., 2.]]
+
+    .. method:: Tensor.scatter_(dim, index, src, *, reduce) -> Tensor
+        :noindex:
+
+    Update the value in `src` to update `self` according to the specified `index`.
+
+    Using the operation specified by `reduce` to index the dimension `self` selected
+    by `dim` using `index` , traverse the other dimensions in sequence, accumulate or
+    multiply the value of `src` to `self` , and return `self` .
+
+    This operator is the inverse of the in-place version of :func:`mindspore.Tensor.gather` .
+
+    Expect that the replacement operation changes to accumulation or multiplication
+    based on the parameter `reduce`, other operations are the same as the overloaded
+    function that accept `src` without the parameter `reduce` .
+
+    Here's an example using a 3-dimension tensor.
+
+    .. code-block::
+
+        self[index[i][j][k]][j][k] += src[i][j][k]  # if dim == 0, reduce == "add"
+
+        self[i][j][index[i][j][k]] *= src[i][j][k]  # if dim == 2, reduce == "multiply"
+
+    .. warning::
+        - If multiple indexes point to the same position in `self` , the final value of
+          this position in `self` is uncertain.
+        - On Ascend, behavior is unpredictable when the value of `index` is not in the
+          range `[-self.shape[dim], self.shape[dim])` in forward.
+        - This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        This overload function does not support reverse gradient calculation and will return zeros if calculate gradient.
+
+    Args:
+        dim (int): Which axis to scatter. Accepted range is `[-r, r)` where `r` is the rank of `self` .
+        index (Tensor): The index to access `self` on the target axis specified by `dim` whose dtype must be int32
+            or int64. If it is an empty Tensor, no operations is performed and directly returns `self` . Otherwise,
+            its rank must be the same as `self` and the value range of each element must be `[-s, s)`
+            where `s` is the size of `self` along axis `dim` .
+        src (Tensor): The data to doing the accumulate or multiply operation with `self` . It should have the
+            same dtype and rank as `self` .
+        reduce (str): Reduce operation, supports ``"add"`` and ``"multiply"`` . When `reduce` is ``"add"`` , `src`
+            is accumulated to `input` base on `index` . When `reduce` is ``"multiply"`` , `src` is multiplied
+            to `input` base on `index` .
+
+    Returns:
+        Tensor, the modified `self` itself.
+
+    Raises:
+        TypeError: If type of `self` , `index` or `src` is unsupported.
+        ValueError: If `reduce` is a str but not ``"add"`` or ``"multiply"`` .
+        RuntimeError: If `dim` is out of the range `[-r, r)` .
+        RuntimeError: If rank of `self` is larger than 8.
+        RuntimeError: If dtype of tensor `self` , `index` or `src` is unsupported.
+        RuntimeError: If dtype of `self` is not equal to the dtype of `src` .
+        RuntimeError: If `self` , `index`, or `src` have different ranks and `index` is not an empty tensor.
+        RuntimeError: If there is a dimension `d` that makes `index.size(d) > src.size(d)` .
+        RuntimeError: If there is a dimension `d` that makes `index.size(d) > self.size(d)` .
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import tensor, int64, float32
+        >>> from mindspore.ops import scatter_
+        >>> this_tensor = tensor([[1, 2], [3, 4]], dtype=float32)
+        >>> index = tensor([[1, 0], [1, 0]], dtype=int64)
+        >>> src = tensor([[4, 3], [2, 1]], dtype=float32)
+        >>> scatter_(this_tensor, 1, index, src, reduce='add')
+        >>> print(this_tensor)
+        [[4., 6.],
+         [4., 6.]]
+
+    .. method:: Tensor.scatter_(dim, index, value) -> Tensor
+        :noindex:
+
+    Update the value `value` to update `self` according to the specified `index`.
+
+    Index the dimension `self` selected by `dim` using `index` , traverse the other
+    dimensions in sequence, update the value `value` to `self` , and return `self` .
+
+    This operator is the inverse of the in-place version of :func:`mindspore.Tensor.gather` .
+
+    It can be considered that after the value is broadcasted as a Tensor whose shape
+    and dtype are consistent with `self` , other operations are the same as the
+    overloaded function that accept `src` without the parameter `reduce` .
+
+    Here's an example using a 3-dimension tensor.
+
+    .. code-block::
+
+        self[index[i][j][k]][j][k] = value  # if dim == 0
+
+        self[i][j][index[i][j][k]] = value  # if dim == 2
+
+    .. warning::
+        - If multiple indexes point to the same position in `self` , the final value of
+          this position in `self` is uncertain.
+        - On Ascend, behavior is unpredictable when the value of `index` is not in the
+          range `[-self.shape[dim], self.shape[dim])` in forward.
+        - This is an experimental API that is subject to change or deletion.
+
+    Args:
+        dim (int): Which axis to scatter. Accepted range is `[-r, r)` where `r` is the rank of `self` .
+        index (Tensor): The index to access `self` on the target axis specified by `dim` whose dtype must be int32
+            or int64. If it is an empty Tensor, no operations is performed and directly returns `self` . Otherwise,
+            its rank must be the same as `self` and the value range of each element must be `[-s, s)`
+            where `s` is the size of `self` along axis `dim` .
+        value (int, float, bool): The data to doing the update operation with `self` . It can be considered as being
+            broadcasted into a Tensor whose shape and dtype are the same as `self` , and then be regarded as `src`
+            for calculation.
+
+    Returns:
+        Tensor, the modified `self` itself.
+
+    Raises:
+        TypeError: If type of `self` , `index` or `value` is unsupported.
+        RuntimeError: If `dim` is out of the range `[-r, r)` .
+        RuntimeError: If rank of `self` is larger than 8.
+        RuntimeError: If dtype of tensor `self` or `index` is unsupported.
+        RuntimeError: If `index` is not an empty tensor and its rank is different from the rank of `self` .
+        RuntimeError: If there is a dimension `d` that makes `index.size(d) > self.size(d)` .
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import tensor, int64, float32
+        >>> from mindspore.ops import scatter_
+        >>> this_tensor = tensor([[1, 2], [3, 4]], dtype=float32)
+        >>> index = tensor([[0], [1]], dtype=int64)
+        >>> scatter_(this_tensor, 0, index, 10)
+        >>> print(this_tensor)
+        [[10., 2.],
+         [10., 4.]]
+
+    .. method:: Tensor.scatter_(dim, index, value, *, reduce) -> Tensor
+        :noindex:
+
+    Update the value `value` to update `self` according to the specified `index`.
+
+    Using the operation specified by `reduce` to index the dimension `self` selected
+    by `dim` using `index` , traverse the other dimensions in sequence, accumulate or
+    multiply the value `value` to `self` , and return `self` .
+
+    This operator is the inverse of the in-place version of :func:`mindspore.Tensor.gather` .
+
+    Expect that the replacement operation changes to accumulation or multiplication
+    based on the parameter `reduce`, other operations are the same as the overloaded
+    function that accept `value` without the parameter `reduce` .
+
+    Here's an example using a 3-dimension tensor.
+
+    .. code-block::
+
+        self[i][index[i][j][k]][k] += value  # if dim == 1, reduce == "add"
+
+        self[i][j][index[i][j][k]] *= value  # if dim == 2, reduce == "multiply"
+
+    .. warning::
+        - If multiple indexes point to the same position in `self` , the final value of
+          this position in `self` is uncertain.
+        - On Ascend, behavior is unpredictable when the value of `index` is not in the
+          range `[-self.shape[dim], self.shape[dim])` in forward.
+        - This is an experimental API that is subject to change or deletion.
+
+    .. note::
+        This overload function does not support reverse gradient calculation and will return zeros if calculate gradient.
+
+    Args:
+        dim (int): Which axis to scatter. Accepted range is `[-r, r)` where `r` is the rank of `self` .
+        index (Tensor): The index to access `self` on the target axis specified by `dim` whose dtype must be int32
+            or int64. If it is an empty Tensor, no operations is performed and directly returns `self` . Otherwise,
+            its rank must be the same as `self` and the value range of each element must be `[-s, s)`
+            where `s` is the size of `self` along axis `dim` .
+        value (int, float, bool): The data to doing the accumulate or multiply operation with `self` . It can be
+            considered as being broadcasted into a Tensor whose shape and dtype are the same as `self` , and then
+            be regarded as `src` for calculation.
+        reduce (str): Reduce operation, supports ``"add"`` and ``"multiply"`` . When `reduce` is ``"add"`` , `value`
+            is accumulated to `input` base on `index` . When `reduce` is ``"multiply"`` , `value` is multiplied
+            to `input` base on `index` .
+
+    Returns:
+        Tensor, the modified `self` itself.
+
+    Raises:
+        TypeError: If type of `self` , `index` or `value` is unsupported.
+        ValueError: If `reduce` is a str but not ``"add"`` or ``"multiply"`` .
+        RuntimeError: If `dim` is out of the range `[-r, r)` .
+        RuntimeError: If rank of `self` is larger than 8.
+        RuntimeError: If dtype of tensor `self` or `index` is unsupported.
+        RuntimeError: If `index` is not an empty tensor and its rank is different from the rank of `self` .
+        RuntimeError: If there is a dimension `d` that makes `index.size(d) > self.size(d)` .
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import tensor, int64, float32
+        >>> from mindspore.ops import scatter_
+        >>> this_tensor = tensor([[1, 2], [3, 4]], dtype=float32)
+        >>> index = tensor([[0], [1]], dtype=int64)
+        >>> scatter_(this_tensor, 0, index, 3, reduce="multiply")
+        >>> print(this_tensor)
+        [[3., 2.],
+         [9., 4.]]

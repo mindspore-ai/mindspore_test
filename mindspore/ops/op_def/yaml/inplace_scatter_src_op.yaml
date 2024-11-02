@@ -1,0 +1,25 @@
+#operator InplaceScatterSrc
+inplace_scatter_src:
+  args:
+    input:
+      dtype: tensor
+    dim:
+      dtype: int
+      type_cast: tensor
+    index:
+      dtype: tensor
+    src:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True
+    Ascend: InplaceScatterSrcAscend
+  function:
+    disable: True

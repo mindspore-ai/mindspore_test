@@ -19,6 +19,9 @@ from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 from mindspore.ops.composite.multitype_ops._compile_utils import sequence_to_tensor
+from mindspore.ops.auto_generate.gen_ops_prim import (
+    inplace_scatter_src_op, inplace_scatter_src_reduce_op, inplace_scatter_value_op, inplace_scatter_value_reduce_op
+)
 # 1 common import
 
 # 2 common import
@@ -970,7 +973,23 @@ def tensor_triu(input, diagonal=0):
 
 # 150 __eq__
 
-# 151
+# 151 scatter_
+
+def tensor_inplace_scatter_src(input, dim, index, src):
+    return inplace_scatter_src_op(input, dim, index, src)
+
+
+def tensor_inplace_scatter_src_reduce(input, dim, index, src, *, reduce):
+    return inplace_scatter_src_reduce_op(input, dim, index, src, reduce=reduce)
+
+
+def tensor_inplace_scatter_value(input, dim, index, value):
+    return inplace_scatter_value_op(input, dim, index, value)
+
+
+def tensor_inplace_scatter_value_reduce(input, dim, index, value, *, reduce):
+    return inplace_scatter_value_reduce_op(input, dim, index, value, reduce=reduce)
+
 
 # 152
 

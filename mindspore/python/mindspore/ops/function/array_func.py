@@ -137,7 +137,7 @@ new_zeros_ = NewZeros()
 fill_scalar_ = FillScalar()
 fill_tensor_ = FillTensor()
 sort_ext_ = SortExt()
-scatter_ = Scatter()
+scatter_prim = Scatter()
 scatter_value_ = ScatterValue()
 arange_ = Arange()
 chunk_ = Chunk()
@@ -3575,9 +3575,8 @@ def scatter(input, axis, index, src):
         [0. 0. 0. 0. 0.]]
     """
     if isinstance(src, Tensor):
-        return scatter_(input, axis, index, src)
+        return scatter_prim(input, axis, index, src)
     return scatter_value_(input, axis, index, src)
-
 
 def scatter_add_ext(input, dim, index, src):
     """
