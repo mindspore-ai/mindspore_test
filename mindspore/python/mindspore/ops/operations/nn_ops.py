@@ -39,7 +39,8 @@ from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, ReLU, ReL
                              FlashAttentionScore, PromptFlashAttention, Embedding, UpsampleNearest1D, UpsampleNearest2D,
                              UpsampleNearest3D, UpsampleTrilinear3D,
                              UpsampleBilinear2D, UpsampleLinear1D,
-                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink)
+                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink,
+                             SmoothL1Loss)
 from .manually_defined import BatchNorm
 
 
@@ -2349,55 +2350,6 @@ class ApplyMomentum(Primitive):
         self.init_prim_io_names(inputs=['variable', 'accumulation', 'learning_rate', 'gradient', 'momentum'],
                                 outputs=['output'])
         self.add_prim_attr('side_effect_mem', True)
-
-
-class SmoothL1Loss(Primitive):
-    r"""
-    Calculate the smooth L1 loss, and the L1 loss function has robustness.
-
-    Refer to :func:`mindspore.ops.smooth_l1_loss` for more details.
-
-    Args:
-        beta (float, optional): A parameter used to control the point where the function will change between
-            L1 to L2 loss. The value should be greater than zero. Default: ``1.0`` .
-        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
-            ``'sum'`` . Default: ``'none'`` .
-
-            - ``'none'``: no reduction will be applied.
-            - ``'mean'``: compute and return the mean of elements in the output.
-            - ``'sum'``: the output elements will be summed.
-
-    Inputs:
-        - **logits** (Tensor) - Input Tensor of any dimension. Data type must be float16, float32 or float64.
-        - **labels** (Tensor) - Ground truth data, has the same shape and dtype as the `logits`.
-
-    Outputs:
-        Tensor, loss float tensor, same shape and dtype as the `logits`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> loss = ops.SmoothL1Loss()
-        >>> logits = Tensor(np.array([1, 2, 3]), mindspore.float32)
-        >>> labels = Tensor(np.array([1, 2, 2]), mindspore.float32)
-        >>> output = loss(logits, labels)
-        >>> print(output)
-        [0.  0.  0.5]
-    """
-
-    @prim_attr_register
-    def __init__(self, beta=1.0, reduction='none'):
-        """Initialize SmoothL1Loss."""
-        validator.check_value_type('beta', beta, [float], self.name)
-        validator.check('beta', beta, '', 0, validator.GT, self.name)
-        validator.check_string(
-            reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
-        self.add_prim_attr('sigma', self.beta)
-        self.init_prim_io_names(inputs=['prediction', 'target'], outputs=['output'])
 
 
 class MultiMarginLoss(Primitive):

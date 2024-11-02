@@ -60,7 +60,7 @@ class SmoothL1LossGradGpuKernelMod : public NativeGpuKernelMod {
   float beta_{1.0};
   TypeId dtype_{kTypeUnknown};
   int64_t tensor_size_{1};
-  SmoothL1LossReductionMode reduction_{SmoothL1LossReductionMode::NONE};
+  ReductionMode reduction_{ReductionMode::kMean};
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -21,12 +21,10 @@
 #include <algorithm>
 #include <utility>
 #include "abstract/utils.h"
-#include "mindspore/ops/infer/smooth_l1_loss.h"
 
 namespace {
-constexpr size_t kSmoothL1LossInputsNum = 2;
+constexpr size_t kSmoothL1LossInputsNum = 4;
 constexpr size_t kSmoothL1LossOutputsNum = 1;
-constexpr float epsilon = 1e-6;
 }  // namespace
 namespace mindspore {
 namespace kernel {
@@ -35,24 +33,6 @@ bool SmoothL1LossGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (inputs.size() != kSmoothL1LossInputsNum || outputs.size() != kSmoothL1LossOutputsNum) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', input and output size must be " << kSmoothL1LossInputsNum << " and "
                   << kSmoothL1LossOutputsNum << ", but got " << inputs.size() << " and " << outputs.size();
-    return false;
-  }
-
-  beta_ = GetValue<float>(primitive_->GetAttr("beta"));
-  if (beta_ <= epsilon) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << ", the 'beta' can not be 0.";
-    return false;
-  }
-
-  std::string reduction = GetValue<std::string>(primitive_->GetAttr("reduction"));
-  if (reduction == "none") {
-    reduction_ = SmoothL1LossReductionMode::NONE;
-  } else if (reduction == "mean") {
-    reduction_ = SmoothL1LossReductionMode::MEAN;
-  } else if (reduction == "sum") {
-    reduction_ = SmoothL1LossReductionMode::SUM;
-  } else {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', reduction: " << reduction << " not support now.";
     return false;
   }
 
@@ -74,6 +54,19 @@ int SmoothL1LossGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   auto predict_shape = inputs[kIndex0]->GetShapeVector();
   auto target_shape = inputs[kIndex1]->GetShapeVector();
+  beta_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  if (beta_ <= 0.0) {
+    MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', the values for beta should greater than 0"
+                               << ", but got " << beta_ << ".";
+  }
+  auto reduction = static_cast<Reduction>(inputs[kIndex3]->GetValueWithCheck<int64_t>());
+  if (reduction == Reduction::NONE) {
+    reduction_ = ReductionMode::kNone;
+  } else if (reduction == Reduction::MEAN) {
+    reduction_ = ReductionMode::kMean;
+  } else {
+    reduction_ = ReductionMode::kSum;
+  }
   if (predict_shape != target_shape) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', the predict_shape should be same as target_shape, but got predict_shape: " << predict_shape
@@ -83,7 +76,7 @@ int SmoothL1LossGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   tensor_size_ = std::accumulate(predict_shape.begin(), predict_shape.end(), int64_t(1), std::multiplies<int64_t>());
 
   // malloc double space for tmp_loss, prevents float overflow.
-  if (reduction_ != SmoothL1LossReductionMode::NONE) {
+  if (reduction_ != ReductionMode::kNone) {
     this->workspace_size_list_.clear();
     this->workspace_size_list_.push_back(sizeof(double));
   }
@@ -99,7 +92,7 @@ bool SmoothL1LossGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
   const auto *predict_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
   const auto *target_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
   T *result_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  if (this->reduction_ != SmoothL1LossReductionMode::NONE) {
+  if (this->reduction_ != ReductionMode::kNone) {
     double *tmp_result_addr = reinterpret_cast<double *>(workspace[0]->device_ptr());
     CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaMemsetAsync(workspace[0]->device_ptr(), false, workspace[0]->size(),
                                                        reinterpret_cast<cudaStream_t>(stream_ptr)),
@@ -116,8 +109,14 @@ bool SmoothL1LossGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &i
   return true;
 }
 
-#define SMOOTH_L1_LOSS_GPU_REG(MS_T, T) \
-  KernelAttr().AddInputAttr(MS_T).AddInputAttr(MS_T).AddOutputAttr(MS_T), &SmoothL1LossGpuKernelMod::LaunchKernel<T>
+#define SMOOTH_L1_LOSS_GPU_REG(MS_T, T)                  \
+  KernelAttr()                                           \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+    .AddOutputAttr(MS_T),                                \
+    &SmoothL1LossGpuKernelMod::LaunchKernel<T>
 
 std::vector<std::pair<KernelAttr, SmoothL1LossGpuKernelMod::SmoothL1LossFunc>> SmoothL1LossGpuKernelMod::func_list_ = {
   {SMOOTH_L1_LOSS_GPU_REG(kNumberTypeFloat16, half)},

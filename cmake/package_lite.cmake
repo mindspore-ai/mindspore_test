@@ -103,7 +103,6 @@ function(__install_white_list_ops)
             ${TOP_DIR}/mindspore/ops/infer/sgd.h
             ${TOP_DIR}/mindspore/ops/infer/sigmoid_cross_entropy_with_logits.h
             ${TOP_DIR}/mindspore/ops/infer/skip_gram.h
-            ${TOP_DIR}/mindspore/ops/infer/smooth_l1_loss.h
             ${TOP_DIR}/mindspore/ops/infer/softmax_cross_entropy_with_logits.h
             ${TOP_DIR}/mindspore/ops/infer/space_to_batch.h
             ${TOP_DIR}/mindspore/ops/infer/space_to_batch_nd.h

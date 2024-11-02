@@ -21,12 +21,11 @@
 #include <map>
 #include <functional>
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "mindspore/ops/infer/smooth_l1_loss.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kSmoothL1LossInputsNum = 2;
+constexpr size_t kSmoothL1LossInputsNum = 4;
 constexpr size_t kSmoothL1LossOutputsNum = 1;
 }  // namespace
 
@@ -61,7 +60,7 @@ bool SmoothL1LossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
   const auto *predict_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
   const auto *target_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
   T *result_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  if (reduction_ == ReductionType::NONE) {
+  if (reduction_ == Reduction::NONE) {
     CalElements(predict_addr, target_addr, result_addr);
     return true;
   }
@@ -74,7 +73,7 @@ bool SmoothL1LossCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
     tmp_sum += static_cast<double>(workspace_addr[i]);
   }
   result_addr[0] = static_cast<T>(tmp_sum);
-  if (reduction_ == ReductionType::SUM) {
+  if (reduction_ == Reduction::REDUCTION_SUM) {
     return true;
   }
 
@@ -90,24 +89,6 @@ bool SmoothL1LossCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
 
-  beta_ = GetValue<float>(primitive_->GetAttr(ops::kBeta));
-  if (beta_ < 0.0) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << ", the 'beta' can not be less than 0.";
-    return false;
-  }
-
-  std::string reduction = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
-  if (reduction == "none") {
-    reduction_ = ReductionType::NONE;
-  } else if (reduction == "mean") {
-    reduction_ = ReductionType::MEAN;
-  } else if (reduction == "sum") {
-    reduction_ = ReductionType::SUM;
-  } else {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', reduction: " << reduction << " not support now.";
-    return false;
-  }
-
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
     return false;
   }
@@ -120,8 +101,14 @@ int SmoothL1LossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (auto ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
     return ret;
   }
+  beta_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  if (beta_ <= 0.0) {
+    MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', the values for beta should greater than 0"
+                               << ", but got " << beta_ << ".";
+  }
+  reduction_ = static_cast<Reduction>(inputs[kIndex3]->GetValueWithCheck<int64_t>());
   // when reduction is not set to none, we need extra space to record the result, with the same size with predict_size.
-  if (reduction_ != ReductionType::NONE) {
+  if (reduction_ != Reduction::NONE) {
     this->workspace_size_list_.push_back(inputs[0]->size());
   }
 
@@ -137,8 +124,14 @@ int SmoothL1LossCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   return KRET_OK;
 }
 
-#define SMOOTH_L1_LOSS_CPU_REG(MS_T, T) \
-  KernelAttr().AddInputAttr(MS_T).AddInputAttr(MS_T).AddOutputAttr(MS_T), &SmoothL1LossCpuKernelMod::LaunchKernel<T>
+#define SMOOTH_L1_LOSS_CPU_REG(MS_T, T)                  \
+  KernelAttr()                                           \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+    .AddOutputAttr(MS_T),                                \
+    &SmoothL1LossCpuKernelMod::LaunchKernel<T>
 
 const std::vector<std::pair<KernelAttr, SmoothL1LossCpuKernelMod::KernelRunFunc>>
   &SmoothL1LossCpuKernelMod::GetFuncList() const {

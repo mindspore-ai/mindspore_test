@@ -24,6 +24,7 @@
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/smooth_l1_loss_impl.cuh"
+
 namespace mindspore {
 namespace kernel {
 constexpr auto kUnKnown = "UnKnown";
@@ -60,7 +61,7 @@ class SmoothL1LossGpuKernelMod : public NativeGpuKernelMod {
   float beta_{1.0};
   TypeId dtype_{kTypeUnknown};
   int64_t tensor_size_{1};
-  SmoothL1LossReductionMode reduction_{SmoothL1LossReductionMode::NONE};
+  ReductionMode reduction_{ReductionMode::kMean};
 };
 }  // namespace kernel
 }  // namespace mindspore

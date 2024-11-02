@@ -1,0 +1,27 @@
+#SmoothL1LossGrad operator
+smooth_l1_loss_grad:
+    args:
+        prediction:
+            dtype: tensor
+        target:
+            dtype: tensor
+        dout:
+            dtype: tensor
+        beta:
+            dtype: float
+            default: 1.0
+            type_cast: int, bool
+            prim_init: True
+        reduction:
+            dtype: int
+            default: "'none'"
+            prim_init: True
+            arg_handler: str_to_enum
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: SmoothL1LossGradAscend

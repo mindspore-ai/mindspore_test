@@ -20,10 +20,9 @@
 #include <functional>
 #include <algorithm>
 #include <utility>
-#include "mindspore/ops/infer/grad/smooth_l1_loss_grad.h"
 
 namespace {
-constexpr size_t kSmoothL1LossGradInputsNum = 3;
+constexpr size_t kSmoothL1LossGradInputsNum = 5;
 constexpr size_t kSmoothL1LossGradOutputsNum = 1;
 }  // namespace
 namespace mindspore {
@@ -34,24 +33,6 @@ bool SmoothL1LossGradGpuKernelMod::Init(const std::vector<KernelTensor *> &input
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', input and output size must be " << kSmoothL1LossGradInputsNum
                   << " and " << kSmoothL1LossGradOutputsNum << ", but got " << inputs.size() << " and "
                   << outputs.size();
-    return false;
-  }
-
-  beta_ = GetValue<float>(primitive_->GetAttr("beta"));
-  if (beta_ == 0.0) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << ", the 'beta' can not be 0.";
-    return false;
-  }
-
-  std::string reduction = GetValue<std::string>(primitive_->GetAttr("reduction"));
-  if (reduction == "none") {
-    reduction_ = SmoothL1LossReductionMode::NONE;
-  } else if (reduction == "mean") {
-    reduction_ = SmoothL1LossReductionMode::MEAN;
-  } else if (reduction == "sum") {
-    reduction_ = SmoothL1LossReductionMode::SUM;
-  } else {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', reduction: " << reduction << " not support now.";
     return false;
   }
 
@@ -73,6 +54,19 @@ int SmoothL1LossGradGpuKernelMod::Resize(const std::vector<KernelTensor *> &inpu
 
   auto predict_shape = inputs[kIndex0]->GetShapeVector();
   auto target_shape = inputs[kIndex1]->GetShapeVector();
+  beta_ = inputs[kIndex3]->GetValueWithCheck<float>();
+  if (beta_ <= 0.0) {
+    MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', the values for beta should greater than 0"
+                               << ", but got " << beta_ << ".";
+  }
+  auto reduction = static_cast<Reduction>(inputs[kIndex4]->GetValueWithCheck<int64_t>());
+  if (reduction == Reduction::NONE) {
+    reduction_ = ReductionMode::kNone;
+  } else if (reduction == Reduction::MEAN) {
+    reduction_ = ReductionMode::kMean;
+  } else {
+    reduction_ = ReductionMode::kSum;
+  }
   if (predict_shape != target_shape) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', the predict_shape should be same as target_shape, but got predict_shape: " << predict_shape
@@ -100,8 +94,14 @@ bool SmoothL1LossGradGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *
   return true;
 }
 
-#define SMOOTH_L1_LOSS_GRAD_GPU_REG(MS_T, T)                                                 \
-  KernelAttr().AddInputAttr(MS_T).AddInputAttr(MS_T).AddInputAttr(MS_T).AddOutputAttr(MS_T), \
+#define SMOOTH_L1_LOSS_GRAD_GPU_REG(MS_T, T)             \
+  KernelAttr()                                           \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+    .AddOutputAttr(MS_T),                                \
     &SmoothL1LossGradGpuKernelMod::LaunchKernel<T>
 
 std::vector<std::pair<KernelAttr, SmoothL1LossGradGpuKernelMod::SmoothL1LossGradFunc>>

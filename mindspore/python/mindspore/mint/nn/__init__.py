@@ -523,6 +523,27 @@ class MSELoss(Cell):
         return out
 
 
+class SmoothL1Loss(Cell):
+    r"""
+    Computes smooth L1 loss, a robust L1 loss.
+
+    Refer to :func:`mindspore.mint.nn.functional.smooth_l1_loss` for more details.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+
+    def __init__(self, reduction='mean', beta=1.0):
+        super(SmoothL1Loss, self).__init__()
+        self.smooth_l1_loss = ops.function.smooth_l1_loss
+        self.reduction = reduction
+        self.beta = beta
+
+    def construct(self, input, target):
+        out = self.smooth_l1_loss(input, target, self.beta, self.reduction)
+        return out
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
@@ -744,6 +765,9 @@ __all__ = [
     # 258
     'MSELoss',
     # 259
+
+    # 294
+    'SmoothL1Loss',
 
     # 556
     'LogSigmoid',

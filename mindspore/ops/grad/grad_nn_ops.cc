@@ -1326,23 +1326,18 @@ REG_BPROP_BUILDER("OneHotExt").SetUnusedInputs({i0, i1, i2, i3, i5, i6}).SetBody
           ib->OutZeros(off_value), ib->OutZeros(axis)};
 });
 
-REG_BPROP_BUILDER("SmoothL1Loss").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SmoothL1Loss").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   auto prediction = ib->GetInput(kIndex0);
   auto target = ib->GetInput(kIndex1);
-  auto dout = ib->GetInput(kIndex3);
-  auto dx =
-    prediction->need_compute_grad_out()
-      ? ib->Emit(
-          "SmoothL1LossGrad", {prediction, target, dout},
-          {{"beta", ib->GetAttr("beta")}, {"sigma", ib->GetAttr("beta")}, {"reduction", ib->GetAttr("reduction")}})
-      : ib->OutZeros(prediction);
-  auto dy =
-    target->need_compute_grad_out()
-      ? ib->Emit(
-          "SmoothL1LossGrad", {target, prediction, dout},
-          {{"beta", ib->GetAttr("beta")}, {"sigma", ib->GetAttr("beta")}, {"reduction", ib->GetAttr("reduction")}})
-      : ib->OutZeros(target);
-  return {dx, dy};
+  auto beta = ib->GetInput(kIndex2);
+  auto reduction = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto dx = prediction->need_compute_grad_out()
+              ? ib->Emit("SmoothL1LossGrad", {prediction, target, dout, beta, reduction})
+              : ib->OutZeros(prediction);
+  auto dy = target->need_compute_grad_out() ? ib->Emit("SmoothL1LossGrad", {target, prediction, dout, beta, reduction})
+                                            : ib->OutZeros(target);
+  return {dx, dy, ib->OutZeros(beta), ib->OutZeros(reduction)};
 });
 
 REG_BPROP_BUILDER("L1LossExt").SetUnusedInputs({i3}).SetBody((BODYFUNC(ib) {

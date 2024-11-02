@@ -50,7 +50,6 @@ class SmoothL1LossGradCpuKernelMod : public NativeCpuKernelMod, public MatchKern
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
-  enum ReductionType { NONE = 0, MEAN = 1, SUM = 2, INVALID_MODE = 255 };
 
   template <typename T>
   bool CalNoReduce(const T *predict_addr, const T *target_addr, const T *dloss_addr, T *result_addr);
@@ -64,7 +63,7 @@ class SmoothL1LossGradCpuKernelMod : public NativeCpuKernelMod, public MatchKern
   float beta_{1.0};
   TypeId dtype_{kTypeUnknown};
   int64_t tensor_size_{1};
-  ReductionType reduction_{INVALID_MODE};
+  Reduction reduction_{Reduction::MEAN};
 };
 }  // namespace kernel
 }  // namespace mindspore

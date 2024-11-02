@@ -453,6 +453,98 @@ def one_hot(tensor, num_classes=-1):
     return ops.function.array_func.one_hot_ext(tensor, num_classes)
 
 
+def smooth_l1_loss(input, target, reduction='mean', beta=1.0):
+    r"""
+    Computes smooth L1 loss, a robust L1 loss.
+
+    SmoothL1Loss is a Loss similar to MSELoss but less sensitive to outliers as described in the
+    `Fast R-CNN <https://arxiv.org/abs/1504.08083>`_ by Ross Girshick.
+
+    Given two inputs :math:`x,\  y` of length :math:`N`, the SmoothL1Loss can be described
+    as follows:
+
+    .. math::
+        L_{i} =
+        \begin{cases}
+        \frac{0.5 (x_i - y_i)^{2}}{\beta}, & \text{if } |x_i - y_i| < \beta \\
+        |x_i - y_i| - 0.5 * \beta, & \text{otherwise. }
+        \end{cases}
+
+    If `reduction` is not `none`, then:
+
+    .. math::
+        L =
+        \begin{cases}
+            \operatorname{mean}(L_{i}), &  \text{if reduction} = \text{'mean';}\\
+            \operatorname{sum}(L_{i}),  &  \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    Here :math:`\text{beta}` controls the point where the loss function changes from quadratic to linear.
+    :math:`\text{beta} \geq 0` , its default value is ``1.0`` . :math:`N` is the batch size.
+
+    .. warning::
+        This is an experimental optimizer API that is subject to change.
+
+    Note:
+        - Arg `input` and `target` comply with the implicit type conversion rules to make the data types consistent.
+          If they have different data types, the lower precision data type will be converted to relatively the
+          highest precision data type.
+
+    Args:
+        input (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            Supported dtypes:
+                Ascend: float16, float32, bfloat16.
+        target (Tensor): Ground truth data, tensor of shape :math:`(N, *)`, same shape as the `input`.
+            Supported dtypes:
+                Ascend: float16, float32, bfloat16.
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute the mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+        beta (number, optional): A parameter used to control the point where the function will change between
+            L1 to L2 loss. The value should be greater than or equal to zero. Default: ``1.0`` .
+
+    Returns:
+        Tensor, the data type is the same as `input`.
+        If `reduction` is ``'none'``, then output is a tensor with the same shape as `input`.
+        Otherwise, the shape of output tensor is :math:`()`.
+
+    Raises:
+        TypeError: If `input` or `target` is not a Tensor.
+        RuntimeError: If dtype of `input` or `target` is not one of float16, float32, bfloat16.
+        ValueError: If shape of `input` is not the same as `target`.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
+        RuntimeError: If `beta` is not a float, int or bool.
+        RuntimeError: If `beta` is less than 0.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([2, 2, 3]), mindspore.float32)
+        >>> target = Tensor(np.array([2, 2, 2]), mindspore.float32)
+        >>> beta = 1.0
+        >>> reduction_1 = 'none'
+        >>> output = ops.nn.functional.smooth_l1_loss(input, target, reduction_1, beta)
+        >>> print(output)
+        [0.  0.  0.5]
+        >>> reduction_2 = 'mean'
+        >>> output = ops.nn.functional.smooth_l1_loss(input, target, reduction_2, beta)
+        >>> print(output)
+        0.16666667
+        >>> reduction_3 = 'sum'
+        >>> output = ops.nn.functional.smooth_l1_loss(input, target, reduction_3, beta)
+        >>> print(output)
+        0.5
+    """
+    return ops.function.smooth_l1_loss(input, target, beta, reduction)
+
+
 __all__ = [
     'conv_transpose2d',
     'max_pool2d',

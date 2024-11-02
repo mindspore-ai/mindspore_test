@@ -21,12 +21,11 @@
 #include <map>
 #include <functional>
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "mindspore/ops/infer/grad/smooth_l1_loss_grad.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t kSmoothL1LossGradInputsNum = 3;
+constexpr size_t kSmoothL1LossGradInputsNum = 5;
 constexpr size_t kSmoothL1LossGradOutputsNum = 1;
 }  // namespace
 
@@ -36,24 +35,6 @@ bool SmoothL1LossGradCpuKernelMod::Init(const std::vector<KernelTensor *> &input
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', input and output size must be " << kSmoothL1LossGradInputsNum
                   << " and " << kSmoothL1LossGradOutputsNum << ", but got " << inputs.size() << " and "
                   << outputs.size();
-    return false;
-  }
-
-  beta_ = GetValue<float>(primitive_->GetAttr(ops::kBeta));
-  if (std::equal_to<float>()(beta_, 0)) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << ", the 'beta' can not be 0.";
-    return false;
-  }
-
-  std::string reduction = GetValue<std::string>(primitive_->GetAttr(ops::kReduction));
-  if (reduction == "none") {
-    reduction_ = ReductionType::NONE;
-  } else if (reduction == "mean") {
-    reduction_ = ReductionType::MEAN;
-  } else if (reduction == "sum") {
-    reduction_ = ReductionType::SUM;
-  } else {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', reduction: " << reduction << " not support now.";
     return false;
   }
 
@@ -72,6 +53,12 @@ int SmoothL1LossGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inpu
 
   auto predict_shape = inputs[kIndex0]->GetShapeVector();
   auto target_shape = inputs[kIndex1]->GetShapeVector();
+  beta_ = inputs[kIndex3]->GetValueWithCheck<float>();
+  if (beta_ <= 0.0) {
+    MS_EXCEPTION(RuntimeError) << "For '" << kernel_name_ << "', the values for beta should greater than 0"
+                               << ", but got " << beta_ << ".";
+  }
+  reduction_ = static_cast<Reduction>(inputs[kIndex4]->GetValueWithCheck<int64_t>());
   if (predict_shape != target_shape) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', the predict_shape should be same as target_shape, but got predict_shape: " << predict_shape
@@ -154,11 +141,11 @@ bool SmoothL1LossGradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kernel
   const auto *dloss_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
   auto *result_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
   switch (reduction_) {
-    case ReductionType::NONE:
+    case Reduction::NONE:
       return CalNoReduce(predict_addr, target_addr, dloss_addr, result_addr);
-    case ReductionType::SUM:
+    case Reduction::REDUCTION_SUM:
       return CalSum(predict_addr, target_addr, dloss_addr, result_addr);
-    case ReductionType::MEAN:
+    case Reduction::MEAN:
       return CalMean(predict_addr, target_addr, dloss_addr, result_addr);
 
     default:
@@ -166,8 +153,14 @@ bool SmoothL1LossGradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kernel
   }
 }
 
-#define SMOOTH_L1_LOSS_GRAD_CPU_REG(MS_T, T)                                                 \
-  KernelAttr().AddInputAttr(MS_T).AddInputAttr(MS_T).AddInputAttr(MS_T).AddOutputAttr(MS_T), \
+#define SMOOTH_L1_LOSS_GRAD_CPU_REG(MS_T, T)             \
+  KernelAttr()                                           \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(MS_T)                                  \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)   \
+    .AddOutputAttr(MS_T),                                \
     &SmoothL1LossGradCpuKernelMod::LaunchKernel<T>
 
 const std::vector<std::pair<KernelAttr, SmoothL1LossGradCpuKernelMod::KernelRunFunc>>
