@@ -556,6 +556,53 @@ def all(input, dim=None, keepdim=False):
     return ops.function.math_func.all(input, dim, keepdim)
 
 
+def allclose(input, other, rtol=1e-05, atol=1e-08, equal_nan=False):
+    """
+    Returns a new Tensor with boolean elements representing if each element of `input`
+    is “close” to the corresponding element of `other`. Closeness is defined as:
+
+    .. math::
+        |input-other| ≤ atol + rtol × |other|
+
+    .. warning:
+            This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): First tensor to compare.
+            Support dtype: float16, float32, float64, int8, int16, int32, int64 and uint8.
+            On Ascend, more dtypes are support: bool and bfloat16.
+        other (Tensor): Second tensor to compare. Dtype must be same as `input`.
+        rtol (Union[float, int, bool], optional): Relative tolerance. Default: ``1e-05`` .
+        atol (Union[float, int, bool], optional): Absolute tolerance. Default: ``1e-08`` .
+        equal_nan (bool, optional): If ``True`` , then two NaNs will be considered equal. Default: ``False``.
+
+    Returns:
+        A bool Scalar.
+
+    Raises:
+        TypeError: `input` or `other` is not Tensor.
+        TypeError: `input` or `other` dtype is not support.
+        TypeError: `atol` or `rtol` is not float, int or bool.
+        TypeError: `equal_nan` is not bool.
+        TypeError: `input` and `other` have different dtypes.
+        ValueError: `input` and `other` cannot broadcast.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([1.3, 2.1, 3.2, 4.1, 5.1]), mindspore.float16)
+        >>> other = Tensor(np.array([1.3, 3.3, 2.3, 3.1, 5.1]), mindspore.float16)
+        >>> output = mint.allclose(input, other)
+        >>> print(output)
+        False
+    """
+    return isclose(input, other, rtol, atol, equal_nan).all().item()
+
+
 def cat(tensors, dim=0):
     r"""
     Connect input tensors along with the given dimension.
@@ -2021,6 +2068,9 @@ __all__ = [
 
     # 305
     'triu',
+
+    # 406
+    'allclose',
 
     # 520
     'bincount',
