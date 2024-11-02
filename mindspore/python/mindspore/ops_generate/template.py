@@ -126,6 +126,23 @@ PYBOOST_COMM_FUNCTION_TEMPLATE = Template.load_from_file(
 PYBOOST_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_function_header.tpl'))
 
+PYBOOST_OVERLOAD_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(
+        WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_overload_functions_cc.tpl'))
+
+PYBOOST_MINT_CLASS_DEF = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_mint_class_def.tpl'))
+
+PYBOOST_OVERLOAD_MINT_CLASS_DEF = Template.load_from_file(
+    os.path.join(
+        WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_overload_mint_class_def.tpl'))
+
+# template path need to be moved
+FUNCTIONAL_OVERLOAD_PY_TEMPLATE = Template.load_from_file(
+    os.path.join(
+        WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/functional_overload_py.tpl')
+)
+
 TENSOR_FUNC_CC_REG = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_cc_reg.tpl'))
 

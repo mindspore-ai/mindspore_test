@@ -182,6 +182,7 @@ void RegModule(py::module *m) {
   mindspore::hal::RegUtils(m);
   mindspore::pynative::RegPyNativeExecutor(m);
   mindspore::pynative::RegisterPyBoostFunction(m);
+  mindspore::pynative::RegisterFunctional(m);
   mindspore::pijit::RegPIJitInterface(m);
   mindspore::prim::RegCompositeOpsGroup(m);
   mindspore::profiler::RegProfilerManager(m);

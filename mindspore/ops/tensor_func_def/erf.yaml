@@ -4,3 +4,5 @@ erf:
   Ascend: pyboost
   CPU: pyboost
   GPU: pyboost
+  tensor_method: True
+  mint_func: False

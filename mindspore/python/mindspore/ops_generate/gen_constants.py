@@ -65,6 +65,7 @@ MS_OP_DEF_YAML_PATH = "mindspore/ops/op_def/yaml"
 MS_OP_DEPRECATED_DEF_YAML_PATH = "mindspore/ops/op_def/deprecated"
 MS_TENSOR_YAML_PATH = "mindspore/ops/tensor_func_def"
 MS_TENSOR_DOC_YAML_PATH = "mindspore/ops/tensor_func_def/doc"
+MS_MINT_FUNC_PATH = "mindspore/python/mindspore/mint"
 PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"
 PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/function/auto_generate"
@@ -82,7 +83,7 @@ ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}
 CLASS_KEYS = {'name', 'disable'}
 FUNCTION_KEYS = {'name', 'disable'}
 DISPATCH_KEYS = {'enable', 'is_comm_op', 'Ascend', 'GPU', 'CPU'}
-TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'alias', 'Ascend', 'GPU', 'CPU'}
+TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'alias', 'Ascend', 'GPU', 'CPU', 'mint_func', 'tensor_method'}
 
 # infer
 MS_OPS_FUNC_IMPL_PATH = "mindspore/ops/infer/ops_func_impl"

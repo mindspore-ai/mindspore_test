@@ -278,9 +278,6 @@ def get_pyboost_name(operator_name):
     return 'pyboost_' + operator_name
 
 
-
-
-
 def get_const_number_convert(arg_name, op_arg):
     cpp_type = number_input_to_cpp_type(op_arg.arg_dtype)
     if op_arg.is_type_id:
@@ -308,6 +305,17 @@ def is_pyboost_enable(operator_data):
         if enable:
             return True
     return False
+
+
+def format_func_api_name(func_api_name):
+    """
+    Generates formatted string for function names, e.g., add_ext -> AddExt.
+    """
+    if '_' in func_api_name:
+        formatted_func_api_name = ''.join([name.capitalize() for name in func_api_name.split('_')])
+    else:
+        formatted_func_api_name = func_api_name.capitalize()
+    return formatted_func_api_name
 
 
 def convert_types(inputs):

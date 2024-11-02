@@ -53,7 +53,7 @@ py::object StubTensorConverter::ToPython(const py::object &object) {
   return impl_->Convert(object);
 }
 
-inline py::object ToPython(const py::object &object) { return StubTensorConverter::GetInstance().ToPython(object); }
+py::object ToPython(const py::object &object) { return StubTensorConverter::GetInstance().ToPython(object); }
 
 ${func_call_body}
 

@@ -3038,7 +3038,7 @@ EvalResultPtr FunctionalEvaluator::EvalPrim(const AnalysisEnginePtr &engine, con
     constexpr size_t index_partial_data = 2;
     (void)std::transform(op_cnode->weak_inputs().cbegin() + index_partial_data, op_cnode->weak_inputs().cend(),
                          std::back_inserter(inputs_list), ConvertWeakNode);
-  } else if (IsGetAttrNode(op_node)) {
+  } else if (is_method_ && IsGetAttrNode(op_node)) {
     auto op_cnode = op_node->cast<CNodePtr>();
     (void)inputs_list.emplace_back(op_cnode->input(index_data));
   }

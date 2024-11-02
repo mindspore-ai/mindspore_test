@@ -47,15 +47,16 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_p
         op_protos_dict[op_proto.op_name] = op_proto
     for deprecated_op_proto in deprecated_op_protos:
         op_protos_dict[deprecated_op_proto.op_name] = deprecated_op_proto
-    func_protos = defaultdict(list)
-    alias_func_mapping = defaultdict(list)
+    tensor_method_protos = defaultdict(list)
+    mint_func_protos = defaultdict(list)
+    alias_api_mapping = defaultdict(list)
     for func_name, tensor_func_data in tensor_func_yaml_data.items():
         func_data_list = [tensor_func_data] if isinstance(tensor_func_data, dict) else tensor_func_data
         for func_data in func_data_list:
             func_keys = func_data.keys()
             check_tensor_func_yaml_keys(func_name, set(func_keys), K.TENSOR_FUNC_KEYS)
             if 'alias' in func_data:
-                alias_func_mapping[func_data['alias']].append(func_name)
+                alias_api_mapping[func_data['alias']].append(func_name)
                 continue
             op_name = _get_op_name_from_op_yaml(func_name, func_data)
             op_proto = op_protos_dict.get(op_name, None)
@@ -69,14 +70,25 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_p
             ascend = func_data.get('Ascend', 'aclnn')
             gpu = func_data.get('GPU', 'aclnn')
             cpu = func_data.get('CPU', 'aclnn')
-            tensor_func_proto = TensorFuncProto(func_name=func_name,
-                                                op_proto=op_proto,
-                                                py_method=py_method,
-                                                ascend=ascend,
-                                                gpu=gpu,
-                                                cpu=cpu)
-            func_protos[func_name].append(tensor_func_proto)
-    return func_protos, alias_func_mapping
+            tensor_method = func_data.get('tensor_method', True)
+            mint_func = func_data.get('mint_func', False)
+            if tensor_method:
+                tensor_method_proto = TensorFuncProto(func_name=func_name,
+                                                      op_proto=op_proto,
+                                                      py_method=py_method,
+                                                      ascend=ascend,
+                                                      gpu=gpu,
+                                                      cpu=cpu)
+                tensor_method_protos[func_name].append(tensor_method_proto)
+            if mint_func:
+                mint_func_proto = TensorFuncProto(func_name=func_name,
+                                                  op_proto=op_proto,
+                                                  py_method=py_method,
+                                                  ascend=ascend,
+                                                  gpu=gpu,
+                                                  cpu=cpu)
+                mint_func_protos[func_name].append(mint_func_proto)
+    return tensor_method_protos, mint_func_protos, alias_api_mapping
 
 
 def _get_op_name_from_op_yaml(func_name: str, func_data: dict) -> str:
@@ -98,3 +110,29 @@ def check_tensor_func_yaml_keys(func_name: str, input_keys: set, compare_keys: s
     if diff_keys:
         raise TypeError(
             f'The definition of keys in yaml has faults, func name is {func_name}, wrong keys are {diff_keys}.')
+
+
+def categorize_func_data(func_protos_data):
+    """
+    Categorizes function prototypes into single, overloaded function prototypes.
+
+    Args:
+        func_protos_data (dict): Dictionary where keys are function API names and values are lists of
+                                 function prototypes associated with each API.
+
+    Returns:
+        tuple:
+            - single_op_func_data (dict): Function prototypes for operations with a single definition.
+            - overload_op_func_data (dict): Function prototypes for operations with overloaded definitions.
+    """
+    single_op_func_data = {}
+    overload_op_func_data = {}
+    for func_api_name, func_protos in func_protos_data.items():
+        if len(func_protos) == 1:
+            func_name = func_protos[0].func_name
+            if func_name not in single_op_func_data:
+                single_op_func_data[func_name] = func_protos[0]
+        if len(func_protos) > 1:
+            overload_op_func_data[func_api_name] = func_protos
+
+    return single_op_func_data, overload_op_func_data

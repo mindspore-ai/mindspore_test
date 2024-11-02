@@ -33,6 +33,7 @@ from lite_ops_cpp_generator import LiteOpsCcGenerator, LiteOpsHGenerator
 from ops_name_h_generator import OpsNameHGenerator
 from functional_map_cpp_generator import FunctionalMapCppGenerator
 from add_tensor_docs_generator import AddTensorDocsGenerator
+from functional_overload_py_generator import FunctionalOverloadPyGenerator
 
 from op_proto import OpProto
 from tensor_func_proto import load_func_protos_from_yaml
@@ -154,19 +155,24 @@ def generate_arg_handler_files(work_path):
     check_change_and_replace_file(dst_arg_dtype_cast_path, tmp_arg_dtype_cast_path)
 
 
-def gen_tensor_func_code(work_path, func_protos, alias_func_mapping):
+def gen_tensor_func_code(work_path, func_protos, alias_api_mapping):
     generator = TensorFuncRegCppGenerator()
-    generator.generate(work_path, func_protos, alias_func_mapping)
+    generator.generate(work_path, func_protos, alias_api_mapping)
 
 
-def gen_functional_map_code(work_path, func_protos, alias_func_mapping):
+def gen_functional_map_code(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping):
     generator = FunctionalMapCppGenerator()
-    generator.generate(work_path, func_protos, alias_func_mapping)
+    generator.generate(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping)
 
 
 def gen_tensor_docs_code(work_path, tensor_docs_data):
     generator = AddTensorDocsGenerator()
     generator.generate(work_path, tensor_docs_data)
+
+
+def gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping):
+    generator = FunctionalOverloadPyGenerator()
+    generator.generate(work_path, mint_func_protos, alias_api_mapping)
 
 
 def main():
@@ -193,9 +199,10 @@ def main():
 
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
     deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
-    func_protos, alias_func_mapping = load_func_protos_from_yaml(tensor_yaml_dict, op_protos, deprecated_op_protos)
+    tensor_method_protos, mint_func_protos, alias_api_mapping \
+        = load_func_protos_from_yaml(tensor_yaml_dict, op_protos, deprecated_op_protos)
     # for generate tensor method deprecated in graph mode
-    op_protos_with_deprecated = get_tensor_op_protos_with_deprecated(func_protos, op_protos)
+    op_protos_with_deprecated = get_tensor_op_protos_with_deprecated(tensor_method_protos, op_protos)
 
     # generate ops python files
     generate_ops_py_files(work_path, op_protos, doc_yaml_dict, "gen")
@@ -204,15 +211,17 @@ def main():
     # generate create prim instance helper file
     generate_create_instance_helper_file(work_path, op_protos_with_deprecated)
     # generate pyboost code
-    gen_pyboost_code(work_path, op_protos, doc_yaml_dict, func_protos)
+    gen_pyboost_code(work_path, op_protos, doc_yaml_dict, tensor_method_protos, mint_func_protos, alias_api_mapping)
     # generate aclnn kernelmod register
     generate_aclnn_reg_file(work_path, op_protos)
     # generate tensor_py func code
-    gen_tensor_func_code(work_path, func_protos, alias_func_mapping)
+    gen_tensor_func_code(work_path, tensor_method_protos, alias_api_mapping)
     # generate functional map code
-    gen_functional_map_code(work_path, func_protos, alias_func_mapping)
+    gen_functional_map_code(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping)
     # generate _tensor_docs.py that attaches docs to tensor func APIs when import mindspore
     gen_tensor_docs_code(work_path, tensor_doc_yaml_dict)
+    # generate functional_overload.py which init pybind mint APIs from cpp
+    gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping)
 
 
 def load_op_protos_from_ops_yaml(ops_yaml_data):

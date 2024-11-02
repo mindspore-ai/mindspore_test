@@ -4,9 +4,13 @@ clamp:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
+    tensor_method: True
+    mint_func: True
 
   - op_yaml: clamp_tensor_op.yaml
     py_method: tensor_clamp_tensor # callback to python function "def tensor_clamp_tensor"
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
+    tensor_method: True
+    mint_func: True
