@@ -1018,6 +1018,137 @@ def test_cv_minddataset_pksampler_with_diff_type():
     check_pksampler(file_name, "float64")
 
 
+def test_minddataset_getitem_random_sampler(add_and_remove_cv_file):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset's __getitem__ method with RandomSampler
+    Expectation: Output is equal to the expected output
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+    columns_list = ["data", "file_name", "label"]
+    num_readers = 4
+    sampler = ds.RandomSampler()
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
+                              sampler=sampler)
+    assert data_set.get_dataset_size() == 10
+    num_iter = 0
+    for item in data_set.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        num_iter += 1
+        assert item == data_set[num_iter - 1]
+    ds.config.set_seed(origin_seed)
+
+
+@pytest.mark.parametrize('num_samples', (None, 8))
+@pytest.mark.parametrize('shuffle', (True, False))
+def test_minddataset_getitem_shuffle_num_samples(add_and_remove_cv_file, shuffle, num_samples):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset's __getitem__ method with shuffle and num_samples
+    Expectation: Output is equal to the expected output
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+    columns_list = ["data", "file_name", "label"]
+    num_readers = 4
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
+                              shuffle=shuffle, num_samples=num_samples)
+    num_iter = 0
+    origin1 = []
+    for item in data_set.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        num_iter += 1
+        origin1.append(item)
+        assert item == data_set[num_iter - 1]
+
+    # Verify dataset random access followed by iterator access
+    assert origin1[0] == data_set[0]
+
+    origin2 = []
+    num_iter2 = 0
+    for item in data_set.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        num_iter2 += 1
+        origin2.append(item)
+        assert item == data_set[num_iter2 - 1]
+
+    # Verify that the results of two iterator accesses to dataset are consistent
+    assert origin1 == origin2
+    ds.config.set_seed(origin_seed)
+
+
+@pytest.mark.parametrize('shuffle', (True, False))
+def test_minddataset_getitem_shuffle_distributed_sampler(add_and_remove_cv_file, shuffle):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset's __getitem__ method with shuffle and num_samples=8 and DistributedSampler(2, 2)
+    Expectation: Output is equal to the expected output
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+    columns_list = ["data", "file_name", "label"]
+    num_readers = 4
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
+                              shuffle=shuffle, num_samples=8)
+    sampler = ds.DistributedSampler(2, 2)
+    data_set.add_sampler(sampler)
+    num_iter = 0
+    for item in data_set.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        num_iter += 1
+        assert item == data_set[num_iter - 1]
+    ds.config.set_seed(origin_seed)
+
+
+def test_minddataset_getitem_random_sampler_and_distributed_sampler(add_and_remove_cv_file):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset's __getitem__ method with RandomSampler and DistributedSampler
+    Expectation: Output is equal to the expected output
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+    columns_list = ["data", "file_name", "label"]
+    num_readers = 4
+    sampler = ds.RandomSampler()
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
+                              sampler=sampler)
+    sampler = ds.DistributedSampler(2, 2)
+    data_set.add_sampler(sampler)
+    assert data_set.get_dataset_size() == 5
+    num_iter = 0
+    for item in data_set.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        num_iter += 1
+        assert item == data_set[num_iter - 1]
+    ds.config.set_seed(origin_seed)
+
+
+def test_minddataset_getitem_exception(add_and_remove_cv_file):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset's __getitem__ method with exception
+    Expectation: Output is equal to the expected output
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+    columns_list = ["data", "file_name", "label"]
+    num_readers = 4
+    sampler = ds.RandomSampler()
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
+                              sampler=sampler)
+    assert data_set.get_dataset_size() == 10
+    with pytest.raises(TypeError) as err:
+        _ = data_set["2"]
+    assert "Argument index with value 2 is not of type [<class 'int'>], but got <class 'str'>." in str(err.value)
+
+    with pytest.raises(RuntimeError) as err2:
+        _ = data_set[100]
+    assert "Input index is not within the required interval of [0, 10], but got 100." in str(err2.value)
+    ds.config.set_seed(origin_seed)
+
+
 if __name__ == '__main__':
     test_cv_minddataset_pk_sample_no_column(add_and_remove_cv_file)
     test_cv_minddataset_pk_sample_basic(add_and_remove_cv_file)
@@ -1039,3 +1170,8 @@ if __name__ == '__main__':
     test_cv_minddataset_split_deterministic(add_and_remove_cv_file)
     test_cv_minddataset_split_sharding(add_and_remove_cv_file)
     test_cv_minddataset_pksampler_with_diff_type()
+    test_minddataset_getitem_random_sampler(add_and_remove_cv_file)
+    test_minddataset_getitem_shuffle_num_samples(add_and_remove_cv_file, True, None)
+    test_minddataset_getitem_shuffle_distributed_sampler(add_and_remove_cv_file, True)
+    test_minddataset_getitem_random_sampler_and_distributed_sampler(add_and_remove_cv_file)
+    test_minddataset_getitem_exception(add_and_remove_cv_file)
