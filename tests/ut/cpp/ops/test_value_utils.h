@@ -61,6 +61,15 @@ static inline ValuePtr CreateTuple(const std::vector<NumberContainer> &values) {
   return std::make_shared<ValueTuple>(value_vec);
 }
 
+template<typename T>
+ValuePtrList CreateScalarList(const std::vector<T> &values) {
+  ValuePtrList value_list;
+  std::transform(values.cbegin(), values.cend(), std::back_inserter(value_list), [](const T &v) {
+    return CreateScalar<T>(v);
+  });
+  return value_list;
+}
+
 static inline ValuePtr CreateList(const std::vector<NumberContainer> &values) {
   std::vector<ValuePtr> value_vec;
   value_vec.reserve(values.size());

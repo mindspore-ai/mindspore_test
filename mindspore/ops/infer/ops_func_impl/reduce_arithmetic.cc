@@ -291,5 +291,71 @@ ShapeArray ReduceExtandSimpleInferShape(const PrimitivePtr &primitive, const Val
   auto out_shape = ReduceFuncCalShapeInferImpl(primitive, input_shape, real_axis_vector, keep_dims->value());
   return {out_shape};
 }
+
+ShapeArray ReduceGeneralInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) {
+  MS_LOG(DEBUG) << "Run ReduceExtandGeneralInferShape_" << primitive->name() << " start";
+  const auto &input = input_infos[kInputIndex0];
+  const auto input_shape = input->GetShape();
+  const auto input_shape_size = input_shape.size();
+
+  const auto keep_dims_opt = input_infos[kInputIndex2]->GetScalarValue<bool>();
+  if (MS_UNLIKELY(!keep_dims_opt.has_value())) {
+    return ShapeArray{ShapeVector({abstract::Shape::kShapeRankAny})};
+  }
+  const auto keep_dims = keep_dims_opt.value();
+
+  const auto &axis = input_infos[kInputIndex1];
+  // If axis is None
+  if (axis->IsNone()) {
+    return keep_dims ? ShapeArray{ShapeVector(input_shape_size, 1)} : ShapeArray{ShapeVector({})};
+  }
+
+  const auto &axis_opt = axis->GetArrayValue<int64_t>();
+  const auto axis_size = axis_opt->size();
+  if (axis_opt.has_value()) {
+    // If axis is empty tuple and keep_dims is False, return a zero-dimensional Tensor
+    if (axis_size == 0 && !keep_dims) {
+      return ShapeArray{ShapeVector({})};
+    }
+  }
+
+  if (input->IsDynamicRank()) {
+    return {input_shape};
+  }
+  if (!axis_opt.has_value()) {
+    // If axis is dynamic.
+    return keep_dims ? ShapeArray{ShapeVector(input_shape_size, -1)}
+                     : ShapeArray{ShapeVector({abstract::Shape::kShapeRankAny})};
+  }
+
+  const auto axis_array = axis_opt.value();
+  // All values of the axis are known.
+  if (!axis_array.HasUnknownValue()) {
+    std::vector<int64_t> axis_vector = axis_array.ToVector();
+    std::vector<int64_t> real_axis_vector;
+    (void)std::transform(
+      axis_vector.begin(), axis_vector.end(), std::back_inserter(real_axis_vector),
+      [&input_shape_size, &primitive](const int64_t &axis) { return CalRealAixs(axis, input_shape_size, primitive); });
+    auto out_shape = ReduceFuncCalShapeInferImpl(primitive, input_shape, real_axis_vector, keep_dims);
+    return {out_shape};
+  }
+
+  // If the axis has unknown value, the reduction position will be any of the input dimensions.
+  if (!keep_dims) {
+    MS_CHECK_VALUE(input_shape_size >= axis_size,
+                   CheckAndConvertUtils::FormatCheckInRangeMsg("axis size", axis_size, kIncludeLeft,
+                                                               {0, input_shape_size}, primitive));
+    return ShapeArray{ShapeVector(input_shape_size - axis_size, -1)};
+  }
+  auto out_shape = ShapeVector(input_shape_size, -1);
+  for (size_t i = 0; i < axis_array.size(); ++i) {
+    if (!axis_array.IsValueUnknown(i)) {
+      auto axis_i = CalRealAixs(axis_array[i], input_shape_size, primitive);
+      out_shape[axis_i] = 1;
+    }
+  }
+  MS_LOG(DEBUG) << "Run ReduceExtandGeneralInferShape_" << primitive->name() << " end";
+  return {out_shape};
+}
 }  // namespace ops
 }  // namespace mindspore

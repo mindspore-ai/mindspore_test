@@ -369,6 +369,9 @@ from mindspore.ops.function.math_func import histc_ext as histc
 # 553
 from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
 
+# 557
+from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
+
 # 610
 from mindspore.ops.function.math_func import nan_to_num
 
@@ -2030,6 +2033,9 @@ __all__ = [
 
     # 553
     'logaddexp',
+
+    # 557
+    'logsumexp',
 
     # 610
     'nan_to_num',

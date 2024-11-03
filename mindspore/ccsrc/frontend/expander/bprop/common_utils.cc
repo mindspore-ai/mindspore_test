@@ -517,6 +517,27 @@ NodePtr SumGrad(Emitter *ib, const NodePtr &x, const NodePtr &axis, const NodePt
   return ib->BroadcastTo(grad, x);
 }
 
+// using input.shape to get the unsqueezed outputs
+NodePtrList GetUnsqueezeTensor(Emitter *ib, const NodePtr &input, const NodePtr &axis, bool keep_dims,
+                               const NodePtrList &outputs) {
+  NodePtrList y;
+  if (!keep_dims) {
+    auto output_shape_kept_dims = ib->ShapeCalc(std::make_shared<ReduceShapeShapeCalc>(), {input, axis}, {1})[0];
+    for (auto node : outputs) {
+      y.push_back(ib->Reshape(node, output_shape_kept_dims));
+    }
+  } else {
+    y = outputs;
+  }
+  return y;
+}
+
+NodePtr LogSumExpGrad(Emitter *ib, const NodePtr &input, const NodePtr &dim, bool keepdim, const NodePtr &output,
+                      const NodePtr &dout) {
+  auto unsqueeze_result = GetUnsqueezeTensor(ib, input, dim, keepdim, {output, dout});
+  return ib->Mul(ib->Exp(ib->Sub(input, unsqueeze_result[0])), unsqueeze_result[1]);
+}
+
 NodePtr MinOrMaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                      const NodePtr &out, const NodePtr &dout) {
   auto y = out;
