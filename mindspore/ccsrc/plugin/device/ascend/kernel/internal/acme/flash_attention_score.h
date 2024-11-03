@@ -25,7 +25,18 @@
 
 namespace mindspore {
 namespace kernel {
-DECLARE_ACME_KERNEL_MOD(FlashAttentionScore)
+class AcmeFlashAttentionScore : public AcmeKernelMod {
+ public:
+  AcmeFlashAttentionScore() : AcmeKernelMod() {}
+  ~AcmeFlashAttentionScore() = default;
+
+ protected:
+  acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
+                               const acme::OutputsImmutableInfoList &outputs,
+                               const std::vector<KernelTensor *> &ms_inputs,
+                               const std::vector<KernelTensor *> &ms_outputs) override;
+  bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+};
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_FLASH_ATTENTION_SCORE_H_
