@@ -1,0 +1,11 @@
+#operator clone
+clone:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    dispatch:
+        enable: True
+        Ascend: CloneAscend

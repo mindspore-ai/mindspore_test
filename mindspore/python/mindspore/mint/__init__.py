@@ -35,6 +35,7 @@ from mindspore.ops.function.array_func import unique_ext as unique
 from mindspore.ops.function.array_func import chunk_ext as chunk
 from mindspore.ops.function.math_func import isclose
 from mindspore.ops.auto_generate import abs
+from mindspore.ops.auto_generate import clone
 # 1
 from mindspore.ops.function.math_func import divide, div
 from mindspore.ops.auto_generate import topk_ext as topk
@@ -1678,6 +1679,7 @@ __all__ = [
     'ones_like',
     'zeros_like',
     'abs',
+    'clone',
     'erf',
     'where',
     'isclose',
