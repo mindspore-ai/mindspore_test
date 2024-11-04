@@ -1739,21 +1739,33 @@ REG_BPROP_BUILDER("CumProd").SetBody(BODYFUNC(ib) {
   auto num_elements =
     std::accumulate(x_shape.begin(), x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto axis = ib->GetInput(kIndex1);
-  auto axis_value_ptr = axis->BuildValue();
-  auto axis_opt = mindspore::GetScalarValue<int64_t>(axis_value_ptr);
-  int64_t axis_value;
-  if (axis_opt.has_value()) {
-    axis_value = axis_opt.value();
-  } else {
-    MS_LOG_EXCEPTION << "For CumProd, got an invalid 'axis'.";
-  }
   auto exclusive = ib->GetInput(kIndex2);
   auto reverse = ib->GetInput(kIndex3);
   auto out = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
   constexpr const int64_t One = 1;
+  if (num_elements <= One) {
+    return {dout, ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
+  }
+  auto axis_value_ptr = axis->BuildValue();
+  auto axis_opt = mindspore::GetScalarValue<int64_t>(axis_value_ptr);
+  // dynamic axis
+  if (!axis_opt.has_value()) {
+    auto axis_one_branch = [&dout](Emitter *e) -> NodePtrList { return {dout}; };
+    auto axis_not_one_branch = [&dout, &x, &axis, &exclusive, &reverse](Emitter *e) -> NodePtrList {
+      auto prod = e->CumProd(x, axis, exclusive, reverse);
+      auto out = e->CumSum(e->Mul(prod, dout), axis, GetValue<bool>(exclusive->BuildValue()),
+                           !GetValue<bool>(reverse->BuildValue()));
+      out = e->RealDiv(out, x);
+      return {out};
+    };
+    auto cond = ib->Equal(axis, ib->Value<int64_t>(1));
+    dout = ib->Conditional(cond, axis_one_branch, axis_not_one_branch);
+    return {dout, ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
+  }
+  int64_t axis_value = axis_opt.value();
   // to par with standards when dim is 1 or element num of input is no greater than 1.
-  if (!IsDynamic(x_shape) && (num_elements <= One || x_shape[axis_value] == One)) {
+  if (!IsDynamic(x_shape) && x_shape[axis_value] == One) {
     return {dout, ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
   }
   auto prod = ib->CumProd(x, axis, exclusive, reverse);
