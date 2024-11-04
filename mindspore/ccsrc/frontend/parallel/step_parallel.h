@@ -38,40 +38,12 @@ using OperatorInfoPtr = std::shared_ptr<mindspore::parallel::OperatorInfo>;
 
 namespace mindspore {
 namespace parallel {
-const uint64_t kUSecondInSecond = 1000000;
-const int32_t RECURSION_LIMIT = 1000;
-
-struct LossNodeInfo {
-  bool has_tuple_getitem = false;
-  bool has_make_tuple = false;
-  int64_t dout_index = 0;  // now don't support the sens is a tuple
-  CNodePtr loss_node = nullptr;
-};
-
-void ForwardCommunication(OperatorVector forward_op, const CNodePtr &node);
-void ForwardCommunicationForMultiOut(OperatorVector forward_op, const CNodePtr &node);
-
-TensorLayout GetTensorInLayout(const AnfNodePtr &pre_node, std::vector<int> get_item_index);
-TensorLayout GetTensorInLayoutForNewShape(const AnfNodePtr &pre_node, std::vector<int> get_item_index);
-
-void MarkForwardCNode(const FuncGraphPtr &root);
-
-void SetVirtualDatasetStrategy(const CNodePtr &node);
-
-// Create parallel operator for primitive node(has strategy)
-void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes);
-
 // main step of Parallel
 bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer);
 
 std::set<FuncGraphPtr> ForwardGraph(const FuncGraphPtr &root);
 
 bool CreateGroupsByCkptFile(const std::string &file);
-
-void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes);
-
-std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node, bool *is_input_param);
-std::shared_ptr<TensorLayout> FindPrevLayoutByParameter(const AnfNodePtr &node, bool *is_input_param);
 }  // namespace parallel
 }  // namespace mindspore
 

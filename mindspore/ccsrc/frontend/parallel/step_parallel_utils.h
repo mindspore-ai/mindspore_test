@@ -64,6 +64,14 @@ struct CommInfo {
   std::string world_group;
   std::string communication_backend;
 };
+
+struct LossNodeInfo {
+  bool has_tuple_getitem = false;
+  bool has_make_tuple = false;
+  int64_t dout_index = 0;  // now don't support the sens is a tuple
+  CNodePtr loss_node = nullptr;
+};
+
 const std::set<std::string> COMMUNICATION_OPS = {
   ALL_REDUCE,         ALL_GATHER,      ALL_TO_ALL,         REDUCE_SCATTER,    BROADCAST,       NEIGHBOREXCHANGE,
   NEIGHBOREXCHANGEV2, SYNC_BATCH_NORM, COLLECTIVE_SCATTER, COLLECTIVE_GATHER, BATCHISENDIRECV, ALL_TO_ALLV};
@@ -202,6 +210,11 @@ void PaddingStrategy(const OperatorInfoPtr &op_info, const bool is_new_shape_bas
 void ObtainInOutStrategy(const StrategyMap &stra_map, const PrimitivePtr &prim, const std::string &strategy_key_name,
                          const CNodePtr &cnode, const OperatorInfoPtr &op_info, const bool is_new_shape_base_node,
                          StrategyPtr *in_strategy, StrategyPtr *out_strategy);
+
+TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info);
+LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph);
+void MarkForwardCNode(const FuncGraphPtr &root);
+void InsertVirtualOutput(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes);
 }  // namespace parallel
 }  // namespace mindspore
 
