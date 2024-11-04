@@ -33,16 +33,6 @@ ShapeVector CheckShapeValid(const ShapeVector &x_shape, const ShapeVector &input
   }
   CheckAndConvertUtils::Check("x shape", SizeToLong(x_shape.size()), kLessEqual, SizeToLong(res_shape.size()),
                               prim_name);
-  bool is_empty_shape_input =
-    std::any_of(res_shape.begin(), res_shape.end(), [](const auto &element) { return element == 0; });
-  bool is_empty_shape_x = std::any_of(x_shape.begin(), x_shape.end(), [](const auto &element) { return element == 0; });
-  if (is_empty_shape_input && !is_empty_shape_x) {
-    MS_EXCEPTION(ValueError)
-      << "For '" << prim_name
-      << "', each dimension pair, input_shape shape and target shape must be equal or input dimension is 1 or target "
-         "dimension is -1. But got input_shape shape: "
-      << x_shape << ", target shape: " << res_shape << ".";
-  }
   auto outer_dim_offset = res_shape.size() - x_shape.size();
   bool need_compute_shape = true;
   if (res_shape.end() == find(res_shape.begin(), res_shape.end(), -1)) {
