@@ -349,6 +349,20 @@ class NetTwoActivation(nn.Cell):
         return x
 
 
+class NetSplitVNoUniform(nn.Cell):
+    def __init__(self, in_layout=None, size_splits=None):
+        super().__init__()
+        self.splitv = P.SplitV(size_splits, -1, num_split=3)
+        self.splitv.shard(in_layout)
+        self.relu = P.ReLU()
+
+    def construct(self, x):
+        x = self.relu(x)
+        q, _, _ = self.splitv(x)
+        q = self.relu(q)
+        return q
+
+
 def test_interleaved_base():
     """
     Feature: test micro interleaved
@@ -681,3 +695,23 @@ def test_interleaved_with_redistribution_optimize():
     assert validator.check_node_inputs_has("Concat-0", ["MakeTuple-1"])
     assert validator.check_node_inputs_has("StridedSlice-2", ["Concat-0"])
     assert validator.check_node_inputs_has("GeLU-0", ["StridedSlice-2"])
+
+
+def test_interleaved_with_splitv():
+    """
+    Feature: test splitv fine grain interleaved
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0, full_batch=True)
+    layout = Layout((4, 2, 2), ("dp", "mp", "interleaved_parallel"))
+    layout1 = (layout(("dp", "interleaved_parallel"), "mp", "None"),)
+    size_splits = [256, 128, 128]
+    net = NetSplitVNoUniform(layout1, size_splits=size_splits)
+    bs = 4
+    seq_length = 1024
+    num_heads = 16
+    input_x = Tensor(np.zeros((bs * seq_length, num_heads, sum(size_splits))).astype(np.float32))
+    phase = compile_net(net, input_x)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs_has("Concat-0", ["MakeTuple-1"])
