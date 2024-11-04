@@ -601,37 +601,6 @@ STATUS AclPassImpl::MakeListToMakeTuple(const FuncGraphPtr &func_graph) {
   return lite::RET_OK;
 }
 
-void AclPassImpl::AdjustDuplicateNodeName(const FuncGraphPtr &func_graph) {
-  std::set<std::string> nodes_name;
-  auto nodes_list = TopoSort(func_graph->get_return());
-  int index = 0;
-  for (auto &node : nodes_list) {
-    if (node == nullptr) {
-      continue;
-    }
-    auto name = node->fullname_with_scope();
-    if (nodes_name.find(name) == nodes_name.end()) {
-      (void)nodes_name.insert(name);
-      continue;
-    }
-    auto sole_name = name + "_" + std::to_string(index);
-    while (nodes_name.find(sole_name) != nodes_name.end()) {
-      ++index;
-      sole_name = name + "_" + std::to_string(index);
-    }
-    ++index;
-    if (utils::isa<CNode>(node)) {
-      node->cast<CNodePtr>()->set_fullname_with_scope(sole_name);
-      (void)nodes_name.insert(sole_name);
-      continue;
-    }
-    if (utils::isa<Parameter>(node)) {
-      node->cast<ParameterPtr>()->set_name(sole_name);
-      (void)nodes_name.insert(sole_name);
-    }
-  }
-}
-
 // this macro is used to reduce Cyclomatic complexity
 #define RUN_OPT_PASS(func_graph, config_name, pass_name)                                                   \
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), #config_name) != plugin_custom_ops.end()) { \
@@ -751,7 +720,7 @@ STATUS AclPassImpl::PreProcGraph(const FuncGraphPtr &func_graph) {
       return lite::RET_ERROR;
     }
   }
-  AdjustDuplicateNodeName(func_graph);
+  lite::AdjustDuplicateNodeName(func_graph);
   MS_LOG(DEBUG) << "Pre proc graph success.";
   return lite::RET_OK;
 }

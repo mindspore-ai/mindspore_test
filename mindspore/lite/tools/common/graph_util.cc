@@ -243,6 +243,37 @@ static STATUS TraceOutput(const AnfNodePtr &node, std::vector<std::pair<AnfNodeP
   return lite::RET_OK;
 }
 
+void AdjustDuplicateNodeName(const FuncGraphPtr &func_graph) {
+  std::set<std::string> nodes_name;
+  auto nodes_list = TopoSort(func_graph->get_return());
+  int index = 0;
+  for (auto &node : nodes_list) {
+    if (node == nullptr) {
+      continue;
+    }
+    auto name = node->fullname_with_scope();
+    if (nodes_name.find(name) == nodes_name.end()) {
+      (void)nodes_name.insert(name);
+      continue;
+    }
+    auto sole_name = name + "_" + std::to_string(index);
+    while (nodes_name.find(sole_name) != nodes_name.end()) {
+      ++index;
+      sole_name = name + "_" + std::to_string(index);
+    }
+    ++index;
+    if (utils::isa<CNode>(node)) {
+      node->cast<CNodePtr>()->set_fullname_with_scope(sole_name);
+      (void)nodes_name.insert(sole_name);
+      continue;
+    }
+    if (utils::isa<Parameter>(node)) {
+      node->cast<ParameterPtr>()->set_name(sole_name);
+      (void)nodes_name.insert(sole_name);
+    }
+  }
+}
+
 int SetFuncGraphOutput(const FuncGraphPtr &graph, const std::vector<AnfNodePtr> &outputs) {
   if (graph == nullptr || outputs.empty()) {
     MS_LOG(DEBUG) << "Input graph is nullptr or outputs is empty";
