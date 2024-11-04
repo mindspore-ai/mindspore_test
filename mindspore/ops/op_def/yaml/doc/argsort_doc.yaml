@@ -1,0 +1,31 @@
+argsort:
+    description: |
+        Sorts the input tensor along the given dimension in specified order and return the sorted indices.
+
+        .. warning::
+                This is an experimental optimizer API that is subject to change.
+
+        Args:
+            input(Tensor): The input tensor to sort.
+            dim (int): The dim to sort along. Default: ``-1`` , means the last dimension.
+                The Ascend backend only supports sorting the last dimension.
+            descending (bool): The sort order. If `descending` is ``True`` then the elements
+                are sorted in descending order by value. Otherwise sort in ascending order. Default: ``False`` .
+
+        Returns:
+            Tensor, the indices of sorted input tensor. Data type is int64.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> import mindspore.mint as mint
+            >>> x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), mindspore.float16)
+            >>> sort = mint.argsort(x)
+            >>> print(sort)
+            [[2 1 0]
+            [2 0 1]
+            [0 1 2]]

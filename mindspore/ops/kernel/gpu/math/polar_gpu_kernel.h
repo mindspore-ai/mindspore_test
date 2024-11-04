@@ -24,7 +24,7 @@
 #include <utility>
 #include <algorithm>
 #include <functional>
-#include "mindspore/ops/infer/polar.h"
+#include "mindspore/ops/infer/ops_func_impl/polar.h"
 #include "abstract/utils.h"
 #include "plugin/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"

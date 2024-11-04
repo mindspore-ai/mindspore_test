@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,48 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include <vector>
-#include <memory>
-#include "common/common_test.h"
-#include "infer/polar.h"
-#include "ir/dtype/type.h"
+#include "ops/test_ops_cmp_utils.h"
+#include "ir/dtype/number.h"
+#include "infer/ops_func_impl/polar.h"
+#include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
-#include "utils/tensor_construct_utils.h"
-#include "ir/primitive.h"
-#include "abstract/abstract_value.h"
-#include "utils/ms_context.h"
-#include "ops/test_ops.h"
-#include "include/backend/optimizer/helper.h"
+#include "ops/utils/general_infer_utils.h"
 
 namespace mindspore {
 namespace ops {
-struct PolarParams {
-  ShapeVector abs_shape;
-  TypePtr abs_type;
-  ShapeVector angle_shape;
-  TypePtr angle_type;
-  ShapeVector out_shape;
-  TypePtr out_type;
-};
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
 
-class TestPolar : public TestOps, public testing::WithParamInterface<PolarParams> {};
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{4, 2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{4, 2, 3}, kNumberTypeFloat32}})
+    .FeedExpectedOutput({{4, 2, 3}}, {kNumberTypeComplex64});
 
-TEST_P(TestPolar, dyn_shape) {
-  const auto &param = GetParam();
-  auto abs = std::make_shared<abstract::AbstractTensor>(param.abs_type, param.abs_shape);
-  auto angle = std::make_shared<abstract::AbstractTensor>(param.angle_type, param.angle_shape);
-  auto expect = std::make_shared<abstract::AbstractTensor>(param.out_type, param.out_shape);
-  ASSERT_NE(abs, nullptr);
-  ASSERT_NE(angle, nullptr);
-  auto prim = std::make_shared<Primitive>(kNamePolar);
-  auto out_abstract = opt::CppInferShapeAndType(prim, {abs, angle});
-  ASSERT_NE(out_abstract, nullptr);
-  ASSERT_TRUE(*out_abstract == *expect);
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeComplex64});
+
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{4, -1, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{4, 3, 3}, kNumberTypeFloat32}})
+    .FeedExpectedOutput({{4, 3, 3}}, {kNumberTypeComplex64});
+
+  return generator.Generate();
 }
+}  // namespace
 
-INSTANTIATE_TEST_CASE_P(TestPolarGroup, TestPolar,
-                        testing::Values(PolarParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {2, 3}, kComplex64},
-                                        PolarParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1, -1}, kComplex64},
-                                        PolarParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kComplex64}));
+INSTANTIATE_TEST_CASE_P(Polar, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace ops
 }  // namespace mindspore

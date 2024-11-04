@@ -40,7 +40,7 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              LinSpace, MatrixDeterminant, LogMatrixDeterminant, Erfinv, Conj,
                              Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
-                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc, Sign)
+                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc, Sign, Polar)
 
 
 def _infer_shape_reduce(x, axis, keep_dims, prim_name):
@@ -4593,47 +4593,6 @@ class CholeskySolve(Primitive):
         """Initialize CholeskySolve"""
         self.init_prim_io_names(inputs=['x1', 'x2'], outputs=['y'])
         validator.check_value_type('upper', upper, [bool], self.name)
-
-
-class Polar(Primitive):
-    r"""
-    Converts polar coordinates to Cartesian coordinates.
-
-    Refer to :func:`mindspore.ops.polar` for more details.
-
-    Inputs:
-        - **abs** (Tensor) - Radial distance. Tensor of any dimension,
-          must be one of the following types: float32, float64.
-
-        - **angle** (Tensor) - Polar angle. It has the same shape and dtype as `abs`.
-
-    Outputs:
-        Tensor, has the same shape and data type as `abs`.
-
-    Supported Platforms:
-        ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> polar = ops.Polar()
-        >>> x1 = Tensor(np.array([1, 2]), mindspore.float64)
-        >>> x2 = Tensor(np.array([3, 4]), mindspore.float64)
-        >>> output = polar(x1, x2)
-        >>> print(output)
-        [-0.9899925 +0.14112001j -1.30728724-1.51360499j]
-        >>> x1 = Tensor(2.1, mindspore.float32)
-        >>> x2 = Tensor(2.1, mindspore.float32)
-        >>> output = polar(x1, x2)
-        >>> print(output)
-        (-1.0601766+1.8127397j)
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize Polar"""
-        self.init_prim_io_names(inputs=['abs', 'angle'], outputs=['y'])
 
 
 class TrilIndices(Primitive):

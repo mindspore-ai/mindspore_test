@@ -1,0 +1,20 @@
+#operator argsort
+argsort:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: int
+            default: -1
+        descending:
+            dtype: bool
+            default: False
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: ArgSort
+    function:
+        name: argsort_ext
+    dispatch:
+        enable: True

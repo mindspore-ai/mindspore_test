@@ -3432,24 +3432,40 @@ REG_BPROP_BUILDER("Diagonal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
 });
 
 REG_BPROP_BUILDER("Polar").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
-  auto input1 = ib->GetInput(kIndex0);
-  auto angle = ib->GetInput(kIndex1);
+  auto input_abs = ib->GetInput(kIndex0);
+  auto input_angle = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
   auto grad_conj = ib->Emit("Conj", {dout});
-  NodePtr grad_abs =
-    input1->need_compute_grad_out() ? ib->Real(ib->Mul(grad_conj, ib->Sign(out))) : ib->OutZeros(input1);
-  NodePtr grad_angle;
-  if (angle->need_compute_grad_out()) {
-    auto zeros = ib->ZerosLike(dout);
-    zeros = ib->Cast(zeros, ib->GetDtype(input1));
-    auto ones = ib->OnesLike(dout);
-    ones = ib->Cast(ones, ib->GetDtype(input1));
+  NodePtr grad_abs, grad_angle;
+  if (input_abs->need_compute_grad_out()) {
+    auto broadcast_axes = ib->BroadcastGradientArgs(dout, input_abs);
+    MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
+    auto reduction_axes = broadcast_axes[kIndex1];
+    NodePtr grad_abs_full = ib->Mul(grad_conj, ib->Sign(out));
+    NodePtr reduced_grad_abs = ib->ReduceSum(grad_abs_full, reduction_axes, true, true);
+    auto abs_shape_node = ib->Shape(input_abs);
+    auto dx = ib->Reshape(reduced_grad_abs, abs_shape_node);
+    grad_abs = ib->Real(dx);
+  } else {
+    grad_abs = ib->OutZeros(input_abs);
+  }
+
+  if (input_angle->need_compute_grad_out()) {
+    auto zeros = ib->ZerosLike(input_angle);
+    auto ones = ib->OnesLike(input_angle);
     auto i = ib->Complex(zeros, ones);
     auto result_mul_1_j = ib->Mul(out, i);
-    grad_angle = ib->Real(ib->Mul(grad_conj, result_mul_1_j));
+    auto broadcast_axes = ib->BroadcastGradientArgs(dout, input_angle);
+    MS_EXCEPTION_IF_CHECK_FAIL(!broadcast_axes.empty(), "BroadcastGradientArgs out should not be empty!");
+    auto reduction_axes = broadcast_axes[kIndex1];
+    NodePtr grad_angle_full = ib->Mul(grad_conj, result_mul_1_j);
+    NodePtr reduced_grad_angle = ib->ReduceSum(grad_angle_full, reduction_axes, true, true);
+    auto angle_shape_node = ib->Shape(input_angle);
+    auto dx = ib->Reshape(reduced_grad_angle, angle_shape_node);
+    grad_angle = ib->Real(dx);
   } else {
-    grad_angle = ib->OutZeros(angle);
+    grad_angle = ib->OutZeros(input_angle);
   }
   return {grad_abs, grad_angle};
 });

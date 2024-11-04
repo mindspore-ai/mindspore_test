@@ -115,7 +115,6 @@ GVAR_DEF(PrimitivePtr, kPrimLerp, std::make_shared<Primitive>("Lerp"));
 GVAR_DEF(PrimitivePtr, kPrimEuclideanNorm, std::make_shared<Primitive>("EuclideanNorm"));
 GVAR_DEF(PrimitivePtr, kPrimSquareSumAll, std::make_shared<Primitive>("SquareSumAll"));
 GVAR_DEF(PrimitivePtr, kPrimSquareSumV1, std::make_shared<Primitive>("SquareSumV1"));
-GVAR_DEF(PrimitivePtr, kPrimPolar, std::make_shared<Primitive>("Polar"));
 GVAR_DEF(PrimitivePtr, kPrimXdivy, std::make_shared<Primitive>("Xdivy"));
 GVAR_DEF(PrimitivePtr, kPrimRaggedRange, std::make_shared<Primitive>(kRaggedRangeOpName));
 GVAR_DEF(PrimitivePtr, kPrimBitwiseOr, std::make_shared<Primitive>("BitwiseOr"));
