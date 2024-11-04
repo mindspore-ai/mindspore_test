@@ -115,6 +115,9 @@ class Adam(Optimizer):
             &\bf{return} \:  \theta_t                                                     \\[-1.ex]
        \end{aligned}
 
+    .. warning::
+            This is an experimental API that is subject to change or deletion.
+
     Args:
         params (Union[list(Parameter), list(dict)]): list of parameters to optimize or dicts defining
             parameter groups
