@@ -37,6 +37,9 @@ mindspore.mint.optim.Adam
             &\bf{return} \:  \theta_t                                                     \\[-1.ex]
         \end{aligned}
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **params** (Union[list(Parameter), list(dict)]) - 网络参数的列表或指定了参数组的列表。
         - **lr** (Union[int, float, Tensor], 可选) - 学习率。默认值：``1e-3``。

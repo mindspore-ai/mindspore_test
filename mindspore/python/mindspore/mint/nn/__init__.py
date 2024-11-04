@@ -262,7 +262,7 @@ class CrossEntropyLoss(Cell):
     r"""
     The cross entropy loss between input and target.
 
-    The cross entropy support two kind of targets:
+    The cross entropy supports two kind of targets:
 
     - Class indices (int) in the range :math:`[0, C)` where :math:`C` is the number of classes,
       the loss with reduction=none can be described as:
@@ -309,6 +309,9 @@ class CrossEntropyLoss(Cell):
               \text{if reduction} = \text{'sum'.}
               \end{cases}
 
+    .. warning::
+            This is an experimental API that is subject to change or deletion.
+
     Note:
         Dynamic shape, dynamic rank and variable constant input are not supported in `strict graph mode
         (jit_syntax_level=mindspore.STRICT)
@@ -329,7 +332,7 @@ class CrossEntropyLoss(Cell):
             - ``'sum'``: the output elements will be summed.
 
         label_smoothing (float, optional): Label smoothing values, a regularization tool used to prevent the model
-            from overfitting when calculating Loss. The value range is [0.0, 1.0]. Default value: ``0.0`` .
+            from overfitting when calculating Loss. The value range is [0.0, 1.0]. Default: ``0.0`` .
 
     Inputs:
         - **input** (Tensor) - :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
