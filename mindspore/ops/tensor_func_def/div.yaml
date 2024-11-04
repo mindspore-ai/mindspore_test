@@ -1,0 +1,12 @@
+div:
+  - op_yaml: div_op.yaml
+    py_method: tensor_div
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+
+  - op_yaml: divmod_op.yaml
+    py_method: tensor_div
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost

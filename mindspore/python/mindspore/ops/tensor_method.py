@@ -22,6 +22,7 @@ from mindspore.ops.auto_generate import add, max_
 from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar, erf, exp, tanh
 from mindspore.ops.auto_generate import cast
 from mindspore.ops.function.math_func import mean, ceil, cos, eq
+from mindspore.ops.function.math_func import div, remainder
 from mindspore.ops.function.array_func import argmax
 from mindspore.ops.function.array_func import repeat_interleave, gather_ext
 from mindspore.ops.auto_generate import gather
@@ -111,3 +112,11 @@ def tensor_repeat_interleave(input, repeats, dim=None):
 
 def tensor_to(input, dtype):
     return cast(input, dtype)
+
+
+def tensor_div(input, value, *, rounding_mode=None):
+    return div(input, value, rounding_mode=rounding_mode)
+
+
+def tensor_remainder(input, divisor):
+    return remainder(input, divisor)

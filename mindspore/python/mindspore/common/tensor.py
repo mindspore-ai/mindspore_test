@@ -2156,12 +2156,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("positive")(self)
 
-    def remainder(self, divisor):
-        r"""
-        For details, please refer to :func:`mindspore.ops.remainder`.
-        """
-        return tensor_operator_registry.get('remainder')(self, divisor)
-
     @flatten_mint
     def flatten(self, order='C', *, start_dim=0, end_dim=-1):
         r"""
@@ -4302,18 +4296,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.multiply`.
         """
         return tensor_operator_registry.get('multiply')(self, value)
-
-    def div(self, value, *, rounding_mode=None):
-        r"""
-        For details, please refer to :func:`mindspore.ops.div`.
-        """
-        return tensor_operator_registry.get('div')(self, value, rounding_mode=rounding_mode)
-
-    def divide(self, value, *, rounding_mode=None):
-        r"""
-        Alias for :func:`mindspore.Tensor.div`.
-        """
-        return tensor_operator_registry.get('div')(self, value, rounding_mode=rounding_mode)
 
     def equal(self, other):
         r"""
