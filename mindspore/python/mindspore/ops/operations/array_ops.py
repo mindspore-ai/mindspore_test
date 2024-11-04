@@ -35,13 +35,14 @@ from mindspore.common import Tensor, CSRTensor, COOTensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore._c_expression import CSRTensor as CSRTensor_
 from mindspore._c_expression import COOTensor as COOTensor_
-from ..auto_generate import (ExpandDims, Reshape, TensorShape, Transpose, Gather,
-                             OnesLike, ZerosLike, Argmax, ArgMaxExt,
-                             ReverseV2, Diag, Eye, ScatterNd, ResizeNearestNeighborV2,
-                             GatherNd, GatherD, Range, MaskedFill, RightShift, NonZero,
-                             ResizeNearestNeighbor, Identity, Split, CumSum, CumProd, MaskedSelect,
-                             Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, ScalarToTensor,
-                             Triu, BroadcastTo, StridedSlice, Select, TopkExt, SearchSorted)
+from ..auto_generate import (
+    ExpandDims, Reshape, TensorShape, Transpose, Gather, OnesLike, ZerosLike,
+    Argmax, ArgMaxExt, ReverseV2, Diag, Eye, ScatterNd,
+    ResizeNearestNeighborV2, GatherNd, GatherD, Range, MaskedFill, RightShift,
+    NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
+    MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum,
+    ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
+    SearchSorted, TypeAs)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt

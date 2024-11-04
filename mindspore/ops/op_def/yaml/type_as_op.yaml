@@ -1,0 +1,15 @@
+#operator type_as
+type_as:
+    args:
+        input:
+            dtype: tensor
+        tensor:
+            dtype: tensor
+    returns:
+        output: 
+            dtype: tensor
+    class:
+        name: TypeAs
+    dispatch:
+        enable: True
+        Ascend: TypeAsAscend

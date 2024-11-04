@@ -65,7 +65,7 @@ from mindspore.ops._utils.utils import ms_arrange
 
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
-    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as
+    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, slice_ext_op, gather_d_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
@@ -7223,5 +7223,6 @@ __all__ = [
     'deepcopy',
     'flip',
     'view_as',
+    'type_as',
 ]
 __all__.sort()
