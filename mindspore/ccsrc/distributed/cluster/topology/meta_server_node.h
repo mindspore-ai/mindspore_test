@@ -159,6 +159,8 @@ class MetaServerNode : public NodeBase {
   bool RegisterMessageHandler(const std::string &name,
                               const std::shared_ptr<std::function<std::string(const std::string &)>> &handler);
 
+  std::map<std::string, std::shared_ptr<NodeInfo>> GetComputeGraphNodes() { return nodes_; }
+
  private:
   // Set metadata for this cluster.
   void SetMetaData();

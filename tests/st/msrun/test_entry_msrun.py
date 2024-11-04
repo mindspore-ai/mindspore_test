@@ -329,3 +329,52 @@ def test_msrun_with_wrong_hostname():
     os.system(cmd)
     result = subprocess.getoutput("grep -rn 'DNS resolution failed' ./hostname_abnormal_msrun.log")
     assert result.find("Name or service not known") != -1
+
+
+def _extract_json_data(input_file, header):
+    with open(input_file, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+
+    inside_json = False
+    json_lines = []
+    for line in lines:
+        stripped_line = line.strip()
+        if header in stripped_line:
+            inside_json = True
+            json_lines = []
+            continue
+        if inside_json:
+            json_lines.append(stripped_line)
+            if stripped_line.endswith("]"):
+                inside_json = False
+                json_str = ''.join(json_lines)
+                json_data = json.loads(json_str)
+    return json_data
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
+def test_msrun_msn_dump_cgn_metadata():
+    """
+    Feature: 'msrun' launch utility.
+    Description: Launch distributed training job with dynamic cluster using msrun.
+    Expectation: Compute graph nodes' metadata is correctly output in scheduler's log.
+    """
+    os.environ['GLOG_v'] = str(2)
+    os.environ['VLOG_v'] = str(12500)
+    ms.set_context(jit_level='O0')
+    os.system(
+        "msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "\
+        "--master_port=10969 --join=True --log_dir=./msn_dump_cgn_metadata "\
+        "test_msrun_only_init.py --device_target=Ascend --dataset_path=/home/workspace/mindspore_dataset/mnist"
+    )
+    flag_header = "Output metadata for compute graph nodes as json format"
+    json_data = _extract_json_data("./msn_dump_cgn_metadata/scheduler.log", flag_header)
+    assert len(json_data) == 1
+    assert len(json_data[0]["device"]) == 4
+    assert "host_ip" in json_data[0]
+    assert "host_name" in json_data[0]
+    assert "device" in json_data[0]
+    assert "device_id" in json_data[0]["device"][0]
+    assert "node_id" in json_data[0]["device"][0]
+    assert "rank_id" in json_data[0]["device"][0]
+    assert "role" in json_data[0]["device"][0]
