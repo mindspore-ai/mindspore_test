@@ -193,8 +193,8 @@ class EmbeddingExt(Cell):
             not None. Default: ``None``.
 
     Variables:
-        weight (Parameter): The learnable weights of this module of shape (num_embeddings, embedding_dim), which
-            initialized from :math:`{N}(\text{sigma=1.0}, \text{mean=0.0})` or `_weight` .
+        - **weight** (Parameter) - The learnable weights of this module of shape (num_embeddings, embedding_dim), which
+          initialized from :math:`{N}(\text{sigma=1.0}, \text{mean=0.0})` or `_weight` .
 
     Inputs:
         - **input** (Tensor) - The indices used to lookup in the embedding vector. The data type must be
