@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,29 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Platform profiler interface."""
+"""BaseViewer class"""
 from abc import ABC, abstractmethod
+from typing import Any
 
 
-class ProfilerInterface(ABC):
-    """
-    ProfilerProduct is the base class of all profiler product.
-    """
-
-    @abstractmethod
-    def start(self):
-        """
-        Start profiling.
-        """
+class BaseViewer(ABC):
+    def __init__(self):
+        pass
 
     @abstractmethod
-    def stop(self):
-        """
-        Stop profiling.
-        """
-
-    @abstractmethod
-    def analyse(self, offline_path=None, pretty=False, step_list=None):
-        """
-        Analyse profiling result.
-        """
+    def save(self, data: Any):
+        raise NotImplementedError("Subclasses should implement this!")
