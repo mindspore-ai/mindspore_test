@@ -223,7 +223,7 @@ from mindspore.ops.auto_generate import reshape
 # 93 select
 
 # 94 sigmoid
-
+from mindspore.ops.auto_generate import sigmoid
 # 95 sin
 
 # 96 size
@@ -665,6 +665,9 @@ def tensor_reshape(input, *shape):
 # 93 select
 
 # 94 sigmoid
+def tensor_sigmoid(input):
+    return sigmoid(input)
+
 
 # 95 sin
 

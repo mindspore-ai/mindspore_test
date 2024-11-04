@@ -3812,12 +3812,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_bool(sorted, 'sorted')
         return tensor_operator_registry.get("top_k")(self, k, sorted)
 
-    def sigmoid(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sigmoid`.
-        """
-        return tensor_operator_registry.get("sigmoid")(self)
-
     def median(self, axis=-1, keepdims=False):
         r"""
         For details, please refer to :func:`mindspore.ops.median`.
