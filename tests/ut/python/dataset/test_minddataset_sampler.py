@@ -1100,6 +1100,29 @@ def test_minddataset_getitem_shuffle_distributed_sampler(add_and_remove_cv_file,
     ds.config.set_seed(origin_seed)
 
 
+@pytest.mark.parametrize('shuffle', (True, False))
+def test_minddataset_getitem_distributed_sampler(add_and_remove_cv_file, shuffle):
+    """
+    Feature: MindDataset
+    Description: Test MindDataset's __getitem__ method with num_samples=8 and DistributedSampler(2, 2, shuffle=shuffle)
+    Expectation: Output is equal to the expected output
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+    columns_list = ["data", "file_name", "label"]
+    num_readers = 4
+    file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
+    data_set = ds.MindDataset(file_name + "0", columns_list, num_readers,
+                              shuffle=False, num_samples=8)
+    sampler = ds.DistributedSampler(2, 2, shuffle=shuffle)
+    data_set.add_sampler(sampler)
+    num_iter = 0
+    for item in data_set.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        num_iter += 1
+        assert item == data_set[num_iter - 1]
+    ds.config.set_seed(origin_seed)
+
+
 def test_minddataset_getitem_random_sampler_and_distributed_sampler(add_and_remove_cv_file):
     """
     Feature: MindDataset
@@ -1145,7 +1168,11 @@ def test_minddataset_getitem_exception(add_and_remove_cv_file):
 
     with pytest.raises(RuntimeError) as err2:
         _ = data_set[100]
-    assert "Input index is not within the required interval of [0, 10], but got 100." in str(err2.value)
+    assert "Input index is not within the required interval of [0, 9], but got 100." in str(err2.value)
+
+    with pytest.raises(ValueError) as err3:
+        _ = data_set[-1]
+    assert "index cannot be negative, but got -1." in str(err3.value)
     ds.config.set_seed(origin_seed)
 
 
@@ -1173,5 +1200,6 @@ if __name__ == '__main__':
     test_minddataset_getitem_random_sampler(add_and_remove_cv_file)
     test_minddataset_getitem_shuffle_num_samples(add_and_remove_cv_file, True, None)
     test_minddataset_getitem_shuffle_distributed_sampler(add_and_remove_cv_file, True)
+    test_minddataset_getitem_distributed_sampler(add_and_remove_cv_file, True)
     test_minddataset_getitem_random_sampler_and_distributed_sampler(add_and_remove_cv_file)
     test_minddataset_getitem_exception(add_and_remove_cv_file)

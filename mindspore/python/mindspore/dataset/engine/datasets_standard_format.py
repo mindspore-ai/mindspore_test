@@ -309,6 +309,8 @@ class MindDataset(MappableDataset, UnionBaseDataset):
 
     def __getitem__(self, index):
         type_check(index, (int,), "index")
+        if index < 0:
+            raise ValueError("index cannot be negative, but got {0}.".format(index))
         if not hasattr(self, "mindrecord_op"):
             minddata_node = cde.MindDataNode(
                 self.dataset_files, self.columns_list, self.sampler, self.new_padded_sample,

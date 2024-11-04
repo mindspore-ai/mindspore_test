@@ -215,11 +215,8 @@ class MINDRECORD_API ShardReader {
   /// \brief get next sample ids in slow load mode
   std::vector<int64_t> GetNextSampleIds();
 
-  /// \brief mindrecord gets sample id when using random access
-  void GetSampleIdsByRandomAccess();
-
   /// \brief mindrecord returns the sample id when using random access
-  std::vector<int64_t> GetAllSampleIds() { return all_sampler_ids_; }
+  Status GetMappedIndex(size_t index, size_t *mapped_index);
 
  protected:
   /// \brief sqlite call back function
@@ -323,6 +320,9 @@ class MINDRECORD_API ShardReader {
   /// \brief get meta of header
   Status GetMeta(const std::string &file_path, std::shared_ptr<json> meta_data_ptr,
                  std::shared_ptr<std::vector<std::string>> *addresses_ptr);
+
+  /// \brief mindrecord gets sample id when using random access
+  void GetSampleIdsByRandomAccess();
 
  protected:
   uint64_t header_size_;                       // header size
