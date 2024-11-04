@@ -20,6 +20,8 @@
 #include <memory>
 #include <queue>
 #include <set>
+#include <unordered_map>
+
 #include "include/common/utils/comm_manager.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
@@ -477,12 +479,16 @@ void InsertVirtualAccuGrad(const AnfNodePtr &recv, const FuncGraphManagerPtr &ma
   (void)manager->Replace(recv, virtual_node);
 }
 
-AnfNodePtr FindGradAccuParameter(const std::vector<AnfNodePtr> &parameters, const std::string &name) {
+AnfNodePtr FindGradAccuParameter(const std::vector<AnfNodePtr> &parameters, const std::string &name,
+                                 const std::string &user_name) {
   for (auto &parameter : parameters) {
     auto param_ptr = parameter->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(param_ptr);
     if (param_ptr->name() == name) {
       continue;
+    }
+    if (name.find(param_ptr->name()) == std::string::npos && user_name.find(param_ptr->name()) != std::string::npos) {
+      return parameter;
     }
     auto expect_name = "accu_grads." + name;
     if (param_ptr->name() == expect_name) {
@@ -1024,6 +1030,112 @@ void HandleMicroBatch(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
     auto micro = cnode->GetPrimalAttr(MICRO);
     MS_EXCEPTION_IF_NULL(micro);
     BroadCastMicroBatch(cnode, &node_users_map, micro, 0);
+  }
+}
+
+void BroadCastSeqChunk(const FuncGraphPtr &root) {
+  auto all_nodes = TopoSort(root->get_return(), SuccDeeperSimple);
+  std::vector<CNodePtr> slice_vector;
+  for (const auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
+      continue;
+    }
+    auto slice_cnode = node->cast<CNodePtr>();
+    auto slice_prim = GetCNodePrimitive(slice_cnode);
+    if (!slice_prim->HasAttr("seq_split_slice")) {
+      continue;
+    }
+    SetStridedSliceStrategy(slice_cnode);
+    slice_vector.push_back(slice_cnode);
+  }
+  std::set<int64_t> accu_shape_set;
+  for (const auto &slice_cnode : slice_vector) {
+    auto slice_value = slice_cnode->input(kIndex2);
+    auto value = GetValueNode(slice_value);
+    if (value == nullptr) {
+      MS_LOG(EXCEPTION) << "Current not support dynamic shape for seq pipe.";
+    }
+    auto shape_tuple = GetValue<std::vector<int64_t>>(value);  // begin
+    auto accu_value = std::accumulate(shape_tuple.begin(), shape_tuple.end(), 0);
+    accu_shape_set.insert(accu_value);
+  }
+  std::unordered_map<int64_t, int64_t> index_map;
+  int64_t index = 0;
+  for (const auto &v : accu_shape_set) {
+    index_map[v] = index;
+    ++index;
+  }
+  for (const auto &slice_cnode : slice_vector) {
+    auto shape_tuple = GetValue<std::vector<int64_t>>(GetValueNode(slice_cnode->input(kIndex2)));
+    auto accu_value = std::accumulate(shape_tuple.begin(), shape_tuple.end(), 0);
+    if (index_map.count(accu_value) == 0) {
+      MS_LOG(EXCEPTION) << "Seq pipe splitting failed.";
+    }
+    auto seq_chunk = index_map.at(accu_value);
+    slice_cnode->AddPrimalAttr(SEQ_CHUNK, MakeValue(seq_chunk));
+    auto slice_users = GetOutputNodesWithFilter(
+      slice_cnode, [&](const AnfNodePtr &anode) { return IsPrimitiveCNode(anode, prim::kPrimDepend); });
+    for (const auto &slice_user : slice_users) {
+      if (!slice_user.first->isa<CNode>()) {
+        continue;
+      }
+      auto call_cnode = slice_user.first->cast<CNodePtr>();
+      if (!IsValueNode<FuncGraph>(call_cnode->input(0))) {
+        continue;
+      }
+      call_cnode->AddPrimalAttr(SEQ_CHUNK, MakeValue(seq_chunk));
+    }
+  }
+}
+
+void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
+  auto all_nodes = TopoSort(root->get_return(), SuccDeeperSimple);
+  auto parameters = root->parameters();
+  auto manager = root->manager();
+  auto node_users = manager->node_users();
+  for (auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimAdd)) {
+      continue;
+    }
+    auto add_cnode = node->cast<CNodePtr>();
+    auto add_input = GetInputNodeWithFilter(add_cnode->input(kIndex2), [&](const CNodePtr &cnode) {
+      bool filter = IsPrimitiveCNode(cnode, prim::kPrimLoad) || IsPrimitiveCNode(cnode, prim::kPrimDepend);
+      return std::make_pair(filter, 1);
+    });
+    if (!add_input->isa<Parameter>()) {
+      continue;
+    }
+    auto param = add_input->cast<ParameterPtr>();
+    auto param_name = param->name();
+    if (param_name.find("key_cache") == std::string::npos && param_name.find("value_cache") == std::string::npos) {
+      continue;
+    }
+    AnfNodePtr kv_add_input = add_cnode->input(kIndex1);
+    AnfNodePtr kv_equal = nullptr;
+    auto add_users = node_users.at(add_cnode);
+    for (const auto &add_user_pair : add_users) {
+      if (!IsPrimitiveCNode(add_user_pair.first, prim::kPrimSelect)) {
+        continue;
+      }
+      kv_equal = add_user_pair.first->cast<CNodePtr>()->input(kIndex1);
+    }
+    if (!kv_equal) {
+      continue;
+    }
+    auto kv_cache_grad = FindGradAccuParameter(parameters, param_name, param_name + "_grad");
+    if (!kv_cache_grad) {
+      continue;
+    }
+    MS_LOG(INFO) << "Find kv_cache_grad:" << kv_cache_grad->DebugString();
+    OperatorAttrs attrs = {};
+    auto py_instance = CreateOpInstance(attrs, VIRTUAL_ASSIGN_KV_CACHE, VIRTUAL_ASSIGN_KV_CACHE);
+    auto value_node = NewValueNode(py_instance);
+    std::vector<AnfNodePtr> virtual_assign_kv_cache_inputs = {value_node, kv_add_input, kv_cache_grad, kv_equal};
+    auto func_graph = kv_add_input->func_graph();
+    auto virtual_assign_kv_cache = func_graph->NewCNode(virtual_assign_kv_cache_inputs);
+    auto kv_prim = GetCNodePrimitive(virtual_assign_kv_cache);
+    kv_prim->AddAttr("param_name", MakeValue(param_name));
+    (void)manager->Replace(kv_add_input, virtual_assign_kv_cache);
   }
 }
 

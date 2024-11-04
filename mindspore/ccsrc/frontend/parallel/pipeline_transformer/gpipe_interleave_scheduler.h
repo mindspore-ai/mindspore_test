@@ -36,8 +36,6 @@ class GpipeInterleavedScheduler : public PipelineScheduler {
                             int64_t stage_num)
       : PipelineScheduler(manager, root, stage, stage_num) {}
   virtual ~GpipeInterleavedScheduler() = default;
-
-  void GetBorderNode() override;
   void Reorder() override;
 
  private:
@@ -47,14 +45,6 @@ class GpipeInterleavedScheduler : public PipelineScheduler {
   void GetChunkNum(const std::vector<AnfNodePtr> &all_nodes);
   AbstractBasePtr GenerateTupleAbstract(const std::vector<AnfNodePtr> &nodes);
   void OptimizerShardCommReorder();
-  std::vector<Border> fwd_begin_;
-  std::vector<Border> fwd_end_;
-  std::vector<Border> bwd_begin_;
-  std::vector<Border> bwd_end_;
-  std::vector<Border> fwd_cell_;
-  std::vector<Border> bwd_cell_;
-  std::vector<Border> fwd_params_;
-  std::vector<Border> bwd_params_;
 };
 }  // namespace parallel
 }  // namespace mindspore

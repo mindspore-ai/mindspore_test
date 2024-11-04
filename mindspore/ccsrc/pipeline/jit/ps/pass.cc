@@ -1167,12 +1167,9 @@ bool PipelineParallelScheduler(const ResourcePtr &resource) {
     auto manager = resource->manager();
     auto stage = parallel::InferStage();
     auto pp_scheduler = parallel_context->pipeline_scheduler();
-    std::shared_ptr<parallel::PipelineScheduler> scheduler = nullptr;
-    if (pp_scheduler == parallel::kPipeline1F1B) {
-      scheduler = std::make_shared<parallel::InterleavedScheduler>(manager, root, stage, stage_num);
-    } else if (pp_scheduler == parallel::kPipelineGpipe) {
-      scheduler = std::make_shared<parallel::GpipeInterleavedScheduler>(manager, root, stage, stage_num);
-    } else {
+    std::shared_ptr<parallel::PipelineScheduler> scheduler =
+      parallel::SchedulerCreator::Instance().Create(pp_scheduler, manager, root, stage, stage_num);
+    if (!scheduler) {
       MS_LOG(EXCEPTION) << "Unsupported pipeline parallel scheduler: " << pp_scheduler;
     }
     scheduler->GetBorderNode();

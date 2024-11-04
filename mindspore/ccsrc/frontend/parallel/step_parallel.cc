@@ -3472,6 +3472,7 @@ static void MicroBatchPreProcess(const FuncGraphPtr &root, const FuncGraphManage
   if (pipeline_stages > 1) {
     HandleMicroBatch(all_nodes, manager);
     ParameterStartNode(all_nodes, manager);
+    BroadCastSeqChunk(root);
     LastStageEndNode(all_nodes, manager, root);
     return;
   }
@@ -3960,7 +3961,7 @@ static void ParallelPartProcess(const std::vector<AnfNodePtr> &all_nodes, const 
     } else {
       pipeline_processor->GraphPartition(all_nodes);
     }
-
+    AddVirtualAssignKvCache(root);
     pipeline_processor->ElimGraphStage();
     pipeline_processor->ModifyParameterList();
   }

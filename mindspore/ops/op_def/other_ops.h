@@ -73,6 +73,7 @@ GVAR_DEF(PrimitivePtr, kPrimInitDataSetQueue, std::make_shared<Primitive>("InitD
 GVAR_DEF(PrimitivePtr, kPrimQueueData, std::make_shared<Primitive>("QueueData"));
 GVAR_DEF(PrimitivePtr, kPrimVirtualAssignAdd, std::make_shared<Primitive>("_VirtualAssignAdd"));
 GVAR_DEF(PrimitivePtr, kPrimVirtualAccuGrad, std::make_shared<Primitive>("_VirtualAccuGrad"));
+GVAR_DEF(PrimitivePtr, kPrimVirtualAssignKvCache, std::make_shared<Primitive>("_VirtualAssignKvCache"));
 GVAR_DEF(PrimitivePtr, kPrimVirtualPipelineEnd, std::make_shared<Primitive>("_VirtualPipelineEnd"));
 GVAR_DEF(PrimitivePtr, kPrimMirrorMicroStep, std::make_shared<Primitive>("_MirrorMicroStepOperator"));
 GVAR_DEF(PrimitivePtr, kPrimVirtualConverterBegin, std::make_shared<Primitive>("_VirtualConverterBegin"));

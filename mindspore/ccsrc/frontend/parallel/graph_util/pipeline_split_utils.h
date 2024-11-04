@@ -34,7 +34,8 @@ int64_t InferStage();
 void InsertVirtualAssignAdd(const std::pair<AnfNodePtr, int> &node_user, const FuncGraphManagerPtr &manager,
                             const AnfNodePtr &accu_parameter, const NodeUsersMap &node_user_map);
 void InsertVirtualAccuGrad(const AnfNodePtr &recv, const FuncGraphManagerPtr &manager, const AnfNodePtr &param);
-AnfNodePtr FindGradAccuParameter(const std::vector<AnfNodePtr> &parameters, const std::string &name);
+AnfNodePtr FindGradAccuParameter(const std::vector<AnfNodePtr> &parameters, const std::string &name,
+                                 const std::string &user_name = "");
 void HandleReceiveParam(const FuncGraphPtr &root);
 void AddVirtualAssignAdd(const FuncGraphPtr &root);
 void SetParameterStartForCellShare(const FuncGraphPtr &root);
@@ -59,6 +60,8 @@ void Reorder(const FuncGraphPtr &root);
 void ReorderForPredict(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager);
 void HandleMicroBatch(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr &manager);
 void BroadCastMicroBatch(const CNodePtr &node, NodeUsersMap *node_users_map, const ValuePtr &value, size_t max_depth);
+void BroadCastSeqChunk(const FuncGraphPtr &root);
+void AddVirtualAssignKvCache(const FuncGraphPtr &root);
 void LabelNeedGrad(const FuncGraphManagerPtr &manager, const FuncGraphPtr &root);
 void BroadCastNeedGrad(const AnfNodePtr &node, NodeUsersMap *node_user_map, const FuncGraphPtr &root);
 void LastStageEndNode(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr &manager,
