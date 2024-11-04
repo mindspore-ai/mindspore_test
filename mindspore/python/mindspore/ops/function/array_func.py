@@ -65,7 +65,8 @@ from mindspore.ops._utils.utils import ms_arrange
 
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
-    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as
+    broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
+    inplace_fill_scalar
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, slice_ext_op, gather_d_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
@@ -759,6 +760,50 @@ def fill(type, shape, value):  # pylint: disable=redefined-outer-name
     """
     value = cast_(value, type)
     return fillv2_(shape, value)
+
+
+def fill_(input, value):
+    """
+    Fills `input` tensor with the specified `value` .
+
+    Args:
+        input (Tensor): The tensor to be filled.
+        value (Union(Tensor, number.Number, bool)): Value to fill the `input` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: The `input` is not a tensor.
+        RunTimeError: The data type of `input` or `value` is not supported.
+        RunTimeError: When the `value` is Tensor, it should be 0-D Tensor or 1-D Tensor with shape=[1].
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import ops
+        >>> x = ops.zeros((3, 3))
+        >>> print(x)
+        [[0. 0. 0.]
+         [0. 0. 0.]
+         [0. 0. 0.]]
+        >>> output = ops.fill_(x, 1.0)
+        >>> print(output)
+        [[1. 1. 1.]
+         [1. 1. 1.]
+         [1. 1. 1.]]
+        >>> print(x)
+        [[1. 1. 1.]
+         [1. 1. 1.]
+         [1. 1. 1.]]
+    """
+    if isinstance(value, (int, float, bool)):
+        return inplace_fill_scalar(input, value)
+    if isinstance(value, Tensor):
+        return inplace_fill_tensor(input, value)
+    raise TypeError(f"For 'ops.fill_', 'value' must be a number or Tensor, but got {type(value)}.")
 
 
 def full(size, fill_value, *, dtype=None):  # pylint: disable=redefined-outer-name

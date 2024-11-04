@@ -351,6 +351,7 @@ from mindspore.ops.function.math_func import tan
 
 # 303
 from mindspore.ops.auto_generate import trace_ext as trace
+from mindspore.ops.auto_generate import gcd
 
 from mindspore.ops.function.array_func import reshape
 
@@ -2066,6 +2067,7 @@ __all__ = [
     'tan',
     # 303
     'trace',
+    'gcd',
     'reshape',
     'outer',
     # 304

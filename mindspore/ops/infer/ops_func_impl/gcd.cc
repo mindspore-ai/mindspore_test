@@ -27,21 +27,25 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr GcdFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                     const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
-  return BroadCastInferShape(primitive->name(), input_args);
+static inline bool IsValidType(TypeId t) {
+  static const std::set<TypeId> valid_types = {kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64};
+  return valid_types.find(t) != valid_types.end();
 }
 
-TypePtr GcdFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
-  TypePtr x1_type = input_args[kIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(x1_type);
-  const std::set<TypePtr> gcd_valid_types = {kInt32, kInt64};
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("x1", x1_type, gcd_valid_types, prim->name());
-  return x1_type;
+ShapeArray GcdFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto input_shape = input_infos[0]->GetShape();
+  const auto outer_shape = input_infos[1]->GetShape();
+  return {CalBroadCastShape(input_shape, outer_shape, primitive->name())};
+}
+
+std::vector<TypeId> GcdFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  const auto input_type_id = input_infos[0]->GetType();
+  if (!IsValidType(input_type_id)) {
+    MS_EXCEPTION(TypeError)
+      << "For Primitive[Gcd], the type of the input tensor must be [Int16, Int32, Int64], but got "
+      << TypeIdToString(input_type_id) << "!";
+  }
+  return {input_type_id};
 }
 
 }  // namespace ops
