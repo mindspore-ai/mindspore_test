@@ -320,7 +320,8 @@ MedianExt: 'aclnnMedian'
 # 267
 MishExt: 'aclnnMish'
 MishGradExt: 'aclnnMishBackward'
-
+# 294
+SmoothL1LossGrad: 'aclnnSmoothL1LossBackward'
 # 301
 TrilExt: 'aclnnTril'
 

@@ -987,28 +987,16 @@ def get_kl_div_loss_grad_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(P.SmoothL1Loss)
 def get_smooth_l1_loss_vmap_rule(prim, axis_size):
     """VmapRule for `SmoothL1Loss` operation."""
-    if isinstance(prim, str):
-        prim = Primitive(prim)
-        prim_beta = 1.0
-        prim_reduction = 'none'
-    else:
-        prim_reduction = prim.reduction
-        prim_beta = prim.beta
-
-    smooth_l1_loss_op = P.SmoothL1Loss(prim_beta, 'none')
-    if prim_reduction == 'mean':
-        reduce_op = P.ReduceMean()
-    elif prim_reduction == "sum":
-        reduce_op = P.ReduceSum()
-
-    def vmap_rule(x_bdim, target_bdim):
+    def vmap_rule(x_bdim, target_bdim, beta_bdim, reduction_bdim):
         is_all_none, result = vmap_general_preprocess(
-            prim, x_bdim, target_bdim)
+            prim, x_bdim, target_bdim, beta_bdim, reduction_bdim)
         if is_all_none:
             return result
 
         x, x_dim = x_bdim
         target, target_dim = target_bdim
+        beta, _ = beta_bdim
+        reduction, _ = reduction_bdim
         x_ndim = F.rank(x)
         target_ndim = F.rank(target)
         max_rank = max(x_ndim, target_ndim)
@@ -1020,15 +1008,20 @@ def get_smooth_l1_loss_vmap_rule(prim, axis_size):
             reduce_indexes = tuple(range(1, max_rank))
 
         # elementwise style when reduction='none', otherwise reduce style
-        if prim_reduction == "none":
-            out = prim(x, target)
-        elif prim_reduction in ("mean", "sum"):
-            out = smooth_l1_loss_op(x, target)
+        # reduction is number
+        none_enum = handler.str_to_enum("SmoothL1Loss", "reduction", "none")
+        mean_enum = handler.str_to_enum("SmoothL1Loss", "reduction", "mean")
+        sum_enum = handler.str_to_enum("SmoothL1Loss", "reduction", "sum")
+        if reduction in (none_enum, mean_enum, sum_enum):
+            out = prim(x, target, beta, none_enum)
             if reduce_indexes is not None:
-                out = reduce_op(out, reduce_indexes)
+                if reduction == mean_enum:
+                    out = P.ReduceMean()(out, reduce_indexes)
+                elif reduction == sum_enum:
+                    out = P.ReduceSum()(out, reduce_indexes)
         else:
             raise RuntimeError("For SmoothL1Loss vmap, reduction should be one of "
-                               "['none', 'mean', 'sum'], but got '{}'".format(prim_reduction))
+                               "['none', 'mean', 'sum'], but got '{}'".format(reduction))
         return out, 0
 
     return vmap_rule
@@ -1037,29 +1030,22 @@ def get_smooth_l1_loss_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(G.SmoothL1LossGrad)
 def get_smooth_l1_loss_grad_vmap_rule(prim, axis_size):
     """VmapRule for `SmoothL1LossGrad`."""
-    if isinstance(prim, str):
-        prim = Primitive(prim)
-        reduction = "none"
-        beta = 1.0
-    else:
-        reduction = prim.reduction
-        beta = prim.beta
-    smooth_l1_loss_grad = G.SmoothL1LossGrad(beta, reduction)
-
-    def vmap_rule(x_bdim, target_bdim, dy_bdim):
+    def vmap_rule(x_bdim, target_bdim, beta_bdim, reduction_bdim, dy_bdim):
         is_all_none, result = vmap_general_preprocess(
-            prim, dy_bdim, x_bdim, target_bdim)
+            prim, dy_bdim, x_bdim, target_bdim, beta_bdim, reduction_bdim)
         if is_all_none:
             return result
 
         dy, dy_dim = dy_bdim
         x, x_dim = x_bdim
         target, target_dim = target_bdim
+        beta, _ = beta_bdim
+        reduction, _ = reduction_bdim
         dy = _bdim_at_front(dy, dy_dim, axis_size)
         x = _bdim_at_front(x, x_dim, axis_size)
         target = _bdim_at_front(target, target_dim, axis_size)
 
-        out = smooth_l1_loss_grad(x, target, dy)
+        out = prim(x, target, beta, reduction, dy)
         return out, 0
 
     return vmap_rule

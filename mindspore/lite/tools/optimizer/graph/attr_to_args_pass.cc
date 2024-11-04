@@ -282,6 +282,11 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
    {
      "diagonal",
    }},
+  {"SmoothL1Loss",
+   {
+     "beta",
+     "reduction",
+   }},
   {"TensorScatterElements",
    {
      "axis",

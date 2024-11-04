@@ -24,6 +24,7 @@
 #include <map>
 #include "kernel/cpu/cpu_kernel.h"
 #include "plugin/factory/ms_factory.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {
@@ -53,12 +54,10 @@ class SmoothL1LossCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHe
   template <typename T>
   void CalElements(const T *predict_addr, const T *target_addr, T *result_addr);
 
-  enum ReductionType { NONE = 0, MEAN = 1, SUM = 2, INVALID_MODE = 255 };
-
   float beta_{1.0};
   TypeId dtype_{kTypeUnknown};
   int64_t tensor_size_{1};
-  ReductionType reduction_{INVALID_MODE};
+  Reduction reduction_{Reduction::MEAN};
 };
 }  // namespace kernel
 }  // namespace mindspore

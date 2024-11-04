@@ -36,7 +36,7 @@ from ..auto_generate import (AbsGrad, ACosGrad, LogitGrad, AcoshGrad, AsinGrad, 
                              ResizeBicubicGrad, HSigmoidGrad, CholeskyGrad, ResizeNearestNeighborGrad, LayerNormGrad,
                              HShrinkGrad, LayerNormGradGrad, SiLUGrad, MaximumGrad, MaximumGradGrad, RmsNormGrad,
                              FlashAttentionScoreGrad, UpsampleTrilinear3DGrad, UpsampleNearest3DGrad, MaskedSelectGrad,
-                             BinaryCrossEntropyGrad, SoftShrinkGrad, SeluGrad)
+                             BinaryCrossEntropyGrad, SoftShrinkGrad, SeluGrad, SmoothL1LossGrad)
 
 
 class SparseFillEmptyRowsGrad(Primitive):
@@ -1637,16 +1637,6 @@ class SliceGrad(PrimitiveWithInfer):
         return {'shape': x_shape,
                 'dtype': x['dtype'],
                 'value': None}
-
-
-class SmoothL1LossGrad(Primitive):
-    """Computes gradient for prediction on SmoothL1Loss."""
-
-    @prim_attr_register
-    def __init__(self, beta=1.0, reduction='none'):
-        self.add_prim_attr('sigma', self.beta)
-        self.reduction = validator.check_string(
-            reduction, ['none', 'sum', 'mean'], 'reduction', self.name)
 
 
 class SoftMarginLossGrad(Primitive):
