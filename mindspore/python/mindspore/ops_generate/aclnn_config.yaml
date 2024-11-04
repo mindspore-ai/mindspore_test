@@ -340,3 +340,6 @@ LogSigmoidGrad: 'aclnnLogSigmoidBackward'
 # 679
 Swiglu: 'aclnnSwiGlu'
 SwigluGrad: 'aclnnSwiGluGrad'
+
+# 1039
+InplaceFloor: 'aclnnInplaceFloor'

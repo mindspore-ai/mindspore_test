@@ -1,0 +1,20 @@
+#operator inplace_floor
+inplace_floor:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  function:
+    name: floor_
+  class:
+    name: InplaceFloor
+  dispatch:
+    enable: True
+    Ascend: InplaceFloorAscend

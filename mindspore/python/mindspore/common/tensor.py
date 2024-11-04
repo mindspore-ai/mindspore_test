@@ -1728,6 +1728,34 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('floor')(self)
 
+    def floor_(self):
+        r"""
+        Rounds a tensor down to the closest integer element-wise.
+
+        .. math::
+            out_i = \lfloor input_i \rfloor
+
+        .. warning::
+
+            This is an experimental API that is subject to change or deletion.
+
+        Returns:
+            Return a tensor with the same shape of input.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([1.1, 2.5, -1.5], mindspore.float32)
+            >>> x.floor_()
+            >>> print(x)
+            [1. 2. -2.]
+        """
+        return tensor_operator_registry.get('floor_')(self)
+
     def floor_divide(self, other):
         """
         For details, please refer to :func:`mindspore.ops.floor_divide`.
