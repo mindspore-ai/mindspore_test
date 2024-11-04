@@ -367,6 +367,9 @@ from mindspore.ops import triu
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
 
+# 552
+from mindspore.ops.auto_generate import log10_ext as log10
+
 # 553
 from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
 
@@ -2029,6 +2032,9 @@ __all__ = [
 
     # 538
     'histc',
+
+    # 552
+    'log10',
 
     # 553
     'logaddexp',

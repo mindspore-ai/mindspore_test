@@ -1,0 +1,12 @@
+#operator log10
+log10:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    function:
+        name: log10_ext
+    dispatch:
+        enable: True
