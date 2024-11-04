@@ -1291,6 +1291,26 @@ REG_BPROP_BUILDER("LogAddExp").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return BinopGradCommon(ib, x, y, dx, dy);
 });
 
+REG_BPROP_BUILDER("LogSumExp").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto keepdim = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
+
+  NodePtr dx;
+  auto keepdim_opt = mindspore::GetScalarValue<bool>(keepdim->BuildValue());
+  if (!keepdim_opt.has_value()) {
+    auto dx_true_branch = [&](Emitter *e) -> NodePtrList { return {LogSumExpGrad(e, input, dim, true, out, dout)}; };
+    auto dx_false_branch = [&](Emitter *e) -> NodePtrList { return {LogSumExpGrad(e, input, dim, false, out, dout)}; };
+    auto keepdim_true = ib->Equal(keepdim, ib->Value<bool>(true));
+    dx = ib->Conditional(keepdim_true, dx_true_branch, dx_false_branch);
+  } else {
+    dx = LogSumExpGrad(ib, input, dim, keepdim_opt.value(), out, dout);
+  }
+  return {dx, ib->OutZeros(dim), ib->OutZeros(keepdim)};
+});
+
 REG_BPROP_BUILDER("Erf").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
