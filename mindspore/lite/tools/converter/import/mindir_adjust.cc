@@ -125,6 +125,7 @@ int GetNodeQuantParam(std::shared_ptr<AnfNode> anf_node, const PrimitivePtr &pri
     return RET_ERROR;
   }
 
+  MS_CHECK_TRUE_RET(manager != nullptr, RET_ERROR);
   auto iter = manager->node_users().find(anf_node);
   std::vector<AnfNodePtr> outputs;
   if (iter != manager->node_users().end()) {

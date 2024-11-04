@@ -28,6 +28,7 @@
 namespace mindspore {
 namespace lite {
 STATUS ConstNodeReorderPass::Run(schema::MetaGraphT *graph) {
+  MS_CHECK_TRUE_RET(graph != nullptr, RET_ERROR);
   for (size_t i = 0; i < graph->subGraph.size(); i++) {
     std::set<unsigned int> const_node_indices;
     std::vector<unsigned int> final_order;

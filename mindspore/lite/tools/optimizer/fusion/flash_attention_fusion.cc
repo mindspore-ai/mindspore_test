@@ -52,6 +52,8 @@ constexpr auto kNameFAFormatBSH = "BSH";
 constexpr auto kNameFAFormatBNSDBSND = "BNSD_BSND";
 constexpr auto kNamePadNodeSuffix = "_fa_pad";
 constexpr auto kSocVersionAscend310P = "Ascend310P3";
+constexpr auto kPFAAscendC = "ascendc";
+constexpr auto kPFATik = "tik";
 constexpr size_t high_inner_precise = 0;
 constexpr size_t high_performance = 1;
 constexpr size_t kNumIndex0 = 0;
@@ -2884,7 +2886,7 @@ std::shared_ptr<FlashAttentionParm> FlashAttentionFusion::ParseFAParam() const {
         }
       } else if (attr.first == "implement_mode") {
         std::transform(attr_value.begin(), attr_value.end(), attr_value.begin(), ::tolower);
-        if (checkBinaryInputValidString(attr_value, "ascendc", "tik")) {
+        if (checkBinaryInputValidString(attr_value, kPFAAscendC, kPFATik)) {
           MS_LOG(INFO) << "Use user config, FA implement_mode is: " << attr_value;
           fa_param.implement_mode = attr_value;
         } else {
