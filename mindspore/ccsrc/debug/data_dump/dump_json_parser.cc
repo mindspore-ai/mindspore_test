@@ -820,10 +820,10 @@ void DumpJsonParser::ParseKernels(const nlohmann::json &content) {
     if (!ret) {
       MS_LOG(WARNING) << "Duplicate dump kernel name:" << kernel_str;
     }
-    if (kernel_strings_.empty()) {
-      kernel_types_.try_emplace({"", 0});
-      kernel_strings_.try_emplace({"", 0});
-    }
+  }
+  if (kernel_strings_.empty()) {
+    kernel_types_.try_emplace({"", 0});
+    kernel_strings_.try_emplace({"", 0});
   }
 }
 
@@ -1093,8 +1093,10 @@ bool DumpJsonParser::NeedDump(const std::string &op_full_name) {
         std::string op_name = op_full_name.substr(start_index, end_index - start_index);
         transform(op_name.begin(), op_name.end(), op_name.begin(), ::tolower);
         std::string kernel_type(iter.first);
-        transform(kernel_type.begin(), kernel_type.end(), kernel_type.begin(), ::tolower);
-        if (op_name.find(kernel_type) != std::string::npos) {
+        std::string kernel_type_in_lower_case = kernel_type;
+        transform(kernel_type_in_lower_case.begin(), kernel_type_in_lower_case.end(), kernel_type_in_lower_case.begin(),
+                  ::tolower);
+        if (op_name.find(kernel_type_in_lower_case) != std::string::npos) {
           need_dump = true;
           MatchKernel(kernel_type);
           break;
