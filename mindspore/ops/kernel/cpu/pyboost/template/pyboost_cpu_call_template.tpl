@@ -41,6 +41,7 @@ if (kernel_attr_pair.first || op_name() == "Cast") {
     PyBoostUtils::LaunchKernel(primitive(), op->device_context(), input_address_info, output_address_info);
   }));
   MS_LOG(DEBUG) << op_name() << " call end";
+  get_op()->CreateOutputSimpleInfoForView();
   return ${return_values};
 }
 ${cast_input_code}

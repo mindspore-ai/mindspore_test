@@ -62,7 +62,9 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
           if (op_run_info->requires_grad) {
             // Refresh op prim, otherwish the size of inputs will be incorrect.
             op_run_info->op_grad_info->op_prim = op_prim;
-            PyNativeAlgo::PyBoost::DoGrad(op, op_run_info, {${grad_args}});
+            op_run_info->op_grad_info->input_value = {${grad_args}};
+            op_run_info->op_grad_info->out_value = op_run_info->real_out;
+            PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
           }
           kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
 

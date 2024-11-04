@@ -166,8 +166,7 @@ struct DataConvert {
 
 struct PyBoost {
   static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim, const py::list &args);
-  static void DoGrad(const kernel::pyboost::OpPtr &op, const FrontendOpRunInfoPtr &op_run_info,
-                     ValuePtrList &&op_inputs);
+  static void DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info, const AsyncStatus &async_status);
   static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
   static void UpdateStubOutput(const FrontendOpRunInfoPtr &op_run_info, const AbstractBasePtr &abstract,
                                const kernel::pyboost::OpPtr &op);

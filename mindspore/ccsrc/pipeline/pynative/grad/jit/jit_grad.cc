@@ -368,7 +368,7 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   MS_EXCEPTION_IF_NULL(grad_executor);
   // Step 1: Get jit op info
   const auto &top_cell = grad_executor->top_cell();
-  top_cell->GetOpInfo(op_run_info, true);
+  top_cell->GetOpInfo(op_run_info->op_grad_info, op_run_info->base_op_run_info.op_name, true);
 
   // Step 2: Flatten output value for replacement
   ValuePtrList flatten_actual_output_list;

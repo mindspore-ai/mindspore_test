@@ -186,7 +186,10 @@ tensor::BaseTensorPtr GetContiguousTensor(const tensor::BaseTensorPtr &input_ten
     contiguous_run_info->input_size = 1;
     contiguous_run_info->base_op_run_info.op_name = ops::kNameContiguous;
     contiguous_run_info->op_grad_info->op_prim = prim::kPrimContiguous;
-    PyBoost::DoGrad(contiguous_op, contiguous_run_info, {input_tensor});
+
+    contiguous_run_info->op_grad_info->input_value = {input_tensor};
+    contiguous_run_info->op_grad_info->out_value = contiguous_run_info->real_out;
+    PyBoost::DoGrad(contiguous_op, contiguous_run_info->op_grad_info, contiguous_run_info->async_status);
   }
   return contiguous_tensor;
 }
@@ -1512,27 +1515,23 @@ void PyBoost::SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op) {
   Common::SetAbstractValueToAnyValue(op->output_abs());
 }
 
-void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const FrontendOpRunInfoPtr &op_run_info,
-                     ValuePtrList &&op_inputs) {
+void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad_info,
+                     const AsyncStatus &async_status) {
   static const std::string kDoGradName = "DoGrad";
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
                                      kDoGradName, false);
-  MS_EXCEPTION_IF_NULL(op);
-  // Update op grad info
-  op_run_info->op_grad_info->input_value = std::move(op_inputs);
-  op_run_info->op_grad_info->out_value = op_run_info->real_out;
 
   const auto &pynative_executor = Common::GetPyNativeExecutor();
   const auto &forward = pynative_executor->forward_executor();
   if (op->output_value_simple_info() == nullptr) {
-    op_run_info->op_grad_info->input_abs = op->input_abs();
-    op_run_info->base_op_run_info.abstract = op->output_abs();
+    MS_LOG(EXCEPTION) << "The simple info of " << op->primitive()->name() << " infer is null";
   }
+
   // Check and set input auto grad meta info and InputType
   if (MS_LIKELY(!forward->grad()->top_cell()->is_bprop_need_get_forward_graph())) {
-    MarkPyBoostInputs(op_run_info->op_grad_info, forward->grad()->top_cell());
+    MarkPyBoostInputs(grad_info, forward->grad()->top_cell());
   }
-  forward->ForwardOpGradImpl(op_run_info);
+  forward->ForwardOpGradImpl(grad_info, async_status);
 }
 
 void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCellInfoPtr &top_cell) {

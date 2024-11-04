@@ -91,7 +91,7 @@ class ME_EXPORT ForwardExecutor {
   void WaitForwardTask();
   std::string GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const;
   void ReInit();
-  void ForwardOpGradImpl(const FrontendOpRunInfoPtr &op_run_info) const;
+  void ForwardOpGradImpl(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) const;
   GradExecutorPtr grad() const;
   void InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info);
   // Mix precision and Implicit transform

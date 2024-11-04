@@ -78,6 +78,7 @@ struct OpGradInfo {
     input_value.clear();
     out_value = nullptr;
   }
+  bool run_in_vm = false;
   bool is_need_recompute{false};
   // Mark op output value whether used in bprop graph
   bool used_in_bprop_graph{false};
@@ -144,7 +145,6 @@ struct FrontendOpRunInfo {
   OpGradInfoPtr op_grad_info;
 
   BaseOpRunInfo base_op_run_info;
-  bool run_in_vm = false;
   bool requires_grad = false;
   bool output_get_by_infer_value = false;
   bool should_be_cache = false;

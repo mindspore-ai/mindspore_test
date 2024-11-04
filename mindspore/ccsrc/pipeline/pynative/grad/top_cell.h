@@ -71,7 +71,7 @@ class TopCellInfo {
   inline bool is_init_kpynative() const { return is_init_kpynative_; }
   inline void set_init_kpynative(bool init) { is_init_kpynative_ = init; }
   inline size_t grad_order() const { return grad_order_; }
-  void GetOpInfo(const FrontendOpRunInfoPtr &op_run_info, bool is_jit_graph) const;
+  void GetOpInfo(const OpGradInfoPtr &op_run_info, const std::string &op_name, bool is_jit_graph) const;
   inline bool forward_already_run() const { return forward_already_run_; }
   inline void set_forward_already_run(bool set_forward_already_run) { forward_already_run_ = set_forward_already_run; }
   inline bool need_compile_graph() const { return need_compile_graph_; }

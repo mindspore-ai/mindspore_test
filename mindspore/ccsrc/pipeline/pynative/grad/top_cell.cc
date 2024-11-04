@@ -21,17 +21,16 @@
 
 namespace mindspore {
 namespace pynative {
-void TopCellInfo::GetOpInfo(const FrontendOpRunInfoPtr &op_run_info, bool is_jit_graph) const {
+void TopCellInfo::GetOpInfo(const OpGradInfoPtr &grad_info, const std::string &op_name, bool is_jit_graph) const {
   // Dynamic shape no need do value node replace
   if (use_dynamic_shape_process_ && !is_jit_graph) {
     MS_LOG(DEBUG) << "Current top cell is in dynamic process";
     ++op_index_;
     return;
   }
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  op_run_info->op_grad_info->op_info.clear();
-  op_run_info->op_grad_info->op_index = op_index_;
-  op_run_info->op_grad_info->op_info += op_run_info->base_op_run_info.op_name + "-" + std::to_string(op_index_);
+  grad_info->op_info.clear();
+  grad_info->op_index = op_index_;
+  grad_info->op_info += op_name + "-" + std::to_string(op_index_);
   ++op_index_;
 }
 

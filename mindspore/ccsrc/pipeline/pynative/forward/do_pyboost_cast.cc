@@ -66,7 +66,9 @@ tensor::BaseTensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPt
     cast_run_info->input_size = input_size;
     cast_run_info->base_op_run_info.op_name = kCast;
     cast_run_info->op_grad_info->op_prim = cast_prim;
-    PyNativeAlgo::PyBoost::DoGrad(cast_op, cast_run_info, {t, type_id64});
+    cast_run_info->op_grad_info->input_value = {t, type_id64};
+    cast_run_info->op_grad_info->out_value = cast_run_info->real_out;
+    PyNativeAlgo::PyBoost::DoGrad(cast_op, cast_run_info->op_grad_info, cast_run_info->async_status);
   }
   return cast_run_info->real_out->cast<tensor::BaseTensorPtr>();
 }
