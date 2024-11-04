@@ -53,6 +53,27 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+namespace {
+Format GetFormat(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto format = Format::DEFAULT_FORMAT;
+  if (tensor->device_address() != nullptr) {
+    const auto temp_device_address = tensor->device_address();
+    auto const device_address = std::dynamic_pointer_cast<const DeviceAddress>(temp_device_address);
+    MS_EXCEPTION_IF_NULL(device_address);
+    if (device_address->device_name() != "CPU") {
+      auto const src_device_address = std::dynamic_pointer_cast<const AscendDeviceAddress>(temp_device_address);
+      MS_EXCEPTION_IF_NULL(src_device_address);
+      format = FromStrToEnum(src_device_address->format());
+    } else {
+      tensor->data_sync();
+      tensor->set_device_address(nullptr);
+    }
+  }
+  return format;
+}
+}  // namespace
+
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {
@@ -599,13 +620,7 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
     char *ptr = reinterpret_cast<char *>(device_ptr);
     for (size_t i = 0; i < tensor_list.size(); ++i) {
       const auto &tensor = tensor_list[i];
-      auto format = Format::DEFAULT_FORMAT;
-      if (tensor->device_address() != nullptr) {
-        const auto temp_device_address = tensor->device_address();
-        auto const src_device_address = std::dynamic_pointer_cast<const AscendDeviceAddress>(temp_device_address);
-        MS_EXCEPTION_IF_NULL(src_device_address);
-        format = FromStrToEnum(src_device_address->format());
-      }
+      auto format = GetFormat(tensor);
       auto device_address = CreateDeviceAddress(reinterpret_cast<void *>(ptr), before_padding_sizes[i], tensor->shape(),
                                                 format, tensor->data_type(), device_name, device_id, stream_id);
       MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
@@ -650,13 +665,7 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
   for (size_t i = 0; i < tensor_list.size(); ++i) {
     const auto &tensor = tensor_list[i];
     const auto &ptr = device_ptr_list[i];
-    auto format = Format::DEFAULT_FORMAT;
-    if (tensor->device_address() != nullptr) {
-      const auto temp_device_address = tensor->device_address();
-      auto const src_device_address = std::dynamic_pointer_cast<const AscendDeviceAddress>(temp_device_address);
-      MS_EXCEPTION_IF_NULL(src_device_address);
-      format = FromStrToEnum(src_device_address->format());
-    }
+    auto format = GetFormat(tensor);
     auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), format,
                                               tensor->data_type(), device_name, device_id, stream_id);
     MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
