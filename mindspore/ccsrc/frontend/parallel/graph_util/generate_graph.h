@@ -71,6 +71,7 @@ class GenerateGraph {
   Status Init(const CNodePtr &cnode);
   ~GenerateGraph() = default;
   AnfNodePtr virtual_input_node() { return virtual_input_node_; }
+  AnfNodePtr NewOpInst(const OperatorName &op_name, const OperatorAttrs &attrs, const OperatorAttrs &prim_attrs);
   AnfNodePtr NewOpInst(const OperatorName &op_name, const OperatorAttrs &attrs);
   AnfNodePtr NewOpInst(const OperatorName &op_name);
   AnfNodePtr PushBack(const std::vector<AnfNodePtr> &inputs);

@@ -437,6 +437,22 @@ AnfNodePtr GenerateGraph::NewOpInst(const OperatorName &op_name, const OperatorA
   return value_node->cast<AnfNodePtr>();
 }
 
+AnfNodePtr GenerateGraph::NewOpInst(const OperatorName &op_name, const OperatorAttrs &attrs,
+                                    const OperatorAttrs &prim_attrs) {
+  name_idx_++;
+  ValuePtr op_prim_instance =
+    CreateOpPrimtiveWithAttrs(attrs, op_name, instance_name_base_ + op_name + std::to_string(name_idx_));
+  if (op_prim_instance == nullptr) {
+    MS_LOG(EXCEPTION) << "Failure:" << op_name << " NewOpInst failed";
+  }
+  auto value_node = NewValueNode(op_prim_instance);
+  auto prim = GetValueNode<PrimitivePtr>(value_node);
+  for (const auto &[name, value] : prim_attrs) {
+    prim->set_attr(name, value);
+  }
+  return value_node->cast<AnfNodePtr>();
+}
+
 AnfNodePtr GenerateGraph::NewOpInst(const OperatorName &op_name) {
   name_idx_++;
   OperatorAttrs attrs;

@@ -98,7 +98,7 @@ def test_grouped_matmul_case0():
 
     mp = 4
     mul_stra = ((1, 1), (1, 1))
-    gmm_stra = (((1, 1),) * 2, ((1, mp),) * 2, ((),), ((),), ((),), ((),), ((),), ()) # x,w / b 4 quant + grouplist
+    gmm_stra = (((1, 1),) * 2, ((1, mp),) * 2, ((),), ((),), ((),), ((),), ((),), ())  # x,w / b 4 quant + grouplist
     relu_stra = ((1, mp),)
 
     M0 = 16
@@ -136,7 +136,7 @@ def test_grouped_matmul_case1():
 
     mp = 4
     mul_stra = ((1, mp), (1, mp))
-    gmm_stra = (((1, mp),) * 2, ((mp, 1),) * 2, ((),), ((),), ((),), ((),), ((),), ()) # x,w / b 4 quant grouplist
+    gmm_stra = (((1, mp),) * 2, ((mp, 1),) * 2, ((),), ((),), ((),), ((),), ((),), ())  # x,w / b 4 quant grouplist
     relu_stra = ((1, 1),)
 
     M0 = 16
@@ -197,7 +197,7 @@ def test_grouped_matmul_case2():
 
     mp = 4
     mul_stra = ((1, 1), (1, 1))
-    gmm_stra = (((1, 1),), ((1, 1, mp),), ((1, mp),), ((),), ((),), ((),), ((),), (1,)) # x, w, b, grouplist
+    gmm_stra = (((1, 1),), ((1, 1, mp),), ((1, mp),), ((),), ((),), ((),), ((),), (1,))  # x, w, b, grouplist
     relu_stra = ((1, mp),)
 
     M0 = 32
@@ -227,6 +227,72 @@ def test_grouped_matmul_case2():
     assert validator.check_parameter_shape('b0', [E0, N0/mp])
 
 
+def test_grouped_matmul_case2_group_list_in_init():
+    """
+    Feature: Test grouped_matmul
+    Description: semi_auto_parallel
+    Expectation: shape is as expected.
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=4, global_rank=0)
+    context.set_auto_parallel_context(dataset_strategy="full_batch")
+    context.set_context(device_target="Ascend", mode=ms.GRAPH_MODE)
+
+    class GroupedMatmulNetSplit3WeightBiasGroupList(Cell):
+        def __init__(self, np_w0, np_b0, split_item=3, group_type=0, mul_stra=None, gmm_stra=None, relu_stra=None,
+                     group_list=None):
+            super().__init__()
+            self.w = [Parameter(ms.Tensor(np_w0), "w0")]
+            self.b = [Parameter(ms.Tensor(np_b0), "b0")]
+            self.scale = None
+            self.offset = None
+            self.antiquant_scale = None
+            self.antiquant_offset = None
+
+            self.mul = ops.Mul().shard(mul_stra)
+            self.gmm = GroupedMatmul(split_item, group_type).shard(gmm_stra)
+            self.relu = ops.ReLU().shard(relu_stra)
+            self.group_list = group_list
+
+        def construct(self, x, one):
+            x = self.mul(x, one)
+            x_list = [x]
+            out = self.gmm(x_list, self.w, self.b, self.scale, self.offset, self.antiquant_scale, self.antiquant_offset,
+                           self.group_list)
+            out = self.relu(out[0])
+            return out
+
+    mp = 4
+    mul_stra = ((1, 1), (1, 1))
+    gmm_stra = (((1, 1),), ((1, 1, mp),), ((1, mp),), ((),), ((),), ((),), ((),), (1,))  # x, w, b, grouplist
+    relu_stra = ((1, mp),)
+
+    M0 = 32
+    K0 = 256
+    N0 = 128
+    E0 = 8
+    group_list_np = [1, 3, 10, 14, 18, 22, 24, M0]
+    group_list = ms.Tensor(group_list_np)
+
+    np_x0 = np.random.uniform(0.1, 2, size=[M0, K0]).astype(np.float16)
+    np_w0 = np.random.uniform(0.1, 1, size=[E0, K0, N0]).astype(np.float16)
+    np_b0 = np.random.uniform(0.1, 1, size=[E0, N0]).astype(np.float16)
+
+    gmm_net = GroupedMatmulNetSplit3WeightBiasGroupList(np_w0, np_b0, split_item=3, group_type=0,
+                                                        mul_stra=mul_stra, gmm_stra=gmm_stra, relu_stra=relu_stra,
+                                                        group_list=group_list)
+
+    # ms calculate
+    x = ms.Tensor(np_x0)
+    one = ms.Tensor(np.ones_like(np_x0).astype(np.float16))
+
+    gmm_net.set_inputs(x, one)
+    phase = compile_net(gmm_net, x, one)
+
+    validator = ParallelValidator(gmm_net, phase)
+    assert validator.check_parameter_shape('w0', [E0, K0, N0 / mp])
+    assert validator.check_parameter_shape('b0', [E0, N0 / mp])
+
+
 def test_grouped_matmul_case3():
     """
     Feature: Test grouped_matmul
@@ -239,7 +305,7 @@ def test_grouped_matmul_case3():
 
     mp = 4
     mul_stra = ((1, mp), (1, mp))
-    gmm_stra = (((1, mp),), ((1, mp, 1),), ((1, 1),), ((),), ((),), ((),), ((),), (1,)) # x, w, b, grouplist
+    gmm_stra = (((1, mp),), ((1, mp, 1),), ((1, 1),), ((),), ((),), ((),), ((),), (1,))  # x, w, b, grouplist
     relu_stra = ((1, 1),)
 
     M0 = 32
@@ -279,7 +345,7 @@ def test_grouped_matmul_case4():
     dp = 2
     mp = 4
     mul_stra = ((dp, mp), (dp, mp))
-    gmm_stra = (((mp, dp),), ((1, dp, 1),), ((1, 1),), ((),), ((),), ((),), ((),), (1,)) # x, w, b, grouplist
+    gmm_stra = (((mp, dp),), ((1, dp, 1),), ((1, 1),), ((),), ((),), ((),), ((),), (1,))  # x, w, b, grouplist
     relu_stra = ((1, 1),)
 
     M0 = 32
@@ -350,7 +416,7 @@ def test_grouped_matmul_case5():
     dp = 2
     mp = 4
     mul_stra = ((dp, 1, mp), (dp, 1, mp))
-    gmm_stra = (((dp, mp),), ((1, mp, 1),), ((1, 1),), ((),), ((),), ((),), ((),), (1,)) # x, w, b, grouplist
+    gmm_stra = (((dp, mp),), ((1, mp, 1),), ((1, 1),), ((),), ((),), ((),), ((),), (1,))  # x, w, b, grouplist
     relu_stra = ((1, dp * mp, 1),)
 
     BS = 8

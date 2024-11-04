@@ -575,13 +575,14 @@ TensorInfoBasePtr CreateTensorInfo(const Shape &device_matrix, const ShapeBasePt
 
 Status OperatorInfo::InferTensorInfoNew() {
   size_t real_input_index = 0;
-  for (size_t i = 0; i < inputs_tensor_map_new_.size(); ++i) {
+  for (size_t i = 0; i < inputs_shape_new_.size(); ++i) {
     // noshape insert default tenosor info
     if (inputs_shape_new_[i]->size() == 0) {
       (void)inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoValue>(TensorInfo()));
       continue;
     }
-    auto input_tensor_info = CreateTensorInfo(dev_matrix_shape_, inputs_shape_new_[i], inputs_tensor_map_new_[i]);
+    auto input_tensor_info =
+      CreateTensorInfo(dev_matrix_shape_, inputs_shape_new_[i], inputs_tensor_map_new_[real_input_index]);
     inputs_tensor_info_new_.emplace_back(input_tensor_info);
     ++real_input_index;
   }

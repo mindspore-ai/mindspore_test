@@ -70,6 +70,7 @@ class SplitVInfo : public SplitInfo {
  protected:
   Status GetAttrs() override;
   Status InferMirrorOps() override { return OperatorInfo::InferMirrorOps(); }
+  Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) override;
 };
 class SplitWithSizeInfo : public SplitInfo {
  public:

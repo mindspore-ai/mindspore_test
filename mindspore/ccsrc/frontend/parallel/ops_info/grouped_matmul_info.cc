@@ -229,8 +229,7 @@ Status GroupedMatmulInfo::InferTensorMap() {
   SetOptionalInputTensorMap(kInputAntiquantOffset, &valid_input_index);
 
   // optional grouplist
-  // input_value_[kInputGroupList] != nullptr && input_value_[index]->isa<None>()
-  if (input_value_[kInputGroupList] == nullptr) {
+  if (input_value_[kInputGroupList] == nullptr || !input_value_[kInputGroupList]->isa<None>()) {
     Shape grouplist_tensor_map_idx{-1};
     inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(grouplist_tensor_map_idx));
   }
