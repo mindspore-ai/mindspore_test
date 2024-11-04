@@ -45,7 +45,9 @@ class ListToTupleEliminator : public AnfVisitor {
       auto real_node = node->cast<CNodePtr>()->input(1);
       MS_EXCEPTION_IF_NULL(real_node);
       std::vector<AnfNodePtr> args_{NewValueNode(prim::kPrimMakeTuple)};
-      MS_EXCEPTION_IF_NULL(real_node->abstract());
+      if (real_node->abstract() == nullptr || !real_node->abstract()->isa<abstract::AbstractList>()) {
+        return nullptr;
+      }
       auto input_abs = real_node->abstract()->cast<abstract::AbstractListPtr>();
       MS_EXCEPTION_IF_NULL(input_abs);
       if (!input_abs->dynamic_len()) {

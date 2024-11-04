@@ -38,7 +38,7 @@ class ListToTupleFrontendFuncImpl : public OpFrontendFuncImpl {
   }
 
   AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-    auto input_list = input_args[kIndex0]->cast<abstract::AbstractListPtr>();
+    auto input_list = input_args[kIndex0]->cast<abstract::AbstractSequencePtr>();
     MS_EXCEPTION_IF_NULL(input_list);
     auto ret = std::make_shared<abstract::AbstractTuple>(input_list->elements(), input_list->sequence_nodes());
     ret->set_dynamic_len(input_list->dynamic_len());

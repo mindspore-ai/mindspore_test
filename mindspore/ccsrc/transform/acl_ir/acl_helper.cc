@@ -55,6 +55,9 @@ static const std::set<std::string> kHcomOps = {
   kHcomOpTypeReceive,   kHcomOpTypeReduceScatter, kHcomOpTypeAllToAllV, kHcomOpTypeBarrier,   kHcomOpTypeScatter,
   kHcomOpTypeGather,    kHcomOpTypeBatchSendRecv, kHcomOpTypeAlltoAllV};
 
+static const std::unordered_map<Reduction, int64_t> reduction_map_ms_to_ge = {
+  {Reduction::REDUCTION_SUM, 2}, {Reduction::MEAN, 1}, {Reduction::NONE, 0}};
+
 static const HashMap<GeDataType, TypeId> kGeTypeToMsType = {{GeDataType::DT_BOOL, kNumberTypeBool},
                                                             {GeDataType::DT_INT8, kNumberTypeInt8},
                                                             {GeDataType::DT_INT16, kNumberTypeInt16},
@@ -696,6 +699,14 @@ bool AclHelper::IsNopNode(const CNodePtr &node) {
 bool AclHelper::NeedIdentityFlag(const std::vector<std::string> &formats) {
   return std::any_of(formats.begin(), formats.end(),
                      [](const auto &format) { return !AclHelper::CheckDefaultSupportFormat(format); });
+}
+
+int64_t AclHelper::ConvertMsReductionToGe(Reduction ms_reduction) {
+  auto iter = reduction_map_ms_to_ge.find(ms_reduction);
+  if (iter == reduction_map_ms_to_ge.end()) {
+    MS_LOG(EXCEPTION) << "The value of reduction is invalid, ms_reduction: " << ms_reduction;
+  }
+  return iter->second;
 }
 }  // namespace transform
 }  // namespace mindspore

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,76 +14,56 @@
  * limitations under the License.
  */
 
-#include <vector>
-#include <memory>
-#include "abstract/abstract_value.h"
-#include "abstract/dshape.h"
-#include "common/common_test.h"
-#include "include/backend/optimizer/helper.h"
-#include "ir/dtype/type.h"
-#include "ir/primitive.h"
-#include "infer/ops_func_impl/nllloss_grad.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "utils/ms_context.h"
-#include "utils/tensor_construct_utils.h"
+#include "ops/utils/general_infer_utils.h"
+#include "mindapi/base/types.h"
 
-namespace mindspore {
-namespace ops {
-struct NLLLossGradOpParams {
-  ShapeVector x_shape;
-  TypePtr x_type;
-  ShapeVector dy_shape;
-  TypePtr dy_type;
-  ShapeVector label_shape;
-  TypePtr label_type;
-  ShapeVector weight_shape;
-  TypePtr weight_type;
-  ShapeVector total_weight_shape;
-  TypePtr total_weight_type;
-  bool is_success;
-  ShapeVector out_shape;
-  TypePtr out_type;
-};
-
-const string kNameNLLLossGrad_ = "NLLLossGrad";
-
-class TestNLLLossGrad : public TestOps, public testing::WithParamInterface<NLLLossGradOpParams> {};
-
-TEST_P(TestNLLLossGrad, dyn_shape) {
-  const auto &param = GetParam();
-  auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
-  auto dy = std::make_shared<abstract::AbstractTensor>(param.dy_type, param.dy_shape);
-  auto label = std::make_shared<abstract::AbstractTensor>(param.label_type, param.label_shape);
-  auto weight = std::make_shared<abstract::AbstractTensor>(param.weight_type, param.weight_shape);
-  auto total_weight = std::make_shared<abstract::AbstractTensor>(param.total_weight_type, param.total_weight_shape);
-  ASSERT_NE(x, nullptr);
-  ASSERT_NE(dy, nullptr);
-  ASSERT_NE(label, nullptr);
-  ASSERT_NE(weight, nullptr);
-  ASSERT_NE(total_weight, nullptr);
-  auto prim = std::make_shared<Primitive>(kNameNLLLossGrad_);
-  auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
-  auto expect_type = std::make_shared<TensorType>(param.out_type);
-  if (param.is_success) {
-    DoFuncImplInferAndCompare<NLLLossGradFuncImpl>(kNameNLLLossGrad_, {x, dy, label, weight, total_weight},
-                                                   expect_shape, expect_type);
-  } else {
-    ASSERT_ANY_THROW(DoFuncImplInferAndCompare<NLLLossGradFuncImpl>(
-      kNameNLLLossGrad_, {x, dy, label, weight, total_weight}, expect_shape, expect_type));
-  }
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{2}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{2}, kNumberTypeInt32}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::NONE)},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{1}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{2}, kNumberTypeInt32}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::MEAN)},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{1}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{2}, kNumberTypeInt32}, InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::REDUCTION_SUM)},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{-1}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{-1}, kNumberTypeInt32}, InferInfoParam{ShapeVector{-1}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{-1}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::REDUCTION_SUM)},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs(
+      {InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{-2}, kNumberTypeInt32}, InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::REDUCTION_SUM)},
+       InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
+  return generator.Generate();
 }
+}  // namespace
 
-INSTANTIATE_TEST_CASE_P(
-  TestNLLLossGradGroup, TestNLLLossGrad,
-  testing::Values(
-    NLLLossGradOpParams{
-      {2, 3}, kFloat32, {2, 3}, kFloat32, {2}, kInt32, {3}, kFloat32, {}, kFloat32, true, {2, 3}, kFloat32},
-    NLLLossGradOpParams{
-      {-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1}, kInt32, {-1}, kFloat32, {}, kFloat32, true, {-1, -1}, kFloat32},
-    NLLLossGradOpParams{
-      {-2}, kFloat32, {-2}, kFloat32, {-2}, kInt32, {-2}, kFloat32, {}, kFloat32, true, {-1, -1}, kFloat32},
-    NLLLossGradOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {3}, kInt32, {3}, kFloat32, {}, kFloat32, false},
-    NLLLossGradOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {2}, kInt32, {2}, kFloat32, {}, kFloat32, false}));
-}  // namespace ops
-}  // namespace mindspore
+INSTANTIATE_TEST_CASE_P(NLLLossGrad, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace mindspore::ops

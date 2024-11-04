@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/nllloss.h"
+#include "infer/ops_func_impl/nllloss_2d.h"
 #include <set>
 #include <algorithm>
 #include <memory>
@@ -29,15 +29,11 @@
 
 namespace mindspore {
 namespace ops {
-
-ShapeArray NLLLossFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+ShapeArray NLLLoss2dFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   auto target_shape = input_infos[kInputIndex1]->GetShape();
   ShapeVector weight_out_shape = {};
   auto reduction = static_cast<Reduction>(input_infos[kInputIndex3]->GetScalarValue<int64_t>().value());
   if (reduction == Reduction::NONE) {
-    if (target_shape.size() == 1 && target_shape[0] == -2) {
-      target_shape = {-1};
-    }
     return {target_shape, weight_out_shape};
   } else {
     ShapeVector out_shape = {};
@@ -45,10 +41,11 @@ ShapeArray NLLLossFuncImpl::InferShape(const PrimitivePtr &primitive, const Infe
   }
 }
 
-std::vector<TypeId> NLLLossFuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const InferInfoPtrList &input_infos) const {
+std::vector<TypeId> NLLLoss2dFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                 const InferInfoPtrList &input_infos) const {
   auto input_data_type = input_infos[kInputIndex0]->GetType();
-  return {input_data_type, input_data_type};
+  auto weight_data_type = input_infos[kInputIndex2]->GetType();
+  return {input_data_type, weight_data_type};
 }
 }  // namespace ops
 }  // namespace mindspore
