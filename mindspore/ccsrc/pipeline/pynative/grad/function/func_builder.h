@@ -169,12 +169,12 @@ class FuncBuilder : public BpropBuilder {
   NodePtr GeLU(const NodePtr &input) override;
   NodePtr GridSampler2DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
                             const NodePtr &interpolation_mode, const NodePtr &padding_mode,
-                            const NodePtr &align_corners) override;
+                            const NodePtr &align_corners, const NodePtr &output_mask) override;
   NodePtr GridSampler2D(const NodePtr &input_x, const NodePtr &grid, const NodePtr &interpolation_mode,
                         const NodePtr &padding_mode, const NodePtr &align_corners) override;
   NodePtr GridSampler3DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
                             const NodePtr &interpolation_mode, const NodePtr &padding_mode,
-                            const NodePtr &align_corners) override;
+                            const NodePtr &align_corners, const NodePtr &output_mask) override;
   NodePtr GridSampler3D(const NodePtr &input_x, const NodePtr &grid, const NodePtr &interpolation_mode,
                         const NodePtr &padding_mode, const NodePtr &align_corners) override;
   NodePtr GroupNormGrad(const NodePtr &dy, const NodePtr &x, const NodePtr &mean, const NodePtr &rstd,

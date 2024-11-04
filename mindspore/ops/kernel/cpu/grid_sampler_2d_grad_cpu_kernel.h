@@ -66,6 +66,7 @@ class GridSampler2DGradCpuKernelMod : public NativeCpuKernelMod {
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
                                                      .AddOutputAttr(kNumberTypeFloat32)
                                                      .AddOutputAttr(kNumberTypeFloat32),
                                                    KernelAttr()
@@ -75,6 +76,7 @@ class GridSampler2DGradCpuKernelMod : public NativeCpuKernelMod {
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
                                                      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+                                                     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
                                                      .AddOutputAttr(kNumberTypeFloat64)
                                                      .AddOutputAttr(kNumberTypeFloat64)};
     return support_list;

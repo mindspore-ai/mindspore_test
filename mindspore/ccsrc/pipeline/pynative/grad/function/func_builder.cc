@@ -706,8 +706,9 @@ NodePtr FuncBuilder::GeLU(const NodePtr &input) { return NativeFunc::GeLU(input)
 
 NodePtr FuncBuilder::GridSampler2DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
                                        const NodePtr &interpolation_mode, const NodePtr &padding_mode,
-                                       const NodePtr &align_corners) {
-  return NativeFunc::GridSampler2DGrad(grad, input_x, grid, interpolation_mode, padding_mode, align_corners);
+                                       const NodePtr &align_corners, const NodePtr &output_mask) {
+  return NativeFunc::GridSampler2DGrad(grad, input_x, grid, interpolation_mode, padding_mode, align_corners,
+                                       output_mask);
 }
 
 NodePtr FuncBuilder::GridSampler2D(const NodePtr &input_x, const NodePtr &grid, const NodePtr &interpolation_mode,
@@ -717,8 +718,9 @@ NodePtr FuncBuilder::GridSampler2D(const NodePtr &input_x, const NodePtr &grid, 
 
 NodePtr FuncBuilder::GridSampler3DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
                                        const NodePtr &interpolation_mode, const NodePtr &padding_mode,
-                                       const NodePtr &align_corners) {
-  return NativeFunc::GridSampler3DGrad(grad, input_x, grid, interpolation_mode, padding_mode, align_corners);
+                                       const NodePtr &align_corners, const NodePtr &output_mask) {
+  return NativeFunc::GridSampler3DGrad(grad, input_x, grid, interpolation_mode, padding_mode, align_corners,
+                                       output_mask);
 }
 
 NodePtr FuncBuilder::GridSampler3D(const NodePtr &input_x, const NodePtr &grid, const NodePtr &interpolation_mode,

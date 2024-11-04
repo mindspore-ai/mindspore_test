@@ -32,6 +32,8 @@
 
 namespace mindspore {
 namespace kernel {
+inline constexpr int kGridSamplerGradInputNum = 7;
+inline constexpr int kGridSamplerGradOutputNum = 2;
 class GridSampler2DGradKernelMod : public NativeGpuKernelMod {
  public:
   GridSampler2DGradKernelMod() { ResetResource(); }
