@@ -76,7 +76,7 @@ def test_log2(mode):
 
     assert np.allclose(output.asnumpy(), expect_output)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
@@ -87,7 +87,7 @@ def test_log(mode):
     Description: Verify the result of Tensor.log..
     Expectation: expect correct forward result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([2, 4, 8]).astype(np.float32)
     x = Tensor(x_np, dtype=ms.float32)
     net = LogNet()

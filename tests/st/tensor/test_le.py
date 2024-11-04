@@ -17,7 +17,18 @@ import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
+import mindspore.nn as nn
 from mindspore import Tensor
+
+class LeNet(nn.Cell):
+    def construct(self, x, y):
+        return x.le(y)
+
+
+class LessEqualNet(nn.Cell):
+    def construct(self, x, y):
+        return x.less_equal(y)
+
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level0',
@@ -30,13 +41,14 @@ def test_tensor_le(mode):
     Description: Verify the result of Tensor.le..
     Expectation: expect correct forward result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([1, 2, 3]).astype(np.int32)
     y_np = np.array([1, 1, 4]).astype(np.int32)
     x = Tensor(x_np, dtype=ms.int32)
     y = Tensor(y_np, dtype=ms.int32)
     expect_output = x_np <= y_np
-    output = x.le(y)
+    net = LeNet()
+    output = net(x, y)
     assert np.allclose(output.asnumpy(), expect_output)
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -50,11 +62,12 @@ def test_tensor_less_equal(mode):
     Description: Verify the result of Tensor.less_equal.
     Expectation: expect correct forward result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([1, 2, 3]).astype(np.int32)
     y_np = np.array([1, 1, 4]).astype(np.int32)
     x = Tensor(x_np, dtype=ms.int32)
     y = Tensor(y_np, dtype=ms.int32)
     expect_output = x_np <= y_np
-    output2 = x.less_equal(y)
-    assert np.allclose(output2.asnumpy(), expect_output)
+    net = LessEqualNet()
+    output = net(x, y)
+    assert np.allclose(output.asnumpy(), expect_output)

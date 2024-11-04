@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 import mindspore.common.dtype as mstype
+import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
@@ -26,7 +27,7 @@ class Net(nn.Cell):
         return x.where(condition, y)
 
 
-@arg_mark(plat_marks=['platform_cpu', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
@@ -37,7 +38,7 @@ def test_tensor_where(mode):
     Description: Verify the result of where
     Expectation: success
     """
-    context.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.arange(4).reshape((2, 2)), mstype.float32)
     y = Tensor(np.ones((2, 2)), mstype.float32)
     condition = x < 3

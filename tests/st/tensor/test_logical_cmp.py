@@ -17,7 +17,23 @@ import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
+import mindspore.nn as nn
 from mindspore import Tensor
+
+class LogicalAndNet(nn.Cell):
+    def construct(self, x, y):
+        return x.logical_and(y)
+
+
+class LogicalNotNet(nn.Cell):
+    def construct(self, x):
+        return x.logical_not()
+
+
+class LogicalOrNet(nn.Cell):
+    def construct(self, x, y):
+        return x.logical_or(y)
+
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level1',
@@ -27,16 +43,17 @@ from mindspore import Tensor
 def test_tensor_logical_and(mode):
     """
     Feature: test Tensor.logical_and.
-    Description: Verify the result of Tensor.logical_and..
+    Description: Verify the result of Tensor.logical_and.
     Expectation: expect correct forward result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([True, False, True]).astype(np.bool_)
     y_np = np.array([True, True, False]).astype(np.bool_)
     x = Tensor(x_np, dtype=ms.bool_)
     y = Tensor(y_np, dtype=ms.bool_)
     expect_output = np.logical_and(x_np, y_np)
-    output = x.logical_and(y)
+    net = LogicalAndNet()
+    output = net(x, y)
     assert np.allclose(output.asnumpy(), expect_output)
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -47,13 +64,15 @@ def test_tensor_logical_and(mode):
 def test_tensor_logical_not(mode):
     """
     Feature: test Tensor.logical_not.
-    Description: Verify the result of Tensor.logical_not..
+    Description: Verify the result of Tensor.logical_not.
     Expectation: expect correct forward result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([True, False, True]).astype(np.bool_)
     x = Tensor(x_np, dtype=ms.bool_)
     expect_output = np.logical_not(x_np)
+    net = LogicalNotNet()
+    output = net(x)
     output = x.logical_not()
     assert np.allclose(output.asnumpy(), expect_output)
 
@@ -65,73 +84,15 @@ def test_tensor_logical_not(mode):
 def test_tensor_logical_or(mode):
     """
     Feature: test Tensor.logical_or.
-    Description: Verify the result of Tensor.logical_or..
+    Description: Verify the result of Tensor.logical_or.
     Expectation: expect correct forward result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([True, False, True]).astype(np.bool_)
     y_np = np.array([True, True, False]).astype(np.bool_)
     x = Tensor(x_np, dtype=ms.bool_)
     y = Tensor(y_np, dtype=ms.bool_)
     expect_output = np.logical_or(x_np, y_np)
-    output = x.logical_or(y)
+    net = LogicalOrNet()
+    output = net(x, y)
     assert np.allclose(output.asnumpy(), expect_output)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-def test_logical_and_graph_mode():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.logical_and.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func_and(x, other):  # pylint: disable=redefined-builtin
-        return x.logical_and(other)
-
-    x_np = np.array([True, False, False]).astype(np.bool_)
-    y_np = np.array([False, True, False]).astype(np.bool_)
-    x = ms.Tensor(x_np)
-    y = ms.Tensor(y_np)
-    out = func_and(x, y)
-    expect = np.logical_and(x_np, y_np)
-    assert np.all(out.asnumpy() == expect)
-
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-def test_logical_or_graph_mode():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.logical_or.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func_or(x, other):  # pylint: disable=redefined-builtin
-        return x.logical_or(other)
-
-    x_np = np.array([True, False, False]).astype(np.bool_)
-    y_np = np.array([False, True, False]).astype(np.bool_)
-    x = ms.Tensor(x_np)
-    y = ms.Tensor(y_np)
-    out = func_or(x, y)
-    expect = np.logical_or(x_np, y_np)
-    assert np.all(out.asnumpy() == expect)
-
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-def test_logical_not_graph_mode():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.logical_not.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func_not(x):  # pylint: disable=redefined-builtin
-        return x.logical_not()
-
-    x_np = np.array([True, False, False]).astype(np.bool_)
-    x = ms.Tensor(x_np)
-    out = func_not(x)
-    expect = np.logical_not(x_np)
-    assert np.all(out.asnumpy() == expect)

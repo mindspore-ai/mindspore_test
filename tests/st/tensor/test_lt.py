@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ def test_lt(mode):
     Description: Verify the result of Tensor.lt
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     x = ms.Tensor(np.array([1, 2, 3]), ms.int32)
     y = ms.Tensor(np.array([1, 1, 4]), ms.int32)
@@ -61,7 +61,7 @@ def test_less(mode):
     Description: Verify the result of Tensor.less
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = NetLess()
     x = ms.Tensor(np.array([1, 2, 3]), ms.int32)
     y = ms.Tensor(np.array([1, 1, 4]), ms.int32)

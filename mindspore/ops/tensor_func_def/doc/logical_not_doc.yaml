@@ -1,5 +1,7 @@
 logical_not:
     description: |
+        logical_not() -> Tensor
+
         Computes the "logical NOT" of a tensor element-wise.
 
         Refer to :func:`mindspore.ops.logical_not` for more details.

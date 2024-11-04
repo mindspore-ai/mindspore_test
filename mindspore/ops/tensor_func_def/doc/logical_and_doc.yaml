@@ -1,5 +1,7 @@
 logical_and:
     description: |
+        logical_and(y) -> Tensor
+
         Computes the "logical AND" of two tensors element-wise.
 
         Refer to :func:`mindspore.ops.logical_and` for more details.

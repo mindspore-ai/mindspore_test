@@ -1,5 +1,7 @@
 logical_or:
     description: |
+        logical_or(y) -> Tensor
+
         Computes the "logical OR" of two tensors element-wise.
 
         Refer to :func:`mindspore.ops.logical_or` for more details.
