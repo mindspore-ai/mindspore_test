@@ -231,7 +231,7 @@ from mindspore.ops.auto_generate import sigmoid
 # 97 sort
 
 # 98 split
-
+from mindspore.ops.function.array_func import split
 # 99 sqrt
 
 # 100 square
@@ -700,6 +700,9 @@ def tensor_sigmoid(input):
 # 97 sort
 
 # 98 split
+def deprecated_tensor_split(input, split_size_or_sections, axis=0):
+    return split(input, split_size_or_sections, axis)
+
 
 # 99 sqrt
 

@@ -350,7 +350,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"tolist", std::string("tolist")},                                  // tolist()
        {"col2im", std::string("col2im")},                                  // P.Col2Im
        {"count_nonzero", std::string("count_nonzero")},                    // count_nonzero
-       {"split", std::string("split")},                                    // split
        {"tensor_split", std::string("tensor_split")},                      // tensor_split
        {"vsplit", std::string("vsplit")},                                  // vsplit
        {"hsplit", std::string("hsplit")},                                  // hsplit

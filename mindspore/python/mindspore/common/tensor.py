@@ -391,7 +391,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __add__(self, other):
         return tensor_operator_registry.get('__add__')(self, other)
 
-
     def __and__(self, other):
         if isinstance(other, (int, bool, float, Tensor)):
             return tensor_operator_registry.get('bitwise_and')(self, other)

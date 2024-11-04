@@ -1,0 +1,14 @@
+#deprecated split
+split:
+  args:
+    input:
+      dtype: tensor
+    split_size_or_sections:
+      dtype: tuple[int]
+      type_cast: int, list[int]
+    axis:
+      dtype: int
+      default: 0
+  returns:
+    output:
+      dtype: tuple[tensor]

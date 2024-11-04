@@ -212,7 +212,7 @@ deprecated_tensor_method_map = {
     # 97 sort
 
     # 98 split
-
+    "split": "deprecated_tensor_split",
     # 99 sqrt
 
     # 100 square
