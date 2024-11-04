@@ -47,7 +47,8 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
 
   size_t comm_stream_id;
-  if (common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream) == "group") {
+  auto value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream);
+  if (value == "group" || value.empty()) {
     comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(group_str);
   } else {
     comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamID();
