@@ -3239,5 +3239,7 @@ REG_BPROP_BUILDER("FakeRemoteLookupUniqued").SetBody((BODYFUNC(ib) {
           dx};
 }));
 
+REG_BPROP_BUILDER("Generator").SetBody(ReturnZeros);
+
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

@@ -242,6 +242,8 @@ from mindspore.nn.loss import L1LossExt as L1Loss
 # 258
 from mindspore.ops.function.nn_func import mse_loss_ext
 
+# 393
+from mindspore.mint.nn.layer.basic import Dropout2d
 
 # 674
 from mindspore.mint.nn.layer.normalization import BatchNorm1d
@@ -889,9 +891,10 @@ __all__ = [
     # 294
     'SmoothL1Loss',
 
+    # 393
+    'Dropout2d',
     # 556
     'LogSigmoid',
-
     # 674
     'BatchNorm1d',
     # 675
