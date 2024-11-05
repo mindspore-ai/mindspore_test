@@ -480,16 +480,16 @@ def test_dataset_mnistdataset_with_for_loop_iterator():
     """
     os.environ["MS_INDEPENDENT_DATASET"] = "False"
 
-    dataset = ds.MnistDataset(MNIST_DIR)
+    dataset = ds.MnistDataset(MNIST_DIR, num_samples=10)
     dataset = dataset.take(count=5)
     dataset = dataset.skip(count=1)
     dataset = dataset.map(operations=transforms.Unique(), input_columns='image',
-                          output_columns=['image', 'image_idx', 'image_cnt'], num_parallel_workers=3,
+                          output_columns=['image', 'image_idx', 'image_cnt'], num_parallel_workers=2,
                           python_multiprocessing=True)
     dataset = dataset.project(columns=['image', 'image_idx', 'image_cnt'])
     dataset = dataset.repeat(5)
     dataset = dataset.shuffle(buffer_size=100)
-    dataset = dataset.batch(1, drop_remainder=True)
+    dataset = dataset.batch(1, drop_remainder=True, num_parallel_workers=2)
     numiter = 0
     for _ in range(3):
         for _ in dataset.create_dict_iterator(output_numpy=True):
@@ -498,16 +498,16 @@ def test_dataset_mnistdataset_with_for_loop_iterator():
 
     os.environ["MS_INDEPENDENT_DATASET"] = "True"
 
-    dataset = ds.MnistDataset(MNIST_DIR)
+    dataset = ds.MnistDataset(MNIST_DIR, num_samples=10)
     dataset = dataset.take(count=5)
     dataset = dataset.skip(count=1)
     dataset = dataset.map(operations=transforms.Unique(), input_columns='image',
-                          output_columns=['image', 'image_idx', 'image_cnt'], num_parallel_workers=3,
+                          output_columns=['image', 'image_idx', 'image_cnt'], num_parallel_workers=2,
                           python_multiprocessing=True)
     dataset = dataset.project(columns=['image', 'image_idx', 'image_cnt'])
     dataset = dataset.repeat(5)
     dataset = dataset.shuffle(buffer_size=100)
-    dataset = dataset.batch(1, drop_remainder=True)
+    dataset = dataset.batch(1, drop_remainder=True, num_parallel_workers=2)
     numiter = 0
     for _ in range(3):
         for _ in dataset.create_dict_iterator(output_numpy=True):
