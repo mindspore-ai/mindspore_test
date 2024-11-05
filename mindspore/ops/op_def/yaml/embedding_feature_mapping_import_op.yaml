@@ -19,9 +19,5 @@ embedding_feature_mapping_import:
             dtype: int
             default: 1
     returns:
-        feature_id:
-            dtype: tensor
-        offset_id:
-            dtype: tensor
-        values:
-            dtype: tensor
+        outputs:
+            dtype: tuple[tensor]

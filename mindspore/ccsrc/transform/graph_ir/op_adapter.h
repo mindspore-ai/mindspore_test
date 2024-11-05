@@ -170,6 +170,39 @@ class OpAdapter : public BaseOpAdapter {
   // Convert ME UserCustom AnfNode to GE CustomOp. And set it's attrs.
   OperatorPtr GenerateCustomOp(const AnfNodePtr anf) { return impl_->GenerateCustomOp(anf); }
 
+  void CreateDynOutputs(const OperatorPtr op, const AnfNodePtr &anf, size_t output_num) const {
+    MS_LOG(DEBUG) << "Create dynamic output for node:" << anf->fullname_with_scope() << " num:" << output_num;
+    if (dyn_output_map_.empty()) {
+      return;
+    } else if (dyn_output_map_.size() == 1) {
+      dyn_output_map_.begin()->second.create_dyn_output(op, SizeToUint(output_num));
+    } else {
+      auto cnode = anf->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      std::vector<int64_t> dyn_output_sizes;
+      if (common::AnfAlgo::HasNodeAttr(kAttrDynOutputSizes, cnode)) {
+        dyn_output_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(cnode, kAttrDynOutputSizes);
+      } else {
+        MS_LOG(EXCEPTION) << "Node [" << cnode->fullname_with_scope()
+                          << "] has multiple dynamic outputs, but there is no attr [dyn_output_sizes].";
+      }
+      auto sum = std::accumulate(dyn_output_sizes.begin(), dyn_output_sizes.end(), 0);
+      if (LongToSize(sum) > output_num) {
+        MS_LOG(EXCEPTION) << "The sum of attr dyn_output_sizes " << sum << " is greater than output num " << output_num
+                          << ", node: " << anf->fullname_with_scope();
+      }
+
+      for (auto &[idx, output_desc] : dyn_output_map_) {
+        MS_LOG(DEBUG) << "Create dynamic output for node:" << anf->fullname_with_scope() << ", idx:" << idx;
+        if (LongToSize(idx) >= dyn_output_sizes.size()) {
+          MS_LOG(EXCEPTION) << "Dynamic output index " << idx << " out of range [0," << dyn_output_sizes.size()
+                            << "], node: " << anf->fullname_with_scope();
+        }
+        output_desc.create_dyn_output(op, LongToUint(dyn_output_sizes[idx]));
+      }
+    }
+  }
+
   OperatorPtr GenerateNormalOp(const AnfNodePtr &anf) const {
     OperatorPtr op = nullptr;
     std::string op_name;
@@ -216,19 +249,7 @@ class OpAdapter : public BaseOpAdapter {
           }
         }
       }
-
-      MS_LOG(DEBUG) << "create_dyn_output for node:" << anf->fullname_with_scope() << ", type:" << type->ToString()
-                    << ", num:" << num;
-      if (dyn_output_map_.size() > 1) {
-        for (auto &[idx, output_desc] : dyn_output_map_) {
-          // To Do
-          // Now, the output num of each dynamic output should be one.
-          MS_LOG(INFO) << "ES, create_dyn_output for node:" << anf->fullname_with_scope() << ", idx:" << idx;
-          output_desc.create_dyn_output(op, static_cast<unsigned int>(1));
-        }
-      } else {
-        dyn_output_map_.begin()->second.create_dyn_output(op, static_cast<unsigned int>(num));
-      }
+      CreateDynOutputs(op, anf, num);
     }
     return op;
   }
@@ -247,15 +268,10 @@ class OpAdapter : public BaseOpAdapter {
     // set dynamic output num if op use DYNAMIC_OUTPUT
     if ((op != nullptr) && (!dyn_output_map_.empty())) {
       MS_LOG(DEBUG) << "create_dyn_output for node:" << op->GetName() << ", num:" << dyn_output_size;
-      if (dyn_output_map_.size() > 1) {
-        for (auto &[idx, output_desc] : dyn_output_map_) {
-          // To Do
-          // Now, the output num of each dynamic output should be one.
-          MS_LOG(INFO) << "ES, create_dyn_output for node:" << op->GetName() << ", idx:" << idx;
-          output_desc.create_dyn_output(op, static_cast<unsigned int>(1));
-        }
-      } else {
+      if (dyn_output_map_.size() == 1) {
         dyn_output_map_.begin()->second.create_dyn_output(op, static_cast<unsigned int>(dyn_output_size));
+      } else {
+        MS_LOG(EXCEPTION) << "Unsupported this interface for multiple dynamic output node [" << op->GetName() << "].";
       }
     }
   }

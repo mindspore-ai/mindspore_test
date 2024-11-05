@@ -111,6 +111,8 @@ BaseShapePtr EmbeddingFeatureMappingFindFuncImpl::InferShape(const PrimitivePtr 
   std::tie(shapes, std::ignore, table_num) =
     EmbeddingFeatureMappingInferFeatureIdAndOffsetIdShapes(primitive, input_args, table_name_idx_, feature_size_idx_);
   (void)CheckEmbeddingFeatureMappingNum(primitive, input_args[num_idx_], SizeToLong(table_num));
+  auto table_num_long = SizeToLong(table_num);
+  primitive->AddAttr(kAttrDynOutputSizes, MakeValue(std::vector<int64_t>{table_num_long, table_num_long}));
   return std::make_shared<abstract::TupleShape>(std::move(shapes));
 }
 
@@ -126,6 +128,9 @@ BaseShapePtr EmbeddingFeatureMappingImportFuncImpl::InferShape(const PrimitivePt
                                                                const std::vector<AbstractBasePtr> &input_args) const {
   auto [shapes, feature_size_opt, table_num] =
     EmbeddingFeatureMappingInferFeatureIdAndOffsetIdShapes(primitive, input_args, table_name_idx_, feature_size_idx_);
+  auto table_num_long = SizeToLong(table_num);
+  primitive->AddAttr(kAttrDynOutputSizes,
+                     MakeValue(std::vector<int64_t>{table_num_long, table_num_long, table_num_long}));
   // value shapes
   auto embedding_dim_opt = GetArrayValue<int64_t>(input_args[embedding_dim_idx_]);
   if (MS_LIKELY(feature_size_opt.has_value() && embedding_dim_opt.has_value())) {
