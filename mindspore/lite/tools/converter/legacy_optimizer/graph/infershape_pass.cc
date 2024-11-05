@@ -187,6 +187,7 @@ std::unique_ptr<Tensor> CreateRuntimeTensor(const std::unique_ptr<TensorT> &src_
 }  // namespace
 
 void ConvertString(const MetaGraphT *graph, uint32_t index, bool *convert_succ, std::vector<Tensor *> *lite_tensors) {
+  CHECK_NULL_RETURN_VOID(graph);
   auto &tensorT = graph->allTensors.at(index);
   auto runtime_tensor = CreateRuntimeTensor(tensorT);
   if (runtime_tensor == nullptr) {
@@ -255,6 +256,7 @@ std::vector<Tensor *> ConvertTensorToLiteTensor(const MetaGraphT *graph, const s
 STATUS NodeInferShape(const std::unique_ptr<schema::CNodeT> &node, const std::vector<Tensor *> &inputs,
                       std::vector<Tensor *> *outputs) {
   flatbuffers::FlatBufferBuilder fbb(kInitialSize);
+  MS_CHECK_TRUE_RET(node != nullptr, RET_ERROR);
   auto prim = ConvertToPrimitive(node->primitive.get(), &fbb);
   if (prim == nullptr) {
     MS_LOG(ERROR) << "get primitive failed.";
@@ -313,6 +315,7 @@ void PrintTensorShape(const std::vector<Tensor *> &input_tensors, const std::vec
 
 int SetDataType(MetaGraphT *graph, const std::vector<Tensor *> &output_tensors,
                 const std::unique_ptr<mindspore::schema::CNodeT> &node, std::vector<InferTensor> *tensors, size_t i) {
+  MS_CHECK_TRUE_RET(graph != nullptr, RET_ERROR);
   auto &output_tensor = graph->allTensors.at(node->outputIndex[i]);
   output_tensor->format = static_cast<schema::Format>(output_tensors[i]->format());
   output_tensor->dataType = output_tensors[i]->data_type();
@@ -364,6 +367,7 @@ int SetDataType(MetaGraphT *graph, const std::vector<Tensor *> &output_tensors,
 int CopyOutputInfoToTensorT(MetaGraphT *graph, const std::vector<Tensor *> &output_tensors,
                             const std::unique_ptr<mindspore::schema::CNodeT> &node, std::vector<InferTensor> *tensors) {
   for (uint32_t i = 0; i < output_tensors.size(); i++) {
+    MS_CHECK_TRUE_RET(graph != nullptr, RET_ERROR);
     auto output_dims = output_tensors[i]->shape();
     auto &output_tensorT = graph->allTensors.at(node->outputIndex[i]);
     MSLITE_CHECK_PTR(output_tensorT);

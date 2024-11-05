@@ -138,7 +138,7 @@ bool CastOpAdjust::Run(const FuncGraphPtr &func_graph, bool strict_mode_flag) {
       continue;
     }
     auto cast_cnode = node->cast<CNodePtr>();
-    MS_ASSERT(cast_node != nullptr);
+    MS_CHECK_TRUE_RET(cast_cnode != nullptr, false);
     MS_CHECK_TRUE_RET(cast_cnode->size() == kCastInputNum, false);
     int input_type_value;
     int output_type_value;

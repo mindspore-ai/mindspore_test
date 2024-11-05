@@ -21,6 +21,7 @@
 namespace mindspore {
 namespace lite {
 int DynamicSession::CompileGraph(Model *model) {
+  MS_CHECK_TRUE_RET(model != nullptr, RET_NULL_PTR);
   if (model->graph_.sub_graphs_.size() != 1) {
     MS_LOG(ERROR) << "Currently, don't support control-flow model.";
     return RET_NOT_SUPPORT;

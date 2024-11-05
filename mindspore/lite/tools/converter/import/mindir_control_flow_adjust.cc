@@ -186,7 +186,7 @@ int MindIRControlFlowAdjust::MoveCallInputsToPartialFusionInputs(const std::set<
         continue;
       }
       auto call_cnode = node->cast<CNodePtr>();
-      MS_ASSERT(call_node != nullptr);
+      MS_CHECK_TRUE_RET(call_cnode != nullptr, RET_NULL_PTR);
       auto call_cnode_inputs = call_cnode->inputs();
       if (call_cnode_inputs.size() == 1) {
         MS_LOG(DEBUG) << "no need move call inputs.";
@@ -286,7 +286,7 @@ int MindIRControlFlowAdjust::InsertPartialFusionForRawCall(const std::set<FuncGr
         continue;
       }
       auto call_cnode = node->cast<CNodePtr>();
-      MS_ASSERT(call_node != nullptr);
+      MS_CHECK_TRUE_RET(call_cnode != nullptr, RET_NULL_PTR);
       auto call_cnode_inputs = call_cnode->inputs();
       auto call_first_input = call_cnode->input(0);
       if (!utils::isa<ValueNodePtr>(call_first_input)) {
