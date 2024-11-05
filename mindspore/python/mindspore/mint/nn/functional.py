@@ -203,7 +203,7 @@ from mindspore.ops.functional import embedding
 # 88
 
 # 89
-
+from mindspore.ops.auto_generate import avg_pool1d_ext as avg_pool1d
 # 90
 from mindspore.ops.function.nn_func import avg_pool2d_ext as avg_pool2d
 # 91
@@ -993,7 +993,7 @@ __all__ = [
     # 88
 
     # 89
-
+    'avg_pool1d',
     # 90
     'avg_pool2d',
     # 91

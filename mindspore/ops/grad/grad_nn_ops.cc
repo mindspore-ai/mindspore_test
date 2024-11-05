@@ -3688,6 +3688,56 @@ REG_BPROP_BUILDER("AvgPool2DGrad").FreeUselessValues_O({}).SetBody((BODYFUNC(ib)
           ib->OutZeros(divisor_override)};
 }));
 
+DEF_PURE_SHAPE_CALC(g_avg_pool1d_squeeze)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shape = inputs.at(0);
+    ShapeVector squeeze_shape = x_shape;
+    MS_EXCEPTION_IF_CHECK_FAIL(squeeze_shape.size() > 2, "shape size should be greater than 2.");
+    squeeze_shape.erase(squeeze_shape.end() - 2);
+    return {squeeze_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    auto x = inputs.at(0);
+    if (!unknown_inputs.empty() || IsDynamicRank(x)) {
+      return {-1};
+    }
+    auto size = SizeToLong(x.size());
+    return {size - 1};
+  });
+
+REG_BPROP_BUILDER("AvgPool1D").SetBody((BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto kernel_size = ib->GetInput(kIndex1);
+  auto stride_opt = ib->GetInput(kIndex2);
+  auto stride = ib->GetDtype(stride_opt)->isa<TypeNone>() ? kernel_size : stride_opt;
+  auto padding = ib->GetInput(kIndex3);
+  auto ceil_mode = ib->GetInput(kIndex4);
+  auto count_include_pad = ib->GetInput(kIndex5);
+  auto divisor_override = ib->EmitValue(kNone);
+
+  auto expanded_kernel_size =
+    ib->MakeTuple(std::vector<NodePtr>{ib->Value<int64_t>(1), ib->TupleGetItem(kernel_size, 0)});
+  auto expanded_stride = ib->MakeTuple(std::vector<NodePtr>{ib->Value<int64_t>(1), ib->TupleGetItem(stride, 0)});
+  auto expanded_padding = ib->MakeTuple(std::vector<NodePtr>{ib->Value<int64_t>(0), ib->TupleGetItem(padding, 0)});
+
+  auto dout = ib->GetInput(kIndex7);
+  auto dout_expand_dim = ib->ExpandDims(dout, -2);
+  auto x_expand_dim = ib->ExpandDims(input, -2);
+
+  auto dx = ib->AvgPool2DGrad(dout_expand_dim, x_expand_dim, expanded_kernel_size, expanded_stride, expanded_padding,
+                              ceil_mode, count_include_pad, divisor_override);
+
+  auto res_shape = ib->ShapeCalc(g_avg_pool1d_squeeze, {dx});
+  auto dx_squeeze = ib->Reshape(dx, res_shape[0]);
+
+  return {dx_squeeze,
+          ib->OutZeros(kernel_size),
+          ib->OutZeros(stride),
+          ib->OutZeros(padding),
+          ib->OutZeros(ceil_mode),
+          ib->OutZeros(count_include_pad)};
+}));
+
 REG_BPROP_BUILDER("EmbeddingTableFindAndInit").FreeUselessValues_IO({i3}, {}).SetBody((BODYFUNC(ib) {
   static std::string prim_name = "EmbeddingTableFindAndInit";
   auto table_id = ib->GetInput(kIndex0);
