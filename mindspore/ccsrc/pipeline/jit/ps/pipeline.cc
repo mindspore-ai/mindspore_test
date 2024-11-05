@@ -2092,6 +2092,7 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
     return true;
   }
 #endif
+  PROF_START(InitExecDatasetVm);
   MS_LOG(INFO) << "Start InitDataSet Entry";
   mindspore::python_adapter::set_python_env_flag(true);
   ShapeVector int_input_indexes;
@@ -2177,6 +2178,7 @@ bool InitExecDatasetVm(const std::string &queue_name, int64_t size, int64_t batc
     (void)(*fn)(args);
   }
   MS_LOG(DEBUG) << "InitDataSetVm End.";
+  PROF_END(InitExecDatasetVm);
   return true;
 }
 

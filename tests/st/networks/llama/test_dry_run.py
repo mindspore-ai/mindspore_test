@@ -98,10 +98,10 @@ def test_train_semi_compile():
     """
     Feature: Trainer.train()
     Description: Test llama2 70b semi compile time when parallel_mode=SEMI_AUTO_PARALLEL.
-    Expectation: Throw AssertionError when compile_backend_graph time > 70000 ms or compile_graph > 200000
+    Expectation: Throw AssertionError when compile_backend_graph time > 60000 ms or compile_graph > 200000
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    run_command_semi_compile(f"bash {sh_path}/dry_compile.sh semi compile", f"{sh_path}/compile.log", 70000, 200000)
+    run_command_semi_compile(f"bash {sh_path}/dry_compile.sh semi compile", f"{sh_path}/compile.log", 60000, 200000)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')

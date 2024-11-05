@@ -150,7 +150,6 @@ void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph) {
   opt_acl_ack->AddPass(std::make_shared<DealRefOutput>());
   optimizer->AddPassManager(opt_acl_ack);
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(AclAfterCreateKernel);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
@@ -224,7 +223,6 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   opt_acl_pm->AddPass(std::make_shared<opt::CustomDefinedDepend>(false, kernel_graph->graph_id()));
   optimizer->AddPassManager(opt_acl_pm);
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(GEBackendOptimizeACL);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
@@ -277,7 +275,6 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   }
   optimizer->AddPassManager(opt_acl_after_kernel_select_pm);
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(GEBackendOptimizeACLAfterKernelSelect);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
@@ -308,7 +305,6 @@ void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
   optimizer->AddPassManager(GetGEUnifyMindIRPassManager());
   optimizer->AddPassManager(GetGEFusionGroupPassManager());
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(GEUnifyMindIR);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
@@ -333,7 +329,6 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
     DumpIR(file_name, kernel_graph);
   }
 #endif
-  kernel_graph->SetExecOrderByDefault();
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto after_inline_pm = std::make_shared<PassManager>("after_inline_pm");
   after_inline_pm->AddFusionPass(std::make_shared<DropoutGenMaskFusion>());
@@ -342,7 +337,6 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   after_inline_pm->AddPass(std::make_shared<InsertMoveTo>());
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(GEAfterInlineOptimize);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {

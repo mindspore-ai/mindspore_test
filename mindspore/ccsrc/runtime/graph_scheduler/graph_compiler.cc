@@ -719,6 +719,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
     kernel_executor->AddMindIRPass(kernel_graph);
   }
   kernel_graph->SetInputNodes();
+  kernel_graph->SetExecOrderByDefault();
   auto context_ptr = MsContext::GetInstance();
   session_->SetInputNodeUsage(kernel_graph, manager);
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -844,6 +845,7 @@ KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGrap
     kernel_executor->AddMindIRPass(root_graph);
   }
 
+  root_graph->SetExecOrderByDefault();
   // todo: waiting for GraphExecutor
   MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
   if (MsContext::GetInstance()->backend_policy() == "ge") {
@@ -1035,6 +1037,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
     // 'KernelMod' is real executive object of kernel.
     start_time = profiler::GetClockSyscnt();
     PROF_START(CreateKernel);
+    graph->SetExecOrderByDefault();
     device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
     PROF_END(CreateKernel);
     (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,

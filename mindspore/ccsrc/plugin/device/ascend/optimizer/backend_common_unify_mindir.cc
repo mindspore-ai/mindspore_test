@@ -220,7 +220,6 @@ void AscendUnfoldInputsForSpecialNodes(const KernelGraphPtr &kernel_graph) {
 
   optimizer->AddPassManager(unfold_inputs_pm);
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     std::string file_name =
