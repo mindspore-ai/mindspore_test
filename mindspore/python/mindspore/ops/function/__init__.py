@@ -380,6 +380,7 @@ from .math_func import (
     atleast_1d,
     dstack,
     diff,
+    diff_ext,
     atleast_2d,
     cartesian_prod,
     atleast_3d,
