@@ -19,6 +19,7 @@
 #include <memory>
 
 #include "ir/cell.h"
+#include "ir/core_ops_primitive.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "abstract/abstract_function.h"
@@ -26,6 +27,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/external.h"
 #include "include/common/utils/tensor_py.h"
+#include "pybind_api/ir/primitive_py.h"
 
 namespace mindspore {
 constexpr auto kAdapterFlag = "adapter_flag";
@@ -131,11 +133,8 @@ py::object ConvertToPythonTensor(const py::object &obj) {
   return obj;
 }
 
-py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
-  if (abs->isa<abstract::AbstractNone>()) {
-    return py::none();
-  }
-
+py::object GetPyObjFromAbstractClosure(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
     auto abs_func = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
     auto fg = abs_func->func_graph();
@@ -154,6 +153,42 @@ py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
     }
     return py::object();
   }
+  if (abs->isa<abstract::PrimitiveAbstractClosure>()) {
+    auto val = abs->BuildValue();
+    if (val == nullptr) {
+      return py::object();
+    }
+    if (val->isa<prim::DoSignaturePrimitive>()) {
+      auto do_sig_prim = val->cast_ptr<prim::DoSignaturePrimitive>();
+      auto value = do_sig_prim->function();
+      MS_EXCEPTION_IF_NULL(value);
+      if (!value->isa<PrimitivePy>()) {
+        return py::object();
+      }
+      auto prim_py = value->cast_ptr<PrimitivePy>();
+      return prim_py->GetPyObj();
+    }
+    if (val->isa<PrimitivePy>()) {
+      auto prim_py = val->cast_ptr<PrimitivePy>();
+      return prim_py->GetPyObj();
+    }
+  }
+  return py::object();
+}
+
+py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
+  if (abs->isa<abstract::AbstractNone>()) {
+    return py::none();
+  }
+
+  if (abs->isa<abstract::AbstractFuncAtom>()) {
+    auto ret = GetPyObjFromAbstractClosure(abs);
+    if (ret.ptr() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert AbstractFuncAtom " << abs->ToString() << " to python object.";
+    }
+    return ret;
+  }
+
   auto build_value = MaybeMakeEmptyTensor(abs);
   auto py_obj = ValueToPyData(build_value, abs);
   // Return none means failed converting.
