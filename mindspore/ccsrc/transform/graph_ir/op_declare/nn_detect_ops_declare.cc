@@ -54,6 +54,17 @@ OUTPUT_MAP(Iou) = {{0, OUTPUT_DESC(overlap)}};
 REG_ADPT_DESC(IOU, kNameIOU, ADPT_DESC(Iou))
 REG_ADPT_DESC(Iou, kIouOpName, ADPT_DESC(Iou))
 
+// RotatedIou
+INPUT_MAP(RotatedIou) = {{1, INPUT_DESC(boxes)}, {2, INPUT_DESC(query_boxes)}};
+ATTR_MAP(RotatedIou) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(RotatedIou) = {{3, ATTR_DESC(trans, AnyTraits<bool>())},
+                              {4, ATTR_DESC(mode, AnyTraits<GERotatedIouMode>())},
+                              {5, ATTR_DESC(is_cross, AnyTraits<bool>())},
+                              {6, ATTR_DESC(v_threshold, AnyTraits<float>())},
+                              {7, ATTR_DESC(e_threshold, AnyTraits<float>())}};
+OUTPUT_MAP(RotatedIou) = {{0, OUTPUT_DESC(iou)}};
+REG_ADPT_DESC(RotatedIou, kNameRotatedIou, ADPT_DESC(RotatedIou))
+
 // CheckValid
 INPUT_MAP(CheckValid) = {{1, INPUT_DESC(bbox_tensor)}, {2, INPUT_DESC(img_metas)}};
 ATTR_MAP(CheckValid) = EMPTY_ATTR_MAP;

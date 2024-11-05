@@ -51,10 +51,10 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
-                                         bincount_ext)
+                                         bincount_ext, rotated_iou_op, cat)
 
 
-
+from mindspore.ops.function.array_func import narrow_ext as narrow
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
 from mindspore.nn import layer
@@ -5948,6 +5948,108 @@ def diff(x, n=1, axis=-1, prepend=None, append=None):
     a1 = x.gather(TupleToTensor()(a[:-1], mstype.int64), axis)
     a2 = x.gather(TupleToTensor()(a[1:], mstype.int64), axis)
     return a2 - a1
+
+def _diff_is_scalar_or_scalar_tensor(value):
+    """judge the value"""
+    if isinstance(value, int):
+        return True
+
+    if isinstance(value, ms.Tensor) and value.shape == ():
+        return True
+
+    return False
+
+def _diff_check(input, n, dim):
+    """judge the input n and dim"""
+    if not isinstance(input, Tensor):
+        raise TypeError("For 'diff', 'input' must be a tensor")
+
+    if not _diff_is_scalar_or_scalar_tensor(n):
+        raise TypeError("For 'diff', 'n' must be a int scalar or int scalar tensor")
+
+    if not _diff_is_scalar_or_scalar_tensor(dim):
+        raise TypeError("For 'diff', 'dim' must be a scalar or scalar tensor")
+
+    if input.dtype in (mstype.complex64, mstype.complex128, mstype.float64, mstype.int16):
+        raise TypeError("For 'diff', 'input' do not support complex64/complex128/float64/int16")
+
+def _diff_helper(input, n, dim):
+    """calculate the forward difference"""
+    out_len = input.shape[dim] - 1
+    is_bool = (input.dtype == mstype.bool_)
+    result = input
+
+    for i in range(n):  # pylint: disable=unused-variable
+        if is_bool:
+            result = logical_xor(narrow(result, dim, 1, out_len), narrow(result, dim, 0, out_len))
+        else:
+            result = sub_ext(narrow(result, dim, 1, out_len), narrow(result, dim, 0, out_len))
+
+        if out_len == 0:
+            break
+        out_len -= 1
+
+    return result
+
+def _diff_prepend_append_on_dim(input, prepend, append, dim):
+    """append tensor on dim"""
+    if prepend is not None and append is None:
+        return cat((prepend, input), dim)
+
+    if prepend is None and append is not None:
+        return cat((input, append), dim)
+
+    return cat((prepend, input, append), dim)
+
+def diff_ext(input, n=1, dim=-1, prepend=None, append=None):
+    r"""
+    Computes the n-th forward difference along the given dimension.
+
+    The first-order differences are given by :math:`out[i] = input[i+1] - input[i]`. Higher-order differences are
+    calculated by using `torch.diff()` recursively.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): the tensor to compute the differences on.
+        n (int, optional): the number of times to recursively compute the difference.
+            Default: ``1`` .
+        dim (Tensor, optional): the dimension to compute the difference along.
+            Default is the last dimension. Default: ``0`` .
+        prepend (Tensor, optional): values to prepend or append to `input` along `dim`
+            before computing the difference. Their dimensions must be equivalent to that of input,
+            and their shapes must match input's shape except on `dim`. Default: ``None`` .
+        append (Tensor, optional): values to prepend or append to `input` along `dim`
+            before computing the difference. Their dimensions must be equivalent to that of input,
+            and their shapes must match input's shape except on `dim`. Default: ``None`` .
+
+    Returns:
+        Tensor, the result of n-th forward difference computation.
+
+    Raises:
+        TypeError: If `input` is not a tensor.
+        TypeError: If `n` is not a scalar or scalar tensor.
+        TypeError: If `dim` is not a scalar or scalar tensor.
+        TypeError: If `input` type is complex64, complex128, float64, int16.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor([1, 3, -1, 0, 4])
+        >>> out = ops.diff_ext(x)
+        >>> print(out.asnumpy())
+        [ 2 -4  1  4]
+    """
+    _diff_check(input, n, dim)
+
+    if (prepend is None and append is None) or n == 0:
+        return _diff_helper(input, n, dim)
+
+    input = _diff_prepend_append_on_dim(input, prepend, append, dim)
+    return _diff_helper(input, n, dim)
 
 
 def tril_indices(row, col, offset=0, *, dtype=mstype.int64):
@@ -11953,6 +12055,77 @@ def round(input, *, decimals=0):
     """
     return round_op(input, decimals)
 
+def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0):
+    r"""
+    Calculate the overlap area between rotated rectangles.
+
+    .. note::
+        The input data types supported by the Ascend platform include
+        bfloat16, float16, float32.
+
+    Args:
+        boxes (Tensor): The first set of rectangles which has a
+            shape of :math:`(B, N, 5)`.
+        query_boxes (Tensor): The second set of rectangles which
+            has a shape of :math:`(B, K, 5)`.
+        trans (bool): Distinguish the rectangles representations
+            of boxes and query_boxes. If ``True``, the format of boxes
+            and query_boxes is ``'xyxyt'``, else the format is ``'xywht'``.
+            The default value is ``False``.
+        mode (int): Distinguish the calculation mode. If the value
+            is ``1``, the calculation mode is ``'iof'``, else the
+            calculation mode is ``'iou'``. The default value is ``0``.
+        is_cross (bool): If ``True``, use cross-calculation, else use
+            one-to-one calculation. The default value is ``True``.
+        v_threshold (float): Provide condition relaxation for
+            intersection calculation. The default value is ``0.0``.
+        e_threshold (float): Provide condition relaxation for
+            intersection calculation. The default value is ``0.0``.
+
+    Returns:
+        Tensor, the shape is :math:`(B, N, K)`.
+
+    Raises:
+        TypeError: If `boxes` is not a Tensor.
+        TypeError: If `query_boxes` is not a Tensor.
+        ValueError: If `boxes` and `query_boxes` do not has same first dim.
+        ValueError: If the third dimension of `boxes` or `query_boxes` is not ``5``.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> a = np.random.uniform(0,1,(2,2,5)).astype(np.float16)
+        >>> b = np.random.uniform(0,1,(2,3,5)).astype(np.float16)
+        >>> box1 = Tensor(a)
+        >>> box2 = Tensor(b)
+        >>> output = ops.rotated_iou(box1, box2, trans=False, mode=0, is_cross=True)
+    """
+    origin_dtype = boxes.dtype
+    if (origin_dtype != mstype.float16 and origin_dtype != mstype.float32
+            and origin_dtype != mstype.bfloat16):
+        raise ValueError(f"input boxes type is illegal.")
+
+    if (query_boxes.dtype != mstype.float16 and query_boxes.dtype != mstype.float32
+            and query_boxes.dtype != mstype.bfloat16):
+        raise ValueError(f"input query_boxes type is illegal.")
+
+    boxes_perm = (0, 2, 1)
+    boxes_cp = permute(boxes, boxes_perm)
+    if boxes_cp.dtype == mstype.float16 or boxes_cp.dtype == mstype.bfloat16:
+        boxes_cp = cast_(boxes_cp, mstype.float32)
+
+    query_boxes_perm = (0, 2, 1)
+    query_boxes_cp = permute(query_boxes, query_boxes_perm)
+    if query_boxes_cp.dtype == mstype.float16 or query_boxes_cp.dtype == mstype.bfloat16:
+        query_boxes_cp = cast_(query_boxes_cp, mstype.float32)
+
+    iou = rotated_iou_op(boxes_cp, query_boxes_cp, trans, mode, is_cross, v_threshold, e_threshold)
+    return cast_(iou, origin_dtype)
+
 
 __all__ = [
     'addn',
@@ -12146,6 +12319,7 @@ __all__ = [
     'atleast_1d',
     'dstack',
     'diff',
+    'diff_ext',
     'atleast_2d',
     'cartesian_prod',
     'atleast_3d',
@@ -12176,6 +12350,7 @@ __all__ = [
     'signbit',
     'accumulate_n',
     'iou',
+    'rotated_iou',
     'baddbmm',
     'baddbmm_ext',
     'bmm',

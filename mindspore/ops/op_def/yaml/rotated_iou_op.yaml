@@ -1,0 +1,34 @@
+#operator rotated_iou
+rotated_iou:
+  args:
+    boxes:
+      dtype: tensor
+    query_boxes:
+      dtype: tensor
+    trans:
+      dtype: bool
+      default: False
+    mode:
+      dtype: int
+      default: 0
+      type_cast: tensor
+    is_cross:
+      dtype: bool
+      default: True
+    v_threshold:
+      dtype: float
+      default: 0.0
+      type_cast: tensor
+    e_threshold:
+      dtype: float
+      default: 0.0
+      type_cast: tensor
+  returns:
+    iou:
+      dtype: Tensor
+  function:
+    disable: True
+
+
+
+

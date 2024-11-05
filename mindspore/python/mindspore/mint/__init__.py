@@ -233,7 +233,7 @@ from mindspore.ops.auto_generate import polar_ext as polar
 # 94
 from mindspore.ops.function.math_func import tanh
 # 95
-
+from mindspore.ops.function.math_func import diff_ext as diff
 # 96
 
 # 97
@@ -2105,6 +2105,9 @@ __all__ = [
 
     # 1007
     't',
+
+    # 1100
+    'diff',
 ]
 
 setattr(tensor_operator_registry_for_mint, 'add', add)

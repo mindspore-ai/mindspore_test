@@ -315,6 +315,18 @@ class GECoordinateTransformMode {
   }
 };
 
+class GERotatedIouMode {
+ public:
+  static std::string ConvertEnumToString(int64_t id) {
+    static const std::vector<std::string> modes = {"iou", "iof"};
+    if (id < 0 || id >= static_cast<int64_t>(modes.size())) {
+      MS_LOG(EXCEPTION) << "Invalid RotatedIouMode " << id;
+      return "";
+    }
+    return modes[id];
+  }
+};
+
 // declare Any type
 template <typename T>
 struct AnyTraits {

@@ -158,6 +158,8 @@ std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<ScatterReduceM
 
 std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<GECoordinateTransformMode>);
 
+std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<GERotatedIouMode>);
+
 std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<GEEnumToStr>, const std::vector<std::string> &);
 
 template <typename P, typename Q>

@@ -1146,6 +1146,12 @@ inline ValuePtr ConvertPythonFloatToScalarValue(double value) {
 
 ValuePtr ConvertBool(const py::object &obj) {
   if (!py::isinstance<py::bool_>(obj)) {
+    // The mutable _Bool class inherits from int, because base class 'bool' is a marked final.
+    if (py::isinstance<py::int_>(obj) && py::hasattr(obj, "__ms_mutable_bool__")) {
+      auto obj_int64 = py::cast<int64_t>(obj);
+      bool obj_bool = obj_int64 != 0;
+      return std::make_shared<BoolImm>(obj_bool);
+    }
     return nullptr;
   }
   return PyCast<BoolImm, bool>(obj);
