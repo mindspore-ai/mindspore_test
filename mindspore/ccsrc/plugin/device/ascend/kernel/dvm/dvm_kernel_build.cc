@@ -111,6 +111,7 @@ static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
   {"Slice", {OP_SLICE, 0}},
   {"StridedSlice", {OP_SLICE, 1}},
   {ops::kNameMatMul, {OP_MATMUL, 0}},
+  {ops::kNameBatchMatMul, {OP_MATMUL, 0}},
 };
 
 TypeId GetValueNodeType(const AnfNodePtr &node) {
