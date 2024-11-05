@@ -1129,3 +1129,59 @@ def test_empty_container_input_3():
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0
     assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_subgraph_with_primitive_output():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    add_func = ops.Add()
+    add_func.ref = add_func
+
+    def cal_func():
+        return add_func.ref
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x):
+        return cal_func()(x, x)
+
+    a = Tensor([1, 2, 3])
+    ret = foo(a)
+    assert np.all(ret.asnumpy() == np.array([2, 4, 6]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@pytest.mark.skip(reason="Subgraph with only load const add output failed, fix later")
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_subgraph_with_primitive_output_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    add_func = ops.Add()
+
+    def cal_func():
+        return add_func
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x):
+        return cal_func()(x, x)
+
+    a = Tensor([1, 2, 3])
+    ret = foo(a)
+    assert np.all(ret.asnumpy() == np.array([2, 4, 6]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
