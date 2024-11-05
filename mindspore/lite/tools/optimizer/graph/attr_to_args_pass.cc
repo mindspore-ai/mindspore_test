@@ -27,6 +27,10 @@ namespace mindspore {
 namespace opt {
 namespace {
 static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
+  {"LogSoftmax",
+   {
+     "axis",
+   }},
   {"ArgMin",
    {
      "axis",
