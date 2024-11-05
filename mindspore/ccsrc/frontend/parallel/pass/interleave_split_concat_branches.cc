@@ -62,6 +62,7 @@ struct BranchInterleaveNode {
   float cost{0.0f};
   bool is_comm{false};
   bool overlapped{false};
+  size_t branch_id{0};
 };
 
 using BranchInterleaveNodePtr = std::shared_ptr<BranchInterleaveNode>;
@@ -267,7 +268,7 @@ float GetNodeCost(const CNodePtr &node) {
 }
 
 // Interleave node is a range of the same compute type nodes
-std::vector<BranchInterleaveNodePtr> GetInterleaveNodes(std::vector<CNodePtr> *node_vec_ptr) {
+std::vector<BranchInterleaveNodePtr> GetInterleaveNodes(std::vector<CNodePtr> *node_vec_ptr, size_t branch_id) {
   MS_EXCEPTION_IF_NULL(node_vec_ptr);
   auto &node_vec = *node_vec_ptr;
   BranchInterleaveNodePtr current_node = nullptr;
@@ -300,6 +301,7 @@ std::vector<BranchInterleaveNodePtr> GetInterleaveNodes(std::vector<CNodePtr> *n
     if (current_node == nullptr) {
       current_node_type = node_type;
       current_node = std::make_shared<BranchInterleaveNode>();
+      current_node->branch_id = branch_id;
       current_node->begin = i;
       if (node_type == InterleaveNodeType::kCommunication) {
         current_node->is_comm = true;
@@ -336,17 +338,18 @@ void AddDependNode(const FuncGraphPtr &graph, const CNodePtr &post_node, const A
   manager->SetEdge(post_node, 1, depend_node);
 }
 
-void AddDependForOverlap(std::vector<CNodePtr> *pre_cnodes_ptr, std::vector<CNodePtr> *cur_cnodes_ptr,
-                         const BranchInterleaveNodePtr &pre_node, const BranchInterleaveNodePtr &cur_node,
-                         const FuncGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(pre_cnodes_ptr);
-  MS_EXCEPTION_IF_NULL(cur_cnodes_ptr);
+void AddDependForOverlap(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr, const BranchInterleaveNodePtr &pre_node,
+                         const BranchInterleaveNodePtr &cur_node, const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(branch_cnodes_ptr);
   MS_EXCEPTION_IF_NULL(pre_node);
   MS_EXCEPTION_IF_NULL(cur_node);
   MS_EXCEPTION_IF_NULL(graph);
 
-  if (pre_node->begin >= pre_cnodes_ptr->size() || pre_node->end >= pre_cnodes_ptr->size() ||
-      cur_node->begin >= cur_cnodes_ptr->size() || cur_node->end >= cur_cnodes_ptr->size()) {
+  auto &branch_cnodes = *branch_cnodes_ptr;
+  auto pre_node_branch_size = branch_cnodes[pre_node->branch_id].size();
+  auto cur_node_branch_size = branch_cnodes[cur_node->branch_id].size();
+  if (pre_node->begin >= pre_node_branch_size || pre_node->end >= pre_node_branch_size ||
+      cur_node->begin >= cur_node_branch_size || cur_node->end >= cur_node_branch_size) {
     return;
   }
 
@@ -366,7 +369,8 @@ void AddDependForOverlap(std::vector<CNodePtr> *pre_cnodes_ptr, std::vector<CNod
   };
 
   auto add_input_depend = [graph, manager](const CNodePtr &post_cnode, const CNodePtr &pre_cnode) {
-    for (auto &node_input : pre_cnode->inputs()) {
+    auto node_inputs = pre_cnode->inputs();
+    for (auto &node_input : node_inputs) {
       if (node_input == nullptr) {
         continue;
       }
@@ -379,20 +383,15 @@ void AddDependForOverlap(std::vector<CNodePtr> *pre_cnodes_ptr, std::vector<CNod
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-
-  auto lhs_cnodes_ptr = pre_cnodes_ptr;
-  auto rhs_cnodes_ptr = cur_cnodes_ptr;
   auto lhs_node = pre_node;
   auto rhs_node = cur_node;
   if (!pre_node->is_comm) {
-    lhs_cnodes_ptr = cur_cnodes_ptr;
-    rhs_cnodes_ptr = pre_cnodes_ptr;
     lhs_node = cur_node;
     rhs_node = pre_node;
   }
 
-  auto const &lhs_cnodes = *lhs_cnodes_ptr;
-  auto const &rhs_cnodes = *rhs_cnodes_ptr;
+  auto const &lhs_cnodes = branch_cnodes[lhs_node->branch_id];
+  auto const &rhs_cnodes = branch_cnodes[rhs_node->branch_id];
   auto lhs_begin_cnode = lhs_cnodes[lhs_node->begin];
   auto lhs_end_cnode = lhs_cnodes[lhs_node->end];
   auto rhs_begin_cnode = rhs_cnodes[rhs_node->begin];
@@ -426,8 +425,7 @@ void AddDependForOverlap(std::vector<CNodePtr> *pre_cnodes_ptr, std::vector<CNod
 
 // Interleave two branches nodes to overlap comm/comp
 // Return unoverlapped nodes
-std::vector<BranchInterleaveNodePtr> InterleaveTwoBranch(std::vector<CNodePtr> *pre_cnodes_ptr,
-                                                         std::vector<CNodePtr> *cur_cnodes_ptr,
+std::vector<BranchInterleaveNodePtr> InterleaveTwoBranch(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr,
                                                          std::vector<BranchInterleaveNodePtr> *pre_nodes_ptr,
                                                          std::vector<BranchInterleaveNodePtr> *cur_nodes_ptr,
                                                          const FuncGraphPtr &graph) {
@@ -443,6 +441,7 @@ std::vector<BranchInterleaveNodePtr> InterleaveTwoBranch(std::vector<CNodePtr> *
     return pre_nodes;
   }
 
+  std::vector<BranchInterleaveNodePtr> unoverlapped_nodes;
   size_t j = 0;
   size_t k = 0;
   for (size_t i = 0; i < cur_nodes.size(); ++i) {
@@ -455,6 +454,9 @@ std::vector<BranchInterleaveNodePtr> InterleaveTwoBranch(std::vector<CNodePtr> *
 
     j = k;
     if (j == pre_nodes.size()) {
+      if (!cur_node->overlapped) {
+        (void)unoverlapped_nodes.emplace_back(cur_node);
+      }
       continue;
     }
 
@@ -478,23 +480,24 @@ std::vector<BranchInterleaveNodePtr> InterleaveTwoBranch(std::vector<CNodePtr> *
       } else if (cur_node->is_comm == pre_node->is_comm) {
         ++j;
       } else {
-        AddDependForOverlap(pre_cnodes_ptr, cur_cnodes_ptr, pre_node, cur_node, graph);
+        AddDependForOverlap(branch_cnodes_ptr, pre_node, cur_node, graph);
         cur_node->overlapped = true;
         pre_node->overlapped = true;
+        for (auto check_index = k; check_index < j; ++check_index) {
+          auto &check_node = pre_nodes[check_index];
+          if (!check_node->overlapped) {
+            (void)unoverlapped_nodes.emplace_back(check_node);
+          }
+        }
         ++j;
         k = j;
         get_next = true;
       }
     }
+    if (!cur_node->overlapped) {
+      (void)unoverlapped_nodes.emplace_back(cur_node);
+    }
   }
-
-  std::vector<BranchInterleaveNodePtr> unoverlapped_nodes;
-  auto check_unoverlapped = [](const BranchInterleaveNodePtr &node) {
-    MS_EXCEPTION_IF_NULL(node);
-    return !node->overlapped;
-  };
-  std::copy_if(pre_nodes.begin(), pre_nodes.end(), std::back_inserter(unoverlapped_nodes), check_unoverlapped);
-  std::copy_if(cur_nodes.begin(), cur_nodes.end(), std::back_inserter(unoverlapped_nodes), check_unoverlapped);
 
   return unoverlapped_nodes;
 }
@@ -552,13 +555,11 @@ void InterleaveBranchesForCommunicationOverlap(const InterLeaveScopePtr &interle
   }
 
   size_t cur_index = 1;
-  auto pre_cnodes = &total_branch_nodes[0];
-  auto pre_nodes = GetInterleaveNodes(&total_branch_nodes[0]);
+  auto pre_nodes = GetInterleaveNodes(&total_branch_nodes[0], 0);
   while (cur_index < total_branch_nodes.size()) {
-    auto cur_cnodes = &total_branch_nodes[cur_index];
-    auto cur_nodes = GetInterleaveNodes(cur_cnodes);
+    auto cur_nodes = GetInterleaveNodes(&total_branch_nodes[cur_index], cur_index);
     // Interleave two branches nodes to overlap comm/comp
-    pre_nodes = InterleaveTwoBranch(pre_cnodes, cur_cnodes, &pre_nodes, &cur_nodes, graph);
+    pre_nodes = InterleaveTwoBranch(&total_branch_nodes, &pre_nodes, &cur_nodes, graph);
     ++cur_index;
   }
 }
