@@ -376,12 +376,9 @@ void SetOutput(GeDeviceResManager *res_manager, GeTensor *ge_output, const AnfNo
   auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx, false);
   output_addr->SetSize(ge_output->GetSize());
   auto &&ge_data_uni = ge_output->ResetData();
-  auto deleter = ge_data_uni.get_deleter();
   auto ge_data = ge_data_uni.release();
-  MS_EXCEPTION_IF_NULL(ge_data);
   output_addr->set_is_ptr_persisted(false);
   output_addr->set_from_mem_pool(false);
-  output_addr->set_deleter(deleter);
   output_addr->set_ptr(ge_data);
   auto placement = ge_output->GetTensorDesc().GetPlacement();
   if (placement == ::ge::kPlacementHost) {

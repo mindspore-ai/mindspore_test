@@ -56,6 +56,7 @@ namespace ascend {
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {
+  MS_EXCEPTION_IF_NULL(res_manager_);
   auto addr = res_manager_->AllocateMemory(size);
   MS_LOG(DEBUG) << "GE Allocator malloc addr: " << addr << " size: " << size;
   if (addr == nullptr) {
@@ -67,8 +68,10 @@ using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_ma
 }
 
 void GeAllocator::Free(::ge::MemBlock *block) {
-  res_manager_->FreeMemory(block->GetAddr());
-  MS_LOG(DEBUG) << "GE Allocator free addr: " << block->GetAddr();
+  if (res_manager_) {
+    res_manager_->FreeMemory(block->GetAddr());
+    MS_LOG(DEBUG) << "GE Allocator free addr: " << block->GetAddr();
+  }
   delete block;
 }
 

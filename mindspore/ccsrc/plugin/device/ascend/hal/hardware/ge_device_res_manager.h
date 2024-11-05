@@ -58,15 +58,16 @@ class GeHostAddress : public cpu::CPUDeviceAddress {
 class GeDeviceResManager;
 class GeAllocator : public ::ge::Allocator {
  public:
-  explicit GeAllocator(GeDeviceResManager *res_manager) : res_manager_(res_manager) {}
+  explicit GeAllocator(DeviceResManager *res_manager) : res_manager_(res_manager) {}
   ~GeAllocator() { res_manager_ = nullptr; }
   GeAllocator(const GeAllocator &) = delete;
   GeAllocator &operator=(const GeAllocator &) = delete;
   ::ge::MemBlock *Malloc(size_t size) override;
   void Free(::ge::MemBlock *block) override;
+  void ResetResManager() { res_manager_ = nullptr; }
 
  private:
-  GeDeviceResManager *res_manager_{nullptr};
+  DeviceResManager *res_manager_{nullptr};
 };
 
 class GeDeviceResManager : public DeviceResManager {

@@ -238,6 +238,8 @@ void GeDeviceContext::Initialize() {
   MS_EXCEPTION_IF_NULL(device_res_manager_);
   device_res_manager_->Initialize();
 
+  ge_allocator_ = std::make_shared<GeAllocator>(device_res_manager_.get());
+
   // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to  heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
   if (!UseSimulationApi()) {
@@ -269,8 +271,13 @@ void GeDeviceContext::Destroy() {
     transform::DestroyAoeUtil();
   }
   FinalizeDump();
+  // Free GeTensorMemory before device_res_manager_ Destroy
+  dynamic_cast<GeGraphExecutor *>(graph_executor_.get())->FreeGeTensorMemory();
   // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
   device_res_manager_->Destroy();
+  if (initialized_) {
+    dynamic_cast<GeAllocator *>(ge_allocator_.get())->ResetResManager();
+  }
   (void)FinalizeGe(ms_context);
   if (hccl::HcclAdapter::GetInstance().Inited()) {
     (void)hccl::HcclAdapter::GetInstance().FinalizeHccl();
@@ -310,8 +317,7 @@ void GeDeviceContext::InitGe(const std::shared_ptr<MsContext> &inst_context) {
   MS_EXCEPTION_IF_NULL(graph_runner);
   if (IsEnableRefMode()) {
     transform::Status ret = transform::RegisterExternalAllocator(
-      graph_runner, dynamic_cast<GeDeviceResManager *>(device_res_manager_.get())->GetStream(),
-      dynamic_cast<GeDeviceResManager *>(device_res_manager_.get())->GetAllocator());
+      graph_runner, dynamic_cast<GeDeviceResManager *>(device_res_manager_.get())->GetStream(), ge_allocator_);
     if (ret != transform::Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "RegisterExternalAllocator failed";
     }
