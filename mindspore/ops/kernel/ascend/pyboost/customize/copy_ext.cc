@@ -27,7 +27,6 @@ namespace pyboost {
 tensor::BaseTensorPtr CopyExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &variable_tensor,
                                              const BaseTensorPtr &value_tensor) {
   MS_LOG(DEBUG) << "Call Copy start";
-  OpRunner::InferOpOutput(op, variable_tensor, value_tensor);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), variable_tensor, value_tensor);
   op->set_outputs({variable_tensor});
   // Async
