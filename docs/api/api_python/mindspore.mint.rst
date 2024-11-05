@@ -50,7 +50,6 @@ Tensor
     mindspore.mint.nonzero
     mindspore.mint.tile
     mindspore.mint.tril
-    mindspore.mint.triu
     mindspore.mint.stack
     mindspore.mint.where
 
@@ -113,7 +112,6 @@ Tensor
     mindspore.mint.floor
     mindspore.mint.log
     mindspore.mint.log1p
-    mindspore.mint.logaddexp
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
