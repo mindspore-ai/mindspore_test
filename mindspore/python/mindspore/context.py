@@ -1686,6 +1686,15 @@ def set_context(**kwargs):
                 - 3: Optimize dataset reader with all scenes.
               - bias_add_comm_swap (bool): Enable node execution order swap communication operators and add operators
                 if ``True``. Only 1-dimension bias node is supported. Default: ``False``.
+              - enable_allreduce_slice_to_reducescatter (bool): Enable allreduce optimization. In the scenario where
+                the batchmatmul model introduces allreduce in parallel, if the subsequent nodes are stridedslice
+                operator with model parallel, allreduce will be optimized as reducescatter according to the identified
+                patterns. Typical used in MoE module with groupwise alltoall. Default: ``False``.
+              - enable_interleave_split_concat_branch (bool): Enable communication computation parallel optimization
+                for branches formed by split and concat operators with ``enable_interleave`` attribute. It is typical
+                used in MoE parallel scenario. After splitting the input data, each slice of data is processed by the
+                MoE module, and then the branch results are concatenated. When the optimization is enable,
+                communication and computation will be executed in parallel between branches. Default: ``False``.
             - host_scheduling_max_threshold(int): The max threshold to control whether the dynamic shape process is
               used when run the static graph, the default value is 0. When the number of operations in the static graph
               is less than the max threshold, this graph will be executed in dynamic shape process. In large model
