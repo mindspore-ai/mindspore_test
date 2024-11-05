@@ -987,6 +987,8 @@ def _split_list(split_list, split_num):
 
 def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num):
     """apply safetensors object operators"""
+    if not transform_operator_stack:
+        return sf_obj
     level = transform_operator_stack[-1][1]
     level_operators = []
     while True:
