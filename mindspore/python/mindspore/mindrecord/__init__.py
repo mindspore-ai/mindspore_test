@@ -39,5 +39,5 @@ from .config import *
 
 __all__ = ['FileWriter', 'FileReader', 'MindPage',
            'Cifar10ToMR', 'Cifar100ToMR', 'CsvToMR', 'ImageNetToMR', 'MnistToMR', 'TFRecordToMR',
-           'set_enc_key', 'set_enc_mode', 'set_dec_mode', 'set_hash_mode',
+           'set_enc_key', 'set_enc_mode', 'set_dec_mode',
            'SUCCESS', 'FAILED']

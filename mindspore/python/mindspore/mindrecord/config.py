@@ -20,10 +20,9 @@ Common imported modules in corresponding API examples are as follows:
 
 .. code-block::
 
-    from mindspore.mindrecord import set_enc_key, set_enc_mode, set_dec_mode, set_hash_mode
+    from mindspore.mindrecord import set_enc_key, set_enc_mode, set_dec_mode
 """
 
-import hashlib
 import os
 import shutil
 import stat
@@ -36,37 +35,25 @@ from .shardutils import MIN_FILE_SIZE
 
 __all__ = ['set_enc_key',
            'set_enc_mode',
-           'set_dec_mode',
-           'set_hash_mode']
+           'set_dec_mode']
 
 
-# default encode key and hash mode
+# default encode key
 ENC_KEY = None
 ENC_MODE = "AES-GCM"
 DEC_MODE = None
 HASH_MODE = None
 
 
-# the final mindrecord after hash check and encode should be like below
-# 1. for create new mindrecord: should do hash first, then encode
-# mindrecord ->
-#               mindrecord+hash_value+len(4bytes)+'HASH' ->
-#                                                                enc_mindrecord+'ENCRYPT'
-# 2. for read mindrecord, should decode first, then do hash check
-# enc_mindrecord+'ENCRYPT' ->
-#                             mindrecord+hash_value+len(4bytes)+'HASH'
+# the final mindrecord after encode should be like below
+# 1. for create new mindrecord
+# mindrecord -> enc_mindrecord+'ENCRYPT'
+# 2. for read mindrecord
+# enc_mindrecord+'ENCRYPT' -> mindrecord
 
 
 # mindrecord file encode end flag, we will append 'ENCRYPT' to the end of file
 ENCRYPT_END_FLAG = str('ENCRYPT').encode('utf-8')
-
-
-# mindrecord file hash check flag, we will append hash value+'HASH' to the end of file
-HASH_END_FLAG = str('HASH').encode('utf-8')
-
-
-# length of hash value (4bytes) + 'HASH'
-LEN_HASH_WITH_END_FLAG = 4 + len(HASH_END_FLAG)
 
 
 # directory which stored decrypt mindrecord files
@@ -74,9 +61,7 @@ DECRYPT_DIRECTORY = ".decrypt_mindrecord"
 DECRYPT_DIRECTORY_LIST = []
 
 
-# time for warning when encrypt/decrypt or calculate hash takes too long time
-CALCULATE_HASH_TIME = 0
-VERIFY_HASH_TIME = 0
+# time for warning when encrypt/decrypt takes too long time
 ENCRYPT_TIME = 0
 DECRYPT_TIME = 0
 WARNING_INTERVAL = 30   # 30s
@@ -85,9 +70,6 @@ WARNING_INTERVAL = 30   # 30s
 def set_enc_key(enc_key):
     """
     Set the encode key.
-
-    Note:
-        When the encryption algorithm is ``"SM4-CBC"`` , only 16 bit length key are supported.
 
     Args:
         enc_key (str): Str-type key used for encryption. The valid length is 16, 24, or 32.
@@ -129,9 +111,9 @@ def set_enc_mode(enc_mode="AES-GCM"):
 
     Args:
         enc_mode (Union[str, function], optional): This parameter is valid only when enc_key is not set to ``None`` .
-            Specifies the encryption mode or customized encryption function, currently supports ``"AES-GCM"``,
-            ``"AES-CBC"`` and ``"SM4-CBC"`` . Default: ``"AES-GCM"`` . If it is customized encryption, users need
-            to ensure its correctness and raise exceptions when errors occur.
+            Specifies the encryption mode or customized encryption function, currently supports ``"AES-GCM"`` .
+            Default: ``"AES-GCM"`` . If it is customized encryption, users need
+            to ensure its correctness, the security of the encryption algorithm and raise exceptions when errors occur.
 
     Raises:
         ValueError: The input is not valid encode mode or callable function.
@@ -150,7 +132,7 @@ def set_enc_mode(enc_mode="AES-GCM"):
     if not isinstance(enc_mode, str):
         raise ValueError("The input enc_mode is not str.")
 
-    if enc_mode not in ["AES-GCM", "AES-CBC", "SM4-CBC"]:
+    if enc_mode not in ["AES-GCM"]:
         raise ValueError("The input enc_mode is invalid.")
 
     ENC_MODE = enc_mode
@@ -173,8 +155,8 @@ def set_dec_mode(dec_mode="AES-GCM"):
 
     Args:
         dec_mode (Union[str, function], optional): This parameter is valid only when enc_key is not set to ``None`` .
-            Specifies the decryption mode or customized decryption function, currently supports ``"AES-GCM"``,
-            ``"AES-CBC"`` and ``"SM4-CBC"`` . Default: ``"AES-GCM"`` . ``None`` indicates that decryption
+            Specifies the decryption mode or customized decryption function, currently supports ``"AES-GCM"`` .
+            Default: ``"AES-GCM"`` . ``None`` indicates that decryption
             mode is not defined. If it is customized decryption, users need to ensure its correctness and raise
             exceptions when errors occur.
 
@@ -199,7 +181,7 @@ def set_dec_mode(dec_mode="AES-GCM"):
     if not isinstance(dec_mode, str):
         raise ValueError("The input dec_mode is not str.")
 
-    if dec_mode not in ["AES-GCM", "AES-CBC", "SM4-CBC"]:
+    if dec_mode not in ["AES-GCM"]:
         raise ValueError("The input dec_mode is invalid.")
 
     DEC_MODE = dec_mode
@@ -244,7 +226,7 @@ def _get_dec_mode_as_str():
     if DEC_MODE is None:
         if callable(ENC_MODE):
             raise RuntimeError("You use custom encryption, so you must also define custom decryption.")
-        valid_dec_mode = ENC_MODE   # "AES-GCM" / "AES-CBC" / "SM4-CBC"
+        valid_dec_mode = ENC_MODE   # "AES-GCM"
     elif callable(DEC_MODE):
         valid_dec_mode = "UDF-ENC"  # "UDF-ENC"
     else:
@@ -254,287 +236,6 @@ def _get_dec_mode_as_str():
         raise RuntimeError("The length of enc_mode string is not 7.")
 
     return str(valid_dec_mode).encode('utf-8')
-
-
-def set_hash_mode(hash_mode):
-    """
-    Set the hash mode to ensure mindrecord file integrity.
-
-    Args:
-        hash_mode (Union[str, function]): The parameter is used to specify the hash mode. Specifies the hash
-            mode or customized hash function, currently supports ``None``, ``"sha256"``,
-            ``"sha384"``, ``"sha512"``, ``"sha3_256"``, ``"sha3_384"``
-            and ``"sha3_512"``. ``None`` indicates that hash check is not enabled.
-
-    Raises:
-        ValueError: The input is not valid hash mode or callable function.
-
-    Examples:
-        >>> from mindspore.mindrecord import set_hash_mode
-        >>>
-        >>> set_hash_mode("sha256")
-    """
-    global HASH_MODE
-
-    if hash_mode is None:
-        HASH_MODE = None
-        return
-
-    if callable(hash_mode):
-        HASH_MODE = hash_mode
-        return
-
-    if not isinstance(hash_mode, str):
-        raise ValueError("The input hash_mode is not str.")
-
-    if hash_mode not in ["sha256", "sha384", "sha512", "sha3_256", "sha3_384", "sha3_512"]:
-        raise ValueError("The input hash_mode is invalid.")
-
-    HASH_MODE = hash_mode
-
-
-def _get_hash_func():
-    """Get the hash func by hash mode"""
-    global HASH_MODE
-
-    if HASH_MODE is None:
-        raise RuntimeError("The HASH_MODE is None, no matching hash function.")
-
-    if callable(HASH_MODE):
-        return HASH_MODE
-
-    if HASH_MODE == "sha256":
-        return hashlib.sha256()
-    if HASH_MODE == "sha384":
-        return hashlib.sha384()
-    if HASH_MODE == "sha512":
-        return hashlib.sha512()
-    if HASH_MODE == "sha3_256":
-        return hashlib.sha3_256()
-    if HASH_MODE == "sha3_384":
-        return hashlib.sha3_384()
-    if HASH_MODE == "sha3_512":
-        return hashlib.sha3_512()
-    raise RuntimeError("The HASH_MODE: {} is invalid.".format(HASH_MODE))
-
-
-def _get_hash_mode():
-    """Get the hash check mode."""
-    global HASH_MODE
-
-    return HASH_MODE
-
-
-def calculate_file_hash(filename, whole=True):
-    """Calculate the file's hash"""
-    if not os.path.exists(filename):
-        raise RuntimeError("The input: {} is not exists.".format(filename))
-
-    if not os.path.isfile(filename):
-        raise RuntimeError("The input: {} should be a regular file.".format(filename))
-
-    # get the hash func
-    m = _get_hash_func()
-
-    f = open(filename, 'rb')
-
-    # get the file size first
-    if whole:
-        file_size = os.path.getsize(filename)
-    else:
-        len_hash_offset = os.path.getsize(filename) - LEN_HASH_WITH_END_FLAG
-        try:
-            f.seek(len_hash_offset)
-        except Exception as e:  # pylint: disable=W0703
-            f.close()
-            raise RuntimeError("Seek the file: {} to position: {} failed. Error: {}"
-                               .format(filename, len_hash_offset, str(e)))
-
-        len_hash = int.from_bytes(f.read(4), byteorder='big')  # length of hash value is 4 bytes
-        file_size = os.path.getsize(filename) - LEN_HASH_WITH_END_FLAG - len_hash
-
-    offset = 64 * 1024 * 1024    ## read the offset 64M
-    current_offset = 0           ## use this to seek file
-
-    # read the file with offset and do sha256 hash
-    hash_value = str("").encode('utf-8')
-    while True:
-        if (file_size - current_offset) >= offset:
-            read_size = offset
-        elif file_size - current_offset > 0:
-            read_size = file_size - current_offset
-        else:
-            # have read the entire file
-            break
-
-        try:
-            f.seek(current_offset)
-        except Exception as e:  # pylint: disable=W0703
-            f.close()
-            raise RuntimeError("Seek the file: {} to position: {} failed. Error: {}"
-                               .format(filename, current_offset, str(e)))
-
-        data = f.read(read_size)
-        if callable(m):
-            hash_value = m(data, hash_value)
-            if not isinstance(hash_value, bytes):
-                raise RuntimeError("User defined hash function should return hash value which is bytes type.")
-            if hash_value is None:
-                raise RuntimeError("User defined hash function return empty.")
-        else:
-            m.update(data)
-
-        current_offset += read_size
-
-    f.close()
-
-    if callable(m):
-        return hash_value
-    return m.digest()
-
-
-def append_hash_to_file(filename):
-    """append the hash value to the end of file"""
-    if not os.path.exists(filename):
-        raise RuntimeError("The input: {} is not exists.".format(filename))
-
-    if not os.path.isfile(filename):
-        raise RuntimeError("The input: {} should be a regular file.".format(filename))
-
-    logger.info("Begin to calculate the hash of the file: {}.".format(filename))
-    start = time.time()
-
-    hash_value = calculate_file_hash(filename)
-
-    # append hash value, length of hash value (4bytes) and HASH_END_FLAG to the file
-    f = open(filename, 'ab')
-    f.write(hash_value)     # append the hash value
-    f.write((len(hash_value)).to_bytes(4, byteorder='big', signed=False))  # append the length of hash value
-    f.write(HASH_END_FLAG)  # append the HASH_END_FLAG
-    f.close()
-
-    end = time.time()
-    global CALCULATE_HASH_TIME
-    CALCULATE_HASH_TIME += end - start
-    if CALCULATE_HASH_TIME > WARNING_INTERVAL:
-        logger.warning("It takes another " + str(WARNING_INTERVAL) +
-                       "s to calculate the hash value of the mindrecord file.")
-        CALCULATE_HASH_TIME = CALCULATE_HASH_TIME - WARNING_INTERVAL
-
-    # change the file mode
-    os.chmod(filename, stat.S_IRUSR | stat.S_IWUSR)
-
-    return True
-
-
-def get_hash_end_flag(filename):
-    """get the hash end flag from the file"""
-    if not os.path.exists(filename):
-        raise RuntimeError("The input: {} is not exists.".format(filename))
-
-    if not os.path.isfile(filename):
-        raise RuntimeError("The input: {} should be a regular file.".format(filename))
-
-    # get the file size first
-    file_size = os.path.getsize(filename)
-    offset = file_size - len(HASH_END_FLAG)
-    f = open(filename, 'rb')
-
-    # get the hash end flag which is HASH_END_FLAG
-    try:
-        f.seek(offset)
-    except Exception as e:  # pylint: disable=W0703
-        f.close()
-        raise RuntimeError("Seek the file: {} to position: {} failed. Error: {}".format(filename, offset, str(e)))
-
-    data = f.read(len(HASH_END_FLAG))
-    f.close()
-
-    return data
-
-
-def get_hash_value(filename):
-    """get the file's hash"""
-    if not os.path.exists(filename):
-        raise RuntimeError("The input: {} is not exists.".format(filename))
-
-    if not os.path.isfile(filename):
-        raise RuntimeError("The input: {} should be a regular file.".format(filename))
-
-    # get the file size first
-    file_size = os.path.getsize(filename)
-
-    # the hash_value+len(4bytes)+'HASH' is stored in the end of the file
-    offset = file_size - LEN_HASH_WITH_END_FLAG
-    f = open(filename, 'rb')
-
-    # seek the position for the length of hash value
-    try:
-        f.seek(offset)
-    except Exception as e:  # pylint: disable=W0703
-        f.close()
-        raise RuntimeError("Seek the file: {} to position: {} failed. Error: {}".format(filename, offset, str(e)))
-
-    len_hash = int.from_bytes(f.read(4), byteorder='big')  # length of hash value is 4 bytes
-    hash_value_offset = file_size - len_hash - LEN_HASH_WITH_END_FLAG
-
-    # seek the position for the hash value
-    try:
-        f.seek(hash_value_offset)
-    except Exception as e:  # pylint: disable=W0703
-        f.close()
-        raise RuntimeError("Seek the file: {} to position: {} failed. Error: {}"
-                           .format(filename, hash_value_offset, str(e)))
-
-    # read the hash value
-    data = f.read(len_hash)
-    f.close()
-
-    return data
-
-
-def verify_file_hash(filename):
-    """Calculate the file hash and compare it with the hash value which is stored in the file"""
-    if not os.path.exists(filename):
-        raise RuntimeError("The input: {} is not exists.".format(filename))
-
-    if not os.path.isfile(filename):
-        raise RuntimeError("The input: {} should be a regular file.".format(filename))
-
-    # verify the hash end flag
-    stored_hash_end_flag = get_hash_end_flag(filename)
-    if _get_hash_mode() is not None:
-        if stored_hash_end_flag != HASH_END_FLAG:
-            raise RuntimeError("The mindrecord file is not hashed. You can set " +
-                               "'mindspore.mindrecord.config.set_hash_mode(None)' to disable the hash check.")
-    else:
-        if stored_hash_end_flag == HASH_END_FLAG:
-            raise RuntimeError("The mindrecord file is hashed. You need to configure " +
-                               "'mindspore.mindrecord.config.set_hash_mode(...)' to enable the hash check.")
-        return True
-
-    # get the pre hash value from the end of the file
-    stored_hash_value = get_hash_value(filename)
-
-    logger.info("Begin to verify the hash of the file: {}.".format(filename))
-    start = time.time()
-
-    # calculate hash by the file
-    current_hash = calculate_file_hash(filename, False)
-
-    if stored_hash_value != current_hash:
-        raise RuntimeError("The input file: " + filename + " hash check fail. The file may be damaged. "
-                           "Or configure a correct hash mode.")
-
-    end = time.time()
-    global VERIFY_HASH_TIME
-    VERIFY_HASH_TIME += end - start
-    if VERIFY_HASH_TIME > WARNING_INTERVAL:
-        logger.warning("It takes another " + str(WARNING_INTERVAL) +
-                       "s to verify the hash value of the mindrecord file.")
-        VERIFY_HASH_TIME = VERIFY_HASH_TIME - WARNING_INTERVAL
-
-    return True
 
 
 def encrypt(filename, enc_key, enc_mode):

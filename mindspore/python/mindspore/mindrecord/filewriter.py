@@ -32,8 +32,7 @@ from .shardindexgenerator import ShardIndexGenerator
 from .shardutils import MIN_SHARD_COUNT, MAX_SHARD_COUNT, VALID_ATTRIBUTES, VALID_ARRAY_ATTRIBUTES, \
     check_filename, VALUE_TYPE_MAP, SUCCESS
 from .common.exceptions import ParamValueError, ParamTypeError, MRMInvalidSchemaError, MRMDefineIndexError
-from .config import _get_enc_key, _get_enc_mode, _get_dec_mode, _get_hash_mode, encrypt, decrypt, append_hash_to_file, \
-    verify_file_hash
+from .config import _get_enc_key, _get_enc_mode, _get_dec_mode, encrypt, decrypt
 
 __all__ = ['FileWriter']
 
@@ -96,8 +95,8 @@ class FileWriter:
         if self._shard_num == 1:
             self._paths = [self._file_name]
         else:
-            if _get_enc_key() is not None or _get_hash_mode() is not None:
-                raise RuntimeError("When encode mode or hash check is enabled, " +
+            if _get_enc_key() is not None:
+                raise RuntimeError("When encode mode is enabled, " +
                                    "the automatic sharding function is unavailable.")
             self._paths = ["{}{}".format(self._file_name,
                                          str(x).rjust(suffix_shard_size, '0'))
@@ -163,11 +162,7 @@ class FileWriter:
         decrypt_filename = decrypt(file_name, _get_enc_key(), _get_dec_mode())
         decrypt_index_filename = decrypt(index_file_name, _get_enc_key(), _get_dec_mode())
 
-        # verify integrity check
-        verify_file_hash(decrypt_filename)
-        verify_file_hash(decrypt_index_filename)
-
-        # move after decrypt and hash check all success
+        # move after decrypt success
         if decrypt_filename != file_name:
             shutil.move(decrypt_filename, file_name)
             shutil.move(decrypt_index_filename, index_file_name)
@@ -473,7 +468,7 @@ class FileWriter:
 
             self._parallel_commit()
 
-        # change file mode first, because encrypt / hash check may failed
+        # change file mode first, because encrypt may failed
         mindrecord_files = []
         index_files = []
         for item in self._paths:
@@ -487,11 +482,6 @@ class FileWriter:
 
         for item in self._paths:
             if os.path.exists(item):
-                # add the integrity check string
-                if _get_hash_mode() is not None:
-                    append_hash_to_file(item)
-                    append_hash_to_file(item + ".db")
-
                 # encrypt the mindrecord file
                 if _get_enc_key() is not None:
                     encrypt(item, _get_enc_key(), _get_enc_mode())

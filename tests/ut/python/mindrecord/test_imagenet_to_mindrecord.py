@@ -19,7 +19,7 @@ import pytest
 from mindspore import log as logger
 from mindspore.mindrecord import FileReader, MindPage
 from mindspore.mindrecord import ImageNetToMR
-from mindspore.mindrecord import set_enc_key, set_enc_mode, set_hash_mode
+from mindspore.mindrecord import set_enc_key, set_enc_mode
 
 IMAGENET_MAP_FILE = "../data/mindrecord/testImageNetDataWhole/labels_map.txt"
 IMAGENET_IMAGE_DIR = "../data/mindrecord/testImageNetDataWhole/images"
@@ -136,8 +136,8 @@ def test_imagenet_to_mindrecord_illegal_1_filename(fixture_file):
         imagenet_transformer.transform()
 
 
-def imagenet_to_mindrecord_with_enc_and_hash(encode, enc_mode, hash_mode):
-    """test transform imagenet dataset to mindrecord with enc and hash."""
+def imagenet_to_mindrecord_with_enc(encode, enc_mode):
+    """test transform imagenet dataset to mindrecord with enc."""
     file_name = os.environ.get('PYTEST_CURRENT_TEST').split(':')[-1].split(' ')[0]
 
     if os.path.exists(file_name):
@@ -147,7 +147,6 @@ def imagenet_to_mindrecord_with_enc_and_hash(encode, enc_mode, hash_mode):
 
     set_enc_key(encode)
     set_enc_mode(enc_mode)
-    set_hash_mode(hash_mode)
 
     imagenet_transformer = ImageNetToMR(IMAGENET_MAP_FILE, IMAGENET_IMAGE_DIR,
                                         file_name, 1)
@@ -162,7 +161,6 @@ def imagenet_to_mindrecord_with_enc_and_hash(encode, enc_mode, hash_mode):
     _ = MindPage([file_name])
 
     set_enc_key(None)
-    set_hash_mode(None)
 
     if os.path.exists(file_name):
         os.remove(file_name)
@@ -170,13 +168,11 @@ def imagenet_to_mindrecord_with_enc_and_hash(encode, enc_mode, hash_mode):
         os.remove(file_name + '.db')
 
 
-def test_imagenet_to_mindrecord_with_enc_and_hash_check(fixture_file):
+def test_imagenet_to_mindrecord_with_enc(fixture_file):
     """
     Feature: ImageNetToMR
-    Description: test transform imagenet dataset to mindrecord with enc and hash.
+    Description: test transform imagenet dataset to mindrecord with enc.
     Expectation: SUCCESS
     """
-    imagenet_to_mindrecord_with_enc_and_hash("0123456789012345", "AES-GCM", "sha384")
-    imagenet_to_mindrecord_with_enc_and_hash("0123456789012345", "AES-CBC", None)
-    imagenet_to_mindrecord_with_enc_and_hash(None, "SM4-CBC", "sha512")
-    imagenet_to_mindrecord_with_enc_and_hash(None, "SM4-CBC", None)
+    imagenet_to_mindrecord_with_enc("0123456789012345", "AES-GCM")
+    imagenet_to_mindrecord_with_enc(None, "AES-GCM")
