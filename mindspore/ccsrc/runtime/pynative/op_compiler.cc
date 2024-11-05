@@ -198,7 +198,7 @@ OpCompilerInfoPtr OpCompiler::Compile(const session::BackendOpRunInfoPtr &op_run
   opt::OptimizationWithoutBackend(graph);
   // Unify the MindIR, must be before of the graph optimization.
   kernel_executor->AddMindIRPass(graph);
-
+  graph->SetExecOrderByDefault();
   // Select kernel and optimize
   kernel_executor->OptimizeGraph(graph);
 

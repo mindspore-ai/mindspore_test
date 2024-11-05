@@ -248,6 +248,7 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
     return;
   }
   memo->insert(kernel_graph);
+  kernel_graph->SetExecOrderByDefault();
   const auto &kernels = kernel_graph->execution_order();
   for (const auto &kernel : kernels) {
     SelectKernelInfo(kernel_graph, kernel, op_selected_num);
@@ -333,6 +334,7 @@ void InlineCallGraph(const KernelGraphPtr &graph) {
     DumpIR(file_name, graph, true, kWholeStack);
   }
 #endif
+  graph->SetExecOrderByDefault();
   auto kernel_cnodes = graph->execution_order();
   AnfNodePtr last_call = nullptr;
   std::vector<FuncGraphManagerPtr> subgraph_managers;
@@ -791,6 +793,7 @@ void InlineSwitchGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *co
   }
 #endif
   // process ConditionSwitch/ConditionGather
+  graph->SetExecOrderByDefault();
   auto kernel_cnodes = graph->execution_order();
   auto mng = graph->manager();
   std::vector<CNodePtr> partial_inline_cnode;
@@ -829,7 +832,6 @@ void InlineSwitchGraph(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *co
     }
   }
   FlattenConditionNodeInput(graph);
-  graph->SetExecOrderByDefault();
   PROF_END(InlineSwitchGraph);
 #ifdef ENABLE_DUMP_IR
   if (save_graphs) {
@@ -1058,6 +1060,7 @@ void GeKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start optimize execution order. graph id: " << kernel_graph->graph_id();
+  kernel_graph->SetExecOrderByDefault();
   auto execution_order = kernel_graph->execution_order();
   kernel_graph->EnableRuntimeCache();
   common::AnfAlgo::ReorderExecList(NOT_NULL(&execution_order));
@@ -1106,8 +1109,10 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   const auto &nodes = kernel_graph->execution_order();
+  const auto &all_nodes = TopoSort(graph->get_return());
+  MS_VLOG(VL_FLOW) << "The size of execution order: " << nodes.size();
+  MS_VLOG(VL_FLOW) << "The size of all node: " << all_nodes.size();
   if (common::IsEnableRuntimeConfig(common::kRuntimeCompileStat)) {
-    const auto &all_nodes = TopoSort(graph->get_return());
     std::cout << "The size of execution order: " << nodes.size() << std::endl;
     std::cout << "The size of all node: " << all_nodes.size() << std::endl;
   }

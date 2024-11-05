@@ -90,7 +90,6 @@ void BackendCommonOptimization(const std::shared_ptr<session::KernelGraph> &kern
   auto optimizer = std::make_shared<GraphOptimizer>();
   optimizer->AddPassManager(GetBackendCommonOptimizationPassManagerPtr());
   (void)optimizer->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(BackendCommonOptimization);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
@@ -162,7 +161,6 @@ void CommonUnifyMindIR(const std::shared_ptr<session::KernelGraph> &kernel_graph
   auto opt = std::make_shared<GraphOptimizer>();
   opt->AddPassManager(GetCommonUnifyMindIRPassManager());
   (void)opt->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(CommonUnifyMindIR);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
@@ -203,7 +201,6 @@ void EliminateIllegalDataTypePass(const std::shared_ptr<session::KernelGraph> &k
   auto opt = std::make_shared<GraphOptimizer>();
   opt->AddPassManager(GetEliminateIllegalDataTypePassManager());
   (void)opt->Optimize(kernel_graph);
-  kernel_graph->SetExecOrderByDefault();
   PROF_END(EliminateIllegalDataTypePass);
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
