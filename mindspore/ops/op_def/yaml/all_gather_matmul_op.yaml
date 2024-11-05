@@ -34,3 +34,5 @@ all_gather_matmul:
   dispatch:
     enable: True
     Ascend: AllGatherMatmulAscend
+    CPU: None
+    GPU: None

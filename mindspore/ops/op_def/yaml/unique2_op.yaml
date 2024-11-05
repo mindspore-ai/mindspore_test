@@ -26,3 +26,5 @@ unique2:
   dispatch:
     enable: True
     Ascend: Unique2Ascend
+    CPU: None
+    GPU: None

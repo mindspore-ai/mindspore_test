@@ -21,3 +21,5 @@ mse_loss_grad_ext:
     dispatch:
         enable: True
         Ascend: MSELossGradExtAscend
+        CPU: None
+        GPU: None

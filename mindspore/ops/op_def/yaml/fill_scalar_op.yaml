@@ -19,3 +19,5 @@ fill_scalar:
     dispatch:
         enable: True
         Ascend: FillScalarAscend
+        CPU: None
+        GPU: None

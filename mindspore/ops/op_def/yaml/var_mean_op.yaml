@@ -26,4 +26,6 @@ var_mean:
     dispatch:
         enable: True
         Ascend: VarMeanAscend
+        CPU: None
+        GPU: None
         

@@ -19,5 +19,7 @@ dropout_ext:
     dispatch:
         enable: True
         Ascend: DropoutExtAscend
+        CPU: None
+        GPU: None
     function:
         disable: True

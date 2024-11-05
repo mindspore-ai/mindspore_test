@@ -22,4 +22,6 @@ multinomial_ext:
     dispatch:
         enable: True
         Ascend: MultinomialExtAscend
+        CPU: None
+        GPU: None
 

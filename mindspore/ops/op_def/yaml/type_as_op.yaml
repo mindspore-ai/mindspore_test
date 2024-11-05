@@ -13,3 +13,5 @@ type_as:
     dispatch:
         enable: True
         Ascend: TypeAsAscend
+        CPU: None
+        GPU: None

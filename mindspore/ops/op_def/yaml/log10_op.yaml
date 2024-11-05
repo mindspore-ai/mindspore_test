@@ -10,3 +10,5 @@ log10:
         name: log10_ext
     dispatch:
         enable: True
+        CPU: None
+        GPU: None

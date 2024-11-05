@@ -20,3 +20,5 @@ randperm_ext:
     dispatch:
         enable: True
         Ascend: RandpermExtAscend
+        CPU: None
+        GPU: None

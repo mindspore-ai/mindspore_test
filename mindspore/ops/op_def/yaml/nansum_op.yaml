@@ -22,3 +22,5 @@ nansum:
     dispatch:
         enable: True
         Ascend: NansumAscend
+        CPU: None
+        GPU: None

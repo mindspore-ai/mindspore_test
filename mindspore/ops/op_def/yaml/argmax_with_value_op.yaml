@@ -23,3 +23,5 @@ argmax_with_value:
   dispatch:
     enable: True
     Ascend: ArgMaxWithValueAscend
+    CPU: None
+    GPU: None

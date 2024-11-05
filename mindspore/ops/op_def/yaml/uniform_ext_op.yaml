@@ -19,3 +19,5 @@ uniform_ext:
     dispatch:
         enable: True
         Ascend: UniformExtAscend
+        CPU: None
+        GPU: None

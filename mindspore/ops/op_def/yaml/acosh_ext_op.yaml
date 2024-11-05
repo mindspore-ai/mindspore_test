@@ -10,3 +10,5 @@ acosh_ext:
         name: AcoshExt
     dispatch:
         enable: True
+        CPU: None
+        GPU: None

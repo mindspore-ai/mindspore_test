@@ -21,3 +21,5 @@ one_hot_ext:
     dispatch:
         Ascend: OneHotExtAscend
         enable: True
+        CPU: None
+        GPU: None
