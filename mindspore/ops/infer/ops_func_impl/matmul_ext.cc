@@ -63,7 +63,11 @@ ShapeVector CheckMatMulShapes(const ShapeVector &shape1, const ShapeVector &shap
       MS_EXCEPTION(RuntimeError) << "For 'MatMulExt' op,  shape1 and shape2 must be broadcastable, but got "
                                  << shape1_padded << " and " << shape2_padded;
     }
-    shape_out.push_back(std::max(dim1, dim2));
+    if (dim1 == 0 || dim2 == 0) {
+      shape_out.push_back(0);
+    } else {
+      shape_out.push_back(std::max(dim1, dim2));
+    }
   }
   return shape_out;
 }
