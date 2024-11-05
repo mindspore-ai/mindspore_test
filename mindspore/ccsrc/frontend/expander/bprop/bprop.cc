@@ -386,6 +386,20 @@ const mindspore::HashSet<size_t> &BpropExpander::GetUnusedInputs(const string &o
   return handle->unused_inputs;
 }
 
+void BpropExpander::FreeUselessValues(const PynativeCallback &cb) {
+  auto handle = BpropIRBuilderFactory::Instance().GetBuilder(cb.opname());
+  if (handle == nullptr) {
+    MS_LOG(DEBUG) << "Bprop IRBuilder [" << cb.opname() << "] is not registered in bprop expander.";
+    return;
+  }
+  if (!handle->unused_inputs.empty()) {
+    cb.DeprecatedFreeDeviceAddress(handle->unused_inputs);
+  }
+  if (handle->free_useless_value_func != nullptr) {
+    handle->free_useless_value_func(cb);
+  }
+}
+
 bool BpropExpander::RunBprop(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values) {
   static const bool cache_env = (common::GetEnv("MS_DEV_DISABLE_BPROP_CACHE") != "on");
   const auto prim = GetCNodePrimitive(cnode);

@@ -298,101 +298,32 @@ std::string GetWeightsObjIdsByWeights(const py::object &weights) {
   return weights_obj_id;
 }
 
-void FreeSpecialOpValue(const std::string &op_name, const FrontendOpRunInfoPtr &op_run_info, ValuePtr *const output) {
-  // Special cases, manually free more inputs.
-  static mindspore::HashSet<std::string> kMulOp{
-    kMulOpName,
-    kMatMulOpName,
-    kConv2DOpName,
-  };
-  static mindspore::HashSet<std::string> kDivOp{
-    kDivOpName,
-    kRealDivOpName,
-  };
-  static mindspore::HashSet<std::string> kNormOp{
-    kLayerNormOpName,
-    kLayerNormExtOpName,
-    kBatchNormExtOpName,
-  };
-  if (op_name == kBatchNormOpName) {
-    // 1. BatchNorm is a multi-output node, it's out[0] and out[1] are not used.
-    auto seq_v = (*output)->cast<ValueSequencePtr>();
-    MS_EXCEPTION_IF_NULL(seq_v);
-    ValuePtrList new_v_list{seq_v->value()};
-    new_v_list[kIndex0] = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(new_v_list[kIndex0]);
-    new_v_list[kIndex1] = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(new_v_list[kIndex1]);
-    *output = std::make_shared<ValueTuple>(new_v_list);
-    MS_LOG(DEBUG) << "Clear device address for output[0, 1] of " << op_name;
-  } else if (kNormOp.find(op_name) != kNormOp.end()) {
-    // 2. Multi-output node, it's out[1] and out[2] are not used.
-    auto seq_v = (*output)->cast<ValueSequencePtr>();
-    MS_EXCEPTION_IF_NULL(seq_v);
-    ValuePtrList new_v_list{seq_v->value()};
-    new_v_list[kIndex0] = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(new_v_list[kIndex0]);
-    *output = std::make_shared<ValueTuple>(new_v_list);
-    MS_LOG(DEBUG) << "Clear device address for output[0] of " << op_name;
-  } else if (kMulOp.find(op_name) != kMulOp.end()) {
-    // 3. For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
-    //    so if y is a valuenode, the dy is useless, we can free x in ahead.
-    bool x_is_const_value = PyNativeAlgo::Common::IsConstant(op_run_info->op_grad_info->input_value_grad_type[kIndex0]);
-    bool y_is_const_value = PyNativeAlgo::Common::IsConstant(op_run_info->op_grad_info->input_value_grad_type[kIndex1]);
-    if (x_is_const_value && op_run_info->op_grad_info->input_value[kIndex1]->isa<tensor::BaseTensor>()) {
-      op_run_info->op_grad_info->input_value[kIndex1] =
-        PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->input_value[kIndex1]);
-      MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << op_name;
-    }
-    if (y_is_const_value && op_run_info->op_grad_info->input_value[kIndex0]->isa<tensor::BaseTensor>()) {
-      op_run_info->op_grad_info->input_value[kIndex0] =
-        PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->input_value[kIndex0]);
-      MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << op_name;
-    }
-  } else if (kDivOp.find(op_name) != kDivOp.end()) {
-    // 3. For operators like Div, the dy does not rely on output node, so if y is a valuenode, we can free output.
-    if (PyNativeAlgo::Common::IsConstant(op_run_info->op_grad_info->input_value_grad_type[kIndex1])) {
-      *output = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*output);
-      MS_LOG(DEBUG) << "Clear device address for the output of " << op_name;
-    }
+class BpropCallback final : public expander::bprop::PynativeCallback {
+ public:
+  explicit BpropCallback(const OpGradInfoPtr &op_grad_info_ptr) : op_grad_info(op_grad_info_ptr) {}
+  const std::string &opname() const override { return op_grad_info->op_prim->name(); }
+  ValuePtr *GetInput(size_t index) const override { return &op_grad_info->input_value.at(index); }
+  ValuePtrList *GetInputs() const override { return &op_grad_info->input_value; }
+  ValuePtr *GetOutput() const override { return &op_grad_info->out_value; }
+  bool IsConstantInput(size_t index) const override {
+    return PyNativeAlgo::Common::IsConstant(op_grad_info->input_value_grad_type[index]);
   }
-}
-
-void FreeUselessValue(const FrontendOpRunInfoPtr &op_run_info, const GradParamPtr &grad_param,
-                      const TopCellInfoPtr &top_cell) {
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  MS_EXCEPTION_IF_NULL(grad_param);
-  MS_EXCEPTION_IF_NULL(top_cell);
-  if (top_cell->is_high_order_top_cell()) {
-    return;
+  void FreeDeviceAddress(ValuePtr *value) const override {
+    *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
   }
 
-  const auto &unused_inputs = BpropExpander::GetUnusedInputs(op_run_info->op_grad_info->op_prim->name());
-  for (const auto i : unused_inputs) {
-    if (i < op_run_info->input_size) {
-      // Free bprop not used input
-      op_run_info->op_grad_info->input_value[i] =
-        PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->input_value[i]);
-    } else if (i == op_run_info->input_size) {
-      // current op output tensor used in bprop graph, set used_in_bprop_graph which affect follow op free its inputs
-      if (op_run_info->op_grad_info->used_in_bprop_graph) {
-        PyNativeAlgo::Common::SetOutputUsedInBpropGraph(op_run_info->op_grad_info->out_value);
-      } else {
-        // Process output, free bprop not used output value
-        op_run_info->op_grad_info->out_value =
-          PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->out_value);
-        grad_param->out_used_in_bporp_graph = false;
-      }
-    }
-  }
-  // Free special op memory
-  FreeSpecialOpValue(op_run_info->op_grad_info->op_prim->name(), op_run_info, &op_run_info->op_grad_info->out_value);
-}
+ private:
+  const OpGradInfoPtr &op_grad_info;
+};
 
 GradParamPtr CreateOpGradParam(const FrontendOpRunInfoPtr &op_run_info, const TopCellInfoPtr &top_cell) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   op_run_info->op_grad_info->out_value = op_run_info->real_out;
   op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
-
   auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, top_cell->use_dynamic_shape_process());
-  FreeUselessValue(op_run_info, grad_param, top_cell);
+  if (!top_cell->is_high_order_top_cell()) {
+    BpropExpander::FreeUselessValues(BpropCallback(op_run_info->op_grad_info));
+  }
   return grad_param;
 }
 
