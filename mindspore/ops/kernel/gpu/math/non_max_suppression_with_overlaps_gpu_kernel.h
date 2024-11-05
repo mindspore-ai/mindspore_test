@@ -26,7 +26,7 @@
 #include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/kernel_constants.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

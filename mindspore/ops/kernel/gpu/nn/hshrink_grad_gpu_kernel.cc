@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include "abstract/utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/hshrink_impl.cuh"
 
 namespace mindspore {

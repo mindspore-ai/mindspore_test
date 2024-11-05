@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/common_utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/kernel.h"
 #include "kernel/kernel_build_info.h"

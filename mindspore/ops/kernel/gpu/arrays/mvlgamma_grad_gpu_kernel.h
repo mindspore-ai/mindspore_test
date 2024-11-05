@@ -29,7 +29,7 @@
 #include "kernel/gpu/cuda_impl/cuda_ops/mvlgamma_grad_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {

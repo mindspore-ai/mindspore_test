@@ -33,7 +33,7 @@
 #include <optional>
 #include "kernel/kernel.h"
 #include "kernel/gpu/gpu_kernel_mod.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/kernel_constants.h"
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
 #include "plugin/device/gpu/hal/device/gpu_device_address.h"

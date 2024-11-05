@@ -18,7 +18,7 @@
 #include "src/extendrt/kernel/ascend/api/ascend_kernel_api.h"
 #include "src/extendrt/kernel/acl/acl_lite_kernel.h"
 #include "src/extendrt/kernel/kernel_spec_infos.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "src/infer/graph_compiler.h"
 #include "mindspore/lite/src/common/common.h"

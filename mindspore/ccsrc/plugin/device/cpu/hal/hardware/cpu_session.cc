@@ -24,7 +24,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "runtime/device/kernel_runtime.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"

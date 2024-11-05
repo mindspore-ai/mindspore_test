@@ -30,7 +30,7 @@
 #include "include/common/utils/python_fallback_running.h"
 #include "include/backend/py_execute_utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/parse/resolve.h"
 #include "utils/trace_base.h"
 

@@ -27,7 +27,7 @@
 #include <vector>
 #include "ir/tensor.h"
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 using std::string;
 using std::vector;
 

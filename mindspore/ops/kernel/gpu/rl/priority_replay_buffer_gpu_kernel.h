@@ -20,7 +20,7 @@
 #include "kernel/gpu/rl/priority_replay_buffer.h"
 #include <vector>
 #include <memory>
-#include "plugin/factory/replay_buffer_factory.h"
+#include "include/common/factory/replay_buffer_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 

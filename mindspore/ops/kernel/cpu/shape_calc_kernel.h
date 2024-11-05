@@ -21,7 +21,7 @@
 #include <set>
 #include <vector>
 #include "kernel/cpu/cpu_kernel.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "ir/functor.h"
 
 namespace mindspore {

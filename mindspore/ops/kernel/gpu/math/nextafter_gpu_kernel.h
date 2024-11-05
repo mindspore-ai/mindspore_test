@@ -23,7 +23,7 @@
 #include <functional>
 #include <map>
 #include "abstract/utils.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/math/nextafter_gpu_kernel.h"

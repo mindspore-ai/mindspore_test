@@ -298,6 +298,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/kernel/kernel.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/ascend_kernel_mod.cc"
         "../../../mindspore/ccsrc/backend/common/optimizer/helper.cc"
+        "../../../mindspore/ccsrc/transform/symbol/*.cc"
         )
 
 list(REMOVE_ITEM MINDSPORE_SRC_LIST
@@ -338,7 +339,7 @@ list(REMOVE_ITEM MINDSPORE_SRC_LIST
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST} $<TARGET_OBJECTS:core_proto_obj> $<TARGET_OBJECTS:mindrt_mid>
         $<TARGET_OBJECTS:_mindspore_utils_obj>
         $<TARGET_OBJECTS:_mindspore_common_obj> ${dataengine_submodules} $<TARGET_OBJECTS:mindrecord_obj>
-        $<TARGET_OBJECTS:md_log_adapter_obj> $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
+        $<TARGET_OBJECTS:md_log_adapter_obj>)
 add_dependencies(_ut_mindspore_obj proto_input_ut)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})

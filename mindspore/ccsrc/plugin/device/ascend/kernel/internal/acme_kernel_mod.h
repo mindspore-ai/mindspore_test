@@ -23,7 +23,7 @@
 #include "kernel/kernel.h"
 #include "acme/include/acme.h"
 #include "acme/tiling_mem_mgr.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 #include "plugin/device/ascend/kernel/internal/acme/acme_tiling_cache.h"
 #include "plugin/device/ascend/kernel/internal/acme/acme_spinlock.h"

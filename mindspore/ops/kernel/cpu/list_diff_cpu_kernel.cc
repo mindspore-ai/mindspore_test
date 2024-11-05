@@ -16,7 +16,7 @@
 
 #include "kernel/cpu/list_diff_cpu_kernel.h"
 #include <unordered_set>
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "kernel/common_utils.h"
 

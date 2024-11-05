@@ -18,7 +18,7 @@
 #include <string>
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "proto/rpc.pb.h"
-#include "plugin/factory/ms_factory.h"
+#include "include/common/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
