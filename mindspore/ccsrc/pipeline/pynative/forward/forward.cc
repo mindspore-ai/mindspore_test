@@ -582,14 +582,7 @@ void ForwardExecutor::RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info) {
   }
 #endif
 
-  if (op_run_info->is_view_op) {
-    // Some special inputs cannot run view op, so need continuous inputs firstly, and set flag to false.
-    for (size_t i = 0; i < op_run_info->op_grad_info->input_value.size(); i++) {
-      op_run_info->op_grad_info->input_value[i] = PyNativeAlgo::Common::ConvertToContiguousValue(
-        op_run_info->op_grad_info->input_value[i], op_run_info->requires_grad);
-    }
-    op_run_info->is_view_op = false;
-  }
+  op_run_info->is_view_op = false;
 
   // Infer output abstract
   InferOutputAbstract(op_run_info);

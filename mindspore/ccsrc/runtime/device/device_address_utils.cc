@@ -42,6 +42,7 @@
 #include "include/backend/device_type.h"
 #endif
 #include "runtime/pipeline/pipeline.h"
+#include "kernel/common/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore {
 using tensor::TensorPtr;
@@ -1327,6 +1328,21 @@ device::DeviceAddressPtr DeviceAddressUtils::CreateWorkspaceAddress(const Device
   }
   MS_LOG(DEBUG) << "Create workspace device address:" << device_address;
   return device_address;
+}
+
+tensor::BaseTensorPtr DeviceAddressUtils::TensorContiguous(const tensor::BaseTensorPtr &tensor) {
+  if (tensor == nullptr || tensor->storage_info() == nullptr) {
+    return tensor;
+  }
+  const auto &old_device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+  MS_EXCEPTION_IF_NULL(old_device_address);
+
+  const DeviceContext *device_context = runtime::OpRunner::GetDeviceContext(old_device_address->device_name());
+  MS_EXCEPTION_IF_NULL(device_context);
+  GilReleaseWithCheck release_gil;
+  auto contiguous_op = CREATE_PYBOOST_OP(Contiguous, device_context->device_context_key().device_name_);
+  const auto &contiguous_tensor = contiguous_op->Call(tensor);
+  return contiguous_tensor;
 }
 
 void DeviceAddressUtils::ConvertContiguousTensorSync(const tensor::BaseTensorPtr &tensor) {
