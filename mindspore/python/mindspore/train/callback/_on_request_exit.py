@@ -240,7 +240,18 @@ class OnRequestExit(Callback):
                 if param.name == "graceful_exit" and param.asnumpy() == True:  # pylint: disable=C0121
                     logger.warning("Graceful exit is triggered, stop training.")
                     if self.save_ckpt:
-                        save_checkpoint(net, self.train_name, integrated_save=self.integrated_save)
+                        append_dict = {"epoch_num": call_params.cur_epoch_num,
+                                       "step_num": call_params.cur_step_num,
+                                       "batch_num": call_params.batch_num}
+                        if call_params.loss_scale_mananger is not None:
+                            append_dict["loss_scale"] = call_params.loss_scale_mananger.get_loss_scale()
+                        if call_params.optimizer is not None:
+                            global_step = int(call_params.optimizer.global_step.data)
+                        else:
+                            global_step = int(call_params.network.optimizer.global_step.data)
+                        append_dict["global_step"] = global_step
+                        save_checkpoint(net, self.train_name, integrated_save=self.integrated_save,
+                                        append_dict=append_dict)
                     if self.save_mindir:
                         inputs = call_params.train_dataset_element
                         export(net, *inputs, file_name=self.train_name, file_format='MINDIR')
