@@ -11,6 +11,7 @@ mindspore.ops.unique_with_pad
 
     .. warning::
         :func:`mindspore.ops.unique_with_pad` 从2.4版本开始已被弃用，并将在未来版本中被移除。
+        请组合使用 :func:`mindspore.ops.unique` 和 :func:`mindspore.ops.pad` 实现同样的功能。
 
     参数：
         - **x** (Tensor) - 需要被去重的Tensor。必须是类型为int32或int64的一维向量。

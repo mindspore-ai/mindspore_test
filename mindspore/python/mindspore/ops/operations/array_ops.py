@@ -771,12 +771,14 @@ class Padding(Primitive):
 class UniqueWithPad(Primitive):
     """
     'ops.UniqueWithPad' is deprecated from version 2.4 and will be removed in a future version.
+    Please use the :func:`mindspore.ops.unique` combined with :func:`mindspore.ops.pad` to realize
+    the same function.
 
     Supported Platforms:
         Deprecated
     """
 
-    @deprecated("2.4", "ops.Unique and ops.PadV3", False)
+    @deprecated("2.4", "ops.unique and ops.pad", False)
     @prim_attr_register
     def __init__(self):
         """init UniqueWithPad"""
