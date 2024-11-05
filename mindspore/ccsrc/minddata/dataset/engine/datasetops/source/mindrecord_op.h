@@ -170,8 +170,8 @@ class MindRecordOp : public MappableLeafOp {
   /// Calculate sampler id based on index to return corresponding data
   /// \param size_t index - indexing of dataset
   /// \param TensorRow row - Get data after sampler based on index
-  /// @return - the row must be returned
-  TensorRow ComputeIndex(size_t index, TensorRow *row);
+  /// @return Status The status code returned
+  Status GetRowByIndex(size_t index, TensorRow *row);
 
  private:
   std::vector<std::string> dataset_file_;                  // dataset files
