@@ -18,29 +18,373 @@ from mindspore import _checkparam as validator
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
-from mindspore.ops.auto_generate import add, max_
-from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar, erf, exp, tanh
+# 1 common import
+
+# 2 common import
+
+# 3 common import
+
+# 4 common import
+
+# 5 common import
+
+# 6 common import
+
+# 7 common import
+
+
+# 1 to
 from mindspore.ops.auto_generate import cast
-from mindspore.ops.function.math_func import mean, ceil, cos, eq
-from mindspore.ops.function.math_func import div, remainder
+# 2 masked_fill
+
+# 3 abs
+
+# 4 __abs__
+
+# 5 add
+from mindspore.ops.auto_generate import add
+# 6 all
+
+# 7 allclose
+
+# 8 any
+
+# 9 arctan2
+
+# 10 argmax
 from mindspore.ops.function.array_func import argmax
-from mindspore.ops.function.array_func import repeat_interleave, gather_ext
+# 11 argmin
+
+# 12 argsort
+
+# 13 atan2
+
+# 14 bfloat16
+
+# 15 bmm
+
+# 16 bool
+
+# 17 broadcast_to
+
+# 18 byte
+
+# 19 ceil
+from mindspore.ops.function.math_func import ceil
+# 20 chunk
+
+# 21 clamp
+from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar
+# 22 clip
+
+# 23 cos
+from mindspore.ops.function.math_func import cos
+# 24 cumprod
+
+# 25 cumsum
+
+# 26 dim
+
+# 27 div
+from mindspore.ops.function.math_func import div
+# 28 divide
+
+# 29 eq
+from mindspore.ops.function.math_func import eq
+# 30 erf
+from mindspore.ops.auto_generate import erf
+# 31 exp
+from mindspore.ops.auto_generate import exp
+# 32 expand
+
+# 33 expand_as
+
+# 34 flatten
+
+# 35 flip
+
+# 36 float
+
+# 37 floor
+
+# 38 gather
 from mindspore.ops.auto_generate import gather
+from mindspore.ops.function.array_func import gather_ext
+# 39 greater
+
+# 40 greater_equal
+
+# 41 gt
+
+# 42 half
+
+# 43 index_put
+
+# 44 index_select
+
+# 45 int
+
+# 46 inverse
+
+# 47 is_contiguous
+
+# 48 isclose
+
+# 49 isfinite
+
+# 50 isnan
+
+# 51 item
+
+# 52 le
+
+# 53 less
+
+# 54 less_equal
+
+# 55 log
+
+# 56 log2
+
+# 57 logical_and
+
+# 58 logical_not
+
+# 59 logical_or
+
+# 60 long
+
+# 61 lt
+
+# 62 masked_fill
+
+# 63 masked_select
+
+# 64 matmul
+
+# 65 max
+from mindspore.ops.auto_generate import max_
 from mindspore.ops.function.array_func import max as max_func
+# 66 maximum
+
+# 67 mean
+from mindspore.ops.function.math_func import mean
+# 68 min
+
+# 69 minimum
+
+# 70 mul
+
+# 71 nan_to_num
+
+# 72 narrow
+
+# 73 ne
+
+# 74 neg
+
+# 75 negative
+
+# 76 nonzero
+
+# 77 norm
+
+# 78 numel
+
+# 79 numpy
+
+# 80 outer
+
+# 81 permute
+
+# 82 pow
+
+# 83 prod
+
+# 84 reciprocal
+
+# 85 remainder
+from mindspore.ops.function.math_func import remainder
+# 86 repeat
+
+# 87 repeat_interleave
+from mindspore.ops.function.array_func import repeat_interleave
+# 88 reshape
+
+# 89 round
+
+# 90 rsqrt
+
+# 91 scatter
+
+# 92 scatter_add
+
+# 93 select
+
+# 94 sigmoid
+
+# 95 sin
+
+# 96 size
+
+# 97 sort
+
+# 98 split
+
+# 99 sqrt
+
+# 100 square
+
+# 101 squeeze
+
+# 102 std
+
+# 103 sub
+
+# 104 sum
+
+# 105 swapaxes
+
+# 106 t
+
+# 107 tanh
+from mindspore.ops.auto_generate import tanh
+# 108 tile
+
+# 109 tolist
+
+# 110 topk
+
+# 111 transpose
+
+# 112 tril
+
+# 113 trunc
+
+# 114 type
+
+# 115 type_as
+
+# 116 unbind
+
+# 117 unfold
+
+# 118 unique
+
+# 119 unsqeeze
+
+# 120 view
+
+# 121 contiguous
+
+# 122 where
+
+# 123 div_
+
+# 124 fill_
+
+# 125 floor_
+
+# 126 masked_fill_
+
+# 127 mul_
+
+# 128 normal_
+
+# 129 requires_grad_
+
+# 130 sub_
+
+# 131 uniform_
+
+# 132 absolute
+
+# 133 bincount
+
+# 134 diff
+
+# 135 double
+
+# 136 lcm
+
+# 137 mm
+
+# 138 ravel
+
+# 139 nelement
+
+# 140 stride
+
+# 141 indices
+
+# 142 view_as
+
+# 143 values
+
+# 144 index_copy
+
+# 145 element_size
+
+# 146 gcd
+
+# 147 isinf
+
+# 148 not_equal
+
+# 149 triu
+
+# 150 __eq__
+
+# 151
+
+# 152
+
+# 153
+
+# 154
+
+# 155
+
+# 156
+
+# 157
+
+# 158
+
+# 159
+
+# 160
+
+# 161
+
+# 162
+
+########################################functions########################################
+# 1 to
+def tensor_to(input, dtype):
+    return cast(input, dtype)
 
 
-def tensor_clamp_tensor(input, min=None, max=None):
-    return clamp_tensor(input, min, max)
+# 2 masked_fill
+
+# 3 abs
+
+# 4 __abs__
+
+# 5 add
+def tensor_add(input, other, alpha=1):
+    return add(input, other)
 
 
-def tensor_clamp_scalar(input, min=None, max=None):
-    return clamp_scalar(input, min, max)
+# 6 all
 
+# 7 allclose
 
-def tensor_mean(x, axis=None, keep_dims=False, dtype=None):
-    return mean(x, axis, keep_dims)
+# 8 any
 
+# 9 arctan2
 
+# 10 argmax
 def tensor_argmax(input, dim=None, keepdim=False):
     return argmax(input, dim, keepdim)
 
@@ -49,10 +393,152 @@ def deprecated_tensor_argmax(input, axis=None, keepdims=False):
     return argmax(input, axis, keepdims)
 
 
-def tensor_add(input, other, alpha=1):
-    return add(input, other)
+# 11 argmin
+
+# 12 argsort
+
+# 13 atan2
+
+# 14 bfloat16
+
+# 15 bmm
+
+# 16 bool
+
+# 17 broadcast_to
+
+# 18 byte
+
+# 19 ceil
+def tensor_ceil(input):
+    return ceil(input)
 
 
+# 20 chunk
+
+# 21 clamp
+def tensor_clamp_tensor(input, min=None, max=None):
+    return clamp_tensor(input, min, max)
+
+
+def tensor_clamp_scalar(input, min=None, max=None):
+    return clamp_scalar(input, min, max)
+
+
+# 22 clip
+
+# 23 cos
+def tensor_cos(input):
+    return cos(input)
+
+
+# 24 cumprod
+
+# 25 cumsum
+
+# 26 dim
+
+# 27 div
+def tensor_div(input, value, *, rounding_mode=None):
+    return div(input, value, rounding_mode=rounding_mode)
+
+
+# 28 divide
+
+# 29 eq
+def tensor_eq(input, other):
+    return eq(input, other)
+
+
+# 30 erf
+def tensor_erf(input):
+    return erf(input)
+
+
+# 31 exp
+def tensor_exp(input):
+    return exp(input)
+
+
+# 32 expand
+
+# 33 expand_as
+
+# 34 flatten
+
+# 35 flip
+
+# 36 float
+
+# 37 floor
+
+# 38 gather
+def tensor_gather_ext(input, dim, index):
+    return gather_ext(input, dim, index)
+
+
+def deprecated_tensor_gather(input, input_indices, axis, batch_dims=0):
+    r"""
+    For details, please refer to :func:`mindspore.ops.gather`.
+    """
+    validator.check_is_int(axis, 'axis')
+    validator.check_is_int(batch_dims, "batch_dims")
+    return gather(input, input_indices, axis, batch_dims)
+
+
+# 39 greater
+
+# 40 greater_equal
+
+# 41 gt
+
+# 42 half
+
+# 43 index_put
+
+# 44 index_select
+
+# 45 int
+
+# 46 inverse
+
+# 47 is_contiguous
+
+# 48 isclose
+
+# 49 isfinite
+
+# 50 isnan
+
+# 51 item
+
+# 52 le
+
+# 53 less
+
+# 54 less_equal
+
+# 55 log
+
+# 56 log2
+
+# 57 logical_and
+
+# 58 logical_not
+
+# 59 logical_or
+
+# 60 long
+
+# 61 lt
+
+# 62 masked_fill
+
+# 63 masked_select
+
+# 64 matmul
+
+# 65 max
 def tensor_max(input):
     return max_(input)
 
@@ -69,54 +555,208 @@ def deprecated_tensor_max(input, axis=None, keepdims=False, *, initial=None, whe
     return values, indices
 
 
-def tensor_ceil(input):
-    return ceil(input)
+# 66 maximum
+
+# 67 mean
+def tensor_mean(x, axis=None, keep_dims=False, dtype=None):
+    return mean(x, axis, keep_dims)
 
 
-def tensor_cos(input):
-    return cos(input)
+# 68 min
+
+# 69 minimum
+
+# 70 mul
+
+# 71 nan_to_num
+
+# 72 narrow
+
+# 73 ne
+
+# 74 neg
+
+# 75 negative
+
+# 76 nonzero
+
+# 77 norm
+
+# 78 numel
+
+# 79 numpy
+
+# 80 outer
+
+# 81 permute
+
+# 82 pow
+
+# 83 prod
+
+# 84 reciprocal
+
+# 85 remainder
+def tensor_remainder(input, divisor):
+    return remainder(input, divisor)
 
 
-def tensor_eq(input, other):
-    return eq(input, other)
+# 86 repeat
 
-
-def tensor_erf(input):
-    return erf(input)
-
-
-def tensor_exp(input):
-    return exp(input)
-
-
-def tensor_tanh(input):
-    return tanh(input)
-
-
-def tensor_gather_ext(input, dim, index):
-    return gather_ext(input, dim, index)
-
-
-def deprecated_tensor_gather(input, input_indices, axis, batch_dims=0):
-    r"""
-    For details, please refer to :func:`mindspore.ops.gather`.
-    """
-    validator.check_is_int(axis, 'axis')
-    validator.check_is_int(batch_dims, "batch_dims")
-    return gather(input, input_indices, axis, batch_dims)
-
-
+# 87 repeat_interleave
 def tensor_repeat_interleave(input, repeats, dim=None):
     return repeat_interleave(input, repeats, dim)
 
 
-def tensor_to(input, dtype):
-    return cast(input, dtype)
+# 88 reshape
+
+# 89 round
+
+# 90 rsqrt
+
+# 91 scatter
+
+# 92 scatter_add
+
+# 93 select
+
+# 94 sigmoid
+
+# 95 sin
+
+# 96 size
+
+# 97 sort
+
+# 98 split
+
+# 99 sqrt
+
+# 100 square
+
+# 101 squeeze
+
+# 102 std
+
+# 103 sub
+
+# 104 sum
+
+# 105 swapaxes
+
+# 106 t
+
+# 107 tanh
+def tensor_tanh(input):
+    return tanh(input)
 
 
-def tensor_div(input, value, *, rounding_mode=None):
-    return div(input, value, rounding_mode=rounding_mode)
+# 108 tile
 
+# 109 tolist
 
-def tensor_remainder(input, divisor):
-    return remainder(input, divisor)
+# 110 topk
+
+# 111 transpose
+
+# 112 tril
+
+# 113 trunc
+
+# 114 type
+
+# 115 type_as
+
+# 116 unbind
+
+# 117 unfold
+
+# 118 unique
+
+# 119 unsqeeze
+
+# 120 view
+
+# 121 contiguous
+
+# 122 where
+
+# 123 div_
+
+# 124 fill_
+
+# 125 floor_
+
+# 126 masked_fill_
+
+# 127 mul_
+
+# 128 normal_
+
+# 129 requires_grad_
+
+# 130 sub_
+
+# 131 uniform_
+
+# 132 absolute
+
+# 133 bincount
+
+# 134 diff
+
+# 135 double
+
+# 136 lcm
+
+# 137 mm
+
+# 138 ravel
+
+# 139 nelement
+
+# 140 stride
+
+# 141 indices
+
+# 142 view_as
+
+# 143 values
+
+# 144 index_copy
+
+# 145 element_size
+
+# 146 gcd
+
+# 147 isinf
+
+# 148 not_equal
+
+# 149 triu
+
+# 150 __eq__
+
+# 151
+
+# 152
+
+# 153
+
+# 154
+
+# 155
+
+# 156
+
+# 157
+
+# 158
+
+# 159
+
+# 160
+
+# 161
+
+# 162
