@@ -30,6 +30,7 @@
 #include "src/common/file_utils.h"
 #include "cxx_api/acl_utils.h"
 #include "utils/ms_utils_secure.h"
+#include "tools/common/graph_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/graph/remove_load_pass.h"
 #include "src/extendrt/utils/func_graph_utils.h"
@@ -1346,6 +1347,7 @@ transform::DfGraphPtr GeGraphExecutor::CompileGraphCommon(const FuncGraphPtr &an
     MS_LOG(ERROR) << "Input param graph is nullptr.";
     return nullptr;
   }
+  lite::AdjustDuplicateNodeName(anf_graph);
   if (ge_options_ptr == nullptr) {
     MS_LOG(ERROR) << "Input param ge_options_ptr is nullptr.";
     return nullptr;

@@ -46,7 +46,6 @@ class AclPassImpl {
   /* build func graph */
   virtual STATUS BuildGraph(const FuncGraphPtr &func_graph);
   /* pre or post pass */
-  void AdjustDuplicateNodeName(const FuncGraphPtr &func_graph);
   STATUS RunLiteInnerPass(const FuncGraphPtr &func_graph);
   STATUS RunAclOptimizerPass(const FuncGraphPtr &func_graph);
   STATUS PreProcGraph(const FuncGraphPtr &func_graph);
