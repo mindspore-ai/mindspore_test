@@ -22,4 +22,6 @@ sort_ext:
     dispatch:
         enable: True
         Ascend: SortExtAscend
+        CPU: None
+        GPU: None
 

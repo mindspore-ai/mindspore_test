@@ -15,3 +15,5 @@ unstack_ext:
     dispatch:
         enable: True
         Ascend: UnstackExtAscend
+        CPU: None
+        GPU: None

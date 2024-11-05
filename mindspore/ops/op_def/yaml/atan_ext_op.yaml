@@ -10,3 +10,5 @@ atan_ext:
         name: AtanExt
     dispatch:
         enable: True
+        CPU: None
+        GPU: None

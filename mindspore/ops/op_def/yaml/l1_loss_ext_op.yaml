@@ -17,3 +17,5 @@ l1_loss_ext:
   dispatch:
     enable: True
     Ascend: L1LossExtAscend
+    CPU: None
+    GPU: None

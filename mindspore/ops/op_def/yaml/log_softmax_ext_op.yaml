@@ -17,3 +17,5 @@ log_softmax_ext:
     dispatch:
         enable: True
         Ascend: LogSoftmaxExtAscend
+        CPU: None
+        GPU: None

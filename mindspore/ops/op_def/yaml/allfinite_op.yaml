@@ -14,3 +14,5 @@ all_finite:
   dispatch:
     enable: True
     Ascend: AllFiniteAscend
+    CPU: None
+    GPU: None

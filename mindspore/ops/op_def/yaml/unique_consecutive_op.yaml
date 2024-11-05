@@ -28,3 +28,4 @@ unique_consecutive:
     enable: True
     Ascend: UniqueConsecutiveAscend
     CPU: UniqueConsecutiveCPU
+    GPU: None

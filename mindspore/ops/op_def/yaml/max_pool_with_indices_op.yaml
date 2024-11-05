@@ -41,3 +41,5 @@ max_pool_with_indices:
   dispatch:
     enable: True
     Ascend: MaxPoolWithIndicesAscend
+    CPU: None
+    GPU: None

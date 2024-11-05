@@ -8,3 +8,5 @@ trace_ext:
             dtype: tensor
     dispatch:
         enable: True
+        CPU: None
+        GPU: None

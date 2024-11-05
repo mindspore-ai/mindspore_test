@@ -29,3 +29,5 @@ add_layernorm_v2:
   dispatch:
     enable: True
     Ascend: AddLayerNormAscend
+    CPU: None
+    GPU: None

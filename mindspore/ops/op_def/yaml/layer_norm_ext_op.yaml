@@ -30,3 +30,4 @@ layer_norm_ext:
     enable: True
     Ascend: LayerNormExtAscend
     CPU: LayerNormExtCPU
+    GPU: None

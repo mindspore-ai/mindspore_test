@@ -23,3 +23,5 @@ std:
   dispatch:
     enable: True
     Ascend: StdAscend
+    CPU: None
+    GPU: None

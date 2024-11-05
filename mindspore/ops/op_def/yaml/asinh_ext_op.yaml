@@ -10,3 +10,5 @@ asinh_ext:
         name: AsinhExt
     dispatch:
         enable: True
+        CPU: None
+        GPU: None

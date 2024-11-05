@@ -10,3 +10,5 @@ acos_ext:
         name: AcosExt
     dispatch:
         enable: True
+        CPU: None
+        GPU: None

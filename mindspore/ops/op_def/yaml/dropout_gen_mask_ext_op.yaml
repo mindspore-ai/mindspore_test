@@ -22,5 +22,7 @@ dropout_gen_mask_ext:
     dispatch:
         enable: True
         Ascend: DropoutGenMaskExtAscend
+        CPU: None
+        GPU: None
     function:
         disable: True

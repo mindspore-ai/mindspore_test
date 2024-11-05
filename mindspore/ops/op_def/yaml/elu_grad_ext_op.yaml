@@ -16,3 +16,5 @@ elu_grad_ext:
   dispatch:
     enable: True
     Ascend: EluGradExtAscend
+    CPU: None
+    GPU: None
