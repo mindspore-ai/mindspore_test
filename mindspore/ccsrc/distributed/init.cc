@@ -101,16 +101,24 @@ bool InitializeCluster() {
   auto callback = std::make_shared<std::function<void(void)>>([]() {
     MS_LOG(INFO) << "Callback on exception is called.";
     if (TFTWaitSem::IsEnable()) {
+      MS_LOG(DEBUG) << "Start waiting for TFT.";
       TFTWaitSem::GetInstance().Wait();
+      MS_LOG(DEBUG) << "End waiting for TFT.";
     }
+
+    MS_LOG(DEBUG) << "Start finalizing CollectiveManager in abnormal callback.";
     if (!collective::CollectiveManager::instance()->Finalize()) {
       MS_LOG(EXCEPTION) << "Failed to finalize the collective communication lib.";
     }
+    MS_LOG(DEBUG) << "End finalizing CollectiveManager in abnormal callback.";
+
+    MS_LOG(DEBUG) << "Start aborting rpc_node_scheduler.";
     // Abort graph scheduler to avoid hang in rpc communication.
     auto &graph_scheduler = runtime::GraphScheduler::GetInstance();
     if (graph_scheduler.initialized() && graph_scheduler.rpc_node_scheduler() != nullptr) {
       graph_scheduler.rpc_node_scheduler()->Abort();
     }
+    MS_LOG(DEBUG) << "End aborting rpc_node_scheduler.";
 
     MS_LOG(INFO) << "Begin finalize the EmbeddingCacheScheduler.";
     runtime::EmbeddingCacheScheduler::GetInstance().Finalize(false);
