@@ -365,6 +365,9 @@ from mindspore.ops.function.math_func import bincount_ext as bincount
 # 305
 from mindspore.ops import triu
 
+# 308
+from mindspore.ops.auto_generate import mm_ext as mm
+
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
 
@@ -2075,6 +2078,9 @@ __all__ = [
 
     # 305
     'triu',
+
+    # 308
+    'mm',
 
     # 406
     'allclose',
