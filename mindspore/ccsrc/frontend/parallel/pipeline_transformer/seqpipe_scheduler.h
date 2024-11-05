@@ -63,9 +63,10 @@ class SeqpipeScheduler : public PipelineScheduler {
   void GetCleanAssigns();
   void SetCleanAssignsMicro();
   void ControlCleanAssigns();
-  void SpecialCalmDownControl(const std::pair<BorderStruct, BorderStruct> &fp_send_node,
-                              const std::pair<BorderStruct, BorderStruct> &send,
-                              const std::pair<BorderStruct, BorderStruct> &recv);
+  BorderPair ControlAdvancedRecv(size_t index, size_t recv_node_index);
+  void SpecialControl(const std::pair<BorderStruct, BorderStruct> &origin_recv,
+                      const std::pair<BorderStruct, BorderStruct> &send,
+                      const std::pair<BorderStruct, BorderStruct> &recv);
   void SendRecvControl(const std::pair<BorderStruct, BorderStruct> &send,
                        const std::pair<BorderStruct, BorderStruct> &recv);
   std::pair<Border, Border> SeqpipeBorder(const std::vector<Border> &borders, int64_t seq_chunk, int64_t chunk,

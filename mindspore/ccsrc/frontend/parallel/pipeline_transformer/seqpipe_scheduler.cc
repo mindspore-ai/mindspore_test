@@ -167,28 +167,21 @@ void SeqpipeScheduler::GetBorderNode() {
 
 void SeqpipeScheduler::SendRecvControl(const std::pair<BorderStruct, BorderStruct> &send,
                                        const std::pair<BorderStruct, BorderStruct> &recv) {
-  if (send.first.border->HasPrimalAttr(kPrimalAttrForwardUniqueId) !=
-      recv.first.border->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-    auto prior = send.first.border->HasPrimalAttr(kPrimalAttrForwardUniqueId) ? send : recv;
-    auto post = send.first.border->HasPrimalAttr(kPrimalAttrForwardUniqueId) ? recv : send;
-    ControlOrder(prior.second, post.first, "send_recv");
-  } else {
-    auto prior = stage_ % INT64_TWO == 0 ? send : recv;
-    auto post = stage_ % INT64_TWO == 0 ? recv : send;
-    ControlOrder(prior.second, post.first, "send_recv");
-  }
+  auto prior = stage_ % INT64_TWO != 0 ? send : recv;
+  auto post = stage_ % INT64_TWO != 0 ? recv : send;
+  ControlOrder(prior.second, post.first, "send_recv");
 }
 
-void SeqpipeScheduler::SpecialCalmDownControl(const std::pair<BorderStruct, BorderStruct> &fp_send_node,
-                                              const std::pair<BorderStruct, BorderStruct> &send,
-                                              const std::pair<BorderStruct, BorderStruct> &recv) {
-  if (IsPrimitiveCNode(fp_send_node.second.border, prim::kPrimSend) &&
+void SeqpipeScheduler::SpecialControl(const std::pair<BorderStruct, BorderStruct> &origin_recv,
+                                      const std::pair<BorderStruct, BorderStruct> &send,
+                                      const std::pair<BorderStruct, BorderStruct> &recv) {
+  if (IsPrimitiveCNode(origin_recv.second.border, prim::kPrimReceive) &&
       IsPrimitiveCNode(send.first.border, prim::kPrimSend)) {
-    ControlOrder(fp_send_node.second, send.first, "calm_down");
+    ControlOrder(origin_recv.second, send.first, "calm_down");
   }
-  if (IsPrimitiveCNode(fp_send_node.second.border, prim::kPrimSend) &&
+  if (IsPrimitiveCNode(origin_recv.second.border, prim::kPrimReceive) &&
       IsPrimitiveCNode(recv.first.border, prim::kPrimReceive)) {
-    ControlOrder(fp_send_node.second, recv.first, "calm_down");
+    ControlOrder(origin_recv.second, recv.first, "calm_down");
   }
   if (IsPrimitiveCNode(recv.first.border, prim::kPrimReceive) &&
       IsPrimitiveCNode(send.second.border, prim::kPrimSend)) {
@@ -226,41 +219,10 @@ size_t SeqpipeScheduler::GetOrderIndex(size_t seq_chunk, size_t micro, size_t ch
                 execute_order_.begin());
 }
 
-BorderPair SeqpipeScheduler::GetBorderNodeRecv(size_t index) {
+BorderPair SeqpipeScheduler::ControlAdvancedRecv(size_t index, size_t recv_node_index) {
   auto chunk = execute_order_[index].chunk;
   auto micro = execute_order_[index].micro;
   auto seq_chunk = execute_order_[index].seq_chunk;
-  size_t recv_node_index = index;
-  if (chunk_num_ > 1 && stage_ == 0 && index >= LongToSize(stage_num_) && !execute_order_[recv_node_index].is_bp) {
-    // distance to pre_fetched in fp_execute_order_ is seq_chunk_size_ * micro_size - stage_num
-    auto fp_index = GetOrderIndex(seq_chunk, micro, chunk, false, "fp");
-    auto prefetched_fp_index = fp_index + LongToSize(seq_chunk_size_ * stage_num_ - stage_num_);
-    if (prefetched_fp_index < fp_execute_order_.size()) {
-      recv_node_index =
-        GetOrderIndex(fp_execute_order_[prefetched_fp_index].seq_chunk, fp_execute_order_[prefetched_fp_index].micro,
-                      fp_execute_order_[prefetched_fp_index].chunk, false);
-      MS_LOG(INFO) << "recv_node_index:" << recv_node_index;
-      advanced_recv_indexs_.push_back(recv_node_index);
-    }
-  }
-  if (chunk_num_ > 1 && stage_ == stage_num_ - 1 && index >= last_stage_pre_fetch_index_ &&
-      execute_order_[recv_node_index].is_bp) {
-    auto bp_index = GetOrderIndex(seq_chunk, micro, chunk, true, "bp");
-    auto prefetched_bp_index = bp_index - last_stage_pre_fetch_bp_index_ + last_stage_pre_fetched_bp_index_;
-    if (prefetched_bp_index < bp_execute_order_.size()) {
-      recv_node_index =
-        GetOrderIndex(bp_execute_order_[prefetched_bp_index].seq_chunk, bp_execute_order_[prefetched_bp_index].micro,
-                      bp_execute_order_[prefetched_bp_index].chunk, true);
-      MS_LOG(INFO) << "recv_node_index:" << recv_node_index;
-      advanced_recv_indexs_.push_back(recv_node_index);
-    }
-  }
-
-  if (recv_node_index >= execute_order_.size() ||
-      (index == recv_node_index &&
-       std::find(advanced_recv_indexs_.begin(), advanced_recv_indexs_.end(), index) != advanced_recv_indexs_.end())) {
-    return BorderPair({Border({nullptr, 0, 0, 0}), Border({nullptr, 0, 0, 0})});
-  }
   auto act_cell =
     execute_order_[index].is_bp ? sorted_bwd_cell_[chunk][micro][seq_chunk] : sorted_fwd_cell_[chunk][micro][seq_chunk];
   chunk = execute_order_[recv_node_index].chunk;
@@ -274,21 +236,56 @@ BorderPair SeqpipeScheduler::GetBorderNodeRecv(size_t index) {
   return recv_node;
 }
 
+BorderPair SeqpipeScheduler::GetBorderNodeRecv(size_t index) {
+  size_t recv_node_index = index;
+  if (chunk_num_ > 1 && index >= LongToSize(warm_up_size_ + 1) && index + 1 < LongToSize(calm_down_index_)) {
+    recv_node_index = index + 1;
+    MS_LOG(INFO) << "recv_node_index in 1f1b:" << recv_node_index;
+  }
+
+  if (chunk_num_ > 1 && stage_ == 0 && recv_node_index >= LongToSize(stage_num_) &&
+      !execute_order_[recv_node_index].is_bp) {
+    // distance to pre_fetched in fp_execute_order_ is seq_chunk_size_ * micro_size - stage_num
+    auto fp_index = GetOrderIndex(execute_order_[recv_node_index].seq_chunk, execute_order_[recv_node_index].micro,
+                                  execute_order_[recv_node_index].chunk, false, "fp");
+    auto prefetched_fp_index = fp_index + LongToSize(seq_chunk_size_ * stage_num_ - stage_num_);
+    if (prefetched_fp_index < fp_execute_order_.size()) {
+      recv_node_index =
+        GetOrderIndex(fp_execute_order_[prefetched_fp_index].seq_chunk, fp_execute_order_[prefetched_fp_index].micro,
+                      fp_execute_order_[prefetched_fp_index].chunk, false);
+      MS_LOG(INFO) << "recv_node_index:" << recv_node_index;
+    }
+  }
+  if (chunk_num_ > 1 && stage_ == stage_num_ - 1 && recv_node_index >= last_stage_pre_fetch_index_ &&
+      execute_order_[recv_node_index].is_bp) {
+    auto bp_index = GetOrderIndex(execute_order_[recv_node_index].seq_chunk, execute_order_[recv_node_index].micro,
+                                  execute_order_[recv_node_index].chunk, true, "bp");
+    auto prefetched_bp_index = bp_index - last_stage_pre_fetch_bp_index_ + last_stage_pre_fetched_bp_index_;
+    if (prefetched_bp_index < bp_execute_order_.size()) {
+      recv_node_index =
+        GetOrderIndex(bp_execute_order_[prefetched_bp_index].seq_chunk, bp_execute_order_[prefetched_bp_index].micro,
+                      bp_execute_order_[prefetched_bp_index].chunk, true);
+      MS_LOG(INFO) << "recv_node_index:" << recv_node_index;
+    }
+  }
+
+  if (recv_node_index >= execute_order_.size() || std::find(advanced_recv_indexs_.begin(), advanced_recv_indexs_.end(),
+                                                            recv_node_index) != advanced_recv_indexs_.end()) {
+    return BorderPair({Border({nullptr, 0, 0, 0}), Border({nullptr, 0, 0, 0})});
+  }
+  if (recv_node_index != index) {
+    advanced_recv_indexs_.push_back(recv_node_index);
+  }
+  return ControlAdvancedRecv(index, recv_node_index);
+}
+
 BorderPair SeqpipeScheduler::GetBorderNode(const std::string &border_type, size_t index) {
   auto chunk = execute_order_[index].chunk;
   auto micro = execute_order_[index].micro;
   auto seq_chunk = execute_order_[index].seq_chunk;
   if (border_type == "Send") {
-    size_t send_node_index =
-      chunk_num_ == 1 || index < warm_up_size_ + 1 || index >= calm_down_index_ - 1 ? index : index - 1;
-    if (chunk_num_ > 1 && index == warm_up_size_ && index + 2 < calm_down_index_) {
-      return BorderPair({Border({nullptr, 0, 0, 0}), Border({nullptr, 0, 0, 0})});
-    }
-    auto s_chunk = execute_order_[send_node_index].chunk;
-    auto s_micro = execute_order_[send_node_index].micro;
-    auto s_seq_chunk = execute_order_[send_node_index].seq_chunk;
-    auto send_node = execute_order_[send_node_index].is_bp ? sorted_bwd_end_[s_chunk][s_micro][s_seq_chunk]
-                                                           : sorted_fwd_end_[s_chunk][s_micro][s_seq_chunk];
+    auto send_node =
+      execute_order_[index].is_bp ? sorted_bwd_end_[chunk][micro][seq_chunk] : sorted_fwd_end_[chunk][micro][seq_chunk];
     return send_node;
   }
   if (border_type == "Receive") {
@@ -307,7 +304,7 @@ void SeqpipeScheduler::Reorder() {
   size_t warm_up_size_stage0 =
     LongToSize((stage_num_ - 1) * bias + (chunk_num_ - 1) * stage_num_ * seq_chunk_size_ + seq_chunk_size_ - 1);
   // stage0 first bp send position is warm_up_size_stage0 + 1 if pp == micro else warm_up_size_stage0 + 2
-  // Thus, the last stage doing bp receive position should match the stage0 send position and delay one bp block.
+  // Thus, the last stage doing bp receive position should match the stage0 send position.
   auto pre_recv_index_last_stage = warm_up_size_stage0 + 1;
   last_stage_pre_fetched_bp_index_ =
     chunk_num_ > 1 && stage_ == stage_num_ - 1
@@ -340,20 +337,19 @@ void SeqpipeScheduler::Reorder() {
     }
     // send to recv or recv to send
     auto send = GetBorderNode("Send", index);
-    auto recv = GetBorderNode("Receive", index + 1);
-    bool special_calm = index == calm_down_index_ - 1 && index >= warm_up_size_ + 1;
-    if (special_calm) {
-      auto fp_send_node = execute_order_[index - 1].is_bp
-                            ? sorted_bwd_end_[execute_order_[index - 1].chunk][execute_order_[index - 1].micro]
-                                             [execute_order_[index - 1].seq_chunk]
-                            : sorted_fwd_end_[execute_order_[index - 1].chunk][execute_order_[index - 1].micro]
-                                             [execute_order_[index - 1].seq_chunk];
+    bool special_control = index <= calm_down_index_ - 1 && index == warm_up_size_ + 1;
+    if (special_control) {
+      auto origin_recv =
+        execute_order_[index].is_bp
+          ? sorted_bwd_begin_[execute_order_[index].chunk][execute_order_[index].micro][execute_order_[index].seq_chunk]
+          : sorted_fwd_begin_[execute_order_[index].chunk][execute_order_[index].micro]
+                             [execute_order_[index].seq_chunk];
 
-      SpecialCalmDownControl(fp_send_node, send, recv);
+      SpecialControl(origin_recv, send, post_recv);
     }
-    if (!special_calm && IsPrimitiveCNode(recv.first.border, prim::kPrimReceive) &&
+    if (!special_control && IsPrimitiveCNode(post_recv.first.border, prim::kPrimReceive) &&
         IsPrimitiveCNode(send.second.border, prim::kPrimSend)) {
-      SendRecvControl(send, recv);
+      SendRecvControl(send, post_recv);
     }
     // send to call
     auto post_call = GetBorderNode("Call", index + 1);
