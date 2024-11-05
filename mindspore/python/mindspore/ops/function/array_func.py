@@ -1357,6 +1357,8 @@ def unique_with_pad(x, pad_num):
 
     .. warning::
         :func:`mindspore.ops.unique_with_pad` is deprecated from version 2.4 and will be removed in a future version.
+        Please use the :func:`mindspore.ops.unique` combined with :func:`mindspore.ops.pad` to realize
+        the same function.
 
     Args:
         x (Tensor): The tensor need to be unique. Must be 1-D vector with types: int32, int64.
