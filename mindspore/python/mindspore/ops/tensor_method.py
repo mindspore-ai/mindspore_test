@@ -259,7 +259,7 @@ from mindspore.ops.auto_generate import tanh
 # 111 transpose
 
 # 112 tril
-
+from mindspore.ops.function.array_func import tril
 # 113 trunc
 
 # 114 type
@@ -733,6 +733,9 @@ def tensor_tanh(input):
 # 111 transpose
 
 # 112 tril
+def deprecated_tensor_tril(input, diagonal=0):
+    return tril(input, diagonal)
+
 
 # 113 trunc
 def tensor_trunc(input):

@@ -240,7 +240,7 @@ deprecated_tensor_method_map = {
     # 111 transpose
 
     # 112 tril
-
+    "tril": "deprecated_tensor_tril",
     # 113 trunc
 
     # 114 type

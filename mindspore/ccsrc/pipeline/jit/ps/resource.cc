@@ -174,7 +174,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"contiguous", prim::kPrimidentity},                                // contiguous
        {"slogdet", std::string("slogdet")},                                // slogdet
        {"trace", std::string("trace")},                                    // trace
-       {"tril", std::string("tril")},                                      // tril
        {"__sub__", std::string("sub")},                                    // C.sub
        {"__mul__", std::string("mul")},                                    // C.mul
        {"__matmul__", std::string("matmul")},                              // F.matmul

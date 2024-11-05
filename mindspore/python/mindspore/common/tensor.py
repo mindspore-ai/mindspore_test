@@ -2133,12 +2133,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('slogdet')(self)
 
-    def tril(self, diagonal=0):
-        """
-        For details, please refer to :func:`mindspore.ops.tril`.
-        """
-        return tensor_operator_registry.get('tril')(self, diagonal)
-
     def unsqueeze(self, dim):
         """
         For details, please refer to :func:`mindspore.ops.unsqueeze`.

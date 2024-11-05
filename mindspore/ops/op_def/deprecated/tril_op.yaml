@@ -1,0 +1,15 @@
+#deprecated tril
+tril:
+  args:
+    input:
+      dtype: tensor
+    diagonal:
+      dtype: int
+      type_cast: tensor
+      prim_init: True
+      default: 0
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
