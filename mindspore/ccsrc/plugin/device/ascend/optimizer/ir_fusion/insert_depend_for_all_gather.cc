@@ -114,7 +114,8 @@ bool InsertDependForOptShardAllGather::Run(const FuncGraphPtr &graph) {
     return false;
   }
   const auto cell_reuse = ms_context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
-  if (cell_reuse) {
+  auto jit_level = ms_context->GetJitLevel();
+  if (cell_reuse || jit_level == "O2") {
     return false;
   }
 
