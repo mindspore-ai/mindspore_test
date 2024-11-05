@@ -17,7 +17,15 @@ import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
+import mindspore.nn as nn
 from mindspore import Tensor
+
+
+class Net(nn.Cell):
+    def construct(self, x):
+        output = x.exp()
+        return output
+
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level0',
@@ -31,8 +39,9 @@ def test_exp(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
+    net = Net()
     inputs = Tensor(np.array([0.0, 1.0, 3.0]), ms.float32)
-    outputs = inputs.exp()
+    outputs = net(inputs)
     expect_output = np.array([1.0, 2.7182817, 20.085537])
     atol = 1e-4
     assert np.allclose(outputs.asnumpy(), expect_output, atol)

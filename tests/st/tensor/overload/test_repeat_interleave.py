@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,25 @@
 import pytest
 import numpy as np
 import mindspore as ms
+import mindspore.nn as nn
 from mindspore import Tensor
 from tests.mark_utils import arg_mark
+
+
+class Net(nn.Cell):
+    def construct(self, x, repeats, dim):
+        return x.repeat_interleave(repeats, dim)
+
+
+class Net1(nn.Cell):
+    def construct(self, x, repeats):
+        return x.repeat_interleave(repeats)
+
+
+class Net2(nn.Cell):
+    def construct(self, x, repeats, dim):
+        return x.repeat_interleave(dim=dim, repeats=repeats)
+
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend910b'],
           level_mark='level0',
@@ -30,23 +47,30 @@ def test_repeat_interleave(mode):
     Expectation: expect correct result.
     """
     ms.set_context(mode=mode)
+    net = Net()
+    net1 = Net1()
+    net2 = Net2()
     input_x = Tensor(np.array([1, 2, 3]), ms.int32)
     # test diff args when repeats type is int
     output1 = np.array([1, 1, 2, 2, 3, 3])
-    assert np.allclose(input_x.repeat_interleave(2).asnumpy(), output1)
-    assert np.allclose(input_x.repeat_interleave(2, dim=None).asnumpy(), output1)
-    assert np.allclose(input_x.repeat_interleave(dim=None, repeats=2).asnumpy(), output1)
+    assert np.allclose(net1(input_x, 2).asnumpy(), output1)
+    assert np.allclose(net(input_x, 2, None).asnumpy(), output1)
+    assert np.allclose(net2(input_x, 2, None).asnumpy(), output1)
 
     input_y = Tensor(np.array([[1, 2], [3, 4]]), ms.int32)
     output2 = np.array([1, 1, 2, 2, 3, 3, 4, 4])
-    assert np.allclose(input_y.repeat_interleave(2).asnumpy(), output2)
+    assert np.allclose(net1(input_y, 2).asnumpy(), output2)
 
     output3 = np.array([[1, 1, 1, 2, 2, 2],
                         [3, 3, 3, 4, 4, 4]])
-    assert np.allclose(input_y.repeat_interleave(3, dim=1).asnumpy(), output3)
+    assert np.allclose(net(input_y, 3, 1).asnumpy(), output3)
 
     # test diff args when repeats type is Tensor
     output4 = np.array([[1, 2],
                         [3, 4],
                         [3, 4]])
-    assert np.allclose(input_y.repeat_interleave(Tensor(np.array([1, 2])), dim=0).asnumpy(), output4)
+    if ms.get_context('mode') == ms.GRAPH_MODE:
+        with pytest.raises(RuntimeError):
+            net2(input_y, Tensor(np.array([1, 2])), 0)
+        return
+    assert np.allclose(net2(input_y, Tensor(np.array([1, 2])), 0).asnumpy(), output4)

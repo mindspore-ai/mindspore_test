@@ -190,7 +190,7 @@ deprecated_tensor_method_map = {
     # 86 repeat
 
     # 87 repeat_interleave
-
+    "repeat_interleave": "tensor_repeat_interleave",
     # 88 reshape
 
     # 89 round
