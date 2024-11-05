@@ -727,6 +727,7 @@ from .clip_func import (
     clip_by_value,
     clip_by_norm,
     clamp,
+    clamp_,
     clip,
     clip_by_global_norm,
 )

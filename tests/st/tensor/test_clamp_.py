@@ -1,0 +1,127 @@
+# Copyright 2024 Huawei Technocasties Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+import pytest
+import numpy as np
+from mindspore import Tensor, dtype as mstype
+import mindspore as ms
+import tests.st.utils.test_utils as test_utils
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randint(1, 10, size=shape).astype(dtype)
+
+
+def generate_expect_forward_output(x, min_, max_):
+    return np.clip(x, min_, max_)
+
+
+@test_utils.run_with_cell
+def clamp_forward_func(x, min_, max_):
+    return x.clamp_(min_, max_)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
+def test_mint_clamp_normal0(context_mode):
+    """
+    Feature: pyboost function.
+    Description: test function clamp forward and backward.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=context_mode)
+    x = np.array([[10, 0, 0, -2], [5.3, 5.2, 11, 8]])
+    x = Tensor(x, mstype.float32)
+    # min & max
+    clamp_forward_func(x, -1, 9)
+    expect = Tensor(
+        np.array([[9, 0, 0, -1], [5.3, 5.2, 9, 8]]), mstype.float32)
+
+    assert np.allclose(x.asnumpy(), expect.asnumpy(), rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
+def test_mint_clamp_normal1(context_mode):
+    """
+    Feature: pyboost function.
+    Description: test function clamp forward and backward.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=context_mode)
+    x = np.array([[10, 0, 0, -2], [5.3, 5.2, 11, 8]])
+    x = Tensor(x, mstype.float32)
+    # min & max
+    clamp_forward_func(x, -1, None)
+    expect = Tensor(
+        np.array([[10, 0, 0, -1], [5.3, 5.2, 11, 8]]), mstype.float32)
+    assert np.allclose(x.asnumpy(), expect.asnumpy(), rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
+def test_mint_clamp_normal2(context_mode):
+    """
+    Feature: pyboost function.
+    Description: test function clamp forward and backward.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=context_mode)
+    x = np.array([[10, 0, 0, -2], [5.3, 5.2, 11, 8]])
+    x = Tensor(x, mstype.float32)
+    # min & max
+    clamp_forward_func(x, None, 9)
+    expect = Tensor(
+        np.array([[9, 0, 0, -2], [5.3, 5.2, 9, 8]]), mstype.float32)
+    assert np.allclose(x.asnumpy(), expect.asnumpy(), rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_mint_clamp_min_max_tensor_dynamic_shape():
+    """
+    Feature: pyboost function.
+    Description: test function clamp forward with dynamic shape.
+    Expectation: expect correct result.
+    """
+    x1 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
+    min1 = ms.Tensor(generate_random_input((3, 4, 1), np.float32))
+    max1 = ms.Tensor(generate_random_input((3, 1, 1), np.float32))
+
+    x2 = ms.Tensor(generate_random_input((3, 4, 5, 6), np.float32))
+    min2 = ms.Tensor(generate_random_input((3, 4, 5, 1), np.float32))
+    max2 = ms.Tensor(generate_random_input((3, 4, 1, 6), np.float32))
+
+    TEST_OP(clamp_forward_func, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
+            disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_mint_clamp_min_max_scalar_dynamic_shape():
+    """
+    Feature: pyboost function.
+    Description: test function clamp forward with dynamic shape.
+    Expectation: expect correct result.
+    """
+    x1 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
+    min1 = 2
+    max1 = 7
+
+    x2 = ms.Tensor(generate_random_input((3, 4, 5, 6), np.float32))
+    min2 = 3
+    max2 = 8
+
+    TEST_OP(clamp_forward_func, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
+            disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])

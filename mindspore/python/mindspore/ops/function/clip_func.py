@@ -26,11 +26,13 @@ from mindspore.ops.primitive import _primexpr
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as Validator
 from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar
+from mindspore.ops.auto_generate import inplace_clamp_tensor, inplace_clamp_scalar
 
 __all__ = [
     'clip_by_value',
     'clip_by_norm',
     'clamp',
+    'clamp_',
     'clip',
     'clip_by_global_norm',
 ]
@@ -276,6 +278,68 @@ def clamp(input, min=None, max=None):
     if isinstance(min, Tensor) or isinstance(max, Tensor):
         return clamp_tensor(input, min, max)
     return clamp_scalar(input, min, max)
+
+
+def clamp_(input, min=None, max=None):
+    r"""
+    Clamps tensor values between the specified minimum value and maximum value.
+
+    Limits the value of :math:`input` to a range, whose lower limit is `min` and upper limit is `max` .
+
+    .. warning::
+
+        This is an experimental API that is subject to change or deletion.
+
+    .. math::
+
+        out_i= \left\{
+        \begin{array}{align}
+            max & \text{ if } input_i\ge max \\
+            input_i & \text{ if } min \lt input_i \lt max \\
+            min & \text{ if } input_i \le min \\
+        \end{array}\right.
+
+    Note:
+        - `min` and `max` cannot be None at the same time;
+        - When `min` is None and `max` is not None, the elements in Tensor larger than `max` will become `max`;
+        - When `min` is not None and `max` is None, the elements in Tensor smaller than `min` will become `min`;
+        - If `min` is greater than `max`, the value of all elements in Tensor will be set to `max`;
+        - The data type of `input`, `min` and `max` should support implicit type conversion and cannot be bool type.
+
+    Args:
+          input (Tensor): Input data, which type is Tensor. Tensors of arbitrary dimensions are supported.
+          min (Union(Tensor, float, int), optional): The minimum value. Default: ``None`` .
+          max (Union(Tensor, float, int), optional): The maximum value. Default: ``None`` .
+
+    Returns:
+          Tensor, a clipped Tensor.
+          The data type and shape are the same as input.
+
+    Raises:
+          ValueError: If both `min` and `max` are None.
+          TypeError: If the type of `input` is not in Tensor.
+          TypeError: If the type of `min` is not in None, Tensor, float or int.
+          TypeError: If the type of `max` is not in None, Tensor, float or int.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> # case 1: the data type of input is Tensor
+        >>> import mindspore
+        >>> from mindspore import Tensor, ops
+        >>> import numpy as np
+        >>> min_value = Tensor(5, mindspore.float32)
+        >>> max_value = Tensor(20, mindspore.float32)
+        >>> input = Tensor(np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]), mindspore.float32)
+        >>> input.clamp_(min_value, max_value)
+        >>> print(input)
+        [[ 5. 20.  5.  7.]
+         [ 5. 11.  6. 20.]]
+    """
+    if isinstance(min, Tensor) or isinstance(max, Tensor):
+        return inplace_clamp_tensor(input, min, max)
+    return inplace_clamp_scalar(input, min, max)
 
 def clip(input, min=None, max=None):
     r"""

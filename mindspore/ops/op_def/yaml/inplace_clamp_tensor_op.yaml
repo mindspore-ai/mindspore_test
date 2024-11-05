@@ -1,0 +1,22 @@
+#operator clamp_
+inplace_clamp_tensor:
+    args:
+        input:
+            dtype: tensor
+        min:
+            dtype: tensor
+            default: None
+        max:
+            dtype: tensor
+            default: None
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    class:
+        name: InplaceClampTensor
+    dispatch:
+        enable: True
+        Ascend: InplaceClampTensorAscend
