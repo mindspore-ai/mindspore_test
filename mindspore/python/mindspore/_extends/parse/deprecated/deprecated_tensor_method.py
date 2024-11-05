@@ -260,7 +260,7 @@ deprecated_tensor_method_map = {
     # 121 contiguous
 
     # 122 where
-
+    "where": "deprecated_tensor_where",
     # 123 div_
 
     # 124 fill_

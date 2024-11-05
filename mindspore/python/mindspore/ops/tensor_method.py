@@ -705,6 +705,10 @@ def tensor_where(input, condition, y):
     return where_func(condition, input, y)
 
 
+def deprecated_tensor_where(input, condition, y):
+    return where_func(condition, input, y)
+
+
 # 123 div_
 
 # 124 fill_
