@@ -82,6 +82,15 @@ bool IsDynamicOp(const CNodePtr &node) {
   return tensor_redistribution->IsAssembledStaticShape();
 }
 
+bool IsMultiDynamicReshape(const CNodePtr &node) {
+  TensorRedistributionPtr tensor_redistribution = GetTensorRedistributionFromCNode(node);
+  if (tensor_redistribution == nullptr) {
+    return false;
+  }
+  return tensor_redistribution->IsMultiDynamicAxisReshape() &&
+         tensor_redistribution->original_reshape_shape() != nullptr;
+}
+
 std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr> &root_all_nodes) {
   // J->CNode->Graph
   std::set<FuncGraphPtr> graph_set;
@@ -753,20 +762,15 @@ std::vector<AnfNodePtr> CreateInput(const Operator &op, const AnfNodePtr &pre_no
   MS_LOG(INFO) << "CreateInput param.empty=" << params.empty() << ", pre_node=" << pre_node->fullname_with_scope()
                << ", op=" << op.first;
   bool is_done = false;
-  if (cur_cnode != nullptr) {
+  if (cur_cnode != nullptr && (IsDynamicOp(cur_cnode) || IsMultiDynamicReshape(cur_cnode))) {
     TensorRedistributionPtr tensor_redistribution = GetTensorRedistributionFromCNode(cur_cnode);
     // 1. Only deal with Reshape in user scripts.
     // 2. Deal with non-user Reshape. If only have StrideSliceD, Concat and Split cannot reach.
-    if (tensor_redistribution != nullptr &&
-        (tensor_redistribution->IsAssembledStaticShape() || tensor_redistribution->IsMultiDynamicAxisReshape())) {
-      MS_LOG(DEBUG) << cur_cnode->fullname_with_scope() << " distribute_operator is not nullptr";
-      if (ConvertParamsToInputs(op, tensor_redistribution, cur_cnode->func_graph(), &new_node_input) == SUCCESS) {
-        is_done = true;
-      } else {
-        MS_LOG(DEBUG) << "Convert params to inputs failed.";
-      }
+    MS_LOG(DEBUG) << cur_cnode->fullname_with_scope() << " distribute_operator is not nullptr";
+    if (ConvertParamsToInputs(op, tensor_redistribution, cur_cnode->func_graph(), &new_node_input) == SUCCESS) {
+      is_done = true;
     } else {
-      MS_LOG(INFO) << "cur_cnode=" << cur_cnode->fullname_with_scope() << " is not dynamic node.";
+      MS_LOG(INFO) << "Convert params to inputs failed.";
     }
   }
 
@@ -822,7 +826,7 @@ std::vector<AnfNodePtr> ReplaceOpInput(const Operator &replace_op, const std::st
   }
   bool is_done = false;
   bool to_be_converted = replace_op.first == SPLIT || replace_op.first == STRIDEDSLICE || replace_op.first == RESHAPE;
-  if (!params.empty() && to_be_converted && IsDynamicOp(node)) {
+  if (!params.empty() && to_be_converted && (IsDynamicOp(node) || IsMultiDynamicReshape(node))) {
     TensorRedistributionPtr tensor_redistribution = GetTensorRedistributionFromCNode(node);
     auto ret = ConvertParamsToInputs(replace_op, tensor_redistribution, node->func_graph(), &replace_input);
     MS_EXCEPTION_IF_CHECK_FAIL(ret == SUCCESS, "ConvertStridedSliceInputs failed.");
