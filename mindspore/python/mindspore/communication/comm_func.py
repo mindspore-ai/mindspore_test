@@ -224,13 +224,12 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async
             This example should be run with 2 devices.
 
         >>> import numpy as np
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import all_reduce
-        >>> from mindspore import Tensor
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
-        >>> init()
-        >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = all_reduce(input_tensor)
+        >>> comm.init()
+        >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> output = comm.comm_func.all_reduce(input_tensor)
         >>> print(output)
         [[2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]]
@@ -291,15 +290,12 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=F
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> from mindspore import ops
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import all_gather_into_tensor
-        >>> from mindspore import Tensor
+        >>> import mindspore.communication as comm
         >>>
         >>> ms.set_context(mode=ms.GRAPH_MODE)
-        >>> init()
-        >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = all_gather_into_tensor(input_tensor)
+        >>> comm.init()
+        >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> output = comm.comm_func.all_gather_into_tensor(input_tensor)
         >>> print(output)
         [[1. 1. 1. 1. 1. 1. 1. 1.]
          [1. 1. 1. 1. 1. 1. 1. 1.]
@@ -363,16 +359,14 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
 
             This example should be run with 2 devices.
 
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import reduce_scatter_tensor
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
         >>> ms.set_context(mode=ms.GRAPH_MODE)
-        >>> init()
-        >>> input_tensor = Tensor(np.ones([8, 8]).astype(np.float32))
-        >>> output = reduce_scatter_tensor(input_tensor)
+        >>> comm.init()
+        >>> input_tensor = ms.Tensor(np.ones([8, 8]).astype(np.float32))
+        >>> output = comm.comm_func.reduce_scatter_tensor(input_tensor)
         >>> print(output)
         [[2. 2. 2. 2. 2. 2. 2. 2.]
          [2. 2. 2. 2. 2. 2. 2. 2.]
@@ -435,17 +429,15 @@ def reduce(tensor, dst, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
 
             This example should be run with 4 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import reduce
-        >>> from mindspore import Tensor
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
+        >>>
         >>> # Launch 4 processes.
-        >>> init()
+        >>> comm.init()
         >>> dest_rank=1
-        >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> output = reduce(input_tensor)
+        >>> input_tensor = ms.Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> output = comm.comm_func.reduce(input_tensor)
         >>> print(output)
         Process with rank 1: [[4. 4. 4. 4. 4. 4. 4. 4.]
                              [4. 4. 4. 4. 4. 4. 4. 4.]],
@@ -494,16 +486,16 @@ class P2POp:
 
     Examples:
         >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore.communication.comm_func import P2POp, isend, irecv
-        >>> from mindspore import Tensor
-        >>> send_tensor = Tensor(1.)
-        >>> send_op = P2POp('isend', send_tensor, 1)
-        >>> send_op = P2POp(isend, send_tensor, 1)
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
+        >>>
+        >>> send_tensor = ms.Tensor(1.)
+        >>> send_op = comm.comm_func.P2POp('isend', send_tensor, 1)
+        >>> send_op = comm.comm_func.P2POp(isend, send_tensor, 1)
         >>> recv_tensor = Tensor(0.)
-        >>> recv_op = P2POp('irecv', recv_tensor, 0)
-        >>> recv_op = P2POp(irecv, recv_tensor, 0)
-        >>> recv_op = P2POp('irecv', (), 0, recv_dtype=mindspore.float32)
+        >>> recv_op = comm.comm_func.P2POp('irecv', recv_tensor, 0)
+        >>> recv_op = comm.comm_func.P2POp(irecv, recv_tensor, 0)
+        >>> recv_op = comm.comm_func.P2POp('irecv', (), 0, recv_dtype=mindspore.float32)
     """
 
     def __init__(self, op, tensor, peer, group=None, tag=0, *, recv_dtype=None):
@@ -566,25 +558,23 @@ def batch_isend_irecv(p2p_op_list):
             This example should be run with 2 devices.
 
         >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore.communication import init, get_rank, get_group_size
-        >>> from mindspore.communication.comm_func import batch_isend_irecv, P2POp
-        >>> from mindspore import Tensor
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
-        >>> init()
-        >>> this_rank = get_rank()
-        >>> world_size = get_group_size()
+        >>> comm.init()
+        >>> this_rank = comm.get_rank()
+        >>> world_size = comm.get_group_size()
         >>> next_rank = (this_rank + 1) % world_size
         >>> prev_rank = (this_rank + world_size - 1) % world_size
         >>>
-        >>> send_tensor = Tensor(this_rank + 1, dtype=mindspore.float32)
-        >>> recv_tensor = Tensor(0., dtype=mindspore.float32)
+        >>> send_tensor = ms.Tensor(this_rank + 1, dtype=mindspore.float32)
+        >>> recv_tensor = ms.Tensor(0., dtype=mindspore.float32)
         >>>
-        >>> send_op = P2POp('isend', send_tensor, next_rank)
-        >>> recv_op = P2POp('irecv', recv_tensor, prev_rank)
+        >>> send_op = comm.comm_func.P2POp('isend', send_tensor, next_rank)
+        >>> recv_op = comm.comm_func.P2POp('irecv', recv_tensor, prev_rank)
         >>>
         >>> p2p_op_list = [send_op, recv_op]
-        >>> output = batch_isend_irecv(p2p_op_list)
+        >>> output = comm.comm_func.batch_isend_irecv(p2p_op_list)
         >>> print(output)
         rank 0:
         (Tensor(shape=[], dtype=Float32, value= 0), Tensor(shape=[], dtype=Float32, value= 2))
@@ -681,15 +671,15 @@ def scatter_tensor(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP):
 
             This example should be run with 2 devices.
 
-        >>> import mindspore as ms
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import scatter_tensor
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
+        >>>
         >>> # Launch 2 processes.
         >>>
-        >>> init()
+        >>> comm.init()
         >>> input = ms.Tensor(np.arange(8).reshape([4, 2]).astype(np.float32))
-        >>> out = scatter_tensor(tensor=data, src=0)
+        >>> out = comm.comm_func.scatter_tensor(tensor=data, src=0)
         >>> print(out)
         # rank_0
         [[0. 1.]
@@ -748,15 +738,13 @@ def gather_into_tensor(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP):
 
         >>> import numpy as np
         >>> import mindspore as ms
-        >>> import mindspore.nn as nn
-        >>> from mindspore.communication import init
-        >>> from mindspore import Tensor
-        >>> from mindspore.communication.comm_func import gather_into_tensor
+        >>> import mindspore.communication as comm
+        >>>
         >>> # Launch 2 processes.
         >>>
-        >>> init()
-        >>> input = Tensor(np.arange(4).reshape([2, 2]).astype(np.float32))
-        >>> output = gather_into_tensor(tensor=data, dst=0)
+        >>> comm.init()
+        >>> input = ms.Tensor(np.arange(4).reshape([2, 2]).astype(np.float32))
+        >>> output = comm.comm_func.gather_into_tensor(tensor=data, dst=0)
         >>> print(output)
         Process with rank 0: [[0. 1.],
                               [2. 3.],
@@ -809,16 +797,15 @@ def broadcast(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP):
 
             This example should be run with 2 devices.
 
-        >>> import mindspore as ms
-        >>> from mindspore import Tensor
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import broadcast
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
+        >>>
         >>> # Launch 2 processes.
         >>>
-        >>> init()
+        >>> comm.init()
         >>> data = ms.Tensor(np.arange(8).reshape([2, 4]).astype(np.float32))
-        >>> out = broadcast(tensor=data, src=0)
+        >>> out = comm.comm_func.broadcast(tensor=data, src=0)
         [[0. 1. 2. 3.]
          [4. 5. 6. 7.]]
 
@@ -863,11 +850,12 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import barrier
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
+        >>>
         >>> # Launch 2 processes.
-        >>> init()
-        >>> barrier()
+        >>> comm.init()
+        >>> comm.comm_func.barrier()
 
     Tutorial Examples:
         - `Distributed Set Communication Primitives - Barrier
@@ -923,16 +911,13 @@ def send(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import send
-        >>> from mindspore import Tensor
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
-        >>> init()
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> send(input_, 0)
+        >>> comm.init()
+        >>> input_ = ms.Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> comm.comm_func.send(input_, 0)
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For send, the input tensor must be tensor")
@@ -984,21 +969,18 @@ def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import recv
-        >>> from mindspore import Tensor
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
         # Launch 2 processes.
         Process 0 send the following array to Process 1
         [[ 0.  1.]
          [ 2.  3.]]
-        >>> init()
+        >>> comm.init()
         >>> x = ms.Tensor(np.zeros([2, 2]))
         # Process 1 receive tensor from Process 0.
-        >>> out = recv(x, src=0)
+        >>> out = comm.comm_func.recv(x, src=0)
         >>> print(out)
         [[ 0.  1.]
          [ 2.  3.]]
@@ -1054,16 +1036,13 @@ def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import isend
-        >>> from mindspore import Tensor
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
-        >>> init()
-        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> handle = isend(input_, 0)
+        >>> comm.init()
+        >>> input_ = ms.Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> handle = comm.comm_func.isend(input_, 0)
         >>> handle.wait()
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
@@ -1119,21 +1098,18 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
 
             This example should be run with 2 devices.
 
-        >>> from mindspore import ops
-        >>> import mindspore.nn as nn
-        >>> from mindspore.communication import init
-        >>> from mindspore.communication.comm_func import irecv
-        >>> from mindspore import Tensor
         >>> import numpy as np
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
         # Launch 2 processes.
-        Process 0 send the following array to Process 1
-        [[ 0.  1.]
-         [ 2.  3.]]
-        >>> init()
+        # Process 0 send the following array to Process 1
+        # [[ 0.  1.]
+        # [ 2.  3.]]
+        >>> comm.init()
         >>> x = ms.Tensor(np.zeros([2, 2]))
         # Process 1 receive tensor from Process 0.
-        >>> out, handle = irecv(x, src=0)
+        >>> out, handle = comm.comm_func.irecv(x, src=0)
         >>> handle.wait()
         >>> print(out)
         [[ 0.  1.]
@@ -1191,21 +1167,18 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
             This example should be run with 2 devices.
 
         >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore.communication import init, get_rank, get_group_size
-        >>> from mindspore.communication.comm_func import all_to_all_with_output_shape
-        >>> from mindspore import Tensor
-        >>> from mindspore.ops import zeros
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
-        >>> init()
-        >>> this_rank = get_rank()
+        >>> comm.init()
+        >>> this_rank = comm.get_rank()
         >>> if this_rank == 0:
-        >>>     send_tensor_list = [Tensor(1.), Tensor([[2, 3], [4, 5.]])]
+        >>>     send_tensor_list = [ms.Tensor(1.), ms.Tensor([[2, 3], [4, 5.]])]
         >>>     recv_tensor_list = [(), (2,)]
         >>> if this_rank == 1:
-        >>>     send_tensor_list = [Tensor([2, 2.]), Tensor([4, 5, 6, 7.])]
+        >>>     send_tensor_list = [ms.Tensor([2, 2.]), ms.Tensor([4, 5, 6, 7.])]
         >>>     recv_tensor_list = [(2, 2), (4,)]
-        >>> output = all_to_all_with_output_shape(recv_tensor_list, send_tensor_list)
+        >>> output = comm.comm_func.all_to_all_with_output_shape(recv_tensor_list, send_tensor_list)
         >>> print(output)
         rank 0:
         (Tensor(shape=[], dtype=Float32, value= 1),
@@ -1345,22 +1318,19 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
             This example should be run with 2 devices.
 
         >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore.communication import init, get_rank, get_group_size
-        >>> from mindspore.communication.comm_func import all_to_all_single_with_output_shape
-        >>> from mindspore import Tensor
-        >>> from mindspore.ops import zeros
+        >>> import mindspore as ms
+        >>> import mindspore.communication as comm
         >>>
-        >>> init()
-        >>> this_rank = get_rank()
+        >>> comm.init()
+        >>> this_rank = comm.get_rank()
         >>> if this_rank == 0:
         >>>     output_shape = (3, 3)
-        >>>     tensor = Tensor([[0, 1, 2.], [3, 4, 5], [6, 7, 8]])
-        >>>     result = all_to_all_single_with_output_shape(output_shape, tensor, [2, 1], [2, 1])
+        >>>     tensor = ms.Tensor([[0, 1, 2.], [3, 4, 5], [6, 7, 8]])
+        >>>     result = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor, [2, 1], [2, 1])
         >>> if this_rank == 1:
         >>>     output_shape = (2, 3)
-        >>>     tensor = Tensor([[9, 10., 11], [12, 13, 14]])
-        >>>     result = all_to_all_single_with_output_shape(output_shape, tensor)
+        >>>     tensor = ms.Tensor([[9, 10., 11], [12, 13, 14]])
+        >>>     result = comm.comm_func.all_to_all_single_with_output_shape(output_shape, tensor)
         >>> print(result)
         rank 0:
         [[ 0.  1.  2.]
