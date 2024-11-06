@@ -215,7 +215,7 @@ CallableGraph Compiler::Compile(const PyFunctionObject &func, const PyFrameWrapp
   if (graph == nullptr) {
     return nullptr;
   }
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG)) {
+  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("func_graph_builder.ir", graph);
   }
   args = ExpandVariableArgs(args, code->co_flags, code->co_argcount);
@@ -277,7 +277,7 @@ CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tu
   py::tuple new_arg = EliminateStubTensor(args);
   new_arg = EliminateSelf(new_arg, compile_info.co_name_);
   MarkArgmentMutable(new_arg);
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_SAVE_GRAPHS_FLAG)) {
+  if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("graph_before_compile.ir", func_graph);
   }
   MS_LOG(INFO) << "Args for compile: " << std::string(py::str(new_arg));

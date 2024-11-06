@@ -13,11 +13,11 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
+import os
 import numpy as np
 import mindspore as ms
 from mindspore import nn
 from mindspore.ops import auto_generate as ops
-from tests.mark_utils import arg_mark
 
 
 class TensorCopySlicesNet(nn.Cell):
@@ -36,6 +36,11 @@ def test_tensor_copy_slices():
     Expectation: No exception.
     """
     ms.context.set_context(mode=ms.context.PYNATIVE_MODE)
-    ms.context.set_context(precompile_only=True)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
     net = TensorCopySlicesNet()
     out = net(ms.Tensor(np.zeros((5, 5))), ms.Tensor(np.ones((2, 5))), (3, 0), (5, 5), (1, 1))
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import sys
 import numpy as np
 
 import mindspore.context as context
@@ -46,6 +45,5 @@ def run_simple_net():
 
 
 if __name__ == "__main__":
-    context.set_context(mode=context.GRAPH_MODE, enable_compile_cache=True, compile_cache_path=sys.argv[1])
+    context.set_context(mode=context.GRAPH_MODE)
     run_simple_net()
-    context.set_context(enable_compile_cache=False)

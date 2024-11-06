@@ -935,7 +935,8 @@ FuncGraphPtr ConvertToFuncGraph(const py::object &obj, const ValuePtrList &args_
   std::string obj_key = results[1];
   FuncGraphPtr func_graph = nullptr;
   ValuePtr value = nullptr;
-  bool is_debug = MsContext::GetInstance()->get_param<int>(MS_CTX_DEBUG_LEVEL) == kLevelDebug;
+  bool is_debug = MsContext::GetInstance()->get_param<int>(MS_CTX_DEBUG_LEVEL) == kLevelDebug ||
+                  common::GetCompileConfig("DEBUG_LEVEL") == "1";
   bool is_cache = data_converter::GetObjectValue(obj_id, &value);
   if (!is_debug && is_cache && value != nullptr && value->isa<FuncGraph>()) {
     func_graph = value->cast<FuncGraphPtr>();

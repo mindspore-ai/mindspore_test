@@ -17,17 +17,18 @@ import numpy as np
 import mindspore as ms
 from mindspore import context
 from mindspore import ops
+from mindspore._extends.parse import compile_config
 import mindspore.ops.operations.manually_defined as F
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
 
 def setup_module():
-    context.set_context(grad_for_scalar=True)
+    compile_config.GRAD_FOR_SCALAR = 1
 
 
 def teardown_module():
-    context.set_context(grad_for_scalar=False)
+    compile_config.GRAD_FOR_SCALAR = ''
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_windows'], level_mark='level1', card_mark='onecard',

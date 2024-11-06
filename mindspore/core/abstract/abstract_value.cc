@@ -284,7 +284,7 @@ AbstractBasePtr AbstractScalar::Broaden() const {
   }
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR)) {
+  if (context->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) || common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") {
     return AbstractBase::Broaden();
   }
   auto type_id = GetTypeTrack()->type_id();

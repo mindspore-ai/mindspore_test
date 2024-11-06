@@ -100,7 +100,8 @@ LinConvertResult MsBackend::MsConvert(const GraphSegmentPtr &segment, const std:
     MS_LOG(INFO) << "Link graph " << pre_segment->graph_id_ << " to " << graph_id;
   }
 
-  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY)) {
+  if (MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY) ||
+      common::GetEnv("MS_DEV_PRECOMPILE_ONLY") == "1") {
     MS_LOG(INFO) << "PrecompileOnly, stop run graph";
     return result;
   }

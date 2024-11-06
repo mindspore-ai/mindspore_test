@@ -16,7 +16,6 @@
 """Resnet examples."""
 
 # pylint: disable=missing-docstring, arguments-differ
-import sys
 import time
 import numpy as np
 import mindspore.nn as nn
@@ -166,7 +165,7 @@ class ResNet50(nn.Cell):
 
 
 if __name__ == "__main__":
-    context.set_context(mode=context.GRAPH_MODE, enable_compile_cache=True, compile_cache_path=sys.argv[1])
+    context.set_context(mode=context.GRAPH_MODE)
     net = ResNet50(ResidualBlock, 10)
     inp = Tensor(np.ones([1, 3, 224, 224]).astype(np.float32))
     start_time = time.time()
@@ -176,4 +175,3 @@ if __name__ == "__main__":
     print("cost_time_with_compile_cache:", cost_time)
     print("AAA", "BBB")
     print("AAA", "BBB")
-    context.set_context(enable_compile_cache=False)

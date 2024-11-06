@@ -908,11 +908,10 @@ def test_large_for_loop():
     t = Tensor(np.ones([2, 3], dtype=np.float32))
     net = Net()
     compile_config.RECURSIVE_EVAL = 1
-    old_max_call_depth = context.get_context('max_call_depth')
-    context.set_context(max_call_depth=60)
+    ms.set_recursion_limit(60)
     with pytest.raises(RuntimeError) as err:
         net(t)
-    context.set_context(max_call_depth=old_max_call_depth)
+    ms.set_recursion_limit(1000)
     compile_config.RECURSIVE_EVAL = 0
     assert 'Exceed function call depth limit 60' in str(err.value)
 
@@ -943,12 +942,11 @@ def test_large_for_loop_case2():
     x = Tensor(np.ones([2, 3], dtype=np.float32))
     net = Menet(axis=0, flag_boottom=True, flag_top=True)
     compile_config.RECURSIVE_EVAL = 1
-    old_max_call_depth = context.get_context('max_call_depth')
-    context.set_context(max_call_depth=80)
+    ms.set_recursion_limit(80)
     with pytest.raises(RuntimeError) as err:
         net(x)
     compile_config.RECURSIVE_EVAL = 0
-    context.set_context(max_call_depth=old_max_call_depth)
+    ms.set_recursion_limit(1000)
     assert 'Exceed function call depth limit 80' in str(err.value)
 
 
@@ -971,13 +969,12 @@ def test_large_for_loop_with_continue_break():
             return x
 
     compile_config.RECURSIVE_EVAL = 1
-    old_max_call_depth = context.get_context('max_call_depth')
-    context.set_context(max_call_depth=2000)
+    ms.set_recursion_limit(2000)
     t = Tensor(np.ones([2, 3], dtype=np.float32))
     net = Net()
     net(t)
     compile_config.RECURSIVE_EVAL = 0
-    context.set_context(max_call_depth=old_max_call_depth)
+    ms.set_recursion_limit(1000)
 
 
 def test_recursive_call():
@@ -1007,14 +1004,13 @@ def test_recursive_call():
 
     context.set_context(mode=context.GRAPH_MODE)
     compile_config.RECURSIVE_EVAL = 1
-    old_max_call_depth = context.get_context('max_call_depth')
-    context.set_context(max_call_depth=80)
+    ms.set_recursion_limit(80)
     input_data = Tensor(np.identity(10).astype(np.float32))
     net = Net2()
     with pytest.raises(RuntimeError):
         net(input_data)
     compile_config.RECURSIVE_EVAL = 0
-    context.set_context(max_call_depth=old_max_call_depth)
+    ms.set_recursion_limit(1000)
 
 
 # grad for Tensor(Bool) input and eliminate AddN(MakeTuple(Xs, zeros_like(Bool)))

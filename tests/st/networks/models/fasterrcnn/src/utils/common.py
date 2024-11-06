@@ -51,7 +51,8 @@ def init_env(cfg):
     enable_modelarts = bool(getattr(cfg, "enable_modelarts", False))
     ms.set_seed(seed)
     # Set Context
-    ms.set_context(mode=ms_mode, device_target=device_target, max_call_depth=2000, runtime_num_threads=15)
+    ms.set_context(mode=ms_mode, device_target=device_target, runtime_num_threads=15)
+    ms.set_recursion_limit(2000)
     if ms_mode == 1:
         ms.set_context(pynative_synchronize=True)
     elif ms_mode == 0:

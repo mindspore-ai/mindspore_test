@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import sys
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
@@ -84,7 +83,7 @@ class Net(nn.Cell):
         return x
 
 
-context.set_context(mode=context.GRAPH_MODE, enable_compile_cache=True, compile_cache_path=sys.argv[1])
+context.set_context(mode=context.GRAPH_MODE)
 context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", pipeline_stages=8)
 init()
 data1 = Tensor(np.ones([32, 64]), dtype=ms.float32)
@@ -95,4 +94,3 @@ optimizer = Momentum(filter(lambda x: x.requires_grad, net.get_parameters()), le
 model = Model(net, optimizer=optimizer)
 dataset = ds.GeneratorDataset(source=MyIter(data1, 1), column_names=["data"])
 model.build(dataset)
-context.set_context(enable_compile_cache=False)

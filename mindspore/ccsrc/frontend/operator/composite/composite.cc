@@ -796,8 +796,9 @@ bool EnableGradFirstForTuple(const AbstractTuplePtr &tuple_arg, bool enable_tupl
 }
 
 bool EnableGradForScalar(const AbstractBasePtr &abs) {
-  return MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) && abs->BuildType() != nullptr &&
-         abs->BuildType()->isa<Number>();
+  return (MsContext::GetInstance()->get_param<bool>(MS_CTX_GRAD_FOR_SCALAR) ||
+          common::GetCompileConfig("GRAD_FOR_SCALAR") == "1") &&
+         abs->BuildType() != nullptr && abs->BuildType()->isa<Number>();
 }
 
 bool CanGradArgument(const AbstractTuplePtr &tuple_arg, size_t pos) {

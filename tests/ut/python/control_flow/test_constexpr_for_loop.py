@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import os
 import mindspore as ms
 
 
@@ -36,6 +37,11 @@ def test_constexpr_validation():
         new_shape = for_loop_calculate(100000)
         return ms.ops.broadcast_to(x, (new_shape,))
 
-    ms.set_context(precompile_only=True)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
     out = func(ms.Tensor([1]))
     print("out:", out)
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env

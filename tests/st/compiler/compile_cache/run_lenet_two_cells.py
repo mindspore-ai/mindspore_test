@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import sys
 import numpy as np
 
 import mindspore.context as context
@@ -68,11 +67,10 @@ def train(net, data, label):
 
 
 if __name__ == "__main__":
-    context.set_context(mode=context.GRAPH_MODE, enable_compile_cache=True, compile_cache_path=sys.argv[1])
+    context.set_context(mode=context.GRAPH_MODE)
     input_data = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)
     input_label = Tensor(np.ones([32]).astype(np.int32))
     lenet1 = LeNet()
     train(lenet1, input_data, input_label)
     lenet2 = LeNet()
     train(lenet2, input_data, input_label)
-    context.set_context(enable_compile_cache=False)

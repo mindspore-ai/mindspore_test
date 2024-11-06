@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test control ops """
+import os
 import pytest
 import numpy as np
 from mindspore import dtype as ms
@@ -33,9 +34,15 @@ grad_all = C.GradOperation(get_all=True)
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_teardown():
-    context.set_context(mode=context.PYNATIVE_MODE, precompile_only=True)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+    context.set_context(mode=context.PYNATIVE_MODE)
     yield
-    context.set_context(mode=context.GRAPH_MODE, precompile_only=False)
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env
+    context.set_context(mode=context.GRAPH_MODE)
 
 
 def test_while_with_param_forward_with_const_branch():

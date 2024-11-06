@@ -351,6 +351,7 @@ def _get_parameter_layout():
 
 def _handle_arg(obj, arg, compile_arg):
     """Handle arg for runtime .If need handle the arg, return True"""
+    from mindspore._extends.parse import compile_config
     if isinstance(arg, PythonTensor):
         if arg.has_init:
             arg.init_data()
@@ -363,7 +364,8 @@ def _handle_arg(obj, arg, compile_arg):
         if isinstance(arg, list) and not arg:
             return None
         return arg
-    elif context.get_context("grad_for_scalar") and isinstance(arg, (int, float)):
+    elif (context.get_context("grad_for_scalar") or str(compile_config.GRAD_FOR_SCALAR) == '1') and \
+            isinstance(arg, (int, float)):
         return arg
     elif hasattr(obj, "enable_tuple_broaden") and obj.enable_tuple_broaden and isinstance(arg, tuple) and \
             _check_all_tensor(arg):
@@ -602,7 +604,7 @@ class _MindsporeFunctionExecutor:
             _pynative_executor.clear_res()
             raise err
 
-        if context.get_context("precompile_only"):
+        if context.get_context("precompile_only") or os.getenv('MS_DEV_PRECOMPILE_ONLY') == '1':
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
@@ -1900,7 +1902,7 @@ class _CellGraphExecutor:
         return self._graph_executor.get_allreduce_fusion(real_phase)
 
     def __call__(self, obj, *args, phase='predict'):
-        if context.get_context("precompile_only") or _is_role_sched():
+        if context.get_context("precompile_only") or os.getenv('MS_DEV_PRECOMPILE_ONLY') == '1' or _is_role_sched():
             return None
         return self.run(obj, *args, phase=phase)
 
@@ -2037,6 +2039,24 @@ def ms_memory_recycle():
             _cell_graph_executor.del_net_res(None, cell_cache)
             cell_cache.clear()
     _ms_memory_recycle()
+
+
+def set_recursion_limit(recursion_limit=1000):
+    """
+    Specify the recursion depth limit of function call before compiling graph.
+    It needs to be call when the nested function call is too deep or the number of sub graphs is too large.
+    If recursion_limit is set larger than before, the system max stack depth should be set larger too,
+    otherwise a `core dumped` exception may be raised because of system stack overflow.
+
+    Args:
+        recursion_limit (int, optional): The recursion depth limit. Must be a positive integer. Default: ``1000`` .
+
+    Examples:
+        >>> import mindspore as ms
+        >>> ms.set_recursion_limit(10000)
+    """
+    recursion_limit = Validator.check_positive_int(recursion_limit)
+    GraphExecutor_.get_instance().set_max_call_depth(recursion_limit)
 
 
 def _generate_branch_control_input(obf_random_seed):

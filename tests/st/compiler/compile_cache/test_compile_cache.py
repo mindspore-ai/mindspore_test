@@ -73,7 +73,7 @@ def exec_model_and_check_result(cur_model_path, dataset_path, config_path, cache
     return loss
 
 
-def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_file_name_second, use_ge=False):
+def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_file_name_second):
     # Clear compile cache folder and log files
     if os.path.exists(cache_path):
         shutil.rmtree(cache_path)
@@ -86,10 +86,9 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert not os.path.exists(log_file_name_second)
 
     # First run without compile cache
-    cmd_first = f"export GLOG_v=2; python " + file_name + " '" + cache_path + "' > " + log_file_name_first + " 2>&1"
-    if use_ge:
-        cmd_first = f"export GLOG_v=2; python " + \
-                    file_name + " '" + cache_path + "' > " + log_file_name_first + " 2>&1"
+    cmd_first = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                 log_file_name_first)
     subprocess.check_output(cmd_first, shell=True)
     assert os.path.exists(log_file_name_first)
     assert os.path.exists(cache_path)
@@ -106,10 +105,9 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     array_shape_first = np.array([int(x) for x in shape_first])
 
     # Second run with compile cache
-    cmd_second = f"export GLOG_v=2; python " + file_name + " '" + cache_path + "' > " + log_file_name_second + " 2>&1"
-    if use_ge:
-        cmd_second = f"export GLOG_v=2; python " + \
-                     file_name + " '" + cache_path + "' > " + log_file_name_second + " 2>&1"
+    cmd_second = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                 + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                  log_file_name_second)
     subprocess.check_output(cmd_second, shell=True)
     assert os.path.exists(log_file_name_second)
     with open(log_file_name_second, "r") as f_second:
@@ -198,7 +196,9 @@ def run_twice_with_different_networks(file_name_first, file_name_second, cache_p
     assert not os.path.exists(cache_path)
 
     # First run without compile cache
-    cmd_first = f"GLOG_v=2 python " + file_name_first + " '" + cache_path + "' > " + log_file_name_first + " 2>&1"
+    cmd_first = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name_first,
+                                                                                 log_file_name_first)
     subprocess.check_output(cmd_first, shell=True)
     assert os.path.exists(log_file_name_first)
     assert os.path.exists(cache_path)
@@ -210,7 +210,9 @@ def run_twice_with_different_networks(file_name_first, file_name_second, cache_p
     shutil.rmtree(ge_cache)
 
     # Second run with compile cache
-    cmd_second = f"GLOG_v=2 python " + file_name_second + " '" + cache_path + "' > " + log_file_name_second + " 2>&1"
+    cmd_second = f"export GLOG_v=2; export MS_COMPILER_CACHE_ENABLE=1; " \
+                 + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name_second,
+                                                                                  log_file_name_second)
     subprocess.check_output(cmd_second, shell=True)
     assert os.path.exists(log_file_name_second)
     with open(log_file_name_second, "r") as f_second:
@@ -230,7 +232,8 @@ def run_two_cells_networks_once(file_name, cache_path, log_file_name):
     assert not os.path.exists(cache_path)
 
     # First run without compile cache
-    cmd = f"GLOG_v=2 python " + file_name + " '" + cache_path + "' > " + log_file_name + " 2>&1"
+    cmd = f"GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + cache_path + " python " + file_name \
+          + " > " + log_file_name + " 2>&1"
     subprocess.check_output(cmd, shell=True)
     assert os.path.exists(log_file_name)
     assert os.path.exists(cache_path)
@@ -253,20 +256,21 @@ def check_log(role, log_name, str_to_check):
 
 def start_ps_subprocess(script_path, cache_path, str_to_check, log_name):
     cwd = os.getcwd()
+    cache_realpath = os.path.realpath(cache_path)
     # start sched first time.
     os.environ['MS_ROLE'] = 'MS_SCHED'
-    cmd_first = f"cd " + cwd + "/sched && GLOG_v=2 python ../" + script_path + " ../" + cache_path + " > " \
-                + log_name + " 2>&1"
+    cmd_first = f"cd " + cwd + "/sched && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
+                cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
     sched_process = subprocess.Popen(cmd_first, shell=True)
     # start server first time.
     os.environ['MS_ROLE'] = 'MS_PSERVER'
-    cmd_first = f"cd " + cwd + "/server && GLOG_v=2 python ../" + script_path + " ../" + cache_path + " > " \
-                + log_name + " 2>&1"
+    cmd_first = f"cd " + cwd + "/server && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
+                cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
     server_process = subprocess.Popen(cmd_first, shell=True)
     # start worker first time.
     os.environ['MS_ROLE'] = 'MS_WORKER'
-    cmd_first = f"cd " + cwd + "/worker && GLOG_v=2 python ../" + script_path + " ../" + cache_path + " > " \
-                + log_name + " 2>&1"
+    cmd_first = f"cd " + cwd + "/worker && GLOG_v=2 MS_COMPILER_CACHE_ENABLE=1 MS_COMPILER_CACHE_PATH=" + \
+                cache_realpath + " python ../" + script_path + " > " + log_name + " 2>&1"
     subprocess.run(cmd_first, shell=True, check=True)
     os.chdir(cwd)
     check_log("server", log_name, str_to_check)
@@ -326,7 +330,7 @@ def run_lenet_ps_twice(file_name, cache_path, log_file_name_first, log_file_name
     shutil.rmtree(cache_path, ignore_errors=True)
 
 
-def run_network_once_with_force_use_compile_cache(file_name, cache_path, log_file_name_first, use_ge=False):
+def run_network_once_with_force_use_compile_cache(file_name, cache_path, log_file_name_first):
     # Clear compile cache folder and log files
     if os.path.exists(cache_path):
         shutil.rmtree(cache_path)
@@ -336,11 +340,9 @@ def run_network_once_with_force_use_compile_cache(file_name, cache_path, log_fil
     assert not os.path.exists(log_file_name_first)
 
     # First run without compile cache
-    cmd_first = f"export MS_DEV_FORCE_USE_COMPILE_CACHE=1; export GLOG_v=2; python " + file_name + " '" + \
-                cache_path + "' > " + log_file_name_first + " 2>&1"
-    if use_ge:
-        cmd_first = f"export MS_DEV_FORCE_USE_COMPILE_CACHE=1; export GLOG_v=2; export MS_ENABLE_GE=1; python " + \
-                    file_name + " '" + cache_path + "' > " + log_file_name_first + " 2>&1"
+    cmd_first = f"export GLOG_v=2; export MS_DEV_FORCE_USE_COMPILE_CACHE=1; export MS_COMPILER_CACHE_ENABLE=1; " \
+                + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, file_name,
+                                                                                 log_file_name_first)
     subprocess.check_output(cmd_first, shell=True)
     assert os.path.exists(log_file_name_first)
     assert os.path.exists(cache_path)
@@ -481,7 +483,7 @@ def test_compile_cache_lenet_ge():
     Description: Test whether the ge compile cache function can run successfully.
     Expectation: success.
     """
-    run_twice_with_same_network("run_lenet.py", "./lenet", "lenet_first.txt", "lenet_second.txt", True)
+    run_twice_with_same_network("run_lenet.py", "./lenet", "lenet_first.txt", "lenet_second.txt")
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
