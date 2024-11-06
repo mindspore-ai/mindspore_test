@@ -207,14 +207,16 @@ class COMMON_EXPORT BpropIRBuilderFactory {
     /// \param inputs_idx unused index of inputs. if empty, ALL inputs will be free.
     const RegHelper &FreeUselessValues_I(const std::initializer_list<size_t> &inputs_idx = {}) const {
       BpropIRBuilderFactory::Instance().RegFreeUselessValues(
-        name_, [inputs_idx](const PynativeCallback &cb) { cb.FreeInputDeviceAddress(inputs_idx); });
+        name_,
+        [index = std::vector<size_t>(inputs_idx)](const PynativeCallback &cb) { cb.FreeInputDeviceAddress(index); });
       return *this;
     }
     /// \brief Set the unused output indices.
     /// \param outputs_idx unused index of outputs. if empty, ALL outputs will be free.
     const RegHelper &FreeUselessValues_O(const std::initializer_list<size_t> &outputs_idx = {}) const {
       BpropIRBuilderFactory::Instance().RegFreeUselessValues(
-        name_, [outputs_idx](const PynativeCallback &cb) { cb.FreeOutputDeviceAddress(outputs_idx); });
+        name_,
+        [index = std::vector<size_t>(outputs_idx)](const PynativeCallback &cb) { cb.FreeOutputDeviceAddress(index); });
       return *this;
     }
     /// \brief Set the unused input and output indices.
@@ -223,8 +225,8 @@ class COMMON_EXPORT BpropIRBuilderFactory {
     const RegHelper &FreeUselessValues_IO(const std::initializer_list<size_t> &inputs_idx,
                                           const std::initializer_list<size_t> &outputs_idx) const {
       BpropIRBuilderFactory::Instance().RegFreeUselessValues(
-        name_,
-        [inputs_idx, outputs_idx](const PynativeCallback &cb) { cb.FreeIODeviceAddress(inputs_idx, outputs_idx); });
+        name_, [inputs = std::vector<size_t>(inputs_idx), outputs = std::vector<size_t>(outputs_idx)](
+                 const PynativeCallback &cb) { cb.FreeIODeviceAddress(inputs, outputs); });
       return *this;
     }
 

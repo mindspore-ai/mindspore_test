@@ -2155,12 +2155,12 @@ REG_BPROP_BUILDER("BatchNorm").FreeUselessValues_IO({i2}, {i0, i1}).SetBody(BODY
   }
   auto reserve = ib->TupleGetItem(out, 2);
   bool is_scale_or_bias_grad = (scale->need_compute_grad_out() || bias->need_compute_grad_out());
-  out = ib->BatchNormGrad(
+  auto new_out = ib->BatchNormGrad(
     {ib->TupleGetItem(dout, 0), x, scale, saved_mean, saved_variance, reserve, is_training, epsilon, data_format},
     is_scale_or_bias_grad);
-  auto dx = ib->TupleGetItem(out, 0);
-  auto dscale = ib->TupleGetItem(out, 1);
-  auto dbias = ib->TupleGetItem(out, 2);
+  auto dx = ib->TupleGetItem(new_out, 0);
+  auto dscale = ib->TupleGetItem(new_out, 1);
+  auto dbias = ib->TupleGetItem(new_out, 2);
   return {dx,
           dscale,
           dbias,
