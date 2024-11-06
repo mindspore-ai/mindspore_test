@@ -30,6 +30,11 @@ class BaseEvent(ABC):
         self._origin_data = data
 
     @property
+    def ph(self) -> str:
+        """Get event phase."""
+        raise NotImplementedError
+
+    @property
     def origin_data(self) -> Dict:
         """Get original event data."""
         return self._origin_data
@@ -106,6 +111,11 @@ class CompleteEvent(BaseEvent):
     def args(self) -> dict:
         """Get event arguments."""
         return self._origin_data.get("args", {})
+
+    @property
+    def unique_id(self) -> str:
+        """Get unique id"""
+        return f"{self.pid}-{self.tid}-{self.ts}"
 
     def to_trace_format(self) -> dict:
         """Convert complete event to Chrome trace format."""
@@ -204,6 +214,11 @@ class FlowEvent(BaseEvent):
         """Get event category."""
         return str(self._origin_data.get("cat", ""))
 
+    @property
+    def unique_id(self) -> str:
+        """Get unique id"""
+        return f"{self.pid}-{self.tid}-{self.ts}"
+
     def to_trace_format(self) -> dict:
         """Convert flow event to Chrome trace format."""
         return {
@@ -213,5 +228,6 @@ class FlowEvent(BaseEvent):
             "ts": str(self.ts),
             "pid": self.pid,
             "tid": self.tid,
+            "id": self.flow_id,
             "cat": self.cat
         }

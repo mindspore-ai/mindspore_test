@@ -45,9 +45,14 @@ class EventConstant:
     THREAD_NAME = "thread_name"
     THREAD_SORT = "thread_sort_index"
 
+    CPU_LABEL = "CPU"
+    ASCEND_LABEL = "NPU"
+
     HOST_TO_DEVICE_FLOW_CAT = "HostToDevice"
     MINDSPORE_NPU_FLOW_CAT = "async_npu"
     MINDSPORE_SELF_FLOW_CAT = "async_mindspore"
+    MINDSPORE_SELF_FLOW_NAME = "mindspore_to_self"
+    MINDSPORE_NPU_FLOW_NAME = "mindspore_to_npu"
 
     MINDSPORE_PID = 1
     CPU_OP_PID = 2
@@ -57,9 +62,54 @@ class EventConstant:
     CPU_OP_SORT_IDX = 2
     SCOPE_LAYER_SORT_IDX = 12
 
+    # field name
+    SEQUENCE_NUMBER = "Sequence number"
+    FORWARD_THREAD_ID = "Fwd thread id"
+    OP_NAME = "op_name"
+    INPUT_SHAPES = "Input Dims"
+    INPUT_DTYPES = "Input type"
+    CALL_STACK = "Call stack"
+    MODULE_HIERARCHY = "Module Hierarchy"
+    FLOPS = "flops"
+    NAME = "name"
+    CUSTOM_INFO = "custom_info"
+    TOP_SCOPE_NAMES = ('Default', 'Gradients', 'recompute_Default')
+    KERNEL_LAUNCH_KEYWORDS = ("KernelLaunch", "LaunchTask")
+
+    FLOW_OP = "flow"
+    INVALID_FLOW_ID = 18446744073709551615
+
 
 class TimeConstant:
     """Time constant values"""
 
     NS_TO_US = 0.001
     MS_TO_US = 1000
+
+
+class FileConstant:
+    """File constant values"""
+
+    # tlv constant struct
+    FIX_SIZE_DATA = "fix_size_data"
+
+
+class TimelineLayerName(Enum):
+    """Timeline layer types."""
+    MINDSPORE = "MindSpore"
+    CPU_OP = "CPU OP"
+    CANN = "CANN"
+    SCOPER_LAYER = "Scope Layer"
+    ASCEND_HARDWARE = "Ascend Hardware"
+    AI_CORE_FREQ = "AI Core Freq"
+    HBM = "HBM"
+    PCLE = "PCle"
+    HCCS = "HCCS"
+    LLC = "LLC"
+    NPU_MEM = "NPU MEM"
+    STARS_SOC_INFO = "Stars Soc Info"
+    STARS_Chip_Trans = "Stars Chip Trans"
+    ACC_PMU = "Acc PMU"
+    SIO = "SIO"
+    QOS = "QoS"
+    OVERLAP_ANALYSIS = "Overlap Analysis"
