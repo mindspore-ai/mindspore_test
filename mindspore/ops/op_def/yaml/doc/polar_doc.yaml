@@ -22,7 +22,7 @@ polar:
             Tensor, has the same shape and data type as `abs`.
 
         Supported Platforms:
-            ``Ascend``
+            ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
             >>> import mindspore

@@ -63,18 +63,6 @@ ShapeArray PolarFuncImpl::InferShape(const PrimitivePtr &primitive, const InferI
 }
 
 std::vector<TypeId> PolarFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  const InferInfoPtr &abs = input_infos[kIndex0];
-  const InferInfoPtr &angle = input_infos[kIndex1];
-
-  TypeId abs_type = abs->GetType();
-  TypeId angle_type = angle->GetType();
-
-  if (abs_type != kNumberTypeFloat32 || angle_type != kNumberTypeFloat32) {
-    auto prim_name = primitive->name();
-    MS_EXCEPTION(TypeError) << prim_name << " input only support float32, but got input[0] type " << abs_type
-                            << " and input[1] type " << angle_type;
-  }
-
   return {kNumberTypeComplex64};
 }
 }  // namespace ops
