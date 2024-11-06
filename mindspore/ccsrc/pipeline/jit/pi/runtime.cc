@@ -58,7 +58,7 @@ namespace pijit {
 void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
 void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 void AddGuardForGlobals(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
-static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach);
+static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach);
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode);
 
 class ByteCodeRunStatistic {
@@ -352,8 +352,7 @@ static void GuardForFrame(const PyFrameWrapper &f, const OptCodePtr &oc, const G
   const char *code_name = f.GetCode().Name();
   AddConfigToGuard(conf, oc->GetGuard());
   AddGuardForParam(f, oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
-  AddGradFlagForParam(pynative::PyNativeExecutor::GetInstance()->grad_flag(), oc->GetGuard(),
-                      conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+  AddGradFlagForParam(oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
   if (conf.GetBoolConfig(GraphJitConfig::kPrintGuard)) {
     GRAPH_JIT_LOG_F("Guard on %s by %s!\n", code_name, oc->GetGuard()->GetDescript().c_str());
     return;
@@ -658,7 +657,8 @@ void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool d
 #endif
 }
 
-static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach) {
+static void AddGradFlagForParam(const OptGuardPtr &guard, bool detach) {
+  bool grad_flag = pynative::PyNativeExecutor::GetInstance()->RequiresGrad();
   CustomizedTracePtr ptr = std::make_shared<CustomizedTrace>(
     grad_flag ? Py_True : Py_False,
     [](PTraceContext context) -> PyObject * {
@@ -666,7 +666,7 @@ static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach) 
       if (pynative_exec == nullptr) {
         pynative_exec = pynative::PyNativeExecutor::GetInstance().get();
       }
-      PyObject *ret = pynative_exec->grad_flag() ? Py_True : Py_False;
+      PyObject *ret = pynative_exec->RequiresGrad() ? Py_True : Py_False;
       Py_INCREF(ret);
       return ret;
     },
@@ -674,7 +674,7 @@ static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach) 
       if (simple) {
         return std::string("g\\") + std::to_string(grad_flag ? 1 : 0);
       }
-      return std::string("{PyNativeExecutor::GetInstance()->grad_flag == ") + std::to_string(grad_flag) +
+      return std::string("{PyNativeExecutor::GetInstance()->RequiresGrad() == ") + std::to_string(grad_flag) +
              std::string("}(type:") + std::to_string(TraceType::Customized) + std::string(")");
     });
   guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GEqual, true);

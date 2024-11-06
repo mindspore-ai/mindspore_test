@@ -15,16 +15,17 @@
 """Test basic operation with one stage"""
 import pytest
 from tests.mark_utils import arg_mark
-import math
 import numpy as np
 import mindspore.nn as nn
 from mindspore import ops
 from mindspore import dtype as mstype
 from mindspore import Tensor, context, Parameter
-from mindspore.common.api import jit
+from mindspore.common.api import jit, _no_grad
 from mindspore.ops.composite import GradOperation
 from mindspore.common.parameter import ParameterTuple
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get_code_extra
+
+from tests.st.pi_jit.share.utils import match_array, assert_no_graph_break
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -34,6 +35,7 @@ def test_base_grad_operation():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             ret = x + y
@@ -72,6 +74,7 @@ def test_base_grad_operation_2():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             ret = x + y
@@ -113,6 +116,7 @@ def test_base_grad_operation_3():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -158,6 +162,7 @@ def test_base_grad_operation_4():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -206,6 +211,7 @@ def test_base_grad_operation_5():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -242,6 +248,7 @@ def test_base_grad_operation_5():
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_6():
     """
@@ -249,6 +256,7 @@ def test_base_grad_operation_6():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -298,6 +306,7 @@ def test_base_grad_operation_7():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -343,6 +352,7 @@ def test_base_grad_operation_8():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -387,6 +397,7 @@ def test_base_grad_operation_with_keywords_args():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             ret = x + y
@@ -425,6 +436,7 @@ def test_base_grad_operation_with_keywords_args_2():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             ret = x * y
@@ -463,6 +475,7 @@ def test_base_grad_operation_with_vargs():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, *args):
             ret = args[0] * args[1]
@@ -501,6 +514,7 @@ def test_functional_grad():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -542,6 +556,7 @@ def test_functional_grad_2():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -586,6 +601,7 @@ def test_functional_grad_3():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -633,6 +649,7 @@ def test_functional_grad_4():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -681,6 +698,7 @@ def test_functional_grad_5():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -726,6 +744,7 @@ def test_second_grad_operation():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x):
             ret = ops.sin(x)
@@ -774,6 +793,7 @@ def test_grad_with_invalid_output():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, x, y):
             ret = x + y
@@ -812,6 +832,7 @@ def test_grad_with_invalid_output_2():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, *args):
             ret = args[0] + args[1]
@@ -850,6 +871,7 @@ def test_grad_with_invalid_output_3():
     Description: Test One stage GradOperation with no graph break
     Expectation: No exception.
     """
+
     class Net(nn.Cell):
         def construct(self, *args, **kwargs):
             ret = args[0] + args[1]
@@ -879,3 +901,50 @@ def test_grad_with_invalid_output_3():
     assert jcr["break_count_"] == 0
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_with_no_grad():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+
+    class Block(nn.Cell):
+        def construct(self, x, y):
+            return ops.mul(x, y)
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.block = Block()
+
+        def construct(self, x, y):
+            with _no_grad():
+                a = self.block(x, y)
+            b = self.block(x, y)
+            return a + b
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.grad_op = GradOperation(False, False, False)
+
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    o1 = grad_net(a, b)
+
+    net.block.construct = jit(net.block.construct, mode='PIJit', jit_config={'compile_with_try': False})
+    o2 = grad_net(a, b)
+
+    match_array(o1, o2)
+    assert_no_graph_break(net.block.construct, call_count=1)  # call_count=1, should recompile

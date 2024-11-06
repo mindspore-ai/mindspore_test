@@ -169,7 +169,8 @@ PyObject *RunGraph(const std::string &phase, const py::tuple &args, const std::s
   py::object ret;
   int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto executor = pynative::PyNativeExecutor::GetInstance();
-  if (mode == kPynativeMode && executor->grad_flag()) {
+  if (mode == kPynativeMode && executor->RequiresGrad()) {
+    MS_LOG(INFO) << "Do GradJit";
     executor->grad_executor()->jit()->set_graph_phase(phase);
     ret = executor->GradJit(args_tuple);
   } else {
