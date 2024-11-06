@@ -346,6 +346,7 @@ setattr(tensor_operator_registry, 'log10', log10)
 setattr(tensor_operator_registry, 'log2', log2)
 setattr(tensor_operator_registry, 'lerp', lerp)
 setattr(tensor_operator_registry, 'floor', floor)
+setattr(tensor_operator_registry, 'floor_', auto_generate.floor_)
 setattr(tensor_operator_registry, 'floor_divide', floor_divide)
 # support sparse tensor operators
 setattr(tensor_operator_registry, 'csr_add', csr_add)

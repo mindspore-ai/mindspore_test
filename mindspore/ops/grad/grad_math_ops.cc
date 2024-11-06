@@ -2034,6 +2034,13 @@ REG_BPROP_BUILDER("Log").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("Floor").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("InplaceFloor").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto zeros = ib->Emit("ZerosLikeExt", {dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
+  return {zeros};
+});
+
 REG_BPROP_BUILDER("Ceil").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("Square").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
