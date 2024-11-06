@@ -533,7 +533,6 @@ Status DataQueueOp::SendDataToAscend() {
         is_break_loop = true;
         continue;
       }
-      row_timer_start = GetMilliTimeStamp();
       uint64_t start_time = GetSyscnt();
       if (!enable_prefetch_cache_pipeline_) {
 #ifdef ENABLE_DUMP_IR
@@ -542,7 +541,7 @@ Status DataQueueOp::SendDataToAscend() {
         }
         MS_LOG(INFO) << md_channel_info_->ToFormatString();
 #endif
-        RETURN_IF_NOT_OK(SendRowToTdt(curr_row, is_profiling_enable, &tdt_cost));
+        RETURN_IF_NOT_OK(SendRowToTdt(&curr_row, is_profiling_enable, &tdt_cost));
       } else {
         RETURN_IF_NOT_OK(PushDataToAscendCacheQueue(curr_row));
       }
@@ -554,12 +553,9 @@ Status DataQueueOp::SendDataToAscend() {
 #endif
       RETURN_IF_NOT_OK(
         CollectOpInfo(this->NameWithID(), "PushToAscend", start_time, {{"TensorRowFlags", curr_row.FlagName()}}));
-      curr_row.TimerRecord(NameWithID(), RowTimer::kPushToDeviceTime, {GetMilliTimeStamp() - row_timer_start});
       if (curr_row.Timer()->Enabled()) {
-#ifndef ENABLE_ANDROID
         // VL_MD is 10900
-        MS_VLOG(VL_MD) << curr_row.Timer()->Summary();
-#endif
+        VLOG_MD(curr_row.Timer()->Summary());
       }
       PrintEndInfoWhenFirstBatch(&first_push_flag_);
 #ifndef ENABLE_SECURITY
@@ -703,15 +699,17 @@ void DataQueueOp::LimitSendingBatches(int64_t send_batch, int64_t *sending_num,
   }
 }
 
-Status DataQueueOp::SendRowToTdt(TensorRow curr_row, bool is_profiling_enable, int32_t *tdt_cost) {
-  std::vector<device::DataQueueItem> items = ConvertTensorRowToDataQueueItem(curr_row);
+Status DataQueueOp::SendRowToTdt(TensorRow *curr_row, bool is_profiling_enable, int32_t *tdt_cost) {
+  std::vector<device::DataQueueItem> items = ConvertTensorRowToDataQueueItem(*curr_row);
 #ifndef ENABLE_SECURITY
   double start_time = 0;
   if (is_profiling_enable) {
     start_time = ProfilingTime::GetCurMilliSecond();
   }
 #endif
+  double row_timer_start = GetMilliTimeStamp();
   auto status = ascend_data_queue_->Push(items);
+  curr_row->TimerRecord(NameWithID(), RowTimer::kPushToDeviceTime, {GetMilliTimeStamp() - row_timer_start});
 #ifndef ENABLE_SECURITY
   if (is_profiling_enable) {
     double end_time = ProfilingTime::GetCurMilliSecond();
@@ -732,7 +730,7 @@ Status DataQueueOp::SendRowToTdt(TensorRow curr_row, bool is_profiling_enable, i
   }
   if (create_data_info_queue_) {
     DATA_INFO data_info;
-    (void)std::transform(curr_row.begin(), curr_row.end(), std::back_inserter(data_info),
+    (void)std::transform(curr_row->begin(), curr_row->end(), std::back_inserter(data_info),
                          [](const std::shared_ptr<Tensor> &ts) { return std::make_pair(ts->type(), ts->shape()); });
     RETURN_IF_NOT_OK(data_info_queue_ptr_->Add(std::move(data_info)));
   }
@@ -1230,6 +1228,7 @@ void DataQueueOp::DetectPerBatchTime(const uint64_t *start_time, uint64_t *end_t
 
 void DataQueueOp::PrintBeginInfoWhenFirstBatch(const bool &first_push_flag) const {
   if (first_push_flag != true) {
+    VLOG_FLOW("Loading dataset and begin to push first batch into device ...");
     MS_LOG(INFO) << "Loading dataset and begin to push first batch into device ...";
   }
 }
@@ -1240,6 +1239,7 @@ void DataQueueOp::PrintEndInfoWhenFirstBatch(bool *first_push_flag) const {
     return;
   }
   if (*first_push_flag != true) {
+    VLOG_FLOW("Loading dataset and push first batch into device successful.");
     MS_LOG(INFO) << "Loading dataset and push first batch into device successful.";
     *first_push_flag = true;
   }
