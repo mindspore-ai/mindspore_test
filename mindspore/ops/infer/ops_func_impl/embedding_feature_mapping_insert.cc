@@ -120,12 +120,12 @@ std::tuple<int32_t, size_t, std::vector<int64_t>> EmbeddingFeatureMappingInsertF
   SetDynInputSizes(primitive, table_num);
 
   int32_t ret = OP_CHECK_SUCCESS;
-  auto feature_sie = EmbeddingFeatureMappingCheckFeatureAndOffsetId(primitive, input_args, feature_id_idx_, table_num);
-  if (MS_UNLIKELY(feature_sie.size() != table_num)) {
+  auto feature_size = EmbeddingFeatureMappingCheckFeatureAndOffsetId(primitive, input_args, feature_id_idx_, table_num);
+  if (MS_UNLIKELY(feature_size.size() != table_num)) {
     ret = OP_CHECK_RETRY;
   }
 
-  return std::make_tuple(ret, table_num, std::move(feature_sie));
+  return std::make_tuple(ret, table_num, std::move(feature_size));
 }
 
 void EmbeddingFeatureMappingInsertFuncImpl::SetDynInputSizes(const PrimitivePtr &primitive, int64_t table_num) const {

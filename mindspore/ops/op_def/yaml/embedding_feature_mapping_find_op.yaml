@@ -9,7 +9,5 @@ embedding_feature_mapping_find:
             dtype: int
             default: 1
     returns:
-        feature_id:
-            dtype: tensor
-        offset_id:
-            dtype: tensor
+        outputs:
+            dtype: tuple[tensor]

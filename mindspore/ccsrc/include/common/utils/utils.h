@@ -128,6 +128,7 @@ constexpr auto kAttrNodeInfo = "node_info";
 constexpr auto kAttrNodeName = "node_name";
 constexpr auto kAttrDynInput = "dynamic";
 constexpr auto kAttrDynInputSizes = "dyn_input_sizes";
+constexpr auto kAttrDynOutputSizes = "dyn_output_sizes";
 constexpr auto kAttrChannelName = "channel_name";
 constexpr auto kAttrTupleInputStructural = "tuple_input_structural";
 constexpr auto kAttrListStartIndex = "list_start_index";

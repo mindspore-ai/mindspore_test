@@ -593,16 +593,22 @@ Status OpAdapterImpl::UpdateMultiOutputDesc(const OperatorPtr &op, const abstrac
   MS_EXCEPTION_IF_NULL(tuple_shp);
 
   size_t output_size = 0;
+  std::vector<size_t> dyn_output_num;
+  dyn_output_num.resize(dyn_output_map_.size());
   bool is_custom_op = IsCustomOp(op);
   if (is_custom_op) {
     output_size = GetCustomOpOutputSize(std::dynamic_pointer_cast<CustomOperator>(op));
   } else {
-    if (!output_map_.empty()) {
-      output_size = output_map_.size();
-    } else {
-      for (auto &it : dyn_output_map_) {
-        output_size += static_cast<size_t>(op->GetDynamicOutputNum(it.second.name));
+    output_size = output_map_.size();
+    for (auto &it : dyn_output_map_) {
+      auto dyn_num = op->GetDynamicOutputNum(it.second.name);
+      MS_LOG(DEBUG) << "Op " << op->GetName() << " index " << it.first << ", dynamic output num: " << dyn_num;
+      output_size += IntToSize(dyn_num);
+      if (LongToSize(it.first) >= dyn_output_num.size()) {
+        MS_LOG(EXCEPTION) << "Op " << op->GetName() << " dyn_output index " << it.first << " is out of range [0,"
+                          << dyn_output_num.size() << "].";
       }
+      dyn_output_num[it.first] = dyn_num;
     }
   }
 
@@ -658,18 +664,22 @@ Status OpAdapterImpl::UpdateMultiOutputDesc(const OperatorPtr &op, const abstrac
       if (it != output_map_.end()) {
         it->second.update_out_desc(op, *desc);
       } else if (!dyn_output_map_.empty()) {
-        if (dyn_output_map_.size() > 1) {
-          auto iterator = dyn_output_map_.find(i);
-          if (iterator == dyn_output_map_.end()) {
-            MS_LOG(EXCEPTION) << "Failed to find dyn_out_desc for " << op->GetName();
+        auto cur_index = i - output_map_.size();
+        size_t dyn_index = 0;
+        for (; dyn_index < dyn_output_num.size(); dyn_index++) {
+          if (cur_index < dyn_output_num[dyn_index]) {
+            break;
           }
-          // To Do
-          // Now, the output num of each dynamic output should be one.
-          MS_LOG(INFO) << "Es, Op: " << op->GetName() << ", update_dyn_output_desc[" << i << "].";
-          iterator->second.update_dyn_output_desc(op, static_cast<unsigned int>(0), *desc);
-        } else {
-          dyn_output_map_.begin()->second.update_dyn_output_desc(op, static_cast<unsigned int>(i), *desc);
+          cur_index = cur_index - dyn_output_num[dyn_index];
         }
+        dyn_index = dyn_index + output_map_.size();
+        auto iterator = dyn_output_map_.find(dyn_index);
+        if (iterator == dyn_output_map_.end()) {
+          MS_LOG(EXCEPTION) << "Failed to find dyn_out_desc index " << dyn_index << " for " << op->GetName();
+        }
+        MS_LOG(DEBUG) << "Op: " << op->GetName() << ", update_dyn_output_desc index: " << dyn_index
+                      << ", inner index: " << cur_index;
+        iterator->second.update_dyn_output_desc(op, SizeToUint(cur_index), *desc);
       }
     }
   }
