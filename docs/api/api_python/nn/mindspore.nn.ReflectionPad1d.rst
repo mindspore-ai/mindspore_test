@@ -3,7 +3,7 @@ mindspore.nn.ReflectionPad1d
 
 .. py:class:: mindspore.nn.ReflectionPad1d(padding)
 
-    根据 `padding` 对输入 `x` 进行填充。
+    根据 `padding` 对输入 `x` 进行填充。1d代表填充的维度为一维。
 
     参数：
         - **padding** (union[int, tuple]) - 填充大小，如果输入为int，则对所有边界进行相同大小的填充；如果是tuple，则为 :math:`(pad\_left, pad\_right)`。

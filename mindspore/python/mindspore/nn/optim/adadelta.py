@@ -134,9 +134,9 @@ class Adadelta(Optimizer):
 
     Raises:
         TypeError: If `learning_rate` is not one of int, float, Tensor, Iterable, LearningRateSchedule.
-        TypeError: If element of `parameters` is neither Parameter nor dict.
+        TypeError: If element of `params` is neither Parameter nor dict.
         TypeError: If `rho`, `epsilon` or `loss_scale` is not a float.
-        TypeError: If `weight_decay` is neither float nor int.
+        TypeError: If `weight_decay` is not float, int or cell.
         ValueError: if `rho` is not in range [0.0, 1.0].
         ValueError: If `loss_scale` is less than or equal to 0.
         ValueError: If `learning_rate`, `epsilon` or `weight_decay` is less than 0.

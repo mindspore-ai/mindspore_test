@@ -12,7 +12,7 @@ mindspore.ops.csr_log
         如果算子Log的输入值在(0, 0.01]或[0.95, 1.05]范围内，则输出精度可能会存在误差。
 
     参数：
-        - **x** (CSRTensor) - 任意维度的输入CSRTensor。该值必须大于0。
+        - **x** (CSRTensor) - 任意维度的输入CSRTensor。值小于0时，返回nan。
 
     返回：
         CSRTensor，具有与 `x` 相同的shape。

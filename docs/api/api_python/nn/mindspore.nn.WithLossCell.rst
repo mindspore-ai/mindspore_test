@@ -12,8 +12,8 @@ mindspore.nn.WithLossCell
         - **loss_fn** (Cell) - 用于计算损失函数。
 
     输入：
-        - **data** (Tensor) - shape为 :math:`(N, \ldots)` 的Tensor。
-        - **label** (Tensor) - shape为 :math:`(N, \ldots)` 的Tensor。
+        - **data** (Tensor) - shape为 :math:`(N, \ldots)` 的Tensor。 `data` 的数据类型必须是float16或float32。
+        - **label** (Tensor) - shape为 :math:`(N, \ldots)` 的Tensor。 `label` 的数据类型必须是float16或float32。
 
     输出：
         Tensor，loss值，其shape通常为 :math:`()` 。

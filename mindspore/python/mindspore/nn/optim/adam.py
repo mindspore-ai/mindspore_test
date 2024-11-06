@@ -633,7 +633,7 @@ class Adam(Optimizer):
     Raises:
         KeyError: If kwargs got keys other than 'use_lazy' or 'use_offload'.
         TypeError: If `learning_rate` is not one of int, float, Tensor, Iterable, LearningRateSchedule.
-        TypeError: If element of `parameters` is neither Parameter nor dict.
+        TypeError: If element of `params` is neither Parameter nor dict.
         TypeError: If `beta1`, `beta2`, `eps` or `loss_scale` is not a float.
         TypeError: If `weight_decay` is neither float nor int.
         TypeError: If `use_locking`, `use_nesterov`, `use_amsgrad`, `use_lazy` or `use_offload` is not a bool.

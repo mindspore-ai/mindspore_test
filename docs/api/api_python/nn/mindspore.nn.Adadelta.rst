@@ -56,9 +56,9 @@ mindspore.nn.Adadelta
 
     异常：
         - **TypeError** - `learning_rate` 不是int、float、Tensor、Iterable或 `LearningRateSchedule` 。
-        - **TypeError** - `parameters` 的元素是 `Parameter` 或字典。
+        - **TypeError** - `params` 的元素既不是 `Parameter` 也不是字典。
         - **TypeError** - `rho` 、 `epsilon` 或 `loss_scale` 不是float。
-        - **TypeError** - `weight_decay` 不是float或int。
+        - **TypeError** - `weight_decay` 不是float、int或cell。
         - **ValueError** - `rho` 不在范围 [0.0, 1.0] 内。
         - **ValueError** - `loss_scale` 小于或等于0。
         - **ValueError** - `learning_rate` 、 `epsilon` 或 `weight_decay` 小于0。

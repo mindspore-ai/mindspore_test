@@ -7,6 +7,7 @@
 #
 # http://www.apache.org/licenses/LICENSE-2.0
 #
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,8 +86,8 @@ class WithLossCell(Cell):
         loss_fn (Cell): The loss function used to compute loss.
 
     Inputs:
-        - **data** (Tensor) - Tensor of shape :math:`(N, \ldots)`.
-        - **label** (Tensor) - Tensor of shape :math:`(N, \ldots)`.
+        - **data** (Tensor) - Tensor of shape :math:`(N, \ldots)`. The dtype of `data` must be float16 or float32.
+        - **label** (Tensor) - Tensor of shape :math:`(N, \ldots)`. The dtype of `label` must be float16 or float32.
 
     Outputs:
         Tensor, a tensor means the loss value, the shape of which is usually :math:`()`.
@@ -579,9 +580,6 @@ class MicroBatchInterleaved(Cell):
     communication operators at the same time, to achieve the performance acceleration of communication and computing
     concurrency.
 
-    Note:
-        The output of the input network must be a single tensor.
-
     Args:
         network (Cell): The target network to wrap.
         interleave_num (int, optional): split num of batch size. Default: ``2`` .
@@ -590,7 +588,7 @@ class MicroBatchInterleaved(Cell):
         tuple[Tensor]. It's the same with the input of the `network` .
 
     Outputs:
-        Tensor. The output of the input `network` .
+        The wrapped input. The output of the input `network` should be a Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU``

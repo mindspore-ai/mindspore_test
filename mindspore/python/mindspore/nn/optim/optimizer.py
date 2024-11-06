@@ -848,7 +848,7 @@ class Optimizer(Cell):
             optim_result(bool): The results of updating parameters. This input is used to ensure that the parameters are
               updated before they are broadcast.
         Returns:
-             bool, the status flag.
+             The broadcast parameters.
         """
         # If rank_id is 0, 1, 2, 3, there are param0 ~ param7,
         # then the value is[(param0, param4), (param1, param5), (param2, param6), (param3, param7)]

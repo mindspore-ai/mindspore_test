@@ -20,5 +20,5 @@ mindspore.ops.col2im
         - **TypeError** - 如果 `kernel_size`，`dilation`，`padding_value`，`stride` 不属于 Union[int, tuple[int], list[int]]。
         - **ValueError** - 如果 `kernel_size`，`dilation`，`stride` 值小于等于0或者个数大于2。
         - **ValueError** - 如果 `padding_value` 值小于0或者个数大于2。
-        - **ValueError** - 如果 `input_x.dims(2)` 不等于 `kernel_size[0] * kernel_size[1]` 。
-        - **ValueError** - 如果 `input_x.dims(3)` 与计算出的滑动块数量不匹配。
+        - **ValueError** - 如果 `input_x` 的第三维长度不等于 `kernel_size[0] * kernel_size[1]` 。
+        - **ValueError** - 如果 `input_x` 的第四维长度与计算出的滑动块数量不匹配。

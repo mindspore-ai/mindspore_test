@@ -837,7 +837,7 @@ def custom_mixed_precision(network, *, white_list=None, black_list=None, dtype=m
         - Repeatedly calling mixed-precision interfaces, such as `custom_mixed_precision` and `auto_mixed_precision`,
           can result in a larger network hierarchy and slower performance.
         - If interfaces like `Model` and `build_train_network` is used to train the network which is converted by
-          mixed-precision interfaces such as `custom_mixed_precision` and `auto_mixed_precision`, `amp_level`
+          mixed-precision interfaces such as `custom_mixed_precision` and `auto_mixed_precision`, `amp_level` or `level`
           need to be configured to ``O0`` to avoid the duplicated accuracy conversion.
         - Primitives for blacklist is not support yet.
 

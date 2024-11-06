@@ -442,7 +442,7 @@ class _ReflectionPadNd(Cell):
 
 class ReflectionPad1d(_ReflectionPadNd):
     r"""
-    Using a given padding to do reflection pad on the given tensor.
+    Using a given padding to do reflection pad on the given tensor. 1d means the dimension of padding is 1-dimension.
 
     Args:
         padding (union[int, tuple]): The padding size to pad the last dimension of input tensor.
@@ -490,7 +490,7 @@ class ReflectionPad1d(_ReflectionPadNd):
 
 class ReflectionPad2d(_ReflectionPadNd):
     r"""
-    Using a given padding to do reflection pad the given tensor.
+    Using a given padding to do reflection pad the given tensor. 2d means the dimension of padding is 2-dimension.
 
     Args:
         padding (union[int, tuple]): The padding size to pad the input tensor.
@@ -542,7 +542,8 @@ class ReflectionPad2d(_ReflectionPadNd):
 
 class ReflectionPad3d(_ReflectionPadNd):
     r"""
-    Pad the given tensor in a reflecting way using the input boundaries as the axis of symmetry.
+    Pad the given tensor in a reflecting way using the input boundaries as the axis of symmetry. 3d means the dimension
+    of padding is 3-dimension.
 
     Note:
         ReflectionPad3d has not supported 5D tensor yet.

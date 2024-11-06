@@ -1956,9 +1956,8 @@ class Cell(Cell_):
 
     def set_grad(self, requires_grad=True):
         """
-        Sets the cell flag for gradient. In pynative mode, this parameter specifies whether the network requires
-        gradients. If ``true`` , the backward network needed to compute the gradients will be generated when the forward
-        network is executed.
+        Sets the cell flag for gradient.
+
 
         Args:
             requires_grad (bool): Specifies if the net need to grad, if it is

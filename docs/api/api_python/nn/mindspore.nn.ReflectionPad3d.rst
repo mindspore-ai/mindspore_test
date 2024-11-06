@@ -3,7 +3,7 @@ mindspore.nn.ReflectionPad3d
 
 .. py:class:: mindspore.nn.ReflectionPad3d(padding)
 
-    使用反射的方式，以 `input` 的边界为对称轴，对 `input` 进行填充。
+    使用反射的方式，以 `input` 的边界为对称轴，对 `input` 进行填充。3d代表填充的维度为三维。
 
     .. note::
         ReflectionPad3d尚不支持5D Tensor输入。

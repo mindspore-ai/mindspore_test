@@ -44,7 +44,7 @@ mindspore.nn.Optimizer
             - **optim_result** (bool) - 参数更新结果。该输入用来保证参数更新完成后才执行参数广播。
 
         返回：
-            bool，状态标志。
+            被广播的参数组。
 
     .. py:method:: decay_weight(gradients)
 
