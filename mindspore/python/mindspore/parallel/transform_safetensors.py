@@ -992,7 +992,7 @@ def _split_list(split_list, split_num):
 def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num):
     """apply safetensors object operators"""
     if not transform_operator_stack:
-        return sf_obj
+        return sf_obj[:]
     level = transform_operator_stack[-1][1]
     level_operators = []
     while True:
@@ -1100,7 +1100,7 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
             _insert_opt_shard_reshape(param_rank_map, from_info_tuple, to_info_tuple)
             transform_operator_stack = _generate_transform_operator_stack(param_rank_map, local_rank_id)
 
-            slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj[:], device_num)
+            slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num)
         else:
             slice_param = sf_obj[:]
 

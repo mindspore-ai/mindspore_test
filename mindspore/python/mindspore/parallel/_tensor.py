@@ -590,6 +590,8 @@ def _apply_operator(operator_name):
         Returns:
             The data of tensor after apply operator.
         """
+        if str(type(numpy_data)) == "<class 'builtins.PySafeSlice'>":
+            numpy_data = numpy_data[:]
         if not isinstance(numpy_data, np.ndarray):
             raise TypeError("The data should be a numpy.ndarray.")
         _check_operator(reshape_op)
@@ -629,8 +631,6 @@ def _apply_operator(operator_name):
         Returns:
             The data of tensor after apply operator.
         """
-        if not isinstance(numpy_data, np.ndarray):
-            raise TypeError("The data should be a numpy.ndarray.")
         _check_operator(slice_op)
         if len(slice_op[1]) % 3 != 0:
             raise ValueError("The slice operator information is wrong.")
