@@ -365,7 +365,23 @@ PYBIND_REGISTER(GeneratorNode, 2, ([](const py::module *m) {
                                                                  std::move(python_multiprocessing_runtime));
                       THROW_IF_ERROR(gen->ValidateParams());
                       return gen;
-                    }));
+                    }))
+                    .def("Build", [](GeneratorNode &self) {
+                      std::vector<std::shared_ptr<DatasetOp>> node_ops;
+                      THROW_IF_ERROR(self.Build(&node_ops));
+                      std::shared_ptr<GeneratorOp> generator_op = std::dynamic_pointer_cast<GeneratorOp>(node_ops[0]);
+                      THROW_IF_ERROR(generator_op->CalculatedSampleId());
+                      return generator_op;
+                    });
+                }));
+
+PYBIND_REGISTER(GeneratorOp, 0, ([](const py::module *m) {
+                  (void)py::class_<GeneratorOp, std::shared_ptr<GeneratorOp>>(*m, "GeneratorOp")
+                    .def("GetMappedIndex", [](GeneratorOp &self, int64_t index) {
+                      int64_t sample_id;
+                      THROW_IF_ERROR(self.GetMappedIndex(index, &sample_id));
+                      return sample_id;
+                    });
                 }));
 
 PYBIND_REGISTER(GTZANNode, 2, ([](const py::module *m) {

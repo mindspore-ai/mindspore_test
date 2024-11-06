@@ -15,6 +15,7 @@
 import copy
 import os
 import random
+import re
 import subprocess
 import time
 
@@ -58,6 +59,17 @@ class DatasetGeneratorLarge:
 
     def __len__(self):
         return 10
+
+
+class DatasetGeneratorSmall:
+    def __init__(self):
+        self.data = np.array([1, 2, 3, 4, 5, 6])
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __len__(self):
+        return len(self.data)
 
 
 class DatasetGeneratorMixed:
@@ -2769,6 +2781,106 @@ def test_release_generator_dataset_iter(num_epochs):
     ds.config.set_prefetch_size(original_prefetch_size)
 
 
+@pytest.mark.parametrize('num_samples', (None, 4))
+@pytest.mark.parametrize('shuffle', (None, False, True))
+def test_generator_dataset_getitem_success_distributed_sampler(num_samples, shuffle):
+    """
+    Feature: GeneratorDataset random access
+    Description: Test combinations of GeneratorDataset parameters [shuffle/num_samples]
+    Expectation: SUCCESS
+    """
+    small_dataset = DatasetGeneratorSmall()
+    origin_seed = ds.config.get_seed()
+
+    ds.config.set_seed(200)
+    dataset = ds.GeneratorDataset(small_dataset, column_names=["col1"], shuffle=shuffle, num_samples=num_samples,
+                                  num_shards=3, shard_id=0)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item == dataset[index]
+        index += 1
+    ds.config.set_seed(origin_seed)
+
+
+@pytest.mark.parametrize('num_samples', (None, 4))
+@pytest.mark.parametrize('shuffle', (None, False, True))
+def test_generator_dataset_getitem_success_other_sampler(num_samples, shuffle):
+    """
+    Feature: GeneratorDataset random access
+    Description: Test combinations of GeneratorDataset parameters [shuffle/num_samples]
+    Expectation: SUCCESS
+    """
+    small_dataset = DatasetGeneratorSmall()
+    origin_seed = ds.config.get_seed()
+
+    ds.config.set_seed(200)
+    dataset = ds.GeneratorDataset(small_dataset, column_names=["col1"], shuffle=shuffle, num_samples=num_samples,
+                                  num_shards=None, shard_id=None)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item == dataset[index]
+        index += 1
+    ds.config.set_seed(origin_seed)
+
+
+def test_generator_dataset_getitem_success_sampler():
+    """
+    Feature: GeneratorDataset random access
+    Description: Test combinations of GeneratorDataset parameters [shuffle/sampler]
+    Expectation: SUCCESS
+    """
+    small_dataset = DatasetGeneratorSmall()
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(200)
+
+    weights = [0.9, 0.01, 0.4, 0.8, 0.1, 0.3]
+    sampler = ds.WeightedRandomSampler(weights, 4)
+    dataset = ds.GeneratorDataset(small_dataset, column_names=["col1"], shuffle=None, sampler=sampler)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item == dataset[index]
+        index += 1
+    ds.config.set_seed(origin_seed)
+
+    # Test the source dataset is a list object.
+    dataset = ds.GeneratorDataset([1, 2, 3, 4, 5], column_names=["col1"], shuffle=False)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item[0] == dataset[index]
+        index += 1
+
+
+def test_generator_dataset_getitem_exception():
+    """
+    Feature: GeneratorDataset random access exception
+    Description: Test the exception to GeneratorDataset random access
+    Expectation: Success throw exception
+    """
+    small_dataset = DatasetGeneratorSmall()
+
+    # Test source dataset do not have "__getitem__" function.
+    with pytest.raises(RuntimeError, match="Dataset don't support randomized access."):
+        dataset = ds.GeneratorDataset(source=generator_1d, column_names=["col1"], shuffle=False)
+        _ = dataset[0]
+
+    # Test the number of input indexes exceeds the number of samples
+    dataset = ds.GeneratorDataset(source=small_dataset, column_names=["col1"], shuffle=False)
+    with pytest.raises(RuntimeError, match=re.escape("Index [8] exceeded the number of data samples.")):
+        _ = dataset[8]
+
+    # Test the input index is an abnormal value.
+    dataset = ds.GeneratorDataset(source=small_dataset, column_names=["col1"], shuffle=False)
+    err_info = "Argument index with value x is not of type [<class 'int'>], but got <class 'str'>."
+    with pytest.raises(TypeError, match=re.escape(err_info)):
+        _ = dataset["x"]
+
+    # Test the input index is a negative number
+    with pytest.raises(RuntimeError) as err_info:
+        dataset = ds.GeneratorDataset(source=small_dataset, column_names=["col1"], shuffle=False)
+        _ = dataset[-1]
+        assert "Index [-1] can not be a negative number." in str(err_info.value)
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -2837,3 +2949,7 @@ if __name__ == "__main__":
     test_generator_with_generator_object_iterated_multi_times()
     test_generator_with_seed_and_multiprocessing_mode()
     test_release_generator_dataset_iter(1)
+    test_generator_dataset_getitem_success_distributed_sampler(None, True)
+    test_generator_dataset_getitem_success_other_sampler(None, True)
+    test_generator_dataset_getitem_success_sampler()
+    test_generator_dataset_getitem_exception()

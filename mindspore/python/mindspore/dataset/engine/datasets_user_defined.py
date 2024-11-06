@@ -19,6 +19,7 @@ After declaring the dataset object, you can further apply dataset operations
 (e.g. filter, skip, concat, map, batch) on it.
 """
 import builtins
+import copy
 import errno
 import itertools
 import math
@@ -50,6 +51,7 @@ from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multipro
     get_enable_watchdog, get_debug_mode, get_seed, set_seed
 from ..core.datatypes import mstypelist_to_detypelist
 from ..core.py_util_helpers import ExceptionHandler
+from ..core.validator_helpers import type_check
 from ..transforms import transforms
 
 
@@ -906,6 +908,26 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         if id(self) in memodict:
             return memodict[id(self)]
         return self.__safe_deepcopy__(memodict, exclude=("source", "__transfer_dataset__"))
+
+    def __getitem__(self, index):
+        type_check(index, (int,), "index")
+        if not hasattr(self.source, "__getitem__"):
+            raise RuntimeError("Dataset don't support randomized access.")
+        if not hasattr(self, "generator_op"):
+            dataset = copy.deepcopy(self)
+            self.prepared_source = _generator_fn_wrapper(_cpp_sampler_fn, self.source)
+            if self.schema is None:
+                dataset.generator_node = cde.GeneratorNode(self.prepared_source, self.column_names, self.column_types,
+                                                           self.source_len, self.sampler, 1, None)
+            else:
+                schema = self.schema
+                if isinstance(schema, Schema):
+                    schema = self.schema.cpp_schema
+                dataset.generator_node = cde.GeneratorNode(self.prepared_source, schema, self.column_names,
+                                                           self.column_types, self.source_len, self.sampler, 1, None)
+            self.generator_op = dataset.generator_node.Build()
+        sample_id = self.generator_op.GetMappedIndex(index)
+        return self.source[sample_id]
 
     def is_shuffled(self):
         if self.sampler:
