@@ -111,7 +111,7 @@ check_int_const = validator.check_is_int
 check_non_negative_float_const = validator.check_non_negative_float
 check_string_const = constexpr(validator.check_string)
 
-generator_step_ = Tensor(1, mstype.int64)
+generator_step_ = Tensor(12, mstype.int64)
 
 
 def adaptive_avg_pool2d(input, output_size):

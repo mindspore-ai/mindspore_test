@@ -52,7 +52,7 @@ randn_ = Randn()
 randn_like_ = RandnLike()
 randint_ = RandInt()
 randint_like_ = RandIntLike()
-generator_step_ = Tensor(10, mstype.int64)
+generator_step_ = Tensor(12, mstype.int64)
 
 
 @constexpr
