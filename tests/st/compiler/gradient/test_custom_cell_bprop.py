@@ -27,6 +27,7 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore import ops
 from mindspore._extends import cell_attr_register
+from mindspore._extends.parse import compile_config
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
@@ -373,11 +374,12 @@ class MulAddWithWrongOutputNum(nn.Cell):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_num():
-    context.set_context(check_bprop=True)
+    compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputNum()
     with pytest.raises(ValueError):
         grad_all(mul_add)(mutable(1), 2)
         _pynative_executor.sync()
+    compile_config.CHECK_BPROP = ''
 
 
 class MulAddWithWrongOutputType(nn.Cell):
@@ -390,11 +392,12 @@ class MulAddWithWrongOutputType(nn.Cell):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_type():
-    context.set_context(check_bprop=True)
+    compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputType()
     with pytest.raises(TypeError):
         grad_all(mul_add)(1, Tensor(np.ones([2, 2])))
         _pynative_executor.sync()
+    compile_config.CHECK_BPROP = ''
 
 
 class MulAddWithWrongOutputShape(nn.Cell):
@@ -411,11 +414,12 @@ class MulAddWithWrongOutputShape(nn.Cell):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_grad_mul_add_with_wrong_output_shape():
-    context.set_context(check_bprop=True)
+    compile_config.CHECK_BPROP = 1
     mul_add = MulAddWithWrongOutputShape()
     with pytest.raises(ValueError):
         grad_all(mul_add)(1, Tensor(np.ones([2, 2])))
         _pynative_executor.sync()
+    compile_config.CHECK_BPROP = ''
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

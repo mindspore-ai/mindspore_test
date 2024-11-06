@@ -103,7 +103,8 @@ mindspore.set_context
           当网络结构复杂时将 `save_graphs` 属性设为 ``2`` 或者 ``3`` 时可能会出现耗时过长的情况。如需要快速定位问题，可先设置 `save_graphs` 属性为 ``1`` 。
 
           当 `save_graphs` 属性设为 ``1`` 、 ``2`` 、 ``3`` 或者 ``True`` 时， `save_graphs_path` 属性用于设置中间编译图的存储路径。默认情况下，计算图保存在当前目录下。
-        - **save_graphs_path** (str) - 表示保存计算图的路径。默认值： ``"."`` 。如果指定的目录不存在，系统将自动创建该目录。在分布式训练中，图形将被保存到 `save_graphs_path/rank_${rank_id}/` 目录下。 `rank_id` 为集群中当前设备的ID。
+          此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_SAVE_GRAPHS` 替代。
+        - **save_graphs_path** (str) - 表示保存计算图的路径。默认值： ``"."`` 。如果指定的目录不存在，系统将自动创建该目录。在分布式训练中，图形将被保存到 `save_graphs_path/rank_${rank_id}/` 目录下。 `rank_id` 为集群中当前设备的ID。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_SAVE_GRAPHS_PATH` 替代。
         - **deterministic** (str) - 表示是否使能算子确定性运行模式。值必须在['ON','OFF']范围内，默认值： ``'OFF'`` 。
 
           - ON：开启算子确定性运行模式。
@@ -128,11 +129,11 @@ mindspore.set_context
             - ``"1"``: 设置为子图调优。
             - ``"2"``: 设置为算子调优。
 
-        - **check_bprop** (bool) - 表示是否检查反向传播节点，以确保反向传播节点输出的shape和数据类型与输入参数相同。默认值： ``False`` 。
-        - **max_call_depth** (int) - 指定函数调用的最大深度。其值必须为正整数。默认值： ``1000`` 。当嵌套Cell太深或子图数量太多时，需要设置 `max_call_depth` 参数。系统最大堆栈深度应随着 `max_call_depth` 的调整而设置为更大的值，否则可能会因为系统堆栈溢出而引发 "core dumped" 异常。
-        - **grad_for_scalar** (bool) - 表示是否获取标量梯度。默认值： ``False`` 。当 `grad_for_scalar` 设置为True时，则可以导出函数的标量输入。由于后端目前不支持伸缩操作，所以该接口只支持在前端可推演的简单操作。
-        - **enable_compile_cache** (bool) - 表示是否加载或者保存前端编译的图。当 `enable_compile_cache` 被设置为True时，在第一次执行的过程中，一个硬件无关的编译缓存会被生成并且导出为一个MINDIR文件。当该网络被再次执行时，如果 `enable_compile_cache` 仍然为True并且网络脚本没有被更改，那么这个编译缓存会被加载。注意目前只支持有限的Python脚本更改的自动检测，这意味着可能有正确性风险。默认值： ``False`` 。当前不支持编译后大于2G的图。这是一个实验特性，可能会被更改或者删除。
-        - **compile_cache_path** (str) - 保存编译缓存的路径。默认值： ``"."`` 。如果目录不存在，系统会自动创建这个目录。缓存会被保存到如下目录： `compile_cache_path/rank_${rank_id}/` 。 `rank_id` 是集群上当前设备的ID。
+        - **check_bprop** (bool) - 表示是否检查反向传播节点，以确保反向传播节点输出的shape和数据类型与输入参数相同。默认值： ``False`` 。此参数将被弃用，将在后续版本中删除。
+        - **max_call_depth** (int) - 指定函数调用的最大深度。其值必须为正整数。默认值： ``1000`` 。当嵌套Cell太深或子图数量太多时，需要设置 `max_call_depth` 参数。系统最大堆栈深度应随着 `max_call_depth` 的调整而设置为更大的值，否则可能会因为系统堆栈溢出而引发 "core dumped" 异常。此参数将被弃用，将在后续版本中删除，请使用 `mindspore.set_recursion_limit()` 接口替代。
+        - **grad_for_scalar** (bool) - 表示是否获取标量梯度。默认值： ``False`` 。当 `grad_for_scalar` 设置为True时，则可以导出函数的标量输入。由于后端目前不支持伸缩操作，所以该接口只支持在前端可推演的简单操作。此参数将被弃用，将在后续版本中删除，请使用张量求导的方式。
+        - **enable_compile_cache** (bool) - 表示是否加载或者保存图编译缓存。当 `enable_compile_cache` 被设置为True时，在第一次执行的过程中，一个编译缓存会被生成并且导出为一个MINDIR文件。当该网络被再次执行时，如果 `enable_compile_cache` 仍然为True并且网络脚本没有被更改，那么这个编译缓存会被加载。注意目前只支持有限的Python脚本更改的自动检测，这意味着可能有正确性风险。默认值： ``False`` 。当前不支持编译后大于2G的图。这是一个实验特性，可能会被更改或者删除。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_ENABLE` 替代。
+        - **compile_cache_path** (str) - 保存编译缓存的路径。默认值： ``"."`` 。如果目录不存在，系统会自动创建这个目录。缓存会被保存到如下目录： `compile_cache_path/rank_${rank_id}/` 。 `rank_id` 是集群上当前设备的ID。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_COMPILER_CACHE_PATH` 替代。
         - **inter_op_parallel_num** (int) - 算子间并行数控制。 默认值为 ``0`` ，表示由框架默认指定。
         - **runtime_num_threads** (int) - 运行时actor和CPU算子核使用的线程池线程数，必须大于等于 ``0`` 。默认值为 ``30`` ，如果同时运行多个进程，应将该值设置得小一些，以避免线程争用。如果设置为1，则无法使能运行时异步流水能力，可能会影响执行性能。此参数将被弃用，将在后续版本中删除。请使用接口 :func:`mindspore.device_context.cpu.op_tuning.threads_num` 代替。
         - **disable_format_transform** (bool) - 表示是否取消NCHW到NHWC的自动格式转换功能。当fp16的网络性能不如fp32的时，可以设置 `disable_format_transform` 为 ``True`` ，以尝试提高训练性能。默认值： ``False`` 。
@@ -231,6 +232,7 @@ mindspore.set_context
           - ``RELEASE`` : 正常场景下使用，一些调试信息会被丢弃以获取一个较好的编译性能。
           - ``DEBUG`` : 当错误发生时，用来调试，在编译过程中，更多的调试信息会被记录下来。
 
+          此参数将被弃用，将在后续版本中删除。
         - **gpu_config** (dict) - 设置GPU硬件平台专用的参数，默认不设置。
           目前只支持GPU硬件平台上设置conv_fprop_algo、conv_dgrad_algo、conv_wgrad_algo、conv_allow_tf32和matmul_allow_tf32参数。
 

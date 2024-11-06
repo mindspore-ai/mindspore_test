@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
+import os
 from tests.st.utils import test_utils
-
+from tests.mark_utils import arg_mark
 from mindspore import Tensor
 import mindspore.context as context
 from mindspore.ops import auto_generate as P
 from mindspore.common import dtype as mstype
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -35,7 +34,13 @@ def test_cholesky_cpu():
     Description: Test cholesky cpu kernel for Graph and PyNative modes.
     Expectation: the result match with expected result.
     """
-    context.set_context(mode=context.GRAPH_MODE, device_target="CPU", precompile_only=True)
+    reserved_env = os.getenv('MS_DEV_PRECOMPILE_ONLY')
+    os.environ['MS_DEV_PRECOMPILE_ONLY'] = '1'
+    context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     x = Tensor([[1.0, 1.0], [1.0, 2.0]], mstype.float32)
     output = cholesky_forward_func(x, True)
     assert output is None
+    if reserved_env is None:
+        os.unsetenv('MS_DEV_PRECOMPILE_ONLY')
+    else:
+        os.environ['MS_DEV_PRECOMPILE_ONLY'] = reserved_env

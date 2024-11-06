@@ -21,6 +21,7 @@ from mindspore.ops import functional as F, composite as C, operations as P
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.common.tensor import Tensor
+from mindspore.common import set_recursion_limit
 import mindspore.ops as ops
 import mindspore.nn as nn
 import mindspore.common.dtype as mstype
@@ -355,7 +356,7 @@ def thor(net, learning_rate, damping, momentum, weight_decay=0.0, loss_scale=1.0
         ...                                                 amp_level="O2", keep_batchnorm_fp32=False)
 
     """
-    context.set_context(max_call_depth=10000)
+    set_recursion_limit(10000)
     ConvertNetUtils().convert_to_thor_net(net)
     if context.get_context("device_target") == "Ascend":
         return ThorAscend(net, learning_rate, damping, momentum, weight_decay, loss_scale, batch_size, decay_filter,

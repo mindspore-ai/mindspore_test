@@ -175,6 +175,7 @@ mindspore
     mindspore.constexpr
     mindspore.lazy_inline
     mindspore.no_inline
+    mindspore.set_recursion_limit
 
 工具
 -----

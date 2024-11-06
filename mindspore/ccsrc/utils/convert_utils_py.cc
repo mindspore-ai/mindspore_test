@@ -56,7 +56,8 @@ bool ContainsWeights(const py::tuple &grads) {
 
 void check_bprop_input_grads(const py::tuple &py_args, const py::tuple &grads, const std::string &bprop_cls_name,
                              int filter_args_size) {
-  if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_CHECK_BPROP_FLAG)) {
+  if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_CHECK_BPROP_FLAG) &&
+      common::GetCompileConfig("CHECK_BPROP") != "1") {
     return;
   }
   if (grads.size() != py_args.size() - filter_args_size) {

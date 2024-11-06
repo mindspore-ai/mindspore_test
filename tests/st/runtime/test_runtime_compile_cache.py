@@ -100,8 +100,9 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
 
     os.environ['MS_DEV_RUNTIME_CONF'] = "memory_statistics:True,compile_statistics:True,backend_compile_cache:True"
     # First run without compile cache
-    cmd_first = f"export GLOG_v=1; python " + temp_file + " '" \
-        + cache_path + "' > " + log_file_name_first + " 2>&1"
+    cmd_first = f"export GLOG_v=1; export MS_COMPILER_CACHE_ENABLE=1; " \
+                + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, temp_file,
+                                                                                 log_file_name_first)
     subprocess.check_output(cmd_first, shell=True)
     assert os.path.exists(log_file_name_first)
     assert os.path.exists(cache_path)
@@ -130,8 +131,9 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     assert check_hash_file(cache_path, first_run_hash)
 
     # Second run with compile cache
-    cmd_second = f"export GLOG_v=1; python " + temp_file + " '" \
-        + cache_path + "' > " + log_file_name_second + " 2>&1"
+    cmd_second = f"export GLOG_v=1; export MS_COMPILER_CACHE_ENABLE=1; " \
+                 + "export MS_COMPILER_CACHE_PATH={}; python {} > {} 2>&1".format(cache_path, temp_file,
+                                                                                  log_file_name_second)
     subprocess.check_output(cmd_second, shell=True)
     assert os.path.exists(log_file_name_second)
     with open(log_file_name_second, "r") as f_second:
