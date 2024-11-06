@@ -380,6 +380,9 @@ from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
 # 610
 from mindspore.ops.function.math_func import nan_to_num
 
+# 664
+from mindspore.ops.function.array_func import meshgrid_ext as meshgrid
+
 # 695
 from mindspore.ops.auto_generate import count_nonzero
 
@@ -2099,6 +2102,9 @@ __all__ = [
 
     # 610
     'nan_to_num',
+
+    # 664
+    'meshgrid',
 
     # 695
     'count_nonzero',

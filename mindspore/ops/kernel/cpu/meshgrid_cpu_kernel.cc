@@ -18,13 +18,14 @@
 #include <algorithm>
 #include <functional>
 #include <string>
-#include "mindspore/ops/infer/meshgrid.h"
 #include "include/common/factory/ms_factory.h"
+#include "infer/ops_func_impl/meshgrid.h"
+#include "op_def/op_enum.h"
 
 namespace mindspore {
 namespace kernel {
 bool MeshgridCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  if (inputs.size() != outputs.size()) {
+  if (inputs.size() - 1 != outputs.size()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', input and output size must be equal, but get " << inputs.size()
                   << " and " << outputs.size();
     return false;
@@ -42,10 +43,10 @@ bool MeshgridCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const
   }
   kernel_func_ = func_list_[pair.second].second;
 
-  auto indexing = GetValue<std::string>(primitive_->GetAttr(ops::kIndexing));
-  if (indexing == "xy") {
+  auto indexing = LongToInt(inputs.back()->GetValueWithCheck<int64_t>());
+  if (indexing == ops::Indexing::XY) {
     swap_indexing_ = true;
-  } else if (indexing == "ij") {
+  } else if (indexing == ops::Indexing::IJ) {
     swap_indexing_ = false;
   } else {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', the value of 'indexing' must be \"xy\" or \"ij\", but get "
@@ -66,8 +67,10 @@ int MeshgridCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   input_shape_.clear();
   output_shape_.clear();
 
+  auto tensors_inputs = inputs;
+  tensors_inputs.pop_back();
   // The input tensor must be 1-D tensor.
-  for (auto &input : inputs) {
+  for (auto &input : tensors_inputs) {
     auto shape = input->GetShapeVector();
     if (shape.size() != 1) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "', each input tensor shape size must be 1, but get " << shape.size();
@@ -126,12 +129,12 @@ bool MeshgridCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &input
   };
   ParallelLaunchAutoSearch(task, output_element_, this, &parallel_search_info_);
 
-  if (inputs.size() != outputs.size()) {
+  if (inputs.size() - 1 != outputs.size()) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', input and output size must be equal, but get " << inputs.size()
                   << " and " << outputs.size();
     return false;
   }
-  for (size_t i = 0; i < inputs.size(); i++) {
+  for (size_t i = 0; i < inputs.size() - 1; i++) {
     auto input_index = (i <= 1 && swap_indexing_ == true) ? 1 - i : i;
     input_shape_[input_index] = output_shape_[input_index];
     auto *input = reinterpret_cast<T *>(inputs[i]->device_ptr());
@@ -145,33 +148,89 @@ bool MeshgridCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &input
 }
 
 std::vector<std::pair<KernelAttr, MeshgridCpuKernelMod::MeshgridFunc>> MeshgridCpuKernelMod::func_list_ = {
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeBool),
    &MeshgridCpuKernelMod::LaunchKernel<bool>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt8).AddOutputAttr(kNumberTypeUInt8),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt8)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt8),
    &MeshgridCpuKernelMod::LaunchKernel<uint8_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt16).AddOutputAttr(kNumberTypeUInt16),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt16),
    &MeshgridCpuKernelMod::LaunchKernel<uint16_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt32).AddOutputAttr(kNumberTypeUInt32),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt32),
    &MeshgridCpuKernelMod::LaunchKernel<uint32_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt64).AddOutputAttr(kNumberTypeUInt64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt64),
    &MeshgridCpuKernelMod::LaunchKernel<uint64_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt8)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt8),
    &MeshgridCpuKernelMod::LaunchKernel<int8_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeInt16),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt16),
    &MeshgridCpuKernelMod::LaunchKernel<int16_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt32),
    &MeshgridCpuKernelMod::LaunchKernel<int32_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt64),
    &MeshgridCpuKernelMod::LaunchKernel<int64_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeFloat16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat16),
    &MeshgridCpuKernelMod::LaunchKernel<float16>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat32),
    &MeshgridCpuKernelMod::LaunchKernel<float>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat64),
    &MeshgridCpuKernelMod::LaunchKernel<double>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kNumberTypeComplex64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeComplex64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeComplex64),
    &MeshgridCpuKernelMod::LaunchKernel<complex64>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeComplex128).AddOutputAttr(kNumberTypeComplex128),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeComplex128)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeComplex128),
    &MeshgridCpuKernelMod::LaunchKernel<complex128>}};
 
 std::vector<KernelAttr> MeshgridCpuKernelMod::GetOpSupport() {

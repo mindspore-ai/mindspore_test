@@ -34,9 +34,9 @@ from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_util
 from mindspore.ops.operations._sequence_ops import TensorToList
 from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, Chunk, UniqueDim, \
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue
-from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor
+from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl
 from mindspore.ops.operations.array_ops import (
     UniqueConsecutive,
     MatrixDiagV3,
@@ -4032,6 +4032,91 @@ def matrix_set_diag(x, diagonal, k=0, align="RIGHT_LEFT"):  # pylint: disable=re
         k = cast_(k, mstype.int32)
     return matrix_set_diag_v3_op(x, diagonal, k)
 
+def meshgrid_ext(*tensors, indexing='ij'):
+    """
+    Generates coordinate matrices from given coordinate tensors.
+
+    Given N one-dimensional coordinate tensors, returns a tuple outputs of N N-D
+    coordinate tensors for evaluating expressions on an N-D grid.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        tensors (List[Tensor]): List of 1-D tensors.
+            The length of tensors should be greater than 1. The data type is Number.
+
+    Keyword Args:
+        indexing (str, optional): Cartesian ('xy', default) or
+            matrix ('ij') indexing of output. Valid options: xy' or ``'ij'``. In the 2-D case with
+            inputs of length `M` and `N`, for ``'xy'`` indexing, the shape of outputs is :math:`(N, M)`
+            for ``'ij'`` indexing, the shape of outputs is :math:`(M, N)`. In the 3-D
+            case with inputs of length `M`, `N` and `P`, for ``'xy'`` indexing, the shape of outputs is
+            :math:`(N, M, P)` and for ``'ij'`` indexing, the shape of outputs is :math:`(M, N, P)`.
+            Default: ``'ij'`` .
+
+    Returns:
+        Tensors, a Tuple of N N-D Tensor objects. The data type is the same with the Inputs.
+
+    Raises:
+        TypeError: If `indexing` is not a str or `tensors` is not a tuple.
+        ValueError: If `indexing` is neither ``'xy'`` nor ``'ij'``.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> x = Tensor(np.array([1, 2, 3, 4]).astype(np.int32))
+        >>> y = Tensor(np.array([5, 6, 7]).astype(np.int32))
+        >>> z = Tensor(np.array([8, 9, 0, 1, 2]).astype(np.int32))
+        >>> output = ops.meshgrid(x, y, z, indexing='xy')
+        >>> print(output)
+        (Tensor(shape=[3, 4, 5], dtype=Int32, value=
+         [[[1, 1, 1, 1, 1],
+           [2, 2, 2, 2, 2],
+           [3, 3, 3, 3, 3],
+           [4, 4, 4, 4, 4]],
+          [[1, 1, 1, 1, 1],
+           [2, 2, 2, 2, 2],
+           [3, 3, 3, 3, 3],
+           [4, 4, 4, 4, 4]],
+          [[1, 1, 1, 1, 1],
+           [2, 2, 2, 2, 2],
+           [3, 3, 3, 3, 3],
+           [4, 4, 4, 4, 4]]]),
+         Tensor(shape=[3, 4, 5], dtype=Int32, value=
+         [[[5, 5, 5, 5, 5],
+           [5, 5, 5, 5, 5],
+           [5, 5, 5, 5, 5],
+           [5, 5, 5, 5, 5]],
+          [[6, 6, 6, 6, 6],
+           [6, 6, 6, 6, 6],
+           [6, 6, 6, 6, 6],
+           [6, 6, 6, 6, 6]],
+          [[7, 7, 7, 7, 7],
+           [7, 7, 7, 7, 7],
+           [7, 7, 7, 7, 7],
+           [7, 7, 7, 7, 7]]]),
+         Tensor(shape=[3, 4, 5], dtype=Int32, value=
+         [[[8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2]],
+          [[8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2]],
+          [[8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2],
+           [8, 9, 0, 1, 2]]]))
+    """
+    if indexing is None:
+        indexing = 'ij'
+    return meshgrid_impl(tensors, indexing)
 
 def meshgrid(*inputs, indexing='xy'):
     """
@@ -4112,7 +4197,7 @@ def meshgrid(*inputs, indexing='xy'):
            [8, 9, 0, 1, 2],
            [8, 9, 0, 1, 2]]]))
     """
-    meshgrid_op = _get_cache_prim(P.Meshgrid)(indexing)
+    meshgrid_op = _get_cache_prim(Meshgrid)(indexing)
     return meshgrid_op(inputs)
 
 

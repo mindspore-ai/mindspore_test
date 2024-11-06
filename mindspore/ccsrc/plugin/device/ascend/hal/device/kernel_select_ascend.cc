@@ -728,6 +728,7 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
   if (iter != kIsEnableAclnnMap.end()) {
     return iter->second;
   }
+
   if (kernel::IsEnabledAclnnDispatch(op_name)) {
     if (!kernel::IsRegisteredAclnnOp(op_name)) {
       if (kernel::IsViewOp(op_name)) {

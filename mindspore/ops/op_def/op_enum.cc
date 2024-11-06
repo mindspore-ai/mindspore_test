@@ -167,6 +167,9 @@ REG_STRING_TO_ENUM_COMMON(group, StrToEnumMap{{"SYNC_BN_GROUP0", Group::SYNC_BN_
 REG_STRING_TO_ENUM_COMMON(interpolation_mode, StrToEnumMap{{"BILINEAR", InterpolationMode::BILINEAR},
                                                            {"NEAREST", InterpolationMode::NEAREST}})
 
+// indexing
+REG_STRING_TO_ENUM_COMMON(indexing, StrToEnumMap{{"IJ", Indexing::IJ}, {"XY", Indexing::XY}})
+
 // NormMode
 StrToEnumMap StrToNormModeMap = {
   {"BACKWARD", NormMode::BACKWARD}, {"FORWARD", NormMode::FORWARD}, {"ORTHO", NormMode::ORTHO}};

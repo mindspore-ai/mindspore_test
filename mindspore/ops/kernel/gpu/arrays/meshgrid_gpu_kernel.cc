@@ -16,18 +16,19 @@
 #include "kernel/gpu/arrays/meshgrid_gpu_kernel.h"
 #include <algorithm>
 #include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/infer/meshgrid.h"
+#include "infer/ops_func_impl/meshgrid.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/math/broadcast_public.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/elementwise/eltwise_ops_impl.cuh"
+#include "op_def/op_enum.h"
 
 namespace mindspore {
 namespace kernel {
 bool MeshgridGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  std::string indexing = GetValue<std::string>(primitive_->GetAttr("indexing"));
-  if (indexing == "xy") {
+  auto indexing = LongToInt(inputs.back()->GetValueWithCheck<int64_t>());
+  if (indexing == ops::Indexing::XY) {
     swap_indexing_ = true;
-  } else if (indexing == "ij") {
+  } else if (indexing == ops::Indexing::IJ) {
     swap_indexing_ = false;
   } else {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', the value of 'indexing' must be \"xy\" or \"ij\", but got "
@@ -57,7 +58,7 @@ int MeshgridGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   input_shapes_.clear();
   input_size_ = 1;
   input_count_ = static_cast<size_t>(inputs.size());
-  for (size_t i = 0; i < input_count_; i++) {
+  for (size_t i = 0; i < input_count_ - 1; i++) {
     auto input_shape = inputs[i]->GetShapeVector();
     if (input_shape.size() < 1) {
       MS_LOG(ERROR) << "For '" << kernel_name_ << "', the dimension of input[" << i << "] cannot be less than 1, "
@@ -80,10 +81,10 @@ int MeshgridGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     return KRET_OK;
   }
 
-  if (output_count_ != input_count_) {
+  if (output_count_ != input_count_ - 1) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', the number of inputs and outputs must be the same, but got the number of inputs: "
-                  << input_count_ << ", the number of outputs: " << output_count_;
+                  << input_count_ - 1 << ", the number of outputs: " << output_count_;
     return KRET_RESIZE_FAILED;
   }
 
@@ -127,33 +128,89 @@ template <typename T>
 using Complex = mindspore::utils::Complex<T>;
 
 std::vector<std::pair<KernelAttr, MeshgridGpuKernelMod::MeshgridFunc>> MeshgridGpuKernelMod::func_list_ = {
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeBool)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeBool),
    &MeshgridGpuKernelMod::LaunchKernel<bool>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeFloat16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat16),
    &MeshgridGpuKernelMod::LaunchKernel<half>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeFloat32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat32),
    &MeshgridGpuKernelMod::LaunchKernel<float>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeFloat64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeFloat64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeFloat64),
    &MeshgridGpuKernelMod::LaunchKernel<double>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt8).AddOutputAttr(kNumberTypeUInt8),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt8)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt8),
    &MeshgridGpuKernelMod::LaunchKernel<uint8_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt16).AddOutputAttr(kNumberTypeUInt16),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt16),
    &MeshgridGpuKernelMod::LaunchKernel<uint16_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt32).AddOutputAttr(kNumberTypeUInt32),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt32),
    &MeshgridGpuKernelMod::LaunchKernel<uint32_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeUInt64).AddOutputAttr(kNumberTypeUInt64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeUInt64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeUInt64),
    &MeshgridGpuKernelMod::LaunchKernel<uint64_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt8)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt8),
    &MeshgridGpuKernelMod::LaunchKernel<int8_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeInt16),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt16)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt16),
    &MeshgridGpuKernelMod::LaunchKernel<int16_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt32)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt32),
    &MeshgridGpuKernelMod::LaunchKernel<int32_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeInt64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeInt64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeInt64),
    &MeshgridGpuKernelMod::LaunchKernel<int64_t>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kNumberTypeComplex64),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeComplex64)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeComplex64),
    &MeshgridGpuKernelMod::LaunchKernel<Complex<float>>},
-  {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeComplex128).AddOutputAttr(kNumberTypeComplex128),
+  {KernelAttr()
+     .AddAllSameAttr(true)
+     .AddInputAttr(kNumberTypeComplex128)
+     .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
+     .AddOutputAttr(kNumberTypeComplex128),
    &MeshgridGpuKernelMod::LaunchKernel<Complex<double>>},
 };
 

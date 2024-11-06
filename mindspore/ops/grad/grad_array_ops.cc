@@ -29,6 +29,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/ms_context.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "op_def/op_enum.h"
 
 namespace mindspore::expander::bprop {
 namespace {
@@ -589,6 +590,26 @@ NodePtrList ConcatBpropStatic(BpropBuilder *ib, const NodePtr &dout, const Shape
     res.push_back(slice_out);
   }
   return {ib->MakeTuple(res)};
+}
+
+ShapeArray MeshgridDimsCal(const ShapeArray &input_shapes, ops::Indexing indexing_value) {
+  ShapeArray res;
+  auto single_rank = input_shapes.size();
+  for (size_t i = 0; i < single_rank; ++i) {
+    ShapeVector single_shape;
+    for (size_t j = 0; j < single_rank; ++j) {
+      if (i == j) {
+        continue;
+      }
+      single_shape.push_back(j);
+    }
+    res.push_back(single_shape);
+  }
+
+  if (indexing_value == ops::Indexing::XY) {
+    std::swap(res[kIndex0], res[kIndex1]);
+  }
+  return res;
 }
 
 NodePtrList StackBpropFunc(BpropBuilder *ib) {
@@ -1464,6 +1485,116 @@ REG_BPROP_BUILDER("Concat").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   // Because there are no ListToTuple, and list type is ok for now.....
   auto dyn_list = ib->TupleGetItem(while_block, kIndex4);
   return {dyn_list, ib->OutZeros(axis_node)};
+});
+
+DEF_PURE_SHAPE_CALC(g_meshgrid)
+  .SetCalc([](const ShapeArray &inputs, const ElemPosIdx &pos_idx) -> ShapeArray {
+    auto indexing = inputs[pos_idx[kIndex1].front()][kIndex0];
+    auto indexing_value = static_cast<ops::Indexing>(indexing);
+    ShapeArray input_shapes;
+    input_shapes.reserve(pos_idx[kIndex0].size());
+    for (auto idx : pos_idx[kIndex0]) {
+      input_shapes.push_back(inputs[idx]);
+    }
+    return MeshgridDimsCal(input_shapes, indexing_value);
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs,
+               const ElemPosIdx &pos_idx) -> InferOutputInfo {
+    auto x = inputs[0];
+    auto x_rank = IsDynamicRank(x) ? abstract::TensorShape::kShapeDimAny : SizeToLong(x.size());
+    if (unknown_inputs.count(0) != 0) {
+      return std::make_pair(ShapeVector{x_rank}, true);
+    }
+
+    auto input_num = pos_idx[0].size();
+    return std::make_pair(ShapeVector(input_num, x_rank), false);
+  });
+
+REG_BPROP_BUILDER("Meshgrid").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto indexing_node = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+
+  auto x_abs = x->abstract();
+  MS_EXCEPTION_IF_NULL(x_abs);
+  auto base_shape = x_abs->GetShape();
+  MS_EXCEPTION_IF_NULL(base_shape);
+  auto x_is_dyn_seq = base_shape->isa<abstract::DynamicSequenceShape>();
+  if (!x_is_dyn_seq) {
+    auto input_shapes = ib->GetShapes(x);
+    if (input_shapes.empty()) {
+      MS_EXCEPTION(ValueError) << "For gradient of 'Meshgrid', 'input' can not be empty";
+    }
+    if (!std::any_of(input_shapes.cbegin(), input_shapes.cend(),
+                     [](const std::vector<int64_t> &shape) { return IsDynamic(shape); })) {
+      auto indexing_opt = GetScalarValue<int64_t>(indexing_node->BuildValue());
+      if (indexing_opt.has_value()) {
+        auto indexing_value = indexing_opt.value();
+        auto reduce_dims = MeshgridDimsCal(input_shapes, static_cast<ops::Indexing>(indexing_value));
+        NodePtrList res;
+        for (size_t i = 0; i < input_shapes.size(); ++i) {
+          auto reduce_value = ib->Value(reduce_dims[i]);
+          auto single_dout = ib->TupleGetItem(dout, i);
+          auto sum_out = ib->SumExt(single_dout, reduce_value, ib->Value(false));
+          auto reshape_out = ib->Reshape(sum_out, ib->Value(input_shapes[i]));
+          res.push_back(reshape_out);
+        }
+        return {ib->MakeTuple(res), ib->OutZeros(indexing_node)};
+      }
+    }
+
+    auto reduce_dims = ib->ShapeCalc(g_meshgrid, {x, indexing_node}, {1});
+    auto input_nums = input_shapes.size();
+    if (reduce_dims.size() != input_nums) {
+      MS_LOG(EXCEPTION) << "The number of Meshgrid's ShapeCalc(" << reduce_dims.size() << ") is not equal to input("
+                        << input_nums << ")!";
+    }
+
+    NodePtrList tuple_out;
+    for (size_t i = 0; i < input_nums; ++i) {
+      auto single_dout = ib->TupleGetItem(dout, i);
+      auto sum_out = ib->SumExt(single_dout, reduce_dims[i], ib->Value(false));
+      auto x_shape = ib->Shape(ib->TupleGetItem(x, i));
+      auto reshape_out = ib->Reshape(sum_out, x_shape);
+      tuple_out.push_back(reshape_out);
+    }
+    auto res = ib->MakeTuple(tuple_out);
+    return {res, ib->OutZeros(indexing_node)};
+  }
+
+  // Here the x is a dynamic sequence, so the infer out is a dynamic sequence too!
+  auto reduce_dims = ib->ShapeCalc(g_meshgrid, {x, indexing_node}, {1})[kIndex0];
+  auto first_dout = ib->Shape(ib->TupleGetItem(dout, 0));
+  auto reduce_dim = ib->TupleGetItem(reduce_dims, 0);
+  auto first_sum_out = ib->SumExt(first_dout, reduce_dim, ib->Value(false));
+  auto first_x = ib->TupleGetItem(x, 0);
+  auto first_x_shape = ib->Shape(first_x);
+  auto first_reshape_out = ib->Reshape(first_sum_out, first_x_shape);
+  auto res_list = ib->MakeList({first_reshape_out});
+
+  // Cannot use `auto i = ib->Tensor(1, kInt64);`.
+  // If so, the i will be treat as a const Tensor but variable expected which will be not caught as a while body
+  // parameter.
+  // Here Emit a `ScalarToTensor` to make it a fake-variable-in-logit node.
+  auto i = ib->Emit("ScalarToTensor", {ib->Value<int64_t>(1), ib->Value<int64_t>(kInt64->type_id())});
+  auto len = ib->Emit("ScalarToTensor", {ib->Emit("sequence_len", {x}), ib->Value<int64_t>(kInt64->type_id())});
+  auto while_body = [&x, &dout, &reduce_dims, &i, &res_list](Emitter *e) -> NodePtrList {
+    auto scalar_i = e->Emit("TensorToScalar", {i});
+    auto temp_dout = e->Shape(e->Emit(kTupleGetItemOpName, {dout, scalar_i}));
+    auto single_dims = e->Emit(kTupleGetItemOpName, {reduce_dims, scalar_i});
+    auto sum_out = e->SumExt(temp_dout, single_dims, e->Value(false));
+    auto x_shape = e->Shape(e->Emit(kTupleGetItemOpName, {x, scalar_i}));
+    auto reshape_out = e->Reshape(sum_out, x_shape);
+    auto new_list = e->Emit("ListAppend", {res_list, reshape_out});
+    auto new_i = e->Emit("Add", {i, e->Tensor(1, kInt64)});
+    return {x, dout, reduce_dims, new_i, new_list};
+  };
+  auto cond = ib->Less(i, len);
+  auto while_block = ib->While(cond, while_body, {x, dout, reduce_dims, i, res_list});
+  // The `res_list` is a list, it should return a Tuple type rigorously.
+  // Because there are no ListToTuple, and list type is ok for now.....
+  auto dyn_list = ib->TupleGetItem(while_block, kIndex4);
+  return {dyn_list, ib->OutZeros(indexing_node)};
 });
 
 REG_BPROP_BUILDER("Mvlgamma").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
