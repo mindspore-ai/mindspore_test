@@ -27,7 +27,7 @@ BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
   auto input_x_shape = input_args[0]->GetShape()->GetShapeVector();
-  (void)CheckAndConvertUtils::CheckInteger("rank of input", SizeToLong(input_x_shape.size()), kGreaterThan, 0,
+  (void)CheckAndConvertUtils::CheckInteger("rank of input_x", SizeToLong(input_x_shape.size()), kGreaterThan, 0,
                                            prim_name);
 
   if (IsDynamicRank(input_x_shape)) {
@@ -44,6 +44,8 @@ BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   auto axis_value = axis_value_opt.value();
+  auto input_begin_value = input_begin_value_opt.value();
+  auto input_end_value = input_end_value_opt.value();
   auto x_rank = SizeToLong(input_x_shape.size());
 
   MS_CHECK_VALUE(axis_value >= -x_rank && axis_value < x_rank, "dim value error. dim:" + std::to_string(axis_value) +
@@ -57,31 +59,22 @@ BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,
     return std::make_shared<abstract::TensorShape>(input_x_shape);
   }
 
-  auto step = input_step_value_opt.value();
-  MS_CHECK_VALUE(step > 0, "For primitive [SliceExt]: step value must be positive.");
+  auto input_length = input_end_value - input_begin_value;
 
-  auto start = input_begin_value_opt.value();
-  auto end = input_end_value_opt.value();
-  auto dim_value = x_axis_size;
+  MS_CHECK_VALUE(input_begin_value >= -x_axis_size && input_begin_value <= x_axis_size,
+                 "For primitive [SliceExt]: start value error, start: " + std::to_string(input_begin_value) +
+                   ", start should be in [" + std::to_string(-x_axis_size) + ", " + std::to_string(x_axis_size) + "].");
+  input_begin_value = input_begin_value < 0 ? input_begin_value + x_axis_size : input_begin_value;
+  auto max_length = x_axis_size - input_begin_value;
+  MS_CHECK_VALUE(input_length >= 0 && input_length <= max_length,
+                 "length value error. length: " + std::to_string(input_length) + ", length should be in [0, " +
+                   std::to_string(max_length) + "].");
 
-  start = start < 0 ? start + dim_value : start;
-
-  end = end < 0 ? end + dim_value : end;
-
-  if (start < 0) {
-    start = 0;
-  } else if (start > dim_value) {
-    start = dim_value;
-  }
-
-  if (end < start) {
-    end = start;
-  } else if (end > dim_value) {
-    end = dim_value;
-  }
-
+  input_end_value = input_begin_value + input_length;
+  MS_CHECK_VALUE(input_end_value >= -x_axis_size && input_end_value <= x_axis_size,
+                 "For primitive [SliceExt]: end exceed range");
   auto out_shape = input_x_shape;
-  out_shape[axis_value] = (end - start + step - 1) / step;
+  out_shape[axis_value] = input_end_value - input_begin_value;
 
   return std::make_shared<abstract::Shape>(out_shape);
 }
