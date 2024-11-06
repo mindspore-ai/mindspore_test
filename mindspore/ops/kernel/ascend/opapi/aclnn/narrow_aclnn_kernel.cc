@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/slice_ext_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/narrow_aclnn_kernel.h"
 #include <algorithm>
 #include <vector>
 #include <map>
@@ -27,39 +27,22 @@
 namespace mindspore {
 namespace kernel {
 
-void SliceExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                      const std::vector<KernelTensor *> &outputs) {
+void NarrowAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                    const std::vector<KernelTensor *> &outputs) {
   dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
   start_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  end_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  step_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
+  auto length = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
 
   shape_ = inputs[0]->GetShapeVector();
-  int shape_size = SizeToLong(shape_.size());
-
-  dim_ = dim_ < 0 ? dim_ + shape_size : dim_;
-
-  auto dim_value = shape_[dim_];
-  start_ = start_ < 0 ? start_ + dim_value : start_;
-  end_ = end_ < 0 ? end_ + dim_value : end_;
-
-  if (start_ < 0) {
-    start_ = 0;
-  } else if (start_ > dim_value) {
-    start_ = dim_value;
-  }
-
-  if (end_ < start_) {
-    end_ = start_;
-  } else if (end_ > dim_value) {
-    end_ = dim_value;
-  }
+  dim_ = dim_ < 0 ? dim_ + shape_.size() : dim_;
+  start_ = start_ < 0 ? start_ + shape_[dim_] : start_;
+  end_ = start_ + length;
 
   GetWorkspaceForResize(inputs[kIndex0], dim_, start_, end_, step_, outputs[kIndex0]);
 }
 
-bool SliceExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool NarrowAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                          const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   if (start_ == end_) {
     auto output_shape = shape_;
@@ -71,6 +54,6 @@ bool SliceExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(SliceExt, SliceExtAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(Narrow, NarrowAscend);
 }  // namespace kernel
 }  // namespace mindspore
