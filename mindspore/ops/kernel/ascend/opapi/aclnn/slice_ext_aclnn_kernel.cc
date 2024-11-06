@@ -35,25 +35,10 @@ void SliceExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   step_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
 
   shape_ = inputs[0]->GetShapeVector();
-  int shape_size = SizeToLong(shape_.size());
-
-  dim_ = dim_ < 0 ? dim_ + shape_size : dim_;
-
-  auto dim_value = shape_[dim_];
-  start_ = start_ < 0 ? start_ + dim_value : start_;
-  end_ = end_ < 0 ? end_ + dim_value : end_;
-
-  if (start_ < 0) {
-    start_ = 0;
-  } else if (start_ > dim_value) {
-    start_ = dim_value;
-  }
-
-  if (end_ < start_) {
-    end_ = start_;
-  } else if (end_ > dim_value) {
-    end_ = dim_value;
-  }
+  dim_ = dim_ < 0 ? dim_ + shape_.size() : dim_;
+  auto length_value = end_ - start_;
+  start_ = start_ < 0 ? start_ + shape_[dim_] : start_;
+  end_ = start_ + length_value;
 
   GetWorkspaceForResize(inputs[kIndex0], dim_, start_, end_, step_, outputs[kIndex0]);
 }
