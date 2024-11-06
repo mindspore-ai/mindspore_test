@@ -4,13 +4,11 @@ argmax:
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    tensor_method: True
-    mint_func: False
+    interface: tensor
 
   - op_yaml: deprecated/argmax_op.yaml
     py_method: deprecated_tensor_argmax
     Ascend: py_method
     CPU: py_method
     GPU: py_method
-    tensor_method: True
-    mint_func: False
+    interface: tensor

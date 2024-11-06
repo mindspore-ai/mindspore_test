@@ -70,24 +70,27 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_p
             ascend = func_data.get('Ascend', 'aclnn')
             gpu = func_data.get('GPU', 'aclnn')
             cpu = func_data.get('CPU', 'aclnn')
-            tensor_method = func_data.get('tensor_method', True)
-            mint_func = func_data.get('mint_func', False)
-            if tensor_method:
-                tensor_method_proto = TensorFuncProto(func_name=func_name,
-                                                      op_proto=op_proto,
-                                                      py_method=py_method,
-                                                      ascend=ascend,
-                                                      gpu=gpu,
-                                                      cpu=cpu)
-                tensor_method_protos[func_name].append(tensor_method_proto)
-            if mint_func:
-                mint_func_proto = TensorFuncProto(func_name=func_name,
-                                                  op_proto=op_proto,
-                                                  py_method=py_method,
-                                                  ascend=ascend,
-                                                  gpu=gpu,
-                                                  cpu=cpu)
-                mint_func_protos[func_name].append(mint_func_proto)
+
+            interface = func_data.get('interface')
+            if interface is None:
+                raise ValueError(
+                    f"For generating tensor or functional interfaces, field interface must exist. "
+                    f"Op name is {func_name}")
+
+            interface = ', '.join(part.strip() for part in interface.split(','))
+
+            if interface not in {'tensor', 'function', 'tensor, function', 'function, tensor'}:
+                raise ValueError(
+                    f"The value of field 'interface' must be one of 'tensor', 'function', "
+                    f"'tensor, function', or 'function, tensor'. File name is {func_name}.yaml")
+
+            proto = TensorFuncProto(func_name=func_name, op_proto=op_proto,
+                                    py_method=py_method, ascend=ascend, gpu=gpu, cpu=cpu)
+            if 'tensor' in interface:
+                tensor_method_protos[func_name].append(proto)
+            if 'function' in interface:
+                mint_func_protos[func_name].append(proto)
+
     return tensor_method_protos, mint_func_protos, alias_api_mapping
 
 
