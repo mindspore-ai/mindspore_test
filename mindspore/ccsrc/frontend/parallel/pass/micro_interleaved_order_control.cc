@@ -163,6 +163,9 @@ bool ExtractInterLeavedCommNode(const std::vector<CNodePtr> &origin_nodes_topolo
 
 void SetEdgeForDepend(const NodeUsersMap &node_users, const FuncGraphManagerPtr &manager, const CNodePtr &comm_node,
                       const CNodePtr depend_node, bool use_replace) {
+  if (use_replace) {
+    (void)manager->Replace(comm_node, depend_node);
+  }
   const auto &users = node_users.find(comm_node);
   if (users == node_users.end()) {
     return;
@@ -174,11 +177,7 @@ void SetEdgeForDepend(const NodeUsersMap &node_users, const FuncGraphManagerPtr 
     if (!pair.first->cast<CNodePtr>()) {
       continue;
     }
-    if (use_replace) {
-      (void)manager->Replace(comm_node, depend_node);
-    } else {
-      manager->SetEdge(pair.first, pair.second, depend_node);
-    }
+    manager->SetEdge(pair.first, pair.second, depend_node);
   }
 }
 
