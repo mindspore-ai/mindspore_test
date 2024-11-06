@@ -31,6 +31,7 @@
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/acl_tdt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "transform/symbol/acl_symbol.h"
 
 namespace mindspore {
 namespace device {
@@ -295,8 +296,10 @@ size_t AscendTdtQueue::QueryQueueSize() const {
   }
   auto status = CALL_ASCEND_API(acltdtQueryChannelSize, acl_handle_, &size);
   if (status != ACL_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Unable to query real-time size of Mbuf channel: " << channel_name_
-                      << ", error code: " << status;
+    MS_LOG(ERROR) << "Function [acltdtQueryChannelSize] failed. Unable to query real-time size of Mbuf channel:"
+                  << channel_name_ << ", error code: " << status << "\n- Ascend Error Message:\n"
+                  << CALL_ASCEND_API(aclGetRecentErrMsg);
+    MS_LOG(EXCEPTION) << "Device Error.";
   }
   return size;
 }
@@ -330,7 +333,9 @@ DataQueueStatus AscendTdtQueue::Push(std::vector<DataQueueItem> data) {
                       << "transmission channel on the device side. So we force the data transmission channel to stop.";
       return DataQueueStatus::SUCCESS;
     }
-    MS_LOG(EXCEPTION) << "Tdt Send data failed. The details refer to 'Ascend Error Message'.";
+    MS_LOG(ERROR) << "Function [acltdtSendTensor] failed. error code: " << status << "\n- Ascend Error Message:\n"
+                  << CALL_ASCEND_API(aclGetRecentErrMsg);
+    MS_LOG(EXCEPTION) << "Device Error.";
   }
   auto wingman = DataQueueMgr::GetInstance().GetDataQueue(channel_name_);
   if (wingman != nullptr && wingman->IsOpen() && !data.empty()) {
