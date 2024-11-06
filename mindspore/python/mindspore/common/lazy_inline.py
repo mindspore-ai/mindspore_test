@@ -27,6 +27,10 @@ def lazy_inline(fn=None, attrs=None, policy=None):
     Registering the decorator of the built-in function `__init__` of a cell, the decorator
     will add the parameters of `__init__` according to the `attrs` as the attributes of this cell.
 
+    For a detailed description of the function, see `Using the lazy_inline decorator
+    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph_syntax/
+    static_graph_expert_programming.html#using-lazy-inline-decorator>`_ .
+
     .. warning::
         This feature is only supported on Ascend and is not supported on other hardwares.
         The construct parameters must be positional or key word arguments and have not default values.
