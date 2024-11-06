@@ -25,15 +25,9 @@ from tests.mark_utils import arg_mark
 from ..share.utils import match_array, assert_executed_by_graph_mode, assert_no_graph_break
 
 
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
-
-
 context.set_context(mode=context.PYNATIVE_MODE)
 
-jit_cfg = {'compile_with_try': False, 'print_after_all': True}
+jit_cfg = {'compile_with_try': False}
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
