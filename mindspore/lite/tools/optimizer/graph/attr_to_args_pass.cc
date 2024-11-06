@@ -288,8 +288,14 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
 };
 
 constexpr size_t kMatMulInputSizeWithBias = 6;  // primitive, x1, x2, bias, transpose_a, transpose_b
+constexpr size_t kPFAOriginInputSize = 12;
+constexpr size_t kInputSizeTwo = 2;
+constexpr size_t kInputSizeThree = 3;
 constexpr auto kMatMulOpName = "MatMul";
 constexpr auto kMatMulV2OpName = "MatMulV2";
+constexpr auto kSqueezeOpName = "Squeeze";
+constexpr auto kCustomOpName = "Custom";
+constexpr auto kPromptFlashAttentionOpName = "PromptFlashAttention";
 
 void RearrangeBiasForMatMul(const FuncGraphManagerPtr &manager, const CNodePtr &cnode) {
   auto node_inputs = cnode->inputs();
@@ -298,21 +304,58 @@ void RearrangeBiasForMatMul(const FuncGraphManagerPtr &manager, const CNodePtr &
   cnode->set_inputs(node_inputs);
 }
 
-int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
-  auto cnode = node->cast<CNodePtr>();
-  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr");
-  const auto &origin_prim = GetCNodePrimitive(node);
-  MS_CHECK_TRUE_MSG(origin_prim != nullptr, RET_ERROR, "origin_prim is nullptr");
-  auto prim_name = origin_prim->name();
-  const auto &attrs_adjust = kAttrMapNeedAdjust.at(prim_name);
+int AdjustInputsAndAttrsForSqueeze(const FuncGraphManagerPtr &manager, const CNodePtr &cnode,
+                                   const mindspore::PrimitivePtr &origin_prim) {
+  auto node_inputs = cnode->inputs();
+  auto actual_input_num = node_inputs.size();
+  const auto &attrs_adjust = kAttrMapNeedAdjust.at(kSqueezeOpName);
   const auto &origin_attrs = origin_prim->attrs();
-
+  auto attrs_name = attrs_adjust[0];
   // Create new primitive and inherit the origin attributes.
-  MS_LOG(INFO) << "Begin to convert Primitive to Primitive_Func for node: " << node->DebugString()
-               << "new name: " << prim_name;
-  for (const auto &attr : attrs_adjust) {
-    if (origin_attrs.count(attr) == 0) {
-      MS_LOG(INFO) << "Origin primitive: " << prim_name << " has no attribute : " << attr;
+  if (origin_attrs.count(attrs_name) != 0) {
+    // Convert the specific attr to input and erase the specific attr.
+    auto attr_value = origin_prim->GetAttr(attrs_name);
+    MS_CHECK_TRUE_MSG(attr_value != nullptr, RET_ERROR, "attr_value is nullptr");
+    auto new_value_node = std::make_shared<ValueNode>(attr_value);
+    MS_CHECK_TRUE_MSG(new_value_node != nullptr, RET_ERROR, "new_value_node is nullptr");
+    new_value_node->set_abstract(attr_value->ToAbstract());
+    if (actual_input_num == kInputSizeThree) {
+      auto axis_input_node = cnode->input(kIndexTwo);
+      if (axis_input_node->isa<Parameter>() && axis_input_node->cast<ParameterPtr>()->has_default()) {
+        MS_LOG(INFO) << "Origin primitive: Squeeze already has a const input, replacing it with the attribute.";
+        manager->Replace(axis_input_node, new_value_node);
+        return RET_OK;
+      }
+    }
+    MS_CHECK_TRUE_MSG(actual_input_num == kInputSizeTwo, RET_ERROR,
+                      "Origin primitive: Squeeze must has only one or two inputs");
+    manager->AddEdge(cnode, new_value_node);
+    return RET_OK;
+  }
+  MS_LOG(INFO) << "Origin primitive: Squeeze has no attribute : " << attrs_name;
+  return RET_OK;
+}
+
+int AdjustInputsAndAttrsForPFA(const FuncGraphManagerPtr &manager, const CNodePtr &cnode,
+                               const mindspore::PrimitivePtr &origin_prim) {
+  auto node_inputs = cnode->inputs();
+  auto actual_input_num = node_inputs.size();
+  // First input of cnode is Primitive, so an extra none is padded.
+  auto pad_none_size = kPFAOriginInputSize - actual_input_num + 1;
+  auto none_input = NewValueNode(std::make_shared<None>());
+  none_input->set_abstract(std::make_shared<abstract::AbstractNone>());
+  node_inputs.insert(node_inputs.end(), pad_none_size, none_input);
+  cnode->set_inputs(node_inputs);
+
+  const auto &attrs_adjust_pfa = kAttrMapNeedAdjust.at(kPromptFlashAttentionOpName);
+  const auto &origin_attrs_custom = origin_prim->attrs();
+  // Create new primitive and inherit the origin attributes.
+  for (const auto &attr : attrs_adjust_pfa) {
+    if (origin_attrs_custom.count(attr) == 0) {
+      MS_LOG(INFO) << "Origin primitive: Custom has no attribute : " << attr << ", pad none for PromptFlashAttention.";
+      auto none_attribute = NewValueNode(std::make_shared<None>());
+      none_attribute->set_abstract(std::make_shared<abstract::AbstractNone>());
+      manager->AddEdge(cnode, none_attribute);
     } else {
       // Convert the specific attr to input and erase the specific attr.
       auto attr_value = origin_prim->GetAttr(attr);
@@ -322,6 +365,41 @@ int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &
       new_value_node->set_abstract(attr_value->ToAbstract());
       manager->AddEdge(cnode, new_value_node);
     }
+  }
+  return RET_OK;
+}
+
+int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
+  auto cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr");
+  const auto &origin_prim = GetCNodePrimitive(node);
+  MS_CHECK_TRUE_MSG(origin_prim != nullptr, RET_ERROR, "origin_prim is nullptr");
+  auto prim_name = origin_prim->name();
+  if ((prim_name == kCustomOpName &&
+       GetValue<std::string>(origin_prim->GetAttr("type")) == kPromptFlashAttentionOpName) ||
+      (prim_name == kPromptFlashAttentionOpName)) {
+    return AdjustInputsAndAttrsForPFA(manager, cnode, origin_prim);
+  }
+  if (prim_name == kSqueezeOpName) {
+    return AdjustInputsAndAttrsForSqueeze(manager, cnode, origin_prim);
+  }
+  const auto &attrs_adjust = kAttrMapNeedAdjust.at(prim_name);
+  const auto &origin_attrs = origin_prim->attrs();
+
+  // Create new primitive and inherit the origin attributes.
+  MS_LOG(INFO) << "Begin to convert Primitive to Primitive_Func for node: " << node->DebugString()
+               << "new name: " << prim_name;
+  for (const auto &attr : attrs_adjust) {
+    if (origin_attrs.count(attr) != 0) {
+      // Convert the specific attr to input and erase the specific attr.
+      auto attr_value = origin_prim->GetAttr(attr);
+      MS_CHECK_TRUE_MSG(attr_value != nullptr, RET_ERROR, "attr_value is nullptr");
+      auto new_value_node = std::make_shared<ValueNode>(attr_value);
+      MS_CHECK_TRUE_MSG(new_value_node != nullptr, RET_ERROR, "new_value_node is nullptr");
+      new_value_node->set_abstract(attr_value->ToAbstract());
+      manager->AddEdge(cnode, new_value_node);
+    }
+    MS_LOG(INFO) << "Origin primitive: " << prim_name << " has no attribute : " << attr;
   }
 
   if ((prim_name == kMatMulOpName || prim_name == kMatMulV2OpName) &&
