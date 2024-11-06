@@ -150,7 +150,7 @@ class DataQueueOp : public PipelineOp {
   Status PushDataToGPUCacheQueue(std::vector<device::DataQueueItem> &&data_items);
 
   void LimitSendingBatches(int64_t send_batch, int64_t *sending_num, const std::shared_ptr<ConfigManager> &cfg) const;
-  Status SendRowToTdt(TensorRow curr_row, bool is_profiling_enable, int32_t *tdt_cost);
+  Status SendRowToTdt(TensorRow *curr_row, bool is_profiling_enable, int32_t *tdt_cost);
   // check status that push data into device
   Status CheckPushStatus(DataQueueStatus status, bool stop_send, bool *send_finished, bool *is_break_loop);
   bool ascend_keep_waiting_;

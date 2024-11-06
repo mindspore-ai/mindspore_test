@@ -46,6 +46,7 @@ from mindspore.parallel._utils import _get_parallel_mode, _get_device_num, _get_
 from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_ps_mode, \
     _cache_enable, _enable_distributed_mindrt
 from mindspore.train.metrics import Loss
+from mindspore.train._utils import vlog_print
 from mindspore import nn
 from mindspore.boost import AutoBoost
 from mindspore.context import ParallelMode
@@ -654,10 +655,12 @@ class Model:
             dataset.__loop_size__ = 1
 
         if dataset_helper is None:
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to create DatasetHelper.")
             logger.info("Begin to create DatasetHelper.")
             dataset_helper = DatasetHelper(dataset, dataset_sink_mode, sink_size, epoch_num)
 
         if dataset_sink_mode:
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to connect network with dataset.")
             logger.info("Begin to connect network with dataset.")
             network = connect_network_with_dataset(network, dataset_helper)
 
@@ -779,6 +782,7 @@ class Model:
         if not train_dataset and not valid_dataset:
             raise ValueError("The argument 'train_dataset' and 'valid_dataset' can not both be None or empty.")
 
+        vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to check device number in model.build().")
         logger.info("Begin to check device number in model.build() procedure.")
         _device_number_check(self._parallel_mode, self._device_number)
 
@@ -787,17 +791,21 @@ class Model:
                 raise TypeError("The type of 'train_dataset' must be `Dataset`, "
                                 "but got {}.".format(type(train_dataset)))
 
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                       "Begin to check parameter broadcast in model.build().")
             logger.info("Begin to check parameter broadcast in model.build() procedure.")
             _parameter_broadcast_check(self._parallel_mode, self._parameter_broadcast)
             if self._parameter_broadcast:
                 self._train_network.set_broadcast_flag()
 
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to exec preprocess in model.build().")
             logger.info("Begin to exec preprocess in model.build() procedure.")
             train_dataset.__no_send__ = True
             train_dataset_helper, train_network = self._exec_preprocess(is_train=True,
                                                                         dataset=train_dataset,
                                                                         dataset_sink_mode=True,
                                                                         sink_size=sink_size)
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to warmup dataset in model.build().")
             logger.info("Begin to warmup dataset in model.build() procedure.")
             self._warmup_dataset(epoch, train_dataset, sink_size)
 
@@ -805,13 +813,19 @@ class Model:
             delattr(train_dataset, "__no_send__")
 
             # Waiting for the dataset warmup ready
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                       "Begin waiting for dataset warmup in model.build().")
             logger.info("Begin waiting for dataset warmup in model.build() procedure.")
             self._waiting_for_dataset_warmup_ready(train_dataset)
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                       "The dataset warmup was successful in model.build().")
             logger.info("The dataset warmup was successful in model.build() procedure.")
 
             if context.get_auto_parallel_context("pipeline_stages") > 1 and valid_dataset:
                 train_network.add_flags_recursive(is_first_iteration=True)
             for inputs in train_dataset_helper:
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           "Begin to compile train network in model.build().")
                 logger.info("Begin to compile train network in model.build() procedure.")
                 train_network.compile(*inputs)
                 self._train_network.parameter_layout_dict = train_network.parameter_layout_dict
@@ -832,6 +846,8 @@ class Model:
             if context.get_auto_parallel_context("pipeline_stages") > 1:
                 eval_network.add_flags_recursive(is_first_iteration=False)
             for inputs in valid_dataset_helper:
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                           "Begin to compile eval network in model.build().")
                 logger.info("Begin to compile eval network in model.build() procedure.")
                 eval_network.compile(*inputs)
                 break
@@ -1568,8 +1584,11 @@ class Model:
         if hasattr(self._train_network, '_is_check_and_refresh') and not self._train_network._is_check_and_refresh:
             self._train_network.check_names_and_refresh_name()
             self._train_network._is_check_and_refresh = True
+        vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin to init dataset in model.build().")
         logger.info("Begin to init dataset in model.build() procedure.")
         self._init(train_dataset, valid_dataset, sink_size, epoch)
+        vlog_print("1", "ME", __file__, sys._getframe().f_lineno,
+                   "The model.build() which contains dataset warmup and network compile is success.")
         logger.info("The model.build() which contains dataset warmup and network compile is success.")
 
     def _eval_in_fit(self, valid_dataset, callbacks=None, dataset_sink_mode=True, cb_params=None):
