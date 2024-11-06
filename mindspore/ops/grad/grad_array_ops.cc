@@ -1751,7 +1751,7 @@ REG_BPROP_BUILDER("SliceToIndices").SetUnusedInputs({i0, i1, i2, i3, i4, i5, i6}
 
 REG_BPROP_BUILDER("Fills").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("Cast").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Cast").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto t = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -2787,7 +2787,7 @@ REG_BPROP_BUILDER("TransShape").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(shape)};
 });
 
-REG_BPROP_BUILDER("RepeatInterleaveInt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("RepeatInterleaveInt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto repeats = ib->GetInput(kIndex1);
   auto axis = ib->GetInput(kIndex2);

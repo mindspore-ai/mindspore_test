@@ -852,7 +852,7 @@ REG_BPROP_BUILDER("Add").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   return BinopGradCommon(ib, x, y, dx, dy);
 });
 
-REG_BPROP_BUILDER("AddExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AddExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
@@ -887,7 +887,7 @@ REG_BPROP_BUILDER("AddExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return ret;
 });
 
-REG_BPROP_BUILDER("SubExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SubExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
