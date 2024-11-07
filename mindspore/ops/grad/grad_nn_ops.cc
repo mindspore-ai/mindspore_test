@@ -531,7 +531,7 @@ REG_BPROP_BUILDER("MaxPool").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Embedding").SetUnusedInputs({i3, i4, i6}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Embedding").FreeUselessValues_IO({i1, i3, i4}, {}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto weight = ib->GetInput(kIndex1);
   auto padding_idx = ib->GetInput(kIndex2);
@@ -3152,7 +3152,7 @@ REG_BPROP_BUILDER("FlashAttentionScore").SetBody((BODYFUNC(ib) {
           g_scale_value, g_pre_tokens, g_next_tokens,     g_inner_precise,    g_input_layout, g_sparse_mode};
 }));
 
-REG_BPROP_BUILDER("RmsNorm").SetUnusedInputs({i2}).SetBody((BODYFUNC(ib) {
+REG_BPROP_BUILDER("RmsNorm").FreeUselessValues_IO({i2}, {i0}).SetBody((BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto gamma = ib->GetInput(kIndex1);
   auto eps = ib->GetInput(kIndex2);
