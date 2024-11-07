@@ -76,7 +76,7 @@ REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
 REG_FALLBACK_BUILDER("BatchMatMulExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
-  return {ib->BatchMatMul(x, y, false, false)};
+  return {ib->Cast(ib->BatchMatMul(x, y, false, false), ib->GetDtype(x))};
 });
 
 DEF_PURE_SHAPE_CALC(g_matmul_ext_fallback_shapecalc)
@@ -155,14 +155,14 @@ REG_FALLBACK_BUILDER("MatMulExt").SetBody(BODYFUNC(ib) {
     other = ib->Transpose(other, shapes[2]);
     input = ib->Reshape(input, shapes[3]);
     other = ib->Reshape(other, shapes[4]);
-    auto ret = ib->BatchMatMul(input, other);
+    auto ret = ib->Cast(ib->BatchMatMul(input, other), ib->GetDtype(input));
     ret = ib->Reshape(ret, shapes[5]);
     return {ret};
   } else {
     auto input_rank = input->shape().size();
     auto other_rank = other->shape().size();
     if (input_rank == 2 && other_rank == 2) {
-      auto ret = ib->MatMul(input, other);
+      auto ret = ib->Cast(ib->MatMul(input, other), ib->GetDtype(input));
       return {ret};
     }
     const ShapeVector &shape1_orig = input->shape();
@@ -187,7 +187,7 @@ REG_FALLBACK_BUILDER("MatMulExt").SetBody(BODYFUNC(ib) {
         std::vector<int64_t> new_shape_vector = {new_shape_dim0, shape1_orig.back()};
         input = ib->Reshape(input, ib->Value(new_shape_vector));
       }
-      ret = ib->MatMul(input, other, false, transpose_b);
+      ret = ib->Cast(ib->MatMul(input, other, false, transpose_b), ib->GetDtype(input));
     } else {
       size_t ndim_aligned = std::max(input_rank, other_rank);
       input = Expand(ib, input, ndim_aligned);
@@ -206,7 +206,7 @@ REG_FALLBACK_BUILDER("MatMulExt").SetBody(BODYFUNC(ib) {
       }
       input = ib->Reshape(input, ReduceTo3D(input->shape()));
       other = ib->Reshape(other, ReduceTo3D(other->shape()));
-      ret = ib->BatchMatMul(input, other, false, transpose_b);
+      ret = ib->Cast(ib->BatchMatMul(input, other, false, transpose_b), ib->GetDtype(input));
     }
     ret = ib->Reshape(ret, ib->Value(shape_out));
     return {ret};
