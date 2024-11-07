@@ -2230,3 +2230,28 @@ def test_tensor_searchsorted():
     match_res(mnp_x.searchsorted, x.searchsorted, y, side='right')
     match_res(mnp_x.searchsorted, x.searchsorted, y, sorter=sorter)
     match_res(mnp_x.searchsorted, x.searchsorted, y, side='right', sorter=sorter)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+          card_mark='onecard', essential_mark='unessential')
+def test_comp_comp_absolute():
+    """ test absolute """
+    # check int32
+    input = np.asarray([1, 2, 3, -4, -5], np.int32)
+    input_m = ms.Tensor(input, ms.int32)
+
+    output = np.absolute(input)
+    output_m = mnp.absolute(input_m)
+
+    # check result
+    assert np.all(output == output_m.asnumpy())
+
+    # check float32
+    input = np.asarray([1, 2.2, 3, -4.5, -5.6], np.float32)
+    input_m = ms.Tensor(input, ms.float32)
+
+    output = np.absolute(input)
+    output_m = mnp.absolute(input_m)
+
+    # check result
+    assert np.all(output == output_m.asnumpy())
