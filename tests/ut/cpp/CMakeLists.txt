@@ -141,7 +141,6 @@ if(Python3_FOUND)
 endif()
 
 file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "../../../mindspore/ccsrc/distributed/cluster/actor_route_table_proxy.cc"
         "../../../mindspore/ccsrc/distributed/cluster/topology/*.cc"
         "../../../mindspore/ccsrc/distributed/rpc/rdma/*.cc"
         "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
@@ -151,7 +150,6 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/cpu/hal/hardware/cpu_memory_pool.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/hal/hardware/ms_collective_topo.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
-        "../../../mindspore/ccsrc/plugin/factory/ms_factory.h"
         "../../../mindspore/ccsrc/ps/*.cc"
         "../../../mindspore/ops/kernel/cpu/adam_delta_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/akg/*.cc"
@@ -165,7 +163,6 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ops/kernel/cpu/sparse_apply_proximal_adagrad_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/unique_cpu_kernel.cc"
         "../../../mindspore/ops/kernel/cpu/unique_with_pad_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/gpu/akg/*.cc"
         )
 
 file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -260,14 +257,12 @@ list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_matmul_all_reduce.cc")
 
 add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
-add_dependencies(_ut_mindspore_obj proto_input_ut)
-target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend _c_mindrecord mindspore_core _c_dataengine
-        mindspore_common md_log_adapter)
+target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend mindspore_core _c_dataengine
+        mindspore_common)
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
-add_dependencies(_ut_mindspore_ascend_obj proto_input_ut)
-target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend _c_mindrecord mindspore_core
-        _c_dataengine mindspore_common md_log_adapter)
+target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend mindspore_core
+        _c_dataengine mindspore_common)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})
     list(APPEND CORE_OBJECT_LIST $<TARGET_OBJECTS:core_obj_${number}>)
@@ -276,23 +271,6 @@ foreach(number RANGE 1 ${OPS_OBJECT_COUNT})
     list(APPEND OPS_OBJECT_LIST $<TARGET_OBJECTS:ops_obj_${number}>)
 endforeach()
 include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
-file(GLOB_RECURSE PROTO_IN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "../../../mindspore/ccsrc/plugin/device/ascend/kernel/aicpu/proto/*.proto")
-ms_protobuf_generate(PROTOSRCS PROTOHDRS ${PROTO_IN}
-        ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fission/random_status.proto)
-
-file(GLOB_RECURSE PROTO_DUMP RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/dump/proto/*.proto")
-ms_protobuf_generate(DUMP_PROTOSRCS PROTOHDRS ${PROTO_DUMP})
-
-list(APPEND MINDSPORE_PROTO_LIST ${PROTOSRCS})
-list(APPEND MINDSPORE_PROTO_LIST ${PREDICT_PROTOSRCS})
-list(APPEND MINDSPORE_PROTO_LIST ${DUMP_PROTOSRCS})
-
-if(MINDSPORE_PROTO_LIST)
-    add_library(proto_input_ut STATIC ${MINDSPORE_PROTO_LIST})
-    set_target_properties(proto_input_ut PROPERTIES COMPILE_FLAGS "-Wno-unused-variable -Wno-array-bounds")
-endif()
 
 add_library(_ut_obj_static STATIC ${UT_SRCS})
 target_link_libraries(_ut_obj_static PRIVATE mindspore_backend)
@@ -306,7 +284,7 @@ foreach(comp ${ALL_UT_COMPS})
         target_link_libraries(ut_${comp}_tests PRIVATE _c_mindrecord md_log_adapter _c_dataengine)
     endif()
     target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static
-            -Wl,--end-group proto_input_ut)
+            -Wl,--end-group)
     target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
             proto_input)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -316,7 +294,7 @@ foreach(comp ${ALL_UT_COMPS})
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::sqlite mindspore::jpeg_turbo mindspore::turbojpeg
                 mindspore::opencv_core mindspore::opencv_imgcodecs mindspore::opencv_imgproc mindspore::tinyxml2
                 mindspore::sentencepiece mindspore::sentencepiece_train mindspore::icuuc mindspore::icudata
-                mindspore::icui18n mindspore::z mindspore::dnnl)
+                mindspore::icui18n mindspore::z)
         if(ENABLE_FFMPEG)
             target_link_libraries(ut_${comp}_tests PRIVATE mindspore::avcodec mindspore::avdevice mindspore::avfilter
                     mindspore::avformat mindspore::avutil mindspore::swresample mindspore::swscale)
