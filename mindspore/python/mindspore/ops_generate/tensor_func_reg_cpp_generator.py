@@ -26,7 +26,7 @@ import template
 from template import Template
 import gen_constants as K
 import pyboost_utils
-import tensor_func_proto
+import op_api_proto
 from gen_utils import save_file
 from base_generator import BaseGenerator
 from op_proto import OpProto
@@ -131,7 +131,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         func_header_body_list, func_header_def_list = [], []
         func_call_body_list, func_def_body_list = [], []
 
-        single_op_func_data, overload_op_func_data = tensor_func_proto.categorize_func_data(func_protos_data)
+        single_op_func_data, overload_op_func_data = op_api_proto.categorize_func_data(func_protos_data)
 
         def process_func_data_wrapper(processor, func_data, alias_mapping):
             """

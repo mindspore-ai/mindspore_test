@@ -25,7 +25,7 @@ import template
 from template import Template
 import gen_constants as K
 import pyboost_utils
-import tensor_func_proto
+import op_api_proto
 from gen_utils import save_file
 from op_proto import OpProto
 from base_generator import BaseGenerator
@@ -144,7 +144,7 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
 
         mint_classes_def_list = []
 
-        single_mint_func_data, overload_mint_func_data = tensor_func_proto.categorize_func_data(mint_func_protos_data)
+        single_mint_func_data, overload_mint_func_data = op_api_proto.categorize_func_data(mint_func_protos_data)
 
         mint_classes_def_list.extend(self._get_single_func_call_body_list(single_mint_func_data))
         mint_classes_def_list.extend(self._get_overload_func_call_body_list(overload_mint_func_data))

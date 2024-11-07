@@ -4,3 +4,4 @@ trunc:
   Ascend: pyboost
   CPU: pyboost
   GPU: pyboost
+  interface: tensor

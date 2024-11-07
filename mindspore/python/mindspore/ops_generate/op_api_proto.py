@@ -18,7 +18,7 @@ from collections import defaultdict
 import gen_constants as K
 
 
-class TensorFuncProto:
+class OpApiProto:
     """
     Represents a tensor function prototype with associated function name, operation prototype, and target devices.
     """
@@ -38,7 +38,7 @@ class TensorFuncProto:
         self.cpu = cpu
 
 
-def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_protos):
+def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_protos):
     """
     Loads tensor function prototypes from YAML data and returns them as a dictionary.
     """
@@ -54,7 +54,7 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_p
         func_data_list = [tensor_func_data] if isinstance(tensor_func_data, dict) else tensor_func_data
         for func_data in func_data_list:
             func_keys = func_data.keys()
-            check_tensor_func_yaml_keys(func_name, set(func_keys), K.TENSOR_FUNC_KEYS)
+            check_op_api_yaml_keys(func_name, set(func_keys), K.TENSOR_FUNC_KEYS)
             if 'alias' in func_data:
                 alias_api_mapping[func_data['alias']].append(func_name)
                 continue
@@ -84,8 +84,8 @@ def load_func_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_p
                     f"The value of field 'interface' must be one of 'tensor', 'function', "
                     f"'tensor, function', or 'function, tensor'. File name is {func_name}.yaml")
 
-            proto = TensorFuncProto(func_name=func_name, op_proto=op_proto,
-                                    py_method=py_method, ascend=ascend, gpu=gpu, cpu=cpu)
+            proto = OpApiProto(func_name=func_name, op_proto=op_proto,
+                               py_method=py_method, ascend=ascend, gpu=gpu, cpu=cpu)
             if 'tensor' in interface:
                 tensor_method_protos[func_name].append(proto)
             if 'function' in interface:
@@ -108,7 +108,7 @@ def _get_op_name_from_op_yaml(func_name: str, func_data: dict) -> str:
     return op_name
 
 
-def check_tensor_func_yaml_keys(func_name: str, input_keys: set, compare_keys: set):
+def check_op_api_yaml_keys(func_name: str, input_keys: set, compare_keys: set):
     diff_keys = input_keys - compare_keys
     if diff_keys:
         raise TypeError(

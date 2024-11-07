@@ -36,7 +36,7 @@ from add_tensor_docs_generator import AddTensorDocsGenerator
 from functional_overload_py_generator import FunctionalOverloadPyGenerator
 
 from op_proto import OpProto
-from tensor_func_proto import load_func_protos_from_yaml
+from op_api_proto import load_api_protos_from_yaml
 from tensor_func_reg_cpp_generator import TensorFuncRegCppGenerator
 from gen_pyboost_func import gen_pyboost_code
 
@@ -180,7 +180,7 @@ def main():
     work_path = os.path.join(current_path, '../../../../')
 
     # merge ops yaml
-    doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path, tensor_doc_yaml_path \
+    doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path, tensor_method_doc_yaml_path \
         = merge_ops_yaml(work_path)
 
     # make auto_generate dir
@@ -190,17 +190,17 @@ def main():
     # generate arg_handler files
     generate_arg_handler_files(work_path)
 
-    # read ops definition str and doc str
+    # read ops definition str and tensor method doc str
     ops_yaml_dict = safe_load_yaml(ops_yaml_path)
     doc_yaml_dict = safe_load_yaml(doc_yaml_path)
     deprecated_ops_yaml_dict = safe_load_yaml(deprecated_ops_yaml_path)
-    tensor_yaml_dict = safe_load_yaml(tensor_yaml_path)
-    tensor_doc_yaml_dict = safe_load_yaml(tensor_doc_yaml_path)
+    ops_api_yaml_dict = safe_load_yaml(ops_api_yaml_path)
+    tensor_method_doc_yaml_dict = safe_load_yaml(tensor_method_doc_yaml_path)
 
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
     deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
     tensor_method_protos, mint_func_protos, alias_api_mapping \
-        = load_func_protos_from_yaml(tensor_yaml_dict, op_protos, deprecated_op_protos)
+        = load_api_protos_from_yaml(ops_api_yaml_dict, op_protos, deprecated_op_protos)
     # for generate tensor method deprecated in graph mode
     op_protos_with_deprecated = get_tensor_op_protos_with_deprecated(tensor_method_protos, op_protos)
 
@@ -219,7 +219,7 @@ def main():
     # generate functional map code
     gen_functional_map_code(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping)
     # generate _tensor_docs.py that attaches docs to tensor func APIs when import mindspore
-    gen_tensor_docs_code(work_path, tensor_doc_yaml_dict)
+    gen_tensor_docs_code(work_path, tensor_method_doc_yaml_dict)
     # generate functional_overload.py which init pybind mint APIs from cpp
     gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping)
 
@@ -261,19 +261,19 @@ def merge_ops_yaml(work_path):
     doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops_doc.yaml')
     merge_files(doc_yaml_dir_path, doc_yaml_path, '*doc.yaml')
 
-    tensor_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_YAML_PATH)
-    tensor_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_func.yaml')
-    merge_files(tensor_yaml_dir_path, tensor_yaml_path, '*.yaml')
+    ops_api_yaml_dir_path = os.path.join(work_path, K.MS_OP_API_YAML_PATH)
+    ops_api_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'op_api_def.yaml')
+    merge_files(ops_api_yaml_dir_path, ops_api_yaml_path, '*.yaml')
 
     deprecated_ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEPRECATED_DEF_YAML_PATH)
     deprecated_ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'deprecated_ops.yaml')
     merge_files(deprecated_ops_yaml_dir_path, deprecated_ops_yaml_path, '*_op.yaml')
 
-    tensor_doc_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_DOC_YAML_PATH)
-    tensor_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_doc.yaml')
-    merge_files(tensor_doc_yaml_dir_path, tensor_doc_yaml_path, '*doc.yaml')
+    tensor_method_doc_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_METHOD_DOC_YAML_PATH)
+    tensor_method_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_method_doc.yaml')
+    merge_files(tensor_method_doc_yaml_dir_path, tensor_method_doc_yaml_path, '*doc.yaml')
 
-    return doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, tensor_yaml_path, tensor_doc_yaml_path
+    return doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path, tensor_method_doc_yaml_path
 
 
 if __name__ == "__main__":
