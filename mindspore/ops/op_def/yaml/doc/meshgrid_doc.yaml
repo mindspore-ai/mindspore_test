@@ -1,0 +1,74 @@
+meshgrid:
+    description: |
+        Generates coordinate matrices from given coordinate tensors.
+
+        Refer to :func:`mindspore.ops.meshgrid` for more details.
+
+        Args:
+            indexing (str, optional): Cartesian ``'xy'`` or
+                matrix ('ij') indexing of output. Valid options: xy' or ``'ij'``. In the 2-D case with
+                inputs of length `M` and `N`, for ``'xy'`` indexing, the shape of outputs is :math:`(N, M)`
+                for ``'ij'`` indexing, the shape of outputs is :math:`(M, N)`. In the 3-D
+                case with inputs of length `M`, `N` and `P`, for ``'xy'`` indexing, the shape of outputs is 
+                :math:`(N, M, P)` and for ``'ij'`` indexing, the shape of outputs is :math:`(M, N, P)`.
+                Default: ``'xy'`` .
+
+        Inputs:
+            - **inputs** (Union[tuple]) - A Tuple of N 1-D Tensor objects.
+              The length of input should be greater than 1. The data type is Number.
+
+        Outputs:
+            Tensors, A Tuple of N N-D Tensor objects. The data type is the same with the Inputs.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor(np.array([1, 2, 3, 4]).astype(np.int32))
+            >>> y = Tensor(np.array([5, 6, 7]).astype(np.int32))
+            >>> z = Tensor(np.array([8, 9, 0, 1, 2]).astype(np.int32))
+            >>> inputs = (x, y, z)
+            >>> meshgrid = ops.Meshgrid(indexing='xy')
+            >>> output = meshgrid(inputs)
+            >>> print(output)
+            (Tensor(shape=[3, 4, 5], dtype=Int32, value=
+            [[[1, 1, 1, 1, 1],
+              [2, 2, 2, 2, 2],
+              [3, 3, 3, 3, 3],
+              [4, 4, 4, 4, 4]],
+              [[1, 1, 1, 1, 1],
+              [2, 2, 2, 2, 2],
+              [3, 3, 3, 3, 3],
+              [4, 4, 4, 4, 4]],
+              [[1, 1, 1, 1, 1],
+              [2, 2, 2, 2, 2],
+              [3, 3, 3, 3, 3],
+              [4, 4, 4, 4, 4]]]),
+            Tensor(shape=[3, 4, 5], dtype=Int32, value=
+            [[[5, 5, 5, 5, 5],
+              [5, 5, 5, 5, 5],
+              [5, 5, 5, 5, 5],
+              [5, 5, 5, 5, 5]],
+              [[6, 6, 6, 6, 6],
+              [6, 6, 6, 6, 6],
+              [6, 6, 6, 6, 6],
+              [6, 6, 6, 6, 6]],
+              [[7, 7, 7, 7, 7],
+              [7, 7, 7, 7, 7],
+              [7, 7, 7, 7, 7],
+              [7, 7, 7, 7, 7]]]),
+            Tensor(shape=[3, 4, 5], dtype=Int32, value=
+            [[[8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2]],
+              [[8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2]],
+              [[8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2],
+              [8, 9, 0, 1, 2]]]))

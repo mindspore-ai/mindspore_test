@@ -203,6 +203,10 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
      "transpose_a",
      "transpose_b",
    }},
+  {"Meshgrid",
+   {
+     "indexing",
+   }},
   {"NanToNum",
    {
      "nan",

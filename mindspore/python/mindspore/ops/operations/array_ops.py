@@ -42,7 +42,7 @@ from ..auto_generate import (
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, TypeAs)
+    SearchSorted, TypeAs, Meshgrid)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
@@ -3734,110 +3734,6 @@ class BatchToSpaceNDV2(Primitive):
         """Initialize BatchToSpaceNDV2"""
         self.init_prim_io_names(inputs=['input_x', 'block_shape', 'crops'], outputs=['y'])
         self.add_prim_attr('origin_format', 'NHWC')
-
-
-class Meshgrid(PrimitiveWithInfer):
-    """
-    Generates coordinate matrices from given coordinate tensors.
-
-    Refer to :func:`mindspore.ops.meshgrid` for more details.
-
-    Args:
-        indexing (str, optional): Cartesian ``'xy'`` or
-            matrix ``'ij'`` indexing of output. In the 2-D case with
-            inputs of length `M` and `N`, the outputs are of shape :math:`(N, M)`
-            for ``'xy'`` indexing and :math:`(M, N)` for ``'ij'`` indexing. In the 3-D
-            case with inputs of length `M`, `N` and `P`, outputs are of shape
-            :math:`(N, M, P)` for ``'xy'`` indexing and :math:`(M, N, P)` for ``'ij'`` indexing.
-            Default: ``'xy'``.
-
-    Inputs:
-        - **input** (Union[tuple]) - A Tuple of N 1-D Tensor objects.
-          The length of input should be greater than 1. The data type is Number.
-
-    Outputs:
-        Tensors, A Tuple of N N-D Tensor objects. The data type is the same with the Inputs.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3, 4]).astype(np.int32))
-        >>> y = Tensor(np.array([5, 6, 7]).astype(np.int32))
-        >>> z = Tensor(np.array([8, 9, 0, 1, 2]).astype(np.int32))
-        >>> inputs = (x, y, z)
-        >>> meshgrid = ops.Meshgrid(indexing='xy')
-        >>> output = meshgrid(inputs)
-        >>> print(output)
-        (Tensor(shape=[3, 4, 5], dtype=Int32, value=
-         [[[1, 1, 1, 1, 1],
-           [2, 2, 2, 2, 2],
-           [3, 3, 3, 3, 3],
-           [4, 4, 4, 4, 4]],
-          [[1, 1, 1, 1, 1],
-           [2, 2, 2, 2, 2],
-           [3, 3, 3, 3, 3],
-           [4, 4, 4, 4, 4]],
-          [[1, 1, 1, 1, 1],
-           [2, 2, 2, 2, 2],
-           [3, 3, 3, 3, 3],
-           [4, 4, 4, 4, 4]]]),
-         Tensor(shape=[3, 4, 5], dtype=Int32, value=
-         [[[5, 5, 5, 5, 5],
-           [5, 5, 5, 5, 5],
-           [5, 5, 5, 5, 5],
-           [5, 5, 5, 5, 5]],
-          [[6, 6, 6, 6, 6],
-           [6, 6, 6, 6, 6],
-           [6, 6, 6, 6, 6],
-           [6, 6, 6, 6, 6]],
-          [[7, 7, 7, 7, 7],
-           [7, 7, 7, 7, 7],
-           [7, 7, 7, 7, 7],
-           [7, 7, 7, 7, 7]]]),
-         Tensor(shape=[3, 4, 5], dtype=Int32, value=
-         [[[8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2]],
-          [[8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2]],
-          [[8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2],
-           [8, 9, 0, 1, 2]]]))
-    """
-
-    @prim_attr_register
-    def __init__(self, indexing="xy"):
-        """Initialize Meshgrid."""
-        validator.check_value_type("indexing", indexing, (str), self.name)
-        validator.check_string(indexing.lower(), ["xy", "ij"], "indexing", self.name)
-        self.indexing = indexing
-
-    def infer_shape(self, x_shape):
-        validator.check_value_type("shape", x_shape, [tuple], self.name)
-        validator.check_int(len(x_shape), 2, validator.GE, "len of input", self.name)
-        n = len(x_shape)
-        shape_0 = []
-        for s in x_shape:
-            validator.check_int(len(s), 1, validator.EQ, 'each input rank', self.name)
-            shape_0.append(s[0])
-        if self.indexing == "xy":
-            shape_0[0], shape_0[1] = shape_0[1], shape_0[0]
-        out_shape = tuple(tuple(shape_0) for _ in range(n))
-        return out_shape
-
-    def infer_dtype(self, x_type):
-        validator.check_subclass("input[0]", x_type[0], mstype.tensor_type, self.name)
-        n = len(x_type)
-        for i in range(1, n):
-            validator.check('x_type[%d]' % i, x_type[i], 'base', x_type[0], validator.EQ, self.name, TypeError)
-        return x_type
 
 
 class ReverseSequence(PrimitiveWithInfer):

@@ -224,10 +224,12 @@ ATTR_MAP(Size) = {{"dtype", ATTR_DESC(dtype, AnyTraits<int64_t>())}};
 OUTPUT_MAP(Size) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Size, kNameSize, ADPT_DESC(Size))
 
+const std::vector<std::string> kMeshgridIndexings = {"ij", "xy"};
 // Meshgrid
 INPUT_MAP(Meshgrid) = EMPTY_INPUT_MAP;
 DYN_INPUT_MAP(Meshgrid) = {{1, DYN_INPUT_DESC(x)}};
-ATTR_MAP(Meshgrid) = {{"indexing", ATTR_DESC(indexing, AnyTraits<std::string>())}};
+ATTR_MAP(Meshgrid) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(Meshgrid) = {{2, ATTR_DESC(indexing, AnyTraits<GEEnumToStr>(), kMeshgridIndexings)}};
 DYN_OUTPUT_MAP(Meshgrid) = {{0, DYN_OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Meshgrid, prim::kPrimMeshgrid->name(), ADPT_DESC(Meshgrid))
 
