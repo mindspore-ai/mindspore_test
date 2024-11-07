@@ -356,8 +356,21 @@ bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int rec
   if (item != nullptr) {
     size_t szItem = item->Info().Id();
     if (guardMap_.find(szItem) == guardMap_.end()) {
-      guardList_.push_back(item);
-      guardMap_[szItem] = item;
+      if (traceMap_.find(var->Info().Id()) == traceMap_.end()) {
+        guardList_.push_back(item);
+        guardMap_[szItem] = item;
+        traceMap_[var->Info().Id()] = item;
+      } else {
+        auto old_item = traceMap_[var->Info().Id()];
+        if (old_item->GetType() < item->GetType()) {
+          guardMap_[szItem] = item;
+          traceMap_[var->Info().Id()] = item;
+          auto iter = std::find(guardList_.begin(), guardList_.end(), old_item);
+          if (iter != guardList_.end()) {
+            *iter = item;
+          }
+        }
+      }
     }
     return true;
   } else {
@@ -571,12 +584,13 @@ void OptGuard::UpdateConfig(const std::map<std::string, bool> &bool_config,
   }
 }
 
-void OptGuard::Backup() { guardStack_.push(std::make_pair(guardList_, guardMap_)); }
+void OptGuard::Backup() { guardStack_.push(std::make_tuple(guardList_, guardMap_, traceMap_)); }
 
 void OptGuard::Rollback() {
   GuardCheckPoint point = guardStack_.top();
-  guardList_.swap(point.first);
-  guardMap_.swap(point.second);
+  guardList_.swap(std::get<0>(point));
+  guardMap_.swap(std::get<1>(point));
+  traceMap_.swap(std::get<2>(point));
   guardStack_.pop();
 }
 
@@ -751,6 +765,18 @@ OptGuardPtr OptGuard::Optimize() {
     return shared_from_this();
   } else {
     return nullptr;
+  }
+}
+
+void OptGuard::FilterConstItem() {
+  for (size_t i = 0; i < guardList_.size();) {
+    auto item = guardList_[i];
+    if (item->GetTrace()->IsConst()) {
+      guardList_.erase(guardList_.begin() + i);
+      guardMap_.erase(item->Info().Id());
+    } else {
+      i++;
+    }
   }
 }
 

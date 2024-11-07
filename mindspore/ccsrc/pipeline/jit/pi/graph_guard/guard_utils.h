@@ -32,11 +32,11 @@ namespace pijit {
 
 typedef enum _GIType {
   GTUnknown = 0,
-  GTEqual,
   GTType,
-  GTId,
-  GTAttr,
   GTRepr,
+  GTAttr,
+  GTEqual,
+  GTId,
 } GIType;
 
 class GuardItem : public std::enable_shared_from_this<GuardItem> {

@@ -42,7 +42,8 @@ typedef enum _GuardLevel {
 
 using GuardItemVector = std::vector<GuardItemPtr>;
 using GuardItemMap = std::map<size_t, GuardItemPtr>;
-using GuardCheckPoint = std::pair<GuardItemVector, GuardItemMap>;
+using GuardTraceMap = std::map<size_t, GuardItemPtr>;
+using GuardCheckPoint = std::tuple<GuardItemVector, GuardItemMap, GuardTraceMap>;
 
 class OptGuard : public std::enable_shared_from_this<OptGuard> {
  public:
@@ -87,11 +88,13 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   std::string ToString() const;
   virtual const InfoPack &Info();
   virtual std::shared_ptr<OptGuard> Optimize();
+  virtual void FilterConstItem();
 
  protected:
   void UpdateGuardList(GuardItemPtr item);
   std::vector<GuardItemPtr> guardList_;
   std::map<size_t, GuardItemPtr> guardMap_;
+  GuardTraceMap traceMap_;
   std::stack<GuardCheckPoint> guardStack_;
   std::map<std::string, bool> bool_config_;
   std::map<std::string, int> int_config_;
