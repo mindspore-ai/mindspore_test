@@ -104,7 +104,7 @@ option(MSLITE_ENABLE_PACKAGE_WHEEL "enable package python wheel" off)
 
 # ============================ [Lite build env] ============================
 option(ENABLE_VERBOSE "" off)
-set(VERSION_STR "2.4.0" CACHE STRING "get from version")
+set(VERSION_STR "2.4.1" CACHE STRING "get from version")
 
 add_definitions(-DVERSION_STR=\"${VERSION_STR}\")
 
