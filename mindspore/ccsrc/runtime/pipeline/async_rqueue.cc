@@ -22,6 +22,7 @@
 #endif
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
+#include "utils/llm_manager.h"
 #include "include/common/profiler.h"
 
 #include "utils/profile.h"
@@ -64,6 +65,9 @@ void AsyncRQueue::WorkerLoop() {
     std::unique_lock<std::mutex> lock(level_mutex_);
     thread_id_to_wait_level_[std::this_thread::get_id()] = wait_level_;
   }
+
+  auto &llm_manager = LLMManager::GetInstance();
+  llm_manager.bind_thread_core(name_);
 
   while (true) {
     std::shared_ptr<AsyncTask> task = tasks_queue_.Head();

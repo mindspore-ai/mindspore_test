@@ -238,6 +238,12 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const con
 void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
   MS_EXCEPTION_IF_NULL(graph_);
+  if (!affinity_init_) {
+    auto &llm_manager = LLMManager::GetInstance();
+    llm_manager.bind_thread_core("runtime_scheduler_actor");
+    affinity_init_ = true;
+  }
+
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "SuperKernelActor", graph_->ToString());
   }

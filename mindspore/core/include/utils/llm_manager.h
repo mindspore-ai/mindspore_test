@@ -22,6 +22,7 @@
 #include <map>
 #include <vector>
 #include <set>
+
 #include "mindapi/base/macros.h"
 #include "ir/meta_tensor.h"
 #include "utils/log_adapter.h"
@@ -51,10 +52,31 @@ class MS_CORE_API LLMManager {
 
   bool need_force_resize(const std::string &kernel_name);
 
+  /// \brief bind current thread to specify core.
+  ///
+  /// \param[in] thread_name: the name of working thread
+  void bind_thread_core(const std::string &thread_name);
+
+  /// \brief unbind current thread.
+  ///
+  /// \param[in] thread_name: the name of working thread
+  ///
+  /// \return bind result, true for success
+  bool unbind_threads(const std::string &thread_name);
+
+ private:
+  void get_thread_bind_policy();
+  LLMManager();
+
  private:
   bool force_resize_kernel_{false};
   std::map<std::string, tensor::TensorDataPtr> graph_inputs_map_;
   std::set<std::string> force_resize_kernel_set_{};
+
+  // Note: thread bind is used for specify case for perf, eg. vm which cpu-migration is slow
+  std::map<std::string, std::vector<int64_t>> thread_bind_policy_;
+  std::map<std::string, bool> thread_bind_status_;
+  int64_t group_core_size_{0};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_LLM_MANAGER_H_

@@ -16,6 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
+#include "utils/llm_manager.h"
 
 namespace mindspore {
 namespace runtime {
@@ -28,6 +29,12 @@ std::shared_ptr<KernelAsyncLaunchActor> &KernelAsyncLaunchActor::GetInstance() {
 void KernelAsyncLaunchActor::Initialize() {
   Async(this->GetAID(), &KernelAsyncLaunchActor::GetThreadId);
   Wait();
+}
+
+void KernelAsyncLaunchActor::GetThreadId() {
+  auto &llm_manager = LLMManager::GetInstance();
+  llm_manager.bind_thread_core("runtime_launch_actor");
+  thread_id_ = std::this_thread::get_id();
 }
 
 void KernelAsyncLaunchActor::LaunchKernel(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor) {
