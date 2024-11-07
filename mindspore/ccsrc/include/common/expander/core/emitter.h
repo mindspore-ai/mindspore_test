@@ -549,8 +549,9 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr Generator(const NodePtr &cmd, const NodePtr &inputs) { return Emit("Generator", {cmd, inputs}); }
   virtual NodePtr GridSampler2DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
                                     const NodePtr &interpolation_mode, const NodePtr &padding_mode,
-                                    const NodePtr &align_corners) {
-    return Emit("GridSampler2DGrad", {grad, input_x, grid, interpolation_mode, padding_mode, align_corners});
+                                    const NodePtr &align_corners, const NodePtr &output_mask) {
+    return Emit("GridSampler2DGrad",
+                {grad, input_x, grid, interpolation_mode, padding_mode, align_corners, output_mask});
   }
   virtual NodePtr GridSampler2D(const NodePtr &input_x, const NodePtr &grid, const NodePtr &interpolation_mode,
                                 const NodePtr &padding_mode, const NodePtr &align_corners) {
@@ -558,8 +559,9 @@ class COMMON_EXPORT Emitter {
   }
   virtual NodePtr GridSampler3DGrad(const NodePtr &grad, const NodePtr &input_x, const NodePtr &grid,
                                     const NodePtr &interpolation_mode, const NodePtr &padding_mode,
-                                    const NodePtr &align_corners) {
-    return Emit("GridSampler3DGrad", {grad, input_x, grid, interpolation_mode, padding_mode, align_corners});
+                                    const NodePtr &align_corners, const NodePtr &output_mask) {
+    return Emit("GridSampler3DGrad",
+                {grad, input_x, grid, interpolation_mode, padding_mode, align_corners, output_mask});
   }
   virtual NodePtr GridSampler3D(const NodePtr &input_x, const NodePtr &grid, const NodePtr &interpolation_mode,
                                 const NodePtr &padding_mode, const NodePtr &align_corners) {

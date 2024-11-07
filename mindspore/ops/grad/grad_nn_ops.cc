@@ -2644,7 +2644,9 @@ REG_BPROP_BUILDER("GridSampler3D").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto padding_mode = ib->GetInput(kIndex3);
   auto align_corners = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
-  auto tmp = ib->GridSampler3DGrad(dout, input_x, grid, interpolation_mode, padding_mode, align_corners);
+  std::vector<int64_t> output_mask_vec = {input_x->need_compute_grad_out(), grid->need_compute_grad_out()};
+  auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
+  auto tmp = ib->GridSampler3DGrad(dout, input_x, grid, interpolation_mode, padding_mode, align_corners, output_mask);
   auto dx = ib->TupleGetItem(tmp, 0);
   auto dgrid = ib->TupleGetItem(tmp, 1);
   auto grad_interpolation_mode = ib->OutZeros(interpolation_mode);
@@ -2667,7 +2669,9 @@ REG_BPROP_BUILDER("GridSampler2D").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto padding_mode = ib->GetInput(kIndex3);
   auto align_corners = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
-  auto tmp = ib->GridSampler2DGrad(dout, input_x, grid, interpolation_mode, padding_mode, align_corners);
+  std::vector<int64_t> output_mask_vec = {input_x->need_compute_grad_out(), grid->need_compute_grad_out()};
+  auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
+  auto tmp = ib->GridSampler2DGrad(dout, input_x, grid, interpolation_mode, padding_mode, align_corners, output_mask);
   auto dx = ib->TupleGetItem(tmp, 0);
   auto dgrid = ib->TupleGetItem(tmp, 1);
   auto grad_interpolation_mode = ib->OutZeros(interpolation_mode);

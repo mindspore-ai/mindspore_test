@@ -31,6 +31,10 @@ void GridSampler2DGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *>
   interpolation_mode_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
   padding_mode_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   align_corners_ = transform::ConvertKernelTensor<bool>(inputs[kIndex5]);
+  const auto &output_mask_tmp = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex6]);
+  output_mask_.clear();
+  std::transform(output_mask_tmp.begin(), output_mask_tmp.end(), std::back_inserter(output_mask_),
+                 [](int64_t value) { return static_cast<uint8_t>(value); });
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], interpolation_mode_, padding_mode_,
                         align_corners_, output_mask_, outputs[kIndex0], outputs[kIndex1]);
 }

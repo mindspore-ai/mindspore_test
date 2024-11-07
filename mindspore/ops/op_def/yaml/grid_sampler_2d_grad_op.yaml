@@ -21,6 +21,10 @@ grid_sampler_2d_grad:
             dtype: bool
             default: False
             prim_init: True
+        output_mask:
+            dtype: tuple[int]
+            prim_init: True
+            default: (1, 1)
     returns:
         dx: 
             dtype: tensor

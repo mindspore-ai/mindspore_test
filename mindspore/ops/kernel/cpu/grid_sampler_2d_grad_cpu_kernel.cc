@@ -25,7 +25,7 @@ const size_t kTwo = 2;
 const size_t kThree = 3;
 const size_t kFour = 4;
 const size_t kFive = 5;
-const size_t kInputsNum = 6;
+const size_t kInputsNum = 7;
 const size_t kOutputsNum = 2;
 }  // namespace
 

@@ -673,10 +673,11 @@ def get_grid_sampler_grad_vmap_rule(prim, axis_size):
     else:
         _raise_value_error("The prim name must be `GridSampler2D` or `GridSampler3D`, but got {}.".format(prim_name))
 
-
-    def vmap_rule(grad_bdim, input_x_bdim, grid_bdim, interpolation_mode_bdim, padding_mode_bdim, align_corners_bdim):
+    def vmap_rule(grad_bdim, input_x_bdim, grid_bdim, interpolation_mode_bdim, padding_mode_bdim, align_corners_bdim,
+                  output_mask_bdim):
         is_all_none, result = vmap_general_preprocess(
-            prim, grad_bdim, input_x_bdim, grid_bdim, interpolation_mode_bdim, padding_mode_bdim, align_corners_bdim)
+            prim, grad_bdim, input_x_bdim, grid_bdim, interpolation_mode_bdim, padding_mode_bdim, align_corners_bdim,
+            output_mask_bdim)
         if is_all_none:
             return result
 
@@ -686,6 +687,7 @@ def get_grid_sampler_grad_vmap_rule(prim, axis_size):
         interpolation_mode, _ = interpolation_mode_bdim
         padding_mode, _ = padding_mode_bdim
         align_corners, _ = align_corners_bdim
+        output_mask, _ = output_mask_bdim
 
         grad = _bdim_at_front(grad, grad_dim, axis_size)
         grad_shape = F.shape(grad)
@@ -699,7 +701,8 @@ def get_grid_sampler_grad_vmap_rule(prim, axis_size):
         grid_shape = F.shape(grid)
         grid = F.reshape(grid, (-1,) + grid_shape[non_batch_dim_index:])
 
-        dx, dgrid = prim(grad, input_x, grid, interpolation_mode, padding_mode, align_corners)
+        dx, dgrid = prim(grad, input_x, grid, interpolation_mode,
+                         padding_mode, align_corners, output_mask)
         dx_shape = F.shape(dx)
         dx_return_shape = input_x_shape[:non_batch_dim_index] + dx_shape[non_batch_dim_index:]
         dx = F.reshape(dx, dx_return_shape)

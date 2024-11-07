@@ -19,6 +19,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <algorithm>
 #include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -30,7 +31,7 @@ namespace pyboost {
 std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> GridSampler3DGradAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &grad_tensor, const BaseTensorPtr &input_x_tensor,
   const BaseTensorPtr &grid_tensor, const Int64ImmPtr &interpolation_mode, const Int64ImmPtr &padding_mode,
-  const BoolImmPtr &align_corners) {
+  const BoolImmPtr &align_corners, const ValueTuplePtr &output_mask) {
   constexpr char op_name[] = "GridSampler3DGrad";
   MS_LOG(DEBUG) << op_name << " call start";
   auto device_context = op->device_context();
@@ -43,6 +44,10 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> GridSampler3DGradAscend
   auto interpolation_mode_imm = GetValue<int64_t>(interpolation_mode);
   auto padding_mode_imm = GetValue<int64_t>(padding_mode);
   auto align_corners_imm = GetValue<bool>(align_corners);
+  const auto &output_mask_tmp = ConvertValueTupleToVector<int64_t>(output_mask);
+  std::vector<uint8_t> output_mask_vec;
+  std::transform(output_mask_tmp.begin(), output_mask_tmp.end(), std::back_inserter(output_mask_vec),
+                 [](int64_t value) { return static_cast<uint8_t>(value); });
 
   PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), grad_tensor, input_x_tensor, grid_tensor);
 
@@ -51,7 +56,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> GridSampler3DGradAscend
   // Async
   PyBoostUtils::DispatchRun(
     std::make_shared<runtime::PyBoostDeviceTask>([op, grad_tensor, input_x_tensor, grid_tensor, interpolation_mode_imm,
-                                                  padding_mode_imm, align_corners_imm, op_name]() {
+                                                  padding_mode_imm, align_corners_imm, output_mask_vec, op_name]() {
       MS_LOG(DEBUG) << "Run device task " << op_name << " end";
       auto device_context = op->device_context();
       // Malloc for input tensors
@@ -59,10 +64,9 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr> GridSampler3DGradAscend
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, op->outputs());
 
-      std::vector<uint8_t> output_mask{1, 1};
       LAUNCH_ACLNN(aclnnGridSampler3DBackward, device_context, op->stream_id(), grad_tensor, input_x_tensor,
-                   grid_tensor, interpolation_mode_imm, padding_mode_imm, align_corners_imm, output_mask, op->output(0),
-                   op->output(1));
+                   grid_tensor, interpolation_mode_imm, padding_mode_imm, align_corners_imm, output_mask_vec,
+                   op->output(0), op->output(1));
       MS_LOG(DEBUG) << "Run device task " << op_name << " end";
     }));
   return std::make_tuple(op->output(0), op->output(1));

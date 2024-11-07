@@ -28,6 +28,7 @@ std::vector<std::pair<KernelAttr, GridSampler2DGradKernelMod::KernelFunc>> GridS
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat16)
      .AddOutputAttr(kNumberTypeFloat16),
    &GridSampler2DGradKernelMod::LaunchKernel<half>},
@@ -38,6 +39,7 @@ std::vector<std::pair<KernelAttr, GridSampler2DGradKernelMod::KernelFunc>> GridS
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
    &GridSampler2DGradKernelMod::LaunchKernel<float>},
@@ -48,6 +50,7 @@ std::vector<std::pair<KernelAttr, GridSampler2DGradKernelMod::KernelFunc>> GridS
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64),
    &GridSampler2DGradKernelMod::LaunchKernel<double>}};
@@ -67,6 +70,7 @@ std::vector<std::pair<KernelAttr, GridSampler3DGradKernelMod::KernelFunc>> GridS
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat16)
      .AddOutputAttr(kNumberTypeFloat16),
    &GridSampler3DGradKernelMod::LaunchKernel<half>},
@@ -77,6 +81,7 @@ std::vector<std::pair<KernelAttr, GridSampler3DGradKernelMod::KernelFunc>> GridS
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat32)
      .AddOutputAttr(kNumberTypeFloat32),
    &GridSampler3DGradKernelMod::LaunchKernel<float>},
@@ -87,6 +92,7 @@ std::vector<std::pair<KernelAttr, GridSampler3DGradKernelMod::KernelFunc>> GridS
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeInt64)
      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)
+     .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
      .AddOutputAttr(kNumberTypeFloat64)
      .AddOutputAttr(kNumberTypeFloat64),
    &GridSampler3DGradKernelMod::LaunchKernel<double>}};
