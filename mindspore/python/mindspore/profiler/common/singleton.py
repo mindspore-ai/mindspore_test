@@ -16,13 +16,30 @@
 
 
 class Singleton:
-    """A singleton implement"""
+    """A singleton implement with reset capability"""
 
     def __init__(self, cls):
         self._cls = cls
         self._instance = {}
 
-    def __call__(self):
+    def __call__(self, *args, **kwargs):
+        """
+        Create a new instance of the singleton class.
+        """
         if self._cls not in self._instance:
-            self._instance[self._cls] = self._cls()
+            self._instance[self._cls] = self._cls(*args, **kwargs)
         return self._instance[self._cls]
+
+    def reset(self, *args, **kwargs):
+        """
+        Reset the singleton instance and create a new one.
+
+        Args:
+            *args: Positional arguments for the class constructor.
+            **kwargs: Keyword arguments for the class constructor.
+
+        Returns:
+            A new instance of the singleton class.
+        """
+        self._instance.pop(self._cls, None)
+        return self.__call__(*args, **kwargs)

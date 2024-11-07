@@ -18,15 +18,39 @@ from enum import Enum
 
 class DeviceTarget(Enum):
     """The device target enum."""
-    CPU = 'cpu'
-    GPU = 'gpu'
-    ASCEND = 'ascend'
+
+    CPU = "CPU"
+    GPU = "GPU"
+    NPU = "Ascend"
 
 
 class ProfilerLevel(Enum):
+    """The profiler level enum."""
+
+    LevelNone = "LevelNone"
     Level0 = "Level0"
     Level1 = "Level1"
     Level2 = "Level2"
+
+
+class ProfilerActivity(Enum):
+    """The profiler activity enum."""
+
+    NPU = "NPU"
+    GPU = "GPU"
+    CPU = "CPU"
+
+class AicoreMetrics(Enum):
+    """The aicore metrics enum."""
+
+    PipeUtilization = "PipeUtilization"
+    ArithmeticUtilization = "ArithmeticUtilization"
+    Memory = "Memory"
+    MemoryL0 = "MemoryL0"
+    MemoryUB = "MemoryUB"
+    ResourceConflictRatio = "ResourceConflictRatio"
+    L2Cache = "L2Cache"
+    AiCoreNone = "None"
 
 
 class EventConstant:
