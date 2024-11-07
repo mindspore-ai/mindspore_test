@@ -200,6 +200,14 @@ ATTR_MAP(GroupedMatmul) = EMPTY_ATTR_MAP;
 DYN_OUTPUT_MAP(GroupedMatmul) = {{0, DYN_OUTPUT_DESC(y)}};
 REG_ADPT_DESC(GroupedMatmul, kNameGroupedMatmul, ADPT_DESC(GroupedMatmul))
 
+// MoeInitRouting
+INPUT_MAP(MoeInitRouting) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(row_idx)}, {3, INPUT_DESC(expert_idx)}};
+ATTR_MAP(MoeInitRouting) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(MoeInitRouting) = {{4, ATTR_DESC(active_num, AnyTraits<int64_t>())}};
+OUTPUT_MAP(MoeInitRouting) = {
+  {0, OUTPUT_DESC(expanded_x)}, {1, OUTPUT_DESC(expanded_row_idx)}, {2, OUTPUT_DESC(expanded_expert_idx)}};
+REG_ADPT_DESC(MoeInitRouting, kNameMoeInitRouting, ADPT_DESC(MoeInitRouting))
+
 // MoeFinalizeRouting
 INPUT_MAP(MoeFinalizeRouting) = {{1, INPUT_DESC(expanded_x)},
                                  {2, INPUT_DESC(x1)},
