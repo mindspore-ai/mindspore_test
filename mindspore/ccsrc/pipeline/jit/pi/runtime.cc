@@ -850,6 +850,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
       c->code()->SetGuard(guard);
     }
   }
+  c->code()->GetGuard()->FilterConstItem();
 
   CollectTraceBack(c, c->code()->GetPythonCode(), c->code()->GetNativeFunc() != nullptr);
 
