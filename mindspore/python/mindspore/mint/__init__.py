@@ -87,7 +87,7 @@ from mindspore.ops.functional import log
 # 21
 from mindspore.ops.functional import mul
 # 22
-
+from mindspore.ops.functional import cumprod
 # 23
 
 # 24
@@ -1788,7 +1788,7 @@ __all__ = [
     # 21
     'mul',
     # 22
-
+    'cumprod',
     # 23
 
     # 24
