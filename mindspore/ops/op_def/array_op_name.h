@@ -116,6 +116,7 @@ constexpr auto kDiagDOpName = "DiagD";
 constexpr auto kDynamicGRUV2OpName = "DynamicGRUV2";
 constexpr auto kDynamicRNNOpName = "DynamicRNN";
 constexpr auto kExpandOpName = "Expand";
+constexpr auto kExpandAsOpName = "ExpandAs";
 constexpr auto kExpandDOpName = "ExpandD";
 constexpr auto kExpandDimsOpName = "ExpandDims";
 constexpr auto kExtractImagePatchesOpName = "ExtractImagePatches";

@@ -23,11 +23,11 @@ import logging
 import gen_utils
 from gen_utils import (py_licence_str, cc_license_str, check_change_and_replace_file, merge_files,
                        merge_files_append, safe_load_yaml, convert_dtype_str, write_file)
-from pyboost_utils import get_pyboost_name, is_pyboost_enable, AclnnUtils, get_dtypes
+from pyboost_utils import get_pyboost_name, is_pyboost_enable
 import template
 from template import CppTemplate
 from gen_pyboost_func import gen_pyboost_code
-from gen_aclnn_implement import gen_aclnn_kernel
+from gen_aclnn_implement import generate_aclnn_reg_file
 import gen_constants as K
 
 
@@ -965,56 +965,6 @@ def generate_create_instance_helper_file(work_path, yaml_str):
     py_arg_default = generate_op_arg_default_value(yaml_str)
     write_file(tmp_op_py_path, py_licence_str + "\n" + py_arg_default + "\n\n" + py_labels + "\n")
     check_change_and_replace_file(op_py_path, tmp_op_py_path)
-
-
-def generate_aclnn_reg_code(yaml_data):
-    """generate aclnn register code"""
-    current_path = os.path.dirname(os.path.realpath(__file__))
-    work_path = os.path.join(current_path, '../../../../')
-    ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, "ops.yaml")
-    yaml_str = gen_utils.safe_load_yaml(ops_yaml_path)
-
-    reg_code = f"""
-#include "{K.MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_mod.h"
-
-namespace mindspore {{
-namespace kernel {{
-"""
-    for operator_name, operator_data in yaml_data.items():
-        dispatch = operator_data.get("dispatch")
-        if not dispatch or not dispatch.get("enable"):
-            continue
-        Ascend = dispatch.get("Ascend")
-        if Ascend is not None:  # KernelMod is provided by yaml, don't auto generate it.
-            continue
-        _, _, none_tensor_exist = get_dtypes(operator_data)
-        if none_tensor_exist:
-            gen_aclnn_kernel(operator_name, yaml_str, auto=True)
-            continue
-        class_name = ''.join(word.capitalize() for word in operator_name.split('_'))
-        op_class = operator_data.get("class")
-        if op_class and op_class.get("name") is not None:
-            class_name = op_class.get("name")
-        inputs_outputs_num = len(operator_data.get("args")) + len(operator_data.get("returns"))
-        aclnn_name = AclnnUtils.get_aclnn_interface(class_name)
-        reg_code += f"""
-MS_ACLNN_COMMON_KERNEL_FACTORY_REG({class_name}, {aclnn_name}, {inputs_outputs_num});"""
-    reg_code += f"""
-}}  // namespace kernel
-}}  // namespace mindspore
-"""
-    return reg_code
-
-
-def generate_aclnn_reg_file(work_path, yaml_str):
-    """
-    Generate nnacl kernelmod register
-    """
-    tmp_register_file = work_path + f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/tmp_aclnn_kernel_register.cc'
-    register_file = work_path + f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_register_auto.cc'
-    reg_code = generate_aclnn_reg_code(yaml_str)
-    write_file(tmp_register_file, cc_license_str + reg_code)
-    check_change_and_replace_file(register_file, tmp_register_file)
 
 
 def generate_arg_handler_files(work_path):

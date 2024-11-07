@@ -1,0 +1,31 @@
+expand_as:
+    description: |
+        Broadcast the shape of the input tensor to be the same as the another input tensor. The dim of the
+        input shape must be smaller than or equal to that of another and the broadcast rules must be met.
+
+        Args:
+            input (Tensor): The input Tensor.
+            other (Tensor): The target Tensor. It's shape is the target shape that input tensor need to be broadcasted.
+
+        Returns:
+            Tensor, with the given shape of `other` and the same data type as `input`.
+
+        Raises:
+            TypeError: If `other` is not a tensor.
+            ValueError: If the shape of `other` and `input` are incompatible.
+
+        Supported Platforms:
+            ``Ascend``expa
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>>  from mindspore.ops.function.array_func import expand_as
+            >>> x = Tensor(np.array([[1, 2, 3], [1, 2, 3]]).astype(np.float32))
+            >>> other = Tensor(np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]]).astype(np.float32))
+            >>> output = expand_as(x, other)
+            >>> print(output)
+            [[1. 2. 3.]
+             [1. 2. 3.]
+             [1. 2. 3.]]
+            >>> shape = (3, 3)
