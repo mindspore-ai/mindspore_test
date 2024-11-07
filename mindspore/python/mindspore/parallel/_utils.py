@@ -14,6 +14,7 @@
 # ============================================================================
 """Utils of auto parallel"""
 import os
+from time import perf_counter
 from importlib import import_module
 import numpy as np
 import mindspore as ms
@@ -104,6 +105,26 @@ def _need_to_full():
     return not _get_full_batch()
 
 
+class ParallelParamInitProfCtx:
+    """Collect parallel param initialization performance context mgr."""
+
+    def __init__(self, parameter, func_name):
+        self.parameter = parameter
+        self.func_name = func_name
+        self.start_timestamp = None
+
+    def __enter__(self):
+        self.start_timestamp = perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        end_timestamp = perf_counter()
+        duration = end_timestamp - self.start_timestamp
+        if os.getenv("MS_DEV_PARAM_INIT_PROF_COLLECT"):
+            logger.warning(f"{self.func_name}: {self.parameter.name}, shape: {self.parameter.shape}, "
+                           f"sliced: {self.parameter.sliced}, duration: {duration}")
+
+
 def _slice_parameter(parameter, phase, layout):
     """Slice python parameter obj according to the layout."""
     is_train_phase = phase.startswith('train')
@@ -119,7 +140,8 @@ def _slice_parameter(parameter, phase, layout):
         parameter.shape = tuple(layout_shape)
         return
     graph_executor = GraphExecutor_.get_instance()
-    new_param = parameter.init_data(layout, set_sliced=True)
+    with ParallelParamInitProfCtx(parameter, "init_data") as _:
+        new_param = parameter.init_data(layout, set_sliced=True)
     parameter = new_param
     graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
     if layout is None:
@@ -127,8 +149,9 @@ def _slice_parameter(parameter, phase, layout):
         return
     if not parameter.sliced:
         rank = get_rank()
-        new_tensor = _load_tensor_by_layout(parameter, layout, rank)
-        parameter.set_data(new_tensor, True)
+        with ParallelParamInitProfCtx(parameter, "_load_tensor_by_layout") as _:
+            new_tensor = _load_tensor_by_layout(parameter, layout, rank)
+            parameter.set_data(new_tensor, True)
 
 
 def _slice_tensor(tensor, layout, rank_id):
