@@ -4,4 +4,4 @@ add:
   Ascend: pyboost
   CPU: py_method
   GPU: py_method
-  interface: tensor
+  interface: method

@@ -4,4 +4,4 @@ logical_or:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor
+    interface: method

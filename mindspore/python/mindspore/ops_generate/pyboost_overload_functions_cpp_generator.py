@@ -72,26 +72,21 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
             'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'py::object res = fn(self, *py_args, **py_kwargs);\n'
+            'py::object res = fn(self, *args, **kwargs);\n'
             'return res;\n'
         )
         self.arg_handler_prt_template = Template(
             "arg_list[${idx}] = "
-            "(*pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
+            "(*${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]))->value();\n"
         )
         self.arg_handler_template = Template(
             "arg_list[${idx}] = "
-            "pynative::${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]);\n"
+            "${func_str}(\"${func_name}\", \"${op_arg_name}\", arg_list[${idx}]);\n"
         )
         self.arg_handler_optional_template = Template(
             'if (!py::isinstance<py::none>(arg_list[${idx}])) {\n'
             '  ${arg_handler_str}\n'
             '}\n'
-        )
-        self.header_func_def_template = Template(
-            'py::object TensorMethod${class_name}(const py::object &self, '
-            'const py::args &py_args, '
-            'const py::kwargs &py_kwargs);'
         )
         self.pybind_register_template = Template(
             '(void)py::class_ <${cpp_func_name}Functional, Functional, std::shared_ptr<${cpp_func_name}Functional>>(\n'
@@ -99,13 +94,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             '.def(py::init<>())\n'
             '.def("__call__", &${cpp_func_name}Functional::Call, "Call ${mint_func_name} functional.");\n'
         )
-        # self.pybind_alias_reg_template = Template(
-        #     '(void)(*m).attr("${alias_func_name}Functional_") = (*m).attr("${orig_func_name}Functional_");\n'
-        # )
         self.callback_python_in_ut_template = Template(
             'MS_LOG(INFO) << "Callback python method in UT: ${py_method}";\n'
             'fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'res = fn(self, *py_args, **py_kwargs);\n'
+            'res = fn(self, *args, **kwargs);\n'
             'break;\n'
         )
         self.single_case_in_ut_template = Template(

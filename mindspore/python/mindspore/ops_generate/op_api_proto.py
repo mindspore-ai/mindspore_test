@@ -70,7 +70,6 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
             ascend = func_data.get('Ascend', 'aclnn')
             gpu = func_data.get('GPU', 'aclnn')
             cpu = func_data.get('CPU', 'aclnn')
-
             interface = func_data.get('interface')
             if interface is None:
                 raise ValueError(
@@ -79,14 +78,14 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
 
             interface = ', '.join(part.strip() for part in interface.split(','))
 
-            if interface not in {'tensor', 'function', 'tensor, function', 'function, tensor'}:
+            if interface not in {'method', 'function', 'method, function', 'function, method'}:
                 raise ValueError(
-                    f"The value of field 'interface' must be one of 'tensor', 'function', "
-                    f"'tensor, function', or 'function, tensor'. File name is {func_name}.yaml")
+                    f"The value of field 'interface' must be one of 'method', 'function', "
+                    f"'method, function', or 'function, method'. File name is {func_name}.yaml")
 
             proto = OpApiProto(func_name=func_name, op_proto=op_proto,
                                py_method=py_method, ascend=ascend, gpu=gpu, cpu=cpu)
-            if 'tensor' in interface:
+            if 'method' in interface:
                 tensor_method_protos[func_name].append(proto)
             if 'function' in interface:
                 mint_func_protos[func_name].append(proto)

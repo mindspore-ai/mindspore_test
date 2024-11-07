@@ -4,4 +4,4 @@ not_equal:
   Ascend: pyboost
   CPU: pyboost
   GPU: pyboost
-  interface: tensor
+  interface: method

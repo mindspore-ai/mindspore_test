@@ -17,6 +17,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "pybind_api/ir/tensor_func_reg.h"
 #include "pipeline/pynative/op_function/converter.h"
+#include "pybind_api/ir/arg_handler.h"
 
 
 namespace mindspore::pynative {

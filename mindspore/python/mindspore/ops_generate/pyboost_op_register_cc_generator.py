@@ -26,7 +26,6 @@ import template
 from template import Template
 import gen_constants as K
 import pyboost_utils
-import op_api_proto
 from gen_utils import save_file
 from base_generator import BaseGenerator
 from op_proto import OpProto
