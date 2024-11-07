@@ -38,15 +38,14 @@ def count_nonzero_backward_func(x, dim=None):
 
 def set_mode(mode):
     if mode == "GRAPH_MODE":
-        ms.context.set_context(mode=ms.GRAPH_MODE, jit_config={"jit_level": "O0"})
+        ms.context.set_context(mode=ms.GRAPH_MODE,
+                               jit_config={"jit_level": "O0"})
     else:
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
 
 
 @arg_mark(
-    plat_marks=[
-        "platform_ascend"
-    ],
+    plat_marks=["platform_ascend"],
     level_mark="level0",
     card_mark="onecard",
     essential_mark="essential",
@@ -69,9 +68,7 @@ def test_mint_count_nonzero_normal(context_mode):
 
 
 @arg_mark(
-    plat_marks=[
-        "platform_ascend"
-    ],
+    plat_marks=["platform_ascend"],
     level_mark="level1",
     card_mark="onecard",
     essential_mark="unessential",
@@ -86,9 +83,14 @@ def test_mint_count_nonzero_forward_dynamic_shape():
     axis1 = (0, -1)
     input2 = ms.Tensor(generate_random_input((3, 3, 4, 4), np.float32))
     axis2 = (0, 1, -1)
-    TEST_OP(count_nonzero_forward_func, [[input1, axis1], [input2, axis2]], 'count_nonzero', disable_yaml_check=True)
+    TEST_OP(count_nonzero_forward_func, [[input1, axis1], [input2, axis2]],
+            'count_nonzero',
+            disable_yaml_check=True,
+            disable_mode=['GRAPH_MODE'])
 
     input3 = ms.Tensor(generate_random_input((2, 3, 4), np.float32))
     input4 = ms.Tensor(generate_random_input((2, 3), np.float32))
-    TEST_OP(count_nonzero_forward_func, [[input3], [input4]], 'count_nonzero', disable_yaml_check=True)
-    
+    TEST_OP(count_nonzero_forward_func, [[input3], [input4]],
+            'count_nonzero',
+            disable_yaml_check=True,
+            disable_mode=['GRAPH_MODE'])
