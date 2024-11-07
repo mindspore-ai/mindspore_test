@@ -20,7 +20,6 @@ from itertools import accumulate
 import operator
 
 import mindspore.context as context
-from mindspore.ops import functional as F
 from mindspore.ops.primitive import constexpr
 from mindspore.ops.primitive import _primexpr
 from mindspore.common import dtype as mstype
@@ -28,6 +27,7 @@ from mindspore.common import Tensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore._c_expression import typing
 from mindspore import _checkparam as validator
+from mindspore import ops
 
 from mindspore.numpy.dtypes import promotion_rule, dtype_tuple, all_types, dtype_map, rule_for_trigonometric
 
@@ -80,13 +80,13 @@ def _check_dtype(dtype):
 @_primexpr
 def _is_shape_empty(shp):
     """Check whether shape contains zero"""
-    if F.is_sequence_shape_unknown(shp):
+    if ops.is_sequence_shape_unknown(shp):
         return False
     if isinstance(shp, int):
         return shp == 0
     if isinstance(shp, (tuple, list)):
         return 0 in shp
-    return F.shape_mul(shp) == 0
+    return ops.shape_mul(shp) == 0
 
 
 @_primexpr
@@ -189,7 +189,7 @@ def _check_axis_valid(axes, ndim):
             raise ValueError('duplicate value in "axis"')
 
     if axes is None:
-        axes = F.make_range(ndim)
+        axes = ops.make_range(ndim)
         return axes
     if isinstance(axes, (tuple, list)):
         axes = tuple(map(lambda x: _check_axis_in_range(x, ndim), axes))

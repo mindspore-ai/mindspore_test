@@ -19,8 +19,6 @@ import operator
 
 from mindspore.common import dtype as mstype
 from mindspore.common import Tensor, mutable
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.nn import Cell
 from mindspore import ops
@@ -73,11 +71,11 @@ def expand_dims(a, axis):
     if not isinstance(axis, (int, tuple, list)):
         _raise_type_error("axis must be tuple, list or int, but got ", axis)
     if isinstance(axis, int):
-        return F.expand_dims(a, axis)
+        return ops.expand_dims(a, axis)
     ndim = a.ndim + len(axis)
     axis = _canonicalize_axis(axis, ndim)
     for ax in axis:
-        a = F.expand_dims(a, ax)
+        a = ops.expand_dims(a, ax)
     return a
 
 
@@ -199,14 +197,14 @@ def rollaxis(x, axis, start=0):
     if not isinstance(start, int):
         _raise_type_error("integer argument expected, but got ", start)
 
-    shape = F.shape(x)
-    ndim = F.tuple_len(shape)
+    shape = ops.shape(x)
+    ndim = ops.tuple_len(shape)
 
     axis = _check_axes_range(axis, ndim)
     start = _check_start_normalize(start, ndim)
     if start - axis >= 0 and start - axis <= 1:
         return x
-    perm = F.make_range(0, ndim)
+    perm = ops.make_range(0, ndim)
     new_perm = None
     if start < axis:
         if axis + 1 < ndim:
@@ -222,7 +220,7 @@ def rollaxis(x, axis, start=0):
             new_perm = perm[0:axis] + perm[axis + 1:start] + \
                 perm[axis:axis + 1]
 
-    return F.transpose(x, new_perm)
+    return ops.transpose(x, new_perm)
 
 
 def swapaxes(x, axis1, axis2):
@@ -409,7 +407,7 @@ def concatenate(arrays, axis=0):
         # as: tuple(tensor_1(4,5), tensor_2(4,5), tensor_3(4,5))
         if axis is None or axis >= MAX_NUMPY_DIMS:
             return ravel(arrays)
-        arr_shape = F.shape(arrays)
+        arr_shape = ops.shape(arrays)
         _check_axes_range((axis,), len(arr_shape))
         # move axis 0 to the disiganated position, while keep other axes' relative
         # positions unchanged
@@ -424,12 +422,12 @@ def concatenate(arrays, axis=0):
             flattened_arrays += (ravel(arr),)
         axis = -1
         flattened_arrays = _promote_type_for_concatenate(flattened_arrays)
-        return P.Concat(axis)(flattened_arrays)
+        return ops.Concat(axis)(flattened_arrays)
 
     # convert a list of tensor to a tuple of tensor
     arrays = _convert_list_tensor_to_tuple_tensor(arrays)
 
-    arr_shape = F.shape(arrays[0])
+    arr_shape = ops.shape(arrays[0])
     _check_axes_range((axis,), len(arr_shape))
 
     # if only one tensor in the tuple/list, return the tensor itself
@@ -437,7 +435,7 @@ def concatenate(arrays, axis=0):
         return arrays[0]
 
     arrays = _promote_type_for_concatenate(arrays)
-    return P.Concat(axis)(arrays)
+    return ops.Concat(axis)(arrays)
 
 
 def append(arr, values, axis=None):
@@ -476,7 +474,7 @@ def append(arr, values, axis=None):
         values = values.ravel()
     else:
         _check_axis_in_range(axis, arr.ndim)
-    if F.rank(arr) != F.rank(values):
+    if ops.rank(arr) != ops.rank(values):
         _raise_value_error("all tensors must have same number of dimensions")
     return concatenate((arr, values), axis)
 
@@ -518,13 +516,13 @@ def column_stack(tup):
     trans_tup = ()
     for tensor in tup:
         if tensor.ndim < 1:
-            tensor = F.expand_dims(tensor, 0)
+            tensor = ops.expand_dims(tensor, 0)
         if tensor.ndim == 1:
-            tensor = F.expand_dims(tensor, 1)
+            tensor = ops.expand_dims(tensor, 1)
         trans_tup += (tensor,)
     if not trans_tup:
         _raise_value_error("Need at least one tensor to concatenate.")
-    return P.Concat(1)(trans_tup)
+    return ops.Concat(1)(trans_tup)
 
 
 def vstack(tup):
@@ -568,7 +566,7 @@ def vstack(tup):
         trans_tup += (tensor,)
     if not trans_tup:
         _raise_value_error("Need at least one tensor to concatenate.")
-    return P.Concat(0)(trans_tup)
+    return ops.Concat(0)(trans_tup)
 
 
 def hstack(tup):
@@ -608,13 +606,13 @@ def hstack(tup):
     tuple_of_tensor = ()
     for tensor in tup:
         if tensor.ndim < 1:
-            tensor = F.expand_dims(tensor, 0)
+            tensor = ops.expand_dims(tensor, 0)
         tuple_of_tensor += (tensor,)
     if not tuple_of_tensor:
         _raise_value_error("Need at least one tensor to concatenate.")
     if tuple_of_tensor[0].ndim <= 1:
-        return P.Concat(0)(tuple_of_tensor)
-    return P.Concat(1)(tuple_of_tensor)
+        return ops.Concat(0)(tuple_of_tensor)
+    return ops.Concat(1)(tuple_of_tensor)
 
 
 def dstack(tup):
@@ -658,11 +656,11 @@ def dstack(tup):
         if tensor.ndim <= 1:
             tensor = _expand(tensor, 2, 0)
         if tensor.ndim == 2:
-            tensor = F.expand_dims(tensor, 2)
+            tensor = ops.expand_dims(tensor, 2)
         trans_tup += (tensor,)
     if not trans_tup:
         _raise_value_error("Need at least one tensor to concatenate.")
-    return P.Concat(2)(trans_tup)
+    return ops.Concat(2)(trans_tup)
 
 
 def where(condition, x=None, y=None):
@@ -705,42 +703,42 @@ def where(condition, x=None, y=None):
     """
     condition, x, y = _to_tensor(condition, x, y)
     # type promotes input tensors
-    dtype1 = F.dtype(x)
-    dtype2 = F.dtype(y)
+    dtype1 = ops.dtype(x)
+    dtype2 = ops.dtype(y)
     dtype = _promote(dtype1, dtype2)
     if not _check_same_type(dtype1, dtype):
-        x = F.cast(x, dtype)
+        x = ops.cast(x, dtype)
     if not _check_same_type(dtype2, dtype):
-        y = F.cast(y, dtype)
+        y = ops.cast(y, dtype)
     is_bool = _check_same_type(dtype1, mstype.bool_) and _check_same_type(dtype2, mstype.bool_)
     if is_bool:
         # select does not support bool type for x or y
-        x = F.cast(x, mstype.float32)
-        y = F.cast(y, mstype.float32)
+        x = ops.cast(x, mstype.float32)
+        y = ops.cast(y, mstype.float32)
 
-    dynamic = F.is_sequence_value_unknown(F.shape(condition)) or F.is_sequence_value_unknown(F.shape(x))\
-              or F.is_sequence_value_unknown(F.shape(y))
+    dynamic = ops.is_sequence_value_unknown(ops.shape(condition)) or ops.is_sequence_value_unknown(ops.shape(x))\
+              or ops.is_sequence_value_unknown(ops.shape(y))
     # As select op currently does not support broadcast, broadcasts input tensors
     if not dynamic:
-        shape_out = _infer_out_shape(F.shape(condition),
-                                     F.shape(x), F.shape(y))
+        shape_out = _infer_out_shape(ops.shape(condition),
+                                     ops.shape(x), ops.shape(y))
         condition = _broadcast_to_shape(condition, shape_out)
         x = _broadcast_to_shape(x, shape_out)
         y = _broadcast_to_shape(y, shape_out)
     else:
         # Get the broadcast shape through broadcast calculation
         add_x_y = x + y
-        add_out = condition + F.cast(add_x_y, condition.dtype)
-        shape_out = P.Shape()(add_out)
+        add_out = condition + ops.cast(add_x_y, condition.dtype)
+        shape_out = ops.Shape()(add_out)
         condition = ops.broadcast_to(condition, shape_out)
         x = ops.broadcast_to(x, shape_out)
         y = ops.broadcast_to(y, shape_out)
 
-    if not _check_same_type(F.dtype(condition), mstype.bool_):
-        condition = F.cast(condition, mstype.bool_)
-    res = F.select(condition, x, y)
+    if not _check_same_type(ops.dtype(condition), mstype.bool_):
+        condition = ops.cast(condition, mstype.bool_)
+    res = ops.select(condition, x, y)
     if is_bool:
-        res = F.cast(res, mstype.bool_)
+        res = ops.cast(res, mstype.bool_)
     return res
 
 
@@ -873,13 +871,13 @@ def atleast_3d(*arys):
     """
     res = []
     for arr in arys:
-        ndim = F.rank(arr)
+        ndim = ops.rank(arr)
         if ndim == 0:
-            arr = F.reshape(arr, (1, 1, 1))
+            arr = ops.reshape(arr, (1, 1, 1))
         elif ndim == 1:
-            arr = F.reshape(arr, (1, F.size(arr), 1))
+            arr = ops.reshape(arr, (1, ops.size(arr), 1))
         elif ndim == 2:
-            arr = F.reshape(arr, F.shape(arr) + (1,))
+            arr = ops.reshape(arr, ops.shape(arr) + (1,))
         res.append(arr)
     if len(res) == 1:
         return res[0]
@@ -927,24 +925,24 @@ def stack(arrays, axis=0):
     """
 
     if isinstance(arrays, Tensor):
-        shape = F.shape(arrays)
-        ndim = F.rank(arrays)
+        shape = ops.shape(arrays)
+        ndim = ops.rank(arrays)
         axis = axis % ndim
-        axes = F.make_range(ndim)
+        axes = ops.make_range(ndim)
         perm = axes[1:axis + 1] + (0,) + axes[axis + 1:]
         if _is_shape_empty(shape):
             return _empty(mstype.float32, shape[1:axis + 1] + (shape[0],) + shape[axis + 1:])
         return transpose(arrays, perm)
 
     if isinstance(arrays, (list, tuple)):
-        shape = (len(arrays),) + F.shape(arrays[0])
+        shape = (len(arrays),) + ops.shape(arrays[0])
         ndim = len(shape)
         axis = axis % ndim
         if _is_shape_empty(shape):
             return _empty(mstype.float32, shape[1:axis + 1] + (shape[0],) + shape[axis + 1:])
         seq = ()
         for arr in arrays:
-            seq += (F.expand_dims(arr, axis),)
+            seq += (ops.expand_dims(arr, axis),)
         return concatenate(seq, axis)
     return _raise_value_error('input arrays must be Tensor, tuple, or list')
 
@@ -954,7 +952,7 @@ class UniqueNet(Cell):
 
     def __init__(self):
         super(UniqueNet, self).__init__()
-        self.unique = P.Unique()
+        self.unique = ops.Unique()
 
     def construct(self, x):
         return self.unique(x)
@@ -998,7 +996,7 @@ def unique(x, return_inverse=False):
             value= [0, 1, 1, 1, 2, 3, 4]))
     """
     _check_input_tensor(x)
-    if F.tuple_len(F.shape(x)) > 1:
+    if ops.tuple_len(ops.shape(x)) > 1:
         x = ravel(x)
     uniq = UniqueNet()
     res = uniq(x)
@@ -1032,7 +1030,7 @@ def roll_along_axis(a, shift, axis):
     end1 = ()
     end2 = ()
     stride = _list_comprehensions(a.ndim, 1, True)
-    for i in F.make_range(a.ndim):
+    for i in ops.make_range(a.ndim):
         if i != axis:
             begin1 += (0,)
             end1 += (a.shape[i],)
@@ -1043,8 +1041,8 @@ def roll_along_axis(a, shift, axis):
             end1 += (a.shape[i],)
             begin2 += (0,)
             end2 += (shift,)
-    return append(F.strided_slice(a, begin1, end1, stride),
-                  F.strided_slice(a, begin2, end2, stride), axis=axis)
+    return append(ops.strided_slice(a, begin1, end1, stride),
+                  ops.strided_slice(a, begin2, end2, stride), axis=axis)
 
 
 def roll(a, shift, axis=None):
@@ -1086,7 +1084,7 @@ def roll(a, shift, axis=None):
     original_shape = a.shape
     original_dtype = a.dtype
     restore_shape = False
-    # F.strided_slice only supports float on cpu, this will change once more supports
+    # ops.strided_slice only supports float on cpu, this will change once more supports
     # are added.
     if not _check_is_float(original_dtype):
         if not original_dtype in (mstype.complex64, mstype.complex128):
@@ -1181,14 +1179,14 @@ def moveaxis(a, source, destination):
         >>> print(output.shape)
         (5, 4, 3)
     """
-    ndim = F.rank(a)
+    ndim = ops.rank(a)
     source = _check_axis_valid(source, ndim)
     destination = _check_axis_valid(destination, ndim)
     if len(source) != len(destination):
         _raise_value_error('`source` and `destination` arguments must have the same number of elements')
     perm = _get_moved_perm(ndim, source, destination)
 
-    return F.transpose(a, perm)
+    return ops.transpose(a, perm)
 
 
 def tile(a, reps):
@@ -1233,13 +1231,13 @@ def tile(a, reps):
         [[0 1 2 0 1 2]]]
     """
     _check_input_tensor(a)
-    ndim = F.rank(a)
-    shape = F.shape(a)
+    ndim = ops.rank(a)
+    shape = ops.shape(a)
     reps = _add_unit_axes(reps, ndim)
     if _is_shape_empty(shape) or _is_shape_empty(reps):
         shape = _add_unit_axes(shape, len(reps))
-        return _empty(F.dtype(a), _seq_prod(shape, reps))
-    return F.tile(a, reps)
+        return _empty(ops.dtype(a), _seq_prod(shape, reps))
+    return ops.tile(a, reps)
 
 
 @_primexpr
@@ -1284,7 +1282,7 @@ def broadcast_to(array, shape):
     def _check(shape_a, shape):
         if not _check_can_broadcast_to(shape_a, shape):
             _raise_value_error('cannot broadcast with ', shape)
-    shape_a = F.shape(array)
+    shape_a = ops.shape(array)
     _check(shape_a, shape)
     return _broadcast_to_shape(array, shape)
 
@@ -1322,7 +1320,7 @@ def broadcast_arrays(*args):
         [[4, 4, 4],
         [5, 5, 5]])]
     """
-    shapes = map(F.shape, args)
+    shapes = map(ops.shape, args)
     out_shape = _infer_out_shape(*shapes)
     res = []
     for arr in args:
@@ -1439,18 +1437,18 @@ def _split(x, indices_or_sections, opname, axis=0):
         if indices_or_sections > length_along_dim:
             _raise_value_error("empty tensor encountered.")
         if opname == "split" or length_along_dim % indices_or_sections == 0:
-            res = P.Split(axis_new, indices_or_sections)(x)
+            res = ops.Split(axis_new, indices_or_sections)(x)
         else:
             num_long_tensor = length_along_dim % indices_or_sections
             num_short_tensor = indices_or_sections - num_long_tensor
             length1 = num_long_tensor * (length_along_dim // indices_or_sections + 1)
             length2 = length_along_dim - length1
-            start1 = _list_comprehensions(F.rank(x), 0, True)
+            start1 = _list_comprehensions(ops.rank(x), 0, True)
             size1 = _tuple_setitem(arr_shape, axis_new, length1)
             start2 = _tuple_setitem(start1, axis_new, length1)
             size2 = _tuple_setitem(arr_shape, axis_new, length2)
-            res = P.Split(axis_new, num_long_tensor)(F.tensor_slice(x, start1, size1)) + \
-                P.Split(axis_new, num_short_tensor)(F.tensor_slice(x, start2, size2))
+            res = ops.Split(axis_new, num_long_tensor)(ops.tensor_slice(x, start1, size1)) + \
+                ops.Split(axis_new, num_short_tensor)(ops.tensor_slice(x, start2, size2))
 
     elif isinstance(indices_or_sections, (list, tuple)) and _check_element_int(indices_or_sections):
         res = _split_sub_tensors(x, indices_or_sections, axis_new)
@@ -1487,7 +1485,7 @@ def _split_sub_tensors(x, indices, axis):
         end[axis] = idx
         if end[axis] <= begin[axis]:
             _raise_value_error("empty sub-tensor encountered.")
-        sliced_tensor = F.strided_slice(x, _type_convert(tuple, begin), _type_convert(tuple, end), strides)
+        sliced_tensor = ops.strided_slice(x, _type_convert(tuple, begin), _type_convert(tuple, end), strides)
         sub_tensors.append(sliced_tensor)
     return sub_tensors
 
@@ -1679,10 +1677,10 @@ def flip(m, axis=None):
           [3. 2.]]]
     """
     _check_input_tensor(m)
-    ndim = F.rank(m)
+    ndim = ops.rank(m)
     axes = _check_axis_valid(axis, ndim)
-    shape = F.shape(m)
-    dtype = F.dtype(m)
+    shape = ops.shape(m)
+    dtype = ops.dtype(m)
     if _is_shape_empty(shape):
         return m
     if not _check_is_float(dtype):
@@ -1690,9 +1688,9 @@ def flip(m, axis=None):
     start = _get_flip_start(ndim, shape, axes)
     end = _get_flip_end(ndim, shape, axes)
     strides = _get_flip_strides(ndim, axes)
-    res = F.strided_slice(m, start, end, strides)
-    if not _check_same_type(F.dtype(res), dtype):
-        res = F.cast(res, dtype)
+    res = ops.strided_slice(m, start, end, strides)
+    if not _check_same_type(ops.dtype(res), dtype):
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -1796,49 +1794,49 @@ def take_along_axis(arr, indices, axis):
     if axis is None:
         arr = ravel(arr)
         axis = 0
-    ndim = F.rank(arr)
-    if ndim != F.rank(indices):
+    ndim = ops.rank(arr)
+    if ndim != ops.rank(indices):
         _raise_value_error('`indices` and `arr` must have the same number of dimensions')
     axis = _check_axis_in_range(axis, ndim)
 
-    shape_arr = F.shape(arr)
-    shape_indices = F.shape(indices)
+    shape_arr = ops.shape(arr)
+    shape_indices = ops.shape(indices)
     # broadcasts indices against the shape of arr except at axis
     indices = _broadcast_to(indices, _tuple_slice(shape_indices, None, axis),
                             _tuple_slice(shape_arr, None, axis), ndim)
     indices = _broadcast_to(indices, _tuple_slice(shape_arr, None, axis + 1) +
                             _tuple_slice(shape_indices, axis + 1, None), shape_arr, ndim)
     arr = _broadcast_to(arr, shape_arr, indices.shape, ndim)
-    return F.gather_d(arr, axis, indices)
+    return ops.gather_d(arr, axis, indices)
 
 
 def _mod(x, y):
     """Computes x mod y."""
-    quotient = F.tensor_floordiv(x, y)
-    prod = F.tensor_mul(y, quotient)
-    return F.tensor_sub(x, prod)
+    quotient = ops.tensor_floordiv(x, y)
+    prod = ops.tensor_mul(y, quotient)
+    return ops.tensor_sub(x, prod)
 
 
 def _check_indices(dims, indices, mode, allow_negative_index=True):
     """Checks whether indices are out of bounds."""
-    shape = F.shape(indices)
-    dtype = F.dtype(indices)
+    shape = ops.shape(indices)
+    dtype = ops.dtype(indices)
     if not allow_negative_index:
-        lowerbounds = F.fill(dtype, shape, 0)
+        lowerbounds = ops.fill(dtype, shape, 0)
     else:
-        lowerbounds = F.fill(dtype, shape, -dims)
-    upperbounds = F.fill(dtype, shape, dims - 1)
-    out_of_lowerbounds = F.tensor_lt(indices, lowerbounds)
-    out_of_upperbounds = F.tensor_gt(indices, upperbounds)
+        lowerbounds = ops.fill(dtype, shape, -dims)
+    upperbounds = ops.fill(dtype, shape, dims - 1)
+    out_of_lowerbounds = ops.tensor_lt(indices, lowerbounds)
+    out_of_upperbounds = ops.tensor_gt(indices, upperbounds)
     if mode == 'raise':
         _raise_unimplemented_error('"raise" mode is not implemented')
     if mode == 'wrap':
-        return _mod(indices, F.fill(mstype.float32, shape, dims)).astype(dtype)
+        return _mod(indices, ops.fill(mstype.float32, shape, dims)).astype(dtype)
     if mode != 'clip':
         _raise_value_error('invalid mode. Expected "raise", "wrap", or "clip"')
-    zeros = F.fill(dtype, shape, 0)
-    clipped = F.select(out_of_lowerbounds, zeros, indices)
-    clipped = F.select(out_of_upperbounds, upperbounds, clipped)
+    zeros = ops.fill(dtype, shape, 0)
+    clipped = ops.select(out_of_lowerbounds, zeros, indices)
+    clipped = ops.select(out_of_upperbounds, upperbounds, clipped)
     return clipped
 
 
@@ -2052,9 +2050,9 @@ def select(condlist, choicelist, default=0):
         [ 0  1  2  0 16]
     """
     condlist, choicelist = _to_tensor(condlist, choicelist)
-    shape_cond = F.shape(condlist)
-    shape_choice = F.shape(choicelist)
-    if F.rank(condlist) == 0 or F.rank(choicelist) == 0:
+    shape_cond = ops.shape(condlist)
+    shape_choice = ops.shape(choicelist)
+    if ops.rank(condlist) == 0 or ops.rank(choicelist) == 0:
         _raise_value_error('input cannot be scalars')
     case_num = shape_cond[0]
     if shape_choice[0] != case_num:
@@ -2066,25 +2064,25 @@ def select(condlist, choicelist, default=0):
     case_size = _infer_out_shape(case_size_cond, case_size_choice)
     shape_broadcasted = (case_num,) + case_size
     ndim = len(shape_broadcasted)
-    shape_cond_expanded = ((case_num,) + _list_comprehensions(ndim - F.rank(condlist), 1, True) +
+    shape_cond_expanded = ((case_num,) + _list_comprehensions(ndim - ops.rank(condlist), 1, True) +
                            case_size_cond)
-    condlist = _broadcast_to_shape(F.reshape(condlist, shape_cond_expanded), shape_broadcasted)
-    shape_choice_expanded = ((case_num,) + _list_comprehensions(ndim - F.rank(choicelist), 1, True) +
+    condlist = _broadcast_to_shape(ops.reshape(condlist, shape_cond_expanded), shape_broadcasted)
+    shape_choice_expanded = ((case_num,) + _list_comprehensions(ndim - ops.rank(choicelist), 1, True) +
                              case_size_choice)
-    choicelist = _broadcast_to_shape(F.reshape(choicelist, shape_choice_expanded), shape_broadcasted)
+    choicelist = _broadcast_to_shape(ops.reshape(choicelist, shape_choice_expanded), shape_broadcasted)
 
     slice_start = _list_comprehensions(ndim - 1, 0, True)
     slice_size = (1,) + case_size
-    dtype = F.dtype(choicelist)
+    dtype = ops.dtype(choicelist)
     if isinstance(default, Tensor):
-        default_slice = default.astype(F.dtype(choicelist)).reshape(slice_size)
+        default_slice = default.astype(ops.dtype(choicelist)).reshape(slice_size)
     else:
-        default_slice = F.fill(F.dtype(choicelist), slice_size, default)
+        default_slice = ops.fill(ops.dtype(choicelist), slice_size, default)
     for i in range(case_num - 1, -1, -1):
-        cond_slice = F.tensor_slice(condlist.astype(mstype.float32), (i,) + slice_start, slice_size)
-        choice_slice = F.tensor_slice(choicelist, (i,) + slice_start, slice_size)
-        default_slice = F.select(cond_slice.astype(mstype.bool_), choice_slice, default_slice)
-    return F.reshape(default_slice, (case_size)).astype(dtype)
+        cond_slice = ops.tensor_slice(condlist.astype(mstype.float32), (i,) + slice_start, slice_size)
+        choice_slice = ops.tensor_slice(choicelist, (i,) + slice_start, slice_size)
+        default_slice = ops.select(cond_slice.astype(mstype.bool_), choice_slice, default_slice)
+    return ops.reshape(default_slice, (case_size)).astype(dtype)
 
 
 @_primexpr
@@ -2173,32 +2171,32 @@ def choose(a, choices, mode='clip'):
          [ 10 -10  10]]
     """
     a = _to_tensor(a)
-    if not _check_is_int(F.dtype(a)):
+    if not _check_is_int(ops.dtype(a)):
         _raise_value_error('`a` should be an int array')
     if isinstance(choices, (tuple, list)):
         # broadcasts choices to the same shape if choices is a sequence
         choices = _to_tensor(*choices)
         shapes = ()
         for choice in choices:
-            shapes += (F.shape(choice),)
-        shape_choice = _infer_out_shape(F.shape(a), *shapes)
+            shapes += (ops.shape(choice),)
+        shape_choice = _infer_out_shape(ops.shape(a), *shapes)
         tmp = []
         for choice in choices:
             tmp.append(broadcast_to(choice, shape_choice))
         choices = stack(tmp)
     else:
         choices = _to_tensor(choices)
-        shape_choice = _infer_out_shape(F.shape(a), F.shape(choices)[1:])
-        choices = F.reshape(choices, choices.shape[:1] + _add_unit_axes(choices.shape[1:], len(shape_choice)))
-        choices = broadcast_to(choices, (F.shape(choices)[0],) + shape_choice)
+        shape_choice = _infer_out_shape(ops.shape(a), ops.shape(choices)[1:])
+        choices = ops.reshape(choices, choices.shape[:1] + _add_unit_axes(choices.shape[1:], len(shape_choice)))
+        choices = broadcast_to(choices, (ops.shape(choices)[0],) + shape_choice)
 
-    if F.rank(a) == 0 or F.rank(choices) == 0:
+    if ops.rank(a) == 0 or ops.rank(choices) == 0:
         _raise_value_error('input cannot be scalars')
     a = broadcast_to(a, shape_choice)
-    a = _check_indices(F.shape(choices)[0], a, mode, allow_negative_index=False)
-    grid = _get_grid(F.shape(a))
-    indices = concatenate((a.reshape(F.shape(a) + (1,)), grid), -1)
-    return F.gather_nd(choices, indices)
+    a = _check_indices(ops.shape(choices)[0], a, mode, allow_negative_index=False)
+    grid = _get_grid(ops.shape(a))
+    indices = concatenate((a.reshape(ops.shape(a) + (1,)), grid), -1)
+    return ops.gather_nd(choices, indices)
 
 
 def size(a, axis=None):
@@ -2312,24 +2310,24 @@ def apply_along_axis(func1d, axis, arr, *args, **kwargs):
         [0 8 0]
         [0 0 9]]]
     """
-    ndim = F.rank(arr)
-    shape = F.shape(arr)
+    ndim = ops.rank(arr)
+    shape = ops.shape(arr)
     axis = _check_axis_in_range(axis, ndim)
     arr = moveaxis(arr, axis, -1)
-    arr = F.reshape(arr, (-1, F.shape(arr)[-1]))
+    arr = ops.reshape(arr, (-1, ops.shape(arr)[-1]))
     slices = []
-    for i in range(F.shape(arr)[0]):
+    for i in range(ops.shape(arr)[0]):
         slices.append(func1d(arr[i], *args, **kwargs))
     stacked_slices = stack(slices)
     shape_stacked = (_tuple_slice(shape, None, axis) + _tuple_slice(shape, axis + 1, None) +
-                     _tuple_slice(F.shape(stacked_slices), 1, None))
-    res = F.reshape(stacked_slices, shape_stacked)
+                     _tuple_slice(ops.shape(stacked_slices), 1, None))
+    res = ops.reshape(stacked_slices, shape_stacked)
 
     # moves the dimensions returned by `func1d` back to `axis`
-    ndim_func = F.rank(res) - ndim + 1
+    ndim_func = ops.rank(res) - ndim + 1
     if ndim_func >= 1:
-        res = moveaxis(res, F.make_range(ndim - 1, F.rank(res)),
-                       F.make_range(axis, axis + ndim_func))
+        res = moveaxis(res, ops.make_range(ndim - 1, ops.rank(res)),
+                       ops.make_range(axis, axis + ndim_func))
     return res
 
 
@@ -2445,17 +2443,17 @@ def unravel_index(indices, shape, order='C'):
         _raise_value_error('invalid order. Expected "C" or "F"')
     if isinstance(shape, int):
         shape = (shape,)
-    ndim = F.rank(indices)
+    ndim = ops.rank(indices)
     if order == 'F':
         sizes = _cumprod(shape)
     else:
         sizes = _cumprod(shape[::-1])
     sizes = _to_tensor(sizes[::-1] + (1,))
-    sizes = F.reshape(sizes, (-1,) + _list_comprehensions(ndim, 1, True))
+    sizes = ops.reshape(sizes, (-1,) + _list_comprehensions(ndim, 1, True))
     total_size = sizes[0]
     indices = where(indices > total_size - 1, total_size - 1, indices)
     if _get_device() == 'GPU':
-        dtype = F.dtype(total_size)
+        dtype = ops.dtype(total_size)
         lowerbounds = (-(total_size.astype(mstype.float32))).astype(dtype)
     else:
         lowerbounds = -total_size
@@ -2515,7 +2513,7 @@ def apply_over_axes(func, a, axes):
     res = a
     for axis in axes:
         res = func(res, axis=axis)
-        res = F.expand_dims(res, axis) if res.ndim != a.ndim else res
+        res = ops.expand_dims(res, axis) if res.ndim != a.ndim else res
         if res.ndim != a.ndim:
             _raise_value_error("function is not returning a tensor of the correct shape")
     return res
@@ -2546,7 +2544,7 @@ def argwhere(a):
         Tensor(shape=[2, 3], dtype=Int64, value=[[0, 0, 0], [0, 1, 0]])
     """
     a = _to_tensor(a)
-    return F.argwhere(a)
+    return ops.argwhere(a)
 
 
 def intersect1d(ar1, ar2, assume_unique=False, return_indices=False):
@@ -2584,42 +2582,42 @@ def intersect1d(ar1, ar2, assume_unique=False, return_indices=False):
     def unique_w_ind(arr):
         array, sort_indices = arr.ravel().sort()
         array_type = array.dtype
-        cmp_array1 = F.cat((array, Tensor([0], dtype=array_type)))
-        cmp_array2 = F.cat((Tensor([0], dtype=array_type), array))
+        cmp_array1 = ops.cat((array, Tensor([0], dtype=array_type)))
+        cmp_array2 = ops.cat((Tensor([0], dtype=array_type), array))
         mask = cmp_array1 != cmp_array2
         mask[0] = True
-        array = F.masked_select(array, mask[:-1])
-        ind = F.masked_select(sort_indices, mask[:-1])
+        array = ops.masked_select(array, mask[:-1])
+        ind = ops.masked_select(sort_indices, mask[:-1])
         return array, ind
 
     if not isinstance(assume_unique, bool) or not isinstance(return_indices, bool):
         _raise_type_error("assume_unique or return_indices is not bool type.")
     ar1, ar2 = _to_tensor(ar1, ar2)
-    ind1 = F.fill(mstype.int32, (ar1.size,), -1)
-    ind2 = F.fill(mstype.int32, (ar2.size,), -1)
+    ind1 = ops.fill(mstype.int32, (ar1.size,), -1)
+    ind2 = ops.fill(mstype.int32, (ar2.size,), -1)
     if not assume_unique:
         if return_indices:
             array1, ind1 = unique_w_ind(ar1)
             array2, ind2 = unique_w_ind(ar2)
         else:
-            array1 = F.unique(ar1)[0]
-            array2 = F.unique(ar2)[0]
+            array1 = ops.unique(ar1)[0]
+            array2 = ops.unique(ar2)[0]
     else:
         array1 = ar1.ravel()
         array2 = ar2.ravel()
     concat_array = concatenate((array1, array2))
     if return_indices:
-        concat_sort_indices = F.argsort(concat_array)
+        concat_sort_indices = ops.argsort(concat_array)
         concat_array = concat_array[concat_sort_indices]
     else:
         concat_array, concat_sort_indices = concat_array.sort()
 
     mask_res = concat_array[1:] == concat_array[:-1]
-    res = F.masked_select(concat_array[1:], mask_res)
+    res = ops.masked_select(concat_array[1:], mask_res)
 
     if return_indices:
-        ar1_indices = F.masked_select(concat_sort_indices[:-1], mask_res)
-        ar2_indices = F.masked_select(concat_sort_indices[1:], mask_res)
+        ar1_indices = ops.masked_select(concat_sort_indices[:-1], mask_res)
+        ar2_indices = ops.masked_select(concat_sort_indices[1:], mask_res)
         if ar2_indices.shape[0] > 0:
             ar2_indices = ar2_indices - array1.size
         if not assume_unique:

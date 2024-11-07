@@ -19,8 +19,8 @@ import types
 
 from mindspore.common import Tensor
 from mindspore._c_expression import Tensor as Tensor_
-from mindspore.ops import functional as F
 from mindspore.common import dtype as mstype
+from mindspore import ops
 
 from mindspore.numpy.utils_const import _tile_size, _add_unit_axes, _raise_type_error, _type_convert, \
     _tuple_setitem, _callable_const, _check_is_float, _get_device
@@ -65,7 +65,7 @@ def _check_input_for_asarray(array_like):
 
 def _is_scalar(shape):
     """check whether input shape is a scalar"""
-    return F.shape_mul(shape) == 1
+    return ops.shape_mul(shape) == 1
 
 
 def _convert_list_tensor_to_tuple_tensor(list_of_tensor):
@@ -80,27 +80,27 @@ def _convert_list_tensor_to_tuple_tensor(list_of_tensor):
 
 def _expand(x, ndim, axis=0):
     """Expand x to ndim from axis, which can be 0 or -1."""
-    shape = _add_unit_axes(F.shape(x), ndim, axis == -1)
-    return F.reshape(x, shape)
+    shape = _add_unit_axes(ops.shape(x), ndim, axis == -1)
+    return ops.reshape(x, shape)
 
 
 def _broadcast_to(x, shape_cur, shape_to, ndim_to):
     """Broadcasts x from shape_cur to shape_to."""
     size = _tile_size(shape_cur, shape_to, ndim_to)
-    return F.tile(x, size)
+    return ops.tile(x, size)
 
 
 def _broadcast_to_shape(x, shape):
     """Broadcasts x from current shape to shape"""
     ndim_to = len(shape)
     x = _expand(x, ndim_to)
-    return _broadcast_to(x, F.shape(x), shape, ndim_to)
+    return _broadcast_to(x, ops.shape(x), shape, ndim_to)
 
 
 def _get_size(x, axis=None):
     """Get the number of elements along the given axis of tensor x."""
-    if axis is None or F.tuple_len(axis) == 0:
-        axis = F.make_range(x.ndim)
+    if axis is None or ops.tuple_len(axis) == 0:
+        axis = ops.make_range(x.ndim)
     nums = 1
     for ax in axis:
         nums *= x.shape[ax]
@@ -110,7 +110,7 @@ def _get_size(x, axis=None):
 def _check_input_tensor(*tensors):
     for tensor in tensors:
         if not isinstance(tensor, Tensor):
-            _raise_type_error('expect Tensor, but got ', F.typeof(tensor))
+            _raise_type_error('expect Tensor, but got ', ops.typeof(tensor))
     return True
 
 
@@ -141,7 +141,7 @@ def _to_tensor(*args):
 
 def _get_dtype_from_scalar(*input_numbers):
     """
-    Get the final dtype from series of input numbers, compared with F.typeof, we
+    Get the final dtype from series of input numbers, compared with ops.typeof, we
     return int32/float32 for python int/float instead.
     """
     bool_flag = True
@@ -184,7 +184,7 @@ def _slice_along_axis(f, axis, slice_start, slice_end):
     slice_size = slice_end - slice_start
     index_start = _tuple_setitem(index_start, axis, slice_start)
     index_end = _tuple_setitem(index_end, axis, slice_size)
-    return F.tensor_slice(f, index_start, index_end)
+    return ops.tensor_slice(f, index_start, index_end)
 
 
 def _to_tensor_origin_dtype(*args):
@@ -203,12 +203,12 @@ def _to_tensor_origin_dtype(*args):
 
 def _callable(tensor, obj):
     """Returns True if `obj` is a function."""
-    if F.isconstant(tensor):
+    if ops.isconstant(tensor):
         return isinstance(obj, types.FunctionType)
-    return _callable_const(F.typeof(obj))
+    return _callable_const(ops.typeof(obj))
 
 
 def _isnan(x):
-    if _get_device() == 'Ascend' and not _check_is_float(F.dtype(x)):
-        return F.fill(mstype.bool_, F.shape(x), False)
-    return F.isnan(x)
+    if _get_device() == 'Ascend' and not _check_is_float(ops.dtype(x)):
+        return ops.fill(mstype.bool_, ops.shape(x), False)
+    return ops.isnan(x)
