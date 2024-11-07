@@ -48,6 +48,11 @@ DECLARE_OP_USE_OUTPUT(AllGatherMatmul)
 DECLARE_OP_ADAPTER(GroupedMatmul)
 DECLARE_OP_USE_DYN_OUTPUT(GroupedMatmul)
 
+// MoeInitRouting
+DECLARE_OP_ADAPTER(MoeInitRouting)
+DECLARE_OP_USE_INPUT_ATTR(MoeInitRouting)
+DECLARE_OP_USE_OUTPUT(MoeInitRouting)
+
 // MoeFinalizeRouting
 DECLARE_OP_ADAPTER(MoeFinalizeRouting)
 DECLARE_OP_USE_OUTPUT(MoeFinalizeRouting)
