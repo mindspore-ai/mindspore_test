@@ -41,8 +41,13 @@ else()
                 -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
         endif()
     else()
-        set(protobuf_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
-            -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
+        if(ENABLE_TESTCASES)
+            set(protobuf_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
+                -fPIC -fvisibility=default -D_FORTIFY_SOURCE=2 -O2")
+        else()
+            set(protobuf_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
+                -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
+        endif()
         if(NOT ENABLE_GLIBCXX)
             set(protobuf_CXXFLAGS "${protobuf_CXXFLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         endif()

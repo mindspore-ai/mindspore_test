@@ -113,7 +113,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   std::string GetMemoryPoolType() const override { return "Other"; }
 
   static void set_wait_callback(const std::function<void()> &wait_callback) { wait_callback_ = wait_callback; }
-#ifdef WITH_BACKEND
+#ifndef ENABLE_TEST
 
  protected:
 #endif
@@ -132,7 +132,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit : virtual public DynamicMemPool {
   void WaitPipeline();
 
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
-#ifdef WITH_BACKEND
+#ifndef ENABLE_TEST
 
  private:
 #endif

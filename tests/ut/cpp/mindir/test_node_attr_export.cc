@@ -92,6 +92,7 @@ TEST_F(TestLoadExport, test_export_attr_contain_dict) {
   ASSERT_NE(dstgraph_ptr, nullptr);
   auto return_node = dstgraph_ptr->output();
   auto load_relu = return_node->cast<CNodePtr>();
+  ASSERT_NE(load_relu, nullptr);
   ASSERT_TRUE(load_relu->HasPrimalAttr("TestPrimalAttr"));
   auto test_primal_attr = load_relu->GetPrimalAttr("TestPrimalAttr");
   auto value_tuple = test_primal_attr->cast<ValueTuplePtr>();

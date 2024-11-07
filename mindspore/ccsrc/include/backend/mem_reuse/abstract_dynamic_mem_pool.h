@@ -311,7 +311,7 @@ class MemBufAllocator {
     ss << "Mem buf allocator, is persistent : " << is_persistent_ << ", stream id : " << stream_id_ << ".";
     return ss.str();
   }
-#ifdef WITH_BACKEND
+#ifndef ENABLE_TEST
 
  protected:
 #endif
@@ -416,7 +416,7 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   const bool IsEnableVmm() const override { return enable_vmm_; }
   void SetEnableVmm(bool enable_vmm) { enable_vmm_ = enable_vmm; }
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
-#ifdef WITH_BACKEND
+#ifndef ENABLE_TEST
 
  protected:
 #else
