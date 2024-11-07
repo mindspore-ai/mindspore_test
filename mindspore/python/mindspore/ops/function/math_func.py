@@ -51,10 +51,9 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
-                                         bincount_ext, rotated_iou_op, cat)
+                                         bincount_ext, rotated_iou_op, cat, narrow)
 
 
-from mindspore.ops.function.array_func import narrow_ext as narrow
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
 from mindspore.nn import layer

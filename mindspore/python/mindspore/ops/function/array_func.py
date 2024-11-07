@@ -68,7 +68,7 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
     inplace_fill_scalar
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
-from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, slice_ext_op, gather_d_op
+from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
 
@@ -5811,48 +5811,6 @@ def narrow(input, axis, start, length):
     sizes = list(input.shape)
     sizes[axis] = length
     return tensor_slice(input, begins, sizes)
-
-
-def narrow_ext(input, dim, start, length):
-    """
-    Returns a narrowed tensor from input tensor, and
-    the dimension axis is input from start to start + length.
-
-    Args:
-        input (Tensor): the tensor to narrow.
-        dim (int): dimension  along which to narrow.
-        start (int): the starting dimension.
-        length (int): the distance to the ending dimension.
-
-    Returns:
-        Tensor.
-
-    Raises:
-        ValueError: If dim is out of range [-input.ndim, input.ndim).
-        ValueError: If start is out of range [-input.shape[dim], input.shape[dim]].
-        ValueError: It length is out of range [0, input.shape[dim]-start].
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import ops
-        >>> from mindspore import Tensor
-        >>> x = Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mindspore.int32)
-        >>> output = ops.narrow(x, 0, 0, 2)
-        >>> print(output)
-        [[ 1 2 3]
-         [ 4 5 6]]
-        >>> output = ops.narrow(x, 1, 1, 2)
-        >>> print(output)
-        [[ 2 3]
-         [ 5 6]
-         [ 8 9]]
-    """
-    validator.check_value_type("input", input, Tensor, "narrow")
-    return slice_ext_op(input, dim, start, start + length, 1)
-
 
 def topk(input, k, dim=None, largest=True, sorted=True):
     r"""
