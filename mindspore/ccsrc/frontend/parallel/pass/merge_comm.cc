@@ -114,9 +114,6 @@ std::unordered_map<CNodePtr, std::vector<CNodePtr>> AllGatherInputMap(const std:
       bool filter = IsPrimitiveCNode(cnode, prim::kPrimReshape);
       return std::make_pair(filter, 1);
     });
-    if (!IsPrimitiveCNode(pre_node)) {
-      continue;
-    }
     if (IsPrimitiveCNode(pre_node, prim::kPrimCast)) {
       auto attr_v = pre_node->cast<CNodePtr>()->input(kIndex2)->cast<ValueNodePtr>();
       if (!IsValueNode<Int64Imm>(attr_v)) {
@@ -130,6 +127,9 @@ std::unordered_map<CNodePtr, std::vector<CNodePtr>> AllGatherInputMap(const std:
       auto index_value = pre_node->cast<CNodePtr>()->input(kIndex2)->cast<ValueNodePtr>()->value();
       allgather_cnode->AddAttr(kGetItemIndex, index_value);
       pre_node = pre_node->cast<CNodePtr>()->input(kIndex1);
+    }
+    if (!IsPrimitiveCNode(pre_node)) {
+      continue;
     }
     auto pre_cnode = pre_node->cast<CNodePtr>();
     allgather_input_map[pre_cnode].push_back(allgather_cnode);
