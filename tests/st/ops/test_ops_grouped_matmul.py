@@ -18,7 +18,7 @@ import mindspore as ms
 from mindspore import dtype as mstype
 from mindspore import context, Tensor, ops
 from mindspore.nn import Cell
-from mindspore.ops.auto_generate import GroupedMatmul
+from mindspore.ops.auto_generate import GroupedMatmul, grouped_matmul
 
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -473,3 +473,53 @@ def test_ops_grouped_mamtul_dyn():
 
     TEST_OP(grouped_matmul_forward_func, [[x1, wweight1], [x2, weight2]], '', disable_input_check=True,
             disable_grad=True, disable_yaml_check=True, disable_resize=True)
+
+
+@test_utils.run_with_cell
+def grouped_matmul_single_output_forward_func(x, weight, group_list):
+    out = grouped_matmul([x,], [weight,], bias=None, group_list=group_list,
+                         split_item=3, group_type=0)
+    return out[0]
+
+
+@arg_mark(
+    plat_marks=["platform_ascend910b"],
+    level_mark="level1",
+    card_mark="onecard",
+    essential_mark="unessential",
+)
+def test_grouped_matmul_single_output_dyn_shape():
+    """
+    Feature: Ops
+    Description: test op GroupedMatmul with gorup type 0
+    Expectation: expect correct result.
+    """
+    context.set_context(runtime_num_threads=1)  # multi-threads have none-initialized bug now.
+
+    m = 10
+    k = 20
+    n = 14
+    group_list = Tensor([2, 6, 8, 10])
+    x = Tensor(np.random.randn(m, k).astype(np.float32))
+    w = Tensor(np.random.randn(group_list.shape[0], k, n).astype(np.float32))
+    inputs_0 = [x, w, group_list]
+
+    m = 20
+    k = 30
+    n = 8
+    group_list = Tensor([2, 6, 8, 10, 14, 17, 20])
+    x = Tensor(np.random.randn(m, k).astype(np.float32))
+    w = Tensor(np.random.randn(group_list.shape[0], k, n).astype(np.float32))
+    inputs_1 = [x, w, group_list]
+
+    TEST_OP(
+        grouped_matmul_single_output_forward_func,
+        [
+            inputs_0,
+            inputs_1,
+        ],
+        "",
+        disable_input_check=True,
+        disable_yaml_check=True,
+        disable_mode=['GRAPH_MODE',]
+    )

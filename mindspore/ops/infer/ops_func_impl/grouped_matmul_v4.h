@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_H_
 
 #include <set>
 #include "infer/ops_func_impl/grouped_matmul_base.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API GroupedMatmulFuncImpl : public GroupedMatmulBaseFuncImpl {
+class OPS_API GroupedMatmulV4FuncImpl final : public GroupedMatmulBaseFuncImpl {
  public:
-  GroupedMatmulFuncImpl() {
+  GroupedMatmulV4FuncImpl() {
     idxes_.x = 0;
     idxes_.weight = 1;
-    idxes_.group_list = 7;
-    idxes_.split_item = 8;
-    idxes_.group_type = 9;
+    idxes_.group_list = 8;
+    idxes_.split_item = 12;
+    idxes_.group_type = 13;
   }
-  ~GroupedMatmulFuncImpl() = default;
+  ~GroupedMatmulV4FuncImpl() = default;
 
   std::set<int64_t> GetValueDependArgIndices() const override {
     return {static_cast<int64_t>(this->idxes_.group_list)};
@@ -44,8 +44,10 @@ class OPS_API GroupedMatmulFuncImpl : public GroupedMatmulBaseFuncImpl {
 
   int32_t PrivateCheckValidation(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
                                  int64_t group_type) const override;
+
+ private:
+  int64_t group_list_type_idx_ = 14;
 };
 }  // namespace ops
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_GROUPED_MATMUL_V4_H_

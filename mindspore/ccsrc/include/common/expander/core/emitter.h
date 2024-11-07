@@ -78,6 +78,7 @@ class COMMON_EXPORT Emitter {
   virtual NodePtr Exp(const NodePtr &x);
   NodePtr Log(const NodePtr &x);
   virtual NodePtr Transpose(const NodePtr &node, const NodePtr &perm);
+  virtual NodePtr Transpose(const NodePtr &node, int64_t dim0, int64_t dim1);
   NodePtr Transpose(const NodePtr &node, const ShapeVector &perm) { return Transpose(node, Value(perm)); }
   virtual NodePtr Tile(const NodePtr &node, const NodePtr &dims);
   NodePtr Tile(const NodePtr &node, const ShapeVector &dims) { return Tile(node, Value(dims)); }

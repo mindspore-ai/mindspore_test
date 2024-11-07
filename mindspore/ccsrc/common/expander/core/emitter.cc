@@ -17,6 +17,7 @@
 #include "include/common/expander/core/emitter.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <unordered_set>
 #include <utility>
@@ -196,6 +197,10 @@ NodePtr Emitter::BatchMatMul(const NodePtr &a, const NodePtr &b, bool transpose_
 
 NodePtr Emitter::MatMulExt(const NodePtr &a, const NodePtr &b) {
   return UnifyDtypeAndEmit(prim::kPrimMatMulExt->name(), a, b, {});
+}
+
+NodePtr Emitter::Transpose(const NodePtr &node, int64_t dim0, int64_t dim1) {
+  return Emit(prim::kPrimTransposeExt->name(), {node, Value(dim0), Value(dim1)});
 }
 
 NodePtr Emitter::Transpose(const NodePtr &node, const NodePtr &perm) {
