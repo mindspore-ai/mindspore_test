@@ -178,11 +178,11 @@ deprecated_tensor_method_map = {
     # 80 outer
 
     # 81 permute
-
+    "permute": "deprecated_tensor_permute",
     # 82 pow
 
     # 83 prod
-
+    "prod": "deprecated_tensor_prod",
     # 84 reciprocal
 
     # 85 remainder

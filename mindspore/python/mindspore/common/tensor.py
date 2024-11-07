@@ -1595,18 +1595,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('real')(self)
 
-    def rsqrt(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.rsqrt`.
-        """
-        return tensor_operator_registry.get('rsqrt')(self)
-
-    def reciprocal(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.reciprocal`.
-        """
-        return tensor_operator_registry.get('reciprocal')(self)
-
     def sqrt(self):
         """
         For details, please refer to :func:`mindspore.ops.sqrt`.
@@ -1722,12 +1710,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.lerp`.
         """
         return tensor_operator_registry.get('lerp')(self, end, weight)
-
-    def negative(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.negative`.
-        """
-        return tensor_operator_registry.get("negative")(self)
 
     # pylint: disable=redefined-builtin
     def norm(self, ord=None, dim=None, keepdim=False, *, dtype=None):
@@ -1851,12 +1833,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('invert')(self)
 
-    def pow(self, exponent):
-        r"""
-        For details, please refer to :func:`mindspore.ops.pow`.
-        """
-        return tensor_operator_registry.get('pow')(self, exponent)
-
     def log10(self):
         r"""
         For details, please refer to :func:`mindspore.ops.log10`.
@@ -1902,12 +1878,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.reverse_sequence`.
         """
         return tensor_operator_registry.get("reverse_sequence")(self, seq_lengths, seq_dim, batch_dim)
-
-    def prod(self, axis=None, keep_dims=False, dtype=None):
-        """
-        For details, please refer to :func:`mindspore.ops.prod`.
-        """
-        return tensor_operator_registry.get('prod')(self, axis, keep_dims, dtype)
 
     def select(self, condition, y):
         r"""
@@ -1999,12 +1969,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         reshape_op = tensor_operator_registry.get('reshape')
         return reshape_op(self, (-1,))
 
-    def round(self, decimals=0):
-        """
-        For details, please refer to :func:`mindspore.ops.round`.
-        """
-        return tensor_operator_registry.get('round')(self, decimals=decimals)
-
     def roll(self, shifts, dims):
         """
         For details, please refer to :func:`mindspore.ops.roll`.
@@ -2058,13 +2022,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.numel`.
         """
         return tensor_operator_registry.get('numel')(self)
-
-    def permute(self, *axis):
-        """
-        For details, please refer to :func:`mindspore.ops.permute`.
-        """
-        perm = validator.check_transpose_axis(axis, self.ndim)
-        return tensor_operator_registry.get('permute')(self, perm)
 
     def positive(self):
         """
@@ -3659,12 +3616,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.erfc`.
         """
         return tensor_operator_registry.get("erfc")(self)
-
-    def tile(self, reps):
-        r"""
-        For details, please refer to :func:`mindspore.ops.tile`.
-        """
-        return tensor_operator_registry.get('tile')(self, reps)
 
     def topk(self, k, dim=None, largest=True, sorted=True):
         r"""

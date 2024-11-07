@@ -197,13 +197,13 @@ from mindspore.ops.function.array_func import min as min_func
 # 80 outer
 
 # 81 permute
-
+from mindspore.ops.function.math_func import permute
 # 82 pow
-
+from mindspore.ops.auto_generate import pow
 # 83 prod
-
+from mindspore.ops.auto_generate import prod_ext
 # 84 reciprocal
-
+from mindspore.ops.function.math_func import reciprocal
 # 85 remainder
 from mindspore.ops.function.math_func import remainder
 # 86 repeat
@@ -213,9 +213,9 @@ from mindspore.ops.function.array_func import repeat_interleave
 # 88 reshape
 from mindspore.ops.auto_generate import reshape
 # 89 round
-
+from mindspore.ops.function.math_func import round
 # 90 rsqrt
-
+from mindspore.ops.auto_generate import rsqrt
 # 91 scatter
 
 # 92 scatter_add
@@ -251,7 +251,7 @@ from mindspore.ops.function.array_func import split
 # 107 tanh
 from mindspore.ops.auto_generate import tanh
 # 108 tile
-
+from mindspore.ops.operations.manually_defined import tile
 # 109 tolist
 
 # 110 topk
@@ -666,12 +666,32 @@ def tensor_neg(input):
 # 80 outer
 
 # 81 permute
+def tensor_permute(input, axis):
+    return permute(input, axis)
+
+
+def deprecated_tensor_permute(input, dims):
+    return permute(input, dims)
+
 
 # 82 pow
+def tensor_pow(input, exponent):
+    return pow(input, exponent)
+
 
 # 83 prod
+def tensor_prod(input, axis=None, keep_dims=False, dtype=None):
+    return prod_ext(input, axis, keep_dims, dtype)
+
+
+def deprecated_tensor_prod(input, dim=None, keepdim=False, dtype=None):
+    return prod_ext(input, dim, keepdim, dtype)
+
 
 # 84 reciprocal
+def tensor_reciprocal(input):
+    return reciprocal(input)
+
 
 # 85 remainder
 def tensor_remainder(input, divisor):
@@ -692,8 +712,14 @@ def tensor_reshape(input, *shape):
 
 
 # 89 round
+def tensor_round(input, decimals=0):
+    return round(input, decimals=decimals)
+
 
 # 90 rsqrt
+def tensor_rsqrt(input):
+    return rsqrt(input)
+
 
 # 91 scatter
 
@@ -744,6 +770,9 @@ def tensor_tanh(input):
     return tanh(input)
 
 # 108 tile
+def tensor_tile(input, dims):
+    return tile(input, dims)
+
 
 # 109 tolist
 

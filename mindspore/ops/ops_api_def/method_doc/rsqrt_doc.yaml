@@ -1,0 +1,30 @@
+rsqrt:
+    description: |
+        rsqrt(self) -> Tensor
+
+        Computes reciprocal of square root of self tensor element-wise.
+
+        .. math::
+        
+            out_{i} =  \frac{1}{\sqrt{input_{i}}}
+    
+        Args:
+            self (Tensor): The self of rsqrt. Its each element must be a non-negative
+                number, if an element is negative, the calculation result is nan.
+    
+        Returns:
+            Tensor, has the same shape and dtype as the `self`.
+    
+        Raises:
+            TypeError: If `self` is not a Tensor.
+    
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+    
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor([-0.0370,  0.2970,  1.5420, -0.9105])
+            >>> output = input.rsqrt()
+            >>> print(output)
+            [       nan 1.8349396  0.8053002        nan]

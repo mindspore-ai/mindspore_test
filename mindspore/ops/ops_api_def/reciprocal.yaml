@@ -1,0 +1,6 @@
+reciprocal:
+  - op_yaml: reciprocal_op.yaml
+    py_method: tensor_reciprocal
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost

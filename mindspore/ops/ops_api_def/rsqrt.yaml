@@ -1,0 +1,6 @@
+rsqrt:
+  - op_yaml: rsqrt_op.yaml
+    py_method: tensor_rsqrt
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost

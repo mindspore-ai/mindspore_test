@@ -1,0 +1,12 @@
+permute:
+  - op_yaml: transpose_op.yaml
+    py_method: tensor_permute
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+
+  - op_yaml: deprecated/transpose_op.yaml
+    py_method: deprecated_tensor_permute
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method

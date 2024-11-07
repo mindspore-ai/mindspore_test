@@ -180,7 +180,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"xdivy", std::string("xdivy")},                                    // P.Xdivy
        {"abs", std::string("abs_")},                                       // C.abs_
        {"absolute", std::string("abs_")},                                  // C.abs_
-       {"prod", std::string("prod")},                                      // C.reduce_prod
        {"__truediv__", std::string("truediv")},                            // C.truediv
        {"__floordiv__", std::string("floordiv")},                          // C.floordiv
        {"__mod__", std::string("mod")},                                    // C.mod
@@ -245,17 +244,14 @@ BuiltInTypeMap &GetMethodMap() {
        {"log1p", std::string("log1p")},                                    // P.Log1p()
        {"logcumsumexp", std::string("logcumsumexp")},                      // logcumsumexp()
        {"logit", std::string("logit")},                                    // Logit()
-       {"negative", std::string("negative")},                              // neg()
        {"logdet", std::string("logdet")},                                  // logdet()
        {"log_matrix_determinant", std::string("log_matrix_determinant")},  // log_matrix_determinant()
        {"matrix_determinant", std::string("matrix_determinant")},          // matrix_determinant()
        {"matrix_power", std::string("matrix_power")},                      // P.MatrixPower()
        {"det", std::string("det")},                                        // matrix_determinant()
        {"ndimension", std::string("ndim_")},                               // ndimension()
-       {"pow", std::string("pow")},                                        // P.Pow()
        {"nelement", std::string("numel")},                                 // numel()
        {"numel", std::string("numel")},                                    // numel()
-       {"permute", std::string("permute")},                                // permute()
        {"positive", std::string("positive")},                              // positive()
        {"log10", std::string("log10")},                                    // F.log10()
        {"log2", std::string("log2")},                                      // F.log2()
@@ -269,7 +265,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"rad2deg", std::string("rad2deg")},                                // F.rad2deg()
        {"deg2rad", std::string("deg2rad")},                                // F.deg2rad()
        {"dot", std::string("dot")},                                        // composite.dot()
-       {"round", std::string("round_")},                                   // P.Round()
        {"roll", std::string("roll")},                                      // P.Roll()
        {"rot90", std::string("rot90")},                                    // rot90()
        {"fill", std::string("fill")},                                      // P.fill()
@@ -309,8 +304,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"unsorted_segment_prod", std::string("unsorted_segment_prod")},    // P.UnsortedSegmentProd()
        {"renorm", std::string("renorm")},                                  // renorm()
        {"real", std::string("real")},                                      // real()
-       {"reciprocal", std::string("reciprocal")},                          // reciprocal()
-       {"rsqrt", std::string("rsqrt")},                                    // rsqrt()
        {"trace", std::string("trace")},                                    // P.Eye()
        {"var", std::string("var")},                                        // P.ReduceSum
        {"std", std::string("std")},                                        // P.ReduceSum
@@ -357,7 +350,6 @@ BuiltInTypeMap &GetMethodMap() {
        {"erfc", std::string("erfc")},                                      // P.Erfc()
        {"argmax_with_value", std::string("argmax_with_value")},            // P.ArgMaxWithValue
        {"argmin_with_value", std::string("argmin_with_value")},            // P.ArgMinWithValue
-       {"tile", std::string("tile")},                                      // P.Tile
        {"topk", std::string("topk")},                                      // P.TopK()
        {"top_k", std::string("top_k")},                                    // P.TopK()
        {"cov", std::string("cov")},                                        // cov()

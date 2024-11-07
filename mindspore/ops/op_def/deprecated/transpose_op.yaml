@@ -1,0 +1,10 @@
+#operator transpose
+transpose:
+  args:
+    input:
+      dtype: tensor
+    dims:
+      dtype: tuple[int]
+  returns:
+    output:
+      dtype: tensor
