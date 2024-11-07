@@ -36,12 +36,14 @@ struct UserMap {
   UserType dout_user_;
   UserType tuple_getitem_user_;
 };
+
 class BpropExpander {
  public:
   BpropExpander(CNodePtrList *outputs, UserMap *users) : outputs_(outputs), users_(users) {}
   ~BpropExpander() = default;
   bool Run(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values = {});
   static const mindspore::HashSet<size_t> &GetUnusedInputs(const string &op_name);
+  static void FreeUselessValues(const PynativeCallback &cb);
 
  protected:
   bool RunBprop(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values);
