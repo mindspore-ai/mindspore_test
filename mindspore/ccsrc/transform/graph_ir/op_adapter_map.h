@@ -550,6 +550,7 @@ constexpr const char kNameMatmulReduceScatter[] = "MatmulReduceScatter";
 constexpr const char kNameIndex[] = "Index";
 constexpr const char kNameAllGatherMatmul[] = "AllGatherMatmul";
 constexpr const char kNameGroupedMatmul[] = "GroupedMatmul";
+constexpr const char kNameMoeInitRouting[] = "MoeInitRouting";
 constexpr const char kNameMoeFinalizeRouting[] = "MoeFinalizeRouting";
 constexpr const char kNameMoeComputeExpertTokens[] = "MoeComputeExpertTokens";
 constexpr const char kNameUniformCandidateSampler[] = "UniformCandidateSampler";
