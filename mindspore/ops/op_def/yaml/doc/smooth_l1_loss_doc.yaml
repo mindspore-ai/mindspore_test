@@ -1,0 +1,36 @@
+smooth_l1_loss:
+    description: |
+        Calculate the smooth L1 loss, and the L1 loss function has robustness.
+
+        Refer to :func:`mindspore.ops.smooth_l1_loss` for more details.
+
+        Args:
+            beta (float, optional): A parameter used to control the point where the function will change between
+                L1 to L2 loss. The value should be greater than zero. Default: ``1.0`` .
+            reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+                ``'sum'`` . Default: ``'none'`` .
+
+                - ``'none'``: no reduction will be applied.
+                - ``'mean'``: compute and return the mean of elements in the output.
+                - ``'sum'``: the output elements will be summed.
+
+        Inputs:
+            - **logits** (Tensor) - Input Tensor of any dimension. Data type must be float16, float32 or float64.
+            - **labels** (Tensor) - Ground truth data, has the same shape and dtype as the `logits`.
+
+        Outputs:
+            Tensor, loss float tensor, same shape and dtype as the `logits`.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> loss = ops.SmoothL1Loss()
+            >>> logits = Tensor(np.array([1, 2, 3]), mindspore.float32)
+            >>> labels = Tensor(np.array([1, 2, 2]), mindspore.float32)
+            >>> output = loss(logits, labels)
+            >>> print(output)
+            [0.  0.  0.5]
