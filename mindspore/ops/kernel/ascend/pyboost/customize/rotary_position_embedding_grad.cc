@@ -51,10 +51,10 @@ void RotaryPositionEmbeddingGradAscendCustomize(const std::shared_ptr<OpRunner> 
 
       if (dx_tensor.has_value()) {
         LAUNCH_ACLNN(aclnnRotaryPositionEmbeddingGrad, device_context, op->stream_id(), dy_tensor, cos_tensor,
-                     sin_tensor, dx_tensor.value(), mode_imm, outputs[0], outputs[1], outputs[2]);
+                     sin_tensor, dx_tensor.value(), mode_imm, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
       } else {
         LAUNCH_ACLNN(aclnnRotaryPositionEmbeddingGrad, device_context, op->stream_id(), dy_tensor, cos_tensor,
-                     sin_tensor, nullptr, mode_imm, outputs[0], outputs[1], outputs[2]);
+                     sin_tensor, nullptr, mode_imm, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
       }
 
       MS_LOG(DEBUG) << "Run device task RotaryPositionEmbeddingGrad end";
