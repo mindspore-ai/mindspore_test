@@ -69,6 +69,7 @@ constexpr int kNumMultiple16 = 16;
 constexpr int64_t kNumDValue = 40;
 constexpr int64_t kNumPadSize = 8;
 constexpr int kNumPowerTwo = 2;
+constexpr int kNumSparseMode10 = 10;
 constexpr float kNumPowerHalf = 0.5;
 
 bool IsDivNode(const BaseRef &n) {
@@ -1357,7 +1358,6 @@ CNodePtr FlashAttentionFusion::CreateTikFlashAttentionCnodeForBNSD(const FuncGra
   }
   CNodePtr tik_flash_attention_cnode = nullptr;
   tik_flash_attention_cnode = func_graph->NewCNode(fa_prim_c, {q1, k, v});
-
   if (tik_flash_attention_cnode == nullptr) {
     MS_LOG(ERROR) << "new cnode failed.";
     return nullptr;
@@ -2890,7 +2890,7 @@ std::shared_ptr<FlashAttentionParm> FlashAttentionFusion::ParseFAParam() const {
           return nullptr;
         }
         int sparse_mode = std::atoi(attr_value.c_str());
-        if (std::to_string(sparse_mode) == attr_value && (checkBinaryInputValidInt(sparse_mode, 0, 10))) {
+        if (std::to_string(sparse_mode) == attr_value && (checkBinaryInputValidInt(sparse_mode, 0, kNumSparseMode10))) {
           MS_LOG(INFO) << "Use user config, FA sparse_mode is: " << attr_value;
           fa_param.inner_precise = sparse_mode;
         } else {
