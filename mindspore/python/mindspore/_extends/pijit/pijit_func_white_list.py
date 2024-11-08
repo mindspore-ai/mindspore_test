@@ -499,6 +499,7 @@ _func_map = {
     function_id(get_rank_id): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(offload_context): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(check_version_and_env_config): FUNC_KEY_PIJIT_CONSTEXPR,
+    function_id(Tensor.tolist): FUNC_KEY_PIJIT_CONSTEXPR,
 
     # inner function
     function_id(type_size_in_bytes): FUNC_KEY_BUILTIN_FUNC,

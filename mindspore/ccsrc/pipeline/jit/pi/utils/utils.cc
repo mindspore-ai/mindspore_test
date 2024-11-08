@@ -628,5 +628,18 @@ std::string TimeRecorder::TimeData::ToString() {
   return s.str();
 }
 
+static size_t GetPIJitLogMinSize() {
+  if (!(IS_OUTPUT_ON(mindspore::kWarning))) {
+    // if MS_LOG is disable, print all to stderr
+    return 0;
+  }
+  return 20000;
+}
+
+size_t PIJitLogMinSize() {
+  static size_t s = GetPIJitLogMinSize();
+  return s;
+}
+
 }  // namespace pijit
 }  // namespace mindspore

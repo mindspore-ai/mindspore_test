@@ -90,11 +90,11 @@ class PIJitCaptureContext:
             logger.warning("unsupported function type" + str(fn))
             return fn
 
-        try:
-            if inspect.getmodule(fn.__code__).__name__.startswith("mindspore"):
+        module = inspect.getmodule(fn.__code__)
+        if module is not None and module.__name__.startswith("mindspore"):
+            if fn.__code__.co_name != 'after_grad':
+                # Use PIJit for mindspore api, please use PSJit
                 return fn
-        finally:
-            pass
 
         _fn = self._wrapper()
         if fn.__code__ is _fn.__code__:
