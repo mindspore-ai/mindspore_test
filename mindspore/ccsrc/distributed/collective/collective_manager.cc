@@ -355,32 +355,36 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
   // Step 3: Generate device information of the root node.
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
   MS_EXCEPTION_IF_NULL(group);
-  size_t root_info_size = 0;
-  PROF_START(GenerateRootInfo);
-  void *root_info = group->GenerateRootInfo(&root_info_size);
-  PROF_END(GenerateRootInfo);
-  MS_EXCEPTION_IF_NULL(root_info);
-
+  std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
   bool ret = false;
-  // Step 4: Broadcast the device root information to all nodes on host side.
-  PROF_START(BroadcastUniqueID);
-  while (!ret) {
-    RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
-                             "Broadcast for device root info failed on the host side.");
-    ret = true;
-    // In disaster recovery scenarios, it is necessary to ensure that the unique id obtained from the Scheduler is a
-    // newly generated one.
-    if (RecoveryContext::GetInstance()->enable_recovery()) {
-      ret = CheckUniqueIDLatest(group_name, root_info_size, root_info);
-      if (!ret) {
-        // The time interval for querying latest unique id from scheduler: 3 second.
-        constexpr uint32_t kWaitDuration = 3;
-        std::this_thread::sleep_for(std::chrono::seconds(kWaitDuration));
+  void *root_info;
+  if (rank_table_file_path.empty()) {
+    size_t root_info_size = 0;
+    PROF_START(GenerateRootInfo);
+    root_info = group->GenerateRootInfo(&root_info_size);
+    PROF_END(GenerateRootInfo);
+    MS_EXCEPTION_IF_NULL(root_info);
+
+    // Step 4: Broadcast the device root information to all nodes on host side.
+    PROF_START(BroadcastUniqueID);
+    while (!ret) {
+      RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
+                               "Broadcast for device root info failed on the host side.");
+      ret = true;
+      // In disaster recovery scenarios, it is necessary to ensure that the unique id obtained from the Scheduler is a
+      // newly generated one.
+      if (RecoveryContext::GetInstance()->enable_recovery()) {
+        ret = CheckUniqueIDLatest(group_name, root_info_size, root_info);
+        if (!ret) {
+          // The time interval for querying latest unique id from scheduler: 3 second.
+          constexpr uint32_t kWaitDuration = 3;
+          std::this_thread::sleep_for(std::chrono::seconds(kWaitDuration));
+        }
       }
+      MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
     }
-    MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
+    PROF_END(BroadcastUniqueID);
   }
-  PROF_END(BroadcastUniqueID);
 
   // Step 5: Initialize communication group on the device side.
   std::function<bool()> init_device_comm_group_func = [&, this]() {
@@ -628,6 +632,7 @@ bool CollectiveManager::AssignLocalRank() {
   host_comm_lib_instance_->SetLocalGroupSize(host_comm_lib_instance_->global_group_name(), local_group_size);
 
   MS_LOG(INFO) << "The local rank id assigned for this process is " << local_rank_id_;
+  MS_LOG(INFO) << "The env 'DEVICE_ID' assigned for this process is: " << common::GetEnv("DEVICE_ID");
   common::SetEnv("RANK_ID", std::to_string(global_rank_id_).c_str());
   common::SetEnv("RANK_SIZE", std::to_string(global_rank_size_).c_str());
   // When starting with msrun and adding argument '--rank_table_file', device_id of ms_context will be set from env

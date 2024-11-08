@@ -37,8 +37,8 @@ def get_args():
     parser.add_argument(
         "--master_addr",
         default="127.0.0.1", type=str,
-        help="specifies the IP address of the scheduler and its data type is string."
-        " Allowed values: valid IP addresses."
+        help="specifies the IP address or the host name of the scheduler and its data type is string."
+        " Allowed values: valid IP addresses or valid host name."
     )
     parser.add_argument(
         "--master_port", default=8118, type=int,
@@ -101,6 +101,19 @@ def get_args():
         type=str,
         help="specifies rank table file path. This path is not used to initialize distributed job in "
              "'rank table file manner' but to help support other features."
+    )
+    parser.add_argument(
+        "--worker_log_name",
+        default="",
+        type=str,
+        help="specifies the worker log output file name, the default name will be worker_[rankid]."
+    )
+    parser.add_argument(
+        "--tail_worker_log",
+        default="-1",
+        type=str,
+        help="tail worker log output to console, or tail the specified worker log "
+             "(e.g. --tail_log=0 tail the worker 0 log to console)."
     )
     parser.add_argument(
         "task_script",

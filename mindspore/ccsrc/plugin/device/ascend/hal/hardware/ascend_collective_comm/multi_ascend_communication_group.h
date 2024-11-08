@@ -44,10 +44,8 @@ class MultiAscendCommunicationGroup : public CommunicationGroup {
   void *GenerateRootInfo(size_t *root_info_size) override;
 
   void SetHcclGroup(CommunicationGroupPtr hccl_group) { hccl_group_ = hccl_group; }
-  CommunicationGroupPtr GetHcclGroup() { return hccl_group_; }
 #ifdef ENABLE_INTERNAL_KERNELS
   void SetLcclGroup(CommunicationGroupPtr lccl_group) { lccl_group_ = lccl_group; }
-  CommunicationGroupPtr GetLcclGroup() { return lccl_group_; }
 #endif
 
  protected:

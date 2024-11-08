@@ -17,22 +17,25 @@ import os
 import re
 import sys
 import subprocess
+import socket
 import mindspore.log as logger
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url,\
-                    _is_local_ip, _send_scale_num
+                    _is_local_ip, _convert_addr_to_ip, _send_scale_num, _get_local_ip
 
 class _Node:
     """
     Base class for dynamic networking nodes.
 
     """
-    def __init__(self, worker_num, sched_host, sched_port, timeout, args_list, output_file):
+    def __init__(self, worker_num, sched_host, sched_port, timeout, args_list, output_file, tail_worker_log, join):
         self.worker_num = worker_num
         self.sched_host = sched_host
         self.sched_port = sched_port
         self.args_list = args_list
         self.output_file = output_file
         self.timeout = timeout
+        self.tail_worker_log = tail_worker_log
+        self.join = join
 
     def run(self):
         """
@@ -63,8 +66,10 @@ class _ComputeGraphNode(_Node):
     """
     Worker node for dynamic networking. Inherits from the Node class.
     """
-    def __init__(self, worker_num, sched_host, sched_port, timeout, node_id, args_list, output_file):
-        super().__init__(worker_num, sched_host, sched_port, timeout, args_list, output_file)
+    def __init__(self, worker_num, sched_host, sched_port, timeout, node_id, args_list, output_file,
+                 tail_worker_log, join):
+        super().__init__(worker_num, sched_host, sched_port, timeout, args_list, output_file,
+                         tail_worker_log, join)
         self.node_id = node_id
 
 
@@ -79,8 +84,18 @@ class _ComputeGraphNode(_Node):
         if self.node_id is not None:
             os.environ["MS_NODE_ID"] = str(self.node_id)
         os.environ["MS_ROLE"] = "MS_WORKER"
+        tail_worker_process = None
         with open(self.output_file, "w") as file_handle:
-            return subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
+            worker_process = subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
+            if self.join and (self.tail_worker_log == "-1" or str(self.node_id) in self.tail_worker_log):
+                tail_worker_process = self.output_to_console()
+            return worker_process, tail_worker_process
+
+    def output_to_console(self):
+        """
+        Output worker log file to console.
+        """
+        return subprocess.Popen(['tail', '-f', self.output_file])
 
 
 class _ProcessManager:
@@ -99,12 +114,13 @@ class _ProcessManager:
         """
         self.msn_process = None
         self.cgn_processes = []
+        self.tail_cgn_processes = []
+
+        self.master_addr = _convert_addr_to_ip(args.master_addr)
+        self.master_port = args.master_port
 
         """`is_master` flags whether the current node is the master node."""
-        self.is_master = _is_local_ip(args.master_addr)
-
-        self.master_addr = args.master_addr
-        self.master_port = args.master_port
+        self.is_master = _is_local_ip(self.master_addr)
 
         self.worker_num = args.worker_num
         if self.worker_num <= 0:
@@ -115,6 +131,8 @@ class _ProcessManager:
 
         self.log_dir = args.log_dir
         self.join = args.join
+        self.worker_log_name = args.worker_log_name
+        self.tail_worker_log = args.tail_worker_log
         self.cluster_time_out = args.cluster_time_out
         self.bind_core = args.bind_core
         self.rank_table_file = args.rank_table_file
@@ -190,7 +208,7 @@ class _ProcessManager:
         os.environ['RANK_ID'] = str(0)
         msn = _MetaServerNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
                               _generate_cmd_args_list(self.cmd, self.cmd_args),
-                              os.path.join(self.log_dir, "scheduler.log"))
+                              os.path.join(self.log_dir, "scheduler.log"), self.tail_worker_log, self.join)
         self.msn_process = msn.run()
 
     def start_workers(self):
@@ -238,9 +256,11 @@ class _ProcessManager:
             else:
                 cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
             cgn = _ComputeGraphNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
-                                    node_id, cmd, log_name)
-            process = cgn.run()
+                                    node_id, cmd, log_name, self.tail_worker_log, self.join)
+            process, tail_process = cgn.run()
             self.cgn_processes.append(process)
+            self.tail_cgn_processes.append(tail_process)
+
 
     def join_processes(self):
         """
@@ -269,9 +289,17 @@ class _ProcessManager:
                 for p in self.cgn_processes:
                     if p.poll() is None:
                         p.kill()
+                for p_tail in self.tail_cgn_processes:
+                    if p_tail is not None:
+                        logger.debug("There's worker exits with exception, kill tail process:{p_tail.pid}.")
+                        p_tail.kill()
                 break
             elif len(success_cgn_processes) == len(self.cgn_processes):
                 logger.info("All workers successfully exit!")
+                for p_tail in self.tail_cgn_processes:
+                    if p_tail is not None:
+                        logger.debug("Tial worker log process:{p_tail.pid} successfully exit!.")
+                        p_tail.kill()
                 break
 
 
@@ -314,21 +342,23 @@ class _ProcessManager:
         """
         Generate node id and log path for corresponding process.
         """
+        formatted_log_name = self.format_worker_log_name()
         if self.local_worker_num > self.worker_num:
             raise ValueError(f"Total worker number is {self.worker_num}, "
                              f"but got exceeded local worker number: {self.local_worker_num}.")
         if self.local_worker_num == self.worker_num:
-            return index, os.path.join(self.log_dir, "worker_" + str(index) + ".log")
+            return index, os.path.join(self.log_dir, formatted_log_name  + "_" + str(index) + ".log")
 
         if self.node_rank >= 0:
             # We assume that each node has same process number.
             node_id = self.node_rank * self.local_worker_num + index
-            log_name = os.path.join(self.log_dir, "worker_" + str(node_id) + ".log")
+            log_name = os.path.join(self.log_dir, formatted_log_name  + "_" + str(node_id) + ".log")
         else:
             # If node_rank is default value -1, let MindSpore assign rank id.
             node_id = None
-            log_name = os.path.join(self.log_dir, "worker_" + str(index) + ".log")
+            log_name = os.path.join(self.log_dir, formatted_log_name  + "_" + str(index) + ".log")
         return node_id, log_name
+
 
     def _analyze_log(self):
         """
@@ -350,3 +380,16 @@ class _ProcessManager:
             logger.error(f"Time out nodes are {time_out_node_ids}")
 
         os.system(f"grep -rn -E 'ERROR|CRITICAL|Traceback|Error' -C 5 {self.log_dir}")
+
+
+    def format_worker_log_name(self):
+        """
+        Format worker log files' name.
+        """
+        if not self.worker_log_name:
+            formatted_worker_log_name = "worker"
+        else:
+            current_ip = _get_local_ip(self.master_addr)
+            formatted_worker_log_name = re.sub(r'\{ip\}', current_ip, self.worker_log_name)
+            formatted_worker_log_name = re.sub(r'\{hostname\}', socket.gethostname(), formatted_worker_log_name)
+        return formatted_worker_log_name

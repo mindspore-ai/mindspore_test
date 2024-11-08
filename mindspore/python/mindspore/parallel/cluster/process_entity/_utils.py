@@ -16,7 +16,10 @@
 import os
 import json
 import socket
+import ipaddress
 import mindspore.log as logger
+
+CURRENT_IP = None
 
 def _generate_cmd(cmd, cmd_args, output_name):
     """
@@ -67,6 +70,20 @@ def _generate_url(addr, port):
     return url
 
 
+def _get_local_ip(ip_address):
+    """
+    Get current IP address.
+
+    """
+    global CURRENT_IP
+    if CURRENT_IP is None:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((ip_address, 0))
+        CURRENT_IP = s.getsockname()[0]
+        s.close()
+    return CURRENT_IP
+
+
 def _is_local_ip(ip_address):
     """
     Check if the current input IP address is a local IP address.
@@ -75,13 +92,8 @@ def _is_local_ip(ip_address):
     p = os.popen("ip -j addr")
     addr_info_str = p.read()
     p.close()
+    current_ip = _get_local_ip(ip_address)
     if not addr_info_str:
-        # This means this host has no "ip -j addr" command.
-        # We use socket module to get local ip address.
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect((ip_address, 0))
-        current_ip = s.getsockname()[0]
-        s.close()
         return current_ip == ip_address
 
     addr_infos = json.loads(addr_info_str)
@@ -91,6 +103,24 @@ def _is_local_ip(ip_address):
                 logger.info(f"IP address found on this node. Address info:{addr}. Found address:{ip_address}")
                 return True
     return False
+
+
+def _convert_addr_to_ip(master_addr):
+    """
+    Check whether the input parameter 'master_addr' is IPv4. If a hostname is inserted, it will be converted
+    to IP and then set as master host's IP.
+
+    """
+    try:
+        ipaddress.IPv4Address(master_addr)
+        return master_addr
+    except ipaddress.AddressValueError:
+        try:
+            ip_address = socket.gethostbyname(master_addr)
+            logger.info(f"Convert input host name:{master_addr} to ip address:{ip_address}.")
+            return ip_address
+        except socket.gaierror as e:
+            raise RuntimeError(f"DNS resolution failed: {e}. Please check whether the correct host name is input.")
 
 
 def _send_scale_num(url, scale_num):

@@ -25,7 +25,7 @@ from mindspore.common import dtype as mstype
 from mindspore.dataset.vision import Inter
 from mindspore.train import Model, LossMonitor, Accuracy
 from mindspore.common.initializer import TruncatedNormal
-from mindspore.communication import init, get_rank, get_group_size
+from mindspore.communication import init, get_rank, get_group_size, create_group
 
 parser = argparse.ArgumentParser(description='test_ps_lenet')
 parser.add_argument("--device_target", type=str, default="GPU")
@@ -125,6 +125,13 @@ if __name__ == "__main__":
     rank_id = get_rank()
     device_id = os.environ.get('DEVICE_ID')
     context.set_auto_parallel_context(parallel_mode="data_parallel", gradients_mean=True, device_num=get_group_size())
+
+    # create sub communication group
+    subcomm_group_name = "hccl_sub_group"
+    subcomm_rank_ids = [0, 1]
+    if rank_id in subcomm_rank_ids:
+        create_group(subcomm_group_name, subcomm_rank_ids)
+
     network = LeNet5(10)
     net_loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
     net_opt = nn.Momentum(network.trainable_params(), 0.01, 0.9)
