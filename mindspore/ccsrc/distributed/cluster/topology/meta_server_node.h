@@ -233,6 +233,9 @@ class MetaServerNode : public NodeBase {
   // Stores the registered compute graph nodes.
   std::map<std::string, std::shared_ptr<NodeInfo>> nodes_;
 
+  // Hostnames hash of all nodes in the cluster.
+  NodeRoleToHostNames all_hostname_hash_;
+
   mutable std::shared_mutex nodes_mutex_;
 
   // The total legal number of compute graph nodes.

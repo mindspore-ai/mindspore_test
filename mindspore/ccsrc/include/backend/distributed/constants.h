@@ -99,6 +99,8 @@ constexpr uint32_t kDefaultFinishTimeout = 30;
 // Each node has range number 2048, and the port started from 8118.
 constexpr uint32_t kStartPort = 8118;
 constexpr uint32_t kNodePortRangeNum = 4096;
+// We consider device number on one node is 32.
+constexpr uint32_t kMaxDeviceNumPerNode = 32;
 constexpr char kNodePortRange[] = "node_port_range";
 using ServerPortRange = std::pair<uint32_t, uint32_t>;
 

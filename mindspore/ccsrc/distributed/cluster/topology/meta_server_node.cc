@@ -384,7 +384,7 @@ MessageBase *const MetaServerNode::ProcessReadMetadata(MessageBase *const messag
     result = MessageName::kInvalidMetadata;
   } else {
     result = MessageName::kValidMetadata;
-    std::string meta_value = metadata_[meta_msg.name()];
+    std::string meta_value = metadata_.at(meta_msg.name());
     meta_msg.set_value(meta_value);
   }
   response = CreateMessage(meta_server_addr_.GetUrl(), result, meta_msg.SerializeAsString());
@@ -419,13 +419,16 @@ MessageBase *const MetaServerNode::ProcessGetHostNames(MessageBase *const messag
   nlohmann::json hostnames = nlohmann::json::array();
   nlohmann::json retval = nlohmann::json::object();
   MessageName result;
+  auto node_role = message->body;
 
   if (nodes_.size() != total_node_num_) {
     result = MessageName::kInvalidMetadata;
-  } else {
+    retval[kHostNames] = hostnames;
+    auto response = CreateMessage(meta_server_addr_.GetUrl(), result, retval.dump());
+    MS_EXCEPTION_IF_NULL(response);
+    return response.release();
+  } else if (all_hostname_hash_.count(node_role) == 0) {
     result = MessageName::kValidMetadata;
-
-    auto node_role = message->body;
 
     // Collect all the hostnames from nodes info.
     std::vector<std::string> tmp_hostnames(nodes_.size(), "");
@@ -452,15 +455,13 @@ MessageBase *const MetaServerNode::ProcessGetHostNames(MessageBase *const messag
         hostnames.push_back(tmp_hostnames[i]);
       }
     }
+    retval[kHostNames] = hostnames;
+    all_hostname_hash_[node_role] = retval.dump();
+  } else {
+    result = MessageName::kValidMetadata;
   }
 
-  retval[kHostNames] = hostnames;
-  try {
-    MS_LOG(DEBUG) << "Host names are " << retval.dump();
-  } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "Failed to dump host names json " << e.what();
-  }
-  auto response = CreateMessage(meta_server_addr_.GetUrl(), result, retval.dump());
+  auto response = CreateMessage(meta_server_addr_.GetUrl(), result, all_hostname_hash_[node_role]);
   MS_EXCEPTION_IF_NULL(response);
   return response.release();
 }
@@ -527,9 +528,6 @@ bool MetaServerNode::TransitionToInitialized() {
       // After all nodes are successfully registered, reassign rank ids so they could be continuous.
       ReassignNodeRank();
     }
-
-    // Assign port range for each node after cluster is initialized.
-    AssignPortRange();
 
     // Persist the cluster metadata into storage through configuration.
     if (recovery::IsEnableRecovery() && configuration_ != nullptr && configuration_->Empty()) {

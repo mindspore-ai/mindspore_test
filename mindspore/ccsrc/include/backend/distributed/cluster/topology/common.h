@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_DISTRIBUTED_CLUSTER_TOPOLOGY_COMMON_H_
 #define MINDSPORE_CCSRC_DISTRIBUTED_CLUSTER_TOPOLOGY_COMMON_H_
 
+#include <map>
 #include <string>
 #include <chrono>
 
@@ -46,6 +47,9 @@ struct MetaServerAddress {
   std::string ip;
   int port{-1};
 };
+
+// Each node role has corresponding hostname string to cache.
+using NodeRoleToHostNames = std::map<std::string, std::string>;
 
 // The address of meta server node.
 // This address is set or obtained through environment variables.

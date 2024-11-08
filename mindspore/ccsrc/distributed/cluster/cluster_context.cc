@@ -268,13 +268,18 @@ void ClusterContext::PostProcess() {
     MS_LOG(INFO) << "Start post processing for computing graph nodes.";
 
     // 1. Get new rank id from meta server node because it may be reassigned.
-    std::string final_rank_id = cgn->GetMetadata(node_role_ + node_id_);
-    if (!final_rank_id.empty()) {
-      cgn->set_rank_id(static_cast<uint32_t>(std::atoi(final_rank_id.c_str())));
-      MS_LOG(WARNING) << "This node " << node_id_ << " rank id: " << final_rank_id;
-    } else {
-      MS_LOG(WARNING) << "This node could be redundant and is not successfully registered.";
+    auto node_id = common::GetEnv("MS_NODE_ID");
+    if (node_id.empty() || !common::IsStrNumeric(node_id) || !common::GetEnv("RANK_TABLE_FILE").empty()) {
+      MS_LOG(INFO) << "MS_NODE_ID set to this process is " << node_id
+                   << " and it's not numeric. Or ranktable file is set. Need to get reassigned rank id from scheduler.";
+      std::string final_rank_id = cgn->GetMetadata(node_role_ + node_id_);
+      if (!final_rank_id.empty()) {
+        cgn->set_rank_id(static_cast<uint32_t>(std::atoi(final_rank_id.c_str())));
+      } else {
+        MS_LOG(WARNING) << "This node could be redundant and is not successfully registered.";
+      }
     }
+    MS_LOG(WARNING) << "This node " << node_id_ << " rank id: " << cgn->rank_id();
 
     // 2. Set this node's client ip address in this cluster.
     const std::string &client_ip_in_cluster = cgn->client_ip();
@@ -282,16 +287,9 @@ void ClusterContext::PostProcess() {
     (void)common::SetEnv(kEnvWorkerIp, client_ip_in_cluster.c_str());
 
     // 3. Set port range of this node.
-    std::string port_range_pb = cgn->GetMetadata(kNodePortRange);
-    topology::NodePortRanges node_port_ranges;
-    (void)node_port_ranges.ParseFromArray(port_range_pb.c_str(), SizeToInt(port_range_pb.size()));
-    if (node_port_ranges.data().count(node_id_) != 0) {
-      auto port_range = node_port_ranges.data().at(node_id_);
-      port_range_.first = port_range.min_port();
-      port_range_.second = port_range.max_port();
-      MS_LOG(INFO) << "Port range assigned for this node " << node_id_ << " is " << port_range_.first << " to "
-                   << port_range_.second;
-    }
+    port_range_.first =
+      kStartPort + (kNodePortRangeNum / kMaxDeviceNumPerNode) * (cgn->rank_id() % kMaxDeviceNumPerNode);
+    port_range_.second = port_range_.first + (kNodePortRangeNum / kMaxDeviceNumPerNode) - 1;
   }
 }
 }  // namespace cluster

@@ -204,8 +204,7 @@ bool ComputeGraphNode::Register() {
   auto message = CreateMessage(server_url, MessageName::kRegistration, content);
   MS_EXCEPTION_IF_NULL(message);
 
-  const uint32_t timeout = 10;
-  MessageBase *response = hb_client_->ReceiveSync(std::move(message), timeout);
+  MessageBase *response = hb_client_->ReceiveSync(std::move(message));
   if (response == nullptr) {
     return false;
   }
