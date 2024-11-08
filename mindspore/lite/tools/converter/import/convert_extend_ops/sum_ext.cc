@@ -15,61 +15,16 @@
  */
 
 #define USE_DEPRECATED_API
-#include "tools/converter/import/convert_extend_ops_pass.h"
-#include <unordered_map>
 #include <memory>
-#include <vector>
 #include <set>
-#include "tools/optimizer/common/gllo_utils.h"
+#include <vector>
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "tools/optimizer/common/gllo_utils.h"
+#include "tools/converter/import/convert_extend_ops/utils.h"
+#include "tools/converter/import/convert_extend_ops/convert_extend_ops_pass.h"
 
 namespace mindspore::opt {
 namespace {
-constexpr auto kNameSumExtPatternName = "SumExtPatternName";
-
-AnfNodePtr CreateCastNode(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &input,
-                          const TypeId &dst_type_id) {
-  auto cast_prim = std::make_shared<Primitive>(prim::kPrimCast->name());
-  MS_CHECK_TRUE_MSG(cast_prim != nullptr, nullptr, "create Primitive cast failed.");
-  cast_prim->AddAttr("input_names", MakeValue(std::vector<std::string>{"x", "dst_type"}));
-  cast_prim->AddAttr("output_names", MakeValue(std::vector<std::string>{"output"}));
-  cast_prim->AddAttr("primitive_function", MakeValue<bool>(true));
-
-  auto dst_type = std::make_shared<Int64Imm>(static_cast<int64_t>(dst_type_id));
-  std::vector<AnfNodePtr> cast_inputs = {NewValueNode(cast_prim), input, NewValueNode(dst_type)};
-  auto cast_shape = input->Shape();
-  auto cast_input = func_graph->NewCNode(cast_inputs);
-  MS_CHECK_TRUE_MSG(cast_input != nullptr, nullptr, "create CNode cast failed.");
-  auto cast_abs = std::make_shared<mindspore::abstract::AbstractTensor>(TypeIdToType(dst_type_id), cast_shape);
-  cast_input->set_abstract(cast_abs);
-  cast_input->set_scope(input->scope());
-
-  return cast_input;
-}
-
-TypeId GetSingleNodeOutputTypeId(const mindspore::AnfNodePtr &node) {
-  TypePtr type = node->Type();
-  if (node->isa<CNode>()) {
-    auto input0 = node->cast<CNodePtr>()->input(0);
-    auto input0_value_node = dyn_cast_ptr<ValueNode>(input0);
-    if (input0_value_node != nullptr && input0_value_node->value()->isa<Primitive>()) {
-      const auto &abs = node->abstract();
-      MS_CHECK_TRUE_MSG(abs != nullptr, kTypeUnknown, "get abstract from CNode failed.");
-      type = abs->BuildType();
-    }
-  }
-
-  MS_CHECK_TRUE_MSG(type != nullptr, kTypeUnknown, "type is nullptr.");
-  if (type->isa<TensorType>()) {
-    const auto &tensor_type = type->cast<TensorTypePtr>();
-    MS_CHECK_TRUE_MSG(tensor_type != nullptr, kTypeUnknown, "cast TensorType failed.");
-    const auto &element = tensor_type->element();
-    return element->type_id();
-  } else {
-    return type->type_id();
-  }
-}
-
 AnfNodePtr ReduceExtendGetCastInputByDtype(const FuncGraphPtr &func_graph, const mindspore::CNodePtr &cnode) {
   auto input = cnode->input(kInputIndexOne);
   auto dtype = cnode->input(kInputIndexFour);
@@ -85,14 +40,15 @@ AnfNodePtr ReduceExtendGetCastInputByDtype(const FuncGraphPtr &func_graph, const
     if (kIntergralSet.find(src_type_id) != kIntergralSet.end()) {
       MS_LOG(INFO) << "For SumExt, when dtype of 'input' is [bool, uint8, int8, int16, int32, int64] and 'dtype' is "
                    << "None, then dtype of output will be int64.";
-      return CreateCastNode(func_graph, input, kNumberTypeInt64);
+      return GetCastNode(func_graph, input, kNumberTypeInt64);
     }
     return input;
   }
 
   auto dst_type_id = static_cast<TypeId>(GetValue<int64_t>(dtype_value_ptr));
-  return dst_type_id != src_type_id ? CreateCastNode(func_graph, input, dst_type_id) : input;
+  return dst_type_id != src_type_id ? GetCastNode(func_graph, input, dst_type_id) : input;
 }
+}  // namespace
 
 AnfNodePtr ConvertSumExtPass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node) {
   auto sum_ext_cnode = node->cast<CNodePtr>();
@@ -142,48 +98,5 @@ AnfNodePtr ConvertSumExtPass(const FuncGraphPtr &func_graph, const mindspore::An
   reduce_sum_node->set_abstract(sum_ext_cnode->abstract());
 
   return reduce_sum_node;
-}
-}  // namespace
-
-VectorRef ConvertExtendOpsPass::DefineSumExtPattern() const {
-  auto is_sum_ext = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimSumExt>);
-  MS_CHECK_TRUE_RET(is_sum_ext != nullptr, {});
-  auto input = std::make_shared<Var>();
-  MS_CHECK_TRUE_RET(input != nullptr, {});
-  auto axis = std::make_shared<Var>();
-  MS_CHECK_TRUE_RET(axis != nullptr, {});
-  auto keep_dims = std::make_shared<Var>();
-  MS_CHECK_TRUE_RET(keep_dims != nullptr, {});
-  auto dtype = std::make_shared<Var>();
-  MS_CHECK_TRUE_RET(dtype != nullptr, {});
-  VectorRef sum_ext_ref = VectorRef({is_sum_ext, input, axis, keep_dims, dtype});
-  return sum_ext_ref;
-}
-
-std::unordered_map<std::string, VectorRef> ConvertExtendOpsPass::DefinePatterns() const {
-  std::unordered_map<std::string, VectorRef> patterns;
-  patterns[kNameSumExtPatternName] = DefineSumExtPattern();
-  return patterns;
-}
-
-using ConvertExtendOpsSubPass = AnfNodePtr (*)(const FuncGraphPtr &, const mindspore::AnfNodePtr &);
-
-AnfNodePtr ConvertExtendOpsPass::Process(const std::string &pattern_name, const mindspore::FuncGraphPtr &func_graph,
-                                         const mindspore::AnfNodePtr &node, const mindspore::EquivPtr &equiv) const {
-  if (func_graph == nullptr || node == nullptr || equiv == nullptr) {
-    lite::ReturnCode::GetSingleReturnCode()->UpdateReturnCode(lite::RET_NULL_PTR);
-    return nullptr;
-  }
-
-  static std::unordered_map<std::string, ConvertExtendOpsSubPass> sub_pass_map = {
-    {kNameSumExtPatternName, ConvertSumExtPass},
-  };
-
-  if (sub_pass_map.find(pattern_name) != sub_pass_map.end()) {
-    MS_LOG(INFO) << "The node " << node->fullname_with_scope() << " is matched pattern[" << pattern_name
-                 << "] in ConvertExtendOpsPass.";
-    return sub_pass_map.at(pattern_name)(func_graph, node);
-  }
-  return nullptr;
 }
 }  // namespace mindspore::opt
