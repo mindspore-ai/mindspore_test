@@ -27,6 +27,7 @@ Hal中封装了设备管理、流管理、事件管理与内存管理的接口�
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.hal.communication_stream
     mindspore.hal.current_stream
     mindspore.hal.default_stream
     mindspore.hal.set_cur_stream

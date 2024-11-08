@@ -297,16 +297,15 @@ def default_stream():
 
 def communication_stream():
     r"""
-    Return default stream on this device.
+    Return communication stream on this device.
 
     Returns:
-        stream (Stream), default stream.
+        stream (Stream), communication stream.
 
-    TODO
     Examples:
         >>> import mindspore as ms
-        >>> cur_stream = ms.hal.current_stream()
-        >>> assert cur_stream == ms.hal.default_stream()
+        >>> ms.hal.communication_stream()
+        Stream(device_name=Ascend, device_id:0, stream id:1)
     """
     return Stream(stream=communication_stream_())
 
