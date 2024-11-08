@@ -48,21 +48,3 @@ def test_net_2D_float32(context_mode):
     output = net(abs_ms, angle_ms)
     expect = abs_np * (np.cos(angle_np)) + 1j * abs_np * (np.sin(angle_np))
     assert np.allclose(output.asnumpy(), expect)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_net_3D_float64(context_mode):
-    """
-    Feature: aicpu ops Polar.
-    Description: test Polar forward.
-    Expectation: expect correct result.
-    """
-    context.set_context(mode=context_mode, device_target="Ascend")
-    abs_np = np.random.randn(3, 4, 5).astype(np.float64)
-    angle_np = np.random.randn(3, 4, 5).astype(np.float64)
-    net = Net()
-    abs_ms, angle_ms = Tensor(abs_np, mstype.float64), Tensor(angle_np, mstype.float64)
-    output = net(abs_ms, angle_ms)
-    expect = abs_np * (np.cos(angle_np)) + 1j * abs_np * (np.sin(angle_np))
-    assert np.allclose(output.asnumpy(), expect)

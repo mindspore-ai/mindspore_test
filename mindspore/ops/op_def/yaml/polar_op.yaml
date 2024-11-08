@@ -11,7 +11,7 @@ polar:
     class:
         name: Polar
     function:
-        name: polar_ext
+        disable: True
     dispatch:
         enable: True
 

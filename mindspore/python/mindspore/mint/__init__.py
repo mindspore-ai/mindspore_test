@@ -227,7 +227,7 @@ from mindspore.ops.auto_generate import argsort_ext as argsort
 # 91
 
 # 92
-from mindspore.ops.auto_generate import polar_ext as polar
+from mindspore.ops.function.math_func import polar
 # 93
 
 # 94

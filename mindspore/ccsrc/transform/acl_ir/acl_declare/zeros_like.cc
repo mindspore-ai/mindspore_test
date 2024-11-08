@@ -19,5 +19,7 @@
 namespace mindspore {
 namespace transform {
 REGISTER_ACL_OP(ZerosLike).set_extra_supported_datatype({ge::DT_BOOL});
+REGISTER_ACL_OP(OnesLike).set_extra_supported_datatype({ge::DT_COMPLEX64});
+
 }  // namespace transform
 }  // namespace mindspore
