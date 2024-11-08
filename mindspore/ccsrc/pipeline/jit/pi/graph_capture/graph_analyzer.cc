@@ -27,11 +27,11 @@
 #include "pipeline/jit/pi/graph_capture/graph_build.h"
 #include "pipeline/jit/pi/graph_capture/side_effect.h"
 
-#define ADD_NODE(container, node)                                                \
-  do {                                                                           \
-    auto _tmp_node = (node);                                                     \
-    (container).push_back(_tmp_node);                                            \
-    MS_LOG(INFO) << "Add [" << _tmp_node->ToString() << "] to " << (#container); \
+#define ADD_NODE(container, node)                                                   \
+  do {                                                                              \
+    auto _tmp_node = (node);                                                        \
+    (container).push_back(_tmp_node);                                               \
+    MS_LOG(INFO) << "Add node to " #container " [" << _tmp_node->ToString() << "]"; \
   } while (0)
 
 namespace mindspore {
@@ -797,7 +797,9 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
       return IsValidGraphOutput(elem.first) && IsValidGraphOutput(elem.second);
     });
   }
-  return FuncGraphBuilder::IsValidScalar(abstract) || FuncGraphBuilder::IsValidTensor(abstract);
+  return FuncGraphBuilder::IsValidScalar(abstract) || FuncGraphBuilder::IsValidTensor(abstract) ||
+         // none is transform to LOAD_CONST
+         abstract->isa<abstract::AbstractNone>();
 }
 
 inline bool IsValidOutput(const ValueNode *node) {
@@ -809,6 +811,9 @@ std::vector<ValueNode *> CollectInputs(const std::vector<ValueNode *> &nodes) {
   std::set<ValueNode *> inputs;
   for (const auto &node : nodes) {
     inputs.insert(node->getInputs().begin(), node->getInputs().end());
+  }
+  for (const auto &node : nodes) {
+    inputs.erase(node);
   }
   return std::vector<ValueNode *>(inputs.begin(), inputs.end());
 }
@@ -830,6 +835,25 @@ void ReplaceSequenceNoneElementWithConst(ValueNode *node, Graph *graph) {
   }
 }
 
+void UpdateUseDefOrder(std::vector<ValueNode *> *nodes) {
+  MS_EXCEPTION_IF_NULL(nodes);
+  std::list<ValueNode *> node_list(nodes->begin(), nodes->end());
+  nodes->clear();
+  while (!node_list.empty()) {
+    auto front = node_list.front();
+    node_list.pop_front();
+    auto inputs = front->getInputs();
+    auto independent = std::all_of(inputs.begin(), inputs.end(), [&node_list](const auto &input) {
+      return std::find(node_list.begin(), node_list.end(), input) == node_list.end();
+    });
+    if (inputs.empty() || independent) {
+      nodes->push_back(front);
+    } else {
+      node_list.push_back(front);
+    }
+  }
+}
+
 ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   MS_EXCEPTION_IF_NULL(node);
   auto abstract_wrapper = node->abstract_wrapper();
@@ -837,11 +861,6 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
   auto abstract = abstract_wrapper->abstract();
   MS_EXCEPTION_IF_NULL(abstract);
   if (!abstract->isa<abstract::AbstractSequence>()) {
-    return node;
-  }
-  ReplaceSequenceNoneElementWithConst(node, graph_);
-  auto opcode = node->GetOpcode();
-  if (opcode == BUILD_LIST || opcode == BUILD_TUPLE) {
     return node;
   }
   auto &captured = GetCaptureInfo().captured_;
@@ -952,7 +971,6 @@ std::pair<ValueNode *, ValueNode *> MindGraphAnalyzer::MutateDictNode(ValueNode 
   ADD_NODE(captured.operations, bc_keys);
   ADD_NODE(captured.operations, bc_values);
   // call zip and call dict is interpret operations
-  // add it reverse execute order, later reverse it
   ADD_NODE(outputs_optimize.operations, make_dict);
   ADD_NODE(outputs_optimize.operations, call_zip);
 
@@ -976,7 +994,6 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
   while (!nodes.empty()) {
     auto node = *nodes.begin();
     nodes.erase(nodes.begin());
-    Opcode opcode(node->GetOpcode());
     MS_LOG(INFO) << "Start analyze : " << node->ToString() << " abs : "
                  << (node->abstract_wrapper() == nullptr ? "nullptr"
                                                          : node->abstract_wrapper()->abstract()->ToString());
@@ -995,15 +1012,16 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
     // This issue must be fixed, just pass-by and reminder here
     // This code will be redundant after the issue fixed.
     bool is_not_in_top_graph = (func_graph_builder->GetNodeByWrapper(node->abstract_wrapper()) == nullptr);
+    // it is top graph node but not find in top func_graph
+    bool is_mutated_node = is_not_in_top_graph && node->GetGraph() == graph_;
 
     // Contains data whose type is not supported by the graph, analyze its inputs
-    if (!IsValidOutput(node) || is_not_in_top_graph || opcode.IsBuildOp()) {
+    if (!IsValidOutput(node) || is_not_in_top_graph || is_mutated_node) {
       auto msg = (is_not_in_top_graph ? "Not in top graph node : " : "Invalid output : ");
       MS_LOG(INFO) << msg << node->ToString();
       if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
         GRAPH_JIT_LOG_F("This call node will executed in pynative : [%s]", node->ToString().c_str());
       }
-      // reverse order add, has been removed duplicated
       ADD_NODE(outputs_optimize.operations, node);
       nodes.insert(node->getInputs().begin(), node->getInputs().end());
       continue;
@@ -1021,7 +1039,6 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
         // specialize for named tuple, 1: graph output tuple, 2: python reconstruct namedtuple
         ADD_NODE(outputs_optimize.operations, MutateNamedtupleNode(sequence, node));
       }
-      // reverse order add, has been removed duplicated
       ADD_NODE(outputs_optimize.operations, sequence);
       nodes.insert(sequence->getInputs().begin(), sequence->getInputs().end());
     } else {
@@ -1205,7 +1222,11 @@ bool MindGraphAnalyzer::SkipAddGraphOutput(ValueNode *node) {
     MS_LOG(INFO) << "skip same data: [" << node->ToString() << "] and [" << duplicate_data->ToString();
     return true;
   }
-  MS_EXCEPTION_IF_CHECK_FAIL(replaced.find(node) == replaced.end(), "duplicate node");
+  auto iter_replaced = replaced.find(node);
+  if (iter_replaced != replaced.end()) {
+    MS_LOG(INFO) << "duplicate node " << node->ToString();
+    return SkipAddGraphOutput(iter_replaced->second);
+  }
   return false;
 }
 
@@ -1303,7 +1324,9 @@ void MindGraphAnalyzer::Validate() {
 
 void MindGraphAnalyzer::UpdateUseDefNode() {
   auto &map = GetCaptureInfo().replaced_nodes_;
+  auto &nodes = GetCaptureInfo().outputs_optimize_.operations;
   if (map.empty()) {
+    UpdateUseDefOrder(&nodes);
     return;
   }
   auto latest = [&map](ValueNode *node) {
@@ -1314,7 +1337,6 @@ void MindGraphAnalyzer::UpdateUseDefNode() {
     MS_EXCEPTION_IF_CHECK_FAIL(limit > 0, "maybe circle map");
     return node;
   };
-  auto &nodes = GetCaptureInfo().outputs_optimize_.operations;
   bool changed;
   do {
     changed = false;
@@ -1350,6 +1372,7 @@ void MindGraphAnalyzer::UpdateUseDefNode() {
       MS_LOG(ERROR) << "add copy node for " << node << " new " << new_node;
     }
   } while (changed);
+  UpdateUseDefOrder(&nodes);
 }
 
 }  // namespace pijit
