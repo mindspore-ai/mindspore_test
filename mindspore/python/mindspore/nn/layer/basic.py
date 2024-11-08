@@ -258,7 +258,7 @@ class DropoutExt(Cell):
         """Initialize DropoutExt."""
         super(DropoutExt, self).__init__()
         self.p = p
-        self.generator_step = Tensor(1, mstype.int64)
+        self.generator_step = Tensor(12, mstype.int64)
 
     def construct(self, x):
         if not self.training or self.p == 0:

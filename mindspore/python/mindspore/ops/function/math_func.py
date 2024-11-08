@@ -143,7 +143,7 @@ transpose_ = P.Transpose()
 xdivy_ = P.Xdivy()
 tensor_div_ = P.Div()
 tensor_divmod_ = DivMod()
-generator_step_ = Tensor(10, mstype.int64)
+generator_step_ = Tensor(12, mstype.int64)
 
 #####################################
 # Private Operation Functions.
