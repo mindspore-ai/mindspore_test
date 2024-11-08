@@ -1395,6 +1395,72 @@ REG_BPROP_BUILDER("Pow").SetBody(BODYFUNC(ib) {
   return {BinopGradCommon(ib, x, power, dx, grad_power)};
 });
 
+REG_BPROP_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
+  auto input_x = ib->GetInput(kIndex0);
+  auto exponent = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex3);
+
+  auto input_x_ptr = input_x->BuildValue();
+  auto type_id = input_x_ptr->type()->type_id();
+  double input_value;
+
+  if (type_id == kNumberTypeBool) {
+    auto input_opt = mindspore::GetScalarValue<bool>(input_x_ptr);
+    input_value = static_cast<double>(input_opt.value());
+  } else if (type_id == kNumberTypeInt64) {
+    auto input_opt = mindspore::GetScalarValue<int64_t>(input_x_ptr);
+    input_value = static_cast<double>(input_opt.value());
+  } else if (type_id == kNumberTypeFloat32) {
+    auto input_opt = mindspore::GetScalarValue<float>(input_x_ptr);
+    input_value = static_cast<double>(input_opt.value());
+  } else {
+    MS_LOG_EXCEPTION << "For PowScalarTensor, got an invalid 'input' type: " << TypeIdToString(type_id);
+  }
+
+  auto log_input = log(input_value);
+  auto dexponent = ib->Mul(out, ib->Tensor(log_input, ib->GetDtype(out)));
+  if (fabs(input_value) < 1e-15) {
+    auto exp_positive = ib->GreaterEqual(exponent, ib->Tensor(0, ib->GetDtype(exponent)));
+    auto zero_tensor = ib->Emit("ZerosLikeExt", {exponent, ib->Value(static_cast<int64_t>(ib->GetDtypeId(exponent)))});
+    dexponent = ib->Select(exp_positive, zero_tensor, dexponent);
+  }
+
+  dexponent = ib->Mul(dout, dexponent);
+  return {ib->OutZeros(input_x), dexponent};
+});
+
+REG_BPROP_BUILDER("PowTensorScalar").SetBody(BODYFUNC(ib) {
+  auto input_x = ib->GetInput(kIndex0);
+  auto exponent = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex3);
+  auto exponent_ptr = exponent->BuildValue();
+  auto type_id = exponent_ptr->type()->type_id();
+  double exp_value;
+  if (type_id == kNumberTypeBool) {
+    auto exp_opt = mindspore::GetScalarValue<bool>(exponent_ptr);
+    exp_value = static_cast<double>(exp_opt.value());
+  } else if (type_id == kNumberTypeInt64) {
+    auto exp_opt = mindspore::GetScalarValue<int64_t>(exponent_ptr);
+    exp_value = static_cast<double>(exp_opt.value());
+  } else if (type_id == kNumberTypeFloat32) {
+    auto exp_opt = mindspore::GetScalarValue<float>(exponent_ptr);
+    exp_value = static_cast<double>(exp_opt.value());
+  } else {
+    MS_LOG_EXCEPTION << "For PowTensorScalar, got an invalid 'exponent' type: " << TypeIdToString(type_id);
+  }
+
+  if (fabs(exp_value) < 1e-15) {
+    auto zero_tensor = ib->Emit("ZerosLikeExt", {input_x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x)))});
+    return {zero_tensor, ib->OutZeros(exponent)};
+  }
+
+  auto grad_input = ib->Mul(dout, ib->Mul(ib->ScalarToTensor(exponent),
+                                          ib->Emit("PowTensorScalar", {input_x, ib->Value<float>(exp_value - 1)})));
+  return {grad_input, ib->OutZeros(exponent)};
+});
+
 REG_BPROP_BUILDER("Exp").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto g = ib->GetInput(kIndex1);

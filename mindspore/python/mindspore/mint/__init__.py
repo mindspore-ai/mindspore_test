@@ -195,7 +195,7 @@ from mindspore.ops.function.array_func import sort_ext as sort
 # 75
 from mindspore.ops.functional import less, lt
 # 76
-from mindspore.ops.functional import pow
+from mindspore.ops.function.math_func import pow_ext as pow
 # 77
 
 # 78

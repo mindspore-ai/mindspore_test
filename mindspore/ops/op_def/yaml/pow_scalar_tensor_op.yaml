@@ -1,0 +1,16 @@
+#operator pow_scalar_tensor
+pow_scalar_tensor:
+    args:
+        input:
+            dtype: number
+        exponent:
+            dtype: tensor
+    returns:
+        y:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+
+

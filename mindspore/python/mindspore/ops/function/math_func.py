@@ -47,11 +47,12 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
-                                         log, log1p, neg, not_equal, pow, round_op, isfinite, argmax_ext, mean_ext_op,
+                                         log, log1p, neg, not_equal, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
-                                         bincount_ext, rotated_iou_op, cat, narrow, var_op)
+                                         bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
+                                         pow_tensor_scalar_op)
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
@@ -1844,6 +1845,61 @@ def polar(abs, angle):  # pylint: disable=redefined-outer-name
         [ 6.12323400e-17+1.j         -1.41421356e+00-1.41421356j]
     """
     return polar_(abs, angle)
+
+
+def pow_ext(input, exponent):
+    """
+    Calculates the `exponent` power of each element in `input`.
+
+    When `exponent` is a Tensor, the shapes of `input` and `exponent` must be broadcastable.
+
+    .. math::
+
+        out_{i} = input_{i} ^{ exponent_{i}}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Union[Tensor, Number]): The first input is a Number or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        exponent (Union[Tensor, Number]): The second input is a Number or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting,
+        and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If types of `input` and `exponent` are bool.
+        TypeError: The `input` is tensor and of type int or bool, while the `exponent` is negative int.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> exponent = 3.0
+        >>> output = ops.pow(input, exponent)
+        >>> print(output)
+        [ 1.  8. 64.]
+        >>>
+        >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> exponent = Tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
+        >>> output = ops.pow(input, exponent)
+        >>> print(output)
+        [ 1. 16. 64.]
+    """
+    if isinstance(input, Tensor) and isinstance(exponent, numbers.Number):
+        return pow_tensor_scalar_op(input, exponent)
+    if isinstance(input, numbers.Number) and isinstance(exponent, Tensor):
+        return pow_scalar_tensor_op(input, exponent)
+    return pow(input, exponent)
 
 
 def arccos(input):
