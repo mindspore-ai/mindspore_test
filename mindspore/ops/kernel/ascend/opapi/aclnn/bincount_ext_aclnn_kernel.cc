@@ -26,7 +26,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-int64_t GetValueFromTensorToInt64(std::shared_ptr<KernelTensor> tensor) {
+int64_t GetValueFromTensorToInt64(KernelTensor *tensor) {
   auto data_type = tensor->dtype_id();
   switch (data_type) {
     case kNumberTypeInt8:
@@ -44,6 +44,17 @@ int64_t GetValueFromTensorToInt64(std::shared_ptr<KernelTensor> tensor) {
   }
   return 0;
 }
+
+void SetKernelTensorShapeAndType(KernelTensor *tensor, const ShapeVector &shape_vector, const TypePtr &type_ptr) {
+  tensor->SetType(type_ptr);
+  tensor->SetShape(std::make_shared<abstract::TensorShape>(shape_vector));
+}
+
+void SetKernelTensorSize(KernelTensor *tensor) {
+  size_t type_size = UnitSizeInBytes(tensor->dtype_id());
+  size_t size = SizeOf(tensor->GetShapeVector()) * type_size;
+  tensor->set_size(size);
+}
 }  // namespace
 
 void BincountExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
@@ -52,21 +63,20 @@ void BincountExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inpu
 
   input_dim_ = inputs[kIndex0]->GetShapeVector().size();
   input_numel_ = inputs[kIndex0]->GetShapeVector()[0];
+  origin_output_typeptr_ = outputs[0]->GetType();
 
+  min_length_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  outputs[kIndex0]->SetShapeVector({min_length_});
+  GetWorkspaceForResizeBincount(inputs[kIndex0], inputs[kIndex1], min_length_, outputs[kIndex0]);
   // Check if null tensor
   if (!(input_dim_ == 1 && input_numel_ == 0)) {
-    min_output_tensor_ = outputs[kIndex0]->CloneKernelTensor();
-    min_output_tensor_->SetType(inputs[kIndex0]->GetType());
-    min_output_tensor_->SetShape(std::make_shared<abstract::TensorShape>(zero_dim_shape_));
-    GetWorkspaceForResizeMin(inputs[kIndex0], min_output_tensor_.get());
-    max_output_tensor_ = outputs[kIndex0]->CloneKernelTensor();
-    max_output_tensor_->SetType(inputs[kIndex0]->GetType());
-    max_output_tensor_->SetShape(std::make_shared<abstract::TensorShape>(zero_dim_shape_));
-    GetWorkspaceForResizeMax(inputs[kIndex0], max_output_tensor_.get());
+    min_output_tensor_ = outputs[0];
+    max_output_tensor_ = outputs[0];
+    SetKernelTensorShapeAndType(min_output_tensor_, inputs[kIndex2]->GetShapeVector(), inputs[kIndex0]->GetType());
+    SetKernelTensorShapeAndType(max_output_tensor_, inputs[kIndex2]->GetShapeVector(), inputs[kIndex0]->GetType());
+    GetWorkspaceForResizeMin(inputs[kIndex0], min_output_tensor_);
+    GetWorkspaceForResizeMax(inputs[kIndex0], max_output_tensor_);
   }
-  auto min_length = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  outputs[kIndex0]->SetShapeVector({min_length});
-  GetWorkspaceForResizeBincount(inputs[kIndex0], inputs[kIndex1], min_length, outputs[kIndex0]);
 }
 
 bool BincountExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
@@ -74,28 +84,27 @@ bool BincountExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const 
   MS_EXCEPTION_IF_NULL(stream_ptr);
   MS_LOG(DEBUG) << "Run BincountExt start.";
 
-  auto min_length = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  auto ouptut_shape = min_length;
+  auto ouptut_shape = min_length_;
 
   // Check if null tensor
   if (!(input_dim_ == 1 && input_numel_ == 0)) {
     // Calculate min value to avoid negative integer
-    min_output_tensor_->set_device_ptr(inputs[kIndex2]->device_ptr());
-    RunOpMin(stream_ptr, workspace, inputs[kIndex0], min_output_tensor_.get());
+    RunOpMin(stream_ptr, workspace, inputs[kIndex0], min_output_tensor_);
+    SetKernelTensorSize(min_output_tensor_);
     auto min_value = GetValueFromTensorToInt64(min_output_tensor_);
     if (min_value < 0) {
       MS_LOG(EXCEPTION) << "Bincount only supports non-negative input values.";
     }
 
     // Calculate max value for output shape
-    max_output_tensor_->set_device_ptr(inputs[kIndex2]->device_ptr());
-    RunOpMax(stream_ptr, workspace, inputs[kIndex0], max_output_tensor_.get());
+    RunOpMax(stream_ptr, workspace, inputs[kIndex0], max_output_tensor_);
+    SetKernelTensorSize(max_output_tensor_);
     auto max_value = GetValueFromTensorToInt64(max_output_tensor_);
 
-    ouptut_shape = max_value < min_length ? min_length : (max_value + 1);
-    outputs[kIndex0]->SetShapeVector({ouptut_shape});
+    ouptut_shape = max_value < min_length_ ? min_length_ : (max_value + 1);
+    SetKernelTensorShapeAndType(outputs[kIndex0], {ouptut_shape}, origin_output_typeptr_);
+    SetKernelTensorSize(outputs[kIndex0]);
   }
-
   // Update workspace and run aclnnBincount
   auto res = GEN_EXECUTOR_CUST(op_type_Bincount_, inputs[kIndex0], inputs[kIndex1], ouptut_shape, outputs[kIndex0]);
   UpdateWorkspace(res);

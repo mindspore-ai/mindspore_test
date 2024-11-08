@@ -41,12 +41,13 @@ class BincountExtAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnMax, Max)
   DEFINE_GET_WORKSPACE_FOR_OPS(aclnnBincount, Bincount)
 
-  std::shared_ptr<KernelTensor> min_output_tensor_;
-  std::shared_ptr<KernelTensor> max_output_tensor_;
+  KernelTensor *min_output_tensor_;
+  KernelTensor *max_output_tensor_;
   std::vector<ShapeVector> output_shape_{{0}};
-  ShapeVector zero_dim_shape_{};
   int64_t input_dim_ = 0;
   int64_t input_numel_ = 0;
+  int64_t min_length_ = 0;
+  TypePtr origin_output_typeptr_;
 };
 }  // namespace kernel
 }  // namespace mindspore
