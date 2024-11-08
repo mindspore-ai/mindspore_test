@@ -26,16 +26,20 @@
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr float kNumberTwo = 2.0;
+constexpr float kDefaultOrd = 2.0;
 }
 void NormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  if (inputs[kIndex1]->dtype_id() == kMetaTypeNone) {
-    MAKE_SCALAR(kNumberTwo, kNumberTypeFloat32, p_scalar_);
+  auto p_dtype_id = inputs[kIndex1]->dtype_id();
+  if (p_dtype_id == kMetaTypeNone) {
+    MAKE_SCALAR(kDefaultOrd, kNumberTypeFloat32, p_scalar_);
   } else {
-    auto p_opt = inputs[kIndex1]->GetOptionalValueWithCheck<float>();
-    p_scalar_ = p_opt.has_value() ? std::make_shared<FP32Imm>(p_opt.value()) : std::make_shared<FP32Imm>(kNumberTwo);
+    auto p_value = (p_dtype_id == kNumberTypeFloat32)
+                     ? inputs[kIndex1]->GetValueWithCheck<float>()
+                     : static_cast<float>(inputs[kIndex1]->GetValueWithCheck<double>());
+    MAKE_SCALAR(p_value, kNumberTypeFloat32, p_scalar_);
   }
+
   const auto dim_opt = inputs[kIndex2]->GetOptionalValueWithCheck<std::vector<int64_t>>();
   if (dim_opt.has_value()) {
     dim_ = dim_opt.value();
