@@ -275,10 +275,6 @@ if(ENABLE_MINDDATA)
     add_subdirectory(minddata/dataset)
 endif()
 
-if(ENABLE_TESTCASES)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/testcase_compile_config.cmake)
-endif()
-
 if(ENABLE_GPU)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/gpu_compile_config.cmake)
 endif()

@@ -281,7 +281,7 @@ foreach(comp ${ALL_UT_COMPS})
     if(${comp_index} LESS 0)
         message("${comp} start link _ut_mindspore_obj")
         target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group _ut_mindspore_ascend_obj _ut_mindspore_obj)
-        target_link_libraries(ut_${comp}_tests PRIVATE _c_mindrecord md_log_adapter _c_dataengine)
+        target_link_libraries(ut_${comp}_tests PRIVATE _c_mindrecord _c_dataengine)
     endif()
     target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static
             -Wl,--end-group)
