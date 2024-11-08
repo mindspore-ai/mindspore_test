@@ -3,6 +3,7 @@ randperm_ext:
     args:
         n:
             dtype: int
+            type_cast: Tensor
         seed:
             dtype: tensor
         offset:
