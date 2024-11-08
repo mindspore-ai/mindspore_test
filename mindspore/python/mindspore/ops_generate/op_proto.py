@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Op Proto."""
-from pyboost_utils import convert_python_func_name_to_c, is_op_multi_output
+
+"""Op Proto module for defining operator prototypes and their arguments."""
+
+from pyboost_utils import convert_python_func_name_to_c
 
 
-class Arg:
-    def __init__(self, arg_name, arg_dtype, type_cast, is_type_id=False, as_init_arg=False, default=-1, inplace=''):
+class OpArg:
+    """
+    Represents an argument of an operator.
+
+    Attributes:
+        arg_name (str): The name of the argument.
+        arg_dtype (str): The data type of the argument.
+        type_cast (list): A list of type casts applicable to the argument.
+        is_type_id (bool): Indicates if the argument is a type identifier.
+        as_init_arg (bool): Indicates if the argument is an initialization argument.
+        default: The default value of the argument.
+        inplace (str): The name of the inplace tensor if applicable.
+        is_prim_init (bool): Indicates if the argument is a primitive initialization argument.
+        arg_handler (str): A handler for the argument, if applicable.
+    """
+
+    def __init__(self, arg_name, arg_dtype, type_cast, is_type_id=False, as_init_arg=False, default=-1, inplace='',
+                 is_prim_init=False, arg_handler=''):
         self.arg_name = arg_name
         self.arg_dtype = arg_dtype
         self.type_cast = type_cast
@@ -25,121 +43,294 @@ class Arg:
         self.as_init_arg = as_init_arg
         self.default = default
         self.inplace = inplace
+        self.is_prim_init = is_prim_init
+        self.arg_handler = arg_handler
+
+
+class OpArgsSignature:
+    """
+    Represents the signature of operator arguments.
+
+    Attributes:
+        rw_write (list): Arguments that are written to.
+        rw_read (list): Arguments that are read from.
+        rw_ref (list): Arguments that are passed by reference.
+        dtype_group (list): Grouping of data types for the arguments.
+    """
+
+    def __init__(self, rw_write=None, rw_read=None, rw_ref=None, dtype_group=None):
+        self.rw_write = rw_write
+        self.rw_read = rw_read
+        self.rw_ref = rw_ref
+        self.dtype_group = dtype_group
+
+
+class OpFunction:
+    """
+    Represents the function associated with an operator.
+
+    Attributes:
+        disable (bool): Indicates if the function is disabled.
+        name (str): The name of the function.
+    """
+
+    def __init__(self, disable=False, name=''):
+        self.disable = disable
+        self.name = name
+
+
+class OpClass:
+    """
+    Represents a class associated with an operator.
+
+    Attributes:
+        disable (bool): Indicates if the class is disabled.
+        name (str): The name of the class.
+    """
+
+    def __init__(self, disable=False, name=''):
+        self.disable = disable
+        self.name = name
+
+
+class OpDispatch:
+    """
+    Represents the dispatch information for an operator.
+
+    Attributes:
+        enable (bool): Indicates if the dispatch is enabled.
+        is_comm_op (bool): Indicates if the dispatch is communication operator or not.
+        ascend (str): The dispatch type for the Ascend device.
+        cpu (str): The dispatch type for the CPU.
+        gpu (str): The dispatch type for the GPU.
+    """
+
+    def __init__(self, enable=False, is_comm_op=False, ascend='default', cpu='default', gpu='default'):
+        self.enable = enable
+        self.is_comm_op = is_comm_op
+        self.ascend = ascend
+        self.cpu = cpu
+        self.gpu = gpu
 
 
 class OpProto:
     """
-    This class defines mindspore op prototype, we parse ops.yaml to the object, to auto generate primitive
-    and pyboost function.
+    Defines a prototype for an operator in MindSpore.
+
+    This class is used to parse the operator definition from a YAML file and to generate
+    the necessary primitive and PyBoost functions.
+
+    Attributes:
+        op_name (str): The name of the operator.
+        op_args (list): A list of arguments for the operator.
+        op_function (OpFunction): The function associated with the operator.
+        op_class (OpClass): The class associated with the operator.
+        op_dispatch (OpDispatch): The dispatch information for the operator.
+        op_args_signature (OpArgsSignature): The signature of the operator's arguments.
+        op_returns (list): A list of return values for the operator.
+        op_view (bool): Indicates if the operator is a view operator.
     """
 
     def __init__(self,
-                 operator_name,
+                 op_name,
                  op_args,
-                 returns,
-                 class_name,
-                 is_pyboost,
-                 is_view,
-                 cpu,
-                 gpu,
-                 ascend,
-                 prim_init,
-                 is_dispatch,
-                 is_multi_output,
-                 is_comm_op):
-        self.operator_name = operator_name
-        self.class_name = class_name
+                 op_function,
+                 op_class,
+                 op_dispatch,
+                 op_args_signature,
+                 op_returns,
+                 op_view=False):
+        self.op_name = op_name
         self.op_args = op_args
-        self.returns = returns
-        self.indexes = {arg.arg_name: index for index, arg in enumerate(op_args)}
-        self.pyboost_function_name = "Pyboost_" + self.class_name
-        self.is_pyboost = is_pyboost
-        self.is_view = is_view
-        self.cpu = cpu
-        self.gpu = gpu
-        self.ascend = ascend
-        self.prim_init = prim_init
-        self.is_dispatch = is_dispatch
-        self.is_multi_output = is_multi_output
-        self.is_comm_op = is_comm_op
+        self.op_function = op_function
+        self.op_class = op_class
+        self.op_dispatch = op_dispatch
+        self.op_args_signature = op_args_signature
+        self.op_returns = op_returns
+        self.op_view = op_view
 
     @staticmethod
-    def get_device_special_name(dispatch, gpu, cpu, ascend):
-        if 'GPU' in dispatch.keys():
-            gpu = dispatch['GPU']
-        if 'CPU' in dispatch.keys():
-            cpu = dispatch['CPU']
-        if 'Ascend' in dispatch.keys():
-            ascend = dispatch['Ascend']
-        return gpu, cpu, ascend
+    def load_from_yaml(op_name, op_data):
+        """
+        Loads an operator prototype from YAML data.
 
-    @staticmethod
-    def load_from_yaml(op_name, yaml):
+        Args:
+            op_name (str): The name of the operation.
+            op_data (dict): A dictionary containing the operation data.
+
+        Returns:
+            OpProto: An instance of OpProto representing the operator.
         """
-        load from yaml
-        :param op_name:
-        :param yaml:
-        :return:
-        """
-        if 'args' not in yaml.keys():
-            raise TypeError("op define need key 'args'")
-        args_dict = yaml.get('args')
-        op_args = []
-        default_str = 'default'
+        # get op args
+        op_args = get_op_args(op_data)
+        # get op return args
+        op_returns = get_op_returns(op_data)
+        # get op args signature
+        op_args_signature = get_op_args_signature(op_data)
+        # get op class
+        op_class = get_op_class(op_name, op_data)
+        # get op function
+        op_function = get_op_function(op_data)
+        # get op dispatch
+        op_dispatch = get_op_dispatch(op_data)
+        # get op view
+        op_view = op_data.get('view', False)
+        op_proto = OpProto(op_name=op_name, op_args=op_args, op_returns=op_returns, op_function=op_function,
+                           op_class=op_class, op_dispatch=op_dispatch, op_args_signature=op_args_signature,
+                           op_view=op_view)
+        return op_proto
+
+
+def get_op_args_signature(op_data):
+    """
+    Retrieves the argument signature from the operation data.
+
+    Args:
+        op_data (dict): A dictionary containing the operation data.
+
+    Returns:
+        OpArgsSignature: An instance of OpArgsSignature containing the argument signature.
+    """
+    op_args_signature = op_data.get('args_signature', None)
+    if op_args_signature is not None:
+        rw_write = op_args_signature.get('rw_write', None)
+        rw_read = op_args_signature.get('rw_read', None)
+        rw_ref = op_args_signature.get('rw_ref', None)
+        dtype_group = op_args_signature.get('dtype_group', None)
+        return OpArgsSignature(rw_write, rw_read, rw_ref, dtype_group)
+    return None
+
+
+def check_validation(op_data: dict):
+    """
+    Validates the operator data to ensure it contains necessary keys.
+
+    Args:
+        op_data (dict): The operator data to validate.
+
+    Raises:
+        TypeError: If the required keys 'args' or 'returns' are missing.
+    """
+    if 'args' not in op_data.keys():
+        raise TypeError("op define need key 'args'")
+    if 'returns' not in op_data.keys():
+        raise TypeError("op define need key 'returns'")
+
+
+def get_op_args(op_data):
+    """
+    Retrieves the arguments for the operator from the operation data.
+
+    Args:
+        op_data (dict): A dictionary containing the operation data.
+
+    Returns:
+        list: A list of OpArg instances representing the arguments of the operator.
+    """
+    # 参数校验
+    check_validation(op_data)
+    args_dict = op_data.get('args')
+    op_args = []
+    for arg_name in args_dict.keys():
+        arg_dtype = args_dict[arg_name]['dtype']
+        if arg_dtype == 'TypeId':
+            arg_dtype = 'int'
+        default = None
+        as_init_arg = False
         is_type_id = False
         prim_init = False
-        for arg_name in args_dict.keys():
-            arg_dtype = args_dict[arg_name]['dtype']
-            if arg_dtype == 'TypeId':
-                arg_dtype = 'int'
-            default = None
-            as_init_arg = False
-            is_type_id = False
-            type_cast = []
-            if default_str in args_dict[arg_name]:
-                default = args_dict[arg_name][default_str]
-                as_init_arg = True
-            if 'prim_init' in args_dict[arg_name]:
-                prim_init = args_dict[arg_name]['prim_init']
-            if 'type_cast' in args_dict[arg_name]:
-                type_cast = [cast_type.strip() for cast_type in args_dict[arg_name]['type_cast'].split(',')]
-            arg_handler_key = 'arg_handler'
-            if arg_handler_key in args_dict[arg_name] and args_dict[arg_name][arg_handler_key] == 'dtype_to_type_id':
-                is_type_id = True
-            arg = Arg(arg_name, arg_dtype, type_cast, is_type_id, as_init_arg, default)
-            op_args.append(arg)
-        if 'returns' not in yaml.keys():
-            raise TypeError("op define need key 'returns'")
+        type_cast = []
+        if 'default' in args_dict[arg_name]:
+            default = args_dict[arg_name]['default']
+            as_init_arg = True
+        # 当op_args任意一个参数有prim_init，该op就要在pyboost_inner_prim.py生成
+        if 'prim_init' in args_dict[arg_name] and args_dict[arg_name]['prim_init'] is True:
+            prim_init = True
+        if 'type_cast' in args_dict[arg_name]:
+            type_cast = [cast_type.strip() for cast_type in args_dict[arg_name]['type_cast'].split(',')]
+        arg_handler_key = 'arg_handler'
+        arg_handler = args_dict[arg_name].get(arg_handler_key, '')
+        if arg_handler_key in args_dict[arg_name] and args_dict[arg_name][arg_handler_key] == 'dtype_to_type_id':
+            is_type_id = True
+        op_arg = OpArg(arg_name, arg_dtype, type_cast, is_type_id, as_init_arg, default,
+                       is_prim_init=prim_init, arg_handler=arg_handler)
+        op_args.append(op_arg)
+    return op_args
 
-        is_pyboost = False
-        is_dispatch = False
-        is_comm_op = False
-        gpu = default_str
-        cpu = default_str
-        ascend = default_str
-        dispatch_key = 'dispatch'
-        if dispatch_key in yaml.keys():
-            is_dispatch = True
-            is_pyboost = yaml[dispatch_key].get('enable')
-            gpu, cpu, ascend = OpProto.get_device_special_name(yaml[dispatch_key], gpu, cpu, ascend)
-            is_comm_op = yaml[dispatch_key].get('is_comm_op')
-        return_dict = yaml['returns']
-        class_name = convert_python_func_name_to_c(op_name)
-        class_key = 'class'
-        if class_key in yaml.keys() and 'name' in yaml[class_key].keys():
-            class_name = yaml[class_key]['name']
-        return_args = []
-        for return_name in return_dict.keys():
-            inplace = ''
-            if 'inplace' in return_dict[return_name]:
-                inplace = return_dict[return_name]['inplace']
-            dtype = return_dict[return_name]['dtype']
-            arg = Arg(return_name, dtype, type_cast=[], inplace=inplace)
-            return_args.append(arg)
-        is_multi_output = is_op_multi_output(return_args)
-        is_view = False
-        if 'view' in yaml.keys():
-            is_view = True
-        op_proto = OpProto(op_name, op_args, return_args, class_name,
-                           is_pyboost, is_view, cpu, gpu, ascend, prim_init, is_dispatch, is_multi_output, is_comm_op)
-        return op_proto
+
+def get_op_returns(op_data):
+    """
+    Retrieves the return values for the operator from the operation data.
+
+    Args:
+        op_data (dict): A dictionary containing the operation data.
+
+    Returns:
+        list: A list of OpArg instances representing the return values of the operator.
+    """
+    op_return_args = []
+    return_dict = op_data['returns']
+    for return_name in return_dict.keys():
+        inplace = ''
+        if 'inplace' in return_dict[return_name]:
+            inplace = return_dict[return_name]['inplace']
+        if 'dtype' not in return_dict[return_name]:
+            raise TypeError("op return args need key 'dtype'")
+        dtype = return_dict[return_name]['dtype']
+        arg = OpArg(return_name, dtype, type_cast=[], inplace=inplace)
+        op_return_args.append(arg)
+    return op_return_args
+
+
+def get_op_dispatch(op_data):
+    """
+    Retrieves the dispatch information for the operator from the operation data.
+
+    Args:
+        op_data (dict): A dictionary containing the operation data.
+
+    Returns:
+        OpDispatch: An instance of OpDispatch containing the dispatch information.
+    """
+    op_dispatch = op_data.get('dispatch', {})
+    if not op_dispatch:
+        return None
+    enable = op_dispatch.get('enable', False)
+    is_comm_op = op_dispatch.get('is_comm_op', False)
+    ascend = op_dispatch.get('Ascend', 'default')
+    cpu = op_dispatch.get('CPU', 'default')
+    gpu = op_dispatch.get('GPU', 'default')
+    return OpDispatch(enable, is_comm_op, ascend, cpu, gpu)
+
+
+def get_op_class(op_name, op_data) -> OpClass:
+    """
+    Retrieves the class information for the operator from the operation data.
+
+    Args:
+        op_name (str): The name of the operation.
+        op_data (dict): A dictionary containing the operation data.
+
+    Returns:
+        OpClass: An instance of OpClass containing the class information for the operator.
+    """
+    op_class = op_data.get('class', {})
+    is_disable = op_class.get('disable', False)
+    class_name = op_class.get('name', convert_python_func_name_to_c(op_name))
+    return OpClass(disable=is_disable, name=class_name)
+
+
+def get_op_function(op_data) -> OpFunction:
+    """
+    Retrieves the function information for the operator from the operation data.
+
+    Args:
+        op_data (dict): A dictionary containing the operation data.
+
+    Returns:
+        OpFunction: An instance of OpFunction containing the function information for the operator.
+    """
+    op_function = op_data.get('function', {})
+    is_disable = op_function.get('disable', False)
+    function_name = op_function.get('name', '')
+    return OpFunction(disable=is_disable, name=function_name)

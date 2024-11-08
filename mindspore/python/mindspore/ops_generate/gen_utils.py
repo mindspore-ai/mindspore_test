@@ -18,6 +18,7 @@ Generate operator utils function
 import os
 import glob
 import hashlib
+import pathlib
 import stat
 import yaml
 
@@ -207,3 +208,11 @@ def write_file(path, data):
     fd = os.open(path, flags, mode)
     with os.fdopen(fd, "w") as f:
         f.write(data)
+
+
+def save_file(save_path, file_name, content):
+    pathlib.Path(save_path).mkdir(parents=True, exist_ok=True)
+    dst_file_path = os.path.join(save_path, file_name)
+    tmp_file_path = os.path.join(save_path, f"tmp_{file_name}")
+    write_file(tmp_file_path, content)
+    check_change_and_replace_file(dst_file_path, tmp_file_path)

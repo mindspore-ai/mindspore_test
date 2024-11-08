@@ -25,7 +25,7 @@ from gen_utils import (py_licence_str, cc_license_str, check_change_and_replace_
                        merge_files_append, safe_load_yaml, convert_dtype_str, write_file)
 from pyboost_utils import get_pyboost_name, is_pyboost_enable
 import template
-from template import CppTemplate
+from template import Template
 from gen_pyboost_func import gen_pyboost_code
 from gen_aclnn_implement import generate_aclnn_reg_file
 import gen_constants as K
@@ -463,7 +463,7 @@ def generate_pyboost_import_header(yaml_data):
     Generate python primitive
     """
     pyboost_import_header = ''
-    import_pyboost = CppTemplate("from mindspore._c_expression import $var\n")
+    import_pyboost = Template("from mindspore._c_expression import $var\n")
     for operator_name, operator_data in yaml_data.items():
         is_pyboost = is_pyboost_enable(operator_data)
         if is_pyboost:
@@ -486,16 +486,16 @@ def _generate_class_description(class_name, func_name, input_args, init_args, fu
     # If function is an released API, refer to the function doc.
     description_str = f"""    r\"\"\"
     .. code-block::
-        
+
         prim = ops.{class_name}({', '.join(init_args)})
         out = prim({', '.join(input_args)})
-        
+
     is equivalent to
-    
+
     .. code-block::
-    
+
         ops.{func_name}({", ".join(input_args + init_args)})
-        
+
     Refer to :func:`mindspore.ops.{func_name}` for more details.
     \"\"\"
 """
@@ -813,7 +813,7 @@ namespace mindspore::ops {{"""
                                                        is_view=is_view_str)
         gen_cc_code += op_def_cc
         if is_view:
-            view_op_def = op_def_cc.replace(class_name, class_name+"View")
+            view_op_def = op_def_cc.replace(class_name, class_name + "View")
             gen_cc_code += view_op_def
 
     cc_opdef_end = f"""\n}}  // namespace mindspore::ops\n"""
@@ -1028,7 +1028,6 @@ def main():
 
     # generate ops python files
     generate_ops_py_files(work_path, ops_yaml_str, doc_yaml_str, "gen")
-
     # generate ops c++ files
     generate_ops_cc_files(work_path, ops_yaml_str)
     # generate create prim instance helper file

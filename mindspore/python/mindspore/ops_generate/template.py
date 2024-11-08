@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Template."""
+"""Templates for code auto generation."""
 import re
 import os
 import gen_constants as K
 
 
-class CppTemplate:
+class Template:
     """
-    template for generate c++ code
+    template for generate c++/python code
     """
     regular_str = r"(^[^\n\S]*)?\$([^\d\W]\w*|\{,?[^\d\W]\w*\,?})"
     regular_match = re.compile(regular_str, re.MULTILINE)
@@ -31,7 +31,7 @@ class CppTemplate:
     @staticmethod
     def load_from_file(file_path):
         with open(file_path, "r") as f:
-            return CppTemplate(f.read())
+            return Template(f.read())
 
     def replace(self, **kwargs):
         """
@@ -82,7 +82,7 @@ class CppTemplate:
 NEW_LINE = "\n"
 WORK_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../../")
 
-PYTHON_PRIM_TEMPLATE = CppTemplate("""
+PYTHON_PRIM_TEMPLATE = Template("""
 
 class _Pyboost${class_name}Prim(${class_name}Prim_):
     def __call__(self, ${input_args}):
@@ -104,133 +104,133 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import *
 
 """
 
-REGISTER_DEFINE_TEMPLATE = CppTemplate(
+REGISTER_DEFINE_TEMPLATE = Template(
     """
     (void)py::class_<${class_name}PrimAdapter, PrimitiveFunctionAdapter, std::shared_ptr<${class_name}PrimAdapter>>(
       *m, "${class_name}Prim_")
       .def(py::init<>())
       .def("__call__", &${class_name}PrimAdapter::Call, "Call ${class_name} op.");
     m->def(\"${pyboost_op_name}\", &mindspore::pynative::${pyboost_cfunc_name}, \"Encrypt the data.\");""")
-REGISTER_TEMPLATE = CppTemplate("void RegisterPyBoostFunction(py::module *m) {${register_func}\n}")
+REGISTER_TEMPLATE = Template("void RegisterPyBoostFunction(py::module *m) {${register_func}\n}")
 
-REGISTER_PYBOOST_GRAD_DEFINE_TEMPLATE = CppTemplate(
+REGISTER_PYBOOST_GRAD_DEFINE_TEMPLATE = Template(
     "MS_REG_PYBOOST_GRAD_OP(${pyboost_op_name}, mindspore::runtime::${pyboost_cfunc_name});\n")
-REGISTER_PYBOOST_GRAD_TEMPLATE = CppTemplate("${register_func}")
+REGISTER_PYBOOST_GRAD_TEMPLATE = Template("${register_func}")
 
-PYBOOST_FUNCTION_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_function.tpl'))
 
-PYBOOS_COMM_FUNCTION_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_COMM_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_comm_function.tpl'))
 
-PYBOOST_HEADER_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_function_header.tpl'))
 
-PYBOOST_GRAD_FUNCTION_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/runtime/pynative/op_function/template/pyboost_grad_function.tpl'))
 
-PYBOOST_GRAD_HEADER_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_GRAD_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/runtime/pynative/op_function/template/pyboost_grad_function_header.tpl'))
 
-PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_NATIVE_GRAD_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/grad/function/template/native_grad_function.tpl'))
 
-PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_NATIVE_GRAD_FUNCTIONS_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ccsrc/pipeline/pynative/grad/function/template/pyboost_native_grad_functions.tpl'))
 
-PYBOOST_NATIVE_GRAD_FUNCTIONS_HEADER_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_NATIVE_GRAD_FUNCTIONS_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ccsrc/pipeline/pynative/grad/function/template/pyboost_native_grad_functions_header.tpl'))
 
-GEN_OPS_DEF_HEADER_TEMPLATE = CppTemplate.load_from_file(
+GEN_OPS_DEF_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/python/mindspore/ops_generate/gen_ops_def_header.tpl'))
 
-PYBOOST_BASE_OP_DEFINE_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_BASE_OP_DEFINE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_op_header.tpl'))
 
-PYBOOST_OP_REGISTER_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_OP_REGISTER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_op_register.tpl'))
 
 # Ascend op generate
-PYBOOST_ASCEND_OP_HEADER_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_ASCEND_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_header_template.tpl'))
 
-PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_ASCEND_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_aclnn_source_template.tpl'))
 
-PYBOOST_ASCEND_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_ASCEND_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template/pyboost_ascend_call_template.tpl'))
 
-PYBOOST_ASCEND_VIEW_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_ASCEND_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/'
                  'pyboost_view_template.tpl'))
 
-PYBOOST_ASCEND_CUSTOMIZE_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_ASCEND_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/template'
                  '/pyboost_ascend_customize_call_template.tpl'))
 
 # GPU op generate
-PYBOOST_GPU_OP_HEADER_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_GPU_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_header_template.tpl'))
 
-PYBOOST_GPU_OP_SOURCE_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_GPU_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_source_template.tpl'))
 
-PYBOOST_GPU_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_GPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template/pyboost_gpu_call_template.tpl'))
 
-PYBOOST_GPU_VIEW_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_GPU_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_view_template.tpl'))
 
-PYBOOST_GPU_CUSTOMIZE_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_GPU_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ops/kernel/gpu/pyboost/template'
                  '/pyboost_gpu_customize_call_template.tpl'))
 
 # CPU op generate
-PYBOOST_CPU_OP_HEADER_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_CPU_OP_HEADER_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_header_template.tpl'))
 
-PYBOOST_CPU_OP_SOURCE_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_CPU_OP_SOURCE_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_source_template.tpl'))
 
-PYBOOST_CPU_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_CPU_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template/pyboost_cpu_call_template.tpl'))
 
-PYBOOST_CPU_VIEW_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_CPU_VIEW_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_COMMON_PYBOOST_KERNEL_PATH}/template/pyboost_view_template.tpl'))
 
-PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE = CppTemplate.load_from_file(
+PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH,
                  f'./{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/template'
                  '/pyboost_cpu_customize_call_template.tpl'))
 
-PYBOOST_PY_FUNC_IMPORT_HEADEAR = CppTemplate(
+PYBOOST_PY_FUNC_IMPORT_HEADEAR = Template(
     """from mindspore._c_expression import ${class_name}Prim_\n"""
 )
 
-PYBOOST_PY_FUNC_TEMPLATE = CppTemplate("""
+PYBOOST_PY_FUNC_TEMPLATE = Template("""
 def ${func_name}(${func_args}):
     r\"\"\"
     ${description}
     \"\"\"
     return ${func_impl_name}_impl(${input_args})\n\n""")
 
-OP_PROTO_TEMPLATE = CppTemplate("""
+OP_PROTO_TEMPLATE = Template("""
 ${class_name}FuncImpl g${class_name}FuncImpl;
 OpDef g${class_name} = {
   /*.name_=*/"${class_name}",
