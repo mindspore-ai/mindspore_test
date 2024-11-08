@@ -142,7 +142,6 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
   (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::MatmulReduceScatterFusion>());
   (*unify_mindir_pm)->AddFusionPass(std::make_shared<opt::AllGatherMatmulFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::InsertDependForOptShardAllGather>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddAttrToDump>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AscendMindIROpAdapter>());
 }
