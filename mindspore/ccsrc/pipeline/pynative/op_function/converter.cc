@@ -131,6 +131,16 @@ template <>
 ValueTuplePtr ConvertList<py::list, py::int_, Int64Imm>(const py::object &obj) {
   return ConvertIntList<py::list>(obj);
 }
+
+void EnablePipelineForTupleTensor(const ValueTuplePtr &tuple) {
+  const auto &values = tuple->value();
+  for (auto &value : values) {
+    if (value->isa<BaseTensor>()) {
+      auto t = value->cast<BaseTensorPtr>();
+      t->set_need_pipeline_sync(true);
+    }
+  }
+}
 }  // namespace
 
 Converter::Converter(ops::OpDef *op_def)
@@ -180,6 +190,7 @@ ValueTuplePtr Converter::ToTensorList(const py::list &python_args, size_t i) {
   source_type_[i] = OP_DTYPE::DT_BEGIN;
   auto val_seq = parse::ConvertSequence<py::tuple, ValueTuple, parse::ConvertTensor>(obj);
   if (val_seq != nullptr && val_seq->isa<ValueTuple>()) {
+    EnablePipelineForTupleTensor(val_seq->cast<ValueTuplePtr>());
     return val_seq->cast<ValueTuplePtr>();
   }
   return ConvertValueTupleByCastDtype(python_args, op_arg, i);
@@ -432,6 +443,7 @@ ValueTuplePtr Converter::ConvertValueTupleByCastDtype(const py::list &python_arg
   if (!op_arg.cast_dtype_.empty()) {
     auto convert_value = ConvertByCastDtype(input, op_arg, index);
     if (convert_value != nullptr && convert_value->isa<ValueTuple>()) {
+      EnablePipelineForTupleTensor(convert_value->cast<ValueTuplePtr>());
       return convert_value->cast<ValueTuplePtr>();
     }
   }
