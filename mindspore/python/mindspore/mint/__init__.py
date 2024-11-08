@@ -288,6 +288,9 @@ from mindspore.ops.auto_generate import argmin_ext as argmin
 
 # 122
 
+# 123
+from mindspore.ops.function.math_func import var_ext as var
+
 # 151
 from mindspore.ops.function.math_func import acos_ext as acos
 from mindspore.ops.function.math_func import arccos_ext as arccos
@@ -2000,6 +2003,9 @@ __all__ = [
     # 121
 
     # 122
+
+    # 123
+    'var',
 
     # 151
     'acos',

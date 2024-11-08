@@ -538,6 +538,85 @@ NodePtr LogSumExpGrad(Emitter *ib, const NodePtr &input, const NodePtr &dim, boo
   return ib->Mul(ib->Exp(ib->Sub(input, unsqueeze_result[0])), unsqueeze_result[1]);
 }
 
+inline NodePtr DynamicRankVarImpl(Emitter *ib, const NodePtr &x, const NodePtr &dout, const NodePtr &grad,
+                                  const NodePtr &correction, const NodePtr &mean) {
+  auto dout_size = ib->Emit("Size", {dout});
+  auto x_size = ib->Emit("Size", {x});
+  auto used_size = ib->RealDiv(ib->ScalarToTensor(x_size, kFloat32), ib->ScalarToTensor(dout_size, kFloat32));
+  auto dof = ib->RealDiv(ib->Tensor(2.0, kFloat32), ib->Sub(used_size, ib->ScalarToTensor(correction, kFloat32)));
+  dof = ib->Cast(dof, dout->dtype());
+  return ib->Mul(ib->Mul(ib->Cast(grad, dout->dtype()), dof), ib->Sub(x, mean));
+}
+
+inline NodePtr DynamicGradUnsqueeze(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &dout,
+                                    const NodePtr &keepdim, const NodePtr &rank) {
+  auto is_keepdim_false = ib->Equal(keepdim, ib->Value<bool>(false));
+  auto cond = ib->LogicalAnd(ib->ScalarToTensor(is_keepdim_false, kBool),
+                             ib->Greater(ib->ScalarToTensor(rank, kInt64), ib->Tensor(1, kInt64)));
+  auto true_branch = [&x, &axis, &dout](Emitter *e) -> NodePtrList {
+    auto output_shape_keepdim = e->ShapeCalc(std::make_shared<ReduceShapeShapeCalc>(false), {x, axis}, {1})[0];
+    return {e->Reshape(dout, output_shape_keepdim)};
+  };
+  auto false_branch = [&dout](Emitter *e) -> NodePtrList { return {dout}; };
+
+  return ib->Conditional(cond, true_branch, false_branch);
+}
+
+NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, const NodePtr &dout,
+                const NodePtr &correction, const NodePtr &keepdim) {
+  NodePtr axis = axis_node;
+  if (ib->GetDtype(axis_node)->isa<TypeNone>()) {
+    axis = ib->Value<std::vector<int64_t>>({});
+  }
+  NodePtr grad = dout;
+  auto dtype = ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout)));
+  if (IsDynamicRank(ib->GetShape(x))) {
+    auto rank = ib->Emit("Rank", {x});
+    grad = DynamicGradUnsqueeze(ib, x, axis, dout, keepdim, rank);
+    auto is_zero_rank_cond = ib->Emit("scalar_eq", {rank, ib->Value<int64_t>(0)});
+    auto var_zero_rank_impl = [&x, &dout, &grad, &correction, &dtype](Emitter *e) -> NodePtrList {
+      auto mean = e->MeanExt(x, e->Value<std::vector<int64_t>>({}), e->Value<bool>(false), dtype);
+      return {DynamicRankVarImpl(e, x, dout, grad, correction, mean)};
+    };
+    auto var_impl = [&x, &axis, &dout, &grad, &correction, &dtype](Emitter *e) -> NodePtrList {
+      auto mean = e->MeanExt(x, axis, e->Value<bool>(true), dtype);
+      return {DynamicRankVarImpl(e, x, dout, grad, correction, mean)};
+    };
+    return ib->Conditional(is_zero_rank_cond, var_zero_rank_impl, var_impl);
+  } else {
+    NodePtr dof = nullptr;
+    float dof_imm = 0.0;
+    if (IsDynamic(ib->GetShape(x)) || IsDynamic(ib->GetShape(dout))) {
+      auto dout_size = ib->DynSize(dout, kFloat32);
+      auto used_size = ib->DynSize(x, kFloat32) / dout_size;
+      dof = ib->RealDiv(ib->Tensor(2.0, kFloat32), ib->Sub(used_size, ib->ScalarToTensor(correction, kFloat32)));
+      dof = ib->Cast(dof, ib->GetDtype(dout));
+    } else {
+      auto dout_size = ib->GetSize(dout);
+      if (dout_size == 0) {
+        MS_EXCEPTION(ValueError) << "For 'Var', out shape size can not be 0";
+      }
+      auto used_size = ib->GetSize(x) / dout_size;
+      dof_imm = 2.0 / (used_size - GetValue<int64_t>(correction->BuildValue()));
+    }
+    auto rank = ib->GetShape(x).size();
+    auto mean = rank == 0 ? ib->MeanExt(x, ib->Value<std::vector<int64_t>>({}), ib->Value<bool>(false), dtype)
+                          : ib->MeanExt(x, axis, ib->Value<bool>(true), dtype);
+
+    auto keepdim_opt = mindspore::GetScalarValue<bool>(keepdim->BuildValue());
+    if (!keepdim_opt.has_value()) {
+      grad = DynamicGradUnsqueeze(ib, x, axis, dout, keepdim, ib->Value<int64_t>(rank));
+    } else if (!keepdim_opt.value() && rank > 1) {
+      auto output_shape_keepdim = ib->ShapeCalc(std::make_shared<ReduceShapeShapeCalc>(false), {x, axis}, {1})[0];
+      grad = ib->Reshape(dout, output_shape_keepdim);
+    }
+
+    grad = ib->Cast(grad, ib->GetDtype(dout));
+    grad = dof ? ib->Mul(grad, dof) : ib->Emit("Muls", {grad, ib->Value<float>(dof_imm)});
+    return ib->Mul(grad, ib->Sub(x, mean));
+  }
+}
+
 NodePtr MinOrMaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                      const NodePtr &out, const NodePtr &dout) {
   auto y = out;

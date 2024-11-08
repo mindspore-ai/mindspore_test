@@ -91,6 +91,8 @@ NodePtrList GetUnsqueezeTensor(Emitter *ib, const NodePtr &input, const NodePtr 
                                const NodePtrList &outputs);
 NodePtr LogSumExpGrad(Emitter *ib, const NodePtr &input, const NodePtr &dim, bool keepdim, const NodePtr &out,
                       const NodePtr &dout);
+NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, const NodePtr &dout,
+                const NodePtr &correction, const NodePtr &keepdim);
 NodePtr MinOrMaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                      const NodePtr &out, const NodePtr &dout);
 std::pair<ShapeVector, ShapeVector> SplitShapeIndex(const ShapeVector &input_shape, const ShapeVector &axis);

@@ -4381,5 +4381,17 @@ REG_BPROP_BUILDER("Dot").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   }
   return {grad_input, grad_other};
 });
+
+REG_BPROP_BUILDER("Var").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto correction = ib->GetInput(kIndex2);
+  auto keepdim = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto grad = VarGrad(ib, input, dim, dout, correction, keepdim);
+
+  return {grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
