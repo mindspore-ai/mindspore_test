@@ -49,7 +49,7 @@ if(ENABLE_MPI)
     include(${CMAKE_SOURCE_DIR}/cmake/external_libs/ompi.cmake)
 endif()
 
-if(ENABLE_CPU OR ENABLE_TESTCASES)
+if(ENABLE_CPU)
     include(${CMAKE_SOURCE_DIR}/cmake/external_libs/mkl_dnn.cmake)
 endif()
 

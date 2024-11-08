@@ -243,13 +243,6 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore proto_input -Wl,-noall_load mindspore_core
             mindspore_ops mindspore_common mindspore_backend)
-    if(${ENABLE_TESTCASES})
-        target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore -Wl,-noall_load mindspore_core
-            mindspore_ops mindspore_common mindspore_backend proto_input)
-    else()
-        target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore proto_input -Wl,-noall_load mindspore_core
-            mindspore_ops mindspore_common mindspore_backend)
-    endif()
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     if(ENABLE_CPU AND NOT WIN32)

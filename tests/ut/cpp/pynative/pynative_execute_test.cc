@@ -106,9 +106,6 @@ TEST_F(TestPynativeExecute, TestCreateContext) {
 /// Expectation: success
 TEST_F(TestPynativeExecute, TestDefaultContext) {
   auto ctx = MsContext::GetInstance();
-
-  //ASSERT_EQ(std::string(ctx->backend_policy()), "ge_only");
-
   auto ctx2 = MsContext::GetInstance();
 
   ASSERT_EQ(ctx.get(), ctx2.get());

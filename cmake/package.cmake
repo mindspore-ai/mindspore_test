@@ -67,8 +67,6 @@ if(ENABLE_TESTCASES)
         TARGETS proto_input
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore)
-    install(FILES ${onednn_LIBPATH}/libdnnl.so.2.2
-        DESTINATION ${INSTALL_LIB_DIR} RENAME libdnnl.so.2 COMPONENT mindspore)
 endif()
 
 if(ENABLE_D)
