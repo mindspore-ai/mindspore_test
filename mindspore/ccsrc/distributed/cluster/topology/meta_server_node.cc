@@ -237,12 +237,10 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
     node_info->state = NodeState::kRegistered;
     (void)time(&(node_info->last_update));
     nodes_[node_id] = node_info;
-    MS_LOG(WARNING) << "The new node: " << node_id << "(role: " << role << ")"
-                    << ", rank id: " << rank_id << ", device id: " << node_info->device_id
-                    << ", hostname: " << node_info->host_name << ", ip: " << host_ip
-                    << " is registered successfully. Currently registered node number: " << nodes_.size()
-                    << ", expected node number: " << total_node_num_;
+    rank_role_to_node_info_[std::make_pair(rank_id, role)] = node_info;
+    size_t nodes_size = nodes_.size();
     (void)TransitionToInitialized();
+    lock.unlock();
 
     RegistrationRespMessage reg_resp_msg;
     reg_resp_msg.set_success(true);
@@ -252,6 +250,11 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
 
     auto message = CreateMessage(meta_server_addr_.GetUrl(), MessageName::kSuccess, content);
     MS_EXCEPTION_IF_NULL(message);
+    MS_LOG(WARNING) << "The new node: " << node_id << "(role: " << role << ")"
+                    << ", rank id: " << rank_id << ", device id: " << node_info->device_id
+                    << ", hostname: " << node_info->host_name << ", ip: " << host_ip
+                    << " is registered successfully. Currently registered node number: " << nodes_size
+                    << ", expected node number: " << total_node_num_;
     return message.release();
   } else {
     if (!recovery::IsEnableRecovery()) {
@@ -320,6 +323,7 @@ MessageBase *const MetaServerNode::ProcessUnregister(MessageBase *const message)
   if (nodes_.size() == 0) {
     topo_state_ = TopoState::kFinished;
   }
+  lock.unlock();
   auto response = CreateMessage(meta_server_addr_.GetUrl(), MessageName::kSuccess,
                                 std::to_string(static_cast<int>(MessageName::kSuccess)));
   MS_EXCEPTION_IF_NULL(response);
@@ -336,10 +340,11 @@ MessageBase *const MetaServerNode::ProcessHeartbeat(MessageBase *const message) 
   const auto &node_id = heartbeat.node_id();
   std::shared_lock<std::shared_mutex> lock(nodes_mutex_);
   if (nodes_.find(node_id) != nodes_.end()) {
-    auto &node = nodes_[node_id];
+    auto &node = nodes_.at(node_id);
     MS_ERROR_IF_NULL_W_RET_VAL(node, rpc::NULL_MSG);
     (void)time(&(node->last_update));
     node->state = NodeState::kRegistered;
+    lock.unlock();
 
     HeartbeatRespMessage resp_msg;
     resp_msg.set_success(static_cast<bool>(MessageName::kSuccess));
@@ -384,7 +389,7 @@ MessageBase *const MetaServerNode::ProcessReadMetadata(MessageBase *const messag
     result = MessageName::kInvalidMetadata;
   } else {
     result = MessageName::kValidMetadata;
-    std::string meta_value = metadata_[meta_msg.name()];
+    std::string meta_value = metadata_.at(meta_msg.name());
     meta_msg.set_value(meta_value);
   }
   response = CreateMessage(meta_server_addr_.GetUrl(), result, meta_msg.SerializeAsString());
@@ -419,13 +424,16 @@ MessageBase *const MetaServerNode::ProcessGetHostNames(MessageBase *const messag
   nlohmann::json hostnames = nlohmann::json::array();
   nlohmann::json retval = nlohmann::json::object();
   MessageName result;
+  auto node_role = message->body;
 
   if (nodes_.size() != total_node_num_) {
     result = MessageName::kInvalidMetadata;
-  } else {
+    retval[kHostNames] = hostnames;
+    auto response = CreateMessage(meta_server_addr_.GetUrl(), result, retval.dump());
+    MS_EXCEPTION_IF_NULL(response);
+    return response.release();
+  } else if (all_hostname_hash_.count(node_role) == 0) {
     result = MessageName::kValidMetadata;
-
-    auto node_role = message->body;
 
     // Collect all the hostnames from nodes info.
     std::vector<std::string> tmp_hostnames(nodes_.size(), "");
@@ -445,6 +453,7 @@ MessageBase *const MetaServerNode::ProcessGetHostNames(MessageBase *const messag
         continue;
       }
     }
+    lock.unlock();
 
     // The hostname of the node whose role name not match is empty, and should be skipped.
     for (size_t i = 0; i < tmp_hostnames.size(); ++i) {
@@ -452,15 +461,13 @@ MessageBase *const MetaServerNode::ProcessGetHostNames(MessageBase *const messag
         hostnames.push_back(tmp_hostnames[i]);
       }
     }
+    retval[kHostNames] = hostnames;
+    all_hostname_hash_[node_role] = retval.dump();
+  } else {
+    result = MessageName::kValidMetadata;
   }
 
-  retval[kHostNames] = hostnames;
-  try {
-    MS_LOG(DEBUG) << "Host names are " << retval.dump();
-  } catch (const std::exception &e) {
-    MS_LOG(ERROR) << "Failed to dump host names json " << e.what();
-  }
-  auto response = CreateMessage(meta_server_addr_.GetUrl(), result, retval.dump());
+  auto response = CreateMessage(meta_server_addr_.GetUrl(), result, all_hostname_hash_[node_role]);
   MS_EXCEPTION_IF_NULL(response);
   return response.release();
 }
@@ -473,6 +480,7 @@ void MetaServerNode::UpdateTopoState() {
       // Update the state of topology.
       if (topo_state_ == TopoState::kInitializing) {
         if (TransitionToInitialized()) {
+          nodes_mutex_.unlock();
           continue;
         }
         MS_LOG(INFO) << "The cluster topology is in the process of constructing, current alive node num: ("
@@ -511,7 +519,7 @@ void MetaServerNode::UpdateTopoState() {
 
       nodes_mutex_.unlock();
       static const size_t interval = 3;
-      (void)sleep(interval);
+      SleepBasedOnScale(interval);
     }
   } catch (const std::exception &e) {
     nodes_mutex_.unlock();
@@ -527,9 +535,6 @@ bool MetaServerNode::TransitionToInitialized() {
       ReassignNodeRank();
     }
 
-    // Assign port range for each node after cluster is initialized.
-    AssignPortRange();
-
     // Persist the cluster metadata into storage through configuration.
     if (recovery::IsEnableRecovery() && configuration_ != nullptr && configuration_->Empty()) {
       if (!Persist()) {
@@ -538,6 +543,7 @@ bool MetaServerNode::TransitionToInitialized() {
     }
     topo_state_ = TopoState::kInitialized;
     MS_LOG(INFO) << "The cluster topology has been constructed successfully.";
+    MS_VLOG(VL_DISTRIBUTED_TRACE) << "Distribute networking cost : " << ElapsedTime(start_time_).count() << " ms.";
     return true;
   }
   return false;
@@ -679,9 +685,11 @@ bool MetaServerNode::CheckRankIdValidation(const std::string &node_id, const std
     return false;
   }
   // Whether rank id has already exists.
-  bool rank_id_exist = std::any_of(nodes_.begin(), nodes_.end(), [&role, &rank_id](const auto &n) {
-    return n.second->role == role && n.second->rank_id == rank_id;
-  });
+  bool rank_id_exist = false;
+  if (rank_role_to_node_info_.find(std::make_pair(rank_id, role)) != rank_role_to_node_info_.end()) {
+    rank_id_exist = true;
+  }
+
   // Whether rank id exceeds upper bound.
   bool is_extra_node = (rank_id >= role_expect_num_[role]);
   if (rank_id_exist) {

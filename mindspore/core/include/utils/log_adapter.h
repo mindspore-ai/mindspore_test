@@ -248,6 +248,8 @@ enum VLogLevel : int {
   VL_PI = COMPONENT_START + (SM_PI - 1) * COMPONENT_RANGE,                                // 23. PIJIT
   VL_FL = COMPONENT_START + (SM_FL - 1) * COMPONENT_RANGE,                                // 24. Federated Learning
   VL_DISTRIBUTED = COMPONENT_START + (SM_DISTRIBUTED - 1) * COMPONENT_RANGE,              // 25. Distributed
+  VL_DISTRIBUTED_FD,                                                                      //    Distributed socket fd
+  VL_DISTRIBUTED_TRACE,                                                                   //    Distributed trace
   VL_LITE = COMPONENT_START + (SM_LITE - 1) * COMPONENT_RANGE,                            // 26. LITE
   VL_ARMOUR = COMPONENT_START + (SM_ARMOUR - 1) * COMPONENT_RANGE,                        // 27. ARMOUR
   VL_HCCL_ADPT = COMPONENT_START + (SM_HCCL_ADPT - 1) * COMPONENT_RANGE,                  // 28. Hccl Adapter

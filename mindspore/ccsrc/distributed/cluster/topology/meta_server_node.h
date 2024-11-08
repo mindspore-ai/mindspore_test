@@ -20,6 +20,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <utility>
 #include <thread>
 #include <shared_mutex>
 #include <unordered_map>
@@ -31,6 +32,9 @@ namespace mindspore {
 namespace distributed {
 namespace cluster {
 namespace topology {
+// Node's rank id and its role.
+using RankIdAndRole = std::pair<uint32_t, std::string>;
+
 // Indicates the state of compute graph node.
 enum class NodeState {
   // This node is newly created and unauthenticated.
@@ -232,6 +236,10 @@ class MetaServerNode : public NodeBase {
 
   // Stores the registered compute graph nodes.
   std::map<std::string, std::shared_ptr<NodeInfo>> nodes_;
+  std::map<RankIdAndRole, std::shared_ptr<NodeInfo>> rank_role_to_node_info_;
+
+  // Hostnames hash of all nodes in the cluster.
+  NodeRoleToHostNames all_hostname_hash_;
 
   mutable std::shared_mutex nodes_mutex_;
 
