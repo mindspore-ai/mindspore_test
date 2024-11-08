@@ -27,6 +27,7 @@ Stream
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.hal.communication_stream
     mindspore.hal.current_stream
     mindspore.hal.default_stream
     mindspore.hal.set_cur_stream
