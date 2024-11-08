@@ -1461,7 +1461,7 @@ REG_BPROP_BUILDER("PowTensorScalar").SetBody(BODYFUNC(ib) {
   return {grad_input, ib->OutZeros(exponent)};
 });
 
-REG_BPROP_BUILDER("Exp").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Exp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto g = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -1509,7 +1509,7 @@ REG_BPROP_BUILDER("CumSum").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
           ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
 });
 
-REG_BPROP_BUILDER("CumsumExt").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("CumsumExt").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto x_shape = ib->GetShape(x);
   auto num_elements =
@@ -2346,9 +2346,9 @@ REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Bernoulli").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("Bernoulli").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("BernoulliExt").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i1, i2}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto seed = ib->GetInput(kIndex1);
   auto offset = ib->GetInput(kIndex2);
@@ -3307,7 +3307,7 @@ REG_BPROP_BUILDER("BatchMatMul").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
   return ret;
 });
 
-REG_BPROP_BUILDER("BatchMatMulExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("BatchMatMulExt").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -3378,7 +3378,7 @@ REG_BPROP_BUILDER("MatrixTriangularSolve").SetUnusedInputs({i1}).SetBody(BODYFUN
   return {grad_matrix, grad_rhs};
 });
 
-REG_BPROP_BUILDER("NanToNum").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("NanToNum").FreeUselessValues_IO({i1, i2, i3}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto nan = ib->GetInput(kIndex1);
   auto posinf = ib->GetInput(kIndex2);
@@ -3567,7 +3567,7 @@ REG_BPROP_BUILDER("Diagonal").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   }
 });
 
-REG_BPROP_BUILDER("Polar").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Polar").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   auto input_abs = ib->GetInput(kIndex0);
   auto input_angle = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);

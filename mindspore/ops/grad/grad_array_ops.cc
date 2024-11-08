@@ -1056,8 +1056,8 @@ REG_BPROP_BUILDER("Clone").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dout};
 });
 
-REG_BPROP_BUILDER("Range").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
-REG_BPROP_BUILDER("Arange").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("Range").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("Arange").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("Pack").SetUnusedInputs({i0, i1}).SetBody(StackBpropFunc);
 REG_BPROP_BUILDER("Stack").SetUnusedInputs({i0, i1}).SetBody(StackBpropFunc);
@@ -1075,7 +1075,7 @@ REG_BPROP_BUILDER("Unstack").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("StackExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("StackExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex3);
   auto axis_node = ib->GetInput(kIndex1);
   auto input_shape = ib->GetShape(dout);
@@ -1325,7 +1325,7 @@ REG_BPROP_BUILDER("Reshape").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(shp)};
 });
 
-REG_BPROP_BUILDER("ViewAs").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ViewAs").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -1510,7 +1510,7 @@ DEF_PURE_SHAPE_CALC(g_meshgrid)
     return std::make_pair(ShapeVector(input_num, x_rank), false);
   });
 
-REG_BPROP_BUILDER("Meshgrid").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Meshgrid").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto indexing_node = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -2063,7 +2063,7 @@ REG_BPROP_BUILDER("Chunk").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib
   return {dx, ib->OutZeros(chunks), ib->OutZeros(axis)};
 });
 
-REG_BPROP_BUILDER("SliceExt").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SliceExt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto begin = ib->GetInput(kIndex2);
@@ -2430,7 +2430,7 @@ REG_BPROP_BUILDER("ConjugateTranspose").SetUnusedInputs({i0, i2}).SetBody(BODYFU
   return {ib->Emit("ConjugateTranspose", {dout, ib->Value<ShapeVector>(res_perm)}), ib->OutZeros(perm)};
 });
 
-REG_BPROP_BUILDER("Triu").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Triu").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto diagonal = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
 
@@ -2461,14 +2461,14 @@ REG_BPROP_BUILDER("ResizeNearestNeighborV2").SetUnusedInputs({i1, i4}).SetBody(B
   return {dx, ib->OutZeros(grad_in_size), ib->OutZeros(align_corners), ib->OutZeros(half_pixel_centers)};
 });
 
-REG_BPROP_BUILDER("Tril").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Tril").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto diagonal = GetValue<int64_t>(ib->GetAttr("diagonal"));
   auto dout = ib->GetInput(kIndex2);
   auto dx = ib->Emit("Tril", {dout}, {{"diagonal", MakeValue(diagonal)}});
   return {dx};
 });
 
-REG_BPROP_BUILDER("TrilExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TrilExt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto diagonal = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("TrilExt", {dout, diagonal});
@@ -2969,7 +2969,7 @@ REG_BPROP_BUILDER("RepeatInterleaveInt").FreeUselessValues_IO({i0}, {}).SetBody(
   return {result, ib->OutZeros(repeats), ib->OutZeros(axis), ib->OutZeros(output_size)};
 });
 
-REG_BPROP_BUILDER("RepeatInterleaveTensor").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("RepeatInterleaveTensor").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto repeats = ib->GetInput(kIndex1);
   auto axis = ib->GetInput(kIndex2);
