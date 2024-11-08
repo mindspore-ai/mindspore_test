@@ -33,7 +33,12 @@ class ConstructGraph {
                              bool use_scalar = false);
   ParameterPtr NewListInput(const std::string &name, const std::vector<std::pair<TypePtr, ShapeVector>> &pairs);
 
-  ValueNodePtr NewValueNode(const ValuePtr &value);
+  template <typename T, typename _ = typename std::enable_if<!is_shared_ptr<T>::value>::type>
+  ValueNodePtr NewValueNode(const T &x) {
+    return graph_->NewValueNode(MakeValue(x));
+  }
+  ValueNodePtr NewValueNode(const ValuePtr &value) { return graph_->NewValueNode(value); }
+
   CNodePtr NewCNodeWithoutInfer(const std::string &prim_name, const std::vector<AnfNodePtr> &inputs,
                                 const mindspore::HashMap<std::string, ValuePtr> &attrs = {});
   CNodePtr NewCNode(const std::string &prim_name, const std::vector<AnfNodePtr> &inputs,
