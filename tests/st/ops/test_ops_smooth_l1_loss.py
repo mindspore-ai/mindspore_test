@@ -105,8 +105,10 @@ def test_ops_smooth_l1_loss_normal(mode, reduction):
         output_backward = op_backward(ms.Tensor(inputx_b), ms.Tensor(target_b), reduction, beta_b)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        output_forward = smooth_l1_loss_forward_func(ms.Tensor(inputx_f), ms.Tensor(target_f), reduction, beta_f)
-        output_backward = smooth_l1_loss_backward_func(ms.Tensor(inputx_b), ms.Tensor(target_b), reduction, beta_b)
+        op_froward = ms.jit(smooth_l1_loss_forward_func, jit_config=ms.JitConfig(jit_level="O2"))
+        output_forward = op_froward(ms.Tensor(inputx_f), ms.Tensor(target_f), reduction, beta_f)
+        op_backward = ms.jit(smooth_l1_loss_backward_func, jit_config=ms.JitConfig(jit_level="O2"))
+        output_backward = op_backward(ms.Tensor(inputx_b), ms.Tensor(target_b), reduction, beta_b)
 
     np.testing.assert_allclose(output_forward.asnumpy(), expect_forward, rtol=1e-3)
     np.testing.assert_allclose(output_backward[0].asnumpy(), expect_backward[0], rtol=1e-3, atol=1e-3)
@@ -137,7 +139,8 @@ def test_ops_smooth_l1_loss_bf16(mode, reduction):
         output = op_froward(inputx_tensor, target_tensor, reduction, beta)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        output = smooth_l1_loss_forward_func(inputx_tensor, target_tensor, reduction, beta)
+        op_froward = ms.jit(smooth_l1_loss_forward_func, jit_config=ms.JitConfig(jit_level="O2"))
+        output = op_froward(inputx_tensor, target_tensor, reduction, beta)
     np.testing.assert_allclose(output.float().asnumpy(), expect, rtol=4e-3, atol=1e-2)
 
 
@@ -169,7 +172,8 @@ def test_ops_smooth_l1_loss_vmap(mode, reduction):
         output = op_froward(ms.Tensor(inputx), ms.Tensor(target), reduction, beta)
     else:
         ms.context.set_context(mode=ms.GRAPH_MODE)
-        output = smooth_l1_loss_vmap_func(ms.Tensor(inputx), ms.Tensor(target), reduction, beta)
+        op_froward = ms.jit(smooth_l1_loss_vmap_func, jit_config=ms.JitConfig(jit_level="O2"))
+        output = op_froward(ms.Tensor(inputx), ms.Tensor(target), reduction, beta)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 

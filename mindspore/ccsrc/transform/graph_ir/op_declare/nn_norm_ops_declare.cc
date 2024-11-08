@@ -44,19 +44,19 @@ REG_ADPT_DESC(SoftmaxCrossEntropyWithLogits, prim::kPrimSoftmaxCrossEntropyWithL
 
 // SmoothL1Loss
 INPUT_MAP(SmoothL1LossV2) = {{1, INPUT_DESC(predict)}, {2, INPUT_DESC(label)}};
-ATTR_MAP(SmoothL1LossV2) = {{"beta", ATTR_DESC(sigma, AnyTraits<float>())},
-                            {"reduction", ATTR_DESC(reduction, AnyTraits<std::string>())}};
+ATTR_MAP(SmoothL1LossV2) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(SmoothL1LossV2) = {{3, ATTR_DESC(sigma, AnyTraits<float>())},
+                                  {4, ATTR_DESC(reduction, AnyTraits<GEReduction>())}};
 OUTPUT_MAP(SmoothL1LossV2) = {{0, OUTPUT_DESC(loss)}};
 REG_ADPT_DESC(SmoothL1Loss, kNameSmoothL1Loss, ADPT_DESC(SmoothL1LossV2))
-REG_ADPT_DESC(SmoothL1LossV2, prim::kPrimSmoothL1LossV2->name(), ADPT_DESC(SmoothL1LossV2))
 
 // SmoothL1LossGrad
 INPUT_MAP(SmoothL1LossGradV2) = {{1, INPUT_DESC(predict)}, {2, INPUT_DESC(label)}, {3, INPUT_DESC(dout)}};
-ATTR_MAP(SmoothL1LossGradV2) = {{"beta", ATTR_DESC(sigma, AnyTraits<float>())},
-                                {"reduction", ATTR_DESC(reduction, AnyTraits<std::string>())}};
+ATTR_MAP(SmoothL1LossGradV2) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(SmoothL1LossGradV2) = {{4, ATTR_DESC(sigma, AnyTraits<float>())},
+                                      {5, ATTR_DESC(reduction, AnyTraits<GEReduction>())}};
 OUTPUT_MAP(SmoothL1LossGradV2) = {{0, OUTPUT_DESC(gradient)}};
 REG_ADPT_DESC(SmoothL1LossGrad, kNameSmoothL1LossGrad, ADPT_DESC(SmoothL1LossGradV2))
-REG_ADPT_DESC(SmoothL1LossGradV2, prim::kPrimSmoothL1LossGradV2->name(), ADPT_DESC(SmoothL1LossGradV2))
 
 // SigmoidCrossEntropyWithLogits
 INPUT_MAP(SigmoidCrossEntropyWithLogits) = {{1, INPUT_DESC(predict)}, {2, INPUT_DESC(target)}};
