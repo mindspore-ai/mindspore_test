@@ -487,7 +487,7 @@
 
     .. py:method:: set_grad(requires_grad=True)
 
-        Cell的梯度设置。在PyNative模式下，该参数指定Cell是否需要梯度。如果为 ``True`` ，则在执行正向网络时，将生成需要计算梯度的反向网络。
+        Cell的梯度设置。
 
         参数：
             - **requires_grad** (bool) - 指定网络是否需要梯度，如果为 ``True`` ，PyNative模式下Cell将构建反向网络。默认值： ``True`` 。

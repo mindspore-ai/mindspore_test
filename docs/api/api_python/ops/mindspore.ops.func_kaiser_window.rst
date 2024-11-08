@@ -15,7 +15,7 @@ mindspore.ops.kaiser_window
     .. math::
         - \frac{M - 1}{2} \leq n \leq \frac{M - 1}{2}
 
-    其中 :math:`I_0` 为零阶修正Bessel函数。
+    其中 :math:`I_0` 为零阶修正Bessel函数，:math:`M` 代表了 `window_length`。
 
     参数：
         - **window_length** (int) - 输出window的大小。

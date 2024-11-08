@@ -7,7 +7,7 @@ mindspore.ops.masked_select
 
     参数：
         - **input** (Tensor) - 它的shape是 :math:`(x_1, x_2, ..., x_R)`。
-        - **mask** (Tensor[bool]) - 它的shape是 :math:`(x_1, x_2, ..., x_R)`。
+        - **mask** (Tensor[bool]) - 其为True的位置对应的 `input` 值将被保留。它的shape是 :math:`(x_1, x_2, ..., x_R)`。
 
     返回：
         一个一维Tensor，类型与 `input` 相同。

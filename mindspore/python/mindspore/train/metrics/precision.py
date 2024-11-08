@@ -32,11 +32,9 @@ class Precision(EvaluationBase):
     .. math::
         \text{precision} = \frac{\text{true_positive}}{\text{true_positive} + \text{false_positive}}
 
-    Note:
-        In the multi-label cases, the elements of :math:`y` and :math:`y_{pred}` must be 0 or 1.
-
     Args:
-        eval_type (str): ``'classification'`` or ``'multilabel'`` are supported. Default: ``'classification'`` .
+        eval_type (str): ``'classification'`` or ``'multilabel'`` are supported. See the update method below
+            for what it does. Default: ``'classification'`` .
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -76,7 +74,8 @@ class Precision(EvaluationBase):
     @rearrange_inputs
     def update(self, *inputs):
         """
-        Updates the internal evaluation result with `y_pred` and `y`.
+        Updates the internal evaluation result with `y_pred` and `y`. In the multi-label cases, the elements of
+            :math:`y` and :math:`y_pred` must be 0 or 1.
 
         Args:
             inputs: Input `y_pred` and `y`. `y_pred` and `y` are Tensor, list or numpy.ndarray.

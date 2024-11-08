@@ -10,11 +10,8 @@ mindspore.train.Precision
     .. math::
         \text{precision} = \frac{\text{true_positive}}{\text{true_positive} + \text{false_positive}}
 
-    .. note::
-        在多标签情况下， :math:`y` 和 :math:`y_{pred}` 的元素必须为0或1。
-
     参数：
-        - **eval_type** (str) - 支持 ``'classification'`` 和 ``'multilabel'`` 。默认值： ``'classification'`` 。
+        - **eval_type** (str) - 支持 ``'classification'`` 和 ``'multilabel'`` 。具体作用见下update方法。默认值： ``'classification'`` 。
 
     .. py:method:: clear()
 
@@ -32,7 +29,7 @@ mindspore.train.Precision
 
     .. py:method:: update(*inputs)
 
-        使用预测值 `y_pred` 和真实标签 `y` 更新局部变量。
+        使用预测值 `y_pred` 和真实标签 `y` 更新局部变量。在多标签情况下， :math:`y` 和 :math:`y_pred` 的元素必须为0或1。
 
         参数：
             - **inputs** - 输入 `y_pred` 和 `y`。`y_pred` 和 `y` 支持Tensor、list或numpy.ndarray类型。

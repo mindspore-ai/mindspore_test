@@ -223,7 +223,8 @@ class InverseDecayLR(LearningRateSchedule):
         learning_rate (float): The initial value of learning rate.
         decay_rate (float): The decay rate.
         decay_steps (int): Number of steps to decay over.
-        is_stair (bool): If true, learning rate decay once every `decay_steps` times. Default: ``False`` .
+        is_stair (bool): If true, learning rate decay once every `decay_steps` times. If False, the learning rate
+            decays for every step. Default: ``False`` .
 
     Inputs:
         - **global_step** (Tensor) - The current step number.
@@ -454,8 +455,9 @@ class WarmUpLR(LearningRateSchedule):
         tmp\_step= \min(current\_step, warmup\_steps)
 
     Args:
-        learning_rate (float): The initial value of learning rate.
-        warmup_steps (int): The warm up steps of learning rate.
+        learning_rate (float): The initial value of learning rate. The value of `learning_rate` must be greater than 0.
+        warmup_steps (int): The warm up steps of learning rate. The value of `warmup_steps` must be greater than
+            or equal to 1.
 
     Inputs:
         - **global_step** (Tensor) - The current step number. Shape is :math:`()`.

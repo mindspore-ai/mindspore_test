@@ -224,7 +224,8 @@ def inverse_decay_lr(learning_rate, decay_rate, total_step, step_per_epoch, deca
         total_step (int): The total number of steps.
         step_per_epoch (int): The number of steps in per epoch.
         decay_epoch (int): Number of epochs to decay over.
-        is_stair (bool): If true, learning rate is decayed once every `decay_epoch` times. Default: ``False`` .
+        is_stair (bool): If true, learning rate is decayed once every `decay_epoch` times. If False, the learning rate
+            decays for every epoch. Default: ``False`` .
 
     Returns:
         list[float]. The size of list is `total_step`.

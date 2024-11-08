@@ -3900,9 +3900,9 @@ def rrelu(input, lower=1.0 / 8, upper=1.0 / 3):
     `Empirical Evaluation of Rectified Activations in Convolution Network <https://arxiv.org/pdf/1505.00853.pdf>`_ .
 
     Args:
-        input  (Tensor): The input of rrelu is a Tensor of any dimension.
-        lower (Union[int, float]): Slope of the activation function at x < 0. Default: ``1.0 / 8`` .
-        upper (Union[int, float]): Slope of the activation function at x < 0. Default: ``1.0 / 3`` .
+        input (Tensor): The input of rrelu is a Tensor of any dimension.
+        lower (Union[int, float]): Slope of the activation function at data of `input` < 0. Default: ``1.0 / 8`` .
+        upper (Union[int, float]): Slope of the activation function at data of `input` < 0. Default: ``1.0 / 3`` .
 
     Returns:
         Tensor, after rrelu, has the same type and shape as the `input`.
@@ -5769,9 +5769,9 @@ def conv1d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
 
     The shape of the convolutional kernel is given by :math:`(\text{kernel_size})`,
     where :math:`\text{kernel_size}` is the width of the kernel.
-    If we consider the input and output channels as well as the `group` parameter, the complete kernel shape
-    will be :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size})`,
-    where `group` is the number of groups dividing `x`'s input channel when applying group convolution.
+    If we consider the input and output channels as well as the `groups` parameter, the complete kernel shape
+    will be :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size})`,
+    where `groups` is the number of groups dividing `x`'s input channel when applying group convolution.
 
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_
@@ -5921,9 +5921,9 @@ def conv2d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
     The shape of the convolutional kernel is given by :math:`(\text{kernel_size[0]}, \text{kernel_size[1]})`,
     where :math:`\text{kernel_size[0]}` and :math:`\text{kernel_size[1]}` are the height and width of the kernel,
     respectively.
-    If we consider the input and output channels as well as the `group` parameter, the complete kernel shape
-    will be :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size[0]}, \text{kernel_size[1]})`,
-    where `group` is the number of groups dividing `x`'s input channel when applying group convolution.
+    If we consider the input and output channels as well as the `groups` parameter, the complete kernel shape
+    will be :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`,
+    where `groups` is the number of groups dividing `x`'s input channel when applying group convolution.
 
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_ and
@@ -6973,10 +6973,10 @@ def conv3d(input, weight, bias=None, stride=1, pad_mode="valid", padding=0, dila
     :math:`(\text{kernel_size[0]}, \text{kernel_size[1]}, \text{kernel_size[2]})`
     where :math:`\text{kernel_size[0]}` , :math:`\text{kernel_size[1]}` and :math:`\text{kernel_size[2]}` are the depth,
     height and width of the kernel, respectively.
-    If we consider the input and output channels as well as the `group` parameter, the complete kernel shape
-    will be :math:`(C_{out}, C_{in} / \text{group}, \text{kernel_size[0]},
+    If we consider the input and output channels as well as the `groups` parameter, the complete kernel shape
+    will be :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]},
     \text{kernel_size[1]}, \text{kernel_size[2]})`,
-    where `group` is the number of groups dividing `x`'s input channel when applying group convolution.
+    where `groups` is the number of groups dividing `x`'s input channel when applying group convolution.
 
     For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
     <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
@@ -7898,7 +7898,8 @@ def triplet_margin_loss(anchor, positive, negative, margin=1.0, p=2, eps=1e-06, 
             as `anchor`.
         negative (Tensor): A sample belonging to the different class from `anchor`, with the same type and shape
             as `anchor`.
-        margin (float, optional): Make a margin between the positive pair and the negative pair. Default: ``1.0`` .
+        margin (float, optional): Make a margin between the positive pair and the negative pair. The shape of margin
+            must be 0. Default: ``1.0`` .
         p (int, optional): The degree of norm for pairwise distance. Default: ``2`` .
         eps (float, optional): Add small value to avoid division by zero. Default: ``1e-06``.
         swap (bool, optional): The distance swap change the negative distance to the distance between positive

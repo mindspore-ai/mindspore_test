@@ -433,7 +433,7 @@ MindSpore的ReWrite模块为用户提供了基于自定义规则，对网络的�
         该接口会将 `new_nodes` 里的节点按顺序插入到SymbolTree中，然后删除旧节点 `old_node` 。
 
         .. note::
-            - 仅支持一对一更换或一对多替换。如果需要多对多替换，请参考PatternEngine。
+            - 仅支持一对一更换或一对多替换。
             - 调用者应维护好 `new_nodes` 里每个节点间的拓扑关系，以及 `new_nodes` 里的节点与原始树中节点的拓扑关系。
 
         参数：

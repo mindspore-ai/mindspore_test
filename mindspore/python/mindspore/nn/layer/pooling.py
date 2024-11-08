@@ -1129,7 +1129,7 @@ class AvgPool2d(_PoolNd):
         TypeError: If `kernel_size` or `strides` is neither int nor tuple.
         ValueError: If `pad_mode` is not ``"valid"`` , ``"same"`` or ``"pad"`` with not case sensitive.
         ValueError: If `data_format` is neither ``'NCHW'`` nor ``'NHWC'``.
-        ValueError: If `padding`, `ceil_mode`, `count_include_pad`, or `divisor_override` is used
+        ValueError: If `padding`, `ceil_mode`, `count_include_pad`, or `divisor_override` is used,
             or `pad_mode` is ``"pad"`` when `data_format` is 'NHWC'.
         ValueError: If `kernel_size` or `strides` is less than 1.
         ValueError: If length of `padding` tuple/list is not 1 or 2.

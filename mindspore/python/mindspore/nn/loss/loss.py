@@ -2265,7 +2265,8 @@ class TripletMarginLoss(LossBase):
             - ``'mean'``: compute and return the mean of elements in the output.
             - ``'sum'``: the output elements will be summed.
 
-        margin (Union[Tensor, float]): Make a margin between the positive pair and the negative pair.
+        margin (Union[Tensor, float]): Make a margin between the positive pair and the negative pair. The length of
+            shape of `margin` must be 0.
             Default: ``1.0`` .
 
     Inputs:
@@ -2275,7 +2276,8 @@ class TripletMarginLoss(LossBase):
           shape as `x`. :math:`p` in the above formula.
         - **negative** (Tensor) - A sample belonging to the different class from `x`, with the same type and shape
           as `x`. :math:`n` in the above formula.
-        - **margin** (Union[Tensor, float]) - Make a margin between the positive pair and the negative pair.
+        - **margin** (Union[Tensor, float]) - Make a margin between the positive pair and the negative pair. The length
+          of shape of `margin` must be 0.
           Default: ``1.0`` .
 
     Outputs:

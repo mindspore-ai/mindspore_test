@@ -179,7 +179,7 @@ class Softmax2d(Cell):
     r"""
     Softmax function applied to 2D features data.
 
-    Applies `Softmax` to each location :math:`(c, h, w)` with an input Tensor of shape :math:`(C, H, W)` .
+    Applies `Softmax` to each location with an input Tensor of shape :math:`(C, H, W)` .
 
     Inputs:
         - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`.

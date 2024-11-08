@@ -12,7 +12,7 @@ mindspore.ops.lu_solve
 
     参数：
         - **b** (Tensor) - 上面公式的列向量 `b` 。 `b` 的shape为 :math:`(*, m, k)`，其中 :math:`*` 是batch的维度， 数据类型是float32、float16。
-        - **LU_data** (Tensor) - LU分解的结果。shape为 :math:`(*, m, m)` ，其中 :math:`*` 是batch的维度。
+        - **LU_data** (Tensor) - LU分解的结果，上面公式中的 `A`。shape为 :math:`(*, m, m)` ，其中 :math:`*` 是batch的维度。
           LU分解的结果可以被分成上三角矩阵 U 和下三角矩阵 L , 数据类型为 float32、float16。
         - **LU_pivots** (Tensor) - LU分解的主元。shape为 :math:`(*, m)` ，其中 :math:`*` 是batch的维度。主元可以被转为变换矩阵P， 数据类型为int32。
 

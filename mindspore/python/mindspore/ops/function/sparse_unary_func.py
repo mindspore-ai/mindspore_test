@@ -720,7 +720,7 @@ def csr_log(x: CSRTensor) -> CSRTensor:
         be affacted.
 
     Args:
-        x (CSRTensor): The value must be greater than 0.
+        x (CSRTensor): Input CSRTensor of any dimension. If the value is smaller than 0, return nan.
 
     Returns:
         CSRTensor, has the same shape and dtype as the `x`.

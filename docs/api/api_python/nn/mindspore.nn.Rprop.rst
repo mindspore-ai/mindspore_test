@@ -20,7 +20,7 @@ mindspore.nn.Rprop
             &\hspace{15mm} w_{t} \leftarrow w_{t-1}- \Delta_{t} \mathrm{sign}(g_t)                 \\
         \end{gather*}
 
-    :math:`\Delta_{min/max}` 表示最小或者最大步长， :math:`\eta_{+/-}` 表示加速和减速因子， :math:`g` 表示 `gradients` ， :math:`w` 表示 `params` 。
+    :math:`g` 表示 `gradients` ，:math:`w` 表示 `parameters`，:math:`\Delta_{min/max}` 表示最小或者最大步长， :math:`\eta_{+/-}` 表示加速和减速因子。
 
     .. note::
         .. include:: mindspore.nn.optim_note_weight_decay.rst

@@ -18,7 +18,7 @@ mindspore.ops.Primitive
 
     .. py:method:: check_elim(*args)
 
-        检查是否可以消除此Primitive。有需要的子类可以重写该方法。
+        检查是否能在编译阶段计算Primitive，如果能，则可以消除。有需要的子类可以重写该方法。
 
         参数：
             - **args** (Primitive args) - 与当前Primitive的参数相同。

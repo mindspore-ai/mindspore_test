@@ -331,8 +331,7 @@ class SymbolTree:
         Nodes in `new_nodes` will be inserted into SymbolTree sequentially, and then `old_node` will be deleted.
 
         Note:
-            - Replace support one-to-one replacement or one-to-multi replacement. If you need multi-to-multi
-              replacement, please refer to `PatternEngine`.
+            - Replace only support one-to-one replacement or one-to-multi replacement.
             - Caller should maintain the topological relationship between each node in the `new_nodes` , as well as
               the topological relationship between nodes in the `new_nodes` and nodes in the original tree.
 

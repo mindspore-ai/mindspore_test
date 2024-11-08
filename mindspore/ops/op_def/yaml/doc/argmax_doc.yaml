@@ -1,29 +1,29 @@
 argmax:
     description: |
-        Returns the indices of the maximum value along a specified `axis` of a Tensor.
-
-        Refer to :func:`mindspore.ops.argmax` for more details.
+        Return the indices of the maximum values of a tensor across a dimension.
 
         Args:
-            axis (int): Axis where the Argmax operation applies to. Default: ``-1`` .
-            output_type (:class:`mindspore.dtype`): Output data type.
-                Supported types: ``mstype.int32`` , ``mstype.int64`` . Default: ``mstype.int32`` .
+            input (Tensor): Input tensor.
+            dim (Union[int, None], optional): The dimension to reduce. If `dim` is ``None`` , the indices of the maximum
+                value within the flattened input will be returned. `dim` should be smaller than dimension of `input`.
+                Default: ``None`` .
+            keepdim (bool, optional): Whether the output tensor retains the specified
+                dimension. Ignored if `dim` is None. Default: ``False`` .
 
-        Inputs:
-            - **input_x** (Tensor) - The input tensor. :math:`(N, *)` where :math:`*` means, any number of additional
-              dimensions.
+        Returns:
+            Tensor, indices of the maximum values across a dimension.
 
-        Outputs:
-            Tensor, indices of the max value of input tensor across the axis.
+        Raises:
+            TypeError: If `keepdim` is not bool.
+            ValueError: If `dim` is out of range.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
-            >>> import mindspore
             >>> import numpy as np
             >>> from mindspore import Tensor, ops
-            >>> input_x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
-            >>> output = ops.Argmax(output_type=mindspore.int32)(input_x)
+            >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
+            >>> output = ops.argmax(x, dim=-1)
             >>> print(output)
             [1 0 0]

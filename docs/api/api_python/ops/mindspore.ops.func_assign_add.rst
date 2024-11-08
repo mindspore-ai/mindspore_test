@@ -12,7 +12,7 @@ mindspore.ops.assign_add
 
     参数：
         - **variable** (Parameter) - 网络参数。shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。
-        - **value** (Tensor) - 要和 `variable` 相加的值，shape必须与 `variable` 相同。建议在使用此函数时使用相同的数据类型。
+        - **value** (Union[Tensor, Number]) - 要和 `variable` 相加的值，shape必须与 `variable` 相同。如果 `value` 是数值型，则会自动转换为Tensor。建议在使用此函数时使用相同的数据类型。
 
     返回：
         Tensor，数据类型和shape与输入 `variable` 相同。

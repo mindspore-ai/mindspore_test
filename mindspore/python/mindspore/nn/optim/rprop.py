@@ -44,8 +44,8 @@ class Rprop(Optimizer):
             &\hspace{15mm} w_{t} \leftarrow w_{t-1}- \Delta_{t} \mathrm{sign}(g_t)                 \\
         \end{gather*}
 
-    :math:`\Delta_{min/max}` represents the min/max step size, :math:`\eta_{+/-}` represents the factors of
-    etaminus and etaplus, :math:`g` represents `gradients`, :math:`w` represents `parameters`.
+    :math:`g` represents `gradients`, :math:`w` represents `parameters`, :math:`\Delta_{min/max}` represents the
+    min/max step size, :math:`\eta_{+/-}` represents the factors of etaminus and etaplus.
 
     Note:
         If parameters are not grouped, the `weight_decay` in optimizer will be applied on the parameters without 'beta'

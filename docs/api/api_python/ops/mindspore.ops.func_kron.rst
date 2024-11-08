@@ -4,7 +4,7 @@ mindspore.ops.kron
 .. py:function:: mindspore.ops.kron(input, other)
 
     计算 `input` 和 `other` 的Kronecker积：:math:`input ⊗ other` 。
-    如果 `input` 是Tensor :math:`(a_{0}` input :math:`a_{1}` input ... input :math:`a_{n})` ， `other` 是Tensor :math:`(b_{0}` input :math:`b_{1}` input ... input :math:`b_{n})` ，计算结果为Tensor :math:`(a_{0}*b_{0}` input :math:`a_{1}*b_{1}` input ... input :math:`a_{n}*b_{n})` ，计算公式如下：
+    如果 `input` 是shape为 :math:`(r0, r1, ... , rN)` 的Tensor ， `other` 是shape为 :math:`(s0, s1, ... , sN)` 的Tensor ，则计算结果为shape为 :math:`(r0 * s0, r1 * s1, ... , rN * sN)` 的Tensor ，计算公式如下：
 
     .. math::
         (input ⊗ y)_{k_{0},k_{1},...k_{n}} =

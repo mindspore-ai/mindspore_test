@@ -14,4 +14,5 @@ mindspore.ops.float_power
 
     异常：
         - **TypeError** - `input` 和 `exponent` 都不是Tensor。
-        - **TypeError** - `input` 或 `exponent` 数据类型不是Tensor或Number。
+        - **TypeError** - `input` 数据类型不是Tensor或Number。
+        - **TypeError** - `exponent` 数据类型不是Tensor或Number。

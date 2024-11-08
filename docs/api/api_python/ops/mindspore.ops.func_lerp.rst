@@ -5,7 +5,7 @@ mindspore.ops.lerp
 
     基于权重参数计算两个Tensor之间的线性插值。
 
-    如果权重参数 `weight` 是一个Tensor，则各输入广播后应有相同shape 。
+    如果权重参数 `weight` 是一个Tensor，则 `input` 与 `end` 与 `weight` 广播后应有相同shape 。
     如果权重参数 `weight` 是一个浮点数，则 `input` 与 `end` 广播后shape应相同。
 
     .. math::

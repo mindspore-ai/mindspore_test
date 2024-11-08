@@ -82,7 +82,7 @@ class LARS(Optimizer):
             &\hline \\[-1.ex]
         \end{array}
 
-    :math:`w` represents the network parameters, :math:`g` represents `gradients`,
+    :math:`w` represents the network's params, :math:`g` represents `gradients`,
     :math:`t` represents the current step, :math:`\lambda` represents `weight_decay` in `optimizer`,
     :math:`\gamma` represents `learning_rate` in `optimizer`, :math:`\eta` represents `coefficient`.
 
@@ -97,9 +97,6 @@ class LARS(Optimizer):
     Inputs:
         - **gradients** (tuple[Tensor]) - The gradients of `params` in the optimizer, the shape is the
           as same as the `params` in the optimizer.
-
-    Outputs:
-        Union[Tensor[bool], tuple[Parameter]], it depends on the output of `optimizer`.
 
     Supported Platforms:
         ``Ascend``

@@ -3,7 +3,7 @@ mindspore.ops.csr_add
 
 .. py:function:: mindspore.ops.csr_add(a: CSRTensor, b: CSRTensor, alpha: Tensor, beta: Tensor)
 
-    :math:`a` 和 :math:`b` 是CSRTensor，:math:`alpha` 和 :math:`beta` 是Tensor。
+    计算两个输入CSRTensor的线性组合。
 
     .. math::
 

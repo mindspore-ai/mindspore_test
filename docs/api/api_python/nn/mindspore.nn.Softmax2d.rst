@@ -5,7 +5,7 @@ mindspore.nn.Softmax2d
 
     应用于2D特征数据的Softmax函数。
 
-    将 `Softmax` 应用于具有shape :math:`(C, H, W)` 的输入Tensor的每个位置 :math:`(c, h, w)` 。
+    将 `Softmax` 应用于具有shape :math:`(C, H, W)` 的输入Tensor的每个位置。
 
     输入：
         - **x** (Tensor) - Tensor的shape :math:`(N, C_{in}, H_{in}, W_{in})` 或者 :math:`(C_{in}, H_{in}, W_{in})`。
