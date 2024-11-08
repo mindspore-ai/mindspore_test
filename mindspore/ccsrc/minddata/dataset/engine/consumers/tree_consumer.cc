@@ -202,10 +202,8 @@ Status IteratorConsumer::GetNextAsVector(std::vector<TensorPtr> *const out) {
   }
 
   if (res.Timer()->Enabled()) {
-#ifndef ENABLE_ANDROID
     // VL_MD is 10900
-    MS_VLOG(VL_MD) << res.Timer()->Summary();
-#endif
+    VLOG_MD(res.Timer()->Summary());
   }
 
   // Filter meta column
@@ -248,10 +246,8 @@ Status IteratorConsumer::GetNextAsMap(std::unordered_map<std::string, TensorPtr>
   }
 
   if (res.Timer()->Enabled()) {
-#ifndef ENABLE_ANDROID
     // VL_MD is 10900
-    MS_VLOG(VL_MD) << res.Timer()->Summary();
-#endif
+    VLOG_MD(res.Timer()->Summary());
   }
 
   // Populate the out map from the row and return it
