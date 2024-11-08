@@ -15,10 +15,9 @@
 """logical operations, the function docs are adapted from Numpy API."""
 from __future__ import absolute_import
 
-from mindspore.ops import functional as F
 from mindspore.common import dtype as mstype
 from mindspore.common import Tensor
-from mindspore.ops import operations as P
+from mindspore import ops
 
 from mindspore.numpy.math_ops import _apply_tensor_op
 from mindspore.numpy.array_creations import zeros, ones, asarray
@@ -61,7 +60,7 @@ def not_equal(x1, x2, dtype=None):
         [False  True]]
     """
     _check_input_tensor(x1, x2)
-    return _apply_tensor_op(F.not_equal, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.not_equal, x1, x2, dtype=dtype)
 
 
 def less_equal(x1, x2, dtype=None):
@@ -94,7 +93,7 @@ def less_equal(x1, x2, dtype=None):
         [False  True  True]
     """
     _check_input_tensor(x1, x2)
-    return _apply_tensor_op(F.tensor_le, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_le, x1, x2, dtype=dtype)
 
 
 def less(x1, x2, dtype=None):
@@ -126,7 +125,7 @@ def less(x1, x2, dtype=None):
         >>> print(output)
         [ True False]
     """
-    return _apply_tensor_op(F.tensor_lt, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_lt, x1, x2, dtype=dtype)
 
 
 def greater_equal(x1, x2, dtype=None):
@@ -158,7 +157,7 @@ def greater_equal(x1, x2, dtype=None):
         >>> print(output)
         [ True  True False]
     """
-    return _apply_tensor_op(F.tensor_ge, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_ge, x1, x2, dtype=dtype)
 
 
 def greater(x1, x2, dtype=None):
@@ -190,7 +189,7 @@ def greater(x1, x2, dtype=None):
         >>> print(output)
         [ True False]
     """
-    return _apply_tensor_op(F.tensor_gt, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_gt, x1, x2, dtype=dtype)
 
 
 def equal(x1, x2, dtype=None):
@@ -222,7 +221,7 @@ def equal(x1, x2, dtype=None):
         >>> print(output)
         [ True  True False]
     """
-    return _apply_tensor_op(F.equal, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.equal, x1, x2, dtype=dtype)
 
 
 def isfinite(x, dtype=None):
@@ -254,7 +253,7 @@ def isfinite(x, dtype=None):
         >>> print(output)
         [False  True False]
     """
-    return _apply_tensor_op(F.isfinite, x, dtype=dtype)
+    return _apply_tensor_op(ops.isfinite, x, dtype=dtype)
 
 
 def isnan(x, dtype=None):
@@ -292,14 +291,14 @@ def isnan(x, dtype=None):
 
 def _isinf(x):
     """Computes isinf without applying keyword arguments."""
-    shape = F.shape(x)
+    shape = ops.shape(x)
     zeros_tensor = zeros(shape, mstype.float32)
     ones_tensor = ones(shape, mstype.float32)
-    not_inf = F.isfinite(x)
+    not_inf = ops.isfinite(x)
     is_nan = _isnan(x)
-    res = F.select(not_inf, zeros_tensor, ones_tensor)
-    res = F.select(is_nan, zeros_tensor, res)
-    return F.cast(res, mstype.bool_)
+    res = ops.select(not_inf, zeros_tensor, ones_tensor)
+    res = ops.select(is_nan, zeros_tensor, res)
+    return ops.cast(res, mstype.bool_)
 
 
 def isinf(x, dtype=None):
@@ -339,14 +338,14 @@ def isinf(x, dtype=None):
 
 def _is_sign_inf(x, fn):
     """Tests element-wise for inifinity with sign."""
-    shape = F.shape(x)
+    shape = ops.shape(x)
     zeros_tensor = zeros(shape, mstype.float32)
     ones_tensor = ones(shape, mstype.float32)
-    not_inf = F.isfinite(x)
+    not_inf = ops.isfinite(x)
     is_sign = fn(x, zeros_tensor)
-    res = F.select(not_inf, zeros_tensor, ones_tensor)
-    res = F.select(is_sign, res, zeros_tensor)
-    return F.cast(res, mstype.bool_)
+    res = ops.select(not_inf, zeros_tensor, ones_tensor)
+    res = ops.select(is_sign, res, zeros_tensor)
+    return ops.cast(res, mstype.bool_)
 
 
 def isposinf(x):
@@ -377,7 +376,7 @@ def isposinf(x):
         [False False  True False]
     """
     _check_input_tensor(x)
-    return _is_sign_inf(x, F.tensor_gt)
+    return _is_sign_inf(x, ops.tensor_gt)
 
 
 def isneginf(x):
@@ -407,7 +406,7 @@ def isneginf(x):
         >>> print(output)
         [ True False False False]
     """
-    return _is_sign_inf(x, F.tensor_lt)
+    return _is_sign_inf(x, ops.tensor_lt)
 
 
 def isscalar(element):
@@ -446,7 +445,7 @@ def isscalar(element):
         >>> print(output)
         True
     """
-    obj_type = F.typeof(element)
+    obj_type = ops.typeof(element)
     return not isinstance(obj_type, Tensor) and _isscalar(obj_type)
 
 
@@ -492,7 +491,7 @@ def isclose(a, b, rtol=1e-05, atol=1e-08, equal_nan=False):
         [ True  True False False  True  True]
     """
     a, b = _to_tensor(a, b)
-    is_close = P.IsClose(rtol=rtol, atol=atol, equal_nan=equal_nan)
+    is_close = ops.IsClose(rtol=rtol, atol=atol, equal_nan=equal_nan)
     return is_close(a, b)
 
 
@@ -533,13 +532,13 @@ def in1d(ar1, ar2, invert=False):
         [False  True False  True False]
     """
     ar1, ar2 = _to_tensor(ar1, ar2)
-    ar1 = F.expand_dims(ar1.ravel(), -1)
+    ar1 = ops.expand_dims(ar1.ravel(), -1)
     ar2 = ar2.ravel()
-    included = F.equal(ar1, ar2)
-    # F.reduce_sum only supports float
-    res = F.reduce_sum(included.astype(mstype.float32), -1).astype(mstype.bool_)
+    included = ops.equal(ar1, ar2)
+    # ops.reduce_sum only supports float
+    res = ops.reduce_sum(included.astype(mstype.float32), -1).astype(mstype.bool_)
     if invert:
-        res = F.logical_not(res)
+        res = ops.logical_not(res)
     return res
 
 
@@ -582,7 +581,7 @@ def isin(element, test_elements, invert=False):
     """
     element = _to_tensor(element)
     res = in1d(element, test_elements, invert=invert)
-    return F.reshape(res, F.shape(element))
+    return ops.reshape(res, ops.shape(element))
 
 
 def logical_not(a, dtype=None):
@@ -616,7 +615,7 @@ def logical_not(a, dtype=None):
         >>> print(output)
         [False  True]
     """
-    return _apply_tensor_op(F.logical_not, a, dtype=dtype)
+    return _apply_tensor_op(ops.logical_not, a, dtype=dtype)
 
 
 def logical_or(x1, x2, dtype=None):
@@ -650,7 +649,7 @@ def logical_or(x1, x2, dtype=None):
         >>> print(output)
         [ True  True]
     """
-    return _apply_tensor_op(F.logical_or, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.logical_or, x1, x2, dtype=dtype)
 
 
 def logical_and(x1, x2, dtype=None):
@@ -684,7 +683,7 @@ def logical_and(x1, x2, dtype=None):
         >>> print(output)
         [False False]
     """
-    return _apply_tensor_op(F.logical_and, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.logical_and, x1, x2, dtype=dtype)
 
 
 def logical_xor(x1, x2, dtype=None):
@@ -720,9 +719,9 @@ def logical_xor(x1, x2, dtype=None):
     """
     _check_input_tensor(x1)
     _check_input_tensor(x2)
-    y1 = F.logical_or(x1, x2)
-    y2 = F.logical_or(F.logical_not(x1), F.logical_not(x2))
-    return _apply_tensor_op(F.logical_and, y1, y2, dtype=dtype)
+    y1 = ops.logical_or(x1, x2)
+    y2 = ops.logical_or(ops.logical_not(x1), ops.logical_not(x2))
+    return _apply_tensor_op(ops.logical_and, y1, y2, dtype=dtype)
 
 
 def array_equal(a1, a2, equal_nan=False):
@@ -837,9 +836,9 @@ def signbit(x, dtype=None):
     if dtype is not None and not _check_same_type(dtype, mstype.bool_):
         _raise_type_error("Casting was not allowed for signbit.")
     x = _to_tensor(x)
-    res = F.less(x, 0)
-    if dtype is not None and not _check_same_type(F.dtype(res), dtype):
-        res = F.cast(res, dtype)
+    res = ops.less(x, 0)
+    if dtype is not None and not _check_same_type(ops.dtype(res), dtype):
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -889,7 +888,7 @@ def sometrue(a, axis=None, keepdims=False):
         axis = _canonicalize_axis(axis, a.ndim)
     a = _to_tensor(a)
     keepdims = keepdims not in (0, False)
-    return F.not_equal(a, 0).any(axis, keepdims)
+    return ops.not_equal(a, 0).any(axis, keepdims)
 
 
 def setdiff1d(ar1, ar2, assume_unique=False):
@@ -930,7 +929,7 @@ def setdiff1d(ar1, ar2, assume_unique=False):
     if assume_unique:
         ar1 = ar1.ravel()
     else:
-        ar1 = F.unique(ar1)[0].sort()[0]
-        ar2 = F.unique(ar2)[0].sort()[0]
+        ar1 = ops.unique(ar1)[0].sort()[0]
+        ar2 = ops.unique(ar2)[0].sort()[0]
     mask = in1d(ar1, ar2, invert=True)
-    return F.masked_select(ar1, mask)
+    return ops.masked_select(ar1, mask)

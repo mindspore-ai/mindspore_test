@@ -23,9 +23,6 @@ import sys
 from numpy import dtype as nptype
 
 import mindspore.ops as ops
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
-from mindspore.ops import composite as C
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.common import dtype as mstype
 from mindspore.common import Tensor
@@ -54,20 +51,20 @@ from mindspore.ops.composite.multitype_ops._compile_utils import reduce_
 ZERO_TENSOR = asarray_const(0)
 
 
-_mean_keepdims = P.ReduceMean(True)
-_matmul = P.MatMul(False, False)
-_matmul_t = P.MatMul(False, True)
-_reduce_sum_default = P.ReduceSum()
-_reduce_sum_keepdims = P.ReduceSum(True)
-_reduce_min_default = P.ReduceMin()
-_reduce_min_keepdims = P.ReduceMin(True)
-_reduce_max_default = P.ReduceMax()
-_reduce_max_keepdims = P.ReduceMax(True)
-_cumsum_default = P.CumSum()
-_concat = P.Concat(-1)
-_cumprod_default = P.CumProd()
-_round = P.Round()
-_rint = P.Rint()
+_mean_keepdims = ops.ReduceMean(True)
+_matmul = ops.MatMul(False, False)
+_matmul_t = ops.MatMul(False, True)
+_reduce_sum_default = ops.ReduceSum()
+_reduce_sum_keepdims = ops.ReduceSum(True)
+_reduce_min_default = ops.ReduceMin()
+_reduce_min_keepdims = ops.ReduceMin(True)
+_reduce_max_default = ops.ReduceMax()
+_reduce_max_keepdims = ops.ReduceMax(True)
+_cumsum_default = ops.CumSum()
+_concat = ops.Concat(-1)
+_cumprod_default = ops.CumProd()
+_round = ops.Round()
+_rint = ops.Rint()
 
 
 
@@ -110,8 +107,8 @@ def absolute(x, dtype=None):
         allowed_types = (mstype.int32, mstype.float16, mstype.float32, mstype.float64)
     if original_dtype not in allowed_types and dtype is None:
         x = x.astype(mstype.float32)
-        return _apply_tensor_op(F.absolute, x, dtype=dtype).astype(original_dtype)
-    return _apply_tensor_op(F.absolute, x, dtype=dtype)
+        return _apply_tensor_op(ops.absolute, x, dtype=dtype).astype(original_dtype)
+    return _apply_tensor_op(ops.absolute, x, dtype=dtype)
 
 
 def count_nonzero(x, axis=None, keepdims=False):
@@ -295,8 +292,8 @@ def add(x1, x2, dtype=None):
     # broadcast is not fully supported in tensor_add on CPU,
     # so we use tensor_sub as a substitute solution
     if _get_device() == 'CPU':
-        return subtract(x1, F.neg(_to_tensor(x2)), dtype=dtype)
-    return _apply_tensor_op(F.tensor_add, x1, x2, dtype=dtype)
+        return subtract(x1, ops.neg(_to_tensor(x2)), dtype=dtype)
+    return _apply_tensor_op(ops.tensor_add, x1, x2, dtype=dtype)
 
 
 def subtract(x1, x2, dtype=None):
@@ -330,7 +327,7 @@ def subtract(x1, x2, dtype=None):
         [-2 -2]
         [-2 -2]]
     """
-    return _apply_tensor_op(F.tensor_sub, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_sub, x1, x2, dtype=dtype)
 
 
 def multiply(x1, x2, dtype=None):
@@ -368,10 +365,10 @@ def multiply(x1, x2, dtype=None):
         _check_input_tensor(x1, x2)
         # broadcast is not fully supported on CPU backend,
         # and explicit broadcasting is performed
-        shape_out = _infer_out_shape(F.shape(x1), F.shape(x2))
+        shape_out = _infer_out_shape(ops.shape(x1), ops.shape(x2))
         x1 = _broadcast_to_shape(x1, shape_out)
         x2 = _broadcast_to_shape(x2, shape_out)
-    return _apply_tensor_op(F.tensor_mul, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_mul, x1, x2, dtype=dtype)
 
 
 def divide(x1, x2, dtype=None):
@@ -408,10 +405,10 @@ def divide(x1, x2, dtype=None):
         [0.33333334 0.5       ]]
     """
     x1, x2 = _to_tensor(x1, x2)
-    if not _check_is_float(F.dtype(x1)) and not _check_is_float(F.dtype(x2)):
-        x1 = F.cast(x1, mstype.float32)
-        x2 = F.cast(x2, mstype.float32)
-    return _apply_tensor_op(F.tensor_div, x1, x2, dtype=dtype)
+    if not _check_is_float(ops.dtype(x1)) and not _check_is_float(ops.dtype(x2)):
+        x1 = ops.cast(x1, mstype.float32)
+        x2 = ops.cast(x2, mstype.float32)
+    return _apply_tensor_op(ops.tensor_div, x1, x2, dtype=dtype)
 
 
 def true_divide(x1, x2, dtype=None):
@@ -484,7 +481,7 @@ def power(x1, x2, dtype=None):
         [ 1. 16.]
         [ 1. 16.]]
     """
-    return _apply_tensor_op(F.tensor_pow, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_pow, x1, x2, dtype=dtype)
 
 
 def float_power(x1, x2, dtype=None):
@@ -524,12 +521,12 @@ def float_power(x1, x2, dtype=None):
         >>> print(output)
         [  0.   1.   8.  27.  64. 125.]
     """
-    if not _check_same_type(F.dtype(x1), mstype.float32):
-        x1 = F.cast(x1, mstype.float32)
-    if not _check_same_type(F.dtype(x2), mstype.float32):
-        x2 = F.cast(x2, mstype.float32)
+    if not _check_same_type(ops.dtype(x1), mstype.float32):
+        x1 = ops.cast(x1, mstype.float32)
+    if not _check_same_type(ops.dtype(x2), mstype.float32):
+        x2 = ops.cast(x2, mstype.float32)
 
-    return _apply_tensor_op(F.tensor_pow, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_pow, x1, x2, dtype=dtype)
 
 
 def minimum(x1, x2, dtype=None):
@@ -581,12 +578,12 @@ def minimum(x1, x2, dtype=None):
     # comparisons with 2 scalars
     if x1.ndim == 0 and x2.ndim == 0:
         x1 = expand_dims(x1, 0)
-        return _apply_tensor_op(functools.partial(_prop_nan, F.minimum), x1, x2, dtype=dtype).squeeze()
+        return _apply_tensor_op(functools.partial(_prop_nan, ops.minimum), x1, x2, dtype=dtype).squeeze()
     if x1.ndim == 0:
         dtype = x2.dtype
     elif x2.ndim == 0:
         dtype = x1.dtype
-    return _apply_tensor_op(functools.partial(_prop_nan, F.minimum), x1, x2, dtype=dtype)
+    return _apply_tensor_op(functools.partial(_prop_nan, ops.minimum), x1, x2, dtype=dtype)
 
 
 def mean(a, axis=None, keepdims=False, dtype=None):
@@ -632,7 +629,7 @@ def mean(a, axis=None, keepdims=False, dtype=None):
         >>> print(output)
         2.5
     """
-    return _reduce(a, P.ReduceMean(keepdims), axis=axis, keepdims=keepdims, dtype=dtype)
+    return _reduce(a, ops.ReduceMean(keepdims), axis=axis, keepdims=keepdims, dtype=dtype)
 
 
 def inner(a, b):
@@ -681,17 +678,17 @@ def inner(a, b):
         [[3. 3. 3. 3. 3. 3. 3.]
         [3. 3. 3. 3. 3. 3. 3.]]]
     """
-    if F.rank(a) == 0 or F.rank(b) == 0:
-        return F.tensor_mul(a, b)
+    if ops.rank(a) == 0 or ops.rank(b) == 0:
+        return ops.tensor_mul(a, b)
 
-    _check_shape_aligned(F.shape(a), F.shape(b))
-    aligned_shape_a = (F.shape_mul(F.shape(a)[:-1]), F.shape(a)[-1])
-    aligned_shape_b = (F.shape_mul(F.shape(b)[:-1]), F.shape(a)[-1])
-    a_aligned = F.reshape(a, aligned_shape_a)
-    b_aligned = F.reshape(b, aligned_shape_b)
+    _check_shape_aligned(ops.shape(a), ops.shape(b))
+    aligned_shape_a = (ops.shape_mul(ops.shape(a)[:-1]), ops.shape(a)[-1])
+    aligned_shape_b = (ops.shape_mul(ops.shape(b)[:-1]), ops.shape(a)[-1])
+    a_aligned = ops.reshape(a, aligned_shape_a)
+    b_aligned = ops.reshape(b, aligned_shape_b)
 
     res = _matmul_t(a_aligned, b_aligned)
-    res = F.reshape(res, F.shape(a)[:-1] + F.shape(b)[:-1])
+    res = ops.reshape(res, ops.shape(a)[:-1] + ops.shape(b)[:-1])
     return res
 
 
@@ -745,20 +742,20 @@ def dot(a, b):
         if dim_a != dim_b:
             raise ValueError('shapes are not aligned')
 
-    ndim_a, ndim_b = F.rank(a), F.rank(b)
+    ndim_a, ndim_b = ops.rank(a), ops.rank(b)
     if ndim_a == 0 or ndim_b == 0:
-        return F.tensor_mul(a, b)
+        return ops.tensor_mul(a, b)
     if ndim_a > 0 and ndim_b >= 2:
-        perm = F.make_range(ndim_b)
+        perm = ops.make_range(ndim_b)
         perm = perm[:-2] + (perm[-1],) + (perm[-2],)
-        b = F.transpose(b, perm)
+        b = ops.transpose(b, perm)
 
-    _check(F.shape(a)[-1], F.shape(b)[-1])
-    a_aligned = F.reshape(a, (-1, F.shape(a)[-1]))
-    b_aligned = F.reshape(b, (-1, F.shape(b)[-1]))
+    _check(ops.shape(a)[-1], ops.shape(b)[-1])
+    a_aligned = ops.reshape(a, (-1, ops.shape(a)[-1]))
+    b_aligned = ops.reshape(b, (-1, ops.shape(b)[-1]))
 
     res = _matmul_t(a_aligned, b_aligned)
-    res = F.reshape(res, F.shape(a)[:-1] + F.shape(b)[:-1])
+    res = ops.reshape(res, ops.shape(a)[:-1] + ops.shape(b)[:-1])
     return res
 
 
@@ -813,11 +810,11 @@ def outer(a, b):
         [6. 6. 6. 6.]]
     """
     _check_input_tensor(a, b)
-    if F.rank(a) != 1:
+    if ops.rank(a) != 1:
         a = ravel(a)
-    if F.rank(b) != 1:
+    if ops.rank(b) != 1:
         b = ravel(b)
-    a = F.reshape(a, (F.shape(a)[0], 1))
+    a = ops.reshape(a, (ops.shape(a)[0], 1))
     b = _expand(b, 2)
     return _matmul(a, b)
 
@@ -878,8 +875,8 @@ def tensordot(a, b, axes=2):
         >>> print(output.shape)
         (5, 2)
     """
-    if F.rank(a)*F.rank(b) == 0 and axes == 0:
-        return F.tensor_mul(a, b)
+    if ops.rank(a)*ops.rank(b) == 0 and axes == 0:
+        return ops.tensor_mul(a, b)
     return ops.tensor_dot(a, b, axes)
 
 
@@ -1041,7 +1038,7 @@ def average(x, axis=None, weights=None, returned=False):
         _check_axis_type(axis, True, True, False)
         axis = _canonicalize_axis(axis, x.ndim)
 
-    x_avg = full((), nan, F.dtype(x))
+    x_avg = full((), nan, ops.dtype(x))
     sum_of_weights = None
 
     if weights is None:
@@ -1051,7 +1048,7 @@ def average(x, axis=None, weights=None, returned=False):
         _check_input_tensor(weights)
         if x.shape == weights.shape:
             x_avg, sum_of_weights = comput_avg(x, axis, weights)
-        elif F.rank(weights) == 1:
+        elif ops.rank(weights) == 1:
             if not isinstance(axis, int):
                 _raise_type_error("Axis must be specified when shapes of x and weights differ.")
             perm = _expanded_shape(x.ndim, weights.shape[0], axis)
@@ -1070,10 +1067,10 @@ def average(x, axis=None, weights=None, returned=False):
 def compute_weights_for_mean(x, x_avg, axis):
     """Computes weights for np.average."""
     if axis is None:
-        sum_of_weights = full((), x.size, F.dtype(x))
+        sum_of_weights = full((), x.size, ops.dtype(x))
     else:
         fill_value = 1
-        if isinstance(axis, int) or (isinstance(axis, tuple) and F.tuple_len(axis) == 1):
+        if isinstance(axis, int) or (isinstance(axis, tuple) and ops.tuple_len(axis) == 1):
             fill_value = x.shape[axis] if isinstance(axis, int) else x.shape[axis[0]]
         elif axis is None:
             for sh in x.shape:
@@ -1081,17 +1078,17 @@ def compute_weights_for_mean(x, x_avg, axis):
         else:
             for ax in axis:
                 fill_value *= x.shape[ax]
-        sum_of_weights = full_like(x_avg, fill_value, F.dtype(x))
+        sum_of_weights = full_like(x_avg, fill_value, ops.dtype(x))
     return sum_of_weights
 
 
 def comput_avg(x, axis, weights):
     """Computes average value of input x with given parameters."""
     axis = () if axis is None else axis
-    x_mul = F.tensor_mul(x, weights)
+    x_mul = ops.tensor_mul(x, weights)
     x_sum = _reduce_sum_default(x_mul, axis)
     sum_of_weights = _reduce_sum_default(weights, axis)
-    x_avg = F.tensor_div(x_sum, sum_of_weights)
+    x_avg = ops.tensor_div(x_sum, sum_of_weights)
     return x_avg, sum_of_weights
 
 
@@ -1135,7 +1132,7 @@ def matmul(x1, x2, dtype=None):
         [ 550.  620.  690.  760.  830.]
         [ 670.  756.  842.  928. 1014.]]]
     """
-    return C.matmul(x1, x2, dtype=dtype)
+    return ops.matmul(x1, x2, dtype=dtype)
 
 
 def square(x, dtype=None):
@@ -1166,7 +1163,7 @@ def square(x, dtype=None):
         [[ 0.  1.  4.]
         [ 9. 16. 25.]]
     """
-    return _apply_tensor_op(F.square, x, dtype=dtype)
+    return _apply_tensor_op(ops.square, x, dtype=dtype)
 
 
 def sqrt(x, dtype=None):
@@ -1200,7 +1197,7 @@ def sqrt(x, dtype=None):
         [[ 0. 1. 2.]
         [ 3. 4. 5.]]
     """
-    return _apply_tensor_op(F.sqrt, x, dtype=dtype)
+    return _apply_tensor_op(ops.sqrt, x, dtype=dtype)
 
 
 def reciprocal(x, dtype=None):
@@ -1237,7 +1234,7 @@ def reciprocal(x, dtype=None):
         [[1.         0.5        0.33333334]
         [0.25       0.2        0.16666667]]
     """
-    return _apply_tensor_op(lambda x: F.tensor_div(1, x), x, dtype=dtype)
+    return _apply_tensor_op(lambda x: ops.tensor_div(1, x), x, dtype=dtype)
 
 
 def log(x, dtype=None):
@@ -1272,15 +1269,15 @@ def log(x, dtype=None):
         >>> print(output)
         [0.69314575 1.09861    1.3862929 ]
     """
-    return _apply_tensor_op(F.log, x, dtype=dtype)
+    return _apply_tensor_op(ops.log, x, dtype=dtype)
 
 
 def _prop_nan(fn, x1, x2):
     """Selects NaN if either element is NaN"""
-    has_nan = F.logical_or(_isnan(x1), _isnan(x2))
-    nan_tensor = F.fill(_promote(F.dtype(x1), F.dtype(x2)), F.shape(has_nan), nan)
+    has_nan = ops.logical_or(_isnan(x1), _isnan(x2))
+    nan_tensor = ops.fill(_promote(ops.dtype(x1), ops.dtype(x2)), ops.shape(has_nan), nan)
     res = fn(x1, x2)
-    return F.select(has_nan, nan_tensor, res)
+    return ops.select(has_nan, nan_tensor, res)
 
 
 def maximum(x1, x2, dtype=None):
@@ -1325,15 +1322,15 @@ def maximum(x1, x2, dtype=None):
     elif not isinstance(x2, Tensor):
         _raise_type_error("Input x2 is expected to be array_like")
 
-    # F.maximum does not support when both operands are scalar
+    # ops.maximum does not support when both operands are scalar
     if x1.ndim == 0 and x2.ndim == 0:
         x1 = expand_dims(x1, 0)
-        return _apply_tensor_op(functools.partial(_prop_nan, F.maximum), x1, x2, dtype=dtype).squeeze()
+        return _apply_tensor_op(functools.partial(_prop_nan, ops.maximum), x1, x2, dtype=dtype).squeeze()
     if x1.ndim == 0:
         dtype = x2.dtype
     elif x2.ndim == 0:
         dtype = x1.dtype
-    return _apply_tensor_op(functools.partial(_prop_nan, F.maximum), x1, x2, dtype=dtype)
+    return _apply_tensor_op(functools.partial(_prop_nan, ops.maximum), x1, x2, dtype=dtype)
 
 
 def heaviside(x1, x2, dtype=None):
@@ -1372,21 +1369,21 @@ def heaviside(x1, x2, dtype=None):
     def _heaviside(x1, x2):
         """Computes heaviside without passing keyword arguments"""
         # performs type promotion
-        dtype1 = F.dtype(x1)
-        dtype2 = F.dtype(x2)
+        dtype1 = ops.dtype(x1)
+        dtype2 = ops.dtype(x2)
         dtype_out = _promote(dtype1, dtype2)
         if not _check_same_type(dtype1, dtype_out):
-            x1 = F.cast(x1, dtype_out)
+            x1 = ops.cast(x1, dtype_out)
         if not _check_same_type(dtype2, dtype_out):
-            x2 = F.cast(x2, dtype_out)
+            x2 = ops.cast(x2, dtype_out)
 
         # performs broadcast
-        shape_out = _infer_out_shape(F.shape(x1), F.shape(x2))
+        shape_out = _infer_out_shape(ops.shape(x1), ops.shape(x2))
         x1 = _broadcast_to_shape(x1, shape_out)
         x2 = _broadcast_to_shape(x2, shape_out)
 
-        x2 = F.select(x1 < 0, zeros(shape_out, dtype_out), x2)
-        x2 = F.select(x1 > 0, ones(shape_out, dtype_out), x2)
+        x2 = ops.select(x1 < 0, zeros(shape_out, dtype_out), x2)
+        x2 = ops.select(x1 > 0, ones(shape_out, dtype_out), x2)
         return x2
 
     return _apply_tensor_op(_heaviside, x1, x2, dtype=dtype)
@@ -1444,7 +1441,7 @@ def amax(a, axis=None, keepdims=False, initial=None, where=True):
         >>> print(output)
         [-1.  3.]
     """
-    return reduce_(a, P.ReduceMax(keepdims), cmp_fn=F.maximum, axis=axis, keepdims=keepdims,
+    return reduce_(a, ops.ReduceMax(keepdims), cmp_fn=ops.maximum, axis=axis, keepdims=keepdims,
                    initial=initial, where=where)
 
 
@@ -1500,7 +1497,7 @@ def amin(a, axis=None, keepdims=False, initial=None, where=True):
         >>> print(output)
         [10.  1.]
     """
-    return reduce_(a, P.ReduceMin(keepdims), cmp_fn=F.minimum, axis=axis, keepdims=keepdims,
+    return reduce_(a, ops.ReduceMin(keepdims), cmp_fn=ops.minimum, axis=axis, keepdims=keepdims,
                    initial=initial, where=where)
 
 
@@ -1552,8 +1549,8 @@ def hypot(x1, x2, dtype=None):
         if _get_device() == 'CPU':
             # broadcast is not fully supported in tensor_add on CPU,
             # so we use tensor_sub as a substitute solution
-            return F.sqrt(F.tensor_sub(F.square(x1), F.neg(F.square(x2))))
-        return F.sqrt(F.tensor_add(F.square(x1), F.square(x2)))
+            return ops.sqrt(ops.tensor_sub(ops.square(x1), ops.neg(ops.square(x2))))
+        return ops.sqrt(ops.tensor_add(ops.square(x1), ops.square(x2)))
 
     return _apply_tensor_op(_hypot, x1, x2, dtype=dtype)
 
@@ -1588,7 +1585,7 @@ def floor(x, dtype=None):
         >>> print(output)
         [-2. -2. -1.  0.  1.  1.  2.]
     """
-    return _apply_tensor_op(F.floor, x, dtype=dtype)
+    return _apply_tensor_op(ops.floor, x, dtype=dtype)
 
 
 def floor_divide(x1, x2, dtype=None):
@@ -1619,30 +1616,30 @@ def floor_divide(x1, x2, dtype=None):
         >>> print(output)
         [0. 0. 1. 1.]
     """
-    return _apply_tensor_op(F.tensor_floordiv, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_floordiv, x1, x2, dtype=dtype)
 
 
 def _remainder(x1, x2, c_style=False):
     """Computes remainder without applying keyword arguments."""
-    dtype = _promote(F.dtype(x1), F.dtype(x2))
+    dtype = _promote(ops.dtype(x1), ops.dtype(x2))
     if not _check_is_float(dtype):
-        x1 = F.cast(x1, mstype.float32)
-        x2 = F.cast(x2, mstype.float32)
+        x1 = ops.cast(x1, mstype.float32)
+        x2 = ops.cast(x2, mstype.float32)
 
-    quotient = F.tensor_div(x1, x2)
+    quotient = ops.tensor_div(x1, x2)
     if c_style:
         quotient = fix(quotient)
     else:
-        quotient = F.floor(quotient)
-    prod = F.tensor_mul(x2, quotient)
-    res = F.tensor_sub(x1, prod)
+        quotient = ops.floor(quotient)
+    prod = ops.tensor_mul(x2, quotient)
+    res = ops.tensor_sub(x1, prod)
     if _check_is_int(dtype):
-        zeros_tensor = zeros(F.shape(quotient), F.dtype(quotient))
-        x2_zeros = F.equal(x2, zeros_tensor)
-        res = F.select(x2_zeros, zeros_tensor, res)
+        zeros_tensor = zeros(ops.shape(quotient), ops.dtype(quotient))
+        x2_zeros = ops.equal(x2, zeros_tensor)
+        res = ops.select(x2_zeros, zeros_tensor, res)
 
-    if not _check_same_type(F.dtype(res), dtype):
-        res = F.cast(res, dtype)
+    if not _check_same_type(ops.dtype(res), dtype):
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -1712,13 +1709,13 @@ def fix(x):
         [ 2.  2. -2. -2.]
     """
     _check_input_tensor(x)
-    if not _check_is_float(F.dtype(x)):
-        x = F.cast(x, mstype.float32)
-    floored = F.floor(x)
-    # change to F.ceil once supported on CPU.
-    ceiled = F.neg(F.floor(F.neg(x)))
-    is_neg = F.tensor_lt(x, zeros(F.shape(x), F.dtype(x)))
-    return F.select(is_neg, ceiled, floored)
+    if not _check_is_float(ops.dtype(x)):
+        x = ops.cast(x, mstype.float32)
+    floored = ops.floor(x)
+    # change to ops.ceil once supported on CPU.
+    ceiled = ops.neg(ops.floor(ops.neg(x)))
+    is_neg = ops.tensor_lt(x, zeros(ops.shape(x), ops.dtype(x)))
+    return ops.select(is_neg, ceiled, floored)
 
 
 def fmod(x1, x2, dtype=None):
@@ -1818,7 +1815,7 @@ def exp(x, dtype=None):
         >>> print(output)
         [ 1.         2.718282   7.3890557 20.085537  54.598145 ]
     """
-    return _apply_tensor_op(F.tensor_exp, x, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_exp, x, dtype=dtype)
 
 
 def expm1(x, dtype=None):
@@ -1849,7 +1846,7 @@ def expm1(x, dtype=None):
         >>> print(output)
         [ 0.         1.7182819  6.389056  19.085537  53.59815  ]
     """
-    return _apply_tensor_op(F.tensor_expm1, x, dtype=dtype)
+    return _apply_tensor_op(ops.tensor_expm1, x, dtype=dtype)
 
 
 def divmod_(x1, x2, dtype=None):
@@ -1881,7 +1878,7 @@ def divmod_(x1, x2, dtype=None):
          Tensor(shape=[5], dtype=Float32,
          value= [ 1.00000000e+00,  5.00000000e-01,  0.00000000e+00,  1.00000000e+00,  5.00000000e-01]))
     """
-    q = F.tensor_floordiv(x1, x2)
+    q = ops.tensor_floordiv(x1, x2)
     r = remainder(x1, x2)
     if dtype is not None:
         q = q.astype(dtype)
@@ -1971,16 +1968,16 @@ def diff(a, n=1, axis=-1, prepend=None, append=None):
         _raise_value_error("n is bigger then the specified dimension, this will result in an empty tensor.")
 
     original_dtype = a.dtype
-    # will change once F.tensor_slice supports types other than float32
+    # will change once ops.tensor_slice supports types other than float32
     if not _check_is_float(original_dtype):
         a = a.astype(mstype.float32)
     a = moveaxis(a, new_axis, -1)
-    for _ in F.make_range(n):
-        slice_start = _list_comprehensions(F.rank(a) - 1, 0, True)
-        slice_size = F.shape(a)[:-1] + (F.shape(a)[-1] - 1,)
-        minuend = F.tensor_slice(a, slice_start + (1,), slice_size)
-        subtrahend = F.tensor_slice(a, slice_start + (0,), slice_size)
-        a = F.tensor_sub(minuend, subtrahend)
+    for _ in ops.make_range(n):
+        slice_start = _list_comprehensions(ops.rank(a) - 1, 0, True)
+        slice_size = ops.shape(a)[:-1] + (ops.shape(a)[-1] - 1,)
+        minuend = ops.tensor_slice(a, slice_start + (1,), slice_size)
+        subtrahend = ops.tensor_slice(a, slice_start + (0,), slice_size)
+        a = ops.tensor_sub(minuend, subtrahend)
     if not _check_is_float(original_dtype):
         a = a.astype(original_dtype)
     return moveaxis(a, -1, new_axis)
@@ -2033,7 +2030,7 @@ def ediff1d(ary, to_end=None, to_begin=None):
         to_end = to_end.astype(ary.dtype)
         combined += (to_end,)
 
-    return P.Concat(0)(combined)
+    return ops.Concat(0)(combined)
 
 
 def trapz(y, x=None, dx=1.0, axis=-1):
@@ -2070,12 +2067,12 @@ def trapz(y, x=None, dx=1.0, axis=-1):
         [ 4.5  7.5 10.5]
     """
     y = _to_tensor(y)
-    ndim = F.rank(y)
+    ndim = ops.rank(y)
     _check_axis_in_range(axis, ndim)
     axis = axis + ndim if axis < 0 else axis
     y_start_axis_left = _list_comprehensions(axis, 0, True)
     y_start_axis_right = _list_comprehensions(ndim - axis - 1, 0, True)
-    shape = F.shape(y)
+    shape = ops.shape(y)
     y_slice_size = _tuple_setitem(shape, axis, shape[axis] - 1)
     if x is not None:
         x = _to_tensor(x)
@@ -2084,42 +2081,42 @@ def trapz(y, x=None, dx=1.0, axis=-1):
         dx = _to_tensor(dx)
     dx = _expand(dx, ndim - axis, axis=-1)
     dx = _broadcast_to_shape(dx, y_slice_size)
-    if not _check_is_float(F.dtype(y)):
+    if not _check_is_float(ops.dtype(y)):
         # trapz returns float
-        y = F.cast(y, mstype.float32)
-    dx = F.cast(dx, F.dtype(y))
+        y = ops.cast(y, mstype.float32)
+    dx = ops.cast(dx, ops.dtype(y))
 
     # product of dx and y with the last column removed
-    y_slice_left = F.tensor_slice(y, y_start_axis_left + (0,) + y_start_axis_right, y_slice_size)
-    prod_left = F.tensor_mul(y_slice_left, dx)
+    y_slice_left = ops.tensor_slice(y, y_start_axis_left + (0,) + y_start_axis_right, y_slice_size)
+    prod_left = ops.tensor_mul(y_slice_left, dx)
     # product of dx and y with the first column removed
-    y_slice_right = F.tensor_slice(y, y_start_axis_left + (1,) + y_start_axis_right, y_slice_size)
-    prod_right = F.tensor_mul(y_slice_right, dx)
-    prod_sum = F.tensor_div(F.tensor_add(prod_left, prod_right), _to_tensor(2.0).astype(F.dtype(y)))
-    return F.reduce_sum(prod_sum, axis)
+    y_slice_right = ops.tensor_slice(y, y_start_axis_left + (1,) + y_start_axis_right, y_slice_size)
+    prod_right = ops.tensor_mul(y_slice_right, dx)
+    prod_sum = ops.tensor_div(ops.tensor_add(prod_left, prod_right), _to_tensor(2.0).astype(ops.dtype(y)))
+    return ops.reduce_sum(prod_sum, axis)
 
 
 def _gcd(x1, x2):
     """Calculates gcd without applying keyword arguments."""
-    dtype = _promote(F.dtype(x1), F.dtype(x2))
+    dtype = _promote(ops.dtype(x1), ops.dtype(x2))
     if not _check_is_float(dtype):
-        # F.reduce_sum only supports float
-        x1 = F.cast(x1, mstype.float32)
-        x2 = F.cast(x2, mstype.float32)
-    x1 = F.absolute(x1)
-    x2 = F.absolute(x2)
-    cond_ge = F.tensor_ge(x1, x2)
+        # ops.reduce_sum only supports float
+        x1 = ops.cast(x1, mstype.float32)
+        x2 = ops.cast(x2, mstype.float32)
+    x1 = ops.absolute(x1)
+    x2 = ops.absolute(x2)
+    cond_ge = ops.tensor_ge(x1, x2)
     a = where_(cond_ge, x1, x2)
     b = where_(cond_ge, x2, x1)
-    b = where_(F.equal(b, ZERO_TENSOR), a, b)
+    b = where_(ops.equal(b, ZERO_TENSOR), a, b)
     r = _remainder(a, b)
-    while F.tensor_gt(F.reduce_sum(r), ZERO_TENSOR):
+    while ops.tensor_gt(ops.reduce_sum(r), ZERO_TENSOR):
         r = _remainder(a, b)
-        has_terminated = F.equal(r, ZERO_TENSOR)
+        has_terminated = ops.equal(r, ZERO_TENSOR)
         a = where_(has_terminated, a, b)
         b = where_(has_terminated, b, r)
-    if not _check_same_type(F.dtype(b), dtype):
-        b = F.cast(b, dtype)
+    if not _check_same_type(ops.dtype(b), dtype):
+        b = ops.cast(b, dtype)
     return b
 
 
@@ -2183,15 +2180,15 @@ def lcm(x1, x2, dtype=None):
     def _lcm(x1, x2):
         """Calculates lcm without applying keyword arguments"""
         common_divisor = _gcd(x1, x2)
-        dtype = _promote(F.dtype(x1), F.dtype(x2))
+        dtype = _promote(ops.dtype(x1), ops.dtype(x2))
         x1 = x1.astype(mstype.float32)
         x2 = x2.astype(mstype.float32)
-        q1 = F.tensor_div(x1, common_divisor)
-        q2 = F.tensor_div(x2, common_divisor)
-        res = F.tensor_mul(F.tensor_mul(q1, q2), common_divisor)
-        has_zero = F.equal(multiply(x1, x2), ZERO_TENSOR)
+        q1 = ops.tensor_div(x1, common_divisor)
+        q2 = ops.tensor_div(x2, common_divisor)
+        res = ops.tensor_mul(ops.tensor_mul(q1, q2), common_divisor)
+        has_zero = ops.equal(multiply(x1, x2), ZERO_TENSOR)
         res = where_(has_zero, ZERO_TENSOR, res)
-        return F.absolute(res).astype(dtype)
+        return ops.absolute(res).astype(dtype)
 
     return _apply_tensor_op(_lcm, x1, x2, dtype=dtype)
 
@@ -2237,8 +2234,8 @@ def convolve(a, v, mode='full'):
         a = asarray_const(a)
     if not isinstance(v, Tensor):
         v = asarray_const(v)
-    a_size = F.shape_mul(a.shape)
-    v_size = F.shape_mul(v.shape)
+    a_size = ops.shape_mul(a.shape)
+    v_size = ops.shape_mul(v.shape)
     if a_size == 0 or v_size == 0:
         _raise_value_error("Inputs cannot be empty.")
     a = _expand(a, 1)
@@ -2297,7 +2294,7 @@ def _handle_facts(w, m, ddof, aweights):
         elif aweights is None:
             fact = w_sum - ddof
         else:
-            fact = w_sum - ddof * F.reduce_sum(w * aweights) / w_sum
+            fact = w_sum - ddof * ops.reduce_sum(w * aweights) / w_sum
     return fact
 
 
@@ -2393,7 +2390,7 @@ def cov(m, y=None, rowvar=True, bias=False, ddof=None, fweights=None, aweights=N
     # Determine the Normalization
     fact = _handle_facts(w, m, ddof, aweights)
 
-    m = m - F.expand_dims(avg, -1)
+    m = m - ops.expand_dims(avg, -1)
     if w is None:
         m_t = m.T
     else:
@@ -2408,7 +2405,7 @@ def cov(m, y=None, rowvar=True, bias=False, ddof=None, fweights=None, aweights=N
 def _real_axes(ndim_orig, ndim_out, axes_orig):
     """Returns the real axes to be reduced after performing broadcast"""
     _diff = ndim_out - ndim_orig
-    axes = F.make_range(_diff)
+    axes = ops.make_range(_diff)
     axes_orig = map(functools.partial(operator.add, _diff), axes_orig)
     return axes + tuple(axes_orig)
 
@@ -2419,7 +2416,7 @@ def _shape_reduced_keepdims(shape, axes):
     Reduces dimensions corresponding to argument axes while
     keeping the number of dimensions unchanged.
     """
-    ndim_out = F.tuple_len(shape)
+    ndim_out = ops.tuple_len(shape)
     shape_out = [1] * ndim_out
     for i in range(ndim_out):
         if i not in axes:
@@ -2430,8 +2427,8 @@ def _shape_reduced_keepdims(shape, axes):
 @_primexpr
 def _shape_reduced(shape, axes):
     """Removes dimensions corresponding to argument axes"""
-    ndim_orig = F.tuple_len(shape)
-    ndim_out = ndim_orig - F.tuple_len(axes)
+    ndim_orig = ops.tuple_len(shape)
+    ndim_out = ndim_orig - ops.tuple_len(axes)
     shape_out = [0] * ndim_out
     idx_out = 0
     for i in range(ndim_orig):
@@ -2448,13 +2445,13 @@ def _reduce(a, reduce_fn, cmp_fn=None, axis=None, keepdims=False, initial=None, 
     """
     a = _to_tensor(a)
 
-    shape = F.shape(a)
-    ndim = F.rank(a)
+    shape = ops.shape(a)
+    ndim = ops.rank(a)
     if dtype is None:
-        dtype = F.dtype(a)
+        dtype = ops.dtype(a)
     axes = _check_axis_valid(axis, ndim)
     if initial is not None:
-        if ((isinstance(initial, Tensor) and F.rank(initial) > 0) or
+        if ((isinstance(initial, Tensor) and ops.rank(initial) > 0) or
                 not isinstance(initial, (int, float, bool, Tensor))):
             _raise_type_error('initial should be scalar')
 
@@ -2481,9 +2478,9 @@ def _reduce(a, reduce_fn, cmp_fn=None, axis=None, keepdims=False, initial=None, 
     if isinstance(where, Tensor):
         if initial is None:
             _raise_value_error('initial value must be provided for where masks')
-        ndim_orig = F.rank(a)
+        ndim_orig = ops.rank(a)
         a = where_(where, a, initial)
-        axes = _real_axes(ndim_orig, F.rank(a), axes)
+        axes = _real_axes(ndim_orig, ops.rank(a), axes)
 
     return reduce_fn(a, axes).astype(dtype)
 
@@ -2531,7 +2528,7 @@ def nanmax(a, axis=None, dtype=None, keepdims=False):
     if not isinstance(keepdims, int):
         _raise_type_error("integer argument expected, got", keepdims)
     nan_mask = _isnan(a)
-    a = F.select(nan_mask, P.FillV2()(F.shape(a), Tensor(-sys.maxsize - 1, F.dtype(a))), a)
+    a = ops.select(nan_mask, ops.FillV2()(ops.shape(a), Tensor(-sys.maxsize - 1, ops.dtype(a))), a)
     reduce_fn = _reduce_max_keepdims if keepdims else _reduce_max_default
     return _reduce(a, reduce_fn, axis=axis, keepdims=keepdims, dtype=dtype)
 
@@ -2581,14 +2578,14 @@ def nanmin(a, axis=None, dtype=None, keepdims=False):
     if not isinstance(keepdims, int):
         _raise_type_error("integer argument expected, got", keepdims)
     nan_mask = _isnan(a)
-    a = F.select(nan_mask, P.FillV2()(F.shape(a), Tensor(sys.maxsize, F.dtype(a))), a)
+    a = ops.select(nan_mask, ops.FillV2()(ops.shape(a), Tensor(sys.maxsize, ops.dtype(a))), a)
     reduce_fn = _reduce_min_keepdims if keepdims else _reduce_min_default
     return _reduce(a, reduce_fn, axis=axis, keepdims=keepdims, dtype=dtype)
 
 
 def _reduce_nansum(x, axis, keepdims=False):
     """Computes reduce sum treating NaNs as zeros."""
-    x = F.select(_isnan(x), zeros(F.shape(x), F.dtype(x)), x)
+    x = ops.select(_isnan(x), zeros(ops.shape(x), ops.dtype(x)), x)
     if keepdims:
         return _reduce_sum_keepdims(x, axis)
     return _reduce_sum_default(x, axis)
@@ -2634,14 +2631,14 @@ def nansum(a, axis=None, dtype=None, keepdims=False):
     """
     a = _to_tensor(a)
     nan_mask = _isnan(a)
-    a = F.select(nan_mask, zeros(F.shape(a), F.dtype(a)), a)
+    a = ops.select(nan_mask, zeros(ops.shape(a), ops.dtype(a)), a)
     return _reduce(a, functools.partial(_reduce_nansum, keepdims=keepdims), axis=axis,
                    keepdims=keepdims, dtype=dtype)
 
 
 def _count_nonnan(a, axis, keepdims=False):
     """Counts the number of elements excluding NaNs."""
-    nonnan_mask = F.select(_isnan(a), zeros(F.shape(a), F.dtype(a)), ones(F.shape(a), F.dtype(a)))
+    nonnan_mask = ops.select(_isnan(a), zeros(ops.shape(a), ops.dtype(a)), ones(ops.shape(a), ops.dtype(a)))
     if keepdims:
         return _reduce_sum_keepdims(nonnan_mask, axis)
     return _reduce_sum_default(nonnan_mask, axis)
@@ -2695,18 +2692,18 @@ def nanmean(a, axis=None, dtype=None, keepdims=False):
     if dtype is None:
         dtype = mstype.float32
     a = _to_tensor(a)
-    axis = _check_axis_valid(axis, F.rank(a))
+    axis = _check_axis_valid(axis, ops.rank(a))
     sum_a = nansum(a, axis=axis, dtype=dtype, keepdims=keepdims)
-    return F.tensor_div(sum_a, _count_nonnan(a, axis, keepdims))
+    return ops.tensor_div(sum_a, _count_nonnan(a, axis, keepdims))
 
 
 def _nanvar(a, axis, ddof=0, keepdims=False):
     """Computes nanvar without applying keyword arguments."""
     mean_a = nanmean(a, axis=axis, keepdims=True)
-    pow_a = F.tensor_pow(F.tensor_sub(a, mean_a), 2)
+    pow_a = ops.tensor_pow(ops.tensor_sub(a, mean_a), 2)
     sum_a = _reduce_nansum(pow_a, axis, keepdims)
     count = _count_nonnan(a, axis, keepdims)
-    return divide(sum_a, F.tensor_sub(count, ddof))
+    return divide(sum_a, ops.tensor_sub(count, ddof))
 
 
 def nanvar(a, axis=None, dtype=None, ddof=0, keepdims=False):
@@ -2814,7 +2811,7 @@ def nanstd(a, axis=None, dtype=None, ddof=0, keepdims=False):
     """
     if dtype is None:
         dtype = mstype.float32
-    return _reduce(a, lambda a, axis: F.sqrt(_nanvar(a, axis, ddof=ddof, keepdims=keepdims)),
+    return _reduce(a, lambda a, axis: ops.sqrt(_nanvar(a, axis, ddof=ddof, keepdims=keepdims)),
                    axis=axis, keepdims=keepdims, dtype=dtype)
 
 
@@ -2845,7 +2842,7 @@ def exp2(x, dtype=None):
         >>> print(output)
         [4. 8.]
     """
-    return _apply_tensor_op(lambda x: F.tensor_pow(2, x), x, dtype=dtype)
+    return _apply_tensor_op(lambda x: ops.tensor_pow(2, x), x, dtype=dtype)
 
 
 def kron(a, b):
@@ -2884,23 +2881,23 @@ def kron(a, b):
         [0. 0. 1. 1.]]
     """
     a, b = _to_tensor(a, b)
-    ndim = _max(F.rank(a), F.rank(b))
+    ndim = _max(ops.rank(a), ops.rank(b))
     if ndim == 0:
-        return F.tensor_mul(a, b)
+        return ops.tensor_mul(a, b)
     a = _expand(a, ndim)
     b = _expand(b, ndim)
-    shape_a = F.shape(a)
-    shape_b = F.shape(b)
+    shape_a = ops.shape(a)
+    shape_b = ops.shape(b)
 
     # scales a by the shape of b
     kron_shape = _seq_prod(shape_a, shape_b)
-    a = F.reshape(a, _add_unit_axes(shape_a, 2 * ndim, True))
-    a = F.tile(a, _add_unit_axes(shape_b, 2 * ndim, False))
-    a = moveaxis(a, F.make_range(ndim, 2 * ndim), F.make_range(1, 2 * ndim, 2))
-    a = F.reshape(a, kron_shape)
+    a = ops.reshape(a, _add_unit_axes(shape_a, 2 * ndim, True))
+    a = ops.tile(a, _add_unit_axes(shape_b, 2 * ndim, False))
+    a = moveaxis(a, ops.make_range(ndim, 2 * ndim), ops.make_range(1, 2 * ndim, 2))
+    a = ops.reshape(a, kron_shape)
     # scales b by the shape of a
-    b = F.tile(b, shape_a)
-    return F.tensor_mul(a, b)
+    b = ops.tile(b, shape_a)
+    return ops.tensor_mul(a, b)
 
 
 def cross(a, b, axisa=- 1, axisb=- 1, axisc=- 1, axis=None):
@@ -2957,13 +2954,13 @@ def cross(a, b, axisa=- 1, axisb=- 1, axisc=- 1, axis=None):
     if axis is not None:
         axisa, axisb, axisc = axis, axis, axis
 
-    _check_axis_in_range(axisa, F.rank(a))
-    _check_axis_in_range(axisb, F.rank(b))
+    _check_axis_in_range(axisa, ops.rank(a))
+    _check_axis_in_range(axisb, ops.rank(b))
     a = moveaxis(a, axisa, -1)
     b = moveaxis(b, axisb, -1)
-    shape_a = F.shape(a)
-    shape_b = F.shape(b)
-    if F.shape(a)[-1] not in (2, 3) or F.shape(b)[-1] not in (2, 3):
+    shape_a = ops.shape(a)
+    shape_b = ops.shape(b)
+    if ops.shape(a)[-1] not in (2, 3) or ops.shape(b)[-1] not in (2, 3):
         _raise_value_error('incompatible dimensions for cross product (dimension must be 2 or 3)')
     a_has_z = shape_a[-1] == 3
     b_has_z = shape_b[-1] == 3
@@ -2972,36 +2969,36 @@ def cross(a, b, axisa=- 1, axisb=- 1, axisc=- 1, axis=None):
         shape_out += (3,)
     _check_axis_in_range(axisc, len(shape_out))
 
-    dtype = _promote(F.dtype(a), F.dtype(b))
+    dtype = _promote(ops.dtype(a), ops.dtype(b))
     if _get_device() == 'CPU':
-        # F.tensor_slice only supports float on CPU
-        if not _check_is_float(F.dtype(a)):
-            a = F.cast(a, mstype.float32)
-        if not _check_is_float(F.dtype(b)):
-            b = F.cast(b, mstype.float32)
+        # ops.tensor_slice only supports float on CPU
+        if not _check_is_float(ops.dtype(a)):
+            a = ops.cast(a, mstype.float32)
+        if not _check_is_float(ops.dtype(b)):
+            b = ops.cast(b, mstype.float32)
 
-    a_slice_start = _list_comprehensions(F.rank(a) - 1, 0, True)
+    a_slice_start = _list_comprehensions(ops.rank(a) - 1, 0, True)
     a_slice_size = shape_a[:-1] + (1,)
-    b_slice_start = _list_comprehensions(F.rank(b) - 1, 0, True)
+    b_slice_start = _list_comprehensions(ops.rank(b) - 1, 0, True)
     b_slice_size = shape_b[:-1] + (1,)
 
     def _get_slice_product(idx_a, idx_b):
-        return multiply(F.tensor_slice(a, a_slice_start + (idx_a,), a_slice_size),
-                        F.tensor_slice(b, b_slice_start + (idx_b,), b_slice_size))
+        return multiply(ops.tensor_slice(a, a_slice_start + (idx_a,), a_slice_size),
+                        ops.tensor_slice(b, b_slice_start + (idx_b,), b_slice_size))
 
-    cz = F.tensor_sub(_get_slice_product(0, 1), _get_slice_product(1, 0)) # ax*by - ay*bx
+    cz = ops.tensor_sub(_get_slice_product(0, 1), _get_slice_product(1, 0)) # ax*by - ay*bx
     if not a_has_z and not b_has_z:
-        return F.reshape(cz, shape_out).astype(dtype)
+        return ops.reshape(cz, shape_out).astype(dtype)
 
     if a_has_z and b_has_z:
-        cx = F.tensor_sub(_get_slice_product(1, 2), _get_slice_product(2, 1)) # ay*bz - az*by
-        cy = F.tensor_sub(_get_slice_product(2, 0), _get_slice_product(0, 2)) # az*bx - ax*bz
+        cx = ops.tensor_sub(_get_slice_product(1, 2), _get_slice_product(2, 1)) # ay*bz - az*by
+        cy = ops.tensor_sub(_get_slice_product(2, 0), _get_slice_product(0, 2)) # az*bx - ax*bz
     elif a_has_z:
-        cx = F.neg(_get_slice_product(2, 1)) # -az*by
+        cx = ops.neg(_get_slice_product(2, 1)) # -az*by
         cy = _get_slice_product(2, 0)               # az*bx
     else: # b_has_z
         cx = _get_slice_product(1, 2)               # ay*bz
-        cy = F.neg(_get_slice_product(0, 2)) # -ax*bz
+        cy = ops.neg(_get_slice_product(0, 2)) # -ax*bz
     res = _concat((cx, cy, cz)).reshape(shape_out)
     return moveaxis(res, -1, axisc).astype(dtype)
 
@@ -3035,7 +3032,7 @@ def ceil(x, dtype=None):
         >>> print(output)
         [-1. -1. -0.  1.  2.  2.  2.]
     """
-    return _apply_tensor_op(lambda x: F.neg(F.floor(F.neg(x.astype(mstype.float32)))),
+    return _apply_tensor_op(lambda x: ops.neg(ops.floor(ops.neg(x.astype(mstype.float32)))),
                             x, dtype=dtype)
 
 
@@ -3080,8 +3077,8 @@ def positive(a, dtype=None):
         [1. -1.]
     """
     _check_input_tensor(a)
-    neg_tensor = F.neg(a)
-    return _apply_tensor_op(F.neg, neg_tensor, dtype=dtype)
+    neg_tensor = ops.neg(a)
+    return _apply_tensor_op(ops.neg, neg_tensor, dtype=dtype)
 
 
 def negative(a, dtype=None):
@@ -3110,7 +3107,7 @@ def negative(a, dtype=None):
         >>> print(output)
         [-1. 1.]
     """
-    return _apply_tensor_op(F.neg, a, dtype=dtype)
+    return _apply_tensor_op(ops.neg, a, dtype=dtype)
 
 
 def cumsum(a, axis=None, dtype=None):
@@ -3198,7 +3195,7 @@ def nancumsum(a, axis=None, dtype=None):
         [[1. 3.]
         [3. 3.]]
     """
-    a = F.select(_isnan(a), zeros(F.shape(a), F.dtype(a)), a)
+    a = ops.select(_isnan(a), zeros(ops.shape(a), ops.dtype(a)), a)
     return a.cumsum(axis, dtype)
 
 
@@ -3231,10 +3228,10 @@ def cbrt(x, dtype=None):
     def _cbrt(x):
         compute_type = promote_types(x.dtype, "float32")
         x = x.astype(compute_type)
-        # use P.Sign() once gpu support is added
-        abs_x = F.absolute(x)
+        # use ops.Sign() once gpu support is added
+        abs_x = ops.absolute(x)
         sign_x = abs_x / x
-        return sign_x * F.tensor_pow(abs_x, 1. / 3.)
+        return sign_x * ops.tensor_pow(abs_x, 1. / 3.)
     return _apply_tensor_op(_cbrt, x, dtype=dtype)
 
 
@@ -3266,7 +3263,7 @@ def log1p(x, dtype=None):
         >>> print(output)
         [0.6934 1.099 1.387 ]
     """
-    return _apply_tensor_op(lambda x: F.log(x + 1), x, dtype=dtype)
+    return _apply_tensor_op(lambda x: ops.log(x + 1), x, dtype=dtype)
 
 
 def logaddexp(x1, x2, dtype=None):
@@ -3299,7 +3296,7 @@ def logaddexp(x1, x2, dtype=None):
         [2.312 2.693 3.312]
     """
     def _logaddexp(x1, x2):
-        return F.log(F.tensor_add(F.tensor_exp(x1), F.tensor_exp(x2)))
+        return ops.log(ops.tensor_add(ops.tensor_exp(x1), ops.tensor_exp(x2)))
     return _apply_tensor_op(_logaddexp, x1, x2, dtype=dtype)
 
 
@@ -3332,7 +3329,7 @@ def log2(x, dtype=None):
     tensor_2 = _make_tensor(2, x.dtype)
 
     def _log2(x):
-        return F.log(x) / F.log(tensor_2)
+        return ops.log(x) / ops.log(tensor_2)
 
     return _apply_tensor_op(_log2, x, dtype=dtype)
 
@@ -3373,7 +3370,7 @@ def logaddexp2(x1, x2, dtype=None):
         [3. 4.32 8.02]
     """
     _check_input_tensor(x1, x2)
-    add_exp = F.tensor_add(F.tensor_pow(2, x1), F.tensor_pow(2, x2))
+    add_exp = ops.tensor_add(ops.tensor_pow(2, x1), ops.tensor_pow(2, x2))
     return log2(add_exp, dtype=dtype)
 
 
@@ -3406,7 +3403,7 @@ def log10(x, dtype=None):
     tensor_10 = _make_tensor(10, x.dtype)
 
     def _log10(x):
-        return F.log(x) / F.log(tensor_10)
+        return ops.log(x) / ops.log(tensor_10)
 
     return _apply_tensor_op(_log10, x, dtype=dtype)
 
@@ -3415,7 +3412,7 @@ def _cast_type_for_trigonometric(x):
     _check_input_tensor(x)
     if x.dtype != mstype.float16 or x.dtype != mstype.float32 or x.dtype != mstype.float64:
         dtype = _promote_for_trigonometric(x.dtype)
-        x = F.cast(x, dtype)
+        x = ops.cast(x, dtype)
     return x
 
 
@@ -3446,7 +3443,7 @@ def sin(x, dtype=None):
         [ 0.9589243  -0.84147096  0.   0.9092974  -0.7568025  -0.50636566]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.sin, x, dtype=dtype)
+    return _apply_tensor_op(ops.sin, x, dtype=dtype)
 
 
 def cos(x, dtype=None):
@@ -3475,7 +3472,7 @@ def cos(x, dtype=None):
         [ 1.          0.5403023  -0.41614684 -0.9899925  -0.6536436 ]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.cos, x, dtype=dtype)
+    return _apply_tensor_op(ops.cos, x, dtype=dtype)
 
 
 def tan(x, dtype=None):
@@ -3509,7 +3506,7 @@ def tan(x, dtype=None):
         [ 3.380515   -1.5574077   0.         -2.1850398   1.1578213  -0.58721393]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.tan, x, dtype=dtype)
+    return _apply_tensor_op(ops.tan, x, dtype=dtype)
 
 
 def arcsin(x, dtype=None):
@@ -3542,7 +3539,7 @@ def arcsin(x, dtype=None):
         [ 1.5707964 -1.5707964]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.asin, x, dtype=dtype)
+    return _apply_tensor_op(ops.asin, x, dtype=dtype)
 
 
 def arccos(input, dtype=None):
@@ -3576,7 +3573,7 @@ def arccos(input, dtype=None):
         [0.        3.1415927]
     """
     input = _cast_type_for_trigonometric(input)
-    return _apply_tensor_op(F.acos, input, dtype=dtype)
+    return _apply_tensor_op(ops.acos, input, dtype=dtype)
 
 
 def arctan(x, dtype=None):
@@ -3607,7 +3604,7 @@ def arctan(x, dtype=None):
         [0.        0.7853982 1.1071488 1.2490457 1.3258177]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.atan, x, dtype=dtype)
+    return _apply_tensor_op(ops.atan, x, dtype=dtype)
 
 
 def sinh(x, dtype=None):
@@ -3636,7 +3633,7 @@ def sinh(x, dtype=None):
         [ 0.         1.1752012  3.6268604 10.017875  27.289917 ]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.sinh, x, dtype=dtype)
+    return _apply_tensor_op(ops.sinh, x, dtype=dtype)
 
 
 def cosh(x, dtype=None):
@@ -3665,7 +3662,7 @@ def cosh(x, dtype=None):
         [ 1.         1.5430807  3.7621956 10.067662  27.308233 ]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.cosh, x, dtype=dtype)
+    return _apply_tensor_op(ops.cosh, x, dtype=dtype)
 
 
 def tanh(x, dtype=None):
@@ -3694,7 +3691,7 @@ def tanh(x, dtype=None):
         [0.        0.7615942 0.9640276 0.9950548 0.9993293]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.tanh, x, dtype=dtype)
+    return _apply_tensor_op(ops.tanh, x, dtype=dtype)
 
 
 def arcsinh(x, dtype=None):
@@ -3723,7 +3720,7 @@ def arcsinh(x, dtype=None):
         [0.8813736 1.4436355 1.8184465 2.0947125]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.asinh, x, dtype=dtype)
+    return _apply_tensor_op(ops.asinh, x, dtype=dtype)
 
 
 def arccosh(x, dtype=None):
@@ -3752,7 +3749,7 @@ def arccosh(x, dtype=None):
         [0.        1.316958  1.7627472 2.063437 ]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.acosh, x, dtype=dtype)
+    return _apply_tensor_op(ops.acosh, x, dtype=dtype)
 
 
 def arctanh(x, dtype=None):
@@ -3781,7 +3778,7 @@ def arctanh(x, dtype=None):
         [-2.646653   -0.97295505 -0.54930615  0.          0.54930615]
     """
     x = _cast_type_for_trigonometric(x)
-    return _apply_tensor_op(F.atanh, x, dtype=dtype)
+    return _apply_tensor_op(ops.atanh, x, dtype=dtype)
 
 
 def arctan2(x1, x2, dtype=None):
@@ -3815,7 +3812,7 @@ def arctan2(x1, x2, dtype=None):
     """
     x1 = _cast_type_for_trigonometric(x1)
     x2 = _cast_type_for_trigonometric(x2)
-    return _apply_tensor_op(F.atan2, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.atan2, x1, x2, dtype=dtype)
 
 
 def promote_types(type1, type2):
@@ -3896,11 +3893,11 @@ def corrcoef(x, y=None, rowvar=True, dtype=None):
     # This implementation was adapted from original Numpy.
     c = cov(x, y, rowvar)
     if not c.shape:
-        return F.tensor_div(c, c)
+        return ops.tensor_div(c, c)
     d = diag(c)
     stddev = sqrt(d)
-    c /= F.expand_dims(stddev, -1)
-    c /= F.expand_dims(stddev, 0)
+    c /= ops.expand_dims(stddev, -1)
+    c /= ops.expand_dims(stddev, 0)
     c = clip(c, -1, 1)
     if dtype is not None:
         return c.astype(dtype)
@@ -3925,7 +3922,7 @@ def _slice_along_axis(f, axis, slice_start, slice_end):
     index_end = f.shape
     index_start = _tuple_setitem(index_start, axis, slice_start)
     index_end = _tuple_setitem(index_end, axis, slice_size)
-    return F.tensor_slice(f, index_start, index_end)
+    return ops.tensor_slice(f, index_start, index_end)
 
 
 def _gradient_along_axis(f, h, axis):
@@ -3950,7 +3947,7 @@ def check_gradient_arguments(f, axis, edge_order):
     if f.dtype != mstype.float64:
         f = f.astype(mstype.float32)
     if axis is None:
-        axis = F.make_range(f.ndim)
+        axis = ops.make_range(f.ndim)
     else:
         _check_axis_type(axis, True, True, True)
         axis = _canonicalize_axis(axis, f.ndim)
@@ -4023,7 +4020,7 @@ def gradient(f, *varargs, axis=None, edge_order=1):
 
     a_grad = []
 
-    for idx in F.make_range(len_axes):
+    for idx in ops.make_range(len_axes):
         h = dx[idx]
         ax = axis[idx]
         if f.shape[ax] < 2:
@@ -4187,7 +4184,7 @@ def multi_dot(arrays):
     else:
         arrays = _to_tensor(arrays)
         num = len(arrays)
-        arrays = F.reshape(arrays, (-1,) + _tuple_slice(F.shape(arrays), 2, None))
+        arrays = ops.reshape(arrays, (-1,) + _tuple_slice(ops.shape(arrays), 2, None))
         arrays = split(arrays, num)
     if len(arrays) == 2:
         return dot(*arrays)
@@ -4197,22 +4194,22 @@ def multi_dot(arrays):
     for arr in arrays:
         arrs.append(arr)
 
-    if F.rank(arrs[0]) == 1:
-        arrs[0] = F.reshape(arrs[0], (1, arrs[0].size))
+    if ops.rank(arrs[0]) == 1:
+        arrs[0] = ops.reshape(arrs[0], (1, arrs[0].size))
     else:
-        shape_out += (F.shape(arrs[0])[0],)
-    if F.rank(arrs[-1]) == 1:
-        arrs[-1] = F.reshape(arrs[-1], (arrs[-1].size, 1))
+        shape_out += (ops.shape(arrs[0])[0],)
+    if ops.rank(arrs[-1]) == 1:
+        arrs[-1] = ops.reshape(arrs[-1], (arrs[-1].size, 1))
     else:
-        shape_out += (F.shape(arrs[-1])[1],)
+        shape_out += (ops.shape(arrs[-1])[1],)
 
     shapes = []
     for arr in arrs:
-        shapes.append(F.shape(arr))
+        shapes.append(ops.shape(arr))
     dims = _get_dims(shapes)
     order = _min_cost_chain_matmul(dims)
     res = _multi_dot(arrs, 0, len(arrs) - 1, order)
-    return F.reshape(res, shape_out)
+    return ops.reshape(res, shape_out)
 
 
 def argmax(a, axis=None):
@@ -4338,26 +4335,26 @@ def searchsorted(a, v, side='left', sorter=None):
     if side not in ('left', 'right'):
         _raise_value_error('invalid value for keyword "side"')
     a = _to_tensor(a).astype(mstype.float32)
-    if F.rank(a) != 1:
+    if ops.rank(a) != 1:
         _raise_value_error('`a` should be 1-D array')
     v = _to_tensor(v)
-    shape = F.shape(v)
+    shape = ops.shape(v)
     if sorter is not None:
-        if F.rank(sorter) != 1 or sorter.size != a.size:
+        if ops.rank(sorter) != 1 or sorter.size != a.size:
             _raise_value_error('sorter must be 1-D array with the same size as `a`')
         sorter = _to_tensor(sorter)
-        sorter = F.expand_dims(sorter, -1)
-        a = F.gather_nd(a, sorter)
-    less_op = F.tensor_le if side == 'left' else F.tensor_lt
-    i = F.fill(mstype.int32, shape, 0)
-    j = F.fill(mstype.int32, shape, a.size)
-    two = F.fill(mstype.int32, shape, 2)
+        sorter = ops.expand_dims(sorter, -1)
+        a = ops.gather_nd(a, sorter)
+    less_op = ops.tensor_le if side == 'left' else ops.tensor_lt
+    i = ops.fill(mstype.int32, shape, 0)
+    j = ops.fill(mstype.int32, shape, a.size)
+    two = ops.fill(mstype.int32, shape, 2)
 
     for _ in _get_sort_range(a.size):
         mid = floor_divide(add(i, j), two)
-        mask = less_op(v, F.gather_nd(a, F.expand_dims(mid, -1)))
-        i = F.select(mask, i, mid)
-        j = F.select(mask, mid, j)
+        mask = less_op(v, ops.gather_nd(a, ops.expand_dims(mid, -1)))
+        i = ops.select(mask, i, mid)
+        j = ops.select(mask, mid, j)
     return j
 
 
@@ -4405,7 +4402,7 @@ def interp(x, xp, fp, left=None, right=None):
     """
     # implement period once sort is supported
     x, xp, fp = _to_tensor(x, xp, fp)
-    if F.rank(xp) != 1 or F.rank(fp) != 1:
+    if ops.rank(xp) != 1 or ops.rank(fp) != 1:
         _raise_value_error('xp and fp must be 1-d sequences')
     size = xp.size
     if fp.size != size:
@@ -4416,25 +4413,25 @@ def interp(x, xp, fp, left=None, right=None):
 
     indices_1 = clip(searchsorted(xp, x), 0, size - 1)
     indices_0 = clip(indices_1 - _to_tensor(1), 0, size - 1)
-    indices_0 = F.expand_dims(indices_0, -1)
-    indices_1 = F.expand_dims(indices_1, -1)
-    x_0 = F.gather_nd(xp, indices_0)
-    x_1 = F.gather_nd(xp, indices_1)
-    y_0 = F.gather_nd(fp, indices_0)
-    y_1 = F.gather_nd(fp, indices_1)
+    indices_0 = ops.expand_dims(indices_0, -1)
+    indices_1 = ops.expand_dims(indices_1, -1)
+    x_0 = ops.gather_nd(xp, indices_0)
+    x_1 = ops.gather_nd(xp, indices_1)
+    y_0 = ops.gather_nd(fp, indices_0)
+    y_1 = ops.gather_nd(fp, indices_1)
     res = (y_0 * (x_1 - x) + y_1 * (x - x_0)) / (x_1 - x_0)
-    res = F.select(F.equal(x_0, x_1), y_0, res)
+    res = ops.select(ops.equal(x_0, x_1), y_0, res)
 
     idx_0 = _to_tensor([0])
     idx_last = _to_tensor([size - 1])
     if left is None:
-        left = F.gather_nd(fp, idx_0)
-    left = full(F.shape(x), left, mstype.float32)
+        left = ops.gather_nd(fp, idx_0)
+    left = full(ops.shape(x), left, mstype.float32)
     if right is None:
-        right = F.gather_nd(fp, idx_last)
-    right = full(F.shape(x), right, mstype.float32)
-    res = F.select(F.tensor_lt(x, F.gather_nd(xp, idx_0)), left, res)
-    res = F.select(F.tensor_gt(x, F.gather_nd(xp, idx_last)), right, res)
+        right = ops.gather_nd(fp, idx_last)
+    right = full(ops.shape(x), right, mstype.float32)
+    res = ops.select(ops.tensor_lt(x, ops.gather_nd(xp, idx_0)), left, res)
+    res = ops.select(ops.tensor_gt(x, ops.gather_nd(xp, idx_last)), right, res)
     return res
 
 
@@ -4445,8 +4442,8 @@ def _apply_tensor_op(fn, *args, dtype=None):
         res = fn(args)
     else:
         res = fn(*args)
-    if dtype is not None and not _check_same_type(F.dtype(res), dtype):
-        res = F.cast(res, dtype)
+    if dtype is not None and not _check_same_type(ops.dtype(res), dtype):
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -4486,16 +4483,16 @@ def sign(x, dtype=None):
     if not isinstance(x, (int, float, list, tuple, Tensor)):
         _raise_type_error('integer, float, list, tuple or Tensor are expected, but got', x)
     x = _to_tensor(x)
-    if _check_same_type(F.dtype(x), mstype.bool_):
+    if _check_same_type(ops.dtype(x), mstype.bool_):
         _raise_type_error("sign does not accept dtype bool.")
 
     _non_zero_sign = x / absolute(x)
     _zero = _broadcast_to_shape(_make_tensor(0, x.dtype), x.shape)
-    is_zero = F.equal(x, 0)
-    res = F.select(is_zero, _zero, _non_zero_sign)
+    is_zero = ops.equal(x, 0)
+    res = ops.select(is_zero, _zero, _non_zero_sign)
 
-    if dtype is not None and not _check_same_type(F.dtype(res), dtype):
-        res = F.cast(res, dtype)
+    if dtype is not None and not _check_same_type(ops.dtype(res), dtype):
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -4538,24 +4535,24 @@ def copysign(x1, x2, dtype=None):
     if not isinstance(x2, (int, float, list, tuple, Tensor)):
         _raise_type_error('integer, float, list, tuple or Tensor are expected, but got', x2)
     x1, x2 = _to_tensor(x1, x2)
-    shape_out = _infer_out_shape(F.shape(x1), F.shape(x2))
+    shape_out = _infer_out_shape(ops.shape(x1), ops.shape(x2))
     x1 = _broadcast_to_shape(x1, shape_out)
     x2 = _broadcast_to_shape(x2, shape_out)
-    if _check_same_type(F.dtype(x1), mstype.bool_) or _check_same_type(F.dtype(x2), mstype.bool_):
+    if _check_same_type(ops.dtype(x1), mstype.bool_) or _check_same_type(ops.dtype(x2), mstype.bool_):
         _raise_type_error("sign does not accept dtype bool.")
 
     original_dtype = x1.dtype
     if not _check_is_float(original_dtype):
-        pos_tensor = F.absolute(x1.astype('float32')).astype(original_dtype)
+        pos_tensor = ops.absolute(x1.astype('float32')).astype(original_dtype)
     else:
-        pos_tensor = F.absolute(x1)
+        pos_tensor = ops.absolute(x1)
 
-    neg_tensor = F.neg(pos_tensor)
-    less_zero = F.less(x2, 0)
-    res = F.select(less_zero, neg_tensor, pos_tensor)
+    neg_tensor = ops.neg(pos_tensor)
+    less_zero = ops.less(x2, 0)
+    res = ops.select(less_zero, neg_tensor, pos_tensor)
 
-    if dtype is not None and not _check_same_type(F.dtype(res), dtype):
-        res = F.cast(res, dtype)
+    if dtype is not None and not _check_same_type(ops.dtype(res), dtype):
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -4590,12 +4587,12 @@ def digitize(x, bins, right=False):
         [1 3 3 4 5]
     """
     x, bins = _to_tensor(x, bins)
-    if F.rank(bins) != 1:
+    if ops.rank(bins) != 1:
         _raise_value_error('bins should be 1-dimensional')
     if x.size == 0:
         return x
     if bins.size == 0:
-        return zeros(F.shape(x), mstype.int32)
+        return zeros(ops.shape(x), mstype.int32)
     side = 'left' if right else 'right'
     first_bin = bins[0]
     last_bin = bins[_type_convert(int, bins.size) - 1]
@@ -4652,24 +4649,24 @@ def bincount(x, weights=None, minlength=0, length=None):
         [0.3 0.7 1.1]
     """
     x = _to_tensor(x)
-    if F.rank(x) != 1:
+    if ops.rank(x) != 1:
         _raise_value_error('`x` should be one-dimensional')
-    if not _check_is_int(F.dtype(x)):
+    if not _check_is_int(ops.dtype(x)):
         _raise_type_error('`x` should be an array of ints')
     x = clip(x, 0, None)
     if length is None:
-        if F.isconstant(x):
-            length = int(maximum(F.reduce_max(x.astype(mstype.float32)), minlength - 1).asnumpy()) + 1
+        if ops.isconstant(x):
+            length = int(maximum(ops.reduce_max(x.astype(mstype.float32)), minlength - 1).asnumpy()) + 1
         else:
             _raise_value_error('argument `length` must be provided in graph mode')
     idx = arange(length).reshape(length, 1)
-    idx_mapping = F.equal(x, idx)
+    idx_mapping = ops.equal(x, idx)
     if weights is not None:
         weights = _to_tensor(weights)
-        if F.shape(x) != F.shape(weights):
+        if ops.shape(x) != ops.shape(weights):
             _raise_value_error('`x` and `weights` must have the same length')
         idx_mapping *= weights
-    return F.reduce_sum(idx_mapping.astype(mstype.float32), 1).ravel()
+    return ops.reduce_sum(idx_mapping.astype(mstype.float32), 1).ravel()
 
 
 def histogram(a, bins=10, range=None, weights=None, density=False): # pylint: disable=redefined-builtin
@@ -4727,7 +4724,7 @@ def histogram(a, bins=10, range=None, weights=None, density=False): # pylint: di
     a = _to_tensor(a)
     if weights is not None:
         weights = _to_tensor(weights)
-        if F.shape(a) != F.shape(weights):
+        if ops.shape(a) != ops.shape(weights):
             _raise_value_error('weights should have the same shape as a')
         weights = weights.ravel()
     a = a.ravel()
@@ -4739,8 +4736,8 @@ def histogram(a, bins=10, range=None, weights=None, density=False): # pylint: di
     if count.size == 0:
         return count, bin_edges
     if density:
-        count = F.cast(count, mstype.float32)
-        count = count / diff(bin_edges) / F.reduce_sum(count)
+        count = ops.cast(count, mstype.float32)
+        count = count / diff(bin_edges) / ops.reduce_sum(count)
     return count, bin_edges
 
 
@@ -4757,7 +4754,7 @@ def _get_histogramdd_count(ndim, bin_edges, sample, weights):
     data_indices = []
     nbin = ()
     flattened_bin_size = 1
-    for i in F.make_range(ndim):
+    for i in ops.make_range(ndim):
         data_to_bins = searchsorted(bin_edges[i], sample[:, i], 'right')
         bin_size = _type_convert(int, bin_edges[i].size)
         data_to_bins = where_(sample[:, i] == bin_edges[i][-1], _to_tensor(bin_size - 1), data_to_bins)
@@ -4765,14 +4762,14 @@ def _get_histogramdd_count(ndim, bin_edges, sample, weights):
         nbin += (bin_size + 1,)
         flattened_bin_size *= (bin_size + 1)
 
-    factor = F.reshape(_to_tensor(_factor_flattened_hist(nbin)), (ndim, 1))
+    factor = ops.reshape(_to_tensor(_factor_flattened_hist(nbin)), (ndim, 1))
     stacked_indices = stack(data_indices) * factor
     if _get_device() == 'Ascend':
-        stacked_indices = F.cast(stacked_indices, mstype.float32)
-    flattened_hist = F.reduce_sum(stacked_indices.astype(mstype.float32), 0)
+        stacked_indices = ops.cast(stacked_indices, mstype.float32)
+    flattened_hist = ops.reduce_sum(stacked_indices.astype(mstype.float32), 0)
     count = bincount(flattened_hist.astype(mstype.int32), weights, length=flattened_bin_size)
-    count = F.reshape(count, nbin)
-    slices = _list_comprehensions(ndim, F.make_slice(1, -1, 1), True)
+    count = ops.reshape(count, nbin)
+    slices = _list_comprehensions(ndim, ops.make_slice(1, -1, 1), True)
     count = count[slices]
     return count
 
@@ -4852,9 +4849,9 @@ def histogramdd(sample, bins=10, range=None, weights=None, density=False): # pyl
         sample = stack(sample, -1)
     elif not isinstance(sample, Tensor):
         _raise_type_error('sample should be (N, D) array, or (D, N) array_like')
-    if F.rank(sample) != 2:
+    if ops.rank(sample) != 2:
         _raise_value_error('when an array, sample should be 2-dimensional')
-    ndim = F.shape(sample)[1]
+    ndim = ops.shape(sample)[1]
 
     if isinstance(bins, int):
         bins = _list_comprehensions(ndim, bins)
@@ -4872,7 +4869,7 @@ def histogramdd(sample, bins=10, range=None, weights=None, density=False): # pyl
 
     bin_edges = []
     dedges = []
-    for i in F.make_range(ndim):
+    for i in ops.make_range(ndim):
         edges = histogram_bin_edges(sample[:, i], bins[i], range[i], weights)
         bin_edges.append(edges)
         dedges.append(diff(edges))
@@ -4880,8 +4877,8 @@ def histogramdd(sample, bins=10, range=None, weights=None, density=False): # pyl
     count = _get_histogramdd_count(ndim, bin_edges, sample, weights)
 
     if density:
-        s = F.reduce_sum(count.astype(mstype.float32))
-        for i in F.make_range(ndim):
+        s = ops.reduce_sum(count.astype(mstype.float32))
+        for i in ops.make_range(ndim):
             shape = _expanded_shape(ndim, dedges[i].size, i)
             count /= _to_tensor(dedges[i]).reshape(shape)
         count /= s
@@ -5001,7 +4998,7 @@ def matrix_power(a, n):
         return a
     res = a
     while n > 1:
-        res = C.matmul(res, a)
+        res = ops.matmul(res, a)
         n = n - 1
     return res
 
@@ -5042,12 +5039,12 @@ def around(a, decimals=0):
         _raise_value_error("decimals < 0 is not supported now.")
     if decimals == 0:
         return _round(a)
-    return F.tensor_div(_round(a * 10**decimals), 10**decimals)
+    return ops.tensor_div(_round(a * 10**decimals), 10**decimals)
 
 
 def _to_poly1d(x):
     x = atleast_1d(_to_tensor(x))
-    if F.rank(x) > 1:
+    if ops.rank(x) > 1:
         _raise_value_error('input array must be scalar or 1-d sequence')
     return x
 
@@ -5114,7 +5111,7 @@ def polysub(a1, a2):
         >>> print(np.polysub([2, 10, -2], [3, 10, -4]))
         [-1  0  2]
     """
-    return polyadd(a1, F.neg(_to_tensor(a2)))
+    return polyadd(a1, ops.neg(_to_tensor(a2)))
 
 
 def polyval(p, x):
@@ -5150,10 +5147,10 @@ def polyval(p, x):
     """
     p = _to_poly1d(p)
     x = _to_tensor(x)
-    shape = F.shape(x)
+    shape = ops.shape(x)
     exp_p = arange(_type_convert(int, p.size) - 1, -1, -1).astype(mstype.float32)
     var_p = (x.reshape(shape + (1,)))**exp_p
-    return F.reduce_sum(p * var_p, -1)
+    return ops.reduce_sum(p * var_p, -1)
 
 
 def polyder(p, m=1):
@@ -5188,7 +5185,7 @@ def polyder(p, m=1):
     if m >= p.size:
         return _to_tensor([])
     for _ in range(m):
-        coeff = _to_tensor(F.make_range(_type_convert(int, p.size) - 1, 0, -1))
+        coeff = _to_tensor(ops.make_range(_type_convert(int, p.size) - 1, 0, -1))
         p = p[:-1] * coeff
     return p
 
@@ -5259,13 +5256,13 @@ def polyint(p, m=1, k=None):
     if m == 0:
         return p
     if k is None:
-        k = zeros(m, F.dtype(p))
+        k = zeros(m, ops.dtype(p))
     k = atleast_1d(_to_tensor(k))
     if k.size == 1:
-        k = F.tile(k, (m,))
-    k = F.expand_dims(k, -1)
+        k = ops.tile(k, (m,))
+    k = ops.expand_dims(k, -1)
     for i in range(m):
-        coeff = _to_tensor(F.make_range(_type_convert(int, p.size), 0, -1))
+        coeff = _to_tensor(ops.make_range(_type_convert(int, p.size), 0, -1))
         p = concatenate((true_divide(p, coeff), k[i]))
     return p
 
@@ -5318,7 +5315,7 @@ def result_type(*arrays_and_dtypes):
     """
     def get_dtype(x):
         if isinstance(x, Tensor):
-            return F.dtype(_to_tensor(x))
+            return ops.dtype(_to_tensor(x))
         return _get_dtype(x)
 
     dtype_out = get_dtype(arrays_and_dtypes[0])
@@ -5362,16 +5359,16 @@ def unwrap(p, discont=3.141592653589793, axis=-1):
     if not isinstance(discont, (int, float)):
         _raise_type_error('discont should be a float')
     p = _to_tensor(p)
-    ndim = F.rank(p)
+    ndim = ops.rank(p)
     axis = _check_axis_in_range(axis, ndim)
     dd = diff(p, axis=axis)
     ddmod = remainder(add(dd, pi), 2*pi) - pi
-    ddmod = F.masked_fill(ddmod, F.logical_and(ddmod == -pi, dd > 0), F.cast(pi, ddmod.dtype))
+    ddmod = ops.masked_fill(ddmod, ops.logical_and(ddmod == -pi, dd > 0), ops.cast(pi, ddmod.dtype))
     ph_correct = ddmod - dd
-    ph_correct = F.masked_fill(ph_correct, absolute(dd) < discont, F.cast(0, ph_correct.dtype))
-    slice_all = _list_comprehensions(F.rank(p), F.make_slice(None, None, None), True)
-    slice0 = _tuple_setitem(slice_all, axis, F.make_slice(0, 1, None))
-    slice1 = _tuple_setitem(slice_all, axis, F.make_slice(1, None, None))
+    ph_correct = ops.masked_fill(ph_correct, absolute(dd) < discont, ops.cast(0, ph_correct.dtype))
+    slice_all = _list_comprehensions(ops.rank(p), ops.make_slice(None, None, None), True)
+    slice0 = _tuple_setitem(slice_all, axis, ops.make_slice(0, 1, None))
+    slice1 = _tuple_setitem(slice_all, axis, ops.make_slice(1, None, None))
     head = p[slice0]
     tail = add(p[slice1], cumsum(ph_correct, axis))
     return concatenate((head, tail), axis=axis)
@@ -5408,7 +5405,7 @@ def cumprod(a, axis=None, dtype=None):
         [1 2 6]
     """
     a = _to_tensor_origin_dtype(a)
-    original_dtype = F.dtype(a)
+    original_dtype = ops.dtype(a)
 
     if axis is not None and not isinstance(axis, int):
         _raise_type_error("integer axis is expected, but got", axis)
@@ -5442,9 +5439,9 @@ def _process_index(index, dims, mode='raise'):
             idx = clip(idx, 0, d - 1)
         elif mode == "wrap":
             idx = remainder(idx, d)
-        idx = F.expand_dims(idx, 0) if idx.ndim < 1 else idx
+        idx = ops.expand_dims(idx, 0) if idx.ndim < 1 else idx
         tup += (idx,)
-    return P.Concat(0)(tup).reshape(ori_shape)
+    return ops.Concat(0)(tup).reshape(ori_shape)
 
 
 def _get_strides(dims, order='C'):
@@ -5456,10 +5453,10 @@ def _get_strides(dims, order='C'):
     for d in dims:
         tensor = tup[-1] * d
         if tensor.ndim < 1:
-            tensor = F.expand_dims(tensor, 0)
+            tensor = ops.expand_dims(tensor, 0)
         tup += (tensor,)
     tup = tup[::-1] if order == 'C' else tup
-    return P.Concat(0)(tup)
+    return ops.Concat(0)(tup)
 
 
 def ravel_multi_index(multi_index, dims, mode='clip', order='C'):
@@ -5529,13 +5526,13 @@ def _vector_norm(x, _ord, axis, keepdims):
     if _ord is None:
         _ord = 2
     if _ord == inf:
-        res = P.ReduceMax(keepdims)(absolute(x), axis)
+        res = ops.ReduceMax(keepdims)(absolute(x), axis)
     elif _ord == -inf:
-        res = P.ReduceMin(keepdims)(absolute(x), axis)
+        res = ops.ReduceMin(keepdims)(absolute(x), axis)
     elif _ord == 0:
-        res = P.ReduceSum(keepdims)(F.not_equal(x, 0).astype(mstype.float32), axis)
+        res = ops.ReduceSum(keepdims)(ops.not_equal(x, 0).astype(mstype.float32), axis)
     else:
-        res = power(P.ReduceSum(keepdims)(power(absolute(x), _ord), axis), 1. / _ord)
+        res = power(ops.ReduceSum(keepdims)(power(absolute(x), _ord), axis), 1. / _ord)
     return res
 
 
@@ -5548,7 +5545,7 @@ def _matrix_norm(x, _ord, axis, keepdims):
     if _in(_ord, (2, -2)):
         _raise_unimplemented_error('2-norm is not implemented for matrices')
     if _in(_ord, (None, 'fro')):
-        return F.sqrt(P.ReduceSum(keepdims)(F.square(x), axis))
+        return ops.sqrt(ops.ReduceSum(keepdims)(ops.square(x), axis))
     axis0, axis1 = axis
     if not keepdims:
         if _check_is_inf(_abs(_ord)) and axis0 > axis1:
@@ -5556,13 +5553,13 @@ def _matrix_norm(x, _ord, axis, keepdims):
         elif _abs(_ord) == 1 and axis1 > axis0:
             axis1 -= 1
     if _check_is_inf(_ord):
-        return P.ReduceMax(keepdims)(P.ReduceSum(keepdims)(absolute(x), axis1), axis0)
+        return ops.ReduceMax(keepdims)(ops.ReduceSum(keepdims)(absolute(x), axis1), axis0)
     if _check_is_inf(_ord, True):
-        return P.ReduceMin(keepdims)(P.ReduceSum(keepdims)(absolute(x), axis1), axis0)
+        return ops.ReduceMin(keepdims)(ops.ReduceSum(keepdims)(absolute(x), axis1), axis0)
     if _ord == 1:
-        return P.ReduceMax(keepdims)(P.ReduceSum(keepdims)(absolute(x), axis0), axis1)
+        return ops.ReduceMax(keepdims)(ops.ReduceSum(keepdims)(absolute(x), axis0), axis1)
     if _ord == -1:
-        return P.ReduceMin(keepdims)(P.ReduceSum(keepdims)(absolute(x), axis0), axis1)
+        return ops.ReduceMin(keepdims)(ops.ReduceSum(keepdims)(absolute(x), axis0), axis1)
     return _raise_value_error('invalid norm order for matrices')
 
 
@@ -5608,14 +5605,14 @@ def norm(x, ord=None, axis=None, keepdims=False): # pylint: disable=redefined-bu
     if not isinstance(ord, (int, float)) and not _in(ord, (None, 'fro', 'nuc', inf, -inf)):
         _raise_value_error('invalid value for `ord`')
     x = _to_tensor(x)
-    ndim = F.rank(x)
+    ndim = ops.rank(x)
     if axis is None:
         if ord is None:
             x = x.ravel()
-        if F.rank(x) not in (1, 2):
+        if ops.rank(x) not in (1, 2):
             _raise_value_error('for None axis, array must a vector or a 2-D matrix')
-        axis = F.make_range(F.rank(x))
-    axis = _check_axis_valid(axis, F.rank(x))
+        axis = ops.make_range(ops.rank(x))
+    axis = _check_axis_valid(axis, ops.rank(x))
 
     if len(axis) == 1:
         res = _vector_norm(x, ord, axis, keepdims)
@@ -5624,7 +5621,7 @@ def norm(x, ord=None, axis=None, keepdims=False): # pylint: disable=redefined-bu
     else:
         return _raise_value_error('invalid number of dimensions to norm')
 
-    if keepdims and ndim > F.rank(res):
+    if keepdims and ndim > ops.rank(res):
         res = _expand(res, ndim)
     return res
 
@@ -5658,7 +5655,7 @@ def bitwise_and(x1, x2, dtype=None):
         >>> print(np.bitwise_and(13, 17))
         1
     """
-    return _apply_tensor_op(F.bitwise_and, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.bitwise_and, x1, x2, dtype=dtype)
 
 
 def bitwise_or(x1, x2, dtype=None):
@@ -5690,7 +5687,7 @@ def bitwise_or(x1, x2, dtype=None):
         >>> print(np.bitwise_or(13, 16))
         29
     """
-    return _apply_tensor_op(F.bitwise_or, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.bitwise_or, x1, x2, dtype=dtype)
 
 
 def bitwise_xor(x1, x2, dtype=None):
@@ -5722,7 +5719,7 @@ def bitwise_xor(x1, x2, dtype=None):
         >>> print(np.bitwise_xor(13, 17))
         28
     """
-    return _apply_tensor_op(F.bitwise_xor, x1, x2, dtype=dtype)
+    return _apply_tensor_op(ops.bitwise_xor, x1, x2, dtype=dtype)
 
 
 def invert(x, dtype=None):
@@ -5757,7 +5754,7 @@ def invert(x, dtype=None):
         >>> print(np.invert(np.array(13, dtype=np.uint16)))
         65522
     """
-    return _apply_tensor_op(F.invert, x, dtype=dtype)
+    return _apply_tensor_op(ops.invert, x, dtype=dtype)
 
 
 def rint(x, dtype=None):
@@ -5790,8 +5787,8 @@ def rint(x, dtype=None):
     """
     x = _to_tensor_origin_dtype(x)
     res = _rint(x)
-    if dtype is not None and not _check_same_type(F.dtype(res), dtype):
-        res = F.cast(res, dtype)
+    if dtype is not None and not _check_same_type(ops.dtype(res), dtype):
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -5865,20 +5862,20 @@ def correlate(a, v, mode='valid'):
 
 def _compute_1d_conv(a, v, mode):
     """Returns a 1-D sequence which is the cross-correlate of two 1-D sequences (`a` and `v`)."""
-    v_size = F.shape_mul(v.shape)
+    v_size = ops.shape_mul(v.shape)
     if mode not in ('same', 'full', 'valid'):
         _raise_value_error("mode must be one of ['full', 'same', 'valid']")
     if v_size > 1:
         if mode == 'same':
             pad_left = _to_tensor(_list_comprehensions(v_size // 2, 0.0, True))
             pad_right = _to_tensor(_list_comprehensions(v_size - v_size // 2 - 1, 0.0, True))
-            a = P.Concat(0)((pad_left, a, pad_right))
+            a = ops.Concat(0)((pad_left, a, pad_right))
         elif mode == 'full':
             pad = _to_tensor(_list_comprehensions(v_size - 1, 0.0, True))
-            a = P.Concat(0)((pad, a, pad))
+            a = ops.Concat(0)((pad, a, pad))
     a = a.reshape(1, 1, 1, a.size)
     v = v.reshape(1, 1, 1, v.size)
-    _conv = P.Conv2D(1, (1, v.size))
+    _conv = ops.Conv2D(1, (1, v.size))
     return _conv(a, v).reshape(-1)
 
 

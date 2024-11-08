@@ -26,8 +26,6 @@ from mindspore import ops
 from mindspore.common import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.common.seed import get_seed
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.function.random_func import _get_seed
 from mindspore.nn.layer.basic import tril as nn_tril
@@ -52,9 +50,9 @@ MAX_NUMPY_DIMS = 32
 # All types that can be accepted as "array_like" parameters in graph mode.
 ARRAY_TYPES = (int, float, bool, list, tuple, Tensor)
 
-_reduce_min_keepdims = P.ReduceMin(True)
-_reduce_max_keepdims = P.ReduceMax(True)
-_reduce_mean_keepdims = P.ReduceMean(True)
+_reduce_min_keepdims = ops.ReduceMin(True)
+_reduce_max_keepdims = ops.ReduceMax(True)
+_reduce_mean_keepdims = ops.ReduceMean(True)
 
 
 def array(obj, dtype=None, copy=True, ndmin=0):
@@ -300,7 +298,7 @@ def ones(shape, dtype=mstype.float32):
     dtype = _check_dtype(dtype)
     if _is_shape_empty(shape):
         return full(shape, 1.0, dtype)
-    output = F.fill(dtype, shape, 1)
+    output = ops.fill(dtype, shape, 1)
     return output
 
 
@@ -333,7 +331,7 @@ def zeros(shape, dtype=mstype.float32):
     dtype = _check_dtype(dtype)
     if _is_shape_empty(shape):
         return full(shape, 0.0, dtype)
-    output = F.fill(dtype, shape, 0)
+    output = ops.fill(dtype, shape, 0)
     return output
 
 
@@ -379,7 +377,7 @@ def full(shape, fill_value, dtype=None):
 
     if not _is_shape_empty(shape):
         if isinstance(fill_value, (int, float, bool)):
-            return F.fill(dtype, shape, fill_value)
+            return ops.fill(dtype, shape, fill_value)
         if isinstance(fill_value, (list, tuple)):
             fill_value = asarray_const(fill_value)
         return broadcast_to(fill_value, shape)
@@ -459,9 +457,9 @@ def randn(*shape, dtype=mstype.float32):
     seed = get_seed()
     if seed is not None:
         seed1, seed2 = _get_seed(seed, "StandardNormal")
-        stdnormal = P.StandardNormal(seed=seed1, seed2=seed2)
+        stdnormal = ops.StandardNormal(seed=seed1, seed2=seed2)
     else:
-        stdnormal = P.StandardNormal()
+        stdnormal = ops.StandardNormal()
     return stdnormal(size).astype(dtype)
 
 
@@ -500,9 +498,9 @@ def rand(*shape, dtype=mstype.float32):
     seed = get_seed()
     if seed is not None:
         seed1, seed2 = _get_seed(seed, "UniformReal")
-        uniformreal = P.UniformReal(seed=seed1, seed2=seed2)
+        uniformreal = ops.UniformReal(seed=seed1, seed2=seed2)
     else:
-        uniformreal = P.UniformReal()
+        uniformreal = ops.UniformReal()
     return uniformreal(size).astype(dtype)
 
 
@@ -570,9 +568,9 @@ def randint(minval, maxval=None, shape=None, dtype=mstype.int32):
     seed = get_seed()
     if seed is not None:
         seed1, seed2 = _get_seed(seed, "UniformInt")
-        uniformint = P.UniformInt(seed=seed1, seed2=seed2)
+        uniformint = ops.UniformInt(seed=seed1, seed2=seed2)
     else:
-        uniformint = P.UniformInt()
+        uniformint = ops.UniformInt()
     t_min = _type_convert(Tensor, minval).astype(dtype)
     t_max = _type_convert(Tensor, maxval).astype(dtype)
     return uniformint(shape, t_min, t_max).astype(dtype)
@@ -792,7 +790,7 @@ def logspace(start, stop, num=50, endpoint=True, base=10.0, dtype=None, axis=0):
     if not isinstance(base, (int, float, bool)):
         _raise_type_error("base should be a number, but got ", base)
     linspace_res = linspace(start, stop, num, endpoint=endpoint, retstep=False, dtype=None, axis=axis)
-    return F.tensor_pow(base, linspace_res).astype(dtype)
+    return ops.tensor_pow(base, linspace_res).astype(dtype)
 
 
 def geomspace(start, stop, num=50, endpoint=True, dtype=None, axis=0):
@@ -842,17 +840,17 @@ def geomspace(start, stop, num=50, endpoint=True, dtype=None, axis=0):
     root = num
     if endpoint:
         root -= 1
-    bases = F.tensor_pow(F.tensor_div(stop, start), asarray_const(1. / (root)))
-    exponents = linspace(zeros(F.shape(bases)), F.fill(F.dtype(bases), F.shape(bases), root),
+    bases = ops.tensor_pow(ops.tensor_div(stop, start), asarray_const(1. / (root)))
+    exponents = linspace(zeros(ops.shape(bases)), ops.fill(ops.dtype(bases), ops.shape(bases), root),
                          num, endpoint=endpoint, dtype=dtype, axis=axis)
-    shape = F.shape(bases)
-    axis = axis + F.rank(bases) + 1 if axis < 0 else axis
+    shape = ops.shape(bases)
+    axis = axis + ops.rank(bases) + 1 if axis < 0 else axis
     expanded_shape = _tuple_slice(shape, None, axis) + (1,) + _tuple_slice(shape, axis, None)
-    bases = F.reshape(bases, expanded_shape)
-    start = F.reshape(start, expanded_shape)
-    res = F.tensor_mul(F.tensor_pow(bases, exponents), start)
+    bases = ops.reshape(bases, expanded_shape)
+    start = ops.reshape(start, expanded_shape)
+    res = ops.tensor_mul(ops.tensor_pow(bases, exponents), start)
     if dtype is not None:
-        res = F.cast(res, dtype)
+        res = ops.cast(res, dtype)
     return res
 
 
@@ -896,7 +894,7 @@ def eye(N, M=None, k=0, dtype=mstype.float32):
         # Fill the shape with any value is fine.
         return full((N, M), 0, dtype)
 
-    out = F.eye(N, M, dtype)
+    out = ops.eye(N, M, dtype)
 
     if k >= M or k <= -N:
         return full((N, M), 0, dtype)
@@ -1264,7 +1262,7 @@ def tril(m, k=0):
         assist = nn_tril(m.shape, mstype.float32, k)
     else:
         assist = nn_tril(m.shape, dtype, k)
-    return F.tensor_mul(assist, m).astype(dtype)
+    return ops.tensor_mul(assist, m).astype(dtype)
 
 
 def triu(m, k=0):
@@ -1318,7 +1316,7 @@ def triu(m, k=0):
         assist = nn_triu(m.shape, mstype.float32, k)
     else:
         assist = nn_triu(m.shape, dtype, k)
-    return F.tensor_mul(assist, m).astype(dtype)
+    return ops.tensor_mul(assist, m).astype(dtype)
 
 
 def diagonal(a, offset=0, axis1=0, axis2=1):
@@ -1505,7 +1503,7 @@ def meshgrid(*xi, sparse=False, indexing='xy'):
 
     grids = []
     for x in xi:
-        if F.rank(x) == 1:
+        if ops.rank(x) == 1:
             grids.append(x)
         else:
             grids.append(ravel(x))
@@ -1515,7 +1513,7 @@ def meshgrid(*xi, sparse=False, indexing='xy'):
     shape_out = ()
     for i in range(len(grids)):
         grid_index = _index(i, ndim, cartesian=cartesian)
-        shape_out += (F.shape(grids[grid_index])[0],)
+        shape_out += (ops.shape(grids[grid_index])[0],)
 
     res = []
     for i, x in enumerate(grids):
@@ -1523,7 +1521,7 @@ def meshgrid(*xi, sparse=False, indexing='xy'):
         shape_expanded = _expanded_shape(ndim, shape_out[grid_index], grid_index)
         x = x.reshape(shape_expanded)
         if not sparse:
-            x = F.tile(x, _tile_size(shape_expanded, shape_out, ndim))
+            x = ops.tile(x, _tile_size(shape_expanded, shape_out, ndim))
         res.append(x)
     return res
 
@@ -1579,7 +1577,7 @@ class NdGrid:
             return grids
         expanded = []
         for grid in grids:
-            expanded.append(F.expand_dims(grid, 0))
+            expanded.append(ops.expand_dims(grid, 0))
         res = concatenate(tuple(expanded))
         return res
 
@@ -1718,28 +1716,28 @@ def diag(v, k=0):
         >>> print(output)
         [3 7]
     """
-    ndim = F.rank(v)
+    ndim = ops.rank(v)
     if ndim == 1:
         return diagflat(v, k=k)
     if ndim == 2:
-        shape = F.shape(v)
-        dtype = F.dtype(v)
+        shape = ops.shape(v)
+        dtype = ops.dtype(v)
         if _is_shape_empty(shape):
             return _empty(dtype, (0,))
         e = eye(shape[0], shape[1], k, dtype)
-        prod = F.tensor_mul(v, e)
+        prod = ops.tensor_mul(v, e)
 
         cast_type = dtype
         if not _check_is_float(dtype):
             # reduce sum only supports float types
             cast_type = mstype.float32
-            prod = F.cast(prod, cast_type)
+            prod = ops.cast(prod, cast_type)
 
-        res = F.reduce_sum(prod, 1)
+        res = ops.reduce_sum(prod, 1)
         res = res[_max(0, -k): _min(shape[0], _max(0, shape[1] - k))]
 
         if not _check_same_type(cast_type, dtype):
-            res = F.cast(res, dtype)
+            res = ops.cast(res, dtype)
 
         return res
     return _raise_value_error("Input must be 1- or 2-d.")
@@ -1783,15 +1781,15 @@ def diagflat(v, k=0):
         [0 0 0]]
     """
     _check_input_tensor(v)
-    dtype = F.dtype(v)
+    dtype = ops.dtype(v)
     k_abs = _abs(k)
-    if _is_shape_empty(F.shape(v)):
+    if _is_shape_empty(ops.shape(v)):
         return zeros((k_abs, k_abs), dtype)
 
     v = ravel(v)
-    size = F.shape(v)[0]
+    size = ops.shape(v)[0]
     e = eye(size, size, 0, dtype)
-    res = F.tensor_mul(v, e)
+    res = ops.tensor_mul(v, e)
 
     if k != 0:
         pad_y = zeros((size, k_abs), dtype)
@@ -1883,9 +1881,9 @@ def ix_(*args):
     ndim = len(args)
     res = ()
     for i, arr in enumerate(args):
-        if F.rank(arr) != 1:
+        if ops.rank(arr) != 1:
             return _raise_value_error('Cross index must be 1 dimensional')
-        res += (F.reshape(arr, _expanded_shape(ndim, arr.size, i)),)
+        res += (ops.reshape(arr, _expanded_shape(ndim, arr.size, i)),)
     return res
 
 
@@ -1941,9 +1939,9 @@ def vander(x, N=None, increasing=False):
     if not isinstance(increasing, bool):
         _raise_type_error("increasing must be a bool.")
     exponent = _iota(x.dtype, N, increasing)
-    x = F.expand_dims(x, 1)
-    exponent = F.expand_dims(exponent, 0)
-    return F.tensor_pow(x, exponent)
+    x = ops.expand_dims(x, 1)
+    exponent = ops.expand_dims(exponent, 0)
+    return ops.tensor_pow(x, exponent)
 
 
 def indices(dimensions, dtype=mstype.int32, sparse=False):
@@ -2029,7 +2027,7 @@ def bartlett(M):
         return ones(_max(0, M))
     n = _iota(mstype.float32, M)
     m_minus_one = _to_tensor(M - 1)
-    return _to_tensor(1) - F.absolute(_to_tensor(2) * n - m_minus_one) / m_minus_one
+    return _to_tensor(1) - ops.absolute(_to_tensor(2) * n - m_minus_one) / m_minus_one
 
 
 def blackman(M):
@@ -2063,8 +2061,8 @@ def blackman(M):
     if not _check_window_size(M):
         return ones(_max(0, M))
     n_doubled = arange(1 - M, M, 2, dtype=mstype.float32)
-    return (_to_tensor(0.42) + _to_tensor(0.5) * F.cos(_to_tensor(pi / (M - 1)) * n_doubled) +
-            _to_tensor(0.08) * F.cos(_to_tensor(2 * pi / (M - 1)) * n_doubled))
+    return (_to_tensor(0.42) + _to_tensor(0.5) * ops.cos(_to_tensor(pi / (M - 1)) * n_doubled) +
+            _to_tensor(0.08) * ops.cos(_to_tensor(2 * pi / (M - 1)) * n_doubled))
 
 
 def hamming(M):
@@ -2095,7 +2093,7 @@ def hamming(M):
     if not _check_window_size(M):
         return ones(_max(0, M))
     n = _iota(mstype.float32, M)
-    return _to_tensor(0.54) - _to_tensor(0.46) * F.cos(_to_tensor(2 * pi / (M - 1)) * n)
+    return _to_tensor(0.54) - _to_tensor(0.46) * ops.cos(_to_tensor(2 * pi / (M - 1)) * n)
 
 
 def hanning(M):
@@ -2126,7 +2124,7 @@ def hanning(M):
     if not _check_window_size(M):
         return ones(_max(0, M))
     n = _iota(mstype.float32, M)
-    return _to_tensor(0.5) - _to_tensor(0.5) * F.cos(_to_tensor(2 * pi / (M - 1)) * n)
+    return _to_tensor(0.5) - _to_tensor(0.5) * ops.cos(_to_tensor(2 * pi / (M - 1)) * n)
 
 
 @constexpr
@@ -2319,11 +2317,11 @@ def histogram_bin_edges(a, bins=10, range=None, weights=None):  # pylint: disabl
     a = _to_tensor(a)
     if weights is not None:
         weights = _to_tensor(weights)
-        if F.shape(a) != F.shape(weights):
+        if ops.shape(a) != ops.shape(weights):
             _raise_value_error('weights should have the same shape as a')
     if isinstance(bins, (tuple, list, Tensor)):
         bins = _to_tensor(bins)
-        if F.rank(bins) != 1:
+        if ops.rank(bins) != 1:
             _raise_value_error('`bins` must be 1d, when an array')
         return bins
     if isinstance(bins, str):
@@ -2331,8 +2329,8 @@ def histogram_bin_edges(a, bins=10, range=None, weights=None):  # pylint: disabl
         _raise_unimplemented_error('string value for `bins` not implemented')
     a = a.ravel().astype(mstype.float32)
     if range is None:
-        start = F.reduce_min(a)
-        end = F.reduce_max(a)
+        start = ops.reduce_min(a)
+        end = ops.reduce_max(a)
     else:
         if not isinstance(range, (list, tuple)) or len(range) != 2:
             _raise_value_error('`range` should take the form (start, end)')
@@ -2398,9 +2396,9 @@ def _pad_statistic(arr, pad_width, stat_length, stat_op):
     stat_length = _limit_stat_length(stat_length, shape)
     for i in range(ndim):
         pad_before = stat_op(_slice_along_axis(arr, i, 0, stat_length[i][0]), i)
-        pad_before = (F.tile(pad_before, _tuple_setitem((1,) * ndim, i, pad_width[i][0])),)
+        pad_before = (ops.tile(pad_before, _tuple_setitem((1,) * ndim, i, pad_width[i][0])),)
         pad_after = stat_op(_slice_along_axis(arr, i, shape[i] - stat_length[i][1], shape[i]), i)
-        pad_after = (F.tile(pad_after, _tuple_setitem((1,) * ndim, i, pad_width[i][1])),)
+        pad_after = (ops.tile(pad_after, _tuple_setitem((1,) * ndim, i, pad_width[i][1])),)
         tensor_with_pad = pad_before + (arr,) + pad_after
         arr = concatenate(tensor_with_pad, axis=i)
     return arr
@@ -2427,7 +2425,7 @@ def _pad_wrap(arr, pad_width):
         # To avoid any memory issues, we don't make tensor with 0s in their shapes
         if padsize_before > 0:
             tensor_with_pad += (_slice_along_axis(arr, i, shape[i] - padsize_before, shape[i]),)
-        tensor_with_pad += (F.tile(arr, _tuple_setitem((1,) * ndim, i, total_repeats)),)
+        tensor_with_pad += (ops.tile(arr, _tuple_setitem((1,) * ndim, i, total_repeats)),)
         if padsize_after > 0:
             tensor_with_pad += (_slice_along_axis(arr, i, 0, padsize_after),)
         arr = concatenate(tensor_with_pad, axis=i)
@@ -2478,7 +2476,7 @@ def _add_pads_before(arr, pad_args, mode):
             curr_pad = flip(curr_pad, axis=idx)
             if reflect_type == "odd":
                 curr_pad = 2 * edge_before - curr_pad
-            arr = P.Concat(idx)((curr_pad, arr))
+            arr = ops.Concat(idx)((curr_pad, arr))
             edge_before = _slice_along_axis(arr, idx, 0, 1)
     return arr
 
@@ -2504,7 +2502,7 @@ def _add_pads_after(arr, pad_args, mode):
             curr_pad = flip(curr_pad, axis=idx)
             if reflect_type == "odd":
                 curr_pad = 2 * edge_end - curr_pad
-            arr = P.Concat(idx)((arr, curr_pad))
+            arr = ops.Concat(idx)((arr, curr_pad))
             edge_end = _slice_along_axis(arr, idx, arr.shape[idx] - 1, arr.shape[idx])
     return arr
 
@@ -2541,7 +2539,7 @@ def _pad_reflect(arr, pad_width, reflect_type):
         array_length = arr.shape[i]
         if array_length == 1:
             total_repeats = pad_width[i][0] + pad_width[i][1] + 1
-            arr = F.tile(arr, _tuple_setitem((1,) * arr.ndim, i, total_repeats))
+            arr = ops.tile(arr, _tuple_setitem((1,) * arr.ndim, i, total_repeats))
         else:
             has_pad_before = (pad_width[i][0] > 0)
             has_pad_after = (pad_width[i][1] > 0)
@@ -2712,7 +2710,7 @@ def pad(arr, pad_width, mode="constant", stat_length=None, constant_values=0,
         constant_values = _convert_pad_to_nd(constant_values, arr.ndim)
         return _pad_constant(arr, pad_width, constant_values)
     if mode in ("maximum", "minimum", "mean", "median"):
-        # support median mode once P.Sort/P.Median is supported on GPU/CPU
+        # support median mode once ops.Sort/ops.Median is supported on GPU/CPU
         if mode == "median":
             _raise_unimplemented_error("median mode is not supported yet")
         return _pad_statistic(arr, pad_width, stat_length, stat_func[mode])
