@@ -201,9 +201,10 @@ bool ClusterContext::BuildCluster() {
     MsException::Instance().CheckException();
     return this->node_base_->Initialized();
   };
-  size_t retry_num = node_base_->topo_timeout() / topology::kExecuteInterval;
-  EXECUTE_WITH_RETRY(check_func, retry_num, topology::kExecuteInterval, "Topology build timed out.");
+  size_t retry_num = GetRetryNumBasedOnScale(node_base_->topo_timeout(), kExecuteInterval);
+  EXECUTE_WITH_RETRY(check_func, retry_num, kExecuteInterval, "Topology build timed out.");
   PROF_END(BuildCluster);
+
   MS_LOG(WARNING) << "Cluster is successfully initialized.";
 
   PROF_START(PostBuildCluster);

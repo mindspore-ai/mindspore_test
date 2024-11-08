@@ -237,6 +237,7 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
     node_info->state = NodeState::kRegistered;
     (void)time(&(node_info->last_update));
     nodes_[node_id] = node_info;
+    rank_role_to_node_info_[std::make_pair(rank_id, role)] = node_info;
     MS_LOG(WARNING) << "The new node: " << node_id << "(role: " << role << ")"
                     << ", rank id: " << rank_id << ", device id: " << device_id
                     << ", hostname: " << node_info->host_name << ", ip: " << host_ip
@@ -336,7 +337,7 @@ MessageBase *const MetaServerNode::ProcessHeartbeat(MessageBase *const message) 
   const auto &node_id = heartbeat.node_id();
   std::shared_lock<std::shared_mutex> lock(nodes_mutex_);
   if (nodes_.find(node_id) != nodes_.end()) {
-    auto &node = nodes_[node_id];
+    auto &node = nodes_.at(node_id);
     MS_ERROR_IF_NULL_W_RET_VAL(node, rpc::NULL_MSG);
     (void)time(&(node->last_update));
     node->state = NodeState::kRegistered;
@@ -512,7 +513,7 @@ void MetaServerNode::UpdateTopoState() {
 
       nodes_mutex_.unlock();
       static const size_t interval = 3;
-      (void)sleep(interval);
+      SleepBasedOnScale(interval);
     }
   } catch (const std::exception &e) {
     nodes_mutex_.unlock();
@@ -678,9 +679,11 @@ bool MetaServerNode::CheckRankIdValidation(const std::string &node_id, const std
     return false;
   }
   // Whether rank id has already exists.
-  bool rank_id_exist = std::any_of(nodes_.begin(), nodes_.end(), [&role, &rank_id](const auto &n) {
-    return n.second->role == role && n.second->rank_id == rank_id;
-  });
+  bool rank_id_exist = false;
+  if (rank_role_to_node_info_.find(std::make_pair(rank_id, role)) != rank_role_to_node_info_.end()) {
+    rank_id_exist = true;
+  }
+
   // Whether rank id exceeds upper bound.
   bool is_extra_node = (rank_id >= role_expect_num_[role]);
   if (rank_id_exist) {

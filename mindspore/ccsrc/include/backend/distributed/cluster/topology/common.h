@@ -86,7 +86,6 @@ static const size_t kExecuteRetryNum = 210;
 static const size_t kCgnExecuteRetryNum = 210;
 static const size_t kMsnExecuteRetryNum = 210;
 static const size_t kNoRetry = 1;
-static const uint32_t kExecuteInterval = 3;
 
 // Cluster building time out window in second. Default: 30 minutes.
 constexpr char kEnvTopoTimeOut[] = "MS_TOPO_TIMEOUT";
@@ -94,30 +93,13 @@ static const size_t kDefaultTopoTimeOut = 30 * 60;
 
 // The timeout(second) window for heartbeat from compute graph node to meta server. Default: 15 seconds.
 constexpr char kEnvNodeTimeOut[] = "MS_NODE_TIMEOUT";
-static const size_t kDefaultNodeTimeout = 15;
+static const size_t kDefaultNodeTimeout = 30;
 
 constexpr char kEnvRetryIntervalLower[] = "MS_RETRY_INTERVAL_LOWER";
-static const size_t kDefaultRetryInterLower = 3;
+static const size_t kDefaultRetryInterLower = 1;
 
 constexpr char kEnvRetryIntervalUpper[] = "MS_RETRY_INTERVAL_UPPER";
-static const size_t kDefaultRetryInterUpper = 5;
-
-#define EXECUTE_WITH_RETRY(func, retry, interval, err_msg)                     \
-  do {                                                                         \
-    bool success = false;                                                      \
-    for (size_t i = 1; i <= retry; ++i) {                                      \
-      success = func();                                                        \
-      if (!success) {                                                          \
-        MS_LOG(WARNING) << err_msg << ", retry(" << i << "/" << retry << ")."; \
-        (void)sleep(interval);                                                 \
-      } else {                                                                 \
-        break;                                                                 \
-      }                                                                        \
-    }                                                                          \
-    if (!success) {                                                            \
-      return false;                                                            \
-    }                                                                          \
-  } while (false)
+static const size_t kDefaultRetryInterUpper = 2;
 
 #define EXECUTE_WITH_TIMEOUT(func, interval, err_msg, success, time) \
   do {                                                               \

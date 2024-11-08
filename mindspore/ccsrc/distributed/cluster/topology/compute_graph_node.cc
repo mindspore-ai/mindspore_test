@@ -324,7 +324,7 @@ bool ComputeGraphNode::Heartbeat() {
 
       uint32_t interval = IntToUint(distrib(gen));
       MS_LOG(DEBUG) << "Heart beat interval " << interval;
-      (void)sleep(interval);
+      SleepBasedOnScale(interval);
     }
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
@@ -341,7 +341,7 @@ bool ComputeGraphNode::ReconnectIfNeeded(const std::function<bool(void)> &func, 
     if (!success) {
       // Retry to reconnect to the meta server.
       MS_LOG(WARNING) << error;
-      (void)sleep(kExecuteInterval);
+      SleepBasedOnScale(kExecuteInterval);
       (void)Reconnect();
     }
     --retry;
@@ -359,7 +359,7 @@ bool ComputeGraphNode::ReconnectWithTimeoutWindow(const std::function<bool(void)
     if (!success) {
       // Retry to reconnect to the meta server.
       MS_LOG(WARNING) << error;
-      (void)sleep(kExecuteInterval);
+      SleepBasedOnScale(kExecuteInterval);
       (void)Reconnect();
     }
   }
