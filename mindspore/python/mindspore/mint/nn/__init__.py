@@ -238,6 +238,9 @@ from mindspore.nn.layer import HSwish as Hardswish
 # 238
 from mindspore.nn.loss import L1LossExt as L1Loss
 
+# 254
+from mindspore.mint.nn.layer.pooling import MaxUnpool2d
+
 # 257
 
 # 258
@@ -965,6 +968,8 @@ __all__ = [
     'Hardswish',
     # 238
     'L1Loss',
+    # 254
+    'MaxUnpool2d',
     # 267
     'Mish',
     # 258

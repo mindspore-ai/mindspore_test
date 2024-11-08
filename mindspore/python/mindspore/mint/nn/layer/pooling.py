@@ -104,7 +104,91 @@ class AdaptiveAvgPool2d(_AdaptiveAvgPoolNd):
         return mint.nn.functional.adaptive_avg_pool2d(input, self.output_size)
 
 
+class MaxUnpool2d(Cell):
+    r"""
+    Computes the inverse of `Maxpool2d`.
+
+    `MaxUnpool2d` keeps the maximal value and set all position of non-maximal values to zero.
+    Typically the input is of shape :math:`(N, C, H_{in}, W_{in})` or :math:`(C, H_{in}, W_{in})`,
+    and the output is of shape :math:`(N, C, H_{out}, W_{out})` or :math:`(C, H_{out}, W_{out})`.
+    The operation is as follows.
+
+    .. math::
+        \begin{array}{ll} \\
+        H_{out} = (H{in} - 1) \times stride[0] - 2 \times padding[0] + kernel\_size[0] \\
+        W_{out} = (W{in} - 1) \times stride[1] - 2 \times padding[1] + kernel\_size[1] \\
+        \end{array}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        kernel_size (Union[int, tuple[int]]): The size of kernel used to take the maximum value,
+            an int number that represents height and width of the kernel,
+            or a tuple of two int numbers that represent height and width respectively.
+        stride (Union[int, tuple[int]], optional): The distance of kernel moving,
+            an int number that represents the height and width of movement are both stride,
+            or a tuple of two int numbers that represent height and width of movement respectively.
+            Default: ``None`` , which indicates the moving step is `kernel_size` .
+        padding (Union[int, tuple[int]], optional): The pad value to be filled. Default: ``0`` .
+            If `padding` is an integer, the paddings of height and width are the same, equal to padding.
+            If `padding` is a tuple of two integers, the padding of height and width equal to padding[0]
+            and padding[1] correspondingly.
+
+    Inputs:
+        - **input** (Tensor) - The input Tensor to invert.
+          Tensor of shape :math:`(N, C, H_{in}, W_{in})` or :math:`(C, H_{in}, W_{in})`.
+        - **indices** (Tensor) - Max values' index represented by the indices.
+          Tensor of shape must be same with input 'input'.
+          Values of indices must belong to :math:`[0, H_{in} \times W_{in} - 1]`.
+          Data type must be in int32 or int64.
+        - **output_size** (tuple[int], optional) - The target output size. Default: ``None`` .
+          If output_size == (), then the shape of output computed by `kernel_size`, `stride` and `padding`.
+          If output_size != (), then output_size must be :math:`(N, C, H, W)` , :math:`(C, H, W)` or :math:`(H, W)`
+          and output_size must belong to :math:
+          `[(N, C, H_{out} - stride[0], W_{out} - stride[1]), (N, C, H_{out} + stride[0], W_{out} + stride[1])]`.
+
+    Returns:
+        Tensor, with shape :math:`(N, C, H_{out}, W_{out})` or :math:`(C, H_{out}, W_{out})`,
+        with the same data type with `input`.
+
+    Raises:
+        TypeError: If data type of `input` or `indices` is not supported.
+        TypeError: If `kernel_size`, `stride` or `padding` is neither an int nor a tuple.
+        ValueError: If numbers in `stride`, `padding` or `kernel_size` is not positive.
+        ValueError: If the shape of `input` and `indices` are not equal.
+        ValueError: If `input` whose length is not 3 or 4.
+        ValueError: If `output_size` whose type is not tuple.
+        ValueError: If `output_size` is not close to output size computed by attr `kernel_size`, `stride`, `padding`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.array([[[[0, 1], [8, 9]]]]).astype(np.float32))
+        >>> indices = Tensor(np.array([[[[0, 1], [2, 3]]]]).astype(np.int64))
+        >>> net =  mint.nn.MaxUnpool2d(1, stride=1, padding=0)
+        >>> output = net(input, indices)
+        >>> print(output.asnumpy())
+        [[[[0. 1.]
+           [8. 9.]]]]
+    """
+
+    def __init__(self, kernel_size, stride=None, padding=0) -> None:
+        super(MaxUnpool2d, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+
+    def construct(self, input, indices, output_size=None):
+        return mint.nn.functional.max_unpool2d(input, indices,
+                                               self.kernel_size, self.stride,
+                                               self.padding, output_size)
+
 __all__ = [
     'AdaptiveAvgPool2d',
     'AdaptiveAvgPool1d',
+    'MaxUnpool2d',
 ]
