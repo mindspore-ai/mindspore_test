@@ -52,6 +52,9 @@ class BACKEND_EXPORT ClusterContext {
   // Finalize the cluster and process exits. If timeout is set to UINT32_MAX, this method will block without timeout.
   bool Finalize(uint32_t timeout = kDefaultFinishTimeout);
 
+  // Stop threads when exception happens to avoid unpredictable behavior.
+  void StopThreadsOnException();
+
   // Return whether this node is the scheduler node.
   // In a cluster, the scheduler node is special because it's responsible for building network.
   bool IsScheduler();
