@@ -910,7 +910,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         return self.__safe_deepcopy__(memodict, exclude=("source", "__transfer_dataset__"))
 
     def __getitem__(self, index):
-        type_check(index, (int,), "index")
+        type_check(index, (int, np.number), "index")
         if not hasattr(self.source, "__getitem__"):
             raise RuntimeError("Dataset don't support randomized access.")
         if not hasattr(self, "generator_op"):
@@ -923,8 +923,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
                 schema = self.schema
                 if isinstance(schema, Schema):
                     schema = self.schema.cpp_schema
-                dataset.generator_node = cde.GeneratorNode(self.prepared_source, schema, self.column_names,
-                                                           self.column_types, self.source_len, self.sampler, 1, None)
+                dataset.generator_node = cde.GeneratorNode(self.prepared_source, schema, self.source_len,
+                                                           self.sampler, 1, None)
             self.generator_op = dataset.generator_node.Build()
         sample_id = self.generator_op.GetMappedIndex(index)
         return self.source[sample_id]

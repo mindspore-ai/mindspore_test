@@ -39,6 +39,18 @@ def generator_1d():
         yield (np.array([i]),)
 
 
+class DatasetGeneratorTwoLevelPipeline:
+    def __init__(self):
+        self.data = np.array([1, 2, 3, 4, 5, 6])
+        self.dataset = ds.GeneratorDataset(self.data, column_names=["col1"], shuffle=False)
+
+    def __getitem__(self, i):
+        return self.dataset[i]
+
+    def __len__(self):
+        return self.dataset.get_dataset_size()
+
+
 class DatasetGenerator:
     def __init__(self):
         pass
@@ -63,7 +75,7 @@ class DatasetGeneratorLarge:
 
 class DatasetGeneratorSmall:
     def __init__(self):
-        self.data = np.array([1, 2, 3, 4, 5, 6])
+        self.data = np.array([1, 2, 3, 4, 5, 6], dtype=np.int32)
 
     def __getitem__(self, item):
         return self.data[item]
@@ -2850,6 +2862,36 @@ def test_generator_dataset_getitem_success_sampler():
         index += 1
 
 
+def test_generator_dataset_getitem_schema():
+    """
+    Feature: GeneratorDataset random access
+    Description: Test combinations of GeneratorDataset parameters [schema]
+    Expectation: SUCCESS
+    """
+    small_dataset = DatasetGeneratorSmall()
+    schema = ds.Schema()
+    schema.add_column("col1", de_type=mstype.int32)
+    dataset = ds.GeneratorDataset(small_dataset, shuffle=False, schema=schema)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item == dataset[index]
+        index += 1
+
+
+def test_generator_dataset_getitem_two_level_pipeline():
+    """
+    Feature: GeneratorDataset random access
+    Description: Verify GeneratorDataset random access on two level pipeline
+    Expectation: SUCCESS
+    """
+    source_dataset = DatasetGeneratorTwoLevelPipeline()
+    dataset = ds.GeneratorDataset(source_dataset, column_names=["col1"], shuffle=False)
+    index = 0
+    for item in dataset.create_tuple_iterator(num_epochs=1, output_numpy=True):
+        assert item == dataset[index]
+        index += 1
+
+
 def test_generator_dataset_getitem_exception():
     """
     Feature: GeneratorDataset random access exception
@@ -2870,7 +2912,8 @@ def test_generator_dataset_getitem_exception():
 
     # Test the input index is an abnormal value.
     dataset = ds.GeneratorDataset(source=small_dataset, column_names=["col1"], shuffle=False)
-    err_info = "Argument index with value x is not of type [<class 'int'>], but got <class 'str'>."
+    err_info = "Argument index with value x is not of type [<class 'int'>, <class 'numpy.number'>], " \
+               "but got <class 'str'>."
     with pytest.raises(TypeError, match=re.escape(err_info)):
         _ = dataset["x"]
 
@@ -2952,4 +2995,6 @@ if __name__ == "__main__":
     test_generator_dataset_getitem_success_distributed_sampler(None, True)
     test_generator_dataset_getitem_success_other_sampler(None, True)
     test_generator_dataset_getitem_success_sampler()
+    test_generator_dataset_getitem_schema()
+    test_generator_dataset_getitem_two_level_pipeline()
     test_generator_dataset_getitem_exception()
