@@ -19,7 +19,7 @@ from mindspore.profiler.common.constant import DeviceTarget
 from mindspore.profiler.platform_profiler.profiler_interface import ProfilerInterface
 
 
-@PROFILERS.register_module(DeviceTarget.ASCEND.value)
+@PROFILERS.register_module(DeviceTarget.NPU.value)
 class NpuProfiler(ProfilerInterface):
     """
     NPU platform profiler
