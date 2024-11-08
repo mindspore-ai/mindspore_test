@@ -29,6 +29,7 @@
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
 #include "backend/common/pass/split_inputs_for_reduce_scatter.h"
+#include "backend/common/pass/overlap_grad_reduce.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/utils/parallel_context.h"
@@ -344,6 +345,11 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
   after_inline_pm->AddPass(std::make_shared<CommonSubexpressionElimination>());
   after_inline_pm->AddPass(std::make_shared<EliminateMaketupleGetitem>());
   after_inline_pm->AddPass(std::make_shared<InsertMoveTo>());
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_GRAD_COMM_OPT)) {
+    after_inline_pm->AddPass(std::make_shared<OverlapGradReduce>());
+  }
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   PROF_END(GEAfterInlineOptimize);
