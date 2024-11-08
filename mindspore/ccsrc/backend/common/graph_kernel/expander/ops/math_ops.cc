@@ -150,4 +150,16 @@ REG_EXPANDER_FUNC("Addcmul").SetBody(BODYFUNC(ib) {
   auto result = ib->Add(input_data, ib->Mul(value, ib->Mul(x1, x2)));
   return {result};
 });
+
+REG_EXPANDER_FUNC("ReluGrad").SetBody(BODYFUNC(ib) {
+  if (!CheckAllFormatsSame(ib)) {
+    return {};
+  }
+  const auto &input_dout = ib->input(kIndex0);
+  const auto &input_x = ib->input(kIndex1);
+  auto const_zero = ib->Tensor(0.0, input_x->GetDtype());
+  auto gt_res = ib->Greater(input_x, const_zero);
+  auto res = ib->Select(gt_res, input_dout, const_zero);
+  return {res};
+});
 }  // namespace mindspore::graphkernel::expander
