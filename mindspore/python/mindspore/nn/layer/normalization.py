@@ -36,7 +36,6 @@ from mindspore.common import dtype as mstype
 from mindspore.parallel._utils import _is_in_auto_parallel_mode
 from mindspore.nn.cell import Cell
 from mindspore import log as logger
-from mindspore.ops import group_norm
 
 __all__ = ['BatchNorm1d', 'BatchNorm2d', 'BatchNorm3d', 'LayerNorm', 'LayerNormExt', 'GroupNorm',
            'SyncBatchNorm', 'InstanceNorm1d', 'InstanceNorm2d', 'InstanceNorm3d']
@@ -1248,7 +1247,7 @@ class GroupNorm(Cell):
 
     def _cal_output(self, x):
         """calculate groupnorm output"""
-        return group_norm(x, self.num_groups, self.gamma.to(x.dtype), self.beta.to(x.dtype), self.eps)
+        return ops.group_norm(x, self.num_groups, self.gamma.to(x.dtype), self.beta.to(x.dtype), self.eps)
 
     @staticmethod
     @_primexpr

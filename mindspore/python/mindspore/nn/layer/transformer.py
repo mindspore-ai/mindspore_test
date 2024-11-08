@@ -26,7 +26,6 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, XavierNormal, XavierUniform, \
     HeUniform, Uniform, _calculate_fan_in_and_fan_out
-from mindspore.ops.function.nn_func import multi_head_attention_forward
 from mindspore.nn.cell import Cell
 from .basic import Dense, Dropout
 from .activation import ReLU, GELU
@@ -212,7 +211,7 @@ class MultiheadAttention(Cell):
                 query, key, value = [x.swapaxes(1, 0) for x in (query, key, value)]
 
         if not self._qkv_same_embed_dim:
-            attn_output, attn_output_weights = multi_head_attention_forward(
+            attn_output, attn_output_weights = ops.function.nn_func.multi_head_attention_forward(
                 query, key, value, self.embed_dim, self.num_heads,
                 self.in_proj_weight, self.in_proj_bias,
                 self.bias_k, self.bias_v, self.add_zero_attn,
@@ -224,7 +223,7 @@ class MultiheadAttention(Cell):
                 v_proj_weight=self.v_proj_weight, average_attn_weights=average_attn_weights,
                 k_is_v=self.k_is_v, q_is_k=self.q_is_k, dtype=self.dtype)
         else:
-            attn_output, attn_output_weights = multi_head_attention_forward(
+            attn_output, attn_output_weights = ops.function.nn_func.multi_head_attention_forward(
                 query, key, value, self.embed_dim, self.num_heads,
                 self.in_proj_weight, self.in_proj_bias,
                 self.bias_k, self.bias_v, self.add_zero_attn,

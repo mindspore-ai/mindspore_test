@@ -28,7 +28,6 @@ from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
 from mindspore.nn.layer.normalization import LayerNormExt as LayerNorm
-from mindspore.ops import group_norm
 
 
 class _NormBase(Cell):
@@ -457,7 +456,7 @@ class GroupNorm(Cell):
 
     def _cal_output(self, x):
         """calculate groupnorm output"""
-        return group_norm(x, self.num_groups, self.weight, self.bias, self.eps)
+        return ops.group_norm(x, self.num_groups, self.weight, self.bias, self.eps)
 
     def extend_repr(self):
         return 'num_groups={}, num_channels={}, eps={}, affine={}'.format(

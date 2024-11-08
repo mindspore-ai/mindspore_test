@@ -18,16 +18,12 @@ from __future__ import absolute_import
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 import mindspore.ops as ops
-from mindspore.ops.function.nn_func import avg_pool2d_ext
 from mindspore._checkparam import _check_3d_int_or_tuple
 from mindspore import _checkparam as validator
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.common.tensor import Tensor
 import mindspore.context as context
 from mindspore.common import dtype as mstype
-from mindspore.ops.operations.nn_ops import AdaptiveMaxPool2D
-from mindspore.ops.operations.nn_ops import AdaptiveMaxPool3D, AdaptiveAvgPool3D
-from mindspore.ops.auto_generate.gen_ops_prim import MaxPoolWithIndices, MaxPoolWithMask
 from mindspore.nn.cell import Cell
 from mindspore._c_expression import MSContext
 
@@ -686,9 +682,11 @@ class MaxPool2dExt(Cell):
         self.return_indices = return_indices
         strides = stride if (stride is not None) else kernel_size
         if return_indices:
-            self.max_pool_func_ = MaxPoolWithIndices(kernel_size, strides, padding, dilation, ceil_mode)
+            self.max_pool_func_ = ops.auto_generate.gen_ops_prim.MaxPoolWithIndices(kernel_size, strides, padding,
+                                                                                    dilation, ceil_mode)
         else:
-            self.max_pool_func_ = MaxPoolWithMask(kernel_size, strides, padding, dilation, ceil_mode)
+            self.max_pool_func_ = ops.auto_generate.gen_ops_prim.MaxPoolWithMask(kernel_size, strides, padding,
+                                                                                 dilation, ceil_mode)
 
     def construct(self, input):
         out, indices = self.max_pool_func_(input)
@@ -1054,8 +1052,8 @@ class AvgPool2dExt(Cell):
         self.divisor_override = divisor_override
 
     def construct(self, input):
-        return avg_pool2d_ext(input, self.kernel_size, self.stride, self.padding,
-                              self.ceil_mode, self.count_include_pad, self.divisor_override)
+        return ops.function.nn_func.avg_pool2d_ext(input, self.kernel_size, self.stride, self.padding,
+                                                   self.ceil_mode, self.count_include_pad, self.divisor_override)
 
 
 class AvgPool2d(_PoolNd):
@@ -1594,7 +1592,7 @@ class AdaptiveAvgPool3d(Cell):
     def __init__(self, output_size):
         """Initialize AdaptiveAvgPool3d."""
         super(AdaptiveAvgPool3d, self).__init__()
-        self.adaptive_avg_pool3d = AdaptiveAvgPool3D(output_size)
+        self.adaptive_avg_pool3d = ops.AdaptiveAvgPool3D(output_size)
 
     def construct(self, input):
         return self.adaptive_avg_pool3d(input)
@@ -1766,7 +1764,7 @@ class AdaptiveMaxPool2d(Cell):
         """Initialize AdaptiveMaxPool2d."""
         super(AdaptiveMaxPool2d, self).__init__()
         validator.check_value_type('return_indices', return_indices, [bool], self.cls_name)
-        self.adaptive_max_pool2d = AdaptiveMaxPool2D(output_size)
+        self.adaptive_max_pool2d = ops.AdaptiveMaxPool2D(output_size)
         self.return_indices = return_indices
 
     def construct(self, input):
@@ -1825,7 +1823,7 @@ class AdaptiveMaxPool3d(Cell):
             output_size = (output_size, output_size, output_size)
         self.output_size = Tensor(output_size, dtype=mstype.int32)
         self.return_indices = return_indices
-        self.adaptive_max_pool3d = AdaptiveMaxPool3D()
+        self.adaptive_max_pool3d = ops.AdaptiveMaxPool3D()
 
     def construct(self, input):
         output = self.adaptive_max_pool3d(input, self.output_size)
