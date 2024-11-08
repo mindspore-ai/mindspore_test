@@ -25,7 +25,7 @@
 
 namespace mindspore::graphkernel {
 const BaseRef FloatStatusBaseFusion::DefinePattern() const {
-  VectorRef is_finite = VectorRef({prim::kPrimIsFinite, input_});
+  VectorRef is_finite = VectorRef({isfinite_prim_, input_});
   VectorRef reduce = VectorRef({prim::kPrimReduceAll, is_finite, axis_, keep_dims_});
   VectorRef cast = VectorRef({prim::kPrimCast, reduce, type_});
   VectorRef sub = VectorRef({prim::kPrimSub, s_, cast});
@@ -38,7 +38,7 @@ const BaseRef FloatStatusReshapeFusion::DefinePattern() const {
 
 const BaseRef CastFloatStatusBaseFusion::DefinePattern() const {
   VectorRef cast_tmp = VectorRef({prim::kPrimCast, input_, type_fp32_});
-  VectorRef is_finite = VectorRef({prim::kPrimIsFinite, cast_tmp});
+  VectorRef is_finite = VectorRef({isfinite_prim_, cast_tmp});
   VectorRef reduce = VectorRef({prim::kPrimReduceAll, is_finite, axis_, keep_dims_});
   VectorRef cast = VectorRef({prim::kPrimCast, reduce, type_});
   VectorRef sub = VectorRef({prim::kPrimSub, s_, cast});
@@ -53,6 +53,7 @@ const AnfNodePtr FloatStatusBaseFusion::Process(const FuncGraphPtr &func_graph, 
                                                 const EquivPtr &equiv) const {
   auto input_node = opt::GetAnfNodeByVar(equiv, input_);
   auto axis_node = opt::GetAnfNodeByVar(equiv, axis_);
+  auto isfinite_node = opt::GetAnfNodeByVar(equiv, isfinite_prim_);
   if (!axis_node->isa<ValueNode>()) {
     return nullptr;
   }
@@ -63,7 +64,7 @@ const AnfNodePtr FloatStatusBaseFusion::Process(const FuncGraphPtr &func_graph, 
   } else {
     axis_vector = GetValue<ShapeVector>(axis_node->cast<ValueNodePtr>()->value());
   }
-  auto input_vector = AnfAlgo::GetOutputDeviceShape(input_node, 0);
+  auto input_vector = AnfAlgo::GetInputDeviceShape(isfinite_node, 0);
   if (!axis_vector.empty()) {
     std::sort(axis_vector.begin(), axis_vector.end());
     auto unique_size = static_cast<size_t>(std::unique(axis_vector.begin(), axis_vector.end()) - axis_vector.begin());

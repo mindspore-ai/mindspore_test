@@ -54,7 +54,8 @@ class FloatStatusBaseFusion : public opt::PatternProcessPass {
         axis_{std::make_shared<Var>()},
         keep_dims_{std::make_shared<Var>()},
         type_{std::make_shared<Var>()},
-        s_{std::make_shared<Var>()} {}
+        s_{std::make_shared<Var>()},
+        isfinite_prim_{std::make_shared<Var>(std::make_shared<Primitive>("IsFinite"))} {}
   ~FloatStatusBaseFusion() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &node, const EquivPtr &) const override;
@@ -65,6 +66,7 @@ class FloatStatusBaseFusion : public opt::PatternProcessPass {
   VarPtr keep_dims_;
   VarPtr type_;
   VarPtr s_;
+  VarPtr isfinite_prim_;
 };
 
 class FloatStatusReshapeFusion : public FloatStatusBaseFusion {
