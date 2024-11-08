@@ -261,6 +261,85 @@ from mindspore.mint.nn.layer.pooling import AdaptiveAvgPool2d
 
 from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 
+from mindspore.ops.function.nn_func import _nllloss_nd as nllloss
+
+
+class NLLLoss(Cell):
+    r"""
+    Gets the negative log likelihood loss between inputs and target.
+
+    The nll loss with reduction=none can be described as:
+
+    .. math::
+
+        \ell(x, t)=L=\left\{l_{1}, \ldots, l_{N}\right\}^{\top},
+        \quad l_{n}=-w_{t_{n}} x_{n, t_{n}},
+        \quad w_{c}=\text { weight }[c] \cdot \mathbb{1}
+        \{c \not= \text{ignore_index}\},
+
+    where :math:`x` is the inputs, :math:`t` is the target, :math:`w` is the weight,
+    N is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index, where :math:`C` is the number of
+    classes.
+
+    If `reduction` is not ``None`` (default ``'mean'``), then
+
+    .. math::
+
+        \ell(x, t)=\left\{\begin{array}{ll}
+        \sum_{n=1}^{N} \frac{1}{\sum_{n=1}^{N} w_{t n}} l_{n}, & \text { if reduction }=\text { 'mean', } \\
+        \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
+        \end{array}\right.
+
+    Args:
+        weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
+            If not None, the shape is :math:`(C,)`, data type must be float16 or float32 or bfloat16(only supported by
+            Atlas A2 training series products). Default: ``None`` .
+        ignore_index (int, optional): Specifies a target value that is ignored and does not contribute to the input
+            gradient. Only valid in class indices, please set it to a negative number in probabilities.
+            Default: ``-100`` .
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the weighted mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Inputs:
+        - **input** (Tensor) - :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
+          in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)`.
+          `input` is expected to be log-probabilities, data type must be float16 or float32 or bfloat16(only supported
+          by Atlas A2 training series products).
+        - **target** (Tensor) - :math:`(N)` or :math:`(N, d_1, d_2, ..., d_K)` for
+          high-dimensional loss, data type must be int32 or int64 or uint8.
+
+    Outputs:
+        Tensor, the data type is the same as `input` .
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> inputs = mindspore.Tensor(np.random.randn(3, 5), mindspore.float32)
+        >>> target = mindspore.Tensor(np.array([1, 0, 4]), mindspore.int32)
+        >>> op = mindspore.mint.nn.NLLLoss()
+        >>> output = op(inputs, target)
+
+    """
+
+    def __init__(self, weight=None, ignore_index=-100, reduction='mean'):
+        super(NLLLoss, self).__init__()
+        self.weight = weight
+        self.ignore_index = ignore_index
+        self.reduction = reduction
+
+    def construct(self, input, target):
+        out = nllloss(input, target, self.weight, self.ignore_index, self.reduction)
+        return out
+
+
 class CrossEntropyLoss(Cell):
     r"""
     The cross entropy loss between input and target.
