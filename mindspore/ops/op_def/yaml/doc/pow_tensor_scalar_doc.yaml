@@ -1,0 +1,35 @@
+pow_tensor_scalar:
+    description: |
+        Calculates the `exponent` power of each element in `input`.
+        
+        When `exponent` is a Tensor, the shapes of `input` and `exponent` must be broadcastable.
+
+        .. math::
+
+            out_{i} = input_{i} ^{ exponent_{i}}
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The first input is a tensor whose data type is
+                `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+                `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+            exponent (Number): The second input is a Number.
+
+        Returns:
+            Tensor, the shape is the same as the one after broadcasting,
+            and the data type is the one with higher precision or higher digits among the two inputs.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+            >>> exponent = 3.0
+            >>> output = ops.pow_ext(input, exponent)
+            >>> print(output)
+            [ 1.  8. 64.]
