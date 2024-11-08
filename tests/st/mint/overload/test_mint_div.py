@@ -28,12 +28,12 @@ class NetNone(nn.Cell):
 
 class NetFloor(nn.Cell):
     def construct(self, x, other):
-        return x.div(other, rounding_mode="floor")
+        return mint.div(x, other, rounding_mode="floor")
 
 
 class NetTrunc(nn.Cell):
     def construct(self, x, other):
-        return x.div(other, rounding_mode="trunc")
+        return mint.div(x, other, rounding_mode="trunc")
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -64,7 +64,7 @@ def test_divide_none(mode):
 def test_divide_floor(mode):
     """
     Feature: tensor.divide()
-    Description: Verify the result of tensor.divide
+    Description: Verify the result of tensor.divide floor
     Expectation: success
     """
     context.set_context(mode=mode, jit_config={"jit_level": "O0"})
@@ -84,7 +84,7 @@ def test_divide_floor(mode):
 def test_divide_trunc(mode):
     """
     Feature: tensor.divide()
-    Description: Verify the result of tensor.divide
+    Description: Verify the result of tensor.divide trunc
     Expectation: success
     """
     context.set_context(mode=mode, jit_config={"jit_level": "O0"})

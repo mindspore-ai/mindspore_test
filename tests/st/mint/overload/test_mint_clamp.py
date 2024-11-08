@@ -59,7 +59,7 @@ def test_clamp(mode):
 def test_clamp_with_input_type_error(mode):
     """
     Feature: test mint.clamp
-    Description: Verify the result of mint.clamp
+    Description: Verify the result of mint.clamp with input type error
     Expectation: expect correct forward result
     """
     ms.set_context(mode=mode)
@@ -80,7 +80,7 @@ def test_clamp_with_input_type_error(mode):
 def test_clamp_with_input_value_error(mode):
     """
     Feature: test mint.clamp
-    Description: Verify the result of mint.clamp
+    Description: Verify the result of mint.clamp with input value error
     Expectation: expect correct forward result
     """
     ms.set_context(mode=mode)
