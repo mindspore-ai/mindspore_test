@@ -2441,13 +2441,9 @@ ValueNode *GetSelfFromMethod(ValueNode *method) {
     return nullptr;
   }
   ValueNode *self = method->input(0);
-  /**
-   * (chaiyouheng):
-   * Check method is a generic attribute
-   * descr = _PyType_Lookup(self->GetVobj()->GetTypeObject(), py::str(method->GetName()).ptr());
-   * Check descr == nullptr || !PyFunction_Check(descr)
-   */
-  return self;
+  PyTypeObject *tp = self->GetVobj() ? self->GetVobj()->GetTypeObject() : nullptr;
+  PyTypeObject *real_tp = method->GetVobj()->GetAttr("__self__")->GetTypeObject();
+  return tp == real_tp ? self : nullptr;
 }
 
 bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) {
@@ -4727,6 +4723,8 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
   //   2. function return iterator, such as enumerate.
   static std::vector<std::string> forbidden_list = {
     "Tensor.__setitem__",
+    // tolist require tensor value
+    "Tensor.tolist",
     "list.append",
     "list.pop",
     "list.insert",
@@ -4859,9 +4857,7 @@ py::object MindGraphBuilder::HandleMSCallable(CallNode *call_node, const py::obj
              (PyMethod_Check(original_callable.ptr()) || PyCFunction_Check(original_callable.ptr()))) {
     // When x.y maps to primitive, x should be added to the first input of the primitive.
     auto self_node = GetBoundSelf(call_node);
-    if (self_node == nullptr) {
-      MS_LOG(WARNING) << "Self of " << py::str(callable_info) << " is nullptr.";
-    } else {
+    if (self_node != nullptr) {
       args.insert(args.begin(), self_node);
     }
     const auto &call_node_inputs = call_node->getInputs();

@@ -1,4 +1,5 @@
 import dis
+import types
 import pytest 
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get_code_extra
 from mindspore import Tensor, jit, context, ops
@@ -396,3 +397,58 @@ def test_mix_0(mode: int):
     result = inner_func(mode)
 
     assert excepted == result
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_infer_self_conflict():
+    """
+    Feature: Test type infer
+    Description: Got correct self of method
+    Expectation: The results should match for both modes.
+    """
+    class Test:
+        def __init__(self, x):
+            self.x = x
+
+        def calc(self, x):
+            return x + self.x
+
+        @jit(mode="PIJit")
+        def func(self, x):
+            m1 = types.MethodType(calc, x) # method from class instantiation
+            m2 = x.calc                    # method from attribute
+            m3 = self.calc                 # method from descriptor
+            return m1(x) + m2(x) + m3(x)
+
+    global calc
+    calc = Test.calc
+
+    x = Tensor([1])
+    x.x = 0
+    test = Test(1)
+    x.calc = test.calc
+    result = test.func(x)
+    excepted = Tensor([5])
+
+    assert result == excepted
+
+    del calc
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_builtin_attr():
+    """
+    Feature: Test after grad resolve
+    Description: Got no graph break
+    Expectation: The results should match for both modes.
+    """
+    @jit(mode="PIJit")
+    def fn(x, y):
+        return "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
+
+    x = Tensor([1])
+    y = Tensor([2])
+    result = fn(x, y)
+    excepted = fn.__wrapped__(x, y)
+    print(result)
+    assert result == excepted

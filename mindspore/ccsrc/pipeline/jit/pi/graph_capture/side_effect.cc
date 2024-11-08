@@ -91,7 +91,7 @@ SideEffect::CacheResult SideEffect::LoadAttr(ValueNode *src, const std::string &
   PyObject *src_object = src->GetVobj() ? src->GetVobj()->GetPyObject().ptr() : nullptr;
   if (src_object == nullptr) {
     Find(src);
-  } else {
+  } else if (!CheckConstPyObject(src_object)) {
     auto iter = data()->id_map().find(src_object);
     MS_EXCEPTION_IF_CHECK_FAIL(iter != data()->id_map().end(), "missing track for node " + src->ToString());
     (void)std::find_if(iter->second.begin(), iter->second.end(), Find);

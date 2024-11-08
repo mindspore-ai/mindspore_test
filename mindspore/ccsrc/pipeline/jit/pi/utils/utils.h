@@ -97,20 +97,41 @@ class Utils {
   static PyObject *MixedPrecisionTypeToDType(MixedPrecisionType mixedPrecisionType);
 };
 
-#define GRAPH_JIT_LOG_F PY_PRINT_F
+/* use python format pattern */
+template <typename... Args>
+py::str PyStringFormat(std::string fmt, Args &&... args) {
+  if (fmt.back() == '\n') {
+    fmt.back() = ' ';
+  }
+  PyObject *py_format = PyUnicode_FromFormat(fmt.c_str(), std::forward<Args>(args)...);
+  if (py_format != nullptr) {
+    return py::reinterpret_steal<py::str>(py_format);
+  }
+  throw py::error_already_set();
+}
 
-#define PY_PRINT_F(fmt, ...)                                       \
-  do {                                                             \
-    PyObject *_pystr;                                              \
-    if (fmt[strlen(fmt) - 1] == '\n') {                            \
-      std::string _fstr = fmt;                                     \
-      _fstr[_fstr.size() - 1] = ' ';                               \
-      _pystr = PyUnicode_FromFormat(_fstr.c_str(), ##__VA_ARGS__); \
-    } else {                                                       \
-      _pystr = PyUnicode_FromFormat(fmt, ##__VA_ARGS__);           \
-    }                                                              \
-    Utils::PyBuiltinPrint(_pystr);                                 \
-    Py_DECREF(_pystr);                                             \
+/**
+ * if the log string size is greater than logger size, print it to stderr
+ * if MS_LOG(WARNING) is disable, print all to stderr, default logger size is 20000
+ * MS_LOG is limit log string size
+ */
+size_t PIJitLogMinSize();
+#define GRAPH_JIT_LOG_F(fmt, ...)                                                                                      \
+  do {                                                                                                                 \
+    if (PIJitLogMinSize() != 0) {                                                                                      \
+      std::string logger_helper;                                                                                       \
+      MS_LOG(WARNING) << std::endl                                                                                     \
+                      << ((logger_helper = std::string(PyStringFormat(fmt, ##__VA_ARGS__))).size() < PIJitLogMinSize() \
+                            ? logger_helper                                                                            \
+                            : (((void)operator<<(std::cout, logger_helper).operator<<(std::endl)), ""));               \
+    } else {                                                                                                           \
+      std::cerr << std::string(PyStringFormat(fmt, ##__VA_ARGS__)) << std::endl;                                       \
+    }                                                                                                                  \
+  } while (0)
+
+#define PY_PRINT_F(fmt, ...)                                         \
+  do {                                                               \
+    Utils::PyBuiltinPrint(PyStringFormat(fmt, ##__VA_ARGS__).ptr()); \
   } while (0)
 
 #define REPLACE_PY_MEMBER(member, o)     \
