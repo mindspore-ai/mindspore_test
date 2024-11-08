@@ -435,8 +435,8 @@ class GroupNorm(Cell):
         """Initialize GroupNorm."""
         super(GroupNorm, self).__init__()
         ms_dtype = mstype.float32 if dtype is None else dtype
-        gamma_init = 'ones'
-        beta_init = 'zeros'
+        weight_init = 'ones'
+        bias_init = 'zeros'
 
         self.num_groups = validator.check_positive_int(
             num_groups, "num_groups", self.cls_name)
@@ -450,14 +450,14 @@ class GroupNorm(Cell):
         self.affine = validator.check_bool(
             affine, arg_name="affine", prim_name=self.cls_name)
 
-        self.gamma = Parameter(initializer(
-            gamma_init, self.num_channels, dtype=ms_dtype), name="gamma", requires_grad=affine)
-        self.beta = Parameter(initializer(
-            beta_init, self.num_channels, dtype=ms_dtype), name="beta", requires_grad=affine)
+        self.weight = Parameter(initializer(
+            weight_init, self.num_channels, dtype=ms_dtype), name="weight", requires_grad=affine)
+        self.bias = Parameter(initializer(
+            bias_init, self.num_channels, dtype=ms_dtype), name="bias", requires_grad=affine)
 
     def _cal_output(self, x):
         """calculate groupnorm output"""
-        return group_norm(x, self.num_groups, self.gamma, self.beta, self.eps)
+        return group_norm(x, self.num_groups, self.weight, self.bias, self.eps)
 
     def extend_repr(self):
         return 'num_groups={}, num_channels={}, eps={}, affine={}'.format(
