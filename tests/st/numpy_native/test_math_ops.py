@@ -16,6 +16,7 @@
 
 import pytest
 import numpy as onp
+import mindspore as ms
 import mindspore.numpy as mnp
 from mindspore import context
 from mindspore.common.dtype import dtype_to_nptype
@@ -2230,3 +2231,628 @@ def test_tensor_searchsorted():
     match_res(mnp_x.searchsorted, x.searchsorted, y, side='right')
     match_res(mnp_x.searchsorted, x.searchsorted, y, sorter=sorter)
     match_res(mnp_x.searchsorted, x.searchsorted, y, side='right', sorter=sorter)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_absolute():
+    """
+        Feature: Test absolute
+        Description: Test the functionality of absolute
+        Expectation: throw errors
+    """
+    # check int32
+    inputA = onp.asarray([1, 2, 3, -4, -5], onp.int32)
+    input_m = ms.Tensor(inputA, ms.int32)
+
+    output = onp.absolute(inputA)
+    output_m = mnp.absolute(input_m)
+
+    # check result
+    assert onp.all(output == output_m.asnumpy())
+
+    # check float32
+    inputA = onp.asarray([1, 2.2, 3, -4.5, -5.6], onp.float32)
+    input_m = ms.Tensor(inputA, ms.float32)
+
+    output = onp.absolute(inputA)
+    output_m = mnp.absolute(input_m)
+
+    # check result
+    assert onp.all(output == output_m.asnumpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_count_nonzero():
+    """
+        Feature: Test count_nonzero
+        Description: Test the functionality of count_nonzero
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[1, 2, 3, -4, 0, 3, 2, 0],
+                          [1, 0, 3, -4, 0, 3, 2, 0]], onp.int32)
+    input_m = ms.Tensor(inputA)
+
+    output = mnp.count_nonzero(input_m)
+
+    # check result
+    assert output.asnumpy() == 11
+
+    output = mnp.count_nonzero(input_m, keepdims=True)
+
+    # check result
+    assert onp.all(output.asnumpy() == [[11]])
+
+    output = mnp.count_nonzero(input_m, axis=0)
+    # check result
+    assert onp.all(output.asnumpy() == [2, 1, 2, 2, 0, 2, 2, 0])
+
+    output = mnp.count_nonzero(input_m, axis=1)
+    # check result
+    assert onp.all(output.asnumpy() == [6, 5])
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_clip():
+    """
+        Feature: Test clip
+        Description: Test the functionality of clip
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[1, 2, 6, -4, 0, 3, 8, 0],
+                          [1, 0, 3, -8, 0, 3, 2, 0]], onp.int32)
+    input_m = ms.Tensor(inputA)
+
+    output = onp.clip(inputA, 1, 3)
+    output_m = mnp.clip(input_m, 1, 3)
+
+    # check result
+    assert onp.all(output_m.asnumpy() == output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_deg2rad():
+    """
+        Feature: Test deg2rad
+        Description: Test the functionality of deg2rad
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[1, 2, 3, -9, 0, 8, 2, 0],
+                          [7, 2, 8, -9, 0, 0, -10, 0],
+                          [1, 9, 3, -4, 0, 3, 7, 0]], onp.int32)
+    input_m = ms.Tensor(inputA)
+
+    output = onp.deg2rad(inputA)
+    output_m = mnp.deg2rad(input_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_rad2deg():
+    """
+        Feature: Test rad2deg
+        Description: Test the functionality of rad2deg
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[11, 2, 13, -91, 0, 8, 2, 0],
+                          [1, 2, 3, -9, 20, 8, 2, 0],
+                          [7, 2, 48, -9, 40, 0, -10, 0],
+                          [1, 9, 53, -4, 0, 3, 7, 0]], onp.float32)
+    input_m = ms.Tensor(inputA)
+
+    output = onp.rad2deg(inputA)
+    output_m = mnp.rad2deg(input_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_add():
+    """
+        Feature: Test add
+        Description: Test the functionality of add
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[11, 2.5, 13, -91, 0, 8, 2, 0],
+                          [1, 2, 3, -9, 20, 8, 2, 0],
+                          [7, 2, 48, -9, 40, 0, -10, 0],
+                          [1, 9, 53, -4, 0, 3, 7, 0]], onp.float16)
+    inputB = onp.asarray([[11.0, 2, 13, -91, 0, 8, 2, 0],
+                          [1, 2, 3.11, -9, 20, 8, 2, 0],
+                          [7, 2, 48.23, -8.9, 40, 0, -10, 0],
+                          [1, 7.9, 53, -4, 0.59, 3, 7, 0]], onp.float16)
+    inputA_m = ms.Tensor(inputA, dtype=ms.float16)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float16)
+
+    output = onp.add(inputA, inputB)
+    output_m = mnp.add(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_subtract():
+    """
+        Feature: Test subtract
+        Description: Test the functionality of subtract
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[111, 2.65, 123, -91, 0, 8, 2, 0],
+                          [1, 28, 3, -9, 270, 8, 2, 0],
+                          [7, 20, 418, -9, 40, 0, -10, 0],
+                          [1, 9, 543, -4, 0, 3, 7, 0]], onp.float32)
+    inputB = onp.asarray([[115.0, 2.2, 13, -91, 0, 8, 2, 0],
+                          [1, 2, 3.11, -9.4, 20, 8, 2, 0],
+                          [7, 2, 48.23, -18.9, 40, 0, -10, 0],
+                          [1, 7.9, 53, -4, 51.9, 3, 7, 0]], onp.float32)
+    inputA_m = ms.Tensor(inputA, dtype=ms.float32)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float32)
+
+    output = onp.subtract(inputA, inputB)
+    output_m = mnp.subtract(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_multiply():
+    """
+        Feature: Test multiply
+        Description: Test the functionality of multiply
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[11, 2.65, 123, -91, 0.5, 82, 2, 0],
+                          [1, 284, 3, -9, 270, 8.9, 2, 0],
+                          [7, 20, 418, -9, 40, 0.22, -10, 0],
+                          [1, 967, 543, -4, 0, 3, 7, 0]])
+    inputB = onp.asarray([[115.0, 2.2, 13, -91, 0, 8, 2, 0],
+                          [1, 22, 3.11, -9.4, 20, 8, 2, 0],
+                          [7, 2.3, 48.23, -18.9, 40, 0, -10, 0],
+                          [1, 7.9, 53.6, -4, 51.9, 3, 7, 0]])
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.multiply(inputA, inputB)
+    output_m = mnp.multiply(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_divide():
+    """
+        Feature: Test divide
+        Description: Test the functionality of divide
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[1221, 22.65, 123, -91, 0.5, 82, 2, 0],
+                          [1, 284, 3, -9, 2760, 8.9, 2, 0],
+                          [7, 20, 418, -9, 40, 0.22, -10, 0],
+                          [1, 967, 543, -4, 0, 3.5, 7, 0]], dtype=onp.int32)
+    inputB = onp.asarray([[1.0, 2.2, 13, -91, 10.2, 8, 2, 1],
+                          [1, 22, 3.11, -9.4, 20, 8, 2, 2],
+                          [7, 2.3, 48.23, -18.9, 40, 10.8, -10, 1],
+                          [1, 7.9, 53.6, -4, 51.9, 3, 7.7, 3]], dtype=onp.int32)
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.divide(inputA, inputB)
+    output_m = mnp.divide(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_true_divide():
+    """
+        Feature: Test true_divide
+        Description: Test the functionality of true_divide
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[131, 232.65, 123, -91, 0, 82, 2, 25],
+                          [1, 284, 3, -9, 2760, 8, 2, 0],
+                          [7, 20, 418, -9, 40, 1.22, -10, 0],
+                          [1, 967, 5423, -4, 0, 3.5, 7, 0]], dtype=onp.int32)
+    inputB = onp.asarray([[1.0, 2, 13, -91, 10.2, 8, 2, 1],
+                          [21, 22, 3.11, -9.4, 20, 8, 2, 2],
+                          [7, 2.3, 48.23, -18.9, 40, 10.8, -10, 1],
+                          [1, 7.9, 523.6, -4, 51.9, 32, 7.7, 3]], dtype=onp.int32)
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.true_divide(inputA, inputB)
+    output_m = mnp.true_divide(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_power():
+    """
+        Feature: Test power
+        Description: Test the functionality of power
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[1, 2, 6, -4, 0, 3, 8, 0],
+                          [1, 0, 3, -8, 0, 3, 2, 0]], onp.int32)
+    inputB = onp.asarray([[1, 2, 3, 4, 2, 3, 2, 0],
+                          [1, 0, 3, 2, 0, 3, 2, 0]], onp.int32)
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.power(inputA, inputB)
+    output_m = mnp.power(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_float_power():
+    """
+        Feature: Test float_power
+        Description: Test the functionality of float_power
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[12, 2, 5, -4, 0, 3, 8, 0],
+                          [1, 0, 3, -3, 0, 5, 2, 0]], onp.int32)
+    inputB = onp.asarray([[1, 2, 4, 2, 2, 3, 2, 0],
+                          [1, 0, 2, 2, 2, 3, 2, 0]], onp.int32)
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.float_power(inputA, inputB)
+    output_m = mnp.float_power(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_minimum():
+    """
+        Feature: Test minimum
+        Description: Test the functionality of minimum
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[12231, 2.655, 123, -91, 0.5, 82, 2, 0],
+                          [1, 284, 3, -9, 270, 856.9, 2, 0],
+                          [7, 20, 4138, -9, 40, 0.22, -10, 0],
+                          [1, 967, 543, -4, 0, 3, 7, 0]])
+    inputB = onp.asarray([[115.0, 222, 13, -91, 0, 8, 2, 0],
+                          [12434, 22, 3.11, -9.4, 20, 8, 2, 0],
+                          [7, 2.3, 48.23, -18.9, 4067.9, 0, -10, 0],
+                          [1, 7.9, 53.6, -4, 521.9, 3333, 7, 0]])
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.minimum(inputA, inputB)
+    output_m = mnp.minimum(inputA_m, inputB_m)
+
+    # check result
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_mean():
+    """
+        Feature: Test mean
+        Description: Test the functionality of mean
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[1531, 24.65, 13, -921, 2.5, 82, 2, 0],
+                          [1, 294, 3, -9, 270, 856.9, 2, 0],
+                          [7, 21, 4138, -9, 40, 0.22, -10, 0],
+                          [1, 9627, 543, -4, 0, 3, 7, 0]])
+
+    inputA_m = ms.Tensor(inputA)
+
+    output = onp.mean(inputA)
+    output_m = mnp.mean(inputA_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.mean(inputA, axis=0)
+    output_m = mnp.mean(inputA_m, axis=0)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.mean(inputA, axis=1)
+    output_m = mnp.mean(inputA_m, axis=1)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.mean(inputA, keepdims=True)
+    output_m = mnp.mean(inputA_m, keepdims=True)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.mean(inputA, axis=0, keepdims=True)
+    output_m = mnp.mean(inputA_m, axis=0, keepdims=True)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.mean(inputA, axis=1, keepdims=True)
+    output_m = mnp.mean(inputA_m, axis=1, keepdims=True)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_inner():
+    """
+        Feature: Test inner
+        Description: Test the functionality of inner
+        Expectation: throw errors
+    """
+    inputA = onp.full((3,), 1, dtype=onp.float32)
+    inputB = onp.full((3,), 2, dtype=onp.float32)
+
+    inputA_m = ms.Tensor(inputA, dtype=ms.float32)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float32)
+
+    output = onp.inner(inputA, inputB)
+    output_m = mnp.inner(inputA_m, inputB_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    inputA = onp.asarray([[11, 2, 13, -91, 5, 82, 2, 0],
+                          [1, 284, 3, -9, 20, 56, 2, 0],
+                          [7, 20, 38, -9, 40, 22, -10, 0],
+                          [1, 97, 53, -4, 0, 3, 7, 0]], dtype=onp.float32)
+    inputB = onp.asarray([[15, 22, 13, -1, 20, 8, 2, 0],
+                          [12, 22, 3, -4, 20, 8, 2, 0],
+                          [97, 12, 48, -28, 47, 12, -10, 0],
+                          [12, 7, 46, -4, 51, 33, 72, 20]], dtype=onp.float32)
+    inputA_m = ms.Tensor(inputA, dtype=ms.float32)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float32)
+
+    output = onp.inner(inputA, inputB)
+    output_m = mnp.inner(inputA_m, inputB_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_dot():
+    """
+        Feature: Test dot
+        Description: Test the functionality of dot
+        Expectation: throw errors
+    """
+    inputA = onp.full((5,), 2, dtype=onp.float32)
+    inputB = onp.full((5,), 6, dtype=onp.float32)
+
+    inputA_m = ms.Tensor(inputA, dtype=ms.float32)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float32)
+
+    output = onp.dot(inputA, inputB)
+    output_m = mnp.dot(inputA_m, inputB_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    inputA = onp.asarray([[21, 2, 13, -1, 51, 82, 2, 0],
+                          [1, 24, 31, -9, 20, 56, 2, 0],
+                          [7, 2, 8, -19, 40, 22, -10, 0],
+                          [1, 97, 53, -4, 0, 31, 7, 0]], dtype=onp.float32)
+    inputB = onp.asarray([[15, 22, 13, -11, 20, 82, 2, 0],
+                          [12, 22, 3, -4, 20, 8, 21, 0],
+                          [97, 12, 4, -28, 4, 12, -10, 0],
+                          [12, 7, 4, -4, 51, 3, 72, 20]], dtype=onp.float32)
+
+    inputB = inputB.transpose()
+    inputA_m = ms.Tensor(inputA, dtype=ms.float32)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float32)
+
+    output = onp.dot(inputA, inputB)
+    output_m = mnp.dot(inputA_m, inputB_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_outer():
+    """
+        Feature: Test outer
+        Description: Test the functionality of outer
+        Expectation: throw errors
+    """
+    inputA = onp.full((5,), 3, dtype=onp.float32)
+    inputB = onp.full((5,), 5, dtype=onp.float32)
+
+    inputA_m = ms.Tensor(inputA, dtype=ms.float32)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float32)
+
+    output = onp.outer(inputA, inputB)
+    output_m = mnp.outer(inputA_m, inputB_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    inputA = onp.asarray([[1, 21, 13, -11, 21, 32, 2, 0],
+                          [1, 24, 34, -9, 20, 56, 2, 0],
+                          [7, 2, 8, -19, 40, 22, -10, 0],
+                          [1, 97, 53, -4, 0, 31, 7, 0]], dtype=onp.float32)
+    inputB = onp.asarray([[15, 22, 13, -11, 20, 82, 2, 0],
+                          [12, 22, 3, -4, 20, 8, 21, 0],
+                          [97, 12, 4, -28, 4, 12, -10, 0],
+                          [12, 7, 4, -4, 51, 3, 72, 20]], dtype=onp.float32)
+
+    inputB = inputB.transpose()
+    inputA_m = ms.Tensor(inputA, dtype=ms.float32)
+    inputB_m = ms.Tensor(inputB, dtype=ms.float32)
+
+    output = onp.outer(inputA, inputB)
+    output_m = mnp.outer(inputA_m, inputB_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_tensordot():
+    """
+        Feature: Test tensordot
+        Description: Test the functionality of tensordot
+        Expectation: throw errors
+    """
+    inputA = onp.full((1,), 10, dtype=onp.float32)
+    inputB = onp.full((1,), 4.5, dtype=onp.float32)
+
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.tensordot(inputA, inputB, axes=0)
+    output_m = mnp.tensordot(inputA_m, inputB_m, axes=0)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    inputA = onp.array(1.5)
+    inputB = onp.array(2.5)
+
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.tensordot(inputA, inputB, axes=0)
+    output_m = mnp.tensordot(inputA_m, inputB_m, axes=0)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    inputA = onp.full((3, 4, 5), 2, dtype=onp.float32)
+    inputB = onp.full((4, 3, 2), 3, dtype=onp.float32)
+
+    inputA_m = ms.Tensor(inputA)
+    inputB_m = ms.Tensor(inputB)
+
+    output = onp.tensordot(inputA, inputB, axes=([1, 0], [0, 1]))
+    output_m = mnp.tensordot(inputA_m, inputB_m, axes=([1, 0], [0, 1]))
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_std():
+    """
+        Feature: Test std
+        Description: Test the functionality of std
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[1, 21, 13.2, -11, 21, 32, 2, 0],
+                          [1, 24, 34.2, -9, 20, 56, 2, 0],
+                          [7, 2, 8, -19.3, 40, 22, -10, 0],
+                          [1, 97, 53.5, -4, 0, 31, 7, 0]], dtype=onp.float32)
+
+    input_m = ms.Tensor(inputA)
+
+    output = onp.std(inputA)
+    output_m = mnp.std(input_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.std(inputA, axis=0)
+    output_m = mnp.std(input_m, axis=0)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.std(inputA, keepdims=True)
+    output_m = mnp.std(input_m, keepdims=True)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.std(inputA, axis=0, ddof=1)
+    output_m = mnp.std(input_m, axis=0, ddof=int(1))
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_var():
+    """
+        Feature: Test var
+        Description: Test the functionality of var
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[10, 21, 13, -11, 21, 32, 2, 0],
+                          [1, 24, 34, -9, 20, 56, 2, 0],
+                          [7, 2, 88, -19, 40, 22, -10, 0],
+                          [1, 97, 53, -4, 8, 31, 7, 0]], dtype=onp.float32)
+
+    input_m = ms.Tensor(inputA)
+
+    output = onp.var(inputA)
+    output_m = mnp.var(input_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.var(inputA, axis=0)
+    output_m = mnp.var(input_m, axis=0)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.var(inputA, keepdims=True)
+    output_m = mnp.var(input_m, keepdims=True)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_ptp():
+    """
+        Feature: Test ptp
+        Description: Test the functionality of ptp
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[101, 21, 13, -11, 21, 32, 2, 0],
+                          [1, 24, 342, -9, 20, 56, 2, 0],
+                          [7, 2, 88, -192, 40, 22, -10, 0],
+                          [1, 97, 53, -42, 8, 31, 7, 0]], dtype=onp.float32)
+
+    input_m = ms.Tensor(inputA)
+
+    output = onp.ptp(inputA)
+    output_m = mnp.ptp(input_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.ptp(inputA, axis=0)
+    output_m = mnp.ptp(input_m, axis=0)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.ptp(inputA, keepdims=True)
+    output_m = mnp.ptp(input_m, keepdims=True)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
+def test_com_average():
+    """
+        Feature: Test average
+        Description: Test the functionality of average
+        Expectation: throw errors
+    """
+    inputA = onp.asarray([[101, 221, 13, 11, 21, 32, 2, 1],
+                          [1, 224, 342, 9, 20, 56, 2, 1],
+                          [7, 2, 88, 192, 400, 22, 20, 1],
+                          [1, 927, 53, 42, 8, 31, 7, 1]], dtype=onp.float32)
+
+    input_m = ms.Tensor(inputA)
+
+    output = onp.average(inputA)
+    output_m = mnp.average(input_m)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.average(inputA, axis=0)
+    output_m = mnp.average(input_m, axis=0)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.average(inputA, axis=1)
+    output_m = mnp.average(input_m, axis=1)
+    assert onp.allclose(output_m.asnumpy(), output)
+
+    output = onp.average(inputA, axis=0, weights=inputA, returned=True)
+    output_m = mnp.average(input_m, axis=0, weights=input_m, returned=True)
+    assert onp.allclose(output_m[0].asnumpy(), output[0])
