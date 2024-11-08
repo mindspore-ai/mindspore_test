@@ -42,7 +42,7 @@
 #include "src/common/common.h"
 #include "tools/converter/parser/conv2d_transpose_input_adjust.h"
 #include "tools/converter/parser/einsum_adjust.h"
-#include "tools/converter/import/convert_extend_ops_pass.h"
+#include "tools/converter/import/convert_extend_ops/convert_extend_ops_pass.h"
 
 namespace mindspore::lite {
 namespace {
