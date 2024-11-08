@@ -33,6 +33,11 @@
 
 namespace mindspore {
 namespace parallel {
+
+constexpr char kSizeSplits[] = "size_splits";
+constexpr char kSplitDim[] = "split_dim";
+constexpr char kNumSplit[] = "num_split";
+
 Status SplitInfo::GetAttrs() {
   auto axis_opt = GetScalarValueFromInputs<int64_t>(input_value_, name_, AXIS);
   if (!axis_opt.has_value()) {
@@ -93,6 +98,67 @@ Status SplitVInfo::GetAttrs() {
     skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
   }
 
+  return SUCCESS;
+}
+
+Status SplitVInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
+  GenerateGraph gen_g = GenerateGraph(attrs_);
+  if (gen_g.Init(cnode) != SUCCESS) {
+    MS_LOG(ERROR) << name_ << "GenerateGraph Init failed";
+    return FAILED;
+  }
+  auto interleaved_num = ParallelContext::GetInstance()->fine_grained_micro_interleaved_size();
+  Attr output_nums_attr = {"output_nums", MakeValue(interleaved_num)};
+  OperatorAttrs virtual_converter_begin_attrs = {output_nums_attr};
+  auto virtual_converter_begin = gen_g.PushBack(
+    {gen_g.NewOpInst(VIRTUAL_CONVERTER_BEGIN, virtual_converter_begin_attrs), gen_g.virtual_input_node()});
+  std::vector<AnfNodePtr> virtual_converter_end_inputs_vector;
+  std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(virtual_converter_begin, 1)};
+
+  std::pair<std::string, ValuePtr> size_splits;
+  if (attrs_.find(kSizeSplits) != attrs_.end()) {
+    size_splits = std::make_pair(kSizeSplits, attrs_[kSizeSplits]);
+  } else {
+    MS_LOG(ERROR) << name_ << ": Can not find the size_splits attr";
+    return FAILED;
+  }
+  std::pair<std::string, ValuePtr> num_split;
+  if (attrs_.find(kNumSplit) != attrs_.end()) {
+    num_split = std::make_pair(kNumSplit, attrs_[kNumSplit]);
+  } else {
+    MS_LOG(ERROR) << name_ << ": Can not find the num_split attr";
+    return FAILED;
+  }
+  std::pair<std::string, ValuePtr> split_dim;
+  if (attrs_.find(kSplitDim) != attrs_.end()) {
+    split_dim = std::make_pair(kSplitDim, attrs_[kSplitDim]);
+  } else {
+    MS_LOG(ERROR) << name_ << ": Can not find the split_dim attr";
+    return FAILED;
+  }
+  OperatorAttrs splitv_attrs = {size_splits, split_dim, num_split};
+  for (int64_t i = 0; i < interleaved_num; ++i) {
+    auto tuple_get_item = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), virtual_converter_begin, CreatInt64Imm(i)});
+    std::vector<std::string> added_attrs = {kSizeSplits, kSplitDim, kNumSplit};
+    OperatorAttrs other_attrs = {};
+    for (const auto &attr : attrs_) {
+      if (std::find(added_attrs.begin(), added_attrs.end(), attr.first) == added_attrs.end()) {
+        other_attrs.push_back(std::make_pair(attr.first, attr.second));
+      }
+    }
+    auto splitv_cnode = gen_g.NewOpInst(prim_name_, splitv_attrs, other_attrs);
+    auto split = gen_g.PushBack({splitv_cnode, tuple_get_item});
+    virtual_converter_end_inputs_vector.push_back(split);
+  }
+  Attr input_nums_attr = {"input_nums", MakeValue(interleaved_num)};
+  OperatorAttrs virtual_converter_end_attrs = {input_nums_attr};
+  std::vector<AnfNodePtr> virtual_converter_end_inputs = {
+    gen_g.NewOpInst(VIRTUAL_CONVERTER_END, virtual_converter_end_attrs)};
+  std::copy(virtual_converter_end_inputs_vector.begin(), virtual_converter_end_inputs_vector.end(),
+            std::back_inserter(virtual_converter_end_inputs));
+  auto virtual_converter_end = gen_g.PushBack(virtual_converter_end_inputs);
+  replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
+    std::make_pair(input_nodes, virtual_converter_end));
   return SUCCESS;
 }
 
@@ -259,7 +325,7 @@ void SplitInfo::UpdateOutputTensorInfoForInterleaved() {
     output_dev_matrix[output_dev_matrix.size() - 1] = interleaved_num;
     Arrangement out_device_arrangement_interleaved;
     out_device_arrangement_interleaved.Init(output_dev_matrix);
-    auto new_tensor_layout = outputs_tensor_info_[kIndex0].tensor_layout();
+    auto new_tensor_layout = outputs_tensor_info_[i].tensor_layout();
     new_tensor_layout.set_device_arrangement_interleaved(out_device_arrangement_interleaved);
     TensorInfo new_output_tensor_info(new_tensor_layout);
     outputs_tensor_info_[i] = new_output_tensor_info;

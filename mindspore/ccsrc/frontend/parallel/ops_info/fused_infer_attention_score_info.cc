@@ -358,8 +358,6 @@ void FusedInferAttentionScoreInfo::InferOptionalTensorMap() {
         continue;
       }
       (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(optional_tensor_map_[index]));
-    } else {
-      (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1}));
     }
   }
 }
