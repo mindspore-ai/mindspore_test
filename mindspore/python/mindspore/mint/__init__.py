@@ -344,6 +344,8 @@ from mindspore.ops.function.random_func import randint_like_ext as randint_like
 from mindspore.ops.auto_generate import floor
 # 231
 from mindspore.ops.function.math_func import inverse_ext as inverse
+# 239
+from mindspore.ops.function.math_func import lerp_ext as lerp
 # 244
 from mindspore.ops.auto_generate import log1p
 # 261
@@ -2046,7 +2048,6 @@ __all__ = [
     # 83
     'narrow',
     # 84
-
     'masked_select',
 
     # 86
@@ -2171,7 +2172,8 @@ __all__ = [
     'erfc',
     # 208
     'eye',
-
+    # 239
+    'lerp',
     # 256
     'median',
     'randperm',
