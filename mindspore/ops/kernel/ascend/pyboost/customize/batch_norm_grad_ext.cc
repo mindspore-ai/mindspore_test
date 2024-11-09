@@ -15,6 +15,7 @@
  */
 
 #include "kernel/ascend/pyboost/customize/batch_norm_grad_ext.h"
+#include <algorithm>
 #include <memory>
 #include <functional>
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
@@ -29,14 +30,18 @@ void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const 
                                      const std::optional<BaseTensorPtr> &running_mean_tensor,
                                      const std::optional<BaseTensorPtr> &runnning_var_tensor,
                                      const std::optional<BaseTensorPtr> &saved_mean_tensor,
-                                     const std::optional<BaseTensorPtr> &saved_rstd_tensor,
-                                     const BoolImmPtr &training, const FP32ImmPtr &eps) {
+                                     const std::optional<BaseTensorPtr> &saved_rstd_tensor, const BoolImmPtr &training,
+                                     const FP32ImmPtr &eps, const ValueTuplePtr &output_mask) {
   MS_LOG(DEBUG) << "Call aclnnBatchNormBackward start";
   // Convert ValuePtr to c++ scalar
   OpRunner::InferOpOutput(op, dout_tensor, input_tensor, weight_tensor, running_mean_tensor, runnning_var_tensor,
-                          saved_mean_tensor, saved_rstd_tensor, training, eps);
+                          saved_mean_tensor, saved_rstd_tensor, training, eps, output_mask);
   auto training_imm = GetValue<bool>(training);
   auto eps_imm = static_cast<double>(GetValue<float>(eps));
+  std::vector<int64_t> output_mask_vector = ConvertValueTupleToVector<int64_t>(output_mask);
+  std::vector<uint8_t> output_mask_u8_vec;
+  std::transform(output_mask_vector.begin(), output_mask_vector.end(), std::back_inserter(output_mask_u8_vec),
+                 [](const int64_t &value) { return static_cast<uint8_t>(value); });
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), dout_tensor, input_tensor, weight_tensor,
                                 running_mean_tensor, runnning_var_tensor, saved_mean_tensor, saved_rstd_tensor);
@@ -44,10 +49,9 @@ void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const 
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
     [op, dout_tensor, input_tensor, weight_tensor, running_mean_tensor, runnning_var_tensor, saved_mean_tensor,
-     saved_rstd_tensor, training_imm, eps_imm]() {
+     saved_rstd_tensor, training_imm, eps_imm, output_mask_u8_vec]() {
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
-      std::vector<uint8_t> output_mask{1, 1, 1};
       // Malloc for input tensors
       PyBoostUtils::MallocOpInputs(device_context, dout_tensor, input_tensor, weight_tensor, running_mean_tensor,
                                    runnning_var_tensor, saved_mean_tensor, saved_rstd_tensor);
@@ -56,7 +60,7 @@ void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const 
 
       LAUNCH_ACLNN(aclnnBatchNormBackward, device_context, op->stream_id(), dout_tensor, input_tensor, weight_tensor,
                    running_mean_tensor, runnning_var_tensor, saved_mean_tensor, saved_rstd_tensor, training_imm,
-                   eps_imm, output_mask, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
+                   eps_imm, output_mask_u8_vec, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
       MS_LOG(DEBUG) << "Launch aclnnBatchNormBackward end";
     }));
 }

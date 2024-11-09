@@ -15,6 +15,7 @@
  */
 
 #include "kernel/ascend/pyboost/customize/layer_norm_grad_ext.h"
+#include <algorithm>
 #include <memory>
 #include <functional>
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
@@ -27,25 +28,30 @@ namespace pyboost {
 void LayerNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
                                      const BaseTensorPtr &x_tensor, const ValueTuplePtr &normalized_shape,
                                      const BaseTensorPtr &mean_tensor, const BaseTensorPtr &variance_tensor,
-                                     const BaseTensorPtr &gamma_tensor, const BaseTensorPtr &beta_tensor) {
+                                     const BaseTensorPtr &gamma_tensor, const BaseTensorPtr &beta_tensor,
+                                     const ValueTuplePtr &output_mask) {
   MS_LOG(DEBUG) << "Call start";
   // Convert ValuePtr to c++ scalr
   OpRunner::InferOpOutput(op, dy_tensor, x_tensor, normalized_shape, mean_tensor, variance_tensor, gamma_tensor,
-                          beta_tensor);
+                          beta_tensor, output_mask);
 
   std::vector<int64_t> normalized_shape_vector = ConvertValueTupleToVector<int64_t>(normalized_shape);
+  std::vector<int64_t> output_mask_vector = ConvertValueTupleToVector<int64_t>(output_mask);
+  std::vector<uint8_t> output_mask_u8_vec;
+  std::transform(output_mask_vector.begin(), output_mask_vector.end(), std::back_inserter(output_mask_u8_vec),
+                 [](const int64_t &value) { return static_cast<uint8_t>(value); });
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), dy_tensor, x_tensor, mean_tensor,
                                 variance_tensor, gamma_tensor, beta_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, dy_tensor, x_tensor, normalized_shape_vector, mean_tensor, variance_tensor, gamma_tensor, beta_tensor]() {
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, dy_tensor, x_tensor, normalized_shape_vector, mean_tensor,
+                                                  variance_tensor, gamma_tensor, beta_tensor, output_mask_u8_vec]() {
       MS_LOG(DEBUG) << "Run device task LayerNormGradExt start";
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
-      std::vector<uint8_t> output_mask{1, 1, 1};
       // Malloc for input tensors
       PyBoostUtils::MallocOpInputs(device_context, dy_tensor, x_tensor, mean_tensor, variance_tensor, gamma_tensor,
                                    beta_tensor);
@@ -53,7 +59,7 @@ void LayerNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const 
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
       LAUNCH_ACLNN(aclnnLayerNormBackward, device_context, op->stream_id(), dy_tensor, x_tensor,
-                   normalized_shape_vector, mean_tensor, variance_tensor, gamma_tensor, beta_tensor, output_mask,
+                   normalized_shape_vector, mean_tensor, variance_tensor, gamma_tensor, beta_tensor, output_mask_u8_vec,
                    outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
       MS_LOG(DEBUG) << "Run device task LayerNormGradExt end";
     }));

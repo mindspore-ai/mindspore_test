@@ -504,9 +504,9 @@ NodePtr FuncBuilder::BatchNormExt(const NodePtr &input, const NodePtr &weight, c
 NodePtr FuncBuilder::BatchNormGradExt(const NodePtr &dout, const NodePtr &input, const NodePtr &weight,
                                       const NodePtr &running_mean, const NodePtr &running_var,
                                       const NodePtr &saved_mean, const NodePtr &saved_rstd, const NodePtr &training,
-                                      const NodePtr &eps) {
+                                      const NodePtr &eps, const NodePtr &output_mask) {
   return NativeFunc::BatchNormGradExt(dout, input, weight, running_mean, running_var, saved_mean, saved_rstd, training,
-                                      eps);
+                                      eps, output_mask);
 }
 
 NodePtr FuncBuilder::BinaryCrossEntropyGrad(const NodePtr &input, const NodePtr &target, const NodePtr &grad_output,
@@ -768,8 +768,8 @@ NodePtr FuncBuilder::LayerNormExt(const NodePtr &input, const NodePtr &normalize
 
 NodePtr FuncBuilder::LayerNormGradExt(const NodePtr &dy, const NodePtr &x, const NodePtr &normalized_shape,
                                       const NodePtr &mean, const NodePtr &variance, const NodePtr &gamma,
-                                      const NodePtr &beta) {
-  return NativeFunc::LayerNormGradExt(dy, x, normalized_shape, mean, variance, gamma, beta);
+                                      const NodePtr &beta, const NodePtr &output_mask) {
+  return NativeFunc::LayerNormGradExt(dy, x, normalized_shape, mean, variance, gamma, beta, output_mask);
 }
 
 NodePtr FuncBuilder::LeakyReLUExt(const NodePtr &input, const NodePtr &negative_slope) {

@@ -32,8 +32,8 @@ void BatchNormGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const 
                                      const std::optional<BaseTensorPtr> &running_mean_tensor,
                                      const std::optional<BaseTensorPtr> &runnning_var_tensor,
                                      const std::optional<BaseTensorPtr> &saved_mean_tensor,
-                                     const std::optional<BaseTensorPtr> &saved_rstd_tensor,
-                                     const BoolImmPtr &training, const FP32ImmPtr &eps);
+                                     const std::optional<BaseTensorPtr> &saved_rstd_tensor, const BoolImmPtr &training,
+                                     const FP32ImmPtr &eps, const ValueTuplePtr &output_mask);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

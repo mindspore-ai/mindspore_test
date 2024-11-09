@@ -394,9 +394,10 @@ class COMMON_EXPORT Emitter {
   }
   virtual NodePtr BatchNormGradExt(const NodePtr &dout, const NodePtr &input, const NodePtr &weight,
                                    const NodePtr &running_mean, const NodePtr &running_var, const NodePtr &saved_mean,
-                                   const NodePtr &saved_rstd, const NodePtr &training, const NodePtr &eps) {
+                                   const NodePtr &saved_rstd, const NodePtr &training, const NodePtr &eps,
+                                   const NodePtr &output_mask) {
     return Emit("BatchNormGradExt",
-                {dout, input, weight, running_mean, running_var, saved_mean, saved_rstd, training, eps});
+                {dout, input, weight, running_mean, running_var, saved_mean, saved_rstd, training, eps, output_mask});
   }
   virtual NodePtr BinaryCrossEntropyGrad(const NodePtr &input, const NodePtr &target, const NodePtr &grad_output,
                                          const NodePtr &weight, const NodePtr &reduction) {
@@ -599,8 +600,8 @@ class COMMON_EXPORT Emitter {
   }
   virtual NodePtr LayerNormGradExt(const NodePtr &dy, const NodePtr &x, const NodePtr &normalized_shape,
                                    const NodePtr &mean, const NodePtr &variance, const NodePtr &gamma,
-                                   const NodePtr &beta) {
-    return Emit("LayerNormGradExt", {dy, x, normalized_shape, mean, variance, gamma, beta});
+                                   const NodePtr &beta, const NodePtr &output_mask) {
+    return Emit("LayerNormGradExt", {dy, x, normalized_shape, mean, variance, gamma, beta, output_mask});
   }
   virtual NodePtr LeakyReLUExt(const NodePtr &input, const NodePtr &negative_slope) {
     return Emit("LeakyReLUExt", {input, negative_slope});
