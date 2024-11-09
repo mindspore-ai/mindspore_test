@@ -203,6 +203,8 @@ int UpdateTensorTFromTensorInfo(const tensor::TensorPtr &src_tensor, std::unique
 }
 
 int InitParameterFromTensorInfo(const ParameterPtr &param_node, const tensor::TensorPtr &tensor_info) {
+  MS_CHECK_TRUE_MSG(param_node != nullptr, RET_ERROR, "param_node is nullptr!");
+
   if (tensor_info == nullptr) {
     MS_LOG(ERROR) << "tensor info is nullptr.";
     return RET_ERROR;
@@ -257,6 +259,11 @@ std::unique_ptr<TensorT> CopyTensorDefT(const std::unique_ptr<TensorT> &oldTenso
     MS_LOG(ERROR) << "new TensorT failed";
     return nullptr;
   }
+  if (oldTensor == nullptr) {
+    MS_LOG(ERROR) << "oldTensor is nullptr";
+    return nullptr;
+  }
+
   newTensor->dims = oldTensor->dims;
   newTensor->format = oldTensor->format;
   newTensor->dataType = oldTensor->dataType;

@@ -29,6 +29,7 @@ constexpr auto kFuncType = "func_type";
 constexpr auto kUniqueName = "uniq_name";
 
 void SaveDynKVCacheInfo(const DynKVCacheSaveInfo &dyn_kv_info, std::map<std::string, ValuePtr> *attr_map) {
+  MS_CHECK_TRUE_RET_VOID(attr_map != nullptr);
   if (!dyn_kv_info.batch_size_dyn && !dyn_kv_info.seq_length_dyn) {
     return;
   }
@@ -107,6 +108,7 @@ ParameterPtr CustomAscendUtils::CreateOmParameter(const FuncGraphPtr &func_graph
 }
 
 bool CustomAscendUtils::SetCustomOutputs(const FuncGraphPtr &func_graph, const CNodePtr &custom_node) {
+  MS_CHECK_TRUE_MSG(custom_node != nullptr, false, "custom_node is nullptr!");
   if (outputs_.size() == 1) {
     auto abstract_tensor = FuncGraphUtils::GetAbstractFromNode(outputs_[0]);
     if (abstract_tensor == nullptr) {
@@ -136,8 +138,13 @@ bool CustomAscendUtils::SetCustomOutputs(const FuncGraphPtr &func_graph, const C
 
 void CustomAscendUtils::SetZeroValueRefDatas(const ops::PrimitiveCPtr &primc,
                                              const std::vector<std::pair<std::string, tensor::TensorPtr>> &ref_infos) {
+  MS_CHECK_TRUE_RET_VOID(primc != nullptr);
   ValuePtrList value_ptr_list;
   for (const auto &item : ref_infos) {
+    if (item.second == nullptr) {
+      MS_LOG(ERROR) << item.first << " tensorptr is nullptr!";
+      return;
+    }
     (void)value_ptr_list.emplace_back(MakeValue<std::string>(item.first));
     (void)value_ptr_list.emplace_back(MakeValue(static_cast<uint64_t>(item.second->data_type())));
     (void)value_ptr_list.emplace_back(MakeValue(item.second->shape_c()));
@@ -147,6 +154,8 @@ void CustomAscendUtils::SetZeroValueRefDatas(const ops::PrimitiveCPtr &primc,
 
 bool CustomAscendUtils::GetZeroValueRefDatas(const ops::PrimitiveCPtr &primc,
                                              std::vector<std::pair<std::string, tensor::TensorPtr>> *ref_infos) {
+  MS_CHECK_TRUE_MSG(primc != nullptr, false, "primc is nullptr!");
+  MS_CHECK_TRUE_MSG(ref_infos != nullptr, false, "ref_infos is nullptr!");
   auto attr = primc->GetAttr(lite::kNameAttrZeroValRefDatas);
   if (attr == nullptr) {
     MS_LOG(INFO) << "Not found attr " << lite::kNameAttrZeroValRefDatas << " in custom node";
@@ -217,6 +226,7 @@ CNodePtr CustomAscendUtils::CreateCustomNode(const FuncGraphPtr &func_graph, con
 
 void CustomAscendUtils::SetCustomAttrs(const std::shared_ptr<ops::Custom> &prim,
                                        const std::map<std::string, ValuePtr> &attr_map) {
+  MS_CHECK_TRUE_RET_VOID(prim != nullptr);
   std::string output_dim_str;
   for (const auto &item : outputs_) {
     auto shape = opt::GetAnfNodeOutputShape(item.first, item.second);
@@ -232,11 +242,14 @@ void CustomAscendUtils::SetCustomAttrs(const std::shared_ptr<ops::Custom> &prim,
   prim->AddAttr(kUniqueName, api::MakeValue<std::string>(lite::kNameCustomAscend));
   auto prim_c = prim->GetPrim();
   for (auto &attr : attr_map) {
+    MS_CHECK_TRUE_RET_VOID(attr.second != nullptr);
     prim_c->AddAttr(attr.first, attr.second);
   }
 }
 
 CNodePtr CustomAscendUtils::CreateMakeTupleGraphOutput(const FuncGraphPtr &func_graph, const CNodePtr &custom_node) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(custom_node != nullptr, nullptr);
   std::vector<CNodePtr> node_list;
   for (size_t j = 0; j < outputs_.size(); ++j) {
     auto tuple_get_item_prim_ptr = std::make_shared<ops::TupleGetItem>();
@@ -268,6 +281,8 @@ CNodePtr CustomAscendUtils::CreateMakeTupleGraphOutput(const FuncGraphPtr &func_
 }
 
 bool CustomAscendUtils::ModifyGraphByCustomNode(const FuncGraphPtr &func_graph, const CNodePtr &custom_node) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, false);
+  MS_CHECK_TRUE_RET(custom_node != nullptr, false);
   auto manager = Manage(func_graph, true);
   if (manager == nullptr) {
     MS_LOG(ERROR) << "Manager is nullptr";

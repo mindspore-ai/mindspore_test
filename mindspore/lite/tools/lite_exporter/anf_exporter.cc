@@ -201,6 +201,7 @@ int AnfExporter::ConvertQuantParam(const std::unique_ptr<schema::MetaGraphT> &me
   CHECK_NULL_RETURN(meta_graph);
   CHECK_NULL_RETURN(dst_node);
   CHECK_NULL_RETURN(cnode);
+  CHECK_NULL_RETURN(primitive);
   // quant_type not exist in cnode, return
   auto quant_type_attr = primitive->GetAttr(quant::kQuantType);
   if (!opt::CheckPrimitiveType(cnode, prim::kPrimQuantDTypeCast)) {
@@ -391,6 +392,7 @@ int AnfExporter::SetSubGraphOutputIndex(const CNodePtr &cnode, const size_t subg
                                         schema::CNodeT *return_node) {
   MS_ASSERT(meta_graphT != nullptr);
   MS_ASSERT(return_node != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
   for (size_t i = kFirstDataIndex; i < cnode->size(); i++) {
     auto input_node = cnode->input(i);
     if (input_node == nullptr) {
@@ -565,6 +567,7 @@ bool AnfExporter::HasNodeIdKey(const std::pair<AnfNodePtr, size_t> &key) {
 
 size_t AnfExporter::NewFbTensor(const std::unique_ptr<schema::MetaGraphT> &meta_graphT,
                                 mindspore::schema::TensorT *tensor) {
+  MS_CHECK_TRUE_MSG(tensor != nullptr, 0, "tensor is nullptr!");
   fb_graph_all_tensors_mutex_.lock();
   auto insert_index = meta_graphT->allTensors.size();
   meta_graphT->allTensors.emplace_back(std::move(tensor));
@@ -574,12 +577,21 @@ size_t AnfExporter::NewFbTensor(const std::unique_ptr<schema::MetaGraphT> &meta_
 
 void AnfExporter::InsertFbTensor(const std::unique_ptr<schema::MetaGraphT> &meta_graphT,
                                  mindspore::schema::TensorT *tensor) {
+  if (meta_graphT != nullptr) {
+    MS_LOG(ERROR) << "meta_graphT is nullptr!";
+    return;
+  }
+  if (tensor != nullptr) {
+    MS_LOG(ERROR) << "tensor is nullptr!";
+    return;
+  }
   fb_graph_all_tensors_mutex_.lock();
   meta_graphT->allTensors.emplace_back(std::move(tensor));
   fb_graph_all_tensors_mutex_.unlock();
 }
 
 size_t AnfExporter::GetAllTensorSize(const std::unique_ptr<schema::MetaGraphT> &meta_graphT) {
+  MS_CHECK_TRUE_MSG(meta_graphT != nullptr, 0, "meta_graphT is nullptr!");
   fb_graph_all_tensors_mutex_.lock();
   auto size = meta_graphT->allTensors.size();
   fb_graph_all_tensors_mutex_.unlock();
@@ -588,6 +600,7 @@ size_t AnfExporter::GetAllTensorSize(const std::unique_ptr<schema::MetaGraphT> &
 
 mindspore::schema::TensorT *AnfExporter::GetTensorFromAllTensor(const std::unique_ptr<schema::MetaGraphT> &meta_graphT,
                                                                 size_t index) {
+  MS_CHECK_TRUE_MSG(meta_graphT != nullptr, nullptr, "meta_graphT is nullptr!");
   fb_graph_all_tensors_mutex_.lock();
   auto *tensor = meta_graphT->allTensors[index].get();
   fb_graph_all_tensors_mutex_.unlock();
@@ -917,6 +930,8 @@ int AnfExporter::ConvertInputCNodeCommonOp(const AnfNodePtr &input_anode, schema
 }
 
 int AnfExporter::ConvertInputCNode(const std::shared_ptr<AnfNode> &input_anode, schema::CNodeT *output_cnode) {
+  MS_CHECK_TRUE_MSG(input_anode != nullptr, lite::RET_NULL_PTR, "input_anode is nullptr!");
+  MS_CHECK_TRUE_MSG(output_cnode != nullptr, lite::RET_NULL_PTR, "output_cnode is nullptr!");
   auto input_cnode = utils::cast<CNodePtr>(input_anode);
   MS_CHECK_TRUE_MSG(input_cnode != nullptr, RET_ERROR, "cast ptr failed");
   auto input_value_node = input_cnode->input(kPrimIndex)->cast<ValueNodePtr>();
@@ -1037,6 +1052,7 @@ int AnfExporter::SetOpInputNode(const CNodePtr &cnode, const std::unique_ptr<sch
                                 schema::CNodeT *fb_node) {
   MS_ASSERT(meta_graphT != nullptr);
   MS_ASSERT(fb_node != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
   if (cnode->size() <= 1) {
     return RET_OK;
   }
@@ -1080,6 +1096,7 @@ int AnfExporter::SetOpOutputNode(const CNodePtr &cnode, const std::unique_ptr<sc
                                  schema::CNodeT *fb_node) {
   MS_ASSERT(meta_graphT != nullptr);
   MS_ASSERT(fb_node != nullptr);
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_NULL_PTR, "cnode is nullptr!");
   std::string cnode_name = fb_node->name;
 
   // new anf export and import will add abstract tuple for control flow op, which contains abstract closure,
@@ -1172,6 +1189,8 @@ int AnfExporter::SetOpOutputNode(const CNodePtr &cnode, const std::unique_ptr<sc
 }
 
 CNodePtr AnfExporter::CreateCallCnode(const FuncGraphPtr &fg, const AnfNodePtr &node) {
+  MS_CHECK_TRUE_MSG(fg != nullptr, nullptr, "fg is nullptr!");
+  MS_CHECK_TRUE_MSG(node != nullptr, nullptr, "node is nullptr!");
   auto call_anf_prim_vnode = GetCallAnfPrim();
   MS_CHECK_TRUE_MSG(call_anf_prim_vnode != nullptr, nullptr, "GetCallAnfPrim failed");
   std::vector<AnfNodePtr> inputs{call_anf_prim_vnode, node};
@@ -1182,6 +1201,8 @@ CNodePtr AnfExporter::CreateCallCnode(const FuncGraphPtr &fg, const AnfNodePtr &
 }
 
 CNodePtr AnfExporter::CreatePartialCnode(const FuncGraphPtr &fg, const AnfNodePtr &node) {
+  MS_CHECK_TRUE_MSG(node != nullptr, nullptr, "node is nullptr!");
+  MS_CHECK_TRUE_MSG(fg != nullptr, nullptr, "fg is nullptr!");
   if (utils::isa<CNodePtr>(node)) {
     auto cnode = utils::cast<CNodePtr>(node);
     MS_CHECK_TRUE_MSG(cnode != nullptr, nullptr, "cast ptr failed");

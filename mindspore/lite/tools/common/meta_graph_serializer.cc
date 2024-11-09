@@ -184,6 +184,8 @@ bool MetaGraphSerializer::ExtraAndSerializeModelWeight(const schema::MetaGraphT 
 bool MetaGraphSerializer::SerializeModelAndUpdateWeight(const schema::MetaGraphT &meta_graphT, const Byte *key,
                                                         const size_t key_len, const std::string &enc_mode,
                                                         size_t *size) {
+  MS_CHECK_TRUE_MSG(key != nullptr, false, "key is nullptr!");
+  MS_CHECK_TRUE_MSG(size != nullptr, false, "size is nullptr!");
   // serialize model
   flatbuffers::FlatBufferBuilder builder(kFlatbuffersBuilderInitSize);
   auto offset = schema::MetaGraph::Pack(builder, &meta_graphT);
@@ -233,6 +235,7 @@ int MetaGraphSerializer::Save(const schema::MetaGraphT &graph, const std::string
 
 int MetaGraphSerializer::Save(const schema::MetaGraphT &graph, const std::string &output_path, size_t *size,
                               const Byte *key, const size_t key_len, const std::string &enc_mode) {
+  MS_CHECK_TRUE_MSG(size != nullptr, lite::RET_NULL_PTR, "size is nullptr!");
   MetaGraphSerializer meta_graph_serializer;
   *size = 0;
   flatbuffers::FlatBufferBuilder builder(kFlatbuffersBuilderInitSize);
@@ -284,7 +287,8 @@ MetaGraphSerializer::~MetaGraphSerializer() {
 
 bool MetaGraphSerializer::SerializeModel(const void *content, size_t size, const Byte *key, const size_t key_len,
                                          const std::string &enc_mode) {
-  MS_ASSERT(model_fs_ != nullptr);
+  MS_CHECK_TRUE_MSG(content != nullptr, false, "content is nullptr!");
+  MS_CHECK_TRUE_MSG(model_fs_ != nullptr, false, "model_fs_ is nullptr!");
   if (size == 0 || content == nullptr) {
     MS_LOG(ERROR) << "Input meta graph buffer is nullptr";
     return false;

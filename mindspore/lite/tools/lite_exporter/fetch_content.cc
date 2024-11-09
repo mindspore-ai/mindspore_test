@@ -255,6 +255,7 @@ int FetchFromSequenceValue(const ValueNodePtr &value_node, DataInfo *data_info) 
 int SetTensorData(const tensor::TensorPtr &tensor_info, DataInfo *data_info, TypeId data_type, size_t offset,
                   bool copy_data) {
   MS_CHECK_TRUE_RET(data_info != nullptr, RET_NULL_PTR);
+  MS_CHECK_TRUE_RET(tensor_info != nullptr, RET_NULL_PTR);
   if (data_type == kObjectTypeTensorType && tensor_info->Size() >= kTensorListMinSize) {
     data_info->data_.resize(tensor_info->Size() - offset);
     if (EOK != common::huge_memcpy(data_info->data_.data(), data_info->data_.size(),
@@ -453,6 +454,7 @@ int FetchDataFromCNode(const CNodePtr &cnode, size_t index, DataInfo *data_info)
 
 int FetchConstData(const CNodePtr &cnode, size_t index, converter::FmkType fmk_type, DataInfo *data_info,
                    bool copy_data) {
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_NULL_PTR, "cnode is nullptr!");
   auto node_name = cnode->fullname_with_scope();
   if (index > cnode->size()) {
     MS_LOG(ERROR) << node_name << index << " > " << cnode->size();
@@ -476,6 +478,7 @@ int FetchConstData(const CNodePtr &cnode, size_t index, converter::FmkType fmk_t
 }
 
 int FetchDataFromAbstract(const AbstractBasePtr &abstract, DataInfo *data_info) {
+  MS_CHECK_TRUE_MSG(data_info != nullptr, RET_ERROR, "data_info is nullptr");
   MS_CHECK_TRUE_MSG(abstract != nullptr, RET_ERROR, "abstract is nullptr");
   if (!utils::isa<abstract::AbstractTensor>(abstract)) {
     MS_LOG(ERROR) << "Abstract should be AbstractTensor.";
@@ -592,6 +595,7 @@ int FetchOpParameterFromNode(const AnfNodePtr &node, OpParameter **op_parameter)
     MS_LOG(ERROR) << "op_parameter is nullptr.";
     return RET_NULL_PTR;
   }
+  MS_CHECK_TRUE_MSG(node != nullptr, RET_NULL_PTR, "node is nullptr!");
   CHECK_NULL_RETURN(GetValueNode<PrimitivePtr>(node));
   auto prim_t = lite::GetPrimitiveT(node);
   CHECK_NULL_RETURN(prim_t);
@@ -620,6 +624,7 @@ int FetchOpParameterFromNode(const AnfNodePtr &node, OpParameter **op_parameter)
 
 int FetchOpParameterFromFuncGraph(const FuncGraphPtr &func_graph, std::map<std::string, OpParameter *> *op_parameters) {
   MS_CHECK_TRUE_MSG(op_parameters != nullptr, RET_NULL_PTR, "op_parameters is nullptr.");
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, RET_NULL_PTR, "func_graph is nullptr.");
   auto cnodes = func_graph->GetOrderedCnodes();
   for (auto &cnode : cnodes) {
     if (opt::IsSpecialType(cnode)) {
