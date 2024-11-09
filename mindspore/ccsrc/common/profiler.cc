@@ -207,7 +207,15 @@ void ProfilerAnalyzer::Clear() noexcept {
   init_ = false;
 }
 
-void ProfilerAnalyzer::EnableMiProfile() { mi_profiler_enable_ = true; }
+void ProfilerAnalyzer::EnableMiProfile() {
+  mi_profiler_enable_ = true;
+  MS_LOG(INFO) << "Enable mi profiler.";
+}
+
+void ProfilerAnalyzer::DisableMiProfile() {
+  mi_profiler_enable_ = false;
+  MS_LOG(INFO) << "Disable mi profiler.";
+}
 
 uint64_t ProfilerAnalyzer::GetTimeStamp() const noexcept {
   if (profiler_enable_) {
