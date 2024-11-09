@@ -499,6 +499,9 @@ class COMMON_EXPORT ProfilerAnalyzer {
   // Enable MindInsight Profile
   void EnableMiProfile();
 
+  // Disable MindInsight Profile
+  void DisableMiProfile();
+
   // The used by ProfilerRecorder to record data.
   bool profiler_enable() const;
   bool enable_by_env() const { return profiler_enable_; }
