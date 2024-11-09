@@ -1302,6 +1302,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
 }
 
 AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractRefTensor>()) {
     return abs;
   }
@@ -1358,11 +1359,56 @@ AbstractBasePtr PrimitiveFunctionEvaluator::AddRefKeyForArgs(const AbstractBaseP
   return output_abs;
 }
 
+AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const AbstractBasePtrList &args) {
+  MS_EXCEPTION_IF_NULL(res);
+  if (!res->isa<abstract::AbstractTensor>() && !res->isa<abstract::AbstractTuple>()) {
+    MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+  }
+
+  // Update the abstract of first input of view operation.
+  auto arg0_tensor = dyn_cast<abstract::AbstractTensor>(args[0]);
+  auto new_input_arg = ConvertTensorToRef(arg0_tensor);
+  args[0]->set_inplace_abstract(new_input_arg);
+
+  // Update the abstract of view operation.
+  AbstractBasePtr new_res = res;
+  if (res->isa<abstract::AbstractTensor>()) {
+    // The output of the view operator shares the same address with the first input of the operator.
+    new_res = ConvertTensorToRef(res);
+  } else if (res->isa<abstract::AbstractTuple>()) {
+    // Update the elements of output.
+    AbstractBasePtrList output_list;
+    const auto &res_args = res->cast<abstract::AbstractTuplePtr>()->elements();
+    for (size_t i = 0; i < res_args.size(); ++i) {
+      auto ele = res_args[i];
+      MS_EXCEPTION_IF_NULL(ele);
+      if (ele->isa<abstract::AbstractRefTensor>()) {
+        (void)output_list.emplace_back(ele);
+        continue;
+      }
+      if (!ele->isa<abstract::AbstractTensor>()) {
+        MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+      }
+      auto ele_abs = dyn_cast<abstract::AbstractTensor>(ele);
+      auto new_ele_abs = ConvertTensorToRef(ele_abs);
+      (void)output_list.emplace_back(new_ele_abs);
+      ele->set_inplace_abstract(new_ele_abs);
+    }
+    new_res = std::make_shared<abstract::AbstractTuple>(output_list);
+  }
+  MS_LOG(DEBUG) << "The new abstract of view operation is:" << new_res->ToString();
+  return new_res;
+}
+
 AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrList &args) {
   if (op_def_ != nullptr) {
     MS_LOG(DEBUG) << "prim_func_: " << prim_func_->ToString();
     if (op_def_->func_impl_.GeneralInferRegistered()) {
       auto res = ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
+      if (op_def_->is_graph_view_) {
+        MS_LOG(DEBUG) << "View prim infer.";
+        return UpdateViewOpsAbstract(res, args);
+      }
       return prim_func_->inplace_prim() ? AddRefKeyForArgs(res, args) : res;
     } else {
       (void)op_def_->func_impl_.CheckValidation(prim_func_, args);
@@ -1375,6 +1421,10 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       auto type = op_def_->func_impl_.InferType(prim_func_, args);
       auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
       auto res = MakeAbstract(shape, type);
+      if (op_def_->is_graph_view_) {
+        MS_LOG(DEBUG) << "View prim infer.";
+        return UpdateViewOpsAbstract(res, args);
+      }
       return prim_func_->inplace_prim() ? AddRefKeyForArgs(res, args) : res;
     }
   }
