@@ -174,7 +174,7 @@ def generate(op_name, class_name, op_yaml, h_and_cc, need_update_shape):
 
 def gen_aclnn_kernel(op_name, yaml_str, need_update_shape=False, auto=False):
     """gen_aclnn_kernel function"""
-    skip_aclnn_list = {"squeeze", "generator"}
+    skip_aclnn_list = {"squeeze", "expand_dims", "generator"}
     if op_name in skip_aclnn_list:
         logging.warning("Operator {%s} has no aclnn interface, no aclnn kernel will be generated.", op_name)
         return

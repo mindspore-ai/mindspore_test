@@ -28,6 +28,7 @@ class OPS_API ExpandDimsFuncImpl : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
+class OPS_API ExpandDimsViewFuncImpl : public ExpandDimsFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 
