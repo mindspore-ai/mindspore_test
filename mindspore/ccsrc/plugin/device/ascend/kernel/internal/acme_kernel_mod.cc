@@ -24,14 +24,6 @@
 
 namespace mindspore {
 namespace kernel {
-AcmeKernelMod::~AcmeKernelMod() {
-  if (not_cached_item_ != nullptr) {
-    TilingMemMgr::GetInstance().pool_device_.Free(not_cached_item_->tiling_info_->tiling_addr_,
-                                                  not_cached_item_->size_);
-    TilingMemMgr::GetInstance().pool_host_.Free(not_cached_item_->host_addr_, not_cached_item_->size_);
-  }
-}
-
 bool AcmeKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   acme_to_ms_input_indices_mapper_.clear();
   acme_to_ms_output_indices_mapper_.clear();
@@ -175,13 +167,6 @@ void AcmeKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &input
   std::lock_guard<SimpleSpinLock> lock(lock_);
   auto tiling_cache_item = AcmeTilingCache::GetInstance().Bind(key);
   AcmeTilingCache::GetInstance().Unbind(last_item_);
-  if (not_cached_item_ != nullptr) {
-    TilingMemMgr::GetInstance().pool_device_.Free(not_cached_item_->tiling_info_->tiling_addr_,
-                                                  not_cached_item_->size_);
-    TilingMemMgr::GetInstance().pool_host_.Free(not_cached_item_->host_addr_, not_cached_item_->size_);
-    not_cached_item_ = nullptr;
-  }
-
   if (tiling_cache_item == nullptr) {
     auto tiling_size = acme_op_->GetTilingSize();
     auto host_addr = TilingMemMgr::GetInstance().pool_host_.Malloc(tiling_size);
@@ -200,23 +185,20 @@ void AcmeKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &input
     workspace_size_list_ = acme_op_->GetWorkspaceSize();
     tiling_info->host_run_info_->SetWorkSpaceSize(workspace_size_list_);
     auto tiling_info_ptr = std::make_shared<TilingCacheItem>(tiling_info, host_addr, tiling_size);
-    auto ret = AcmeTilingCache::GetInstance().Insert(key, tiling_info_ptr);
-    if (!ret) {
-      // op cache is full, comb out some items which are not recently used with high probability
+    if (TilingMemMgr::GetInstance().pool_device_.IsOutOfPoolMem(device_addr)) {
+      // tiling mem pool is full, comb out some items which are not recently used with high probability
       auto erased_items = AcmeTilingCache::GetInstance().CombOutSuspectedUselessItems();
-      for (auto &item : erased_items) {
-        TilingMemMgr::GetInstance().pool_device_.Free(item->tiling_info_->tiling_addr_, item->size_);
-        TilingMemMgr::GetInstance().pool_host_.Free(item->host_addr_, item->size_);
+      if (!erased_items.empty()) {
+        for (auto &item : erased_items) {
+          TilingMemMgr::GetInstance().pool_device_.Free(item->tiling_info_->tiling_addr_, item->size_);
+          TilingMemMgr::GetInstance().pool_host_.Free(item->host_addr_, item->size_);
+        }
+        TilingMemMgr::GetInstance().pool_device_.Rearrange();
+        TilingMemMgr::GetInstance().pool_host_.Rearrange();
       }
-      TilingMemMgr::GetInstance().pool_device_.Rearrange();
-      TilingMemMgr::GetInstance().pool_host_.Rearrange();
-
-      // try insert again, store the ptr to free memory if failed
-      ret = AcmeTilingCache::GetInstance().Insert(key, tiling_info_ptr);
-      if (!ret) {
-        not_cached_item_ = tiling_info_ptr;
-      }
+      MS_LOG(INFO) << "The tiling memory pool is full, comb out not used items: " << erased_items.size();
     }
+    (void)AcmeTilingCache::GetInstance().Insert(key, tiling_info_ptr);
     last_item_ = tiling_info_ptr;
   } else {
     acme_op_->SetTilingInfo(tiling_cache_item->tiling_info_);
