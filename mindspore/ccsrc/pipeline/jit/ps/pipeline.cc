@@ -1104,6 +1104,9 @@ void GraphExecutorPy::InitCompileCacheInfo(const ResourcePtr &resource, const st
     MS_EXCEPTION_IF_NULL(resource);
     resource->GetCompileCacheResource(compile_cache_dep_files_, weights_, queue_name_, idx++,
                                       &compile_cache_consistent_, has_python_script);
+    if (resource->func_graph() != nullptr) {
+      ResetId(resource);
+    }
   }
 }
 
