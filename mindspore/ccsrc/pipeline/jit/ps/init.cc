@@ -125,7 +125,8 @@ void RegFrameworkProfiler(py::module *m) {
     .def(
       "_framework_profiler_clear", []() { runtime::ProfilerAnalyzer::GetInstance().Clear(); },
       "Dump json and clear data")
-    .def("_framework_profiler_enable_mi", []() { runtime::ProfilerAnalyzer::GetInstance().EnableMiProfile(); });
+    .def("_framework_profiler_enable_mi", []() { runtime::ProfilerAnalyzer::GetInstance().EnableMiProfile(); })
+    .def("_framework_profiler_disable_mi", []() { runtime::ProfilerAnalyzer::GetInstance().DisableMiProfile(); });
 }
 
 void RegFrameworkPythonProfileRecorder(py::module *m) {

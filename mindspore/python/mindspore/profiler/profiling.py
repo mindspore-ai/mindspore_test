@@ -31,7 +31,7 @@ from mindspore.context import get_auto_parallel_context
 from mindspore.communication.management import GlobalComm, get_rank, get_group_size, get_local_rank
 import mindspore._c_expression as c_expression
 import mindspore._c_dataengine as cde
-from mindspore._c_expression import _framework_profiler_enable_mi
+from mindspore._c_expression import _framework_profiler_enable_mi, _framework_profiler_disable_mi
 from mindspore.profiler.common.exceptions.exceptions import ProfilerFileNotFoundException, \
     ProfilerIOException, ProfilerException, ProfilerRawFileException, ProfilerParamTypeErrorException
 from mindspore.profiler.common.exceptions.exceptions import ProfilerPathErrorException
@@ -824,6 +824,10 @@ class Profiler:
             self._ascend_profiler.stop()
 
             self._stop_time = int(time.time() * 10000000)
+
+        if self._profile_framework:
+            _framework_profiler_disable_mi()
+
         ProfilerInfo.set_profiling_stop_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         self._init_profiler_info()
         ProfilerInfo.set_diff_time(self._start_time - self._monotonic_time)
