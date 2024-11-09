@@ -188,7 +188,7 @@ void AcmeKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &input
     workspace_size_list_ = acme_op_->GetWorkspaceSize();
     tiling_info->host_run_info_->SetWorkSpaceSize(workspace_size_list_);
     auto tiling_info_ptr = std::make_shared<TilingCacheItem>(tiling_info, host_addr, tiling_size);
-    if (TilingMemMgr::GetInstance().pool_device_.IsOutOfPoolMem(device_addr)) {
+    if (TilingMemMgr::GetInstance().pool_device_.IsOneOffMem(device_addr)) {
       // tiling mem pool is full, comb out some items which are not recently used with high probability
       auto erased_items = AcmeTilingCache::GetInstance().CombOutSuspectedUselessItems();
       if (!erased_items.empty()) {
