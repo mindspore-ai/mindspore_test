@@ -58,6 +58,7 @@ class OPS_API ScalarFloorDiv : public ScalarIntOp {
     }
     return DoubleToLong(std::floor(LongToDouble(x) / LongToDouble(y)));
   }
+  void UpdateMathInfo() override;
 };
 
 class OPS_API ScalarCeilDiv : public ScalarIntOp {

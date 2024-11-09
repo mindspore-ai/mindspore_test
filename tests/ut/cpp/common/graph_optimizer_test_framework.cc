@@ -89,8 +89,6 @@ ParameterPtr ConstructGraph::NewListInput(const std::string &name,
   return NewInput(name, abs);
 }
 
-ValueNodePtr ConstructGraph::NewValueNode(const ValuePtr &value) { return graph_->NewValueNode(value); }
-
 CNodePtr ConstructGraph::NewCNodeWithoutInfer(const std::string &prim_name, const std::vector<AnfNodePtr> &inputs,
                                               const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   MS_EXCEPTION_IF_NULL(graph_);
