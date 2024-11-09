@@ -40,7 +40,7 @@ class AcmeKernelMod : public KernelMod {
     MS_EXCEPTION_IF_NULL(ascend_profiler_);
   }
 
-  virtual ~AcmeKernelMod();
+  virtual ~AcmeKernelMod() = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;

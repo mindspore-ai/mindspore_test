@@ -28,8 +28,6 @@
 
 namespace mindspore {
 namespace kernel {
-constexpr size_t kMaxKernelCount = kTilingMemPoolDeviceBlockNum;
-
 struct TilingCacheItem {
   std::atomic<int64_t> ref_count_{0};
   acme::TilingInfoPtr tiling_info_;
