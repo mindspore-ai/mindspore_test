@@ -64,7 +64,7 @@ class BACKEND_EXPORT OpExecutor {
 
   void RegisterCallbackForMemoryPool();
 
-  static void DispatchLaunchTask(const std::function<void()> &func);
+  static void DispatchLaunchTask(std::function<void()> &&func);
 
  private:
   OpExecutor();
