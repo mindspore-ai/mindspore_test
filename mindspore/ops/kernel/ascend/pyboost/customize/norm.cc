@@ -24,31 +24,25 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-namespace {
-constexpr size_t kNumberTwo = 2;
-}  // namespace
-void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor,
-                         const std::optional<ScalarPtr> &ord, const std::optional<ValueTuplePtr> &dim,
-                         const BoolImmPtr &keepdim, const std::optional<Int64ImmPtr> &dtype) {
+void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_x_tensor, const FP32ImmPtr &p,
+                         const std::optional<ValueTuplePtr> &dim, const BoolImmPtr &keepdim,
+                         const std::optional<Int64ImmPtr> &dtype) {
   MS_LOG(DEBUG) << "Call Norm start";
   // Convert ValuePtr to c++ scalar
-  OpRunner::InferOpOutput(op, input_x_tensor, ord, dim, keepdim, dtype);
+  OpRunner::InferOpOutput(op, input_x_tensor, p, dim, keepdim, dtype);
   std::vector<int64_t> dim_vector{};
   if (dim.has_value()) {
     dim_vector = ConvertValueTupleToVector<int64_t>(dim.value());
   }
-  ScalarPtr ord_scalar = nullptr;
-  if (!ord.has_value()) {
-    MAKE_SCALAR(kNumberTwo, kNumberTypeFloat32, ord_scalar);
-  } else {
-    ord_scalar = ord.value();
-  }
+  ScalarPtr p_scalar = nullptr;
+  MAKE_SCALAR(GetValue<float>(p), kNumberTypeFloat32, p_scalar);
+
   const auto keepdim_imm = GetValue<bool>(keepdim);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
   // Async
   PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, input_x_tensor, ord_scalar, dim_vector, keepdim_imm]() {
+    std::make_shared<runtime::PyBoostDeviceTask>([op, input_x_tensor, p_scalar, dim_vector, keepdim_imm]() {
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
       // Malloc for input tensors
@@ -56,7 +50,7 @@ void NormAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPt
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-      LAUNCH_ACLNN(aclnnNorm, device_context, op->stream_id(), input_x_tensor, ord_scalar, dim_vector, keepdim_imm,
+      LAUNCH_ACLNN(aclnnNorm, device_context, op->stream_id(), input_x_tensor, p_scalar, dim_vector, keepdim_imm,
                    outputs[kIndex0]);
       MS_LOG(DEBUG) << "Launch Norm end";
     }));
