@@ -208,18 +208,21 @@ AutoGradMetaData *HasTensorHook(const ValuePtr &value) {
 }
 
 void RunTensorHook(ValuePtrList *grad_in, AutoGradMetaData *auto_grad_meta) {
+  static const std::string kTensorHook = "TensorHook";
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
+                                     kTensorHook, false);
   MS_EXCEPTION_IF_NULL(grad_in);
   MS_EXCEPTION_IF_NULL(auto_grad_meta);
   if (grad_in->size() != kSizeOne) {
     MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
   }
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   for (const auto &hook : auto_grad_meta->backward_hooks()) {
     MS_LOG(DEBUG) << "Run hook id T" << hook.first;
     MS_EXCEPTION_IF_NULL(hook.second);
     (*grad_in)[kIndex0] = (*(hook.second))(grad_in->front());
   }
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
 }
 
@@ -294,7 +297,7 @@ void FuncBackwardNode::Release() {
 ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      name(), false);
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "Begin HookBackwardNode CallBackward ";
   auto gradient = ValueListToValue(grads, out_abstract_);
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -315,7 +318,7 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   }
   auto gradient_tensors = PostProcess(gradient_values);
   MS_LOG(DEBUG) << "End HookBackwardNode CallBackward";
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   return gradient_tensors;
 }
 

@@ -94,6 +94,7 @@ enum class ProfilerEvent {
   kPyNativeDeviceTask,
   kPyNativeLaunchTask,
   kPyNativeBpropTask,
+  kWait,
   // PyNative inner Event
   kPyNativeGilAcquire,
   kPyNativeCast,
@@ -190,6 +191,7 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kPyNativeDeviceTask, "DeviceTask"},
   {ProfilerEvent::kPyNativeLaunchTask, "LaunchTask"},
   {ProfilerEvent::kPyNativeBpropTask, "BpropTask"},
+  {ProfilerEvent::kWait, "Wait"},
   {ProfilerEvent::kPyNativeGilAcquire, "AcquireGil"},
   {ProfilerEvent::kPyNativeCast, "PyNativeCast"},
   {ProfilerEvent::kPyNativeInfer, "PyNativeInfer"},
