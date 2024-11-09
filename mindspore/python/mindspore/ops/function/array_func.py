@@ -66,7 +66,7 @@ from mindspore.ops._utils.utils import ms_arrange
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
-    inplace_fill_scalar, expand_as, unstack_ext_op
+    inplace_fill_scalar, expand_as, unstack_ext_op, full_like_op
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
@@ -1020,6 +1020,50 @@ def full_like(input, fill_value, *, dtype=None):
     if dtype is None:
         dtype = input.dtype
     return full(input.shape, fill_value, dtype=dtype)
+
+
+def full_like_ext(input, fill_value, *, dtype=None):
+    """
+    Return a Tensor of the same shape as `input` and filled with `fill_value`.
+
+    .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): input Tensor and the output Tensor have the same shape as `input`.
+        fill_value (Number): Value to fill the returned tensor. Complex numbers are not supported for now.
+
+    Keyword Args:
+        dtype (mindspore.dtype, optional): The specified type of output tensor. `bool_` and `number` are supported,
+            for details, please refer to :class:`mindspore.dtype` . Default: ``None`` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor([[0, 1], [2, 1]], dtype=mindspore.int32)
+        >>> output = mint.full_like(input, 1)
+        >>> print(output)
+        [[1 1]
+         [1 1]]
+        >>> input = Tensor([[0, 1, 1], [2, 1, 2], [1, 3, 4]], dtype=mindspore.int32)
+        >>> output = mint.full_like(input, 0, dtype=mindspore.float32)
+        >>> print(output)
+        [[0. 0. 0.]
+         [0. 0. 0.]
+         [0. 0. 0.]]
+    """
+    if dtype is None:
+        dtype = input.dtype
+    return full_like_op(input, fill_value, dtype)
 
 
 def chunk(input, chunks, axis=0):

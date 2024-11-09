@@ -1,0 +1,38 @@
+full_like:
+    description: |
+        Return a Tensor of the same shape as `input` and filled with `fill_value`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): Input Tensor and the output Tensor have the same shape as `input`.
+            fill_value (Number): Value to fill the returned tensor. Complex numbers are not supported for now.
+
+        Keyword Args:
+            dtype (mindspore.dtype, optional): The specified type of output tensor. `bool_` and `number` are supported,
+                for details, please refer to :class:`mindspore.dtype` . Default: ``None`` .
+
+        Returns:
+            Tensor.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor, mint
+            >>> input = Tensor([[0, 1], [2, 1]], dtype=mindspore.int32)
+            >>> output = mint.full_like(input, 1)
+            >>> print(output)
+            [[1 1]
+             [1 1]]
+            >>> input = Tensor([[0, 1, 1], [2, 1, 2], [1, 3, 4]], dtype=mindspore.int32)
+            >>> output = mint.full_like(input, 0, dtype=mindspore.float32)
+            >>> print(output)
+            [[0. 0. 0.]
+             [0. 0. 0.]
+             [0. 0. 0.]]
