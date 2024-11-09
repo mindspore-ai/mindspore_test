@@ -56,7 +56,7 @@ class TilingMemPool {
 
   std::string GetName() const { return name_; }
 
-  inline bool IsOutOfPoolMem(void *addr) const { return addr < mem_base_ptr_ || addr >= mem_base_ptr_ + total_size_; }
+  inline bool IsOneOffMem(void *addr) const { return addr < mem_base_ptr_ || addr >= mem_base_ptr_ + total_size_; }
 
  protected:
   virtual void *MallocInner(size_t size) { return nullptr; }
