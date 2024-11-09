@@ -604,10 +604,11 @@ size_t GeDeviceResManager::DefaultStream() const {
 
 std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryForTensorList(
   const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+  MS_LOG(INFO) << "Start AllocDeviceMemoryForTensorList";
   MS_EXCEPTION_IF_NULL(mem_manager_);
   std::vector<size_t> before_padding_sizes = GetUniqueTensorListSize(tensor_list);
   if (enable_mem_align == false) {
-    size_t total_size = std::accumulate(before_padding_sizes.begin(), before_padding_sizes.end(), 0);
+    size_t total_size = std::accumulate(before_padding_sizes.begin(), before_padding_sizes.end(), IntToSize(0));
     auto stream_id = DefaultStream();
     auto total_align_size = device::MemoryManager::GetCommonAlignSize(total_size);
     auto device_ptr = mem_manager_->MallocMemFromMemPool(total_align_size, false, false, stream_id);
@@ -626,8 +627,9 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
       auto format = GetFormat(tensor);
       auto device_address = CreateDeviceAddress(reinterpret_cast<void *>(ptr), before_padding_sizes[i], tensor->shape(),
                                                 format, tensor->data_type(), device_name, device_id, stream_id);
-      MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
-                    << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
+      MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << reinterpret_cast<void *>(ptr)
+                    << ", size:" << before_padding_sizes[i] << ", shape:" << tensor->shape()
+                    << ", data_type:" << TypeIdToString(tensor->data_type());
       MS_EXCEPTION_IF_NULL(device_address);
       if (tensor->device_address() == nullptr) {
         device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
