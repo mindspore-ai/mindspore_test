@@ -275,8 +275,9 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
                      std::map<size_t, bool> *success, std::map<size_t, bool> *fail, bool perf) {
   // filter failure case
   if (fail != nullptr) {
-    for (auto item : guardMap_) {
+    for (const auto &item : guardMap_) {
       if (fail->find(item.first) != fail->end()) {
+        MS_LOG(DEBUG) << "Found in failure cache, no need to check this guard: " << item.second->ToString();
         return false;
       }
     }
@@ -285,11 +286,8 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
   list.reserve(guardList_.size());
   // filter success case
   if (success != nullptr) {
-    for (auto item : guardList_) {
-      if (success->find(item->Info().Id()) == success->end()) {
-        list.push_back(item);
-      }
-    }
+    std::copy_if(guardList_.begin(), guardList_.end(), std::back_inserter(list),
+                 [success](const GuardItemPtr &guard) { return success->find(guard->Info().Id()) == success->end(); });
   } else {
     list = guardList_;
   }
@@ -311,7 +309,7 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
       if (print) {
         auto trace = item->GetTrace();
         auto obj = GetObjectFromTrace(frame, trace);
-        GRAPH_JIT_LOG_F("Guard check fail: %s v.s. %s\n", item->ToString().c_str(),
+        GRAPH_JIT_LOG_F("Guard check fail: %s v.s. %p %s\n", item->ToString().c_str(), obj,
                         std::string(py::str(py::cast<py::object>(obj))).c_str());
         Py_XDECREF(obj);
       } else if (IS_OUTPUT_ON(mindspore::kDebug)) {

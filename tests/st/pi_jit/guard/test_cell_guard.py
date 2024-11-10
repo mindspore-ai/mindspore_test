@@ -14,32 +14,60 @@
 # ============================================================================
 """Test guard for Cell"""
 import sys
-import pytest
 
 import mindspore as ms
-from mindspore import Tensor, context, jit, nn
+from mindspore import Tensor, context, jit, nn, ops
 from mindspore._c_expression import get_code_extra
 
 from tests.mark_utils import arg_mark
-from ..share.utils import match_array
-
-
-@pytest.fixture(autouse=True)
-def skip_if_python_version_too_high():
-    if sys.version_info >= (3, 11):
-        pytest.skip("Skipping tests on Python 3.11 and higher.")
-
+from ..share.utils import match_array, assert_no_graph_break
 
 cfg = {"compile_with_try": False}
 
+context.set_context(mode=context.PYNATIVE_MODE)
 
-def assert_no_graph_break(func, call_count: int = None):
-    jcr = get_code_extra(getattr(func, "__wrapped__", func))
-    assert jcr is not None
-    assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
-    if call_count is not None:
-        assert jcr['code']['call_count_'] == call_count
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_guard_for_Cell_1():
+    """
+    Feature: Test guard for nn.Cell.
+    Description: Call different Cell instance, should recompile.
+    Expectation: Guard failed, should recompile.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x: Tensor, y: Tensor):
+            return ops.matmul(x, y)
+
+    pynative_net = Net()
+    jit_net1 = Net()
+    jit_net2 = Net()
+    jit_net1.construct = jit(jit_net1.construct, mode='PIJit', jit_config=cfg)
+    jit_net2.construct = jit(jit_net2.construct, mode='PIJit', jit_config=cfg)
+
+    x = ops.randn(2, 4)
+    y = ops.randn(4, 2)
+    o1 = pynative_net(x, y)
+
+    o2 = jit_net1(x, y)
+    match_array(o1, o2, error=7)
+    assert_no_graph_break(jit_net1.construct, call_count=1)
+
+    o3 = jit_net2(x, y)
+    match_array(o1, o3, error=7)
+    assert_no_graph_break(jit_net2.construct, call_count=1)  # should recompile
+
+    x = ops.randn(2, 4)
+    y = ops.randn(4, 2)
+    o4 = pynative_net(x, y)
+
+    o5 = jit_net1(x, y)
+    match_array(o4, o5, error=7)
+    assert_no_graph_break(jit_net1.construct, call_count=2)  # should not recompile
+
+    o6 = jit_net2(x, y)
+    match_array(o4, o6, error=7)
+    assert_no_graph_break(jit_net2.construct, call_count=2)  # should not recompile
 
 
 class MLP(nn.Cell):
