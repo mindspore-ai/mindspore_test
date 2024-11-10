@@ -1667,15 +1667,20 @@ class CellData : public ItemData {
   }
 
   std::string ToString() override {
+    std::stringstream ss;
+    ss << cell_;
+    const std::string &ptr = ss.str();
+
     std::string cell;
     cell += DESC(type_);
+    cell += DESC(ptr);
     cell += DESC_STRING(training_);
     cell += DESC_STRING(requires_grad_);
     return DESC(cell) + DESC_END;
   }
 
  protected:
-  void SubInfo(InfoPack *info) override { (*info) << cell_ << training_ << requires_grad_; }
+  void SubInfo(InfoPack *info) override { (*info) << static_cast<void *>(cell_) << training_ << requires_grad_; }
 
  private:
   PyObject *cell_;

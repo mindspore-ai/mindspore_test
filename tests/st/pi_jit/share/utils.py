@@ -110,7 +110,7 @@ def assert_executed_by_graph_mode(func, call_count: int = None):
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
 
-def assert_no_graph_break(func, call_count: int = None):
+def assert_no_graph_break(func, *, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
