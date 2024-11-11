@@ -93,7 +93,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     return;
   }
   // H2D src_device_ptr: CPU; dst_device_ptr: GPU/ASCEND.
-  auto dst_addr = dst_tensor->device_address();
+  auto dst_addr = std::dynamic_pointer_cast<device::DeviceAddress>(dst_tensor->device_address());
   if (dst_addr == nullptr) {
     auto size = src_device_ptr != nullptr ? src_device_ptr->GetSize() : src_tensor->Size();
     auto type_id = src_device_ptr != nullptr ? src_device_ptr->type_id() : src_tensor->data_type();
@@ -106,16 +106,18 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     if (target_context->device_res_manager_->GetStream(stream_id) == nullptr) {
       stream_id = kDefaultStreamIndex;
     }
-    auto new_ptr = target_context->device_res_manager_->AllocateMemory(size, stream_id);
-    MS_EXCEPTION_IF_NULL(new_ptr);
+
     auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
-      new_ptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, host_shape, to, device_id);
+      nullptr, size, kernel::GetFormatFromStrToEnum(kOpFormat_DEFAULT), type_id, host_shape, to, device_id);
     dst_addr = target_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+    MS_EXCEPTION_IF_NULL(dst_addr);
+    if (!target_context->device_res_manager_->AllocateMemory(dst_addr.get(), stream_id)) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed, maybe device memory(device id:" << device_id
+                        << ") isn't enough. Allocate size: " << size;
+    }
     dst_tensor->set_device_address(dst_addr);
   }
-  auto dst_device_ptr = std::dynamic_pointer_cast<device::DeviceAddress>(dst_addr);
-  MS_EXCEPTION_IF_NULL(dst_device_ptr);
-  MoveToH2D(src_tensor, src_device_ptr, dst_device_ptr, blocking);
+  MoveToH2D(src_tensor, src_device_ptr, dst_addr, blocking);
   dst_tensor->set_sync_status(kNeedSyncDeviceToHost);
 }
 }  // namespace device

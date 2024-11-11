@@ -1027,7 +1027,7 @@ void RegMetaTensor(const py::module *m) {
                                   >>> ret = (data.offload_file_path() != '')
                                   True
                               )mydelimiter")
-    .def("move_to", &TensorPy::MoveTo, R"mydelimiter(
+    .def("move_to", &TensorPy::MoveTo, py::arg("to"), py::arg("blocking") = nullptr, R"mydelimiter(
                                Copy tensor between host and device asynchronously if blocking=False,
                                otherwise synchronously. if the arg `to`=`CPU`, means D2H copy;
                                if the arg `to`=`GPU` or `to`=`ASCEND`, means H2D copy.
