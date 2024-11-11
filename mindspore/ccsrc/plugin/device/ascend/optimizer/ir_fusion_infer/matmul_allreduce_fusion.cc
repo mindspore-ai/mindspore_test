@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
 #include <set>
 #include <vector>
+#include <string>
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
@@ -32,7 +34,6 @@
 #include "ir/anf.h"
 #include "utils/phase.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_allreduce_fusion.h"
 
 namespace mindspore::opt {
 enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
@@ -110,6 +111,11 @@ bool IsNodesDTypeSameAndValid(const std::vector<AnfNodePtr> &nodes, const std::v
   }
   auto type0 = types[0];
   return std::all_of(types.begin() + 1, types.end(), [&type0](TypeId type) { return type == type0; });
+}
+
+std::vector<std::string> MatMulAllReduceFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimMatMul->name(), prim::kPrimAllReduce->name()};
+  return ret;
 }
 
 const BaseRef MatMulAllReduceFusion::DefinePattern() const {

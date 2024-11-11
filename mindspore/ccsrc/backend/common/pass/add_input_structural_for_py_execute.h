@@ -16,6 +16,8 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_ADD_INPUT_STRUCTURAL_OF_PY_EXECUTE_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_ADD_INPUT_STRUCTURAL_OF_PY_EXECUTE_H_
 
+#include <vector>
+#include <string>
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -27,6 +29,9 @@ class AddInputStructuralForPyExecute : public PatternProcessPass {
   ~AddInputStructuralForPyExecute() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &node, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

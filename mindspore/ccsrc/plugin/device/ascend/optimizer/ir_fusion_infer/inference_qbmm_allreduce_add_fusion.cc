@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.h"
+#include <vector>
+#include <string>
 #include <memory>
 #include "mindspore/ops/op_def/other_ops.h"
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
@@ -45,6 +47,12 @@ CNodePtr QbmmAllReduceAddFusion::CreateQbmmAllReduceAddNode(const FuncGraphPtr &
   }
   MS_LOG(DEBUG) << "create QbmmAllReduceAddFusion node success.";
   return allreduce_node;
+}
+
+std::vector<std::string> QbmmAllReduceAddFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimAllReduce->name(),
+                               prim::kPrimAdd->name()};
+  return ret;
 }
 
 const BaseRef QbmmAllReduceAddFusion::DefinePattern() const {

@@ -18,15 +18,25 @@
 
 #include <memory>
 #include <string>
+#include "backend/common/pass/add_parallel_group_id_attr.h"
 #include "backend/common/pass/dropout_gen_mask_fusion.h"
 #include "backend/common/pass/common_subexpression_elimination.h"
 #include "backend/common/pass/custom_defined_depend.h"
+#include "backend/common/pass/communication_op_fusion.h"
+#include "backend/common/pass/concat_outputs_for_all_gather.h"
 #include "backend/common/pass/erase_visit_attr.h"
 #include "backend/common/pass/graph_view_replace_pass.h"
+#include "backend/common/pass/insert_type_transform_op.h"
+#include "backend/common/pass/insert_tensor_move_for_communication.h"
+#include "backend/common/pass/split_inputs_for_reduce_scatter.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
-#include "backend/common/pass/add_parallel_group_id_attr.h"
+#include "include/common/utils/parallel_context.h"
 #include "include/backend/debug/profiler/profiling.h"
+#include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
+#include "plugin/device/ascend/optimizer/format_type/deal_ref_output.h"
+#include "plugin/device/ascend/optimizer/format_type/set_fracz_group_attr.h"
 #include "plugin/device/ascend/optimizer/ge/all_to_all_v_for_ge.h"
 #include "plugin/device/ascend/optimizer/ge/maketuple_depend_remover.h"
 #include "plugin/device/ascend/optimizer/ge/fused_cast_add.h"
@@ -45,9 +55,7 @@
 #include "plugin/device/ascend/optimizer/ge/resize_bilinear_add_attr.h"
 #include "plugin/device/ascend/optimizer/ge/process_call_inline.h"
 #include "plugin/device/ascend/optimizer/ge/process_partial_inline.h"
-#include "plugin/device/ascend/optimizer/format_type/deal_ref_output.h"
 #include "plugin/device/ascend/optimizer/ge/hcom/insert_load_for_allgather.h"
-#include "plugin/device/ascend/optimizer/format_type/set_fracz_group_attr.h"
 #include "plugin/device/ascend/optimizer/ge/shape_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/inputs_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/maketuple_unify_mindir.h"
@@ -57,24 +65,20 @@
 #include "plugin/device/ascend/optimizer/ge/scalar_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/tuple_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/add_noop_to_es_grad.h"
-#include "plugin/device/ascend/optimizer/ir_fission/seed_adapter.h"
-#include "plugin/device/ascend/optimizer/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
-#include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/remove_tensor_to_scalar_or_tuple_ops.h"
 #include "plugin/device/ascend/optimizer/ge/scalar_ops_output_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/ge_convert_const_input_to_tensor_input.h"
-#include "plugin/device/ascend/optimizer/heterogeneous/insert_move_to.h"
-#include "backend/common/pass/insert_type_transform_op.h"
-#include "backend/common/pass/insert_tensor_move_for_communication.h"
-#include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
 #include "plugin/device/ascend/optimizer/ge/convert_pad_v3_paddings.h"
 #include "plugin/device/ascend/optimizer/ge/broadcast_for_select.h"
 #include "plugin/device/ascend/optimizer/ge/fa_alltoallv_parallel.h"
+#include "plugin/device/ascend/optimizer/heterogeneous/insert_move_to.h"
+#include "plugin/device/ascend/optimizer/mindir/centralization_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/specialized_prepare.h"
+#include "plugin/device/ascend/optimizer/mindir/tensor_array.h"
+#include "plugin/device/ascend/optimizer/ir_fission/seed_adapter.h"
+#include "plugin/device/ascend/optimizer/ir_fission/ascend_convert_tuple_input_to_dynamic_input.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/histogram_fixed_width_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/shape_reshape_fusion.h"
-#include "include/common/utils/parallel_context.h"
-#include "backend/common/pass/communication_op_fusion.h"
-#include "backend/common/pass/concat_outputs_for_all_gather.h"
-#include "backend/common/pass/split_inputs_for_reduce_scatter.h"
 
 namespace mindspore {
 namespace opt {
@@ -92,6 +96,14 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
 #endif
   auto optimizer = std::make_shared<GraphOptimizer>();
   auto opt_ge_pm = std::make_shared<PassManager>("opt_ge_pm");
+  opt_ge_pm->AddPass(std::make_shared<HistogramFixedWidthFusion>());
+  opt_ge_pm->AddPass(std::make_shared<opt::TensorArrayAddFlowCond1>());
+  opt_ge_pm->AddPass(std::make_shared<opt::TensorArrayAddFlowCond2>());
+  opt_ge_pm->AddPass(std::make_shared<opt::GeTensorArrayCastIndex>());
+  opt_ge_pm->AddPass(std::make_shared<opt::TensorArrayPrepare>());
+  opt_ge_pm->AddPass(std::make_shared<opt::CentralizationMindIR>());
+  opt_ge_pm->AddPass(std::make_shared<opt::TransDependValueToInt32>());
+  opt_ge_pm->AddPass(std::make_shared<opt::AddParallelGroupIdAttr>());
   opt_ge_pm->AddPass(std::make_shared<opt::GEConvertConstInputToTensorInput>());
   opt_ge_pm->AddPass(std::make_shared<opt::RemoveTensorToScalarOrTupleOps>());
   opt_ge_pm->AddPass(std::make_shared<opt::AlltoAllVForGE>());
@@ -213,13 +225,11 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   } else {
     opt_acl_pm->AddPass(std::make_shared<InsertTensorMoveForCommunication>());
   }
-  opt_acl_pm->AddPass(std::make_shared<opt::TransDependValueToInt32>());
   opt_acl_pm->AddPass(std::make_shared<opt::ProcessPartialInline>());
   opt_acl_pm->AddPass(std::make_shared<opt::ExpanderFallback>());
   opt_acl_pm->AddPass(std::make_shared<opt::ConvertPadV3Paddings>());
   opt_acl_pm->AddPass(std::make_shared<opt::ConvertPadV3GradPaddings>());
   opt_acl_pm->AddPass(std::make_shared<opt::ResizeBilinearAddAttr>());
-  opt_acl_pm->AddPass(std::make_shared<opt::AddParallelGroupIdAttr>());
   opt_acl_pm->AddPass(std::make_shared<opt::CustomDefinedDepend>(false, kernel_graph->graph_id()));
   optimizer->AddPassManager(opt_acl_pm);
   (void)optimizer->Optimize(kernel_graph);
@@ -254,11 +264,11 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   auto opt_acl_after_kernel_select_pm = std::make_shared<PassManager>("opt_acl_after_kernel_select_pm");
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<SetFraczGroupAttr>());
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<InsertIdentity>());
-  opt_acl_after_kernel_select_pm->AddPass(std::make_shared<EraseVisitAttr>());
 
   int execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   // graph_mode process the pass in OptimizeACLGraphAfterCreateKernel
   if (execution_mode == kPynativeMode) {
+    opt_acl_after_kernel_select_pm->AddPass(std::make_shared<EraseVisitAttr>());
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<DealRefOutput>());
   }
 
@@ -267,7 +277,6 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   }
   if (!kernel_graph->is_graph_run_mode() && context_ptr->ascend_soc_version() != "ascend910") {
     opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion>());
-    opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeFusion2>());
     opt_acl_after_kernel_select_pm->AddFusionPass(std::make_shared<opt::ShapeReshapeDirectFusion>());
   }
   if (!common::IsDisableRuntimeConfig(common::kRuntimeView)) {

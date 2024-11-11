@@ -31,6 +31,11 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> AddCastRmsNormCastQuantFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimRmsNorm->name(), prim::kPrimAdd->name(), prim::kPrimQuantV2->name()};
+  return ret;
+}
+
 const BaseRef AddCastRmsNormCastQuantFusion::DefinePattern() const {
   VarPtr index0 = std::make_shared<CondVar>(IsConstant);
   VarPtr x0 = std::make_shared<Var>();

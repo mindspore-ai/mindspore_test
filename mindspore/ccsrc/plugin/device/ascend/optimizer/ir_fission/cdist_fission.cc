@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <string>
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -85,6 +86,16 @@ AnfNodePtr AddBroadCastToNode(const FuncGraphPtr &func_graph, const AnfNodePtr &
   return broadcast_to;
 }
 }  // namespace
+
+std::vector<std::string> CdistFission::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimCdist->name()};
+  return ret;
+}
+
+std::vector<std::string> CdistGradFission::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimCdistGrad->name()};
+  return ret;
+}
 
 const BaseRef CdistFission::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();

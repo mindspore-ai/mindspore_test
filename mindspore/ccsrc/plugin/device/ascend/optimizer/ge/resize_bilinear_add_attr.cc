@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/ge/resize_bilinear_add_attr.h"
-
+#include <vector>
+#include <string>
 #include <memory>
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/image_ops.h"
@@ -35,6 +36,11 @@ bool IsResizeBilinear(const BaseRef &ref) {
   return false;
 }
 }  // namespace
+
+std::vector<std::string> ResizeBilinearAddAttr::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimResizeBilinearV2->name()};
+  return ret;
+}
 
 const BaseRef ResizeBilinearAddAttr::DefinePattern() const {
   VarPtr resize = std::make_shared<CondVar>(IsResizeBilinear);

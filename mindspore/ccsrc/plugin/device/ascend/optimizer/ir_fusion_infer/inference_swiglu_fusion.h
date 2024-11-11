@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_SWIGLU_FUSION_H_
 
 #include <memory>
+#include <vector>
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/math_ops.h"
@@ -36,6 +37,7 @@ class InferenceSwiGLUFusion : public PatternProcessPass {
  private:
   bool Init() const;
   CNodePtr CreateSwiGLUNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const EquivPtr &equiv) const;
+  std::vector<std::string> MustExistPrimitiveName() const override;
 
  protected:
   mutable VarPtr input_ = nullptr;
