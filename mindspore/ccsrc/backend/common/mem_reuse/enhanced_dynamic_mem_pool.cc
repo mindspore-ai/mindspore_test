@@ -20,7 +20,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "utils/log_adapter.h"
 #ifdef ENABLE_DEBUGGER
-#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #endif
 
 namespace mindspore {
@@ -51,7 +51,7 @@ DeviceMemPtr EnhancedDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
 
 #ifdef ENABLE_DEBUGGER
   // Cpu profiler record.
-  static auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
+  static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
   MS_EXCEPTION_IF_NULL(profiler_inst);
   if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
     profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
@@ -108,7 +108,7 @@ bool EnhancedDynamicMemPool::DoFreeTensorMem(const DeviceMemPtr &device_addr) {
   if (ret) {
 #ifdef ENABLE_DEBUGGER
     // Cpu profiler record.
-    static auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
+    static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
     MS_EXCEPTION_IF_NULL(profiler_inst);
     if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
       profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),

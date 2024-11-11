@@ -28,7 +28,7 @@
 #include "utils/ms_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #ifdef ENABLE_DEBUGGER
-#include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
+#include "include/backend/debug/profiler/profiling.h"
 #endif
 
 namespace mindspore {
@@ -78,7 +78,7 @@ DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persis
 
 // report memory data to profiler
 #ifdef ENABLE_DEBUGGER
-  static auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
+  static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
   MS_EXCEPTION_IF_NULL(profiler_inst);
   if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
     profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
@@ -636,7 +636,7 @@ void DynamicMemPoolBestFit::CombineMemBuf(const DynamicMemBlockPtr &mem_block,
 
 // report memory data to profiler
 #ifdef ENABLE_DEBUGGER
-  static auto profiler_inst = profiler::cpu::CPUProfiler::GetInstance();
+  static auto profiler_inst = profiler::Profiler::GetInstance(kCPUDevice);
   MS_EXCEPTION_IF_NULL(profiler_inst);
   if (profiler_inst->GetEnableFlag() && profiler_inst->GetProfileMemoryFlag()) {
     profiler_inst->RecordMemoryPoolInfo(TotalUsedMemStatistics(), TotalMemStatistics(),
