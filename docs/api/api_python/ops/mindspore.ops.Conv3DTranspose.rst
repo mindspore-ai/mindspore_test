@@ -41,8 +41,12 @@ mindspore.ops.Conv3DTranspose
         - **data_format** (str，可选) - 支持的数据模式。目前仅支持 ``"NCDHW"`` 。默认值： ``"NCDHW"`` 。
 
     输入：
-        - **dout** (Tensor) - 卷积操作的输出的梯度Tensor。shape： :math:`(N, C_{in}, D_{out}, H_{out}, W_{out})` 。目前数据类型仅支持float16和float32。
-        - **weight** (Tensor) - 若kernel shape为 :math:`(K_d, K_h, K_w)` ，则weight shape应为 :math:`(C_{in}, C_{out}//group, K_d, K_h, K_w)` ，其中 :math:`group` 为算子参数。:math:`//` 为整数除法操作。目前数据类型仅支持float16和float32。
+        - **dout** (Tensor) - 卷积操作的输出的梯度Tensor。shape： :math:`(N, C_{in}, D_{out}, H_{out}, W_{out})` 。
+          支持数据类型：
+
+          - Ascend: float16。
+          - GPU/CPU: float16、float32。
+        - **weight** (Tensor) - 若kernel shape为 :math:`(K_d, K_h, K_w)` ，则weight shape应为 :math:`(C_{in}, C_{out}//group, K_d, K_h, K_w)` ，其中 :math:`group` 为算子参数。:math:`//` 为整数除法操作。其数据类型与 `dout` 一致。
         - **bias** (Tensor) - shape为 :math:`C_{out}` 的Tensor。目前仅支持 ``None`` 。默认值： ``None`` 。
 
     输出：
