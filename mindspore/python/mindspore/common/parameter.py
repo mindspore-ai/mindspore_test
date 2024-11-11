@@ -22,6 +22,7 @@ import os
 import sys
 import math
 import numbers
+from contextlib import contextmanager
 import numpy as np
 from mindspore import log as logger
 from mindspore.log import _LogActionOnce
@@ -52,6 +53,16 @@ PARAMETER_NAME_PREFIX_MAX_LEN = 1024
 
 # Global variable for parameter unique key.
 _GLOBAL_PARAMETER_KEY = -1
+
+
+@contextmanager
+def no_init_parameters():
+    init_class = globals()["Parameter"]
+    setattr(init_class, "init_param", False)
+    try:
+        yield
+    finally:
+        setattr(init_class, "init_param", True)
 
 
 def _is_in_auto_parallel_mode():
@@ -243,7 +254,8 @@ class Parameter(Tensor_):
     def __new__(cls, default_input, *args, **kwargs):
         init_data_flag = bool(isinstance(default_input, Tensor) and default_input.has_init)
         rc = sys.getrefcount(default_input)
-        input_class, *class_init_args = Parameter._get_parameter_new_args(default_input, rc)
+        init_param = getattr(cls, "init_param", True)
+        input_class, *class_init_args = Parameter._get_parameter_new_args(default_input, rc, init_param)
         new_type = Parameter._get_base_class(input_class)
         obj = input_class.__new__(new_type)
         input_class.__init__(obj, *class_init_args)
@@ -355,7 +367,7 @@ class Parameter(Tensor_):
         return new_type
 
     @staticmethod
-    def _get_parameter_new_args(data, rc):
+    def _get_parameter_new_args(data, rc, init_param=True):
         """Set `set_data` of current `Parameter`."""
         if isinstance(data, bool):
             raise ValueError('Parameter data can not be `bool`')
@@ -370,8 +382,8 @@ class Parameter(Tensor_):
                     return (Tensor, data.asnumpy(), mstype.qint4x2)
                 return (Tensor, data.asnumpy())
 
-            not_init_data = _is_role_sched() or (_is_role_pserver() and _cache_enable()
-                                                 ) or _is_in_auto_parallel_mode() or _is_parallel_mode()
+            not_init_data = not init_param or _is_role_sched() or (_is_role_pserver() and _cache_enable()) \
+                            or _is_in_auto_parallel_mode() or _is_parallel_mode()
             if not_init_data:
                 # do not init data while in auto parallel.
                 return (Tensor, None, data.dtype, get_slice_shape(data.dtype, data.shape), data.init)
@@ -976,6 +988,8 @@ class Parameter(Tensor_):
         """
         if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
             raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
+        if hasattr(self, "init_param") and self.init_param:
+            return self
         if self.init_mode is None:
             return self
         if self.inited_param is not None:

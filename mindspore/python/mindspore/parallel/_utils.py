@@ -28,7 +28,7 @@ from mindspore.communication._comm_helper import _is_initialized
 from mindspore.parallel._auto_parallel_context import auto_parallel_context
 from mindspore.common.seed import get_seed
 from mindspore._c_expression import GraphExecutor_
-from mindspore.parallel._tensor import _load_tensor_by_layout
+from mindspore.parallel._tensor import _load_tensor_by_layout, _load_tensor_shape_by_layout
 
 SUPPORTED_TUPLE_IN_TUPLE_STRATEGY = ["GroupedMatmul", "FusedInferAttentionScore", "Custom"]
 
@@ -127,29 +127,25 @@ class ParallelParamInitProfCtx:
 
 def _slice_parameter(parameter, phase, layout):
     """Slice python parameter obj according to the layout."""
-    is_train_phase = phase.startswith('train')
-    is_prefill_phase = phase.startswith('prefill')
-    if layout is not None and parameter.from_ckpt and not is_train_phase:
-        is_opt_shard_group = layout[5]
-        if not parameter.sliced and is_prefill_phase and is_opt_shard_group:
-            rank = get_rank()
-            new_tensor = _load_tensor_by_layout(parameter, layout, rank)
-            parameter.set_data(new_tensor, True)
+    # graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
+    if getattr(parameter, "init_param", False):
+        if layout is None:
+            parameter.sliced = True
             return
-        layout_shape = layout[2]
-        parameter.shape = tuple(layout_shape)
-        return
-    graph_executor = GraphExecutor_.get_instance()
-    with ParallelParamInitProfCtx(parameter, "init_data") as _:
+        if not parameter.sliced:
+            rank = get_rank()
+            new_tensor_shape = _load_tensor_shape_by_layout(parameter, layout, rank)
+            parameter.shape = new_tensor_shape
+    else:
+        graph_executor = GraphExecutor_.get_instance()
         new_param = parameter.init_data(layout, set_sliced=True)
-    parameter = new_param
-    graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
-    if layout is None:
-        parameter.sliced = True
-        return
-    if not parameter.sliced:
-        rank = get_rank()
-        with ParallelParamInitProfCtx(parameter, "_load_tensor_by_layout") as _:
+        parameter = new_param
+        graph_executor.updata_param_node_default_input(phase, {parameter.name: parameter})
+        if layout is None:
+            parameter.sliced = True
+            return
+        if not parameter.sliced:
+            rank = get_rank()
             new_tensor = _load_tensor_by_layout(parameter, layout, rank)
             parameter.set_data(new_tensor, True)
 
