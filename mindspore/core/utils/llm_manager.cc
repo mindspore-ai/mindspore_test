@@ -85,19 +85,19 @@ void LLMManager::bind_thread_core(const std::string &thread_name) {
   auto it = thread_bind_policy_.find(thread_name);
   if (it == thread_bind_policy_.end()) {
     // no thread bind policy
-    MS_LOG(WARNING) << "thread: " << thread_name << " has no bind policy, bind failed";
+    MS_LOG(INFO) << "thread: " << thread_name << " has no bind policy, bind failed";
     return;
   }
 
   auto thread_bind_core_vec = it->second;
   auto rank_id = std::stoi(common::GetEnv("RANK_ID", "0"));
-  unsigned group_start_core_id = rank_id * group_core_size_;
+  int64_t group_start_core_id = rank_id * group_core_size_;
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
 
   for (const auto &core_id : thread_bind_core_vec) {
     auto bind_core_id = group_start_core_id + core_id;
-    CPU_SET(bind_core_id, &cpuset);
+    CPU_SET(static_cast<size_t>(bind_core_id), &cpuset);
     MS_LOG(INFO) << "bind thread: " << thread_name << " to core: " << bind_core_id;
   }
 
@@ -113,6 +113,9 @@ bool LLMManager::unbind_threads(const std::string &thread_name) { return true; }
 // get thread_bind_policy_ from env
 void LLMManager::get_thread_bind_policy() {
   auto thread_bind_env_str = common::GetEnv("MS_ENABLE_NUMA");
+  if (thread_bind_env_str.empty() || thread_bind_env_str == "1") {
+    return;
+  }
   // custom bind policy by json
   auto real_filename = FileUtils::GetRealPath(thread_bind_env_str.c_str());
   if (!real_filename.has_value()) {
