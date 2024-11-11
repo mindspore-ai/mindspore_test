@@ -7156,12 +7156,15 @@ class Conv3DTranspose(Primitive):
     Inputs:
         - **dout** (Tensor) - The gradients with respect to the output of the convolution.
           The shape conforms to the default.
-          data_format :math:`(N, C_{in}, D_{out}, H_{out}, W_{out})`. Currently dout data type only supports float16
-          and float32.
+          data_format :math:`(N, C_{in}, D_{out}, H_{out}, W_{out})`.
+          Supported dtypes:
+
+          - Ascend: float16.
+          - GPU/CPU: float16, float32.
         - **weight** (Tensor) - Set size of kernel is :math:`(K_d, K_h, K_w)`, then the shape is
           :math:`(C_{in}, C_{out}//group, K_d, K_h, K_w)`. Where :math:`group` is the Args parameter,
           :math:`//` is the symbol for integer division.
-          Currently weight data type only supports float16 and float32.
+          It has the same dtype as `dout`.
         - **bias** (Tensor) - Tensor of shape :math:`C_{out}`. Currently, only support none. Default: ``None`` .
 
     Outputs:
