@@ -1569,6 +1569,9 @@ def _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check):
                     raise ValueError("For 'load_checkpoint', the crc check is failed, "
                                      "please check whether the ckpt file is damaged.")
         checkpoint_list.ParseFromString(pb_content)
+    except google.protobuf.message.DecodeError as e:
+        raise ValueError(f"Failed to read the checkpoint file {ckpt_file_name}. "
+                         f"The file may be corrupted, and the content cannot be parsed.") from e
     except BaseException as e:
         if _is_cipher_file(ckpt_file_name):
             err_info = "Failed to read the checkpoint file {}. The file may be encrypted or tempered with, " \
