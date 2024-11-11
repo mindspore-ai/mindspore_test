@@ -24,8 +24,6 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
-from mindspore.ops.operations.nn_ops import MultiMarginLoss as MultiMarginLossOp
-from mindspore.ops.operations.nn_ops import MultilabelMarginLoss as MultilabelMarginLossOp
 from mindspore.ops import functional as F
 from mindspore import nn
 from mindspore.ops.primitive import constexpr, _primexpr
@@ -33,7 +31,6 @@ from mindspore.nn.cell import Cell
 from mindspore.nn.layer.activation import get_activation
 from mindspore import _checkparam as validator
 from mindspore import context
-from mindspore.ops.auto_generate import l1_loss_ext_op
 
 
 class LossBase(Cell):
@@ -319,7 +316,7 @@ class L1LossExt(LossBase):
         self.reduction = reduction
 
     def construct(self, logits, labels):
-        return l1_loss_ext_op(logits, labels, self.reduction)
+        return ops.auto_generate.l1_loss_ext_op(logits, labels, self.reduction)
 
 
 class MSELoss(LossBase):
@@ -1631,7 +1628,7 @@ class MultiMarginLoss(LossBase):
     def __init__(self, p=1, margin=1.0, reduction='mean', weight=None):
         """Initialize MultiMarginLoss."""
         super(MultiMarginLoss, self).__init__()
-        self.multi_margin_loss = MultiMarginLossOp(p=p, margin=margin, reduction=reduction)
+        self.multi_margin_loss = ops.MultiMarginLoss(p=p, margin=margin, reduction=reduction)
         self.weight = weight
 
     def construct(self, x, target, weight=None):
@@ -1887,7 +1884,7 @@ class MultilabelMarginLoss(LossBase):
 
     def __init__(self, reduction='mean'):
         super(MultilabelMarginLoss, self).__init__()
-        self.multilabel_margin_loss = MultilabelMarginLossOp(reduction=reduction)
+        self.multilabel_margin_loss = ops.MultilabelMarginLoss(reduction=reduction)
 
     def construct(self, x, target):
         loss, _ = self.multilabel_margin_loss(x, target)

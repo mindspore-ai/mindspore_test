@@ -25,10 +25,9 @@ from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_util
 from mindspore.common.seed import _get_graph_seed
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import initializer, HeUniform, Uniform
+from mindspore import ops
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
-from mindspore.ops.function.nn_func import interpolate_ext
-from mindspore.ops.auto_generate import unfold_ext
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops.primitive import constexpr, Primitive, _primexpr
 from mindspore.common.parameter import Parameter
@@ -37,7 +36,6 @@ from mindspore import _checkparam as Validator
 from mindspore.nn.cell import Cell
 from mindspore.nn.layer.activation import get_activation
 from mindspore.common._decorator import deprecated
-from mindspore.ops.auto_generate import dropout_ext_op, fold_ext
 from mindspore.common.generator import default_generator
 
 __all__ = ['Dropout', 'Flatten', 'Dense', 'Linear', 'ClipByNorm', 'Norm', 'OneHot', 'Pad', 'Unfold', 'Tril', 'Triu',
@@ -265,7 +263,7 @@ class DropoutExt(Cell):
             return x
 
         seed, offset = default_generator._step(self.generator_step)  # pylint: disable=protected-access
-        out, _ = dropout_ext_op(x, self.p, seed, offset)
+        out, _ = ops.auto_generate.dropout_ext_op(x, self.p, seed, offset)
         return out
 
 
@@ -512,8 +510,8 @@ class UpsampleExt(Cell):
         self.recompute_scale_factor = recompute_scale_factor
 
     def construct(self, input):
-        out = interpolate_ext(input, self.size, self.scale_factor, self.mode,
-                              self.align_corners, self.recompute_scale_factor)
+        out = ops.function.nn_func.interpolate_ext(input, self.size, self.scale_factor, self.mode,
+                                                   self.align_corners, self.recompute_scale_factor)
         return out
 
 
@@ -1286,7 +1284,7 @@ class UnfoldExt(Cell):
         self.stride = stride
 
     def construct(self, input):
-        return unfold_ext(input, self.kernel_size, self.dilation, self.padding, self.stride)
+        return ops.auto_generate.unfold_ext(input, self.kernel_size, self.dilation, self.padding, self.stride)
 
 
 class Fold(Cell):
@@ -1317,8 +1315,8 @@ class Fold(Cell):
         self.stride = stride
 
     def construct(self, input):
-        return fold_ext(input, self.output_size, self.kernel_size,
-                        self.dilation, self.padding, self.stride)
+        return ops.auto_generate.fold_ext(input, self.output_size, self.kernel_size,
+                                          self.dilation, self.padding, self.stride)
 
 
 @_primexpr

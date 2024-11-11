@@ -237,6 +237,7 @@ class _DynamicGRUCPUGPU(Cell):
                 h_0.view(1, *h_0.shape),
                 weights.astype(x.dtype)
             )
+
             if seq_length is not None:
                 h_n = get_hidden(output, seq_length)
                 mask = sequence_mask(seq_length, x.shape[0])
