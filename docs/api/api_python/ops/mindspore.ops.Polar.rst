@@ -5,11 +5,20 @@ mindspore.ops.Polar
 
     将极坐标转化为笛卡尔坐标。
 
+    返回一个复数Tensor，其元素是由输入极坐标构造的笛卡尔坐标。其中极坐标由极径 `abs` 和极角 `angle` 给定。
+
     更多细节请参考 :func:`mindspore.ops.polar`。
 
-    输入：
-        - **abs** (Tensor) - 极径。任意维度的Tensor，其数据类型须为：float32、float64。
-        - **angle** (Tensor) - 极角。其shape与数据类型与 `abs` 一致。
+    .. math::
 
-    输出：
-        Tensor，其shape与 `abs` 一致。
+        y_{i} =  abs_{i} * \cos(angle_{i}) + abs_{i} * \sin(angle_{i}) * j
+
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
+    参数：
+        - **abs** (Tensor, float) - 极径。其输入shape可以是任意维度，其数据类型须为：float32。
+        - **angle** (Tensor, float) - 极角。其shape与数据类型与 `abs` 一致。
+
+    返回：
+        Tensor，其shape与 `abs` 一致，dtype是complex64。

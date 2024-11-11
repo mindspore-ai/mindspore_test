@@ -1813,26 +1813,23 @@ def polar(abs, angle):  # pylint: disable=redefined-outer-name
         y_{i} =  abs_{i} * \cos(angle_{i}) + abs_{i} * \sin(angle_{i}) * j
 
     Args:
-        abs (Tensor): Radial distance. The shape of tensor is
-          :math:`(N,*)` where :math:`N` means the batchsize of the input tensor,
-          :math:`*` means, any number of additional dimensions.
-          Must be one of the following types: float32, float64.
-        angle (Tensor):  Polar angle. It has the same shape and dtype as `abs`.
+        abs (Tensor, float): Radial distance. Tensor of any dimension,
+            with dtype required to be float32.
+
+        angle (Tensor, float): Polar angle. It has the same shape and dtype as `abs`.
 
     Returns:
-        Tensor, has the same shape as `abs`.
+        Tensor, with the same shape as `abs` and the dtype is complex64.
 
-        - If the inputs are float32, data type must be complex64.
-        - If the inputs are float64, data type must be complex128.
 
     Raises:
         TypeError: If neither `abs` nor `angle` is a Tensor.
-        TypeError: If the dtype of input is not one of: float32, float64.
+        TypeError: If the dtype of input is not one of: float32.
         TypeError: If the dtypes of `abs` and `angle` are not the same.
         ValueError: If `abs`'s shape is not the same as `angle`.
 
     Supported Platforms:
-        ``GPU`` ``CPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
