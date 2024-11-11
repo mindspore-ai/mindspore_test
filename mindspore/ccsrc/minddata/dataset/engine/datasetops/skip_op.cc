@@ -104,11 +104,19 @@ Status SkipOp::GetNextRowPullMode(TensorRow *const row) {
   }
   if (!eoe_received) {
     RETURN_IF_NOT_OK(child_[0]->GetNextRowPullMode(row));
+    data_produced_++;
   }
   if (row->eoe()) {
     UpdateRepeatAndEpochCounter();
     if (!once_only_) {
       skip_count_ = 0;
+    } else {
+      // In pipeline recovery, if the skip count is equal to the dataset size,
+      // it means we should begin at the next epoch, so we ignore the eoe
+      // here and return the next data
+      if (data_produced_ == 1) {  // eoe is the first data we get
+        RETURN_IF_NOT_OK(child_[0]->GetNextRowPullMode(row));
+      }
     }
   }
   return Status::OK();
