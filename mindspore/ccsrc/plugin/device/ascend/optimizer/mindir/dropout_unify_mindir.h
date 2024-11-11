@@ -89,6 +89,9 @@ class DropoutGradExtUnifyMindIR : public PatternProcessPass {
   ~DropoutGradExtUnifyMindIR() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

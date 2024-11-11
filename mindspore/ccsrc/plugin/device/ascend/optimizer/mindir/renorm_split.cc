@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <string>
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -53,6 +54,11 @@ void FreshRenormInferShape(const CNodePtr &node, ShapeVector in_shape, const Typ
   common::AnfAlgo::SetOutputInferTypeAndShape({type}, {in_shape}, node.get());
 }
 }  // namespace
+
+std::vector<std::string> RenormSplit::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimRenorm->name()};
+  return ret;
+}
 
 const BaseRef RenormSplit::DefinePattern() const {
   std::shared_ptr Xs = std::make_shared<SeqVar>();

@@ -15,6 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_swiglu_fusion.h"
 #include <vector>
+#include <string>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
@@ -63,6 +64,11 @@ bool InferenceSwiGLUFusion::Init() const {
   split_prim_ = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimSplitWithSize>);
   MS_CHECK_TRUE_RET(split_prim_ != nullptr, false);
   return true;
+}
+
+std::vector<std::string> InferenceSwiGLUFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimSiLU->name(), prim::kPrimMul->name()};
+  return ret;
 }
 
 const BaseRef InferenceSwiGLUFusion::DefinePattern() const {

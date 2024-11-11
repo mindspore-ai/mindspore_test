@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_LAYERNORM_FUSION_H_
 
 #include <memory>
+#include <vector>
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
@@ -63,6 +64,12 @@ class AddLayernormFusion : public AddLayernormFusionBase {
                                           begin_norm_axis_, begin_params_axis_, eps_});
     return add_layer_norm;
   }
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override {
+    std::vector<std::string> ret{prim::kPrimLayerNorm->name()};
+    return ret;
+  }
 };
 
 class AddLayernormV3Fusion : public AddLayernormFusionBase {
@@ -73,6 +80,12 @@ class AddLayernormV3Fusion : public AddLayernormFusionBase {
     VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNormV3, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
                                           begin_norm_axis_, begin_params_axis_, eps_});
     return add_layer_norm;
+  }
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override {
+    std::vector<std::string> ret{prim::kPrimLayerNormV3->name()};
+    return ret;
   }
 };
 
@@ -85,6 +98,12 @@ class AddLayernormExtFusion : public AddLayernormFusionBase {
     VectorRef add_layer_norm = VectorRef(
       {prim::kPrimLayerNormExt, VectorRef({prim::kPrimAdd, x1_, x2_}), normalize_shape_, gamma_, beta_, eps_});
     return add_layer_norm;
+  }
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override {
+    std::vector<std::string> ret{prim::kPrimLayerNormExt->name()};
+    return ret;
   }
 };
 

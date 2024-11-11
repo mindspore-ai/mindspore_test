@@ -51,6 +51,11 @@ CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const 
   return new_qbmm_node;
 }
 
+std::vector<std::string> QbmmAddFusion::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimQuantBatchMatmul->name(), prim::kPrimAdd->name()};
+  return ret;
+}
+
 const BaseRef QbmmAddFusion::DefinePattern() const {
   if (!Init()) {
     MS_LOG(DEBUG) << "initial member failed.";

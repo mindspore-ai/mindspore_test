@@ -26,6 +26,10 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> AvgPoolGradForGE::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimAvgPoolGrad->name()};
+  return ret;
+}
 
 const BaseRef AvgPoolGradForGE::DefinePattern() const {
   auto x = std::make_shared<SeqVar>();

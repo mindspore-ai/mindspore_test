@@ -18,7 +18,7 @@
 
 #include <memory>
 #include <vector>
-
+#include <string>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "include/common/utils/anfalgo.h"
@@ -42,10 +42,17 @@ ValuePtr SetInputStructuralFromAbstract(const AbstractBasePtr &abs) {
   return MakeValue<int64_t>(-1);
 }
 }  // namespace
+
+std::vector<std::string> AddInputStructuralForPyExecute::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimPyExecute->name()};
+  return ret;
+}
+
 const BaseRef AddInputStructuralForPyExecute::DefinePattern() const {
   VarPtr Xs = std::make_shared<SeqVar>();
   return VectorRef({prim::kPrimPyExecute, Xs});
 }
+
 const AnfNodePtr AddInputStructuralForPyExecute::Process(const FuncGraphPtr &, const AnfNodePtr &node,
                                                          const EquivPtr &) const {
   MS_EXCEPTION_IF_NULL(node);

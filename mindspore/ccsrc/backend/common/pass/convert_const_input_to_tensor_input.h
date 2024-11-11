@@ -15,8 +15,8 @@
  */
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_CONVERT_CONST_INPUT_TO_TENSOR_INPUT_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_CONVERT_CONST_INPUT_TO_TENSOR_INPUT_H_
+#include <vector>
 #include <string>
-
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
@@ -35,6 +35,9 @@ class ConvertConstInputToTensorInputForPrint : public PatternProcessPass {
       : PatternProcessPass("convert_const_input_to_tensor_input_for_print", multigraph) {}
   ~ConvertConstInputToTensorInputForPrint() override = default;
   const AnfNodePtr Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const EquivPtr &) const override;
+
+ private:
+  std::vector<std::string> MustExistPrimitiveName() const override;
 };
 }  // namespace opt
 }  // namespace mindspore

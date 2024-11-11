@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <string>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"
@@ -64,6 +65,11 @@ ValueNodePtr CreateValueNode(const ValuePtr &value_ptr, TypeId output_type, bool
   return new_node;
 }
 }  // namespace
+
+std::vector<std::string> AdjustPrintForGe::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimPrint->name()};
+  return ret;
+}
 
 const BaseRef AdjustPrintForGe::DefinePattern() const {
   VarPtr V = std::make_shared<CondVar>(PrintUnvisited);

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include "backend/common/pass/custom_op_const_input_to_attr.h"
+#include <vector>
+#include <string>
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_set.h"
 #include "backend/common/pass/const_input_to_attr.h"
@@ -21,6 +23,11 @@
 
 namespace mindspore {
 namespace opt {
+std::vector<std::string> CustomOpConstInputToAttr::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimCustom->name()};
+  return ret;
+}
+
 const AnfNodePtr CustomOpConstInputToAttr::Process(const FuncGraphPtr &, const AnfNodePtr &node,
                                                    const EquivPtr &) const {
   if (node == nullptr || !AnfUtils::IsRealCNodeKernel(node)) {

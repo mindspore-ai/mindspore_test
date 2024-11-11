@@ -385,8 +385,7 @@ std::vector<AnfNodePtr> CreateAllReduceAndMulForUpdate(const FuncGraphPtr &graph
 }
 
 std::vector<std::string> BnSplit::MustExistPrimitiveName() const {
-  std::vector<std::string> ret;
-  ret.emplace_back(prim::kPrimBatchNorm->name());
+  std::vector<std::string> ret{prim::kPrimBatchNorm->name()};
   return ret;
 }
 
@@ -398,6 +397,11 @@ const BaseRef BnSplit::DefinePattern() const {
 
 const AnfNodePtr BnSplit::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const EquivPtr &) const {
   return SplitBatchNormForTBE(func_graph, node);
+}
+
+std::vector<std::string> SyncBnSplit::MustExistPrimitiveName() const {
+  std::vector<std::string> ret{prim::kPrimSyncBatchNorm->name()};
+  return ret;
 }
 
 const BaseRef SyncBnSplit::DefinePattern() const {
