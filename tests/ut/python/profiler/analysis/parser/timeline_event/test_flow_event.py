@@ -55,6 +55,7 @@ class TestFlowStartEvent(unittest.TestCase):
             "ts": "1000",
             "pid": 1,
             "tid": 2,
+            "id": "flow_1",
             "cat": "test_category"
         }
         self.assertEqual(trace_format, expected_format)
@@ -99,6 +100,7 @@ class TestFlowEndEvent(unittest.TestCase):
             "ts": "2000",
             "pid": 1,
             "tid": 2,
+            "id": "flow_1",
             "cat": "test_category"
         }
         self.assertEqual(trace_format, expected_format)
