@@ -63,18 +63,18 @@ struct AclDumpString {
   } tensor_type;
 };
 
-// record the relationship between input in prototype and corresponding real inputs
-struct MsInputInfo {
-  // input index in operator prototype
+// record the relationship between output in prototype and corresponding real outputs
+struct MsOutputInfo {
+  // output index in operator prototype
   size_t proto_index;
-  // for dynamic input, it is offset of the first element of dynamic input in real inputs; for normal input, it is the
-  // offset of the input in real inputs
+  // for dynamic output, it is offset of the first element of dynamic output in real outputs; for normal output, it is
+  // the offset of the output in real outputs
   size_t real_offset;
-  // for dynamic input, it is the number of real inputs corresponding to `proto_index`; for normal input, it is const
+  // for dynamic output, it is the number of real outputs corresponding to `proto_index`; for normal output, it is const
   // value 1
   size_t folded_size;
-  // for dynamic input, it is offset of the first element of dynamic input in ge inputs; for normal input, it is the
-  // offset of the input in ge inputs
+  // for dynamic output, it is offset of the first element of dynamic output in ge outputs; for normal output, it is the
+  // offset of the output in ge outputs
   size_t ge_offset;
 };
 
@@ -94,11 +94,9 @@ class CompareGeIdx {
 class AclConverter {
  public:
   void ConvertToAclOpType(const std::string &prim_name);
-  void ResizeAclOpInputs(const PrimitivePtr &prim, const std::vector<KernelTensor *> &inputs);
-  void ConvertInputMsIndexToAclIndex(const PrimitivePtr &prim, const std::vector<KernelTensor *> &inputs);
   void ConvertToAclInput(const PrimitivePtr &prim, const std::vector<KernelTensor *> &inputs,
                          const std::vector<TensorParams> &input_params);
-  void ConvertToAclOutput(const std::string &kernel_name, const std::vector<KernelTensor *> &outputs,
+  void ConvertToAclOutput(const PrimitivePtr &prim, const std::vector<KernelTensor *> &outputs,
                           const std::vector<TensorParams> &output_params);
   bool IsNeedSkipExecute(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
                          const std::vector<KernelTensor *> &outputs, void *stream_ptr);
@@ -160,16 +158,14 @@ class AclConverter {
 
   void GenerateRealGeIdx();
 
+  void ConvertOutputsMultiDynParams(const PrimitivePtr &prim, const std::vector<KernelTensor *> &outputs,
+                                    const GeAdapterInfoPtr &info);
+
+  void ConvertOutputsNormal(const PrimitivePtr &prim, const std::vector<KernelTensor *> &outputs,
+                            const GeAdapterInfoPtr &info);
+
   template <typename T>
   void AclRunnerAddAttr(const std::string &attrName, T value);
-
-  // convert acl inputs for operator with at most one dynamic parameter, general case
-  void ConvertInputsNormal(const PrimitivePtr &prim, const std::vector<KernelTensor *> &inputs,
-                           const GeAdapterInfoPtr &info);
-
-  // convert acl inputs for operator with more than one dynamic parameters, rare case
-  void ConvertInputsMutiDynParams(const PrimitivePtr &prim, const std::vector<KernelTensor *> &inputs,
-                                  const GeAdapterInfoPtr &info);
 
   AclRunner runner_;
   AclInputToHost input_on_host_;
@@ -185,14 +181,10 @@ class AclConverter {
   AclPrecisionMode precision_mode_ = DEFAULT_MODE;
   bool is_need_retrieve_output_shape_ = false;
 
-  // Fields for op containing multiple dynamic inputs, since operators with more than one dynamic inputs are rare, for
-  // speed reason, we process this case separately.
-  // Map for recording [MindSpore op input proto index of dynamic input] to [its number of folded inputs]
+  // Map for recording [MindSpore op output proto index of dynamic output] to [its number of folded outputs]
   // NOTE: here the map MUST be an ordered map to sort the input indices ascendly.
-  std::map<size_t, size_t> dyn_inputs_map_;
-  std::map<size_t, MsInputInfo> inputs_idx_convert_map_;
-  // number of folded inputs of dynamic input, only used for op with only one dynamic input
-  std::pair<size_t, size_t> num_folded_inputs_{SIZE_MAX, 1};
+  std::map<size_t, size_t> dyn_outputs_map_;
+  std::map<size_t, MsOutputInfo> outputs_idx_convert_map_;
 
   std::map<std::pair<size_t, size_t>, std::pair<std::vector<size_t>, std::vector<size_t>>, CompareGeIdx>
     ms_and_ge_inputs_sort_info_;

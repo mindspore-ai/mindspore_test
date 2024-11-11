@@ -246,7 +246,7 @@ bool AclKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::
   SetParamsDataTypeIfComplexInput(primitive_, &input_params_, &output_params_);
   converter_->ConvertValueDependToHostInput(kernel_name_, inputs, input_params_, value_depend_args_);
   converter_->ConvertToAclInput(primitive_, inputs, input_params_);
-  converter_->ConvertToAclOutput(kernel_name_, outputs, output_params_);
+  converter_->ConvertToAclOutput(primitive_, outputs, output_params_);
   converter_->SetRunnerSpecialInfo();
   // cppcheck-suppress unreadVariable
   auto lock = device::KernelRuntime::LockRuntime(stream_ptr);
