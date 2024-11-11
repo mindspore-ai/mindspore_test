@@ -4,9 +4,11 @@ sort:
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
+    interface: method
 
   - op_yaml: deprecated/sort_op.yaml
     py_method: deprecated_tensor_sort
     Ascend: py_method
     CPU: py_method
     GPU: py_method
+    interface: method

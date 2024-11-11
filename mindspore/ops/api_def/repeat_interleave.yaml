@@ -4,18 +4,18 @@ repeat_interleave:
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: tensor, function
+    interface: method, function
 
   - op_yaml: repeat_interleave_int_op.yaml
     py_method: tensor_repeat_interleave
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: tensor, function
+    interface: method, function
 
   - op_yaml: deprecated/repeat_interleave_op.yaml
     py_method: tensor_repeat_interleave
     Ascend: py_method
     CPU: py_method
     GPU: py_method
-    interface: tensor, function
+    interface: method

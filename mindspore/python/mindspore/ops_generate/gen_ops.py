@@ -262,7 +262,7 @@ def merge_ops_yaml(work_path):
     merge_files(doc_yaml_dir_path, doc_yaml_path, '*doc.yaml')
 
     ops_api_yaml_dir_path = os.path.join(work_path, K.MS_OP_API_YAML_PATH)
-    ops_api_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'op_api_def.yaml')
+    ops_api_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'api_def.yaml')
     merge_files(ops_api_yaml_dir_path, ops_api_yaml_path, '*.yaml')
 
     deprecated_ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEPRECATED_DEF_YAML_PATH)

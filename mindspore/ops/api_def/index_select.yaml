@@ -4,9 +4,11 @@ index_select:
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
+    interface: method
 
   - op_yaml: deprecated/index_select_op.yaml
     py_method: deprecated_tensor_index_select
     Ascend: py_method
     CPU: py_method
     GPU: py_method
+    interface: method

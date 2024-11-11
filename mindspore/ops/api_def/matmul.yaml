@@ -4,9 +4,11 @@ matmul:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
+    interface: method, function
 
   - op_yaml: matmul_op.yaml
     py_method: deprecated_tensor_matmul
     Ascend: py_method
     CPU: py_method
     GPU: py_method
+    interface: method, function
