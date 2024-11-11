@@ -38,7 +38,7 @@ def test_tensor_mul(mode):
     Expectation: success
     """
     # test 1: tensor(number) mul tensor(number)
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
     y = Tensor(np.array([4.0, 5.0, 6.0]), ms.float32)
     net = Net()

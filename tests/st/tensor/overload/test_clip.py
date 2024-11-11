@@ -39,7 +39,7 @@ def test_clip_scalar(mode):
     Description: Verify the result of Tensor.clip
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClipNet()
@@ -62,7 +62,7 @@ def test_clip_tensor(mode):
     Description: Verify the result of Tensor.clip
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClipNet()
@@ -87,7 +87,7 @@ def test_clip_with_min_or_max_one_none(mode):
     Description: Verify the result of Tensor.clip
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClipNet()
@@ -110,7 +110,7 @@ def test_clip_with_min_and_max_all_none(mode):
     Description: Verify the result of Tensor.clip
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClipNet()

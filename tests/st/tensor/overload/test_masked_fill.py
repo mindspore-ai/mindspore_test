@@ -40,7 +40,7 @@ def test_tensor_masked_fill(mode):
     Description: Verify the result of masked_fill
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     for np_type, ms_type in zip(_NP_TYPE, _MS_TYPE):
         input_x = Tensor(np.array([1., 2., 3., 4.]), ms_type)

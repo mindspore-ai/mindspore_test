@@ -37,7 +37,7 @@ def test_method_reshape(mode):
     Description: Test functional feature with Tensor.reshape.
     Expectation: Run success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = ReshapeNet()
     x = ms.Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), ms.float32)
     output = net(x, (3, 2))

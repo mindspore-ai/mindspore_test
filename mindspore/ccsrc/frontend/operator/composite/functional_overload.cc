@@ -357,19 +357,8 @@ std::map<size_t, std::pair<ValuePtr, bool>> &GetFunctionalConvertCache() {
 }
 
 bool IsFunctionalMethod(const TypeId &type_id, const std::string &method_name) {
-  // Check if tensor.
-  if (NormalizeTypeId(type_id) != kObjectTypeTensorType ||
-      ops::tensor_method_overload_map.find(method_name) == ops::tensor_method_overload_map.end()) {
-    return false;
-  }
-  // Check for duplicate definitions.
-  if (!pipeline::Resource::GetMethodPtr(type_id, method_name).empty() ||
-      !pipeline::Resource::GetAttrPtr(type_id, method_name).empty()) {
-    MS_LOG(INTERNAL_EXCEPTION)
-      << "There are duplicate definitions of Tensor." << method_name
-      << " in graph mode. Please remove the definition in mindspore/ccsrc/pipeline/jit/ps/resource.cc";
-  }
-  return true;
+  return NormalizeTypeId(type_id) == kObjectTypeTensorType &&
+         ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end();
 }
 
 ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,

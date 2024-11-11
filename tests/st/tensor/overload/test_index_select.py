@@ -36,7 +36,7 @@ def test_tensor_index_select(mode):
     Description: Verify the result of tensor.index_select.
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     if mode == ms.GRAPH_MODE:
         ms.set_context(jit_config={"jit_level": "O0"})
     net = Net()

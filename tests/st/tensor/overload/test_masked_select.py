@@ -37,7 +37,7 @@ def test_tensor_masked_select(mode):
     Description: Verify the result of tensor.masked_select
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([1, 2, 3, 4]), ms.int64)
     mask = Tensor(np.array([1, 0, 1, 0]), ms.bool_)
     net = Net()

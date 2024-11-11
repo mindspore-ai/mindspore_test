@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Test the feature of functional"""
+"""test the feature of functional"""
 import pytest
 import numpy as np
 import mindspore as ms
+from mindspore.mint import clamp
 from tests.mark_utils import arg_mark
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
-def test_method_clamp():
+def test_mint_clamp():
     """
     Feature: Functional.
-    Description: Test functional feature with Tensor.clamp.
+    Description: Test functional feature with clamp.
     Expectation: Run success
     """
     @ms.jit
     def func(x, min, max):  # pylint: disable=redefined-builtin
-        return x.clamp(min, max)
+        return clamp(x, min, max)
 
     x = ms.Tensor([1, 2, 3, 4, 5])
     out_clamp_tensor = func(x, ms.Tensor(2), ms.Tensor(4))
@@ -40,15 +41,15 @@ def test_method_clamp():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_clamp_default():
+def test_mint_clamp_default():
     """
     Feature: Functional.
-    Description: Test functional feature with Tensor.clamp.
+    Description: Test functional feature with clamp.
     Expectation: Run success
     """
     @ms.jit
     def func(x, min):  # pylint: disable=redefined-builtin
-        return x.clamp(min)
+        return clamp(x, min)
 
     out = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2))
     expect = ms.Tensor([2, 2, 3, 4, 5])
@@ -56,15 +57,15 @@ def test_method_clamp_default():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_clamp_any():
+def test_mint_clamp_any():
     """
     Feature: Functional.
-    Description: Test functional feature with Tensor.clamp.
+    Description: Test functional feature with clamp.
     Expectation: Run success
     """
     @ms.jit
     def func(x, min, max):  # pylint: disable=redefined-builtin
-        return x.clamp(min, ms.Tensor(max.asnumpy()))
+        return clamp(x, min, ms.Tensor(max.asnumpy()))
 
     out = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), ms.Tensor(4))
     expect = ms.Tensor([2, 2, 3, 4, 4])
@@ -72,15 +73,15 @@ def test_method_clamp_any():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_clamp_keyword():
+def test_mint_clamp_keyword():
     """
     Feature: Functional.
-    Description: Test functional feature with Tensor.clamp.
+    Description: Test functional feature with clamp.
     Expectation: Run success
     """
     @ms.jit
     def func(x, min):  # pylint: disable=redefined-builtin
-        return x.clamp(min, max=ms.Tensor(4)), x.clamp(max=3, min=1)
+        return clamp(x, min, max=ms.Tensor(4)), clamp(x, max=3, min=1)
 
     out_clamp_tensor, out_clamp_scalar = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2))
     assert np.all(out_clamp_tensor.asnumpy() == ms.Tensor([2, 2, 3, 4, 4]).asnumpy())
@@ -88,15 +89,15 @@ def test_method_clamp_keyword():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_clamp_keyword_any():
+def test_mint_clamp_keyword_any():
     """
     Feature: Functional.
-    Description: Test functional feature with Tensor.clamp.
+    Description: Test functional feature with clamp.
     Expectation: Run success
     """
     @ms.jit
     def func(x, min, max):  # pylint: disable=redefined-builtin
-        return x.clamp(min=ms.Tensor(min.asnumpy())), x.clamp(2, max=int(max.asnumpy()))
+        return clamp(x, min=ms.Tensor(min.asnumpy())), clamp(x, 2, max=int(max.asnumpy()))
 
     out_clamp_tensor, out_clamp_scalar = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), ms.Tensor(4))
     assert np.all(out_clamp_tensor.asnumpy() == ms.Tensor([2, 2, 3, 4, 5]).asnumpy())
@@ -104,79 +105,16 @@ def test_method_clamp_keyword_any():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_clamp_exception():
+def test_mint_clamp_exception():
     """
     Feature: Functional.
-    Description: Test functional feature with Tensor.clamp.
+    Description: Test functional feature with clamp.
     Expectation: Raise expected exception.
     """
     @ms.jit
     def func(x, min, max):  # pylint: disable=redefined-builtin
-        return x.clamp(min, max)
+        return clamp(x, min, max)
 
     with pytest.raises(TypeError) as raise_info:
         func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), 4)
     assert "Failed calling clamp with" in str(raise_info.value)
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_max():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.max.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func(x):
-        return x.max()
-
-    x = ms.Tensor([1, 2, 3, 4, 5])
-    assert func(x).asnumpy() == ms.Tensor(5).asnumpy()
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_max_keyword():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.max.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func(x):
-        return x.max(keepdims=False)
-
-    x = ms.Tensor([1, 2, 3, 4, 5])
-    assert func(x).asnumpy() == ms.Tensor(5).asnumpy()
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_max_keyword_any():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.max.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func(x, y):
-        return x.max(return_indices=bool(y.asnumpy()))
-
-    x = ms.Tensor([1, 2, 3, 4, 5])
-    y = ms.Tensor(False)
-    assert func(x, y).asnumpy() == ms.Tensor(5).asnumpy()
-
-
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_method_reshape():
-    """
-    Feature: Functional.
-    Description: Test functional feature with Tensor.reshape.
-    Expectation: Run success
-    """
-    @ms.jit
-    def func(x):
-        return x.reshape(1, 2, 3)
-
-    x = ms.Tensor([[[1], [2]], [[3], [4]], [[5], [6]]])
-    out = func(x)
-    expect = ms.Tensor([[[1, 2, 3], [4, 5, 6]]])
-    assert np.all(out.asnumpy() == expect.asnumpy())

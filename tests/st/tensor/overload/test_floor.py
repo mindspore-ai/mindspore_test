@@ -36,7 +36,7 @@ def test_tensor_floor(mode):
     Description: Verify the result of tensor.floor.
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([1.1, 2.5, -1.5]), ms.float32)
     net = Net()
     output_x = net(x)

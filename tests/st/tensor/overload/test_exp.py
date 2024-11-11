@@ -38,7 +38,7 @@ def test_exp(mode):
     Description: Verify the result of tensor.exp
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     inputs = Tensor(np.array([0.0, 1.0, 3.0]), ms.float32)
     outputs = net(inputs)

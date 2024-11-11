@@ -56,7 +56,7 @@ def test_gather_pyboost(mode):
     Description: Verify the result of gather in pyboost.
     Expectation: expect correct result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     net1 = Net1()
     net2 = Net2()
@@ -79,7 +79,7 @@ def test_gather_python(mode):
     Description: Verify the result of gather in python.
     Expectation: expect correct result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net3 = Net3()
     net4 = Net4()
     input_params1 = Tensor(np.array([1, 2, 3, 4, 5, 6, 7]), ms.float32)

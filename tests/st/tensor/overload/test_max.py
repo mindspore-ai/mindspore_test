@@ -42,7 +42,7 @@ def test_tensor_max(mode):
     Description: Verify the result of tensor.max
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.arange(4).reshape((2, 2)).astype('float32'))
     net = Net(x)
 

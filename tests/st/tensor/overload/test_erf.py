@@ -38,7 +38,7 @@ def test_eq(mode):
     Description: Verify the result of tensor.erf
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     inputs = Tensor(np.array([-1, 0, 1, 2, 3]), ms.float32)
     outputs = net(inputs)

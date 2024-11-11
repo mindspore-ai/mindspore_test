@@ -39,7 +39,7 @@ def test_clamp(mode):
     Description: Verify the result of Tensor.clamp
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClampNet()
@@ -62,7 +62,7 @@ def test_clamp_with_input_type_error(mode):
     Description: Verify the result of Tensor.clamp
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClampNet()
@@ -83,7 +83,7 @@ def test_clamp_with_input_value_error(mode):
     Description: Verify the result of Tensor.clamp
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = ClampNet()

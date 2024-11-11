@@ -38,7 +38,7 @@ def test_tensor_not_equal_tensor_scalar(mode):
     Description: Verify the result of tensor.not_equal
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor([1, 2, 3], ms.float32)
     other = 2.0
     net = Net()
@@ -66,7 +66,7 @@ def test_tensor_not_equal_tensor_tensor(mode):
     Description: Verify the result of tensor.not_equal
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor([1, 2, 3], ms.int32)
     other = Tensor([1, 2, 4], ms.int32)
     net = Net()

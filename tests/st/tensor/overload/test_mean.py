@@ -47,7 +47,7 @@ def test_method_mean(mode):
     Description: Test functional feature with Tensor.mean.
     Expectation: Run success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
 
     # test 1: using positional args
     net = MeanNet()

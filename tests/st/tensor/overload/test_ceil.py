@@ -38,7 +38,7 @@ def test_ceil(mode):
     Description: Verify the result of Tensor.ceil
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([-0.6341, -1.4208, -1.0900, 0.5826]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = CeilNet()

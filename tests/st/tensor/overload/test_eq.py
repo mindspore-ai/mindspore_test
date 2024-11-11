@@ -44,7 +44,7 @@ def test_eq(mode):
     Description: Verify the result of tensor.eq
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
 
     inputs = Tensor(np.array([[1.0, 0.0], [0.0, 2.0]]))
@@ -65,7 +65,7 @@ def test_eq_broadcast(mode):
     Description: Verify the result of tensor.eq broadcast
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
 
     inputs = Tensor(np.array([[1.0, 0.0], [0.0, 2.0]]))
@@ -86,7 +86,7 @@ def test_tensor_eq(mode):
     Description: Verify the result of __eq__ in Tensor.
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net1()
 
     inputs = Tensor(np.array([[True, False], [False, True]]))

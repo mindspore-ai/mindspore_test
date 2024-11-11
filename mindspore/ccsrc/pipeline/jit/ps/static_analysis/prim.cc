@@ -2334,6 +2334,11 @@ bool CheckHasOverriddenMethod(AnfNodePtr node, ValuePtr item_value) {
 }
 
 bool CheckFunctionalMethod(const TypeId &type_id, const ValuePtr &method_value) {
+  // O2 does not support tensor method overloading.
+  auto ge_mode = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2;
+  if (ge_mode) {
+    return false;
+  }
   // Check if tensor.
   if (NormalizeTypeId(type_id) != kObjectTypeTensorType) {
     return false;

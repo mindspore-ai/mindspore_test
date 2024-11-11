@@ -37,7 +37,7 @@ def test_method_tril(mode):
     Description: Test functional feature with Tensor.tril.
     Expectation: Run success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = TrilNet()
 
     x = ms.Tensor(np.array([[1, 2, 3, 4],

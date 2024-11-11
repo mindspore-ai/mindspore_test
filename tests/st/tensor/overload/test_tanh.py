@@ -38,7 +38,7 @@ def test_tanh(mode):
     Description: Verify the result of tensor.tanh
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     inputs = Tensor(np.array([1, 2, 3, 4, 5]), ms.float32)
     outputs = net(inputs)

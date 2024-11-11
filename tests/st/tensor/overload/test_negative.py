@@ -37,7 +37,7 @@ def test_tensor_negative(mode):
     Description: Verify the result of Tensor.negative
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([1, 2, -1, 2, 0, -3.5]), ms.float32)
     net = Net()
     output_x = net(x)

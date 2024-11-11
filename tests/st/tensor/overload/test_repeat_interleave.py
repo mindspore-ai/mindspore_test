@@ -46,7 +46,7 @@ def test_repeat_interleave(mode):
     Description: Verify the result of repeat_interleave.
     Expectation: expect correct result.
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     net1 = Net1()
     net2 = Net2()

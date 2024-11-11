@@ -37,7 +37,7 @@ def test_method_isfinite(mode):
     Description: Test functional feature with Tensor.isfinite.
     Expectation: Run success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
 
     net = IsFiniteNet()
     x = ms.Tensor(np.array([np.log(-1), 1, np.log(0)]), ms.float16)

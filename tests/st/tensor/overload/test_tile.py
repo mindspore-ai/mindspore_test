@@ -38,7 +38,7 @@ def test_tile(mode):
     Description: Verify the result of Tensor.tile
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     x = Tensor(np.array([[1, 2], [3, 4]]), ms.float32)
     dims = (2, 2)

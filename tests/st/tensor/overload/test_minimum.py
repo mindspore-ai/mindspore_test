@@ -37,7 +37,7 @@ def test_tensor_minimum(mode):
     Description: Verify the result of tensor.minimum
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     # test1: same dtype
     x = Tensor(np.array([1.0, 5.0, 3.0]), ms.float32)
     other = Tensor(np.array([4.0, 2.0, 6.0]), ms.float32)

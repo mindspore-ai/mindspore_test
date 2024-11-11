@@ -41,7 +41,7 @@ def test_tensor_nan_to_num(mode):
     Description: Verify the result of tensor.nan_to_num
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([float('nan'), float('inf'), -float('inf'), 5.0]), ms.float32)
     net = Net(x)
 

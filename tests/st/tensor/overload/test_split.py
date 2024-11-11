@@ -38,7 +38,7 @@ def test_method_split_python(mode):
     Expectation: Run success
     """
 
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
 
     net = SplitNet()
     a = np.array(np.arange(20).reshape((10, 2)), dtype=np.float32)

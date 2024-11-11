@@ -38,7 +38,7 @@ def test_cos(mode):
     Description: Verify the result of Tensor.cos
     Expectation: expect correct forward result
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x_np = np.array([0.24, 0.83, 0.31, 0.09]).astype(np.float32)
     x = Tensor(x_np, ms.float32)
     net = CosNet()

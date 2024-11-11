@@ -36,7 +36,7 @@ def test_tensor_gt(mode):
     Description: Verify the result of tensor when dims argument is tuple.
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     x = Tensor(np.array([1, 2, 3]), ms.int32)
     y = Tensor(np.array([1, 1, 4]), ms.int32)

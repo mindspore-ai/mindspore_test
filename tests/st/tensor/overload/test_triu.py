@@ -42,7 +42,7 @@ def test_tensor_triu(mode):
     Expectation: success
     """
     # test 1: diagonal is default
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([[1, 2, 3, 4],
                          [5, 6, 7, 8],
                          [10, 11, 12, 13],

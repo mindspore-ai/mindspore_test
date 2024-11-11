@@ -38,7 +38,7 @@ def test_tensor_permute(mode):
     Description: Verify the result of permute
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4), ms.float32)
     input_perm = (0, 2, 1)
     net = Net()

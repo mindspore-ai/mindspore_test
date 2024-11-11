@@ -37,7 +37,7 @@ def test_tensor_round(mode):
     Description: Verify the result of Tensor.round
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([0.8, 1.5, 2.3, 2.5, -4.5]), ms.float32)
     net = Net()
     output_x = net(x)

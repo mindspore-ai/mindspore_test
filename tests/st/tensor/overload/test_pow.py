@@ -39,7 +39,7 @@ def test_tensor_pow(mode):
     Description: Verify the result of Tensor.pow
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([1.0, 2.0, 4.0]), ms.float32)
     exponent = 3.0
     net = Net()
@@ -65,7 +65,7 @@ def test_tensor_pow_scalar(mode):
     Description: Verify the result of Tensor.pow
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = 2.0
     exponent = 3.0
     net = Net()

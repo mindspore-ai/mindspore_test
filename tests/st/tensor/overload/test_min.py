@@ -42,7 +42,7 @@ def test_method_min_python(mode):
     Description: Test functional feature with Tensor.min.
     Expectation: Run success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
 
     # test 1: using positional args
     net = MinPythonNet()
@@ -72,7 +72,7 @@ def test_method_min_pyboost(mode):
     Description: Test functional feature with Tensor.min.
     Expectation: Run success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = MinPyboostNet()
     x = ms.Tensor(np.arange(4).reshape((2, 2)).astype(np.float32))
     output = net(x)

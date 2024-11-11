@@ -174,12 +174,16 @@ BuiltInTypeMap &GetMethodMap() {
        {"contiguous", prim::kPrimidentity},                                // contiguous
        {"slogdet", std::string("slogdet")},                                // slogdet
        {"trace", std::string("trace")},                                    // trace
+       {"tril", std::string("tril")},                                      // tril
+       {"__add__", std::string("add")},                                    // C.add
        {"__sub__", std::string("sub")},                                    // C.sub
        {"__mul__", std::string("mul")},                                    // C.mul
        {"__matmul__", std::string("matmul")},                              // F.matmul
        {"xdivy", std::string("xdivy")},                                    // P.Xdivy
        {"abs", std::string("abs_")},                                       // C.abs_
        {"absolute", std::string("abs_")},                                  // C.abs_
+       {"mean", std::string("mean")},                                      // C.mean
+       {"prod", std::string("prod")},                                      // C.reduce_prod
        {"__truediv__", std::string("truediv")},                            // C.truediv
        {"__floordiv__", std::string("floordiv")},                          // C.floordiv
        {"__mod__", std::string("mod")},                                    // C.mod
@@ -194,6 +198,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"__gt__", std::string("gt")},                                      // C.gt
        {"__le__", std::string("le")},                                      // C.le
        {"__ge__", std::string("ge")},                                      // C.ge
+       {"gt", std::string("gt")},                                          // P.Greater
        {"ge", std::string("ge")},                                          // P.GreaterEqual
        {"expand_as", std::string("expand_tensor_as")},                     // C.expand_as
        {"broadcast_to", std::string("broadcast_to")},                      // P.BroadcastTo
@@ -208,6 +213,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"itemset", std::string("itemset")},                                // P.itemset,
        {"transpose", std::string("transpose")},                            // P.transpose
        {"flatten", std::string("flatten")},                                // P.reshape(,-1)
+       {"reshape", std::string("reshape")},                                // P.reshape()
        {"reshape_as", std::string("reshape_as")},                          // P.reshape()
        {"reverse", std::string("reverse")},                                // P.ReverseV2()
        {"reverse_sequence", std::string("reverse_sequence")},              // P.ReverseSequence()
@@ -222,6 +228,8 @@ BuiltInTypeMap &GetMethodMap() {
        {"swapaxes", std::string("swapaxes")},                              // P.transpose()
        {"swapdims", std::string("swapdims")},                              // P.transpose()
        {"narrow", std::string("narrow")},                                  // narrow()
+       {"masked_fill", std::string("masked_fill")},                        // masked_fill()
+       {"masked_select", std::string("masked_select")},                    // masked_select()
        {"nonzero", std::string("nonzero")},                                // nonzero()
        {"expand_dims", std::string("expand_dims")},                        // P.expand_dims()
        {"squeeze", std::string("squeeze")},                                // P.squeeze()
@@ -234,6 +242,8 @@ BuiltInTypeMap &GetMethodMap() {
        {"cummin", std::string("cummin")},                                  // cummin()
        {"cummax", std::string("cummax")},                                  // cummax()
        {"index_fill", std::string("index_fill")},                          // index_fill()
+       {"index_select", std::string("index_select")},                      // index_select()
+       {"repeat_interleave", std::string("repeat_interleave")},            // repeat_interleave()
        {"copy", std::string("copy")},                                      // copy()
        {"copysign", std::string("copysign")},                              // copysign()
        {"inplace_update", std::string("inplace_update")},                  // P.InplaceUpdateV2
@@ -243,15 +253,22 @@ BuiltInTypeMap &GetMethodMap() {
        {"log1p", std::string("log1p")},                                    // P.Log1p()
        {"logcumsumexp", std::string("logcumsumexp")},                      // logcumsumexp()
        {"logit", std::string("logit")},                                    // Logit()
+       {"negative", std::string("negative")},                              // neg()
        {"logdet", std::string("logdet")},                                  // logdet()
        {"log_matrix_determinant", std::string("log_matrix_determinant")},  // log_matrix_determinant()
        {"matrix_determinant", std::string("matrix_determinant")},          // matrix_determinant()
        {"matrix_power", std::string("matrix_power")},                      // P.MatrixPower()
        {"det", std::string("det")},                                        // matrix_determinant()
        {"ndimension", std::string("ndim_")},                               // ndimension()
+       {"max", std::string("max")},                                        // P.reduce_max()
+       {"min", std::string("min")},                                        // P.reduce_min()
+       {"pow", std::string("pow")},                                        // P.Pow()
+       {"log", std::string("log")},                                        // P.Log()
        {"nelement", std::string("numel")},                                 // numel()
        {"numel", std::string("numel")},                                    // numel()
+       {"permute", std::string("permute")},                                // permute()
        {"positive", std::string("positive")},                              // positive()
+       {"remainder", std::string("remainder")},                            // remainder()
        {"log10", std::string("log10")},                                    // F.log10()
        {"log2", std::string("log2")},                                      // F.log2()
        {"logaddexp", std::string("logaddexp")},                            // logaddexp()
@@ -260,10 +277,13 @@ BuiltInTypeMap &GetMethodMap() {
        {"isneginf", std::string("isneginf")},                              // isneginf()
        {"isposinf", std::string("isposinf")},                              // isposinf()
        {"isreal", std::string("isreal")},                                  // isreal()
+       {"minimum", std::string("minimum")},                                // P.Minimum()
        {"cosh", std::string("cosh")},                                      // P.Cosh()
+       {"tanh", std::string("tanh")},                                      // P.Tanh()
        {"rad2deg", std::string("rad2deg")},                                // F.rad2deg()
        {"deg2rad", std::string("deg2rad")},                                // F.deg2rad()
        {"dot", std::string("dot")},                                        // composite.dot()
+       {"round", std::string("round_")},                                   // P.Round()
        {"roll", std::string("roll")},                                      // P.Roll()
        {"rot90", std::string("rot90")},                                    // rot90()
        {"fill", std::string("fill")},                                      // P.fill()
@@ -271,7 +291,10 @@ BuiltInTypeMap &GetMethodMap() {
        {"fill_diagonal", std::string("fill_diagonal")},                    // P.FillDiagonal()
        {"uniform", std::string("uniform")},                                // P.UniformExt()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
+       {"clamp", std::string("clamp")},                                    // clamp()
+       {"clip", std::string("clamp")},                                     // clamp()
        {"__bool__", std::string("tensor_bool")},                           // C.tensor_bool
+       {"argmax", std::string("argmax")},                                  // P.Argmax()
        {"argmin", std::string("argmin")},                                  // P.Argmax()
        {"resize", std::string("resize")},                                  // P.Reshape()
        {"crop_and_resize", std::string("crop_and_resize")},                // P.crop_and_resize
@@ -280,6 +303,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"diagonal", std::string("diagonal")},                              // P.Eye()
        {"diagonal_scatter", std::string("diagonal_scatter")},              // diagonal_scatter()
        {"i0", std::string("i0")},                                          // F.i0()
+       {"isclose", std::string("isclose")},                                // P.IsClose()
        {"is_floating_point", std::string("is_floating_point")},            // is_floating_point()
        {"is_signed", std::string("is_signed")},                            // is_signed()
        {"is_complex", std::string("is_complex")},                          // F.is_complex()
@@ -288,6 +312,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"invert", std::string("invert")},                                  // invert()
        {"searchsorted", std::string("searchsorted")},                      // P.Select()
        {"take", std::string("take")},                                      // P.GatherNd()
+       {"gather", std::string("gather")},                                  // P.Gather()
        {"scatter", std::string("scatter")},                                // P.TensorScatterElements()
        {"scatter_add", std::string("tensor_scatter_add")},                 // P.TensorScatterAdd()
        {"scatter_mul", std::string("tensor_scatter_mul")},                 // tensor_scatter_mul()
@@ -303,6 +328,8 @@ BuiltInTypeMap &GetMethodMap() {
        {"unsorted_segment_prod", std::string("unsorted_segment_prod")},    // P.UnsortedSegmentProd()
        {"renorm", std::string("renorm")},                                  // renorm()
        {"real", std::string("real")},                                      // real()
+       {"reciprocal", std::string("reciprocal")},                          // reciprocal()
+       {"rsqrt", std::string("rsqrt")},                                    // rsqrt()
        {"trace", std::string("trace")},                                    // P.Eye()
        {"var", std::string("var")},                                        // P.ReduceSum
        {"std", std::string("std")},                                        // P.ReduceSum
@@ -311,10 +338,14 @@ BuiltInTypeMap &GetMethodMap() {
        {"square", std::string("square")},                                  // P.Square()
        {"sub", std::string("sub")},                                        // P.Sub()
        {"true_divide", std::string("true_divide")},                        // true_divide()
+       {"triu", std::string("triu")},                                      // triu()
        {"subtract", std::string("subtract")},                              // true_divide()
        {"sum_to_size", std::string("sum_to_size")},                        // sum_to_size()
+       {"exp", std::string("exp")},                                        // P.Exp()
        {"repeat", std::string("repeat")},                                  // C.repeat_elements
        {"bernoulli", std::string("bernoulli")},                            // P.Bernoulli()
+       {"ceil", std::string("ceil")},                                      // P.Ceil
+       {"floor", std::string("floor")},                                    // P.floor
        {"floor_divide", std::string("floor_divide")},                      // floor_divide
        {"flip", std::string("flip")},                                      // flip
        {"fliplr", std::string("fliplr")},                                  // fliplr
@@ -340,22 +371,29 @@ BuiltInTypeMap &GetMethodMap() {
        {"tolist", std::string("tolist")},                                  // tolist()
        {"col2im", std::string("col2im")},                                  // P.Col2Im
        {"count_nonzero", std::string("count_nonzero")},                    // count_nonzero
+       {"split", std::string("split")},                                    // split
        {"tensor_split", std::string("tensor_split")},                      // tensor_split
        {"vsplit", std::string("vsplit")},                                  // vsplit
        {"hsplit", std::string("hsplit")},                                  // hsplit
        {"dsplit", std::string("dsplit")},                                  // dplit
        {"random_categorical", std::string("random_categorical")},          // P.RandomCategorical
        {"xlogy", std::string("xlogy")},                                    // P.Xlogy()
+       {"erf", std::string("erf")},                                        // P.Erf()
        {"erfc", std::string("erfc")},                                      // P.Erfc()
        {"argmax_with_value", std::string("argmax_with_value")},            // P.ArgMaxWithValue
        {"argmin_with_value", std::string("argmin_with_value")},            // P.ArgMinWithValue
+       {"tile", std::string("tile")},                                      // P.Tile
        {"topk", std::string("topk")},                                      // P.TopK()
        {"top_k", std::string("top_k")},                                    // P.TopK()
+       {"isfinite", std::string("isfinite")},                              // P.isfinite()
+       {"cos", std::string("cos")},                                        // cos()
        {"cov", std::string("cov")},                                        // cov()
        {"acos", std::string("acos")},                                      // acos()
        {"arccos", std::string("acos")},                                    // acos()
        {"acosh", std::string("acosh")},                                    // acosh()
+       {"sigmoid", std::string("sigmoid")},                                // P.Sigmoid()
        {"addr", std::string("addr")},                                      // addr()
+       {"add", std::string("add")},                                        // P.Add()
        {"addbmm", std::string("addbmm")},                                  // addbmm()
        {"addmm", std::string("addmm")},                                    // addmm()
        {"addmv", std::string("addmv")},                                    // addmv()
@@ -376,6 +414,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"baddbmm", std::string("baddbmm")},                                // baddbmm
        {"bmm", std::string("bmm")},                                        // bmm()
        {"value", std::string("value_")},                                   // P.Load(param, U)
+       {"to", std::string("to")},                                          // to()
        {"bool", std::string("to_bool")},                                   // bool()
        {"float", std::string("to_float")},                                 // float()
        {"half", std::string("to_half")},                                   // half()
@@ -387,10 +426,14 @@ BuiltInTypeMap &GetMethodMap() {
        {"conj", std::string("conj")},                                      // conj()
        {"cross", std::string("cross")},                                    // cross()
        {"erfinv", std::string("erfinv")},                                  // erfinv()
+       {"less_equal", std::string("less_equal")},                          // less_equal()
        {"fold", std::string("fold")},                                      // fold()
        {"unfold", std::string("unfold")},                                  // unfold()
        {"expand", std::string("expand")},                                  // expand()
        {"cumprod", std::string("cumprod")},                                // cumprod()
+       {"div", std::string("div")},                                        // div()
+       {"divide", std::string("div")},                                     // divide()
+       {"eq", std::string("eq")},                                          // eq()
        {"equal", std::string("equal")},                                    // equal()
        {"expm1", std::string("expm1")},                                    // expm1()
        {"eig", std::string("eig")},                                        // eig()
@@ -401,20 +444,35 @@ BuiltInTypeMap &GetMethodMap() {
        {"type_as", std::string("type_as")},                                // astype()
        {"dim", prim::kPrimRank},                                           // P.Rank()
        {"index_add", std::string("index_add")},                            // index_add()
+       {"greater", std::string("greater")},                                // greater()
+       {"greater_equal", std::string("greater_equal")},                    // greater_equal()
        {"igamma", std::string("igamma")},                                  // igamma()
        {"igammac", std::string("igammac")},                                // igammac()
        {"isinf", std::string("isinf")},                                    // isinf()
        {"isnan", std::string("isnan")},                                    // isnan()
+       {"le", std::string("le")},                                          // le()
+       {"less", std::string("less")},                                      // less()
+       {"lt", std::string("less")},                                        // lt()
+       {"logical_and", std::string("logical_and")},                        // logical_and()
+       {"logical_not", std::string("logical_not")},                        // logical_not()
+       {"logical_or", std::string("logical_or")},                          // logical_or()
        {"logical_xor", std::string("logical_xor")},                        // logical_xor()
        {"lstsq", std::string("lstsq")},                                    // lstsq()
        {"mvlgamma", std::string("mvlgamma")},                              // mvlgamma()
+       {"matmul", std::string("matmul")},                                  // matmul()
        {"inner", std::string("inner")},                                    // inner()
+       {"maximum", std::string("maximum")},                                // maximum()
        {"msort", std::string("msort")},                                    // msort()
        {"mm", std::string("mm")},                                          // mm()
+       {"mul", std::string("mul")},                                        // mul()
        {"multiply", std::string("multiply")},                              // multiply()
+       {"nan_to_num", std::string("nan_to_num")},                          // nan_to_num()
        {"nansum", std::string("nansum")},                                  // nansum()
        {"nanmean", std::string("nanmean")},                                // nanmean()
        {"nanmedian", std::string("nanmedian")},                            // nanmedian()
+       {"neg", std::string("neg")},                                        // neg()
+       {"ne", std::string("ne")},                                          // ne()
+       {"not_equal", std::string("not_equal")},                            // not_equal()
        {"new_zeros", std::string("new_zeros")},                            // new_zeros()
        {"zero_", std::string("zero_")},                                    // zero_()
        {"new_ones", std::string("new_ones")},                              // new_ones()
@@ -422,9 +480,12 @@ BuiltInTypeMap &GetMethodMap() {
        {"sign", std::string("sign")},                                      // sign()
        {"signbit", std::string("signbit")},                                // signbit()
        {"sinh", std::string("sinh")},                                      // sinh()
+       {"sort", std::string("sort")},                                      // sort()
        {"cauchy", std::string("cauchy")},                                  // P.cauchy()
        {"log_normal", std::string("log_normal")},                          // P.LogNormalReverse()
        {"argsort", std::string("argsort")},                                // argsort()
+       {"trunc", std::string("trunc")},                                    // trunc()
+       {"where", std::string("where")},                                    // where()
        {"imag", std::string("imag")},                                      // imag()
        {"diff", std::string("diff")},                                      // diff()
        {"frac", std::string("frac")},                                      // frac()

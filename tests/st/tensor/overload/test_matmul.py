@@ -41,7 +41,7 @@ def test_tensor_matmul(mode):
     Description: Verify the result of tensor.matmul
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     # test1: no broadcast
     x = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4), ms.float32)
     other = Tensor(np.arange(4 * 5).reshape(4, 5), ms.float32)

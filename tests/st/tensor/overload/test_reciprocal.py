@@ -38,7 +38,7 @@ def test_reciprocal_normal(mode):
     Description: Verify the result of reciprocal
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     x = ms.Tensor(np.array([1.0, 2.0, 4.0]), ms.float32)
     out = net(x)
