@@ -52,6 +52,7 @@ struct InterLeaveScope {
   CNodePtr concat{nullptr};
   bool forward{false};
   size_t scope_id{0};
+  FuncGraphPtr graph{nullptr};
 };
 
 using InterLeaveScopePtr = std::shared_ptr<InterLeaveScope>;
@@ -361,7 +362,7 @@ void AddDependForOverlap(std::vector<std::vector<CNodePtr>> *branch_cnodes_ptr, 
       if (node_user.first == nullptr) {
         continue;
       }
-      if (!node_user.first->isa<CNode>()) {
+      if (!node_user.first->isa<CNode>() || IsPrimitiveCNode(node_user.first, prim::kPrimPartial)) {
         continue;
       }
       AddDependNode(graph, node_user.first->cast<CNodePtr>(), pre_cnode);
@@ -513,9 +514,8 @@ void PrintBranchNodes(const std::vector<CNodePtr> &branch_nodes) {
   MS_LOG(INFO) << "End print split concat interleave branch node name.";
 }
 
-void InterleaveBranchesForCommunicationOverlap(const InterLeaveScopePtr &interleave_scope, const FuncGraphPtr &graph) {
+void InterleaveBranchesForCommunicationOverlap(const InterLeaveScopePtr &interleave_scope) {
   MS_EXCEPTION_IF_NULL(interleave_scope);
-  MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(interleave_scope->concat);
   MS_EXCEPTION_IF_NULL(interleave_scope->split);
   auto make_tuple = interleave_scope->concat->input(1);
@@ -559,7 +559,7 @@ void InterleaveBranchesForCommunicationOverlap(const InterLeaveScopePtr &interle
   while (cur_index < total_branch_nodes.size()) {
     auto cur_nodes = GetInterleaveNodes(&total_branch_nodes[cur_index], cur_index);
     // Interleave two branches nodes to overlap comm/comp
-    pre_nodes = InterleaveTwoBranch(&total_branch_nodes, &pre_nodes, &cur_nodes, graph);
+    pre_nodes = InterleaveTwoBranch(&total_branch_nodes, &pre_nodes, &cur_nodes, interleave_scope->graph);
     ++cur_index;
   }
 }
@@ -616,6 +616,7 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
 
       if (is_split) {
         current_scope = std::make_shared<InterLeaveScope>();
+        current_scope->graph = child_graph;
         current_scope->split = node;
         current_scope->forward = forward;
         current_scope->scope_id = ++scope_id;
@@ -636,7 +637,7 @@ void InterleaveSplitConcatBranches(const FuncGraphPtr &graph) {
 
   // Handle each split/concat scope
   for (auto &interleave_scope : interleave_scopes) {
-    InterleaveBranchesForCommunicationOverlap(interleave_scope, graph);
+    InterleaveBranchesForCommunicationOverlap(interleave_scope);
   }
 }
 }  // namespace parallel
