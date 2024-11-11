@@ -6,7 +6,7 @@ mindspore.mint.distributed.init_process_group
     初始化通信服务并创建默认通讯group（group=GlobalComm.WORLD_COMM_GROUP）。
 
     .. note::
-        - 当前接口不支持GPU、CPU版本的Mindpore调用。
+        - 当前接口不支持GPU、CPU版本的MindSpore调用。
         - 在Ascend硬件平台下，这个接口的设置需要在创建Tensor和Parameter之前，以及所有算子和网络的实例化和运行之前。
 
     参数：
