@@ -66,7 +66,8 @@ class SeqpipeScheduler : public PipelineScheduler {
   BorderPair ControlAdvancedRecv(size_t index, size_t recv_node_index);
   void SpecialControl(const std::pair<BorderStruct, BorderStruct> &origin_recv,
                       const std::pair<BorderStruct, BorderStruct> &send,
-                      const std::pair<BorderStruct, BorderStruct> &recv);
+                      const std::pair<BorderStruct, BorderStruct> &recv,
+                      const std::pair<BorderStruct, BorderStruct> &prior_cell);
   void SendRecvControl(const std::pair<BorderStruct, BorderStruct> &send,
                        const std::pair<BorderStruct, BorderStruct> &recv);
   std::pair<Border, Border> SeqpipeBorder(const std::vector<Border> &borders, int64_t seq_chunk, int64_t chunk,
@@ -82,6 +83,7 @@ class SeqpipeScheduler : public PipelineScheduler {
   std::vector<Triplet> execute_order_;
   std::vector<Triplet> fp_execute_order_;
   std::vector<Triplet> bp_execute_order_;
+  std::vector<size_t> cycle_list_;
   size_t warm_up_size_ = 0;
   size_t calm_down_index_ = 0;
   size_t last_stage_pre_fetch_index_ = 0;

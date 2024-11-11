@@ -1122,6 +1122,12 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
     if (!kv_equal) {
       continue;
     }
+    auto kv_equal_cnode = kv_equal->cast<CNodePtr>();
+    if (!IsPrimitiveCNode(kv_equal_cnode, prim::kPrimMul) ||
+        !IsPrimitiveCNode(kv_equal_cnode->input(kIndex2), prim::kPrimNotEqual)) {
+      continue;
+    }
+    auto not_equal_cnode = kv_equal_cnode->input(kIndex2)->cast<CNodePtr>();
     auto kv_cache_grad = FindGradAccuParameter(parameters, param_name, param_name + "_grad");
     if (!kv_cache_grad) {
       continue;
@@ -1130,7 +1136,8 @@ void AddVirtualAssignKvCache(const FuncGraphPtr &root) {
     OperatorAttrs attrs = {};
     auto py_instance = CreateOpInstance(attrs, VIRTUAL_ASSIGN_KV_CACHE, VIRTUAL_ASSIGN_KV_CACHE);
     auto value_node = NewValueNode(py_instance);
-    std::vector<AnfNodePtr> virtual_assign_kv_cache_inputs = {value_node, kv_add_input, kv_cache_grad, kv_equal};
+    std::vector<AnfNodePtr> virtual_assign_kv_cache_inputs = {value_node, kv_add_input, kv_cache_grad,
+                                                              not_equal_cnode->input(kIndex1)};
     auto func_graph = kv_add_input->func_graph();
     auto virtual_assign_kv_cache = func_graph->NewCNode(virtual_assign_kv_cache_inputs);
     auto kv_prim = GetCNodePrimitive(virtual_assign_kv_cache);
