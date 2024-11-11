@@ -13,10 +13,11 @@
 # limitations under the License.
 # ============================================================================
 """CPU platform profiler."""
-import mindspore._c_expression as c_expression
 from mindspore import log as logger
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
+import mindspore._c_expression as c_expression
+
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 
@@ -36,8 +37,8 @@ class CpuProfiler(BaseProfiler):
         """Start profiling."""
         logger.info("CpuProfiler start.")
         self._profiler.init(self._prof_ctx.framework_path)
+        logger.info("CpuProfiler framework_path: %s", self._prof_ctx.framework_path)
         self._profiler.step_profiling_enable(True)
-        logger.info("CpuProfiler init framework_path: %s", self._prof_ctx.framework_path)
 
         if ProfilerActivity.CPU in self._prof_ctx.activities:
             self._profiler.enable_op_time()
