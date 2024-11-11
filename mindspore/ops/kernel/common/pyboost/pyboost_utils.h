@@ -241,6 +241,17 @@ class BACKEND_EXPORT PyBoostUtils {
   // Set current stream for CREATE_PYBOOST_OP in front queue.
   static void set_cur_stream_id(uint32_t cur_stream_id) { cur_stream_id_ = cur_stream_id; }
 
+  static bool IsBool(const BaseTensorPtr &input_tensor) { return input_tensor->data_type() == TypeId::kNumberTypeBool; }
+
+  static bool IsBool(const ScalarPtr &alpha) { return alpha->isa<BoolImm>(); }
+
+  static bool IsFloat(const BaseTensorPtr &input_tensor) {
+    return input_tensor->data_type() >= TypeId::kNumberTypeFloat &&
+           input_tensor->data_type() <= TypeId::kNumberTypeBFloat16;
+  }
+
+  static bool IsFloat(const ScalarPtr &alpha) { return alpha->isa<FloatImm>(); }
+
  private:
   inline static uint32_t cur_stream_id_ = kDefaultStreamIndex;
 };
