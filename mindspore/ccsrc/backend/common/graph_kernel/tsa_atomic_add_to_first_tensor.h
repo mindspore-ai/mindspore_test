@@ -21,7 +21,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include "include/backend/optimizer/optimizer.h"
 #include "backend/common/graph_kernel/add_atomic_clean.h"
 #include "include/backend/kernel_graph.h"
 

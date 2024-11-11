@@ -18,8 +18,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/backend/kernel_info.h"
-#include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"

@@ -18,7 +18,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"

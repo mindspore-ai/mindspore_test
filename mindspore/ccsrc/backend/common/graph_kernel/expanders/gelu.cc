@@ -17,7 +17,6 @@
 #include <memory>
 #include <vector>
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
-#include "utils/ms_context.h"
 
 namespace mindspore::graphkernel::expanders {
 namespace {

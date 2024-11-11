@@ -24,8 +24,6 @@
 #include <utility>
 #include <memory>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "kernel/common_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "backend/common/graph_kernel/core/parallel_op_concatenate.h"
 

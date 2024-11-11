@@ -20,10 +20,8 @@
 #include <vector>
 #include <set>
 #include <string>
-#include "ir/dtype/type_id.h"
 #include "ir/anf.h"
-#include "ir/value.h"
-#include "ir/tensor.h"
+#include "ir/base_tensor.h"
 #include "utils/hash_map.h"
 #include "utils/shape_utils.h"
 #include "include/common/utils/utils.h"

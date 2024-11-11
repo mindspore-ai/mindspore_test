@@ -17,12 +17,11 @@
 #include "backend/common/graph_kernel/core/graph_kernel_expander.h"
 
 #include <string>
-
+#include "ir/core_ops_primitive.h"
 #include "utils/anf_utils.h"
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
-#include "include/common/utils/anfalgo.h"
 
 namespace mindspore::graphkernel {
 AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const std::string &name) const {

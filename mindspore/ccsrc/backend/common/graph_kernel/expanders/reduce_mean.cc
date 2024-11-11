@@ -21,7 +21,6 @@
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "ir/anf.h"
-#include "mindapi/base/shape_vector.h"
 #include "utils/convert_utils_base.h"
 
 namespace mindspore::graphkernel::expanders {

@@ -19,9 +19,7 @@
 
 #include <memory>
 #include <tuple>
-#include "include/backend/optimizer/optimizer.h"
 #include "backend/common/graph_kernel/add_atomic_clean.h"
-#include "include/backend/kernel_graph.h"
 
 namespace mindspore::graphkernel {
 /*

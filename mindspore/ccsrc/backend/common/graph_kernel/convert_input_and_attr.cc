@@ -26,7 +26,6 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/api/format.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/op_def.h"

@@ -17,7 +17,6 @@
 #define MINDSPORE_CCSRC_COMMON_GRAPH_KERNEL_SPLIT_RESHAPE_AND_CACHE
 
 #include <memory>
-#include "include/backend/optimizer/optimizer.h"
 #include "backend/common/graph_kernel/core/graph_kernel_expander.h"
 #include "backend/common/graph_kernel/core/split_umonad.h"
 

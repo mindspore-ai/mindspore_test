@@ -24,11 +24,8 @@
 #include <map>
 #include <tuple>
 #include <unordered_map>
-#include <nlohmann/json.hpp>
-
-#include "include/backend/kernel_graph.h"
-#include "ir/anf.h"
-#include "kernel/kernel.h"
+#include <mutex>
+#include "nlohmann/json.hpp"
 #include "kernel/kash/kernel_pack.h"
 
 namespace mindspore {

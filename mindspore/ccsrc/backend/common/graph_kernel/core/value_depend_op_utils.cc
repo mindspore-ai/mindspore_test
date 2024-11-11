@@ -26,7 +26,6 @@
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/primitive_c.h"
-#include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore::graphkernel {

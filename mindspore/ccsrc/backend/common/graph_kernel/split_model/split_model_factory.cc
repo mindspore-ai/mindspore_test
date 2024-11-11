@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "backend/common/graph_kernel/split_model/split_model_factory.h"
-#include "utils/ms_context.h"
 
 namespace mindspore::graphkernel::inner {
 SplitModelPtr SplitModelFactory::CreateSplitModel(const std::string &processor) {

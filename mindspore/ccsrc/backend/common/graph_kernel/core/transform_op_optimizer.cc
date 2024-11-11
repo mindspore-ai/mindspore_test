@@ -24,8 +24,6 @@
 #include <tuple>
 #include <functional>
 
-#include "ir/graph_utils.h"
-#include "utils/anf_utils.h"
 #include "backend/common/graph_kernel/model/lite_graph.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
 #include "backend/common/graph_kernel/model/op_register.h"
