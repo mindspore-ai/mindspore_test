@@ -676,6 +676,91 @@ void AclStreamAssign::GenEventsForParallelOp(const NotNull<KernelGraphPtr> &kern
   MS_LOG(DEBUG) << "Finish GenEventsForParallelOp.";
 }
 
+std::pair<CNodePtr, CNodePtr> AclStreamAssign::CreateSendRecvEventsPair(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                                        size_t send_stream_id, size_t wait_stream_id) {
+  AscendStreamMng &resource_manager = AscendStreamMng::GetInstance();
+  uint32_t event_id = resource_manager.ApplyNewEvent();
+  auto event = resource_manager.ApplyRtEvent();
+  auto event_generate_id = ++event_generate_id_;
+
+  auto send_cnode = CreateSendApplyKernel(kernel_graph, event_id, send_stream_id, event_generate_id);
+  common::AnfAlgo::SetNodeAttr(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), send_cnode);
+
+  auto recv_cnode = CreateRecvApplyKernel(kernel_graph, event_id, send_stream_id, wait_stream_id, event_generate_id);
+  common::AnfAlgo::SetNodeAttr(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), recv_cnode);
+
+  return std::make_pair(send_cnode, recv_cnode);
+}
+
+void AclStreamAssign::UpdateGPTOEventsToExecutionOrder(const NotNull<KernelGraphPtr> &kernel_graph,
+                                                       const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
+  std::unordered_map<CNodePtr, std::pair<std::vector<CNodePtr>, std::vector<CNodePtr>>> gpto_events;
+  std::vector<CNodePtr> new_exec_order;
+  auto exec_order_list = kernel_graph->execution_order();
+
+  // Find all streams to protect between graphs
+  std::set<size_t> streams_set;
+  for (auto &kernel : exec_order_list) {
+    auto process_stream_id = AnfAlgo::GetStreamId(kernel);
+    if (process_stream_id != kDefaultStreamIndex) {
+      streams_set.insert(process_stream_id);
+    }
+  }
+
+  // Add stream events at the beginning of the graph
+  for (const auto &stream : streams_set) {
+    std::pair<CNodePtr, CNodePtr> send_recv_nodes = CreateSendRecvEventsPair(kernel_graph, kDefaultStreamIndex, stream);
+    new_exec_order.push_back(send_recv_nodes.first);
+    new_exec_order.push_back(send_recv_nodes.second);
+  }
+
+  for (auto pair : sched_events) {
+    const auto &node_before_send = pair.first;
+    auto send_stream_id = AnfAlgo::GetStreamId(node_before_send);
+    const auto &node_after_recv = pair.second;
+    auto recv_stream_id = AnfAlgo::GetStreamId(node_after_recv);
+
+    // Create necessary events computed by GPTO
+    std::pair<CNodePtr, CNodePtr> events_pair = CreateSendRecvEventsPair(kernel_graph, send_stream_id, recv_stream_id);
+
+    if (gpto_events.find(node_before_send) == gpto_events.end()) {
+      gpto_events[node_before_send] = {{events_pair.first}, {}};
+    } else {
+      gpto_events[node_before_send].first.push_back(events_pair.first);
+    }
+    if (gpto_events.find(node_after_recv) == gpto_events.end()) {
+      gpto_events[node_after_recv] = {{}, {events_pair.second}};
+    } else {
+      gpto_events[node_after_recv].second.push_back(events_pair.second);
+    }
+  }
+
+  // Compute the new execution order list for the current graph
+  for (auto &kernel : exec_order_list) {
+    bool has_events = gpto_events.find(kernel) != gpto_events.end();
+    auto &send_event_nodes = gpto_events[kernel].first;
+    auto &recv_event_nodes = gpto_events[kernel].second;
+    // Insert recv events nodes to the exec order list
+    if (has_events && recv_event_nodes.size() > 0) {
+      (void)std::copy(recv_event_nodes.begin(), recv_event_nodes.end(), std::back_inserter(new_exec_order));
+    }
+    new_exec_order.push_back(kernel);
+    // Insert send events nodes to the exec order list
+    if (has_events && send_event_nodes.size() > 0) {
+      (void)std::copy(send_event_nodes.begin(), send_event_nodes.end(), std::back_inserter(new_exec_order));
+    }
+  }
+
+  // Add stream events at the end of the graph
+  for (const auto &stream : streams_set) {
+    std::pair<CNodePtr, CNodePtr> send_recv_nodes = CreateSendRecvEventsPair(kernel_graph, stream, kDefaultStreamIndex);
+    new_exec_order.push_back(send_recv_nodes.first);
+    new_exec_order.push_back(send_recv_nodes.second);
+  }
+
+  kernel_graph->set_execution_order(new_exec_order);
+}
+
 void AclStreamAssign::InsertEventForNonTaskSink(const NotNull<KernelGraphPtr> &kernel_graph,
                                                 const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
   mindspore::HashMap<AnfNodePtr, std::vector<CNodePtr>> kernel_send;
@@ -685,17 +770,10 @@ void AclStreamAssign::InsertEventForNonTaskSink(const NotNull<KernelGraphPtr> &k
 
   if (sched_events.empty()) {
     GenEventsForParallelOp(kernel_graph, &kernel_send, &kernel_recv, &producer_streams);
+    UpdateEventsToExecutionOrder(kernel_graph, kernel_send, kernel_recv, producer_streams);
   } else {
-    // Simple logic should be this, but there seem to be many exceptions tackled in function
-    // GenEventsForParallelOp()
-    for (auto event : sched_events) {
-      const auto &send = event.first;
-      const auto &recv = event.second;
-      InsertEvents(kernel_graph, send, send, &kernel_send, &kernel_recv, recv);
-    }
+    UpdateGPTOEventsToExecutionOrder(kernel_graph, sched_events);
   }
-
-  UpdateEventsToExecutionOrder(kernel_graph, kernel_send, kernel_recv, producer_streams);
 }
 }  // namespace ascend
 }  // namespace device
