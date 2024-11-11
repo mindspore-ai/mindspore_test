@@ -44,9 +44,10 @@ BaseShapePtr LayerNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr LayerNormGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type = input_args[kInputIndex1]->GetType();
+  auto gamma_type = input_args[kInputIndex5]->GetType();
+  auto beta_type = input_args[kInputIndex6]->GetType();
   std::vector<TypePtr> types_list;
-  auto out_type = x_type->Clone();
-  types_list = {out_type, out_type, out_type};
+  types_list = {x_type, gamma_type, beta_type};
   return std::make_shared<Tuple>(types_list);
 }
 
