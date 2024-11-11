@@ -360,6 +360,58 @@ NodePtrList FminFmaxGrad(BpropBuilder *ib, bool if_fmin) {
   return {brrx1, brrx2};
 }
 
+NodePtr StdGrad(BpropBuilder *ib, const NodePtr &input, const NodePtr &axis, const NodePtr &correction,
+                const NodePtr &keep_dims, const NodePtr &out, const NodePtr &dout) {
+  auto grad_var = ib->Emit("Div", {dout, ib->Emit("Muls", {out, ib->Value<float>(2.0)})});
+  auto equal_zero = ib->Equal(out, ib->Tensor(0, ib->GetDtype(out)));
+  grad_var = ib->MaskedFill(grad_var, equal_zero, ib->Tensor(0.0, ib->GetDtype(grad_var)));
+
+  auto grad = VarGrad(ib, input, axis, grad_var, correction, keep_dims);
+  return grad;
+}
+
+NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, NodePtr axis, const NodePtr &keep_dims, const NodePtr &out,
+                    const NodePtr &dout) {
+  auto input_dtype_id = ib->GetDtypeId(input);
+  if (input_dtype_id == kNumberTypeComplex64 || input_dtype_id == kNumberTypeComplex128) {
+    MS_EXCEPTION(TypeError) << "For 'MeanExt', gradient not support for complex type currently.";
+  }
+
+  auto axis_type = axis->abstract()->BuildType();
+  MS_EXCEPTION_IF_NULL(axis_type);
+  if (axis_type->isa<TypeNone>()) {
+    axis = ib->Value<std::vector<int64_t>>({});
+  }
+
+  NodePtr grad;
+  auto keep_dims_opt = mindspore::GetScalarValue<bool>(keep_dims->BuildValue());
+  if (!keep_dims_opt.has_value()) {
+    auto true_branch = [&](Emitter *e) -> NodePtrList { return {SumGrad(e, input, axis, dout, true)}; };
+    auto false_branch = [&](Emitter *e) -> NodePtrList { return {SumGrad(e, input, axis, dout, false)}; };
+    auto keep_dims_true = ib->Equal(keep_dims, ib->Value<bool>(true));
+    grad = ib->Conditional(keep_dims_true, true_branch, false_branch);
+  } else {
+    grad = SumGrad(ib, input, axis, dout, keep_dims_opt.value());
+  }
+  grad = ib->Cast(grad, ib->GetDtype(input));
+
+  NodePtr div_shape_node;
+  if (IsDynamic(ib->GetShape(input)) || IsDynamic(ib->GetShape(out))) {
+    auto shape_out_sz = ib->DynSize(out, kFloat32);
+    auto div_shape = ib->DynSize(input, kFloat32) / shape_out_sz;
+    div_shape_node = ib->Cast(div_shape, ib->GetDtype(grad));
+  } else {
+    auto shape_out_sz = ib->GetSize(out);
+    if (shape_out_sz == 0) {
+      MS_EXCEPTION(ValueError) << "For 'MeanExt', out shape size can not be 0";
+    }
+    auto div_shape = ib->GetSize(input) / shape_out_sz;
+    div_shape_node = ib->Tensor(div_shape, ib->GetDtype(grad));
+  }
+  auto dx = ib->Div(grad, div_shape_node);
+  return dx;
+}
+
 DEF_PURE_SHAPE_CALC(g_fft_dct_axis2tuple)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     constexpr int64_t input_num = 2;
@@ -4262,49 +4314,26 @@ REG_BPROP_BUILDER("IDCTN").SetBody(BODYFUNC(ib) {
 
 REG_BPROP_BUILDER("MeanExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
-  auto input_dtype_id = ib->GetDtypeId(input);
-  if (input_dtype_id == kNumberTypeComplex64 || input_dtype_id == kNumberTypeComplex128) {
-    MS_EXCEPTION(TypeError) << "For 'MeanExt', gradient not support for complex type currently.";
-  }
   auto axis = ib->GetInput(kIndex1);
   auto keep_dims = ib->GetInput(kIndex2);
   auto dtype = ib->GetInput(kIndex3);
   auto out = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
 
-  auto axis_type = axis->abstract()->BuildType();
-  MS_EXCEPTION_IF_NULL(axis_type);
-  if (axis_type->isa<TypeNone>()) {
-    axis = ib->Value<std::vector<int64_t>>({});
-  }
-
-  NodePtr grad;
-  auto keep_dims_opt = mindspore::GetScalarValue<bool>(keep_dims->BuildValue());
-  if (!keep_dims_opt.has_value()) {
-    auto true_branch = [&](Emitter *e) -> NodePtrList { return {SumGrad(e, input, axis, dout, true)}; };
-    auto false_branch = [&](Emitter *e) -> NodePtrList { return {SumGrad(e, input, axis, dout, false)}; };
-    auto keep_dims_true = ib->Equal(keep_dims, ib->Value<bool>(true));
-    grad = ib->Conditional(keep_dims_true, true_branch, false_branch);
-  } else {
-    grad = SumGrad(ib, input, axis, dout, keep_dims_opt.value());
-  }
-  grad = ib->Cast(grad, ib->GetDtype(input));
-
-  NodePtr div_shape_node;
-  if (IsDynamic(ib->GetShape(input)) || IsDynamic(ib->GetShape(out))) {
-    auto shape_out_sz = ib->DynSize(out, kFloat32);
-    auto div_shape = ib->DynSize(input, kFloat32) / shape_out_sz;
-    div_shape_node = ib->Cast(div_shape, ib->GetDtype(grad));
-  } else {
-    auto shape_out_sz = ib->GetSize(out);
-    if (shape_out_sz == 0) {
-      MS_EXCEPTION(ValueError) << "For 'MeanExt', out shape size can not be 0";
-    }
-    auto div_shape = ib->GetSize(input) / shape_out_sz;
-    div_shape_node = ib->Tensor(div_shape, ib->GetDtype(grad));
-  }
-  auto dx = ib->Div(grad, div_shape_node);
+  auto dx = MeanExtGrad(ib, input, axis, keep_dims, out, dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims), ib->OutZeros(dtype)};
+});
+
+REG_BPROP_BUILDER("Std").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto correction = ib->GetInput(kIndex2);
+  auto keep_dims = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto grad = StdGrad(ib, input, axis, correction, keep_dims, out, dout);
+  return {grad, ib->OutZeros(axis), ib->OutZeros(correction), ib->OutZeros(keep_dims)};
 });
 
 REG_BPROP_BUILDER("SumExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
@@ -4332,6 +4361,26 @@ REG_BPROP_BUILDER("SumExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   }
 
   return {ib->Cast(dx, ib->GetDtype(input)), ib->OutZeros(axis), ib->OutZeros(keep_dims), ib->OutZeros(dtype)};
+});
+
+REG_BPROP_BUILDER("StdMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto correction = ib->GetInput(kIndex2);
+  auto keepdim = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto std_out = ib->TupleGetItem(out, kIndex0);
+  auto std_dout = ib->TupleGetItem(dout, kIndex0);
+  auto std_grad = StdGrad(ib, input, dim, correction, keepdim, std_out, std_dout);
+
+  auto mean_out = ib->TupleGetItem(out, kIndex1);
+  auto mean_dout = ib->TupleGetItem(dout, kIndex1);
+  auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
+
+  auto std_mean_grad = ib->Add(std_grad, mean_grad);
+  return {std_mean_grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
 
 DEF_PURE_SHAPE_CALC(g_prod_ext)
