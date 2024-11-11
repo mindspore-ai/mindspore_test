@@ -1132,7 +1132,10 @@ def matmul(x1, x2, dtype=None):
         [ 550.  620.  690.  760.  830.]
         [ 670.  756.  842.  928. 1014.]]]
     """
-    return ops.matmul(x1, x2, dtype=dtype)
+    res = ops.matmul(x1, x2)
+    if dtype is not None:
+        res = res.astype(dtype)
+    return res
 
 
 def square(x, dtype=None):
