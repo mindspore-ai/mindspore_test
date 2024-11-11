@@ -32,7 +32,7 @@ class MsprofTimelineCreator(BaseTimelineCreator):
 
     def __init__(self):
         super().__init__()
-        self.msprof_timeline_raw_data = None
+        self.msprof_timeline_raw_data = []
         self.acl_to_npu_flow_dict: Dict[int, Dict[str, List[MsprofCompleteEvent]]] = {}
 
     def create(self, msprof_timeline_data: List[Dict]) -> None:
