@@ -118,6 +118,16 @@ bool ClusterContext::Finalize(uint32_t timeout) {
   return true;
 }
 
+void ClusterContext::StopThreadsOnException() {
+  if (node_role_ != kEnvRoleOfScheduler) {
+    auto cgn = std::dynamic_pointer_cast<topology::ComputeGraphNode>(node_base_);
+    if (cgn == nullptr) {
+      return;
+    }
+    cgn->StopHeartBeatThread();
+  }
+}
+
 bool ClusterContext::IsScheduler() { return node_role_ == kEnvRoleOfScheduler; }
 
 const std::shared_ptr<topology::NodeBase> &ClusterContext::node() const { return node_base_; }

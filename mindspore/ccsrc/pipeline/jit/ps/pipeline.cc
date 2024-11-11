@@ -2784,6 +2784,8 @@ void FinalizeCluster() {
       // Finalize MindSpore cluster only when this process exits without any exception.
       (void)distributed::cluster::ClusterContext::instance()->Finalize(UINT32_MAX);
       MS_LOG(INFO) << "End finalize the cluster instance.";
+    } else {
+      (void)distributed::cluster::ClusterContext::instance()->StopThreadsOnException();
     }
   }
 #endif
