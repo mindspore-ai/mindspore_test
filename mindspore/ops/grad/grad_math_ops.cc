@@ -2110,6 +2110,13 @@ REG_BPROP_BUILDER("Log").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {ib->Div(dout, x)};
 });
 
+REG_BPROP_BUILDER("Log2").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  double denominator = 0.6931471805599453;
+  return {ib->Div(dout, ib->Emit("Muls", {x, ib->Value<double>(denominator)}))};
+});
+
 REG_BPROP_BUILDER("Log10").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);

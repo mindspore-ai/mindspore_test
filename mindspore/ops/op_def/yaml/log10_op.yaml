@@ -1,5 +1,5 @@
-#operator log2
-log2:
+#operator log10
+log10:
     args:
         input:
             dtype: tensor
@@ -7,6 +7,6 @@ log2:
         output:
             dtype: tensor
     function:
-        name: log2_ext
+        name: log10_ext
     dispatch:
         enable: True
