@@ -23,9 +23,12 @@ enum class MetaOp : int {
   Assign,
   BroadcastTo,
   Cast,
+  Floor,
+  Trunc,
   Concat,
   Cosh,
   Div,
+  RealDiv,
   Equal,
   Exp,
   Gather,
@@ -57,6 +60,8 @@ enum class MetaOp : int {
   Tanh,
   TensorScatterAdd,
   Transpose,
+  Maximum,
+  Minimum,
   MetaOpNum  // max id
 };
 
@@ -66,9 +71,12 @@ inline static std::string MetaOpStr[static_cast<int>(MetaOp::MetaOpNum)] = {
   "Assign",            // MetaOp::Assign
   "BroadcastTo",       // MetaOp::BroadcastTo
   "Cast",              // MetaOp::Cast
+  "Floor",             // MetaOp::Floor
+  "Trunc",             // MetaOp::Trunc
   "Concat",            // MetaOp::Concat
   "Cosh",              // MetaOp::Cosh
   "Div",               // MetaOp::Div
+  "RealDiv",           // MetaOp::RealDiv
   "Equal",             // MetaOp::Equal
   "Exp",               // MetaOp::Exp
   "Gather",            // MetaOp::Gather
@@ -100,6 +108,8 @@ inline static std::string MetaOpStr[static_cast<int>(MetaOp::MetaOpNum)] = {
   "Tanh",              // MetaOp::Tanh
   "TensorScatterAdd",  // MetaOp::TensorScatterAdd
   "Transpose",         // MetaOp::Transpose
+  "Maximum",           // MetaOp::Maximum
+  "Minimum",           // MetaOp::Minimum
 };
 }  // namespace mindspore::graphkernel::expander
 #endif  // MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_EXPANDER_BASE_META_OP_H_

@@ -57,4 +57,42 @@ REG_EXPANDER_FUNC("FillV2").SetBody(BODYFUNC(ib) {
   auto result = ib->BroadcastTo(val, shape);
   return {result};
 });
+
+REG_EXPANDER_FUNC("RepeatInterleaveInt").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto shape = input->GetShape();
+  if (IsDynamicRank(shape)) {
+    MS_LOG(DEBUG) << "Input is dynamic rank";
+    return {};
+  }
+  auto repeat = ib->input(kIndex1);
+  auto repeat_value_ptr = repeat->GetValue();
+  if (repeat_value_ptr == nullptr || !IsValueKnown(repeat_value_ptr)) {
+    MS_LOG(DEBUG) << "repeat is not const value";
+    return {};
+  }
+  auto repeat_value = GetValue<int64_t>(repeat_value_ptr);
+  const auto &dim = ib->input(kIndex2);
+  auto dim_value_ptr = dim->GetValue();
+  if (dim_value_ptr == nullptr || !IsValueKnown(dim_value_ptr)) {
+    MS_LOG(DEBUG) << "dim is not const value";
+    return {};
+  }
+  auto dim_value = GetValue<int64_t>(dim_value_ptr);
+  if (dim_value < 0) {
+    dim_value = shape.size() + dim_value;
+  }
+  if (shape[dim_value] == 1) {
+    shape[dim_value] = repeat_value;
+    return {ib->BroadcastTo(input, ib->Tensor(shape))};
+  }
+  shape.insert(shape.begin() + dim_value + 1, 1);
+  auto expand = ib->Reshape(input, ib->Tensor(shape));
+  shape[dim_value + 1] = repeat_value;
+  auto broadcast = ib->BroadcastTo(expand, ib->Tensor(shape));
+  auto res_shape = input->GetShape();
+  res_shape[dim_value] = res_shape[dim_value] * repeat_value;
+  auto result = ib->Reshape(broadcast, ib->Tensor(res_shape));
+  return {result};
+});
 }  // namespace mindspore::graphkernel::expander

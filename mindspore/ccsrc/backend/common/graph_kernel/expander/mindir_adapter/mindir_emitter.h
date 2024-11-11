@@ -77,9 +77,12 @@ class MindirEmitter : public Emitter {
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::Assign
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::BroadcastTo
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::Cast
+    &MindirEmitter::DefaultEmitFunc,  // MetaOp::Floor
+    &MindirEmitter::DefaultEmitFunc,  // MetaOp::Trunc
     nullptr,                          // MetaOp::Concat
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::Cosh
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::Div
+    &MindirEmitter::DefaultEmitFunc,  // MetaOp::RealDiv
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::Equal
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::Exp
     nullptr,                          // MetaOp::Gather
@@ -111,6 +114,8 @@ class MindirEmitter : public Emitter {
     &MindirEmitter::DefaultEmitFunc,  // MetaOp::Tanh
     nullptr,                          // MetaOp::TensorScatterAdd
     nullptr,                          // MetaOp::Transpose
+    &MindirEmitter::DefaultEmitFunc,  // MetaOp::Maximum
+    &MindirEmitter::DefaultEmitFunc,  // MetaOp::Minimum
   };
 };
 }  // namespace mindspore::graphkernel::expander

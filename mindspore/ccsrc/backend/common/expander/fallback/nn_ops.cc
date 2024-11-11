@@ -431,18 +431,12 @@ REG_FALLBACK_BUILDER("ClampScalar").SetBody(BODYFUNC(ib) {
 
   auto output = x;
   if (!min_type_none) {
-    min = ib->ScalarToTensor(min, ib->GetDtype(min));
-    if (ib->GetDtype(x)->type_id() != ib->GetDtype(min)->type_id()) {
-      min = ib->Cast(min, ib->GetDtype(x)->type_id());
-    }
+    min = ib->ScalarToTensor(min, ib->GetDtype(x));
     output = ib->Maximum(output, min);
   }
 
   if (!max_type_none) {
-    max = ib->ScalarToTensor(max, ib->GetDtype(max));
-    if (ib->GetDtype(x)->type_id() != ib->GetDtype(max)->type_id()) {
-      max = ib->Cast(max, ib->GetDtype(x)->type_id());
-    }
+    max = ib->ScalarToTensor(max, ib->GetDtype(x));
     output = ib->Minimum(output, max);
   }
 

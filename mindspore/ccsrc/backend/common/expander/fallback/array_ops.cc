@@ -129,7 +129,8 @@ REG_FALLBACK_BUILDER("OnesLikeExt").SetBody(BODYFUNC(ib) {
     auto input_type = ib->GetDtype(input)->type_id();
     dtype = ib->Value(static_cast<int64_t>(input_type));
   }
-  auto out = ib->Emit("Cast", {org_out, dtype});
+  auto dtype_type = GetValue<int64_t>(dtype->BuildValue());
+  auto out = ib->Cast(org_out, static_cast<TypeId>(dtype_type));
   return {out};
 });
 
@@ -141,7 +142,8 @@ REG_FALLBACK_BUILDER("ZerosLikeExt").SetBody(BODYFUNC(ib) {
     auto input_type = ib->GetDtype(input)->type_id();
     dtype = ib->Value(static_cast<int64_t>(input_type));
   }
-  auto out = ib->Emit("Cast", {org_out, dtype});
+  auto dtype_type = GetValue<int64_t>(dtype->BuildValue());
+  auto out = ib->Cast(org_out, static_cast<TypeId>(dtype_type));
   return {out};
 });
 

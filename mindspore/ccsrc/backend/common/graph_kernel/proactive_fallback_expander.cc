@@ -29,8 +29,16 @@
 
 namespace mindspore::graphkernel {
 const std::unordered_set<std::string> &ProactiveFallbackExpander::GetFallbackOps() {
-  static const std::unordered_set<std::string> fallback_ops_list_ = {"AddExt", "SubExt", "SumExt"};
+  static const std::unordered_set<std::string> fallback_ops_list_ = {"AddExt",      "SubExt",       "SumExt",
+                                                                     "OnesLikeExt", "ZerosLikeExt", "BatchMatMulExt",
+                                                                     "MatMulExt",   "ClampScalar",  "ClampTensor"};
   return fallback_ops_list_;
+}
+
+void SetDeviceInfo(const CNodePtr &cnode) {
+  auto kernel_info_setter = GraphKernelInfoManager::Instance().GetGraphKernelInfo(kAscendDevice);
+  MS_EXCEPTION_IF_NULL(kernel_info_setter);
+  kernel_info_setter->SetKernelInfo(cnode, KernelType::UNKNOWN_KERNEL_TYPE);
 }
 
 bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
@@ -78,6 +86,10 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
           auto scalar = value->cast<ScalarPtr>();
           info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
           info_builder->SetOutputsDeviceType(std::vector<TypeId>{scalar->type()->type_id()});
+        } else if (value->isa<ValueSequence>()) {
+          auto valuesequence = value->cast<ValueSequencePtr>();
+          info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
+          info_builder->SetOutputsDeviceType(std::vector<TypeId>{valuesequence->type()->type_id()});
         } else {
           return false;
         }
@@ -87,9 +99,7 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
       if (kernel_info == nullptr) {
         cnode->set_kernel_info(std::make_shared<device::KernelInfo>());
       }
-      auto kernel_info_setter = GraphKernelInfoManager::Instance().GetGraphKernelInfo(kAscendDevice);
-      MS_EXCEPTION_IF_NULL(kernel_info_setter);
-      kernel_info_setter->SetKernelInfo(cnode, KernelType::UNKNOWN_KERNEL_TYPE);
+      SetDeviceInfo(cnode);
       return true;
     };
     expander::FallbackIRBuilder ib(prim_name, cnode->func_graph(), func);
@@ -99,7 +109,11 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
       return false;
     }
     auto output = ib.Run(cnode, *handle);
-    (void)mng->Replace(cnode, output);
+    if (output != nullptr) {
+      (void)mng->Replace(cnode, output);
+    } else {
+      MS_LOG(WARNING) << "Fallback node: " << cnode->fullname_with_scope() << " failed";
+    }
   }
   return true;
 }
