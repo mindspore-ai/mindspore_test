@@ -91,7 +91,7 @@ lite::STATUS Conv1DInOutAdjust::ExpandFilterShape(const AnfNodePtr &weight_node,
       (void)new_shape.insert(new_shape.begin() + 1, 1);
       break;
     default:
-      MS_LOG(ERROR) << "Unsupported format.";
+      MS_LOG(ERROR) << "Unsupported format!";
       return RET_ERROR;
   }
   (void)weight_tensor->set_shape(new_shape);

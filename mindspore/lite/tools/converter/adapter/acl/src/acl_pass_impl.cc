@@ -123,8 +123,9 @@ constexpr auto kOpsTransPose = "Transpose";
 /* 1. For compatibility reasons (on MindIRs with old primitives), ResizeBilinear op still needs to be processed.
    2. ResizeBilinear in core/ops is deprecated, avoid using name string defined in core/ops. */
 constexpr auto kNameResizeBilinear = "ResizeBilinear";
-const std::set<std::string> kSocVersionForAscendCFA = {"Ascend910B1", "Ascend910B2", "Ascend910B2C",
-                                                       "Ascend910B3", "Ascend910B4", "Ascend310P3"};
+const std::set<std::string> kSocVersionForAscendCFA = {
+  "Ascend910B1",    "Ascend910B2",    "Ascend910B2C",   "Ascend910B3",    "Ascend910B4",    "Ascend310P3",
+  "Ascend910_9391", "Ascend910_9381", "Ascend910_9392", "Ascend910_9382", "Ascend910_9372", "Ascend910_9361"};
 
 STATUS ModifyCNodeFormat(const FuncGraphPtr &func_graph, Format format) {
   CHECK_NULL_RETURN(func_graph);
