@@ -19,11 +19,14 @@ import inspect
 import re
 from functools import wraps
 from mindspore import log as logger
+from mindspore import context
 from mindspore.common.jit_context import JitContext, set_jit_context
+from mindspore.common.tensor import Tensor as PythonTensor
 from mindspore._checkparam import is_stub_tensor
 from mindspore._c_expression import TraceRecorder as tr
 from mindspore._c_expression import JitExecutor_
-
+from mindspore._c_expression import TensorNode
+from mindspore._c_expression import Tensor, CSRTensor, COOTensor
 
 class TraceJitContext(JitContext):
     """JIT Context for trace JIT."""
@@ -32,6 +35,8 @@ class TraceJitContext(JitContext):
 
     def run_op(self, prim, prim_res, *args):
         logger.debug(f'prim: {prim}, args: {args}, prim_res: {prim_res}')
+        if isinstance(prim_res, TensorNode):
+            prim_res = prim_res.get_value()
         prim_res = _sync_stub_tensor(prim_res)
         args = tuple(_sync_stub_tensor(arg) for arg in args)
         file_names, linenos = _get_caller_lines()
@@ -43,7 +48,7 @@ _compile_only = False
 _trace_jit_context = TraceJitContext()
 _trace_compile_cache = set()
 _jit_executor = JitExecutor_.get_instance()
-
+_using_trace = False
 
 def _set_compile_only(compile_only=True):
     global _compile_only
@@ -122,7 +127,8 @@ def _jit_trace(fn):
         if new_compile:
             fn_res = fn(*args, **kwargs)
             logger.debug(f'fn: {fn}, fn_res: {fn_res}, line: {line_str}')
-            output = _jit_trace_end(fn_res)  # Use fn's output to build func graph's output.
+            # Use fn's output to build func graph's output.
+            output = _jit_trace_end(fn_res)
         else:
             output = _jit_trace_end(None)  # Run with compilation.
         logger.debug(f'output: {output}')
@@ -145,6 +151,21 @@ def _get_caller_lines():
         file_names.append(file_name)
         linenos.append(lineno)
     return file_names, linenos
+
+def _get_args_for_run(args):
+    """Get the actual input args and kwargs for runtime."""
+    new_args = []
+    for arg in args:
+        if isinstance(arg, PythonTensor):
+            if arg.has_init:
+                arg.init_data()
+            if not arg.const_arg:
+                new_args.append(arg)
+        elif isinstance(arg, (Tensor, CSRTensor, COOTensor)):
+            new_args.append(arg)
+        elif context.get_context("grad_for_scalar") and isinstance(arg, (int, float)):
+            new_args.append(arg)
+    return tuple(new_args)
 
 
 def _jit_trace_begin(fn_name, *args):
@@ -180,6 +201,11 @@ def _jit_trace_begin(fn_name, *args):
         ...
         >>> out = tensor_add(x, y)
     """
+    global _using_trace
+    if _using_trace:
+        raise RuntimeError(
+            "Should not use jit_block and jit_trace at the same time.")
+    _using_trace = True
     logger.debug(f'_jit_trace_begin, args: {args}')
     set_jit_context(_trace_jit_context)
     args = tuple(_sync_stub_tensor(arg) for arg in args)
@@ -188,8 +214,10 @@ def _jit_trace_begin(fn_name, *args):
 
     # Generate phase for compile pipeline.
     key = _jit_executor.generate_arguments_key(None, args, dict(), False)
-
+    from mindspore.common.api import _PyNativeExecutor
     phase = fn_name + '.' + str(key)
+    if _PyNativeExecutor().requires_grad():
+        phase = phase + ".grad"
     logger.debug(f'phase: {phase}')
     # Compiled before, just run.
     if not _compile_only and phase in _trace_compile_cache:
@@ -257,13 +285,18 @@ def _jit_trace_end(*output_args):
         if _compile_only:
             output = output_args[0] if len(output_args) == 1 else output_args
         else:
-            output = tr.get_instance().run_graph(_trace_jit_context.phase, _trace_jit_context.args)
+            args = _get_args_for_run(_trace_jit_context.args)
+            output = tr.get_instance().run_graph(
+                _trace_jit_context.phase, args)
             from mindspore.common.api import _convert_python_data
             output = _convert_python_data(output)
             logger.debug(f'jit trace result: {output}')
-            logger.debug(f'python result: {output_args[0] if len(output_args) == 1 else output_args}')
+            logger.debug(
+                f'python result: {output_args[0] if len(output_args) == 1 else output_args}')
             _trace_jit_context.phase = ''
             _trace_jit_context.args = None
     set_jit_context(None)
     _trace_jit_context.compiled = False
+    global _using_trace
+    _using_trace = False
     return output

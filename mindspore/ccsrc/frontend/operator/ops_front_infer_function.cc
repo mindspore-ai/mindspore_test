@@ -31,6 +31,7 @@
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "pipeline/jit/ps/fallback.h"
+#include "pipeline/jit/trace/trace_recorder.h"
 #include "abstract/param_validator.h"
 #include "pybind_api/ir/tensor_py.h"
 #include "frontend/operator/ops.h"
@@ -1100,6 +1101,10 @@ AbstractBasePtr InferImplDtypeToEnum(const AnalysisEnginePtr &, const PrimitiveP
                                      const AbstractBasePtrList &args_abs_list) {
   constexpr size_t args_num = 3;
   CheckArgsSize(primitive->name(), args_abs_list, args_num);
+  if (args_abs_list[ops::kInputIndex2]->isa<abstract::AbstractScalar>() &&
+      trace::TraceRecorder::GetInstance()->BuildingTraceGraph()) {
+    return args_abs_list[ops::kInputIndex2];
+  }
   auto abs_type = args_abs_list[ops::kInputIndex2]->cast<AbstractTypePtr>();
   if (abs_type == nullptr) {
     const auto &op_name = GetValue<std::string>(args_abs_list[ops::kInputIndex0]->GetValue());
