@@ -18,15 +18,72 @@ from enum import Enum
 
 class DeviceTarget(Enum):
     """The device target enum."""
-    CPU = 'cpu'
-    GPU = 'gpu'
-    ASCEND = 'ascend'
+
+    CPU = "CPU"
+    GPU = "GPU"
+    NPU = "Ascend"
 
 
 class ProfilerLevel(Enum):
+    """The profiler level enum."""
+
+    LevelNone = "LevelNone"
     Level0 = "Level0"
     Level1 = "Level1"
     Level2 = "Level2"
+
+
+class ProfilerActivity(Enum):
+    """The profiler activity enum."""
+
+    NPU = "NPU"
+    GPU = "GPU"
+    CPU = "CPU"
+
+
+class AicoreMetrics(Enum):
+    """The aicore metrics enum."""
+
+    PipeUtilization = "PipeUtilization"
+    ArithmeticUtilization = "ArithmeticUtilization"
+    Memory = "Memory"
+    MemoryL0 = "MemoryL0"
+    MemoryUB = "MemoryUB"
+    ResourceConflictRatio = "ResourceConflictRatio"
+    L2Cache = "L2Cache"
+    AiCoreNone = "None"
+
+
+class OverlapAnalysisTidName(Enum):
+    """The overlap analysis tidName."""
+    COMPUTING = "Computing"
+    COMMUNICATION = "Communication"
+    COMMUNICATION_NOT_OVERLAP = "Communication(Not Overlapped)"
+    FREE = "Free"
+
+
+class OpSummaryHeaders(Enum):
+    """The op summary headers."""
+    STEP_ID = "Step ID"
+    DEVICE_ID = "Device_id"
+    MODEL_NAME = "Model Name"
+    MODEL_ID = "Model ID"
+    TASK_ID = "Task ID"
+    STREAM_ID = "Stream ID"
+    OP_NAME = "Op Name"
+    OP_TYPE = "OP Type"
+    TASK_TYPE = "Task Type"
+    TASK_START_TIME = "Task Start Time(us)"
+    TASK_DURATION = "Task Duration(us)"
+    TASK_WAIT_TIME = "Task Wait Time(us)"
+    BLOCK_DIM = "Block Dim"
+    MIX_BLOCK_DIM = "Mix Block Dim"
+    INPUT_SHAPES = "Input Shapes"
+    INPUT_DATA_TYPES = "Input Data Types"
+    INPUT_FORMATS = "Input Formats"
+    OUTPUT_SHAPES = "Output Shapes"
+    OUTPUT_DATA_TYPES = "Output Data Types"
+    OUTPUT_FORMATS = "Output Formats"
 
 
 class EventConstant:
@@ -94,6 +151,12 @@ class FileConstant:
     FIX_SIZE_DATA = "fix_size_data"
 
 
+class ProfilerStepNameConstant:
+    """Profiler step name."""
+
+    PROFILER_STEP = "ProfilerStep#"
+
+
 class TimelineLayerName(Enum):
     """Timeline layer types."""
     MINDSPORE = "MindSpore"
@@ -101,6 +164,7 @@ class TimelineLayerName(Enum):
     CANN = "CANN"
     SCOPER_LAYER = "Scope Layer"
     ASCEND_HARDWARE = "Ascend Hardware"
+    HCCL = "HCCL"
     AI_CORE_FREQ = "AI Core Freq"
     HBM = "HBM"
     PCLE = "PCle"

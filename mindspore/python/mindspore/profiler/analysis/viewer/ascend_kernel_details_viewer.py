@@ -15,11 +15,16 @@
 """Ascend kernel details viewer"""
 import os
 import csv
+from decimal import Decimal
 
 from mindspore import log as logger
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
+from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_container import TraceViewContainer
 from mindspore.profiler.common.constant import OpSummaryHeaders
 from mindspore.profiler.common.path_manager import PathManager
+from mindspore.profiler.common.constant import TimelineLayerName
+
+from mindspore.python.mindspore.profiler.common.constant import ProfilerStepNameConstant
 
 
 class AscendKernelDetailsViewer(BaseViewer):
@@ -58,7 +63,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             self._update_kernel_name()
             self._update_headers()
             self._write_data()
-        except Exception as e: # pylint: disable=W0703
+        except Exception as e:  # pylint: disable=W0703
             logger.warning("Failed to save kernel details: %s", str(e))
 
     def _check_input_data(self, data):
@@ -107,6 +112,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         Update op summary op name to framework launch op name.
         """
         dev_kernels = self.trace_container.hardware_op_event
+        generate_step_id_dev_event_dict_by_trace_container(self.trace_container)
 
         if dev_kernels is None or not dev_kernels:
             logger.warning("device kernels is empty")
@@ -118,23 +124,97 @@ class AscendKernelDetailsViewer(BaseViewer):
             for kernel in per_tid_kernels:
                 dev_kernel_name = kernel.name
                 dev_kerel_ts = str(kernel.ts)
-                dev_kernel_to_fwk_op[(dev_kernel_name, dev_kerel_ts)] = kernel.parent.name
+                dev_kernel_to_fwk_op[(dev_kernel_name, dev_kerel_ts)] = (kernel.parent.name, kernel.step_id)
 
         launch_ops = [None] * len(self.op_summary)
+        step_ids = [None] * len(self.op_summary)
         for index, summary in enumerate(self.op_summary):
             dev_kernel_name = summary[OpSummaryHeaders.OP_NAME.value]
-            dev_kerel_ts = str(summary[OpSummaryHeaders.TASK_START_TIME.value]).strip("\t")
-            fwk_lanch_op_name = dev_kernel_to_fwk_op.get((dev_kernel_name, dev_kerel_ts), None)
+            dev_kernel_ts = str(summary[OpSummaryHeaders.TASK_START_TIME.value]).strip("\t")
+            fwk_langch_op_name, step_id = dev_kernel_to_fwk_op.get((dev_kernel_name, dev_kernel_ts), None)
 
-            if fwk_lanch_op_name is None:
+            if fwk_langch_op_name is None:
                 logger.warning(
                     "Can not find fwk launch op for dev kernel %s, ts %s",
                     dev_kernel_name,
-                    dev_kerel_ts,
+                    dev_kernel_ts,
                 )
                 launch_ops[index] = dev_kernel_name
             else:
-                launch_ops[index] = fwk_lanch_op_name
+                launch_ops[index] = f"{fwk_langch_op_name}/{dev_kernel_name}"
+
+            if step_id is None:
+                logger.warning(
+                    "Can not find step id for dev kernel %s, ts %s",
+                    dev_kernel_name,
+                    dev_kernel_ts,
+                )
+            else:
+                step_ids[index] = step_id
 
         # update op summary op name
         self.op_summary[OpSummaryHeaders.OP_NAME.value] = launch_ops
+
+        # update op summary step id
+        self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
+
+
+def generate_step_id_dev_event_dict_by_trace_container(trace_container: TraceViewContainer):
+    """
+    Generates a dictionary mapping hardware operation events to their corresponding step IDs.
+
+    This method processes events from the trace container to identify step events and kernel launch events.
+    It then associates each hardware operation event with the step ID based on the timestamp.
+
+    Args:
+        trace_container: TraceViewContainer
+
+    Returns:
+        dict: A dictionary with keys step IDs and values as tuples of (first_hardware_op_event, last_hardware_op_event).
+
+    Raises:
+        None
+    """
+    # Retrieve all events from the trace container for the Mindspore timeline layer
+    events = trace_container.get_pool_by_name(TimelineLayerName.MINDSPORE.value).get_all_events()
+
+    # Filter events that contain "ProfilerStep" and create a dictionary mapping (start_ts, end_ts) to step ID
+    step_time_to_id_dict = {}
+    for event in events:
+        event_name = event.name
+        if ProfilerStepNameConstant.PROFILER_STEP in event_name:
+            print(event.ts, event.dur + event.ts)
+            step_time_to_id_dict[event.name.split("#")[-1]] = (event.ts, event.dur + event.ts)
+
+    # Get kernel launch events and sort them by timestamp
+    hardware_op_events_dict = trace_container.hardware_op_event
+    for hardware_op_events_list in hardware_op_events_dict.values():
+        # Associate each hardware operation event with its step ID
+        for hardware_op_event in hardware_op_events_list:
+            kernel_event = hardware_op_event.parent
+            if not kernel_event:
+                continue
+
+            hardware_op_event.step_id = _get_step_id_by_ts(kernel_event.ts, step_time_to_id_dict)
+
+
+def _get_step_id_by_ts(ts: Decimal, step_events_dict: dict):
+    """
+    Retrieves the step ID for a given timestamp from the step events dictionary.
+
+    Args:
+        ts (Decimal): The timestamp for which to find the step ID.
+        step_events_dict (dict): A dictionary mapping (start_ts, end_ts) to step ID.
+
+    Returns:
+        str: The step ID corresponding to the given timestamp, or None if not found.
+
+    Raises:
+        None
+    """
+    # Iterate through the step events dictionary to find the step ID for the given timestamp
+    for step_id, (st, et) in step_events_dict.items():
+        if st <= ts <= et:
+            return step_id
+
+    return None
