@@ -4,9 +4,11 @@ prod:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
+    interface: method
 
   - op_yaml: deprecated/prod_op.yaml
     py_method: deprecated_tensor_prod
     Ascend: py_method
     CPU: py_method
     GPU: py_method
+    interface: method
