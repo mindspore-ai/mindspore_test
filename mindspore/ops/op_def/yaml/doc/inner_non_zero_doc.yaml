@@ -1,0 +1,29 @@
+inner_non_zero:
+    description: |
+        Return a Tensor of the positions of all non-zero values.
+
+        .. warning::
+            This is an internal and non-standard interface. The target interface is aclnn.
+
+        Inputs:
+            - **input** (Tensor) - The input Tensor, its rank should be greater than or eaqual to 1.
+
+        Outputs:
+            Tensor, a 2-D Tensor whose data type is int64, containing the positions of all non-zero values of the input. 
+            If the dimension of `input` is `D` and the number of non-zero in `input` is `N`, then the shape of output is `D*N` .
+
+        Raises:
+            TypeError: If `input` is not Tensor.
+            ValueError: If dim of `input` equals to 0.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([1, 0, 2, 0, 3]), mindspore.int32)
+            >>> output = ops.auto_generate.InnerNonZero()(input)
+            >>> print(output)
+            [[0 2 4]]

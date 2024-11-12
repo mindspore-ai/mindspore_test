@@ -1,0 +1,15 @@
+#operator index
+index:
+    args:
+        input:
+            dtype: tensor
+        indices:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+    returns:
+        output:
+            dtype: tensor
+    dispatch:
+        enable: True
+        Ascend: IndexAscend
+

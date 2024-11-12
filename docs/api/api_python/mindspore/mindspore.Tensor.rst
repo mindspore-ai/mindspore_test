@@ -167,6 +167,7 @@ mindspore.Tensor
     mindspore.Tensor.index_add
     mindspore.Tensor.index_fill
     mindspore.Tensor.index_put
+    mindspore.Tensor.index_put_
     mindspore.Tensor.index_select
     mindspore.Tensor.init_data
     mindspore.Tensor.inner

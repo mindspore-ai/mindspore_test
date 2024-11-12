@@ -1,0 +1,13 @@
+#operator inner non_zero
+inner_non_zero:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: InnerNonZeroAscend
