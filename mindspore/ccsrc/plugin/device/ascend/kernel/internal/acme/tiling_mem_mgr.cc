@@ -141,7 +141,7 @@ void TilingMemPool::Free(void *addr, size_t size) {
   if (addr == nullptr || mem_base_ptr_ == nullptr || total_size_ == 0) {
     return;
   }
-  if (addr < mem_base_ptr_ || addr >= mem_base_ptr_ + total_size_) {
+  if (IsOutOfPoolMem(addr)) {
     TMP_LOG(INFO) << "Free directly for one off memory, addr: " << addr;
     FreeInner(addr);
     (void)one_off_mem_ptrs_.erase(addr);

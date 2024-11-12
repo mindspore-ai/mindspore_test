@@ -55,12 +55,6 @@ std::vector<TilingCacheItemPtr> AcmeTilingCache::CombOutSuspectedUselessItems() 
 }
 
 bool AcmeTilingCache::Insert(uint64_t key, const TilingCacheItemPtr &ti_ptr) {
-  if (cache_.size() == kMaxKernelCount) {
-    MS_LOG(INFO) << "The kernel is not cached because of the capacity limit. The key is " << key
-                 << ", and the tiling_info is " << ti_ptr->tiling_info_;
-    return false;
-  }
-
   if (cache_.find(key) != cache_.end()) {
     MS_LOG(EXCEPTION) << "kernel is already in cache, where the key is " << key
                       << ", device_addr: " << ti_ptr->tiling_info_->tiling_addr_
