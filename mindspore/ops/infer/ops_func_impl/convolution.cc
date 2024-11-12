@@ -23,17 +23,8 @@
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr size_t expand_vec_size = 2;
 constexpr size_t kConvolutionInputArgsSize = 9;
 constexpr size_t kConvolutionInputDims = 4;
-constexpr size_t kInputIdx = 0;
-constexpr size_t kWightIdx = 1;
-constexpr size_t kStrideIdx = 3;
-constexpr size_t kPaddingIdx = 4;
-constexpr size_t kDilationIdx = 5;
-constexpr size_t kTransposedIdx = 6;
-constexpr size_t kOutputPaddingIdx = 7;
-constexpr size_t kGroupsIdx = 8;
 
 int64_t GetOutputHW(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
                     const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &padding,
@@ -64,28 +55,44 @@ BaseShapePtr ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive,
                       << input_args.size();
   }
 
-  auto input_shape_ptr = input_args[kInputIdx]->GetShape();
-  auto weight_shape_ptr = input_args[kWightIdx]->GetShape();
+  auto input_shape_ptr = input_args[kIndex0]->GetShape();
+  auto weight_shape_ptr = input_args[kIndex1]->GetShape();
   const auto &input_shape = input_shape_ptr->GetShapeVector();
   const auto &weight_shape = weight_shape_ptr->GetShapeVector();
+  const auto conv2d_shape_size = 4;
+  auto prim_name = primitive->name();
 
   if (IsDynamicRank(input_shape) || IsDynamicRank(weight_shape)) {
+    if (!IsDynamicRank(input_shape)) {
+      (void)CheckAndConvertUtils::CheckInteger("input rank", SizeToLong(input_shape.size()), kEqual, conv2d_shape_size,
+                                               prim_name);
+      auto output_shape = {input_shape[0], abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
+                           abstract::Shape::kShapeDimAny};
+      return std::make_shared<abstract::Shape>(output_shape);
+    }
+    if (!IsDynamicRank(weight_shape)) {
+      (void)CheckAndConvertUtils::CheckInteger("weight rank", SizeToLong(weight_shape.size()), kEqual,
+                                               conv2d_shape_size, prim_name);
+      auto output_shape = {abstract::Shape::kShapeDimAny, weight_shape[0], abstract::Shape::kShapeDimAny,
+                           abstract::Shape::kShapeDimAny};
+      return std::make_shared<abstract::Shape>(output_shape);
+    }
     std::vector<int64_t> output_shape = {abstract::Shape::kShapeRankAny};
     return std::make_shared<abstract::Shape>(output_shape);
   }
 
   // Support conv2d first
-  if (input_shape.size() != kConvolutionInputDims || weight_shape.size() != kConvolutionInputDims) {
-    MS_LOG(EXCEPTION) << "Input and weight shape size must be " << kConvolutionInputDims
-                      << ", but got input_shape:" << input_shape << ", weight_shape:" << weight_shape;
-  }
+  int64_t input_rank = SizeToLong(input_shape.size());
+  int64_t weight_rank = SizeToLong(weight_shape.size());
+  (void)CheckAndConvertUtils::CheckInteger("input rank", input_rank, kEqual, conv2d_shape_size, prim_name);
+  (void)CheckAndConvertUtils::CheckInteger("weight rank", weight_rank, kEqual, conv2d_shape_size, prim_name);
 
   int64_t N = input_shape[0];
   int64_t Co = abstract::Shape::kShapeDimAny;
   int64_t Ho = abstract::Shape::kShapeDimAny;
   int64_t Wo = abstract::Shape::kShapeDimAny;
 
-  auto transposed_opt = GetScalarValue<bool>(input_args[kTransposedIdx]->BuildValue());
+  auto transposed_opt = GetScalarValue<bool>(input_args[kIndex6]->BuildValue());
   if (!transposed_opt.has_value()) {
     // 'Co/Ho/Wo' is unknown, if transposed is any value
     auto output_shape = {N, Co, Ho, Wo};
@@ -95,7 +102,7 @@ BaseShapePtr ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   auto transposed = transposed_opt.value();
   if (transposed) {
-    auto groups_opt = GetScalarValue<int64_t>(input_args[kGroupsIdx]->BuildValue());
+    auto groups_opt = GetScalarValue<int64_t>(input_args[kIndex8]->BuildValue());
     if (groups_opt.has_value() && weight_shape[1] != abstract::Shape::kShapeDimAny) {
       Co = weight_shape[1] * groups_opt.value();
     }
@@ -103,10 +110,10 @@ BaseShapePtr ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive,
     Co = weight_shape[0];
   }
 
-  auto stride_opt = GetArrayValue<int64_t>(input_args[kStrideIdx]);
-  auto padding_opt = GetArrayValue<int64_t>(input_args[kPaddingIdx]);
-  auto dilation_opt = GetArrayValue<int64_t>(input_args[kDilationIdx]);
-  auto output_padding_opt = GetArrayValue<int64_t>(input_args[kOutputPaddingIdx]);
+  auto stride_opt = GetArrayValue<int64_t>(input_args[kIndex3]);
+  auto padding_opt = GetArrayValue<int64_t>(input_args[kIndex4]);
+  auto dilation_opt = GetArrayValue<int64_t>(input_args[kIndex5]);
+  auto output_padding_opt = GetArrayValue<int64_t>(input_args[kIndex7]);
   if (!stride_opt.has_value() || !padding_opt.has_value() || !dilation_opt.has_value() ||
       (transposed && !output_padding_opt.has_value())) {
     auto output_shape = {N, Co, Ho, Wo};
@@ -132,12 +139,7 @@ BaseShapePtr ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ConvolutionFuncImpl::InferType(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  const std::set<TypePtr> valid_types = {kInt8, kInt32, kInt64, kFloat16, kFloat32, kBFloat16};
-  auto out_type =
-    CheckAndConvertUtils::CheckTypeValid("input", input_args[kInputIdx]->GetType(), valid_types, primitive->name());
-
-  return out_type;
+  return input_args[kIndex0]->GetType()->Clone();
 }
 }  // namespace ops
 }  // namespace mindspore
