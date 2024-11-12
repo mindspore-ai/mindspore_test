@@ -510,6 +510,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"orgqr", std::string("orgqr")},                                    // orgqr()
        {"outer", std::string("outer")},                                    // outer()
        {"softmax", std::string("softmax")},                                // softmax()
+       {"index_add_", std::string("index_add_")},                          // index_add_()
      }},
     {kObjectTypeRowTensorType,
      {
