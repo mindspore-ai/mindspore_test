@@ -126,11 +126,13 @@ def test_silent_check_receive():
     assert ret2 == 0
     assert ret3 == 0
 
-    cmd1 = f"cat ms_graphs/rank_0/graph_build*.ir | grep 'group:' | grep 'forward_unique_id:' | wc -l"
+    cmd1 = "cat ms_graphs/rank_0/graph_build*.ir | grep 'group:' | grep 'forward_unique_id:'" \
+           " | grep -E 'forward_op|distribution_op' | wc -l"
     backward_comm_op_cnt = int(exec_command(cmd1))
-    cmd2 = f"cat ms_graphs/rank_0/graph_build*.ir | grep '= PrimFunc_SilentCheckV2(' | wc -l"
+    cmd2 = "cat ms_graphs/rank_0/graph_build*.ir | grep '= PrimFunc_SilentCheckV2(' | wc -l"
     silent_check_op_cnt = int(exec_command(cmd2))
-    receive_op_cnt = int(exec_command(f"cat ms_graphs/rank_0/graph_build*.ir | grep '= Receive(' | wc -l"))
+    cmd3 = "cat ms_graphs/rank_0/graph_build*.ir | grep -E 'forward_op|distribution_op' | grep '= Receive(' | wc -l"
+    receive_op_cnt = int(exec_command(cmd3))
     print(f'backward_comm_op_cnt={backward_comm_op_cnt} silent_check_op_cnt={silent_check_op_cnt} '
           f'receive_op_cnt={receive_op_cnt}')
     last_grad_node_check_cnt = 1
