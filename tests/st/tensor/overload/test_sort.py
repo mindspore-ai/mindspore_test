@@ -50,18 +50,15 @@ def test_sort_pyboost(mode):
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), ms.float16)
+    net = Net()
     if ms.get_context('device_target') != 'Ascend':
         with pytest.raises(RuntimeError):
-            x.sort()
+            net(x, -1)
             _pynative_executor.sync()
         return
-
-    net = Net()
-    net1 = Net1()
     net2 = Net2()
-    output1, output2 = net1(x)
-    output3, output4 = net(x, -1)
-    output5, output6 = net2(x, -1, False)
+    output1, output2 = net(x, -1)
+    output3, output4 = net2(x, -1, False)
     except_out1 = np.array([[1.0000e+00, 2.0000e+00, 8.0000e+00],
                             [3.0000e+00, 5.0000e+00, 9.0000e+00],
                             [4.0000e+00, 6.0000e+00, 7.0000e+00]])
@@ -72,8 +69,6 @@ def test_sort_pyboost(mode):
     np.allclose(output2.asnumpy(), except_out2)
     np.allclose(output3.asnumpy(), except_out1)
     np.allclose(output4.asnumpy(), except_out2)
-    np.allclose(output5.asnumpy(), except_out1)
-    np.allclose(output6.asnumpy(), except_out2)
 
 
 class Net3(nn.Cell):
@@ -99,11 +94,13 @@ def test_sort_python(mode):
     Expectation: success
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net1 = Net1()
     net3 = Net3()
     net4 = Net4()
     x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), ms.float16)
-    output1, output2 = net3(x, -1)
-    output3, output4 = net4(x, -1, False)
+    output1, output2 = net1(x)
+    output3, output4 = net3(x, -1)
+    output5, output6 = net4(x, -1, False)
     except_out1 = np.array([[1.0000e+00, 2.0000e+00, 8.0000e+00],
                             [3.0000e+00, 5.0000e+00, 9.0000e+00],
                             [4.0000e+00, 6.0000e+00, 7.0000e+00]])
@@ -114,3 +111,5 @@ def test_sort_python(mode):
     np.allclose(output2.asnumpy(), except_out2)
     np.allclose(output3.asnumpy(), except_out1)
     np.allclose(output4.asnumpy(), except_out2)
+    np.allclose(output5.asnumpy(), except_out1)
+    np.allclose(output6.asnumpy(), except_out2)

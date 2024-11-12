@@ -353,7 +353,7 @@ def test_gpu_dynamic_sort3d(descending, nptype):
     dynamic_sort_3d(descending, nptype)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_sort_tensor_api_modes(mode):
     """
