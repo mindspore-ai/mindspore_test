@@ -146,3 +146,36 @@ def test_matmul_dtypes_ge():
     Expectation: The result match to the expect value.
     """
     do_test_matmul_dtypes([mstype.int8, mstype.int32, mstype.float16, mstype.float32], True)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_trans_double_matmul():
+    """
+    Feature: Test transpose and double matmul.
+    Description: Test matmul success for Graph mode.
+    Expectation: The result match to the expect value.
+    """
+    context.set_context(mode=context.GRAPH_MODE, jit_level='O0')
+
+    class TransDoubleMatMulNet(nn.Cell):
+        def __init__(self, trans_a1=False, trans_b1=False, trans_a2=False, trans_b2=False):
+            super(TransDoubleMatMulNet, self).__init__()
+            self.mm1 = P.MatMul(trans_a1, trans_b1)
+            self.mm2 = P.MatMul(trans_a2, trans_b2)
+            self.trans = P.Transpose()
+
+        def construct(self, x, y1, y2, perm):
+            x = self.trans(x, perm)
+            out1 = self.mm1(x, y1)
+            out2 = self.mm2(x, y2)
+            return out1, out2
+
+    x = Tensor(np.random.randn(8, 96), dtype=mstype.float16)
+    y1 = Tensor(np.random.randn(96, 24), dtype=mstype.float16)
+    y2 = Tensor(np.random.randn(8, 24), dtype=mstype.float16)
+
+    net = TransDoubleMatMulNet(True, False, False, False)
+    out1, out2 = net(x, y1, y2, (1, 0))
+
+    assert out1.shape == (8, 24)
+    assert out2.shape == (96, 24)
