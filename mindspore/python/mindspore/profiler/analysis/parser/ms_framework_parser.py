@@ -20,7 +20,7 @@ from typing import List, Dict, Any, Optional
 from mindspore import log as logger
 from mindspore.profiler.common.tlv_decoder import TLVDecoder
 from mindspore.profiler.common.file_manager import FileManager
-from mindspore.profiler.common.constant import ProfilerActivity
+from mindspore.profiler.common.constant import ProfilerActivity, FileConstant
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.analysis.parser.timeline_event.fwk_event import FwkFixSizeFormat, OpRangeStructField
 
@@ -36,7 +36,7 @@ class FrameworkParser(BaseParser):
         super().__init__(next_parser)
         self._rank_id = kwargs.get("rank_id")
         self._activities = kwargs.get("activities")
-        self._step_list = kwargs.get("model_iteration_dict")
+        self._step_list = kwargs.get("step_list")
         self._framework_path = kwargs.get("framework_path")
         self._op_range_path = os.path.join(
             self._framework_path,
@@ -107,13 +107,13 @@ class FrameworkParser(BaseParser):
             return op_range_list
 
         first_step = min(
-            op[OpRangeStructField.FIX_SIZE_DATA][OpRangeStructField.STEP_ID.value]
+            op[FileConstant.FIX_SIZE_DATA][OpRangeStructField.STEP_ID.value]
             for op in op_range_list
         )
         adjusted_step_list = [step - 1 + first_step for step in self._step_list]
         return [
             op for op in op_range_list
-            if op[OpRangeStructField.FIX_SIZE_DATA][OpRangeStructField.STEP_ID.value] in adjusted_step_list
+            if op[FileConstant.FIX_SIZE_DATA][OpRangeStructField.STEP_ID.value] in adjusted_step_list
         ]
 
     def _parse_cpu_op_data(self) -> List[str]:
