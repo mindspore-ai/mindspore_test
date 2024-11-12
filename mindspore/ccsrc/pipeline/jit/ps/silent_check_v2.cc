@@ -33,6 +33,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
+#include "ir/core_ops_name.h"
 #include "ir/dtype/number.h"
 #include "ir/func_graph.h"
 #include "ir/param_info.h"
@@ -54,6 +55,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
+#include "frontend/parallel/ops_info/ops_utils.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -151,7 +153,11 @@ bool NeedCheckCommOperator(const AnfNodePtr &node) {
     return false;
   }
   auto prim = GetValuePtr<Primitive>(node);
-  return common::AnfAlgo::IsCommunicationOp(prim->name());
+  if (!common::AnfAlgo::IsCommunicationOp(prim->name())) {
+    return false;
+  }
+  return prim->instance_name().find(parallel::REDISTRIBUTION_OP) != std::string::npos ||
+         prim->instance_name().find(parallel::FORWARD_OP) != std::string::npos;
 }
 
 ValueNodePtr CreateValueNode(const FuncGraphPtr &func_graph, const ValuePtr &value, TypeId dtype,
@@ -569,14 +575,16 @@ AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, 
     AbstractBasePtrList{out_input_grad_abs, out_sfda_abs, out_step_abs, out_result_abs}));
   check_node->set_scope(node->scope());
 
-  // create Depend node
-  std::vector<AnfNodePtr> depend_inputs = {NewValueNode(std::make_shared<Primitive>(kDependOpName)),
-                                           cnode->input(kIndexOne), check_node};
-  auto depend_node = func_graph->NewCNode(depend_inputs);
-  MS_EXCEPTION_IF_NULL(depend_node);
-  depend_node->set_abstract(dout->abstract());
-  depend_node->set_scope(node->scope());
-  return depend_node;
+  // create tuple_getitem
+  auto zero =
+    CreateValueNode(func_graph, std::make_shared<Int64Imm>(0), kNumberTypeInt64, kernel::KernelObjectType::SCALAR);
+  std::vector<AnfNodePtr> tuple_getitem_inputs = {NewValueNode(std::make_shared<Primitive>(kTupleGetItemOpName)),
+                                                  check_node, zero};
+  auto tuple_getitem_node = func_graph->NewCNode(tuple_getitem_inputs);
+  MS_EXCEPTION_IF_NULL(tuple_getitem_node);
+  tuple_getitem_node->set_abstract(dout->abstract());
+  tuple_getitem_node->set_scope(node->scope());
+  return tuple_getitem_node;
 }
 
 bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
