@@ -31,10 +31,10 @@ PrimitiveCPtr TFGatherParser::Parse(const tensorflow::NodeDef &tf_op,
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
   auto prim_c = prim->GetPrim();
   MS_CHECK_TRUE_RET(prim_c != nullptr, nullptr);
-  int batchDims = 0;
+  int64_t batch_dims = 0;
   tensorflow::AttrValue attr_value;
   if (TensorFlowUtils::FindAttrValue(tf_op, "batch_dims", &attr_value)) {
-    batchDims = attr_value.i();
+    batch_dims = attr_value.i();
   }
 
   int32_t axis = 1;
@@ -70,11 +70,11 @@ PrimitiveCPtr TFGatherParser::Parse(const tensorflow::NodeDef &tf_op,
       return nullptr;
     }
   }
-  if (batchDims != 0 && !axis_is_set) {
-    axis = batchDims;
+  if (batch_dims != 0 && !axis_is_set) {
+    axis = batch_dims;
   }
   (void)prim_c->AddAttr("axis", MakeValue(axis));
-
+  (void)prim_c->AddAttr("batch_dims", MakeValue(batch_dims));
   *output_size = 1;
   if (AddOpInput(tf_op, 0, inputs) != RET_OK || AddOpInput(tf_op, 1, inputs) != RET_OK) {
     MS_LOG(ERROR) << "add op input failed";
