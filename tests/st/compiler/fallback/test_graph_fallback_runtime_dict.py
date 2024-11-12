@@ -1135,3 +1135,23 @@ def test_jitclass_grad():
     assert ms_out2 == 16
     assert x_before == 1
     assert ms_grad == -1
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
+def test_dict_inner_method_overrrided_4():
+    """
+    Feature: Support overriding dict getattr.
+    Description: Make overriding __getattr__ works in graph mode
+    Expectation: Return the correct value.
+    """
+    class Tmp(dict):
+        __getattr__ = dict.__getitem__
+
+    obj = Tmp({"aaa": 100})
+    obj.aaa = 10
+    @jit
+    def foo():
+        return obj.aaa
+    ms_out = foo()
+    assert ms_out == 10
