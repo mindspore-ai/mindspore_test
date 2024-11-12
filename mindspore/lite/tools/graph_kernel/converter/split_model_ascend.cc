@@ -51,7 +51,7 @@ class FuseLayerNorm : public FusePattern {
 
 void SplitModelAscend::InitFusePatterns() {
   AddPattern(std::make_shared<FuseVirtualNode>(), true);
-  if (soc_version_.find("910B") == string::npos) {
+  if ((soc_version_.find("910B") == string::npos) && (soc_version_.find("910_93") == string::npos)) {
     // Ascend 910B do not fuse Matmul
     AddPattern(std::make_shared<ascend::FuseMatMul>(), true);
   }

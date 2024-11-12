@@ -23,7 +23,7 @@ from itertools import product
 
 SUPPORTED_INPUT_NUM = [1, 2, 3, 4, 5, 6, 7]
 SUPPORTED_OUTPUT_NUM = [1, 2, 3, 4, 5]
-SUPPORTED_DEVICE_ARCH = ["ascend910", "ascend910b"]
+SUPPORTED_DEVICE_ARCH = ["ascend910", "ascend910b", "ascend910_93"]
 VALUE_ALL = "all"
 VALUE = "value"
 NAME = "name"

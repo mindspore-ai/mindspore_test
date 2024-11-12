@@ -141,7 +141,7 @@ class CustomOOC():
         with open(cmake_preset_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         data[CONFIG_KEY_CONFIGUREPRESET][0][CONFIG_KEY_VARIABLE][CONFIG_KEY_COMPUTE_UNIT][
-            CONFIG_KEY_VALUE] = "ascend310p;ascend310b;ascend910;ascend910b"
+            CONFIG_KEY_VALUE] = "ascend310p;ascend310b;ascend910;ascend910b;ascend910_93"
         with os.fdopen(
                 os.open(cmake_preset_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
                         0o700), "w") as f:

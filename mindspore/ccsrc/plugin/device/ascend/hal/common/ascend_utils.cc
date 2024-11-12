@@ -196,7 +196,7 @@ bool GenerateAclInitJson(const string &json_file_path) {
 
 bool EnableLccl() {
   auto ascend_soc_version = MsContext::GetInstance()->ascend_soc_version();
-  if (ascend_soc_version != "ascend910b") {
+  if (ascend_soc_version != "ascend910b" && ascend_soc_version != "ascend910_93") {
     return false;
   }
   auto enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
