@@ -40,7 +40,6 @@ bool OnnxNonZeroAdjust::Adjust(const FuncGraphPtr &func_graph) {
       MS_LOG(ERROR) << "create transpose failed.";
       return false;
     }
-
     auto manager = Manage(func_graph, true);
     if (manager == nullptr) {
       MS_LOG(ERROR) << "manager is nullptr.";

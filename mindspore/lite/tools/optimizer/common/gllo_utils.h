@@ -172,6 +172,14 @@ CNodePtr GenGatherNodeDynamicIndex(const FuncGraphPtr &func_graph, const AnfNode
 CNodePtr GenConcatNode(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &input_node_vec,
                        const std::string &cnode_name, int64_t axis = 0);
 
+CNodePtr GenShapeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node, const string &node_name);
+
+CNodePtr GenDivNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node, const std::vector<int> &input1,
+                    const string &node_name);
+
+CNodePtr GenReshapeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node, const AnfNodePtr &shape_node,
+                        const std::string &cnode_name);
+
 CNodePtr GenTupleGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &input, size_t index);
 
 CNodePtr CreateMulNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_cnode, const float mul_scale);
@@ -220,6 +228,7 @@ inline bool IsSpecifiedNode(const BaseRef &n) {
 tensor::TensorPtr GetTensorFromParameterNode(const EquivPtr &equiv, const VarPtr &input);
 const float GetFloatParameterValue(const EquivPtr &equiv, const VarPtr &input);
 const int GetIntParameterValue(const EquivPtr &equiv, const VarPtr &input);
+STATUS GetPrimFromCnode(const CNodePtr &cnode, PrimitivePtr *prim_ptr);
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_LITE_TOOLS_OPTIMIZER_COMMON_GLLO_UTILS_H_

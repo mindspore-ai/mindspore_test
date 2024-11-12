@@ -145,7 +145,6 @@ bool ModelProcess::PreInitModelResource() {
     data_input_num_ = input_infos_.size();
     return true;
   }
-
   data_input_num_ = input_infos_.size();
   if (IsDynamicShape() && data_input_num_ > 0) {
     data_input_num_ -= 1;

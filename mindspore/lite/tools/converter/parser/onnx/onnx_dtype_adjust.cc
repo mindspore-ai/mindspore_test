@@ -26,27 +26,9 @@ namespace {
 constexpr size_t kNameCastInputNum = 3;
 }  // namespace
 
-STATUS GetPrimFromCnode(const CNodePtr &cnode, PrimitivePtr *prim_ptr) {
-  CHECK_NULL_RETURN(cnode);
-  CHECK_NULL_RETURN(prim_ptr);
-  CHECK_NULL_RETURN(cnode->input(0));
-
-  auto value_node = cnode->input(0)->cast<ValueNodePtr>();
-  if (value_node == nullptr) {
-    MS_LOG(ERROR) << "Value node[" << cnode->fullname_with_scope() << "] is nullptr!";
-    return lite::RET_ERROR;
-  }
-  *prim_ptr = GetValueNode<PrimitivePtr>(value_node);
-  if (*prim_ptr == nullptr) {
-    MS_LOG(ERROR) << "Value node[" << cnode->fullname_with_scope() << "] cast to primitive failed!";
-    return lite::RET_ERROR;
-  }
-  return lite::RET_OK;
-}
-
 STATUS AdjustCast(CNodePtr cnode, const FuncGraphPtr &func_graph, bool keep_origin_dtype) {
   PrimitivePtr src_prim = nullptr;
-  if (lite::GetPrimFromCnode(cnode, &src_prim) != lite::RET_OK) {
+  if (opt::GetPrimFromCnode(cnode, &src_prim) != lite::RET_OK) {
     MS_LOG(ERROR) << "Get primitive from cnode failed!";
     return lite::RET_ERROR;
   }
@@ -105,7 +87,7 @@ bool OnnxDtypeAdjust::Adjust(const FuncGraphPtr &func_graph, const converter::Co
     }
     if (opt::CheckPrimitiveType(node, prim::kPrimShape)) {
       PrimitivePtr src_prim = nullptr;
-      if (lite::GetPrimFromCnode(cnode, &src_prim) != lite::RET_OK) {
+      if (opt::GetPrimFromCnode(cnode, &src_prim) != lite::RET_OK) {
         MS_LOG(ERROR) << "Get primitive from cnode failed!";
         return false;
       }
@@ -122,7 +104,7 @@ bool OnnxDtypeAdjust::Adjust(const FuncGraphPtr &func_graph, const converter::Co
     } else if (opt::CheckPrimitiveType(node, prim::kPrimConstantOfShape)) {
       ValueNodePtr value_node = nullptr;
       PrimitivePtr src_prim = nullptr;
-      if (GetPrimFromCnode(cnode, &src_prim) != lite::RET_OK) {
+      if (opt::GetPrimFromCnode(cnode, &src_prim) != lite::RET_OK) {
         MS_LOG(ERROR) << "Get primitive from cnode failed!";
         return lite::RET_ERROR;
       }

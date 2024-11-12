@@ -21,8 +21,11 @@
 #include "nnacl/op_base.h"
 
 namespace mindspore::lite {
+namespace {
+constexpr int kWeightIdx3 = 3;
+}
 STATUS ParseKernelSize(std::vector<int64_t> *kernel_size, const onnx::GraphProto &onnx_graph,
-                       const onnx::NodeProto &onnx_node) {
+                       const onnx::NodeProto &onnx_node, const int &weight_index) {
   MS_CHECK_TRUE_RET(kernel_size != nullptr, RET_ERROR);
   // output_channel, input_channel, kH, kW
   const int kKernelSizeHeightIndex = 2;
@@ -30,7 +33,7 @@ STATUS ParseKernelSize(std::vector<int64_t> *kernel_size, const onnx::GraphProto
   const size_t kIndex0 = 0;
   const size_t kIndex1 = 1;
 
-  const auto &onnx_weight_name = onnx_node.input(3);
+  const auto &onnx_weight_name = onnx_node.input(weight_index);
   auto node_iter =
     std::find_if(onnx_graph.initializer().begin(), onnx_graph.initializer().end(),
                  [onnx_weight_name](const onnx::TensorProto &proto) { return proto.name() == onnx_weight_name; });
@@ -53,7 +56,14 @@ STATUS ParseVecAttr(const onnx::NodeProto &onnx_node, std::vector<int64_t> *stri
                     std::vector<int64_t> *padding) {
   MS_CHECK_TRUE_RET(strides != nullptr && dilation != nullptr && padding != nullptr, RET_NULL_PTR);
   for (const auto &onnx_node_attr : onnx_node.attribute()) {
-    if (onnx_node_attr.name() == "dilation") {
+    if (onnx_node_attr.name() == "dilations") {
+      if (onnx_node_attr.ints().size() < DIMENSION_2D) {
+        MS_LOG(ERROR) << "Parse dilations failed!";
+        return RET_ERROR;
+      }
+      dilation->push_back(onnx_node_attr.ints(0));
+      dilation->push_back(onnx_node_attr.ints(1));
+    } else if (onnx_node_attr.name() == "dilation") {
       if (onnx_node_attr.ints().size() < DIMENSION_2D) {
         MS_LOG(ERROR) << "Parse dilation failed!";
         return RET_ERROR;
@@ -69,9 +79,25 @@ STATUS ParseVecAttr(const onnx::NodeProto &onnx_node, std::vector<int64_t> *stri
       padding->push_back(onnx_node_attr.ints(0));
       padding->push_back(onnx_node_attr.ints(1));
       padding->push_back(onnx_node_attr.ints(1));
+    } else if (onnx_node_attr.name() == "paddings") {
+      if (onnx_node_attr.ints().size() < DIMENSION_2D) {
+        MS_LOG(ERROR) << "Parse paddings failed!";
+        return RET_ERROR;
+      }
+      padding->push_back(onnx_node_attr.ints(0));
+      padding->push_back(onnx_node_attr.ints(0));
+      padding->push_back(onnx_node_attr.ints(1));
+      padding->push_back(onnx_node_attr.ints(1));
     } else if (onnx_node_attr.name() == "stride") {
       if (onnx_node_attr.ints().size() < DIMENSION_2D) {
         MS_LOG(ERROR) << "Parse stride failed!";
+        return RET_ERROR;
+      }
+      strides->push_back(onnx_node_attr.ints(0));
+      strides->push_back(onnx_node_attr.ints(1));
+    } else if (onnx_node_attr.name() == "strides") {
+      if (onnx_node_attr.ints().size() < DIMENSION_2D) {
+        MS_LOG(ERROR) << "Parse strides failed!";
         return RET_ERROR;
       }
       strides->push_back(onnx_node_attr.ints(0));
@@ -94,30 +120,45 @@ PrimitiveCPtr OnnxDeformConv2dParser::Parse(const onnx::GraphProto &onnx_graph, 
   (void)prim_c->AddAttr(mindspore::ops::kOriginalFormat, MakeValue<int64_t>(mindspore::Format::NCHW));
 
   std::vector<int64_t> kernel_size(DIMENSION_2D);
-
+  int weight_index = 0;
+  if (onnx_node.op_type() == "NPUDeformableConv2d") {
+    prim_c->AddAttr("keep_origin", MakeValue<bool>(true));
+    weight_index = 1;
+  } else if (onnx_node.op_type() == "MMCVModulatedDeformConv2d") {
+    weight_index = kWeightIdx3;
+  } else {
+    MS_LOG(ERROR) << "Only support NPUDeformableConv2d and MMCVModulatedDeformConv2d now!";
+    return nullptr;
+  }
   if (::mindspore::lite::ParseVecAttr(onnx_node, &strides, &dilation, &pads) != RET_OK) {
     MS_LOG(ERROR) << "Parse vector attr failed for " << onnx_node.name();
     return nullptr;
   }
-  if (ParseKernelSize(&kernel_size, onnx_graph, onnx_node) != RET_OK) {
+  if (ParseKernelSize(&kernel_size, onnx_graph, onnx_node, weight_index) != RET_OK) {
     MS_LOG(ERROR) << "Parse kernel_size failed for " << onnx_node.name();
     return nullptr;
   }
   int64_t deformable_groups = 1;
+  bool modulated = true;
   for (const auto &onnx_node_attr : onnx_node.attribute()) {
     const auto &attribute_name = onnx_node_attr.name();
     if (attribute_name == "deform_groups") {
       deformable_groups = onnx_node_attr.i();
+    } else if (attribute_name == "deformable_groups") {
+      deformable_groups = onnx_node_attr.i();
+    } else if (attribute_name == "modulated") {
+      modulated = static_cast<bool>(onnx_node_attr.i());
     }
   }
   prim->set_strides(strides);
   prim->set_dilations(dilation);
   prim->set_pads(pads);
   prim->set_deformable_groups(deformable_groups);
-  prim->set_modulated(true);  // True for v2, false for v1
+  prim->set_modulated(modulated);  // True for v2, false for v1
 
   return prim->GetPrim();
 }
 
 OnnxNodeRegistrar g_onnx_DeformConv2dParser("MMCVModulatedDeformConv2d", new OnnxDeformConv2dParser());
+OnnxNodeRegistrar g_onnx_NPUDeformConv2dParser("NPUDeformableConv2d", new OnnxDeformConv2dParser());
 }  // namespace mindspore::lite

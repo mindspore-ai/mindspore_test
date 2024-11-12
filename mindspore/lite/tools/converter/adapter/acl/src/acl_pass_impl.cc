@@ -95,6 +95,7 @@ constexpr auto kToNHWCFormatPass = "ToNHWCFormat";
 constexpr auto kToNCHWFormatPass = "ToNCHWFormat";
 constexpr auto kInferShapePass = "InferShapePass";
 constexpr auto kConstFoldPass = "ConstFoldPass";
+constexpr auto kAdjustCol2imPass = "AdjustCol2imPass";
 constexpr auto kRemoveRedundantOpPass = "RemoveRedundantOpPass";
 constexpr auto kAdjustMatmulPass = "AdjustMatmulPass";
 constexpr auto kAdjustQuantMatmulPass = "AdjustQuantMatmulPass";
@@ -677,8 +678,8 @@ STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
     MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kAdjustMatmulPass}), lite::RET_ERROR,
                       "BMM2MM op pass failed.");
   }
-  if (!lite::RunOptimizerPass(func_graph, {kAdjustResizeDimsPass})) {
-    MS_LOG(ERROR) << "AdjustResizeDimsPass failed!";
+  if (!lite::RunOptimizerPass(func_graph, {kAdjustResizeDimsPass, kAdjustCol2imPass})) {
+    MS_LOG(ERROR) << "AdjustResizeDimsPass or AdjustCol2imPass failed!";
     return lite::RET_ERROR;
   }
   return lite::RET_OK;
