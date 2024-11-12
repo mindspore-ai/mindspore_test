@@ -104,7 +104,7 @@ py::tuple UnfoldPyArgs(const py::tuple &py_args) {
 
 mindspore::OrderedMap<std::string, py::function> PrimitivePy::unpair_backward_hook_grad_{};
 
-PrimitivePy::PrimitivePy(const std::string &name) : Primitive(name, false), python_obj_(py::none()) {}
+PrimitivePy::PrimitivePy(const std::string &name) : Primitive(name, false) {}
 
 PrimitivePy::PrimitivePy(const PrimitivePy &prim_py)
     : Primitive(prim_py),
@@ -156,8 +156,8 @@ PrimitivePy::~PrimitivePy() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kDefault, name(),
                                      false);
   py::gil_scoped_acquire acquire_gil;
-  python_obj_ = py::none();
-  hook_fn_ = py::none();
+  python_obj_ = py::object();
+  hook_fn_ = py::object();
 }
 
 py::function PrimitivePy::GetVmapRuleFunction(const bool, int axis_size) {

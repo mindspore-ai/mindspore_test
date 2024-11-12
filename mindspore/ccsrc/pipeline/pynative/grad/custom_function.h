@@ -52,9 +52,9 @@ struct CustomContext {
   bool is_recompute;
   ~CustomContext() {
     py::gil_scoped_acquire gil_acquire;
-    bprop_fn = py::none();
-    original_inputs = py::none();
-    original_output = py::none();
+    bprop_fn = py::object();
+    original_inputs = py::object();
+    original_output = py::object();
   }
 };
 

@@ -804,7 +804,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     MS_LOG(DEBUG) << "RunOpInVM end";
     return result_v;
   }
-
+  py::gil_scoped_acquire gil_acquire;
   MS_EXCEPTION_IF_NULL(op_run_info->op_grad_info->op_prim);
   py::list vm_op_inputs = py::list(op_run_info->input_size);
   for (size_t i = 0; i < op_run_info->input_size; ++i) {
