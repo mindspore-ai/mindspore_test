@@ -11,6 +11,7 @@ mindspore.nn.EmbeddingLookup
         当'target'设置为'CPU'时，此模块将使用ops.EmbeddingLookup().set_device('CPU')，在lookup表指定了'offset = 0'。
         当'target'设置为'DEVICE'时，此模块将使用ops.Gather()，在lookup表指定了'axis = 0'。
         在字段切片模式下，必须指定manual_shapes。此tuple包含vocab[i]元素, vocab[i]是第i部分的行号。
+        该模块不支持PyNative模式。
 
     参数：
         - **vocab_size** (int) - 嵌入词典的大小。

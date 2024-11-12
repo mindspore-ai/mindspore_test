@@ -316,6 +316,7 @@ class EmbeddingLookup(Cell):
         specified 'axis = 0' to lookup table.
         In field slice mode, the manual_shapes must be given. It is a tuple ,where
         the element is vocab[i], vocab[i] is the row numbers for i-th part.
+        This module does not support the PyNative mode.
 
     Args:
         vocab_size (int): Size of the dictionary of embeddings.
