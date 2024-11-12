@@ -450,18 +450,18 @@ def _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_fi
     """
     Transforms safetensors files to a specified format using parallel processing.
     """
-    part_list_dict = _distribute_files_by_size(all_safetensor_files_map, needed_rank_list_map, process_num)
-
     # cal param name for every pipeline, save in pipe_param_list.
     pipe_num = _extract_pipeline_stage_num(dst_strategy_dict)
     pipe_param_list = [None for _ in range(max(pipe_num, process_num))]
     if len(needed_rank_list_map) == 1 and pipe_num > 1:
+        process_num = pipe_num
         pipe_param_list = [[] for _ in range(pipe_num)]
         layout_map = _convert_to_list(dst_strategy_dict)
 
         for name, layout in layout_map.items():
             pipe_param_list[layout[6][0]].append(name)
 
+    part_list_dict = _distribute_files_by_size(all_safetensor_files_map, needed_rank_list_map, process_num)
     processes = []
     for i in range(process_num):
         p = mp.Process(target=_transform_safetensors_single, args=(
