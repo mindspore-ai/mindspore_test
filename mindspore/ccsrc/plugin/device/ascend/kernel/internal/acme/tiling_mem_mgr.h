@@ -26,8 +26,8 @@
 namespace mindspore {
 namespace kernel {
 constexpr size_t kTilingMemPoolBlockSize = 32;
-constexpr size_t kTilingMemPoolDeviceBlockNum = 2 * 1024 * 1024;
-constexpr size_t kTilingMemPoolHostBlockNum = 32 * 1024 * 1024;
+constexpr size_t kTilingMemPoolDeviceBlockNum = 3 * 1024 * 1024;
+constexpr size_t kTilingMemPoolHostBlockNum = 8 * 1024 * 1024;
 
 enum MemoryType : int {
   kMemoryUndefined = 0,
@@ -55,6 +55,8 @@ class TilingMemPool {
   void SetName(const std::string &name) { name_ = name; }
 
   std::string GetName() const { return name_; }
+
+  inline bool IsOutOfPoolMem(void *addr) const { return addr < mem_base_ptr_ || addr >= mem_base_ptr_ + total_size_; }
 
  protected:
   virtual void *MallocInner(size_t size) { return nullptr; }
