@@ -41,20 +41,36 @@ tensor::BaseTensorPtr RepeatInterleaveGradAscendCustomize(const std::shared_ptr<
   int64_t dim_imm = GetValue<int64_t>(dim);
   auto rank = SizeToLong(output_shape.size());
   dim_imm = (dim_imm < 0) ? (dim_imm + rank) : dim_imm;
+
+  BaseTensorPtr input_tensor_contiguous = input_tensor;
+  BaseTensorPtr repeats_contiguous = repeats;
+  if (!input_tensor->is_contiguous()) {
+    MS_LOG(DEBUG) << "For RepeatInterleaveGrad, input_tensor is not contiguous.";
+    auto copy_op = CREATE_PYBOOST_OP(Copy, kAscendDevice);
+    copy_op->set_stream_id(op->stream_id());
+    input_tensor_contiguous = copy_op->Call(input_tensor);
+  }
+  if (!repeats->is_contiguous()) {
+    MS_LOG(DEBUG) << "For RepeatInterleaveGrad, repeats is not contiguous.";
+    auto copy_op = CREATE_PYBOOST_OP(Copy, kAscendDevice);
+    copy_op->set_stream_id(op->stream_id());
+    repeats_contiguous = copy_op->Call(repeats);
+  }
+
   MS_LOG(DEBUG) << op->primitive()->name() << " Call start";
-
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, repeats, dim_imm]() {
-    auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
-    // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, input_tensor, repeats);
-    // Malloc for output tensors
-    PyBoostUtils::MallocOpOutputs(device_context, outputs);
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor_contiguous, repeats_contiguous, dim_imm]() {
+      auto device_context = op->device_context();
+      const auto &outputs = op->outputs();
+      // Malloc for input tensors
+      PyBoostUtils::MallocOpInputs(device_context, input_tensor_contiguous, repeats_contiguous);
+      // Malloc for output tensors
+      PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-    LAUNCH_ACLNN(aclnnRepeatInterleaveGrad, device_context, op->stream_id(), input_tensor, repeats, dim_imm,
-                 outputs[0]);
-  }));
+      LAUNCH_ACLNN(aclnnRepeatInterleaveGrad, device_context, op->stream_id(), input_tensor_contiguous,
+                   repeats_contiguous, dim_imm, outputs[0]);
+    }));
 
   MS_LOG(DEBUG) << op->primitive()->name() << " Launch end";
   return op->output(0);
