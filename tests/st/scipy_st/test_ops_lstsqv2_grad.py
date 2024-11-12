@@ -20,6 +20,8 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
+np.random.seed(0)
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
