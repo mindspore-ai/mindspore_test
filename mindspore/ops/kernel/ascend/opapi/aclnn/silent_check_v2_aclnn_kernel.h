@@ -36,7 +36,8 @@ class SilentCheckV2Ascend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnSilentCheck, SilentCheck)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceCopy, InputGradCopy)
 
   int64_t c_min_steps_{7};
   pyfloat c_thresh_l1_{1000000.};
