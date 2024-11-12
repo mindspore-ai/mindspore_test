@@ -210,9 +210,17 @@ Status MappableLeafOp::GetNextRowPullMode(TensorRow *const row) {
     MS_LOG(DEBUG) << "Set sample_ids_=" << (*sample_ids_);
   }
   if (curr_row_ + 1 > sample_ids_->Size()) {
-    *row = TensorRow(TensorRow::kFlagEOE);
-    RETURN_IF_NOT_OK(ResetAndUpdateRepeat());
-    return Status::OK();
+    // For 1 billion samples mindrecord, sampler returns 1 million per time, thus it should be called multiple times.
+    RETURN_IF_NOT_OK(sampler_->GetNextSample(&sample_row));
+    if (!sample_row.eoe()) {
+      curr_row_ = 0;
+      sample_ids_ = sample_row[0];
+      MS_LOG(DEBUG) << "Set sample_ids_=" << (*sample_ids_);
+    } else {
+      *row = TensorRow(TensorRow::kFlagEOE);
+      RETURN_IF_NOT_OK(ResetAndUpdateRepeat());
+      return Status::OK();
+    }
   }
   int64_t key;
   RETURN_IF_NOT_OK(sample_ids_->GetItemAt(&key, {curr_row_}));
