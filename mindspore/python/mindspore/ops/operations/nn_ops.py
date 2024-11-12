@@ -31,6 +31,8 @@ from mindspore.ops.primitive import PrimitiveWithInfer
 from mindspore.ops.primitive import PrimitiveWithCheck
 from mindspore.ops.primitive import prim_attr_register
 from mindspore.run_check._check_version import AscendEnvChecker
+from mindspore._c_expression import pyboost_all_finite
+from mindspore.common._stub_tensor import _convert_stub
 from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, ReLU, ReLU6, Dense, Tanh,
                              Elu, Sigmoid, Softmax, SoftplusExt, HSwish, HSigmoid, AvgPool, BiasAdd,
                              NLLLoss, OneHot, GeLU, FastGeLU, PReLU, RmsNorm, IncreFlashAttention, MSELossExt,
@@ -9438,3 +9440,6 @@ class AllFinite(Primitive):
                 raise RuntimeError(
                     "The version of Ascend AI software package installed "
                     "in the current environment does not support AllFinite.")
+
+    def __call__(self, *args):
+        return _convert_stub(pyboost_all_finite(self, args))
