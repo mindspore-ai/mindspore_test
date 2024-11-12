@@ -45,9 +45,7 @@
 #include "include/common/debug/dump_proto.h"
 #include "kernel/graph_kernel_info.h"
 #include "kernel/framework_utils.h"
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
 #include "include/backend/distributed/ps/ps_context.h"
@@ -59,12 +57,10 @@
 namespace mindspore {
 namespace session {
 void CPUSession::Init(uint32_t device_id) {
-#ifndef ENABLE_SECURITY
   // Dump json config file if dump is enabled
   auto &json_parser = DumpJsonParser::GetInstance();
   json_parser.Parse();
   json_parser.CopyMSCfgJsonToDir(rank_id_);
-#endif
   InitExecutor(kCPUDevice, device_id);
 }
 
@@ -149,9 +145,7 @@ GraphId CPUSession::CompileGraphImpl(const AnfNodePtrList &lst, const AnfNodePtr
   MS_LOG(INFO) << "Assign kernel graph address";
   runtime_.AssignKernelGraphAddress(graph.get());
   // set summary node
-#ifndef ENABLE_SECURITY
   SetSummaryNodes(graph.get());
-#endif
   runtime_.IncreaseSummaryRefCount(graph->summary_nodes());
   DumpGraphs({graph});
   return graph_id;
@@ -206,9 +200,7 @@ void CPUSession::PreExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_grap
 
 void CPUSession::PostExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph,
                                   const std::vector<tensor::TensorPtr> &, VectorRef *const) {
-#ifndef ENABLE_SECURITY
   Summary(kernel_graph.get());
-#endif
 }
 
 void CPUSession::ExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_graph) {

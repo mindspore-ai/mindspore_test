@@ -51,9 +51,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
@@ -178,9 +176,7 @@ MsBackend::MsBackend(const std::string &name, const std::string &target, uint32_
     MS_LOG(EXCEPTION) << "Session create failed! Please make sure target device:" << target << " is available.";
   }
   target_sess_->Init(device_id);
-#ifndef ENABLE_SECURITY
   target_sess_->RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
-#endif
   target_device_ = target;
 }
 
@@ -196,9 +192,7 @@ void MsBackend::CreateOtherSession(const std::string &target) {
   MS_EXCEPTION_IF_NULL(context_ptr);
   uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   other_sess_->Init(device_id);
-#ifndef ENABLE_SECURITY
   other_sess_->RegisterSummaryCallBackFunc(callbacks::SummarySaveCallback);
-#endif
   other_device_ = target;
 }
 

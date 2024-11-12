@@ -530,7 +530,6 @@ TEST_F(TestOptLib, DISABLED_test_reducesum_one) {
   ASSERT_TRUE(CheckOpt(before4, after3, patterns));
 }
 
-#ifndef ENABLE_SECURITY
 TEST_F(TestOptLib, test_print_tuple_wrapper) {
   FuncGraphPtr before1 = getPyFun.CallAndParseRet("test_print_tuple_wrapper", "before1");
   FuncGraphPtr before2 = getPyFun.CallAndParseRet("test_print_tuple_wrapper", "before2");
@@ -542,7 +541,6 @@ TEST_F(TestOptLib, test_print_tuple_wrapper) {
   ASSERT_TRUE(CheckOpt(before2, after2, patterns));
   ASSERT_TRUE(CheckOpt(before3, before3, patterns));
 }
-#endif
 
 TEST_F(TestOptLib, test_constant_duplicate_mul) {
   FuncGraphPtr beforell = getPyFun.CallAndParseRet("test_constant_duplicate_mul", "beforell");

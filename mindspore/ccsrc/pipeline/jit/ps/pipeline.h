@@ -96,9 +96,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   py::bytes GetFuncGraphProto(const std::string &phase, const std::string &ir_type, const bool &incremental);
   py::bytes GetObfuscateFuncGraphProto(const std::string &phase, const bool &incremental, const float obf_ratio,
                                        const int branch_control_input);
-#ifndef ENABLE_SECURITY
   py::bytes GetOptimizeGraphProto(const std::string &phase);
-#endif
 
   void SetJitConfig(const py::dict &jit_config);
   compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase);

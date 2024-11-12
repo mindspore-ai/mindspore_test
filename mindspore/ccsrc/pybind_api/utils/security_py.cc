@@ -19,13 +19,7 @@
 
 namespace mindspore {
 // Get whether security is enable
-bool EnableSecurity() {
-#ifdef ENABLE_SECURITY
-  return true;
-#else
-  return false;
-#endif
-}
+bool EnableSecurity() { return false; }
 
 // Define python wrapper to judge security enable.
 void RegSecurity(py::module *m) {

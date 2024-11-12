@@ -36,9 +36,7 @@ using GraphId = uint32_t;
 using GraphInfo = std::string;
 
 namespace session {
-#ifndef ENABLE_SECURITY
 bool ExistSummaryNode(const KernelGraph *graph);
-#endif
 ParamInfoPtr GetParamDefaultValue(const AnfNodePtr &node);
 
 struct PartialFuncInfo {

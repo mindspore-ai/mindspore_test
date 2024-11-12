@@ -284,14 +284,11 @@ Status GeneratorOp::operator()() {
                             "[Internal ERROR] Python Interpreter is finalized");
       }
       try {
-#ifndef ENABLE_SECURITY
         auto start = ProfilingTime::GetCurMilliSecond();
-#endif
         start_time = GetSyscnt();
         RETURN_IF_NOT_OK(PyRowToTensorRow(generator_.attr("__next__")(), &new_row));
         RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "__next__", start_time));
         new_row.TimerRecord(NameWithID(), RowTimer::kWorkerTime, {GetMilliTimeStamp() - row_timer_start});
-#ifndef ENABLE_SECURITY
         auto end = ProfilingTime::GetCurMilliSecond();
         if ((end - start) / num_parallel_workers_ > kGetItemTimeOutMilliSeconds) {
           MS_LOG(WARNING) << "Bad performance attention, it takes more than " +
@@ -301,7 +298,6 @@ Status GeneratorOp::operator()() {
                                "parameter num_parallel_workers in GeneratorDataset / optimize the efficiency of "
                                "obtaining samples in the user-defined generator function.";
         }
-#endif
         generator_counter_++;
       } catch (py::error_already_set &e) {
         eoe = e.matches(PyExc_StopIteration);

@@ -158,19 +158,12 @@ bool AnfUtils::IsNodeOutputShapeDynamic(const AnfNodePtr &node) {
 
 bool AnfUtils::IsRealKernel(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-#ifndef ENABLE_SECURITY
   static const PrimitiveSet virtual_prims = {
     prim::kPrimMakeTuple,   prim::kPrimStateSetItem, prim::kPrimTupleGetItem,
     prim::kPrimReturn,      prim::kPrimPartial,      prim::kPrimDepend,
     prim::kPrimUpdateState, prim::kPrimLoad,         prim::kPrimDynamicLossScale,
     prim::kPrimMakeList,    prim::kPrimListGetItem,  prim::kPrimIs_,
     prim::kPrimIsNot,       prim::kPrimIsInstance};
-#else
-  static const PrimitiveSet virtual_prims = {
-    prim::kPrimMakeTuple,   prim::kPrimStateSetItem, prim::kPrimTupleGetItem,
-    prim::kPrimReturn,      prim::kPrimPartial,      prim::kPrimDepend,
-    prim::kPrimUpdateState, prim::kPrimLoad,         prim::kPrimDynamicLossScale};
-#endif
   auto cnode = node->cast<CNodePtr>();
   if (cnode == nullptr) {
     // parameter and value node is a real kernel too

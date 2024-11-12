@@ -111,9 +111,7 @@ class BACKEND_EXPORT KernelRuntime {
   }
 #endif
 
-#ifndef ENABLE_SECURITY
   virtual void PreInit() {}
-#endif
   virtual uint64_t GetAvailableMemMaxSize() const { return 0; }
   virtual uint64_t GetMsUsedHbmSize() const { return 0; }
   virtual void GenKernelEvents(const session::KernelGraph &graph);

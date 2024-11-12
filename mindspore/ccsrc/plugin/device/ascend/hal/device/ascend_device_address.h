@@ -90,10 +90,8 @@ class AscendDeviceAddress : public LoadableDeviceAddress {
   bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const override;
   void ClearDeviceMemory() override;
   DeviceType GetDeviceType() const override { return DeviceType::kAscend; }
-#ifndef ENABLE_SECURITY
   bool DumpMemToFile(const std::string &filepath, const std::string &host_fmt, const ShapeVector &host_shape,
                      TypeId host_type, bool trans_flag) const override;
-#endif
 #ifdef ENABLE_DEBUGGER
   bool LoadMemToHost(const std::string &tensor_name, int execution_order, const std::string &host_fmt,
                      const ShapeVector &host_shape, TypeId host_type, size_t slot, bool keep_prev,

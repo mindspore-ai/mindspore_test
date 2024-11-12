@@ -47,10 +47,8 @@
 #ifdef ENABLE_DUMP_IR
 #include "include/common/debug/anf_ir_dump.h"
 #endif
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/graph_optimizer.h"
-#endif
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
@@ -310,10 +308,8 @@ void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext
     cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
   }
 #endif
-#ifndef ENABLE_SECURITY
   // Update needed dump kernels for mindRT.
   DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
-#endif
   if (graph->is_dynamic_shape()) {
     auto profiler_manage_inst = profiler::ProfilerManager::GetInstance();
     MS_EXCEPTION_IF_NULL(profiler_manage_inst);
@@ -1060,11 +1056,9 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
 #endif
     }
 
-#ifndef ENABLE_SECURITY
     session_->RecurseSetSummaryNodesForAllGraphs(graph.get());
     // Update needed dump kernels for mindRT.
     DumpJsonParser::GetInstance().UpdateNeedDumpKernels(*graph.get());
-#endif
 
     // dynamic shape pass of graphmode
     if (graph->is_dynamic_shape()) {
@@ -1219,17 +1213,13 @@ void GraphCompiler::RecoverGraphOutput(const AnfNodePtr &kernel, const VectorRef
 
 void GraphCompiler::RegisterSummaryCallBackFunc(const CallBackFunc &callback) const {
   MS_EXCEPTION_IF_NULL(session_);
-#ifndef ENABLE_SECURITY
   session_->RegisterSummaryCallBackFunc(callback);
-#endif
 }
 
 void GraphCompiler::Summary(const std::vector<KernelGraphPtr> &graphs) const {
   MS_EXCEPTION_IF_NULL(session_);
   for (const auto &graph : graphs) {
-#ifndef ENABLE_SECURITY
     session_->Summary(graph.get());
-#endif
   }
 }
 

@@ -474,22 +474,18 @@ Status TreeAdapter::GetNext(TensorRow *row) {
     RETURN_IF_NOT_OK(Launch());
   }
   // Record profiling info
-#ifndef ENABLE_SECURITY
   uint64_t start_time = 0;
   if (tracing_ != nullptr) {
     start_time = ProfilingTime::GetCurMilliSecond();
   }
-#endif
 
   RETURN_IF_NOT_OK(tree_->root()->GetNextRow(row));  // first buf can't be eof or empty buf with none flag
   if (row->eoe()) {                                  // return empty tensor if 1st buf is a ctrl buf (no rows)
     MS_LOG(INFO) << "End of data iteration.  cur_batch_num_: " << cur_batch_num_;
-#ifndef ENABLE_SECURITY
     if (profiling_manager_ != nullptr) {
       tree_->SetEpochEnd();
       profiling_manager_->RecordEndOfEpoch(cur_batch_num_);
     }
-#endif
     RETURN_IF_NOT_OK(
       CollectPipelineInfo("Pipeline", "GetNext", build_start_time, {{"TensorRowFlags", row->FlagName()}}));
     return Status::OK();
@@ -501,7 +497,6 @@ Status TreeAdapter::GetNext(TensorRow *row) {
   }
 
   // Record profiling info
-#ifndef ENABLE_SECURITY
   if (tracing_ != nullptr) {
     uint64_t end_time = ProfilingTime::GetCurMilliSecond();
     cur_batch_num_++;
@@ -513,7 +508,6 @@ Status TreeAdapter::GetNext(TensorRow *row) {
     tracing_->Record(TIME, PIPELINE_TIME, cur_batch_num_, end_time - start_time, end_time);
     tracing_->Record(CONNECTOR_DEPTH, cur_connector_capacity_, cur_batch_num_, cur_connector_size_, end_time);
   }
-#endif
   RETURN_IF_NOT_OK(CollectPipelineInfo("Pipeline", "GetNext", build_start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }

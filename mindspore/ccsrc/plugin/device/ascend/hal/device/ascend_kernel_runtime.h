@@ -52,9 +52,7 @@ class AscendKernelRuntime : public KernelRuntime {
   void GetShadowBackendNodeMap(const session::KernelGraph &graph,
                                std::map<AnfNodePtr, AnfNodePtr> *shadow_backend_node_map) override;
   size_t GetCommunicationStreamIDByGroup(const std::string &group) override;
-#ifndef ENABLE_SECURITY
   void PreInit() override;
-#endif
   DeviceType GetTargetDeviceType() const override { return DeviceType::kAscend; };
   std::shared_ptr<DeviceEvent> CreateDeviceEvent() override;
   std::shared_ptr<DeviceEvent> CreateDeviceTimeEvent() override;

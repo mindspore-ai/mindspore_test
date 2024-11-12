@@ -24,9 +24,7 @@
 #include "kernel/gpu/data/dataset_utils.h"
 #include "kernel/common_utils.h"
 
-#ifndef ENABLE_SECURITY
 #include "plugin/device/gpu/hal/profiler/gpu_profiling.h"
-#endif
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #ifdef ENABLE_DUMP_IR
@@ -67,7 +65,6 @@ bool DatasetIteratorKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     }
   }
 
-#ifndef ENABLE_SECURITY
   auto profiler_inst = profiler::gpu::GPUProfiler::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_inst);
   if (profiler_inst->IsInitialized()) {
@@ -76,7 +73,6 @@ bool DatasetIteratorKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     MS_EXCEPTION_IF_NULL(profiling_op_);
     profiler_inst->RegisterProfilingOp(profiling_op_);
   }
-#endif
   return true;
 }
 
@@ -93,32 +89,26 @@ const uint32_t log_interval_step = 30;  // log info in each 30s when getnext tim
 bool DatasetIteratorKernelMod::ReadDevice(std::vector<DataQueueItem> *data) {
   uint64_t start_time_stamp = 0;
   uint32_t queue_size = 0;
-#ifndef ENABLE_SECURITY
   auto profiler_inst = profiler::gpu::GPUProfiler::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_inst);
-#endif
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   uint32_t op_timeout = ms_context->get_param<uint32_t>(MS_CTX_OP_TIMEOUT);
   uint32_t time_cost = 0;
   uint32_t log_interval = log_interval_step;
   while (true) {
-#ifndef ENABLE_SECURITY
     profiling_enable_ = profiler_inst->GetDataProcessEnableFlag();
     if (profiling_enable_) {
       start_time_stamp = profiling_op_->GetTimeStamp();
       queue_size = DataQueueMgr::GetInstance().Size(queue_name_);
     }
-#endif
     time_t start_time = time(nullptr);
     auto ret = DataQueueMgr::GetInstance().Front(queue_name_, data);
     if (ret == device::DataQueueStatus::SUCCESS) {
-#ifndef ENABLE_SECURITY
       if (profiling_enable_) {
         uint64_t end_time_stamp = profiling_op_->GetTimeStamp();
         profiling_op_->RecordData(queue_size, start_time_stamp, end_time_stamp);
       }
-#endif
       break;
     }
     if (ret == device::DataQueueStatus::ERROR_INPUT) {
@@ -141,12 +131,10 @@ bool DatasetIteratorKernelMod::ReadDevice(std::vector<DataQueueItem> *data) {
         MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', get data timeout. Queue name: " << queue_name_;
       }
     }
-#ifndef ENABLE_SECURITY
     if (profiling_enable_) {
       uint64_t end_time_stamp = profiling_op_->GetTimeStamp();
       profiling_op_->RecordData(queue_size, start_time_stamp, end_time_stamp);
     }
-#endif
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', get data failed, errcode " << ret
                   << ", queue name: " << queue_name_;
     return false;

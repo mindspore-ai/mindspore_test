@@ -44,7 +44,6 @@
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_build.h"
 #endif
 
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
@@ -66,7 +65,6 @@
 #include "include/backend/debug/data_dump/overflow_dumper.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
-#endif
 
 namespace mindspore::device::ascend {
 namespace {

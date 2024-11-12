@@ -1169,14 +1169,12 @@ std::string GetVirtualNodeTargetFromInputs(const AnfNodePtr &node) {
   auto cnode = node->cast_ptr<CNode>();
   MS_EXCEPTION_IF_NULL(cnode);
   auto &weak_inputs = cnode->weak_inputs();
-#ifndef ENABLE_SECURITY
   if (IsSummaryPrimitiveCNode(node)) {
     if (weak_inputs.size() > 1) {
       return GetOriginNodeTarget(weak_inputs[1].lock());
     }
     return kDeviceUnDefined;
   }
-#endif
   if (IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimLoad)) {
     const size_t node_inputs_num = 3;
     if (weak_inputs.size() >= node_inputs_num) {
@@ -1281,7 +1279,7 @@ std::string GetOriginNodeTarget(const AnfNodePtr &node) {
   if (target != kDeviceUnDefined) {
     return target;
   }
-#ifndef ENABLE_SECURITY
+
   if (IsPrimitiveCNode(node, prim::kPrimImageSummary) || IsPrimitiveCNode(node, prim::kPrimScalarSummary) ||
       IsPrimitiveCNode(node, prim::kPrimTensorSummary) || IsPrimitiveCNode(node, prim::kPrimHistogramSummary) ||
       IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimLoad) ||
@@ -1289,13 +1287,6 @@ std::string GetOriginNodeTarget(const AnfNodePtr &node) {
       IsPrimitiveCNode(node, prim::kPrimTupleGetItem)) {
     return GetVirtualNodeTarget(node);
   }
-#else
-  if (IsPrimitiveCNode(node, prim::kPrimDepend) || IsPrimitiveCNode(node, prim::kPrimLoad) ||
-      IsPrimitiveCNode(node, prim::kPrimUpdateState) || IsPrimitiveCNode(node, prim::kPrimMakeTuple) ||
-      IsPrimitiveCNode(node, prim::kPrimTupleGetItem)) {
-    return GetVirtualNodeTarget(node);
-  }
-#endif
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   return context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);

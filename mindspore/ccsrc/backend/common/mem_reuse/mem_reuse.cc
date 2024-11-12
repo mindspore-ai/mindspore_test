@@ -365,7 +365,6 @@ void MemReuseUtil::SetReuseRefCount() {
   }
 }
 
-#ifndef ENABLE_SECURITY
 void MemReuseUtil::SetSummaryNodesRefCount() {
   bool summary_exist = graph_->summary_node_exist();
   if (!summary_exist) {
@@ -397,7 +396,6 @@ void MemReuseUtil::SetSummaryNodesRefCount() {
 #endif
   MS_LOG(INFO) << "Special Tensor total size: SummaryNodes: " << total_summary_size;
 }
-#endif
 
 void MemReuseUtil::SetRefNodesInputRefCount() {
   size_t total_size = 0;
@@ -462,9 +460,7 @@ void MemReuseUtil::SetAllInfo(const KernelGraph *graph) {
   }
   SetKernelDefMap();
   SetReuseRefCount();
-#ifndef ENABLE_SECURITY
   SetSummaryNodesRefCount();
-#endif
   SetRefNodesInputRefCount();
   SetWorkSpaceList();
 #ifdef MEM_REUSE_DEBUG

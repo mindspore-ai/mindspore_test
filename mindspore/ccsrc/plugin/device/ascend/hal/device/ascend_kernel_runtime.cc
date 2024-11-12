@@ -34,12 +34,10 @@
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_event.h"
 #include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/profiler/profiling.h"
 #include "plugin/device/ascend/hal/device/dump/ascend_dump.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
-#endif
 #include "utils/trace_base.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/parallel_context.h"
@@ -204,7 +202,6 @@ bool AscendKernelRuntime::NeedDestroyHccl() {
   return true;
 }
 
-#ifndef ENABLE_SECURITY
 void AsyncDataDumpUninit() {
   if (DumpJsonParser::GetInstance().async_dump_enabled()) {
     auto ms_context = MsContext::GetInstance();
@@ -218,7 +215,6 @@ void AsyncDataDumpUninit() {
     }
   }
 }
-#endif
 
 void AscendKernelRuntime::TaskExceptionCallback(aclrtExceptionInfo *task_fail_info) {
   if (task_fail_info == nullptr) {
@@ -255,9 +251,7 @@ void AscendKernelRuntime::ReleaseDeviceRes() {
   // release ge runtime
   ClearGraphModelMap();
 
-#ifndef ENABLE_SECURITY
   AsyncDataDumpUninit();
-#endif
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -280,26 +274,22 @@ void AscendKernelRuntime::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Ascend finalize end";
 }
 
-#ifndef ENABLE_SECURITY
 void AscendKernelRuntime::PreInit() {
   if (!ErrorManagerAdapter::Init()) {
     MS_LOG(WARNING) << "Init ErrorManager failed.";
   }
 }
-#endif
 
 bool AscendKernelRuntime::Init() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto execution_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE);
-#ifndef ENABLE_SECURITY
   auto profiler_manager = profiler::ProfilerManager::GetInstance();
   MS_EXCEPTION_IF_NULL(profiler_manager);
   auto profiling_flag = profiler_manager->GetProfilingEnableFlag();
   if (execution_mode == kPynativeMode && profiling_flag) {
     pynative_mode_profiling_flag_ = true;
   }
-#endif
   if (initialized_) {
     SetContextForce();
     return true;
@@ -375,7 +365,6 @@ bool AscendKernelRuntime::Init() {
 bool AscendKernelRuntime::KernelMemNotReuse(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   bool need_dump = false;
-#ifndef ENABLE_SECURITY
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   if (dump_json_parser.e2e_dump_enabled() && dump_json_parser.dump_mode() == 1) {
     auto op_name = node->fullname_with_scope();
@@ -383,7 +372,6 @@ bool AscendKernelRuntime::KernelMemNotReuse(const AnfNodePtr &node) {
       need_dump = true;
     }
   }
-#endif
   return need_dump;
 }
 

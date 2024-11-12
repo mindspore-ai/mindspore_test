@@ -26,9 +26,7 @@
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/profiler/profiling.h"
-#ifndef ENABLE_SECURITY
 #include "include/common/debug/dump_proto.h"
-#endif
 
 namespace mindspore {
 namespace device {

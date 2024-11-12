@@ -283,11 +283,9 @@ void PyNativeExecutor::SetIsRunRecompute(bool is_runing_recompute) const {
 
 void PyNativeExecutor::set_forward_use_dynamic_shape_process(bool flag) const {
   grad_executor()->set_forward_use_dynamic_shape_process(flag);
-#ifndef ENABLE_SECURITY
   if (flag) {
     profiler::ProfilerManager::GetInstance()->SetNetDynamicShapeStatus();
   }
-#endif
 }
 
 void PyNativeExecutor::SetDynamicInput(const py::object &obj, const py::args &args) const {

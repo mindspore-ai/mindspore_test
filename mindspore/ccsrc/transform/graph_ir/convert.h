@@ -150,7 +150,6 @@ class DfGraphConvertor {
   static void RegisterAdapter(const std::string &name, OpAdapterPtr train_adpt, OpAdapterPtr infer_adpt);
 
   void DrawComputeGraph(const std::string &name) {
-#ifndef ENABLE_SECURITY
     std::ofstream fout(name);
     if (!fout.is_open()) {
       MS_LOG(ERROR) << "Open file '" << name << "' failed!";
@@ -158,11 +157,9 @@ class DfGraphConvertor {
     }
     fout << compute_sout_.str();
     fout.close();
-#endif
   }
 
   void DrawInitGraph(const std::string &name) {
-#ifndef ENABLE_SECURITY
     std::ofstream fout(name);
     if (!fout.is_open()) {
       MS_LOG(ERROR) << "Open file '" << name << "' failed!";
@@ -170,7 +167,6 @@ class DfGraphConvertor {
     }
     fout << init_sout_.str();
     fout.close();
-#endif
   }
 
   void DrawSaveCheckpointGraph(const std::string &name) {

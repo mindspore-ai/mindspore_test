@@ -18,9 +18,7 @@
 
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #include "acl/error_codes/rt_error_codes.h"
 #include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
 #include "transform/symbol/acl_rt_symbol.h"

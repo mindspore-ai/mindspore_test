@@ -32,9 +32,7 @@
 #include "include/common/utils/utils.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 #ifdef ENABLE_DEBUGGER
 #include "debug/tensor_load.h"
 #endif
@@ -1081,7 +1079,6 @@ AscendDeviceAddress::~AscendDeviceAddress() {
   }
 }
 
-#ifndef ENABLE_SECURITY
 /*
  * Feature group: Dump.
  * Target device group: Ascend.
@@ -1133,7 +1130,6 @@ bool AscendDeviceAddress::DumpMemToFile(const std::string &filepath, const std::
 
   return ret;
 }
-#endif
 
 int64_t AscendDeviceAddress::GetGroupsWithCache() const {
   auto node = GetNodeIndex();

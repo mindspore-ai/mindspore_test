@@ -22,18 +22,9 @@ add_subdirectory(mindrt)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT BUILD_LITE)
     file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/*.cc")
-    if(ENABLE_SECURITY)
-        file(GLOB_RECURSE _INFER_SUMMARY_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/*_summary.cc")
-        list(REMOVE_ITEM CORE_OPS_LIST ${_INFER_SUMMARY_FILES})
-    endif()
 else()
     include(${TOP_DIR}/mindspore/lite/cmake/merge.cmake)
-    if(ENABLE_SECURITY)
-        merge_files(${CMAKE_CURRENT_SOURCE_DIR}/ops/ ${CMAKE_BINARY_DIR}/merge/mindspore/core ops_merge
-                    "_summary.cc$")
-    else()
-        merge_files(${CMAKE_CURRENT_SOURCE_DIR}/ops/ ${CMAKE_BINARY_DIR}/merge/mindspore/core ops_merge "")
-    endif()
+    merge_files(${CMAKE_CURRENT_SOURCE_DIR}/ops/ ${CMAKE_BINARY_DIR}/merge/mindspore/core ops_merge "")
     file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_BINARY_DIR}/merge/mindspore/core/ops_merge*.cc")
 endif()
@@ -82,11 +73,6 @@ endif()
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     LIST(REMOVE_ITEM CORE_SRC_LIST utils/numa_interface.cc)
-endif()
-
-if(ENABLE_SECURITY)
-    file(GLOB_RECURSE _INFER_SUMMARY_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/*_summary.cc")
-    list(REMOVE_ITEM CORE_SRC_LIST ${_INFER_SUMMARY_FILES})
 endif()
 
 file(GLOB_RECURSE PROTO_FILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "proto/*.proto")

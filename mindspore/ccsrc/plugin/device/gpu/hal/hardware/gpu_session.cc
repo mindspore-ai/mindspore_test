@@ -87,9 +87,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #endif
 
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
-#endif
 
 namespace mindspore {
 namespace session {
@@ -114,12 +112,10 @@ void GPUSession::Init(uint32_t device_id) {
     MS_LOG(EXCEPTION) << "windows not support nccl.";
 #endif
   }
-#ifndef ENABLE_SECURITY
   auto &json_parser = DumpJsonParser::GetInstance();
   // Dump json config file if dump is enabled for GPU old runtime.
   json_parser.CopyDumpJsonToDir(rank_id_);
   json_parser.CopyMSCfgJsonToDir(rank_id_);
-#endif
   MS_LOG(INFO) << "Set device id " << device_id << " for gpu session.";
   InitExecutor(kGPUDevice, device_id);
 }
@@ -406,10 +402,8 @@ GraphId GPUSession::CompileGraphImpl(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto runtime_instance = device::KernelRuntimeManager::Instance().GetSingleKernelRuntime(kGPUDevice, device_id_);
   MS_EXCEPTION_IF_NULL(runtime_instance);
-#ifndef ENABLE_SECURITY
   auto &json_parser = DumpJsonParser::GetInstance();
   json_parser.Parse();
-#endif
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     // Dump .pb graph before graph optimization
@@ -444,17 +438,14 @@ GraphId GPUSession::CompileGraphImpl(const KernelGraphPtr &graph) {
   }
   // Build kernel if node is cnode
   BuildKernel(graph);
-#ifndef ENABLE_SECURITY
   // Get summary nodes.
   SetSummaryNodes(graph.get());
-#endif
   // Dump .pb graph after graph optimization
 #ifdef ENABLE_DUMP_IR
   if (context_ptr->CanDump(kIntroductory)) {
     DumpIRProto(graph, "after_opt_" + std::to_string(graph->graph_id()));
   }
 #endif
-#ifndef ENABLE_SECURITY
   // GPU old runtime.
   if (json_parser.e2e_dump_enabled()) {
     graph->set_root_graph_id(graph->graph_id());
@@ -467,7 +458,6 @@ GraphId GPUSession::CompileGraphImpl(const KernelGraphPtr &graph) {
     DumpGraphExeOrder("ms_execution_order_graph_" + std::to_string(graph->graph_id()) + ".csv", root_dir,
                       graph->execution_order());
   }
-#endif
   // Set graph manager.
   MS_EXCEPTION_IF_NULL(context_);
   FuncGraphManagerPtr manager = MakeManager({graph});
@@ -511,11 +501,9 @@ void GPUSession::PostExecuteGraph(const std::shared_ptr<KernelGraph> &kernel_gra
   // Summary
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-#ifndef ENABLE_SECURITY
   if (context_ptr->get_param<bool>(MS_CTX_ENABLE_GPU_SUMMARY)) {
     Summary(kernel_graph.get());
   }
-#endif
 #ifdef ENABLE_DEBUGGER
   if (debugger_ && debugger_->DebuggerBackendEnabled()) {
     debugger_->LoadParametersAndConst(kernel_graph);

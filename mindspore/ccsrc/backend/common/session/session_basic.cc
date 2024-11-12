@@ -72,10 +72,8 @@
 #include "debug/rdr/graph_recorder.h"
 #include "runtime/hardware/device_context_manager.h"
 #endif
-#ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
-#endif
 
 namespace mindspore {
 namespace session {
@@ -1144,7 +1142,6 @@ void SessionBasic::GetModelOutputsInfo(uint32_t graph_id, std::vector<tensor::Te
   }
 }
 
-#ifndef ENABLE_SECURITY
 void SessionBasic::RegisterSummaryCallBackFunc(const CallBackFunc &callback) {
   MS_EXCEPTION_IF_NULL(callback);
   Summary::GetInstance().RegisterSummaryCallBackFunc(callback);
@@ -1172,7 +1169,6 @@ void SessionBasic::Summary(KernelGraph *graph) {
   }
   Summary::GetInstance().SummaryTensor(graph);
 }
-#endif
 
 void SessionBasic::CreateOutputNode(const CNodePtr &cnode, const std::shared_ptr<KernelGraph> &graph) const {
   MS_EXCEPTION_IF_NULL(cnode);

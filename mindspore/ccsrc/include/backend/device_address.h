@@ -46,9 +46,7 @@ class AscendKernelRuntime;
 class AscendRuntimeCore;
 class AscendMemoryManager;
 class AscendDeviceContext;
-#ifndef ENABLE_SECURITY
 class DataDumper;
-#endif
 namespace tasksink {
 class TaskGenerator;
 }  // namespace tasksink
@@ -532,9 +530,7 @@ class DeviceAddress : public mindspore::DeviceSync {
   friend class mindspore::device::ascend::AscendRuntimeCore;
   friend class mindspore::device::ascend::AscendMemoryManager;
   friend class mindspore::device::ascend::AscendDeviceContext;
-#ifndef ENABLE_SECURITY
   friend class mindspore::device::ascend::DataDumper;
-#endif
   friend class mindspore::SingleOpInferSession;
   friend class mindspore::RuntimeUtils;
 };
