@@ -20,7 +20,6 @@
 #include <vector>
 #include <memory>
 #include "include/backend/kernel_graph.h"
-#include "kernel/kernel.h"
 
 namespace mindspore::device {
 class BACKEND_EXPORT LaunchMul {

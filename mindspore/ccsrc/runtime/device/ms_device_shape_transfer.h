@@ -27,20 +27,13 @@
 #include <optional>
 #include <unordered_map>
 #include "kernel/oplib/oplib.h"
-#include "ir/dtype.h"
-#include "kernel/kernel.h"
-#include "ir/dtype/type.h"
-#include "utils/shape_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "utils/ms_utils.h"
 #include "abstract/utils.h"
 #include "runtime/device/convert_tensor_utils.h"
-#include "include/common/utils/convert_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/visible.h"
-#include "mindapi/base/shape_vector.h"
 
 namespace mindspore {
 namespace trans {

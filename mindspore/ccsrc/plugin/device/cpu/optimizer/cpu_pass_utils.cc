@@ -16,19 +16,17 @@
 #include "plugin/device/cpu/optimizer/cpu_pass_utils.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "include/backend/optimizer/helper.h"
 #include "kernel/kernel_build_info.h"
 #include "include/common/factory/ms_factory.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/kernel_graph.h"
 #include "include/common/utils/utils.h"
-#include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "kernel/framework_utils.h"
 

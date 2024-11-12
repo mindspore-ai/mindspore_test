@@ -22,16 +22,12 @@
 #include <vector>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "kernel/common_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "kernel/cpu/cpu_kernel.h"
-#include "include/common/factory/ms_factory.h"
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace opt {

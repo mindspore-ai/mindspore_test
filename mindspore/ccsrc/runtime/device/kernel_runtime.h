@@ -24,15 +24,12 @@
 #include <unordered_set>
 #include "include/backend/device_address.h"
 #include "ir/tensor.h"
-#include "include/common/utils/convert_utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
 #include "kernel/kernel.h"
-#include "utils/ms_context.h"
 #include "runtime/device/memory_manager.h"
 #include "runtime/device/memory_scheduler.h"
 #include "include/backend/visible.h"

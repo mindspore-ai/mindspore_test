@@ -33,11 +33,9 @@
 #include "runtime/device/kernel_runtime_manager.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "frontend/operator/ops.h"
 #include "ir/value.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"
-#include "include/common/utils/parallel_context.h"
 #include "include/common/debug/env_config_parser.h"
 #include "kernel/framework_utils.h"
 

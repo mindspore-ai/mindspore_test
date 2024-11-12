@@ -16,7 +16,6 @@
 
 #include "plugin/device/cpu/hal/hardware/cpu_somas.h"
 #include <string>
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace device {

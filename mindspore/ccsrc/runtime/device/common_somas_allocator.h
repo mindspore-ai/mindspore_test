@@ -23,7 +23,6 @@
 #include <utility>
 #include <memory>
 #include "backend/common/somas/somas.h"
-#include "include/backend/device_type.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
