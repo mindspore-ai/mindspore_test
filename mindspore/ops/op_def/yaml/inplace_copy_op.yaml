@@ -1,5 +1,5 @@
-#operator copy_ext
-copy_ext:
+#operator inplace_copy
+inplace_copy:
   args:
     variable:
       dtype: tensor
@@ -14,7 +14,7 @@ copy_ext:
   labels:
     side_effect_mem: True
   class:
-    name: CopyExt
+    name: InplaceCopy
   dispatch:
     enable: True
-    Ascend: CopyExtAscend
+    Ascend: InplaceCopyAscend

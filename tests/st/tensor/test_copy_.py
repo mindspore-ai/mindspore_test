@@ -81,7 +81,7 @@ def test_copy_dynamic_shape():
     tensor_x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
     tensor_y2 = ms.Tensor(generate_random_input((1, 1, 5), np.float32))  # broadcast
 
-    TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'copy_ext',
+    TEST_OP(copy_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'inplace_copy',
             disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'], disable_grad=True)
 
 

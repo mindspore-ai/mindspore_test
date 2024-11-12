@@ -2072,7 +2072,7 @@ REG_BPROP_BUILDER("SliceExt").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex6);
 
   auto dx = ib->Zeros(x);
-  (void)ib->Emit("CopyExt", {ib->Emit("SliceExt", {dx, axis, begin, end, step}), dout});
+  (void)ib->Emit("InplaceCopy", {ib->Emit("SliceExt", {dx, axis, begin, end, step}), dout});
   return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(step)};
 });
 
