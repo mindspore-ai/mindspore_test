@@ -420,9 +420,7 @@ Status ReshapeInfo::ComputeReplaceOp() {
     tensor_redistribution->SetPreAndNextCNode(reshape_input, this->cnode_);
     Shape output_tensor_shape = this->output_layout_.tensor_shape().array();
 
-    bool is_multi_dynamic_reshape =
-      this->input_layout_.tensor_shape().array().size() != this->output_layout_.tensor_shape().array().size() &&
-      std::count(output_tensor_shape.begin(), output_tensor_shape.end(), -1) > 1;
+    bool is_multi_dynamic_reshape = std::count(output_tensor_shape.begin(), output_tensor_shape.end(), -1) > 1;
     if (tensor_redistribution->Init(input_layout_, output_layout_, dev_list, is_multi_dynamic_reshape) == FAILED) {
       if (is_generating_costs_) {
         MS_LOG(DEBUG) << name_ << ": tensor_redistribution init failed.";
@@ -436,6 +434,8 @@ Status ReshapeInfo::ComputeReplaceOp() {
     MS_LOG(DEBUG) << name_ << ": dev_list " << dev_list.size();
     RedistributionOpListPtr redistribution_oplist_ptr;
     if (is_multi_dynamic_reshape) {
+      MS_LOG(INFO) << this->name_
+                   << " has more than 1 dynamic axis. shape: " << this->cnode_->input(INDEX_TWO)->fullname_with_scope();
       // If only one axis is sharded, and it's const axis, use past solution.
       if (SpecialPatternInTransformer(this->input_layout_, this->output_layout_)) {
         MS_LOG(INFO) << "Match special pattern in transformer.";
@@ -452,8 +452,6 @@ Status ReshapeInfo::ComputeReplaceOp() {
       }
       // use naive method. Do AllGather on each dim.
       tensor_redistribution->set_original_reshape_shape(this->cnode_->input(INDEX_TWO));
-      MS_LOG(INFO) << this->name_
-                   << " has more than 1 dynamic axis. shape: " << this->cnode_->input(INDEX_TWO)->fullname_with_scope();
       redistribution_oplist_ptr = tensor_redistribution->InferTensorRedistributionOperatorListForMultiDynamicReshape();
     } else {
       tensor_redistribution->set_original_reshape_shape(nullptr);
