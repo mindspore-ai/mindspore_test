@@ -179,7 +179,7 @@ from mindspore.ops.functional import maximum
 # 63
 from mindspore.ops.functional import minimum
 # 64
-
+from mindspore.ops.functional import ravel
 # 65
 from mindspore.ops.functional import logical_and
 # 66
@@ -2004,7 +2004,7 @@ __all__ = [
     # 63
     'minimum',
     # 64
-
+    'ravel',
     # 65
     'logical_and',
     # 66
