@@ -1799,37 +1799,45 @@ REG_BPROP_BUILDER("Sinc").SetBody(BODYFUNC(ib) {
   return {ib->Select(cond, zeros, dx)};
 });
 
+DEF_PURE_SHAPE_CALC(g_cumprod_axis2tuple)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shape = inputs.at(kIndex0);
+    auto axis = inputs.at(kIndex1)[0];
+
+    auto normal_axis = NormalizeAxis(axis, x_shape.size());
+    std::vector<int64_t> res;
+    res.push_back(x_shape[normal_axis]);
+    return {res};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1}; });
+
 REG_BPROP_BUILDER("CumProd").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto x_shape = ib->GetShape(x);
-  auto num_elements =
-    std::accumulate(x_shape.begin(), x_shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   auto axis = ib->GetInput(kIndex1);
   auto exclusive = ib->GetInput(kIndex2);
   auto reverse = ib->GetInput(kIndex3);
   auto out = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
-  constexpr const int64_t One = 1;
-  if (num_elements <= One) {
-    return {dout, ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
-  }
   auto axis_value_ptr = axis->BuildValue();
   auto axis_opt = mindspore::GetScalarValue<int64_t>(axis_value_ptr);
   // dynamic axis
   if (!axis_opt.has_value()) {
-    auto axis_one_branch = [&dout](Emitter *e) -> NodePtrList { return {dout}; };
-    auto axis_not_one_branch = [&dout, &x, &axis, &exclusive, &reverse](Emitter *e) -> NodePtrList {
+    auto axis_one_branch = [&](Emitter *e) -> NodePtrList { return {dout}; };
+    auto axis_not_one_branch = [&](Emitter *e) -> NodePtrList {
       auto prod = e->CumProd(x, axis, exclusive, reverse);
-      auto out = e->CumSum(e->Mul(prod, dout), axis, GetValue<bool>(exclusive->BuildValue()),
-                           !GetValue<bool>(reverse->BuildValue()));
+      out = e->CumSum(e->Mul(prod, dout), axis, GetValue<bool>(exclusive->BuildValue()),
+                      !GetValue<bool>(reverse->BuildValue()));
       out = e->RealDiv(out, x);
       return {out};
     };
-    auto cond = ib->Equal(axis, ib->Value<int64_t>(1));
-    dout = ib->Conditional(cond, axis_one_branch, axis_not_one_branch);
-    return {dout, ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
+    auto axis_to_tuple = ib->ShapeCalc(g_cumprod_axis2tuple, {x, axis}, {1})[0];
+    auto cond = ib->Equal(ib->TupleGetItem(axis_to_tuple, 0), ib->Value<int64_t>(1));
+    out = ib->Conditional(cond, axis_one_branch, axis_not_one_branch);
+    return {out, ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
   }
   int64_t axis_value = axis_opt.value();
+  constexpr const int64_t One = 1;
   // to par with standards when dim is 1 or element num of input is no greater than 1.
   if (!IsDynamic(x_shape) && x_shape[axis_value] == One) {
     return {dout, ib->OutZeros(axis), ib->OutZeros(exclusive), ib->OutZeros(reverse)};
