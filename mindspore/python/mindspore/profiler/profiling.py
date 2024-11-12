@@ -1058,7 +1058,8 @@ class Profiler:
             "op_time": self.ENABLE_STATUS if self._op_time else self.DISABLE_STATUS,
             "profile_framework": self._profile_framework,
             "profiler_level": self.profiler_level.value if self.profiler_level else self.DISABLE_STATUS,
-            "with_stack": "on" if self._with_stack else "off"
+            "with_stack": "on" if self._with_stack else "off",
+            "framework_path": self._output_path,
         }
         ProfilerInfo.set_profiling_options(profiling_options)
         return profiling_options
