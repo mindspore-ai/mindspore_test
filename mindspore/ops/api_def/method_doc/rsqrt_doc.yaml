@@ -1,16 +1,12 @@
 rsqrt:
     description: |
-        rsqrt(self) -> Tensor
+        rsqrt() -> Tensor
 
         Computes reciprocal of square root of self tensor element-wise.
 
         .. math::
         
             out_{i} =  \frac{1}{\sqrt{input_{i}}}
-    
-        Args:
-            self (Tensor): The self of rsqrt. Its each element must be a non-negative
-                number, if an element is negative, the calculation result is nan.
     
         Returns:
             Tensor, has the same shape and dtype as the `self`.
