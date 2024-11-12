@@ -827,6 +827,9 @@ void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
         cg->MarkAlive(iter->second);
         continue;
       }
+      if (cg->GetLocalsMap().find(iter->second) != cg->GetLocalsMap().end()) {
+        continue;
+      }
       bool not_a_local = cg->GetLocalsMap().find(iter->second) == cg->GetLocalsMap().end();
       if (not_a_local && iter->second->GetOpcode() != LOAD_CONST) {
         MS_LOG(INTERNAL_EXCEPTION) << iter->second->ToString() << " should be a local var.";
