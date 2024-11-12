@@ -81,6 +81,7 @@ void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id,
   } catch (nlohmann::json::exception &e) {
     MS_LOG(EXCEPTION) << "Failed to parse profiling options because of format error, current options is " << options;
   }
+  framework_data_path_ = options["framework_path"];
   if (options["parallel_strategy"] == "off") {
     is_parallel_strategy = false;
   } else {
@@ -110,11 +111,11 @@ void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id,
   }
 
   if (options["profile_memory"] == "on") {
-    MS_LOG(INFO) << "profile_memory is on, profile_data_path:" << profile_data_path_;
+    MS_LOG(INFO) << "profile_memory is on, profile_data_path:" << framework_data_path_;
     enable_prof_mem_ = true;
     MS_LOG(INFO) << "Enable profiling memory.";
     auto ms_context = MsContext::GetInstance();
-    ms_context->set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, profile_data_path_);
+    ms_context->set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, framework_data_path_);
     ms_context->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, true);
   }
 
@@ -260,7 +261,7 @@ void AscendProfiler::Stop() {
 
   if (enable_prof_mem_) {
     std::string csvPrefix = "operator_memory";
-    device::tracker::MemTrackerManager::GetInstance().DumpProfilingMemInfo(profile_data_path_, csvPrefix);
+    device::tracker::MemTrackerManager::GetInstance().DumpProfilingMemInfo(framework_data_path_, csvPrefix);
     device::tracker::MemTrackerManager::GetInstance().Dump();
 
     MS_LOG(INFO) << "End profiling memory.";
