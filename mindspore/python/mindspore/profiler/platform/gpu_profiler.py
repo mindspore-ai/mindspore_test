@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,36 +14,60 @@
 # ============================================================================
 """GPU platform profiler."""
 from mindspore import log as logger
+import mindspore._c_dataengine as cde
+import mindspore._c_expression as c_expression
 from mindspore.profiler.common.registry import PROFILERS
-from mindspore.profiler.common.constant import DeviceTarget
-from mindspore.profiler.platform_profiler.profiler_interface import ProfilerInterface
+from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
+
+from mindspore.profiler.common.profiler_context import ProfilerContext
+from mindspore.profiler.platform.base_profiler import BaseProfiler
 
 
 @PROFILERS.register_module(DeviceTarget.GPU.value)
-class GpuProfiler(ProfilerInterface):
+class GpuProfiler(BaseProfiler):
     """
     GPU platform profiler
     """
-    def __init__(
-            self,
-            *,
-            output_path: str = "./data",
-            op_time: bool = True,
-            sync_enable: bool = True,
-            data_process: bool = False,
-            profile_framework: str = None,
-            **kwargs
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
+        self._prof_ctx = ProfilerContext()
+        self._profiler = c_expression.Profiler.get_instance(DeviceTarget.GPU.value)
+
+
+        self._profiler.init(self._prof_ctx.output_path)
+        self._profiler.sync_enable(self._prof_ctx.sync_enable)
+
+        if self._prof_ctx.data_process:
+            self._md_profiler = cde.GlobalContext.profiling_manager()
+            self._md_profiler.init()
 
     def start(self) -> None:
         """Start profiling."""
         logger.info("GpuProfiler start.")
 
+        if self._prof_ctx.data_process:
+            self._profiler.data_process_enable(True)
+            self._md_profiler.start()
+
+        if ProfilerActivity.GPU in self._prof_ctx.activities:
+            self._profiler.enable_op_time()
+
+            if ProfilerActivity.CPU in self._prof_ctx.activities:
+                self._profiler.step_profiling_enable(True)
+
     def stop(self) -> None:
         """Stop profiling."""
         logger.info("GpuProfiler stop.")
+        self._profiler.stop()
 
-    def analyse(self, pretty=False, step_list=None, mode="sync", rank_id=None) -> None:
+        if self._prof_ctx.data_process:
+            self._md_profiler.stop()
+            self._md_profiler.save(self._prof_ctx.output_path)
+
+    def analyse(self, **kwargs) -> None:
         """Analyse profiling data."""
         logger.info("GpuProfiler analyse.")
+
+    def finalize(self) -> None:
+        """Finalize profiling data."""
+        logger.info("GpuProfiler finalize.")
