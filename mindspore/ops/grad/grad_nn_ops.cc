@@ -431,6 +431,19 @@ REG_FUNCTOR("ShapeCalc_ExtractImagePatches", ExtractImagePatchesShapeCalc);
 // implements the function to free useless values which defined in other files.
 void FreeTensorsOfMul(const PynativeCallback &cb);
 
+void FreeTensorsOfLSTM(const PynativeCallback &cb) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto device = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device == "CPU") {
+    cb.FreeOutputDeviceAddress({i4});
+    MS_LOG(DEBUG) << "Clear CPU device address for outputs[4] of " << cb.opname();
+  } else if (device == "GPU") {
+    cb.FreeOutputDeviceAddress({i1, i2});
+    MS_LOG(DEBUG) << "Clear GPU device address for outputs[1] and outputs[2] of " << cb.opname();
+  }
+}
+
 REG_BPROP_BUILDERS_BEGIN(GradNnOps)
 REG_BPROP_BUILDER("Conv2D").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
@@ -976,7 +989,7 @@ REG_BPROP_BUILDER("BiasAdd").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) 
   return {dx, grad_bias, ib->OutZeros(format)};
 });
 
-REG_BPROP_BUILDER("AddLayerNormV2").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AddLayerNormV2").FreeUselessValues_IO({i3}, {0, 3}).SetBody(BODYFUNC(ib) {
   // x1, x2, gamma, beta, epsilon, additionalOut, (y, mean, rstd, x), (dy, dmean, drstd, dx)
   auto x1 = ib->GetInput(kIndex0);
   auto x2 = ib->GetInput(kIndex1);
@@ -1380,7 +1393,7 @@ REG_BPROP_BUILDER("DeformableOffsets").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib
   return {ib->TupleGetItem(out_grad, 0), ib->TupleGetItem(out_grad, 1)};
 });
 
-REG_BPROP_BUILDER("LSTM").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("LSTM").FreeUselessValues(FreeTensorsOfLSTM).SetBody(BODYFUNC(ib) {
   auto input_size = ib->GetAttr("input_size");
   auto hidden_size = ib->GetAttr("hidden_size");
   auto num_layers = ib->GetAttr("num_layers");
@@ -1445,7 +1458,7 @@ REG_BPROP_BUILDER("LSTM").SetBody(BODYFUNC(ib) {
   return {dx, dhx, dcx, dw};
 });
 
-REG_BPROP_BUILDER("CudnnGRU.NotReady").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("CudnnGRU.NotReady").FreeUselessValues_O({i1}).SetBody(BODYFUNC(ib) {
   auto input_size = ib->GetAttr("input_size");
   auto hidden_size = ib->GetAttr("hidden_size");
   auto num_layers = ib->GetAttr("num_layers");
@@ -1496,7 +1509,7 @@ REG_BPROP_BUILDER("GLU").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("MaxPoolWithArgmaxV2").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaxPoolWithArgmaxV2").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -1510,7 +1523,7 @@ REG_BPROP_BUILDER("MaxPoolWithArgmaxV2").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("MaxPoolWithMask").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaxPoolWithMask").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto kernel_size = ib->GetInput(kIndex1);
   auto strides = ib->GetInput(kIndex2);
@@ -1531,7 +1544,7 @@ REG_BPROP_BUILDER("MaxPoolWithMask").SetBody(BODYFUNC(ib) {
   return {dx, g_kernel_size, g_strides, g_pads, g_dilation, g_ceil_mode, g_argmax_type};
 });
 
-REG_BPROP_BUILDER("MaxPoolWithIndices").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaxPoolWithIndices").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto kernel_size = ib->GetInput(kIndex1);
   auto strides = ib->GetInput(kIndex2);
@@ -1628,7 +1641,7 @@ REG_BPROP_BUILDER("LayerNorm").FreeUselessValues_IO({i2, i5}, {i0}).SetBody(BODY
   return {d_x, d_gamma, d_beta, grad_begin_norm_axis, grad_begin_params_axis, grad_epsilon};
 });
 
-REG_BPROP_BUILDER("LayerNormV3").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("LayerNormV3").FreeUselessValues_IO({i2}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto gamma = ib->GetInput(kIndex1);
   auto begin_norm_axis = ib->GetInput(kIndex3);
@@ -1651,7 +1664,7 @@ REG_BPROP_BUILDER("LayerNormV3").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {d_x, d_gamma, d_beta, grad_begin_norm_axis, grad_begin_params_axis, grad_epsilon};
 });
 
-REG_BPROP_BUILDER("LayerNormGrad").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("LayerNormGrad").FreeUselessValues_I({i7}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dy = ib->GetInput(kIndex1);
   auto variance = ib->GetInput(kIndex2);
@@ -1682,7 +1695,7 @@ REG_BPROP_BUILDER("L2Normalize").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("SoftmaxCrossEntropyWithLogits").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SoftmaxCrossEntropyWithLogits").FreeUselessValues_IO({i0, i1}, {i0}).SetBody(BODYFUNC(ib) {
   auto labels = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
@@ -1691,7 +1704,7 @@ REG_BPROP_BUILDER("SoftmaxCrossEntropyWithLogits").SetUnusedInputs({i0, i1}).Set
   return {grad, ib->OutZeros(labels)};
 });
 
-REG_BPROP_BUILDER("NLLLoss").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("NLLLoss").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto logits = ib->GetInput(kIndex0);
   auto labels = ib->GetInput(kIndex1);
   auto weight = ib->GetInput(kIndex2);
@@ -1706,7 +1719,7 @@ REG_BPROP_BUILDER("NLLLoss").SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(labels), ib->OutZeros(weight), ib->OutZeros(reduction), ib->OutZeros(ignore_index)};
 });
 
-REG_BPROP_BUILDER("NLLLoss2d").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("NLLLoss2d").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   // logits,labels weight reduction
   auto logits = ib->GetInput(kIndex0);
   auto labels = ib->GetInput(kIndex1);
@@ -1808,7 +1821,7 @@ REG_BPROP_BUILDER("L2Loss").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("RNNTLoss").SetUnusedInputs({i0, i1, i2, i3, i5}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("RNNTLoss").FreeUselessValues_IO({}, {i0}).SetBody(BODYFUNC(ib) {
   auto labels = ib->GetInput(kIndex1);
   auto act_lens = ib->GetInput(kIndex2);
   auto label_lens = ib->GetInput(kIndex3);
@@ -2085,10 +2098,10 @@ REG_BPROP_BUILDER("UpsampleTrilinear3D").SetUnusedInputs({i4}).SetBody(BODYFUNC(
   return {dx, ib->OutZeros(output_size), ib->OutZeros(scales), ib->OutZeros(align_corners)};
 });
 
-REG_BPROP_BUILDER("Dropout2D").SetUnusedInputs({i0}).SetBody(Dropout2DBpropExpander);
-REG_BPROP_BUILDER("Dropout3D").SetUnusedInputs({i0}).SetBody(Dropout2DBpropExpander);
+REG_BPROP_BUILDER("Dropout2D").FreeUselessValues_IO({i0}, {i0}).SetBody(Dropout2DBpropExpander);
+REG_BPROP_BUILDER("Dropout3D").FreeUselessValues_IO({i0}, {i0}).SetBody(Dropout2DBpropExpander);
 
-REG_BPROP_BUILDER("CTCLoss").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("CTCLoss").FreeUselessValues_IO({}, {i0}).SetBody(BODYFUNC(ib) {
   auto labels_indices = ib->GetInput(kIndex1);
   auto labels_values = ib->GetInput(kIndex2);
   auto sequence_length = ib->GetInput(kIndex3);
@@ -2480,7 +2493,7 @@ REG_BPROP_BUILDER("Gelu").SetBody(GeLUBpropExpander);
 REG_BPROP_BUILDER("FastGeLU").SetUnusedInputs({i1}).SetBody(FastGeLUBpropExpander);
 REG_BPROP_BUILDER("FastGelu").SetUnusedInputs({i1}).SetBody(FastGeLUBpropExpander);
 
-REG_BPROP_BUILDER("InstanceNorm").SetUnusedInputs({i2, i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InstanceNorm").FreeUselessValues_IO({i2, i3, i4}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto gamma = ib->GetInput(kIndex1);
   auto mean = ib->GetInput(kIndex3);
@@ -2767,7 +2780,7 @@ REG_BPROP_BUILDER("DynamicRNN").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   return {dx, dw, db, ib->OutZeros(ib->Tensor(zero)), dh_prev, dc_prev};
 });
 
-REG_BPROP_BUILDER("GRUV2").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("GRUV2").FreeUselessValues_O({i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto hx = ib->GetInput(kIndex1);
   auto w = ib->GetInput(kIndex2);
@@ -2828,7 +2841,7 @@ REG_BPROP_BUILDER("DynamicGRUV2").SetUnusedInputs({i3, i4, i5}).SetBody(BODYFUNC
   return {dx, dw_input, dw_hidden, db_input, db_hidden, ib->OutZeros(ib->Tensor(zero)), dh_prev};
 });
 
-REG_BPROP_BUILDER("AdaptiveMaxPool2D").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AdaptiveMaxPool2D").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -2838,7 +2851,7 @@ REG_BPROP_BUILDER("AdaptiveMaxPool2D").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("AdaptiveMaxPool3D").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("AdaptiveMaxPool3D").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto output_size = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
@@ -2865,7 +2878,7 @@ REG_BPROP_BUILDER("Conv2DBackpropFilter").SetUnusedInputs({i2, i3}).SetBody(BODY
   return {dw_dy, dw_dx, ib->OutZeros(filter_size)};
 });
 
-REG_BPROP_BUILDER("BCEWithLogitsLoss").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("BCEWithLogitsLoss").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   // input, target, weight, posWeight, reduction, out, dout
   auto dout = ib->GetInput(kIndex6);
   auto input = ib->GetInput(kIndex0);
@@ -2969,7 +2982,7 @@ REG_BPROP_BUILDER("SoftMarginLoss").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, dy};
 });
 
-REG_BPROP_BUILDER("MultilabelMarginLoss").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MultilabelMarginLoss").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto target = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
@@ -3100,7 +3113,7 @@ REG_BPROP_BUILDER("ResizeLinear1D").SetUnusedInputs({i1, i3}).SetBody(BODYFUNC(i
   return {dx, ib->OutZeros(size), ib->OutZeros(coordinate_transformation_mode)};
 });
 
-REG_BPROP_BUILDER("MaxPool3DWithArgmax").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaxPool3DWithArgmax").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -3263,7 +3276,7 @@ REG_BPROP_BUILDER("AdaptiveAvgPool2DExt").SetUnusedInputs({i1, i2}).SetBody(BODY
   return {dx, ib->OutZeros(output_size)};
 });
 
-REG_BPROP_BUILDER("FractionalMaxPool").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("FractionalMaxPool").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -3275,7 +3288,7 @@ REG_BPROP_BUILDER("FractionalMaxPool").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("FractionalMaxPool3DWithFixedKsize").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("FractionalMaxPool3DWithFixedKsize").FreeUselessValues_IO({i1}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto random_samples = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
@@ -3285,7 +3298,7 @@ REG_BPROP_BUILDER("FractionalMaxPool3DWithFixedKsize").SetUnusedInputs({i1}).Set
   return {dx, ib->OutZeros(random_samples)};
 });
 
-REG_BPROP_BUILDER("FractionalAvgPool").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("FractionalAvgPool").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -3366,7 +3379,7 @@ REG_BPROP_BUILDER("CTCLossV2").SetBody(BODYFUNC(ib) {
   return {grad, ib->OutZeros(targets), ib->OutZeros(input_lengths), ib->OutZeros(target_lengths)};
 });
 
-REG_BPROP_BUILDER("InstanceNormV2").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InstanceNormV2").FreeUselessValues_IO({i2}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto gamma = ib->GetInput(kIndex1);
   auto mean = ib->GetInput(kIndex3);
@@ -3386,7 +3399,7 @@ REG_BPROP_BUILDER("InstanceNormV2").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, dgamma, dbeta, ib->OutZeros(mean), ib->OutZeros(variance)};
 });
 
-REG_BPROP_BUILDER("FractionalMaxPoolWithFixedKsize").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("FractionalMaxPoolWithFixedKsize").FreeUselessValues_IO({i1}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto random_samples = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
@@ -3398,7 +3411,7 @@ REG_BPROP_BUILDER("FractionalMaxPoolWithFixedKsize").SetUnusedInputs({i1}).SetBo
   return {dx, ib->OutZeros(random_samples)};
 });
 
-REG_BPROP_BUILDER("SparseSoftmaxCrossEntropyWithLogitsV2").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SparseSoftmaxCrossEntropyWithLogitsV2").FreeUselessValues_IO({i1}, {i0}).SetBody(BODYFUNC(ib) {
   auto logits = ib->GetInput(kIndex0);
   auto labels = ib->GetInput(kIndex1);
   auto out = ib->GetInput(kIndex2);
@@ -3534,7 +3547,7 @@ REG_BPROP_BUILDER("ReplicationPad3D").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib)
   return {dx, ib->OutZeros(paddings)};
 });
 
-REG_BPROP_BUILDER("WKV").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("WKV").FreeUselessValues_IO({i4, i5, i6}, {}).SetBody(BODYFUNC(ib) {
   auto w = ib->GetInput(kIndex0);
   auto u = ib->GetInput(kIndex1);
   auto k = ib->GetInput(kIndex2);
@@ -3622,7 +3635,7 @@ REG_BPROP_BUILDER("RmsNorm").FreeUselessValues_IO({i2}, {i0}).SetBody((BODYFUNC(
   return {dx, dgamma, ib->OutZeros(eps)};
 }));
 
-REG_BPROP_BUILDER("AvgPool2D").SetBody((BODYFUNC(ib) {
+REG_BPROP_BUILDER("AvgPool2D").FreeUselessValues_O({}).SetBody((BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto kernel_size = ib->GetInput(kIndex1);
   auto stride = ib->GetInput(kIndex2);
@@ -3643,7 +3656,7 @@ REG_BPROP_BUILDER("AvgPool2D").SetBody((BODYFUNC(ib) {
           ib->OutZeros(divisor_override)};
 }));
 
-REG_BPROP_BUILDER("AvgPool2DGrad").SetBody((BODYFUNC(ib) {
+REG_BPROP_BUILDER("AvgPool2DGrad").FreeUselessValues_O({}).SetBody((BODYFUNC(ib) {
   auto grad_output = ib->GetInput(kIndex0);
   auto image = ib->GetInput(kIndex1);
   auto kernel_size = ib->GetInput(kIndex2);
@@ -3665,18 +3678,17 @@ REG_BPROP_BUILDER("AvgPool2DGrad").SetBody((BODYFUNC(ib) {
           ib->OutZeros(divisor_override)};
 }));
 
-REG_BPROP_BUILDER("EmbeddingTableFindAndInit").SetBody((BODYFUNC(ib) {
+REG_BPROP_BUILDER("EmbeddingTableFindAndInit").FreeUselessValues_IO({i3}, {}).SetBody((BODYFUNC(ib) {
   static std::string prim_name = "EmbeddingTableFindAndInit";
   auto table_id = ib->GetInput(kIndex0);
   auto keys = ib->GetInput(kIndex1);
   auto max_grad_norm = ib->GetInput(kIndex2);
-  auto parameter = ib->GetInput(kIndex3);
   auto dout = ib->GetInput(kIndex5);
   auto dx = FakeRemoteAndTableFindInitBackwardFunc(ib, {table_id, dout, keys, max_grad_norm}, prim_name);
   return {ib->OutZeros(table_id), ib->OutZeros(keys), ib->OutZeros(max_grad_norm), dx};
 }));
 
-REG_BPROP_BUILDER("FakeRemoteLookupUniqued").SetBody((BODYFUNC(ib) {
+REG_BPROP_BUILDER("FakeRemoteLookupUniqued").FreeUselessValues_IO({i2, i4, i6}, {}).SetBody((BODYFUNC(ib) {
   static std::string prim_name = "FakeRemoteLookupUniqued";
   auto table_id = ib->GetInput(kIndex0);
   auto keys = ib->GetInput(kIndex1);
@@ -3684,7 +3696,6 @@ REG_BPROP_BUILDER("FakeRemoteLookupUniqued").SetBody((BODYFUNC(ib) {
   auto unique_indices = ib->GetInput(kIndex3);
   auto key_count = ib->GetInput(kIndex4);
   auto max_grad_norm = ib->GetInput(kIndex5);
-  auto parameter = ib->GetInput(kIndex6);
   auto dout = ib->GetInput(kIndex8);
   auto keys_recovery = ib->Gather(keys, unique_indices, 0, 0);
   auto dx = FakeRemoteAndTableFindInitBackwardFunc(ib, {table_id, dout, keys_recovery, max_grad_norm}, prim_name);
