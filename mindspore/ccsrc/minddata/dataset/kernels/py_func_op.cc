@@ -60,7 +60,7 @@ PyFuncOp::PyFuncOp(const py::function &func, DataType::Type output_type) : outpu
 
 PyFuncOp::~PyFuncOp() {
   py::gil_scoped_acquire gil_acquire;
-  py_func_ptr_ = py::none();
+  py_func_ptr_ = py::object();
 }
 
 Status PyFuncOp::Compute(const TensorRow &input, TensorRow *output) {

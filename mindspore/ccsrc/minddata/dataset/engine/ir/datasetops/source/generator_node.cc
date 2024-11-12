@@ -59,7 +59,7 @@ GeneratorNode::GeneratorNode(const py::function &generator_function, const std::
 
 GeneratorNode::~GeneratorNode() {
   py::gil_scoped_acquire gil_acquire;
-  generator_function_ = py::none();
+  generator_function_ = py::object();
 }
 
 std::shared_ptr<DatasetNode> GeneratorNode::Copy() {
