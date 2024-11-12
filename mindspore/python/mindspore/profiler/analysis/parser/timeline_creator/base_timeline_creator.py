@@ -33,8 +33,11 @@ class BaseTimelineCreator(ABC):
         """Get all events in chrome trace format."""
         if not self.event_pools:
             return []
+        chrome_trace_data = []
         for pool in self.event_pools.values():
-            return pool.get_all_events_with_trace_format()
+            if pool:
+                chrome_trace_data.extend(pool.get_all_events_with_trace_format())
+        return chrome_trace_data
 
     def get_event_pools(self) -> Dict[int, TimelineEventPool]:
         """Get all timeline event pools."""
