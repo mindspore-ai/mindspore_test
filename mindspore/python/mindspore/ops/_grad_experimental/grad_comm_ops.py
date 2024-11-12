@@ -188,11 +188,12 @@ def get_bprop_virtual_assign_kv_cache(self):
     dtype = P.DType()
     out_tensor = Tensor(0.0, mstype.float16)
 
-    def bprop(x, y, kv_equal, out, dout):
+    def bprop(x, y, seq_chunk, out, dout):
         dout_update = dout + y
+        kv_equal = F.equal(seq_chunk, 0)
         update_kv = F.select(kv_equal, F.broadcast_to(cast(out_tensor, dtype(y)), F.shape(y)), dout_update)
         return F.depend((dout_update, cast(out_tensor, dtype(y)),
-                         cast(out_tensor, dtype(kv_equal))), assign(y, update_kv))
+                         cast(out_tensor, dtype(seq_chunk))), assign(y, update_kv))
 
     return bprop
 
