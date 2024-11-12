@@ -4900,7 +4900,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         mode = context.get_context("mode")
         if mode != context.PYNATIVE_MODE:
             raise ValueError(f"The method of 'move_to' only supported in pynative mode, but got: {mode}.")
-        return Tensor(Tensor_.move_to(self, to, blocking), device="CPU" if to == "CPU" else None)
+        return Tensor_.move_to(self, to, blocking)
 
     def _offload(self):
         r"""
