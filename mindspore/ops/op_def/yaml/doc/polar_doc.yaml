@@ -5,21 +5,23 @@ polar:
         Returns a complex tensor, its elements are Cartesian coordinates constructed with the polar
         coordinates which is specified by radial distance `abs` and polar angle `angle`.
 
-        .. warning::
-            This is an experimental optimizer API that is subject to change.
+        Refer to :func:`mindspore.ops.polar` for more details.
 
         .. math::
 
             y_{i} =  abs_{i} * \cos(angle_{i}) + abs_{i} * \sin(angle_{i}) * j
 
-        Args:
-            - **abs** (Tensor) - Radial distance. Tensor of any dimension,
-              must be one of the following types: float32.
+        .. warning::
+            This is an experimental API that is subject to change.
 
-            - **angle** (Tensor) - Polar angle. It has the same shape and dtype as `abs`.
+        Args:
+            abs (Tensor, float): Radial distance. Tensor of any dimension,
+              with dtype required to be float32.
+
+            angle (Tensor, float): Polar angle. It has the same shape and dtype as `abs`.
 
         Returns:
-            Tensor, has the same shape and data type as `abs`.
+            Tensor, with the same shape as `abs` and the dtype is complex64.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

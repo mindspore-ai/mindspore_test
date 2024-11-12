@@ -12,16 +12,15 @@ mindspore.mint.polar
         y_{i} =  abs_{i} * \cos(angle_{i}) + abs_{i} * \sin(angle_{i}) * j
 
     .. warning::
-        这是一个实验性API，后续可能修改或删除
+        这是一个实验性API，后续可能修改或删除。
 
     参数：
-        - **abs** (Tensor) - 极径。Tensor的shape为 :math:`(N,*)` ，其中 :math:`N` 为输入Tensor的批量大小， :math:`*` 为任意数量的额外维度。其数据类型须为：float32。
-        - **angle** (Tensor) - 极角。其shape与数据类型与 `abs` 一致。
+        - **abs** (Tensor, float) - 极径。其输入shape可以是任意维度，数据类型须为：float32。
+        - **angle** (Tensor, float) - 极角。其shape与数据类型与 `abs` 一致。
 
     返回：
-        Tensor，其shape与 `abs` 一致。
+        Tensor，其shape与 `abs` 一致，dtype是complex64。
 
-        - 如果输入数据类型是float32，则输出类型为complex64。
 
     异常：
         - **TypeError** - `abs` 或 `angle` 不是Tensor。
