@@ -70,6 +70,10 @@ FrontendOpRunInfoPtr GetOpRunInfo(const py::args &args, const std::string &graph
   PyNativeAlgo::PyParser::ParseOpInputByPythonObj(op_run_info, new_args);
   // Set input abs
   const auto &original_params = jit_forward_graph->parameters();
+  if (op_run_info->input_size > original_params.size()) {
+    MS_LOG(EXCEPTION) << "The number of inputs: " << op_run_info->input_size
+                      << " should not greater than the number of parameters,which is : " << original_params.size();
+  }
   for (size_t i = 0; i < op_run_info->input_size; ++i) {
     op_run_info->op_grad_info->input_abs[i] = original_params[i]->abstract();
   }

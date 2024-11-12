@@ -30,6 +30,7 @@
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/pynative/pynative_execute.h"
+#include "pipeline/jit/ps/parse/resolve.h"
 
 namespace py = pybind11;
 namespace mindspore {
@@ -108,6 +109,28 @@ DebugInfoPtr GenerateDebugInfos(const py::list &file_names, const py::list &line
   return debug_info;
 }
 }  // namespace
+
+void Capture(const py::args &args, const py::object &res) {
+  if (!IsTracing()) {
+    return;
+  }
+  CaptureRun(py::args(py::tuple(args[1])), res, args[0]);
+}
+
+void Capture(const py::list &args, const py::object &res, const std::string &class_name) {
+  if (!IsTracing()) {
+    return;
+  }
+  const py::object &prim_py = python_adapter::CallPyFn("mindspore.ops", class_name);
+  CaptureRun(py::args(py::tuple(args)), res, prim_py);
+}
+
+void CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py) {
+  auto jit_context = python_adapter::CallPyFn("mindspore.common.jit_context", "jit_context");
+  python_adapter::CallPyObjMethod(jit_context, "run_op", prim_py, res, args);
+}
+
+bool IsTracing() { return trace::TraceRecorder::GetInstance()->BuildingTraceGraph(); }
 
 void TraceRecorder::Clear() {
   // Clear the AnfNode in python object.
@@ -196,12 +219,18 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
   }
   int mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto executor = pynative::PyNativeExecutor::GetInstance();
-  if (mode == kPynativeMode && executor->grad_flag()) {
+  if (mode == kPynativeMode && executor->RequiresGrad()) {
     executor->grad_executor()->jit()->set_graph_phase(py::cast<std::string>(phase));
-    executor->GradJit(res, args);
-    // Update forward graph with fprop graph.
     FuncGraphPtr jit_fg = graph_executor->GetFuncGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(jit_fg);
+    if (args.size() > jit_fg->parameters().size()) {
+      MS_LOG(EXCEPTION) << "The number of inputs: " << args.size()
+                        << " should not greater than the number of parameters,which is : "
+                        << jit_fg->parameters().size()
+                        << ". Please make sure all of the inputs were used in trace block.";
+    }
+    executor->GradJit(res, args);
+    // Update forward graph with fprop graph.
     FuncGraphPtr grad_jit_fg = graph_executor->GetJitGradGraph(py::cast<std::string>(phase));
     MS_EXCEPTION_IF_NULL(grad_jit_fg);
 #ifdef ENABLE_DUMP_IR
@@ -225,6 +254,26 @@ py::object TraceRecorder::RunGraph(const py::object &phase, const py::tuple &arg
   return res;
 }
 
+AnfNodePtr TraceRecorder::ConvertParameterObj(const py::object &input_obj) {
+  auto top_func_graph = graph_stack_.top();
+  // Parameter object should not be none
+  if (py::isinstance<py::none>(input_obj)) {
+    MS_LOG(EXCEPTION) << "Resolve class Parameter error because obj is null.";
+  }
+  if (!py::hasattr(input_obj, "name")) {
+    MS_LOG(EXCEPTION) << "Resolve class Parameter error: cannot find name attr for obj";
+  }
+  // Get the parameter name from parameter object
+  auto name_attr = python_adapter::GetPyObjAttr(input_obj, "name");
+  if (py::isinstance<py::none>(name_attr)) {
+    MS_LOG(EXCEPTION) << "Parameter object should have name attribute";
+  }
+  const auto &param_name = py::cast<std::string>(name_attr);
+  auto value = parse::GetParameterValue(input_obj);
+  MS_LOG(DEBUG) << "Created a new weight parameter for " << top_func_graph->ToString() << ", param: " << param_name;
+  return top_func_graph->AddFvParameter(param_name, value);
+}
+
 void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_res, const py::list &file_names,
                             const py::list &linenos, const py::object &do_signature, const py::args &inputs) {
   MS_LOG(DEBUG) << "NewNode, prim_obj: " << py::str(prim_obj) << ", prim_res: [" << py::str(prim_res.get_type()) << "] "
@@ -234,13 +283,21 @@ void TraceRecorder::NewNode(const py::object &prim_obj, const py::object &prim_r
   AnfNodePtrList node_inputs;
   AbstractBasePtrList abs_inputs;
   for (size_t i = 0; i < inputs.size(); ++i) {
-    const auto &node = GetNode(inputs[i], debug_info);
-    MS_EXCEPTION_IF_NULL(node);
+    AnfNodePtr node;
+    auto input_obj = inputs[i];
+    bool is_parameter = py::hasattr(input_obj, "__parameter__") && py::isinstance<tensor::MetaTensor>(input_obj);
+    // When the input of a cnode is a weight, add it to the top graph.
+    if (is_parameter) {
+      node = ConvertParameterObj(input_obj);
+    } else {
+      node = GetNode(inputs[i], debug_info);
+      MS_EXCEPTION_IF_NULL(node);
+    }
     (void)node_inputs.emplace_back(node);
     if (node->abstract() != nullptr) {
       (void)abs_inputs.emplace_back(node->abstract());
     } else {
-      (void)abs_inputs.emplace_back(GetAbstract(inputs[i]));
+      (void)abs_inputs.emplace_back(GetAbstract(input_obj));
     }
     MS_LOG(DEBUG) << "Add input, " << node->DebugString();
   }

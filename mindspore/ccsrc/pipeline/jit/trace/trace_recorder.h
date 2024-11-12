@@ -31,6 +31,10 @@
 
 namespace mindspore {
 namespace trace {
+void Capture(const py::args &args, const py::object &res);
+void Capture(const py::list &args, const py::object &res, const std::string &class_name);
+void CaptureRun(const py::args &args, const py::object &res, const py::object &prim_py);
+bool IsTracing();
 class TraceRecorder {
  public:
   TraceRecorder() = default;
@@ -53,12 +57,14 @@ class TraceRecorder {
   py::object RunGraph(const py::object &phase, const py::tuple &args);
 
   void SyncTensorNode(const py::object &old_tensor_obj, const py::object &new_tensor_obj);
+  bool BuildingTraceGraph() { return !graph_stack_.empty(); }
 
  private:
   AnfNodePtr GetNode(const py::object &obj, const DebugInfoPtr &debug_info, bool set_abstract = false);
   AnfNodePtr GetTensorNode(const py::object &tensor_obj, const DebugInfoPtr &debug_info, bool set_abstract);
   AnfNodePtr GetTupleNode(const py::tuple &tuple_obj, const DebugInfoPtr &debug_info, bool set_abstract);
   AnfNodePtr GetListNode(const py::list &list_obj, const DebugInfoPtr &debug_info, bool set_abstract);
+  AnfNodePtr ConvertParameterObj(const py::object &input_obj);
 
   void SetNode(const py::object &obj, const AnfNodePtr &node, const DebugInfoPtr &debug_info,
                bool set_abstract = false);
