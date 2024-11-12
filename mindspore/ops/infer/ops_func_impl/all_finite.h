@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_ALL_FINITE_H_
-#define MINDSPORE_CORE_OPS_ALL_FINITE_H_
-#include <memory>
-#include <vector>
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ALL_FINITE_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ALL_FINITE_H_
 
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
-#include "mindspore/ops/op_def/nn_op_name.h"
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API AllFinite : public BaseOperator {
+class OPS_API AllFiniteFuncImpl : public OpFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(AllFinite);
-
-  AllFinite() : BaseOperator(kAllFiniteOpName) { InitIOName({"gradients"}, {"is_finite"}); }
+  BaseShapePtr InferShape(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override;
+  TypePtr InferType(const PrimitivePtr &, const std::vector<AbstractBasePtr> &) const override;
 };
-
-OPS_API abstract::AbstractBasePtr AllFiniteInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                                 const std::vector<abstract::AbstractBasePtr> &input_args);
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_ALL_FINITE_H_
+
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ALL_FINITE_H_

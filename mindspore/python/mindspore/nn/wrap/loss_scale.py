@@ -377,7 +377,7 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         self.loss_scaling_manager = None
         self._ascend_check_overflow_mode = os.environ.get('MS_ASCEND_CHECK_OVERFLOW_MODE')
 
-        self.enable_allfinite = False
+        self.enable_allfinite = True
         runtime_conf = os.environ.get('MS_DEV_RUNTIME_CONF')
         global_jit_config = context.get_jit_config()
         if runtime_conf is not None and ("all_finite:True" in runtime_conf or "all_finite:true" in runtime_conf):
