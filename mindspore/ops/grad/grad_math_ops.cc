@@ -3676,6 +3676,23 @@ REG_BPROP_BUILDER("Addmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   return {input_grad, mat1_grad, mat2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
 
+REG_BPROP_BUILDER("InplaceIndexAddExt").SetUnusedInputs({i0, i5}).SetBody(BODYFUNC(ib) {
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto source = ib->GetInput(kIndex3);
+  auto alpha = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+  NodePtr dsource;
+  if (ib->GetShape(source).size() > 0) {
+    dsource = ib->Emit("ExpandAs", {ib->Emit("IndexSelect", {dout, dim, index}), source});
+  } else {
+    ShapeVector axis{0};
+    dsource = ib->Emit("IndexSelect", {dout, dim, ib->Squeeze(index, MakeValue(axis))});
+  }
+  dsource = MaybeMultiply(ib, ib->GetDtype(source), dsource, alpha, "alpha");
+  return {dout, ib->OutZeros(dim), ib->OutZeros(index), dsource, ib->OutZeros(alpha)};
+});
+
 REG_BPROP_BUILDER("InplaceAddmm").SetUnusedInputs({i0, i3, i5}).SetBody(BODYFUNC(ib) {
   auto mat1 = ib->GetInput(kIndex1);
   auto mat2 = ib->GetInput(kIndex2);

@@ -3898,6 +3898,69 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         source = tensor_operator_registry.get('__mul__')(source, alpha)
         return tensor_operator_registry.get('index_add')(self, indices=index, y=source, axis=dim)
 
+    def index_add_(self, dim, index, source, *, alpha=1):
+        r"""
+        Accumulate the elements of `alpha` times `source` into the `self` by adding to the indices
+        in the order given in `index`. For example, if `dim == 0`, `index[i] == j`, and `alpha = -1`,
+        then the `i` th row of `source` is subtracted from the `j` th row of `self` .
+        The `dim` th dimension of `source` must have the same size as the length of `index` ,
+        and all other dimensions must match `self`, or an error will be raised.
+        For a 3-D tensor the output is defined as follows:
+
+        .. math::
+            \begin{array}{ll}
+            self[index[i],\ :,\ :]\ +=\ alpha * src[i,\ :,\ :]  \qquad \#if\ dim == 0 \\
+            self[:,\ \ index[i],\ :]\ +=\ alpha * src[:,\ \ i,\ :]  \qquad \#if\ dim == 1 \\
+            self[:,\ :,\ \ index[i]]\ +=\ alpha * src[:,\ :,\ \ i]  \qquad\#if\ dim == 2 \\
+            \end{array}
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            dim (int): The dimension along which to index.
+            index (Tensor): Add the value of `self` and `source` along the dimension of the `dim` according to
+                the specified index value, with data type int32. The `indices` must be 1D with the same size as
+                the size of `source` in the `dim` dimension. The values of `indices` should be in [0, b),
+                where the b is the size of `self` in the `dim` dimension.
+            source (Tensor): The input tensor with the value to add. Must have same data type as `self`.
+                The shape must be the same as `self` except the `dim` th dimension.
+            alpha (number, optional): The scalar multiplier for source. Default: ``1``.
+
+        Returns:
+            Tensor, has the same shape and dtype as `self`.
+
+        Raises:
+            TypeError: If neither `indices` nor `source` is a Tensor.
+            ValueError: If dim is out of `self` rank's range.
+            ValueError: If `self` rank is not the same as `source` rank.
+            ValueError: If shape of `indices` is not 1D or size of `indices` is not equal to dimension
+                of `source[dim]`.
+            ValueError: If `source`'s shape is not the same as `self` except the `dim` th dimension.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> from mindspore import ops
+            >>> x = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), mindspore.float32)
+            >>> indices = Tensor(np.array([0, 2]), mindspore.int32)
+            >>> y = Tensor(np.array([[0.5, 1.0], [1.0, 1.5], [2.0, 2.5]]), mindspore.float32)
+            >>> output = x.index_add_(1, indices, y, 1)
+            >>> print(output)
+            [[ 1.5  2.   4. ]
+             [ 5.   5.   7.5]
+             [ 9.   8.  11.5]]
+            >>> print(x)
+            [[ 1.5  2.   4. ]
+             [ 5.   5.   7.5]
+             [ 9.   8.  11.5]]
+        """
+        return tensor_operator_registry.get('index_add_')(self, dim, index, source, alpha)
+
     def igamma(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.igamma`.

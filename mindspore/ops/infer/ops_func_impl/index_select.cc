@@ -33,6 +33,9 @@ BaseShapePtr IndexSelectFuncImpl::InferShape(const PrimitivePtr &primitive,
   if (MS_UNLIKELY(!axis_opt.has_value())) {
     return std::make_shared<abstract::TensorShape>(ShapeVector(input_rank, abstract::TensorShape::kShapeDimAny));
   }
+  if (input_rank == 0 && axis_opt.value() == 0) {
+    return std::make_shared<abstract::TensorShape>(ShapeVector{});
+  }
   if (MS_UNLIKELY(axis_opt.value() >= input_rank || axis_opt.value() < -input_rank)) {
     MS_EXCEPTION(ValueError) << "For 'IndexSelect', the axis must be in '[" << -input_rank << ", " << input_rank
                              << ")', but got " << axis_opt.value() << ".";
