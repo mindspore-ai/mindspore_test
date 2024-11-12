@@ -1400,7 +1400,7 @@ REG_BPROP_BUILDER("Reshape").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(shp)};
 });
 
-REG_BPROP_BUILDER("ViewAs").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ViewAs").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
