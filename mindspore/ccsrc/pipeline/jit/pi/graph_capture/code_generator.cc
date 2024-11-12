@@ -827,7 +827,7 @@ void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
         cg->MarkAlive(iter->second);
         continue;
       }
-      if (cg->GetLocalsMap().find(iter->second) != cg->GetLocalsMap().end()) {
+      if (cg->GetLocalsMap().find(node) != cg->GetLocalsMap().end()) {
         continue;
       }
       bool not_a_local = cg->GetLocalsMap().find(iter->second) == cg->GetLocalsMap().end();
