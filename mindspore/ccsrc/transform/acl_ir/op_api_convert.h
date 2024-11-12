@@ -373,7 +373,7 @@ inline aclTensor *ConvertType(std::pair<mindspore::kernel::KernelTensor *, bool>
     acl_tensor = aclCreateTensor(shape.data(), shape_size, acl_data_type, strides.data(), 0, format, shape.data(),
                                  shape.size(), tensor->device_ptr());
   } else {
-    auto &strides = storage_info->strides;
+    auto strides = storage_info->strides;
     const auto &storage_shape = storage_info->ori_shape;
     // Check if shape need transpose.
     if (trans) {
