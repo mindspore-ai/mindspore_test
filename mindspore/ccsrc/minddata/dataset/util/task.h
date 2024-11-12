@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,10 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+
 #include "minddata/dataset/util/intrp_resource.h"
 #include "minddata/dataset/util/list.h"
 #include "minddata/dataset/util/log_adapter.h"
-#include "minddata/dataset/util/memory_pool.h"
-#include "minddata/dataset/util/services.h"
 #include "minddata/dataset/util/wait_post.h"
 
 namespace mindspore {

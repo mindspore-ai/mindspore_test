@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_WAIT_POST_H_
 
 #include <mutex>
+
 #include "minddata/dataset/util/cond_var.h"
-#include "minddata/dataset/util/status.h"
 
 namespace mindspore {
 namespace dataset {

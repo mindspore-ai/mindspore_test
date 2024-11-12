@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,8 @@
 #include <vector>
 
 #include "minddata/dataset/engine/cache/storage_container.h"
-#include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/auto_index.h"
 #include "minddata/dataset/util/lock.h"
-#include "minddata/dataset/util/memory_pool.h"
 #include "minddata/dataset/util/path.h"
 #include "minddata/dataset/util/service.h"
 #include "minddata/dataset/util/slice.h"

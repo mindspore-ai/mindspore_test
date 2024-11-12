@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "minddata/dataset/util/memory_pool.h"
+
 #include "minddata/dataset/util/allocator.h"
 #include "minddata/dataset/util/service.h"
 
