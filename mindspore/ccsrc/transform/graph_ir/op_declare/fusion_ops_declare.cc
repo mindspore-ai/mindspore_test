@@ -201,6 +201,13 @@ ATTR_MAP(MoeFinalizeRouting) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(MoeFinalizeRouting) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(MoeFinalizeRouting, kNameMoeFinalizeRouting, ADPT_DESC(MoeFinalizeRouting))
 
+// MoeComputeExpertTokens
+INPUT_MAP(MoeComputeExpertTokens) = {{1, INPUT_DESC(sorted_experts)}};
+INPUT_ATTR_MAP(MoeComputeExpertTokens) = {{2, ATTR_DESC(num_experts, AnyTraits<int64_t>())}};
+ATTR_MAP(MoeComputeExpertTokens) = EMPTY_ATTR_MAP;
+OUTPUT_MAP(MoeComputeExpertTokens) = {{0, OUTPUT_DESC(total_rows_before_expert)}};
+REG_ADPT_DESC(MoeComputeExpertTokens, kNameMoeComputeExpertTokens, ADPT_DESC(MoeComputeExpertTokens))
+
 // GeGluV2
 INPUT_MAP(GeGluV2) = {{1, INPUT_DESC(x)}};
 ATTR_MAP(GeGluV2) = {{"dim", ATTR_DESC(dim, AnyTraits<int64_t>())},
