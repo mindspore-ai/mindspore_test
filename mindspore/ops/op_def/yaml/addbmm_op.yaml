@@ -1,18 +1,20 @@
-#operator addmm
-addmm:
+#operator addbmm
+addbmm:
   args:
     input:
       dtype: tensor
-    mat1:
+    batch1:
       dtype: tensor
-    mat2:
+    batch2:
       dtype: tensor
     beta:
       dtype: number
       default: 1
+      type_cast: tensor
     alpha:
       dtype: number
       default: 1
+      type_cast: tensor
   returns:
     output:
       dtype: tensor
@@ -20,4 +22,4 @@ addmm:
     disable: True
   dispatch:
     enable: True
-    Ascend: AddmmAscend
+    Ascend: AddbmmAscend
