@@ -246,7 +246,7 @@ from mindspore.ops.auto_generate import square
 # 102 std
 
 # 103 sub
-
+from mindspore.ops.auto_generate import sub
 # 104 sum
 from mindspore.ops.function.math_func import sum
 # 105 swapaxes
@@ -883,6 +883,13 @@ def tensor_square(input):
 # 102 std
 
 # 103 sub
+def deprecated_tensor_sub(input, y):
+    if isinstance(input, (tuple, list)):
+        input = sequence_to_tensor(input, F.dtype(y))
+    if isinstance(y, (tuple, list)):
+        y = sequence_to_tensor(y, F.dtype(input))
+    return sub(input, y)
+
 
 # 104 sum
 def deprecated_tensor_sum(input, axis=None, dtype=None, keepdims=False, initial=None):

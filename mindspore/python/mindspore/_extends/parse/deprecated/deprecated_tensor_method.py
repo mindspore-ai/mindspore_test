@@ -224,7 +224,7 @@ deprecated_tensor_method_map = {
     # 102 std
 
     # 103 sub
-
+    "sub": "deprecated_tensor_sub",
     # 104 sum
     "sum": "deprecated_tensor_sum",
     # 105 swapaxes

@@ -31,7 +31,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (item_mint, sub_mint)
+from mindspore.common._tensor_overload import (item_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -405,15 +405,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def __iadd__(self, other):
         return self.__add__(other)
 
-    @sub_mint
-    def __sub__(self, other):
-        return tensor_operator_registry.get('__sub__')(self, other)
-
     def __rsub__(self, other):
         return tensor_operator_registry.get('__sub__')(other, self)
-
-    def __isub__(self, other):
-        return self.__sub__(other)
 
     def __mul__(self, other):
         return tensor_operator_registry.get('__mul__')(self, other)
@@ -1561,13 +1554,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.real`.
         """
         return tensor_operator_registry.get('real')(self)
-
-    @sub_mint
-    def sub(self, y):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sub`.
-        """
-        return tensor_operator_registry.get('sub')(self, y)
 
     def tan(self):
         """
