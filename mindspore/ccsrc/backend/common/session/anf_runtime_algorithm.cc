@@ -2478,6 +2478,10 @@ bool AnfRuntimeAlgorithm::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node,
     }
     return false;
   }
+  // The input of ge graph must have addr.
+  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
+    return false;
+  }
 
   // The new ignore input cannot be dumped, so it is not ignored when dump.
   static bool is_enable_dump = !common::GetEnv(kMindsporeDumpConfig).empty();
