@@ -1,24 +1,23 @@
 masked_fill:
   description: |
-    masked_fill(self, mask, value) -> Tensor
+    masked_fill(mask, value) -> Tensor
     
     Fills elements of Tensor with value where mask is True.
-    The shapes of `input_x` and `mask` need to be the same or broadcastable.
+    The shapes of this tensor and `mask` need to be the same or broadcastable.
 
     Args:
-      self (Tensor): The source Tensor whose data type is one of bool, int8, int32, int64, float16, float32.
       mask (Tensor[bool]): The boolean mask.
-      value (Union[Number, Tensor]): The value to fill in with, which dtype is the same as `self`.
+      value (Union[Number, Tensor]): The value to fill in with, which dtype is the same as this tensor.
 
     Returns:
-      Tensor, has the same type and shape as `self`.
+      Tensor, has the same type and shape as this tensor.
 
     Raises:
       TypeError: If dtype of `mask` is not bool.
-      TypeError: If `self` or `mask` is not a Tensor.
-      ValueError: If the shapes of `self` and `mask` could not be broadcast.
-      TypeError: If dtype of `self` or `value` is not one of bool, int8, int32, int64, float16, float32.
-      TypeError: If dtype of `value` is different from that of `self`.
+      TypeError: If `mask` is not a Tensor.
+      ValueError: If the shapes of this tensor and `mask` could not be broadcast.
+      TypeError: If dtype of this tensor or `value` is not one of bool, int8, int32, int64, float16, float32, bfloat16.
+      TypeError: If dtype of `value` is different from that of this tensor.
       TypeError: If `value` is neither float number nor Tensor.
 
     Supported Platforms:
