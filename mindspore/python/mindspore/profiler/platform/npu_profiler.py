@@ -17,6 +17,7 @@ import os
 import re
 import glob
 import json
+from typing import List, Optional
 
 from mindspore import context
 from mindspore import log as logger
@@ -29,17 +30,20 @@ from mindspore._c_expression import _framework_profiler_enable_mi
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
-from mindspore.profiler.analysis.task_manager import TaskManager
 from mindspore.profiler.common.profiler_info import ProfilerInfo
-from mindspore.profiler.analysis.parser.ascend_cann_parser import AscendMsprofParser
-from mindspore.profiler.analysis.parser.ms_framework_parser import FrameworkParser
-from mindspore.profiler.analysis.viewer.ms_dataset_viewer import MsDatasetViewer
+from mindspore.profiler.analysis.task_manager import TaskManager
 from mindspore.profiler.analysis.time_converter import TimeConverter
+from mindspore.profiler.analysis.parser.ascend_cann_parser import AscendMsprofParser
+from mindspore.profiler.analysis.parser.base_parser import DummyParser
+from mindspore.profiler.analysis.parser.ms_framework_parser import FrameworkParser
+from mindspore.profiler.analysis.parser.ms_minddata_parser import MindDataParser
 from mindspore.profiler.analysis.parser.framework_cann_relation_parser import FrameworkCannRelationParser
+from mindspore.profiler.analysis.viewer.ms_dataset_viewer import MsDatasetViewer
 from mindspore.profiler.analysis.viewer.ascend_timeline_viewer import AscendTimelineViewer
 from mindspore.profiler.analysis.viewer.ascend_kernel_details_viewer import AscendKernelDetailsViewer
 from mindspore.profiler.analysis.viewer.ascend_step_trace_time_viewer import AscendStepTraceTimeViewer
-from mindspore.profiler.analysis.parser.ms_minddata_parser import MindDataParser
+from mindspore.profiler.analysis.viewer.ascend_integrate_viewer import AscendIntegrateViewer
+from mindspore.profiler.analysis.viewer.ascend_memory_viewer import AscendMemoryViewer
 from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
     MindDataPipelineRawViewer,
     MindDataPiplineSummaryViewer,
@@ -57,7 +61,7 @@ class NpuProfiler(BaseProfiler):
         self._prof_ctx = ProfilerContext()
         self._prof_info = ProfilerInfo()
         self._prof_path_mgr = ProfilerPathManager()
-
+        self._prof_path_mgr.set_ascend_ms_dir()
         self._profiler = None
         if ProfilerActivity.NPU in self._prof_ctx.activities:
             self._profiler = c_expression.Profiler.get_instance(
@@ -122,7 +126,8 @@ class NpuProfiler(BaseProfiler):
         logger.info("NpuProfiler analyse.")
 
         NPUProfilerAnalysis.online_analyse()
-        ProfilerPathManager.reset()
+        if self._prof_ctx.data_simplification:
+            self._prof_path_mgr.simplify_data()
 
     def finalize(self) -> None:
         """Finalize profiling data."""
@@ -141,6 +146,13 @@ class NPUProfilerAnalysis:
         Online analysis for NPU
         """
         cls._pre_analyse_online()
+        cls._run_tasks(**ProfilerContext().to_dict())
+
+    @classmethod
+    def offline_analyse(cls, path: str, pretty: bool,
+                        step_list: Optional[List[int]], data_simplification: bool) -> None:
+        """Analyze profiling data in offline mode."""
+        cls._pre_analyse_offline(path, pretty, step_list, data_simplification)
         cls._run_tasks(**ProfilerContext().to_dict())
 
     @classmethod
@@ -164,6 +176,44 @@ class NPUProfilerAnalysis:
         TimeConverter.init_parameters(**ProfilerInfo().time_parameters)
 
     @classmethod
+    def _pre_analyse_offline(cls, ascend_ms_dir: str, pretty: bool, step_list: Optional[List[int]],
+                             data_simplification: bool) -> None:
+        """Pre-process profiling data for offline analysis."""
+        prof_dir = glob.glob(os.path.join(ascend_ms_dir, "PROF_*"))
+        if not prof_dir:
+            logger.error(f"No PROF_* directory found in {ascend_ms_dir}")
+            return
+
+        # get device_id and rank_id from ascend_ms_dir
+        device_id = cls.get_device_id(prof_dir[0])
+        rank_id = cls.get_rank_id(ascend_ms_dir)
+
+        prof_ctx = ProfilerContext()
+        prof_ctx.set_params()
+        prof_path_mgr = ProfilerPathManager()
+
+        prof_info = ProfilerInfo()
+
+        # set PROF_XXX path
+        prof_ctx.ascend_ms_dir = ascend_ms_dir
+        prof_ctx.msprof_profile_path = prof_dir[0]
+        prof_info.load_time_parameters(
+            prof_ctx.msprof_profile_path,
+            prof_ctx.msprof_profile_host_path
+        )
+        prof_ctx.rank_id = rank_id
+        prof_ctx.device_id = device_id
+        prof_ctx.pretty = pretty
+        prof_ctx.step_list = step_list
+        prof_ctx.data_simplification = data_simplification
+        prof_path_mgr.clean_analysis_cache()
+        prof_path_mgr.create_output_path()
+
+        prof_info.load_info(ascend_ms_dir, prof_ctx.rank_id)
+        prof_ctx.load_offline_profiler_params(prof_info.profiler_parameters)
+        TimeConverter.init_parameters(**prof_info.time_parameters)
+
+    @classmethod
     def _run_tasks(cls, **kwargs) -> None:
         """
         Run tasks for online analysis
@@ -177,7 +227,8 @@ class NPUProfilerAnalysis:
             FrameworkCannRelationParser()
             .register_post_hook(AscendTimelineViewer(**kwargs).save)
             .register_post_hook(AscendKernelDetailsViewer(**kwargs).save)
-            .register_post_hook(AscendStepTraceTimeViewer(**kwargs).save),
+            .register_post_hook(AscendStepTraceTimeViewer(**kwargs).save)
+            .register_post_hook(AscendIntegrateViewer(**kwargs).save),
             flow_name="cann_flow",
             show_process=True,
         )
@@ -192,7 +243,15 @@ class NPUProfilerAnalysis:
                 show_process=False,
             )
 
+        enable_profile_memory = kwargs.get("profile_memory", False)
+        if enable_profile_memory:
+            task_mgr.create_flow(
+                DummyParser().register_post_hook(AscendMemoryViewer(**kwargs).save),
+                flow_name="memory_flow",
+                show_process=False,
+            )
         task_mgr.run()
+        logger.info(json.dumps(task_mgr.cost_time, indent=4))
 
     @staticmethod
     def get_rank_id(ascend_ms_dir: str) -> str:

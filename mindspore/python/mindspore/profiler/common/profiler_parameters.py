@@ -13,8 +13,8 @@
 # limitations under the License.
 # ===========================================================================
 """ProfilerParameters"""
-from typing import Dict, Optional, Callable, Any
 import warnings
+from typing import Dict, Optional, Callable, Any
 
 from mindspore import log as logger
 from mindspore.profiler.common.constant import (
@@ -56,12 +56,15 @@ class ProfilerParameters:
     DISABLE_STATUS = "off"
 
     def __init__(self, **kwargs):
+        self.is_set_schedule: bool = False
+        self._set_schedule(**kwargs)
+        self._check_deprecated_params(**kwargs)
         # Initialize parameters with kwargs
         for param, (_, default_value) in self.PARAMS.items():
             setattr(self, param, kwargs.get(param, default_value))
 
         self._check_params_type()
-        self._check_deprecated_params()
+        self._handle_compatibility()
 
     @property
     def original_params(self) -> Dict[str, str]:
@@ -69,6 +72,7 @@ class ProfilerParameters:
         Get params dict for profiler_info.json save.
         """
         params = {}
+        params["is_set_schedule"] = self.is_set_schedule
         for param, (_, _) in self.PARAMS.items():
             if param == "profiler_level":
                 params[param] = getattr(self, param).value
@@ -116,7 +120,7 @@ class ProfilerParameters:
             ),
             "with_stack": self._convert_bool_to_status(
                 self.with_stack and ProfilerActivity.CPU in self.activities
-            ),
+            )
         }
 
     def _check_params_type(self) -> None:
@@ -133,7 +137,6 @@ class ProfilerParameters:
                     if not callable(value):
                         setattr(self, key, default_value)
                     continue
-
                 # 检查可迭代类型
                 elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
                     if not (isinstance(value, expected_type) and
@@ -150,11 +153,11 @@ class ProfilerParameters:
                     )
                     setattr(self, key, default_value)
 
-    def _check_deprecated_params(self) -> None:
+    def _check_deprecated_params(self, **kwargs) -> None:
         """
         Check deprecated parameters.
         """
-        for key, _ in self.__dict__.items():
+        for key, _ in kwargs.items():
             if key == "profile_communication":
                 warnings.warn(
                     "The parameter 'profile_communication' is deprecated,"
@@ -176,6 +179,18 @@ class ProfilerParameters:
                     "The parameter 'host_stack' is deprecated,"
                     " please use 'with_stack' instead."
                 )
+
+    def _set_schedule(self, **kwargs):
+        if "schedule" in kwargs and isinstance(kwargs["schedule"], Schedule):
+            self.is_set_schedule = True
+
+    def _handle_compatibility(self) -> None:
+        """
+        Handle compatibility.
+        """
+        if hasattr(self, "schedule") and self.is_set_schedule and self.__dict__.get('data_process', False):
+            self.data_process = False
+            warnings.warn("When 'schedule' is set, 'data_process' will be set to False.")
 
     def __getattr__(self, name):
         """

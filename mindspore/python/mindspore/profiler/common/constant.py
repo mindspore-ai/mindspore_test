@@ -149,7 +149,8 @@ class FileConstant:
 
     # tlv constant struct
     FIX_SIZE_DATA = "fix_size_data"
-
+    CANN_FILE_REGEX = r"^PROF_\d+_\d+_[0-9a-zA-Z]+"
+    FRAMEWORK_DIR = "FRAMEWORK"
 
 class ProfilerStepNameConstant:
     """Profiler step name."""

@@ -18,6 +18,7 @@ import re
 import shutil
 
 from mindspore import log as logger
+from mindspore.profiler.common.constant import FileConstant
 from mindspore.profiler.common.exceptions.exceptions import ProfilerPathErrorException
 
 
@@ -185,7 +186,6 @@ class PathManager:
             when invalid data throw exception
         """
         if os.path.exists(path):
-            logger.warning("Directory already exists: %s", path)
             return
 
         if os.path.islink(path):
@@ -245,3 +245,61 @@ class PathManager:
             if len(name) > cls.MAX_FILE_NAME_LENGTH:
                 msg = f"Length of input path {path} file name {name} exceeds the limit {cls.MAX_FILE_NAME_LENGTH}."
                 raise ProfilerPathErrorException(msg)
+
+    @classmethod
+    def get_ascend_ms_path_list(cls, input_path: str):
+        """
+        Function Description:
+            get valid profiler {}_ascend_ms_dir path list from input_path
+        Parameter:
+            input_path: The directory path from which to extract profiler parent paths.
+        Return:
+            A list containing the input path or its subdirectories that are valid profiler parents.
+        """
+        if os.path.isdir(input_path) and (cls.get_fwk_path(input_path) or cls.get_cann_path(input_path)):
+            return [input_path]
+        sub_dirs = os.listdir(os.path.realpath(input_path))
+        profiler_ascend_ms_path_list = []
+        for sub_dir in sub_dirs:
+            sub_path = os.path.join(input_path, sub_dir)
+            if not os.path.isdir(sub_path):
+                continue
+            if cls.get_fwk_path(sub_path) or cls.get_cann_path(sub_path):
+                profiler_ascend_ms_path_list.append(os.path.join(input_path, sub_dir))
+        return profiler_ascend_ms_path_list
+
+    @classmethod
+    def get_fwk_path(cls, input_path: str):
+        """
+        Function Description:
+            get valid framework path from input_path
+        Parameter:
+            input_path: the directory path to check whether exist valid FRAMEWORK path
+        Return:
+            The path to the FRAMEWORK directory if found, otherwise an empty string.
+        """
+        fwk_path = os.path.join(input_path, FileConstant.FRAMEWORK_DIR)
+        if os.path.isdir(fwk_path):
+            return fwk_path
+        return ""
+
+    @classmethod
+    def get_cann_path(cls, input_path: str):
+        """
+        Function Description:
+            get valid PROF_XXX path from input_path
+        Parameter:
+            input_path: the directory path to check valid PROF_XXX path
+        Return:
+            The path to the PROF_XXX directory if it matches the pattern and exists, otherwise an empty string.
+        """
+        sub_dirs = os.listdir(os.path.realpath(input_path))
+        for sub_dir in sub_dirs:
+            sub_path = os.path.join(input_path, sub_dir)
+            if os.path.isdir(sub_path) and re.match(FileConstant.CANN_FILE_REGEX, sub_dir):
+                return sub_path
+        return ""
+
+    @classmethod
+    def get_abs_path(cls, path: str):
+        return os.path.abspath(path)

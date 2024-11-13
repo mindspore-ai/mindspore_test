@@ -170,7 +170,8 @@ class MsprofCmdTool:
         msprof_path = shutil.which(self._MSPROF_CMD)
         if not msprof_path:
             return ""
-        pre_path = msprof_path.split("bin")[0]
+        msprof_path = os.path.realpath(msprof_path.strip())
+        pre_path = msprof_path.split("tools")[0]
         full_script_path = os.path.join(pre_path, script_path)
         return full_script_path if os.path.exists(full_script_path) else ""
 
