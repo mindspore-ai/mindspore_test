@@ -310,6 +310,10 @@ bool AscendKernelRuntime::Init() {
   }
   bool init_device = false;
   try {
+    MS_LOG(INFO)
+      << "Start inititializing kernel runtime(SetDevice & CreateDefaultStream & MemoryManagerInitialization etc).";
+    MS_VLOG(VL_FLOW)
+      << "Start inititializing kernel runtime(SetDevice & CreateDefaultStream & MemoryManagerInitialization etc).";
     // Start up profiling before aclrtSetDevice
     bool ret = InitDevice();
     if (!ret) {
@@ -359,6 +363,8 @@ bool AscendKernelRuntime::Init() {
         MS_LOG(EXCEPTION) << "Set op execute timeout failed, error: " << acl_ret;
       }
     }
+    MS_VLOG(VL_FLOW) << "End inititializing kernel runtime.";
+    MS_LOG(INFO) << "End inititializing kernel runtime.";
   } catch (const std::exception &e) {
     if (init_device) {
       ResetDevice(device_id_);
