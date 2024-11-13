@@ -31,6 +31,7 @@ constexpr auto kNameInputNum = 1;
 }  // namespace
 
 STATUS SiLUMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   if (cnode->size() != kNameInputNum) {
     MS_LOG(WARNING) << "Input of resize must be " << kNameInputNum << ", real silu: " << cnode->size() << ", cnode "
                     << cnode->fullname_with_scope();

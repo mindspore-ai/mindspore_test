@@ -29,6 +29,7 @@ constexpr int64_t kInputMinNum = 2;
 }  // namespace
 
 STATUS ConcatV2Mapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   ValueNodePtr value_node = nullptr;
   PrimitivePtr src_prim = nullptr;
   if (GetValueNodeAndPrimFromCnode(cnode, &value_node, &src_prim) != lite::RET_OK) {

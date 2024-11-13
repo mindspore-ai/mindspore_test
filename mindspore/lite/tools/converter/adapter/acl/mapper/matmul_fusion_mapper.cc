@@ -268,6 +268,7 @@ void MatMulFusionMapper::SetMatMulTransposeAttr(const PrimitivePtr &src_prim, co
 
 STATUS MatMulFusionMapper::Mapper(const CNodePtr &cnode) {
   auto quant_holder = GetCNodeQuantHolder(cnode);
+  MS_CHECK_TRUE_MSG(quant_holder != nullptr, RET_NULL_PTR, "quant holder is nullptr.");
   auto cnode_primitive = GetValueNode<PrimitivePtr>(cnode->input(0));
   MS_CHECK_TRUE_MSG(cnode_primitive != nullptr, RET_NULL_PTR, "Primitive is nullptr.");
   if (quant_holder->quant_type() != quant::QUANT_NONE) {

@@ -24,6 +24,7 @@
 namespace mindspore {
 namespace lite {
 STATUS PReluFusionMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   ops::PReLU prelu_op;
   auto dst_prim = prelu_op.GetPrim();
   if (MoveAttrMap(cnode, dst_prim) != RET_OK) {

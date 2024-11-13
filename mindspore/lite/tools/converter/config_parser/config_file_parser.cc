@@ -354,6 +354,7 @@ bool ConfigFileParser::CheckPluginCustomOps(const std::vector<std::string> &plug
 
 STATUS ConfigFileParser::ParseCustomPattern(const std::shared_ptr<mindspore::ConverterPara> &param,
                                             std::string custom_pattern_str) {
+  CHECK_NULL_RETURN(param);
   std::vector<std::string> custom_pattern_strs = mindspore::lite::SplitStringToVector(custom_pattern_str, ";");
   for (auto custom_pattern : custom_pattern_strs) {
     std::vector<std::string> item = mindspore::lite::SplitStringToVector(custom_pattern, ":");

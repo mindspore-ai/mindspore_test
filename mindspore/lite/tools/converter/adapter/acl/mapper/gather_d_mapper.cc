@@ -26,6 +26,7 @@ namespace mindspore {
 namespace lite {
 namespace {
 STATUS GetParameterDim(const AnfNodePtr &cnode, int64_t *result_dim) {
+  CHECK_NULL_RETURN(cnode);
   if (result_dim == nullptr) {
     MS_LOG(WARNING) << "result dim is nullptr.";
     return RET_NULL_PTR;

@@ -94,6 +94,7 @@ STATUS AclOptionParamParser::ParseCommon(const AclOptionCfgString &acl_option_st
 
 STATUS AclOptionParamParser::ParseDeviceId(const std::string &device_id, acl::AclModelOptionCfg *acl_option_cfg) {
   MS_LOG(DEBUG) << "Acl option device id: " << device_id;
+  CHECK_NULL_RETURN(acl_option_cfg);
   acl_option_cfg->device_id = 0;  // default
   int32_t device_id_num;
   if (ConvertIntNum(device_id, &device_id_num)) {
@@ -104,6 +105,7 @@ STATUS AclOptionParamParser::ParseDeviceId(const std::string &device_id, acl::Ac
 
 STATUS AclOptionParamParser::ParseOutputType(const std::string &output_type, acl::AclModelOptionCfg *acl_option_cfg) {
   MS_LOG(DEBUG) << "Acl option output type: " << output_type;
+  CHECK_NULL_RETURN(acl_option_cfg);
   acl_option_cfg->output_type = DataType::kInvalidType;
   if (kSupportedDtypeOptionMap.find(output_type) != kSupportedDtypeOptionMap.end()) {
     acl_option_cfg->output_type = kSupportedDtypeOptionMap.at(output_type);
@@ -115,6 +117,7 @@ STATUS AclOptionParamParser::ParseOutputType(const std::string &output_type, acl
 STATUS AclOptionParamParser::ParseDynamicBatchSize(const std::string &dynamic_batch_size,
                                                    acl::AclModelOptionCfg *acl_option_cfg) {
   MS_LOG(DEBUG) << "Acl option dynamic batch size: " << dynamic_batch_size;
+  CHECK_NULL_RETURN(acl_option_cfg);
   std::vector<std::string> batch_size_string = SplitStringToVector(dynamic_batch_size, ',');
   for (const auto &item : batch_size_string) {
     int32_t val;
@@ -130,6 +133,7 @@ STATUS AclOptionParamParser::ParseDynamicBatchSize(const std::string &dynamic_ba
 STATUS AclOptionParamParser::ParseInputShapeVector(const std::string &input_shape_vector,
                                                    acl::AclModelOptionCfg *acl_option_cfg) {
   MS_LOG(DEBUG) << "Acl option input shape vector: " << input_shape_vector;
+  CHECK_NULL_RETURN(acl_option_cfg);
   std::vector<std::string> intput_shape_str = SplitStringToVector(input_shape_vector, ';');
   int32_t idx = 0;
   std::map<int32_t, std::vector<int32_t>> input_shape_map;

@@ -51,6 +51,7 @@ STATUS FillMapper::Mapper(const CNodePtr &cnode) {
 STATUS FillMapper::AdjustInputOrder(const CNodePtr &cnode) {
   // original input order: value, dims
   // new order: dims value
+  CHECK_NULL_RETURN(cnode);
   if (cnode->size() != kInputNum) {
     MS_LOG(ERROR) << "Input num must be " << kInputNum << ",real num " << cnode->size();
     return lite::RET_ERROR;

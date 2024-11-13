@@ -23,6 +23,7 @@
 namespace mindspore {
 namespace lite {
 STATUS MicroParamParser::ParseTarget(const std::string &target, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro HW target: " << target;
   if (!target.empty()) {
     micro_param->target = target;
@@ -30,6 +31,7 @@ STATUS MicroParamParser::ParseTarget(const std::string &target, micro::MicroPara
   return RET_OK;
 }
 STATUS MicroParamParser::ParseCodeGenMode(const std::string &codegen_mode, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro codegen mode: " << codegen_mode;
   if (!codegen_mode.empty()) {
     micro_param->codegen_mode = codegen_mode;
@@ -37,6 +39,7 @@ STATUS MicroParamParser::ParseCodeGenMode(const std::string &codegen_mode, micro
   return RET_OK;
 }
 STATUS MicroParamParser::ParseSupportParallel(const std::string &support_parallel, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro supports parallel: " << support_parallel;
   if (support_parallel.empty()) {
     return RET_OK;
@@ -49,6 +52,7 @@ STATUS MicroParamParser::ParseSupportParallel(const std::string &support_paralle
   return RET_OK;
 }
 STATUS MicroParamParser::ParseDebugMode(const std::string &debug_mode, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro enables debug mode: " << debug_mode;
   if (debug_mode.empty()) {
     return RET_OK;
@@ -62,6 +66,7 @@ STATUS MicroParamParser::ParseDebugMode(const std::string &debug_mode, micro::Mi
 }
 
 STATUS MicroParamParser::ParseEnableMicro(const std::string &enable_micro, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro enables : " << enable_micro;
   if (enable_micro.empty()) {
     return RET_OK;
@@ -75,6 +80,7 @@ STATUS MicroParamParser::ParseEnableMicro(const std::string &enable_micro, micro
 }
 
 STATUS MicroParamParser::ParseSavePath(const std::string &save_path, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro save path : " << save_path;
   if (!save_path.empty()) {
     micro_param->save_path = save_path;
@@ -83,6 +89,7 @@ STATUS MicroParamParser::ParseSavePath(const std::string &save_path, micro::Micr
 }
 
 STATUS MicroParamParser::ParseProjName(const std::string &project_name, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro project name : " << project_name;
   if (!project_name.empty()) {
     micro_param->project_name = project_name;
@@ -91,6 +98,7 @@ STATUS MicroParamParser::ParseProjName(const std::string &project_name, micro::M
 }
 
 STATUS MicroParamParser::ParseKeepOriginalWeight(const std::string &keep_weight, micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro enables : " << keep_weight;
   if (keep_weight.empty()) {
     return RET_OK;
@@ -108,6 +116,7 @@ STATUS MicroParamParser::ParseKeepOriginalWeight(const std::string &keep_weight,
 
 STATUS MicroParamParser::ParseChangeableWeightsName(const std::string &changeable_weights_name,
                                                     micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro record changeable weights name: " << changeable_weights_name;
   if (!changeable_weights_name.empty()) {
     micro_param->changeable_weights_name = changeable_weights_name;
@@ -118,6 +127,7 @@ STATUS MicroParamParser::ParseChangeableWeightsName(const std::string &changeabl
 STATUS MicroParamParser::ParseGraphInputsShapeTemplate(
   const std::string &graph_inputs_shape_template, const std::map<std::string, std::vector<int>> &dynamic_symbols_map,
   micro::MicroParam *micro_param) {
+  CHECK_NULL_RETURN(micro_param);
   MS_LOG(DEBUG) << "Micro record inputs shape: " << graph_inputs_shape_template;
   if (!graph_inputs_shape_template.empty()) {
     auto graph_inputs_shape_vec = SplitStringToVector(graph_inputs_shape_template, ';');

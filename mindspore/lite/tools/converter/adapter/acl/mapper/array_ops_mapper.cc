@@ -24,6 +24,7 @@
 namespace mindspore {
 namespace lite {
 STATUS DynamicShapeMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   ops::Shape shape_op;
   auto dst_prim = shape_op.GetPrim();
   if (MoveAttrMap(cnode, dst_prim) != RET_OK) {

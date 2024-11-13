@@ -33,6 +33,7 @@ const size_t kNumCnodeInputIndex1 = 1;  // var
 const size_t kNumCnodeInputIndex3 = 3;  // updates
 }  // namespace
 STATUS ScatterNdUpdateMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   if (cnode->size() != kNumInputSize) {
     MS_LOG(ERROR) << "cnode input size is " << cnode->size() << ", not equal kNumInputSize.";
     return RET_ERROR;

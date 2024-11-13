@@ -76,7 +76,7 @@ bool SqueezeMapper::GetAxisValue(AnfNodePtr input_node, std::vector<int64_t> *ax
 }
 
 STATUS SqueezeMapper::Mapper(const CNodePtr &cnode) {
-  MS_ASSERT(cnode != nullptr);
+  CHECK_NULL_RETURN(cnode);
   constexpr size_t input_count_with_const = 2 + 1;
   constexpr size_t axis_input_index = 2;
   if (cnode->size() != input_count_with_const) {

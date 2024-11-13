@@ -34,6 +34,7 @@
 namespace mindspore {
 namespace lite {
 STATUS ActivationMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   std::map<ActivationType, BaseOperatorPtr> activation_type_map = {
     {mindspore::ELU, std::make_shared<ops::Elu>()},
     {mindspore::GELU, std::make_shared<ops::GeLU>()},

@@ -20,6 +20,7 @@ namespace mindspore {
 namespace lite {
 STATUS CpuOptionParamParser::ParseCpuOptionCfg(const CpuOptionCfgString &cpu_option_string,
                                                CpuOptionCfg *cpu_option_cfg) {
+  CHECK_NULL_RETURN(cpu_option_cfg);
   if (cpu_option_string.architecture.empty() || cpu_option_string.instruction.empty()) {
     return RET_OK;
   }
