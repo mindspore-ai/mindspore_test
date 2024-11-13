@@ -351,6 +351,7 @@ class PagedAttentionBase:
                 else:
                     sz_amask = [b, 1, 1, sq, max_skv]
                 amask = np.random.randint(0, 2, size=sz_amask)
+                amask *= -10000
                 amask = amask.astype(np.float16)
                 self.gen["attn_mask"] = amask.copy()
             if is_dropout:  # 0 is drop, 1 is keep
@@ -470,7 +471,7 @@ class PagedAttentionBase:
                 if self.i_test["is_alibi"]:
                     s1 = s1 + alibi[i].astype(np.float32)
                 if self.i_test["is_amask"] and self.i_test["sq"] != 1:
-                    s1 = s1 - amask[i].astype(np.float32) * np.float32(10000)
+                    s1 = s1 + amask[i].astype(np.float32)
 
                 score_max[i] = np.max(s1, axis=-1, keepdims=True)  # [n, g, sq, 1]
 
@@ -531,7 +532,7 @@ class PagedAttentionBase:
             if self.i_test["is_alibi"]:
                 s1 = s1 + alibi.astype(np.float32)
             if self.i_test["is_amask"] and self.i_test["sq"] != 1:
-                s1 = s1 - amask.astype(np.float32) * np.float32(10000)
+                s1 = s1 + amask.astype(np.float32)
 
             score_max = np.max(s1, axis=-1, keepdims=True)  # [b, n, g, sq, 1]
 

@@ -39,7 +39,7 @@ flash_attention_score:
 
         inner_precise (int): The parameter is reserved and not implemented yet. Default: 0.
         input_layout (str): Specifies the layout of input `query`, key and value. The value can be "BSH", "BNSD", "SBH",
-            "BSND" or "TND". "TND" is an experimental format. Default: "BSH".
+            "BSND", "TH" or "TND". "TH" and "TND" are experimental formats. Default: "BSH".
             When input_layout is "TND", the following restrictions must be met.
             There are two lists that represent the length of the input sequence: list_seq_q and list_seq_k. Each
             value in the list indicates the length of the sequence in the batch. For example, list_seq_q = [4, 2, 6],
