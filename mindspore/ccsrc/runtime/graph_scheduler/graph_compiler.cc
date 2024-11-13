@@ -240,7 +240,11 @@ bool IsEnableZeroCopy(bool run_in_pynative) {
   bool is_multi_graph_sink = ms_context->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
   // If the run mode is not subgraph sink, the flag should not be set.
   if (!task_sink || is_multi_graph_sink) {
-    return false;
+    // Jit level O2 in graph mode will execute ge and zero copy flag should be set.
+    if (ms_context->get_param<std::string>(MS_CTX_JIT_LEVEL) != "O2" ||
+        ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kGraphMode) {
+      return false;
+    }
   }
 
 // In ps cache mode, the whole graph sink has set multi_graph_sink to false, the zero copy cannot be enabled.
