@@ -1,0 +1,34 @@
+#operator batch_norm_gather_stats_with_counts
+batch_norm_gather_stats_with_counts:
+  args:
+    input:
+      dtype: tensor
+    mean:
+      dtype: tensor
+    invstd:
+      dtype: tensor
+    running_mean:
+      dtype: tensor
+      default: None
+    running_var:
+      dtype: tensor
+      default: None
+    momentum:
+      dtype: float
+      default: 1e-1
+    eps:
+      dtype: float
+      default: 1e-5
+    counts:
+      dtype: tensor
+      default: None
+  labels:
+    side_effect_mem: True
+  returns:
+    mean_all:
+      dtype: tensor
+    invstd_all:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: BatchNormGatherStatsWithCountsAscend

@@ -58,6 +58,9 @@ from mindspore.ops.auto_generate import stack_ext as stack
 from mindspore.ops.function.array_func import unsqueeze
 # 8
 from mindspore.ops.auto_generate import transpose_ext as transpose
+from mindspore.ops.auto_generate import batch_norm_elemt
+from mindspore.ops.auto_generate import batch_norm_gather_stats_with_counts
+from mindspore.ops.auto_generate import batch_norm_stats
 # 9
 from mindspore.ops.auto_generate import masked_select
 from mindspore.ops.function.math_func import cross
@@ -1772,6 +1775,9 @@ __all__ = [
     # 8
     'transpose',
     'swapaxes',
+    "batch_norm_elemt",
+    "batch_norm_gather_stats_with_counts",
+    "batch_norm_stats",
     # 9
 
     # 10

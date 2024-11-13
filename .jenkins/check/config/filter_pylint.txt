@@ -127,6 +127,22 @@
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "inconsistent-return-statements"
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "superfluous-parens"
 
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "missing-docstring"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "len-as-condition"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "consider-using-ternary"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "ungrouped-imports"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "useless-super-delegation"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "pointless-string-statement"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "misplaced-comparison-constant"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "singleton-comparison"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "inconsistent-return-statements"
+"mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "superfluous-parens"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/_functions.py"                                                       "syntax-error"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "missing-docstring"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "useless-super-delegation"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "pointless-string-statement"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/normalization.py"                                                    "no-else-return"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/_functions.py"                                                       "missing-docstring"
 
 # MindData
 "mindspore/mindspore/python/mindspore/dataset/__init__.py"                                                               "redefined-builtin"
@@ -257,6 +273,9 @@
 "mindspore/tests/st/compiler/graph_syntax/operators/test_ops_signatures.py"                             "consider-iterating-dictionary"
 "mindspore/tests/st/ops/test_ops_erfc.py"                                                               "not-callable"
 "mindspore/tests/st/ops/test_ops_sinh.py"
+"mindspore/tests/st/mint/test_syncbatchnorm_msrun.py"                                                   "line-too-long"
+"mindspore/tests/st/mint/test_inner_syncbatchnorm_msrun.py"                                             "line-too-long"
+"mindspore/tests/st/ops/ascend/test_batch_norm_gather_stats_with_counts.py"                             "too-many-function-args"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"

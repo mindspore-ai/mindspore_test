@@ -1,0 +1,26 @@
+#operator batch_norm_elemt_grad
+batch_norm_elemt_grad:
+  args:
+    dout:
+      dtype: tensor
+    input:
+      dtype: tensor
+    mean:
+      dtype: tensor
+    invstd:
+      dtype: tensor
+    weight:
+      dtype: tensor
+    sumdDy:
+      dtype: tensor
+    sumDyXmu:
+      dtype: tensor
+    counter:
+      dtype: tensor
+  returns:
+    input_grad:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True

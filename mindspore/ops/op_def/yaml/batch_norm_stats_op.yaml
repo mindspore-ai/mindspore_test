@@ -1,0 +1,15 @@
+#operator batch_norm_stats
+batch_norm_stats:
+  args:
+    input:
+      dtype: tensor
+    eps:
+      dtype: float
+  returns:
+    mean_out:
+      dtype: tensor
+    invstd_out:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: BatchNormStatsAscend
