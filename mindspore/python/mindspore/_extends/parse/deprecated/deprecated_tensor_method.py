@@ -204,7 +204,7 @@ deprecated_tensor_method_map = {
     # 92 scatter_add
 
     # 93 select
-
+    "select": "deprecated_tensor_select",
     # 94 sigmoid
 
     # 95 sin

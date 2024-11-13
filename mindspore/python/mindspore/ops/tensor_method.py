@@ -22,7 +22,7 @@ from mindspore.ops.composite.multitype_ops._compile_utils import sequence_to_ten
 # 1 common import
 
 # 2 common import
-
+from mindspore import Tensor
 # 3 common import
 from mindspore.common import dtype as mstype
 # 4 common import
@@ -225,7 +225,7 @@ from mindspore.ops.auto_generate import rsqrt
 # 92 scatter_add
 
 # 93 select
-
+from mindspore.ops.auto_generate import select, select_ext
 # 94 sigmoid
 from mindspore.ops.auto_generate import sigmoid
 # 95 sin
@@ -801,6 +801,37 @@ def tensor_rsqrt(input):
 # 92 scatter_add
 
 # 93 select
+def tensor_select_ext(input, dim, index):
+    return select_ext(input, dim, index)
+
+
+def deprecated_tensor_select(input, condition, y):
+    r"""
+    For details, please refer to :func:`mindspore.ops.select`.
+    """
+    if not isinstance(condition, Tensor):
+        raise TypeError(f"For 'Tensor.select', the argument 'condition' should be Tensor,"
+                        f" but got {type(condition)}.")
+    if not isinstance(y, (Tensor, int, float)):
+        raise TypeError(f"For 'Tensor.select', the argument 'y' should be Tensor, int or float,"
+                        f" but got {type(y)}.")
+    if isinstance(y, int) and input.dtype != mstype.int32:
+        raise TypeError(f"For 'Tensor.select', if the argument 'y' is int,"
+                        f" then the tensor type should be int32 but got {input.dtype}")
+    if isinstance(y, float) and input.dtype != mstype.float32:
+        raise TypeError(f"For 'Tensor.select', if the argument 'y' is float,"
+                        f" then the tensor type should be float32 but got {input.dtype}")
+    input_y = y
+    if isinstance(y, (int, float)):
+        zeros_like = F.zeros_like
+        cast_f = F.cast
+        input_y = zeros_like(input) + y
+        if isinstance(y, int):
+            input_y = cast_f(input_y, mstype.int32)
+        else:
+            input_y = cast_f(input_y, mstype.float32)
+    return select(condition, input, input_y)
+
 
 # 94 sigmoid
 def tensor_sigmoid(input):
@@ -897,8 +928,8 @@ def tensor_trunc(input):
 # 121 contiguous
 
 # 122 where
-def tensor_where(input, condition, y):
-    return where_func(condition, input, y)
+def tensor_where(condition, input, other):
+    return where_func(condition, input, other)
 
 
 def deprecated_tensor_where(input, condition, y):

@@ -1,0 +1,14 @@
+select:
+  - op_yaml: select_ext_op.yaml
+    py_method: tensor_select_ext # callback to python function "def tensor_select_ext"
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/select_op.yaml
+    py_method: deprecated_tensor_select # callback to python function "def deprecated_tensor_select"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
