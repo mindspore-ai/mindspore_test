@@ -28,6 +28,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (inner_comm_all_reduce_op, 
                                                       inner_comm_all_to_all_v_op, inner_comm_irecv_op,
                                                       inner_comm_isend_op, inner_comm_reduce_scatter_op)
 from mindspore._c_expression import CommHandle as CommHandle_
+from mindspore._c_expression.typing import Type
 from mindspore import jit_class
 
 __all__ = [
@@ -501,12 +502,21 @@ class P2POp:
     def __init__(self, op, tensor, peer, group=None, tag=0, *, recv_dtype=None):
         self.op = op
         self.tensor = tensor
+        if not isinstance(peer, int):
+            raise TypeError(f"peer must be type of int, but got type of {type(peer)}")
+
+        if recv_dtype and not isinstance(recv_dtype, Type):
+            raise TypeError(f"recv_dtype must be type of mindspore dtype, but got type of {type(recv_dtype)}")
+
         self.peer = peer
         self.group = group
         self.tag = tag
         self.recv_dtype = recv_dtype
 
     def __new__(cls, op, tensor, peer, group=None, tag=0, recv_dtype=None):
+        if not (isinstance(op, str) or callable(op)):
+            raise TypeError(f"op must be type of string or function, but got type of {type(op)}")
+
         if isinstance(op, str):
             op_name = op
         else:
@@ -587,6 +597,10 @@ def batch_isend_irecv(p2p_op_list):
     receive_shapes = []
     receive_dtypes = []
     tags = []
+
+    if not isinstance(p2p_op_list, list):
+        raise TypeError(f"p2p_op_list must be type of list, but got type of {p2p_op_list}.")
+
     if not p2p_op_list:
         raise TypeError(f"p2p_op_list can not be empty list.")
     group = p2p_op_list[0].group
@@ -861,6 +875,8 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
         - `Distributed Set Communication Primitives - Barrier
           <https://www.mindspore.cn/docs/en/master/api_python/samples/ops/communicate_ops.html#barrier>`_
     """
+    if not isinstance(group, str):
+        raise TypeError(f"group must be type of string, but got {type(group)}")
     _op = _get_cache_prim(P.Barrier)(group)
     return _op()
 
