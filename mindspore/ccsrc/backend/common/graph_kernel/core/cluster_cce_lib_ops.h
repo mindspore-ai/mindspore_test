@@ -17,7 +17,6 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_CLUSTER_CCE_LIB_OPS_H_
 #include <vector>
 #include "ir/func_graph.h"
-#include "include/backend/optimizer/pass.h"
 #include "backend/common/graph_kernel/core/graph_kernel_cluster.h"
 
 namespace mindspore::graphkernel {

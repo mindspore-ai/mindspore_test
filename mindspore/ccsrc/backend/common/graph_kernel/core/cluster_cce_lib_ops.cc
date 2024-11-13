@@ -19,11 +19,11 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
-#include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 

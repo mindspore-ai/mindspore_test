@@ -15,9 +15,7 @@
  */
 #ifndef MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_ADAPTER_SYMBOL_ENGINE_BUILDER_H_
 #define MINDSPORE_CCSRC_BACKEND_COMMON_GRAPH_KERNEL_ADAPTER_SYMBOL_ENGINE_BUILDER_H_
-#include "ir/anf.h"
 #include "ir/func_graph.h"
-#include "include/backend/visible.h"
 #include "include/backend/optimizer/pass.h"
 
 namespace mindspore::graphkernel {

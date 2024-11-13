@@ -22,7 +22,6 @@
 #include <utility>
 #include "ops/primitive_c.h"
 #include "backend/common/graph_kernel/model/node.h"
-#include "ir/dtype/type.h"
 #include "include/backend/visible.h"
 
 namespace mindspore::graphkernel::inner {

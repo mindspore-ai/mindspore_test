@@ -16,7 +16,6 @@
 #include <algorithm>
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
-#include "kernel/common_utils.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::graphkernel::expander {

@@ -20,7 +20,6 @@
 #include <unordered_set>
 
 #include "include/backend/optimizer/pass.h"
-#include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore::graphkernel {
 /**

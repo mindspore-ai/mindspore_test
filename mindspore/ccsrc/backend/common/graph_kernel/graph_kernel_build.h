@@ -22,10 +22,7 @@
 #include <sstream>
 #include <unordered_map>
 #include <map>
-#include "ir/anf.h"
-#include "include/backend/optimizer/optimizer.h"
 #include "kernel/framework_utils.h"
-#include "kernel/kernel.h"
 #include "kernel/kash/kernel_pack.h"
 #include "kernel/graph_kernel/graph_kernel_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_splitter.h"

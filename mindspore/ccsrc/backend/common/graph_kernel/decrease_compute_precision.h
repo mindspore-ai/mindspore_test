@@ -18,9 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_DECREASE_COMPUTE_PRECISION_H_
 
 #include <vector>
-#include <string>
-#include "include/backend/optimizer/optimizer.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/optimizer/pass.h"
 
 namespace mindspore::graphkernel {
 class DecreaseComputePrecision : public opt::Pass {

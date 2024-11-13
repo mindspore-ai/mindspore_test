@@ -17,8 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_OPTIMIZE_ASSIGN_H_
 
 #include <memory>
-#include "include/backend/optimizer/optimizer.h"
-#include "include/backend/kernel_graph.h"
+#include "include/backend/optimizer/pass.h"
 
 namespace mindspore::graphkernel {
 class OptimizeAssign : public opt::Pass {

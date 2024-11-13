@@ -18,7 +18,6 @@
 
 #include "backend/common/graph_kernel/expander/mindir_adapter/anf_node_holder.h"
 #include "backend/common/graph_kernel/model/node.h"
-#include "ir/primitive.h"
 #include "utils/hash_map.h"
 
 namespace mindspore::graphkernel::expander {

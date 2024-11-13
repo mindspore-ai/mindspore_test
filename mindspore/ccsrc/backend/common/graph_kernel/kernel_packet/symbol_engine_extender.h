@@ -20,7 +20,6 @@
 #include <vector>
 #include "utils/hash_set.h"
 #include "include/backend/optimizer/pass.h"
-#include "include/backend/optimizer/optimizer.h"
 #include "symbolic_shape/operation_builder.h"
 
 namespace mindspore::graphkernel::packet {
