@@ -44,6 +44,15 @@ SAVE_DIR = _cur_dir
 _info_list = ["epoch_num", "step_num"]
 
 
+def _wait_async_save_ckpt(async_save=False):
+    """Waiting for asynchronous saving of ckpt to complete."""
+    if async_save:
+        thread_list = threading.enumerate()
+        for thread in thread_list:
+            if thread.getName() == "asyn_save_ckpt":
+                thread.join()
+
+
 def _get_dp_tp_from_redundancy(redundancy_tuple):
     """From redundancy get dp and tp"""
     dp = []
@@ -568,6 +577,7 @@ class ModelCheckpoint(Callback):
                                  "string that does not contain '/', but got {}.".format(self._prefix))
         if self._directory_func:
             self._directory = self._directory_func(cb_params)
+            _make_directory(self._directory)
         collect_host_info("Callback", "ModelCheckpoint", "step_end", start_time=get_clock_syscnt(), level=1)
         # In disaster recovery scenario, the training process may be rolled back to the last step where
         # the ckpt was successfully saved, so the _last_triggered_step should be updated.
@@ -575,7 +585,6 @@ class ModelCheckpoint(Callback):
             self._last_triggered_step = cb_params.last_save_ckpt_step
             cb_params.last_save_ckpt_step = None
 
-        _make_directory(self._directory)
         # save graph (only once)
         if not self._graph_saved:
             graph_file_name = os.path.join(self._directory, self._prefix + '-graph.meta')
@@ -583,10 +592,6 @@ class ModelCheckpoint(Callback):
                 os.remove(graph_file_name)
             _save_graph(cb_params.train_network, graph_file_name)
             self._graph_saved = True
-        thread_list = threading.enumerate()
-        for thread in thread_list:
-            if thread.getName() == "asyn_save_ckpt":
-                thread.join()
         self._save_ckpt(cb_params)
 
     def end(self, run_context):
@@ -601,11 +606,6 @@ class ModelCheckpoint(Callback):
         _to_save_last_ckpt = True
 
         self._save_ckpt(cb_params, _to_save_last_ckpt)
-
-        thread_list = threading.enumerate()
-        for thread in thread_list:
-            if thread.getName() == "asyn_save_ckpt":
-                thread.join()
 
         destroy_allgather_cell()
 
@@ -643,6 +643,7 @@ class ModelCheckpoint(Callback):
         step_num_in_epoch = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
 
         if save_ckpt:
+            _wait_async_save_ckpt(self._config.async_save)
             if self._prefix_func:
                 cur_ckpoint_file = self._prefix + f".{self._config.format}"
             else:
