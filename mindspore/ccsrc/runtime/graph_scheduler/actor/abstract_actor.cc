@@ -33,7 +33,8 @@ AbstractActor::AbstractActor(const std::string &name, KernelTransformType type, 
       running_dependent_msg_num_(0),
       parent_fusion_actor_{nullptr},
       memory_alloc_insert_position_{nullptr},
-      memory_free_insert_position_{nullptr} {}
+      memory_free_insert_position_{nullptr},
+      enable_input_optimize_(EnableInputOptimize()) {}
 
 void AbstractActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_data);
@@ -155,6 +156,28 @@ void AbstractActor::FetchInputByTensorStore(
         ((*input_kernel_tensors)[device_tensor_store_key.first] != kernel_tensor.get())) {
       (*input_kernel_tensors)[device_tensor_store_key.first] = kernel_tensor.get();
       (*input_kernel_tensors_for_infer)[device_tensor_store_key.first] = kernel_tensor;
+    }
+  }
+}
+
+void AbstractActor::FetchParameterByTensorStore(
+  std::vector<DeviceTensor *> *const input_device_tensors, std::vector<KernelTensor *> *const input_kernel_tensors,
+  std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
+  std::vector<DeviceTensor *> *const memory_free_tensors, OpContext<DeviceTensor> *const context) {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kInputProcess, "FetchParameter", true);
+  for (const auto &parameter_index : parameter_indexs_) {
+    auto device_tensor = FetchParameter(parameter_index.second, context, device_contexts_[0], GetAID());
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    if ((*input_device_tensors)[parameter_index.first] != device_tensor) {
+      (*input_device_tensors)[parameter_index.first] = device_tensor;
+      (*memory_free_tensors)[parameter_index.first] = device_tensor;
+    }
+    // Collect the input kernel tensor.
+    const auto &kernel_tensor = (*input_device_tensors)[parameter_index.first]->kernel_tensor();
+    if (input_kernel_tensors && input_kernel_tensors_for_infer &&
+        ((*input_kernel_tensors)[parameter_index.first] != kernel_tensor.get())) {
+      (*input_kernel_tensors)[parameter_index.first] = kernel_tensor.get();
+      (*input_kernel_tensors_for_infer)[parameter_index.first] = kernel_tensor;
     }
   }
 }

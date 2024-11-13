@@ -419,7 +419,7 @@ void AnyTypeGraphScheduler::FixDeviceTensorStoreKeyInActor(const std::vector<Abs
             MS_LOG(DEBUG) << "Add device tensor store for front node:" << front_node->DebugString()
                           << " by node:" << pair.second->DebugString() << " device tensor:" << device_tensor
                           << " for actor:" << actor->GetAID();
-            SchedulerHelper::AddDeviceTensorStore(front_node.get(), device_tensor);
+            SchedulerHelper::AddDeviceTensorStore(front_node, device_tensor);
             PrepareDataForValueNode(pair.second, actor->device_contexts_[0]);
           } else {
             MS_LOG(WARNING) << "Failed to get device tensor store by front node:" << front_node->DebugString()
@@ -491,6 +491,12 @@ std::vector<AbstractActorPtr> AnyTypeGraphScheduler::Transform(const KernelGraph
   model_graph->set_enable_kbk_sub_graph_execute(false);
   for (const auto &graph : graph_compiler_info->graphs_) {
     graph->set_enable_kbk_sub_graph_execute(false);
+  }
+
+  // Input optimize do not support fallback currently.
+  model_graph->set_enable_input_optimize(false);
+  for (const auto &graph : graph_compiler_info->graphs_) {
+    graph->set_enable_input_optimize(false);
   }
   auto actor_set = GraphScheduler::GetInstance().Transform(*graph_compiler_info);
   MS_EXCEPTION_IF_NULL(actor_set);
@@ -592,7 +598,7 @@ void AnyTypeGraphScheduler::Optimize(const ActorSetPtr &actor_set,
                       << " device type:" << device_context->GetDeviceType()
                       << " type:" << other_type_device_tensor->type_id()
                       << " for actor:" << any_type_kernel_actor->GetAID();
-        SchedulerHelper::AddDeviceTensorStore(backend_node_with_index.first.get(), other_type_device_tensor);
+        SchedulerHelper::AddDeviceTensorStore(backend_node_with_index.first, other_type_device_tensor);
       }
 
       MS_LOG(INFO) << "Get backend:" << backend_node_with_index.first->DebugString()

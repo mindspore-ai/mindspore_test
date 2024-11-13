@@ -81,6 +81,8 @@ class GPUDeviceAddress : public LoadableDeviceAddress {
   // Asynchronously copy host memory to device side.
   bool AsyncHostToDevice(const ShapeVector &, size_t size, TypeId, const void *host_ptr,
                          size_t stream_id) const override;
+  bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                         const std::string &format) const override;
 
   // Asynchronously copy device memory to host side.
   bool AsyncDeviceToHost(const ShapeVector &, size_t size, TypeId, void *host_ptr, size_t stream_id) const override;

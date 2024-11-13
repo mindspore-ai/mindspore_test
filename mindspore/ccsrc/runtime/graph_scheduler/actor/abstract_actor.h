@@ -28,6 +28,7 @@
 #include "actor/op_actor.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
+#include "runtime/graph_scheduler/parameter_store.h"
 #include "runtime/graph_scheduler/device_tensor_copy_store.h"
 #include "runtime/hardware/device_context.h"
 
@@ -35,6 +36,8 @@ namespace mindspore {
 namespace runtime {
 using mindspore::device::DeviceContext;
 using mindspore::kernel::KernelTensor;
+// pair<KernelWithIndex, size_t>: Front node and parameter store addr index.
+using ParameterInfo = std::pair<KernelWithIndex, size_t>;
 
 // The flag of output data.
 constexpr size_t kOutputDataFlagInit = 0;
@@ -138,6 +141,7 @@ class AbstractActor : public OpActor<DeviceTensor> {
   AbstractActor *memory_alloc_insert_position() const { return memory_alloc_insert_position_; }
   AbstractActor *memory_free_insert_position() const { return memory_free_insert_position_; }
   const std::vector<const DeviceContext *> &device_contexts() { return device_contexts_; }
+  const std::vector<std::pair<size_t, ParameterInfo>> &parameter_indexs() const { return parameter_indexs_; }
 
   // Reset state for UCE.
   virtual void ResetState() { MS_LOG(INFO) << "Actor " << GetAID().Name() << " no need to reset state."; }
@@ -163,6 +167,13 @@ class AbstractActor : public OpActor<DeviceTensor> {
                                std::vector<DeviceTensor *> *const memory_free_tensors,
                                OpContext<DeviceTensor> *const context) const;
 
+  // Fetch input parameter data from the device tensor store.
+  void FetchParameterByTensorStore(std::vector<DeviceTensor *> *const input_device_tensors,
+                                   std::vector<KernelTensor *> *const input_kernel_tensors,
+                                   std::vector<abstract::AbstractBasePtr> *const input_kernel_tensors_for_infer,
+                                   std::vector<DeviceTensor *> *const memory_free_tensors,
+                                   OpContext<DeviceTensor> *const context);
+
   // Init the member output_data_ and batch_output_data_ by output data arrows.
   void InitOutputData();
   // Update the output data before send output data.
@@ -180,6 +191,11 @@ class AbstractActor : public OpActor<DeviceTensor> {
   // Fetch the sub actor in the fusion actor by the name.
   AbstractActor *FetchSubActorInFusionActor(const std::string &sub_actor_name) const;
   bool IsOutputAddressPersisted(const DeviceTensor *output_device_tensor, const KernelWithIndex &output_node);
+
+  // Stores info required by to_actor
+  void InsertParameterIndexs(size_t to_kernel_idx, ParameterInfo cur_front_node_info) {
+    parameter_indexs_.push_back({to_kernel_idx, cur_front_node_info});
+  }
 
   KernelTransformType type_;
 
@@ -211,6 +227,10 @@ class AbstractActor : public OpActor<DeviceTensor> {
   // The dependent device tensor stores, the dependent expression is pair<index, AnfNode>.
   // Index is the input position, AnfNode is the key of the device tensor store.
   std::vector<std::pair<size_t, AnfNodePtr>> device_tensor_store_keys_;
+
+  // The dependent parameter stores, the dependent expression is pair<index, ParameterInfo>.
+  // Index is the input position, ParameterInfo is used to fetch args and device tensor.
+  std::vector<std::pair<size_t, ParameterInfo>> parameter_indexs_;
   // The device tensor stores which have the auto monad attribute.
   std::set<AnfNodePtr> auto_monad_device_tensor_stores_;
 
@@ -243,6 +263,9 @@ class AbstractActor : public OpActor<DeviceTensor> {
   // The information used for integration of dynamic and static memory.
   AbstractActor *memory_alloc_insert_position_;
   AbstractActor *memory_free_insert_position_;
+
+  // Whether use input optimize.
+  bool enable_input_optimize_;
 };
 
 using AbstractActorPtr = std::shared_ptr<AbstractActor>;

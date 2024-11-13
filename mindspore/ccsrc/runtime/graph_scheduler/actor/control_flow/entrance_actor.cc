@@ -89,27 +89,33 @@ void EntranceActor::FetchInput(OpContext<DeviceTensor> *const context) {
   auto &sequential_num = context->sequential_num_;
 
   // There are two kinds of run conditions for entrance actor:
-  // 1.Data comes from the data source actor, it is in the form of data arrow.
+  // 1.Data comes from the data source actor or graph parameter store, it is in the form of data arrow.
   const auto &data_iter = input_op_datas_.find(sequential_num);
   const auto &control_iter = input_op_controls_.find(sequential_num);
   if (data_iter != input_op_datas_.end() || control_iter != input_op_controls_.end()) {
-    // If the data comes from the data source actor, use the default branch id.
-    output_branch_id_ = 0;
+    // Fetch parameter input from graph parameter store if input optimization.
+    if (enable_input_optimize_) {
+      output_branch_id_ = 0;
+      ControlActor::FetchParameterInput(context);
+    } else {
+      // If the data comes from the data source actor, use the default branch id.
+      output_branch_id_ = 0;
 
-    if (data_iter == input_op_datas_.end()) {
-      return;
-    }
-
-    for (auto &input_data : data_iter->second) {
-      MS_EXCEPTION_IF_NULL(input_data);
-      if (IntToSize(input_data->index_) >= input_device_tensors_.size()) {
-        std::string error_info = "The input index is out of range, need:" + std::to_string(input_data->index_) +
-                                 " current:" + std::to_string(input_device_tensors_.size()) +
-                                 " for actor:" + GetAID().Name();
-        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+      if (data_iter == input_op_datas_.end()) {
+        return;
       }
-      MS_EXCEPTION_IF_NULL(input_data->data_);
-      input_device_tensors_[IntToSize(input_data->index_)] = input_data->data_;
+
+      for (auto &input_data : data_iter->second) {
+        MS_EXCEPTION_IF_NULL(input_data);
+        if (IntToSize(input_data->index_) >= input_device_tensors_.size()) {
+          std::string error_info = "The input index is out of range, need:" + std::to_string(input_data->index_) +
+                                   " current:" + std::to_string(input_device_tensors_.size()) +
+                                   " for actor:" + GetAID().Name();
+          SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+        }
+        MS_EXCEPTION_IF_NULL(input_data->data_);
+        input_device_tensors_[IntToSize(input_data->index_)] = input_data->data_;
+      }
     }
   } else {
     // 2.Data comes from the gather actor, it is in the form of data with branch id.

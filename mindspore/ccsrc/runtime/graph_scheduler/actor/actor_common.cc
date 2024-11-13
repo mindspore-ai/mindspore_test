@@ -25,11 +25,15 @@
 #include "utils/ms_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/distributed/ps/ps_context.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
 #ifndef BUILD_LITE
+#include "runtime/graph_scheduler/parameter_store.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
+#include "runtime/graph_scheduler/actor/memory_manager_actor.h"
+#include "runtime/device/device_address_utils.h"
 #endif
 
 namespace mindspore {
@@ -46,6 +50,7 @@ bool ActorDispatcher::enable_sub_graph_execute_for_cur_actor_set_ = false;
 bool ActorDispatcher::enable_static_shape_ = false;
 bool ActorDispatcher::enable_trace_dynamic_memory_ = false;
 bool ActorDispatcher::enable_use_trace_memory_ = false;
+bool ActorDispatcher::enable_input_optimize_for_cur_actor_set_ = true;
 
 bool IsRunningFailed(const OpContext<DeviceTensor> *context) {
   if (UCEException::GetInstance().enable_uce()) {
@@ -94,6 +99,51 @@ bool IsHostQueueDSActor(const AnfNodePtr &node, const KernelGraphPtr &graph,
 
   // In control flow, only the parameters of the root funcgraph are in the host data source.
   const auto &front_node = graph->GetFrontAnfByBackendAnf(node);
+  bool is_host = ((front_node == nullptr) ||
+                  find(host_parameters.begin(), host_parameters.end(), front_node) != host_parameters.end());
+
+  // Judge whether node is internal parameter.
+  const auto &internal_front_node = graph->GetFrontNodeByInternalParameter(node);
+  if (internal_front_node.first == nullptr && is_host) {
+    return true;
+  }
+
+  return false;
+}
+
+bool IsGraphRootParameter(const AnfNodePtr &node, const KernelGraphPtr &graph,
+                          const std::vector<AnfNodePtr> &host_parameters, GraphExecutionStrategy strategy) {
+  MS_EXCEPTION_IF_NULL(node);
+  KernelWithIndex front_node_with_idx{nullptr, 0};
+  if (IsInternalParameter(node, graph)) {
+    front_node_with_idx = graph->GetFrontNodeByInternalParameter(node);
+  } else {
+    front_node_with_idx = graph->GetElementInTupleBackendFrontIndexMap(node);
+    if (front_node_with_idx.first == nullptr) {
+      front_node_with_idx = {AnfAlgo::FetchFrontNodeByBackendNode(node, *graph), 0};
+    }
+  }
+  auto front_node = front_node_with_idx.first;
+  MS_EXCEPTION_IF_NULL(front_node);
+  bool is_parameter_data = front_node->isa<Parameter>();
+  if (is_parameter_data) {
+    return true;
+  }
+  // Need to be updated every step.
+  if (node->has_user_data(kForwardOutput)) {
+    return true;
+  }
+
+  if (strategy == GraphExecutionStrategy::kStep) {
+    MS_EXCEPTION_IF_NULL(graph);
+    return graph->execution_order().size() > 1;
+  }
+
+  if (graph == nullptr) {
+    return true;
+  }
+
+  // In control flow, only the parameters of the root funcgraph are in the host data source.
   bool is_host = ((front_node == nullptr) ||
                   find(host_parameters.begin(), host_parameters.end(), front_node) != host_parameters.end());
 
@@ -284,6 +334,27 @@ bool EnableKbkSubGraphExecute() {
   return true;
 }
 
+bool EnableInputOptimize() {
+  static bool disable_input_optimize = common::IsDisableRuntimeConfig(common::kRuntimeInputOptimize);
+  if (disable_input_optimize) {
+    return false;
+  }
+
+  if (!EnableKbkSubGraphExecute()) {
+    return false;
+  }
+
+  if (!ActorDispatcher::enable_input_optimize_for_cur_actor_set()) {
+    return false;
+  }
+
+  if (UCEException::GetInstance().enable_uce()) {
+    return false;
+  }
+
+  return true;
+}
+
 bool EnableRuntimePipeline() {
   static bool disable_runtime_pipeline = common::IsDisableRuntimeConfig(common::kRuntimePipeline);
   if (disable_runtime_pipeline) {
@@ -456,6 +527,12 @@ KernelTransformType FetchKernelTransformType(const AnfNodePtr &node, const Kerne
   auto real_node = common::AnfAlgo::FetchRealNodeSkipMonadControl({node, 0}).first;
   MS_EXCEPTION_IF_NULL(real_node);
 
+  if (EnableInputOptimize()) {
+    if (IsGraphRootParameter(real_node, kernel_graph, host_parameters, strategy)) {
+      return KernelTransformType::kGraphParameterStore;
+    }
+  }
+
   if (IsDeviceQueueDSActor(real_node, strategy)) {
     type = KernelTransformType::kDeviceDataSourceActor;
   } else if (IsHostQueueDSActor(real_node, kernel_graph, host_parameters, strategy)) {
@@ -506,6 +583,9 @@ std::string FetchActorName(KernelTransformType kernel_type, const std::string &a
       break;
     case KernelTransformType::kHostDataSourceActor:
       actor_name = actor_set_name + kHostDSActorNameSuffix;
+      break;
+    case KernelTransformType::kGraphParameterStore:
+      actor_name = actor_set_name + kReplaceDSActorStore;
       break;
     case KernelTransformType::kCustomActor:
       MS_EXCEPTION_IF_NULL(real_node);
@@ -729,6 +809,249 @@ mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::ve
 
 bool IsInferPhase(const std::string &phase) {
   return phase.find("prefill") != std::string::npos || phase.find("increment") != std::string::npos;
+}
+
+size_t FetchInputTensorIndex(const KernelWithIndex &front_node) {
+  MS_EXCEPTION_IF_NULL(front_node.first);
+  if (common::AnfAlgo::IsDynamicSequence(front_node.first)) {
+    return 0;
+  }
+
+  const auto &abs = front_node.first->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  if (abs->isa<abstract::AbstractSequence>()) {
+    return front_node.second;
+  }
+
+  return 0;
+}
+
+TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node) {
+  if (arg_index >= args.size()) {
+    MS_LOG(INFO) << "Arg index out of args range, index is " << arg_index << " and args size is " << args.size();
+    return nullptr;
+  }
+
+  std::vector<tensor::TensorPtr> flatten_tensors;
+  AnfAlgo::FlattenInputArg(args[arg_index], front_node.first, &flatten_tensors);
+  if (EnableInputOptimize()) {
+    // Push flatten tensors into store buffers.
+    auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+    graph_parameter_store->FillBuffer(arg_index, flatten_tensors);
+  }
+  auto input_tensor_index = FetchInputTensorIndex(front_node);
+  if (input_tensor_index >= flatten_tensors.size()) {
+    MS_LOG(INFO) << "Input tensor index out of args range, index is " << input_tensor_index << " and tensors size is "
+                 << flatten_tensors.size();
+    return nullptr;
+  }
+
+  auto tensor = flatten_tensors[input_tensor_index];
+  // The tensor needs to be converted to contiguous before being given to the actors.
+  // After the view feature is supported in the graph mode, the following code will be deleted.
+  DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+  runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
+
+  return tensor;
+}
+
+bool IsEmptySequenceTensor(tensor::Tensor *tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor->base_shape_ptr() == nullptr || (!tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
+    return false;
+  }
+  const auto &sequence_shape = tensor->base_shape_ptr()->cast<abstract::SequenceShapePtr>();
+  MS_EXCEPTION_IF_NULL(sequence_shape);
+  return sequence_shape->size() == 0;
+}
+
+void UpdateDynamicShapeAndSize(tensor::Tensor *input_tensor, DeviceTensor *device_tensor) {
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  if (input_tensor == nullptr || IsEmptySequenceTensor(input_tensor)) {
+    return;
+  }
+
+  if (!IsDynamic(device_tensor->host_shape()) && !IsDynamic(device_tensor->GetShapeVector())) {
+    return;
+  }
+
+  // Update shape.
+  const auto &output_kernel_tensor = device_tensor->kernel_tensor();
+  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
+  if (input_tensor->base_shape_ptr() == nullptr || (!input_tensor->base_shape_ptr()->isa<abstract::SequenceShape>())) {
+    output_kernel_tensor->SetShape(input_tensor->ToAbstract()->GetShape());
+    return;
+  }
+  output_kernel_tensor->SetShape(input_tensor->base_shape_ptr());
+
+  // Update size.
+  auto device_format = device_tensor->format();
+  static const std::set<std::string> kNormalFormat = {
+    kOpFormat_DEFAULT, kOpFormat_ND, kOpFormat_NCHW, kOpFormat_NHWC, kOpFormat_HWCN,
+  };
+  if (kNormalFormat.find(device_format) != kNormalFormat.end()) {
+    auto tensor_data_size = input_tensor->data().nbytes();
+    MS_LOG(DEBUG) << "Set device address:" << device_tensor << " size from:" << device_tensor->GetSize()
+                  << " to:" << tensor_data_size;
+    device_tensor->SetSize(tensor_data_size);
+  } else {
+    MS_LOG(EXCEPTION) << "Can not Update size for 5D format device address";
+  }
+}
+
+void SyncHostToDeviceForParameter(size_t outer_index, size_t inner_index, tensor::Tensor *tensor,
+                                  OpContext<DeviceTensor> *const context, const AID &from_aid) {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, from_aid.Name());
+  MS_EXCEPTION_IF_NULL(context);
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  auto device_tensors = graph_parameter_store->Fetch(outer_index, inner_index);
+  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), from_aid.Name(), "");
+  }
+  for (const auto device_tensor : device_tensors) {
+    // Update dynamic shape and size.
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    UpdateDynamicShapeAndSize(tensor, device_tensor);
+    graph_parameter_store->ResetAddrRefCount(outer_index, inner_index, device_tensor->GetDeviceType());
+
+    auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+      {device_tensor->device_name(), device_tensor->device_id()});
+
+    if (device_tensor->GetPtr() == nullptr) {
+      std::vector<DeviceTensor *> allocate_list = {device_tensor};
+      MemoryManagerActor::GetInstance()->AllocateMemory(&allocate_list, device_context, context, from_aid);
+    }
+
+    if (!device_tensor->AsyncHostToDevice(LongToSize(tensor->data().nbytes()), tensor->data_type(), tensor->data_ptr(),
+                                          tensor->device_info().host_format_)) {
+      MS_LOG(EXCEPTION) << "Fetch parameter async host to device failed.";
+    }
+  }
+}
+
+DeviceTensor *PrepareParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
+                               const DeviceContext *device_context, OpContext<DeviceTensor> *const context,
+                               const AID &from_aid) {
+  // Check parameter prepared for concurrent
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  auto outer_index = parameter_index.second;
+  auto inner_index = parameter_index.first.second;
+  auto device_tensor =
+    graph_parameter_store->FetchMutableAddr(outer_index, inner_index, device_context->GetDeviceType());
+  if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
+    return device_tensor.get();
+  }
+  auto front_node = parameter_index.first;
+  MS_EXCEPTION_IF_NULL(front_node.first);
+  MS_LOG(DEBUG) << "Prepare parameter input, actor: " << from_aid.Name() << ", outer index: " << outer_index
+                << ", inner index:" << inner_index << ", front node: " << front_node.first->DebugString();
+  auto tensor = graph_parameter_store->FetchTensor(outer_index, front_node);
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
+
+  try {
+    // Prepare data if got tensor address.
+    if (tensor_address != nullptr) {
+      // New kernel tensor if has no one.
+      if (tensor_address->kernel_tensor() == nullptr) {
+        DeviceAddressUtils::CreateKernelTensor(tensor_address, tensor);
+      }
+      if (tensor_address->GetPtr() == nullptr) {
+        MS_LOG(EXCEPTION) << "Tensor address is not null, but got device ptr null.";
+      }
+
+      UpdateRefCount(tensor_address.get(), true);
+      graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
+      if (tensor_address == device_tensor) {
+        return tensor_address.get();
+      }
+      bool is_parameter_data = front_node.first->isa<Parameter>() &&
+                               (!common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>()));
+      if (is_parameter_data) {
+        graph_parameter_store->InsertNonWeightRefMaxInputs(outer_index, inner_index);
+      }
+      // Set tensor address to graph parameter store.
+      if (device_tensor == nullptr || tensor_address->GetDeviceType() == device_tensor->GetDeviceType()) {
+        DeviceTensor *dst_addr = device_tensor == nullptr ? nullptr : device_tensor.get();
+        MS_LOG(DEBUG) << "Refresh store device tensor, from: " << tensor_address.get() << ", to: " << dst_addr
+                      << ", outer index: " << outer_index << ", inner index: " << inner_index
+                      << ", device type: " << device::GetDeviceNameByType(tensor_address->GetDeviceType());
+        graph_parameter_store->Push(outer_index, inner_index, tensor_address, tensor_address->GetDeviceType(),
+                                    SIZE_MAX);
+        device_tensor = tensor_address;
+      }
+
+      if (tensor_address->GetDeviceType() != device_tensor->GetDeviceType()) {
+        SyncHostToDeviceForParameter(outer_index, inner_index, tensor, context, from_aid);
+      }
+      return tensor_address.get();
+    }
+
+    if (device_tensor == nullptr) {
+      auto abstract = tensor->ToAbstract();
+      MS_EXCEPTION_IF_NULL(abstract);
+      auto kernel_tensor =
+        std::make_shared<kernel::KernelTensor>(abstract->GetShape(), abstract->GetType(), abstract->GetValue());
+      kernel_tensor->set_size(LongToSize(tensor->data().nbytes()));
+      auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
+      MS_LOG(DEBUG) << "Refresh store device tensor, from: " << new_device_tensor.get() << ", to null,"
+                    << ", outer index: " << outer_index << ", inner index: " << inner_index
+                    << ", device type: " << device::GetDeviceNameByType(new_device_tensor->GetDeviceType());
+      graph_parameter_store->Push(outer_index, inner_index, new_device_tensor, device_context->GetDeviceType(),
+                                  SIZE_MAX);
+      device_tensor = new_device_tensor;
+    }
+
+    // New kernel tensor if has no one.
+    if (device_tensor->kernel_tensor() == nullptr) {
+      DeviceAddressUtils::CreateKernelTensor(device_tensor, tensor);
+    }
+    SyncHostToDeviceForParameter(outer_index, inner_index, tensor, context, from_aid);
+    if (front_node.first->isa<Parameter>() &&
+        common::AnfAlgo::IsParameterWeight(front_node.first->cast<ParameterPtr>())) {
+      tensor->set_device_address(device_tensor);
+    }
+    graph_parameter_store->SetDeviceTensorPrepared(outer_index, inner_index, true);
+  } catch (const std::exception &e) {
+    MsException::Instance().SetException();
+    std::string error_info =
+      "#umsg#Kernel error:#umsg#fetch parameter failed, actor [" + from_aid.Name() + "], exception: " + e.what();
+    MS_EXCEPTION_IF_NULL(context);
+    if ((*context).error_info_.empty()) {
+      (*context).error_info_ = error_info;
+    }
+    (*context).SetFailed(kFailure);
+  }
+  return device_tensor.get();
+}
+
+DeviceTensor *FetchParameter(const std::pair<KernelWithIndex, size_t> &parameter_index,
+                             OpContext<DeviceTensor> *const context, const DeviceContext *device_context,
+                             const AID &from_aid) {
+  auto front_node = parameter_index.first.first;
+  MS_EXCEPTION_IF_NULL(front_node);
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_LOG(DEBUG) << "Fetch parameter for actor: " << from_aid.Name() << ", front node: " << front_node->DebugString()
+                << ", with index: " << parameter_index.first.second << ", addr index: " << parameter_index.second
+                << ", device type: " << device_context->GetDeviceType();
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  // Return device tensor from graph parameter store if data prepared.
+  auto outer_index = parameter_index.second;
+  auto inner_index = parameter_index.first.second;
+
+  static std::shared_mutex mtx;
+  std::shared_lock<std::shared_mutex> read_lock(mtx);
+  auto device_tensor = graph_parameter_store->Fetch(outer_index, inner_index, device_context->GetDeviceType());
+  if (graph_parameter_store->GetDeviceTensorPrepared(outer_index, inner_index)) {
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    return device_tensor;
+  }
+
+  read_lock.unlock();
+  std::unique_lock<std::shared_mutex> write_lock(mtx);
+  auto prepared_device_tensor = PrepareParameter(parameter_index, device_context, context, from_aid);
+  MS_EXCEPTION_IF_NULL(prepared_device_tensor);
+  return prepared_device_tensor;
 }
 }  // namespace runtime
 }  // namespace mindspore

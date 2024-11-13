@@ -83,8 +83,6 @@ class DataPrepareActor : public DebugAwareActor {
   // Fetch the input info.
   TensorPtr FetchInputTensor(const std::vector<TensorPtr> &tensors, size_t tensor_index, const VectorRef &args,
                              const KernelWithIndex &front_node) const;
-  TensorPtr FetchInputTensorByArg(const VectorRef &args, size_t arg_index, const KernelWithIndex &front_node) const;
-  size_t FetchInputTensorIndex(const KernelWithIndex &front_node) const;
 
   void PrepareDataForDeviceTensorStore(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
                                        OpContext<DeviceTensor> *const context);
@@ -131,6 +129,10 @@ class DataPrepareActor : public DebugAwareActor {
 
   // Preprocess before prepare data for data prepare actor.
   void PreprocessBeforePrepareData() const;
+
+  // Prepare when input optimize, prepare const value and weights at the first step.
+  void PrepareDataBeforeInputOptimize(const std::vector<std::vector<TensorPtr>> &input_tensors, const VectorRef &args,
+                                      OpContext<DeviceTensor> *const context, uint64_t start_time);
 
   // Remove after refact.
   bool enable_prepare_case() { return !tensors_need_reprepare_.empty() || is_sub_data_ || has_heter_weights_; }
