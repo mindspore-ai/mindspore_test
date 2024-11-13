@@ -1,8 +1,8 @@
 div:
   description: |
-    div(self, value, *, rounding_mode=None) -> Tensor
+    div(value, *, rounding_mode=None) -> Tensor
 
-    Divides the first input tensor by the second input tensor in floating-point type element-wise.
+    Divides the self tensor by the other input tensor in floating-point type element-wise.
 
     .. math::
 
@@ -16,9 +16,7 @@ div:
           consistent.
 
     Args:
-        self (Union[Tensor, Number, bool]): The first input is a number or
-            a bool or a tensor whose data type is number or bool.
-        other (Union[Tensor, Number, bool]): The second input is a number or
+        value (Union[Tensor, Number, bool]): The other input is a number or
             a bool when the first input is a tensor or a tensor whose data type is number or bool.
 
     Keyword Args:
@@ -37,7 +35,7 @@ div:
         and the data type is the one with higher precision or higher digits among the two inputs.
 
     Raises:
-        TypeError: If `self` and `other` is not one of the following: Tensor, Number, bool.
+        TypeError: If `self` and `value` is not one of the following: Tensor, Number, bool.
         ValueError: If `rounding_mode` value is not None, "floor" or "trunc".
 
     Supported Platforms:
