@@ -33,6 +33,7 @@
 
 namespace mindspore {
 namespace {
+constexpr char kMainThread[] = "main";
 constexpr char kPynativeThread[] = "pynative";
 constexpr char kRunTimeThread[] = "runtime";
 constexpr char kProcessCpuSize[] = "each_process_cpu_core_size";
@@ -74,6 +75,25 @@ bool LLMManager::need_force_resize(const std::string &kernel_name) {
   return it != force_resize_kernel_set_.end();
 }
 
+std::vector<int> LLMManager::get_thread_core_list(const std::string &thread_name) {
+  auto it = thread_bind_policy_.find(thread_name);
+  if (it == thread_bind_policy_.end()) {
+    // no thread bind policy
+    MS_LOG(INFO) << "thread: " << thread_name << " has no bind policy, bind failed";
+    return {};
+  }
+
+  std::vector<int> res;
+  auto thread_bind_core_vec = it->second;
+  auto rank_id = std::stoi(common::GetEnv("RANK_ID", "0"));
+  int group_start_core_id = rank_id * group_core_size_;
+  for (const auto &core_id : thread_bind_core_vec) {
+    auto bind_core_id = group_start_core_id + core_id;
+    res.emplace_back(bind_core_id);
+  }
+  return res;
+}
+
 void LLMManager::bind_thread_core(const std::string &thread_name) {
 #if defined(BIND_CORE)
   auto status_it = thread_bind_status_.find(thread_name);
@@ -91,7 +111,7 @@ void LLMManager::bind_thread_core(const std::string &thread_name) {
 
   auto thread_bind_core_vec = it->second;
   auto rank_id = std::stoi(common::GetEnv("RANK_ID", "0"));
-  int64_t group_start_core_id = rank_id * group_core_size_;
+  int group_start_core_id = rank_id * group_core_size_;
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
 
@@ -140,7 +160,7 @@ void LLMManager::get_thread_bind_policy() {
   }
 
   if (custom_bind_policy[rank_info].contains(kPynativeThread)) {
-    auto pynative_cpus = custom_bind_policy[rank_info][kPynativeThread].get<std::vector<int64_t>>();
+    auto pynative_cpus = custom_bind_policy[rank_info][kPynativeThread].get<std::vector<int>>();
     if (pynative_cpus.size() == kPynativeThreadName.size()) {
       for (size_t i = 0; i < pynative_cpus.size(); i++) {
         thread_bind_policy_[kPynativeThreadName[i]] = {pynative_cpus[i]};
@@ -149,12 +169,13 @@ void LLMManager::get_thread_bind_policy() {
   }
 
   if (custom_bind_policy[rank_info].contains(kRunTimeThread)) {
-    auto runtime_cpus = custom_bind_policy[rank_info][kRunTimeThread].get<std::vector<int64_t>>();
-    if (runtime_cpus.size() == kRuntimeThreadName.size()) {
-      for (size_t i = 0; i < runtime_cpus.size(); i++) {
-        thread_bind_policy_[kRuntimeThreadName[i]] = {runtime_cpus[i]};
-      }
-    }
+    auto runtime_cpus = custom_bind_policy[rank_info][kRunTimeThread].get<std::vector<int>>();
+    thread_bind_policy_[kRunTimeThread] = runtime_cpus;
+  }
+
+  if (custom_bind_policy[rank_info].contains(kMainThread)) {
+    auto main_cpus = custom_bind_policy[rank_info][kMainThread].get<std::vector<int>>();
+    thread_bind_policy_[kMainThread] = main_cpus;
   }
 }
 }  // namespace mindspore
