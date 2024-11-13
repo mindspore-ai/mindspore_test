@@ -96,3 +96,8 @@ class ProfilerInterface:
         cls.platform_profilers_set.clear()
         cls.is_initialized = False
         logger.info("ProfilerInterface finalize")
+
+    @classmethod
+    def delete_dir(cls):
+        """ProfilerInterface delete dir"""
+        logger.info("ProfilerInterface delete dir")

@@ -33,6 +33,7 @@ class MsprofCompleteEvent(CompleteEvent):
         super().__init__(data)
         self._parent: Optional[BaseEvent] = None
         self._children: List[BaseEvent] = []
+        self._step_id = None
 
     @property
     def parent(self) -> BaseEvent:
@@ -49,6 +50,15 @@ class MsprofCompleteEvent(CompleteEvent):
     def children(self) -> List[BaseEvent]:
         """Get list of children event references."""
         return self._children
+
+    @property
+    def step_id(self) -> str:
+        """Get parent event reference."""
+        return self._step_id
+
+    @step_id.setter
+    def step_id(self, value):
+        self._step_id = value
 
 
 class MsprofInstantEvent(InstantEvent):

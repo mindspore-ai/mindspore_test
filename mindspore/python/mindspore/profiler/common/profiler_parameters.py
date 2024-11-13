@@ -13,7 +13,7 @@
 # limitations under the License.
 # ===========================================================================
 """ProfilerParameters"""
-from typing import Dict
+from typing import Dict, Optional, Callable, Any
 import warnings
 
 from mindspore import log as logger
@@ -22,6 +22,7 @@ from mindspore.profiler.common.constant import (
     ProfilerActivity,
     AicoreMetrics,
 )
+from mindspore.profiler.schedule import Schedule
 
 
 class ProfilerParameters:
@@ -45,6 +46,8 @@ class ProfilerParameters:
         "pcie": (bool, False),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
+        "schedule": (Schedule, Schedule(wait=0, active=1)),
+        "on_trace_ready": (Optional[Callable[..., Any]], None)
     }
 
     TYPE_INDEX = 0
@@ -73,6 +76,10 @@ class ProfilerParameters:
                 params[param] = getattr(self, param).value
             elif param == "activities":
                 params[param] = [item.value for item in getattr(self, param)]
+            elif param == "schedule":
+                params[param] = getattr(self, param).to_dict()
+            elif param == "on_trace_ready":
+                continue
             else:
                 params[param] = getattr(self, param)
         return params
@@ -121,8 +128,14 @@ class ProfilerParameters:
                 expected_type = ProfilerParameters.PARAMS[key][ProfilerParameters.TYPE_INDEX]
                 default_value = ProfilerParameters.PARAMS[key][ProfilerParameters.VALUE_INDEX]
 
+                # Callable特殊处理
+                if key == "on_trace_ready":
+                    if not callable(value):
+                        setattr(self, key, default_value)
+                    continue
+
                 # 检查可迭代类型
-                if isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
+                elif isinstance(expected_type, type) and issubclass(expected_type, (list, tuple, set)):
                     if not (isinstance(value, expected_type) and
                             all(isinstance(item, type(default_value[0])) for item in value)):
                         logger.warning(

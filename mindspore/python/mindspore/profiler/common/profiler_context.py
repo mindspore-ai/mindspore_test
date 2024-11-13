@@ -12,29 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Profiler context"""
+"""profiler context"""
 import os
 from typing import (
     Dict,
     Any,
     Optional,
     List,
-    Set,
+    Set, Callable,
 )
 
-from mindspore import context
-from mindspore import log as logger
 from mindspore.communication.management import GlobalComm
-from mindspore.communication.management import get_rank
 from mindspore.communication.management import get_local_rank
+from mindspore.communication.management import get_rank
 from mindspore.profiler.common.constant import (
     DeviceTarget,
     ProfilerLevel,
     ProfilerActivity,
+    AicoreMetrics
 )
-from mindspore.profiler.common.profiler_parameters import ProfilerParameters
 from mindspore.profiler.common.profiler_output_path import ProfilerOutputPath
+from mindspore.profiler.common.profiler_parameters import ProfilerParameters
 from mindspore.profiler.common.singleton import Singleton
+from mindspore.profiler.schedule import Schedule
+
+from mindspore import context
+from mindspore import log as logger
 
 
 @Singleton
@@ -72,6 +75,30 @@ class ProfilerContext:
             "dynamic_status": self._dynamic_status,
             "model_iteration_dict": self._model_iteration_dict,
         }
+
+    def load_offline_profiler_params(self, profiler_parameters: Dict[str, Any]) -> None:
+        """
+        Update profiler parameters from profiler_info.json
+        """
+        if not profiler_parameters:
+            raise ValueError("Profiler parameters is empty")
+
+        for param, (_, _) in self._profiler_params_mgr.PARAMS.items():
+            if param in profiler_parameters:
+                # 处理特殊类型的参数
+                if param == "profiler_level":
+                    value = ProfilerLevel(profiler_parameters[param])
+                elif param == "aicore_metrics":
+                    value = AicoreMetrics(profiler_parameters[param])
+                elif param == "activities":
+                    value = [ProfilerActivity(activity) for activity in profiler_parameters[param]]
+                else:
+                    value = profiler_parameters[param]
+
+                setattr(self._profiler_params_mgr, param, value)
+                print(f"load_offline_profiler_params: {param} = {value}")
+
+        print(f"original_params : {self._profiler_params_mgr.original_params}")
 
     @property
     def device_target_set(self) -> Set[str]:
@@ -222,21 +249,35 @@ class ProfilerContext:
         """Get device target."""
         return self._device_target
 
-    @device_target.setter
-    def device_target(self, value: str) -> None:
-        if value not in (member.value for member in DeviceTarget):
-            raise ValueError("Invalid device target.")
-        self._device_target = value
-
     @property
     def rank_id(self) -> str:
         """Get rank id."""
         return self._rank_id
 
+    @rank_id.setter
+    def rank_id(self, value: str) -> None:
+        """Set rank id."""
+        if not value:
+            raise ValueError("Rank id must be a non-empty string")
+
+        if not value.isdigit():
+            raise ValueError("Rank id must be a number")
+        self._rank_id = value
+
     @property
     def device_id(self) -> str:
         """Get device id."""
         return self._device_id
+
+    @device_id.setter
+    def device_id(self, value) -> None:
+        """Set device id."""
+        if not value:
+            raise ValueError("Device id must be a non-empty string")
+
+        if not value.isdigit():
+            raise ValueError("Device id must be a number")
+        self._device_id = value
 
     @property
     def dynamic_status(self) -> bool:
@@ -247,6 +288,13 @@ class ProfilerContext:
     def model_iteration_dict(self) -> Dict[int, int]:
         """Get model iteration dict."""
         return self._model_iteration_dict
+
+    @model_iteration_dict.setter
+    def model_iteration_dict(self, value: Dict[int, int]):
+        """Set the model iteration dict."""
+        if not isinstance(value, dict):
+            raise ValueError("model_iteration_dict must be a dictionary")
+        self._model_iteration_dict = value
 
     def _init_device_target(self) -> None:
         """
@@ -260,7 +308,7 @@ class ProfilerContext:
         if self._device_target and self._device_target not in (
                 member.value for member in DeviceTarget
         ):
-            msg = f"Profiling: unsupported backend: {self._device_target}"
+            msg = "Profiling: unsupported backend: %s" % self._device_target
             raise RuntimeError(msg)
 
     def _init_device_id(self) -> None:
@@ -291,3 +339,11 @@ class ProfilerContext:
         if not self._rank_id or not self._rank_id.isdigit():
             self._rank_id = "0"
             logger.warning("Fail to get RANK_ID, use 0 instead.")
+
+    @property
+    def schedule(self) -> Schedule:
+        return self._profiler_params_mgr.schedule
+
+    @property
+    def on_trace_ready(self) -> Optional[Callable[..., Any]]:
+        return self._profiler_params_mgr.on_trace_ready

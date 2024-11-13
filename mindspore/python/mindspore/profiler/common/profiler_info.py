@@ -22,7 +22,7 @@ from mindspore.version import __version__ as ms_version
 from mindspore.profiler.common.singleton import Singleton
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.path_manager import PathManager
-from mindspore.profiler.common.msprof_cmd_tool import MsprofCmdTool
+from mindspore.profiler.common.ascend_msprof_tool import MsprofCmdTool
 
 
 @Singleton
