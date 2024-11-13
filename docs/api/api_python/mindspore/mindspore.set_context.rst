@@ -31,10 +31,6 @@ mindspore.set_context
     |                         +------------------------------+----------------------------+
     |                         |  save_graphs_path            |  CPU/GPU/Ascend            |
     |                         +------------------------------+----------------------------+
-    |                         |  enable_dump                 |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  save_dump_path              |  Ascend                    |
-    |                         +------------------------------+----------------------------+
     |                         |  deterministic               |  Ascend                    |
     |                         +------------------------------+----------------------------+
     |                         |  print_file_path             |  Ascend                    |
@@ -116,28 +112,10 @@ mindspore.set_context
           当确定性开启时，模型中的算子将在Ascend中具有确定性。这意味着，如果算子在同一硬件上使用相同的输入运行多次，则每次都会有完全相同的输出。这对于调试模型很有用。
         - **enable_dump** (bool) - 此参数已弃用，将在下一版本中删除。
         - **save_dump_path** (str) - 此参数已弃用，将在下一版本中删除。
-        - **print_file_path** (str) - 该路径用于保存打印数据。使用时 :class:`mindspore.ops.Print` 可以打印输入的张量或字符串信息，使用方法 :func:`mindspore.parse_print` 解析保存的文件。如果设置了此参数，打印数据保存到文件，未设置将显示到屏幕。如果保存的文件已经存在，则将添加时间戳后缀到文件中。将数据保存到文件解决了屏幕打印中的数据丢失问题，如果未设置，将报告错误:"prompt to set the upper absolute path"。当print输出到文件时，单次print调用输出的总数据的大小不能超过2GB（受限于protobuf）。
-        - **env_config_path** (str) - 通过 `mindspore.set_context(env_config_path="./mindspore_config.json")` 来设置MindSpore环境配置文件路径。
-
-          配置Running Data Recorder：
-
-          - **enable**：表示在发生故障时是否启用Running Data Recorder去收集和保存训练中的关键数据。设置为 ``True`` 时，将打开Running Data Recorder。设置为 ``False`` 时，将关闭Running Data Recorder。
-          - **mode**：设置导出数据时的RDR模式。当设置为 ``1`` 时，RDR只在故障情况下输出数据。当设置为 ``2`` 时，RDR在故障情况和正常结束情况下输出数据。默认值： ``1`` 。
-          - **path**：设置Running Data Recorder保存数据的路径。当前路径必须是一个绝对路径。
-
-          内存重用：
-
-          - **mem_Reuse**：表示内存复用功能是否打开。设置为 ``True`` 时，将打开内存复用功能。设置为 ``False`` 时，将关闭内存复用功能。
-
-          配置详细信息，请查看 `Running Data Recorder <https://www.mindspore.cn/docs/zh-CN/master/model_train/debug/rdr.html>`_ 和 `内存复用 <https://www.mindspore.cn/docs/zh-CN/master/model_train/optimize/mem_reuse.html>`_ 。
-
-        - **precompile_only** (bool) - 表示是否仅预编译网络。默认值： ``False`` 。设置为 ``True`` 时，仅编译网络，而不执行网络。
-        - **reserve_class_name_in_scope** (bool) - 表示是否将网络类名称保存到所属ScopeName中。默认值： ``True`` 。每个节点都有一个ScopeName。子节点的ScopeName是其父节点。如果 `reserve_class_name_in_scope` 设置为 ``True`` ，则类名将保存在ScopeName中的关键字"net-"之后。例如：
-
-          Default/net-Net1/net-Net2 (reserve_class_name_in_scope=True)
-
-          Default/net/net (reserve_class_name_in_scope=False)
-
+        - **print_file_path** (str) - 此参数将被弃用，将在后续版本中删除。
+        - **env_config_path** (str) - 此参数将被弃用，将在后续版本中删除。
+        - **precompile_only** (bool) - 表示是否仅预编译网络。默认值： ``False`` 。设置为 ``True`` 时，仅编译网络，而不执行网络。此参数将被弃用，将在后续版本中删除，请使用环境变量 `MS_DEV_PRECOMPILE_ONLY` 替代。
+        - **reserve_class_name_in_scope** (bool) - 此参数将被弃用，将在后续版本中删除。
         - **pynative_synchronize** (bool) - 表示是否在PyNative模式下启动设备同步执行。默认值： ``False`` 。设置为 ``False`` 时，将在设备上异步执行算子。当算子执行出错时，将无法定位特定错误脚本代码的位置。当设置为 ``True`` 时，将在设备上同步执行算子。这将降低程序的执行性能。此时，当算子执行出错时，可以根据错误的调用栈来定位错误脚本代码的位置。
         - **mode** (int) - 表示在GRAPH_MODE(0)或PYNATIVE_MODE(1)模式中运行，两种模式都支持所有后端。默认值： ``PYNATIVE_MODE`` 。
         - **enable_reduce_precision** (bool) - 表示是否开启降低精度计算。默认值： ``True`` 。设置为 ``True`` 时，不支持用户指定的精度，且精度将自动更改。设置为 ``False`` 时，如果未指定用例的精度，则会报错并退出。

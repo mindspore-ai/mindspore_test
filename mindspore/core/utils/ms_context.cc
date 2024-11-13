@@ -599,7 +599,6 @@ void MsContext::SetAscendConfig() {
 }
 
 void MsContext::InitBoolTypeDefaultValue() {
-  set_param<bool>(MS_CTX_ENABLE_DUMP, false);
   set_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK, false);
   set_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT, false);
   set_param<bool>(MS_CTX_ENABLE_REDUCE_PRECISION, true);
@@ -651,7 +650,6 @@ void MsContext::InitBoolTypeDefaultValue() {
 void MsContext::InitStringTypeDefaultValue() {
   set_param<std::string>(MS_CTX_PYTHON_EXE_PATH, "python");
   set_param<std::string>(MS_CTX_KERNEL_BUILD_SERVER_DIR, "");
-  set_param<std::string>(MS_CTX_SAVE_DUMP_PATH, ".");
   set_param<std::string>(MS_CTX_DETERMINISTIC, "OFF");
   set_param<std::string>(MS_CTX_ENV_CONFIG_PATH, "");
   set_param<std::string>(MS_CTX_AOE_TUNE_MODE, "");

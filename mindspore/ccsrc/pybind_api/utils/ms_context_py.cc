@@ -98,7 +98,6 @@ void RegMsContextDefs(const py::module *m) {
 void RegMsContext(const py::module *m) {
   (void)py::enum_<MsCtxParam>(*m, "ms_ctx_param", py::arithmetic())
     .value("check_bprop", MsCtxParam::MS_CTX_CHECK_BPROP_FLAG)
-    .value("enable_dump", MsCtxParam::MS_CTX_ENABLE_DUMP)
     .value("enable_graph_kernel", MsCtxParam::MS_CTX_ENABLE_GRAPH_KERNEL)
     .value("enable_reduce_precision", MsCtxParam::MS_CTX_ENABLE_REDUCE_PRECISION)
     .value("precompile_only", MsCtxParam::MS_CTX_PRECOMPILE_ONLY)
@@ -114,7 +113,6 @@ void RegMsContext(const py::module *m) {
     .value("_graph_memory_max_size", MsCtxParam::MS_CTX_GRAPH_MEMORY_MAX_SIZE)
     .value("print_file_path", MsCtxParam::MS_CTX_PRINT_FILE_PATH)
     .value("profiling_options", MsCtxParam::MS_CTX_PROFILING_OPTIONS)
-    .value("save_dump_path", MsCtxParam::MS_CTX_SAVE_DUMP_PATH)
     .value("deterministic", MsCtxParam::MS_CTX_DETERMINISTIC)
     .value("precision_mode", MsCtxParam::MS_CTX_PRECISION_MODE)
     .value("jit_compile", MsCtxParam::MS_CTX_ENABLE_JIT_COMPILE)
