@@ -209,6 +209,8 @@ class Profiler:
         output_path (str, optional): Output data path. Default: ``"./data"`` .
         profiler_level (ProfilerLevel, optional): (Ascend only) The level of profiling. Default: ``None``.
 
+            - None: Does not use ProfilerLevel to control the level of profiling data collection, used for
+              compatibility with older versions, it is recommended to configure ProfilerLevel as needed.
             - ProfilerLevel.Level0: Leanest level of profiling data collection, collects information about the elapsed
               time of the computational operators on the NPU and communication large operator information.
             - ProfilerLevel.Level1: Collect more CANN layer AscendCL data and AICore performance metrics and
