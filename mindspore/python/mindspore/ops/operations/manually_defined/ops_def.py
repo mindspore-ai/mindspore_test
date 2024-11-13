@@ -1171,17 +1171,15 @@ class Cast(Primitive):
         self.init_prim_io_names(inputs=['x', 'dst_type'], outputs=['output'])
 
     def check_elim(self, x, dtype):
-        if isinstance(x, (Tensor, numbers.Number, Parameter)):
-            if isinstance(x, Parameter):
-                data = x.data
-                if data.dtype == dtype:
-                    return (True, x)
-            if isinstance(x, Tensor) and x.dtype == dtype:
-                x = Tensor(x)
-                x.set_cast_dtype()
+        if isinstance(x, Parameter):
+            data = x.data
+            if data.dtype == dtype:
                 return (True, x)
-            if isinstance(x, numbers.Number):
-                return (True, Tensor(x, dtype=dtype))
+        if isinstance(x, Tensor) and x.dtype == dtype:
+            x.set_cast_dtype()
+            return (True, x)
+        if isinstance(x, numbers.Number):
+            return (True, Tensor(x, dtype=dtype))
         return (False, None)
 
     def __call__(self, input_x, dtype):
