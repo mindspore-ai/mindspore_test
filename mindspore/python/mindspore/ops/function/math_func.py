@@ -5996,7 +5996,7 @@ def atleast_1d(inputs):
     return tuple([_expand(arr, 1) for arr in inputs])
 
 
-def dstack(inputs):
+def dstack(tensors):
     r"""
     Stacks tensors along the third axis.
 
@@ -6004,7 +6004,7 @@ def dstack(inputs):
     2-D tensors :math:`(M,N)` should be reshaped to :math:`(M,N,1)` before concatenation.
 
     Args:
-        inputs (Union(List[Tensor], Tuple[Tensor])): A sequence of tensors.
+        tensors (Union(List[Tensor], Tuple[Tensor])): A sequence of tensors.
             The tensors must have the same shape along all but the third axis.
             1-D or 2-D tensors must have the same shape.
 
@@ -6013,8 +6013,8 @@ def dstack(inputs):
         The output shape is similar to the output of `numpy.dstack()` function.
 
     Raises:
-        TypeError: If `inputs` is not tuple or list.
-        ValueError: If `inputs` is empty.
+        TypeError: If `tensors` is not tuple or list.
+        ValueError: If `tensors` is empty.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -6033,24 +6033,24 @@ def dstack(inputs):
           [ 5. 11.]
           [ 6. 12.]]]
     """
-    if not isinstance(inputs, (tuple, list)):
-        raise TypeError(f"For 'dstack', 'inputs' must be list or tuple of tensors, but got {type(inputs)}")
-    if not inputs:
-        raise TypeError(f"For 'dstack', 'inputs' can not be empty.")
-    trans_inputs = ()
-    for tensor in inputs:
+    if not isinstance(tensors, (tuple, list)):
+        raise TypeError(f"For 'dstack', 'tensors' must be list or tuple of tensors, but got {type(tensors)}")
+    if not tensors:
+        raise TypeError(f"For 'dstack', 'tensors' can not be empty.")
+    trans_tensors = ()
+    for tensor in tensors:
         if not isinstance(tensor, Tensor):
-            raise TypeError(f"For 'dstack', each elements of 'inputs' must be Tensor, but got {type(tensor)}")
-        if tensor.size == 0:
-            raise TypeError(f"For 'dstack', each elements of 'inputs' can not be empty.")
-        if tensor.ndim <= 1:
-            tensor = _expand(tensor, 2)
-        if tensor.ndim == 2:
+            raise TypeError(f"For 'dstack', each elements of 'tensors' must be Tensor, but got {type(tensor)}")
+        if tensor.ndim == 0:
+            tensor = reshape_(tensor, (1, 1, 1))
+        elif tensor.ndim == 1:
+            tensor = expand_dims_(expand_dims_(tensor, 0), 2)
+        elif tensor.ndim == 2:
             tensor = expand_dims_(tensor, 2)
-        trans_inputs += (tensor,)
-    if not trans_inputs:
+        trans_tensors += (tensor,)
+    if not trans_tensors:
         raise ValueError("For 'dstack', at least one tensor is needed to concatenate.")
-    return _get_cache_prim(P.Concat)(2)(trans_inputs)
+    return _get_cache_prim(P.Concat)(2)(trans_tensors)
 
 
 @_primexpr
