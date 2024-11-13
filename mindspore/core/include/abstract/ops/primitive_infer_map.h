@@ -24,7 +24,6 @@
 #include <memory>
 #include <optional>
 #include "utils/hash_map.h"
-#include "ir/primitive.h"
 #include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"
 #include "ir/anf.h"

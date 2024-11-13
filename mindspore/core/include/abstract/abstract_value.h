@@ -26,7 +26,6 @@
 #include <memory>
 #include "utils/log_adapter.h"
 #include "utils/hashing.h"
-#include "utils/any.h"
 #include "utils/hash_map.h"
 #include "base/base.h"
 #include "base/user_data.h"
