@@ -1,0 +1,25 @@
+#operator dist reduce
+dist_comm_reduce:
+    args:
+        input:
+            dtype: tensor
+        op_type:
+            dtype: str
+        dst:
+            dtype: int
+        group:
+            dtype: str
+    args_signature:
+        rw_write: input
+    labels:
+        side_effect_mem: True
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: DistCommReduceAscend

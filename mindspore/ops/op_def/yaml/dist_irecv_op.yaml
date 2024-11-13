@@ -1,0 +1,20 @@
+#operator inner irecv
+dist_comm_irecv:
+    args:
+        input:
+            dtype: tensor
+        tag:
+            dtype: int
+        src:
+            dtype: int
+        group:
+            dtype: str
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: DistCommIrecvAscend

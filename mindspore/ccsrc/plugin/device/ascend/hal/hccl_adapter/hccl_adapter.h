@@ -85,6 +85,8 @@ class HcclAdapter {
                            const aclrtStream stream, HcclComm comm) const;
   HcclResult HcclReduce(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType, HcclReduceOp op,
                         uint32_t root, const aclrtStream stream, HcclComm comm) const;
+  HcclResult HcclScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType, uint32_t root,
+                         HcclComm comm, aclrtStream stream) const;
   HcclResult HcclAllGather(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                            const aclrtStream stream, HcclComm comm) const;
   HcclResult HcclReduceScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType, HcclReduceOp op,
@@ -150,6 +152,7 @@ class HcclAdapter {
   HcclBroadcastFunObj launch_hccl_broadcast_ = nullptr;
   HcclAllReduceFunObj launch_hccl_all_reduce_ = nullptr;
   HcclReduceFunObj launch_hccl_reduce_ = nullptr;
+  HcclScatterFunObj launch_hccl_scatter_ = nullptr;
   HcclReduceScatterFunObj launch_hccl_reduce_scatter_ = nullptr;
   HcclAllGatherFunObj launch_hccl_all_gather_ = nullptr;
   HcclSendFunObj launch_hccl_send_ = nullptr;

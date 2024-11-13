@@ -1,0 +1,20 @@
+#operator dist all gather
+dist_comm_all_gather_into_tensor:
+    args:
+        other:
+            dtype: tensor
+        input:
+            dtype: tensor
+        rank_size:
+            dtype: int
+        group:
+            dtype: str
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: DistCommAllGatherIntoTensorAscend

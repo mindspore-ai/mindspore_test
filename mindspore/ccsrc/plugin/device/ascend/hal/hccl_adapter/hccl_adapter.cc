@@ -108,6 +108,7 @@ void HcclAdapter::InitPlugin() {
   launch_hccl_broadcast_ = DlsymFuncObj(HcclBroadcast, plugin_handle_);
   launch_hccl_all_reduce_ = DlsymFuncObj(HcclAllReduce, plugin_handle_);
   launch_hccl_reduce_ = DlsymFuncObj(HcclReduce, plugin_handle_);
+  launch_hccl_scatter_ = DlsymFuncObj(HcclScatter, plugin_handle_);
   launch_hccl_reduce_scatter_ = DlsymFuncObj(HcclReduceScatter, plugin_handle_);
   launch_hccl_all_gather_ = DlsymFuncObj(HcclAllGather, plugin_handle_);
   launch_hccl_send_ = DlsymFuncObj(HcclSend, plugin_handle_);
@@ -147,6 +148,7 @@ void HcclAdapter::FinalizePlugin() {
   launch_hccl_broadcast_ = nullptr;
   launch_hccl_all_reduce_ = nullptr;
   launch_hccl_reduce_ = nullptr;
+  launch_hccl_scatter_ = nullptr;
   launch_hccl_reduce_scatter_ = nullptr;
   launch_hccl_all_gather_ = nullptr;
   launch_hccl_send_ = nullptr;
@@ -322,6 +324,11 @@ HcclResult HcclAdapter::HcclAllReduce(void *send_buf, void *recv_buf, uint64_t c
 HcclResult HcclAdapter::HcclReduce(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                    HcclReduceOp op, uint32_t root, const aclrtStream stream, HcclComm hccl_comm) const {
   return launch_hccl_reduce_(send_buf, recv_buf, count, dataType, op, root, hccl_comm, stream);
+}
+
+HcclResult HcclAdapter::HcclScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
+                                    uint32_t root, HcclComm comm, aclrtStream stream) const {
+  return launch_hccl_scatter_(send_buf, recv_buf, count, dataType, root, comm, stream);
 }
 
 HcclResult HcclAdapter::HcclReduceScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,

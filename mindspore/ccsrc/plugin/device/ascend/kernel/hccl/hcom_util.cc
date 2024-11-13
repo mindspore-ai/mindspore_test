@@ -112,9 +112,13 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclData
   size_t input_size;
   uint32_t type_size = 4;
   size_t rank_size = 1;
-
-  bool is_reduce_scatter =
-    primitive->name() == kReduceScatterOpName || primitive->name() == ops::kNameInnerCommReduceScatter;
+  static const std::set<string> &ops_name = {kReduceScatterOpName,
+                                             ops::kNameInnerCommReduceScatter,
+                                             ops::kNameDistCommReduceScatterTensor,
+                                             ops::kNameDistCommScatterTensor,
+                                             ops::kNameDistCommReduceScatter,
+                                             ops::kNameDistCommScatter};
+  bool is_reduce_scatter = (ops_name.count(primitive->name()) > 0);
   if (rank_size_opt.has_value()) {
     rank_size = LongToSize(rank_size_opt.value());
   } else if (is_reduce_scatter) {

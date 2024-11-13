@@ -6,10 +6,10 @@ mindspore.mint.distributed.get_rank
     在指定通信组中获取当前的设备序号。
 
     .. note::
-        - `get_rank` 方法应该在 `init_process_group` 方法之后使用。
+        `get_rank` 方法应该在 `mindspore.mint.distributed.init_process_group` 方法之后使用。
 
     参数：
-        - **group** (str) - 通信组名称，通常由 `mindspore.communication.create_group` 方法创建，否则将使用默认组。如果设置为 ``None`` ，会使用 ``GlobalComm.WORLD_COMM_GROUP`` 。默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，通常由 `mindspore.mint.distributed.new_group` 方法创建，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
 
     返回：
         int，调用该方法的进程对应的组内序号。
