@@ -55,7 +55,7 @@ def lstsqv2_grad_forward_func(dx, a, b):
     return ops.auto_generate.lstsq_v2_grad_op(dx, a, b)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_x86_cpu
 @pytest.mark.platform_arm_cpu
