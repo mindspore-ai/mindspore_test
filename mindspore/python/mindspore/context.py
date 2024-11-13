@@ -1276,8 +1276,8 @@ def _check_key(key):
 
 
 @args_type_check(mode=int, precompile_only=bool, device_target=str, device_id=int, save_graphs=(bool, int),
-                 save_graphs_path=str, enable_dump=bool, aoe_tune_mode=str, aoe_config=dict,
-                 save_dump_path=str, enable_reduce_precision=bool, variable_memory_max_size=str,
+                 save_graphs_path=str, aoe_tune_mode=str, aoe_config=dict,
+                 enable_reduce_precision=bool, variable_memory_max_size=str,
                  enable_auto_mixed_precision=bool, inter_op_parallel_num=int,
                  enable_graph_kernel=bool, reserve_class_name_in_scope=bool, check_bprop=bool,
                  max_device_memory=str, print_file_path=str, max_call_depth=int, env_config_path=str,
@@ -1317,10 +1317,6 @@ def set_context(**kwargs):
     | Debug Configuration     |  save_graphs                 |  CPU/GPU/Ascend            |
     |                         +------------------------------+----------------------------+
     |                         |  save_graphs_path            |  CPU/GPU/Ascend            |
-    |                         +------------------------------+----------------------------+
-    |                         |  enable_dump                 |  Ascend                    |
-    |                         +------------------------------+----------------------------+
-    |                         |  save_dump_path              |  Ascend                    |
     |                         +------------------------------+----------------------------+
     |                         |  deterministic               |  Ascend                    |
     |                         +------------------------------+----------------------------+
@@ -1426,44 +1422,12 @@ def set_context(**kwargs):
             When deterministic mode is on, model ops will be deterministic in Ascend. This means that if op run
             multiple times with the same inputs on the same hardware, it will have the exact same outputs each time.
             This is useful for debugging models.
-        enable_dump (bool): This parameters is deprecated, and will be deleted in the next version.
-        save_dump_path (str): This parameters is deprecated, and will be deleted in the next version.
-        print_file_path (str): The path of saving print data. If this parameter is set, print data is saved to
-            a file by default, and print_file_path is not set, the screen will be displayed.
-            If the saved file already exists, the timestamp suffix will be added to the file. Saving data to a file
-            solves the problem of data loss in screen printing when a large amount of data is generated.
-            If it is not set, an error will be reported: prompt to set the upper absolute path.
-            When print data to file, the total output bytes of single print must be less then 2GB(limited by
-            protobuf).
-        env_config_path (str): Config path for DFX.
-            Through mindspore.set_context(env_config_path="./mindspore_config.json")
-
-            configure RDR:
-
-            - enable: controls whether the RDR is enabled to collect the key data during training and
-              save key data in the fault scenario. When set to ``true`` , the RDR will be turned on.
-              When set to ``false`` , the RDR will be turned off.
-            - mode: sets the mode of RDR on exporting data. When set to ``1`` , the RDR only exports data
-              in the fault scenario. When set to ``2`` , the RDR exports data in the fault scenario and the
-              normal end scenario. Default: ``1`` .
-            - path: sets the path where RDR saves data. The current path must be absolute.
-
-            Memory reuse:
-
-            - mem_Reuse: controls whether the memory reuse function is turned on. When set to ``True`` ,
-              the memory reuse function is turned on. When set to ``False`` , the memory reuse function is turned off.
+        print_file_path (str):This parameter will be deprecated and will be removed in future versions.
+        env_config_path (str): This parameter will be deprecated and will be removed in future versions.
 
         precompile_only (bool): Whether to only precompile the network. Default: ``False`` .
             If set to ``True`` , the network will only be compiled, not executed.
-        reserve_class_name_in_scope (bool) : Whether to save the network class name in the scope. Default: ``True`` .
-            Each node has a scope. A scope of a subnode is the name of its parent node. If reserve_class_name_in_scope
-            is set to ``True`` , the class name will be saved after keyword 'net-' in the scope.
-            For example:
-
-            Default/net-Net1/net-Net2 (reserve_class_name_in_scope=True)
-
-            Default/net/net (reserve_class_name_in_scope=False)
-
+        reserve_class_name_in_scope (bool) : This parameter will be deprecated and will be removed in future versions.
         pynative_synchronize (bool): Whether to enable synchronous execution of the device in PyNative mode.
             Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
             device. When an error occurs in the execution of the operator, the specific error script code location
@@ -1837,10 +1801,17 @@ def set_context(**kwargs):
             logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated, "
                            "and will be removed in the next version.")
             continue
-        if key in ('enable_auto_mixed_precision', 'enable_dump', 'save_dump_path'):
+        if key in ('enable_auto_mixed_precision',):
             logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated. "
                            "For details, please see the interface parameter API comments")
             continue
+        if key == "print_file_path":
+            logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated due to changes in the behavior"
+                           f" of the print operator. Recommend not using this parameter and"
+                           f" directly viewing the screen output.")
+        if key in ('reserve_class_name_in_scope', 'env_config_path'):
+            logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated, "
+                           "and will be removed in the next version.")
         _check_key(key)
         if key == 'save_graphs':
             if value is True:
