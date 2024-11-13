@@ -2,27 +2,23 @@ le:
   description: |
     le(other) -> Tensor
 
-    Computes the boolean value of :math:`input <= other` element-wise.
+    Computes the boolean value of :math: `self <= other` element-wise.
 
     .. math::
 
         out_{i} =\begin{cases}
-            & \text{True,    if } input_{i}<=other_{i} \\
-            & \text{False,   if } input_{i}>other_{i}
+            & \text{True,    if } self_{i}<=other_{i} \\
+            & \text{False,   if } self_{i}>other_{i}
             \end{cases}
 
     .. note::
-        - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
+        - Inputs of `self` and `other` comply with the implicit type conversion rules to make the data types
           consistent.
-        - The inputs must be two tensors or one tensor and one scalar.
-        - When the inputs are one tensor and one scalar, the scalar could only be a constant.
+        - The `other` must be tensor or scalar. When the `other` is scalar, the scalar could only be a constant.
 
     Args:
-        input (Union[Tensor]): The first input is a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, the second input should be a
-            number.Number or bool value, or a Tensor whose data type is number or bool\_.
+        other (Union[Tensor, number.Number, bool]): The `other` should be a number.Number or bool value,
+            or a Tensor whose data type is number or bool\_.
 
     Returns:
         Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
