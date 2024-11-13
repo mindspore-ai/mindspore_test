@@ -480,9 +480,10 @@ NodePtrList BinopGather(BpropBuilder *ib) {
   auto ori_indices = indices;  // indices may be changed latter.
   auto axis = ib->GetInput(kIndex2);
   auto batch_dims_ptr = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex5);
   auto x_shp = ib->GetShape(x);
-  auto out_shp = ib->GetShape(dout);
+  auto out_shp = ib->GetShape(out);
   auto ind_shp = ib->GetShape(indices);
 
   if (out_shp.empty()) {
