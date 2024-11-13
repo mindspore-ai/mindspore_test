@@ -147,6 +147,24 @@ REG_FALLBACK_BUILDER("ZerosLikeExt").SetBody(BODYFUNC(ib) {
   return {out};
 });
 
+REG_FALLBACK_BUILDER("NewOnes").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto size = ib->GetInput(kIndex1);
+  auto dtype = ib->GetInput(kIndex2);
+  int64_t dtype_val;
+  if (ib->GetDtype(dtype)->isa<TypeNone>()) {
+    auto input_type = ib->GetDtype(input)->type_id();
+    dtype_val = static_cast<int64_t>(input_type);
+  } else {
+    auto dtype_ptr = dtype->BuildValue();
+    dtype_val = GetValueWithCheck<int64_t>(dtype_ptr);
+  }
+  auto out_type = TypeIdToType(static_cast<TypeId>(dtype_val));
+  auto value = ib->Tensor(1, out_type);
+  auto out = ib->Emit("FillV2", {size, value});
+  return {out};
+});
+
 REG_FALLBACK_BUILDER("NewZeros").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto size = ib->GetInput(kIndex1);
