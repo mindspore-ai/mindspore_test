@@ -25,6 +25,7 @@ from abc import abstractmethod, ABCMeta
 from packaging import version
 import numpy as np
 from mindspore import log as logger
+from mindspore.log import vlog_print
 from mindspore._c_expression import MSContext, ms_ctx_param
 from ..version import __version__
 
@@ -507,3 +508,4 @@ def _add_cuda_path():
 _set_pb_env()
 check_version_and_env_config()
 _add_cuda_path()
+vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Initialization MindSpore.")
