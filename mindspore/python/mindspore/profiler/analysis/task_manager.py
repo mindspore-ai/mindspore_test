@@ -17,7 +17,7 @@ import time
 from typing import Dict, Any
 from collections import defaultdict
 from multiprocessing import Manager
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Process
 
 from mindspore import log as logger
 from mindspore.profiler.common.process_bar import ProcessBar
@@ -79,17 +79,14 @@ class TaskManager:
         Args:
             data (Any): The data to be processed by the workflows.
         """
-        with ProcessPoolExecutor() as executor:
-            future_to_flow = {
-                executor.submit(self._run_flow, flow_name, workflow, data): flow_name
-                for flow_name, workflow in self.workflows.items()
-            }
-            for future in as_completed(future_to_flow):
-                flow_name = future_to_flow[future]
-                try:
-                    future.result()
-                except Exception as e: # pylint: disable=W0703
-                    logger.error("Flow %s encountered an error: %s", flow_name, e)
+        processes = []
+        for flow_name, workflow in self.workflows.items():
+            p = Process(target=self._run_flow, args=(flow_name, workflow, data))
+            processes.append(p)
+            p.start()
+
+        for p in processes:
+            p.join()
 
     def _run_flow(self, flow_name: str, workflow: WorkFlow, data: Any) -> None:
         """

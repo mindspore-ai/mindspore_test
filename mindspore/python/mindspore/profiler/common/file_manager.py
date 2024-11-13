@@ -187,7 +187,8 @@ class FileManager:
             return
 
         PathManager.check_input_file_path(src_path)
-        PathManager.check_directory_path_readable(dst_path)
+        src_dir = os.path.dirname(src_path)
+        PathManager.check_directory_path_readable(src_dir)
         dst_dir = os.path.dirname(dst_path)
         PathManager.check_directory_path_writeable(dst_dir)
 
@@ -196,3 +197,12 @@ class FileManager:
         except (shutil.Error, IOError) as err:
             msg = f"Failed to copy from '{src_path}' to '{dst_path}': {err}"
             raise RuntimeError(msg) from err
+
+    @classmethod
+    def get_csv_file_list_by_start_name(cls, source_path: str, start_name: str):
+        """Get all the csv files that match the name"""
+        file_list = []
+        for file_name in os.listdir(source_path):
+            if file_name.startswith(start_name) and file_name.endswith(".csv"):
+                file_list.append(os.path.join(source_path, file_name))
+        return file_list

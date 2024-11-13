@@ -152,7 +152,7 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         fwk_to_fwk_flows = []
         for flow_id, flow_pair in framework_pool.get_start_to_end_flow_pairs().items():
             if len(flow_pair["start"]) != 1 or len(flow_pair["end"]) != 1:
-                logger.warning(
+                logger.info(
                     f"Mindspore op flow expected exactly one start and one end event with flow id {flow_id}, "
                     f"but got {len(flow_pair['start'])} start and {len(flow_pair['end'])} end events"
                 )

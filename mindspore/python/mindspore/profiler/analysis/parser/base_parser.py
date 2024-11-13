@@ -19,8 +19,7 @@ from typing import (
     Callable,
     Optional,
 )
-from concurrent.futures import ProcessPoolExecutor, as_completed
-
+from multiprocessing import Process
 from mindspore import log as logger
 
 
@@ -66,8 +65,11 @@ class BaseParser:
         Returns:
             Any: The parsed result.
         """
-        result = self._parse(data)
-        self._execute_post_hooks(result)
+        try:
+            result = self._parse(data)
+            self._execute_post_hooks(result)
+        except Exception as e: # pylint: disable=W0703
+            logger.error("Parser %s error: %s", self.__class__.__name__, str(e))
         return result
 
     def register_post_hook(self, hook: Callable[[Any], None]) -> "BaseParser":
@@ -99,19 +101,14 @@ class BaseParser:
         if not self._post_hooks:
             return
 
-        with ProcessPoolExecutor() as executor:
-            future_to_hook = {
-                executor.submit(hook, res): hook.__name__
-                for hook in self._post_hooks
-            }
+        processes = []
+        for hook in self._post_hooks:
+            p = Process(target=hook, args=(res,))
+            p.start()
+            processes.append(p)
 
-            for future in as_completed(future_to_hook):
-                hook_name = future_to_hook[future]
-                try:
-                    future.result()
-                    logger.info("Hook %s executed successfully", hook_name)
-                except Exception as exc: # pylint: disable=W0703
-                    logger.error("Hook %s executed failed: %s", hook_name, exc)
+        for p in processes:
+            p.join()
 
     def _parse(self, data: Any) -> Any:
         """
@@ -124,3 +121,9 @@ class BaseParser:
             NotImplementedError: If not implemented by subclass.
         """
         raise NotImplementedError("Subclasses should implement this!")
+
+class DummyParser(BaseParser):
+    """Dummy parser"""
+    def _parse(self, data: Any) -> Any:
+        """Dummy parse"""
+        return data

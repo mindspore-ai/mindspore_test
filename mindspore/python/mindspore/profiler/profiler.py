@@ -13,38 +13,40 @@
 # limitations under the License.
 # ============================================================================
 """Profiling api file."""
-from typing import Optional as Opt
+import os
+from typing import Optional
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
+from mindspore import log as logger
 from mindspore.profiler.common.constant import ProfilerStepNameConstant
 from mindspore.profiler.common.profiler_context import ProfilerContext
-from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
-from mindspore.profiler.common.record_function import RecordFunction
 from mindspore.profiler.platform.npu_profiler import NPUProfilerAnalysis
 from mindspore.profiler.profiler_action_controller import ProfilerActionController
 from mindspore.profiler.profiler_interface import ProfilerInterface
 from mindspore.profiler.schedule import _default_schedule_fn, ProfilerAction
-
-from mindspore import log as logger
+from mindspore.profiler.common.record_function import RecordFunction
+from mindspore.profiler.common.path_manager import PathManager
+from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
 def tensor_board_trace_handler():
     try:
         NPUProfilerAnalysis.online_analyse()
-        ProfilerPathManager.reset()
+        if ProfilerContext().data_simplification:
+            ProfilerPathManager().simplify_data()
     except Exception as e:  # pylint: disable=W0703
         logger.error("Call tensorboard_trace_handler failed. Exception: %s", str(e))
 
 
-class RefactorProfiler:
+class Profiler:
     """
     Refactor Profiler class
     """
 
     def __init__(self, **kwargs) -> None:
-        self._prof_context: ProfilerContext = ProfilerContext(**kwargs)
+        self._prof_context: ProfilerContext = ProfilerContext()
+        self._prof_context.set_params(**kwargs)
         self._has_started: bool = False
-        ProfilerInterface.init()
-        profilerInterface = ProfilerInterface()
         self.schedule_arg = kwargs.get('schedule')
         if self.schedule_arg is not None:
             self.schedule = self._prof_context.schedule
@@ -54,19 +56,21 @@ class RefactorProfiler:
             self.schedule = _default_schedule_fn
             self._record_steps: bool = False
             self._schedule_no_use_step = None
-        self._step_rec_fn: Opt[RecordFunction] = None
+        self._step_rec_fn: Optional[RecordFunction] = None
         self.step_num = 0
         self.current_action: ProfilerAction = self.schedule(self.step_num)
-        self.action_controller = ProfilerActionController(profilerInterface, self._prof_context.on_trace_ready)
+        self.action_controller = ProfilerActionController(ProfilerInterface, self._prof_context.on_trace_ready)
         if self._prof_context.start_profile:
             self.start()
 
     def start(self) -> None:
-        if not self._has_started:
-            self._has_started = True
-        else:
+        """
+        Start the profiler
+        """
+        if self._has_started:
             logger.warning("The profiler has already started. Do not turn on again in the open state.")
             return
+        self._has_started = True
         self.action_controller.transit_action(ProfilerAction.NONE, self.current_action)
         if self._record_steps:
             self._step_rec_fn = RecordFunction(ProfilerStepNameConstant.PROFILER_STEP + str(self.step_num))
@@ -74,64 +78,99 @@ class RefactorProfiler:
 
     def stop(self) -> None:
         """
-        Stops the execution of the profiler.
-
-        This method is responsible for halting the profile's operation and handling the associated logic.
-        If the profiler has a schedule but has not used the `step()` method to collect data, a warning is logged.
-        If the profiler has not been started, an error is logged. If the profiler has been started, it stops recording
-        steps and updates the controller's state.
-
-        Args:
-            None
-
-        Returns:
-            None
-
-        Raises:
-            None
-
-        Notes:
-            - Ensure that the profiler has been properly initialized before calling this method.
-            - If the profiler has not been started, calling this method will log an error.
+        Stop the profiler
         """
         if self._schedule_no_use_step:
             logger.warning("The profiler has schedule. Please use step() to collect data.")
             return
-        if self._has_started:
-            self._has_started = False
-        else:
+        if not self._has_started:
             logger.error("The profiler has not started. Do not turn off again in the closed state.")
             return
+        self._has_started = False
         if self._record_steps and self._step_rec_fn:
             self._step_rec_fn.stop()
-        self.action_controller.transit_action(self.current_action, None)
+        if self.schedule_arg:
+            self.action_controller.transit_action(self.current_action, None)
+        else:
+            ProfilerInterface.stop()
 
-    def analyse(self) -> None:
-        ProfilerInterface.stop()
+    def analyse(self, offline_path=None, pretty=False, step_list=None, mode="sync") -> None:
+        """
+        Analyse the profiling data.
+        """
+        if self._has_started:
+            ProfilerInterface.stop()
+            self._has_started = False
+
+        if self.schedule_arg:
+            logger.warning("The profiler has schedule. Please use 'on_trace_ready' to analyse data.")
+            return
+
         ProfilerInterface.analyse()
         ProfilerInterface.finalize()
 
+    @classmethod
+    def offline_analyse(cls, path: str, pretty=False, step_list=None, data_simplification=False) -> None:
+        """
+        Analyze training performance data offline, which is invoked after performance data collection is completed.
+
+        Args:
+            path (str): The profiling data path which need to be analyzed offline.
+                There needs to be a profiler directory in this path.
+            pretty (bool, optional): Whether to pretty json files. Default: ``False``.
+            step_list (list, optional): A list of steps that need to be analyzed. Default: ``None``.
+                By default, all steps will be analyzed.
+            data_simplification (bool, optional): Whether to enable data simplification. Default: ``True``.
+
+        Examples:
+            1. Single-device scenario:
+            {path}
+            ├── ASCEND_PROFILER_OUTPUT/
+            ├── FRAMEWORK/
+            └── PROF_{timestamp}/
+
+            2. Multi-device scenario (rank 0 and rank 1):
+            {path}
+            ├── {}_ascend_ms/  # rank 0
+            │   ├── ASCEND_PROFILER_OUTPUT/
+            │   ├── FRAMEWORK/
+            │   └── PROF_{}/
+            └── {}_ascend_ms/  # rank 1
+
+        >>> from mindspore import Profiler
+        >>> Profiler.offline_analyse("./profiling_path")
+        """
+        real_path = PathManager.get_abs_path(path)
+        PathManager.check_input_directory_path(real_path)
+        ascend_ms_path_list = PathManager.get_ascend_ms_path_list(real_path)
+
+        if not ascend_ms_path_list:
+            msg = (f"Invalid path: {real_path}. Expected a *_ascend_ms_* directory "
+                   "or a parent directory of multiple *_ascend_ms_*")
+            logger.error(msg)
+            return
+
+        worker_number = min(os.cpu_count() // 2, len(ascend_ms_path_list))
+        with ProcessPoolExecutor(max_workers=worker_number) as executor:
+            futures = [
+                executor.submit(
+                    NPUProfilerAnalysis.offline_analyse,
+                    ascend_ms_path,
+                    pretty,
+                    step_list,
+                    data_simplification
+                ) for ascend_ms_path in ascend_ms_path_list
+            ]
+            # 等待所有任务完成
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e: # pylint: disable=W0703
+                    logger.error("offline analysis failed: %s", str(e))
+
     def step(self) -> None:
         """
-        Executes a single step in the profiling process.
-
-        This method checks if the profiler is started and if a schedule is set. If both conditions are met,
-        it proceeds to update the current action based on the schedule, records the transition using the
-        action controller, and starts or stops recording as needed.
-
-        The method's behavior is as follows:
-        1. Checks if a schedule is set; if not, logs an error and returns.
-        2. Checks if the profiler has started; if not, logs an error and returns.
-        3. Stops the current recording function if recording steps are enabled.
-        4. Updates the step number and calculates the new current action based on the schedule.
-        5. Notifies the action controller of the action transition.
-        6. Starts a new recording function if recording steps are enabled.
-
-        Raises:
-            None
-
-        Returns:
-            None
+        Step the profiler.
         """
         if self.schedule_arg is None:
             logger.error("With no schedule in the Profiler, step takes no effect!")
@@ -149,8 +188,9 @@ class RefactorProfiler:
         self._step_rec_fn.start()
         self._schedule_no_use_step = False
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> 'Profiler':
         self.start()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.stop()
@@ -158,3 +198,4 @@ class RefactorProfiler:
     def __del__(self):
         if self._has_started:
             self.stop()
+            logger.warning("Profiler is stopped at the end of the program.")

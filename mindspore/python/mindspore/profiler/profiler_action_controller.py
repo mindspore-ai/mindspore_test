@@ -77,7 +77,6 @@ class ProfilerActionController:
                 # Check whether the action is in the normal map
                 action_list = self.handle_normal_action(prev_action, current_action)
         if not action_list:
-            logger.warning(f"No conversion action from prev action: {prev_action} to current action: {current_action}")
             return
         for action in action_list:
             action()
