@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/copy_ext.h"
+#include "kernel/ascend/pyboost/customize/inplace_copy.h"
 #include <memory>
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/op_register.h"
@@ -24,8 +24,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr CopyExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &variable_tensor,
-                                             const BaseTensorPtr &value_tensor) {
+tensor::BaseTensorPtr InplaceCopyAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                 const BaseTensorPtr &variable_tensor,
+                                                 const BaseTensorPtr &value_tensor) {
   MS_LOG(DEBUG) << "Call Copy start";
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), variable_tensor, value_tensor);
   op->set_outputs({variable_tensor});
