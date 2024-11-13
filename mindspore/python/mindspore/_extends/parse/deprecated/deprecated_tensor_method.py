@@ -178,7 +178,7 @@ deprecated_tensor_method_map = {
     # 80 outer
 
     # 81 permute
-    "permute": "deprecated_tensor_permute",
+
     # 82 pow
 
     # 83 prod

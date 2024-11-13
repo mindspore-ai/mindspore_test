@@ -2023,6 +2023,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('numel')(self)
 
+    def permute(self, *axis):
+        """
+        For details, please refer to :func:`mindspore.ops.permute`.
+        """
+        perm = validator.check_transpose_axis(axis, self.ndim)
+        return tensor_operator_registry.get('permute')(self, perm)
+
     def positive(self):
         """
         For details, please refer to :func:`mindspore.ops.positive`.

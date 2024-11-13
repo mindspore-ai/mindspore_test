@@ -197,7 +197,7 @@ from mindspore.ops.function.array_func import min as min_func
 # 80 outer
 
 # 81 permute
-from mindspore.ops.function.math_func import permute
+
 # 82 pow
 from mindspore.ops.auto_generate import pow
 # 83 prod
@@ -669,13 +669,6 @@ def tensor_neg(input):
 # 80 outer
 
 # 81 permute
-def tensor_permute(input, axis):
-    return permute(input, axis)
-
-
-def deprecated_tensor_permute(input, dims):
-    return permute(input, dims)
-
 
 # 82 pow
 def tensor_pow(input, exponent):
