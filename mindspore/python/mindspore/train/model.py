@@ -46,7 +46,7 @@ from mindspore.parallel._utils import _get_parallel_mode, _get_device_num, _get_
 from mindspore.parallel._ps_context import _is_role_worker, _is_role_pserver, _is_ps_mode, \
     _cache_enable, _enable_distributed_mindrt
 from mindspore.train.metrics import Loss
-from mindspore.train._utils import vlog_print
+from mindspore.log import vlog_print
 from mindspore import nn
 from mindspore.boost import AutoBoost
 from mindspore.context import ParallelMode
