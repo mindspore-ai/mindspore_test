@@ -2,15 +2,12 @@ greater:
   description: |
     greater(other) -> Tensor
     
-    Compare the value of the input parameters :math:`input > other` element-wise, and the output result is a bool value.
+    Compare the value of the input parameters :math:`self > other` element-wise, and the output result is a bool value.
 
     Refer to :func:`mindspore.ops.gt` for more details.
 
     Args:
-        input (Union[Tensor, Number]): The first input is a Number or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ .
-        other (Union[Tensor, Number]): The second input, which is a Number or a tensor whose data type is
+        other (Union[Tensor, Number]): It is a Number or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
