@@ -384,6 +384,12 @@ from mindspore.ops.auto_generate import mm_ext as mm
 # 382
 from mindspore.ops.function.math_func import dstack
 
+# 501
+from mindspore.ops.function.math_func import addbmm_ext as addbmm
+
+# 502
+from mindspore.ops.function.math_func import addmm_ext as addmm
+
 # 505
 from mindspore.ops.function.math_func import addmv_ext as addmv
 
@@ -2318,6 +2324,12 @@ __all__ = [
 
     # 406
     'allclose',
+
+    # 501
+    'addbmm',
+
+    # 502
+    'addmm',
 
     # 505
     'addmv',

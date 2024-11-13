@@ -119,7 +119,7 @@ NodePtr MaybeMultiply(BpropBuilder *ib, const TypePtr &input_type, const NodePtr
       auto s_value = GetValue<bool>(s_ptr);
       is_one = s_value == True;
     } else {
-      MS_EXCEPTION(TypeError) << "For Baddbmm grad " << arg_name << "'s type is wrong!";
+      MS_EXCEPTION(TypeError) << "For " << ib->name() << " grad " << arg_name << "'s type is wrong!";
     }
   }
   auto out = is_one ? t : ib->Emit("Muls", {t, s});
@@ -411,6 +411,20 @@ NodePtr MeanExtGrad(BpropBuilder *ib, const NodePtr &input, NodePtr axis, const 
   auto dx = ib->Div(grad, div_shape_node);
   return dx;
 }
+
+DEF_PURE_SHAPE_CALC(g_addbmm_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto batch1_shape = inputs.at(kIndex0);
+    auto batch2_shape = inputs.at(kIndex1);
+    ShapeVector ret_shape(batch1_shape.begin(), batch1_shape.end());
+    ret_shape.back() = *(batch2_shape.end() - 1);
+    return {ret_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    auto x_shape = inputs[0];
+    auto rank = IsDynamicRank(x_shape) ? -1 : SizeToLong(x_shape.size());
+    return {rank};
+  });
 
 DEF_PURE_SHAPE_CALC(g_fft_dct_axis2tuple)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
@@ -3555,6 +3569,48 @@ REG_BPROP_BUILDER("InplaceIndexAdd").SetUnusedInputs({i0, i2, i3}).SetBody(BODYF
   return {dout, ib->OutZeros(indices), ib->Gather(dout, indices, ib->EmitValue(ib->GetAttr("axis")))};
 });
 
+REG_BPROP_BUILDER("Addmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mat1 = ib->GetInput(kIndex1);
+  auto mat2 = ib->GetInput(kIndex2);
+  auto beta = ib->GetInput(kIndex3);
+  auto alpha = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+  NodePtr input_grad{nullptr};
+  auto input_type = ib->GetDtype(input);
+  if (input->need_compute_grad_out()) {
+    input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
+    auto input_shape = ib->Shape(input);
+    auto bc_axis = ib->BroadcastGradientArgs(input, dout);
+    auto bc_axis_shape_ptr = bc_axis[kIndex0]->GetShape();
+    if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
+      auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
+      auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
+        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[kIndex0], e->Value(false), e->EmitValue(kNone)}),
+                           input_shape)};
+      };
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[kIndex0]}), ib->Value<int64_t>(0));
+      input_grad = ib->Conditional(cond, true_branch, false_branch);
+    } else {
+      auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
+      MS_EXCEPTION_IF_NULL(bc_axis_shape);
+      if (bc_axis_shape->size() > 0) {
+        input_grad = ib->Reshape(
+          ib->Emit("SumExt", {input_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), input_shape);
+      }
+    }
+  } else {
+    input_grad = ib->OutZeros(input);
+  }
+  auto mat1_grad = mat1->need_compute_grad_out()
+                     ? MaybeMultiply(ib, input_type, ib->BatchMatMul(dout, mat2, false, true), alpha, "alpha")
+                     : ib->OutZeros(mat1);
+  auto mat2_grad = mat2->need_compute_grad_out()
+                     ? MaybeMultiply(ib, input_type, ib->BatchMatMul(mat1, dout, true, false), alpha, "alpha")
+                     : ib->OutZeros(mat2);
+  return {input_grad, mat1_grad, mat2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
+});
+
 REG_BPROP_BUILDER("InplaceAddmm").SetUnusedInputs({i0, i3, i5}).SetBody(BODYFUNC(ib) {
   auto mat1 = ib->GetInput(kIndex1);
   auto mat2 = ib->GetInput(kIndex2);
@@ -3619,6 +3675,53 @@ REG_BPROP_BUILDER("Addmv").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
                 : ib->OutZeros(vec);
 
   return {input_grad, dmat, dvec, ib->OutZeros(beta), ib->OutZeros(alpha)};
+});
+
+REG_BPROP_BUILDER("Addbmm").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto batch1 = ib->GetInput(kIndex1);
+  auto batch2 = ib->GetInput(kIndex2);
+  auto beta = ib->GetInput(kIndex3);
+  auto alpha = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+  NodePtr input_grad{nullptr};
+  auto input_type = ib->GetDtype(input);
+  if (input->need_compute_grad_out()) {
+    input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
+    auto input_shape = ib->Shape(input);
+    auto bc_axis = ib->BroadcastGradientArgs(input, dout);
+    auto bc_axis_shape_ptr = bc_axis[kIndex0]->GetShape();
+    if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
+      auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
+      auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
+        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[kIndex0], e->Value(false), e->EmitValue(kNone)}),
+                           input_shape)};
+      };
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[kIndex0]}), ib->Value<int64_t>(0));
+      input_grad = ib->Conditional(cond, true_branch, false_branch);
+    } else {
+      auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
+      MS_EXCEPTION_IF_NULL(bc_axis_shape);
+      if (bc_axis_shape->size() > 0) {
+        input_grad = ib->Reshape(
+          ib->Emit("SumExt", {input_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), input_shape);
+      }
+    }
+  } else {
+    input_grad = ib->OutZeros(input);
+  }
+  auto grad_unsqueeze = ib->ExpandDims(dout, 0);
+  auto expand_shape = ib->ShapeCalc(g_addbmm_shapecalc, {batch1, batch2})[kIndex0];
+  auto grad_unsqueeze_expand = ib->Emit("BroadcastTo", {grad_unsqueeze, expand_shape});
+  auto batch1_grad =
+    batch1->need_compute_grad_out()
+      ? MaybeMultiply(ib, input_type, ib->BatchMatMul(grad_unsqueeze_expand, batch2, false, true), alpha, "alpha")
+      : ib->OutZeros(batch1);
+  auto batch2_grad =
+    batch2->need_compute_grad_out()
+      ? MaybeMultiply(ib, input_type, ib->BatchMatMul(batch1, grad_unsqueeze_expand, true, false), alpha, "alpha")
+      : ib->OutZeros(batch2);
+  return {input_grad, batch1_grad, batch2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
 
 REG_BPROP_BUILDER("Baddbmm").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {

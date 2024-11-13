@@ -40,7 +40,7 @@ def baddbmm_forward_func(input_x, batch1, batch2):
 
 @test_utils.run_with_cell
 def addmm_forward_func(input_x, mat1, mat2):
-    return ops.auto_generate.addmm(input_x, mat1, mat2, 1, 1)
+    return ops.auto_generate.addmm_op(input_x, mat1, mat2, 1, 1)
 
 
 @test_utils.run_with_cell
