@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -792,6 +792,45 @@ def inputs(vectors, maxlen=50):
     return input_, mask, segment
 
 
+def test_minddataset_padded_samples_exception():
+    """
+    Feature: MindDataset
+    Description: Test invalid padded_sample
+    Expectation: Output is equal to the expected output
+    """
+    mindrecord_name = "test_padded_sample.mindrecord"
+    try:
+        writer = FileWriter(file_name=mindrecord_name, shard_num=1, overwrite=True)
+        schema_json = {"file_name": {"type": "string"}, "label": {"type": "int32"}, "data": {"type": "float64"}}
+        writer.add_schema(schema_json, "test_schema")
+        indexes = ["file_name", "data"]
+        writer.add_index(indexes)
+        for i in range(10):
+            data = [{"file_name": str(i) + ".jpg", "label": i, "data": float(i)}]
+            writer.write_raw_data(data)
+        writer.commit()
+
+        columns_list = ["label", "file_name", "data"]
+        padded_sample = {"data": np.array([1, 2, 3]), "file_name": "test_file_name.jpg", "label": -1}
+        data_set = ds.MindDataset(mindrecord_name, columns_list, 1,
+                                  padded_sample=padded_sample, num_padded=1, shuffle=False)
+        with pytest.raises(RuntimeError) as err:
+            for _ in data_set.create_dict_iterator(num_epochs=1, output_numpy=True):
+                pass
+        assert "Invalid padded_sample, the value of column: data should be string or number but got: {}, " + \
+            "check 'padded_sample'." in str(err.value)
+        if os.path.exists(mindrecord_name):
+            os.remove(mindrecord_name)
+        if os.path.exists("{}.db".format(mindrecord_name)):
+            os.remove("{}.db".format(mindrecord_name))
+    except Exception as error:
+        if os.path.exists(mindrecord_name):
+            os.remove(mindrecord_name)
+        if os.path.exists("{}.db".format(mindrecord_name)):
+            os.remove("{}.db".format(mindrecord_name))
+        raise error
+
+
 if __name__ == '__main__':
     test_cv_minddataset_reader_basic_padded_samples()
     test_cv_minddataset_partition_padded_samples()
@@ -805,3 +844,4 @@ if __name__ == '__main__':
     test_nlp_minddataset_reader_basic_padded_samples()
     test_nlp_minddataset_reader_basic_padded_samples_multi_epoch()
     test_nlp_minddataset_reader_basic_padded_samples_check_whole_reshuffle_result_per_epoch()
+    test_minddataset_padded_samples_exception()

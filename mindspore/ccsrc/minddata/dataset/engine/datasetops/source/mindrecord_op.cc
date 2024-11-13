@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -262,6 +262,10 @@ Status MindRecordOp::LoadTensorRow(TensorRow *tensor_row, const std::vector<uint
       RETURN_IF_NOT_OK(shard_column->GetColumnTypeByName(column_name, &column_data_type, &column_data_type_size,
                                                          &column_shape, &category));
       if (category == mindrecord::ColumnInRaw) {
+        CHECK_FAIL_RETURN_UNEXPECTED_MR(sample_json_[column_name].is_string() || sample_json_[column_name].is_number(),
+                                        "Invalid padded_sample, the value of column: " + column_name +
+                                          " should be string or number but got: " + sample_json_[column_name].dump() +
+                                          ", check 'padded_sample'.");
         RETURN_IF_NOT_OK(shard_column->GetColumnFromJson(column_name, sample_json_, &data_ptr, &n_bytes));
       } else if (category == mindrecord::ColumnInBlob) {
         CHECK_FAIL_RETURN_UNEXPECTED(sample_bytes_.find(column_name) != sample_bytes_.end(),
