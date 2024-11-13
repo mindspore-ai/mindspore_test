@@ -31,7 +31,7 @@ class AddTensorDocsGenerator(BaseGenerator):
 
     def __init__(self):
         self.ADD_TENSOR_DOCS_TEMPLATE = template.ADD_TENSOR_DOCS_TEMPLATE
-        self.attach_single_docstr_template = Template('attach_docstr("${api_name}", """${docstr}""")')
+        self.attach_single_docstr_template = Template('attach_docstr("${api_name}", r"""${docstr}""")')
 
     def generate(self, work_path, tensor_docs_data):
         """
