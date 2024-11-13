@@ -1,4 +1,4 @@
-# Copyright 2022-2024 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""profiler context"""
+"""Profiler Context"""
 import os
 from typing import (
     Dict,
     Any,
     Optional,
     List,
-    Set, Callable,
+    Set,
+    Callable,
 )
 
 from mindspore.communication.management import GlobalComm
@@ -46,17 +47,25 @@ class ProfilerContext:
     Profiler context manage all parameters and paths on runtime.
     """
 
-    def __init__(self, **kwargs):
-        self._profiler_params_mgr: ProfilerParameters = ProfilerParameters(**kwargs)
+    def __init__(self):
+        self._profiler_params_mgr: ProfilerParameters = None
         self._device_id: Optional[str] = None
         self._rank_id: Optional[str] = None
         self._device_target: Optional[str] = None
         self._dynamic_status: Optional[bool] = None
-        self._model_iteration_dict: Optional[Dict[int, int]] = None
+        self._step_list: Optional[int] = None
+        self._pretty: bool = False
+        self._profiler_path_mgr: ProfilerOutputPath = None
 
         self._init_device_target()
         self._init_device_id()
         self._init_rank_id()
+
+    def set_params(self, **kwargs):
+        """
+        Set profiler parameters and paths
+        """
+        self._profiler_params_mgr: ProfilerParameters = ProfilerParameters(**kwargs)
         self._profiler_path_mgr: ProfilerOutputPath = ProfilerOutputPath(
             device_id=int(self._device_id), rank_id=int(self._rank_id)
         )
@@ -73,7 +82,7 @@ class ProfilerContext:
             "rank_id": self._rank_id,
             "device_target": self._device_target,
             "dynamic_status": self._dynamic_status,
-            "model_iteration_dict": self._model_iteration_dict,
+            "step_list": self._step_list,
         }
 
     def load_offline_profiler_params(self, profiler_parameters: Dict[str, Any]) -> None:
@@ -85,20 +94,18 @@ class ProfilerContext:
 
         for param, (_, _) in self._profiler_params_mgr.PARAMS.items():
             if param in profiler_parameters:
-                # 处理特殊类型的参数
                 if param == "profiler_level":
                     value = ProfilerLevel(profiler_parameters[param])
                 elif param == "aicore_metrics":
                     value = AicoreMetrics(profiler_parameters[param])
                 elif param == "activities":
                     value = [ProfilerActivity(activity) for activity in profiler_parameters[param]]
+                elif param == "schedule":
+                    continue
                 else:
                     value = profiler_parameters[param]
 
                 setattr(self._profiler_params_mgr, param, value)
-                print(f"load_offline_profiler_params: {param} = {value}")
-
-        print(f"original_params : {self._profiler_params_mgr.original_params}")
 
     @property
     def device_target_set(self) -> Set[str]:
@@ -117,7 +124,10 @@ class ProfilerContext:
         Returns:
             Dict[str, Any]: A dictionary of NPU profiler parameters.
         """
-        return self._profiler_params_mgr.npu_profiler_params
+        params = self._profiler_params_mgr.npu_profiler_params
+        # update framework_path for profile memory
+        params["framework_path"] = self._profiler_path_mgr.framework_path
+        return params
 
     @property
     def original_params(self) -> Dict[str, str]:
@@ -244,6 +254,15 @@ class ProfilerContext:
         """Get the data simplification from ProfilerParameters."""
         return self._profiler_params_mgr.data_simplification
 
+    @data_simplification.setter
+    def data_simplification(self, value: bool) -> None:
+        """Set data simplification value."""
+        if not isinstance(value, bool):
+            logger.warning(f"For profiler, the type of data_simplification should be bool, "
+                           f"but got {type(value)}, reset to True.")
+            value = True
+        self._profiler_params_mgr.data_simplification = value
+
     @property
     def device_target(self) -> str:
         """Get device target."""
@@ -285,16 +304,56 @@ class ProfilerContext:
         return self._dynamic_status
 
     @property
-    def model_iteration_dict(self) -> Dict[int, int]:
-        """Get model iteration dict."""
-        return self._model_iteration_dict
+    def step_list(self) -> Optional[List[int]]:
+        """Get step list."""
+        return self._step_list
 
-    @model_iteration_dict.setter
-    def model_iteration_dict(self, value: Dict[int, int]):
-        """Set the model iteration dict."""
-        if not isinstance(value, dict):
-            raise ValueError("model_iteration_dict must be a dictionary")
-        self._model_iteration_dict = value
+    @step_list.setter
+    def step_list(self, value: Optional[List[int]]) -> None:
+        """Set step list for profiling."""
+        if value is not None and not isinstance(value, list):
+            logger.error(f"For profiler, the parameter step_list must be a list, "
+                         f"but got type {type(value)}, step_list reset to None.")
+            return
+        if value:
+            if not all(isinstance(step_id, int) for step_id in value):
+                logger.error(f"For profiler, the elements of the parameter step_list "
+                             "must be integers, step_list reset to None.")
+                return
+            value.sort()
+            if value[-1] - value[0] != len(value) - 1:
+                logger.error(f"For profiler, the elements of the parameter step_list "
+                             "must be continuous integers, step_list reset to None.")
+                return
+        self._step_list = value
+
+    @property
+    def pretty(self) -> bool:
+        return self._pretty
+
+    @pretty.setter
+    def pretty(self, value: bool) -> None:
+        """Set pretty print value."""
+        if not isinstance(value, bool):
+            logger.warning(f"For profiler, the parameter pretty must be bool, "
+                           f"but got {type(value)}, reset to False.")
+            value = False
+        self._pretty = value
+
+    @property
+    def schedule(self) -> Schedule:
+        """Get the schedule from ProfilerParameters."""
+        return self._profiler_params_mgr.schedule
+
+    @property
+    def on_trace_ready(self) -> Optional[Callable[..., Any]]:
+        """Get the on trace ready from ProfilerParameters."""
+        return self._profiler_params_mgr.on_trace_ready
+
+    @property
+    def is_set_schedule(self) -> bool:
+        """Get the is set schedule from ProfilerParameters."""
+        return self._profiler_params_mgr.is_set_schedule
 
     def _init_device_target(self) -> None:
         """
@@ -339,11 +398,3 @@ class ProfilerContext:
         if not self._rank_id or not self._rank_id.isdigit():
             self._rank_id = "0"
             logger.warning("Fail to get RANK_ID, use 0 instead.")
-
-    @property
-    def schedule(self) -> Schedule:
-        return self._profiler_params_mgr.schedule
-
-    @property
-    def on_trace_ready(self) -> Optional[Callable[..., Any]]:
-        return self._profiler_params_mgr.on_trace_ready

@@ -16,8 +16,8 @@
 import os
 from decimal import Decimal
 
-from base_viewer import BaseViewer
 from mindspore import log as logger
+from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
 
 
@@ -187,6 +187,7 @@ class AscendMemoryViewer(BaseViewer):
             self._output_path, "npu_module_mem.csv"
         )
         FileManager.combine_csv_file(npu_module_mem_file_list, target_file_path)
+        logger.info(f"npu_module_mem.csv saved to {target_file_path}")
 
     def _parse_memory_record(self):
         """Generate memory_record.csv"""
@@ -199,6 +200,7 @@ class AscendMemoryViewer(BaseViewer):
         FileManager.create_csv_file(
             target_file_path, combined_memory_data, self.TARGET_MEMORY_RECORD_HEADERS
         )
+        logger.info(f"memory_record.csv saved to {target_file_path}")
 
     def _parse_ge_memory_record(self):
         """Parse ge memory record data"""

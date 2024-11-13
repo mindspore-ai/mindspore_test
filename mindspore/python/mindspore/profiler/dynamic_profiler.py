@@ -29,6 +29,7 @@ from mindspore.profiler import ProfilerLevel
 from mindspore.communication import get_rank
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
+from mindspore.profiler.profiler_interface import ProfilerInterface
 
 
 def get_real_rank():
@@ -312,7 +313,7 @@ class DynamicProfilerMonitorBase(Callback):
                 if prof_args.analyse_mode:
                     self._profiler.analyse(mode=prof_args.analyse_mode)
                 else:
-                    self._profiler._ascend_profiler.finalize()
+                    ProfilerInterface.finalize()
                 self._profiler = None
                 self._is_started = False
                 print_msg(f"Rank {self._rank_id} Dynamic profiler stop at step {step_num}")

@@ -22,7 +22,7 @@ from mindspore.version import __version__ as ms_version
 from mindspore.profiler.common.singleton import Singleton
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.path_manager import PathManager
-from mindspore.profiler.common.ascend_msprof_tool import MsprofCmdTool
+from mindspore.profiler.common.msprof_cmd_tool import MsprofCmdTool
 
 
 @Singleton
@@ -79,6 +79,13 @@ class ProfilerInfo:
         self._collection_time_begin = 0
         self._clock_monotonic_raw_info = 0 # from start info file
         self._localtime_diff = 0
+
+    def load_info(self, ascend_ms_dir: str, rank_id: int) -> None:
+        """"
+        Load profiler info from ascend ms dir.
+        """
+        info_file_path = os.path.join(ascend_ms_dir, self.PROFILER_INFO_FILE.format(rank_id))
+        self._profiler_info = FileManager.read_json_file(info_file_path)
 
     def load_time_parameters(self, msprof_profile_path: str, msprof_profile_host_path: str) -> None:
         """
