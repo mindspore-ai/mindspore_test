@@ -1255,6 +1255,8 @@ REG_BPROP_BUILDER("OnesLikeExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(Retur
 
 REG_BPROP_BUILDER("ZerosLikeExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
+REG_BPROP_BUILDER("NewZeros").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
+
 DEF_PURE_SHAPE_CALC(g_resize_nearest_neighbor)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     auto shape = inputs[0];
