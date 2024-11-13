@@ -67,8 +67,7 @@ int32_t PReLUFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   int execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
-  if (IsAscend() && x_rank <= 1 && execution_mode == kGraphMode &&
-      context->get_param<std::string>(MS_CTX_JIT_LEVEL) == "O2") {
+  if (IsAscend() && x_rank <= 1 && execution_mode == kGraphMode && !context->IsKByKExecutorMode()) {
     MS_EXCEPTION(ValueError)
       << "For '" << prim_name
       << "', the dimension of 'x' can not be 0-D or 1-D when the platform is \"Ascend\", but got dimension of 'x' is "
