@@ -30,8 +30,7 @@
 
 namespace mindspore {
 namespace pipeline {
-const char kSilentCheckV2[] = "silent_check_v2";
-bool IsNpuAsdEnable();
+const char kSilentCheck[] = "silent_check";
 
 class SilentCheckV2 {
  public:
@@ -41,14 +40,12 @@ class SilentCheckV2 {
   bool HasFloat16Input();
   void GetLastGradNode();
   bool Run(const FuncGraphPtr &func_graph);
-  void UpdateNodes();
 
  private:
   void GetLossScale();
   AnfNodePtr FindGetNextNode();
   AnfNodePtrList &GetRootGraphTopoNodes();
   CNodePtr GetLastGradNode(const FuncGraphPtr &func_graph, const AnfNodePtr &start_node);
-  AnfNodePtr CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node);
 
   // root graph
   FuncGraphPtr root_ = nullptr;

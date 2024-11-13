@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_DYNAMIC_GRAPH_CHECK_H_
-#define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_DYNAMIC_GRAPH_CHECK_H_
+#ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_
+#define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_
 
 #include <unordered_map>
 #include <vector>
@@ -35,6 +35,13 @@ namespace ascend {
 using BaseTensor = tensor::BaseTensor;
 using BaseTensorPtr = tensor::BaseTensorPtr;
 using kernel::pyboost::OpRunner;
+
+const char kAttrNeedSilentCheck[] = "need_silent_check";
+using device::DeviceAddressPtr;
+using kernel::KernelTensor;
+using kernel::KernelTensorPtr;
+using mindspore::device::DeviceContext;
+using TensorPtr = tensor::TensorPtr;
 
 struct DynamicCheckState {
   BaseTensorPtr sfda;  // for SilentCheckV2
@@ -116,7 +123,61 @@ class DynamicSilentChecker : public SilentCheckerBase {
   std::unordered_map<std::string, DynamicCheckStatePtr> states_;
   std::vector<CheckObjPtr> check_objects_;
 };
+
+// silent checker implementation for static graph
+class CheckState {
+ public:
+  CheckState() = default;
+  ~CheckState() = default;
+
+ public:
+  KernelTensorPtr val = nullptr;
+  KernelTensorPtr sfda = nullptr;
+  KernelTensorPtr step = nullptr;
+  KernelTensorPtr result = nullptr;
+
+  DeviceAddressPtr worspace_addr = nullptr;
+};
+using CheckStatePtr = std::shared_ptr<CheckState>;
+
+class SilentChecker {
+ public:
+  static SilentChecker &GetInstance();
+  ~SilentChecker();
+  void RegisterCheck(const kernel::KernelModPtr &kernel_mod);
+  void InitializeCheck(const kernel::KernelModPtr &kernel_mod, const kernel::KernelTensor *dout);
+  void ExecuteCheck(const kernel::KernelMod *kernel_mod, const kernel::KernelTensor *dout, void *stream_ptr);
+  void UpdateDeviceContext(const DeviceContext *device_context) { device_context_ = device_context; }
+
+ private:
+  SilentChecker(const DeviceContext *device_context);
+
+  void LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchSilentCheckAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+
+  KernelTensorPtr GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value = nullptr);
+
+  std::unordered_map<const kernel::KernelMod *, CheckStatePtr> check_states_;
+  const DeviceContext *device_context_ = nullptr;
+
+  // kernel modules for checking
+  kernel::KernelModPtr kernel_norm_ = nullptr;
+  kernel::KernelModPtr kernel_silent_check_ = nullptr;
+
+  // constants used by aclnnNorm
+  KernelTensorPtr p_scalar_ = nullptr;
+  KernelTensorPtr dim_ = nullptr;
+  KernelTensorPtr keep_dim_ = nullptr;
+
+  // constants used by aclnnSilentCheck
+  KernelTensorPtr c_min_steps_ = nullptr;
+  KernelTensorPtr c_thresh_l1_ = nullptr;
+  KernelTensorPtr c_coeff_l1_ = nullptr;
+  KernelTensorPtr c_thresh_l2_ = nullptr;
+  KernelTensorPtr c_coeff_l2_ = nullptr;
+  KernelTensorPtr npu_asd_detect_ = nullptr;
+};
 }  // namespace ascend
 }  // namespace silentcheck
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_DYNAMIC_GRAPH_CHECK_H_
+#endif  // MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_

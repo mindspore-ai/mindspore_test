@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/availability/silent_check/dynamic_graph_check.h"
+#include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 #include <sys/param.h>
 #include <cassert>
 #include <cstddef>
@@ -63,6 +63,11 @@ using mindspore::kernel::pyboost::OpRunner;
 using mindspore::kernel::pyboost::PyBoostUtils;
 using mindspore::kernel::pyboost::SilentCheckV2;
 using mindspore::kernel::pyboost::Square;
+
+using transform::_aclCreateTensor;
+using transform::aclOpExecutor;
+using transform::aclTensor;
+using transform::GetOpApiFunc;
 
 namespace {
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
@@ -164,9 +169,8 @@ bool HasApiSilentCheckV3() {
   }();
   return has_silent_check_v3;
 }
-}  // namespace
 
-bool DynamicSilentChecker::IsNpuAsdEnable() {
+bool IsAsdEnable() {
   static bool is_npu_asd_enable = []() -> bool {
     bool enable_check = true;
     auto ctx = MsContext::GetInstance();
@@ -182,6 +186,9 @@ bool DynamicSilentChecker::IsNpuAsdEnable() {
   }();
   return is_npu_asd_enable;
 }
+}  // namespace
+
+bool DynamicSilentChecker::IsNpuAsdEnable() { return IsAsdEnable(); }
 
 CheckObject::CheckObject() {
   if (HasApiSilentCheckV3()) {
@@ -469,7 +476,7 @@ void CheckObject::LaunchMax() {
 
 void DynamicSilentChecker::DoSilentCheck(const std::string &op_name, const std::string &comm_group,
                                          const BaseTensorPtr &input_grad) {
-  static bool is_npu_asd_enable = IsNpuAsdEnable();
+  static bool is_npu_asd_enable = IsAsdEnable();
   if (!is_npu_asd_enable) {
     return;
   }
@@ -497,6 +504,156 @@ DynamicCheckStatePtr DynamicSilentChecker::CreateDynamicCheckState(const BaseTen
 }
 
 SILENT_CHECK_REG(kAscendDevice, DynamicSilentChecker);
+
+// silent checker implementation for static graph
+SilentChecker::SilentChecker(const DeviceContext *device_context) : device_context_(device_context) {
+  if (device_context_ == nullptr) {
+    device_context_ = mindspore::device::DeviceContextManager::GetInstance().GetDeviceContext(kAscendDevice).get();
+  }
+  MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
+
+  // create kernel modules
+  kernel_norm_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameNorm);
+  MS_EXCEPTION_IF_NULL(kernel_norm_);
+  kernel_silent_check_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameSilentCheckV2);
+  MS_EXCEPTION_IF_NULL(kernel_silent_check_);
+
+  // create constants used by aclnnNorm
+  p_scalar_ = std::make_shared<KernelTensor>(nullptr, kTypeNone, kNone);
+  dim_ = std::make_shared<KernelTensor>(std::make_shared<abstract::TensorShape>(std::vector<int64_t>{}), kInt64,
+                                        MakeValue(std::vector<int64_t>{}));
+  // p_scalar_ = GenerateKernelTensor(kNumberTypeFloat32, ShapeVector{}, MakeValue<float>(2.0));
+  keep_dim_ = std::make_shared<KernelTensor>(nullptr, kBool, MakeValue(false));
+
+  // create constants used by aclnnSilentCheck
+  auto upper_thresh = parse_thresh("NPU_ASD_UPPER_THRESH", "1000000,10000", 3);
+  auto sigma_thresh = parse_thresh("NPU_ASD_SIGMA_THRESH", "100000,5000", 3);
+  c_min_steps_ = std::make_shared<KernelTensor>(nullptr, kInt64, MakeValue<int64_t>(100));
+  c_thresh_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(upper_thresh.front()));
+  c_coeff_l1_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(sigma_thresh.front()));
+  c_thresh_l2_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(upper_thresh.back()));
+  c_coeff_l2_ = std::make_shared<KernelTensor>(nullptr, kFloat32, MakeValue<float>(sigma_thresh.back()));
+  npu_asd_detect_ = std::make_shared<KernelTensor>(nullptr, kInt64, MakeValue<int64_t>(GetNpuAsdDetectValue()));
+}
+
+SilentChecker &SilentChecker::GetInstance() {
+  static std::unique_ptr<SilentChecker> inst_ptr = nullptr;
+  if (inst_ptr == nullptr) {
+    // TODO(fanrui) set device_context
+    inst_ptr.reset(new SilentChecker(nullptr));
+    MS_EXCEPTION_IF_NULL(inst_ptr);
+  }
+  return *inst_ptr;
+}
+
+SilentChecker::~SilentChecker() {
+  // TODO(fanrui)
+  // do nothing
+}
+
+void SilentChecker::RegisterCheck(const kernel::KernelModPtr &kernel_mod) {
+  check_states_[kernel_mod.get()] = std::make_shared<CheckState>();
+}
+
+void SilentChecker::InitializeCheck(const kernel::KernelModPtr &kernel_mod, const kernel::KernelTensor *dout) {
+  auto iter = check_states_.find(kernel_mod.get());
+  if (iter == check_states_.end()) {
+    MS_LOG(EXCEPTION) << "Not find check state for kenrel mod with name " << kernel_mod->primitive()->name();
+  }
+  auto &state = iter->second;
+  state->val = GenerateKernelTensor(dout->dtype_id(), ShapeVector{});
+  state->sfda = GenerateKernelTensor(kNumberTypeFloat32, ShapeVector{3});
+  state->step = GenerateKernelTensor(kNumberTypeInt64, ShapeVector{1});
+  state->result = GenerateKernelTensor(kNumberTypeInt32, ShapeVector{1});
+}
+
+void SilentChecker::ExecuteCheck(const kernel::KernelMod *kernel_mod, const kernel::KernelTensor *dout,
+                                 void *stream_ptr) {
+  if (!IsAsdEnable()) {
+    return;
+  }
+
+  MS_EXCEPTION_IF_NULL(dout);
+  MS_EXCEPTION_IF_NULL(stream_ptr);
+
+  auto iter = check_states_.find(kernel_mod);
+  if (iter == check_states_.end()) {
+    MS_LOG(WARNING) << "Not found check state for kenrel mod with name " << kernel_mod->primitive()->name()
+                    << ", ignore it.";
+    return;
+  }
+  auto &state = iter->second;
+  LaunchNormAsync(dout, state, stream_ptr);
+  LaunchSilentCheckAsync(dout, state, stream_ptr);
+}
+
+void SilentChecker::LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
+  vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout), p_scalar_.get(), dim_.get(), keep_dim_.get()};
+  vector<KernelTensor *> outputs{state->val.get()};
+  vector<KernelTensor *> workspace;
+
+  auto ret = kernel_norm_->Resize(inputs, outputs);
+  if (ret) {
+    MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
+  }
+  auto work_space = kernel_norm_->GetWorkspaceSizeList();
+  if (!work_space.empty() && work_space[0] != 0) {
+    state->worspace_addr =
+      runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    workspace.emplace_back(state->worspace_addr->kernel_tensor().get());
+  }
+
+  if (!kernel_norm_->Launch(inputs, workspace, outputs, stream_ptr)) {
+    MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_norm_->primitive()->name() << " failed.";
+  }
+}
+
+void SilentChecker::LaunchSilentCheckAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
+  vector<KernelTensor *> inputs{state->val.get(),   const_cast<KernelTensor *>(dout),
+                                state->sfda.get(),  state->step.get(),
+                                c_min_steps_.get(), c_thresh_l1_.get(),
+                                c_coeff_l1_.get(),  c_thresh_l2_.get(),
+                                c_thresh_l2_.get(), npu_asd_detect_.get()};
+  vector<KernelTensor *> outputs{const_cast<KernelTensor *>(dout), state->sfda.get(), state->step.get(),
+                                 state->result.get()};
+  vector<KernelTensor *> workspace;
+
+  auto ret = kernel_silent_check_->Resize(inputs, outputs);
+  if (ret) {
+    MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
+  }
+  auto work_space = kernel_silent_check_->GetWorkspaceSizeList();
+  if (!work_space.empty() && work_space[0] != 0) {
+    auto addr =
+      runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    workspace.emplace_back(addr->kernel_tensor().get());
+  }
+
+  if (!kernel_silent_check_->Launch(inputs, workspace, outputs, stream_ptr)) {
+    MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_silent_check_->primitive()->name() << " failed.";
+  }
+}
+
+KernelTensorPtr SilentChecker::GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value) {
+  ShapeVector shape_vec = {};
+  int64_t num_elems = 1;
+  for (const auto &dim : shape) {
+    num_elems *= dim;
+  }
+  auto mem_size = UnitSizeInBytes(dtype_id) * num_elems;
+  auto addr = device_context_->device_res_manager_->AllocateMemory(mem_size, kDefaultStreamIndex);
+  MS_EXCEPTION_IF_NULL(addr);
+  auto tensor = std::make_shared<kernel::KernelTensor>(addr, mem_size, Format::DEFAULT_FORMAT, dtype_id, shape,
+                                                       device_context_->device_context_key().device_name_,
+                                                       device_context_->device_context_key().device_id_);
+  tensor->set_stream_id(kDefaultStreamIndex);
+  tensor->SetType(std::make_shared<TensorType>(TypeIdToType(dtype_id)));
+  tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));
+  if (value) {
+    tensor->SetValue(value);
+  }
+  return tensor;
+}
 }  // namespace ascend
 }  // namespace silentcheck
 }  // namespace mindspore

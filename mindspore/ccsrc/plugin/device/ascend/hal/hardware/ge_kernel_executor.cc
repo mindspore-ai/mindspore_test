@@ -66,6 +66,7 @@
 #include "include/backend/debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "kernel/ascend/availability/silent_check/ascend_silent_check.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -131,6 +132,14 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *gr
     }
     MS_LOG(INFO) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
     MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
+    if (kernel_mod_ptr->primitive() != nullptr &&
+        kernel_mod_ptr->primitive()->HasAttr(silentcheck::ascend::kAttrNeedSilentCheck)) {
+      MS_VLOG(50006) << "Register silent check for kernel opname:" << opname
+                     << ", kernel type:" << GetKernelTypeStr(kernel_type) << " " << kernel->fullname_with_scope();
+      silentcheck::ascend::SilentChecker::GetInstance().RegisterCheck(kernel_mod_ptr);
+      std::vector<KernelTensor *> input_kernel_tensors = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
+      silentcheck::ascend::SilentChecker::GetInstance().InitializeCheck(kernel_mod_ptr, input_kernel_tensors[0]);
+    }
     AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
   }
   return true;
@@ -1229,6 +1238,11 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
   } else {
     MS_EXCEPTION_IF_NULL(kernel_mod);
     MS_EXCEPTION_IF_NULL(stream);
+    if (kernel_mod->primitive() != nullptr &&
+        kernel_mod->primitive()->HasAttr(silentcheck::ascend::kAttrNeedSilentCheck)) {
+      MS_VLOG(50007) << "Launch silent check for " << kernel_mod->kernel_name();
+      silentcheck::ascend::SilentChecker::GetInstance().ExecuteCheck(kernel_mod, inputs[0], stream);
+    }
     bool ret = kernel_mod->Launch(inputs, workspace, outputs, stream);
     if (!ret) {
       MS_LOG(ERROR) << "Launch kernel failed, kernel full name: " << kernel->fullname_with_scope();
