@@ -782,6 +782,19 @@ bool AscendDeviceAddress::AsyncDeviceToDevice(const ShapeVector & /* shape */, s
   return ret;
 }
 
+bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                            const std::string &host_format) const {
+  MS_LOG(DEBUG) << "Async host to device, size: " << size << ", host ptr: " << tensor_data->data()
+                << ", device format: " << format() << ", tensor format: " << host_format
+                << ", device type id: " << TypeIdToString(type_id()) << ", tensor type id: " << TypeIdToString(type)
+                << ", device shape: " << GetShapeVector();
+  if (format() != host_format || type_id() != type) {
+    return SyncHostToDeviceImpl(GetShapeVector(), size, type, tensor_data->data(), host_format, tensor_data);
+  }
+
+  return AsyncHostToDevice(size, type, tensor_data->data());
+}
+
 bool AscendDeviceAddress::AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const {
   MS_ERROR_IF_NULL(host_ptr);
   BindDevice();

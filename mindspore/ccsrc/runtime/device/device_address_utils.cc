@@ -916,7 +916,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(addr);
     if (device_address->GetDeviceType() != device::DeviceType::kAscend) {
       // CPU or GPU View CreateDeviceAddress without KernelTensor
-      CreateKernelTensor(device_address, tensor);
+      CreateKernelTensor(device_address, tensor.get());
     }
     if (device_address->GetDeviceType() == device_context->GetDeviceType()) {
       MS_LOG(DEBUG) << "Already have device address of tensor " << tensor->id();
@@ -934,7 +934,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
   if (device_address->GetDeviceType() != device::DeviceType::kAscend) {
     // CPU or GPU need KernelTensor to LaunchKernel
-    CreateKernelTensor(device_address, tensor);
+    CreateKernelTensor(device_address, tensor.get());
   }
 
   MS_EXCEPTION_IF_NULL(device_address);
@@ -946,7 +946,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
 
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
       !runtime::OpExecutor::GetInstance().async_for_graph()) {
-    CreateKernelTensor(device_address, tensor);
+    CreateKernelTensor(device_address, tensor.get());
   }
 }
 
@@ -1025,7 +1025,7 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
 }
 
 void DeviceAddressUtils::CreateKernelTensor(const device::DeviceAddressPtr &device_address,
-                                            const tensor::BaseTensorPtr &tensor) {
+                                            const tensor::BaseTensor *tensor) {
   MS_EXCEPTION_IF_NULL(device_address);
   MS_EXCEPTION_IF_NULL(tensor);
   if (device_address->kernel_tensor() != nullptr) {
@@ -1052,7 +1052,7 @@ void DeviceAddressUtils::CreateKernelTensor(const ValuePtr &input_value) {
     if (tensor->device_address() != nullptr) {
       auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
       MS_EXCEPTION_IF_NULL(device_address);
-      CreateKernelTensor(device_address, tensor);
+      CreateKernelTensor(device_address, tensor.get());
     }
   }
 }
@@ -1062,7 +1062,7 @@ void DeviceAddressUtils::CreateKernelTensor(const tensor::TensorPtr &input_tenso
   if (input_tensor->device_address() != nullptr) {
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(input_tensor->device_address());
     MS_EXCEPTION_IF_NULL(device_address);
-    CreateKernelTensor(device_address, input_tensor);
+    CreateKernelTensor(device_address, input_tensor.get());
   }
 }
 
@@ -1239,7 +1239,7 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
       device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
     if (device_address->GetDeviceType() != device::DeviceType::kAscend) {
       // CPU or GPU need KernelTensor to LaunchKernel
-      CreateKernelTensor(device_address, tensor);
+      CreateKernelTensor(device_address, tensor.get());
     }
     MS_EXCEPTION_IF_NULL(device_address);
     tensor->set_device_address(device_address);
@@ -1259,7 +1259,7 @@ void DeviceAddressUtils::CreateOutputTensorAddress(const DeviceContext *device_c
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
   if (device_address->GetDeviceType() != device::DeviceType::kAscend) {
     // CPU or GPU need KernelTensor to LaunchKernel
-    CreateKernelTensor(device_address, output_tensor);
+    CreateKernelTensor(device_address, output_tensor.get());
   }
   MS_EXCEPTION_IF_NULL(device_address);
   output_tensor->set_device_address(device_address);

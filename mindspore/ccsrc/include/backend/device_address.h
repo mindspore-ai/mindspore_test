@@ -68,6 +68,7 @@ using kernel::AddressCommon;
 using kernel::AddressCommonPtr;
 using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
+using TensorPtr = std::shared_ptr<tensor::Tensor>;
 struct StorageInfo {
   void *host_ptr_{nullptr};
   std::string file_name_{""};
@@ -188,6 +189,10 @@ class DeviceAddress : public mindspore::DeviceSync {
     return true;
   }
   virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const { return true; }
+  virtual bool AsyncHostToDevice(size_t size, TypeId type, const tensor::TensorDataPtr &tensor_data,
+                                 const std::string &format) const {
+    return true;
+  }
 
   virtual bool AsyncHostToDevice(size_t size, const void *host_ptr) const { return true; }
   virtual bool AsyncDeviceToHost(size_t size, void *host_ptr) const { return true; }

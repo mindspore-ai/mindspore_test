@@ -1051,6 +1051,33 @@ void FetchInputActor(std::string input_aid, ActorInputMap *actor_inputs, const A
   AddInputActorInfo(actor_inputs, input_actor, actor, actor_info, from_index, to_index);
 }
 
+void FetchGraphParameterStore(const AbstractActor *const actor, ActorInputMap *actor_inputs) {
+  if (!EnableInputOptimize()) {
+    return;
+  }
+  auto graph_parameter_store = ParameterStore::GetInstance().GetGraphParameterStore();
+  MS_EXCEPTION_IF_NULL(graph_parameter_store);
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(actor_inputs);
+  std::string input_name = "%";
+  for (const auto &parameter_index : actor->parameter_indexs()) {
+    auto index = parameter_index.first;
+    auto parameter_info = parameter_index.second;
+    input_name += parameter_info.first.first->DebugString(0);
+    if (actor_inputs->find(index) != actor_inputs->end()) {
+      MS_LOG(INFO) << "Invalid index:" << index << " for actor:" << actor->GetAID()
+                   << " input aid:" << parameter_info.first.first->DebugString()
+                   << " same to:" << std::get<0>((*actor_inputs)[index]);
+      return;
+    }
+    auto outer_idx = parameter_info.second;
+    auto inner_idx = parameter_info.first.second;
+    auto device_tensor =
+      graph_parameter_store->FetchMutableAddr(outer_idx, inner_idx, actor->device_contexts()[0]->GetDeviceType());
+    (*actor_inputs)[index] = {input_name, device_tensor};
+  }
+}
+
 void FetchInputDeviceTensorStore(const AnfNodePtr &key, size_t index, const AbstractActor *const actor,
                                  ActorInputMap *actor_inputs) {
   MS_EXCEPTION_IF_NULL(key);
@@ -1119,6 +1146,8 @@ void FetchInputData(AbstractActor *actor, ActorInputMap *actor_inputs, ActorInfo
     MS_EXCEPTION_IF_NULL(pair.second);
     FetchInputDeviceTensorStore(pair.second, pair.first, actor, actor_inputs);
   }
+
+  FetchGraphParameterStore(actor, actor_inputs);
 
   if (actor->type() == KernelTransformType::kHostDataSourceActor) {
     FetchInputForHostQueueDSActor(actor, actor_inputs);

@@ -578,6 +578,9 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   void set_enable_kbk_sub_graph_execute(bool enable_kbk_sub_graph_execute) {
     enable_kbk_sub_graph_execute_ = enable_kbk_sub_graph_execute;
   }
+
+  bool enable_input_optimize() const { return enable_input_optimize_; }
+  void set_enable_input_optimize(bool enable_input_optimize) { enable_input_optimize_ = enable_input_optimize; }
   void set_is_from_cache(bool is_from_cache) { is_from_cache_ = is_from_cache; }
   bool is_from_cache() { return is_from_cache_; }
   void CacheRootWeight(const std::vector<AnfNodePtr> &weights);
@@ -715,6 +718,8 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   // Whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
   // Note: Will be deleted in the future, after runtime refactor for kbk finish.
   bool enable_kbk_sub_graph_execute_{true};
+  // Whether this graph could executed input optimize.
+  bool enable_input_optimize_{true};
   bool is_from_cache_{false};
   std::vector<AnfNodePtr> root_weights_;
 };

@@ -148,6 +148,8 @@ struct ActorSet {
 
   // The phase of the root graph this actor set belongs to.
   std::string graph_phase_{""};
+  // Whether this graph could optimize input data prepare.
+  bool enable_input_optimize_{true};
 };
 using ActorSetPtr = std::shared_ptr<ActorSet>;
 
