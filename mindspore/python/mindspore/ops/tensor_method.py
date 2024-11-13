@@ -260,7 +260,7 @@ from mindspore.ops.operations.manually_defined import tile
 # 109 tolist
 
 # 110 topk
-
+from mindspore.ops.function.array_func import topk
 # 111 transpose
 
 # 112 tril
@@ -907,6 +907,13 @@ def deprecated_tensor_tile(input, reps):
 # 109 tolist
 
 # 110 topk
+def tensor_topk(input, k, dim=-1, largest=True, sorted=True):
+    return topk(input, k, dim, largest, sorted)
+
+
+def deprecated_tensor_topk(input, k, dim=None, largest=True, sorted=True):
+    return topk(input, k, dim, largest, sorted)
+
 
 # 111 transpose
 

@@ -1,0 +1,21 @@
+#deprecated topk
+topk:
+  args:
+    input:
+      dtype: tensor
+    k:
+      dtype: int
+    dim:
+      dtype: int
+      default: None
+    largest:
+      dtype: bool
+      default: True
+    sorted:
+      dtype: bool
+      default: True
+  returns:
+    values:
+      dtype: tensor
+    indices:
+      dtype: tensor

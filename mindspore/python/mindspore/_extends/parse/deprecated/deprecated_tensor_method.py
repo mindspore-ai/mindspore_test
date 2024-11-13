@@ -238,7 +238,7 @@ deprecated_tensor_method_map = {
     # 109 tolist
 
     # 110 topk
-
+    "topk": "deprecated_tensor_topk",
     # 111 transpose
 
     # 112 tril
