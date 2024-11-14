@@ -103,6 +103,12 @@ def _numpy_seed():
     return np.random.randint(low=1, high=(1 << 63), dtype=np.int64)
 
 
+def _init_random_normal_inplace(mean, sigma, arr):
+    if sigma < 0:
+        raise ValueError("sigma < 0")
+    _random_normal(_numpy_seed(), arr, mean, sigma)
+
+
 def _init_random_normal(mean, sigma, shape):
     if sigma < 0:
         raise ValueError("sigma < 0")
@@ -111,10 +117,20 @@ def _init_random_normal(mean, sigma, shape):
     return data
 
 
+def _init_random_uniform_inplace(a, b, arr):
+    _random_uniform(_numpy_seed(), arr, a, b)
+
+
 def _init_random_uniform(a, b, shape):
     data = np.ndarray(shape=shape, dtype=np.float32)
     _random_uniform(_numpy_seed(), data, a, b)
     return data
+
+
+def _init_truncated_normal_inplace(a, b, mean, sigma, arr):
+    if sigma < 0:
+        raise ValueError("sigma < 0")
+    _truncated_normal(_numpy_seed(), arr, a, b, mean, sigma)
 
 
 def _init_truncated_normal(a, b, mean, sigma, shape):
@@ -298,9 +314,11 @@ class XavierNormal(Initializer):
         fan_in, fan_out = _calculate_fan_in_and_fan_out(arr.shape)
 
         std = self.gain * math.sqrt(2.0 / float(fan_in + fan_out))
-        data = _init_random_normal(0, std, arr.shape)
-
-        _assignment(arr, data)
+        if isinstance(arr, np.ndarray) and arr.dtype == np.float32:
+            _init_random_normal_inplace(0, std, arr)
+        else:
+            data = _init_random_normal(0, std, arr.shape)
+            _assignment(arr, data)
 
 
 @_register('xavier_uniform')
@@ -337,8 +355,11 @@ class XavierUniform(Initializer):
     def _initialize(self, arr):
         n_in, n_out = _calculate_fan_in_and_fan_out(arr.shape)
         boundary = self.gain * math.sqrt(6.0 / (n_in + n_out))
-        data = _init_random_uniform(-boundary, boundary, arr.shape)
-        _assignment(arr, data)
+        if isinstance(arr, np.ndarray) and arr.dtype == np.float32:
+            _init_random_uniform_inplace(-boundary, boundary, arr)
+        else:
+            data = _init_random_uniform(-boundary, boundary, arr.shape)
+            _assignment(arr, data)
 
 
 @_register('he_uniform')
@@ -386,8 +407,11 @@ class HeUniform(Initializer):
         gain = _calculate_gain(self.nonlinearity, self.negative_slope)
         std = gain / math.sqrt(fan)
         boundary = math.sqrt(3.0) * std
-        data = _init_random_uniform(-boundary, boundary, arr.shape)
-        _assignment(arr, data)
+        if isinstance(arr, np.ndarray) and arr.dtype == np.float32:
+            _init_random_uniform_inplace(-boundary, boundary, arr)
+        else:
+            data = _init_random_uniform(-boundary, boundary, arr.shape)
+            _assignment(arr, data)
 
 
 @_register('he_normal')
@@ -432,8 +456,11 @@ class HeNormal(Initializer):
         fan = _calculate_correct_fan(arr.shape, self.mode)
         gain = _calculate_gain(self.nonlinearity, self.negative_slope)
         std = gain / math.sqrt(fan)
-        data = _init_random_normal(0, std, arr.shape)
-        _assignment(arr, data)
+        if isinstance(arr, np.ndarray) and arr.dtype == np.float32:
+            _init_random_normal_inplace(0, std, arr)
+        else:
+            data = _init_random_normal(0, std, arr.shape)
+            _assignment(arr, data)
 
 
 class Constant(Initializer):
@@ -718,8 +745,11 @@ class Uniform(Initializer):
         self.scale = scale
 
     def _initialize(self, arr):
-        tmp = _init_random_uniform(-self.scale, self.scale, arr.shape)
-        _assignment(arr, tmp)
+        if isinstance(arr, np.ndarray) and arr.dtype == np.float32:
+            _init_random_uniform_inplace(-self.scale, self.scale, arr)
+        else:
+            tmp = _init_random_uniform(-self.scale, self.scale, arr.shape)
+            _assignment(arr, tmp)
 
 
 @_register()
@@ -749,8 +779,11 @@ class Normal(Initializer):
         self.mean = mean
 
     def _initialize(self, arr):
-        data = _init_random_normal(self.mean, self.sigma, arr.shape)
-        _assignment(arr, data)
+        if isinstance(arr, np.ndarray) and arr.dtype == np.float32:
+            _init_random_normal_inplace(self.mean, self.sigma, arr)
+        else:
+            data = _init_random_normal(self.mean, self.sigma, arr.shape)
+            _assignment(arr, data)
 
 
 @_register()
@@ -780,8 +813,11 @@ class TruncatedNormal(Initializer):
         self.b = b
 
     def _initialize(self, arr):
-        tmp = _init_truncated_normal(self.a, self.b, self.mean, self.sigma, arr.shape)
-        _assignment(arr, tmp)
+        if isinstance(arr, np.ndarray) and arr.dtype == np.float32:
+            _init_truncated_normal_inplace(self.a, self.b, self.mean, self.sigma, arr)
+        else:
+            tmp = _init_truncated_normal(self.a, self.b, self.mean, self.sigma, arr.shape)
+            _assignment(arr, tmp)
 
 
 def initializer(init, shape=None, dtype=mstype.float32):
