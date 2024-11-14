@@ -502,8 +502,21 @@ void CodeGenerator::MarkAlive() {
   for (int index = nodes_->operations.size() - 1; index >= 0; --index) {
     ValueNode *node = nodes_->operations[index];
     for (auto input : node->getInputs()) {
-      int cur = nodes_alive_[input];
-      nodes_alive_[input] = std::max(cur, index);
+      MarkAlive(input, index);
+    }
+  }
+}
+
+void CodeGenerator::MarkAlive(ValueNode *node, int order) {
+  int *cur = &nodes_alive_[node];
+  *cur = std::max(*cur, order);
+  auto iter = locals_map_.find(node);
+  if (iter == locals_map_.end()) {
+    return;
+  }
+  for (auto find_it = locals_map_.begin(); find_it != locals_map_.end(); ++find_it) {
+    if (iter->second == find_it->second) {
+      nodes_alive_[find_it->first] = *cur;
     }
   }
 }
@@ -512,7 +525,6 @@ void CodeGenerator::MakeSameLocal(ValueNode *node, ValueNode *other_node) {
   auto iter = locals_map_.find(node);
   if (iter != locals_map_.end()) {
     locals_map_[other_node] = iter->second;
-    locals_map_.erase(node);
     return;
   }
   LoadValue(node);
@@ -820,6 +832,7 @@ void CodeBreakGenerator::HandleOutputOpt(CodeGenerator *cg) {
   cg->ClearAlive();
   auto handle_replaced = [this, &cg](bool is_pre) {
     for (const auto &node : interpret_.outputs) {
+      cg->MarkAlive(node);
       auto iter = replaced_nodes_.find(node);
       if (iter == replaced_nodes_.end()) {
         continue;

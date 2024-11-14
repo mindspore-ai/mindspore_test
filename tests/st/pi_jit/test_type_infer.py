@@ -450,5 +450,25 @@ def test_builtin_attr():
     y = Tensor([2])
     result = fn(x, y)
     excepted = fn.__wrapped__(x, y)
-    print(result)
+    assert result == excepted
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_code_generate():
+    """
+    Feature: Test code generate with local reuse
+    Description: The local variable 'r' refacted by post operations of graph.
+                 must be mark tow same local and same alive between 'r' and refacted variable
+    Expectation: The results should match for both modes.
+    """
+    @jit(mode="PIJit")
+    def fn(x, y):
+        y = "x({x}) + y({y}) = {}".format(x + y, x=x, y=y)
+        r = {'y' : y}
+        return r
+
+    x = Tensor([1])
+    y = Tensor([2])
+    result = fn(x, y)
+    excepted = fn.__wrapped__(x, y)
     assert result == excepted

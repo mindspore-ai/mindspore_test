@@ -90,7 +90,7 @@ class CodeGenerator {
 
   void ClearAlive(ValueNode *node) { nodes_alive_.erase(node); }
   void ClearAlive() { nodes_alive_.clear(); }
-  void MarkAlive(ValueNode *node) { nodes_alive_[node] = INT_MAX; }
+  void MarkAlive(ValueNode *node) { MarkAlive(node, INT_MAX); }
   void MarkAlive();
   // make the node same as other node, use same local index, if the node not in locals, try to load it
   void MakeSameLocal(ValueNode *new_node, ValueNode *old_node);
@@ -175,6 +175,8 @@ class CodeGenerator {
   static std::vector<std::unique_ptr<Instr>> RotStack(int stack);
 
  private:
+  void MarkAlive(ValueNode *node, int order);
+
   const NodeSet *nodes_;
   py::dict globals_;
   Code code_;
