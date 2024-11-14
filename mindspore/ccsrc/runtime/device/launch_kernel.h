@@ -19,7 +19,6 @@
 
 #include <vector>
 #include <memory>
-#include "kernel/kernel.h"
 #include "include/backend/kernel_graph.h"
 
 namespace mindspore::device {

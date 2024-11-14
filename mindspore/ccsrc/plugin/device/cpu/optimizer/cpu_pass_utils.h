@@ -16,7 +16,6 @@
 #ifndef MINDSPORE_PLUGIN_DEVICE_CPU_OPTIMIZER_CPU_PASS_UTILS_H_
 #define MINDSPORE_PLUGIN_DEVICE_CPU_OPTIMIZER_CPU_PASS_UTILS_H_
 #include <string>
-#include "ir/anf.h"
 #include "ir/func_graph.h"
 
 namespace mindspore {

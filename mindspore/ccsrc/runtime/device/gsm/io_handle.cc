@@ -22,7 +22,6 @@
 #endif
 #include <memory>
 #include "utils/system/env.h"
-#include "utils/file_utils.h"
 #include "include/common/utils/offload_context.h"
 
 namespace mindspore {

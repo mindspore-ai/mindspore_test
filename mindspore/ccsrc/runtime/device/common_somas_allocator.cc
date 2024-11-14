@@ -17,7 +17,6 @@
 #include "runtime/device/common_somas_allocator.h"
 #include <utility>
 #include <string>
-#include "include/backend/optimizer/helper.h"
 #include "utils/ms_context.h"
 #ifdef ENABLE_DUMP_IR
 #include "debug/rdr/string_recorder.h"

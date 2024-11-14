@@ -20,7 +20,6 @@
 #include <utility>
 #include "plugin/device/cpu/optimizer/cpu_pass_utils.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "ir/anf.h"
 
 namespace mindspore {
 namespace opt {

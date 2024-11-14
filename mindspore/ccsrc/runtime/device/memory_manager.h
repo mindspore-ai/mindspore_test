@@ -23,7 +23,6 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
-#include "backend/common/mem_reuse/mem_reuse.h"
 #include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "runtime/device/common_somas_allocator.h"
 
