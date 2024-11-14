@@ -70,6 +70,7 @@
 #include "utils/symbolic.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "mindspore/ccsrc/frontend/parallel/ops_info/operator_info.h"
 
 namespace mindspore {
 namespace parallel {
@@ -1249,6 +1250,27 @@ void ParallelPreprocessor::SetOperatorInfo() {
     // semi: extract shape and strategy, set operator_info
     // auto: create opInfo for step parallel generated op and reset cnode for existing ones
     ExtractInformation(all_nodes);
+
+    // print dump IR parallel detail
+    char *env_var = std::getenv("MS_DEV_DUMP_IR_PARALLEL_DETAIL");
+    if (env_var != nullptr && *env_var == '1') {
+      for (const auto node : all_nodes) {
+        if (node->has_user_data<OperatorInfo>()) {
+          auto operator_info = node->user_data<OperatorInfo>();
+
+          TensorMaps inputs_tensor_map = operator_info->inputs_tensor_map();
+          TensorMaps outputs_tensor_map = operator_info->outputs_tensor_map();
+          Shape device_matrix = operator_info->dev_matrix_shape();
+
+          auto prim = GetCNodePrimitive(node);
+          MS_EXCEPTION_IF_NULL(prim);
+
+          prim->set_attr(INPUTS_TENSOR_MAP, MakeValue(inputs_tensor_map));
+          prim->set_attr(OUTPUTS_TENSOR_MAP, MakeValue(outputs_tensor_map));
+          prim->set_attr(DEVICE_MATRIX, MakeValue(device_matrix));
+        }
+      }
+    }
   }
   StrategyLoader::SaveStrategyToFile(all_nodes);
 }
