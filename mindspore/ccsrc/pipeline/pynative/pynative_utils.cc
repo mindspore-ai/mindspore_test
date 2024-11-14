@@ -2458,6 +2458,7 @@ CallBackFn AutoGrad::CreateGraphCallBack(const FuncGraphPtr &call_graph, const s
 
 PrimitivePyPtr AutoGrad::BuildBpropCutPrim(const PrimitivePtr &prim, bool is_need_recompute) {
   MS_EXCEPTION_IF_NULL(prim);
+  py::gil_scoped_acquire gil_acquire;
   auto prim_py = prim->cast<PrimitivePyPtr>();
   MS_EXCEPTION_IF_NULL(prim_py);
   auto bprop_cut = std::make_shared<PrimitivePy>("bprop_cut");

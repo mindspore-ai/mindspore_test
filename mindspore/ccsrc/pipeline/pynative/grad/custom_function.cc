@@ -26,8 +26,8 @@ namespace pynative {
 namespace autograd {
 CustomBackward::~CustomBackward() {
   py::gil_scoped_acquire gil_acquire;
-  bprop_fn_ = py::none();
-  bprop_inputs_ = py::none();
+  bprop_fn_ = py::object();
+  bprop_inputs_ = py::object();
 }
 
 ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
