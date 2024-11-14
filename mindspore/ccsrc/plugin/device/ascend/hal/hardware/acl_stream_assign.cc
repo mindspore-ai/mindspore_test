@@ -388,6 +388,10 @@ void AclStreamAssign::UpdateEventsToExecutionOrder(
         kv.second.insert(process_stream_id);
       }
     }
+    if (kernel_graph->enable_multi_stream() && IsPrimitiveCNode(kernel, std::make_shared<Primitive>(kSendOpName))) {
+      AddBoundarySendRecvKernel(kernel_graph, process_stream_id, kDefaultStreamIndex, &new_exec_orders,
+                                &no_event_streams, last_kernel, kernel);
+    }
     new_exec_orders.push_back(kernel);
     last_kernel = kernel;
     auto after_iter = send_after_node.find(kernel);
