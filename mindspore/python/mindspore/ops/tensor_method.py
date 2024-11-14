@@ -770,6 +770,10 @@ def tensor_tile(input, dims):
     return tile(input, dims)
 
 
+def deprecated_tensor_tile(input, reps):
+    return tile(input, reps)
+
+
 # 109 tolist
 
 # 110 topk

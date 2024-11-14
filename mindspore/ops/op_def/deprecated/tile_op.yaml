@@ -1,0 +1,11 @@
+#operator tile
+tile:
+    args:
+        input:
+            dtype: tensor
+        reps:
+            dtype: tuple[int]
+            type_cast: tensor
+    returns:
+        output:
+            dtype: tensor
