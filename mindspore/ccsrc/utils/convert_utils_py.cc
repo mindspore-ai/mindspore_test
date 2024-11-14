@@ -95,6 +95,14 @@ void check_bprop_input_grads(const py::tuple &py_args, const py::tuple &grads, c
     }
   }
 }
+
+py::object CTensorToPyStubNode(const ValuePtr &grad, const py::module &stub_module) {
+  const auto grad_tensor = grad->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(grad_tensor);
+  auto node = stub::MakeTopNode(kTensorType);
+  node.second->SetValue(grad);
+  return stub_module.attr("_convert_stub")(node.first);
+}
 }  // namespace
 py::object BuiltinsToPyData(const Any &value);
 py::object BuiltinsToPyData(const BaseRef &value);
@@ -888,6 +896,22 @@ tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
   auto tensor = res.cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   return tensor;
+}
+
+py::object CTensorToPyStubNodes(const ValuePtr &val) {
+  // We need acquire gil from outer function before call this method.
+  static py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
+  if (val->isa<tensor::BaseTensor>()) {
+    return CTensorToPyStubNode(val, stub_tensor_module);
+  } else if (val->isa<ValueSequence>()) {
+    auto tuple_tensor = val->cast<ValueSequencePtr>();
+    py::tuple tuple_grads(tuple_tensor->size());
+    for (size_t i = 0; i < tuple_tensor->value().size(); ++i) {
+      tuple_grads[i] = CTensorToPyStubNode(tuple_tensor->value()[i], stub_tensor_module);
+    }
+    return std::move(tuple_grads);
+  }
+  MS_LOG(EXCEPTION) << "grads should be tensor or tuple tensor, but got " << val->ToString();
 }
 
 ValuePtr PyStubNodeCast(const py::handle &obj) {

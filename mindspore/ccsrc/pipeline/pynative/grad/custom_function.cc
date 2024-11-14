@@ -41,8 +41,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
 
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
-  auto py_grad = ValueToPyData(filled_zeros_grad);
-  auto py_tensor_grad = ConvertCTensorToPyTensor(py_grad);
+  py::object py_tensor_grad = CTensorToPyStubNodes(filled_zeros_grad);
   py::list list_inputs = bprop_inputs_.cast<py::list>();
   list_inputs.append(py_tensor_grad);
   size_t non_inp_args_size = is_recompute_ ? kSizeOne : kSizeTwo;
