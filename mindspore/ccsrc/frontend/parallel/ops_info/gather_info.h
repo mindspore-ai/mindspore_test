@@ -35,6 +35,7 @@ enum GatherMode {
   NORMAL,
   MANUAL,
   SHARD_BATCH_AND_AXIS,
+  SHARD_BATCH_AXIS_AND_SP,
   SHARD_AXIS_0_DYNAMIC,
   SHARD_AXIS_0_STATIC,
   SHARD_AXIS_1,
@@ -115,9 +116,15 @@ class GatherUtil {
   bool dynamic_shape_flag_ = False;
 
  private:
-  const std::vector<std::string> gather_mode_string_ = {
-    "batch",        "normal", "manual", "shard_batch_and_axis", "shard_axis_0_dynamic", "shard_axis_0_static",
-    "shard_axis_1", "invalid"};
+  const std::vector<std::string> gather_mode_string_ = {"batch",
+                                                        "normal",
+                                                        "manual",
+                                                        "shard_batch_and_axis",
+                                                        "shard_batch_axis_and_sp",
+                                                        "shard_axis_0_dynamic",
+                                                        "shard_axis_0_static",
+                                                        "shard_axis_1",
+                                                        "invalid"};
 };
 
 // batch mode: batch_dims > 1
@@ -313,6 +320,17 @@ class ShardBatchAndAxisImpl : public ShardAxisImpl {
   Status InferBias() override;
 };
 
+class ShardBatchAxisAndSpImpl : public ShardBatchAndAxisImpl {
+ public:
+  ShardBatchAxisAndSpImpl(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+                          int64_t axis)
+      : ShardBatchAndAxisImpl(name, inputs_shape, outputs_shape, axis) {}
+  ~ShardBatchAxisAndSpImpl() override = default;
+  Status InferDevMatrixShape() override;
+  Status InferTensorMap() override;
+  Status InferTensorInfo() override { return ShardAxisImpl::InferTensorInfo(); }
+};
+
 class GatherInfo : public OperatorInfo {
  public:
   GatherInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
@@ -354,6 +372,7 @@ class GatherInfo : public OperatorInfo {
   Status GetManualSplitWithoutOffsetAttr();
   Status ComputeReplaceOp();
   bool ShardBatchAndAxis(const Shape &param_strategy, const Shape &indices_strategy) const;
+  bool ShardBatchAxisAndSp(const Shape &param_strategy, const Shape &indices_strategy) const;
 
   std::string target_ = DEVICE;
   int64_t bias_ = 0;
