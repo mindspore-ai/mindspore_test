@@ -8,7 +8,7 @@ div:
 
         out_{i} = input_{i} / other_{i}
 
-    Note:
+    .. note::
         - When the two inputs have different shapes, they must be able to broadcast to a common shape.
         - The two inputs can not be bool type at the same time,
           [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.

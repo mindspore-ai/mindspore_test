@@ -13,7 +13,7 @@ eq:
                 & \text{False,   if } input_{i} \ne other_{i}
                 \end{cases}
 
-        Note:
+        .. note::
             - `self` and `other` comply with the implicit type conversion rules to make the data types consistent.
             - The other input must be Tensor or Scalar.
             - The shapes of the inputs can be broadcasted to each other.

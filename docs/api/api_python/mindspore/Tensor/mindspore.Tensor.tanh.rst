@@ -15,9 +15,6 @@ mindspore.Tensor.tanh
     .. image:: ../images/Tanh.png
         :align: center
 
-    参数：
-        - **self** (Tensor) - Tanh的输入。
-
     返回：
         Tensor，数据类型和shape与 `self` 相同。
 

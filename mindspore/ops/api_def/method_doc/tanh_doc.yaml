@@ -15,9 +15,6 @@ tanh:
         .. image:: ../../images/Tanh.png
             :align: center
 
-        Args:
-            self (Tensor): Input of Tanh.
-
         Returns:
             Tensor, with the same type and shape as the `self`.
 

@@ -1,37 +1,40 @@
 repeat_interleave:
   description: |
-    repeat_interleave(self, repeats, dim=None, output_size=None) -> Tensor
+    repeat_interleave(repeats, dim=None) -> Tensor
 
-    Repeat elements of a tensor along an axis, like `numpy.repeat`.
+    Repeat elements of a tensor along an dim, like `numpy.repeat`.
 
-    .. warning::
-        Only support on Atlas A2 training series.
+    .. note::
+        The self tensor to repeat values for. Must be of type: float16, float32, 
+            int8, uint8, int16, int32, or int64.
 
     Args:
-        self (Tensor): The tensor to repeat values for. Must be of type: float16,
-            float32, int8, uint8, int16, int32, or int64.
         repeats (Union[int, tuple, list, Tensor]): The number of times to repeat, must be positive.
         dim (int, optional): The dim along which to repeat, Default: ``None``. if dims is None,
-            the self Tensor will be flattened and the output will alse be flattened.
-        output_size (int, optional): Total output size for the given axis (e.g. sum of repeats),
-            Default: ``None``.
+            the input Tensor will be flattened and the output will alse be flattened.
 
     Returns:
-        One tensor with values repeated along the specified dim. If self has shape
+        One tensor with values repeated along the specified dim. If input has shape
         :math:`(s1, s2, ..., sn)` and dim is i, the output will have shape :math:`(s1, s2, ...,
-        si * repeats, ..., sn)`. The output type will be the same as the type of `self`.
+        si * repeats, ..., sn)`. The output type will be the same as the type of `input`.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> input = Tensor(np.array([[0, 1, 2], [3, 4, 5]]), mindspore.int32)
-        >>> output = input.repeat_interleave(repeats=2, dim=0)
-        >>> print(output)
+        >>> from mindspore import Tensor, ops
+        >>> input1 = Tensor(np.array([[0, 1, 2], [3, 4, 5]]), mindspore.int32)
+        >>> output1 = input1.repeat_interleave(repeats=2, dim=0)
+        >>> input2 = Tensor(np.array([[1, 2], [3, 4]]), mindspore.int32)
+        >>> output2 = input2.repeat_interleave(Tensor(np.array([1, 2])), dim=0)
+        >>> print(output1)
+        >>> print(output2)
         [[0 1 2]
          [0 1 2]
          [3 4 5]
          [3 4 5]]
+        [[1 2]
+         [3 4]
+         [3 4]]
