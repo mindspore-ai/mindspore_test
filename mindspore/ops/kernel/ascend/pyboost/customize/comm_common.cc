@@ -47,10 +47,15 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
 
   size_t comm_stream_id;
   auto value = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream);
-  if (value == "group" || value.empty()) {
-    comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(group_str);
-  } else {
+  if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+    // multi_stream:true, all communication op use the same communication stream
     comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamID();
+  } else if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
+    // multi_stream:false, all communication op use the same op stream
+    comm_stream_id = op->stream_id();
+  } else {
+    // Default scene, multi_stream:group, all communication op use the communication stream by group
+    comm_stream_id = device_context->device_res_manager_->GetCommunicationStreamIDByGroup(group_str);
   }
 
   [device_context, op_stream_id = op->stream_id(), comm_handle, hccl_comm, comm_stream_id, op_name, launch_func]() {

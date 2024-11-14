@@ -25,6 +25,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
+#include "ir/anf.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
@@ -111,12 +112,25 @@ void AddStreamIdByGroup(const AnfNodePtr &node, bool is_pp_interleave, DeviceRes
     AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
     common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
   } else {
-    auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
-    size_t comm_stream_id = device_res_manager->GetCommunicationStreamIDByGroup(group_name);
-    AnfAlgo::SetStreamId(comm_stream_id, node.get());
-    common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(comm_stream_id), node);
-    MS_LOG(INFO) << "Set stream id by group " << comm_stream_id << " for node " << node->fullname_with_scope()
-                 << ", group: " << group_name;
+    auto prim = GetCNodePrimitive(cnode);
+    MS_EXCEPTION_IF_NULL(prim);
+    auto group_value = prim->GetAttr(kAttrGroup);
+    if (group_value == nullptr) {
+      MS_LOG(EXCEPTION) << "Group value is nullptr, node: " << node->fullname_with_scope();
+    }
+    if (group_value->isa<StringImm>()) {
+      auto group_name = common::AnfAlgo::GetNodeAttr<std::string>(cnode, kAttrGroup);
+      size_t comm_stream_id = device_res_manager->GetCommunicationStreamIDByGroup(group_name);
+      AnfAlgo::SetStreamId(comm_stream_id, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(comm_stream_id), node);
+      MS_LOG(INFO) << "Set stream id by group " << comm_stream_id << " for node " << node->fullname_with_scope()
+                   << ", group: " << group_name;
+    } else {
+      AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
+      MS_LOG(INFO) << "Set stream id by default for node " << node->fullname_with_scope() << ", because group value is "
+                   << group_value->ToString();
+    }
   }
   AddStreamIdForSendRecv(node, is_pp_interleave);
 }
@@ -157,15 +171,19 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     auto parallel_context = parallel::ParallelContext::GetInstance();
     MS_EXCEPTION_IF_NULL(parallel_context);
     auto is_pp_interleave = parallel_context->pipeline_interleave();
-    if (common::GetConfigValue(common::kRuntimeConf, common::kRuntimeMultiStream) == "group") {
-      AddStreamIdByGroup(node, is_pp_interleave, device_res_manager);
-    } else {
+    if (common::IsEnableRuntimeConfig(common::kRuntimeMultiStream)) {
+      // multi_stream:true, all communication op use the same communication stream.
+      MS_LOG(INFO) << "Set stream id by no group for node " << node->fullname_with_scope();
       if (common::AnfAlgo::IsCommunicationOp(node) && !common::AnfAlgo::IsLcclCommunicationOp(node)) {
         AddStreamIdForCommunicationOp(node, is_pp_interleave);
       } else {
         AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
         common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
       }
+    } else {
+      // Default scene, multi_stream:group, all communication op use the communication stream by group
+      MS_LOG(INFO) << "Set stream id by group for node " << node->fullname_with_scope();
+      AddStreamIdByGroup(node, is_pp_interleave, device_res_manager);
     }
     stream_ids.insert(AnfAlgo::GetStreamId(node));
   }
