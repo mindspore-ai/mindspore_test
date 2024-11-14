@@ -816,7 +816,7 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   return MatMulExtBroadCastGrad(ib, x_origin, w_origin, dx, dw, 2);
 });
 
-REG_BPROP_BUILDER("Add").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
