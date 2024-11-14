@@ -824,7 +824,8 @@ def float_power(input, exponent):
 
     Raises:
         TypeError: If neither `input` nor `exponent` is a Tensor.
-        TypeError: If the data type of `input` or `exponent` is not in Tensor and Number.
+        TypeError: If the data type of `input` is not Tensor or Number.
+        TypeError: If the data type of `exponent` is not Tensor or Number.
 
     Supported Platforms:
         ``GPU`` ``CPU``
