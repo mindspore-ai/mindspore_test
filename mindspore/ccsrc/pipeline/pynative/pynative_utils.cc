@@ -1672,6 +1672,9 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&
     // Mode, if the graph contain no CNode after optimization, the tensor need sync to host.
     for (const auto &output : op->outputs()) {
       auto device_address = std::static_pointer_cast<device::DeviceAddress>(output->device_address());
+      if (device_address == nullptr) {
+        continue;
+      }
       runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output);
       output->data_sync(true);
     }
@@ -1679,6 +1682,9 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&
       if (input->isa<tensor::BaseTensor>()) {
         auto tensor = input->cast<tensor::BaseTensorPtr>();
         auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+        if (device_address == nullptr) {
+          continue;
+        }
         runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
       }
     }
