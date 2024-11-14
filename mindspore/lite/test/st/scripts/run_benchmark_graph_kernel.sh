@@ -249,12 +249,12 @@ function ConfigAscend() {
     fi
     echo "Copy file success"
     # source ascend env
-    export ASCEND_HOME=/usr/local/Ascend/latest
-    export PATH=${ASCEND_HOME}/compiler/ccec_compiler/bin:${PATH}
-    export LD_LIBRARY_PATH=${ASCEND_HOME}/lib64:${ASCEND_HOME}/../driver/lib64:${LD_LIBRARY_PATH}
-    export ASCEND_OPP_PATH=${ASCEND_HOME}/opp
-    export TBE_IMPL_PATH=${ASCEND_HOME}/opp/built-in/op_impl/ai_core/tbe
-    export PYTHONPATH=${TBE_IMPL_PATH}:${PYTHONPATH}
+    export ASCEND_PATH=/usr/local/Ascend
+    if [ -d "${ASCEND_PATH}/ascend-toolkit" ]; then
+        source ${ASCEND_PATH}/ascend-toolkit/set_env.sh
+    else
+        source ${ASCEND_PATH}/latest/bin/setenv.bash
+    fi
 }
 
 # Example:sh run_benchmark_graph_kernel.sh -r /home/temp_test -m /home/temp_test/models -e x86_gpu -d 192.168.1.1:0
