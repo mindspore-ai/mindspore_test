@@ -13,32 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-LOCAL_HIAI=/usr/local/Ascend
-export ASCEND_HOME_PATH=${LOCAL_HIAI}/latest
-export TBE_IMPL_PATH=${LOCAL_HIAI}/latest/opp/built-in/op_impl/ai_core/tbe/impl/:${TBE_IMPL_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/lib64/:${LOCAL_HIAI}/add-ons/:${LD_LIBRARY_PATH}
-
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/tools/aoe/lib64/:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/compiler/lib64/plugin/opskernel/:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/hccl/lib64/:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/hccl/lib64/plugin/opskernel:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/compiler/lib64/:${LD_LIBRARY_PATH}
-export LD_LIBRARY_PATH=${LOCAL_HIAI}/latest/compiler/lib64/plugin/nnengine:${LD_LIBRARY_PATH}
-
-export ASCEND_OPP_PATH=${LOCAL_HIAI}/latest/opp
-export ASCEND_AICPU_PATH=${ASCEND_OPP_PATH}/..
-export ASCEND_OPP_KERNEL_PATH=${LOCAL_HIAI}/latest/
-export TOOLCHAIN_HOME=${LOCAL_HIAI}/latest/toolkit
-
-export PATH=${LOCAL_HIAI}/latest/compiler/ccec_compiler/bin/:${PATH}
-export PATH=${LOCAL_HIAI}/latest/hccl/bin/:${PATH}
-export PATH=${LOCAL_HIAI}/compiler/bin/:${PATH}
-export PATH=${LOCAL_HIAI}/compiler/python/site-packages/:${PATH}
-
-export PYTHONPATH=${LOCAL_HIAI}/latest/opp/built-in/op_impl/ai_core/tbe/:${PYTHONPATH}
-export PYTHONPATH=${LOCAL_HIAI}/hccl/python/site-packages/:${PYTHONPATH}
+export ASCEND_PATH=/usr/local/Ascend
+if [ -d "${ASCEND_PATH}/ascend-toolkit" ]; then
+    source ${ASCEND_PATH}/ascend-toolkit/set_env.sh
+else
+    source ${ASCEND_PATH}/latest/bin/setenv.bash
+fi
 
 export DEVICE_MEMORY_CAPACITY=1073741824000
 export NOT_FULLY_USE_DEVICES=off
