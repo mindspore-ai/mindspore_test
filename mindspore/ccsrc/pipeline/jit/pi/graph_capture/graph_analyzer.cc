@@ -1252,7 +1252,10 @@ ValueNode *MindGraphAnalyzer::GetBuiltinMethodNode(std::vector<ValueNode *> *out
   return method_node;
 }
 
-static void UpdateNodeInputs(const std::vector<ValueNode *> &nodes, const std::map<ValueNode *, ValueNode *> &map) {
+static void UpdateNodeInputs(Graph *graph, std::vector<ValueNode *> *nodes_p,
+                             std::map<ValueNode *, ValueNode *> *map_p) {
+  const auto &map = *map_p;
+  const auto &nodes = *nodes_p;
   auto latest = [&map](ValueNode *node) {
     int limit = 10000;
     for (auto iter = map.find(node); limit > 0 && iter != map.end(); iter = map.find(node), --limit) {
@@ -1261,20 +1264,40 @@ static void UpdateNodeInputs(const std::vector<ValueNode *> &nodes, const std::m
     MS_EXCEPTION_IF_CHECK_FAIL(limit > 0, "maybe circle map");
     return node;
   };
-  // for each node check it's inputs
-  for (auto node_iter = nodes.begin(); node_iter != nodes.end(); ++node_iter) {
-    auto node = *node_iter;
-    auto &in = node->getInputs();
-    auto in_iter = std::find_if(in.begin(), in.end(), [&map](ValueNode *k) { return map.find(k) != map.end(); });
-    if (in_iter == in.end()) {
-      continue;  // not find, do nothing
+  bool changed;
+  do {
+    changed = false;
+    // for each node check it's inputs
+    for (auto node_iter = nodes.begin(); node_iter != nodes.end(); ++node_iter) {
+      auto node = *node_iter;
+      auto &in = node->getInputs();
+      auto in_iter = std::find_if(in.begin(), in.end(), [&map](ValueNode *k) { return map.find(k) != map.end(); });
+      if (in_iter == in.end()) {
+        continue;  // not find, do nothing
+      }
+      // collect latest node
+      std::vector<ValueNode *> new_in = node->getInputs();
+      for (; in_iter != in.end(); ++in_iter) {
+        new_in[in_iter - in.begin()] = latest(*in_iter);
+      }
+      // if node is a a new node, update inputs
+      if (node->GetLineNo() < 0) {
+        in = std::move(new_in);
+        continue;
+      }
+      Opcode opcode(node->GetOpcode());
+      ValueNode *new_node;
+      if (opcode.IsCall()) {
+        new_node = graph->NewCallNode(opcode, node->GetOparg(), std::move(new_in));
+        new_node->SetVobj(node->GetVobj());
+      } else {
+        new_node = graph->NewValueNode(node->GetVobj(), opcode, node->GetOparg(), std::move(new_in), node->GetName());
+      }
+      (*nodes_p)[node_iter - nodes.begin()] = new_node;
+      (*map_p)[node] = new_node;
+      changed = true;
     }
-    // collect latest node
-    std::vector<ValueNode *> &new_in = in;
-    for (; in_iter != in.end(); ++in_iter) {
-      new_in[in_iter - in.begin()] = latest(*in_iter);
-    }
-  }
+  } while (changed);
 }
 
 void MindGraphAnalyzer::UpdateUseDefNode() {
@@ -1284,7 +1307,7 @@ void MindGraphAnalyzer::UpdateUseDefNode() {
     UpdateUseDefOrder(&nodes);
     return;
   }
-  UpdateNodeInputs(nodes, map);
+  UpdateNodeInputs(graph_, &nodes, &map);
   UpdateUseDefOrder(&nodes);
 }
 
