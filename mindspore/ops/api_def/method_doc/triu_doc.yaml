@@ -1,6 +1,6 @@
 triu:
   description: |
-    triu(self, diagonal) -> Tensor
+    triu(diagonal) -> Tensor
     
     Returns the upper triangle part of 'self' (elements that contain the diagonal and below),
     and set the other elements to zeros.
@@ -9,16 +9,15 @@ triu:
         This is an experimental API that is subject to change or deletion.
     
     Args:
-        self (Tensor): The input tensor with shape :math:`(M, N, *)` where * means any number of additional dimensions.
-        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: 0,
+        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: ``0`` ,
             indicating the main diagonal.
     
     Returns:
-        Tensor, a tensor has the same shape and data type as input.
+        Tensor, a tensor has the same shape and data type as `self`.
     
     Raises:
         TypeError: If `diagonal` is not an int.
-        ValueError: If the dimension of `input` is less than 2.
+        ValueError: If the dimension of `self` is less than 2.
     
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

@@ -1,6 +1,6 @@
 nan_to_num:
   description: |
-    nan_to_num(self, nan, posinf, neginf) -> Tensor
+    nan_to_num(nan, posinf, neginf) -> Tensor
     
     Replace the `NaN`, positive infinity and negative infinity values of the `self` with the
     specified values in `nan`, `posinf` and `neginf` respectively.
@@ -10,9 +10,7 @@ nan_to_num:
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        self (Tensor): The shape of tensor is :math:`(input_1, input_2, ..., input_R)`.
-            With float32 or float16 data type.
-        nan (number, optional): The replace value of `NaN`. Default value is ``None``.
+        nan (number, optional): The replace value of `NaN`. Default: ``None``.
         posinf (number, optional): the value to replace positive infinity values with. Default: ``None``,
             replacing positive infinity with the maximum value supported by the data type of `self`.
         neginf (number, optional): the value to replace negative infinity values with. Default: ``None``,

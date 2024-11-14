@@ -6,7 +6,7 @@ mindspore.Tensor.max
     返回Tensor的最大值或轴方向上的最大值。
 
     .. note::
-        - `axis` 为 ``None`` 时，`keepdims` 及以后参数均不会生效，同时索引固定返回0。
+        `axis` 为 ``None`` 时，`keepdims` 及以后参数均不会生效，同时索引固定返回0。
 
     参数：
         - **axis** (Union[None, int, list, tuple of ints], 可选) - 轴，在该轴方向上进行操作。默认情况下，使用扁平输入。如果该参数为整数元组，则在多个轴上选择最大值，而不是在单个轴或所有轴上进行选择。默认值： ``None`` 。
@@ -27,4 +27,11 @@ mindspore.Tensor.max
         - :func:`mindspore.Tensor.argmin` ：返回沿轴最小值的索引。
         - :func:`mindspore.Tensor.argmax` ：返回沿轴最大值的索引。
         - :func:`mindspore.Tensor.min` ：返回整个Tensor最小值或沿轴最小值。
+
+.. py:method:: mindspore.Tensor.max() -> Tensor
+
+    返回自身张量 `self` 中所有元素的最大值。
+
+    返回：
+        Tensor，返回自身张量 `self` 每行的最大值。
 
