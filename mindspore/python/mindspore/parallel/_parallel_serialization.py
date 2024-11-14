@@ -115,11 +115,15 @@ def _check_strategy_file(strategy_filename):
                          f"be empty. Please check whether the 'strategy_filename' is correct.")
 
 
-def _load_protobuf_strategy(strategy_filename):
+def _load_protobuf_strategy(strategy_filename, strategy_set=None):
     """load strategy from protobuf file"""
     parallel_strategy_map = ms.train.node_strategy_pb2.ParallelStrategyMap()
     with open(strategy_filename, 'rb') as f:
         pb_content = f.read()
+        if strategy_set is not None:
+            if pb_content in strategy_set:
+                return {}
+            strategy_set.add(pb_content)
     try:
         parallel_strategy_map.ParseFromString(pb_content)
     except BaseException as e:
@@ -188,8 +192,11 @@ def _merge_protobuf_strategy(src_strategy_files, dst_strategy_file):
     """merge protobuf strategy"""
     dst_parallel_strategy_map = ms.train.node_strategy_pb2.ParallelStrategyMap()
     merged_stage = []
+    strategy_set = set()
     for src_strategy_file in src_strategy_files:
-        src_parallel_strategy_map = _load_protobuf_strategy(src_strategy_file)
+        src_parallel_strategy_map = _load_protobuf_strategy(src_strategy_file, strategy_set=strategy_set)
+        if not src_parallel_strategy_map:
+            continue
         strategy_items = src_parallel_strategy_map.parallel_strategy_item
         layout_items = src_parallel_strategy_map.parallel_layout_item
         if not strategy_items or not layout_items:

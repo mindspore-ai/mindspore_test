@@ -1,9 +1,12 @@
 mindspore.load_distributed_checkpoint
 ======================================
 
-.. py:function:: mindspore.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None)
+.. py:function:: mindspore.load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None, train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM', format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None, output_format='safetensors', name_map=None, max_process_num=64)
 
     给分布式预测加载checkpoint文件到网络。用于分布式推理。关于分布式推理的细节，请参考： `分布式模型加载 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/model_loading.html>`_ 。
+
+    .. note::
+        只有 `format` 设置为 `safetensors` 并且 `network` 为 `None` 时，output_format才会生效。
 
     参数：
         - **network** (Cell) - 分布式预测网络。
@@ -17,6 +20,9 @@ mindspore.load_distributed_checkpoint
         - **unified_safetensors_dir** (str) - 待加载进网络的输入权重文件目录。默认值： ``None`` 。
         - **dst_safetensors_dir** (str) - 保存模式场景下，safetensors的保存目录。
         - **rank_id** (int) - 卡的逻辑序号。非保存模式下，通过初始化网络全局自动获取；保存模式下，按传入序号保存文件，若未传入，则全量保存。
+        - **output_format** (str, 可选) - 控制转换后输出的 checkpoint 格式。可以设置为 "ckpt" 或 "safetensors"。默认值："safetensors"。
+        - **name_map** (dict) - 权重映射字典，切分完的权重加载到网络或保存之前，会按照映射字典修改权重名字。默认值：None。
+        - **max_process_num** (int) - 最大进程数。默认值：64。
 
     异常：
         - **TypeError** - 输入类型不符合要求。

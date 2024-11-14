@@ -26,6 +26,7 @@ from collections import defaultdict
 import multiprocessing as mp
 import numpy as np
 import mindspore as ms
+from mindspore import log as logger
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
     _insert_opt_shard_reshape, _extract_src_dst_layout_map_by_src
@@ -757,12 +758,9 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_su
         else:
             safetensor_file_name = os.path.join(safetensor_dir, f"*{file_suffix}.{format}")
         rank_ckpts = glob.glob(safetensor_file_name)
-        rank_ckpts.sort()
-        for safetensor_file in rank_ckpts:
-            if not os.path.isfile(safetensor_file):
-                ms.log.warning("{} is not a safetensor file.".format(safetensor_file))
-                continue
-            all_safetensor_files_map[rank_id] = safetensor_file
+        rank_ckpts.sort(key=os.path.getctime)
+        if rank_ckpts:
+            all_safetensor_files_map[rank_id] = rank_ckpts[-1]
     return all_safetensor_files_map
 
 
@@ -864,7 +862,8 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
     return transform_param_dict
 
 
-def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None):
+def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
+                        max_process_num=64):
     """
     Merge multiple safetensor files into a unified safetensor file.
 
@@ -876,6 +875,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
             saved safetensors files. Default: ``True``, indicating that the merged source weight files are complete.
         file_suffix (str, optional): Specify the filename suffix for merging safetensors files. Default: ``None``,
             meaning all safetensors files in the source weight directory will be merged.
+        max_process_num (int): Maximum number of processes. Default: 64.
 
     Raises:
         ValueError: If the safetensors file of rank is missing.
@@ -949,7 +949,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     with open(map_file, 'w') as f:
         f.write(json_str)
 
-    max_process = min(split_num, 100)
+    max_process = min(split_num, max_process_num)
     res = [i for i in range(split_num)]
     res = _split_list(res, max_process)
     processes = []
@@ -1027,17 +1027,49 @@ def _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_n
     return sf_obj
 
 
-def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None, dst_safetensors_dir=None,
-                              rank_id=None):
+def _check_name_map_value_is_str(value):
+    """check input is bool"""
+    if not isinstance(value, str):
+        raise ValueError(
+            f"For 'load_distributed_checkpoint', the value of name_map must be str, but got {type(value)}.")
+
+
+def _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param):
+    """process hyper params"""
+    if 'hyper_param.safetensors' in file_list:
+        hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
+        with safe_open(hyper_parameter_file_name, framework="np") as f:
+            for key in f.keys():
+                cur_param_name = name_map.get(key) if name_map is not None and key in name_map else key
+                _check_name_map_value_is_str(cur_param_name)
+                total_param[cur_param_name] = ms.Parameter(f.get_tensor(key))
+    return total_param
+
+
+def _load_parallel_checkpoint(file_info):
     """load parallel safetensors by merged file."""
+    total_safetensors_dir, dst_strategy_file, net, dst_safetensors_dir, rank_id, output_format, name_map = file_info
     file_list = os.listdir(total_safetensors_dir)
     json_files = [file for file in file_list if file.endswith('.json')]
-    if len(json_files) != 1:
-        raise ValueError(f"For 'load_parallel_checkpoint', the number of json files in 'total_safetensors_dir' "
-                         f"must be 1, but got {len(json_files)}.")
-    param_name_json = os.path.join(total_safetensors_dir, json_files[0])
-    with open(param_name_json, 'r') as f:
-        param_name_map = json.load(f)
+    if len(file_list) == 1:
+        logger.info("There is only one weight file in the directory, which will be automatically mapped.")
+        file_name = os.path.join(total_safetensors_dir, file_list[0])
+        is_file = os.path.isfile(file_name)
+        if not is_file:
+            raise ValueError(f"For 'load_parallel_checkpoint', weight files must be included "
+                             f"in the `unified_safetensors_dir`.")
+        with safe_open(file_name, framework="np") as f:
+            keys = f.keys()
+            values = len(keys) * [file_list[0]]
+            param_name_map = dict(zip(keys, values))
+    else:
+        if len(json_files) != 1:
+            raise ValueError(f"For 'load_parallel_checkpoint', the number of json files in 'total_safetensors_dir' "
+                             f"must be 1, but got {len(json_files)}.")
+        param_name_json = os.path.join(total_safetensors_dir, json_files[0])
+        with open(param_name_json, 'r') as f:
+            param_name_map = json.load(f)
+
     if dst_strategy_file is not None:
         _, dst_strategy_list = _extract_src_dst_layout_map(rank_id, None, dst_strategy_file)
         param_list = dst_strategy_list.keys()
@@ -1102,20 +1134,17 @@ def _load_parallel_checkpoint(total_safetensors_dir, dst_strategy_file, net=None
             slice_param = _apply_sf_obj_transform_operators(transform_operator_stack, sf_obj, device_num)
         else:
             slice_param = sf_obj[:]
+        cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
+        _check_name_map_value_is_str(cur_param_name)
+        total_param[cur_param_name] = ms.Parameter(slice_param)
 
-        total_param[param_name] = ms.Parameter(slice_param)
-
-    if 'hyper_param.safetensors' in file_list:
-        hyper_parameter_file_name = os.path.join(total_safetensors_dir, "hyper_param.safetensors")
-        with safe_open(hyper_parameter_file_name, framework="np") as f:
-            for key in f.keys():
-                total_param[key] = ms.Parameter(f.get_tensor(key))
+    total_param = _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param)
     if net is not None:
         param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
         return param_not_load, ckpt_not_load
     _make_dir(os.path.join(dst_safetensors_dir, f"rank_{rank_id}"), "path")
-    ms.save_checkpoint(total_param, os.path.join(dst_safetensors_dir, f"rank_{rank_id}", f"net.safetensors"),
-                       format='safetensors')
+    ms.save_checkpoint(total_param, os.path.join(dst_safetensors_dir, f"rank_{rank_id}", f"net.{output_format}"),
+                       format=output_format)
     return None
 
 
