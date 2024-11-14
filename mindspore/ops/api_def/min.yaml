@@ -1,0 +1,14 @@
+min:
+  - op_yaml: deprecated/min_op.yaml
+    py_method: deprecated_tensor_min # callback to python function "def deprecated_tensor_min"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: method
+
+  - op_yaml: min_op.yaml
+    py_method: tensor_min # callback to python function "def tensor_min"
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

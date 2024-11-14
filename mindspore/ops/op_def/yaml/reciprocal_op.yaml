@@ -1,10 +1,10 @@
 #operator reciprocal
 reciprocal:
     args:
-        x:
+        input:
             dtype: tensor
     returns:
-        y:
+        output:
             dtype: tensor
     function:
         disable: True

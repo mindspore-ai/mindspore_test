@@ -1,0 +1,7 @@
+masked_fill:
+  op_yaml: masked_fill_op.yaml
+  py_method: tensor_masked_fill
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

@@ -426,6 +426,42 @@ class MS_CORE_API PrimInstanceAbstractClosure final : public AbstractFuncAtom {
 };
 using PrimInstanceAbstractClosurePtr = std::shared_ptr<PrimInstanceAbstractClosure>;
 
+/// \brief FunctionalAbstractClosure defines the abstract AbstractFuncAtom interface for functional.
+class MS_CORE_API FunctionalAbstractClosure final : public AbstractFuncAtom {
+ public:
+  /// \brief Constructor of FunctionalAbstractClosure.
+  ///
+  /// \param[in] name The name of functional.
+  FunctionalAbstractClosure(const std::string &name, bool is_method) : name_(name), is_method_(is_method) {}
+
+  /// \brief Destructor of FunctionalAbstractClosure.
+  ~FunctionalAbstractClosure() override = default;
+  MS_DECLARE_PARENT(FunctionalAbstractClosure, AbstractFuncAtom)
+
+  /// \brief Get the name of functional.
+  ///
+  /// \return The name of functional.
+  std::string name() const { return name_; }
+
+  /// \brief Check if method.
+  ///
+  /// \return Whether the functional is used as method.
+  bool is_method() const { return is_method_; }
+
+  AbstractFunctionPtr Copy() const override;
+
+  bool operator==(const AbstractFunction &other) const override;
+
+  std::size_t hash() const override;
+
+  std::string ToString() const override;
+
+ private:
+  std::string name_;
+  bool is_method_{false};
+};
+using FunctionalAbstractClosurePtr = std::shared_ptr<FunctionalAbstractClosure>;
+
 /// \brief JTransformedAbstractClosure defines interface for abstract of Function
 /// transformed through the application of J.
 class MS_CORE_API JTransformedAbstractClosure final : public AbstractFuncAtom {

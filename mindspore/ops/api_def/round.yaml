@@ -1,0 +1,7 @@
+round:
+  - op_yaml: round_op.yaml
+    py_method: tensor_round
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

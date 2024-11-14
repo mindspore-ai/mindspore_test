@@ -1,0 +1,7 @@
+tanh:
+  op_yaml: tanh_op.yaml
+  py_method: tensor_erf
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

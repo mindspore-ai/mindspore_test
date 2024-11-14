@@ -1,0 +1,14 @@
+prod:
+  - op_yaml: deprecated/prod_op.yaml
+    py_method: deprecated_tensor_prod
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: method
+
+  - op_yaml: prod_ext_op.yaml
+    py_method: tensor_prod
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

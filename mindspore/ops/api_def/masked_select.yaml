@@ -1,0 +1,7 @@
+masked_select:
+  op_yaml: masked_select_op.yaml
+  py_method: tensor_masked_select
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

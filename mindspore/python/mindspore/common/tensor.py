@@ -31,8 +31,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (repeat_interleave_mint, add_mint, item_mint, isnan_mint, flatten_mint,
-                                               max_mint, mean_mint, min_mint, split_mint, sub_mint)
+from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, flatten_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -1365,17 +1364,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('div')(self, value, rounding_mode=None)
 
-    def triu(self, diagonal=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.triu`.
-
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
-
-        """
-        validator.check_value_type('diagonal', diagonal, [int], 'triu')
-        return tensor_operator_registry.get('triu')(self, diagonal)
-
     def addbmm(self, batch1, batch2, *, beta=1, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.addbmm`.
@@ -1565,12 +1553,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('ger')(self, vec2)
 
-    def gt(self, x):
-        """
-        For details, please refer to :func:`mindspore.ops.gt`.
-        """
-        return tensor_operator_registry.get('gt')(self, x)
-
     def ge(self, x):
         """
         For details, please refer to :func:`mindspore.ops.ge`.
@@ -1607,29 +1589,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('broadcast_to')(self, x.shape)
 
-    def exp(self):
-        """
-        For details, please refer to :func:`mindspore.ops.exp`.
-        """
-        return tensor_operator_registry.get('exp')(self)
-
     def real(self):
         r"""
         For details, please refer to :func:`mindspore.ops.real`.
         """
         return tensor_operator_registry.get('real')(self)
-
-    def rsqrt(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.rsqrt`.
-        """
-        return tensor_operator_registry.get('rsqrt')(self)
-
-    def reciprocal(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.reciprocal`.
-        """
-        return tensor_operator_registry.get('reciprocal')(self)
 
     def sqrt(self):
         """
@@ -1656,12 +1620,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('tan')(self)
 
-    def tanh(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.tanh`.
-        """
-        return tensor_operator_registry.get('tanh')(self)
-
     def cosh(self):
         r"""
         For details, please refer to :func:`mindspore.ops.cosh`.
@@ -1679,12 +1637,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Alias for :func:`mindspore.Tensor.acos`.
         """
         return self.acos()
-
-    def cos(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.cos`.
-        """
-        return tensor_operator_registry.get('cos')(self)
 
     def cov(self, *, correction=1, fweights=None, aweights=None):
         r"""
@@ -1715,18 +1667,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Alias for :func:`mindspore.Tensor.abs`.
         """
         return self.abs()
-
-    def ceil(self):
-        """
-        For details, please refer to :func:`mindspore.ops.ceil`.
-        """
-        return tensor_operator_registry.get('ceil')(self)
-
-    def floor(self):
-        """
-        For details, please refer to :func:`mindspore.ops.floor`.
-        """
-        return tensor_operator_registry.get('floor')(self)
 
     def floor_(self):
         r"""
@@ -1770,12 +1710,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.lerp`.
         """
         return tensor_operator_registry.get('lerp')(self, end, weight)
-
-    def negative(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.negative`.
-        """
-        return tensor_operator_registry.get("negative")(self)
 
     # pylint: disable=redefined-builtin
     def norm(self, ord=None, dim=None, keepdim=False, *, dtype=None):
@@ -1857,12 +1791,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('i0')(self)
 
-    def isclose(self, x2, rtol=1e-05, atol=1e-08, equal_nan=False):
-        """
-        For details, please refer to :func:`mindspore.ops.isclose`.
-        """
-        return tensor_operator_registry.get('isclose')(self, x2, rtol, atol, equal_nan)
-
     def isneginf(self):
         r"""
         For details, please refer to :func:`mindspore.ops.isneginf`.
@@ -1880,12 +1808,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.isreal`.
         """
         return tensor_operator_registry.get('isreal')(self)
-
-    def isfinite(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.isfinite`.
-        """
-        return tensor_operator_registry.get('isfinite')(self)
 
     def is_complex(self):
         r"""
@@ -1911,18 +1833,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('invert')(self)
 
-    def pow(self, exponent):
-        r"""
-        For details, please refer to :func:`mindspore.ops.pow`.
-        """
-        return tensor_operator_registry.get('pow')(self, exponent)
-
-    def log(self):
-        """
-        For details, please refer to :func:`mindspore.ops.log`.
-        """
-        return tensor_operator_registry.get('log')(self)
-
     def log10(self):
         r"""
         For details, please refer to :func:`mindspore.ops.log10`.
@@ -1934,13 +1844,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.log2`.
         """
         return tensor_operator_registry.get('log2')(self)
-
-    @mean_mint
-    def mean(self, axis=None, keep_dims=False):
-        """
-        For details, please refer to :func:`mindspore.ops.mean`.
-        """
-        return tensor_operator_registry.get('mean')(self, axis, keep_dims)
 
     def amin(self, axis=None, keepdims=False, *, initial=None, where=None):
         """
@@ -1975,12 +1878,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.reverse_sequence`.
         """
         return tensor_operator_registry.get("reverse_sequence")(self, seq_lengths, seq_dim, batch_dim)
-
-    def prod(self, axis=None, keep_dims=False, dtype=None):
-        """
-        For details, please refer to :func:`mindspore.ops.prod`.
-        """
-        return tensor_operator_registry.get('prod')(self, axis, keep_dims, dtype)
 
     def select(self, condition, y):
         r"""
@@ -2019,40 +1916,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.col2im`.
         """
         return tensor_operator_registry.get('col2im')(self, output_size, kernel_size, dilation, padding_value, stride)
-
-    def reshape(self, *shape):
-        r"""
-        Rearranges the input Tensor based on the given `shape` .
-
-        The `shape` can only have one -1 at most, in which case it's inferred from the remaining dimensions and
-        the number of elements in the input.
-
-        Args:
-            shape (Union[int, tuple[int], list[int]]): If `shape` is a tuple or list, its elements should be
-                integers, and only constant value is allowed. i.e., :math:`(y_1, y_2, ..., y_S)`.
-
-        Returns:
-            Tensor, If the given `shape` does not contain -1, the `shape` of tensor is :math:`(y_1, y_2, ..., y_S)`.
-            If the k-th position in the given `shape` is -1, the `shape` of tensor is :math:`(y_1, ..., y_{k-1},
-            \frac{\prod_{i=1}^{R}x_{i}}{y_1\times ...\times y_{k-1}\times y_{k+1}\times...\times y_S} , y_{k+1},
-            ..., y_S)`, in where the shape of input tensor is :math:`(x_1, x_2, ..., x_R)`.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor, ops
-            >>> input = Tensor(np.array([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]]), mindspore.float32)
-            >>> output = input.reshape(3, 2)
-            >>> print(output)
-            [[-0.1  0.3]
-             [ 3.6  0.4]
-             [ 0.5 -3.2]]
-        """
-        new_shape = validator.check_reshape_shp(shape)
-        return tensor_operator_registry.get('reshape')(self, new_shape)
 
     def reshape_as(self, other):
         """
@@ -2105,12 +1968,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         reshape_op = tensor_operator_registry.get('reshape')
         return reshape_op(self, (-1,))
-
-    def round(self, decimals=0):
-        """
-        For details, please refer to :func:`mindspore.ops.round`.
-        """
-        return tensor_operator_registry.get('round')(self, decimals=decimals)
 
     def roll(self, shifts, dims):
         """
@@ -2179,12 +2036,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("positive")(self)
 
-    def remainder(self, divisor):
-        r"""
-        For details, please refer to :func:`mindspore.ops.remainder`.
-        """
-        return tensor_operator_registry.get('remainder')(self, divisor)
-
     @flatten_mint
     def flatten(self, order='C', *, start_dim=0, end_dim=-1):
         r"""
@@ -2246,12 +2097,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('slogdet')(self)
 
-    def tril(self, diagonal=0):
-        """
-        For details, please refer to :func:`mindspore.ops.tril`.
-        """
-        return tensor_operator_registry.get('tril')(self, diagonal)
-
     def unsqueeze(self, dim):
         """
         For details, please refer to :func:`mindspore.ops.unsqueeze`.
@@ -2300,13 +2145,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         if not copy and dtype == self.dtype:
             return self
         return tensor_operator_registry.get('cast')(self, dtype)
-
-    def argmax(self, axis=None, keepdims=False):
-        """
-        For details, please refer to :func:`mindspore.ops.argmax`.
-        """
-        out = tensor_operator_registry.get('argmax')(self, axis, keepdims)
-        return out
 
     def argmin(self, axis=None, keepdims=False):
         """
@@ -2446,12 +2284,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('index_fill')(self, axis, index, value)
 
-    def index_select(self, axis, index):
-        """
-        For details, please refer to :func:`mindspore.ops.index_select`.
-        """
-        return tensor_operator_registry.get('index_select')(self, axis, index)
-
     def inplace_update(self, v, indices):
         """
         For details, please refer to :func:`mindspore.ops.inplace_update`.
@@ -2530,153 +2362,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.clone`.
         """
         return tensor_operator_registry.get("clone")(self)
-
-    @max_mint
-    def max(self, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
-        """
-        Return the maximum of a tensor or maximum along an axis.
-
-        Note:
-            When `axis` is ``None``, `keepdims` and subsequent parameters
-            have no effect. At the same time, the index is fixed to return 0.
-
-        Args:
-            axis (Union[None, int, list, tuple of ints], optional): Axis or
-                axes along which to operate. By default, flattened input is used. If
-                this is a tuple of ints, the maximum is selected over multiple axes,
-                instead of a single axis or all the axes as before. Default: ``None`` .
-            keepdims (bool, optional):
-                If this is set to ``True`` , the axes which are reduced are left in the
-                result as dimensions with size one. With this option, the result will
-                broadcast correctly against the input array. Default: ``False`` .
-
-        Keyword Args:
-            initial (scalar, optional):
-                The minimum value of an output element. Must be present to allow
-                computation on empty slice. Default: ``None`` .
-            where (bool Tensor, optional):
-                A boolean tensor which is broadcasted to match the dimensions of array,
-                and selects elements to include in the reduction. If non-default value
-                is passed, initial must also be provided. Default: ``True`` .
-            return_indices (bool, optional): Whether to return the index of the maximum value.
-                Default: ``False`` . If `axis` is a list or tuple of ints, it must be ``False`` .
-
-        Returns:
-            Tensor or scalar, maximum of input tensor. If `axis` is ``None`` , the result is a scalar
-            value. If `axis` is given, the result is a tensor of dimension ``self.ndim - 1``.
-
-        Raises:
-            TypeError: If arguments have types not specified above.
-
-        See also:
-            - :func:`mindspore.Tensor.argmin`: Return the indices of the minimum values along an axis.
-            - :func:`mindspore.Tensor.argmax`: Return the indices of the maximum values along an axis.
-            - :func:`mindspore.Tensor.min`: Return the minimum of a tensor or minimum along an axis.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> a = Tensor(np.arange(4).reshape((2, 2)).astype('float32'))
-            >>> output = a.max()
-            >>> print(output)
-            3.0
-            >>> value, indices = a.max(axis=0, return_indices=True)
-            >>> print(value)
-            [2. 3.]
-            >>> print(indices)
-            [1 1]
-        """
-        if isinstance(axis, (list, tuple)):
-            reduce_ = tensor_operator_registry.get("reduce")
-            reduce_max = tensor_operator_registry.get("reduce_max")
-            maximum = tensor_operator_registry.get("maximum")
-            return reduce_(self, reduce_max(keepdims), cmp_fn=maximum, axis=axis, keepdims=keepdims,
-                           initial=initial, where=where)
-        values, indices = tensor_operator_registry.get("max")(self, axis, keepdims, initial=initial, where=where)
-        if not return_indices:
-            return values
-        return values, indices
-
-    @min_mint
-    def min(self, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
-        """
-        Return the minimum of a tensor or minimum along an axis.
-
-        Note:
-            When `axis` is ``None``, `keepdims` and subsequent parameters
-            have no effect. At the same time, the index is fixed to return 0.
-
-        Args:
-            axis (Union[None, int, list, tuple of ints], optional): An axis or
-                axes along which to operate. By default, flattened input is used. If
-                `axis` is a tuple of ints, the minimum is selected over multiple axes,
-                instead of a single axis or all the axes as before. Default: ``None`` .
-            keepdims (bool, optional):
-                If ``True`` , the axes which are reduced are left in the
-                result as dimensions with size one. With this option, the result will
-                broadcast correctly against the input array. Default: ``False`` .
-
-        Keyword Args:
-            initial (scalar, optional):
-                The minimum value of an output element. Must be present to allow
-                computation on empty slice. Default: ``None`` .
-            where (Tensor[bool], optional):
-                A boolean tensor which is broadcasted to match the dimensions of array,
-                and selects elements to include in the reduction. If non-default value
-                is passed, initial must also be provided. Default: ``True`` .
-            return_indices (bool, optional): Whether to return the index of the minimum value. Default: ``False`` .
-                If `axis` is a list or tuple of ints, it must be ``False`` .
-
-        Returns:
-            Tensor or scalar, minimum of input tensor. If `axis` is ``None`` , the result is a scalar
-            value. If `axis` is given, the result is a tensor of dimension ``self.ndim - 1``.
-
-        Raises:
-            TypeError: If arguments have types not specified above.
-
-        See also:
-            - :func:`mindspore.Tensor.argmin`: Return the indices of the minimum values along an axis.
-            - :func:`mindspore.Tensor.argmax`: Return the indices of the maximum values along an axis.
-            - :func:`mindspore.Tensor.max`: Return the minimum of a tensor or minimum along an axis.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> a = Tensor(np.arange(4).reshape((2, 2)).astype('float32'))
-            >>> output = a.min()
-            >>> print(output)
-            0.0
-            >>> output = a.min(axis=0)
-            >>> print(output)
-            [0. 1.]
-            >>> output = a.min(axis=0, initial=9, where=Tensor([False]))
-            >>> print(output)
-            [9. 9.]
-            >>> output = a.min(axis=0, initial=9, where=Tensor([False, True]))
-            >>> print(output)
-            [9. 1.]
-            >>> value, indices = a.min(axis=0, return_indices=True)
-            >>> print(value)
-            [0. 1.]
-            >>> print(indices)
-            [0 0]
-        """
-        if isinstance(axis, (list, tuple)):
-            reduce_ = tensor_operator_registry.get("reduce")
-            reduce_min = tensor_operator_registry.get("reduce_min")
-            minimum = tensor_operator_registry.get("minimum")
-            return reduce_(self, reduce_min(keepdims), cmp_fn=minimum, axis=axis, keepdims=keepdims,
-                           initial=initial, where=where)
-        values, indices = tensor_operator_registry.get("min")(self, axis, keepdims, initial=initial, where=where)
-        if not return_indices:
-            return values
-        return values, indices
 
     def scatter_add(self, indices, updates):
         """
@@ -2808,18 +2493,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('fill_diagonal')(fill_value, wrap)(self)
 
-    def masked_fill(self, mask, value):
-        """
-        For details, please refer to :func:`mindspore.ops.masked_fill`.
-        """
-        if isinstance(value, (float, int)):
-            value = tensor_operator_registry.get("scalar_to_tensor")(value, self.dtype)
-        if not isinstance(mask, Tensor):
-            raise TypeError("For 'Tensor.masked_fill', the type of the argument 'mask' must be Tensor, but "
-                            "got {}.".format(type(mask)))
-        validator.check_type_name('mask', mask.dtype, [mstype.bool_], "Tensor")
-        return tensor_operator_registry.get("masked_fill")(self, mask, value)
-
     def ptp(self, axis=None, keepdims=False):
         """
         The name of the function comes from the acronym for "peak to peak". Calculate the difference between the
@@ -2862,18 +2535,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             axis = validator.check_axis_valid(axis, self.ndim)
 
         return self.max(axis, keepdims) - self.min(axis, keepdims)
-
-    def minimum(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.minimum`.
-        """
-        return tensor_operator_registry.get('minimum')(self, other)
-
-    def clamp(self, min=None, max=None):
-        r"""
-        For details, please refer to :func:`mindspore.ops.clamp`.
-        """
-        return tensor_operator_registry.get('clamp')(self, min, max)
 
     def clamp_(self, min=None, max=None):
         r"""
@@ -2933,12 +2594,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             [ 5. 11.  6. 20.]]
         """
         return tensor_operator_registry.get('clamp_')(self, min, max)
-
-    def clip(self, min=None, max=None):
-        r"""
-        Alias for :func:`mindspore.Tensor.clamp`.
-        """
-        return self.clamp(min, max)
 
     def init_data(self, slice_index=None, shape=None, opt_shard_group=None):
         """
@@ -3398,14 +3053,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_value_type('indices', indices, (Tensor, Tensor_,), 'Tensor.gather_nd')
         return tensor_operator_registry.get('gather_nd')(self, indices)
 
-    def gather(self, input_indices, axis, batch_dims=0):
-        r"""
-        For details, please refer to :func:`mindspore.ops.gather`.
-        """
-        validator.check_is_int(axis, 'axis')
-        validator.check_is_int(batch_dims, "batch_dims")
-        return tensor_operator_registry.get('gather')(self, input_indices, axis, batch_dims)
-
     def uniform(self, from_=0., to=1., generator=None):
         r"""
         Generates random numbers in the half-open interval [from\_, to).
@@ -3697,13 +3344,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                 repeated_subs.append(tensor_operator_registry.get('repeat_elements')(sub, rep, axis))
         return tensor_operator_registry.get('concatenate')(repeated_subs, axis)
 
-    @repeat_interleave_mint
-    def repeat_interleave(self, repeats, dim=None):
-        """
-        For details, please refer to :func:`mindspore.ops.repeat_interleave`.
-        """
-        return tensor_operator_registry.get('repeat_interleave')(self, repeats, dim)
-
     def bernoulli(self, p=0.5, seed=None):
         r"""
         For details, please refer to :func:`mindspore.ops.bernoulli`.
@@ -3717,12 +3357,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_is_int(num_sample, 'num_sample')
         validator.check_is_int(seed, 'seed')
         return tensor_operator_registry.get('random_categorical')(self, num_sample, seed, dtype)
-
-    def masked_select(self, mask):
-        """
-        For details, please refer to :func:`mindspore.ops.masked_select`.
-        """
-        return tensor_operator_registry.get('masked_select')(self, mask)
 
     def gather_elements(self, dim, index):
         """
@@ -3932,13 +3566,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("xdivy")(self, y)
 
-    @split_mint
-    def split(self, split_size_or_sections, axis=0):
-        """
-        For details, please refer to :func:`mindspore.ops.split`.
-        """
-        return tensor_operator_registry.get('split')(self, split_size_or_sections, axis)
-
     def tensor_split(self, indices_or_sections, axis=0):
         """
         For details, please refer to :func:`mindspore.ops.tensor_split`.
@@ -3979,23 +3606,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("eigvals")()(self)
 
-    def erf(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.erf`.
-        """
-        return tensor_operator_registry.get("erf")(self)
-
     def erfc(self):
         r"""
         For details, please refer to :func:`mindspore.ops.erfc`.
         """
         return tensor_operator_registry.get("erfc")(self)
-
-    def tile(self, reps):
-        r"""
-        For details, please refer to :func:`mindspore.ops.tile`.
-        """
-        return tensor_operator_registry.get('tile')(self, reps)
 
     def topk(self, k, dim=None, largest=True, sorted=True):
         r"""
@@ -4010,12 +3625,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         validator.check_is_int(k, 'k')
         validator.check_bool(sorted, 'sorted')
         return tensor_operator_registry.get("top_k")(self, k, sorted)
-
-    def sigmoid(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sigmoid`.
-        """
-        return tensor_operator_registry.get("sigmoid")(self)
 
     def median(self, axis=-1, keepdims=False):
         r"""
@@ -4065,35 +3674,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.bmm`.
         """
         return tensor_operator_registry.get('bmm')(self, mat2)
-
-    def to(self, dtype):
-        r"""
-        Performs tensor dtype conversion.
-
-        Args:
-            dtype (Number): The valid data type of the output tensor. Only constant value is allowed.
-
-        Returns:
-            Tensor, converted to the specified `dtype`.
-
-        Raises:
-            TypeError: If `dtype` is not a Number.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
-            >>> input_x = Tensor(input_np)
-            >>> dtype = mindspore.int32
-            >>> output = input_x.to(dtype)
-            >>> print(output.dtype)
-            Int32
-        """
-        return tensor_operator_registry.get('to')(self, dtype)
 
     def type(self, dtype=None):
         r"""
@@ -4167,7 +3747,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Bool
         """
-        return tensor_operator_registry.get('bool')(self, mstype.bool_)
+        return self.to(mstype.bool_)
 
     def float(self):
         r"""
@@ -4188,7 +3768,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Float32
         """
-        return tensor_operator_registry.get('float')(self, mstype.float32)
+        return self.to(mstype.float32)
 
     def half(self):
         r"""
@@ -4209,7 +3789,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Float16
         """
-        return tensor_operator_registry.get('half')(self, mstype.float16)
+        return self.to(mstype.float16)
 
     def int(self):
         r"""
@@ -4230,7 +3810,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Int32
         """
-        return tensor_operator_registry.get('int')(self, mstype.int32)
+        return self.to(mstype.int32)
 
     def byte(self):
         r"""
@@ -4251,7 +3831,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             uint8
         """
-        return tensor_operator_registry.get('byte')(self, mstype.uint8)
+        return self.to(mstype.uint8)
 
     def long(self):
         r"""
@@ -4272,7 +3852,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(output.dtype)
             Int64
         """
-        return tensor_operator_registry.get('long')(self, mstype.int64)
+        return self.to(mstype.int64)
 
     def short(self):
         r"""
@@ -4294,7 +3874,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> output
             Tensor(shape=[5], dtype=Int16, value= [1, 2, 3, 4, 5])
         """
-        return tensor_operator_registry.get('cast')(self, mstype.int16)
+        return self.to(mstype.int16)
 
     def cholesky(self, upper=False):
         r"""
@@ -4340,12 +3920,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.erfinv`.
         """
         return tensor_operator_registry.get('erfinv')(self)
-
-    def less_equal(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.less_equal`.
-        """
-        return tensor_operator_registry.get('less_equal')(self, other)
 
     def lcm(self, other):
         r"""
@@ -4395,24 +3969,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('multiply')(self, value)
 
-    def div(self, value, *, rounding_mode=None):
-        r"""
-        For details, please refer to :func:`mindspore.ops.div`.
-        """
-        return tensor_operator_registry.get('div')(self, value, rounding_mode=rounding_mode)
-
-    def divide(self, value, *, rounding_mode=None):
-        r"""
-        Alias for :func:`mindspore.Tensor.div`.
-        """
-        return tensor_operator_registry.get('div')(self, value, rounding_mode=rounding_mode)
-
-    def eq(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.eq`.
-        """
-        return tensor_operator_registry.get('equal')(self, other)
-
     def equal(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.equal`.
@@ -4432,12 +3988,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         check_is_number(alpha, (int, float))
         source = tensor_operator_registry.get('__mul__')(source, alpha)
         return tensor_operator_registry.get('index_add')(self, indices=index, y=source, axis=dim)
-
-    def greater(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.greater`.
-        """
-        return tensor_operator_registry.get('greater')(self, other)
 
     def greater_equal(self, other):
         r"""
@@ -4517,42 +4067,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.dtype in mstype.signed_type
 
-    def le(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.le`.
-        """
-        return tensor_operator_registry.get('le')(self, other)
-
-    def less(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.less`.
-        """
-        return tensor_operator_registry.get('less')(self, other)
-
-    def lt(self, other):
-        """
-        Alias for :func:`mindspore.Tensor.less`.
-        """
-        return self.less(other)
-
-    def logical_and(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logical_and`.
-        """
-        return tensor_operator_registry.get('logical_and')(self, other)
-
-    def logical_not(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logical_not`.
-        """
-        return tensor_operator_registry.get('logical_not')(self)
-
-    def logical_or(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.logical_or`.
-        """
-        return tensor_operator_registry.get('logical_or')(self, other)
-
     def logical_xor(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.logical_xor`.
@@ -4588,11 +4102,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('mvlgamma')(self, p)
 
-    def matmul(self, tensor2):
-        r"""
-        For details, please refer to :func:`mindspore.ops.matmul`.
-        """
-        return tensor_operator_registry.get('matmul')(self, tensor2)
 
     def inner(self, other):
         r"""
@@ -4616,12 +4125,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('matrix_power')(self, n)
 
-    def maximum(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.maximum`.
-        """
-        return tensor_operator_registry.get('maximum')(self, other)
-
     def mm(self, mat2):
         r"""
         For details, please refer to :func:`mindspore.ops.mm`.
@@ -4634,35 +4137,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('msort')(self)
 
-    def mul(self, value):
-        r"""
-        For details, please refer to :func:`mindspore.ops.mul`.
-        """
-        return tensor_operator_registry.get('mul')(self, value)
 
-    def nan_to_num(self, nan=None, posinf=None, neginf=None):
-        """
-        For details, please refer to :func:`mindspore.ops.nan_to_num`.
-        """
-        return tensor_operator_registry.get('nan_to_num')(self, nan, posinf, neginf)
-
-    def neg(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.neg`.
-        """
-        return tensor_operator_registry.get('neg')(self)
-
-    def ne(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.ne`.
-        """
-        return tensor_operator_registry.get('ne')(self, other)
-
-    def not_equal(self, other):
-        r"""
-        For details, please refer to :func:`mindspore.ops.not_equal`.
-        """
-        return tensor_operator_registry.get('not_equal')(self, other)
 
     def new_zeros(self, size, dtype=None):
         r"""
@@ -4791,29 +4266,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('sinh')(self)
 
-    def sort(self, axis=-1, descending=False):
-        r"""
-        For details, please refer to :func:`mindspore.ops.sort`.
-        """
-        return tensor_operator_registry.get('sort')(self, axis=axis, descending=descending)
-
     def argsort(self, axis=-1, descending=False):
         """
         For details, please refer to :func:`mindspore.ops.argsort`.
         """
         return tensor_operator_registry.get('argsort')(self, axis, descending)
-
-    def trunc(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.trunc`.
-        """
-        return tensor_operator_registry.get('trunc')(self)
-
-    def where(self, condition, y):
-        r"""
-        For details, please refer to :func:`mindspore.ops.where`.
-        """
-        return tensor_operator_registry.get('where')(condition, self, y)
 
     def imag(self):
         r"""

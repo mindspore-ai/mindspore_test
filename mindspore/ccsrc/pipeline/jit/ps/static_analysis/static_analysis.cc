@@ -1304,6 +1304,11 @@ EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<PrimInstance
   return std::make_shared<PrimInstanceEvaluator>(func->prim_name(), func->instance_node());
 }
 
+EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<FunctionalAbstractClosure> &func) {
+  MS_EXCEPTION_IF_NULL(func);
+  return std::make_shared<FunctionalEvaluator>(func->name(), func->is_method());
+}
+
 EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<FuncGraphAbstractClosure> &func) {
   MS_EXCEPTION_IF_NULL(func);
   auto [iter, is_new] = evaluators_.emplace(func, nullptr);
@@ -1381,6 +1386,9 @@ EvaluatorPtr AnalysisEngine::GetEvaluatorFor(const AbstractFunctionPtr &func) {
   }
   if (func->isa<PrimInstanceAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<PrimInstanceAbstractClosure>(func));
+  }
+  if (func->isa<FunctionalAbstractClosure>()) {
+    return _GetEvaluatorFor(std::static_pointer_cast<FunctionalAbstractClosure>(func));
   }
   if (func->isa<FuncGraphAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<FuncGraphAbstractClosure>(func));

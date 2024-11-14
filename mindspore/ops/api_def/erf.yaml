@@ -1,0 +1,7 @@
+erf:
+  op_yaml: erf_op.yaml
+  py_method: tensor_erf
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

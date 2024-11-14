@@ -1,0 +1,36 @@
+where:
+  description: |
+    where(condition, y) -> Tensor
+
+    Selects elements from `input` or `other` based on `condition` and returns a tensor.
+
+    .. math::
+        output_i = \begin{cases} input_i,\quad &if\ condition_i \\ other_i,\quad &otherwise \end{cases}
+
+    Args:
+        condition (Tensor[bool]): If True, yield `input`, otherwise yield `other`.
+        input (Union[Tensor]): When `condition` is True, values to select from.
+        other (Union[Tensor, Scalar]): When `condition` is False, values to select from.
+
+    Returns:
+        Tensor, elements are selected from `input` and `other`.
+
+    Raises:
+        TypeError: If `condition` is not a Tensor.
+        TypeError: If both `input` and `other` are scalars.
+        ValueError: If `condition`, `input` and `other` can not broadcast to each other.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import dtype as mstype
+        >>> a = Tensor(np.arange(4).reshape((2, 2)), mstype.float32)
+        >>> b = Tensor(np.ones((2, 2)), mstype.float32)
+        >>> condition = a < 3
+        >>> output = a.where(condition, b)
+        >>> print(output)
+        [[0. 1.]
+         [2. 1.]]

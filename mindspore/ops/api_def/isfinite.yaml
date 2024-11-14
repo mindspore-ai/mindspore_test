@@ -1,0 +1,7 @@
+isfinite:
+  op_yaml: isfinite_op.yaml
+  py_method: tensor_isfinite # callback to python function "def tensor_isfinite"
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

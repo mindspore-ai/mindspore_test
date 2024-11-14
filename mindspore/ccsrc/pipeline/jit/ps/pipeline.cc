@@ -119,6 +119,7 @@
 
 #include "pybind_api/ir/log_adapter_py.h"  // Only include one-time in the whole project.
 #include "pybind_api/ir/py_execute_py.h"   // Only include one-time in the whole project.
+#include "pybind_api/ir/tensor_func_reg.h"
 #include "include/common/utils/compile_cache_context.h"
 
 namespace mindspore {
@@ -2563,7 +2564,7 @@ void ClearResPart1() {
   // When the python process exits, the kernels on the device may not have finished executing.
   device::KernelRuntimeManager::Instance().WaitTaskFinishOnDevice();
   device::DeviceContextManager::GetInstance().WaitTaskFinishOnDevice();
-
+  tensor::StubTensorConverter::GetInstance().Clear();
   RecordExitStatus();
 #ifdef ENABLE_DUMP_IR
   mindspore::RDR::Snapshot();

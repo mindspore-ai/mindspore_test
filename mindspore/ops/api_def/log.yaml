@@ -1,0 +1,7 @@
+log:
+    op_yaml: log
+    py_method: tensor_log
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

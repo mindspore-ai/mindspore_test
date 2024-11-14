@@ -1,0 +1,10 @@
+#deprecated matmul
+matmul:
+  args:
+    input:
+      dtype: tensor
+    tensor2:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor

@@ -16,10 +16,8 @@
 Generate pyboost function from pyboost_op.yaml
 """
 
-from op_proto import OpProto
 from pyboost_inner_prim_generator import PyboostInnerPrimGenerator
 from pyboost_functions_py_generator import PyboostFunctionsPyGenerator
-from ops_header_files_generator import OpHeaderFileGenerator
 from pyboost_functions_cpp_generator import PyboostFunctionsGenerator
 from pyboost_grad_function_cpp_generator import PyboostGradFunctionsGenerator
 from pyboost_native_grad_functions_generator import (
@@ -35,103 +33,112 @@ from pyboost_op_cpp_code_generator import (
     delete_residual_files,
     PyboostOpRegisterCppCodeGenerator,
 )
+from pyboost_overload_functions_cpp_generator import PyboostOverloadFunctionsGenerator
 
 
-def gen_pyboost_code(work_path, ops_yaml_data, doc_yaml_data, extra_ops):
+def gen_pyboost_code(work_path, op_protos, doc_yaml_data, tensor_method_protos, mint_func_protos, alias_func_mapping):
     """ gen_pyboost_code """
-    op_protos = []
-    for operator_name, operator_data in ops_yaml_data.items():
-        op_proto = OpProto.load_from_yaml(operator_name, operator_data)
-        op_protos.append(op_proto)
-
     call_pyboost_inner_prim_generator(work_path, op_protos)
     call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data)
-    call_ops_header_files_generator(work_path, op_protos, extra_ops)
-    call_pyboost_functions_cpp_generator(work_path, op_protos)
+    call_pyboost_functions_cpp_generator(work_path, op_protos, tensor_method_protos)
+    call_pyboost_overload_functions_cpp_generator(work_path, op_protos, mint_func_protos, alias_func_mapping)
     call_pyboost_grad_functions_cpp_generator(work_path, op_protos)
     call_pyboost_native_grad_functions_generator(work_path, op_protos)
     call_pyboost_op_cpp_code_generator(work_path, op_protos)
 
-def call_pyboost_inner_prim_generator(work_path, ops_yaml_data):
+
+def call_pyboost_inner_prim_generator(work_path, op_protos):
     generator = PyboostInnerPrimGenerator()
-    generator.generate(work_path, ops_yaml_data)
+    generator.generate(work_path, op_protos)
 
-def call_pyboost_functions_py_generator(work_path, ops_yaml_data, doc_yaml_data):
+
+def call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data):
     generator = PyboostFunctionsPyGenerator()
-    generator.generate(work_path, ops_yaml_data, doc_yaml_data)
+    generator.generate(work_path, op_protos, doc_yaml_data)
 
-def call_ops_header_files_generator(work_path, ops_yaml_data, extra_ops):
-    generator = OpHeaderFileGenerator()
-    generator.generate(work_path, ops_yaml_data, extra_ops)
 
-def call_pyboost_functions_cpp_generator(work_path, ops_yaml_data):
+def call_pyboost_functions_cpp_generator(work_path, op_protos, tensor_method_protos):
     generator = PyboostFunctionsGenerator()
-    generator.generate(work_path, ops_yaml_data)
+    generator.generate(work_path, op_protos, tensor_method_protos)
 
-def call_pyboost_grad_functions_cpp_generator(work_path, ops_yaml_data):
+
+def call_pyboost_overload_functions_cpp_generator(work_path, op_protos, mint_func_protos, alias_func_mapping):
+    generator = PyboostOverloadFunctionsGenerator()
+    generator.generate(work_path, op_protos, mint_func_protos, alias_func_mapping)
+
+
+def call_pyboost_grad_functions_cpp_generator(work_path, op_protos):
     generator = PyboostGradFunctionsGenerator()
-    generator.generate(work_path, ops_yaml_data)
+    generator.generate(work_path, op_protos)
 
-def call_pyboost_native_grad_functions_generator(work_path, ops_yaml_data):
+
+def call_pyboost_native_grad_functions_generator(work_path, op_protos):
     h_generator = PyboostGradFunctionsHeaderGenerator()
-    h_generator.generate(work_path, ops_yaml_data)
+    h_generator.generate(work_path, op_protos)
 
     cc_generator = PyboostGradFunctionsCppGenerator()
-    cc_generator.generate(work_path, ops_yaml_data)
+    cc_generator.generate(work_path, op_protos)
 
-def call_pyboost_op_cpp_code_generator(work_path, ops_yaml_data):
-    call_PyboostCommonOpCppCodeGenerator(work_path, ops_yaml_data)
-    call_PyboostOpHeaderGenerator(work_path, ops_yaml_data)
-    call_PyboostOpCppGenerator(work_path, ops_yaml_data)
-    call_PyboostViewOpCppGenerator(work_path, ops_yaml_data)
-    call_AclnnOpCppCodeGenerator(work_path, ops_yaml_data)
-    delete_residual_files(work_path, ops_yaml_data)
-    call_PyboostOpRegisterCppCodeGenerator(work_path, ops_yaml_data)
 
-def call_PyboostCommonOpCppCodeGenerator(work_path, ops_yaml_data):
+def call_pyboost_op_cpp_code_generator(work_path, op_protos):
+    call_PyboostCommonOpCppCodeGenerator(work_path, op_protos)
+    call_PyboostOpHeaderGenerator(work_path, op_protos)
+    call_PyboostOpCppGenerator(work_path, op_protos)
+    call_PyboostViewOpCppGenerator(work_path, op_protos)
+    call_AclnnOpCppCodeGenerator(work_path, op_protos)
+    delete_residual_files(work_path, op_protos)
+    call_PyboostOpRegisterCppCodeGenerator(work_path, op_protos)
+
+
+def call_PyboostCommonOpCppCodeGenerator(work_path, op_protos):
     generator = PyboostCommonOpHeaderGenerator()
-    generator.generate(work_path, ops_yaml_data)
+    generator.generate(work_path, op_protos)
 
-def call_PyboostOpHeaderGenerator(work_path, ops_yaml_data):
+
+def call_PyboostOpHeaderGenerator(work_path, op_protos):
     generator = PyboostOpHeaderGenerator('ascend')
-    generator.generate(work_path, ops_yaml_data)
+    generator.generate(work_path, op_protos)
 
     generator = PyboostOpHeaderGenerator('gpu')
-    generator.generate(work_path, ops_yaml_data)
+    generator.generate(work_path, op_protos)
 
     generator = PyboostOpHeaderGenerator('cpu')
-    generator.generate(work_path, ops_yaml_data)
+    generator.generate(work_path, op_protos)
 
-def call_PyboostOpCppGenerator(work_path, ops_yaml_data):
+
+def call_PyboostOpCppGenerator(work_path, op_protos):
     ascend_op_cpp_generator = PyboostOpCppGenerator('ascend')
-    ascend_op_cpp_generator.generate(work_path, ops_yaml_data)
+    ascend_op_cpp_generator.generate(work_path, op_protos)
 
     cpu_op_cpp_generator = PyboostOpCppGenerator('cpu')
-    cpu_op_cpp_generator.generate(work_path, ops_yaml_data)
+    cpu_op_cpp_generator.generate(work_path, op_protos)
 
     gpu_op_cpp_generator = PyboostOpCppGenerator('gpu')
-    gpu_op_cpp_generator.generate(work_path, ops_yaml_data)
+    gpu_op_cpp_generator.generate(work_path, op_protos)
 
-def call_PyboostViewOpCppGenerator(work_path, ops_yaml_data):
+
+def call_PyboostViewOpCppGenerator(work_path, op_protos):
     ascend_view_op_cpp_generator = PyboostViewOpCppGenerator('ascend')
-    ascend_view_op_cpp_generator.generate(work_path, ops_yaml_data)
+    ascend_view_op_cpp_generator.generate(work_path, op_protos)
 
     cpu_view_op_cpp_generator = PyboostViewOpCppGenerator('cpu')
-    cpu_view_op_cpp_generator.generate(work_path, ops_yaml_data)
+    cpu_view_op_cpp_generator.generate(work_path, op_protos)
 
     gpu_view_op_cpp_generator = PyboostViewOpCppGenerator('gpu')
-    gpu_view_op_cpp_generator.generate(work_path, ops_yaml_data)
+    gpu_view_op_cpp_generator.generate(work_path, op_protos)
 
-def call_AclnnOpCppCodeGenerator(work_path, ops_yaml_data):
+
+def call_AclnnOpCppCodeGenerator(work_path, op_protos):
     ascend_aclnn_cpp_generator = AclnnOpCppCodeGenerator('ascend')
-    ascend_aclnn_cpp_generator.generate(work_path, ops_yaml_data)
+    ascend_aclnn_cpp_generator.generate(work_path, op_protos)
 
     cpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('cpu')
-    cpu_aclnn_cpp_generator.generate(work_path, ops_yaml_data)
+    cpu_aclnn_cpp_generator.generate(work_path, op_protos)
 
     gpu_aclnn_cpp_generator = AclnnOpCppCodeGenerator('gpu')
-    gpu_aclnn_cpp_generator.generate(work_path, ops_yaml_data)
+    gpu_aclnn_cpp_generator.generate(work_path, op_protos)
 
-def call_PyboostOpRegisterCppCodeGenerator(work_path, ops_yaml_data):
+
+def call_PyboostOpRegisterCppCodeGenerator(work_path, op_protos):
     op_register_cpp_generator = PyboostOpRegisterCppCodeGenerator()
-    op_register_cpp_generator.generate(work_path, ops_yaml_data)
+    op_register_cpp_generator.generate(work_path, op_protos)

@@ -14,6 +14,7 @@
 
       # Optional. The 'default' is a fixed key.
       # This item means input arg can use default value.
+      # If arg_handler is not empty, the type of default value should be the first one of 'arg_handler_map'
       <default>: <value>
 
       # Optional. The 'prim_init' is a fixed key. Value can be 'True' or 'False', arg is arg of '__init__' of Primitive if value is 'True'.

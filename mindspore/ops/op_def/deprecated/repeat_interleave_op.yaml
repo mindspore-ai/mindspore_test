@@ -1,0 +1,14 @@
+#deprecated repeat_interleave
+repeat_interleave:
+  args:
+    input:
+      dtype: tensor
+    repeats:
+      dtype: int
+      type_cast: tensor, list[int], tuple[int]
+    dim:
+      dtype: int
+      default: None
+  returns:
+    output:
+      dtype: tensor

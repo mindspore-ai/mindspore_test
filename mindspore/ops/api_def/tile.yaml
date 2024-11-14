@@ -1,0 +1,7 @@
+tile:
+  - op_yaml: tile_op.yaml
+    py_method: tensor_tile
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

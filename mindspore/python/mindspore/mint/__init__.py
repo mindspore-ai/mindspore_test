@@ -43,7 +43,8 @@ from mindspore.ops.function.math_func import roll
 # 2
 from mindspore.ops.function.math_func import sin
 # 3
-from mindspore.ops.function.clip_func import clamp
+from mindspore.mint.functional_overload import clamp
+from mindspore.mint.functional_overload import clip
 # 4
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
@@ -398,8 +399,10 @@ from mindspore.ops.auto_generate import count_nonzero
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
 
-#1007
+# 1007
 from mindspore.ops.auto_generate import t_ext as t
+
+
 
 def add(input, other, *, alpha=1):
     r"""

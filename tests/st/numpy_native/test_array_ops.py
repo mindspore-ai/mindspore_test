@@ -45,8 +45,7 @@ class Cases():
                            mnp.bool_, 'bool', bool]
 
         self.array_sets = [1, 1.1, True, [1, 0, True], [1, 1.0, 2], (1,),
-                           [(1, 2, 3), (4, 5, 6)], onp.random.random(  # pylint: disable=no-member
-                (100, 100)).astype(onp.float32),
+                           [(1, 2, 3), (4, 5, 6)], onp.random.random((100, 100)).astype(onp.float32),
                            onp.random.random((100, 100)).astype(onp.bool)]
 
         self.arrs = [
@@ -1445,7 +1444,7 @@ def test_argwhere():
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='unessential')
 def test_intersect1d():
     """

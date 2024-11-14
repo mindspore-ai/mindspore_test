@@ -1,0 +1,56 @@
+matmul:
+  description: |
+    matmul(tensor2) -> Union[Tensor, numbers.Number]
+    
+    Returns the matrix product of two tensors.
+    
+    Note:
+        Numpy arguments `out`, `casting`, `order`, `subok`, `signature`, and `extobj` are not supported. 
+        The dtype of `self` and `tensor2` must be same.
+        On Ascend platform, the dims of `self` and `tensor2` must be between 1 and 6.
+        On GPU platform, the supported dtypes of `self` and `tensor2` are ms.float16 and ms.float32.
+    
+    Args:
+        tensor2 (Tensor): Input tensor, scalar not allowed.
+          The last dimension of `self` must be the same size as the second last dimension of `tensor2`.
+          And the shape of tensor and other could be broadcast.
+    
+    Returns:
+        Tensor or scalar, the matrix product of the inputs. This is a scalar only
+        when both `self` and `tensor2` are 1-d vectors.
+    
+    Raises:
+        TypeError: If the dtype of `self` and the dtype of `tensor2` are not the same.
+        ValueError: If the last dimension of `self` is not the same size as the
+            second-to-last dimension of `tensor2`, or if a scalar value is passed in.
+        ValueError: If the shape of `self` and `tensor2` could not broadcast together.
+        RuntimeError: On Ascend platforms, the dims of `self` or `tensor2` is less than 1 or greater than 6.
+    
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> # case 1 : Reasonable application of broadcast mechanism
+        >>> input = Tensor(np.arange(2 * 3 * 4).reshape(2, 3, 4), mindspore.float32)
+        >>> other = Tensor(np.arange(4 * 5).reshape(4, 5), mindspore.float32)
+        >>> output = input.matmul(other)
+        >>> print(output)
+        [[[  70.   76.   82.   88.   94.]
+        [ 190.  212.  234.  256.  278.]
+        [ 310.  348.  386.  424.  462.]]
+        [[ 430.  484.  538.  592.  646.]
+        [ 550.  620.  690.  760.  830.]
+        [ 670.  756.  842.  928. 1014.]]]
+        >>> print(output.shape)
+        (2, 3, 5)
+        >>> # case 2 : the rank of `tensor2` is 1
+        >>> input = Tensor(np.ones([1, 2]), mindspore.float32)
+        >>> other = Tensor(np.ones([2,]), mindspore.float32)
+        >>> output = input.matmul(other)
+        >>> print(output)
+        [2.]
+        >>> print(output.shape)
+        (1,)

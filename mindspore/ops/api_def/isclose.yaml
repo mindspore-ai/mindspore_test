@@ -1,0 +1,7 @@
+isclose:
+  op_yaml: isclose_op.yaml
+  py_method: tensor_isclose # callback to python function "def tensor_isclose"
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

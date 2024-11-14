@@ -1,0 +1,7 @@
+less:
+  op_yaml: less
+  py_method: tensor_less
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

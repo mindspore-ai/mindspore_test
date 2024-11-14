@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,10 @@ class Net(nn.Cell):
         output = x.lt(other)
         return output
 
+class NetLess(nn.Cell):
+    def construct(self, x, other):
+        output = x.less(other)
+        return output
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
           level_mark='level2',
@@ -38,10 +42,29 @@ def test_lt(mode):
     Description: Verify the result of Tensor.lt
     Expectation: success
     """
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = Net()
     x = ms.Tensor(np.array([1, 2, 3]), ms.int32)
     y = ms.Tensor(np.array([1, 1, 4]), ms.int32)
     out = net(x, y)
     expect_output = np.array([False, False, True], np.bool_)
+    assert (out.asnumpy() == expect_output).any()
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level2',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_less(mode):
+    """
+    Feature: Tensor.less
+    Description: Verify the result of Tensor.less
+    Expectation: success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net = NetLess()
+    x = ms.Tensor(np.array([1, 2, 3]), ms.int32)
+    y = ms.Tensor(np.array([1, 1, 4]), ms.int32)
+    expect_output = np.array([False, False, True], np.bool_)
+    out = net(x, y)
     assert (out.asnumpy() == expect_output).any()

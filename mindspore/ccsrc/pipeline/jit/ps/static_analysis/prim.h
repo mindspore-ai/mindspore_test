@@ -258,6 +258,20 @@ class PrimInstanceEvaluator : public TransitionPrimEvaluator {
   AnfNodeWeakPtr instance_node_;
 };
 
+class FunctionalEvaluator : public TransitionPrimEvaluator {
+ public:
+  explicit FunctionalEvaluator(const std::string &name, bool is_method)
+      : TransitionPrimEvaluator("FunctionalEvaluator"), name_(name), is_method_(is_method) {}
+  ~FunctionalEvaluator() override = default;
+  MS_DECLARE_PARENT(FunctionalEvaluator, TransitionPrimEvaluator);
+  EvalResultPtr EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
+                         const AnfNodeConfigPtr &out_conf) override;
+
+ private:
+  std::string name_;
+  bool is_method_{false};
+};
+
 class ConstexprEvaluator : public TransitionPrimEvaluator {
  public:
   explicit ConstexprEvaluator(const PrimitivePyPtr primitive)
@@ -315,6 +329,11 @@ ME_EXPORT AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, con
 AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def);
 
 bool ValidateArgSpecialType(const std::string &op_name, const AbstractBasePtr &abs, const ops::OpInputArg &op_arg);
+
+AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const std::vector<AnfNodePtr> &args_list,
+                                            const std::vector<ops::OpInputArg> &op_args,
+                                            const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
+                                            const FuncGraphPtr &graph);
 
 // Process the primitive's arguments (such as dtype auto-cast, add argument with default-value...),
 // then generate the primitive CNode and add it to graph.

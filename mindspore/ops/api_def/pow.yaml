@@ -1,0 +1,7 @@
+pow:
+  - op_yaml: pow_op.yaml
+    py_method: tensor_pow
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

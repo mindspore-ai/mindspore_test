@@ -1,0 +1,30 @@
+reciprocal:
+    description: |
+        reciprocal(self) -> Tensor
+
+        Returns reciprocal of a tensor element-wise.
+
+        .. math::
+
+            out_{i} =  \frac{1}{x_{i}}
+
+        Inputs:
+            - self (Tensor) - The self tensor.
+
+        Outputs:
+            Tensor, has the same shape as the `self`.
+
+        Raises:
+            TypeError: If `self` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+            >>> output = input.reciprocal()
+            >>> print(output)
+            [1.   0.5  0.25]

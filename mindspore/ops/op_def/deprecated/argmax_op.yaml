@@ -1,0 +1,16 @@
+#deprecated operator argmax
+argmax:
+  args:
+    input_x:
+      dtype: tensor
+    axis:
+      dtype: int
+      default: -1
+      prim_init: True
+    keepdims:
+      dtype: bool
+      default: False
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor

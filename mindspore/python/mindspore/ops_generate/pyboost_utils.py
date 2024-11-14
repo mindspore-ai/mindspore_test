@@ -17,6 +17,7 @@
 import os
 import logging
 from gen_utils import safe_load_yaml
+from op_proto import OpProto
 
 
 def is_optional_param(op_arg):
@@ -266,20 +267,15 @@ def get_op_name(operator_name, class_def):
     """
     Get op name for python class Primitive or c++ OpDef name.
     """
+    if class_def:
+        return class_def
+
     class_name = ''.join(word.capitalize() for word in operator_name.split('_'))
-    if class_def is not None:
-        item = class_def.get("name")
-        if item is not None:
-            class_name = item
     return class_name
 
 
 def get_pyboost_name(operator_name):
     return 'pyboost_' + operator_name
-
-
-def convert_python_func_name_to_c(func_name: str) -> str:
-    return ''.join(word.capitalize() for word in func_name.split('_'))
 
 
 def get_const_number_convert(arg_name, op_arg):
@@ -311,12 +307,23 @@ def is_pyboost_enable(operator_data):
     return False
 
 
+def format_func_api_name(func_api_name):
+    """
+    Generates formatted string for function names, e.g., add_ext -> AddExt.
+    """
+    if '_' in func_api_name:
+        formatted_func_api_name = ''.join([name.capitalize() for name in func_api_name.split('_')])
+    else:
+        formatted_func_api_name = func_api_name.capitalize()
+    return formatted_func_api_name
+
+
 def convert_types(inputs):
     '''convert type to acl type'''
     inputs_dtypes = {}
     flag = False
     for i in inputs:
-        inputs_dtypes[i] = inputs.get(i).get('dtype')
+        inputs_dtypes[i] = i.arg_dtype
         if inputs_dtypes[i] != 'tensor':
             flag = True
         if 'tuple' in inputs_dtypes[i]:
@@ -338,10 +345,10 @@ def convert_types(inputs):
     return inputs_dtypes, flag
 
 
-def get_dtypes(op_yaml):
+def get_dtypes(op_proto: OpProto):
     """get op inputs and outputs dtypes"""
-    inputs = op_yaml.get('args')
-    outputs = op_yaml.get('returns')
+    inputs = op_proto.op_args
+    outputs = op_proto.op_returns
     inputs_dtypes, flag_in = convert_types(inputs)
     outputs_dtypes, flag_out = convert_types(outputs)
     none_tensor_exist = (flag_in or flag_out)

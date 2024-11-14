@@ -1,0 +1,38 @@
+ceil:
+  description: |
+    ceil(self) -> Tensor
+    
+    Rounds a tensor up to the closest integer element-wise.
+    
+    .. math::
+        out_i = \lceil x_i \rceil = \lfloor x_i \rfloor + 1
+    
+    Args:
+        self (Tensor): the self of Ceil.
+            Supported dtypes: 
+    
+            - Ascend: float16, float32, float64 or bfloat16.
+            - GPU/CPU: float16, float32, float64.
+    
+    Returns:
+        Tensor, has the same shape as `self`.
+    
+    Raises:
+        TypeError: If `self` is not a Tensor.
+        TypeError: If dtype of `self` is not float16, float32, float64 or bfloat16.
+    
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([1.1, 2.5, -1.5]), mindspore.float32)
+        >>> output = input.ceil()
+        >>> print(output)
+        [ 2.  3. -1.]
+        >>> input = Tensor(2.1, mindspore.float32)
+        >>> output = input.ceil()
+        >>> print(output)
+        3.0

@@ -1,0 +1,7 @@
+cos:
+  op_yaml: cos_op.yaml
+  py_method: tensor_cos
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

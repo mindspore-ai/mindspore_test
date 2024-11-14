@@ -1,0 +1,7 @@
+logical_not:
+    op_yaml: logical_not
+    py_method: tensor_logical_not
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

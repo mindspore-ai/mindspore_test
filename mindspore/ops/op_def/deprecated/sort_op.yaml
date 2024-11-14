@@ -1,0 +1,16 @@
+#deprecated sort
+sort:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: int
+      default: -1
+    descending:
+      dtype: bool
+      default: False
+  returns:
+    output: 
+      dtype: tensor
+    indices:
+      dtype: tensor

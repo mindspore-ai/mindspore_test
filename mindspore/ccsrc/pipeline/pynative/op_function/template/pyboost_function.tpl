@@ -74,7 +74,7 @@ class ME_EXPORT ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
    ${class_name}PrimAdapter() : PrimitiveFunctionAdapter() {}
    ~${class_name}PrimAdapter() = default;
    std::string name() override { return "${class_name}"; }
-   py::object Call(const py::args &args) {
+   py::object Call(const py::list &args) {
      runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp,
                                         "${class_name}", false, true);
      return ${func_name}_Base(prim::kPrim${class_name}, args);

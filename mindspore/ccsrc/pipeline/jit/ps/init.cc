@@ -19,6 +19,7 @@
 #include "kernel/oplib/oplib.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/operator/composite/composite.h"
+#include "frontend/operator/composite/functional_overload.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "utils/symbolic.h"
 #include "include/common/pybind_api/api_register.h"
@@ -154,6 +155,7 @@ void RegModule(py::module *m) {
   RegParamInfo(m);
   RegPrimitive(m);
   RegPrimitiveFunction(m);
+  RegFunctional(m);
   RegSignatureEnumRW(m);
   RegRandomSeededGenerator(m);
   mindspore::tensor::RegMetaTensor(m);
@@ -172,6 +174,7 @@ void RegModule(py::module *m) {
   RegSendRecv(m);
   RegCleanTdtChannel(m);
   RegTFT(m);
+  RegTensorDoc(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegCommHandle(m);
@@ -179,6 +182,7 @@ void RegModule(py::module *m) {
   mindspore::hal::RegUtils(m);
   mindspore::pynative::RegPyNativeExecutor(m);
   mindspore::pynative::RegisterPyBoostFunction(m);
+  mindspore::pynative::RegisterFunctional(m);
   mindspore::pijit::RegPIJitInterface(m);
   mindspore::prim::RegCompositeOpsGroup(m);
   mindspore::profiler::RegProfilerManager(m);

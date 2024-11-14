@@ -1,0 +1,7 @@
+minimum:
+  op_yaml: minimum_op.yaml
+  py_method: tensor_minimum
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

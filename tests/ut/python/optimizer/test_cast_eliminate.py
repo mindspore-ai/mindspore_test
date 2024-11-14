@@ -36,7 +36,7 @@ def test_input_not_dtype():
 
         def construct(self, x, tokens):
             _dtype = x.dtype
-            indices = ops.stack((ops.arange(x.shape[0]), tokens.argmax(axis=-1)), axis=-1)
+            indices = ops.stack((ops.arange(x.shape[0]), tokens.argmax(dim=-1)), axis=-1)
             x = ops.gather_nd(x, indices)
             x = ops.matmul(x, ops.cast(ops.cast(self.y, _dtype), x.dtype)).astype(_dtype)
             return x

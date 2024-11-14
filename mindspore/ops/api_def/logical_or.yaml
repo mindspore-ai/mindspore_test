@@ -1,0 +1,7 @@
+logical_or:
+    op_yaml: logical_or
+    py_method: tensor_logical_or
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: method

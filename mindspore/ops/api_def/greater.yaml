@@ -1,0 +1,7 @@
+greater:
+  op_yaml: greater_op.yaml
+  py_method: tensor_greater
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <unordered_map>
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "include/common/pybind_api/api_register.h"
@@ -27,6 +28,80 @@
 
 namespace mindspore {
 namespace pynative {
+static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
+  {"int", ops::OP_DTYPE::DT_INT},
+  {"float", ops::OP_DTYPE::DT_FLOAT},
+  {"bool", ops::OP_DTYPE::DT_BOOL},
+  {"number", ops::OP_DTYPE::DT_NUMBER},
+  {"tuple[int]", ops::OP_DTYPE::DT_TUPLE_INT},
+  {"tuple[float]", ops::OP_DTYPE::DT_TUPLE_FLOAT},
+  {"tuple[bool]", ops::OP_DTYPE::DT_TUPLE_BOOL},
+  {"tuple[tensor]", ops::OP_DTYPE::DT_TUPLE_TENSOR},
+  {"tuple[number]", ops::OP_DTYPE::DT_TUPLE_NUMBER},
+  {"tuple[str]", ops::OP_DTYPE::DT_STR},
+  {"list[int]", ops::OP_DTYPE::DT_LIST_INT},
+  {"list[float]", ops::OP_DTYPE::DT_LIST_FLOAT},
+  {"list[bool]", ops::OP_DTYPE::DT_LIST_BOOL},
+  {"list[tensor]", ops::OP_DTYPE::DT_LIST_TENSOR},
+  {"list[number]", ops::OP_DTYPE::DT_LIST_NUMBER},
+  {"list[str]", ops::OP_DTYPE::DT_LIST_STR},
+  {"tensor", ops::OP_DTYPE::DT_TENSOR},
+  {"str", ops::OP_DTYPE::DT_STR},
+  {"type", ops::OP_DTYPE::DT_TYPE},
+};
+// information of single parameter
+struct FunctionParameter {
+  explicit FunctionParameter(const std::string &fmt);
+  bool check(const py::object &obj) const;
+  void set_default_obj(const std::string &str);
+  const py::object &get_default_value() { return default_obj; }
+
+  ops::OP_DTYPE type_;  // type of parameter
+  std::vector<ops::OP_DTYPE> cast_types_;
+  py::object default_obj;
+  bool optional_;  // if has default value
+  bool allow_none_;
+  std::string name_;  // parameter name
+};
+
+// single overload
+struct FunctionSignature {
+  explicit FunctionSignature(const std::string &fmt, int index);
+  // bind with real args
+  bool CheckParamValid(const py::object &obj, const FunctionParameter &param);
+  bool parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
+
+  std::string name_;
+  std::vector<FunctionParameter> params_;
+  size_t min_args_;
+  size_t max_args_;
+  int index_;
+};
+
+// parser util
+struct PythonArgParser {
+  explicit PythonArgParser(std::vector<std::string> fmts, const std::string &function_name);
+  inline const FunctionSignature &parse(const py::list &args, const py::dict &kwargs, py::list *python_args,
+                                        const bool &is_method);
+  std::string parse_error(const py::list &args, const py::dict &kwargs, const bool &is_method);
+
+ private:
+  std::vector<FunctionSignature> signatures_;  // all overloads
+  std::string function_name_;
+  size_t max_args_;  // max num of args
+};
+
+inline const FunctionSignature &PythonArgParser::parse(const py::list &args, const py::dict &kwargs,
+                                                       py::list *python_args, const bool &is_method) {
+  for (auto &signature : signatures_) {
+    python_args->attr("clear")();
+    if (signature.parse(args, kwargs, python_args)) {
+      return signature;
+    }
+  }
+  MS_EXCEPTION(TypeError) << parse_error(args, kwargs, is_method);
+}
+
 class Converter {
  public:
   explicit Converter(ops::OpDef *op_def);

@@ -15,7 +15,6 @@
 
 import numpy as np
 import pytest
-import os
 from tests.mark_utils import arg_mark
 
 import mindspore.common.dtype as mstype
@@ -27,23 +26,20 @@ class TruncNet(nn.Cell):
         return x.trunc()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level2',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
           card_mark='onecard',
-          essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_f_trunc(mode):
     """
-    Feature: tensor.sub()
-    Description: Verify the result of tensor.sub
+    Feature: tensor.trunc()
+    Description: Verify the result of tensor.trunc
     Expectation: success
     """
-    os.environ["MS_TENSOR_API_ENABLE_MINT"] = '1'
-    ms.set_context(mode=mode)
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
     net = TruncNet()
     x = ms.Tensor([3.4732, 0.5466, -0.8008, -3.9079], dtype=mstype.float32)
     output = net(x)
     expected = np.array([3, 0, 0, -3], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
-    del os.environ["MS_TENSOR_API_ENABLE_MINT"]
-    

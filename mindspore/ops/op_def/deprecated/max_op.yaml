@@ -1,0 +1,29 @@
+#deprecated max
+max:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: int
+      type_cast: list[int], tuple[int]
+      default: None
+    keepdims:
+      dtype: bool
+      default: False
+    initial:
+      dtype: number
+      default: None
+    where:
+      dtype: bool
+      type_cast: tensor
+      default: True
+    return_indices:
+      dtype: bool
+      default: False
+  returns:
+    value:
+      dtype: tensor
+      type_cast: number
+    indices:
+      dtype: tensor
+      type_cast: number

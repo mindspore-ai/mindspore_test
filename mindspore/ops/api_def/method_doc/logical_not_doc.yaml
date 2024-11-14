@@ -1,0 +1,25 @@
+logical_not:
+    description: |
+        logical_not() -> Tensor
+
+        Computes the "logical NOT" of a tensor element-wise.
+
+        Refer to :func:`mindspore.ops.logical_not` for more details.
+
+        Inputs:
+            - **x** (Tensor) - The input tensor.
+
+        Outputs:
+            Tensor, the shape is the same as the `x`, and the dtype is bool.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> x = Tensor(np.array([True, False, True]), mindspore.bool_)
+            >>> output = x.logical_not()
+            >>> print(output)
+            [False  True False]

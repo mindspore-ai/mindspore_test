@@ -32,6 +32,11 @@ class Log2Net(nn.Cell):
         return x.log2()
 
 
+class LogNet(nn.Cell):
+    def construct(self, x):
+        return x.log()
+
+
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
           level_mark='level2',
           card_mark='onecard',
@@ -70,3 +75,23 @@ def test_log2(mode):
     expect_output = np.array([1, 2, 3], dtype=np.float32)
 
     assert np.allclose(output.asnumpy(), expect_output)
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_log(mode):
+    """
+    Feature: test Tensor.log.
+    Description: Verify the result of Tensor.log..
+    Expectation: expect correct forward result.
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    x_np = np.array([2, 4, 8]).astype(np.float32)
+    x = Tensor(x_np, dtype=ms.float32)
+    net = LogNet()
+    output = net(x)
+    expect_output = np.log(x_np)
+
+    assert np.allclose(output.asnumpy(), expect_output, rtol=5e-3, atol=1e-4)

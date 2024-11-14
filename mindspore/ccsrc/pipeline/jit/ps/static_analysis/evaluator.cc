@@ -78,6 +78,10 @@ bool ContainsAbstractAnyInner(const AbstractBasePtr &abs) {
       return ContainsAbstractAnyInner(e);
     });
   }
+  if (abs->isa<AbstractKeywordArg>()) {
+    auto abs_value = abs->cast<AbstractKeywordArgPtr>()->get_arg();
+    return ContainsAbstractAnyInner(abs_value);
+  }
   return abs->isa<AbstractAny>();
 }
 

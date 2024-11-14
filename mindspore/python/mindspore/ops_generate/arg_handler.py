@@ -116,67 +116,6 @@ def to_2d_paddings(op_name, arg_name, pad):
     raise ValueError(arg_invalid_info(op_name, arg_name, pad))
 
 
-def to_paddings(op_name, arg_name, pad):
-    """
-    convert paddings: int -> tuple[int*4].
-    """
-    if isinstance(pad, int):
-        return (pad,) * 4
-    if isinstance(pad, (tuple, list)):
-        return pad
-    raise ValueError(arg_invalid_info(op_name, arg_name, pad))
-
-
-def to_3d_kernel_size(op_name, arg_name, kernel_size):
-    """
-    convert 3d kernel_size: int/tuple[int*6] -> tuple[int*3].
-    """
-    if isinstance(kernel_size, int):
-        return (kernel_size, kernel_size, kernel_size)
-    if isinstance(kernel_size, (tuple, list)):
-        if len(kernel_size) == 5:
-            return (kernel_size[2], kernel_size[3], kernel_size[4])
-        return kernel_size
-    raise ValueError(arg_invalid_info(op_name, arg_name, kernel_size))
-
-
-def to_3d_strides(op_name, arg_name, stride):
-    """
-    convert 3d stride: int/tuple[int*6] -> tuple[int*3].
-    """
-    if isinstance(stride, int):
-        return (stride, stride, stride)
-    if isinstance(stride, (tuple, list)):
-        if len(stride) == 5:
-            return (stride[2], stride[3], stride[4])
-        return stride
-    raise ValueError(arg_invalid_info(op_name, arg_name, stride))
-
-
-def to_3d_dilations(op_name, arg_name, dilation):
-    """
-    convert 3d dilation: int/tuple[int*6] -> tuple[int*3].
-    """
-    if isinstance(dilation, int):
-        return (dilation, dilation, dilation)
-    if isinstance(dilation, (tuple, list)):
-        if len(dilation) == 5:
-            return (dilation[2], dilation[3], dilation[4])
-        return dilation
-    raise ValueError(arg_invalid_info(op_name, arg_name, dilation))
-
-
-def to_3d_paddings(op_name, arg_name, pad):
-    """
-    convert 3d paddings: int -> tuple[int*6].
-    """
-    if isinstance(pad, int):
-        return (pad,) * 6
-    if isinstance(pad, (tuple, list)):
-        return pad
-    raise ValueError(arg_invalid_info(op_name, arg_name, pad))
-
-
 def generator_handler(op_name, arg_name, inputs):
     """
     convert constant value in tuple to tensor

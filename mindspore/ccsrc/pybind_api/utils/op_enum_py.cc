@@ -76,6 +76,7 @@ void RegOpEnum(py::module *m) {
     .value("DT_LIST_STR", OP_DTYPE::DT_LIST_STR)
     .value("DT_LIST_ANY", OP_DTYPE::DT_LIST_ANY)
     .value("DT_TYPE", OP_DTYPE::DT_TYPE)
+    .value("DT_NONE", OP_DTYPE::DT_NONE)
     .value("DT_END", OP_DTYPE::DT_END);
   // There are currently some deficiencies in format, which will be filled in later.
   (void)py::enum_<FormatEnum>(*m, "FormatEnum", py::arithmetic())

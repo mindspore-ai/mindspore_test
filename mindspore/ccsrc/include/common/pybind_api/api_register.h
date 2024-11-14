@@ -32,6 +32,7 @@ void RegUpdateFuncGraphHyperParams(py::module *m);
 void RegParamInfo(const py::module *m);
 void RegPrimitive(const py::module *m);
 void RegPrimitiveFunction(const py::module *m);
+void RegFunctional(const py::module *m);
 void RegSignatureEnumRW(const py::module *m);
 void RegValues(const py::module *m);
 void RegMsContext(const py::module *m);
@@ -42,6 +43,7 @@ void RegStress(py::module *m);
 void RegSendRecv(py::module *m);
 void RegCleanTdtChannel(py::module *m);
 void RegTFT(py::module *m);
+void RegTensorDoc(py::module *m);
 
 namespace hal {
 void RegStream(py::module *m);
@@ -57,6 +59,7 @@ void RegRandomNormal(py::module *m);
 namespace pynative {
 void RegPyNativeExecutor(const py::module *m);
 void RegisterPyBoostFunction(py::module *m);
+void RegisterFunctional(py::module *m);
 }  // namespace pynative
 
 namespace pijit {

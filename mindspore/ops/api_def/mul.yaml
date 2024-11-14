@@ -1,0 +1,7 @@
+mul:
+  op_yaml: mul_op.yaml
+  py_method: tensor_mul
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method
