@@ -2871,9 +2871,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         `output_format` will only take effect when `format` is set to `safetensors` and `network` is set to `None`.
 
     Args:
-        network (Cell): Network for distributed predication.
+        network (Cell): Network for distributed predication, When the format is `safetensors`, the network parameter
+                        can be left blank or passed as None, and the interface will execute save mode.
         checkpoint_filenames (list[str]): The name of Checkpoint files in order of rank id. Default: ``None`` .
-        predict_strategy (dict): Strategy of predication process. It means that using one device to predict
+        predict_strategy (Union[dict, str]): Strategy of predication process. It means that using one device to predict
                                  when setting predict_strategy as None. Default: ``None`` .
         train_strategy_filename (str): The filename of training strategy protocol buffer file.
                                        When train_strategy_filename is None, the training strategy file will be
@@ -2893,7 +2894,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                       It can be set to either "ckpt" or "safetensors". Default: "ckpt".
         unified_safetensors_dir (str): Directory of input weight files to be loaded into the network.
                                        Default: ``None`` .
-        dst_safetensors_dir (str): In the save mode scenario, the save directory for safetensors.
+        dst_safetensors_dir (str): In the save mode scenario, the save directory for weights.
         rank_id (int): The logical sequence number of the card. In non save mode, it is automatically obtained
                        globally by initializing the network; In save mode, save the file according to the input
                        sequence number. If it is not input, save the entire file.
@@ -2908,7 +2909,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         ValueError: Failed to load checkpoint into net.
 
     Supported Platforms:
-        ``Ascend`` ``GPU``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         .. note::
