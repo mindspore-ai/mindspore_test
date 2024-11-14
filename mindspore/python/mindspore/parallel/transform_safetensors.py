@@ -929,7 +929,6 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         name_list.append(name)
     split_list = _split_list(name_list, split_num)
 
-    all_safetensor_files_map = _collect_safetensor_files(src_dir)
     with safe_open(all_safetensor_files_map.get(0), framework="np") as f:
         all_key = f.keys()
         hyper_parameter = set(all_key) - set(name_list)
