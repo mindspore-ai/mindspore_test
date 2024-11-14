@@ -17,6 +17,8 @@ Generates C++ registration code for ACL NN kernels based on operator prototypes.
 """
 
 import os
+import logging
+import re
 
 import gen_constants as K
 import gen_utils
@@ -51,6 +53,9 @@ class AclnnKernelRegisterAutoCcGenerator(BaseGenerator):
                 continue
             if op_proto.op_dispatch.ascend != 'default':  # KernelMod is provided by yaml, don't auto generate it.
                 continue
+            if check_op_registed(op_proto.op_name):
+                logging.warning("Kernel {%s} is already registered.", op_proto.op_name)
+                continue
             _, _, none_tensor_exist = pyboost_utils.get_dtypes(op_proto)
             if none_tensor_exist:
                 # gen operator aclnn kernel c++ files
@@ -70,3 +75,34 @@ class AclnnKernelRegisterAutoCcGenerator(BaseGenerator):
         save_path = os.path.join(work_path, f"{K.MS_OPS_KERNEL_PATH}/ascend/opapi/")
         file_name = "aclnn_kernel_register_auto.cc"
         gen_utils.save_file(save_path, file_name, res_str)
+
+
+def get_registed_ops(file_path=f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/'):
+    '''get registered ops by search files'''
+    # default search in 'ops/kernel/ascend/opapi/'
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    work_path = os.path.join(current_path, '../../../../')
+    search_path = os.path.join(work_path, file_path)
+    ret = []
+    try:
+        for root_path, _, files in os.walk(search_path):
+            for file_name in files:
+                with open(os.path.join(root_path, file_name), "r") as f:
+                    file_context = f.read()
+                    search_re = re.search(r"(?<=KERNEL_FACTORY_REG\()\w+(?=,)", file_context)
+                    if search_re:
+                        ret.append(search_re.group())
+    except OSError:
+        logging.warning("Something wrong in check op registered.")
+        return ret
+    return ret
+
+
+registed_ops = get_registed_ops()
+manual_registed_ops = get_registed_ops(f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn/')
+
+
+def check_op_registed(op_name, manual=False):
+    '''if op already registered return true'''
+    class_name = ''.join(word.capitalize() for word in op_name.split('_'))
+    return (class_name in manual_registed_ops) if manual else (class_name in registed_ops)
