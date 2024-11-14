@@ -3145,6 +3145,75 @@ def test_generator_invalid_collate_fn():
     assert "collate_fn should be callable" in str(e.value)
 
 
+def test_generator_dataset_with_parallel_convert():
+    """
+    Feature: Parallel convert tensor
+    Description: Test the data on parallel convert mode
+    Expectation: Keep the data the same as in normal iterations
+    """
+    ds.config.set_iterator_mode(parallel_convert=True)
+
+    datataset = ds.GeneratorDataset(generator_1d, ["data"])
+
+    i = 0
+    for item in datataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+        golden = np.array([i])
+        np.testing.assert_array_equal(item["data"], golden)
+        i = i + 1
+
+    ds.config.set_iterator_mode(parallel_convert=False)
+
+
+def test_generator_dataset_with_parallel_convert_break():
+    """
+    Feature: Parallel convert tensor
+    Description: Test Interrupt iteration on parallel convert mode
+    Expectation: Iteration value is the same as expected
+    """
+    ds.config.set_iterator_mode(parallel_convert=True)
+
+    dataset = ds.GeneratorDataset(generator_1d, ["data"])
+
+    data_iter = dataset.create_dict_iterator(num_epochs=1, output_numpy=True)
+
+    index = 0
+    for item in data_iter:
+        golden = np.array([index])
+        np.testing.assert_array_equal(item["data"], golden)
+        if index == 2:
+            index += 1
+            break
+        index += 1
+
+    for item in data_iter:
+        golden = np.array([index])
+        np.testing.assert_array_equal(item["data"], golden)
+        index += 1
+
+    ds.config.set_iterator_mode(parallel_convert=False)
+
+
+def test_generator_dataset_with_parallel_convert_exception():
+    """
+    Feature: The exception on parallel convert tensor
+    Description: Test the data on parallel convert mode with exception
+    Expectation: Success throw exception
+    """
+    ds.config.set_iterator_mode(parallel_convert=True)
+
+    def generator_function():
+        raise RuntimeError("Exceptional error.")
+
+    dataset = ds.GeneratorDataset(generator_function, ["data"])
+
+    with pytest.raises(RuntimeError) as err_info:
+        for _ in dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
+            pass
+        assert "Exceptional error." in str(err_info.value)
+
+    ds.config.set_iterator_mode(parallel_convert=False)
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -3226,3 +3295,6 @@ if __name__ == "__main__":
     test_generator_batch_sampler_exclusive_with_other_param({"num_samples": 1})
     test_generator_invalid_batch_sampler()
     test_generator_invalid_collate_fn()
+    test_generator_dataset_with_parallel_convert()
+    test_generator_dataset_with_parallel_convert_break()
+    test_generator_dataset_with_parallel_convert_exception()
