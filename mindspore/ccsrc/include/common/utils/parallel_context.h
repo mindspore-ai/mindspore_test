@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include "abstract/abstract_value.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
@@ -71,6 +72,8 @@ class COMMON_EXPORT ParallelContext {
   ~ParallelContext() = default;
   ParallelContext(const ParallelContext &) = delete;
   ParallelContext &operator=(const ParallelContext &) = delete;
+
+  std::unordered_set<AnfNodePtr> get_redundancy_node() const { return redundancy_node_; }
 
   void set_gradients_mean(bool gradients_mean);
   bool gradients_mean() const { return gradients_mean_; }
@@ -237,6 +240,10 @@ class COMMON_EXPORT ParallelContext {
   void set_do_transform(const bool);
   bool do_transform() const { return do_transform_; }
 
+  void set_is_dynamic_shape_parallel(bool);
+  bool is_dynamic_shape_parallel() const { return is_dynamic_shape_parallel_; }
+  bool dynamic_shape_parallel_flag_is_set() const { return dynamic_shape_parallel_flag_is_set_; }
+
   void set_stra_file_only_trainable_params(const bool);
   bool stra_file_only_trainable_params() const { return stra_file_only_trainable_params_; }
 
@@ -276,6 +283,7 @@ class COMMON_EXPORT ParallelContext {
   bool enable_all_gather_fusion_;
   bool enable_reduce_scatter_fusion_;
 
+  std::unordered_set<AnfNodePtr> redundancy_node_;
   std::map<std::string, std::vector<uint32_t>> all_reduce_fusion_split_indices_;
   std::map<std::string, std::vector<uint32_t>> all_reduce_fusion_split_sizes_;
   std::string strategy_json_config_file_type_;
@@ -308,6 +316,8 @@ class COMMON_EXPORT ParallelContext {
   bool direct_split_ = false;
   bool pipeline_result_broadcast_ = false;
   std::vector<symshape::SymbolInfoList> symbol_infos_;
+  bool is_dynamic_shape_parallel_ = false;
+  bool dynamic_shape_parallel_flag_is_set_ = false;
 };
 }  // namespace mindspore::parallel
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PARALLEL_CONTEXT_H_

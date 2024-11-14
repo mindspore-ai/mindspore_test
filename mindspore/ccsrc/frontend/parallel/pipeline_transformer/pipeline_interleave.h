@@ -64,6 +64,7 @@ class PipelineInterleave {
                           const NodeUsersMap &node_users_map, std::set<int64_t> *const parameter_stage);
   size_t GetBatchAxisForInput(const AnfNodeIndexSet &input_node_users) const;
   FuncGraphManagerPtr manager_;
+  NodeUsersMap node_users_map_;
   int64_t stage_;
   FuncGraphPtr root_;
   FuncGraphPtr main_graph_;

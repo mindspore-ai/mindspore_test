@@ -59,13 +59,12 @@ std::string RemainderOfSymbolsToString(const Symbols &symbols);
 // get real divisor symbols for input or output
 Shapes GetRealDivisorSymbols(const Shapes &shapes, const Symbols &symbols);
 
-void TagDynamicShapeFuncGraph(const FuncGraphPtr &root);
-bool InDynamicGraph(const CNodePtr &node);
 bool IsDynamicShapesList(const std::vector<Shapes> &shapes_list);
 bool IsDynamicShapes(const Shapes &shapes);
 bool IsDynamicShape(const Shape &shape);
 bool IsSemiOrAutoParallelMode();
 void UpdateParamSymbolicShape(const FuncGraphPtr &root);
+bool IsForwardDynamicShape();
 Status CheckLayoutForDynamicShape(const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
                                   const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts,
                                   const OperatorInfoPtr &op_info);

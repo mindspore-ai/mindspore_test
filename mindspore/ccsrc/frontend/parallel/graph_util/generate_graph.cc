@@ -157,7 +157,7 @@ ValuePtr CreateOpInstance(const OperatorAttrs &attrs, const OperatorName &op_nam
   ValuePtr op_instance = nullptr;
   bool succ = parse::ConvertData(obj, &op_instance);
   if (!succ) {
-    MS_LOG(ERROR) << "Failure:get Python op " << op_path << " from " << op_name << " fail";
+    MS_LOG(ERROR) << "Failure: get Python op " << op_path << " from " << op_name << " fail";
     return nullptr;
   }
   return op_instance;

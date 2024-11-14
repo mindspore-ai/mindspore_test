@@ -21,6 +21,7 @@
 #include <utility>
 #include <algorithm>
 #include <memory>
+#include <unordered_set>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -368,10 +369,10 @@ void PipelineInterleave::BroadCastGraphStage(const FuncGraphPtr &fg) {
 
 void PipelineInterleave::BroadCastColoring() {
   auto need_coloring = true;
+  auto all_nodes = shared_cell_->nodes();
+  auto node_users = manager_->node_users();
   while (need_coloring) {
     need_coloring = false;
-    auto all_nodes = shared_cell_->nodes();
-    auto node_users = manager_->node_users();
     for (auto node = all_nodes.cbegin(); node != all_nodes.cend(); ++node) {
       auto stage_info = (*node)->user_data<NodeStageInfo>();
       if (!(*node)->isa<CNode>() || stage_info == nullptr || stage_info->stage() == -1 ||
@@ -428,6 +429,7 @@ void PipelineInterleave::BroadCastColoring() {
       }
     }
   }
+
   for (auto &fg : manager_->func_graphs()) {
     auto stage = fg->stage();
     if (stage < 0) {
@@ -699,7 +701,6 @@ bool PipelineInterleave::IsRedundancyParameter(const AnfNodePtr &parameter,
   if (!ParameterIsCloned(parameter)) {
     stage_set = parameter_color_map_.at(parameter);
   } else {
-    auto parameters = root_->parameters();
     auto param_name = param_ptr->name();
     auto non_clone_name = param_name.substr(param_name.find_first_of('.') + 1);
     for (auto &param : non_cloned_parameters) {
@@ -718,6 +719,7 @@ bool PipelineInterleave::IsRedundancyParameter(const AnfNodePtr &parameter,
 }
 
 void PipelineInterleave::ElimParameter() {
+  ParallelContext::GetInstance()->get_redundancy_node().clear();
   auto parameters = root_->parameters();
   mindspore::HashMap<CNodePtr, std::vector<AnfNodePtr>> make_tuple_map;
   std::vector<AnfNodePtr> non_cloned_parameters;
@@ -733,6 +735,7 @@ void PipelineInterleave::ElimParameter() {
     if (!IsRedundancyParameter(parameter, non_cloned_parameters)) {
       continue;
     }
+    ParallelContext::GetInstance()->get_redundancy_node().insert(parameter);
     MS_LOG(INFO) << "Parameter:" << parameter->DebugString() << " is Redundancy.";
     RedundancyNode(parameter, &make_tuple_map);
   }
