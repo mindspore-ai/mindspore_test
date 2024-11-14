@@ -16,15 +16,16 @@
 from __future__ import absolute_import
 
 import os
-import time
 import glob
-import re
 import math
 import json
 from collections import defaultdict
 
 import multiprocessing as mp
 import numpy as np
+from safetensors.numpy import save_file, load_file
+from safetensors import safe_open
+
 import mindspore as ms
 from mindspore import log as logger
 from mindspore.parallel._parallel_serialization import _get_device_num_from_strategy, _make_dir, \
@@ -36,70 +37,6 @@ from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_
     _extract_layout_item, _load_tensor_shape, _apply_operator
 from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
     _convert_to_list
-
-from safetensors.numpy import save_file, load_file
-from safetensors import safe_open
-
-
-def _load_and_transform(path, name_map, load_func, transform_func):
-    if load_func is not None:
-        param_dict = load_func(path)
-    else:
-        param_dict = path
-    transform_dict = {}
-    for k, v in param_dict.items():
-        new_name = name_map.get(k, k) if name_map is not None else k
-        transform_dict[new_name] = transform_func(v, new_name)
-    return transform_dict
-
-
-def _transform_tensor_to_numpy(path, name_map=None):
-    return _load_and_transform(path, name_map, ms.load_checkpoint, lambda v, new_name: v.asnumpy())
-
-
-def _transform_numpy_to_tensor(path, name_map=None):
-    return _load_and_transform(path, name_map, load_file, lambda v, new_name: ms.Parameter(v, name=new_name))
-
-
-def _process_file(file_info):
-    cur_ckpt_path, name_map, save_path, file = file_info
-    param_dict_numpy = _transform_tensor_to_numpy(cur_ckpt_path, name_map)
-    safetensors_filename = file.replace(".ckpt", ".safetensors")
-    dst_file = os.path.join(save_path, safetensors_filename)
-    save_file(param_dict_numpy, dst_file)
-
-
-def _process_file_safetensors(file_info):
-    cur_safe_path, name_map, save_path, file = file_info
-    param_dict_tensor = _transform_numpy_to_tensor(cur_safe_path, name_map)
-    ckpt_filename = file.replace(".safetensors", ".ckpt")
-    dst_file = os.path.join(save_path, ckpt_filename)
-    ms.save_checkpoint(param_dict_tensor, dst_file)
-
-
-def _gather_tasks(file_path, save_path, file_name_regex, name_map):
-    """gather transform rank together"""
-    tasks = []
-    for root, dirs, _ in os.walk(file_path):
-        if root != file_path:
-            continue
-
-        rank_dirs = [d for d in dirs if d.startswith('rank')]
-        if not rank_dirs:
-            raise ValueError(
-                f"For 'ckpt_to_safetensors', no directories starting with 'rank' found in {file_path}")
-
-        for rank_dir in rank_dirs:
-            rank_dir_path = os.path.join(root, rank_dir)
-            dst_root = os.path.join(save_path,
-                                    os.path.relpath(rank_dir_path, file_path)) if save_path else rank_dir_path
-            os.makedirs(dst_root, exist_ok=True)
-            tasks.extend(
-                (os.path.join(rank_dir_path, file), name_map, dst_root, file)
-                for file in os.listdir(rank_dir_path)
-                if file.endswith(".ckpt") and (file_name_regex is None or re.findall(file_name_regex, file))
-            )
-    return tasks
 
 
 def _progress_bar(iterable, total=None):
@@ -135,155 +72,16 @@ def _progress_bar(iterable, total=None):
         print_progress_bar(i)
 
 
-def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_regex=None, processes_num=1):
-    """
-    Converts MindSpore checkpoint files into safetensors format and saves them to `save_path`.
-    Safetensors is a reliable and portable machine learning model storage format introduced by Huggingface,
-    used for securely storing Tensors with fast speed (zero copy).
-
-    Note:
-        The number of multiprocess settings is related to the size of the host, and it is not recommended to set it
-        too large, otherwise it may cause freezing.
-        The safetensors format does not support the enc verification function. If ckpt is enabled to save enc
-        verification, an error will be generated when performing the conversion.
-        The safetensors format currently does not support crc verification function. If ckpt contains crc verification
-        information, the crc verification information will be lost after conversion to safetensors.
-
-    Args:
-        file_path (str): Path to the directory containing checkpoint files or a single checkpoint file (.ckpt).
-        save_path (str, optional): Directory path where safetensors files will be saved. Defaults: ``None``.
-        name_map (dict, optional): Dictionary mapping original parameter names to new names. Defaults: ``None``.
-        file_name_regex (str, optional): Regular expression used to match the file that needs to be converted.
-                                   Defaults: ``None``.
-        processes_num (int, optional): Number of processes to use for parallel processing. Defaults: 1.
-    Raises:
-        ValueError: If the input path is invalid or the save_path is not a directory,
-                    or the file_path does not end with '.ckpt'.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore as ms
-        >>> ms.ckpt_to_safetensors("./ckpt_save_path")
-        >>> ms.ckpt_to_safetensors("./ckpt_save_path/rank0/checkpoint_0.ckpt")
-        >>> ms.ckpt_to_safetensors(file_path="./ckpt_save_path/rank0/checkpoint_0.ckpt", save_path="./new_path/")
-        >>> namemap = {"lin.weight":"new_name"}
-        >>> ms.ckpt_to_safetensors("./ckpt_save_path/rank0/checkpoint_0.ckpt", "./new_path/", namemap)
-    """
-    is_dir = os.path.isdir(file_path)
-    is_file = os.path.isfile(file_path)
-    if not is_dir and not is_file:
-        raise ValueError(f"For 'ckpt_to_safetensors', the input path must be a valid path or file, but got {file_path}")
-    if save_path and os.path.splitext(save_path)[1]:
-        raise ValueError(f"For 'ckpt_to_safetensors', the save_path must be a directory, but got '{save_path}'")
-    if name_map is not None and not isinstance(name_map, dict):
-        raise ValueError(
-            f"For 'ckpt_to_safetensors', the type of 'name_map' must be a directory, but got '{type(name_map)}'")
-
-    if is_dir:
-        tasks = _gather_tasks(file_path, save_path, file_name_regex, name_map)
-        with mp.Pool(processes=processes_num) as pool:
-            list(_progress_bar(pool.imap(_process_file, tasks), total=len(tasks)))
-    elif is_file:
-        if not file_path.endswith(".ckpt"):
-            raise ValueError(f"For 'ckpt_to_safetensors', the input file must be a .ckpt file, but got {file_path}")
-        if file_name_regex is not None and not re.findall(file_name_regex, file_path):
-            raise ValueError(f"For 'ckpt_to_safetensors', the input file does not match the regular expression.")
-        if save_path and not os.path.exists(save_path):
-            os.makedirs(save_path, exist_ok=True)
-
-        param_dict_numpy = _transform_tensor_to_numpy(file_path, name_map)
-        safetensors_filename = os.path.basename(file_path).replace(".ckpt", ".safetensors")
-        dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), safetensors_filename)
-        save_file(param_dict_numpy, dst_file)
-
-
-def _gather_safetensors_tasks(file_path, save_path, file_name_regex, name_map):
-    """gather transform rank together"""
-    tasks = []
-    for root, dirs, _ in os.walk(file_path):
-        if root != file_path:
-            continue
-
-        rank_dirs = [d for d in dirs if d.startswith('rank')]
-        if not rank_dirs:
-            raise ValueError(
-                f"For 'safetensors_to_ckpt', no directories starting with 'rank' found in {file_path}")
-
-        for rank_dir in rank_dirs:
-            rank_dir_path = os.path.join(root, rank_dir)
-            dst_root = os.path.join(save_path,
-                                    os.path.relpath(rank_dir_path, file_path)) if save_path else rank_dir_path
-            os.makedirs(dst_root, exist_ok=True)
-            tasks.extend(
-                (os.path.join(rank_dir_path, file), name_map, dst_root, file)
-                for file in os.listdir(rank_dir_path)
-                if file.endswith(".safetensors") and (file_name_regex is None or re.findall(file_name_regex, file))
-            )
-    return tasks
-
-
-def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_regex=None, processes_num=1):
-    """
-    Converts safetensors files into MindSpore checkpoint format and saves them to `save_path`.
-    Safetensors is a reliable and portable machine learning model storage format introduced by Huggingface,
-    used for securely storing Tensors with fast speed (zero copy).
-
-    Note:
-        The number of multiprocess settings is related to the size of the host, and it is not recommended to set it
-        too large, otherwise it may cause freezing.
-
-    Args:
-        file_path (str): Path to the directory containing safetensors files or a single safetensors file (.safetensors).
-        save_path (str, optional): Directory path where checkpoint files will be saved. Defaults: ``None``.
-        name_map (dict, optional): Dictionary mapping original parameter names to new names. Defaults: ``None``.
-        file_name_regex (str, optional): Regular expression used to match the file that needs to be converted.
-                                   Defaults: ``None``.
-        processes_num (int, optional): Number of processes to use for parallel processing. Defaults: 1.
-
-    Raises:
-        ValueError: If the input path is invalid, the save_path is not a directory,
-                    or the file_path does not end with '.safetensors'.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore as ms
-        >>> ms.safetensors_to_ckpt("./safetensors_save_path")
-        >>> ms.safetensors_to_ckpt("./safetensors_save_path/rank0/checkpoint_0.safetensors")
-        >>> ms.safetensors_to_ckpt("./safetensors_save_path/rank0/checkpoint_0.safetensors", "./new_path/")
-        >>> namemap = {"lin.weight":"new_name"}
-        >>> ms.safetensors_to_ckpt("./safetensors_save_path/rank0/checkpoint_0.safetensors", "./new_path/", namemap)
-    """
-    is_dir = os.path.isdir(file_path)
-    is_file = os.path.isfile(file_path)
-    if not is_dir and not is_file:
-        raise ValueError(f"For 'safetensors_to_ckpt', the input path must be a valid path or file, but got {file_path}")
-    if save_path and os.path.splitext(save_path)[1]:
-        raise ValueError(f"For 'safetensors_to_ckpt', the save_path must be a directory, but got '{save_path}'")
-    if name_map is not None and not isinstance(name_map, dict):
-        raise ValueError(
-            f"For 'safetensors_to_ckpt', the type of 'name_map' must be a directory, but got '{type(name_map)}'")
-
-    if is_dir:
-        tasks = _gather_safetensors_tasks(file_path, save_path, file_name_regex, name_map)
-        with mp.Pool(processes=processes_num) as pool:
-            list(_progress_bar(pool.imap(_process_file_safetensors, tasks), total=len(tasks)))
-    elif is_file:
-        if not file_path.endswith(".safetensors"):
-            raise ValueError(
-                f"For 'safetensors_to_ckpt', the input file must be a .safetensors file, but got {file_path}")
-        if file_name_regex is not None and not re.findall(file_name_regex, file_path):
-            raise ValueError(f"For 'safetensors_to_ckpt', the input file does not match the regular expression.")
-        if save_path and not os.path.exists(save_path):
-            os.makedirs(save_path, exist_ok=True)
-
-        param_dict_tensor = _transform_numpy_to_tensor(file_path, name_map)
-        ckpt_filename = os.path.basename(file_path).replace(".safetensors", ".ckpt")
-        dst_file = os.path.join(save_path if save_path else os.path.dirname(file_path), ckpt_filename)
-        ms.save_checkpoint(param_dict_tensor, dst_file)
+def _load_and_transform(path, name_map, load_func, transform_func):
+    if load_func is not None:
+        param_dict = load_func(path)
+    else:
+        param_dict = path
+    transform_dict = {}
+    for k, v in param_dict.items():
+        new_name = name_map.get(k, k) if name_map is not None else k
+        transform_dict[new_name] = transform_func(v, new_name)
+    return transform_dict
 
 
 def _check_transform_safetensors(src_safetensors_dir, ckpt_prefix, src_strategy_file, dst_strategy_file):
@@ -1172,4 +970,4 @@ def _get_slice(rank_id, sf_obj, param_name, dst_strategy_list):
 
 
 __all__ = ["_transform_safetensors", "transform_safetensors_by_stage",
-           "transform_safetensors_by_rank", "ckpt_to_safetensors", "safetensors_to_ckpt", "unified_safetensors"]
+           "transform_safetensors_by_rank", "unified_safetensors"]
