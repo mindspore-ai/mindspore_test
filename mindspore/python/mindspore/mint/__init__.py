@@ -45,6 +45,7 @@ from mindspore.ops.function.math_func import sin
 # 3
 from mindspore.mint.functional_overload import clamp
 from mindspore.mint.functional_overload import clip
+from mindspore.mint.functional_overload import fmod
 # 4
 from mindspore.ops.auto_generate import sinc
 from mindspore.ops.auto_generate import sinh
@@ -413,6 +414,7 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 
 #1023
 from mindspore.ops.function.array_func import unbind_ext as unbind
+
 
 def add(input, other, *, alpha=1):
     r"""
@@ -1837,6 +1839,7 @@ __all__ = [
     # 3
     'clamp',
     'xlogy',
+    'fmod',
     # 4
     'sinc',
     'sinh',

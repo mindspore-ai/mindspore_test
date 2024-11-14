@@ -988,6 +988,21 @@ REG_BPROP_BUILDER("Sub").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUNC(ib)
   return BinopGradCommon(ib, x, y, dx, dy);
 });
 
+REG_BPROP_BUILDER("FmodTensor").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto self_div = ib->DivMod(input, other, ops::RoundingMode::TRUNC);
+  auto other_dout = ib->Neg(ib->Mul(dout, self_div));
+  return BinopGradCommon(ib, input, other, dout, other_dout);
+});
+
+REG_BPROP_BUILDER("FmodScalar").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto other = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  return {dout, ib->OutZeros(other)};
+});
+
 REG_BPROP_BUILDER("Div").FreeUselessValues(FreeTensorsOfDiv).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
