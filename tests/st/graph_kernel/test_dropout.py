@@ -29,7 +29,7 @@ class Net(nn.Cell):
         return self.drop(x_)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dropout():
     """
     Feature: todo
