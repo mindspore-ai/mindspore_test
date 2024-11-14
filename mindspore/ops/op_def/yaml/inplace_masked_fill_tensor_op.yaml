@@ -1,7 +1,9 @@
-#operator inplace_fill_tensor
-inplace_fill_tensor:
+#operator inplace_masked_fill_tensor
+inplace_masked_fill_tensor:
     args:
         input:
+            dtype: tensor
+        mask:
             dtype: tensor
         value:
             dtype: tensor
@@ -11,8 +13,10 @@ inplace_fill_tensor:
         out:
             dtype: tensor
             inplace: input
+    function:
+        name: masked_fill_tensor_
     labels:
         side_effect_mem: True
     dispatch:
         enable: True
-        Ascend: InplaceFillTensorAscend
+        Ascend: InplaceMaskedFillTensorAscend
