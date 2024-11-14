@@ -25,7 +25,7 @@ def test_ops_flash_attention_score_tnd():
     """
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 " \
-        "--master_port=10969 --join=True --log_dir=./fa_logs " \
+        "--master_port=10805 --join=True --log_dir=./fa_logs " \
         "pytest -s flash_attention_score.py::test_flash_attention_score_tnd"
     )
     assert return_code == 0
@@ -40,7 +40,7 @@ def test_ops_flash_attention_score_load_balance():
     """
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 " \
-        "--master_port=10969 --join=True --log_dir=./fa_logs " \
+        "--master_port=10806 --join=True --log_dir=./fa_logs " \
         "pytest -s flash_attention_score.py::test_flash_attention_score_load_balance"
     )
     assert return_code == 0

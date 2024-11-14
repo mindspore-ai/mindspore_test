@@ -23,7 +23,7 @@ def test_msrun_pipeline_parallel_inference():
     Description: Test pipeline inference.
     Expectation: Run success.
     '''
-    ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 "
+    ret = os.system("msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10809 "
                     "--join=True --log_dir=./pipeline_inference_logs pytest -s -v "
                     "pipeline_inference.py")
     assert ret == 0

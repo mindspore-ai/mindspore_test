@@ -25,6 +25,6 @@ def test_msrun_broadcast_auto_parallel():
     '''
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret = os.system(f"source {sh_path}/env.sh && msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
-                    "--master_port=10969 --join=True "
+                    "--master_port=11451 --join=True "
                     "--log_dir=./broadcast_auto_parallel_logs pytest -s -v lenet_broadcast_auto_parallel.py")
     assert ret == 0

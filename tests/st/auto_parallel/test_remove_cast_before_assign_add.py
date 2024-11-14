@@ -25,6 +25,6 @@ def test_msrun_remove_cast_before_assign_add():
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     ret = os.system(f"source {sh_path}/env.sh && msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 "
-                    "--master_port=10969 --join=True "
+                    "--master_port=10810 --join=True "
                     "--log_dir=./remove_cast_before_assign_add_logs pytest -s -v remove_cast_before_assign_add.py")
     assert ret == 0

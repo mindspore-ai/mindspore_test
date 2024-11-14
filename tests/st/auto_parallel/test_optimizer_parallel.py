@@ -24,7 +24,7 @@ def test_msrun_sit_optimizer_parallel():
     Expectation: Run success.
     '''
     ret = os.system("export GLOG_v=2 && msrun --worker_num=4 --local_worker_num=4 "
-                    "--master_addr=127.0.0.1 --master_port=10969 "
+                    "--master_addr=127.0.0.1 --master_port=10807 "
                     "--join=True --log_dir=./sit_optimizer_parallel_logs pytest -s -v "
                     "optimizer_parallel.py::test_optimizer_parallel_auto_4p_6_parameter_same_strategy_1_1_2_1_momentum")
     assert ret == 0
