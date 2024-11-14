@@ -62,6 +62,140 @@ constexpr size_t gmmTensor2D = 2;
 constexpr size_t gmmTensor3D = 3;
 constexpr size_t gmmTensor4D = 4;
 
+Status GroupedMatmulInfo::InferMirrorOpsByLayout() {
+  mirror_ops_.clear();
+  if (inputs_shape_new_.empty()) {
+    MS_LOG(INFO) << name_ << ": The inputs size is empty";
+    return SUCCESS;
+  }
+
+  bool group_is_empty = true;
+  for (size_t i = 0; i < inputs_tensor_info_new_.size(); ++i) {
+    auto tensor_info = inputs_tensor_info_new_[i];
+    if (tensor_info->is_list()) {
+      if (InferOperatorVectorListForShapeList(tensor_info, SizeToLong(i), &mirror_ops_new_, &group_is_empty) !=
+          SUCCESS) {
+        MS_LOG(ERROR) << name_ << ": InferOperatorVectorListForShapeList failed";
+        return FAILED;
+      }
+      OperatorVector temp_mirror_op;
+      mirror_ops_.push_back(temp_mirror_op);
+    } else {
+      if (tensor_info->GetValue() == TensorInfo()) {
+        mirror_ops_new_.emplace_back(std::make_shared<OperatorVectorValue>(OperatorVector()));
+        mirror_ops_.emplace_back(OperatorVector());
+        continue;
+      }
+      if (InferOperatorVectorValueForShapeValue(tensor_info, SizeToLong(i), &mirror_ops_new_, &mirror_ops_,
+                                                &group_is_empty) != SUCCESS) {
+        MS_LOG(ERROR) << name_ << ": InferOperatorVectorValueForShapeValue failed";
+        return FAILED;
+      }
+    }
+  }
+  if (group_is_empty) {
+    mirror_ops_new_.clear();
+    MS_LOG(INFO) << name_ << ": No need to insert mirror ops";
+  }
+  return SUCCESS;
+}
+
+Status GroupedMatmulInfo::InferOperatorVectorValueForShapeValue(const TensorInfoBasePtr &tensor_info,
+                                                                const int64_t &input_idx,
+                                                                std::vector<OperatorVectorBasePtr> *mirror_ops_new,
+                                                                MirrorOps *mirror_ops, bool *group_is_empty) {
+  auto input_tensor_layout = tensor_info->GetValue().tensor_layout();
+  auto repeated_rank_list = input_tensor_layout.InferRepeatedGroup();
+
+  OperatorVector mirror_op;
+  if (repeated_rank_list.size() == 1) {
+    MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << input_idx;
+    mirror_ops_new->emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
+    mirror_ops->emplace_back(mirror_op);
+    return SUCCESS;
+  }
+  if (is_auto_parallel_) {
+    if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
+      MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
+                   << " failed in auto parallel mode, "
+                      "this error can be ignored in parallel strategies searching step";
+      return FAILED;
+    }
+    return SUCCESS;
+  }
+
+  Group mirror_group;
+  if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
+    MS_LOG(ERROR) << name_
+                  << ": Create communication group by tensor_map failed, the rank_list is: " << repeated_rank_list
+                  << ", the full_name of node is: " << cnode_->fullname_with_scope();
+    return FAILED;
+  }
+  *group_is_empty = false;
+  mirror_op = CreateMirrorOps(mirror_group.name(), mirror_group.GetDevNum());
+  mirror_ops_new->emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
+  mirror_ops->emplace_back(mirror_op);
+  return SUCCESS;
+}
+
+Status GroupedMatmulInfo::InferOperatorVectorListForShapeList(const TensorInfoBasePtr &tensor_info,
+                                                              const int64_t &input_idx,
+                                                              std::vector<OperatorVectorBasePtr> *mirror_ops_new,
+                                                              bool *group_is_empty) {
+  std::vector<RankList> repeated_rank_lists;
+  for (size_t i = 0; i < tensor_info->size(); ++i) {
+    auto info = tensor_info->GetElement(SizeToLong(i));
+    if (info->is_list()) {
+      MS_LOG(ERROR) << "For " << name_ << ": does not support tuple in tuple to infer mirror ops yet ";
+      return FAILED;
+    }
+    auto tensor_info_value = info->GetValue();
+    if (tensor_info_value == TensorInfo()) {
+      MS_LOG(INFO) << "In tuple there is a TensorInfo(), break";
+      repeated_rank_lists.clear();
+      break;
+    }
+    repeated_rank_lists.push_back(tensor_info_value.tensor_layout().InferRepeatedGroup());
+  }
+  if (repeated_rank_lists.empty()) {
+    std::vector<OperatorVectorBasePtr> op_vector_list(tensor_info->size(),
+                                                      std::make_shared<OperatorVectorValue>(OperatorVector()));
+    mirror_ops_new->emplace_back(std::make_shared<OperatorVectorList>(op_vector_list));
+    return SUCCESS;
+  }
+  std::vector<OperatorVectorBasePtr> mirror_ops;
+  for (const auto &repeated_rank_list : repeated_rank_lists) {
+    OperatorVector mirror_op;
+    if (repeated_rank_list.size() == 1) {
+      MS_LOG(INFO) << name_ << ": The mirror group is empty, the input index is " << input_idx;
+      mirror_ops.emplace_back(std::make_shared<OperatorVectorValue>(mirror_op));
+      continue;
+    }
+    if (is_auto_parallel_) {
+      if (g_device_manager->CheckDeviceList(repeated_rank_list) != SUCCESS) {
+        MS_LOG(INFO) << name_ << ": Try to create communication group : " << repeated_rank_list
+                     << " failed in auto parallel mode, "
+                        "this error can be ignored in parallel strategies searching step";
+        return FAILED;
+      }
+      return SUCCESS;
+    }
+
+    Group mirror_group;
+    if (g_device_manager->CreateGroup(repeated_rank_list, &mirror_group) != SUCCESS) {
+      MS_LOG(ERROR) << name_
+                    << ": Create communication group by tensor_map failed, the rank_list is: " << repeated_rank_list
+                    << ", the full_name of node is: " << cnode_->fullname_with_scope();
+      return FAILED;
+    }
+    *group_is_empty = false;
+    mirror_op = CreateMirrorOps(mirror_group.name(), mirror_group.GetDevNum());
+    mirror_ops.push_back(std::make_shared<OperatorVectorValue>(mirror_op));
+  }
+  mirror_ops_new->emplace_back(std::make_shared<OperatorVectorList>(mirror_ops));
+  return SUCCESS;
+}
+
 // 1.getattr
 Status GroupedMatmulInfo::GetAttrs() {
   auto tensorlist_x_shape = inputs_shape_new_.at(kInputX);
@@ -229,10 +363,14 @@ Status GroupedMatmulInfo::InferTensorMap() {
   SetOptionalInputTensorMap(kInputAntiquantOffset, &valid_input_index);
 
   // optional grouplist
-  if (input_value_[kInputGroupList] == nullptr || !input_value_[kInputGroupList]->isa<None>()) {
-    Shape grouplist_tensor_map_idx{-1};
-    inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(grouplist_tensor_map_idx));
+  Shape grouplist_tensor_map_idx;
+  if (input_value_[kInputGroupList] != nullptr && input_value_[kInputGroupList]->isa<None>()) {
+    grouplist_tensor_map_idx.emplace_back(-1);
+  } else {
+    grouplist_tensor_map_idx.emplace_back(2);
   }
+
+  inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(grouplist_tensor_map_idx));
 
   // origin_dev_matrix_shape_: [bs, N, h, 4h] or [N, h, 4h]
   // out: [bs, N, 4h] or [N, 4h] --> {3, 2} or {2}
