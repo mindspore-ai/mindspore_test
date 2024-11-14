@@ -360,7 +360,7 @@ bool AscendKernelRuntime::Init() {
       ResetDevice(device_id_);
     }
     MS_LOG(EXCEPTION) << "Ascend kernel runtime initialization failed, device id: " << device_id_
-                      << "The details refer to 'Ascend Error Message'. #dmsg#Framework Error Message:#dmsg#"
+                      << ". The details refer to 'Ascend Error Message'. #dmsg#Framework Error Message:#dmsg#"
                       << e.what();
   }
 
@@ -642,12 +642,14 @@ void AscendKernelRuntime::SetRtDevice(uint32_t device_id) {
   uint32_t device_count = 0;
   auto ret = CALL_ASCEND_API(aclrtGetDeviceCount, &device_count);
   if (ret != ACL_ERROR_NONE) {
-    MS_EXCEPTION(DeviceProcessError) << "Call rtGetDeviceCount, ret[" << static_cast<int>(ret) << "]";
+    MS_EXCEPTION(DeviceProcessError) << "Call rtGetDeviceCount failed, ret[" << static_cast<int>(ret) << "].";
   }
 
   ret = CALL_ASCEND_API(aclrtSetDevice, UintToInt(device_id));
   if (ret != ACL_ERROR_NONE) {
-    MS_EXCEPTION(DeviceProcessError) << "Call aclrtSetDevice, ret[" << static_cast<int>(ret) << "]";
+    MS_EXCEPTION(DeviceProcessError) << "Call aclrtSetDevice failed, ret[" << static_cast<int>(ret)
+                                     << "]. Got device count[" << device_count << "] and device id[" << device_id
+                                     << "], please check if device id is valid.";
   }
   (void)initialized_device_set_.insert(device_id);
 }
