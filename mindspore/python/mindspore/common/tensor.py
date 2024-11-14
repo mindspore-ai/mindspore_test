@@ -478,25 +478,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         out = tensor_operator_registry.get('__le__')(self, other)
         return out
 
-    def __getitem__(self, index):
-        out = tensor_operator_registry.get('__getitem__')(self, index)
-        if out is not self:
-            out.parent_tensor_ = self
-            out.index_of_parent_ = index
-        return out
-
-    def __setitem__(self, index, value):
-        out = tensor_operator_registry.get('__setitem__')(self, index, value)
-        if isinstance(out, tuple):
-            if self.parent_tensor_ is not None and self.index_of_parent_ is not None:
-                self.parent_tensor_.__setitem__(self.index_of_parent_, out[0])
-                return self
-            return self
-        self.assign_value(out)
-        if self.parent_tensor_ is not None and self.index_of_parent_ is not None:
-            self.parent_tensor_.__setitem__(self.index_of_parent_, self)
-        return self
-
     def __gt__(self, other):
         out = tensor_operator_registry.get('__gt__')(self, other)
         return out
@@ -528,6 +509,35 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             value = state.pop("value")
             self.__dict__.update(state)
         Tensor_.__setstate__(self, value)
+
+    def _getitem_origin(self, index):
+        """__getitem__ origin process, called by TensorPy::TensorGetItem"""
+        out = tensor_operator_registry.get('_tensor_getitem_origin')(self, index)
+        if out is not self:
+            out.parent_tensor_ = self
+            out.index_of_parent_ = index
+        return out
+
+    def _setitem_origin(self, index, value):
+        """__setitem__ origin process, called by TensorPy::TensorSetItem"""
+        out = tensor_operator_registry.get('_tensor_setitem_origin')(self, index, value)
+        if isinstance(out, tuple):
+            if self.parent_tensor_ is not None and self.index_of_parent_ is not None:
+                self.parent_tensor_.__setitem__(self.index_of_parent_, out[0])
+                return self
+            return self
+        self.assign_value(out)
+        if self.parent_tensor_ is not None and self.index_of_parent_ is not None:
+            self.parent_tensor_.__setitem__(self.index_of_parent_, self)
+        return self
+
+    def _getitem(self, index):
+        """__getitem__ process, called by TensorPy::TensorGetItem"""
+        return tensor_operator_registry.get('_tensor_getitem')(self, index)
+
+    def _setitem(self, index, value):
+        """__setitem__ process, called by TensorPy::TensorSetItem"""
+        return tensor_operator_registry.get('_tensor_setitem')(self, index, value)
 
     @property
     def shape(self):
@@ -4536,12 +4546,16 @@ def _vm_compare(*args):
     if obj_str == "shape":
         fn = getattr(args[0].asnumpy(), obj_str)
         return fn
-    if obj_str == "__setitem__":
-        fn = getattr(args[0].asnumpy(), obj_str)
+    if obj_str == "_tensor_setitem" or obj_str == "_tensor_setitem_origin":
+        fn = getattr(args[0].asnumpy(), "__setitem__")
         index = args[1].asnumpy() if isinstance(args[1], Tensor) else args[1]
         value = args[2].asnumpy() if isinstance(args[2], Tensor) else args[2]
         fn(index, value)
         return args[0]
+    if obj_str == "_tensor_getitem" or obj_str == "_tensor_getitem_origin":
+        fn = getattr(args[0].asnumpy(), "__getitem__")
+        index = args[1].asnumpy() if isinstance(args[1], Tensor) else args[1]
+        return Tensor(np.array(fn(index)))
     if len(args) == 2:
         fn = getattr(args[0].asnumpy(), obj_str)
         return Tensor(fn())

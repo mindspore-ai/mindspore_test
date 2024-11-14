@@ -700,6 +700,22 @@ py::array TensorPy::AsNumpyOfSlice(const Tensor &tensor, const int32_t param_key
   return data_numpy->py_array(owner);
 }
 
+py::object TensorPy::TensorGetItem(const py::object &self, const py::object &py_index) {
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice ||
+      common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE") == "1") {
+    return self.attr("_getitem_origin")(py_index);
+  }
+  return self.attr("_getitem")(py_index);
+}
+
+py::object TensorPy::TensorSetItem(const py::object &self, const py::object &py_index, const py::object &py_value) {
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice ||
+      common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE") == "1") {
+    return self.attr("_setitem_origin")(py_index, py_value);
+  }
+  return self.attr("_setitem")(py_index, py_value);
+}
+
 static ShapeVector GetShapeFromTuple(const py::tuple &tuple) {
   ShapeVector shape;
   const size_t size = tuple.size();
@@ -855,6 +871,8 @@ void RegMetaTensor(const py::module *m) {
     .def("_flatten_tensors", Tensor::FlattenTensors, py::arg("fusion_size") = 0)
     .def("setitem_index_info", TensorIndex::SetItemIndexInfo)
     .def("getitem_index_info", TensorIndex::GetItemIndexInfo)
+    .def("__getitem__", TensorPy::TensorGetItem)
+    .def("__setitem__", TensorPy::TensorSetItem)
     .def("_is_flattened", Tensor::IsFlattened)
     .def("_get_flattened_tensors", Tensor::GetFlattenedTensors)
     .def("_get_fusion_size", Tensor::GetFusionSize)
@@ -1064,17 +1082,17 @@ void RegMetaTensor(const py::module *m) {
     .def("_offload", &TensorPy::Offload)
     .def("set_device_address", &TensorPy::SetDeviceAddress, py::arg("addr"), py::arg("shape"), py::arg("dtype"))
     .def(py::pickle(
-        [](const Tensor &t) {  // __getstate__
-          /* Return a tuple that fully encodes the state of the object */
-          return py::make_tuple(TensorPy::SyncAsNumpy(t));
-        },
-        [](const py::tuple &t) {  // __setstate__
-          if (t.size() != 1) {
-            throw std::runtime_error("Invalid state!");
-          }
-          /* Create a new C++ instance */
-          return TensorPy::MakeTensor(t[0].cast<py::array>());
-        }));
+      [](const Tensor &t) {  // __getstate__
+        /* Return a tuple that fully encodes the state of the object */
+        return py::make_tuple(TensorPy::SyncAsNumpy(t));
+      },
+      [](const py::tuple &t) {  // __setstate__
+        if (t.size() != 1) {
+          throw std::runtime_error("Invalid state!");
+        }
+        /* Create a new C++ instance */
+        return TensorPy::MakeTensor(t[0].cast<py::array>());
+      }));
   RegTensorFunc(&tensor_class);
 }
 

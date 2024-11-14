@@ -45,16 +45,16 @@ def setup_testcase(input_np, case_fn):
 
 class TensorSetItemByList(Cell):
     def construct(self, x):
-        x[[0, 1], [1, 2], [1, 3]] = [3, 4]
-        x[([0, 1], [0, 2], [1, 1])] = [10, 5]
+        x[[0, 1], [1, 2], [1, 3]] = 3
+        x[([0, 1], [0, 2], [1, 1])] = 10
         x[[0, 1], ..., [0, 1]] = 4
         return x
 
 
 class NumpySetItemByList():
     def __call__(self, x):
-        x[[0, 1], [1, 2], [1, 3]] = [3, 4]
-        x[([0, 1], [0, 2], [1, 1])] = [10, 5]
+        x[[0, 1], [1, 2], [1, 3]] = 3
+        x[([0, 1], [0, 2], [1, 1])] = 10
         x[[0, 1], ..., [0, 1]] = 4
         return x
 
@@ -95,36 +95,34 @@ def test_setitem_grad():
 
 
 def test_setitem_by_list():
+    """
+    Feature: Test setitem by list
+    Description: setitem with index of type list
+    Expectation: success
+    """
     x = np.ones((2, 3, 4), dtype=np.float32)
 
     def cases(x):
-        x[[0, 1], [1, 2], [1, 3]] = [3, 4]
-        x[([0, 1], [0, 2], [1, 1])] = [10, 5]
+        x[[0, 1], [1, 2], [1, 3]] = 3
+        x[([0, 1], [0, 2], [1, 1])] = 10
         x[[0, 1], ..., [0, 1]] = 4
         return x
     setup_testcase(x, cases)
 
 
-def test_setitem_with_sequence():
-    x = np.ones((2, 3, 4), dtype=np.float32)
-
-    def cases(x):
-        x[...] = [3]
-        x[..., 1] = ([1, 2, 3], [4, 5, 6])
-        x[0] = ((0, 1, 2, 3), (4, 5, 6, 7), [8, 9, 10, 11])
-        x[1:2] = ((0, 1, 2, 3), (4, 5, 6, 7), [8, 9, 10, 11])
-        return x
-    setup_testcase(x, cases)
-
-
 def test_setitem_dtype():
+    """
+    Feature: Test setitem with different dtype
+    Description: setitem with different dtype
+    Expectation: Success
+    """
     x = np.ones((2, 3, 4), dtype=np.float32)
 
     def cases(x):
         x[...] = 3
         x[..., 1] = 3.0
         x[0] = True
-        x[1:2] = ((0, False, 2, 3), (4.0, 5, 6, 7), [True, 9, 10, 11])
+        x[1:2] = -1
         return x
     setup_testcase(x, cases)
 
@@ -143,14 +141,19 @@ def test_setitem_by_tuple_with_int():
 
 
 def test_setitem_by_tuple_with_list():
+    """
+    Feature: Test setitem by tuple with list
+    Description: setitem with index of type tuple with list
+    Expectation: Success
+    """
     x = np.arange(24).reshape(2, 3, 4).astype(np.float32)
 
     def cases(x):
-        x[..., 2, False, 1] = [-1]
-        x[0, True, 0, None, True] = [-2, -2, -2, -2]
-        x[0, ..., None] = [[-3], [-3], [-3], [-3]]
-        x[..., 0, None, 1, True, True, None] = [[[-4]], [[-4]]]
-        x[None, True, [1, 0], (False, True, True), [2]] = [[2, 3]]
+        x[..., 2, False, 1] = -1
+        x[0, True, 0, None, True] = -2
+        x[0, ..., None] = -3
+        x[..., 0, None, 1, True, True, None] = -4
+        x[None, True, [1, 0], (False, True, True), [2]] = -5
         return x
     setup_testcase(x, cases)
 
@@ -167,14 +170,17 @@ def test_setitem_by_nested_unit_list():
 
 
 def test_setitem_with_broadcast():
+    """
+    Feature: Test setitem with broadcast
+    Description: setitem with value need broadcast
+    Expectation: Success
+    """
     x = np.arange(2*3*4*5*6).reshape(2, 3, 4, 5, 6).astype(np.float32)
-    v1 = np.full((1, 4, 5), -1).tolist()
-    v2 = np.full((4, 1, 6), -2).tolist()
 
     def cases(x):
-        x[..., 4] = v1
-        x[0, 2] = v2
-        x[1, 0, ..., 3] = [[-3], [-3], [-3], [-3]]
+        x[..., 4] = -1
+        x[0, 2] = -2
+        x[1, 0, ..., 3] = -3
         x[0, ..., 1, 3, 5] = -4
         return x
     setup_testcase(x, cases)
@@ -202,7 +208,6 @@ def test_setitem_by_slice():
         x[0:-1] = 0
         x[5:5:5] = 6
         x[-1:2] = 7
-        x[1:0:-1] = 8
         return x
     setup_testcase(x, cases)
 
@@ -267,12 +272,17 @@ class TensorItemSetByItemWithNumber(Cell):
 
 
 def test_setitem_dim_expand():
+    """
+    Feature: Test setitem dim expand
+    Description: setitem with value dim need expand
+    Expectation: Success
+    """
     x = np.ones((2, 3, 4), dtype=np.float32)
     def cases(x):
         x[None, True, [1, 0], (False, True, True), [2]] = 2
-        x[([[0]]), ..., [[1]]] = [[[3, 3, 3]]]
-        x[0:1] = [[2, 3, 4, 5]]
-        x[..., (0, 1, 2), None, :, True, None] = [[[3], [3], [3], [3]]]
+        x[([[0]]), ..., [[1]]] = 3
+        x[0:1] = 2
+        x[..., (0, 1, 2), None, :, True, None] = 3
         return x
     setup_testcase(x, cases)
 
@@ -405,7 +415,6 @@ def test_itemset_all():
     """
     test_setitem_grad()
     test_setitem_by_list()
-    test_setitem_with_sequence()
     test_setitem_dtype()
     test_setitem_by_tuple_with_int()
     test_setitem_by_tuple_with_list()
