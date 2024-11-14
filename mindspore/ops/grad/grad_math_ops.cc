@@ -4398,6 +4398,26 @@ REG_BPROP_BUILDER("StdMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   return {std_mean_grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
 
+REG_BPROP_BUILDER("VarMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto correction = ib->GetInput(kIndex2);
+  auto keepdim = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto var_out = ib->TupleGetItem(out, kIndex0);
+  auto var_dout = ib->TupleGetItem(dout, kIndex0);
+  auto var_grad = VarGrad(ib, input, dim, var_dout, correction, keepdim);
+
+  auto mean_out = ib->TupleGetItem(out, kIndex1);
+  auto mean_dout = ib->TupleGetItem(dout, kIndex1);
+  auto mean_grad = MeanExtGrad(ib, input, dim, keepdim, mean_out, mean_dout);
+
+  auto var_mean_grad = ib->Add(var_grad, mean_grad);
+  return {var_mean_grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
+});
+
 DEF_PURE_SHAPE_CALC(g_prod_ext)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     auto input_shape = inputs.at(0);

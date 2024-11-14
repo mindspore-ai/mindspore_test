@@ -1,5 +1,5 @@
-#operator std_mean
-std_mean:
+#operator var_mean
+var_mean:
     args:
         input:
             dtype: tensor
@@ -15,15 +15,15 @@ std_mean:
             dtype: bool
             default: False
     returns:
-        std:
+        var:
             dtype: tensor
         mean:
             dtype: tensor
     class:
-        name: StdMean
+        name: VarMean
     function:
         disable: True
     dispatch:
         enable: True
-        Ascend: StdMeanAscend
+        Ascend: VarMeanAscend
         

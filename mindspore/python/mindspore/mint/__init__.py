@@ -397,6 +397,9 @@ from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
 # 582
 from mindspore.ops.function.math_func import std_mean_ext as std_mean
 
+# 588
+from mindspore.ops.function.math_func import var_mean_ext as var_mean
+
 # 610
 from mindspore.ops.function.math_func import nan_to_num
 
@@ -2225,6 +2228,9 @@ __all__ = [
 
     # 582
     'std_mean',
+
+    # 588
+    'var_mean',
 
     # 610
     'nan_to_num',
