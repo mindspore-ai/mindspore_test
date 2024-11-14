@@ -549,6 +549,7 @@ constexpr const char kNameGroupedMatmul[] = "GroupedMatmul";
 constexpr const char kNameMoeFinalizeRouting[] = "MoeFinalizeRouting";
 constexpr const char kNameMoeComputeExpertTokens[] = "MoeComputeExpertTokens";
 constexpr const char kNameUniformCandidateSampler[] = "UniformCandidateSampler";
+constexpr const char kNameMoeGatingTopKSoftmax[] = "MoeGatingTopKSoftmax";
 constexpr const char kNameAllFinite[] = "AllFinite";
 constexpr const char kNameInitPartitionMap[] = "InitPartitionMap";
 constexpr const char kNameInitEmbeddingHashmap[] = "InitEmbeddingHashmap";
