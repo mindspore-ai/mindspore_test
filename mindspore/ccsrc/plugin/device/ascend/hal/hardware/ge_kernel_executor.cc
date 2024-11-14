@@ -213,8 +213,9 @@ void SetAclOpPrecisionMode() {
   }
 }
 
-void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel) {
-  auto [select_res, msg, etype] = device::ascend::SelectKernelInfoWithMsg(kernel_graph, kernel);
+void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel,
+                      std::vector<size_t> *op_selected_num = nullptr) {
+  auto [select_res, msg, etype] = device::ascend::SelectKernelInfoWithMsg(kernel_graph, kernel, op_selected_num);
   if (!select_res) {
     MS_LOG(INFO) << "node is " << kernel->fullname_with_scope() << " should backoff";
     std::pair<std::string, ExceptionType> failure_info = std::make_pair(msg, etype);
@@ -222,7 +223,8 @@ void SelectKernelInfo(const KernelGraphPtr &kernel_graph, const CNodePtr &kernel
   }
 }
 
-void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *const memo) {
+void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *const memo,
+                  std::vector<size_t> *op_selected_num) {
   // select kernel
   MS_EXCEPTION_IF_NULL(memo);
   PROF_START(SelectKernel);
@@ -232,7 +234,7 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
   memo->insert(kernel_graph);
   const auto &kernels = kernel_graph->execution_order();
   for (const auto &kernel : kernels) {
-    SelectKernelInfo(kernel_graph, kernel);
+    SelectKernelInfo(kernel_graph, kernel, op_selected_num);
   }
   if (!kernel_graph->is_from_single_op()) {
     kernel_graph->SetKernelObjectTypesForUnrealNodes();
@@ -241,9 +243,20 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
     if (child_graph.lock()->has_flag(kFlagGeKernel)) {
       continue;
     }
-    SelectKernel(child_graph.lock(), memo);
+    SelectKernel(child_graph.lock(), memo, op_selected_num);
   }
   PROF_END(SelectKernel);
+}
+
+inline void PrintOpSelectedNum(const std::vector<size_t> &op_selected_num) {
+  MS_LOG(INFO) << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
+  MS_VLOG(VL_FLOW) << "Number of GE_KERNEL, INTERNAL_KERNEL, OPAPI_KERNEL, ACL_KERNEL, HCCL_KERNEL, HOST_KERNEL:";
+  std::stringstream ss;
+  for (const auto num : op_selected_num) {
+    ss << num << " ";
+  }
+  MS_LOG(INFO) << ss.str();
+  MS_VLOG(VL_FLOW) << ss.str();
 }
 
 void InlineSubGraph(const KernelGraphPtr &graph, const KernelGraphPtr &sub_graph, CNodePtr kernel_cnode,
@@ -914,7 +927,9 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   std::set<KernelGraphPtr> memo;
   GEGraphOptimization::GetInstance().OptimizeACLGraph(kernel_graph, &memo);
   memo.clear();
-  SelectKernel(kernel_graph, &memo);
+  std::vector<size_t> op_selected_num(device::ascend::SelectedKernelType::NUM_KERNLE_TYPE, 0);
+  SelectKernel(kernel_graph, &memo, &op_selected_num);
+  PrintOpSelectedNum(op_selected_num);
   memo.clear();
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterKernelSelect(kernel_graph, &memo);
   memo.clear();
