@@ -1,25 +1,19 @@
 ceil:
   description: |
-    ceil(self) -> Tensor
+    ceil() -> Tensor
     
     Rounds a tensor up to the closest integer element-wise.
     
     .. math::
-        out_i = \lceil x_i \rceil = \lfloor x_i \rfloor + 1
-    
-    Args:
-        self (Tensor): the self of Ceil.
-            Supported dtypes: 
-    
-            - Ascend: float16, float32, float64 or bfloat16.
-            - GPU/CPU: float16, float32, float64.
+        out_i = \lceil self_i \rceil = \lfloor self_i \rfloor + 1
     
     Returns:
         Tensor, has the same shape as `self`.
     
-    Raises:
-        TypeError: If `self` is not a Tensor.
-        TypeError: If dtype of `self` is not float16, float32, float64 or bfloat16.
+    :raise TypeError: If dtype of `self` is not float16, float32, float64 or bfloat16.
+
+        - Ascend: float16, float32, float64 or bfloat16.
+        - GPU/CPU: float16, float32, float64.
     
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
