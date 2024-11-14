@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_IS_INF_H_
-#define MINDSPORE_CORE_OPS_IS_INF_H_
 #include <memory>
-#include <vector>
-
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
+#include "utils/check_convert_utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
+#include "infer/ops_func_impl/isinf.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameIsInf = "IsInf";
-class OPS_API IsInf : public BaseOperator {
- public:
-  MIND_API_BASE_MEMBER(IsInf);
-  IsInf() : BaseOperator(kNameIsInf) { InitIOName({"x"}, {"y"}); }
-  void Init() const {}
-};
+ShapeArray IsInfFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto &x_tensor = input_infos[kInputIndex0];
+  auto x_shape = x_tensor->GetShape();
+  return {x_shape};
+}
+
+std::vector<TypeId> IsInfFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {kNumberTypeBool};
+}
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_IS_INF_H_

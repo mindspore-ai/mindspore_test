@@ -1,0 +1,15 @@
+#operator isinf
+isinf:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: IsInf
+  function:
+    name: isinf
+  dispatch:
+    enable: True
+    Ascend: IsInfAscend
