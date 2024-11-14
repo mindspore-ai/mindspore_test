@@ -66,7 +66,7 @@ from mindspore.ops._utils.utils import ms_arrange
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
-    inplace_fill_scalar, expand_as, unstack_ext_op, full_like_op
+    inplace_fill_scalar, expand_as, unstack_ext_op, full_like_op, masked_fill_scalar_, masked_fill_tensor_
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
@@ -858,6 +858,9 @@ def fill_(input, value):
     """
     Fills `input` tensor with the specified `value` .
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         input (Tensor): The tensor to be filled.
         value (Union(Tensor, number.Number, bool)): Value to fill the `input` .
@@ -896,6 +899,58 @@ def fill_(input, value):
     if isinstance(value, Tensor):
         return inplace_fill_tensor(input, value)
     raise TypeError(f"For 'ops.fill_', 'value' must be a number or Tensor, but got {type(value)}.")
+
+
+def masked_fill_(input, mask, value):
+    """
+    Fills elements of Tensor with `value` where `mask` is True.
+    The shapes of `input` and `mask` need to be the same or broadcastable.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The tensor to be filled.
+        mask (Tensor[bool]): The boolean mask.
+        value (Union[Number, Tensor]): Value to fill the `input` .
+
+    Returns:
+        Tensor.
+
+    Raises:
+        TypeError: If the `input` or the `mask` is not a tensor.
+        TypeError: If `value` is neither Number nor Tensor.
+        RunTimeError: If the data type of `input` or `value` is not supported.
+        RunTimeError: If the `value` is a tensor but not a 0-D tensor.
+        RunTimeError: If the shapes of input and mask could not be broadcast.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import ops
+        >>> x = ops.zeros((3, 3))
+        >>> print(x)
+        [[0. 0. 0.]
+         [0. 0. 0.]
+         [0. 0. 0.]]
+        >>> mask = mindspore.Tensor([[True, False, False], [True, False, False], [True, False, False]])
+        >>> output = ops.masked_fill_(x, mask, 1.0)
+        >>> print(output)
+        [[1. 0. 0.]
+         [1. 0. 0.]
+         [1. 0. 0.]]
+        >>> print(x)
+        [[1. 0. 0.]
+         [1. 0. 0.]
+         [1. 0. 0.]]
+    """
+    if isinstance(value, (int, float, bool)):
+        return masked_fill_scalar_(input, mask, value)
+    if isinstance(value, Tensor):
+        return  masked_fill_tensor_(input, mask, value)
+    raise TypeError(f"For 'ops.masked_fill_', 'value' must be a number or Tensor, but got {type(value)}.")
 
 
 def full(size, fill_value, *, dtype=None):  # pylint: disable=redefined-outer-name

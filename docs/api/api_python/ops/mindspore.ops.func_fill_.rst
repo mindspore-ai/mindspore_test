@@ -5,6 +5,9 @@ mindspore.ops.fill\_
 
     用指定的值填充 `input` 。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **input** (Tensor) - 用来填充的Tensor。
         - **value** (Union(Tensor, number.Number, bool)) - 用来填充 `input` 的值。
