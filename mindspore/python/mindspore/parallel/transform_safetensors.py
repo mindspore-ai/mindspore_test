@@ -915,18 +915,21 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     layout_map = _convert_to_list(src_strategy_dict)
 
     total_size = 0
+    actual_params = set()
     for _, file_name in all_safetensor_files_map.items():
         total_size += os.path.getsize(file_name) / 1024 / 1024 / 1024
+        with safe_open(file_name, framework="np") as f:
+            actual_params.update(f.keys())
     split_num = math.ceil(total_size / 3)
+    params_to_store = actual_params & set(layout_map.keys())
 
     name_list = []
-    for name in list(layout_map.keys()):
+    for name in list(params_to_store):
         if name.startswith("accu_grads"):
             continue
         name_list.append(name)
     split_list = _split_list(name_list, split_num)
 
-    all_safetensor_files_map = _collect_safetensor_files(src_dir)
     with safe_open(all_safetensor_files_map.get(0), framework="np") as f:
         all_key = f.keys()
         hyper_parameter = set(all_key) - set(name_list)
