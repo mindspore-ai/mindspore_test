@@ -51,12 +51,8 @@ namespace ascend {
 namespace {
 constexpr uint32_t kFirstItem = 0;
 constexpr size_t kOpTypeNumber = 6;
-constexpr size_t kAclnnOpSelect = 0;
-constexpr size_t kAclOpSelect = 1;
-constexpr size_t kHcclOpSelect = 2;
-constexpr size_t kHostOpSelect = 3;
-constexpr size_t kInternalOpSelect = 4;
-constexpr size_t kGeOpSelect = 5;
+constexpr const char *kOpSelectedType[] = {"GE kernel",    "internal kernel", "aclnn kernel",
+                                           "aclop kernel", "hccl kernel",     "host kernel"};
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -596,8 +592,23 @@ std::vector<std::string> SplitString(const std::string &str, char delim) {
   return elems;
 }
 
-std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const KernelGraphPtr &graph,
-                                                                     const CNodePtr &node) {
+void CollectOpSelectedType(std::string op_name, SelectedKernelType op_type, std::vector<size_t> *op_selected_num,
+                           std::vector<std::set<std::string>> *op_selected_type) {
+  MS_EXCEPTION_IF_NULL(op_selected_type);
+  size_t index = static_cast<size_t>(op_type);
+  if ((*op_selected_type)[index].count(op_name) == 0) {
+    (void)(*op_selected_type)[index].insert(op_name);
+    auto op_type_name = kOpSelectedType[index];
+    MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select " << op_type_name;
+    MS_LOG(INFO) << op_name << " select " << op_type_name;
+  }
+  if (op_selected_num) {
+    (*op_selected_num)[index] += 1;
+  }
+}
+
+std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const KernelGraphPtr &graph, const CNodePtr &node,
+                                                                     std::vector<size_t> *op_selected_num) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(node);
   static std::vector<std::set<std::string>> op_selected_type(kOpTypeNumber);
@@ -607,21 +618,13 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
 
   if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
     GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
-    if (op_selected_type[kGeOpSelect].count(op_name) == 0) {
-      (void)op_selected_type[kGeOpSelect].insert(op_name);
-      MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select GE kernel.";
-      MS_LOG(INFO) << op_name << " select GE kernel.";
-    }
+    CollectOpSelectedType(op_name, SelectedKernelType::GE_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
 
   if (IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);
-    if (op_selected_type[kInternalOpSelect].count(op_name) == 0) {
-      (void)op_selected_type[kInternalOpSelect].insert(op_name);
-      MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select internal kernel.";
-      MS_LOG(INFO) << op_name << " select internal kernel.";
-    }
+    CollectOpSelectedType(op_name, SelectedKernelType::INTERNAL_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
 
@@ -634,11 +637,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
 
   if (IsEnableAclnn(graph, node)) {
     GenerateKernelBuildInfo(node, KernelType::OPAPI_KERNEL);
-    if (op_selected_type[kAclnnOpSelect].count(op_name) == 0) {
-      (void)op_selected_type[kAclnnOpSelect].insert(op_name);
-      MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select aclnn kernel.";
-      MS_LOG(INFO) << op_name << " select aclnn kernel.";
-    }
+    CollectOpSelectedType(op_name, SelectedKernelType::ACLNN_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
 
@@ -659,11 +658,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   auto kernel_type = transform::AclHelper::GetKernelInfoFromGe(node, &acl_err_type);
   if (kernel_type == KernelType::ACL_KERNEL) {
     GenerateKernelBuildInfo(node, kernel_type);
-    if (op_selected_type[kAclOpSelect].count(op_name) == 0) {
-      (void)op_selected_type[kAclOpSelect].insert(op_name);
-      MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select aclop kernel.";
-      MS_LOG(INFO) << op_name << " select aclop kernel.";
-    }
+    CollectOpSelectedType(op_name, SelectedKernelType::ACLOP_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
 
@@ -671,11 +666,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   if (kernel_type == KernelType::HCCL_KERNEL) {
     kernel::HcclMetadataInfo(node, &kernel_info_list);
     GenerateKernelBuildInfo(node, kernel_type);
-    if (op_selected_type[kHcclOpSelect].count(op_name) == 0) {
-      (void)op_selected_type[kHcclOpSelect].insert(op_name);
-      MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select hccl kernel.";
-      MS_LOG(INFO) << op_name << " select hccl kernel.";
-    }
+    CollectOpSelectedType(op_name, SelectedKernelType::HCCL_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
 
@@ -683,11 +674,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   kernel::HostMetadataInfo(node, &host_kernel_info_list);
   auto match_res = SetMatchKernelInfo(node, host_kernel_info_list, KernelType::HOST_KERNEL, &acl_err_type);
   if (match_res) {
-    if (op_selected_type[kHostOpSelect].count(op_name) == 0) {
-      (void)op_selected_type[kHostOpSelect].insert(op_name);
-      MS_VLOG(VL_ASCEND_KERNEL_SELECT) << op_name << " select host kernel.";
-      MS_LOG(INFO) << op_name << " select host kernel.";
-    }
+    CollectOpSelectedType(op_name, SelectedKernelType::HOST_KERNEL, op_selected_num, &op_selected_type);
     return result;
   }
 
