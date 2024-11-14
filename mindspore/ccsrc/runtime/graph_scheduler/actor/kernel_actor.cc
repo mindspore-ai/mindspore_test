@@ -27,6 +27,7 @@
 #include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
@@ -1064,6 +1065,12 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     TrackInputMemory(input_device_tensors_, GetAID().Name(), depend_shape_input_list_);
   }
+
+  if (EnableExecuteOrderDump()) {
+    auto &execute_order_tracker = ExecuteOrderTracker::GetInstance();
+    execute_order_tracker.ProcessNode(kernel_);
+  }
+
   if (is_skip_launch) {
     return true;
   }
