@@ -171,6 +171,7 @@ from mindspore.ops.function.array_func import max as max_func
 # 66 maximum
 
 # 67 mean
+from mindspore.ops.auto_generate import mean_ext
 from mindspore.ops.function.math_func import mean
 # 68 min
 from mindspore.ops.auto_generate import min_
@@ -658,7 +659,11 @@ def tensor_maximum(input, other):
 
 
 # 67 mean
-def tensor_mean(input, axis=None, keep_dims=False, dtype=None):
+def tensor_mean_ext(input, axis=None, keep_dims=False, dtype=None):
+    return mean_ext(input, axis, keep_dims, dtype)
+
+
+def deprecated_tensor_mean(input, axis=None, keep_dims=False):
     return mean(input, axis, keep_dims)
 
 
