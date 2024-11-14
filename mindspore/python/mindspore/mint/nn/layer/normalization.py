@@ -28,6 +28,11 @@ from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.nn.cell import Cell
 from mindspore.nn.layer.normalization import LayerNormExt as LayerNorm
+from mindspore.communication import get_group_size
+from mindspore.communication._comm_helper import GlobalComm
+from mindspore.ops.function import batch_norm
+
+from ._functions import _SyncBatchNorm
 
 
 class _NormBase(Cell):
@@ -42,6 +47,7 @@ class _NormBase(Cell):
                  dtype=None
                  ) -> None:
         super(_NormBase, self).__init__()
+        self.set_train()
         self.shape = ops.Shape()
         self.num_features = num_features
         self.eps = eps
@@ -54,8 +60,6 @@ class _NormBase(Cell):
                 Tensor(np.empty(num_features), dtype=self.dtype), name="weight")
             self.bias = Parameter(
                 Tensor(np.empty(num_features), dtype=self.dtype), name="bias")
-            self.weight: Optional[Parameter]
-            self.bias: Optional[Parameter]
         else:
             self.weight = None
             self.bias = None
@@ -64,11 +68,8 @@ class _NormBase(Cell):
                                           requires_grad=False, name="running_mean")
             self.running_var = Parameter(Tensor(np.ones(num_features), dtype=self.dtype),
                                          requires_grad=False, name="running_var")
-            self.running_mean: Optional[Tensor]
-            self.running_var: Optional[Tensor]
             self.num_batches_tracked = Parameter(Tensor(0, dtype=ms.float32),
                                                  requires_grad=False, name="num_batches_tracked")
-            self.num_batches_tracked: Optional[Tensor]
         else:
             self.running_mean = None
             self.running_var = None
@@ -120,6 +121,7 @@ class _BatchNorm(_NormBase):
         super(_BatchNorm, self).__init__(num_features, eps, momentum, affine, track_running_stats,
                                          dtype)
         self.training = True
+
 
     def _check_input_dim(self, input):
         raise NotImplementedError
@@ -467,10 +469,127 @@ class GroupNorm(Cell):
         return output
 
 
+class SyncBatchNorm(_BatchNorm):
+    def __init__(self,
+                 num_features: int,
+                 eps: float = 1e-5,
+                 momentum: float = 0.1,
+                 affine: bool = True,
+                 track_running_stats: bool = True,
+                 process_group: Optional[str] = None,
+                 dtype=None):
+        super(SyncBatchNorm, self).__init__(
+            num_features, eps, momentum, affine, track_running_stats, dtype
+        )
+
+        self.process_group = process_group if process_group else GlobalComm.WORLD_COMM_GROUP
+        self.world_size = get_group_size(self.process_group)
+        self.sync_batch_norm = _SyncBatchNorm(
+            self.num_features, self.world_size, self.dtype)
+
+    def _check_input_dim(self, input):
+        if input.ndim < 2:
+            raise ValueError(
+                "expected at least 2D input (got {}D input)".format(input.ndim)
+            )
+
+    def _check_non_zero_input_channels(self, input):
+        if input.shape[1] == 0:
+            raise ValueError(
+                "SyncBatchNorm number of input channels should be non-zero"
+            )
+
+    def construct(self, input: Tensor) -> Tensor:
+        # currently only GPU input is supported
+
+        self._check_input_dim(input)
+        self._check_non_zero_input_channels(input)
+
+        # exponential_average_factor is set to self.momentum
+        # (when it is available) only so that it gets updated
+        # in ONNX graph when this node is exported to ONNX.
+        if self.momentum is None:
+            exponential_average_factor = 0.0
+        else:
+            exponential_average_factor = self.momentum
+
+        if self.training and self.track_running_stats:
+            assert self.num_batches_tracked is not None
+            one_tensor = Tensor(1, dtype=ms.float32)
+            ops.assign_add(self.num_batches_tracked, one_tensor)
+            if self.momentum is None:  # use cumulative moving average
+                exponential_average_factor = 1.0 / self.num_batches_tracked.value()
+            else:  # use exponential moving average
+                exponential_average_factor = self.momentum
+
+        r"""
+        Decide whether the mini-batch stats should be used for normalization rather than the buffers.
+        Mini-batch stats are used in training mode, and in eval mode when buffers are None.
+        """
+        if self.training:
+            bn_training = True
+        else:
+            bn_training = (self.running_mean is None) and (
+                self.running_var is None)
+
+        r"""
+        Buffers are only updated if they are to be tracked and we are in training mode. Thus they only need to be
+        passed when the update should occur (i.e. in training mode when they are tracked), or when buffer stats are
+        used for normalization (i.e. in eval mode when buffers are not None).
+        """
+        # If buffers are not to be tracked, ensure that they won't be updated
+        running_mean = (
+            self.running_mean if not self.training or self.track_running_stats else None
+        )
+        running_var = (
+            self.running_var if not self.training or self.track_running_stats else None
+        )
+
+        # Don't sync batchnorm stats in inference mode (model.eval()).
+        need_sync = (bn_training and self.training)
+        if need_sync:
+            need_sync = self.world_size > 1
+
+        # fallback to framework BN when synchronization is not necessary
+        if not need_sync:
+            if self.weight is None:
+                weight = Tensor(np.ones(self.num_features), dtype=self.dtype)
+            else:
+                weight = self.weight
+            if self.bias is None:
+                bias = Tensor(np.zeros(self.num_features), dtype=self.dtype)
+            else:
+                bias = self.bias
+            if running_mean is None or running_var is None:
+                raise ValueError(
+                    "running mean or running var can\'t be none for batch_norm.")
+            return batch_norm(input,
+                              running_mean,
+                              running_var,
+                              weight,
+                              bias,
+                              bn_training,
+                              exponential_average_factor,
+                              self.eps)
+        else:
+            assert bn_training
+            output = self.sync_batch_norm(input,
+                                          self.weight,
+                                          self.bias,
+                                          running_mean,
+                                          running_var,
+                                          self.eps,
+                                          exponential_average_factor,
+                                          self.process_group,
+                                          self.world_size)
+            return output
+
+
 __all__ = [
     'GroupNorm',
     'BatchNorm1d',
     'BatchNorm2d',
     'BatchNorm3d',
     'LayerNorm',
+    'SyncBatchNorm',
 ]

@@ -64,6 +64,7 @@
 "mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "whitespace/indent"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/llm_boost/atb/boost_model_atb.h"           "runtime/references"
 "mindspore/mindspore/ccsrc/pipeline/jit/pi/python_adapter/pycore.c"                                 "readability/casting"
+"mindspore/mindspore/ops/kernel/ascend/pyboost/customize/batch_norm_gather_stats_with_counts.h"    "whitespace/line_length"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"

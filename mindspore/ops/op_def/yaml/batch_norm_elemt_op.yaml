@@ -1,0 +1,26 @@
+#operator batch_norm_elemt
+batch_norm_elemt:
+  args:
+    input:
+      dtype: tensor
+    weight:
+      dtype: tensor
+      default: None
+    bias:
+      dtype: tensor
+      default: None
+    mean:
+      dtype: tensor
+      default: None
+    invstd:
+      dtype: tensor
+      default: None
+    eps:
+      dtype: float
+      default: 1e-5
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: BatchNormElemtAscend

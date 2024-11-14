@@ -27,6 +27,7 @@ from mindspore.mint.nn.layer.normalization import BatchNorm1d
 from mindspore.mint.nn.layer.normalization import BatchNorm2d
 from mindspore.mint.nn.layer.normalization import BatchNorm3d
 from mindspore.mint.nn.layer.normalization import LayerNorm
+from mindspore.mint.nn.layer.normalization import SyncBatchNorm
 from mindspore.mint.nn.layer.activation import LogSigmoid
 from mindspore.mint.nn.layer.activation import SiLU
 from mindspore.mint.nn.layer.basic import Dropout2d
@@ -44,5 +45,6 @@ __all__ = [
     'SiLU',
     'Dropout2d',
     'AdaptiveAvgPool1d',
-    'AdaptiveAvgPool2d'
+    'AdaptiveAvgPool2d',
+    'SyncBatchNorm',
 ]
