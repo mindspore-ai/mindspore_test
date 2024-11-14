@@ -55,7 +55,7 @@ class SourceNet(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tensorsqueue_gpu():
     """
     Feature: TensorsQueue gpu TEST.
@@ -81,7 +81,7 @@ def test_tensorsqueue_gpu():
     assert np.allclose(ans[2].asnumpy(), [2.0])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_tensorsqueue_cpu():
     """
