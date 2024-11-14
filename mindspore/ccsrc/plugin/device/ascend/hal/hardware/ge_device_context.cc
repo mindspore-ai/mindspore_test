@@ -214,7 +214,7 @@ void GeDeviceContext::Initialize() {
     return;
   }
 
-  MS_LOG(INFO) << "Start initialize...";
+  MS_LOG(INFO) << "Start initializing device context.";
   if (UseSimulationApi()) {
     transform::LoadSimulationApiSymbols();
   }
@@ -262,6 +262,7 @@ void GeDeviceContext::Initialize() {
     transform::EnableAoeOffline();
   }
   initialized_ = true;
+  MS_LOG(INFO) << "End initializing device context.";
 }
 
 void GeDeviceContext::Destroy() {
@@ -300,6 +301,8 @@ void GeDeviceContext::InitGe(const std::shared_ptr<MsContext> &inst_context) {
     return;
   }
 
+  MS_LOG(INFO) << "Start initializing ge.";
+  MS_VLOG(VL_FLOW) << "Start initializing ge.";
   std::map<std::string, std::string> ge_options;
   GetGeOptions(inst_context, &ge_options);
   {
@@ -325,7 +328,10 @@ void GeDeviceContext::InitGe(const std::shared_ptr<MsContext> &inst_context) {
   }
 
   inst_context->increase_param<uint32_t>(MS_CTX_GE_REF);
-  MS_LOG(INFO) << "Init ge successful, ge reference = " << inst_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
+  MS_VLOG(VL_FLOW) << "End initializing ge successfully, ge reference = "
+                   << inst_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
+  MS_LOG(INFO) << "End initializing ge successfully, ge reference = "
+               << inst_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
   return;
 }
 
