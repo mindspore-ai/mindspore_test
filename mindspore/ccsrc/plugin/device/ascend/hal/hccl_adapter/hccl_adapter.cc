@@ -137,6 +137,8 @@ void HcclAdapter::FinalizePlugin() {
     return;
   }
   init_hcom_graph_adapter_ = nullptr;
+  init_hccl_global_comm_ranktable_ = nullptr;
+  init_hccl_sub_comm_ranktable_ = nullptr;
   finalize_hcom_graph_adapter_ = nullptr;
   get_hccl_kernel_info_store_ = nullptr;
   get_all_kernel_builder_ = nullptr;
@@ -430,6 +432,23 @@ bool HcclAdapter::FinalizeKernelInfoStore() {
   init_kernel_info_store_ = false;
   MS_LOG(INFO) << "Destroy hccl kernel info store success.";
   return true;
+}
+
+HcclResult HcclAdapter::HcclCommInitClusterInfoConfig(const char *rank_table, uint32_t rank_id, HcclCommConfig *config,
+                                                      HcclComm *hccl_comm) {
+  if (init_hccl_global_comm_ranktable_ == nullptr) {
+    init_hccl_global_comm_ranktable_ = DlsymFuncObj(HcclCommInitClusterInfoConfig, plugin_handle_);
+  }
+  return init_hccl_global_comm_ranktable_(rank_table, rank_id, config, hccl_comm);
+}
+
+HcclResult HcclAdapter::HcclCreateSubCommConfig(HcclComm *global_comm, uint32_t rank_size, uint32_t *rank_ids,
+                                                uint64_t comm_id, uint32_t rank_id, HcclCommConfig *config,
+                                                HcclComm *hccl_comm) {
+  if (init_hccl_sub_comm_ranktable_ == nullptr) {
+    init_hccl_sub_comm_ranktable_ = DlsymFuncObj(HcclCreateSubCommConfig, plugin_handle_);
+  }
+  return init_hccl_sub_comm_ranktable_(global_comm, rank_size, rank_ids, comm_id, rank_id, config, hccl_comm);
 }
 
 bool HcclAdapter::InitHcclComm(std::string_view rank_id, std::string_view rank_file) {
