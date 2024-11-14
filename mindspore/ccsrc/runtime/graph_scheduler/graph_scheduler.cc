@@ -50,6 +50,7 @@
 #include "utils/profile.h"
 #include "utils/phase.h"
 #include "kernel/common_utils.h"
+#include "utils/llm_manager.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"
@@ -516,6 +517,9 @@ void GraphScheduler::Initialize() {
     return;
   }
   init_ = true;
+
+  auto &llm_manager = LLMManager::GetInstance();
+  numa_cpus_ = llm_manager.get_thread_core_list("runtime");
 
   BindNumaNode();
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kDeviceDataSourceActor,
@@ -990,6 +994,9 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   SignalGuard sg(IntHandler);
 #endif
+
+  auto &llm_manager = LLMManager::GetInstance();
+  llm_manager.bind_thread_core("main");
 
   CheckUceBeforeGraphRun(actor_set);
 

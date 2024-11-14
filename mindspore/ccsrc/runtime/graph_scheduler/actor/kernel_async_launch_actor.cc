@@ -31,11 +31,7 @@ void KernelAsyncLaunchActor::Initialize() {
   Wait();
 }
 
-void KernelAsyncLaunchActor::GetThreadId() {
-  auto &llm_manager = LLMManager::GetInstance();
-  llm_manager.bind_thread_core("runtime_launch_actor");
-  thread_id_ = std::this_thread::get_id();
-}
+void KernelAsyncLaunchActor::GetThreadId() { thread_id_ = std::this_thread::get_id(); }
 
 void KernelAsyncLaunchActor::LaunchKernel(OpContext<DeviceTensor> *const context, KernelActor *kernel_actor) {
   try {

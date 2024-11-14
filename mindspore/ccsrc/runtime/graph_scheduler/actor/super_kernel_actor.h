@@ -174,7 +174,6 @@ class SuperKernelActor : public DebugAwareActor {
   AID kernel_async_launch_aid_;
 
   bool enable_trace_memory_;
-  bool affinity_init_{false};
 };
 
 using SuperKernelActorPtr = std::shared_ptr<SuperKernelActor>;

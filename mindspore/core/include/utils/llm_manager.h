@@ -56,6 +56,7 @@ class MS_CORE_API LLMManager {
   ///
   /// \param[in] thread_name: the name of working thread
   void bind_thread_core(const std::string &thread_name);
+  std::vector<int> get_thread_core_list(const std::string &thread_name);
 
   /// \brief unbind current thread.
   ///
@@ -74,9 +75,9 @@ class MS_CORE_API LLMManager {
   std::set<std::string> force_resize_kernel_set_{};
 
   // Note: thread bind is used for specify case for perf, eg. vm which cpu-migration is slow
-  std::map<std::string, std::vector<int64_t>> thread_bind_policy_;
+  std::map<std::string, std::vector<int>> thread_bind_policy_;
   std::map<std::string, bool> thread_bind_status_;
-  int64_t group_core_size_{0};
+  int group_core_size_{0};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_LLM_MANAGER_H_
