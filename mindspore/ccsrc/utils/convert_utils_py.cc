@@ -900,7 +900,7 @@ tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
 
 py::object CTensorToPyStubNodes(const ValuePtr &val) {
   // We need acquire gil from outer function before call this method.
-  static py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
+  py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
   if (val->isa<tensor::BaseTensor>()) {
     return CTensorToPyStubNode(val, stub_tensor_module);
   } else if (val->isa<ValueSequence>()) {

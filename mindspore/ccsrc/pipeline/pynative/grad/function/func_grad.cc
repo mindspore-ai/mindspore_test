@@ -585,7 +585,7 @@ void FuncGrad::BackPropagate() {
           MS_LOG(DEBUG) << last_variable->ToString() << ", its gradient is kNone, no need propagate!";
           continue;
         }
-        MS_LOG(DEBUG) << "Get custom bprop variable, zeros input din may be have non zeors dout";
+        MS_LOG(DEBUG) << "Get custom bprop variable, zeros input din may have non zeors dout";
       }
       if (input_buffer.find(last_fn.get()) != input_buffer.end()) {
         Add(last_gradient, next_edge.input_index, func_impl_, &input_buffer[last_fn.get()]);
