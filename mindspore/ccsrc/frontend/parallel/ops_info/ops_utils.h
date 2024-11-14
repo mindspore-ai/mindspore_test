@@ -386,6 +386,8 @@ constexpr char RING_ATTENTION_UPDATE_SUM[] = "RING_ATTENTION_UPDATE_SUM";
 constexpr char RING_ATTENTION_UPDATE_ATTN[] = "RING_ATTENTION_UPDATE_ATTN";
 constexpr char FIAS_INDEX[] = "FIAS_INDEX";
 constexpr char KEEP_ALIVE[] = "keep_alive";
+constexpr char INPUTS_TENSOR_MAP[] = "inputs_tensor_map";
+constexpr char OUTPUTS_TENSOR_MAP[] = "outputs_tensor_map";
 
 // Operator
 constexpr char VIRTUAL_DIV[] = "_VirtualDiv";
