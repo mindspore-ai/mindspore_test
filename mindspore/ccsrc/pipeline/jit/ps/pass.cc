@@ -363,7 +363,7 @@ void AddParallelRenormalize(OptPassGroupMap *map_a) {
       opt::irpass::OptimizeIRPassLib irpass;
       opt::OptPassConfig cast_eliminate_pass = opt::OptPassConfig({irpass.cast_eliminate_});
       auto iter = map_a->insert(parallel_end_opt, {"cast_eliminate", cast_eliminate_pass});
-      (void)map_a->insert(iter, {"parallel_renormalize", opt::OptPassConfig::Renormalize()});
+      (void)map_a->insert(iter, {"parallel_renormalize", opt::OptPassConfig::Renormalize(true)});
     }
   }
 }

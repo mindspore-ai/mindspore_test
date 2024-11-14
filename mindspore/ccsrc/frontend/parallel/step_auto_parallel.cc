@@ -160,9 +160,6 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
   }
   MS_LOG(INFO) << "search_mode: " << strategy_search_mode;
 
-  // tag dynamic shape graph
-  parallel::TagDynamicShapeFuncGraph(root);
-
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);

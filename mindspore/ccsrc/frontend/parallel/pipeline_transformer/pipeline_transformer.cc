@@ -556,10 +556,10 @@ void PipelineTransformer::Coloring() {
 
 void PipelineTransformer::BroadCastColoring() {
   auto need_coloring = true;
+  auto node_users = manager_->node_users();
+  auto all_nodes = enable_share_cell_ ? shared_cell_->nodes() : main_graph_->nodes();
   while (need_coloring) {
     need_coloring = false;
-    auto all_nodes = enable_share_cell_ ? shared_cell_->nodes() : main_graph_->nodes();
-    auto node_users = manager_->node_users();
     for (auto node = all_nodes.cbegin(); node != all_nodes.cend(); ++node) {
       auto stage_info = (*node)->user_data<NodeStageInfo>();
       if (!(*node)->isa<CNode>() || stage_info == nullptr || stage_info->stage() == -1 ||
@@ -587,6 +587,7 @@ void PipelineTransformer::BroadCastColoring() {
       }
     }
   }
+
   for (auto &fg : manager_->func_graphs()) {
     auto stage = fg->stage();
     if (stage < 0) {
@@ -596,8 +597,8 @@ void PipelineTransformer::BroadCastColoring() {
       continue;
     }
     BroadCastGraphStage(fg);
-    auto all_nodes = fg->nodes();
-    for (auto node : all_nodes) {
+    auto nodes = fg->nodes();
+    for (auto node : nodes) {
       if (node->user_data<NodeStageInfo>() != nullptr) {
         continue;
       }
@@ -1600,7 +1601,6 @@ void PipelineTransformer::HandleGraphOutputs(const std::vector<AnfNodePtr> &node
   SeparateParamBorder(nodes, true, &pipeline_params, &pipeline_ends);
   std::vector<AnfNodePtr> sends;
   SetNodeAbstract(pipeline_ends);
-
   // Create root graph output before modify subgraph(shared cell).
   // This process order is crucial when the output of subgraph is directly used as root graph.
   auto zero_outputs = GetZeroOutputs(main_graph_);
@@ -1629,11 +1629,13 @@ void PipelineTransformer::HandleGraphOutputs(const std::vector<AnfNodePtr> &node
       (void)std::copy(params.begin(), params.end(), std::back_inserter(sends));
     }
   }
+
   for (size_t i = 0; i < ends_size; i++) {
     auto node = pipeline_ends[i];
     auto ends = FetchSend(node, false, single_pipeline_end, i);
     (void)std::copy(ends.begin(), ends.end(), std::back_inserter(sends));
   }
+
   auto make_tuple = CreateMakeTupleNode(main_graph_, sends);
   std::vector<AnfNodePtr> out = {NewValueNode(prim::kPrimDepend), zero_outputs, make_tuple};
   auto out_node = main_graph_->NewCNode(out);
@@ -1885,17 +1887,21 @@ AnfNodePtr PipelineTransformer::CreateTupleZeroTensor(const AnfNodePtr &node, si
 
 void PipelineTransformer::CutGraph() {
   world_group_ = GetWorldGroup();
+
   auto send_recv_shared_param = HandleSharedParameter();
+
   auto graph = enable_share_cell_ ? shared_cell_ : main_graph_;
   MS_EXCEPTION_IF_NULL(graph);
   auto send_recv_cut_border = CutBorder(graph);
-  std::vector<AnfNodePtr> send_ops;
 
+  std::vector<AnfNodePtr> send_ops;
   (void)(send_ops.insert(send_ops.end(), send_recv_shared_param.first.begin(), send_recv_shared_param.first.end()));
   (void)(send_ops.insert(send_ops.end(), send_recv_cut_border.first.begin(), send_recv_cut_border.first.end()));
+
   if (IsLastStage() && !enable_share_cell_) {
     return;
   }
+
   if (!send_ops.empty()) {
     type_ptr_ = send_ops.back()->user_data<Type>(DTYPE);
     shape_ = send_ops.back()->user_data<ValueList>(SHAPE);
@@ -1912,7 +1918,6 @@ void PipelineTransformer::CutGraph() {
     HandleGraphOutputs(send_ops);
   }
   std::vector<AnfNodePtr> recv_ops;
-
   (void)(recv_ops.insert(recv_ops.end(), send_recv_shared_param.second.begin(), send_recv_shared_param.second.end()));
   (void)(recv_ops.insert(recv_ops.end(), send_recv_cut_border.second.begin(), send_recv_cut_border.second.end()));
   HandleGraphInputs(recv_ops);
@@ -1924,7 +1929,6 @@ void PipelineTransformer::ElimGraphStage() {
     fg->set_segment(-1);
   }
 }
-
 void PipelineTransformer::RedundancyNode(const AnfNodePtr &node,
                                          mindspore::HashMap<CNodePtr, std::vector<AnfNodePtr>> *make_tuple_map) {
   auto node_users = manager_->node_users()[node];
@@ -1971,7 +1975,6 @@ bool PipelineTransformer::IsRedundancyParameter(const AnfNodePtr &parameter,
   if (!ParameterIsCloned(parameter)) {
     stage_set = parameter_color_map_.at(parameter);
   } else {
-    auto parameters = root_->parameters();
     auto param_name = param_ptr->name();
     auto non_clone_name = param_name.substr(param_name.find_first_of('.') + 1);
     for (auto &param : non_cloned_parameters) {
@@ -2063,22 +2066,52 @@ void PipelineTransformer::FreezeGradient() {
 void PipelineTransformer::ElimParameter() {
   auto parameters = root_->parameters();
   mindspore::HashMap<CNodePtr, std::vector<AnfNodePtr>> make_tuple_map;
-  std::vector<AnfNodePtr> non_cloned_parameters;
+  std::vector<AnfNodePtr> cloned_parameters;
   FreezeGradient();
   auto node_users_map = manager_->node_users();
+  mindspore::HashMap<std::string, std::vector<AnfNodePtr>> params_map;
+
+  // map {w1_name, {w1}}, and vector<cloned_parameters>
   for (auto &parameter : parameters) {
-    if (ParameterIsCloned(parameter)) {
+    if (!ParameterIsCloned(parameter)) {
+      auto param_ptr = parameter->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(param_ptr);
+      params_map[param_ptr->name()] = {parameter};
       continue;
     }
-    non_cloned_parameters.push_back(parameter);
+    cloned_parameters.push_back(parameter);
   }
-  for (auto &parameter : parameters) {
-    if (!IsRedundancyParameter(parameter, non_cloned_parameters)) {
-      continue;
+
+  // map {w1_name, {w1, w1_clone_1, w1_clone_2, w1_clone_...}}
+  for (auto &param : cloned_parameters) {
+    auto param_ptr = param->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param_ptr);
+    auto param_name = param_ptr->name();
+    auto non_clone_name = param_name.substr(param_name.find_first_of('.') + 1);
+    if (params_map.find(non_clone_name) != params_map.end()) {
+      params_map[non_clone_name].push_back(param);
     }
-    MS_LOG(INFO) << "Parameter:" << parameter->DebugString() << " is Redundancy.";
-    RedundancyNode(parameter, &make_tuple_map);
   }
+  // check and handle redundancy node
+  for (auto &param_pair : params_map) {
+    auto params = param_pair.second;
+    for (size_t i = 0; i < params.size(); ++i) {
+      auto param_ptr = params[i]->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(param_ptr);
+      if (!param_ptr->has_default()) {
+        continue;
+      }
+      std::set<int64_t> stage_set;
+      stage_set = parameter_color_map_.at(params[0]);
+      if (stage_set.empty()) {
+        continue;
+      }
+      if (stage_set.count(stage_) == 0) {
+        RedundancyNode(params[i], &make_tuple_map);
+      }
+    }
+  }
+
   for (auto &temp : make_tuple_map) {
     auto make_tuple = temp.first;
     auto fg = make_tuple->func_graph();

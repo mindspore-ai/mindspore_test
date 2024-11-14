@@ -21,7 +21,7 @@
 
 #include <map>
 #include <memory>
-#include <set>
+#include <unordered_set>
 #include <string>
 #include <utility>
 #include <deque>
@@ -608,8 +608,32 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
 void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
   auto grad_accumulation_shard = ParallelContext::GetInstance()->grad_accumulation_shard();
+  auto root_params = root->parameters();
+  AnfNodePtrList sub_root_params;
+  for (auto &be_cloned_parameter_node : root_params) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().count(be_cloned_parameter_node)) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(be_cloned_parameter_node);
+    auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(be_cloned_parameter);
+    if (!be_cloned_parameter->has_default()) {
+      continue;
+    }
 
-  for (auto &cloned_parameter_node : root->parameters()) {
+    auto param_value_in = be_cloned_parameter->param_info();
+    if (param_value_in == nullptr) {
+      continue;
+    }
+    if (!param_value_in->be_cloned()) {
+      continue;
+    }
+    sub_root_params.emplace_back(be_cloned_parameter_node);
+  }
+  for (auto &cloned_parameter_node : root_params) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().count(cloned_parameter_node)) {
+      continue;
+    }
     MS_EXCEPTION_IF_NULL(cloned_parameter_node);
     auto cloned_parameter = cloned_parameter_node->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(cloned_parameter);
@@ -628,22 +652,9 @@ void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
     bool found_be_cloned_parameter = false;
     ParameterPtr cloned_from_parameter = nullptr;
     AnfNodePtr cloned_from_node = nullptr;
-    for (auto &be_cloned_parameter_node : root->parameters()) {
-      MS_EXCEPTION_IF_NULL(be_cloned_parameter_node);
+    for (auto &be_cloned_parameter_node : sub_root_params) {
       auto be_cloned_parameter = be_cloned_parameter_node->cast<ParameterPtr>();
-      MS_EXCEPTION_IF_NULL(be_cloned_parameter);
-      if (!be_cloned_parameter->has_default()) {
-        continue;
-      }
-
       auto param_value_in = be_cloned_parameter->param_info();
-      if (param_value_in == nullptr) {
-        continue;
-      }
-      if (!param_value_in->be_cloned()) {
-        continue;
-      }
-
       // get the be cloned index
       auto &be_cloned_index = param_value_in->be_cloned_index();
       if (std::find(be_cloned_index.begin(), be_cloned_index.end(), cloned_index) != be_cloned_index.end()) {
@@ -1363,44 +1374,84 @@ void SetParamInfoSaveStrategy(ParameterPtr row_col_param) {
   }
 }
 
+void FindParamNodes(std::unordered_map<string, AnfNodePtr> *root_params_map_1,
+                    std::unordered_map<AnfNodePtr, AnfNodePtrList> *root_params_map,
+                    const AnfNodePtrList &root_params) {
+  AnfNodePtrList exp_root_params;
+  std::string exp_row_name = EXP_AVG_SQ_ROW;
+  std::string exp_col_name = EXP_AVG_SQ_COL;
+  std::string exp_insta_row_name = EXP_AVG_INSTA_ROW;
+  std::string exp_insta_col_name = EXP_AVG_INSTA_COL;
+  std::string exp_avg_name = EXP_AVG_SQ;
+  for (auto &param_node : root_params) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().find(param_node) !=
+        ParallelContext::GetInstance()->get_redundancy_node().end()) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(param_node);
+    auto param = param_node->cast<ParameterPtr>();
+    std::string param_name = param->name();
+    if (IsOriginWeight(param)) {
+      (*root_params_map_1)[param_name] = param_node;
+    } else {
+      exp_root_params.push_back(param_node);
+    }
+  }
+  for (auto &param_node : exp_root_params) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().find(param_node) !=
+        ParallelContext::GetInstance()->get_redundancy_node().end()) {
+      continue;
+    }
+    auto param = param_node->cast<ParameterPtr>();
+    std::string param_name = param->name();
+
+    if ((param_name.substr(0, kPreLenFifteen) == exp_row_name ||
+         param_name.substr(0, kPreLenFifteen) == exp_col_name) &&
+        ((*root_params_map_1).count(param_name.substr(kPreLenFifteen)) != 0)) {
+      (*root_params_map)[(*root_params_map_1)[param_name.substr(kPreLenFifteen)]].emplace_back(param_node);
+    } else if ((param_name.substr(0, kPreLenEighteen) == exp_insta_row_name ||
+                param_name.substr(0, kPreLenEighteen) == exp_insta_col_name) &&
+               ((*root_params_map_1).count(param_name.substr(kPreLenEighteen)) != 0)) {
+      (*root_params_map)[(*root_params_map_1)[param_name.substr(kPreLenEighteen)]].emplace_back(param_node);
+    } else if (param_name.substr(0, kPreLenEleven) == exp_avg_name &&
+               (*root_params_map_1).count(param_name.substr(kPreLenEleven)) != 0) {
+      (*root_params_map)[(*root_params_map_1)[param_name.substr(kPreLenEleven)]].emplace_back(param_node);
+    }
+  }
+}
+
 void HandleCameAndAdaFactorOpt(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &all_nodes,
                                const FuncGraphManagerPtr &manager) {
   MS_LOG(INFO) << "Adafactor or Came optimizer process start";
   MS_EXCEPTION_IF_NULL(root);
   std::set<AnfNodePtr> origin_params;
-  for (auto &param_node : root->parameters()) {
-    MS_EXCEPTION_IF_NULL(param_node);
-    auto param = param_node->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(param);
+  auto root_params = root->parameters();
+  std::string exp_row_name = EXP_AVG_SQ_ROW;
+  std::string exp_col_name = EXP_AVG_SQ_COL;
+  std::string exp_insta_row_name = EXP_AVG_INSTA_ROW;
+  std::string exp_insta_col_name = EXP_AVG_INSTA_COL;
+  std::string exp_avg_name = EXP_AVG_SQ;
 
-    if (!IsOriginWeight(param)) {
+  std::unordered_map<string, AnfNodePtr> root_params_map_1;
+  std::unordered_map<AnfNodePtr, AnfNodePtrList> root_params_map;
+
+  FindParamNodes(&root_params_map_1, &root_params_map, root_params);
+
+  for (auto &param_pair : root_params_map) {
+    auto param_node = param_pair.first;
+    if (ParallelContext::GetInstance()->get_redundancy_node().find(param_node) !=
+        ParallelContext::GetInstance()->get_redundancy_node().end()) {
       continue;
     }
-
-    int64_t row_col_count = 0;
-    int64_t exp_avg_sq_count = 0;
-    for (auto &row_col_node : root->parameters()) {
-      bool is_all_param_collected = (row_col_count == 4) && (exp_avg_sq_count == 1);
-      if (is_all_param_collected) {
-        break;
-      }
-
+    for (auto &row_col_node : param_pair.second) {
+      MS_EXCEPTION_IF_NULL(param_node);
+      auto param = param_node->cast<ParameterPtr>();
+      MS_EXCEPTION_IF_NULL(param);
+      std::string param_name = param->name();
       MS_EXCEPTION_IF_NULL(row_col_node);
       auto row_col_param = row_col_node->cast<ParameterPtr>();
       MS_EXCEPTION_IF_NULL(row_col_param);
       std::string row_col_param_name = row_col_param->name();
-      std::string param_name = param->name();
-      std::string exp_row_name = EXP_AVG_SQ_ROW + param_name;
-      std::string exp_col_name = EXP_AVG_SQ_COL + param_name;
-      std::string exp_insta_row_name = EXP_AVG_INSTA_ROW + param_name;
-      std::string exp_insta_col_name = EXP_AVG_INSTA_COL + param_name;
-      std::string exp_avg_name = EXP_AVG_SQ + param_name;
-      std::set<std::string> came_param_set = {exp_row_name, exp_col_name, exp_insta_row_name, exp_insta_col_name,
-                                              exp_avg_name};
-
-      if (came_param_set.find(row_col_param_name) == came_param_set.end()) {
-        continue;
-      }
       origin_params.insert(param_node);
       auto tensor_layout = param->user_data<TensorLayout>();
       MS_EXCEPTION_IF_NULL(tensor_layout);
@@ -1411,14 +1462,11 @@ void HandleCameAndAdaFactorOpt(const FuncGraphPtr &root, const std::vector<AnfNo
       }
 
       auto shape_size = slice_shape.size();
-      bool is_row_or_col_param = row_col_param_name != exp_avg_name;
+      bool is_row_or_col_param = row_col_param_name != (exp_avg_name + param_name);
       if (is_row_or_col_param && shape_size <= 1) {
-        row_col_count++;
         continue;
       }
-
-      if (row_col_param_name == exp_avg_name && shape_size != 1) {
-        exp_avg_sq_count++;
+      if (row_col_param_name == (exp_avg_name + param_name) && shape_size != 1) {
         continue;
       }
 
@@ -1426,19 +1474,17 @@ void HandleCameAndAdaFactorOpt(const FuncGraphPtr &root, const std::vector<AnfNo
       auto dev_mat = tensor_layout->device_arrangement().array();
       auto tensor_map = tensor_layout->tensor_map().array();
 
-      if (row_col_param_name == exp_row_name || row_col_param_name == exp_insta_row_name) {
+      if (row_col_param_name == (exp_row_name + param_name) ||
+          row_col_param_name == (exp_insta_row_name + param_name)) {
         opt_shard_slice_shape.pop_back();
         origin_shape.pop_back();
         tensor_map.pop_back();
-        row_col_count++;
-      } else if (row_col_param_name == exp_col_name || row_col_param_name == exp_insta_col_name) {
+      } else if (row_col_param_name == (exp_col_name + param_name) ||
+                 row_col_param_name == (exp_insta_col_name + param_name)) {
         (void)opt_shard_slice_shape.erase(opt_shard_slice_shape.cbegin() +
                                           static_cast<different_type>(SECOND_FROM_END(shape_size)));
         (void)origin_shape.erase(origin_shape.cbegin() + static_cast<different_type>(SECOND_FROM_END(shape_size)));
         (void)tensor_map.erase(tensor_map.cbegin() + static_cast<different_type>(SECOND_FROM_END(shape_size)));
-        row_col_count++;
-      } else {
-        exp_avg_sq_count++;
       }
 
       TensorLayout new_tensor_layout;
@@ -1461,8 +1507,13 @@ void HandleCameAndAdaFactorOpt(const FuncGraphPtr &root, const std::vector<AnfNo
     }
   }
 
+  const auto &node_users_map = manager->node_users();
   for (const auto &origin_param_node : origin_params) {
-    auto inserter = CameCommHandler(origin_param_node->cast<ParameterPtr>(), root->parameters(), manager->node_users());
+    if (ParallelContext::GetInstance()->get_redundancy_node().find(origin_param_node) !=
+        ParallelContext::GetInstance()->get_redundancy_node().end()) {
+      continue;
+    }
+    auto inserter = CameCommHandler(origin_param_node->cast<ParameterPtr>(), root_params, node_users_map);
     inserter.Process();
   }
 }

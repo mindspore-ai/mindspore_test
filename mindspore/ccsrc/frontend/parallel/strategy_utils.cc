@@ -158,7 +158,7 @@ void StrategyUtils::SetVirtualDatasetStrategy(const CNodePtr &node) {
     }
     std::vector<Shapes> shape_list;
     std::vector<NewShapes> new_shape_list;
-    if (InDynamicGraph(node)) {
+    if (IsForwardDynamicShape()) {
       shape_list = ExtractRealDivisor(node);
       MS_LOG(INFO) << "The node is in dynamic shape graph, the real divisor is " << ShapesToString(shape_list[0]);
     } else {

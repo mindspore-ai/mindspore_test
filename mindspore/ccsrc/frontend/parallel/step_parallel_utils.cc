@@ -2136,7 +2136,7 @@ OperatorInfoPtr CreateOperatorInfo(const CNodePtr &cnode) {
   (*op_info).set_input_value(input_value);
   (*op_info).set_outputs_dtype(cnode->Type());
   (*op_info).set_cnode(cnode);
-  if (InDynamicGraph(cnode) && IsDynamicShapesList(shape_list)) {
+  if (IsForwardDynamicShape() && IsDynamicShapesList(shape_list)) {
     Shapes in_real_divisors;
     Shapes out_real_divisors;
     in_real_divisors = GetRealDivisorSymbols(shape_list[INPUT_SYMBOLS_INDEX], symbol_list[INPUT_SYMBOLS_INDEX]);
@@ -3536,6 +3536,10 @@ static void SetForwardFlag(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    if (IsValueNode<FuncGraph>(cnode->input(0))) {
+      cnode->set_in_forward_flag(true);
+      continue;
+    }
     if (!IsValueNode<Primitive>(cnode->input(0))) {
       continue;
     }

@@ -97,11 +97,18 @@ void ParallelContext::Reset() {
   pipeline_scheduler_ = kPipeline1F1B;
   auto_pipeline_ = false;
   dump_local_norm_ = false;
+  is_dynamic_shape_parallel_ = false;
+  dynamic_shape_parallel_flag_is_set_ = false;
 }
 
 void ParallelContext::set_device_num(int64_t device_num) {
   device_num_ = device_num;
   device_num_is_set_ = true;
+}
+
+void ParallelContext::set_is_dynamic_shape_parallel(bool flag) {
+  is_dynamic_shape_parallel_ = flag;
+  dynamic_shape_parallel_flag_is_set_ = true;
 }
 
 void ParallelContext::set_fusion_threshold_mb(int64_t fusion_threshold) {

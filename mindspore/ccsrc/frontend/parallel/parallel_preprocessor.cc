@@ -622,21 +622,16 @@ bool IsForwardCNode(const CNodePtr &cnode) {
   if (cnode->in_forward_flag()) {
     return true;
   }
-  if (cnode->input(0) && IsValueNode<FuncGraph>(cnode->input(0))) {
-    auto func_graph = GetValueNode<FuncGraphPtr>(cnode->input(0));
-    auto orders = func_graph->GetOrderedCnodes();
-    return std::any_of(orders.begin(), orders.end(), [](const auto &c_node) { return c_node->in_forward_flag(); });
-  }
   return false;
 }
 
-void InsertParallelOpt(const FuncGraphPtr &root, const AnfNodePtr &parameter, const std::string &opt_shard_group,
+void InsertParallelOpt(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet &param_sub_set,
+                       const FuncGraphPtr &root, const AnfNodePtr &parameter, const std::string &opt_shard_group,
                        const std::string &op_name) {
-  // insert all gather
-  FuncGraphManagerPtr manager = root->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  auto param_sub_set = manager->node_users()[parameter];
   bool insert_flag = false;
+  auto param_ptr = parameter->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(param_ptr);
+  bool is_shared_param = param_ptr->user_data<TensorLayout>()->is_shared_param();
   for (auto &param_pair : param_sub_set) {
     auto cnode = param_pair.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
@@ -647,8 +642,6 @@ void InsertParallelOpt(const FuncGraphPtr &root, const AnfNodePtr &parameter, co
         auto next_cnode = FindCNode(parameter, op_name, cnode->func_graph(), 0);
         if (next_cnode.first) {
           manager->SetEdge(cnode, param_pair.second, next_cnode.second);
-          auto param_ptr = parameter->cast<ParameterPtr>();
-          MS_EXCEPTION_IF_NULL(param_ptr);
           AddNodeMirrorInfo(cnode, param_ptr->name());
           MS_LOG(INFO) << "Parallel optimizer is shared between " << parameter->ToString() << " and "
                        << GetPrimName(cnode);
@@ -656,10 +649,6 @@ void InsertParallelOpt(const FuncGraphPtr &root, const AnfNodePtr &parameter, co
           MS_LOG(ERROR) << "Can not find the shared AllGather with multiple node users.";
         }
       } else {
-        // insert allgather operator between shard parameter and cnode
-        auto param_ptr = parameter->cast<ParameterPtr>();
-        MS_EXCEPTION_IF_NULL(param_ptr);
-        bool is_shared_param = param_ptr->user_data<TensorLayout>()->is_shared_param();
         InsertAllGatherOp(root, opt_shard_group, param_pair, parameter, op_name, is_shared_param);
         insert_flag = true;
       }
@@ -667,7 +656,8 @@ void InsertParallelOpt(const FuncGraphPtr &root, const AnfNodePtr &parameter, co
   }
 }
 
-static void ApplyParallelOptOnParam(const FuncGraphPtr &root, const AnfNodePtr &parameter,
+static void ApplyParallelOptOnParam(const FuncGraphManagerPtr &manager, const AnfNodeIndexSet &param_sub_set,
+                                    const FuncGraphPtr &root, const AnfNodePtr &parameter,
                                     const std::string &opt_shard_group) {
   auto enable_opt_shard = ParallelContext::GetInstance()->enable_parallel_optimizer();
   if (!enable_opt_shard) {
@@ -694,7 +684,7 @@ static void ApplyParallelOptOnParam(const FuncGraphPtr &root, const AnfNodePtr &
   }
 
   // insert all gather
-  InsertParallelOpt(root, parameter, opt_shard_group, op_name);
+  InsertParallelOpt(manager, param_sub_set, root, parameter, opt_shard_group, op_name);
 }
 
 // When this function returns non-empty string, that means parallel optimizer is applied on this parameter.
@@ -789,7 +779,8 @@ static std::pair<AnfNodePtr, int64_t> FindParallelCareNode(const AnfNodePtr &nod
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  AnfNodeIndexSet node_set = manager->node_users()[node];
+  AnfNodeIndexSet &node_set = manager->node_users()[node];
+  AnfNodeIndexSet node_sub_set;
   for (auto &node_pair : node_set) {
     CNodePtr cnode = node_pair.first->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
@@ -800,20 +791,22 @@ static std::pair<AnfNodePtr, int64_t> FindParallelCareNode(const AnfNodePtr &nod
     MS_EXCEPTION_IF_NULL(prim_node_anf);
     PrimitivePtr node_prim = prim_node_anf->value()->cast<PrimitivePtr>();
     MS_EXCEPTION_IF_NULL(node_prim);
-    if ((node_prim->name() == DEPEND && node_pair.second != 1) || IsPrimitiveCNode(cnode, prim::kPrimReceive) ||
-        IsPrimitiveCNode(cnode, prim::kPrimSend)) {
+    auto node_prim_name = node_prim->name();
+    if ((node_prim_name == DEPEND && node_pair.second != 1) || node_prim_name == RECEIVE || node_prim_name == SEND) {
       continue;
     }
-    if (node_prim->name() == UPDATESTATE && node_pair.second > 0) {
+    if (node_prim_name == UPDATESTATE && node_pair.second > 0) {
       continue;
     }
     if (IsParallelCareNode(cnode) && cnode->has_user_data<OperatorInfo>()) {
       return node_pair;
-    } else {
-      auto tmp_pair = FindParallelCareNode(node_pair.first, recursion_num + 1);
-      if (tmp_pair.first != nullptr) {
-        return tmp_pair;
-      }
+    }
+    node_sub_set.insert(node_pair);
+  }
+  for (auto &node_pair : node_sub_set) {
+    auto tmp_pair = FindParallelCareNode(node_pair.first, recursion_num + 1);
+    if (tmp_pair.first != nullptr) {
+      return tmp_pair;
     }
   }
   return std::make_pair(nullptr, 0);
@@ -828,7 +821,7 @@ static std::pair<AnfNodePtr, int64_t> FindSubGraph(const FuncGraphPtr &graph, co
   if (prim_anf_node_pair.first != nullptr) {
     return prim_anf_node_pair;
   }
-  AnfNodeIndexSet param_sub_set = manager->node_users()[parameter];
+  AnfNodeIndexSet &param_sub_set = manager->node_users()[parameter];
   for (auto &param_pair : param_sub_set) {
     CNodePtr param_cnode = param_pair.first->cast<CNodePtr>();
     AnfNodePtr graph_value_node;
@@ -857,14 +850,22 @@ static std::pair<AnfNodePtr, int64_t> FindSubGraph(const FuncGraphPtr &graph, co
 static void CoverSliceShape(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
   auto parameters = root->parameters();
+  FuncGraphManagerPtr manager = root->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  const auto &param_sub_map = manager->node_users();
   for (auto &parameter : parameters) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().find(parameter) !=
+        ParallelContext::GetInstance()->get_redundancy_node().end()) {
+      continue;
+    }
+    auto param_sub_set = param_sub_map.at(parameter);
     MS_EXCEPTION_IF_NULL(parameter->Shape());
     auto iter = g_RefMap.find(parameter);
     if (iter != g_RefMap.cend()) {
       std::string group = SetParallelShape(parameter, g_RefMap[parameter], root);
       // find all forward nodes that use parameter in graphs and insert allgather if group is not empty
       SetSharedParameterFlag(root, parameter);
-      ApplyParallelOptOnParam(root, parameter, group);
+      ApplyParallelOptOnParam(manager, param_sub_set, root, parameter, group);
       continue;
     }
 
@@ -882,7 +883,7 @@ static void CoverSliceShape(const FuncGraphPtr &root) {
       std::string group = SetParallelShape(parameter, res, root);
       // find all forward nodes that use parameter in graphs and insert allgather if group is not empty
       SetSharedParameterFlag(root, parameter);
-      ApplyParallelOptOnParam(root, parameter, group);
+      ApplyParallelOptOnParam(manager, param_sub_set, root, parameter, group);
       MS_LOG(DEBUG) << "Parameter " << parameter->ToString() << " shape " << parameter->Shape()->ToString();
     }
   }
@@ -1074,6 +1075,10 @@ void ParallelPreprocessor::HandleRootReshapeAndSaveStrategy(const std::vector<An
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    if (IsValueNode<FuncGraph>(cnode->input(0))) {
+      cnode->set_in_forward_flag(true);
+      continue;
+    }
     if (!IsValueNode<Primitive>(cnode->input(0))) {
       continue;
     }
@@ -1220,8 +1225,6 @@ void ParallelPreprocessor::MarkAndModifyGraph() {
   MicroBatchPreProcess(root, manager, all_nodes);
   // mark the forward cnodes, parallel only care these nodes
   MarkForwardCNode(root);
-  // tag dynamic shape graph
-  TagDynamicShapeFuncGraph(root);
   UpdateMicroBatchInterleavedStatus(all_nodes);
   if (processor_context_->load_strategy || processor_context_->parallel_mode != kAutoParallel) {
     TOTAL_OPS = 0;

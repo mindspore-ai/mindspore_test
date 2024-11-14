@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "frontend/parallel/pipeline_transformer/pipeline_interleave.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include <algorithm>
 #include <list>
@@ -319,7 +320,7 @@ void SetStridedSliceStrategy(const AnfNodePtr &node) {
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   std::vector<Shapes> shape_list;
-  if (InDynamicGraph(cnode)) {
+  if (IsForwardDynamicShape()) {
     shape_list = ExtractRealDivisor(cnode);
     MS_LOG(INFO) << "the node is in dynamic shape graph, the divisor is " << ShapesToString(shape_list[0]);
   } else {
@@ -526,8 +527,8 @@ std::vector<std::pair<AnfNodePtr, int>> FindNextNode(
 std::set<std::pair<AnfNodePtr, int>> FuncNodeUsersSet(const AnfNodePtr &parameter) {
   MS_EXCEPTION_IF_NULL(parameter->func_graph());
   MS_EXCEPTION_IF_NULL(parameter->func_graph()->manager());
-  auto node_users_map = parameter->func_graph()->manager()->node_users();
-  auto node_users = node_users_map[parameter];
+  const auto &node_users_map = parameter->func_graph()->manager()->node_users();
+  auto node_users = node_users_map.at(parameter);
   std::set<std::pair<AnfNodePtr, int>> all_node_users;
   for (auto &n_pair : node_users) {
     auto users_skip_virtual_nodes =
@@ -567,6 +568,8 @@ void HandleReceiveParam(const FuncGraphPtr &root) {
     if (!accu_parameter) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(node->func_graph());
+    MS_EXCEPTION_IF_NULL(node->func_graph()->manager());
     auto base_shape = accu_parameter->Shape();
     auto shape_ptr = dyn_cast<abstract::Shape>(base_shape);
     auto slice_shape = shape_ptr->shape();
@@ -601,12 +604,18 @@ void AddVirtualAssignAdd(const FuncGraphPtr &root) {
   auto parameters = root->parameters();
   auto node_users_map = root->manager()->node_users();
   for (auto &parameter : parameters) {
+    if (ParallelContext::GetInstance()->get_redundancy_node().find(parameter) !=
+        ParallelContext::GetInstance()->get_redundancy_node().end()) {
+      continue;
+    }
     auto parameter_ptr = parameter->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(parameter_ptr);
     auto accu_parameter = FindGradAccuParameter(parameters, parameter_ptr->name());
     if (!accu_parameter) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(parameter->func_graph());
+    MS_EXCEPTION_IF_NULL(parameter->func_graph()->manager());
     std::set<std::pair<AnfNodePtr, int>> all_node_users = FuncNodeUsersSet(parameter);
     for (auto &temp_user : all_node_users) {
       // Micro virtual operator might be inserted after cast

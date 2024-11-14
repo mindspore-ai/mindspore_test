@@ -227,9 +227,6 @@ bool PipelineSplit(const ResourcePtr &res) {
   auto manager = res->manager();
   auto root = res->func_graph();
 
-  // tag dynamic shape graph
-  parallel::TagDynamicShapeFuncGraph(root);
-
   auto global_rank = parallel::GetRank();
   auto world_group = mindspore::parallel::GetWorldGroup();
   uint32_t world_rank_size = 0;
@@ -243,7 +240,6 @@ bool PipelineSplit(const ResourcePtr &res) {
   } else {
     device_num = parallel_context->device_num();
   }
-
   if (device_num < 1) {
     MS_LOG(ERROR) << "For 'PipelineSplit', the argument 'device_num' must be positive, "
                      "but got the value of device_num: "
@@ -267,7 +263,6 @@ bool PipelineSplit(const ResourcePtr &res) {
     }
     return true;
   }
-
   auto stage = parallel::InferStage();
   auto per_stage_rank_num = device_num / stage_num;
   if (parallel::ParallelInit() != parallel::SUCCESS) {
@@ -279,7 +274,6 @@ bool PipelineSplit(const ResourcePtr &res) {
   }
   auto transformer =
     std::make_shared<parallel::PipelineTransformer>(manager, stage, root, global_rank, per_stage_rank_num);
-
   if (parallel_context->enable_fold_pipeline()) {
     MS_LOG(INFO) << "Begin Fold Pipeline Transformer ";
     transformer =
@@ -290,13 +284,14 @@ bool PipelineSplit(const ResourcePtr &res) {
   if (!transformer->MainGraph()) {
     MS_LOG(EXCEPTION) << "Cannot find main graph with virtual_dataset in pipeline parallel";
   }
-
   // step2: Do color broadcast
   transformer->BroadCastColoring();
+
   if (!gen_mask_not_fusion) {
     transformer->LabelGenMaskFusion();
   }
   transformer->LabelMicroBatch();
+
   // step3: Handle shared parameters
   transformer->ParameterColoring();
   // step4: Cut Graph
@@ -326,9 +321,6 @@ bool ParallelVirtualDataset(const ResourcePtr &res) {
   auto root = res->func_graph();
   MS_EXCEPTION_IF_NULL(root);
   AnfNodePtr ret = root->get_return();
-
-  // tag dynamic shape graph
-  parallel::TagDynamicShapeFuncGraph(root);
 
   MS_EXCEPTION_IF_NULL(ret);
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);

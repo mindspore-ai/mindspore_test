@@ -412,7 +412,7 @@ static void SplitSens(const CNodePtr &grad_sens_node, const TensorLayout &loss_g
       sens_tensor_param->set_user_data<TensorLayout>(std::make_shared<TensorLayout>(loss_grad_layout));
       return;
     }
-    bool is_dynamic = InDynamicGraph(sens_tensor_node->cast<CNodePtr>());
+    bool is_dynamic = IsForwardDynamicShape();
     if (sens_tensor_node->isa<CNode>() && !is_dynamic) {
       auto op_list_ptr = InferSensRedistribution(sens_tensor_node, loss_grad_layout);
       if (op_list_ptr == nullptr) {

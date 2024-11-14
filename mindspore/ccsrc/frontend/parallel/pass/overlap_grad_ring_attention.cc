@@ -58,6 +58,7 @@
 #include "mindspore/ccsrc/frontend/parallel/ops_info/flash_attention_score_info.h"
 #include "frontend/parallel/pass/flash_sp.h"
 #include "frontend/parallel/parameter_manager.h"
+#include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 
 struct FaGradCompareMethod {
   bool operator()(const std::string &a, const std::string &b) const {
@@ -761,7 +762,7 @@ bool OverlapGradRingAttention(const FuncGraphPtr &graph) {
       parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kAutoParallel) {
     return false;
   }
-  if (pipeline::IsDynamicShapeGraph(graph)) {
+  if (parallel::IsForwardDynamicShape()) {
     DynOverlapGradRingAttention(graph);
     return false;
   }

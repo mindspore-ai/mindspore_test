@@ -55,7 +55,11 @@ class OptPassConfig {
   const std::vector<SubstitutionPtr> &list() const { return list_; }
   const OptimizeGraphFunc &func() const { return func_; }
 
-  static OptPassConfig Renormalize() { return OptPassConfig(); }
+  static OptPassConfig Renormalize(bool run_once = false) {
+    auto config = OptPassConfig();
+    config.is_once_ = run_once;
+    return config;
+  }
   const bool is_renormalize() const { return is_renormalize_; }
 
   const bool is_once() const { return is_once_; }
@@ -85,14 +89,20 @@ class OptPass {
     return pass_func_(func_graph, optimizer);
   }
 
-  static OptPass Renormalize() { return OptPass(); }
+  static OptPass Renormalize(bool is_once = false) { return OptPass(is_once); }
   const bool is_renormalize() const { return is_renormalize_; }
 
+  bool is_once() const { return is_once_; }
+  bool alreay_run() const { return alreay_run_; }
+  void set_alreay_run(bool alreay_run) { alreay_run_ = alreay_run; }
+
  private:
-  OptPass() : is_renormalize_(true) {}
+  explicit OptPass(bool is_once) : is_renormalize_(true), is_once_(is_once) {}
 
   OptimizeGraphFunc pass_func_;
   bool is_renormalize_{false};
+  bool is_once_{false};
+  bool alreay_run_{false};
 };
 using OptPassGroupMap = std::vector<std::pair<std::string, OptPassConfig>>;
 class Optimizer : public std::enable_shared_from_this<Optimizer> {
@@ -139,7 +149,7 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
       pass_names_.push_back(name);
 
       if (config.is_renormalize()) {
-        passes_.push_back(OptPass::Renormalize());
+        passes_.push_back(OptPass::Renormalize(config.is_once()));
         continue;
       }
 
@@ -218,9 +228,9 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
       changes_ = false;
       auto run_runc = [&counter, use_profile, this]() {
         for (size_t i = 0; i < passes_.size(); ++i) {
-          const OptPass &opt = passes_[i];
+          OptPass &opt = passes_[i];
           current_pass_ = {counter, pass_names_[i]};
-          auto opt_func = std::bind(&Optimizer::OptProcess, this, opt);
+          auto opt_func = std::bind(&Optimizer::OptProcess, this, &opt);
           auto profiler_pass_name = name_ + ".r" + std::to_string(counter) + "." + pass_names_[i];
           if (FilterPass(profiler_pass_name)) {
             continue;
@@ -284,9 +294,12 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
   bool is_on_debug_{false};
 
  private:
-  void OptProcess(const OptPass &opt) {
-    if (opt.is_renormalize()) {
+  void OptProcess(OptPass *opt) {
+    if (opt->is_renormalize()) {
       if (!changes_since_last_renorm_) {
+        return;
+      }
+      if (opt->is_once() && opt->alreay_run()) {
         return;
       }
       auto resource = std::dynamic_pointer_cast<pipeline::Resource>(resource_);
@@ -312,7 +325,8 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
         }
       }
       changes_since_last_renorm_ = false;
-    } else if (opt(func_graph_, shared_from_this())) {
+      opt->set_alreay_run(true);
+    } else if ((*opt)(func_graph_, shared_from_this())) {
       changes_ = true;
       changes_since_last_renorm_ = true;
     }

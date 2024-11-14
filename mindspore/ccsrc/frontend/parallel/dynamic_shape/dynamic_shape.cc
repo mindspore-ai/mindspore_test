@@ -28,10 +28,11 @@
 #include "symbolic_shape/symbol_info.h"
 #include "pipeline/jit/ps/action.h"
 #include "include/common/utils/parallel_context.h"
-
+#include "frontend/parallel/graph_util/graph_utils.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "include/common/utils/comm_manager.h"
+#include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
@@ -212,13 +213,52 @@ void PrintSymbolInfo(const std::vector<symshape::SymbolInfoList> &symbol_infos) 
   }
 }
 
+bool ForwardHasDynamicShape(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto ret = root->get_return();
+  MS_EXCEPTION_IF_NULL(ret);
+  auto all_nodes = TopoSort(ret, SuccDeeperSimple);
+  auto graph_set = FindForwardGraphByRootNodes(all_nodes);
+
+  if (graph_set.empty()) {
+    MS_LOG(INFO) << "Can not find the forward graph, so find the ops in root graph";
+    auto fgs = root->manager()->func_graphs();
+    for (const auto &fg : fgs) {
+      if (common::AnfAlgo::IsDynamicGraph(fg)) {
+        return true;
+      }
+    }
+  } else {
+    for (const auto &fg : graph_set) {
+      if (common::AnfAlgo::IsDynamicGraph(fg)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool IsParallelDynamicShape(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(parallel::ParallelContext::GetInstance());
   std::string parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != parallel::kAutoParallel && parallel_mode != parallel::kSemiAutoParallel) {
     return false;
   }
-  return pipeline::IsDynamicShapeGraph(func_graph);
+  if (func_graph->has_flag(kSkipAutoParallelCompile)) {
+    return false;
+  }
+  if (parallel::ParallelContext::GetInstance()->dynamic_shape_parallel_flag_is_set()) {
+    return parallel::ParallelContext::GetInstance()->is_dynamic_shape_parallel();
+  }
+
+  bool is_dynamic = ForwardHasDynamicShape(func_graph);
+  parallel::ParallelContext::GetInstance()->set_is_dynamic_shape_parallel(is_dynamic);
+  return is_dynamic;
+}
+
+bool IsForwardDynamicShape() {
+  MS_EXCEPTION_IF_NULL(parallel::ParallelContext::GetInstance());
+  return parallel::ParallelContext::GetInstance()->is_dynamic_shape_parallel();
 }
 
 bool IsSemiOrAutoParallelMode() {
@@ -371,28 +411,8 @@ Symbols GetNodeSymbol(const AnfNodePtr &node) {
   return symbols;
 }
 
-void TagDynamicShapeFuncGraph(const FuncGraphPtr &root) {
-  MS_EXCEPTION_IF_NULL(root);
-  MS_EXCEPTION_IF_NULL(root->manager());
-  for (auto &fg : root->manager()->func_graphs()) {
-    fg->set_dynamic_shape(pipeline::IsDynamicShapeGraph(fg));
-  }
-}
-
-bool InDynamicGraph(const CNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  auto func_graph = node->func_graph();
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(func_graph->manager());
-  auto roots = func_graph->manager()->roots();
-  FuncGraphPtr root_graph = roots.back();
-  MS_EXCEPTION_IF_NULL(root_graph);
-
-  return root_graph->dynamic_shape();
-}
-
 void UpdateParamSymbolicShape(const FuncGraphPtr &root) {
-  if (!root->dynamic_shape()) {
+  if (!IsForwardDynamicShape()) {
     return;
   }
   auto symbol_infos = ParallelContext::GetInstance()->symbol_infos();

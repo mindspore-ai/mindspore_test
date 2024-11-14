@@ -756,8 +756,8 @@ std::vector<AnfNodePtr> CreateInput(const Operator &op, const AnfNodePtr &pre_no
                                     const CNodePtr &cur_cnode) {
   MS_EXCEPTION_IF_NULL(pre_node);
   OperatorArgs arg_forward = op.second;
-  OperatorParams params = arg_forward.second;
 
+  OperatorParams params = arg_forward.second;
   std::vector<AnfNodePtr> new_node_input = {pre_node};
   MS_LOG(INFO) << "CreateInput param.empty=" << params.empty() << ", pre_node=" << pre_node->fullname_with_scope()
                << ", op=" << op.first;

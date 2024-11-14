@@ -47,6 +47,10 @@ constexpr char EXP_AVG_INSTA_ROW[] = "exp_avg_insta_row_";
 constexpr char EXP_AVG_INSTA_COL[] = "exp_avg_insta_col_";
 constexpr char EXP_AVG_SQ[] = "exp_avg_sq_";
 
+constexpr size_t kPreLenEleven = 11;
+constexpr size_t kPreLenFifteen = 15;
+constexpr size_t kPreLenEighteen = 18;
+
 class CameCommHandler {
  public:
   CameCommHandler(ParameterPtr origin, const std::vector<AnfNodePtr> &all_parameters,
