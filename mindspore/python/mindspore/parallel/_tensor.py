@@ -701,6 +701,50 @@ def _load_tensor_shape(dev_mat, tensor_map, full_shape=None, rank_id=-1):
     return tuple(res)
 
 
+def _count_tensor_shape(dev_mat, tensor_map, full_shape=None, rank_id=-1):
+    """get tensor shape"""
+    if rank_id == -1:
+        rank = get_rank()
+    else:
+        rank = rank_id
+    tensor_strategy = _get_tensor_strategy(dev_mat, tensor_map)
+    tensor_slice_index = _get_tensor_slice_index(dev_mat, tensor_strategy, tensor_map, rank)
+    np_tensor_list = _chunk_shape_by_strategy(full_shape, tensor_strategy)
+    np_tensor_slice_index = np_tensor_list[int(tensor_slice_index)]
+    res = []
+    for index in np_tensor_slice_index:
+        res.append(index[1] - index[0])
+    return res
+
+
+def _load_tensor_shape_by_layout(tensor, layout, rank_id):
+    """get tensor shape by layout"""
+    if not isinstance(layout, tuple):
+        raise TypeError("The layout should be tuple! layout is {}".format(layout))
+    if len(layout) < 7:
+        raise ValueError("The length of layout must be larger than 6! layout is {}".format(layout))
+    slice_shape = layout[2]
+    if slice_shape:
+        return slice_shape
+    tensor_map = layout[1]
+    if not tensor_map:
+        return tensor.shape
+    dev_mat = layout[0]
+    uniform_split = layout[4]
+    group = layout[5]
+    full_shape = layout[6]
+    if not full_shape:
+        full_shape = tensor.shape
+    if uniform_split == 0:
+        raise RuntimeError("The load tensor only support uniform split now")
+    tensor_slice_shape = _count_tensor_shape(dev_mat, tensor_map, full_shape, rank_id)
+    if group:
+        # get a totally shard tensor slice for parallel optimizer
+        size = get_group_size(group)
+        tensor_slice_shape[0] //= size
+    return tensor_slice_shape
+
+
 def _chunk_shape_by_strategy(full_shape, strategy):
     """chunk shape by strategy"""
     shape = []
