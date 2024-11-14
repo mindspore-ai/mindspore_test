@@ -1,13 +1,13 @@
-std_mean:
+var_mean:
     description: |
-        By default, return the standard deviation and mean of each dimension in Tensor.
-        If dim is a dimension list, calculate the standard deviation and mean of the corresponding dimension.
+        By default, return the variance and mean of each dimension in Tensor.
+        If dim is a dimension list, calculate the variance and mean of the corresponding dimension.
 
-        The standard deviation (:math:`\sigma`) is calculated as:
+        The variance (:math:`\sigma ^2`) is calculated as:
 
         .. math::
 
-            \sigma = \sqrt{\frac{1}{N - \delta N} \sum_{j=0}^{N-1} \left(self_{ij} - \overline{x_{i}}\right)^{2}}
+            \sigma ^2 = \frac{1}{N - \delta N} \sum_{j=0}^{N-1} \left(self_{ij} - \overline{x_{i}}\right)^{2}
 
         where :math:`x` is the sample set of elements, :math:`\bar{x}` is the sample mean,
         :math:`N` is the number of samples and :math:`\delta N` is the `correction` .
@@ -18,7 +18,7 @@ std_mean:
         Args:
             input (Tensor): The input tensor. Supported dtypes: float16, float32.
             dim (Union[int, tuple(int), list(int)], optional):
-                Specify the dimensions for calculating standard deviation and mean. Default value: ``None``.
+                Specify the dimensions for calculating variance and mean. Default value: ``None``.
 
         Keyword Args:
             correction (int, optional): Difference between the sample size and sample degrees of freedom.
@@ -28,7 +28,7 @@ std_mean:
                 Default value: ``False``.
 
         Returns:
-            A tuple of standard deviation and mean.
+            A tuple of variance and mean.
 
         Raises:
             TypeError: If `input` is not a Tensor.
@@ -42,10 +42,10 @@ std_mean:
         Examples:
             >>> import mindspore as ms
             >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-            >>> output_std, output_mean = ms.mint.std_mean(input, 1, correction=2, keepdim=True)
-            >>> print(output_std)
-            [[1.5811388]
-             [7.3824115]]
+            >>> output_var, output_mean = ms.mint.var_mean(input, 1, correction=2, keepdim=True)
+            >>> print(output_var)
+            [[ 2.5]
+             [54.5]]
             >>> print(output_mean)
             [[ 2.5]
              [-1.5]]

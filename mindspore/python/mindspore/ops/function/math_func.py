@@ -34,7 +34,7 @@ from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
 from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, BitwiseAndScalar,\
     BitwiseAndTensor, BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor,\
-    RemainderTensorScalar, RemainderScalarTensor, StdMean
+    RemainderTensorScalar, RemainderScalarTensor, std_mean_op, var_mean_op
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
@@ -246,7 +246,6 @@ bitwise_or_scalar_ = BitwiseOrScalar()
 bitwise_or_tensor_ = BitwiseOrTensor()
 bitwise_xor_scalar_ = BitwiseXorScalar()
 bitwise_xor_tensor_ = BitwiseXorTensor()
-std_mean_ext_ = StdMean()
 
 
 #####################################
@@ -4858,7 +4857,7 @@ def std_mean_ext(input, dim=None, *, correction=1, keepdim=False):
     Examples:
         >>> import mindspore as ms
         >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
-        >>> output_std, output_mean = ms.mint.std_mean(input, 1, 2, True)
+        >>> output_std, output_mean = ms.mint.std_mean(input, 1, correction=2, keepdim=True)
         >>> print(output_std)
         [[1.5811388]
          [7.3824115]]
@@ -4866,7 +4865,62 @@ def std_mean_ext(input, dim=None, *, correction=1, keepdim=False):
         [[ 2.5]
          [-1.5]]
     """
-    return std_mean_ext_(input, dim, correction, keepdim)
+    return std_mean_op(input, dim, correction, keepdim)
+
+
+def var_mean_ext(input, dim=None, *, correction=1, keepdim=False):
+    r"""
+    By default, return the variance and mean of each dimension in Tensor.
+    If dim is a dimension list, calculate the variance and mean of the corresponding dimension.
+
+    The variance (:math:`\sigma ^2`) is calculated as:
+
+    .. math::
+
+        \sigma ^2 = \frac{1}{N - \delta N} \sum_{j=0}^{N-1} \left(self_{ij} - \overline{x_{i}}\right)^{2}
+
+    where is :math:`x` the sample set of elements, :math:`\bar{x}` is the sample mean,
+    :math:`N` is the number of samples and :math:`\delta N` is the `correction` .
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor. Supported dtypes: float16, float32.
+        dim (Union[int, tuple(int), list(int)], optional):
+            Specify the dimensions for calculating variance and mean. Default value: ``None``.
+
+    Keyword Args:
+        correction (int, optional): Difference between the sample size and sample degrees of freedom.
+            Defaults to Bessel's correction. Default: ``1``.
+        keepdim (bool, optional): Whether to preserve the dimensions of the output Tensor.
+            If True, retain the reduced dimension with a size of 1. Otherwise, remove the dimensions.
+            Default value: ``False``.
+
+    Returns:
+        A tuple of variance and mean.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not one of the following data types: int, tuple, list, or Tensor.
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If `dim` is out of range.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> input = ms.Tensor([[1, 2, 3, 4], [-1, 1, 4, -10]], ms.float32)
+        >>> output_var, output_mean = ms.mint.var_mean(input, 1, correction=2, keepdim=True)
+        >>> print(output_var)
+        [[ 2.5]
+         [54.5]]
+        >>> print(output_mean)
+        [[ 2.5]
+         [-1.5]]
+    """
+    return var_mean_op(input, dim, correction, keepdim)
 
 
 def reciprocal(input):

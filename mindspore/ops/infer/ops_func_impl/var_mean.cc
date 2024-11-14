@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/std_mean.h"
+#include "infer/ops_func_impl/var_mean.h"
 #include <vector>
 #include <string>
 #include <set>
@@ -26,11 +26,11 @@
 
 namespace mindspore {
 namespace ops {
-ShapeArray StdMeanFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+ShapeArray VarMeanFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   return ReduceGeneralInferShapeV2(primitive, input_infos);
 }
 
-std::vector<TypeId> StdMeanFuncImpl::InferType(const PrimitivePtr &primitive,
+std::vector<TypeId> VarMeanFuncImpl::InferType(const PrimitivePtr &primitive,
                                                const InferInfoPtrList &input_infos) const {
   const std::set<TypeId> valid_dtype_set = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
   const auto type = input_infos[kInputIndex0]->GetType();
