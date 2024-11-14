@@ -1,29 +1,5 @@
 negative:
-    description: |
-        negative(self) -> Tensor
-        
-        Returns a tensor with negative values of the self tensor element-wise.
-    
-        .. math::
-            out_{i} = - input_{i}
-        
-        Args:
-            self (Tensor): The self tensor with a dtype of Number.
-        
-        Returns:
-            Tensor, has the same shape and dtype as self.
-        
-        Raises:
-            TypeError: If `self` is not a Tensor.
-        
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-        
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input = Tensor(np.array([1, 2, -1, 2, 0, -3.5]), mindspore.float32)
-            >>> output = Tensor.negative(input)
-            >>> print(output)
-            [-1.  -2.   1.  -2.   0.   3.5]
+  description: |
+    negative() -> Tensor
+
+    Alias for :func:`mindspore.Tensor.neg`.
