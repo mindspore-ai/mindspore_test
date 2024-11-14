@@ -837,7 +837,7 @@ REG_BPROP_BUILDER("Mm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, dw};
 });
 
-REG_BPROP_BUILDER("Add").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Add").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);

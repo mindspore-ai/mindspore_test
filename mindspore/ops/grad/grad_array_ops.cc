@@ -2381,7 +2381,7 @@ REG_BPROP_BUILDER("Size").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("SearchSorted").SetUnusedInputs({i0, i1, i2, i3, i4, i5, i6}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("MaskedFill").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("MaskedFill").FreeUselessValues_IO({i0, i2}, {}).SetBody(BODYFUNC(ib) {
   auto input_data = ib->GetInput(kIndex0);
   auto mask = ib->GetInput(kIndex1);
   auto value = ib->GetInput(kIndex2);
