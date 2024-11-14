@@ -1,5 +1,5 @@
 log:
-    op_yaml: log
+    op_yaml: log_op.yaml
     py_method: tensor_log
     Ascend: pyboost
     CPU: pyboost

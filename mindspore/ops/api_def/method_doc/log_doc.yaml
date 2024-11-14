@@ -1,31 +1,30 @@
 log:
-    description: |
-        Returns the natural logarithm of a tensor element-wise.
+  description: |
+    log() -> Tensor
 
-        .. math::
-            y_i = \log_e(x_i)
+    Returns the natural logarithm of a tensor element-wise.
 
-        .. warning::
-            If the input value of operator Log is within the range (0, 0.01] or [0.95, 1.05], the output accuracy may
-            be affacted.
+    .. math::
+        y_i = \log_e(self_i)
 
-        Args:
-            input (Tensor): Input Tensor of any dimension. The value must be greater than 0.
+    .. warning::
+        If the input value of operator Log is within the range (0, 0.01] or [0.95, 1.05], the output accuracy may
+        be affacted.
 
-        Returns:
-            Tensor, has the same shape and dtype as the `input`.
+    .. note::
+        The value of `self` must be greater than 0.
 
-        Raises:
-            TypeError: If `input` is not a Tensor.
+    Returns:
+        Tensor, has the same shape as the `self`.
 
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
-            >>> output = x.log()
-            >>> print(output)
-            [0.        0.6931472 1.3862944]
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
+        >>> output = x.log()
+        >>> print(output)
+        [0.        0.6931472 1.3862944]

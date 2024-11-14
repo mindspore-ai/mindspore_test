@@ -2,23 +2,21 @@ where:
   description: |
     where(condition, y) -> Tensor
 
-    Selects elements from `input` or `other` based on `condition` and returns a tensor.
+    Selects elements from `self` or `y` based on `condition` and returns a tensor.
 
     .. math::
-        output_i = \begin{cases} input_i,\quad &if\ condition_i \\ other_i,\quad &otherwise \end{cases}
+        output_i = \begin{cases} self_i,\quad &if\ condition_i \\ y_i,\quad &otherwise \end{cases}
 
     Args:
-        condition (Tensor[bool]): If True, yield `input`, otherwise yield `other`.
-        input (Union[Tensor]): When `condition` is True, values to select from.
-        other (Union[Tensor, Scalar]): When `condition` is False, values to select from.
+        condition (Tensor[bool]): If True, yield `self`, otherwise yield `y`.
+        y (Union[Tensor, Scalar]): When `condition` is False, values to select from.
 
     Returns:
-        Tensor, elements are selected from `input` and `other`.
+        Tensor, elements are selected from `self` and `y`.
 
     Raises:
         TypeError: If `condition` is not a Tensor.
-        TypeError: If both `input` and `other` are scalars.
-        ValueError: If `condition`, `input` and `other` can not broadcast to each other.
+        ValueError: If `condition`, `self` and `y` can not broadcast to each other.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

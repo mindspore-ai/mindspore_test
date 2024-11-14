@@ -1,7 +1,14 @@
 logical_or:
-    op_yaml: logical_or
+  - op_yaml: logical_or_op.yaml
     py_method: tensor_logical_or
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
+    interface: method
+
+  - op_yaml: deprecated/logical_or_op.yaml
+    py_method: tensor_logical_or
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
     interface: method
