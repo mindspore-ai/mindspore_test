@@ -278,8 +278,8 @@ class NLLLoss(Cell):
         \{c \not= \text{ignore_index}\},
 
     where :math:`x` is the inputs, :math:`t` is the target, :math:`w` is the weight,
-    N is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index, where :math:`C` is the number of
-    classes.
+    :math:`N` is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index,
+    where :math:`C` is the number of classes.
 
     If `reduction` is not ``None`` (default ``'mean'``), then
 
@@ -289,6 +289,9 @@ class NLLLoss(Cell):
         \sum_{n=1}^{N} \frac{1}{\sum_{n=1}^{N} w_{t n}} l_{n}, & \text { if reduction }=\text { 'mean', } \\
         \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
         \end{array}\right.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
