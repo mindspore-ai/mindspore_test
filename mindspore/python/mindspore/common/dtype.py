@@ -59,58 +59,58 @@ __all__.extend(__dtype__)
 __all__.extend(__method__)
 
 # type definition
-bool_ = typing.Bool()
+bool_ = typing.kBool
 
-qint4x2 = typing.Int(4)
-int8 = typing.Int(8)
+qint4x2 = typing.kInt4
+int8 = typing.kInt8
 byte = int8
-int16 = typing.Int(16)
+int16 = typing.kInt16
 short = int16
-int32 = typing.Int(32)
+int32 = typing.kInt32
 intc = int32
-int64 = typing.Int(64)
+int64 = typing.kInt64
 intp = int64
 
-uint8 = typing.UInt(8)
+uint8 = typing.kUInt8
 ubyte = uint8
-uint16 = typing.UInt(16)
+uint16 = typing.kUInt16
 ushort = uint16
-uint32 = typing.UInt(32)
+uint32 = typing.kUInt32
 uintc = uint32
-uint64 = typing.UInt(64)
+uint64 = typing.kUInt64
 uintp = uint64
 
-float16 = typing.Float(16)
+float16 = typing.kFloat16
 half = float16
-float32 = typing.Float(32)
+float32 = typing.kFloat32
 single = float32
-float64 = typing.Float(64)
+float64 = typing.kFloat64
 double = float64
-bfloat16 = typing.BFloat(16)
-complex64 = typing.Complex(64)
-complex128 = typing.Complex(128)
+bfloat16 = typing.kBFloat16
+complex64 = typing.kComplex64
+complex128 = typing.kComplex128
 
-number = typing.Number()
-int_ = typing.Int()
-uint = typing.UInt()
-float_ = typing.Float()
-string = typing.String()
-list_ = typing.List()
-tuple_ = typing.Tuple()
-type_none = typing.TypeNone()
-_null = typing.TypeNull()
+number = typing.kNumber
+int_ = typing.kInt
+uint = typing.kUInt
+float_ = typing.kFloat
+string = typing.kString
+list_ = typing.kList
+tuple_ = typing.kTuple
+type_none = typing.kTypeNone
+_null = typing.kTypeNull
 
-tensor_type = typing.TensorType()
-index_slices = typing.RowTensorType()
-coo_tensor = typing.COOTensorType()
-csr_tensor = typing.CSRTensorType()
+tensor_type = typing.kTensorType
+index_slices = typing.kRowTensorType
+coo_tensor = typing.kCOOTensorType
+csr_tensor = typing.kCSRTensorType
 undetermined = typing.UndeterminedType()
 
 function = typing.Function()
 symbolic_key = typing.SymbolicKeyType()
-env_type = typing.EnvType()
-type_type = typing.TypeType()
-type_refkey = typing.RefKeyType()
+env_type = typing.kTypeEnv
+type_type = typing.kTypeType
+type_refkey = typing.kRefKeyType
 
 Int = typing.Int
 Float = typing.Float
