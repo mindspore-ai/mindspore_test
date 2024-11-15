@@ -233,7 +233,7 @@ class AclnnKernelMod : public KernelMod {
       MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity_;
     }
   }
-  ~AclnnKernelMod() = default;
+  ~AclnnKernelMod();
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);

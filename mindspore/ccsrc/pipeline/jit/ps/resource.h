@@ -144,6 +144,8 @@ class Resource : public ResourceBase {
   // Get the backend object. if the backend is being initialized, wait until it completes.
   compile::BackendPtr GetBackend() const;
 
+  void CleanBackend() { backend_ = nullptr; }
+
   // Set backend asynchronously, the input function should return a Backend pointer,
   // and it will be called in a background thread.
   void SetBackendAsync(std::function<compile::BackendPtr()> func);
