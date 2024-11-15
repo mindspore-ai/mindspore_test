@@ -261,8 +261,8 @@ py::object PyNativeExecutor::RunGrad(const prim::GradOperationPtr &grad, const p
   return PyNativeExecutorTry(grad_executor()->Run, grad, cell, weights, grad_position, args);
 }
 
-py::object PyNativeExecutor::GradJit(const py::object &out, const py::args &args) const {
-  const auto &ret = grad_executor()->jit()->GradJit(out, args);
+py::object PyNativeExecutor::GradJit(const py::args &args) const {
+  const auto &ret = grad_executor()->jit()->GradJit(args);
   return ret;
 }
 

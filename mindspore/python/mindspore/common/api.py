@@ -606,9 +606,10 @@ class _MindsporeFunctionExecutor:
             return None
 
         new_inputs = self._generate_run_args(args_list, kwargs)
-        output = self._graph_executor(tuple(new_inputs), phase)
         if context.get_context("mode") == context.PYNATIVE_MODE:
-            output = _pynative_executor.grad_jit(output, *new_inputs)
+            output = _pynative_executor.grad_jit(*new_inputs)
+        else:
+            output = self._graph_executor(tuple(new_inputs), phase)
 
         return output
 
@@ -1524,18 +1525,18 @@ class _PyNativeExecutor:
         """
         self._executor.sync()
 
-    def grad_jit(self, output, *args):
+    def grad_jit(self, *args):
         """
         Building grad graph decorated by jit.
 
         Args:
-            output (tuple): The function or cell decorated by jit output object.
             args (tuple): Function or cell decorated by jit input arguments.
 
         Return:
-            None.
+            output: The output object of function or cell decorated by jit.
         """
-        return self._executor.grad_jit(output, *args)
+        output = self._executor.grad_jit(*args)
+        return output
 
     def call_custom_bprop(self, obj, output, *args, **kwargs):
         """

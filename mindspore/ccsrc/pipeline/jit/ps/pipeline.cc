@@ -332,8 +332,6 @@ kernel::PyExecuteOutputUserDataPtr GetUserDataFromAddress(const py::object &res)
   return nullptr;
 }
 
-py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
-
 template <typename T>
 py::object GetVectorRefPyDataWithAbstract(const VectorRef &value_list, const abstract::AbstractSequencePtr &seq_abs) {
   auto value_size = value_list.size();
@@ -373,30 +371,6 @@ py::object GetVectorRefPyData(const VectorRef &value_list, const AbstractBasePtr
     return GetVectorRefPyDataWithAbstract<py::tuple>(value_list, seq_abs);
   }
   return GetVectorRefPyDataWithAbstract<py::list>(value_list, seq_abs);
-}
-
-py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs) {
-  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kGraphExecutorPy, runtime::ProfilerEvent::kOutputProcess,
-                                     "BaseRefToPyData");
-  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
-  if (!allow_fallback_runtime) {
-    return BaseRefToPyData(value, abs);
-  }
-  if (utils::isa<ValuePtr>(value)) {
-    // Do not use abs as input to BaseRefToPyData, since the res need to be a tensor to get user data.
-    auto res = BaseRefToPyData(value);
-    MS_LOG(DEBUG) << "res: " << py::str(res);
-    const auto user_data = GetUserDataFromAddress(res);
-    if (user_data != nullptr) {
-      return user_data->obj;
-    } else {
-      MS_LOG(DEBUG) << "user data is empty";
-    }
-  } else if (utils::isa<VectorRef>(value)) {
-    auto vec_ref = utils::cast<VectorRef>(value);
-    return GetVectorRefPyData(vec_ref, abs);
-  }
-  return BaseRefToPyData(value, abs);
 }
 
 void AddManager(const FuncGraphManagerPtr &manager, const ValuePtr &value) {
@@ -2846,6 +2820,30 @@ void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, c
       device_addr->CopyHostToDevice(device_ptr + dst_block_offset, host_ptr + src_block_offset, block_size_in_bytes);
     }
   }
+}
+
+py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kGraphExecutorPy, runtime::ProfilerEvent::kOutputProcess,
+                                     "BaseRefToPyData");
+  const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
+  if (!allow_fallback_runtime) {
+    return BaseRefToPyData(value, abs);
+  }
+  if (utils::isa<ValuePtr>(value)) {
+    // Do not use abs as input to BaseRefToPyData, since the res need to be a tensor to get user data.
+    auto res = BaseRefToPyData(value);
+    MS_LOG(DEBUG) << "res: " << py::str(res);
+    const auto user_data = GetUserDataFromAddress(res);
+    if (user_data != nullptr) {
+      return user_data->obj;
+    } else {
+      MS_LOG(DEBUG) << "user data is empty";
+    }
+  } else if (utils::isa<VectorRef>(value)) {
+    auto vec_ref = utils::cast<VectorRef>(value);
+    return GetVectorRefPyData(vec_ref, abs);
+  }
+  return BaseRefToPyData(value, abs);
 }
 }  // namespace pipeline
 }  // namespace mindspore

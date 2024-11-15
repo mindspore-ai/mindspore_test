@@ -66,6 +66,36 @@ void ComplexPreprocess(const AnfNodePtr &input, const CNodePtr &din) {
   }
   din->AddAttr(kAttrCheckComplex, MakeValue(true));
 }
+
+void CopyPrimivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const FuncGraphManagerPtr &manager) {
+  MS_EXCEPTION_IF_NULL(primal_graph);
+  auto value_nodes = primal_graph->value_nodes();
+  for (const auto &value_pair : value_nodes) {
+    const auto &node = value_pair.first;
+    MS_EXCEPTION_IF_NULL(node);
+    if (!IsValueNode<Primitive>(node)) {
+      continue;
+    }
+    const auto &prim = GetValuePtr<Primitive>(node);
+    if (IsPrimitive(node, prim::kPrimUpdateState) ||
+        (prim->Hash() == prim::kPrimReturn->hash() && prim->name() == prim::kPrimReturn->name()) ||
+        (prim->Hash() == prim::kPrimHookBackward->Hash() && prim->name() == prim::kPrimHookBackward->name()) ||
+        (prim->Hash() == prim::kPrimCellBackwardHook->Hash() && prim->name() == prim::kPrimCellBackwardHook->name())) {
+      continue;
+    }
+    auto users = manager->node_users()[node];
+    if (users.size() <= 1) {
+      continue;
+    }
+    for (const auto &user : users) {
+      auto new_value_node = NewValueNode(GetValueNode(node));
+      auto cnode = user.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto index = user.second;
+      (void)manager->SetEdge(cnode, index, new_value_node);
+    }
+  }
+}
 }  // namespace
 
 DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top)
@@ -399,10 +429,6 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
         k_app->debug_info()->set_real_loc(old_real_loc);
       }
     }
-  }
-  // Run in pynative mode, when @jit is used.
-  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    pynative::PyNativeExecutor::GetInstance()->grad_executor()->jit()->ProcessCnodeFromAdGrad(k_app, cnode_morph);
   }
 
   for (size_t i = 0; i < param_adjoints.size(); ++i) {
@@ -780,6 +806,9 @@ void DFunctor::MapParamObject() {
 void DFunctor::MapValueObject() {
   // Map ValueNode.
   auto manager = resources_->manager();
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    CopyPrimivePtrForFpropReplace(primal_graph_, manager);
+  }
   auto &value_nodes = primal_graph_->value_nodes();
   for (const auto &value_pair : value_nodes) {
     auto node = value_pair.first;

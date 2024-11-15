@@ -245,6 +245,7 @@ FuncGraphPtr DynamicObfuscateMindIR(const std::string &file_name, float obf_rati
 void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
                const bool &type);
 bool IsPhaseExport(const std::string &phase);
+py::object BaseRefToPyDataWithUserData(const BaseRef &value, const AbstractBasePtr &abs);
 }  // namespace pipeline
 }  // namespace mindspore
 
