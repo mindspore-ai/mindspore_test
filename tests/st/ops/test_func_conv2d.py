@@ -158,7 +158,7 @@ def test_conv2d_dynamic():
     weight1 = ms.Tensor(np.ones([2, 2, 1, 1]), ms.float16)
     x2 = ms.Tensor(np.ones([1, 2, 6, 8]), ms.float16)
     weight2 = ms.Tensor(np.ones([2, 2, 2, 3]), ms.float16)
-    bias = ms.Tensor(np.ones([2]), ms.bfloat16)
+    bias = ms.Tensor(np.ones([2]), ms.float16)
     stride = 1
     padding = 1
     dilation = 1
