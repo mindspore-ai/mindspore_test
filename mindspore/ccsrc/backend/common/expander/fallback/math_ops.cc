@@ -41,6 +41,9 @@ REG_FALLBACK_BUILDER("AddExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
+  if (x->dtype()->type_id() == kNumberTypeBool) {
+    return {};
+  }
   auto alpha_tensor = ib->Cast(ib->ScalarToTensor(alpha, x->dtype()), y->dtype());
   return {x + y * alpha_tensor};
 });
@@ -49,6 +52,9 @@ REG_FALLBACK_BUILDER("SubExt").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
   auto alpha = ib->GetInput(kIndex2);
+  if (x->dtype()->type_id() == kNumberTypeBool) {
+    return {};
+  }
   auto alpha_tensor = ib->Cast(ib->ScalarToTensor(alpha, x->dtype()), y->dtype());
   return {x - y * alpha_tensor};
 });
