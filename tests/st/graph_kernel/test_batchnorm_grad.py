@@ -38,7 +38,7 @@ def get_output(input_dy, input_x, input_scale, input_save_mean, input_save_inv_v
     return output
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_bn_grad_train():
     """
     Feature: todo
