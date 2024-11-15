@@ -22,6 +22,7 @@
 #include <queue>
 #include <thread>
 #include <mutex>
+#include <memory>
 #include <utility>
 #include <condition_variable>
 #include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
@@ -55,7 +56,7 @@ class TensorDumpUtils {
   void AsyncSaveDatasetToNpyFile(const ScopeAclTdtDataset &dataset);
 
  private:
-  std::string TensorNameToArrayName(const std::string &tensor_name);
+  std::string TensorNameToArrayName(const std::string &tensor_name, const std::string &data_type);
   AsyncFileWriter file_writer{4};
 };
 

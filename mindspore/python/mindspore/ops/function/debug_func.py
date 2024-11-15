@@ -94,9 +94,9 @@ def tensordump(file_name, tensor, mode='out'):
     - If the mode is 'all', the dump data contains both OpA's output slice and OpB's input slice.
     - If the mode is 'in', the dump data contains only OpB's input slice.
 
-    For mode 'all' or 'in', the input slice npy file format is: id_fileName_cNodeID_dumpMode_rankID.npy.
+    For mode 'all' or 'in', the input slice npy file format is: id_fileName_cNodeID_dumpMode_rankID_dtype.npy.
 
-    For mode 'out' or 'all' the output slice npy file format is: id_filename.npy.
+    For mode 'out' or 'all' the output slice npy file format is: id_filename_dtype.npy.
 
     - id: An auto increment ID.
     - fileName: Value of the parameter file_name
@@ -104,6 +104,7 @@ def tensordump(file_name, tensor, mode='out'):
     - cNodeID: The cnode ID in ir graph of step_parallel_end.ir.
     - dumpMode: Value of the parameter mode.
     - rankID: Logical device id.
+    - dtype: The original data type. Data of type bfloat16 stored in the .npy file will be converted to float32.
 
     Note:
         - The operator of tensordump doesn't support in control flow.
@@ -161,8 +162,8 @@ def tensordump(file_name, tensor, mode='out'):
         >>> b = Tensor(0.1 * np.random.randn(64, 64).astype(np.float32))
         >>> out = net(x, y, b)
         >>> print(f"out shape is: {out.shape}")
-        >>> matmul1_output_slice = np.load('0_mul1_mul2.npy')                       # load matmul1's output slice
-        >>> matmul2_input_slice = np.load('1_mul1_mul2_CNode_64_all_rank_0.npy')    # load matmul2's input slice
+        >>> matmul1_output_slice = np.load('0_mul1_mul2_Float32.npy')                       # load matmul1's output slice
+        >>> matmul2_input_slice = np.load('1_mul1_mul2_CNode_64_all_rank_0_Float32.npy')    # load matmul2's input slice
     """
     if not isinstance(file_name, str):
         raise TypeError(f"Parameter file_name should only be build_in str type but got: {type(file_name)}")
