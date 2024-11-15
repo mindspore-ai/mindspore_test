@@ -31,7 +31,6 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.ops.operations.nn_ops import AllFinite
 from mindspore.common import dtype as mstype
-from mindspore.common.api import jit
 from mindspore._c_expression import MSContext
 from mindspore.run_check._check_version import AscendEnvChecker
 from mindspore import log as logger
@@ -548,7 +547,6 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         overflow = self.logic_not(overall_finite)
         return overflow
 
-    @jit
     def get_overflow_status(self, status, compute_output):
         """
         Get floating-point overflow status.
