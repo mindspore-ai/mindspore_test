@@ -1,0 +1,19 @@
+#operator index_fill_tensor
+index_fill_tensor:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: int
+        index:
+            dtype: tensor
+        value:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: False
+    dispatch:
+        enable: True
+        Ascend: IndexFillTensorAscend

@@ -65,7 +65,8 @@ from mindspore.ops._utils.utils import ms_arrange
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
     flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
-    inplace_fill_scalar, expand_as, unstack_ext_op, full_like_op, masked_fill_scalar_, masked_fill_tensor_
+    inplace_fill_scalar, expand_as, unstack_ext_op, full_like_op, \
+    index_fill_scalar, index_fill_tensor, masked_fill_scalar_, masked_fill_tensor_
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
@@ -4747,6 +4748,58 @@ def index_fill(x, axis, index, value):
     if isinstance(value, (bool, float, int)):
         value = cast_(value, x.dtype)
     return index_fill_(x, axis, index, value)
+
+def index_fill_ext(input, dim, index, value):
+    """
+    Fills the elements under the `dim` dimension of the input Tensor `input` with the input `value`
+    by selecting the indices in the order given in `index`.
+
+    Args:
+        input (Tensor): Input Tensor.  The supported data type is Number or Bool.
+        dim (int): Dimension along which to fill the input Tensor. Only supports
+            an int number, which data type is int32 or int64.
+        index (Tensor): Indices of the input Tensor to fill in. The dtype must be int32 or int64.
+        value (Union[bool, int, float, Tensor]): Value to fill the returned Tensor. If `value` is
+            a Tensor, it must be a 0-dimensional Tensor and has the same dtype as `input`. Otherwise,
+            the `value` will be a value with the same data type as `input`.
+
+    Returns:
+        Tensor, has the same dtype and shape as input Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is neither int number nor Tensor.
+        TypeError: When `dim` is a Tensor, its dtype is not int32 or int64.
+        TypeError: If `index` is not a Tensor.
+        TypeError: If dtype of `index` is not int32.
+        TypeError: If `value` is not a bool, int, float, or Tensor.
+        TypeError: When `value` is a Tensor, the dtype of `input` and `value` are not the same.
+        ValueError: If `dim` is a Tensor and its rank is not equal to 0.
+        ValueError: If the rank of `index` is greater than 1D.
+        ValueError: When `value` is a Tensor and its rank is not equal to 0.
+        RuntimeError: If the value of `dim` is out the range of `[-x.ndim, x.ndim - 1]`.
+        RuntimeError: If the values of `index` are out the range of `[-x.shape[dim], x.shape[dim]-1]`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import ops
+        >>> from mindspore import Tensor
+        >>> input = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).astype(np.float32))
+        >>> index = Tensor([0, 2], mindspore.int32)
+        >>> value = Tensor(-2.0, mindspore.float32)
+        >>> y = ops.index_fill_ext(x, 1, index, value)
+        >>> print(y)
+        [[-2. 2. -2.]
+         [-2. 5. -2.]
+         [-2. 8. -2.]]
+    """
+    if isinstance(value, Tensor):
+        return index_fill_tensor(input, dim, index, value)
+    return index_fill_scalar(input, dim, index, value)
 
 
 @constexpr
