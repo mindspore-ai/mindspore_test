@@ -238,6 +238,15 @@ CNodePtr GetRecomputeDropoutGenMask(const FuncGraphPtr &func_graph, const CNodeP
   return (*recompute_genmask)->cast<CNodePtr>();
 }
 
+abstract::ShapePtr GetDropoutInputShape(const AnfNodePtr &input) {
+  MS_EXCEPTION_IF_NULL(input);
+  auto input_base_shape = input->Shape();
+  MS_EXCEPTION_IF_NULL(input_base_shape);
+  auto input_shape = input_base_shape->cast<abstract::ShapePtr>();
+  MS_EXCEPTION_IF_NULL(input_shape);
+  return input_shape;
+}
+
 CNodePtr CreateDropoutGenMaskCNode(const FuncGraphPtr &func_graph, const CNodePtr &dropout,
                                    const AnfNodePtr &keep_prob_value, const abstract::ShapePtr &input_shape,
                                    const bool use_v3, bool enable_keep_prob = false) {
@@ -248,10 +257,41 @@ CNodePtr CreateDropoutGenMaskCNode(const FuncGraphPtr &func_graph, const CNodePt
     use_v3 ? std::vector<AnfNodePtr>{NewValueNode(std::make_shared<Primitive>(kDropoutGenMaskV3OpName))}
            : std::vector<AnfNodePtr>{NewValueNode(std::make_shared<Primitive>(kDropoutGenMaskOpName))};
   if (input_shape->IsDynamic() || common::AnfAlgo::HasNodeAttr(kAttrMutableKernel, dropout)) {
-    CNodePtr dynamic_shape = CreateDynamicShapeCNode(func_graph, dropout->input(kIndex1), input_shape);
-    dynamic_shape->set_scope(dropout->scope());
-    dropout_gen_mask_inputs.push_back(dynamic_shape);
-    dropout_gen_mask_inputs.push_back(keep_prob_value);
+    // In the context of enabling recomputation and dynamic shape, if there is an edge relationship between two
+    // recomputation dropout nodes, it will cause the computation graph to form a cycle. When processing this pass, the
+    // input of the dropout node that is earlier in the topological order of the graph is used as the input for the
+    // GenMask node of the later node, to avoid the situation of forming a cycle.
+    if (dropout->HasAttr(kAttrRecomputeId)) {
+      auto recompute_id = GetValue<int64_t>(dropout->GetAttr(kAttrRecomputeId));
+      const auto &node_list = TopoSort(func_graph->get_return());
+      auto find_recompute_dropout = [recompute_id](const AnfNodePtr &node) {
+        if (!node->isa<CNode>() || !IsOneOfPrimitiveCNode(node, {prim::kPrimDropout, prim::kPrimDropoutExt})) {
+          return false;
+        }
+        auto recompute_id_val = node->cast<CNodePtr>()->GetAttr(kAttrRecomputeId);
+        return recompute_id_val != nullptr && GetValue<int64_t>(recompute_id_val) == recompute_id;
+      };
+      auto recompute_dropout = std::find_if(node_list.begin(), node_list.end(), find_recompute_dropout);
+      if (recompute_dropout != node_list.end()) {
+        auto dropout_input = (*recompute_dropout)->cast<CNodePtr>()->input(kIndex1);
+        auto dropout_input_shape = GetDropoutInputShape(dropout_input);
+        CNodePtr dynamic_shape = CreateDynamicShapeCNode(func_graph, dropout_input, dropout_input_shape);
+        dynamic_shape->set_scope((*recompute_dropout)->cast<CNodePtr>()->scope());
+        dropout_gen_mask_inputs.push_back(dynamic_shape);
+        dropout_gen_mask_inputs.push_back(keep_prob_value);
+      } else {
+        MS_LOG(INFO) << "Can not find Dropout with recompute id " << recompute_id;
+        CNodePtr dynamic_shape = CreateDynamicShapeCNode(func_graph, dropout->input(kIndex1), input_shape);
+        dynamic_shape->set_scope(dropout->scope());
+        dropout_gen_mask_inputs.push_back(dynamic_shape);
+        dropout_gen_mask_inputs.push_back(keep_prob_value);
+      }
+    } else {
+      CNodePtr dynamic_shape = CreateDynamicShapeCNode(func_graph, dropout->input(kIndex1), input_shape);
+      dynamic_shape->set_scope(dropout->scope());
+      dropout_gen_mask_inputs.push_back(dynamic_shape);
+      dropout_gen_mask_inputs.push_back(keep_prob_value);
+    }
   } else {
     auto shape_value = (enable_keep_prob && input_shape->shape().empty())
                          ? CreateShapeValueNode(func_graph, input_shape->shape(), false)
@@ -327,15 +367,6 @@ CNodePtr CreateDropoutDoMaskCNode(const FuncGraphPtr &func_graph, const CNodePtr
     dropout_do_mask_primitive->set_attr("enable_keep_prob", MakeValue(true));
   }
   return dropout_do_mask;
-}
-
-abstract::ShapePtr GetDropoutInputShape(const AnfNodePtr &input) {
-  MS_EXCEPTION_IF_NULL(input);
-  auto input_base_shape = input->Shape();
-  MS_EXCEPTION_IF_NULL(input_base_shape);
-  auto input_shape = input_base_shape->cast<abstract::ShapePtr>();
-  MS_EXCEPTION_IF_NULL(input_shape);
-  return input_shape;
 }
 
 bool NotDuplicatedDropout(const BaseRef &n) {
