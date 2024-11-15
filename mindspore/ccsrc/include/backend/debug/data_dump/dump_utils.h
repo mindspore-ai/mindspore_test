@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <numeric>
 
 #include "include/backend/kernel_graph.h"
 #include "include/backend/device_address.h"
@@ -41,6 +42,14 @@ constexpr size_t kValueNodeOutputIndex = 0;
  */
 BACKEND_EXPORT bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data, size_t out_data_len);
 
+/*
+ * Feature group: Dump.
+ * Target device group: Ascend.
+ * Runtime category: MindRT.
+ * Description: Convert uint1 data_type into uint8 data_type. The in_data is 8 uint1 data stored in 1 uint8 data.
+ * After split, the out_data is 1 uint1 data stored in 1 uint8 data.
+ */
+BACKEND_EXPORT void SplitUint1x8ToUint8s(const void *in_data, size_t in_data_len, ShapeVector shape, void *out_data);
 /*
  * Feature group: Dump.
  * Target device group: Ascend, GPU and CPU.

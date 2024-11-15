@@ -90,6 +90,34 @@ bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_dat
   return true;
 }
 
+void SplitUint1x8ToUint8s(const void *in_data, size_t in_data_len, ShapeVector shape, void *out_data) {
+  MS_EXCEPTION_IF_NULL(in_data);
+  MS_EXCEPTION_IF_NULL(out_data);
+  MS_EXCEPTION_IF_ZERO("in_data_len", in_data_len);
+  auto element_num = std::accumulate(shape.begin(), shape.end(), 1LL, std::multiplies<int64_t>());
+  const int64_t elemnum_per_byte = 8;
+  auto elemnum_last_byte = element_num % elemnum_per_byte;
+
+  const uint8_t *src_data = reinterpret_cast<const uint8_t *>(in_data);
+  uint8_t *dst_data = reinterpret_cast<uint8_t *>(out_data);
+  for (size_t i = 0; i < in_data_len - 1; ++i) {
+    uint8_t s = *src_data;
+    for (int j = 7; j >= 0; --j) {
+      uint8_t bit = (s >> j) & 1;
+      *dst_data = bit;
+      ++dst_data;
+    }
+    ++src_data;
+  }
+
+  // Handles cases where the number of in_data elements is not a multiple of 8
+  for (int j = 7; j >= elemnum_last_byte; --j) {
+    uint8_t bit = (*src_data >> j) & 1;
+    *dst_data = bit;
+    ++dst_data;
+  }
+}
+
 uint32_t ConvertPhysicalDeviceId(uint32_t device_id) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
