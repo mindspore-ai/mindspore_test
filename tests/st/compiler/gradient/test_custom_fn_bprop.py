@@ -14,7 +14,6 @@
 # ============================================================================
 """ test_fn_bprop """
 import numpy as np
-import pytest
 
 import mindspore as ms
 import mindspore.common.dtype as mstype

@@ -15,7 +15,6 @@
 """test function linearize in graph mode"""
 
 import numpy as np
-import pytest
 from mindspore import nn
 from mindspore import context
 from mindspore import Tensor

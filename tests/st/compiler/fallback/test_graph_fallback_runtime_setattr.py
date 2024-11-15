@@ -810,7 +810,7 @@ class _Test(ms.nn.Cell):
 
 
 @pytest.mark.skip(reason="Unsupported setattr test cases")
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('class_type_choice', [0, 1, 2])
 def test_getattr_assign(class_type_choice):

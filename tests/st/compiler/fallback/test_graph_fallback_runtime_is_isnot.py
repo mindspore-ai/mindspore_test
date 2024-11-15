@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+# pylint: disable=literal-comparison
 """ test graph JIT Fallback runtime is/is not feature """
-import pytest
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import dtype as mstype
@@ -41,7 +41,7 @@ def test_is_none_asnumpy():
     assert not ret2
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_is_int_and_int():
     """
     Feature: Is with variable input will be converted to PyExecute node.
@@ -106,7 +106,7 @@ def test_is_int_and_int_3():
     assert not ret2
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_is_not_int_and_int():
     """
     Feature: Is with variable input will be converted to PyExecute node.

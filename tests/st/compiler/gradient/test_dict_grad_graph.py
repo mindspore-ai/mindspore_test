@@ -14,7 +14,6 @@
 # ============================================================================
 """test grad for dict in graph mode"""
 import numpy as np
-import pytest
 import mindspore.nn as nn
 import mindspore.context as context
 import mindspore.ops as ops

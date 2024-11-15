@@ -871,7 +871,7 @@ def test_multi_assign_addn():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_multi_assign_print():
     """
     Feature: Auto monad feature.
@@ -1690,7 +1690,7 @@ def test_multi_abs_add_assign():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_print_assign_print():
     """
     Feature: Auto Monad
@@ -1822,8 +1822,8 @@ def test_return_none_with_side_effect_mutil_func():
     assert res[1] == 12
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_bprop_print_func():
     """
     Feature: Support side effect node in bprop.
