@@ -16,7 +16,7 @@ from mindspore import nn, Tensor, ops
 import mindspore.context as context
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_value_depend_infer():
     """
     Feature: Dynamic type.
@@ -85,7 +85,7 @@ def test_value_depend_infer():
     assert out.shape == (64, 64)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tuple_arg_to_dynamic_tuple_and_partial_para():
     """
     Feature: Dynamic type.

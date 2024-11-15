@@ -35,7 +35,7 @@ class Net(nn.Cell):
         return c
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_free_by_entrance_actor():
     """
     Feature: eliminate nopnode.
@@ -67,7 +67,7 @@ class NetStack(nn.Cell):
         return self.reshape(z, y.shape)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_free_by_stack_actor():
     """
     Feature: eliminate nopnode.
@@ -217,7 +217,7 @@ class NetGather4(nn.Cell):
         return c, d, e
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_free_by_gather_actor_4():
     """
     Feature: eliminate nopnode.

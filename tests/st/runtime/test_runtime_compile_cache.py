@@ -18,12 +18,12 @@ import re
 import shutil
 import subprocess
 import hashlib
+
 from mindspore import context
 from tests.mark_utils import arg_mark
 
 context.set_context(device_target="Ascend")
 context.set_context(jit_config={"jit_level": "O0"})
-
 
 match_output = re.compile(r'AAA(.*?)BBB', re.S)
 match_num = re.compile(r'\d+\.?\d*', re.S)
@@ -161,7 +161,7 @@ def run_twice_with_same_network(file_name, cache_path, log_file_name_first, log_
     shutil.rmtree(cache_path)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_compile_cache_load_weights():
     """
     Feature: compile cache.
@@ -169,7 +169,7 @@ def test_compile_cache_load_weights():
     Expectation: success.
     """
     fpath = os.path.realpath(os.path.dirname(os.getcwd()))
-    pypath = fpath + "/compiler/compile_cache/run_network_with_weights.py"
+    pypath = fpath + "/runtime/runtime_simple_net.py"
     run_twice_with_same_network(pypath, "./weight", "weight_first.txt", "weight_second.txt")
 
 
@@ -185,7 +185,7 @@ def test_compile_cache_lenet():
     run_twice_with_same_network(pypath, "./lenet", "lenet_first.txt", "lenet_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_compile_cache_ms_function():
     """
     Feature: compile cache.
@@ -198,7 +198,7 @@ def test_compile_cache_ms_function():
                                 "lenet_ms_function_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_compile_cache_lenet_ge():
     """
     Feature: compile cache.
@@ -210,7 +210,7 @@ def test_compile_cache_lenet_ge():
     run_twice_with_same_network(pypath, "./lenet", "lenet_first.txt", "lenet_second.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_resnet_infer_compile_cache():
     """
     Feature: support compile cache in inference scenarios.
