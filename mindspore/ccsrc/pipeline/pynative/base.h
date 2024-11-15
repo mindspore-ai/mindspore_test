@@ -126,7 +126,6 @@ struct GradParam {
   size_t input_size{0};
 
   // For jit domain
-  bool has_added_v{false};
   bool is_jit_graph{false};
   bool jit_out_has_dict{false};
   bool is_jit_self_dynamic_shape{false};
@@ -139,6 +138,9 @@ struct GradParam {
   std::string graph_cache_key;
   // Used for pyexecute
   CNodePtr cnode;
+  // Used for store input args
+  VectorRef args{};
+  VectorRef added_args{};
 };
 
 using GradParamPtr = std::shared_ptr<GradParam>;

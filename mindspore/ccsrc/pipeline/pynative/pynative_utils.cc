@@ -141,7 +141,7 @@ void PlantTupleParam(const FuncGraphPtr &bprop_graph, const abstract::AbstractSe
   MS_EXCEPTION_IF_NULL(new_param);
   MS_EXCEPTION_IF_NULL(abs_seq);
   for (size_t i = 0; i < abs_seq->size(); ++i) {
-    auto cur_abs = abs_seq->elements()[i];
+    const auto &cur_abs = abs_seq->elements()[i];
     if (cur_abs->isa<abstract::AbstractSequence>()) {
       auto is_tuple = cur_abs->isa<abstract::AbstractTuple>();
       AnfNodePtrList cur_make_tuple_inputs;
@@ -165,6 +165,24 @@ void PlantTupleParam(const FuncGraphPtr &bprop_graph, const abstract::AbstractSe
       plant_param->set_abstract(cur_abs);
       (void)make_tuple->emplace_back(plant_param);
       (void)new_param->emplace_back(plant_param);
+    } else if (cur_abs->isa<abstract::AbstractDictionary>()) {
+      // Support output type of tuple contains dict
+      const auto &abs_dict = cur_abs->cast<abstract::AbstractDictionaryPtr>();
+      abstract::AbstractBasePtrList local_key_abs_inputs, local_value_abs_inputs;
+      for (const auto &element : abs_dict->elements()) {
+        (void)local_key_abs_inputs.emplace_back(element.first);
+        (void)local_value_abs_inputs.emplace_back(element.second);
+      }
+      auto key_param = bprop_graph->add_parameter();
+      key_param->set_abstract(std::make_shared<abstract::AbstractTuple>(local_key_abs_inputs));
+      auto value_param = bprop_graph->add_parameter();
+      value_param->set_abstract(std::make_shared<abstract::AbstractTuple>(local_value_abs_inputs));
+      (void)new_param->emplace_back(key_param);
+      (void)new_param->emplace_back(value_param);
+      // Add Makedict node as tuple element
+      auto dict_node = bprop_graph->NewCNode({NewValueNode(prim::kPrimMakeDict), key_param, value_param});
+      dict_node->set_abstract(abs_dict);
+      (void)make_tuple->emplace_back(dict_node);
     } else {
       auto value = MakeValue(static_cast<int64_t>(0));
       auto value_node = NewValueNode(value);
