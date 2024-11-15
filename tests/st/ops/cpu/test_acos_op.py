@@ -13,12 +13,12 @@
 # limitations under the License.
 # ============================================================================
 import mindspore.nn as nn
-import numpy as np
-import pytest
-
 from mindspore import Tensor
 from mindspore import context
 from mindspore.ops import operations as P
+
+import numpy as np
+import pytest
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
@@ -39,7 +39,7 @@ class NetACos(nn.Cell):
 def test_acos(dtype):
     """
     Feature: ALL To ALL
-    Description: test cases for ACos
+    Description: test cases for ACOS
     Expectation: the result match to numpy
     """
     np_array = np.array([-1, -0.5, 0, 0.5, 1], dtype=dtype)
