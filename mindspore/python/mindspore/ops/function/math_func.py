@@ -52,7 +52,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
-                                         pow_tensor_scalar_op, isinf)
+                                         pow_tensor_scalar_op, not_equal_op, isinf)
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
@@ -12125,6 +12125,34 @@ def round(input, *, decimals=0):
     """
     return round_op(input, decimals)
 
+def isnan_ext(tensor):
+    r"""
+    Returns a new tensor with boolean elements representing if each element of input is :math:`Nan` or not.
+    Complex values are considered NaN when either their real and/or imaginary part is :math:`Nan`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Returns:
+        Tensor, return a Boolean Tensor. If the input is :math:`Nan`, the value is ``True``.
+        Otherwise, the value is ``False``.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> import numpy as np
+        >>> input1 = Tensor([np.nan, 2, 3, 4])
+        >>> output = ms.mint.isnan(input1)
+        >>> print(output)
+        [ True  False  False  False]
+    """
+    return not_equal_op(tensor, tensor)
+
 def rotated_iou(boxes, query_boxes, trans=False, mode=0, is_cross=True, v_threshold=0.0, e_threshold=0.0):
     r"""
     Calculate the overlap area between rotated rectangles.
@@ -12283,6 +12311,7 @@ __all__ = [
     'inplace_sub',
     'isfinite',
     'isnan',
+    'isnan_ext',
     'isclose',
     'isreal',
     'isneginf',

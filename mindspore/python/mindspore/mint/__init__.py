@@ -399,6 +399,9 @@ from mindspore.ops.auto_generate import count_nonzero
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
 
+# 889
+from mindspore.ops.function.math_func import isnan_ext as isnan
+
 # 1007
 from mindspore.ops.auto_generate import t_ext as t
 
@@ -2135,6 +2138,9 @@ __all__ = [
 
     # 887
     'log2',
+
+    # 889
+    'isnan',
 
     # 1007
     't',
