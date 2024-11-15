@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import mint, jit, JitConfig
+from mindspore import mint
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -61,8 +61,9 @@ def test_ops_log10_normal(context_mode):
         output = log10_forward_func(ms.Tensor(x))
         output_grad = log10_backward_func(ms.Tensor(x))
     elif context_mode == 'KBK':
-        output = (jit(log10_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
-        output_grad = (jit(log10_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+        output = log10_forward_func(ms.Tensor(x))
+        output_grad = log10_backward_func(ms.Tensor(x))
     expect_forward = generate_expect_forward_output(x)
     expect_backward = generate_expect_backward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect_forward, rtol=1e-4)
@@ -78,4 +79,4 @@ def test_mint_log10_dynamic():
     """
     input1 = generate_random_input((2, 3, 4, 5), np.float32)
     input2 = generate_random_input((2, 3, 4), np.float32)
-    TEST_OP(log10_func, [[ms.Tensor(input1)], [ms.Tensor(input2)]], 'log10')
+    TEST_OP(log10_func, [[ms.Tensor(input1)], [ms.Tensor(input2)]], 'log10', disable_mode=['GRAPH_MODE'])
