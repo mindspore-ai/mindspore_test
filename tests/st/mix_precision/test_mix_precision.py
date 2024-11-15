@@ -312,7 +312,7 @@ class TestNet(ms.nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @security_off_wrap
 def test_all_subgraph_mix_precision():
     """

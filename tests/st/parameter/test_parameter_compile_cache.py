@@ -20,8 +20,8 @@ from tests.mark_utils import arg_mark
 
 ms.context.set_context(mode=ms.GRAPH_MODE)
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_param_compile_cache():
     """
     Feature: Support compile cache when exist parameter in the top graph inputs.
@@ -50,8 +50,8 @@ def test_param_compile_cache():
     assert out2 == 4
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_param_compile_cache_kwargs():
     """
     Feature: Support compile cache when exist parameter in the top graph inputs.
@@ -80,8 +80,8 @@ def test_param_compile_cache_kwargs():
     assert out2 == 8
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_param_compile_cache_jit():
     """
     Feature: Support compile cache when exist parameter in the top graph inputs.

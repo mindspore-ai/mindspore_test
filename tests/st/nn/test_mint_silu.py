@@ -47,8 +47,8 @@ def np_silu_grad(x):
     return (1 + np.exp(-x) + x * np.exp(-x)) * np.power(np_sigmoid(x), 2)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_silu_net(mode):
     """
