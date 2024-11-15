@@ -1017,6 +1017,15 @@ void GraphExecutorPy::ClearRes() {
   executor_ = nullptr;
 }
 
+void GraphExecutorPy::ClearInfo() {
+  MS_LOG(INFO) << "Clean graph resource!";
+  for (auto &item : info_) {
+    if (item.second && item.second->resource) {
+      item.second->resource->CleanBackend();
+    }
+  }
+}
+
 std::string GraphExecutorPy::get_queue_name(const std::string &dataset_phase) {
   return CompileCacheManager::GetCachedDataQueueName(dataset_phase);
 }
@@ -2601,6 +2610,9 @@ void ClearResPart1() {
   abstract::ClearPrimEvaluatorMap();
   pipeline::GetMethodMap().clear();
   pipeline::GetAttrMap().clear();
+#ifdef WITH_BACKEND
+  pipeline::GraphExecutorPy::GetInstance()->ClearInfo();
+#endif
   pipeline::GraphExecutorPy::ClearRes();
   pipeline::ReclaimOptimizer();
 }

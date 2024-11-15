@@ -226,7 +226,7 @@ class EmptyKernelTensor {
 class AclnnKernelMod : public KernelMod {
  public:
   explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {}
-  ~AclnnKernelMod() = default;
+  ~AclnnKernelMod();
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
