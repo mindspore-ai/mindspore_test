@@ -52,6 +52,23 @@ bool DvmSupported(const AnfNodePtr &node) {
   }
   auto cb = Callback::Instance();
   MS_EXCEPTION_IF_NULL(cb);
+  static std::vector<PrimitivePtr> exclude_ops{
+    prim::kPrimReduceMean, prim::kPrimMeanExt, prim::kPrimLogSoftmaxGrad,
+    prim::kPrimSqueeze,    prim::kPrimTile,    prim::kPrimExpandDims,
+  };
+  if (!std::any_of(exclude_ops.begin(), exclude_ops.end(),
+                   [&node](const PrimitivePtr &prim) { return IsPrimitiveCNode(node, prim); })) {
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    size_t input_num = cnode->size() - 1;
+    for (size_t i = 1; i <= input_num; i++) {
+      auto input_abstract = cnode->input(i)->abstract();
+      if (input_abstract->isa<abstract::AbstractTensor>() &&
+          supported_types.find(cb->GetInputType(node, i - 1)) == supported_types.end()) {
+        return false;
+      }
+    }
+  }
   auto node_output_type = cb->GetOutputType(node, 0);
   return supported_types.find(node_output_type) != supported_types.end();
 }
