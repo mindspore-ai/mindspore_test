@@ -152,6 +152,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   void ParentBeforeFork();
   void ParentAfterFork();
   void ChildAfterFork();
+  void ClearInfo();
 
  private:
   GraphExecutorPy() = default;

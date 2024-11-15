@@ -55,5 +55,13 @@ std::vector<size_t> AclnnKernelMod::GetLaunchIgnoredInputAddressIdx() const {
   }
   return {};
 }
+
+AclnnKernelMod::~AclnnKernelMod() {
+  auto release_executor_func = transform::OpApiDefaultResource::GetInstance().release_executor_func();
+  if (release_executor_func != nullptr) {
+    (void)std::for_each(hash_cache_.begin(), hash_cache_.end(),
+                        [&](CacheTuple &item) { release_executor_func(std::get<kIndex1>(item)); });
+  }
+}
 }  // namespace kernel
 }  // namespace mindspore
