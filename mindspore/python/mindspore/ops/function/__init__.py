@@ -448,6 +448,7 @@ from .math_func import (
     tensor_dot,
     vecdot,
     dot,
+    isnan_ext,
     batch_dot,
     eps,
 )
