@@ -103,7 +103,6 @@ bool FillCpuKernelMod::LaunchKernel<std::complex<float>>(const std::vector<kerne
     value_data = *GetDeviceAddress<std::complex<float>>(inputs, kIndex1);
   } else if (x_type_id_ == kNumberTypeComplex128) {
     value_data = static_cast<std::complex<float>>(*GetDeviceAddress<std::complex<double>>(inputs, kIndex1));
-
   } else {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' "
                   << "cannot convert datatype between complex and real number!";
