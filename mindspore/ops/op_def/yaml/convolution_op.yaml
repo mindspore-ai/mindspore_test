@@ -39,8 +39,6 @@ convolution:
       dtype: tensor
   class:
       name: Convolution
-  function:
-      disable: True
   dispatch:
     enable: True
     Ascend: ConvolutionAscend
