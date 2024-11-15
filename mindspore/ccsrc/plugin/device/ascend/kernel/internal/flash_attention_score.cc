@@ -115,8 +115,8 @@ internal::OpParamPtr InternalFlashAttentionScore::CreateOpParam(const std::vecto
 
   SetKVHead(&op_param, head_num, input_layout);
   if (is_flatten_batch_seq) {
-    op_param.qSeqLen = ConvertActualSeqLengthsToVector(inputs[kIndex8]);
-    op_param.kvSeqLen = ConvertActualSeqLengthsToVector(inputs[kIndex9]);
+    (void)ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &op_param.qSeqLen);
+    (void)ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex9], &op_param.kvSeqLen);
   } else {
     for (int64_t i = 0; i < kv_shape_[kDim0]; i++) {
       (void)op_param.qSeqLen.emplace_back(q_shape_[kDim1]);

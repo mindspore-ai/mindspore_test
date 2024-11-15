@@ -36,6 +36,9 @@ class AcmeFlashAttentionScore : public AcmeKernelMod {
                                const std::vector<KernelTensor *> &ms_inputs,
                                const std::vector<KernelTensor *> &ms_outputs) override;
   bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+
+ private:
+  acme::FlashAttentionScoreParam param_;
 };
 }  // namespace kernel
 }  // namespace mindspore

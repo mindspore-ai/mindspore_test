@@ -74,7 +74,7 @@ internal::OpParamPtr InternalPagedAttention::CreateOpParam(const std::vector<Ker
   op_param.kvHead = static_cast<int32_t>(inputs[kIndex11]->GetValueWithCheck<int64_t>());
 
   if (!enable_custom_pa_) {
-    GetSeqLenFromGraphInputOrEnv(kernel_name_, "batch_valid_length", "MS_INTERNAL_KV_SEQ_LEN", &kv_seq_len_);
+    (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &kv_seq_len_);
     for (const auto &item : kv_seq_len_) {
       (void)op_param.kvSeqLen.emplace_back(item);
     }
@@ -89,7 +89,7 @@ internal::OpParamPtr InternalPagedAttention::CreateOpParam(const std::vector<Ker
     }
   }
 
-  GetSeqLenFromGraphInputOrEnv(kernel_name_, "q_seq_lens", "MS_INTERNAL_Q_SEQ_LEN", &q_seq_len_);
+  (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &q_seq_len_);
   bool no_need_lookahead =
     std::all_of(q_seq_len_.begin(), q_seq_len_.end(), [](int32_t seq_len) { return seq_len == 1; });
   if (!no_need_lookahead) {

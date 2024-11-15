@@ -40,8 +40,7 @@ class AcmePagedAttention : public AcmeKernelMod {
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
-  std::vector<int32_t> q_seq_len_;
-  std::vector<int32_t> kv_seq_len_;
+  acme::PagedAttentionParam param_;
 };
 }  // namespace kernel
 }  // namespace mindspore
