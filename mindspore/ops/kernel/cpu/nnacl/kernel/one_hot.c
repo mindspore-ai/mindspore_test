@@ -172,11 +172,11 @@ int OneHotResize(KernelBase *self) {
   if (one_hot->outer_size_ == 0) {
     return NNACL_ONE_HOT_OUTER_SIZE_INVALID;
   }
-  one_hot->inner_size_ = GetElementNum(indices) / one_hot->outer_size_;
+  one_hot->inner_size_ = NNACLGetElementNum(indices) / one_hot->outer_size_;
   NNACL_CHECK_FALSE(one_hot->inner_size_ <= 0, NNACL_ONE_HOT_INNER_SIZE_INVALID);
 
   self->thread_nr_ = self->UpdateThread(TC_PTYPE(PrimType_OneHot), one_hot->inner_size_, one_hot->outer_size_,
-                                        GetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
+                                        NNACLGetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
   return NNACL_OK;
 }
 

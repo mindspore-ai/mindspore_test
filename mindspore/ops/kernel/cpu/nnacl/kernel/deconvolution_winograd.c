@@ -320,7 +320,7 @@ int DeConvWinogradInitDataParam(DeConvWinogradStruct *deconv) {
 
   if (deconv->conv_.base_.in_size_ == THREE_TENSOR) {
     TensorC *bias_tensor = deconv->conv_.base_.in_[THIRD_INPUT];
-    if (bias_tensor->shape_size_ == Num1 && GetElementNum(bias_tensor) == deconv->conv_.compute_.out_c_) {
+    if (bias_tensor->shape_size_ == Num1 && NNACLGetElementNum(bias_tensor) == deconv->conv_.compute_.out_c_) {
       (void)memcpy(deconv->conv_.bias_data_, bias_tensor->data_, deconv->conv_.compute_.out_c_ * sizeof(float));
     }
   }
@@ -418,10 +418,10 @@ int DeConvWinogradPrepare(KernelBase *self) {
   // when input data is const tensor, save data in kernel
   TensorC *input_tensor = self->in_[FIRST_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(input_tensor);
-  if (IsConst(input_tensor)) {
-    deconv->origin_input_ = (float *)malloc(GetSize(input_tensor));
+  if (NNACLIsConst(input_tensor)) {
+    deconv->origin_input_ = (float *)malloc(NNACLGetSize(input_tensor));
     NNACL_MALLOC_CHECK_NULL_RETURN_ERR(deconv->origin_input_);
-    (void)memcpy(deconv->origin_input_, input_tensor->data_, GetSize(input_tensor));
+    (void)memcpy(deconv->origin_input_, input_tensor->data_, NNACLGetSize(input_tensor));
   }
   return NNACL_OK;
 }

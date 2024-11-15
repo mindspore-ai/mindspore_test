@@ -46,10 +46,10 @@ float *ConvolutionDelegateCopyData(const TensorC *tensor) {
   NNACL_CHECK_NULL_RETURN_NULL(tensor);
   NNACL_CHECK_NULL_RETURN_NULL(tensor->data_);
 
-  float *data = (float *)malloc(GetSize(tensor));
+  float *data = (float *)malloc(NNACLGetSize(tensor));
   NNACL_MALLOC_CHECK_NULL_RETURN_NULL(data);
 
-  (void)memcpy(data, tensor->data_, GetSize(tensor));
+  (void)memcpy(data, tensor->data_, NNACLGetSize(tensor));
   return data;
 }
 
@@ -248,8 +248,8 @@ int ConvolutionDelegatePrepare(struct KernelBase *self) {
                       self->in_[THIRD_INPUT]->data_type_ != kNumberTypeFloat32,
                     NNACL_CONVOLUTION_BIAS_DATATYPE_INVALID);
 
-  convolution_delegate->input_const_ = IsConst(self->in_[FIRST_INPUT]) && !self->train_session_;
-  convolution_delegate->weight_const_ = IsConst(self->in_[SECOND_INPUT]) && !self->train_session_;
+  convolution_delegate->input_const_ = NNACLIsConst(self->in_[FIRST_INPUT]) && !self->train_session_;
+  convolution_delegate->weight_const_ = NNACLIsConst(self->in_[SECOND_INPUT]) && !self->train_session_;
 
   return ConvolutionDelegateGetWeightAndBias(convolution_delegate);
 }

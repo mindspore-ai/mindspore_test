@@ -37,10 +37,10 @@ int LocalResponseNormRun(void *cdata, int task_id, float l, float r) {
   float *output_ptr = (float *)output->data_;
   NNACL_CHECK_NULL_RETURN_ERR(output_ptr);
 
-  int batch = GetBatch(input);
-  int height = GetHeight(input);
-  int width = GetWidth(input);
-  int channel = GetChannel(input);
+  int batch = NNACLGetBatch(input);
+  int height = NNACLGetHeight(input);
+  int width = NNACLGetWidth(input);
+  int channel = NNACLGetChannel(input);
 
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(batch, width, NNACL_ERR);
   int size_bw = batch * width;

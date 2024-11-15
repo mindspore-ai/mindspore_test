@@ -29,7 +29,7 @@ int OnesLikeCompute(KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(output_tensor);
   void *output_ptr = output_tensor->data_;
   NNACL_CHECK_NULL_RETURN_ERR(output_ptr);
-  size_t num = (size_t)GetElementNum(output_tensor);
+  size_t num = (size_t)NNACLGetElementNum(output_tensor);
 
   if (output_tensor->data_type_ == kNumberTypeFloat32) {
     float *output = (float *)output_ptr;

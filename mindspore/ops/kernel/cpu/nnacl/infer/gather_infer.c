@@ -46,7 +46,7 @@ int GatherInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   if (inputs[2]->data_ == NULL) {
     return NNACL_NULL_PTR;
   }
-  if (GetElementNum(inputs[2]) < 1) {
+  if (NNACLGetElementNum(inputs[2]) < 1) {
     return NNACL_ERR;
   }
   int axis = *((int *)inputs[2]->data_);

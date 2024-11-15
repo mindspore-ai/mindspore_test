@@ -178,7 +178,7 @@ int NonMaxSuppressionSelecte(NonMaxSuppressionStruct *nm_suppression, bool simpl
     output->shape_size_ = Num2;
     memcpy(output->shape_, output_shape, output->shape_size_ * sizeof(int));
     int output_size = selected_index_size * sizeof(NMSIndex);
-    if (output_size != GetSize(output)) {
+    if (output_size != NNACLGetSize(output)) {
       return NNACL_NON_MAX_SUPPRESSION_OUTPUT_SIZE_UNMATCH;
     }
     int *out_data = (int *)env->Alloc(env->allocator_, output_size);
@@ -189,7 +189,7 @@ int NonMaxSuppressionSelecte(NonMaxSuppressionStruct *nm_suppression, bool simpl
     int output_shape[] = {selected_index_size};
     output->shape_size_ = Num1;
     memcpy(output->shape_, output_shape, output->shape_size_ * sizeof(int));
-    int *out_data = (int *)env->Alloc(env->allocator_, GetSize(output));
+    int *out_data = (int *)env->Alloc(env->allocator_, NNACLGetSize(output));
     NNACL_MALLOC_CHECK_NULL_RETURN_ERR(out_data);
     output->data_ = out_data;
     for (int i = 0; i < selected_index_size; i++) {

@@ -66,7 +66,7 @@ void HandleReduceF16ASumAndSumSquare(KernelBase *base) {
   float16_t *data = (float16_t *)in_tensor->data_;
   NNACL_CHECK_NULL_RETURN_VOID(data);
 
-  int num = GetElementNum(in_tensor);
+  int num = NNACLGetElementNum(in_tensor);
 
   if (((ReduceParameter *)base->param_)->mode_ == Reduce_ASum) {
     for (int i = 0; i < num; ++i) {
@@ -86,7 +86,7 @@ void HandleReduceF16ASumAndSumSquare(KernelBase *base) {
 
 int CalculateReduceF16CoeffOutput(KernelBase *base) {
   TensorC *out_tensor = base->out_[OUTPUT_INDEX];
-  int num = GetElementNum(out_tensor);
+  int num = NNACLGetElementNum(out_tensor);
 
   float16_t *out_data = (float16_t *)out_tensor->data_;
   for (int i = 0; i < num; ++i) {

@@ -37,7 +37,7 @@ int PadInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **ou
     return NNACL_INPUT_TENSOR_ERROR;
   }
   const TensorC *paddings = inputs[1];
-  int size = GetElementNum(paddings);
+  int size = NNACLGetElementNum(paddings);
   if (size > MAX_PAD_SIZE) {
     return NNACL_PARAM_INVALID;
   }

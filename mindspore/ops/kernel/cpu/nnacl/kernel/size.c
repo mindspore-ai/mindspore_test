@@ -25,7 +25,7 @@ int SizeCompute(KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(out_tensor);
   int *out_data = (int *)out_tensor->data_;
   NNACL_CHECK_NULL_RETURN_ERR(out_data);
-  out_data[Index0] = GetElementNum(in_tensor);
+  out_data[Index0] = NNACLGetElementNum(in_tensor);
   return NNACL_OK;
 }
 

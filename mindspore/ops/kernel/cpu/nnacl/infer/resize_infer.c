@@ -27,7 +27,7 @@ int HandleTwoInputs(const TensorC *const *inputs, ResizeParameter *param) {
   if (shape_tensor->data_ == NULL) {
     return NNACL_INFER_INVALID;
   }
-  int shape_size = GetElementNum(shape_tensor);
+  int shape_size = NNACLGetElementNum(shape_tensor);
   void *origin_data = shape_tensor->data_;
   if (origin_data == NULL) {
     return NNACL_INFER_INVALID;
@@ -47,16 +47,16 @@ int HandleTwoInputs(const TensorC *const *inputs, ResizeParameter *param) {
         param->new_width_ = data[width_index];
       } else if (shape_tensor->data_type_ == kNumberTypeFloat32) {
         float *data = (float *)(origin_data);
-        NNACL_CHECK_INT_MUL_NOT_OVERFLOW((int)(data[height_index]), GetHeight(input), NNACL_ERRCODE_MUL_OVERFLOW);
-        NNACL_CHECK_INT_MUL_NOT_OVERFLOW((int)(data[width_index]), GetWidth(input), NNACL_ERRCODE_MUL_OVERFLOW);
-        param->new_height_ = round(data[height_index] * GetHeight(input));
-        param->new_width_ = round(data[width_index] * GetWidth(input));
+        NNACL_CHECK_INT_MUL_NOT_OVERFLOW((int)(data[height_index]), NNACLGetHeight(input), NNACL_ERRCODE_MUL_OVERFLOW);
+        NNACL_CHECK_INT_MUL_NOT_OVERFLOW((int)(data[width_index]), NNACLGetWidth(input), NNACL_ERRCODE_MUL_OVERFLOW);
+        param->new_height_ = round(data[height_index] * NNACLGetHeight(input));
+        param->new_width_ = round(data[width_index] * NNACLGetWidth(input));
       } else if (shape_tensor->data_type_ == kNumberTypeFloat16) {
         uint16_t *data = (uint16_t *)(shape_tensor->data_);
         float scale_height = ShortToFloat32(data[height_index]);
         float scale_width = ShortToFloat32(data[width_index]);
-        param->new_height_ = round(scale_height * GetHeight(input));
-        param->new_width_ = round(scale_width * GetWidth(input));
+        param->new_height_ = round(scale_height * NNACLGetHeight(input));
+        param->new_width_ = round(scale_width * NNACLGetWidth(input));
       }
       break;
     }
@@ -69,10 +69,10 @@ int HandleTwoInputs(const TensorC *const *inputs, ResizeParameter *param) {
       } else {
         return NNACL_ERR;
       }
-      NNACL_CHECK_INT_MUL_NOT_OVERFLOW(GetHeight(input) - 1, scale - 1, NNACL_ERRCODE_MUL_OVERFLOW);
-      NNACL_CHECK_INT_MUL_NOT_OVERFLOW(GetWidth(input) - 1, scale - 1, NNACL_ERRCODE_MUL_OVERFLOW);
-      param->new_height_ = GetHeight(input) + (GetHeight(input) - 1) * (scale - 1);
-      param->new_width_ = GetWidth(input) + (GetWidth(input) - 1) * (scale - 1);
+      NNACL_CHECK_INT_MUL_NOT_OVERFLOW(NNACLGetHeight(input) - 1, scale - 1, NNACL_ERRCODE_MUL_OVERFLOW);
+      NNACL_CHECK_INT_MUL_NOT_OVERFLOW(NNACLGetWidth(input) - 1, scale - 1, NNACL_ERRCODE_MUL_OVERFLOW);
+      param->new_height_ = NNACLGetHeight(input) + (NNACLGetHeight(input) - 1) * (scale - 1);
+      param->new_width_ = NNACLGetWidth(input) + (NNACLGetWidth(input) - 1) * (scale - 1);
       break;
     }
     default: {
@@ -115,12 +115,12 @@ int ResizeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
   NNACL_CHECK_NULL_RETURN_ERR(param);
   int output_shape[MAX_SHAPE_SIZE] = {0};
   size_t output_shape_size = 0;
-  ShapePush(output_shape, &output_shape_size, GetBatch(input));
+  ShapePush(output_shape, &output_shape_size, NNACLGetBatch(input));
   int ret = CalculateNewHeightAndWidth(inputs, inputs_size, param);
   if (ret == NNACL_OK) {
     ShapePush(output_shape, &output_shape_size, param->new_height_);
     ShapePush(output_shape, &output_shape_size, param->new_width_);
-    ShapePush(output_shape, &output_shape_size, GetChannel(input));
+    ShapePush(output_shape, &output_shape_size, NNACLGetChannel(input));
     SetShapeArray(output, output_shape, output_shape_size);
   }
   return ret;

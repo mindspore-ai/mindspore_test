@@ -71,7 +71,7 @@ int RunPriorBox(void *cdata, int task_id, float l, float r) {
   NNACL_CHECK_NULL_RETURN_ERR(output_tensor);
   float *output_data = output_tensor->data_;
   NNACL_CHECK_NULL_RETURN_ERR(output_data);
-  return PriorBox(prior_box->output_, output_data, GetSize(output_tensor), task_id, prior_box->base_.thread_nr_);
+  return PriorBox(prior_box->output_, output_data, NNACLGetSize(output_tensor), task_id, prior_box->base_.thread_nr_);
 }
 
 int PriorBoxRelease(KernelBase *self) {
@@ -97,12 +97,12 @@ int PriorBoxResize(KernelBase *self) {
   TensorC *output_tensor = prior_box->base_.out_[OUTPUT_INDEX];
   NNACL_CHECK_NULL_RETURN_ERR(output_tensor);
 
-  prior_box->fmap_w_ = GetWidth(input0_tensor);
+  prior_box->fmap_w_ = NNACLGetWidth(input0_tensor);
   NNACL_CHECK_ZERO_RETURN_ERR(prior_box->fmap_w_);
-  prior_box->fmap_h_ = GetHeight(input1_tensor);
+  prior_box->fmap_h_ = NNACLGetHeight(input1_tensor);
   NNACL_CHECK_ZERO_RETURN_ERR(prior_box->fmap_h_);
-  const int image_w = param->image_size_w > 0 ? param->image_size_w : GetWidth(input1_tensor);
-  const int image_h = param->image_size_h > 0 ? param->image_size_h : GetHeight(input1_tensor);
+  const int image_w = param->image_size_w > 0 ? param->image_size_w : NNACLGetWidth(input1_tensor);
+  const int image_h = param->image_size_h > 0 ? param->image_size_h : NNACLGetHeight(input1_tensor);
 
   prior_box->step_w_ = param->step_w > 0.0f ? param->step_w : (float)(image_w) / prior_box->fmap_w_;
   prior_box->step_h_ = param->step_h > 0.0f ? param->step_h : (float)(image_h) / prior_box->fmap_h_;
@@ -136,7 +136,7 @@ int PriorBoxResize(KernelBase *self) {
   PriorBoxRelease(self);
   int size = Num4 + Num4 + different_aspect_ratios_size;
   size = size * prior_box->fmap_h_ * prior_box->fmap_w_ * param->min_sizes_size;
-  size = size + UP_ROUND(GetHeight(output_tensor), COMM_SHAPE_SIZE);
+  size = size + UP_ROUND(NNACLGetHeight(output_tensor), COMM_SHAPE_SIZE);
   size = size * sizeof(float);
   NNACL_CHECK_MALLOC_SIZE(size);
   prior_box->output_ = (float *)self->env_->Alloc(self->env_->allocator_, size);
@@ -162,7 +162,7 @@ int PriorBoxResize(KernelBase *self) {
   }
 
   // variance
-  for (int i = 0; i < GetHeight(output_tensor) / COMM_SHAPE_SIZE; i++) {
+  for (int i = 0; i < NNACLGetHeight(output_tensor) / COMM_SHAPE_SIZE; i++) {
     for (int j = 0; j < COMM_SHAPE_SIZE; j++) {
       prior_box->output_[prior_box->output_size_++] = param->variances[j];
     }

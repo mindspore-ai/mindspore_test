@@ -83,10 +83,10 @@ void ConvSWPackWeight(ConvolutionBaseStruct *conv) {
   TensorC *filter_tensor = conv->base_.in_[SECOND_INPUT];
   NNACL_CHECK_NULL_RETURN_VOID(filter_tensor);
 
-  int input_channel = GetChannel(filter_tensor);
-  int output_channel = GetBatch(filter_tensor);
-  int kernel_h = GetHeight(filter_tensor);
-  int kernel_w = GetWidth(filter_tensor);
+  int input_channel = NNACLGetChannel(filter_tensor);
+  int output_channel = NNACLGetBatch(filter_tensor);
+  int kernel_h = NNACLGetHeight(filter_tensor);
+  int kernel_w = NNACLGetWidth(filter_tensor);
 
   int oc_block_num = UP_DIV(output_channel, conv_sw->oc_tile_);
   void *origin_weight = (conv->base_.train_session_) ? filter_tensor->data_ : conv->origin_weight_;
@@ -103,10 +103,10 @@ int ConvSWMallocWeightBiasData(ConvolutionBaseStruct *conv) {
   TensorC *filter_tensor = conv->base_.in_[SECOND_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(filter_tensor);
 
-  int input_channel = GetChannel(filter_tensor);
-  int output_channel = GetBatch(filter_tensor);
-  int kernel_h = GetHeight(filter_tensor);
-  int kernel_w = GetWidth(filter_tensor);
+  int input_channel = NNACLGetChannel(filter_tensor);
+  int output_channel = NNACLGetBatch(filter_tensor);
+  int kernel_h = NNACLGetHeight(filter_tensor);
+  int kernel_w = NNACLGetWidth(filter_tensor);
 
   conv_param->input_channel_ = input_channel;
   conv_param->output_channel_ = output_channel;
@@ -206,10 +206,10 @@ int ConvolutionSWPrepare(KernelBase *self) {
     NNACL_CHECK_NULL_RETURN_ERR(filter_tensor);
     NNACL_CHECK_FALSE(filter_tensor->shape_size_ != DIMENSION_4D, NNACL_CONVOLUTION_WEIGHT_SHAPE_INVALID);
 
-    int input_channel = GetChannel(filter_tensor);
-    int output_channel = GetBatch(filter_tensor);
-    int kernel_h = GetHeight(filter_tensor);
-    int kernel_w = GetWidth(filter_tensor);
+    int input_channel = NNACLGetChannel(filter_tensor);
+    int output_channel = NNACLGetBatch(filter_tensor);
+    int kernel_h = NNACLGetHeight(filter_tensor);
+    int kernel_w = NNACLGetWidth(filter_tensor);
 
     NNACL_CHECK_INT_MUL_NOT_OVERFLOW(kernel_h, kernel_w, NNACL_ERR);
     int kernel_hw = kernel_h * kernel_w;

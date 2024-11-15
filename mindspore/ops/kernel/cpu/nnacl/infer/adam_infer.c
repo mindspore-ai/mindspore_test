@@ -24,10 +24,11 @@ int AdamInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
     return check_ret;
   }
 
-  if (GetElementNum(inputs[0]) != GetElementNum(inputs[1]) || GetElementNum(inputs[0]) != GetElementNum(inputs[2]) ||
-      GetElementNum(inputs[0]) != GetElementNum(inputs[9]) || GetElementNum(inputs[3]) != 1 ||
-      GetElementNum(inputs[4]) != 1 || GetElementNum(inputs[5]) != 1 || GetElementNum(inputs[6]) != 1 ||
-      GetElementNum(inputs[7]) != 1 || GetElementNum(inputs[8]) != 1) {
+  if (NNACLGetElementNum(inputs[0]) != NNACLGetElementNum(inputs[1]) ||
+      NNACLGetElementNum(inputs[0]) != NNACLGetElementNum(inputs[2]) ||
+      NNACLGetElementNum(inputs[0]) != NNACLGetElementNum(inputs[9]) || NNACLGetElementNum(inputs[3]) != 1 ||
+      NNACLGetElementNum(inputs[4]) != 1 || NNACLGetElementNum(inputs[5]) != 1 || NNACLGetElementNum(inputs[6]) != 1 ||
+      NNACLGetElementNum(inputs[7]) != 1 || NNACLGetElementNum(inputs[8]) != 1) {
     return NNACL_ERR;
   }
   if (outputs_size != 0) {

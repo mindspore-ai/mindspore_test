@@ -76,15 +76,15 @@ int BatchNormReSize(KernelBase *self) {
 
   (void)batch_norm->base_.Release(self);
 
-  batch_norm->mean_ = self->env_->Alloc(self->env_->allocator_, GetSize(self->in_[SECOND_INPUT]));
-  batch_norm->variance_ = self->env_->Alloc(self->env_->allocator_, GetSize(self->in_[THIRD_INPUT]));
+  batch_norm->mean_ = self->env_->Alloc(self->env_->allocator_, NNACLGetSize(self->in_[SECOND_INPUT]));
+  batch_norm->variance_ = self->env_->Alloc(self->env_->allocator_, NNACLGetSize(self->in_[THIRD_INPUT]));
   if (batch_norm->mean_ == NULL || batch_norm->variance_ == NULL) {
     (void)batch_norm->base_.Release(self);
     return NNACL_ERR;
   }
 
-  (void)memcpy(batch_norm->mean_, self->in_[SECOND_INPUT]->data_, GetSize(self->in_[SECOND_INPUT]));
-  (void)memcpy(batch_norm->variance_, self->in_[THIRD_INPUT]->data_, GetSize(self->in_[THIRD_INPUT]));
+  (void)memcpy(batch_norm->mean_, self->in_[SECOND_INPUT]->data_, NNACLGetSize(self->in_[SECOND_INPUT]));
+  (void)memcpy(batch_norm->variance_, self->in_[THIRD_INPUT]->data_, NNACLGetSize(self->in_[THIRD_INPUT]));
   return NNACL_OK;
 }
 

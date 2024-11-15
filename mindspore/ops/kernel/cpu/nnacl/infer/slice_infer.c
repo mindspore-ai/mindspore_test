@@ -35,7 +35,7 @@ static bool CheckInputsDataType(const TensorC *const *inputs, size_t inputs_size
 
 int InitBeginAndSizeParam(const TensorC *const *inputs, int *begin, int *size, int param_length) {
   /* init begin parameter */
-  int slice_begin_size = GetElementNum(inputs[1]);
+  int slice_begin_size = NNACLGetElementNum(inputs[1]);
   int *begin_ptr = (int *)(inputs[1]->data_);
   if (slice_begin_size != param_length || begin_ptr == NULL) {
     return NNACL_INFER_INVALID;
@@ -48,7 +48,7 @@ int InitBeginAndSizeParam(const TensorC *const *inputs, int *begin, int *size, i
   }
 
   /* init size parameter */
-  int slice_size_size = GetElementNum(inputs[2]);
+  int slice_size_size = NNACLGetElementNum(inputs[2]);
   int *size_ptr = (int *)(inputs[2]->data_);
   if (slice_size_size != param_length || size_ptr == NULL) {
     return NNACL_INFER_INVALID;

@@ -37,7 +37,7 @@ int NonZeroCompute(KernelBase *self) {
   int *coordiate_values = (int *)self->env_->Alloc(self->env_->allocator_, input->shape_size_ * sizeof(int));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(coordiate_values);
 
-  for (int i = 0; i < GetElementNum(input); i += 1) {
+  for (int i = 0; i < NNACLGetElementNum(input); i += 1) {
     if (input_data[i]) {
       for (size_t j = 0; j < input->shape_size_; j++) {
         output_data[non_zero_count + (int)j * non_zero_nums] = coordiate_values[j];

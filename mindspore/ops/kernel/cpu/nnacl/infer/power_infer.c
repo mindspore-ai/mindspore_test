@@ -44,7 +44,7 @@ int PowerInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
   }
   if (exp_tensor != NULL) {
     bool exp_x_equal = ShapeEqual(exp_tensor->shape_, exp_tensor->shape_size_, x_tensor->shape_, x_tensor->shape_size_);
-    if (!exp_x_equal && GetElementNum(exp_tensor) != 1) {
+    if (!exp_x_equal && NNACLGetElementNum(exp_tensor) != 1) {
       return NNACL_INPUT_TENSOR_ERROR;
     }
   }

@@ -25,8 +25,9 @@ int ApplyMomentumInferShape(const TensorC *const *inputs, size_t inputs_size, Te
     return check_ret;
   }
 
-  if (GetElementNum(inputs[0]) != GetElementNum(inputs[1]) || GetElementNum(inputs[0]) != GetElementNum(inputs[3]) ||
-      GetElementNum(inputs[2]) != 1 || GetElementNum(inputs[4]) != 1) {
+  if (NNACLGetElementNum(inputs[0]) != NNACLGetElementNum(inputs[1]) ||
+      NNACLGetElementNum(inputs[0]) != NNACLGetElementNum(inputs[3]) || NNACLGetElementNum(inputs[2]) != 1 ||
+      NNACLGetElementNum(inputs[4]) != 1) {
     return NNACL_INPUT_TENSOR_ERROR;
   }
   if (outputs_size != 0) {

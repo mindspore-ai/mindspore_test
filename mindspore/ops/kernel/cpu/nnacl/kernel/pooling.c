@@ -100,14 +100,14 @@ int PoolingResize(KernelBase *self) {
   PoolingComputeParam *compute = &pooling->compute_;
   PoolingParameter *param = (PoolingParameter *)self->param_;
 
-  compute->input_batch_ = GetBatch(in_tensor);
-  compute->input_channel_ = GetChannel(in_tensor);
-  compute->input_h_ = GetHeight(in_tensor);
-  compute->input_w_ = GetWidth(in_tensor);
-  compute->output_batch_ = GetBatch(out_tensor);
-  compute->output_channel_ = GetChannel(out_tensor);
-  compute->output_h_ = GetHeight(out_tensor);
-  compute->output_w_ = GetWidth(out_tensor);
+  compute->input_batch_ = NNACLGetBatch(in_tensor);
+  compute->input_channel_ = NNACLGetChannel(in_tensor);
+  compute->input_h_ = NNACLGetHeight(in_tensor);
+  compute->input_w_ = NNACLGetWidth(in_tensor);
+  compute->output_batch_ = NNACLGetBatch(out_tensor);
+  compute->output_channel_ = NNACLGetChannel(out_tensor);
+  compute->output_h_ = NNACLGetHeight(out_tensor);
+  compute->output_w_ = NNACLGetWidth(out_tensor);
   compute->window_h_ = param->window_h_;
   compute->window_w_ = param->window_w_;
   if (param->global_) {

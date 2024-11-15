@@ -35,7 +35,7 @@ int ExpResize(struct KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(exp);
   ExpParameter *param = (ExpParameter *)exp->base_.param_;
   NNACL_CHECK_NULL_RETURN_ERR(param);
-  exp->element_num_ = GetElementNum(exp->base_.in_[FIRST_INPUT]);
+  exp->element_num_ = NNACLGetElementNum(exp->base_.in_[FIRST_INPUT]);
   return NNACL_OK;
 }
 

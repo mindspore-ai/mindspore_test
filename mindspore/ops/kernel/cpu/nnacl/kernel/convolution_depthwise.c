@@ -148,9 +148,9 @@ int ConvolutionDepthwisePrepare(KernelBase *self) {
     NNACL_CHECK_NULL_RETURN_ERR(weight_tensor);
     NNACL_CHECK_TRUE_RET(weight_tensor->shape_size_ == DIMENSION_4D, NNACL_CONVOLUTION_WEIGHT_SHAPE_INVALID);
 
-    int weight_size_hw = GetHeight(weight_tensor) * GetWidth(weight_tensor);
-    NNACL_CHECK_INT_MUL_NOT_OVERFLOW(GetBatch(weight_tensor), weight_size_hw, NNACL_ERR);
-    int pack_weight_size = GetBatch(weight_tensor) * weight_size_hw;
+    int weight_size_hw = NNACLGetHeight(weight_tensor) * NNACLGetWidth(weight_tensor);
+    NNACL_CHECK_INT_MUL_NOT_OVERFLOW(NNACLGetBatch(weight_tensor), weight_size_hw, NNACL_ERR);
+    int pack_weight_size = NNACLGetBatch(weight_tensor) * weight_size_hw;
     NNACL_CHECK_INT_MUL_NOT_OVERFLOW(pack_weight_size, sizeof(float), NNACL_ERR);
     self->work_size_ = pack_weight_size * sizeof(float);
   }

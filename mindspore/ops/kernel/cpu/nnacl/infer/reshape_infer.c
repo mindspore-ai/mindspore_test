@@ -20,7 +20,7 @@
 #include "nnacl/tensor_c_utils.h"
 
 int CalShape(const int *data, const TensorC *const *inputs, int *out_shape, size_t *out_shape_size, int shape_size) {
-  int input_count = GetElementNum(inputs[0]);
+  int input_count = NNACLGetElementNum(inputs[0]);
   int index = 0;
   int size = 1;
   for (int i = 0; i < shape_size; i++) {
@@ -62,7 +62,7 @@ int CalNewShape(const TensorC *in_tensor, int *out_shape, size_t out_shape_size)
     } else if (out_shape[i] < 0) {
       return NNACL_ERR;
     } else if (out_shape[i] == 0) {
-      if (GetElementNum(in_tensor) != 0) {
+      if (NNACLGetElementNum(in_tensor) != 0) {
         out_shape[i] = in_tensor->shape_[i];
         out_shape_size_new *= out_shape[i];
       } else {
@@ -182,7 +182,7 @@ int ReshapeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
   size_t out_shape_size = 0;
   if (inputs_size == 2) {
     const TensorC *shape_tensor = inputs[1];
-    if (GetElementNum(input) == 1) {
+    if (NNACLGetElementNum(input) == 1) {
       if (shape_tensor->data_ == NULL || (shape_tensor->shape_size_ == 1 && shape_tensor->shape_[0] == 0)) {
         SetShapeArray(output, out_shape, out_shape_size);
         return NNACL_OK;
@@ -192,7 +192,7 @@ int ReshapeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
     if (shape_tensor->data_ == NULL) {
       return NNACL_INFER_INVALID;
     }
-    int shape_size = GetElementNum(shape_tensor);
+    int shape_size = NNACLGetElementNum(shape_tensor);
     if (shape_size > MAX_SHAPE_SIZE) {
       return NNACL_ERR;
     }

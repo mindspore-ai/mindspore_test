@@ -29,10 +29,10 @@ int BatchToSpaceProcessInput(BatchToSpaceStruct *batch_to_space) {
   NNACL_CHECK_NULL_RETURN_ERR(crop);
   NNACL_CHECK_NULL_RETURN_ERR(crop->data_);
 
-  if (GetElementNum(block_shape) < BATCH_TO_SPACE_BLOCK_SHAPE_SIZE) {
+  if (NNACLGetElementNum(block_shape) < BATCH_TO_SPACE_BLOCK_SHAPE_SIZE) {
     return NNACL_BATCH_TO_SPACE_BLOCK_SHAPE_INVALID;
   }
-  if (GetElementNum(crop) < COMM_SHAPE_SIZE) {
+  if (NNACLGetElementNum(crop) < COMM_SHAPE_SIZE) {
     return NNACL_BATCH_TO_SPACE_CROP_INVALID;
   }
 

@@ -65,8 +65,8 @@ int PReluResize(KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(prelu);
   TensorC *input = self->in_[FIRST_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(input);
-  prelu->input_num_ = GetElementNum(input);
-  prelu->channel_num_ = GetChannel(input);
+  prelu->input_num_ = NNACLGetElementNum(input);
+  prelu->channel_num_ = NNACLGetChannel(input);
   return NNACL_OK;
 }
 
@@ -84,10 +84,10 @@ int PReluCompute(KernelBase *self) {
   TensorC *slope = self->in_[SECOND_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(slope);
 
-  int slope_num = GetElementNum(slope);
+  int slope_num = NNACLGetElementNum(slope);
   if (slope_num == Num1) {
     prelu->channel_shared_ = true;
-  } else if (slope_num == GetChannel(input)) {
+  } else if (slope_num == NNACLGetChannel(input)) {
     prelu->channel_shared_ = false;
   } else {
     return NNACL_PRELU_SLOPE_NUM_INVALID;

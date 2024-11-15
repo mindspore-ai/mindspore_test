@@ -75,7 +75,7 @@ int PriorBoxInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC
   const int kPriorBoxW = 1;
   const int kPriorBoxC = 2;
 
-  int32_t h = GetHeight(input) * GetWidth(input) * num_priors_box * kPriorBoxPoints;
+  int32_t h = NNACLGetHeight(input) * NNACLGetWidth(input) * num_priors_box * kPriorBoxPoints;
   output->shape_size_ = 4;
   output->shape_[0] = kPriorBoxN;
   output->shape_[1] = h;

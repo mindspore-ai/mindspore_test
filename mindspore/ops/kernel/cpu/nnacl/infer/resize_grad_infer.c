@@ -45,10 +45,10 @@ int ResizeGradInferShape(const TensorC *const *inputs, size_t inputs_size, Tenso
     size_t output_shape_size = 0;
     int32_t *data = (int32_t *)(input_1->data_);
 
-    ShapePush(output_shape, &output_shape_size, GetBatch(input));
+    ShapePush(output_shape, &output_shape_size, NNACLGetBatch(input));
     ShapePush(output_shape, &output_shape_size, data[0]);
     ShapePush(output_shape, &output_shape_size, data[1]);
-    ShapePush(output_shape, &output_shape_size, GetChannel(input));
+    ShapePush(output_shape, &output_shape_size, NNACLGetChannel(input));
     SetShapeArray(output, output_shape, output_shape_size);
   } else {
     return NNACL_ERR;

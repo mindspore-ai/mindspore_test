@@ -117,12 +117,12 @@ int InitGatherDynamicStatus(GatherStruct *gather) {
   for (int i = gather->axis_ + 1; i < in_rank; ++i) {
     gather->byte_inner_size_ *= in_shape[i];
   }
-  gather->indices_size_ = GetElementNum(gather->base_.in_[SECOND_INPUT]);
+  gather->indices_size_ = NNACLGetElementNum(gather->base_.in_[SECOND_INPUT]);
   return NNACL_OK;
 }
 
 void GatherUpdateThreadNumProcess(GatherStruct *gather) {
-  int all_bytes = GetSize(gather->base_.out_[OUTPUT_INDEX]);
+  int all_bytes = NNACLGetSize(gather->base_.out_[OUTPUT_INDEX]);
   if (all_bytes <= kGatherMinCostPerThread) {
     gather->base_.thread_nr_ = 1;
     return;
@@ -130,7 +130,7 @@ void GatherUpdateThreadNumProcess(GatherStruct *gather) {
 
   gather->base_.thread_nr_ =
     gather->base_.UpdateThread(TC_PTYPE(PrimType_Gather), 0, gather->byte_inner_size_,
-                               GetSize(gather->base_.out_[OUTPUT_INDEX]), gather->base_.thread_nr_);
+                               NNACLGetSize(gather->base_.out_[OUTPUT_INDEX]), gather->base_.thread_nr_);
   return;
 }
 

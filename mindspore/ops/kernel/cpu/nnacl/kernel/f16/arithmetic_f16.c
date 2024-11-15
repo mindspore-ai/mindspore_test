@@ -86,9 +86,9 @@ int ArithmeticF16Resize(KernelBase *self) {
       NNACL_CHECK_NULL_RETURN_ERR(t->data_);
       void *f32_data = t->data_;
       t->data_type_ = kNumberTypeFloat16;
-      t->data_ = self->env_->Alloc(self->env_->allocator_, GetSize(t));
+      t->data_ = self->env_->Alloc(self->env_->allocator_, NNACLGetSize(t));
       NNACL_MALLOC_CHECK_NULL_RETURN_ERR(self->in_[FIRST_INPUT]->data_);
-      Float32ToFloat16((float *)(f32_data), (float16_t *)(t->data_), GetElementNum(t));
+      Float32ToFloat16((float *)(f32_data), (float16_t *)(t->data_), NNACLGetElementNum(t));
       self->env_->Free(self->env_->allocator_, f32_data);
     }
     if (arithmetic->b_matrix_.is_const_ && self->in_[SECOND_INPUT]->data_type_ == kNumberTypeFloat32) {
@@ -96,9 +96,9 @@ int ArithmeticF16Resize(KernelBase *self) {
       NNACL_CHECK_NULL_RETURN_ERR(t->data_);
       void *f32_data = t->data_;
       t->data_type_ = kNumberTypeFloat16;
-      t->data_ = self->env_->Alloc(self->env_->allocator_, GetSize(t));
+      t->data_ = self->env_->Alloc(self->env_->allocator_, NNACLGetSize(t));
       NNACL_MALLOC_CHECK_NULL_RETURN_ERR(self->in_[FIRST_INPUT]->data_);
-      Float32ToFloat16((float *)(f32_data), (float16_t *)(t->data_), GetElementNum(t));
+      Float32ToFloat16((float *)(f32_data), (float16_t *)(t->data_), NNACLGetElementNum(t));
       self->env_->Free(self->env_->allocator_, f32_data);
     }
   }
@@ -149,7 +149,7 @@ int ArithmeticF16Compute(KernelBase *self) {
     NNACL_CHECK_NULL_RETURN_ERR(arithmetic_f16->arithmetic_.c_matrix_.data_);
     NNACL_CHECK_NULL_RETURN_ERR(self->out_[OUTPUT_INDEX]->data_);
     Float16ToFloat32((float16_t *)(arithmetic_f16->arithmetic_.c_matrix_.data_),
-                     (float *)(self->out_[OUTPUT_INDEX]->data_), GetElementNum(self->out_[OUTPUT_INDEX]));
+                     (float *)(self->out_[OUTPUT_INDEX]->data_), NNACLGetElementNum(self->out_[OUTPUT_INDEX]));
   }
 
   FreeArithmeticF16Buffers(arithmetic_f16);

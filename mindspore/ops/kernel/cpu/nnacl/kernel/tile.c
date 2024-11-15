@@ -31,13 +31,13 @@ int TileDoubleInputScenes(TileStruct *tile) {
     return NNACL_OK;
   }
 
-  NNACL_CHECK_FALSE(GetElementNum(t) > (int)tile->base_.in_[FIRST_INPUT]->shape_size_,
+  NNACL_CHECK_FALSE(NNACLGetElementNum(t) > (int)tile->base_.in_[FIRST_INPUT]->shape_size_,
                     NNACL_TILE_SECOND_INPUT_NUM_INVALID);
   NNACL_CHECK_FALSE(t->data_type_ != kNumberTypeInt && t->data_type_ != kNumberTypeInt32,
                     NNACL_TILE_SECOND_INPUT_DATA_TYPE_INVALID);
 
   int *input1_addr = (int *)(t->data_);
-  for (int i = 0; i < GetElementNum(t); ++i) {
+  for (int i = 0; i < NNACLGetElementNum(t); ++i) {
     NNACL_CHECK_FALSE(input1_addr[i] <= 0, NNACL_TILE_SECOND_INPUT_VALUE_INVALID);
     tile->dims_[i] = i;
     tile->multiples_[i] = input1_addr[i];
@@ -83,7 +83,7 @@ int TileFillOneDimTileParam(TileStruct *tile) {
     NNACL_CHECK_FALSE(INT_MUL_OVERFLOW(tile->in_shape_[mul_index], tile->in_strides_[mul_index]), NNACL_ERR);
     tile->fast_stride_ = (size_t)(tile->in_shape_[mul_index] * tile->in_strides_[mul_index]);
     NNACL_CHECK_FALSE(tile->fast_stride_ < 1, NNACL_TILE_INPUT_SHAPE_INVALID);
-    tile->fast_outer_size_ = (size_t)GetElementNum(tile->base_.in_[FIRST_INPUT]) / tile->fast_stride_;
+    tile->fast_outer_size_ = (size_t)NNACLGetElementNum(tile->base_.in_[FIRST_INPUT]) / tile->fast_stride_;
   }
   tile->resize_done_ = true;
   return NNACL_OK;

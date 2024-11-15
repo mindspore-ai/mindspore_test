@@ -394,7 +394,7 @@ int ArithmeticBroadCastConstTensor(ArithmeticStruct *arithmetic) {
     prefer_explicit_broadcast && (arithmetic->base_.in_[FIRST_INPUT]->data_type_ != kNumberTypeBool);
 
   bool exist_broadcast_ = false;
-  int buffer_size = GetElementNum(arithmetic->base_.out_[OUTPUT_INDEX]) * arithmetic->in_data_size_;
+  int buffer_size = NNACLGetElementNum(arithmetic->base_.out_[OUTPUT_INDEX]) * arithmetic->in_data_size_;
   if (arithmetic->a_matrix_.is_const_) {
     NNACL_CHECK_NULL_RETURN_ERR(arithmetic->base_.in_[FIRST_INPUT]->data_);
     if (arithmetic->in_elements_num0_ != arithmetic->out_elements_num_ && prefer_explicit_broadcast) {
@@ -516,7 +516,7 @@ int ArithmeticComputeOfflineInfo(ArithmeticStruct *arithmetic) {
 }
 
 int ArithmeticChooseThreadCuttingStrategy(ArithmeticStruct *arithmetic) {
-  int total_num = GetElementNum(arithmetic->base_.out_[OUTPUT_INDEX]);
+  int total_num = NNACLGetElementNum(arithmetic->base_.out_[OUTPUT_INDEX]);
   arithmetic->base_.thread_nr_ =
     arithmetic->base_.UpdateThread(TC_TYPE(arithmetic->primitive_type_, arithmetic->functions_.activation_type_), 1, 1,
                                    total_num, arithmetic->base_.thread_nr_);
@@ -560,9 +560,9 @@ int ArithmeticResize(struct KernelBase *self) {
 
   NNACL_CHECK_TRUE_RET(arithmetic->in_data_size_ != 0, NNACL_UNSUPPORTED_DATA_TYPE);
   NNACL_CHECK_TRUE_RET(arithmetic->out_data_size_ != 0, NNACL_UNSUPPORTED_DATA_TYPE);
-  arithmetic->in_elements_num0_ = GetElementNum(self->in_[FIRST_INPUT]);
-  arithmetic->in_elements_num1_ = GetElementNum(self->in_[SECOND_INPUT]);
-  arithmetic->out_elements_num_ = GetElementNum(self->in_[OUTPUT_INDEX]);
+  arithmetic->in_elements_num0_ = NNACLGetElementNum(self->in_[FIRST_INPUT]);
+  arithmetic->in_elements_num1_ = NNACLGetElementNum(self->in_[SECOND_INPUT]);
+  arithmetic->out_elements_num_ = NNACLGetElementNum(self->in_[OUTPUT_INDEX]);
 
   int ret = ResetArithmeticStatus(arithmetic);
   if (ret != NNACL_OK) {
@@ -616,8 +616,8 @@ int ArithmeticPrepare(struct KernelBase *self) {
   }
   arithmetic->init_function_(self);
 
-  arithmetic->a_matrix_.is_const_ = IsConst(self->in_[FIRST_INPUT]);
-  arithmetic->b_matrix_.is_const_ = IsConst(self->in_[SECOND_INPUT]);
+  arithmetic->a_matrix_.is_const_ = NNACLIsConst(self->in_[FIRST_INPUT]);
+  arithmetic->b_matrix_.is_const_ = NNACLIsConst(self->in_[SECOND_INPUT]);
   return NNACL_OK;
 }
 

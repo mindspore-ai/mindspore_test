@@ -54,7 +54,8 @@ int AddnInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
 
   // make sure all elements have the same size or 1 (broadcasting) in all dimensions
   for (size_t i = 1; i < inputs_size; ++i) {
-    if ((inputs[i]->shape_size_ != max_dims) && (GetElementNum(inputs[i]) != GetElementNum(inputs[max_dims_idx]))) {
+    if ((inputs[i]->shape_size_ != max_dims) &&
+        (NNACLGetElementNum(inputs[i]) != NNACLGetElementNum(inputs[max_dims_idx]))) {
       return NNACL_ERR;
     }
     if (inputs[i]->shape_size_ == max_dims) {

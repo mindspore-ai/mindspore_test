@@ -173,7 +173,7 @@ int BroadcastToInferShape(const TensorC *const *inputs, size_t inputs_size, Tens
     if (shape_tensor->data_ == NULL) {
       return NNACL_INFER_INVALID;
     }
-    dst_shape_size = GetElementNum(shape_tensor);
+    dst_shape_size = NNACLGetElementNum(shape_tensor);
     if (dst_shape_size > MAX_SHAPE_SIZE) {
       return NNACL_INPUT_TENSOR_ERROR;
     }

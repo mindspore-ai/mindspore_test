@@ -54,7 +54,7 @@ int ArithmeticGradInferShape(const TensorC *const *inputs, size_t inputs_size, T
 
   ArithmeticParameter *param = (ArithmeticParameter *)parameter;
 
-  if (GetElementNum(dx1) < GetElementNum(dx2)) {
+  if (NNACLGetElementNum(dx1) < NNACLGetElementNum(dx2)) {
     param->ndim_ = in_shape1_size;
     param->in_elements_num0_ = (int)param->ndim_;
     param->in_elements_num1_ = (int)param->ndim_;
@@ -70,7 +70,7 @@ int ArithmeticGradInferShape(const TensorC *const *inputs, size_t inputs_size, T
       param->in_shape0_[i] = in_shape1[i];
       param->out_shape_[i] = out_shape[i];
     }
-  } else if (GetElementNum(dx2) < GetElementNum(dx1)) {
+  } else if (NNACLGetElementNum(dx2) < NNACLGetElementNum(dx1)) {
     param->ndim_ = in_shape0_size;
     param->in_elements_num0_ = (int)param->ndim_;
     param->in_elements_num1_ = (int)param->ndim_;

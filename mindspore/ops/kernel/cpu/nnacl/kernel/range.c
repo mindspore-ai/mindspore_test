@@ -30,7 +30,7 @@ int RangeCompute(KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(input);
   TensorC *output = self->out_[OUTPUT_INDEX];
   NNACL_CHECK_NULL_RETURN_ERR(output);
-  int output_num = GetElementNum(output);
+  int output_num = NNACLGetElementNum(output);
 
   if (self->in_size_ == THREE_TENSOR) {
     TensorC *delta = self->in_[THIRD_INPUT];

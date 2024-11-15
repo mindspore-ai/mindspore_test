@@ -69,7 +69,7 @@ int HandleAxesInputNotExist(const TensorC *const *inputs, struct StridedSliceTra
   if (ret != NNACL_OK) {
     return ret;
   }
-  transfer_buffer->ndim_ = GetElementNum(begin_tensor);
+  transfer_buffer->ndim_ = NNACLGetElementNum(begin_tensor);
   ret = GetInt32DataFromTensor(end_tensor, transfer_buffer->ends_, &transfer_buffer->ends_size_);
   if (ret != NNACL_OK) {
     return ret;
@@ -83,8 +83,8 @@ int HandleAxesInputNotExist(const TensorC *const *inputs, struct StridedSliceTra
 
 int GenerateAxes(const TensorC *axes_tensor, int *axes, int num, int ndim) {
   int *axes_data = NULL;
-  if (GetElementNum(axes_tensor) != 0) {
-    if (GetElementNum(axes_tensor) != num) {
+  if (NNACLGetElementNum(axes_tensor) != 0) {
+    if (NNACLGetElementNum(axes_tensor) != num) {
       return NNACL_ERR;
     }
     axes_data = (int *)(axes_tensor->data_);
@@ -134,11 +134,11 @@ int HandleAxesInputExist(const TensorC *const *inputs, int *ndim, int *in_shape,
 
   // when input contains axes, begins, ends, strides will be expand to the same length as input rank
   *ndim = (int)(input_tensor->shape_size_);
-  int begin_ndim = GetElementNum(begin_tensor);
+  int begin_ndim = NNACLGetElementNum(begin_tensor);
 
   int *stride_data = NULL;
   const TensorC *stride_tensor = inputs[4];
-  int stride_data_num = GetElementNum(stride_tensor);
+  int stride_data_num = NNACLGetElementNum(stride_tensor);
   if (stride_data_num != 0) {
     NNACL_CHECK_TRUE_RET(stride_data_num == begin_ndim, NNACL_ERR);
     stride_data = (int *)(stride_tensor->data_);

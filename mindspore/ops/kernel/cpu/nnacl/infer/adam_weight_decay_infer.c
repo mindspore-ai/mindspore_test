@@ -36,11 +36,12 @@ int AdamWeightDecayInferShape(const TensorC *const *inputs, size_t inputs_size, 
     return check_ret;
   }
 
-  if (GetElementNum(inputs[var_idx]) != GetElementNum(inputs[m_idx]) ||
-      GetElementNum(inputs[var_idx]) != GetElementNum(inputs[v_idx]) ||
-      GetElementNum(inputs[var_idx]) != GetElementNum(inputs[grad_idx]) || GetElementNum(inputs[lr_idx]) != 1 ||
-      GetElementNum(inputs[beta1_idx]) != 1 || GetElementNum(inputs[beta2_idx]) != 1 ||
-      GetElementNum(inputs[epsilon]) != 1 || GetElementNum(inputs[decay_idx]) != 1) {
+  if (NNACLGetElementNum(inputs[var_idx]) != NNACLGetElementNum(inputs[m_idx]) ||
+      NNACLGetElementNum(inputs[var_idx]) != NNACLGetElementNum(inputs[v_idx]) ||
+      NNACLGetElementNum(inputs[var_idx]) != NNACLGetElementNum(inputs[grad_idx]) ||
+      NNACLGetElementNum(inputs[lr_idx]) != 1 || NNACLGetElementNum(inputs[beta1_idx]) != 1 ||
+      NNACLGetElementNum(inputs[beta2_idx]) != 1 || NNACLGetElementNum(inputs[epsilon]) != 1 ||
+      NNACLGetElementNum(inputs[decay_idx]) != 1) {
     return NNACL_ERR;
   }
   if (outputs_size != 0) {

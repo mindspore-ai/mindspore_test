@@ -64,7 +64,7 @@ int TileInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
     return NNACL_INPUT_TENSOR_ERROR;
   }
   NNACL_CHECK_TRUE_RET(input1_shape_size <= MAX_SHAPE_SIZE, NNACL_ERR);
-  int data_num = GetElementNum(inputs[1]);
+  int data_num = NNACLGetElementNum(inputs[1]);
   multiples_size = (size_t)(data_num);
   if (inputs[1]->data_type_ != kNumberTypeInt && inputs[1]->data_type_ != kNumberTypeInt32) {
     return NNACL_INPUT_TENSOR_ERROR;
@@ -81,7 +81,7 @@ int TileInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
   int *dims = param->dims_;
   size_t dims_size = param->dims_size_;
   if (dims_size == 0) {
-    int dim_num = GetElementNum(inputs[1]);
+    int dim_num = NNACLGetElementNum(inputs[1]);
     NNACL_CHECK_TRUE_RET(dim_num <= MAX_SHAPE_SIZE, NNACL_ERR);
     for (int dim = 0; dim < dim_num; ++dim) {
       ShapePush(dims, &dims_size, dim);

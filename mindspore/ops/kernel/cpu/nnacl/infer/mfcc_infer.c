@@ -34,7 +34,7 @@ int MfccInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **o
   if (input->shape_size_ != 3) {
     return NNACL_ERR;
   }
-  if (GetElementNum(inputs[1]) != 1) {
+  if (NNACLGetElementNum(inputs[1]) != 1) {
     return NNACL_ERR;
   }
   output->shape_size_ = 3;

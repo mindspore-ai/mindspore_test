@@ -17,10 +17,10 @@
 #include "ops/primitive_c.h"
 
 #include "abstract/ops/primitive_infer_map.h"
-#include "include/robin_hood.h"
 #include "ir/value.h"
 #include "mindapi/helper.h"
 #include "utils/log_adapter.h"
+#include "utils/hash_map.h"
 
 namespace mindspore {
 namespace ops {

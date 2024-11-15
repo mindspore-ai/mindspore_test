@@ -35,7 +35,7 @@ int RandomStandardNormalInferShape(const TensorC *const *inputs, size_t inputs_s
   if (input_data == NULL) {
     return NNACL_INFER_INVALID;
   }
-  int input_num = GetElementNum(inputs[0]);
+  int input_num = NNACLGetElementNum(inputs[0]);
   if (input_num > MAX_SHAPE_SIZE) {
     return NNACL_INPUT_TENSOR_ERROR;
   }

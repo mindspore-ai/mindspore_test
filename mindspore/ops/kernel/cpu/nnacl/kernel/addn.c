@@ -69,14 +69,14 @@ int AddNComputeNoParallel(AddNStruct *addn) {
   NNACL_CHECK_NULL_RETURN_ERR(in0_tensor);
   TensorC *in1_tensor = addn->base_.in_[SECOND_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(in1_tensor);
-  AddNCompute(addn, IsShapeSame(in0_tensor, in1_tensor), GetElementNum(in0_tensor) == 1);
+  AddNCompute(addn, NNACLIsShapeSame(in0_tensor, in1_tensor), NNACLGetElementNum(in0_tensor) == 1);
 
   for (size_t i = Index2; i < addn->base_.in_size_; i++) {
     TensorC *in_tensor = addn->base_.in_[i];
     NNACL_CHECK_NULL_RETURN_ERR(in_tensor);
     addn->in1_addr_ = in_tensor->data_;
     addn->in2_addr_ = addn->out_addr_;
-    AddNCompute(addn, IsShapeSame(in_tensor, addn->base_.out_[OUTPUT_INDEX]), GetElementNum(in_tensor) == 1);
+    AddNCompute(addn, NNACLIsShapeSame(in_tensor, addn->base_.out_[OUTPUT_INDEX]), NNACLGetElementNum(in_tensor) == 1);
   }
   return NNACL_OK;
 }
@@ -86,7 +86,7 @@ int AddnResize(struct KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(addn);
 
   TensorC *out_tensor = self->out_[OUTPUT_INDEX];
-  addn->elements_num_ = GetElementNum(out_tensor);
+  addn->elements_num_ = NNACLGetElementNum(out_tensor);
   return NNACL_OK;
 }
 
@@ -107,7 +107,7 @@ int AddnCompute(struct KernelBase *self) {
 
   for (int i = 0; i < self->in_size_; i++) {
     TensorC *in_tensor = self->in_[i];
-    if (!IsShapeSame(in_tensor, self->out_[OUTPUT_INDEX])) {
+    if (!NNACLIsShapeSame(in_tensor, self->out_[OUTPUT_INDEX])) {
       return NNACL_ADDN_SHAPE_UNMATCH;
     }
   }

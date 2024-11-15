@@ -134,33 +134,33 @@ int Conv2dInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
     return NNACL_INFER_INVALID;
   }
 
-  int ret = CheckConvAttr(GetChannel(input_tensor), weight_tensor, param);
+  int ret = CheckConvAttr(NNACLGetChannel(input_tensor), weight_tensor, param);
   if (ret != NNACL_OK) {
     return ret;
   }
 
   int output_w = 0, output_h = 0;
-  ret = ConvInferShape(GetHeight(input_tensor), GetWidth(input_tensor), &output_h, &output_w, param);
+  ret = ConvInferShape(NNACLGetHeight(input_tensor), NNACLGetWidth(input_tensor), &output_h, &output_w, param);
   if (ret != NNACL_OK) {
     return ret;
   }
 
   out_tensor->shape_size_ = input_tensor->shape_size_;
-  SetBatch(out_tensor, GetBatch(input_tensor));
-  SetChannel(out_tensor, GetBatch(weight_tensor));
+  NNACLSetBatch(out_tensor, NNACLGetBatch(input_tensor));
+  NNACLSetChannel(out_tensor, NNACLGetBatch(weight_tensor));
   output_h = output_h >= 0 ? output_h : 1;
-  SetHeight(out_tensor, output_h);
+  NNACLSetHeight(out_tensor, output_h);
   output_w = output_w >= 0 ? output_w : 1;
-  SetWidth(out_tensor, output_w);
+  NNACLSetWidth(out_tensor, output_w);
 
-  param->input_batch_ = GetBatch(input_tensor);
-  param->input_h_ = GetHeight(input_tensor);
-  param->input_w_ = GetWidth(input_tensor);
-  param->input_channel_ = GetChannel(input_tensor);
-  param->output_batch_ = GetBatch(out_tensor);
-  param->output_h_ = GetHeight(out_tensor);
-  param->output_w_ = GetWidth(out_tensor);
-  param->output_channel_ = GetChannel(out_tensor);
+  param->input_batch_ = NNACLGetBatch(input_tensor);
+  param->input_h_ = NNACLGetHeight(input_tensor);
+  param->input_w_ = NNACLGetWidth(input_tensor);
+  param->input_channel_ = NNACLGetChannel(input_tensor);
+  param->output_batch_ = NNACLGetBatch(out_tensor);
+  param->output_h_ = NNACLGetHeight(out_tensor);
+  param->output_w_ = NNACLGetWidth(out_tensor);
+  param->output_channel_ = NNACLGetChannel(out_tensor);
   param->out_format_ = out_tensor->format_;
   return NNACL_OK;
 }

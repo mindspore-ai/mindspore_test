@@ -33,7 +33,7 @@ int CustomNormalizeInferShape(const TensorC *const *inputs, size_t inputs_size, 
   if (input->data_ == NULL) {
     return NNACL_INFER_INVALID;
   }
-  if (GetElementNum(input) < 1) {
+  if (NNACLGetElementNum(input) < 1) {
     return NNACL_ERR;
   }
   if (input->data_type_ != kNumberTypeUInt32 && input->data_type_ != kObjectTypeString) {

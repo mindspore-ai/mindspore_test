@@ -27,7 +27,7 @@ int PreJudge(const TensorC *get_index, TensorListC *input0, const TensorC *value
   if (get_index->data_type_ != kNumberTypeInt && get_index->data_type_ != kNumberTypeInt32) {
     return NNACL_ERR;
   }
-  if (GetElementNum(get_index) != 1) {
+  if (NNACLGetElementNum(get_index) != 1) {
     return NNACL_ERR;
   }
   if (get_index->data_ == NULL) {

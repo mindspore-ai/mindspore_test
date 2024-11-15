@@ -25,7 +25,7 @@ int AssignInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC *
     return check_ret;
   }
 
-  if (GetElementNum(inputs[0]) != GetElementNum(inputs[1])) {
+  if (NNACLGetElementNum(inputs[0]) != NNACLGetElementNum(inputs[1])) {
     return NNACL_ERR;
   }
 

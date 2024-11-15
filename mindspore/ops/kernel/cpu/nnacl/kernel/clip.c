@@ -42,9 +42,9 @@ int ClipResize(struct KernelBase *self) {
   ClipStruct *clip = (ClipStruct *)self;
   NNACL_CHECK_NULL_RETURN_ERR(clip);
   clip->base_.thread_nr_ = clip->base_.UpdateThread(
-    TC_PTYPE(PrimType_Clip), 1, 1, GetElementNum(clip->base_.out_[FIRST_INPUT]), clip->base_.thread_nr_);
+    TC_PTYPE(PrimType_Clip), 1, 1, NNACLGetElementNum(clip->base_.out_[FIRST_INPUT]), clip->base_.thread_nr_);
 
-  clip->length_ = GetElementNum(clip->base_.in_[FIRST_INPUT]);
+  clip->length_ = NNACLGetElementNum(clip->base_.in_[FIRST_INPUT]);
   clip->stride_ = UP_DIV(clip->length_, clip->base_.thread_nr_);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(clip->stride_, clip->base_.thread_nr_, NNACL_ERR);
   return NNACL_OK;

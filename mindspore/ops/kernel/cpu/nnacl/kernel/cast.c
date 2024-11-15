@@ -166,7 +166,7 @@ int cast_resize(struct KernelBase *self) {
   NNACL_CHECK_FALSE(self->in_size_ < ONE_TENSOR, NNACL_INPUT_TENSOR_ERROR);
   TensorC *in_tensor = self->in_[FIRST_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(in_tensor);
-  int data_num = GetElementNum(in_tensor);
+  int data_num = NNACLGetElementNum(in_tensor);
   if (data_num == 0) {
     return NNACL_OK;
   }
@@ -175,7 +175,7 @@ int cast_resize(struct KernelBase *self) {
   NNACL_CHECK_FALSE(self->out_size_ < ONE_TENSOR, NNACL_OUTPUT_TENSOR_ERROR);
   // update thread num
   cast->base_.thread_nr_ = cast->base_.UpdateThread(
-    TC_PTYPE(PrimType_Cast), 1, 1, GetElementNum(cast->base_.out_[FIRST_INPUT]), cast->base_.thread_nr_);
+    TC_PTYPE(PrimType_Cast), 1, 1, NNACLGetElementNum(cast->base_.out_[FIRST_INPUT]), cast->base_.thread_nr_);
   cast->stride_ = UP_DIV(data_num, cast->base_.thread_nr_);
   return NNACL_OK;
 }

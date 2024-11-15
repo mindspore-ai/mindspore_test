@@ -26,7 +26,7 @@ int LshProjectionInferShape(const TensorC *const *inputs, size_t inputs_size, Te
   }
 
   const TensorC *in_hash = inputs[0];
-  if (in_hash->shape_size_ != 2 || GetDimensionSize(in_hash, 1) > 32) {
+  if (in_hash->shape_size_ != 2 || NNACLGetDimensionSize(in_hash, 1) > 32) {
     return NNACL_ERR;
   }
   TensorC *out_tensor = outputs[0];
@@ -38,10 +38,10 @@ int LshProjectionInferShape(const TensorC *const *inputs, size_t inputs_size, Te
   LshProjectionParameter *param = (LshProjectionParameter *)parameter;
   switch (param->lsh_type_) {
     case LshProjectionType_SPARSE:
-      ShapePush(out_shape, &out_shape_size, GetDimensionSize(in_hash, 0));
+      ShapePush(out_shape, &out_shape_size, NNACLGetDimensionSize(in_hash, 0));
       break;
     case LshProjectionType_DENSE:
-      ShapePush(out_shape, &out_shape_size, GetDimensionSize(in_hash, 0) * GetDimensionSize(in_hash, 1));
+      ShapePush(out_shape, &out_shape_size, NNACLGetDimensionSize(in_hash, 0) * NNACLGetDimensionSize(in_hash, 1));
       break;
     default:
       return NNACL_ERR;

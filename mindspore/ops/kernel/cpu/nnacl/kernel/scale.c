@@ -148,7 +148,7 @@ int ScaleInitScaleOffset(ScaleStruct *scale) {
 
   if (scale->base_.in_size_ == TWO_TENSOR) {
     scale->malloc_offset_ = true;
-    int malloc_size = GetElementNum(scale_tensor) * data_type_size;
+    int malloc_size = NNACLGetElementNum(scale_tensor) * data_type_size;
     NNACL_CHECK_MALLOC_SIZE(malloc_size);
     scale->offset_ = scale->base_.env_->Alloc(scale->base_.env_->allocator_, malloc_size);
     NNACL_MALLOC_CHECK_NULL_RETURN_ERR(scale->offset_);
@@ -162,7 +162,7 @@ int ScaleInitScaleOffset(ScaleStruct *scale) {
 
   if (scale_tensor->data_ != NULL) {
     scale->malloc_scale_ = true;
-    int malloc_size = GetElementNum(scale_tensor) * data_type_size;
+    int malloc_size = NNACLGetElementNum(scale_tensor) * data_type_size;
     NNACL_CHECK_MALLOC_SIZE(malloc_size);
     scale->scale_ = scale->base_.env_->Alloc(scale->base_.env_->allocator_, malloc_size);
     NNACL_MALLOC_CHECK_NULL_RETURN_ERR(scale->scale_);
@@ -181,7 +181,7 @@ int ScaleInitScaleOffset(ScaleStruct *scale) {
   NNACL_CHECK_NULL_RETURN_ERR(offset_tensor);
   if (offset_tensor->data_ != NULL) {
     scale->malloc_offset_ = true;
-    int malloc_size = GetElementNum(offset_tensor) * data_type_size;
+    int malloc_size = NNACLGetElementNum(offset_tensor) * data_type_size;
     NNACL_CHECK_MALLOC_SIZE(malloc_size);
     scale->offset_ = scale->base_.env_->Alloc(scale->base_.env_->allocator_, malloc_size);
     NNACL_MALLOC_CHECK_NULL_RETURN_ERR(scale->scale_);

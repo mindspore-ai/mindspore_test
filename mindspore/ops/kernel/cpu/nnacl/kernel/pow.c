@@ -29,7 +29,7 @@ int PowImpl(void *cdata, int task_id, float l, float r) {
   TensorC *input1 = pow->base_.in_[SECOND_INPUT];
   TensorC *output = pow->base_.out_[OUTPUT_INDEX];
 
-  int size = GetElementNum(input0);
+  int size = NNACLGetElementNum(input0);
   int stride = UP_DIV(size, pow->base_.thread_nr_);
   int len = MSMIN(stride, size - stride * task_id);
   if (len <= 0) {
