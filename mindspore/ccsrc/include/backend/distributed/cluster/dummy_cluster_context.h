@@ -40,6 +40,7 @@ class BACKEND_EXPORT ClusterContext {
 
   bool Initialize() const;
   bool Finalize(uint32_t timeout = kDefaultFinishTimeout) const;
+  void StopThreadsOnException();
   std::string node_role() const;
   uint32_t node_num(const std::string &node_role);
   bool initialized() const;

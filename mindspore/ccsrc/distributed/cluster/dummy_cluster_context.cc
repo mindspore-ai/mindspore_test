@@ -33,6 +33,8 @@ bool ClusterContext::Initialize() const { return true; }
 
 bool ClusterContext::Finalize(uint32_t) const { return true; }
 
+void ClusterContext::StopThreadsOnException() { return; }
+
 std::string ClusterContext::node_role() const { return ""; }
 
 uint32_t ClusterContext::node_num(const std::string &) { return 0; }

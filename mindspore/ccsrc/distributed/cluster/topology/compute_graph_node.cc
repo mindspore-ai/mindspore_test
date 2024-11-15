@@ -155,6 +155,14 @@ bool ComputeGraphNode::Finalize(bool force) {
   return true;
 }
 
+void ComputeGraphNode::StopHeartBeatThread() {
+  MS_LOG(INFO) << "Start waiting for heart beat thread to end.";
+  enable_hb_ = false;
+  if (heartbeat_.joinable()) {
+    heartbeat_.join();
+  }
+}
+
 bool ComputeGraphNode::Register() {
   MS_EXCEPTION_IF_NULL(hb_client_);
   MS_EXCEPTION_IF_NULL(tcp_client_);

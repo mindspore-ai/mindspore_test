@@ -54,6 +54,9 @@ class BACKEND_EXPORT ComputeGraphNode : public NodeBase {
 
   bool Finalize(bool force = false) override;
 
+  // Stop the heart beat thread. This method will be invoked when exception happens.
+  void StopHeartBeatThread();
+
   // Send the specified message to the meta server node.
   bool SendMessageToMSN(const std::string msg_name, const std::string &msg_body, bool sync = true);
 
@@ -122,7 +125,7 @@ class BACKEND_EXPORT ComputeGraphNode : public NodeBase {
   std::thread heartbeat_;
 
   // Indicate whether the heartbeat thread is running.
-  bool enable_hb_;
+  std::atomic<bool> enable_hb_;
 
   // The device id of a single process.
   uint32_t device_id_;
