@@ -50,6 +50,8 @@ def test_graph_mode():
 
     x_real = np.random.randn(4, 4, 4).astype(np.float32)
     x_imag = np.random.randn(4, 4, 4).astype(np.float32)
+    print(f"x_real is:\n{x_real}")
+    print(f"x_imag is:\n{x_imag}")
     x = ms.Tensor(x_real + 1j*x_imag)
 
     sin_x = np.sin(x_real + 1j*x_imag)
@@ -57,6 +59,11 @@ def test_graph_mode():
     net = Net()
     output = net(x)
     output_np = output.asnumpy()
+    print(f"ms output real part is:\n{np.real(output_np)}")
+    print(f"ms output imag part is:\n{np.imag(output_np)}")
+    print(f"np output real part is:\n{np.real(sin_x)}")
+    print(f"np output imag part is:\n{np.imag(sin_x)}")
 
-    assert np.allclose(np.real(output_np), np.real(sin_x)) and np.allclose(np.imag(output_np), np.imag(sin_x))
+    assert np.allclose(np.real(output_np), np.real(sin_x)) and np.allclose(np.imag(output_np), np.imag(sin_x)), \
+    f"parallel complex st run failed, please check log_output."
     ms.reset_auto_parallel_context()
