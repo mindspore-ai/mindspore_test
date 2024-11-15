@@ -514,6 +514,7 @@ def parse_hccl_file(hccl_file_path):
 
     return rankid_dict
 
+
 def vlog_print(level, module, file, line, message):
     '''Read environment variable VLOG_v and print to log'''
     if os.environ.get("VLOG_v") == level:
