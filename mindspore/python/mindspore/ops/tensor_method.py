@@ -129,7 +129,7 @@ from mindspore.ops.function.array_func import index_select
 # 47 is_contiguous
 
 # 48 isclose
-from mindspore.ops.function.math_func import isclose
+
 # 49 isfinite
 from mindspore.ops.auto_generate import isfinite
 # 50 isnan
@@ -515,9 +515,6 @@ def deprecated_tensor_index_select(input, axis, index):
 # 47 is_contiguous
 
 # 48 isclose
-def tensor_isclose(input, x2, rtol=1e-05, atol=1e-08, equal_nan=False):
-    return isclose(input, x2, rtol, atol, equal_nan)
-
 
 # 49 isfinite
 def tensor_isfinite(input):
