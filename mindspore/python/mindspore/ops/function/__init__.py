@@ -491,6 +491,7 @@ from .nn_func import (
     soft_shrink,
     is_floating_point,
     incre_flash_attention,
+    prompt_flash_attention,
     intopk,
     interpolate,
     upsample,
