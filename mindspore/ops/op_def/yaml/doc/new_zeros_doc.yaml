@@ -2,6 +2,9 @@ new_zeros:
     description: |
         Return a tensor of `size` filled with zeros.
 
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
         Args:
             size (Union[int, tuple(int), list(int)]): An int, list or tuple of integers defining the output shape.
             dtype (:class:`mindspore.dtype`, optional): The desired dtype of the output tensor. If None, the returned

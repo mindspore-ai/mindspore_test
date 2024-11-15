@@ -1218,6 +1218,9 @@ def new_ones(input, size, *, dtype=None):
     """
     Return a tensor of `size` filled with ones.
 
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
     Args:
         input (Tensor): Tensor of any dimension.
         size (Union[int, tuple(int), list(int)]): An int, list or tuple of integers defining the output shape.
@@ -1252,6 +1255,9 @@ def new_ones(input, size, *, dtype=None):
 def new_zeros(input, size, *, dtype=None):
     """
     Return a tensor of `size` filled with zeros.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): Tensor of any dimension.
