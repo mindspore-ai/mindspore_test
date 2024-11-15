@@ -2649,6 +2649,8 @@ void IterateFindTensor(ValuePtrList *value_list, const VectorRef &ref_list) {
       auto value_seq = utils::cast<ValueSequencePtr>(ref_list[i]);
       MS_EXCEPTION_IF_NULL(value_seq);
       FlattenValueSequence(value_list, value_seq);
+    } else if (utils::isa<ValuePtr>(ref_list[i])) {
+      continue;
     } else {
       MS_LOG(EXCEPTION) << "The ref value " << ref_list[i].ToString() << " is not a vector ref or a tensor!";
     }
