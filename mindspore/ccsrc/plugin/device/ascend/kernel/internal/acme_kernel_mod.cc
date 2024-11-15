@@ -84,6 +84,9 @@ bool AcmeKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::v
 
 bool AcmeKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
+  if (acme_op_ == nullptr) {
+    return true;
+  }
   transform::g_hash_offset = 0;
   for (auto idx : recreate_cared_indices_) {
     auto input = inputs[idx];
@@ -210,7 +213,7 @@ void AcmeKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &input
 
 void AcmeKernelMod::GetAcmeKernel(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  if (acme_op_ == nullptr || IsNeedRecreate(inputs, outputs)) {
+  if (IsNeedRecreate(inputs, outputs)) {
     acme::InputsImmutableInfoList inputs_ii;
     acme::OutputsImmutableInfoList outputs_ii;
     for (size_t i = 0; i < acme_to_ms_input_indices_mapper_.size(); i++) {
