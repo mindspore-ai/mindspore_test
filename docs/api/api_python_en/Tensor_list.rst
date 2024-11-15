@@ -40,6 +40,7 @@
     :toctree: Tensor
     :nosignatures:
 
+    mindspore.Tensor.__abs__
     mindspore.Tensor.abs
     mindspore.Tensor.absolute
     mindspore.Tensor.acos

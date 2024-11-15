@@ -1,0 +1,21 @@
+abs:
+  description: |
+    abs() -> Tensor
+    
+    Returns absolute value of a tensor element-wise.
+
+    .. math::
+
+        out_i = |self_i|
+
+    Returns:
+        Tensor, has the same shape as `self`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> x = Tensor(np.array([-1.0, 1.0, 0.0]), mindspore.float32)
+        >>> output = Tensor.abs(x)  # x.abs() 
+        >>> print(output)
+        [1. 1. 0.]
