@@ -92,7 +92,7 @@ void TopCellInfo::BackUpValueMetaGradInfo(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(auto_grad_cell_ptr_);
   if (value->isa<tensor::BaseTensor>()) {
     auto tensor_value = value->cast<tensor::BaseTensorPtr>();
-    auto auto_grad_meta_data = tensor_value->auto_grad_meta_data();
+    auto auto_grad_meta_data = autograd::impl::get_autograd_meta_impl(tensor_value);
     if (auto_grad_meta_data != nullptr) {
       auto_grad_cell_ptr_->param_meta_grad_info()[tensor_value] = auto_grad_meta_data;
     }
@@ -112,8 +112,9 @@ void TopCellInfo::ClearValueMetaGradInfo(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
   if (value->isa<tensor::BaseTensor>()) {
     auto tensor_value = value->cast<tensor::BaseTensorPtr>();
+    auto auto_grad_meta = autograd::impl::get_autograd_meta_impl(tensor_value);
     // Hook register before op run
-    if (tensor_value->auto_grad_meta_data() != nullptr && tensor_value->auto_grad_meta_data()->is_register_hook()) {
+    if (auto_grad_meta != nullptr && auto_grad_meta->is_register_hook()) {
       return;
     }
     tensor_value->set_auto_grad_meta_data(nullptr);

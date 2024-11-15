@@ -26,15 +26,11 @@
 #include "kernel/common/pyboost/op_runner.h"
 #include "kernel/common/pyboost/op_register.h"
 #include "pipeline/pynative/forward/forward_task.h"
-#include "pipeline/pynative/grad/function/func_builder.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 
 namespace mindspore {
 namespace pynative {
 class PyNativeExecutor;
-using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
-enum class SpecialType { kZerosLikeType = 0, kOnesLikeType = 1 };
-
 namespace PyNativeAlgo {
 // Common function
 struct Common {
@@ -73,16 +69,8 @@ struct Common {
   static void SetOutputUsedInBpropGraph(const ValuePtr &value);
   static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool is_force_create_fake = false);
   static tensor::TensorPtr CreateFakeTensorWithoutDeviceAddress(const tensor::TensorPtr &tensor);
-  static inline bool IsParam(InputType grad_type) {
-    return grad_type == InputType::kParameter || grad_type == InputType::kInput;
-  }
-  static inline bool IsParamRequiresGrad(const tensor::BaseTensorPtr &tensor) {
-    return tensor->param_info() != nullptr && tensor->param_info()->requires_grad();
-  }
   static void ClearDeviceAddress(const ValuePtr &value);
   static inline bool IsConstant(InputType grad_type) { return grad_type == InputType::kConstant; }
-  static InputType SetValueGradInfo(const ValuePtr &value, InputType grad_type);
-  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor);
   static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph);
   static void ProcessTupleParam(const FuncGraphPtr &bprop_graph, size_t position);
   static void ProcessDictParam(const FuncGraphPtr &bprop_graph, size_t position);
@@ -119,6 +107,11 @@ struct Common {
   static bool IsVmOp(const std::string &op_name);
   static std::vector<int64_t> BuildShape(const abstract::AbstractBasePtr &abs);
   static void ClearRes();
+  static TopCellInfo *FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
+                                     const std::string &op_info, const ValuePtr &value);
+  static void UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
+                               TopCellInfo *pre_top_cell, bool is_jit_graph);
+  static OperatorType GetOpTypeFromOpdef(const ops::OpDef &op_def);
 };
 
 // Parser python
@@ -145,9 +138,6 @@ struct PyParser {
 struct DataConvert {
   static py::object ValueToPyObj(const ValuePtr &v);
   static ValuePtr PyObjToValue(const py::object &obj, bool stub = false);
-  static ValuePtr BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence, size_t op_index = 0);
-  static ValuePtr VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence,
-                                   size_t op_index = 0);
   static void FlattenValueSeqArg(const ValuePtr &v, bool is_only_flatten_tensor_seq, bool is_filter_tensor,
                                  std::vector<ValuePtr> *flatten_v);
   static ValuePtrList FlattenOnlyTensor(const ValuePtr &v);
@@ -176,13 +166,11 @@ struct DataConvert {
 
 struct PyBoost {
   static FrontendOpRunInfoPtr Init(const PrimitivePtr &prim, const py::list &args);
-  static void MakeOutputValue(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op);
   static void DoGrad(const kernel::pyboost::OpPtr &op, const FrontendOpRunInfoPtr &op_run_info,
                      ValuePtrList &&op_inputs);
   static void SetAnyValueForAbstract(const kernel::pyboost::OpPtr &op);
   static void UpdateStubOutput(const FrontendOpRunInfoPtr &op_run_info, const AbstractBasePtr &abstract,
                                const kernel::pyboost::OpPtr &op);
-  static void UpdateOpRunInfo(const kernel::pyboost::OpPtr &op, const FrontendOpRunInfoPtr &op_run_info);
   static PrimitivePtr ConvertPrimitive(const py::object &obj);
   static py::object RunPyFunction(const PrimitivePtr &prim, const py::list &args);
   template <typename T>
@@ -222,38 +210,7 @@ struct PyBoost {
   }
   static void DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&op_inputs);
   static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCellInfoPtr &top_cell);
-};
-
-// Used for auto grad, like func_grad and ir grad
-struct AutoGrad {
-  static bool IsPrimNeedGrad(const PrimitivePtr &prim);
-  static bool NeedGrad(const std::vector<ValuePtr> &input_values);
-  static bool IsZerosLikeNode(const AnfNodePtr &node);
-  static ValuePtr GetFakeZeroTensor();
-  static ValuePtr BuildSpecialValueGrad(const ValuePtr &value, const tensor::BaseTensorPtr &grad,
-                                        autograd::FuncBuilder *func_builder, const SpecialType &type);
-  static AnfNodePtr BuildSpecialNode(const KernelGraphPtr &tape, const ValuePtr &value,
-                                     const abstract::AbstractBasePtr &abs, const SpecialType &type);
-  static AnfNodePtr BuildSparseTensorNode(const KernelGraphPtr &tape, const ValuePtr &sparse_value,
-                                          const AnfNodePtr &dout_value_node);
-  static void SetGradMetaData(const ValuePtr &value, const VariablePtr &variable, const ParameterPtr &param = nullptr);
-  static void SetGradInfoForInputs(const ValuePtr &value, const VariablePtr &variable,
-                                   autograd::MetaGradInfoList *param_meta_grad_info,
-                                   const ParameterPtr &param = nullptr);
-
-  // Create fake bprop
-  static void BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodePtr> *outputs);
-  static CallBackFn CreateGraphCallBack(const FuncGraphPtr &call_graph, const std::string &cache_key,
-                                        const GraphCallCondition &graph_call_condition);
-  static PrimitivePyPtr BuildBpropCutPrim(const PrimitivePtr &prim, bool is_need_recompute = false);
-  static void CheckRecomputeInputs(const ValuePtrList &inputs, bool is_need_recompute);
-  static TopCellInfo *FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
-                                     const std::string &op_info, const ValuePtr &value);
-  static void UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
-                               TopCellInfo *pre_top_cell, bool is_jit_graph);
-  static void ClearAutoGradStaticCache();
-  static void CheckAndSetAbstract(const OpGradInfoPtr &op_grad_info);
-  static void CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs);
+  static void BumpVersionAsync(const tensor::BaseTensorPtr &tensor);
 };
 
 // Some common functions used in both jit and PackFunc grad

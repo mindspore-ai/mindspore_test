@@ -571,6 +571,20 @@ TensorDataPtr MakeTensorData(TypeId data_type, Args &&... args) {
   MS_LOG(ERROR) << "Cannot construct Tensor because of unsupported data type: " << TypeIdToString(data_type) << ".";
   return nullptr;
 }
+
+struct Version {
+ public:
+  Version() : version_counter_(std::make_shared<uint32_t>(0)) {}
+  void BumpVersion() { (*version_counter_)++; }
+  uint32_t current_version() const {
+    MS_EXCEPTION_IF_NULL(version_counter_);
+    return *version_counter_;
+  }
+
+ private:
+  std::shared_ptr<uint32_t> version_counter_;
+};
+
 class BaseTensor;
 using BaseTensorPtr = std::shared_ptr<BaseTensor>;
 using BaseTensorPtrList = std::vector<std::shared_ptr<BaseTensor>>;
@@ -914,11 +928,11 @@ class MS_CORE_API BaseTensor : public MetaTensor {
 
   /// @brief Get Pynative auto_grad meta data.
   /// @return Auto grad meta data
-  const AutoGradMetaDataPtr &auto_grad_meta_data() const { return auto_grad_meta_data_; }
+  const AutoGradMetaInterfacePtr &auto_grad_meta_data() const { return auto_grad_meta_data_; }
 
   /// @brief Set Pynative auto_grad meta data.
   /// @param auto_grad_meta_data
-  void set_auto_grad_meta_data(const AutoGradMetaDataPtr &auto_grad_meta_data) {
+  void set_auto_grad_meta_data(const AutoGradMetaInterfacePtr &auto_grad_meta_data) {
     auto_grad_meta_data_ = auto_grad_meta_data;
   }
 
@@ -926,6 +940,10 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   ///
   /// \return BaseTensor storage info, the value is nullptr default.
   const TensorStorageInfoPtr storage_info() const;
+
+  /// \brief Set tensor storage info.
+  ///
+  void set_storage_info(const TensorStorageInfoPtr &storage_info);
 
   /// \brief Set synchronization status.
   ///
@@ -981,6 +999,18 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   ///
   /// \return storage offset.
   const int64_t storage_offset() const;
+  /// \brief Get version.
+  ///
+  /// \return storage offset.
+  const Version &version() const { return version_; }
+
+  /// \brief Set version.
+  ///
+  void set_version(const Version &version) { version_ = version; }
+
+  /// \brief Bump version.
+  ///
+  void BumpVersion() { version_.BumpVersion(); }
 
   void set_need_pipeline_sync(bool need_pipeline_sync) { need_pipeline_sync_ = need_pipeline_sync; }
 
@@ -992,12 +1022,14 @@ class MS_CORE_API BaseTensor : public MetaTensor {
 
  protected:
   bool is_forward_output_{false};
-  bool used_in_bprop_graph_{false};
+  bool used_in_bprop_graph_{true};
   bool need_pipeline_sync_{false};
+  Version version_{};
   std::string id_{""};
   mutable DeviceSyncPtr device_sync_{nullptr};
   mutable TensorSyncStatus sync_status_{kNeedSyncHostToDevice};
-  AutoGradMetaDataPtr auto_grad_meta_data_{nullptr};
+  AutoGradMetaInterfacePtr auto_grad_meta_data_{nullptr};
+  TensorStorageInfoPtr storage_info_;
   TensorDataPtr data_{nullptr};
   // Tensor base shape which contain dynamic shape info.
   BaseShapePtr base_shape_ptr_{nullptr};

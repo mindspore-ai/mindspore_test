@@ -39,13 +39,13 @@
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/grad/ir/bprop_tensor_replace.h"
 #include "utils/ms_context.h"
+#include "pipeline/pynative/grad/variable.h"
 
 namespace mindspore {
 namespace pynative {
 namespace py = pybind11;
 class GradExecutor;
 using CellIdWithBackwardHookOp = mindspore::HashMap<std::string, AnfNodePtrList>;
-
 struct PyNGraphInfo {
   OrderedMap<std::string, ParameterPtr> input_params;   // Hold input parameters
   OrderedMap<std::string, ParameterPtr> weight_params;  // Hold weights parameters
@@ -214,7 +214,7 @@ class TopCellInfo {
   // If net just has run forward by set_grad, which does not do gradient calculation, weight auto grad meta should be
   // save
   bool need_resume_meta_grad_{false};
-  std::map<tensor::BaseTensorPtr, AutoGradMetaDataPtr> param_grad_info_;
+  std::map<tensor::BaseTensorPtr, autograd::AutoGradMetaDataPtr> param_grad_info_;
   // Check is the top cell is first step.
   bool is_first_step_{false};
   // Running by actor or by func grad

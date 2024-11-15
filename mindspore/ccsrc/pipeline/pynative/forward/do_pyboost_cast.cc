@@ -16,6 +16,7 @@
 
 #include "pipeline/pynative/forward/do_pyboost_cast.h"
 #include "pipeline/pynative/pynative_utils.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 #include "kernel/common/pyboost/auto_generate/cast.h"
 #include "include/common/utils/stub_tensor.h"
 
@@ -54,7 +55,12 @@ tensor::BaseTensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPt
   auto cast_op = CREATE_PYBOOST_OP(Cast, cast_run_info->base_op_run_info.device_target);
   (void)cast_op->Call(t, type_id64);
   cast_run_info->requires_grad = op_run_info->requires_grad;
-  PyNativeAlgo::PyBoost::UpdateOpRunInfo(cast_op, cast_run_info);
+  PyNativeAlgo::AutoGradUtil::MakeOutput(
+    cast_run_info, cast_op,
+    cast_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index()
+                                 : 0);
+  // Set output value to python
+  PyNativeAlgo::PyBoost::UpdateStubOutput(cast_run_info, cast_op->output_abs(), cast_op);
   if (op_run_info->requires_grad) {
     constexpr auto input_size = 2;
     cast_run_info->input_size = input_size;

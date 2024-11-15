@@ -31,7 +31,7 @@ NodePtr NativeFunc::${func_name}(${call_args_with_type}) {
 
     // Set abstract to tensor cache
     if (op->output_value_simple_info() != nullptr) {
-      PyNativeAlgo::AutoGrad::CacheOutputAbstract(output_value, output_abs);
+      PyNativeAlgo::AutoGradUtil::CacheOutputAbstract(output_value, output_abs);
     }
     MS_LOG(DEBUG) << "End execute native func" << " ${func_name}";
     return output_node;

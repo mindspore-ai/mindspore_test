@@ -37,6 +37,7 @@ using mindspore::profiler::ProfilerManager;
 #include "frontend/operator/ops_front_infer_function.h"
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/device/device_address_utils.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 
 namespace mindspore {
 namespace pynative {
@@ -426,7 +427,7 @@ void ForwardExecutor::CreateViewOpOutputs(const FrontendOpRunInfoPtr &op_run_inf
   for (size_t i = 0; i < storage_infos.size(); i++) {
     MS_LOG(DEBUG) << "View op " << op_run_info->base_op_run_info.op_name << ", i:" << i
                   << ", storage_info:" << storage_infos[i]->ToString();
-    CreateViewOutputTensor(op_run_info, view_input_tensor, storage_infos[i], task_type);
+    CreateViewOutputTensor(op_run_info, view_input_tensor, storage_infos[i], task_type, !is_single_tensor_output);
   }
 
   if (is_single_tensor_output) {
@@ -546,7 +547,7 @@ ValuePtr ForwardExecutor::RunSliceOpFrontend(const std::vector<ValuePtr> &input_
       if (!strides_calc_info.first.has_value()) {
         MS_LOG(EXCEPTION) << "op:" << op_run_info->base_op_run_info.op_name << " is not view.";
       }
-      op_run_info->is_view_op = true;
+      op_run_info->op_grad_info->operator_type = OperatorType::kViewOp;
       PyNativeAlgo::Common::StubNodeToValue(op_run_info);
       if (!ProcessViewOp(op_run_info, strides_calc_info.first.value(), strides_calc_info.second)) {
         MS_EXCEPTION(ValueError) << "op:" << op_run_info->base_op_run_info.op_name << " inputs is not for view.";
@@ -565,7 +566,8 @@ void ForwardExecutor::RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info) {
 #ifndef ENABLE_TEST
   auto strides_calc_info =
     ops::ViewStridesCalcFactory::GetInstance().GetStridesCalcFunc(op_run_info->base_op_run_info.op_name);
-  op_run_info->is_view_op = strides_calc_info.first.has_value();
+  op_run_info->op_grad_info->operator_type =
+    strides_calc_info.first.has_value() ? OperatorType::kViewOp : OperatorType::kDefault;
 #endif
 
   // Convert StubNode to Tensor and no need to concern about input StubNode anymore in this thread.
@@ -574,13 +576,13 @@ void ForwardExecutor::RunOpFrontend(const FrontendOpRunInfoPtr &op_run_info) {
   SetCastForInputs(op_run_info);
 
 #ifndef ENABLE_TEST
-  if (op_run_info->is_view_op &&
+  if (op_run_info->op_grad_info->operator_type == OperatorType::kViewOp &&
       ProcessViewOp(op_run_info, strides_calc_info.first.value(), strides_calc_info.second)) {
     return;
   }
 #endif
 
-  op_run_info->is_view_op = false;
+  op_run_info->op_grad_info->operator_type = OperatorType::kDefault;
 
   // Infer output abstract
   InferOutputAbstract(op_run_info);
@@ -780,7 +782,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   if (op_run_info->requires_grad) {
     for (size_t i = 0; i < op_run_info->input_size; i++) {
       op_run_info->op_grad_info->input_value_grad_type[i] =
-        PyNativeAlgo::Common::SetValueGradInfo(op_run_info->op_grad_info->input_value[i], InputType::kConstant);
+        PyNativeAlgo::AutoGradUtil::SetValueGradInfo(op_run_info->op_grad_info->input_value[i], InputType::kConstant);
       (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(op_run_info->op_grad_info->input_value[i]);
     }
   }
@@ -791,7 +793,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     }
     auto result_v = ConstructOutputInVM(result);
     if (op_run_info->requires_grad) {
-      (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, InputType::kOpOutput);
+      (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
     }
     MS_LOG(DEBUG) << "RunOpInVM end";
     return result_v;
@@ -815,7 +817,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     result_v = std::make_shared<ValueTuple>(std::vector{result_v});
   }
   if (op_run_info->requires_grad) {
-    (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, InputType::kOpOutput);
+    (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
   }
   MS_LOG(DEBUG) << "RunOpInVM end";
   return result_v;
@@ -939,7 +941,7 @@ void ForwardExecutor::PrepareOpInputs(const FrontendOpRunInfoPtr &op_run_info) {
 void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_info,
                                              const tensor::BaseTensorPtr &input_tensor,
                                              const TensorStorageInfoPtr &storage_info,
-                                             runtime::KernelTaskType task_type) {
+                                             runtime::KernelTaskType task_type, bool is_multi_output) {
   MS_EXCEPTION_IF_NULL(input_tensor);
   MS_EXCEPTION_IF_NULL(storage_info);
   auto output_tensor = std::make_shared<tensor::Tensor>(input_tensor->data_type(), storage_info->shape);
@@ -974,10 +976,12 @@ void ForwardExecutor::CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_
 
   output_device_address->set_pointer_ref_count(input_device_address->pointer_ref_count());
   output_tensor->set_device_address(output_device_address);
-  if (op_run_info->requires_grad) {
-    output_tensor->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>());
-    output_tensor->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
-  }
+  autograd::CreationType creationType =
+    is_multi_output
+      ? autograd::CreationType::kMultiOutput
+      : (op_run_info->requires_grad ? autograd::CreationType::kDefault : autograd::CreationType::kNoGradMode);
+  size_t op_index = op_run_info->requires_grad ? grad()->top_cell()->op_index() : 0;
+  PyNativeAlgo::AutoGradUtil::BuildViewAutoGradMeta(input_tensor, output_tensor, op_index, creationType);
   (void)op_run_info->base_op_run_info.output_tensors.emplace_back(output_tensor);
 }
 
@@ -987,8 +991,8 @@ ValuePtr ForwardExecutor::RunOpInMsInner(const FrontendOpRunInfoPtr &op_run_info
   bool is_out_sequence = (op_run_info->base_op_run_info.abstract == nullptr ||
                           op_run_info->base_op_run_info.abstract->isa<abstract::AbstractSequence>());
   const auto &result_v =
-    PyNativeAlgo::DataConvert::VectorRefToValue(outputs, op_run_info->requires_grad, is_out_sequence,
-                                                op_run_info->requires_grad ? grad()->top_cell()->op_index() : 0);
+    PyNativeAlgo::AutoGradUtil::VectorRefToValue(outputs, op_run_info->requires_grad, is_out_sequence,
+                                                 op_run_info->requires_grad ? grad()->top_cell()->op_index() : 0);
   MS_LOG(DEBUG) << "RunOpInMs end";
   return result_v;
 }

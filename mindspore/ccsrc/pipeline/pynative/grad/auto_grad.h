@@ -50,6 +50,7 @@ class AutoGrad {
 
   // Call custom bprop procedure
   virtual void CallCustomBprop(const CustomContext &context) {}
+  virtual VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) { return nullptr; }
 
   // Store grad meta grad info
   MetaGradInfoList &param_meta_grad_info() { return param_meta_grad_info_; }

@@ -26,6 +26,7 @@
 #include "pipeline/pynative/grad/function/func_grad.h"
 #include "pipeline/pynative/grad/ir/ir_grad.h"
 #include "pipeline/pynative/pynative_utils.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "ir/cell.h"
 #include "ir/func_graph_cloner.h"
@@ -417,7 +418,7 @@ void SetCustomBpropInputs(const py::object &obj, autograd::CustomContext *contex
         MS_EXCEPTION_IF_NULL(tensor);
         (void)context->inputs.emplace_back(tensor);
         (void)context->input_value_grad_type.emplace_back(
-          PyNativeAlgo::Common::SetValueGradInfo(tensor, InputType::kConstant));
+          PyNativeAlgo::AutoGradUtil::SetValueGradInfo(tensor, InputType::kConstant));
       }
     }
   }
@@ -524,7 +525,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
     const auto &v = input_value[i];
     auto param_i_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(v->ToAbstract());
     if (!top_cell()->is_bprop_need_get_forward_graph()) {
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kInput);
+      (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(v, InputType::kInput);
       (void)input_param_values.emplace_back(v);
       (void)abs_list.emplace_back(param_i_abs);
     }
@@ -847,15 +848,15 @@ void GradExecutor::SetForwardLastNodeInfo(const ValuePtr &v) const {
     value = coo_tensorptr->GetValues();
   }
   // Set last output abstract and will be used for sens
-  auto fake_v = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(value);
-  (void)PyNativeAlgo::Common::SetValueGradInfo(fake_v, InputType::kOpOutput);
-  top_cell()->SetLastOutputValueForwardOutputFlag(fake_v);
+  (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(value, InputType::kOpOutput);
+  top_cell()->SetLastOutputValueForwardOutputFlag(value);
+  auto fake_val = ShallowCopyTensorValue(value);
   if (forward()->enable_async()) {
     auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
-    auto task = [auto_grad_cell_ptr, fake_v]() { auto_grad_cell_ptr->UpdateOutputNodeOfTopCell(fake_v); };
+    auto task = [auto_grad_cell_ptr, fake_val]() { auto_grad_cell_ptr->UpdateOutputNodeOfTopCell(fake_val); };
     DispatchGradQueueTask(std::move(task));
   } else {
-    top_cell()->auto_grad_cell_ptr()->UpdateOutputNodeOfTopCell(fake_v);
+    top_cell()->auto_grad_cell_ptr()->UpdateOutputNodeOfTopCell(fake_val);
   }
 }
 
@@ -1667,7 +1668,7 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   op_run_info->requires_grad = true;
   op_run_info->op_grad_info->input_value = forward_args;
   op_run_info->input_size = forward_args.size();
-  auto out_value = PyNativeAlgo::DataConvert::BaseRefToValue(out, true, true, top_cell_->op_index());
+  auto out_value = PyNativeAlgo::AutoGradUtil::BaseRefToValue(out, true, true, top_cell_->op_index());
   MS_EXCEPTION_IF_NULL(out_value);
   // Get output values
   if (has_custom_bprop && !out_value->isa<ValueSequence>()) {
@@ -2133,7 +2134,7 @@ void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, 
   for (size_t i = 0; i < args.size(); ++i) {
     auto input = PyNativeAlgo::DataConvert::PyObjToValue(args[i]);
     (void)context.input_value_grad_type.emplace_back(
-      PyNativeAlgo::Common::SetValueGradInfo(input, InputType::kConstant));
+      PyNativeAlgo::AutoGradUtil::SetValueGradInfo(input, InputType::kConstant));
     (void)context.inputs.emplace_back(std::move(input));
     list_inputs.append(args[i]);
   }
@@ -2142,7 +2143,7 @@ void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, 
   if (context.is_recompute) {
     output = ConvertOutputValueToTensor(output, !top_cell()->jit_out_has_dict());
   }
-  (void)PyNativeAlgo::Common::SetValueGradInfo(output, InputType::kOpOutput);
+  (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(output, InputType::kOpOutput);
   context.output = std::move(output);
   context.original_output = out;
   SetCustomBpropInputs(obj, &context);
@@ -2179,18 +2180,18 @@ void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const FrontendOp
 void GradExecutor::DoOpGrad(const FrontendOpRunInfoPtr &op_run_info) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   top_cell()->GetOpInfo(op_run_info, false);
-  auto pre_top_cell = PyNativeAlgo::AutoGrad::FindPreTopcell(this, op_run_info->op_grad_info,
-                                                             op_run_info->op_grad_info->op_info, op_run_info->real_out);
+  auto pre_top_cell = PyNativeAlgo::Common::FindPreTopcell(this, op_run_info->op_grad_info,
+                                                           op_run_info->op_grad_info->op_info, op_run_info->real_out);
   auto &&grad_param = CreateOpGradParam(op_run_info, top_cell());
   if (forward()->enable_async()) {
     auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
     auto task = [auto_grad_cell_ptr, grad_param, pre_top_cell, this]() {
-      PyNativeAlgo::AutoGrad::UpdateGradOpInfo(this, grad_param->op_grad_info, pre_top_cell, false);
+      PyNativeAlgo::Common::UpdateGradOpInfo(this, grad_param->op_grad_info, pre_top_cell, false);
       (void)auto_grad_cell_ptr->KPynativeOp(grad_param);
     };
     DispatchGradQueueTask(std::move(task));
   } else {
-    PyNativeAlgo::AutoGrad::UpdateGradOpInfo(this, grad_param->op_grad_info, pre_top_cell, false);
+    PyNativeAlgo::Common::UpdateGradOpInfo(this, grad_param->op_grad_info, pre_top_cell, false);
     (void)top_cell()->auto_grad_cell_ptr()->KPynativeOp(grad_param);
   }
 }

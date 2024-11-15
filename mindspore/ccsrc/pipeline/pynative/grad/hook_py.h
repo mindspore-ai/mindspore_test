@@ -25,17 +25,16 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "ir/tensor.h"
+#include "pipeline/pynative/grad/variable.h"
 
-namespace mindspore {
-namespace tensor {
+namespace mindspore::pynative::autograd {
 namespace py = pybind11;
 using AutoGradMetaDataWeakPtr = std::weak_ptr<AutoGradMetaData>;
-
 struct RegisterHook {
   /// \brief Register a backward hook
   ///
   /// \ void
-  static uint64_t RegisterTensorBackwardHook(const Tensor &tensor, const py::function &hook);
+  static uint64_t RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook);
 
   /// \brief Remove a backward hook
   ///
@@ -54,7 +53,5 @@ struct RegisterHook {
   static std::map<uint64_t, std::vector<uint64_t>> tensor_id_with_unique_id_;
   static std::map<uint64_t, std::pair<AutoGradMetaDataWeakPtr, TensorBackwardHookPtr>> hook_meta_fn_map_;
 };
-
-}  // namespace tensor
-}  // namespace mindspore
+}  // namespace mindspore::pynative::autograd
 #endif  // MINDSPORE_CCSRC_PYBIND_API_IR_HOOK_PY_H_

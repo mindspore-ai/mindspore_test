@@ -51,8 +51,12 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
           // Data sync in mix mode(Graph and PyNative)
           PyNativeAlgo::PyBoost::DataSyncForGraph(op, {${grad_args}});
 
-          // Update op and op_run_info by op outputs
-          PyNativeAlgo::PyBoost::UpdateOpRunInfo(op, op_run_info);
+          // Create output value
+          PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(op_run_info, op,
+                                                            op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index() : 0${view_arg});
+
+          // Set output value to python
+          PyNativeAlgo::PyBoost::UpdateStubOutput(op_run_info, op->output_abs(), op);
 
           // Do auto grad
           if (op_run_info->requires_grad) {

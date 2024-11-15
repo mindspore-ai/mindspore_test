@@ -48,59 +48,23 @@ using TensorBackwardHookPtr = std::shared_ptr<TensorBackwardHook>;
 using VariablePtr = std::shared_ptr<pynative::autograd::Variable>;
 using VariableWeakPtr = std::weak_ptr<pynative::autograd::Variable>;
 
-class AutoGradMetaData {
+class AutoGradMetaInterface {
  public:
-  AutoGradMetaData() = default;
-  AutoGradMetaData(size_t op_index, const InputType input_type) : op_index_(op_index), input_type_(input_type) {}
-  AutoGradMetaData(const VariablePtr &variable, const ParameterPtr &parameter,
-                   const InputType input_type = InputType::kConstant)
-      : variable_(variable), parameter_(parameter), input_type_(input_type) {}
-  VariablePtr variable() const { return variable_.lock(); }
-  void set_variable(const VariablePtr &variable) { variable_ = variable; }
-  ParameterPtr parameter() const { return parameter_.lock(); }
-  void set_parameter(const ParameterPtr &parameter) { parameter_ = parameter; }
-  void set_k_node(const AnfNodePtr &k_node) { k_node_ = k_node; }
-  AnfNodePtr k_node() const { return k_node_.lock(); }
-  InputType input_type() const { return input_type_; }
-  void set_input_type(InputType input_type) { input_type_ = input_type; }
-  size_t op_index() const { return op_index_; }
-  void set_op_index(size_t op_index) { op_index_ = op_index; }
-  [[nodiscard]] size_t output_index() const { return output_index_; }
-  void set_output_index(size_t output_index) { output_index_ = output_index; }
-  void AddBackwardHook(uint64_t handle_id, TensorBackwardHookPtr hook) {
-    (void)backward_hooks_.emplace(handle_id, std::move(hook));
-    is_register_hook_ = true;
-  }
-  void RemoveBackwardHook(uint64_t handle_id) { (void)backward_hooks_.erase(handle_id); }
-  bool is_register_hook() const { return is_register_hook_; }
-  const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() { return backward_hooks_; }
-  // Reset Parameter auto grad meta
-  void Reset() {
-    variable_ = {};
-    parameter_ = {};
-    k_node_ = {};
-    op_index_ = 0;
-    output_index_ = 0;
-    input_type_ = InputType::kUnkown;
-  }
-
- private:
-  // Weakptr for variable, to avoid circular reference
-  VariableWeakPtr variable_;
-  // Weakptr to hold ir parameter of input or parameter
-  ParameterWeakPtr parameter_;
-  // Weakptr to k_node for tensor
-  AnfNodeWeakPtr k_node_;
-  // Optional for op output, represent index of op in execute order.
-  size_t op_index_{0};
-  // Index of op output tensors.
-  size_t output_index_{0};
-  // Type of grad tensor
-  InputType input_type_{InputType::kUnkown};
-  bool is_register_hook_{false};
-  // Tensor hooks
-  std::map<uint64_t, TensorBackwardHookPtr> backward_hooks_;
+  [[nodiscard]] virtual VariablePtr UnsafeGetVariableImpl() const = 0;
+  virtual void set_variable(const VariablePtr &variable) = 0;
+  [[nodiscard]] virtual ParameterPtr parameter() const = 0;
+  virtual void set_parameter(const ParameterPtr &parameter) = 0;
+  virtual void set_k_node(const AnfNodePtr &k_node) = 0;
+  [[nodiscard]] virtual AnfNodePtr k_node() const = 0;
+  [[nodiscard]] virtual InputType input_type() const = 0;
+  virtual void set_input_type(InputType input_type) = 0;
+  [[nodiscard]] virtual size_t op_index() const = 0;
+  virtual void set_op_index(size_t op_index) = 0;
+  [[nodiscard]] virtual size_t output_index() const = 0;
+  virtual void set_output_index(size_t output_index) = 0;
+  virtual void Reset() = 0;
+  virtual ~AutoGradMetaInterface() = default;
 };
-using AutoGradMetaDataPtr = std::shared_ptr<AutoGradMetaData>;
+using AutoGradMetaInterfacePtr = std::shared_ptr<AutoGradMetaInterface>;
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_META_GRAD_DATA_H_

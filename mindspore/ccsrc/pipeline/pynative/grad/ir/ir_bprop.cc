@@ -19,6 +19,7 @@
 #include <vector>
 #include <memory>
 #include "pipeline/pynative/pynative_utils.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 #include "include/common/utils/primitive_utils.h"
 #include "pipeline/jit/ps/pass.h"
 #include "ir/func_graph_cloner.h"
@@ -155,7 +156,7 @@ void PlantFuncGradBpropGraphDout(const GradParamPtr &grad_param, const FuncGraph
 void ClearAutoGradCache() {
   pass_grad_graph_.clear();
   bprop_pass::ClearCache();
-  PyNativeAlgo::AutoGrad::ClearAutoGradStaticCache();
+  PyNativeAlgo::AutoGradUtil::ClearAutoGradStaticCache();
 }
 
 std::pair<bool, FuncGraphPtr> IrBprop::GetBpropGraph(const GradParamPtr &grad_param) {
@@ -195,7 +196,7 @@ void IrBprop::BuildCustomBpropCNode(const CNodePtr &cnode, const PrimitivePtr &p
 void IrBprop::BuildBPropCutCNode(const CNodePtr &cnode, const PrimitivePtr &prim, std::vector<CNodePtr> *outputs,
                                  size_t weight_size, bool is_need_recompute) {
   MS_EXCEPTION_IF_NULL(prim);
-  auto bprop_cut = PyNativeAlgo::AutoGrad::BuildBpropCutPrim(prim, is_need_recompute);
+  auto bprop_cut = PyNativeAlgo::AutoGradUtil::BuildBpropCutPrim(prim, is_need_recompute);
   size_t origin_input_size = cnode->size() - kOutAndDoutNum - weight_size;
   // Create gradient outputs cnode
   AnfNodePtrList inputs{NewValueNode(bprop_cut)};
@@ -234,7 +235,7 @@ AnfNodePtr IrBprop::MapParameter(const ValuePtr &value, const abstract::Abstract
                                  MetaGradInfoList *param_meta_grad_info) {
   if (value->isa<tensor::BaseTensor>()) {
     const auto &tensor = value->cast<tensor::BaseTensorPtr>();
-    const auto &auto_grad_meta_data = tensor->auto_grad_meta_data();
+    const auto &auto_grad_meta_data = impl::get_autograd_meta_impl(tensor);
     if (auto_grad_meta_data == nullptr) {
       MS_LOG(DEBUG) << "The tensor is a constant value, not a parameter!";
       return PyNativeAlgo::Common::CreateValueNodeByValue(tensor, abs);
@@ -248,7 +249,7 @@ AnfNodePtr IrBprop::MapParameter(const ValuePtr &value, const abstract::Abstract
     (*param_meta_grad_info)[tensor] = auto_grad_meta_data;
     set_bprop_graph_run_by_single_op(auto_grad_meta_data->is_register_hook());
     if (auto_grad_meta_data->input_type() == InputType::kParameter &&
-        PyNativeAlgo::Common::IsParamRequiresGrad(tensor)) {
+        PyNativeAlgo::AutoGradUtil::IsParamRequiresGrad(tensor)) {
       return AddParameterNode(tensor, abs);
     }
     return PyNativeAlgo::Common::CreateValueNodeByValue(value, abs);
@@ -289,8 +290,8 @@ AnfNodePtr IrBprop::MapParameter(const ValuePtr &value, const abstract::Abstract
 ParameterPtr IrBprop::AddParameterNode(const tensor::BaseTensorPtr &tensor, const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(tensor);
   auto param = CreateTapeParameter(tensor, abs);
-  auto zeros_like_dout = PyNativeAlgo::AutoGrad::BuildSpecialNode(
-    ad_param_->tape_, PyNativeAlgo::AutoGrad::GetFakeZeroTensor(), param->abstract(), SpecialType::kZerosLikeType);
+  auto zeros_like_dout = PyNativeAlgo::AutoGradUtil::BuildSpecialNode(
+    ad_param_->tape_, PyNativeAlgo::AutoGradUtil::GetFakeZeroTensor(), param->abstract(), SpecialType::kZerosLikeType);
   auto func_node = std::make_shared<IrFunctionNode>(ad_param_->tape_, zeros_like_dout);
   auto input_adjoint = std::make_shared<IrVariable>(func_node, tensor, true);
   (void)ad_param_->variable_adjoint_set_.insert(input_adjoint);
@@ -373,8 +374,8 @@ void IrBprop::BackPropagate() {
     }
     MS_LOG(DEBUG) << "Begin backpropagate: " << variable->ToString();
     // If zeroslike not used in funcgraph, we need replace the zeroslike placeholder with real zeroslike value.
-    if (static_cast<bool>(MS_UNLIKELY(PyNativeAlgo::AutoGrad::IsZerosLikeNode(fn->accumulate_dout())))) {
-      fn->set_accumulate_dout(PyNativeAlgo::AutoGrad::BuildSpecialNode(
+    if (static_cast<bool>(MS_UNLIKELY(PyNativeAlgo::AutoGradUtil::IsZerosLikeNode(fn->accumulate_dout())))) {
+      fn->set_accumulate_dout(PyNativeAlgo::AutoGradUtil::BuildSpecialNode(
         fn->tape(), variable->out_value(), fn->accumulate_dout()->abstract(), SpecialType::kZerosLikeType));
     }
     // If register hook by weight, and weight in recomputed cell.So, hook will execute, which is not expected.
@@ -391,7 +392,7 @@ void IrBprop::BackPropagate() {
       const auto &last_variable = next_edge.first;
       const auto &din = next_edge.second;
       // If din is Zeroslike, It represents that this tensor grad is zeros.
-      if (static_cast<bool>(MS_UNLIKELY(PyNativeAlgo::AutoGrad::IsZerosLikeNode(din)))) {
+      if (static_cast<bool>(MS_UNLIKELY(PyNativeAlgo::AutoGradUtil::IsZerosLikeNode(din)))) {
         if (!last_variable->is_custom_op_variable()) {
           MS_LOG(DEBUG) << last_variable->ToString() << ", its gradient is zeroslike, no need propagate!";
           continue;
@@ -428,8 +429,8 @@ OrderedSet<IrVariablePtr>::reverse_iterator IrBprop::GetLastNodeReverseIter() co
 
 AbstractBasePtr IrBprop::BuildForwardLastNode() {
   MS_LOG(DEBUG) << "Process last node info " << PyNativeAlgo::Common::GetIdByValue(ad_param_->sens_value_);
-  auto zeros_like_node = PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, ad_param_->sens_value_, nullptr,
-                                                                  SpecialType::kZerosLikeType);
+  auto zeros_like_node = PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, ad_param_->sens_value_, nullptr,
+                                                                      SpecialType::kZerosLikeType);
   auto fn = std::make_shared<IrFunctionNode>(ad_param_->tape_, zeros_like_node);
   auto sens_variable = std::make_shared<IrVariable>(fn, ad_param_->sens_value_);
   if (ad_param_->sens_value_->isa<tensor::BaseTensor>()) {
@@ -664,15 +665,15 @@ void IrBprop::CreateParameterAdjoint(const GradParamPtr &grad_param) const {
     ParameterPtr param = ad_param_->tape_->add_parameter();
     param->set_abstract(graph_parameters[i]->abstract());
     auto zeros_like_dout =
-      PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, PyNativeAlgo::AutoGrad::GetFakeZeroTensor(),
-                                               graph_parameters[i]->abstract(), SpecialType::kZerosLikeType);
+      PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, PyNativeAlgo::AutoGradUtil::GetFakeZeroTensor(),
+                                                   graph_parameters[i]->abstract(), SpecialType::kZerosLikeType);
     auto func_node = std::make_shared<IrFunctionNode>(ad_param_->tape_, zeros_like_dout);
     // Copy to avoid corrupt real input grad info.
     auto op_arg = ShallowCopyTensorValue(grad_param->op_grad_info->input_value[i]);
     ClearGradMetaData(op_arg);
     auto adjoint = std::make_shared<IrVariable>(func_node, op_arg, true);
     adjoint->set_k_node(param);
-    PyNativeAlgo::AutoGrad::SetGradMetaData(op_arg, adjoint, graph_parameters[i]->cast<ParameterPtr>());
+    PyNativeAlgo::AutoGradUtil::SetGradMetaData(op_arg, adjoint, graph_parameters[i]->cast<ParameterPtr>());
     (void)ad_param_->variable_adjoint_set_.insert(adjoint);
     (void)ad_param_->anfnode_to_variable_adjoint_.insert(std::make_pair(graph_parameters[i], adjoint));
   }
@@ -709,13 +710,13 @@ ValuePtrList IrBprop::GetInputArgs(const CNodePtr &cnode, AnfNodePtrList *cnode_
         const auto &grad_meta = t->auto_grad_meta_data();
         // Jit forward graph has no parameters(input is tuple or constant), so input used in graph as valuenode, but it
         // is used by tape_ as parameter also
-        if (grad_meta != nullptr && PyNativeAlgo::Common::IsParam(grad_meta->input_type())) {
+        if (grad_meta != nullptr && PyNativeAlgo::AutoGradUtil::IsParam(grad_meta->input_type())) {
           auto new_tensor = std::make_shared<tensor::Tensor>(t->data_type(), t->shape(), t->data_ptr());
           new_tensor->set_device_address(t->device_address());
           v = new_tensor;
         }
       }
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kConstant);
+      (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(v, InputType::kConstant);
       // In case of jit forward graph and pynative bprop graph used same valuenode
       auto new_v_node = PyNativeAlgo::Common::CreateValueNodeByValue(v, v_node->abstract());
       (void)cnode_inputs->emplace_back(new_v_node);
@@ -758,8 +759,8 @@ void IrBprop::GradCNode(const PrimitivePtr &prim, const CNodePtr &cnode, const G
   auto out = PyNativeAlgo::Common::CreatOutputTensorValueByAbstract(cnode->abstract());
   (void)cnode_inputs->emplace_back(k_node);
   // Set dout
-  AnfNodePtr dout = PyNativeAlgo::AutoGrad::BuildSpecialNode(
-    ad_param_->tape_, PyNativeAlgo::AutoGrad::GetFakeZeroTensor(), cnode->abstract(), SpecialType::kZerosLikeType);
+  AnfNodePtr dout = PyNativeAlgo::AutoGradUtil::BuildSpecialNode(
+    ad_param_->tape_, PyNativeAlgo::AutoGradUtil::GetFakeZeroTensor(), cnode->abstract(), SpecialType::kZerosLikeType);
   (void)cnode_inputs->emplace_back(dout);
   auto input_node = ad_param_->tape_->FuncGraph::NewCNode(*cnode_inputs);
   input_node->set_abstract(cnode->abstract());
@@ -779,7 +780,7 @@ void IrBprop::GradCNode(const PrimitivePtr &prim, const CNodePtr &cnode, const G
   // Get bprop by fake bprop
   if (outputs.empty()) {
     MS_LOG(DEBUG) << "Build fake bprop for this node: " << input_node->DebugString();
-    PyNativeAlgo::AutoGrad::BuildFakeBpropCNode(input_node, &outputs);
+    PyNativeAlgo::AutoGradUtil::BuildFakeBpropCNode(input_node, &outputs);
     variable_adjoint->set_is_fake_bprop(true);
     variable_adjoint->set_fake_prim_name(prim->name());
   }
@@ -789,7 +790,7 @@ void IrBprop::GradCNode(const PrimitivePtr &prim, const CNodePtr &cnode, const G
     (void)input_abs.emplace_back(cnode->input(i)->abstract());
   }
   UpdateNextEdges(variable_adjoint, outputs, inputs_value, input_abs);
-  PyNativeAlgo::AutoGrad::SetGradMetaData(out, variable_adjoint);
+  PyNativeAlgo::AutoGradUtil::SetGradMetaData(out, variable_adjoint);
   (void)ad_param_->anfnode_to_variable_adjoint_.insert(std::make_pair(cnode, variable_adjoint));
   (void)ad_param_->variable_adjoint_set_.insert(variable_adjoint);
 }
@@ -819,8 +820,8 @@ AnfNodePtr IrBprop::BuildKNodeForMakeTuple(const AnfNodePtr &input_node) {
     }
   }
   auto out_value = MakeValue(input_value);
-  AnfNodePtr dout = PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, out_value, input_node->abstract(),
-                                                             SpecialType::kZerosLikeType);
+  AnfNodePtr dout = PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, out_value, input_node->abstract(),
+                                                                 SpecialType::kZerosLikeType);
   auto fn = std::make_shared<IrFunctionNode>(ad_param_->tape_, dout);
   auto variable_adjoint = std::make_shared<IrVariable>(fn, out_value);
   auto k_node = ad_param_->tape_->FuncGraph::NewCNode(inputs);
@@ -883,8 +884,8 @@ AnfNodePtr IrBprop::BuildKNodeForTupleGetItem(const AnfNodePtr &input_node) {
   auto index_value_int = LongToSize(index_value->value());
   auto out_value = (*v_tuple)[index_value_int];
   MS_EXCEPTION_IF_NULL(out_value);
-  AnfNodePtr dout = PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, out_value, input_node->abstract(),
-                                                             SpecialType::kZerosLikeType);
+  AnfNodePtr dout = PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, out_value, input_node->abstract(),
+                                                                 SpecialType::kZerosLikeType);
   auto fn = std::make_shared<IrFunctionNode>(ad_param_->tape_, dout);
   auto variable_adjoint = std::make_shared<IrVariable>(fn, out_value);
 
@@ -904,15 +905,15 @@ AnfNodePtr IrBprop::BuildKNodeForTupleGetItem(const AnfNodePtr &input_node) {
     if (i == index_value_int) {
       (void)tuple_getitem_dout.emplace_back(dout);
     } else {
-      (void)tuple_getitem_dout.emplace_back(PyNativeAlgo::AutoGrad::BuildSpecialNode(
+      (void)tuple_getitem_dout.emplace_back(PyNativeAlgo::AutoGradUtil::BuildSpecialNode(
         ad_param_->tape_, v, abs_tuple->elements()[i], SpecialType::kZerosLikeType));
     }
   }
   CNodePtr tuple_getitem_dout_value = ad_param_->tape_->FuncGraph::NewCNode(tuple_getitem_dout);
   tuple_getitem_dout_value->set_abstract(tuple_item_cnode->input(kIndex1)->abstract());
   auto index_dout_value =
-    PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, index_value,
-                                             tuple_item_cnode->input(kIndex1)->abstract(), SpecialType::kZerosLikeType)
+    PyNativeAlgo::AutoGradUtil::BuildSpecialNode(
+      ad_param_->tape_, index_value, tuple_item_cnode->input(kIndex1)->abstract(), SpecialType::kZerosLikeType)
       ->cast<CNodePtr>();
   UpdateNextEdges(variable_adjoint, {tuple_getitem_dout_value, index_dout_value}, {v_tuple, index_value},
                   {tuple_item_cnode->input(kIndex1)->abstract(), tuple_item_cnode->input(kIndex2)->abstract()});
@@ -975,7 +976,7 @@ void IrBprop::UpdateNextEdge(const IrFunctionNodePtr &fn, const AnfNodePtr &din,
     if (auto_grad_meta_data == nullptr) {
       return;
     }
-    auto variable = auto_grad_meta_data->variable();
+    auto variable = auto_grad_meta_data->UnsafeGetVariableImpl();
     if (variable == nullptr || !variable->is_need_grad()) {
       return;
     }
@@ -1032,7 +1033,8 @@ AnfNodePtr IrBprop::TraceInput(const IrFunctionNodePtr &fn, const ValuePtr &out_
     if (input_tensor->id() == out_tensor->id()) {
       return din;
     }
-    return PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, out_value, out_abs, SpecialType::kZerosLikeType);
+    return PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, out_value, out_abs,
+                                                        SpecialType::kZerosLikeType);
   }
   if (out_value->isa<ValueSequence>()) {
     // The corresponding output of node is ValueSequence, but used one of it
@@ -1066,7 +1068,8 @@ AnfNodePtr IrBprop::TraceInput(const IrFunctionNodePtr &fn, const ValuePtr &out_
     return TraceInputForDict(fn, out_value, out_abs, input_tensor, din);
   }
   MS_LOG(DEBUG) << "Get non tensor input " << out_value->ToString();
-  return PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, out_value, out_abs, SpecialType::kZerosLikeType);
+  return PyNativeAlgo::AutoGradUtil::BuildSpecialNode(ad_param_->tape_, out_value, out_abs,
+                                                      SpecialType::kZerosLikeType);
 }
 
 AnfNodePtr IrBprop::TraceInputForDict(const IrFunctionNodePtr &fn, const ValuePtr &out_value,

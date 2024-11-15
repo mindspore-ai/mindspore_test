@@ -182,10 +182,16 @@ class PyboostOpCppGenerator(BaseGenerator):
             _, call_func_outputs = op_parser.generate_pyboost_outputs()
             operator_name = op_proto.op_name
             op_name_str = op_proto.op_class.name
+            check_inplace_func = ''
+            for arg in op_proto.op_returns:
+                if arg.inplace != '':
+                    check_inplace_func = f'ThrowExpectionWhenInternalOverlap({arg.inplace}_tensor);'
+                    break
             call_impl = self.PYBOOST_CUSTOMIZE_CALL_TEMPLATE.replace(
                 call_args=call_args,
                 return_values=call_func_outputs,
                 customize_func=getattr(op_proto.op_dispatch, self.device) + "Customize",
+                check_expression=check_inplace_func,
             )
             customize_include = \
                 f'#include "{K.MS_OPS_KERNEL_PATH}/{self.device}/pyboost/customize/{operator_name.lower()}.h"'

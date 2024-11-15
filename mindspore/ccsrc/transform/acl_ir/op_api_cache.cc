@@ -18,8 +18,6 @@
 
 namespace mindspore::transform {
 namespace {
-constexpr size_t kSize = 5;
-
 void Gather(mindspore::kernel::KernelTensor *tensor) {
   if (tensor == nullptr || tensor->type_id() == kMetaTypeNone) {
     MemcpyToBuf("None", kSizeFive);
@@ -52,7 +50,7 @@ void Gather(mindspore::kernel::KernelTensor *tensor) {
 
 void Gather(const device::DeviceAddressPtr &device_address) {
   if (device_address == nullptr) {
-    MemcpyToBuf("None", kSize);
+    MemcpyToBuf("None", kSizeFive);
     return;
   }
 

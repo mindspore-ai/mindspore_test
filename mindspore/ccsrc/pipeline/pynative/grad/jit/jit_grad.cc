@@ -18,9 +18,10 @@
 
 #include <utility>
 #include "frontend/optimizer/ad/grad.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
-#include "mindspore/ops/op_def/framework_op_name.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "op_def/structure_op_name.h"
+#include "op_def/framework_op_name.h"
+#include "op_def/sequence_ops.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/jit/jit_dfunctor.h"
 #include "pipeline/jit/ps/pipeline.h"
@@ -313,8 +314,7 @@ GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, co
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(grad_executor);
   PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, jit_forward_graph);
-  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
-
+  (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
   MS_EXCEPTION_IF_NULL(jit_forward_graph);
   RecordForwardGraphForJit(op_run_info, grad_executor, jit_forward_graph);
 
@@ -374,8 +374,8 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   ValuePtrList flatten_actual_output_list;
   PyNativeAlgo::DataConvert::FlattenValueSeqArg(op_run_info->real_out, false, true, &flatten_actual_output_list);
   auto flatten_replace_value = std::make_shared<ValueTuple>(flatten_actual_output_list);
-  auto pre_top_cell = PyNativeAlgo::AutoGrad::FindPreTopcell(grad_executor, op_run_info->op_grad_info,
-                                                             op_run_info->op_grad_info->op_info, flatten_replace_value);
+  auto pre_top_cell = PyNativeAlgo::Common::FindPreTopcell(grad_executor, op_run_info->op_grad_info,
+                                                           op_run_info->op_grad_info->op_info, flatten_replace_value);
   op_run_info->op_grad_info->out_value = flatten_replace_value;
   MS_LOG(DEBUG) << "jit actual output value: " << op_run_info->real_out->ToString() << ", output id "
                 << PyNativeAlgo::Common::GetIdByValue(op_run_info->real_out);
@@ -384,7 +384,7 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   auto auto_grad_cell_ptr = grad_executor->top_cell()->auto_grad_cell_ptr();
   grad_executor->dynamic_shape()->CheckNodeDynamic(grad_executor->top_cell(), grad_param->op_grad_info,
                                                    grad_param->graph_cache_key);
-  PyNativeAlgo::AutoGrad::UpdateGradOpInfo(grad_executor, grad_param->op_grad_info, pre_top_cell, true);
+  PyNativeAlgo::Common::UpdateGradOpInfo(grad_executor, grad_param->op_grad_info, pre_top_cell, true);
   grad_param->op_grad_info->out_value = op_run_info->real_out;
   UpdateAddCnodeFoward(grad_param->op_grad_info, grad_executor, added_node, added_out_v, grad_param->graph_cache_key);
   if (!auto_grad_cell_ptr->KPynativeWithFProp(grad_param)) {
@@ -421,8 +421,8 @@ void Jit::UpdateAddCnodeFoward(const OpGradInfoPtr &op_grad_info, const GradExec
       }
     } else {
       // Static shape will run by replacement
-      auto pre_top_cell = PyNativeAlgo::AutoGrad::FindPreTopcell(grad_executor, op_grad_info,
-                                                                 op_grad_info->op_info + kAddedValue, flatten_v);
+      auto pre_top_cell = PyNativeAlgo::Common::FindPreTopcell(grad_executor, op_grad_info,
+                                                               op_grad_info->op_info + kAddedValue, flatten_v);
       if (op_grad_info->need_do_forward_output_replace && op_grad_info->used_in_bprop_graph) {
         MS_EXCEPTION_IF_NULL(pre_top_cell);
         grad_executor->top_cell()->UpdateTopCellForwardTensorInfoInBpropGraph(op_grad_info->op_info + kAddedValue,

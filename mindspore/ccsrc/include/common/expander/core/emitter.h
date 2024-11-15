@@ -274,6 +274,14 @@ class COMMON_EXPORT Emitter {
     return ZerosLike(x);
   }
 
+  virtual NodePtr InplaceCopy(const NodePtr &variable, const NodePtr &value) {
+    return Emit("InplaceCopy", {variable, value});
+  }
+  virtual NodePtr AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,
+                            const NodePtr &storage_offset) {
+    return Emit("AsStrided", {input, size, stride, storage_offset});
+  }
+
   /// \brief Emit a value node
   template <typename T>
   NodePtr Value(const T &value) {

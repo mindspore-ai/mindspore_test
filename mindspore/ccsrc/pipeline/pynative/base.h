@@ -67,18 +67,25 @@ struct AsyncStatus {
   size_t custom_bprop_cell_count{0};
 };
 
+enum class OperatorType {
+  kDefault = 0,
+  kViewOp,
+  kInplaceOp,
+};
+
 struct OpGradInfo {
   ~OpGradInfo() {
     input_value.clear();
     out_value = nullptr;
   }
   bool is_need_recompute{false};
-
   // Mark op output value whether used in bprop graph
   bool used_in_bprop_graph{false};
   // If op output value used in bprop grad and not in first step or dynamic process, need to do output value replace in
   // bprop graph
   bool need_do_forward_output_replace{true};
+  // Mark op type
+  OperatorType operator_type{OperatorType::kDefault};
   // If recompute, we record weight_size.
   size_t weight_size{0};
   // op index
@@ -142,7 +149,6 @@ struct FrontendOpRunInfo {
   bool output_get_by_infer_value = false;
   bool should_be_cache = false;
   bool is_jit_input = false;
-  bool is_view_op = false;
   int mix_type{0};
   TypePtr mix_precision_type{nullptr};
   size_t input_size = 0;

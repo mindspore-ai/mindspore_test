@@ -21,14 +21,14 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <map>
 #include "ir/anf.h"
+#include "include/common/utils/hook.h"
 #include "include/backend/kernel_graph.h"
 #include "pipeline/pynative/grad/function/func_builder.h"
 #include "include/common/profiler.h"
 
 namespace mindspore::pynative::autograd {
-using TensorPtrList = tensor::TensorPtrList;
-
 struct GradAttr {
   GradAttr(bool get_all, bool get_by_list, bool sens_param, bool get_by_position, bool weight_param_is_tuple)
       : grad_all_inputs(get_all),
@@ -44,6 +44,106 @@ struct GradAttr {
   bool weight_param_is_tuple;
 };
 
+class AutoGradMetaData : public AutoGradMetaInterface {
+ public:
+  AutoGradMetaData() = default;
+  AutoGradMetaData(size_t op_index, const InputType input_type) : op_index_(op_index), input_type_(input_type) {}
+  AutoGradMetaData(const VariablePtr &variable, const ParameterPtr &parameter,
+                   const InputType input_type = InputType::kConstant)
+      : variable_(variable), parameter_(parameter), input_type_(input_type) {}
+  [[nodiscard]] VariablePtr UnsafeGetVariableImpl() const override { return variable_.lock(); }
+  void set_variable(const VariablePtr &variable) override { variable_ = variable; }
+  [[nodiscard]] ParameterPtr parameter() const override { return parameter_.lock(); }
+  void set_parameter(const ParameterPtr &parameter) override { parameter_ = parameter; }
+  void set_k_node(const AnfNodePtr &k_node) override { k_node_ = k_node; }
+  [[nodiscard]] AnfNodePtr k_node() const override { return k_node_.lock(); }
+  [[nodiscard]] InputType input_type() const override { return input_type_; }
+  void set_input_type(InputType input_type) override { input_type_ = input_type; }
+  [[nodiscard]] size_t op_index() const override { return op_index_; }
+  void set_op_index(size_t op_index) override { op_index_ = op_index; }
+  [[nodiscard]] size_t output_index() const override { return output_index_; }
+  void set_output_index(size_t output_index) override { output_index_ = output_index; }
+  // Reset Parameter auto grad meta
+  void Reset() override {
+    variable_ = {};
+    parameter_ = {};
+    k_node_ = {};
+    op_index_ = 0;
+    output_index_ = 0;
+    input_type_ = InputType::kUnkown;
+  }
+  void AddBackwardHook(uint64_t id, TensorBackwardHookPtr hook) {
+    (void)backward_hooks_.emplace(id, std::move(hook));
+    is_register_hook_ = true;
+  }
+  void RemoveBackwardHook(uint64_t id) { (void)backward_hooks_.erase(id); }
+  bool is_register_hook() const { return is_register_hook_; }
+  const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() { return backward_hooks_; }
+  void ClearBackwardHooks() { backward_hooks_.clear(); }
+  ~AutoGradMetaData() override = default;
+
+ private:
+  // Weakptr for variable, to avoid circular reference
+  VariableWeakPtr variable_;
+  // Weakptr to hold ir parameter of input or parameter
+  ParameterWeakPtr parameter_;
+  // Weakptr to k_node for tensor
+  AnfNodeWeakPtr k_node_;
+  // Optional for op output, represent index of op in execute order.
+  size_t op_index_{0};
+  // Type of grad tensor
+  InputType input_type_{InputType::kUnkown};
+  // Index of op output tensors.
+  size_t output_index_{0};
+  bool is_register_hook_{false};
+  // Tensor hooks
+  std::map<uint64_t, TensorBackwardHookPtr> backward_hooks_{};
+};
+using AutoGradMetaDataPtr = std::shared_ptr<AutoGradMetaData>;
+
+class BaseTensor;
+using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
+
+class ViewInfo {
+ public:
+  explicit ViewInfo(BaseTensorPtr base) : base_(std::move(base)) {}
+  [[nodiscard]] ViewInfo Union() const { return ViewInfo(base_); }
+  [[nodiscard]] const tensor::BaseTensorPtr &base() const { return base_; }
+
+ private:
+  BaseTensorPtr base_;
+};
+
+enum class CreationType {
+  // View created in grad mode.
+  kDefault = 0,
+  // View created in no grad mode.
+  kNoGradMode,
+  // View created by multi output op.
+  kMultiOutput,
+  // View created by custom bprop.
+  kCustomBprop,
+};
+
+class ViewAutoGradMetaData final : public AutoGradMetaData {
+ public:
+  ViewAutoGradMetaData(const ViewInfo &&view_info, size_t op_index, InputType input_type,
+                       CreationType creation_type = CreationType::kDefault)
+      : AutoGradMetaData(op_index, input_type), view_info_(view_info), creation_type_(creation_type) {}
+  [[nodiscard]] const ViewInfo &view_info() const { return view_info_; }
+  [[nodiscard]] uint32_t version_attr() const { return version_attr_; }
+  void set_version_attr(uint32_t version) { version_attr_ = version; }
+  CreationType creation_type() { return creation_type_; }
+  void set_creation_type(const CreationType &creation_type) { creation_type_ = creation_type; }
+
+ private:
+  ViewInfo view_info_;
+  CreationType creation_type_;
+  // We need set version attr in bprop queue to avoid multi thread race.
+  uint32_t version_attr_{0};
+};
+using ViewAutoGradMetaDataPtr = std::shared_ptr<ViewAutoGradMetaData>;
+
 class Variable;
 struct Edge {
   /// \brief Constructor.
@@ -52,6 +152,13 @@ struct Edge {
   /// \param[in] input_index The input index is variable output index.
   explicit Edge(std::shared_ptr<Variable> variable, size_t input_index)
       : variable(std::move(variable)), input_index(input_index) {}
+  // Just a placeholder.
+  Edge() : variable(nullptr), input_index(0) {}
+  // Check edge is defined, if is defined, it mean that this edge is effective.
+  // We need use undefined edge as placeholder, so that we can known operator input index exactly,
+  // for example, when we use copy operator, we will knonw it has two tensor input, and next_edges[0] is self tensor.
+  // so that when we use inplace op, we can skip self's edge and update other edges.
+  [[nodiscard]] inline bool is_defined() const { return variable != nullptr; }
   std::shared_ptr<Variable> variable;
   size_t input_index;
 };
@@ -72,10 +179,6 @@ class BackwardNode {
   /// \param[in] grads Grads is this node output's gradients.
   virtual ValuePtrList CallBackward(const ValuePtrList &grads) { return {}; }
 
-  /// \brief Collect next edges of this node. The inputs should be flatten.
-  /// \param[in] inputs Inputs is op input.
-  virtual void UpdateNextEdges(const std::vector<ValuePtr> &inputs);
-
   /// \brief Postprocess gradients from func to align with next_edges.
   /// \param[in] gradient_value Gradients value is gradients result from func
   /// which need postprocess.
@@ -91,17 +194,27 @@ class BackwardNode {
   /// \return next edges
   const std::vector<Edge> &next_edges() const { return next_edges_; }
 
-  /// \brief The gradient_index function is used to represent index of inputs,
-  /// which need calculate gradient.
+  /// \brief Set next edges for backward node.
   ///
-  /// \return gradient index
-  const std::vector<size_t> &gradient_index() const { return gradient_index_; }
+  void set_next_edges(std::vector<Edge> &&next_edges) { next_edges_ = next_edges; }
+
+  /// \brief Add next edges for backward node.
+  ///
+  void add_next_edge(Edge edge) { (void)next_edges_.emplace_back(std::move(edge)); }
 
   /// \brief name of this Node.
   ///
   /// \return name
   const std::string &name() { return name_; }
 
+  /// \brief Check func to check whether the version of input is changed.
+  ///
+  /// \return check_func
+  const std::function<void(const std::string &op_name)> &check_func() const { return check_func_; }
+
+  /// \brief Set check func.
+  ///
+  void set_check_func(const std::function<void(const std::string &op_name)> &check_func) { check_func_ = check_func; }
   /// \brief Set op output value
   ///
   /// \return op output value
@@ -124,8 +237,8 @@ class BackwardNode {
 
  protected:
   std::vector<Edge> next_edges_;
-  std::vector<size_t> gradient_index_;
   std::string name_;
+  std::function<void(const std::string &op_name)> check_func_{nullptr};
   ValuePtr op_output_{nullptr};
   size_t output_size_;
 };
@@ -262,6 +375,7 @@ class Variable {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kReleaseResource,
                                        runtime::ProfilerRecorder::kNoName, false);
     MS_EXCEPTION_IF_NULL(func_node_);
+    func_node_->set_check_func(nullptr);
     func_node_->Release();
   }
 
@@ -340,6 +454,12 @@ bool isa(const BackwardNodePtr &base_ptr) {
   const auto &object = (*base_ptr);
   return typeid(object) == typeid(T);
 }
+
+namespace impl {
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensorPtr &tensor);
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensor &tensor);
+ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::BaseTensorPtr &tensor);
+}  // namespace impl
 }  // namespace mindspore::pynative::autograd
 
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_GRAD_VARIABLE_H_

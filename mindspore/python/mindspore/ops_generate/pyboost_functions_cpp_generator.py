@@ -23,7 +23,7 @@ the necessary header files for the generated functions.
 import os
 
 import pyboost_utils
-from pyboost_utils import get_convert_type_str, is_optional_param
+from pyboost_utils import get_convert_type_str, is_optional_param, is_op_multi_output
 import template
 from template import Template
 import gen_constants as K
@@ -100,6 +100,8 @@ class PyboostFunctionsGenerator(BaseGenerator):
             call_args_str = self._get_call_args_str(op_proto)
             grad_args_str = self._get_grad_args_str(op_proto)
             cast_args_str = self._get_cast_to_value_str(op_proto)
+            view_arg_str = self._get_view_str(op_proto.op_view, grad_args_str)
+            multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
             # communication operators have different func template
             function_tpl = self.PYBOOST_COMM_FUNCTION_TEMPLATE \
                 if op_proto.op_dispatch.is_comm_op else self.PYBOOST_FUNCTION_TEMPLATE
@@ -115,7 +117,9 @@ class PyboostFunctionsGenerator(BaseGenerator):
                                                      optional_to_value=optional_to_value_str,
                                                      call_args=call_args_str,
                                                      grad_args=grad_args_str,
-                                                     cast_args=cast_args_str)
+                                                     cast_args=cast_args_str,
+                                                     view_arg=view_arg_str,
+                                                     is_multi=multi_ouptut_str)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE + template.NEW_LINE
             pyboost_op_name = op_parser.get_pyboost_name()
             pyboost_func_name = op_parser.get_pyboost_func_name()
@@ -337,3 +341,22 @@ class PyboostFunctionsGenerator(BaseGenerator):
                 cast_arg = cast_str + op_arg.arg_name
             cast_args_str.append(cast_arg)
         return cast_args_str
+
+    def _get_view_str(self, is_view_op: bool, grad_args: list):
+        """
+        Generates the view base str of arguments for the operator.
+
+        This method constructs a list of argument names that need to be cast to their corresponding types.
+
+        Args:
+            op_proto (OpProto): The operator prototype containing the argument information.
+
+        Returns:
+            str: Formatted view argument names.
+        """
+        view_arg_str = ''
+        for i, grad_arg in enumerate(grad_args):
+            if is_view_op and i == 0:
+                view_arg_str = ", " + grad_arg
+                break
+        return view_arg_str

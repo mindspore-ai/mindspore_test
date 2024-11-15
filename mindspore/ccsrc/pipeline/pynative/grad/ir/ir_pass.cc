@@ -19,11 +19,11 @@
 #include <vector>
 #include <functional>
 #include "pipeline/pynative/pynative_utils.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/nn_ops.h"
+#include "pipeline/pynative/grad/grad_utils.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/hook.h"
 #include "runtime/pynative/op_function/pyboost_grad_functions.h"
 
 namespace mindspore {
@@ -518,7 +518,7 @@ AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodeP
     MS_LOG(DEBUG) << "Hook just work on tensor, not support value " << value->ToString();
     return grad_node;
   }
-  auto auto_grad_meta = tensor->auto_grad_meta_data();
+  auto auto_grad_meta = autograd::impl::get_autograd_meta_impl(tensor);
   MS_EXCEPTION_IF_NULL(auto_grad_meta);
   if (auto_grad_meta->backward_hooks().empty()) {
     MS_LOG(DEBUG) << "Get empty backward hooks for tensor id " << tensor->id();
@@ -739,7 +739,7 @@ void IrPassForward::ReverseCNodeInputs(const CNodePtr &cnode, AnfNodePtrList *cn
     if (t.second->isa<ValueNode>()) {
       auto vnode = t.second->cast<ValueNodePtr>();
       auto v = vnode->value();
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kConstant);
+      (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(v, InputType::kConstant);
       AddCNodeInputs(cnode, cnode_inputs, t.first, PyNativeAlgo::Common::CreateValueNodeByValue(v, nullptr));
       (void)inputs_value->insert(inputs_value->begin() + SizeToLong(t.first), v);
     } else if (t.second->isa<Parameter>()) {

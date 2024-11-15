@@ -76,6 +76,51 @@ std::vector<int64_t> TileShape(const std::vector<int64_t> &dims, const std::vect
 
   return res;
 }
+
+int64_t GetMindStorageSize(const std::vector<int64_t> &sizes, const std::vector<int64_t> &strides,
+                           int64_t storage_offset) {
+  int64_t storage_size = storage_offset + 1;
+  auto rank = sizes.size();
+  for (size_t i = 0; i < rank; ++i) {
+    const auto &size_i = sizes[i];
+    if (size_i == 0) {
+      return storage_offset;
+    }
+    storage_size += (size_i - 1) * strides[i];
+  }
+  return storage_size;
+}
+
+/**
+ * @brief To judge whether there may be memory overlap in as strided operator.
+ *        Considering performing efficiency, is hard to judge overlap in view accurately.
+ *
+ *        1. Sort the strides and shape by stride ascending order.
+ *        2. Traverse from left to right, it may be overlap if there exist a stride value less or equal then the maximum
+ * index.
+ *        3. It never overlap when all strides value larger then the corresponding maximum index.
+ *
+ * @param shapes Shapes of corresponding dims.
+ * @param strides Strides of corresponding dims.
+ * @return true: maybe overlap, false: never overlap.
+ */
+bool MaybeOverlapMemory(const std::vector<int64_t> &shapes, const std::vector<int64_t> &strides) {
+  if (!shapes.empty()) {
+    std::vector<int64_t> index_sort(shapes.size());
+    std::iota(index_sort.begin(), index_sort.end(), 0);
+    std::sort(index_sort.begin(), index_sort.end(),
+              [&](std::size_t i, std::size_t j) { return strides[i] < strides[j]; });
+    int64_t max_index = 0;
+    for (auto i : index_sort) {
+      const auto &stride = strides[i];
+      if (stride <= max_index) {
+        return true;
+      }
+      max_index += stride * (shapes[i] - 1);
+    }
+  }
+  return false;
+}
 }  // namespace
 
 DEF_PURE_SHAPE_CALC(g_gather_drop_negative)
@@ -2099,7 +2144,7 @@ REG_BPROP_BUILDER("SliceExt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib
   auto dout = ib->GetInput(kIndex6);
 
   auto dx = ib->Zeros(x);
-  (void)ib->Emit("InplaceCopy", {ib->Emit("SliceExt", {dx, axis, begin, end, step}), dout});
+  (void)ib->InplaceCopy(ib->Emit("SliceExt", {dx, axis, begin, end, step}), dout);
   return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(step)};
 });
 
@@ -3035,6 +3080,119 @@ REG_BPROP_BUILDER("InsertGemV2InBackward").SetBody(BODYFUNC(ib) {
   std::transform(all_inputs.begin() + i1, all_inputs.begin() + all_inputs.size() - i2, std::back_inserter(gradients),
                  [&ib](const NodePtr &node) { return ib->OutZeros(node); });
   return gradients;
+});
+
+REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+  const auto &input = ib->GetInput(kIndex0);
+  const auto &size = ib->GetInput(kIndex1);
+  const auto &strides_node = ib->GetInput(kIndex2);
+  const auto &offset = ib->GetInput(kIndex3);
+  const auto &output = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto output_tensor = output->BuildValue()->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(output_tensor);
+  MS_EXCEPTION_IF_NULL(output_tensor->storage_info());
+  auto output_storage_offset = output_tensor->storage_info()->storage_offset;
+  auto input_tensor = input->BuildValue()->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto input_storage_offset =
+    input_tensor->storage_info() == nullptr ? 0 : output_tensor->storage_info()->storage_offset;
+
+  auto grad_rank = output_tensor->storage_info()->shape.size();
+  std::vector<int64_t> out_shape, out_strides;
+  out_shape.reserve(grad_rank);
+  out_strides.reserve(grad_rank);
+  const auto &shape = output_tensor->storage_info()->shape;
+  const auto &strides = output_tensor->storage_info()->strides;
+  for (int64_t i = grad_rank - 1; i >= 0; i--) {
+    int64_t axis_size = shape[i];
+    int64_t stride = strides[i];
+    if (axis_size == 0) {
+      return {ib->OutZeros(input), ib->OutZeros(size), ib->OutZeros(strides_node), ib->OutZeros(offset)};
+    } else if (axis_size == 1) {
+      std::vector<int64_t> axis{i};
+      dout = ib->Squeeze(dout, MakeValue(axis));
+    } else if (stride == 0) {
+      std::vector<int64_t> axis{i};
+      dout = ib->SumExt(dout, ib->Value(axis), ib->Value(false));
+    } else {
+      out_shape.insert(out_shape.begin(), axis_size);
+      out_strides.insert(out_strides.begin(), stride);
+    }
+  }
+  // The result of as strided operator maybe overlap.
+  auto output_maybe_overlap = MaybeOverlapMemory(out_shape, out_strides);
+
+  auto input_rank = input_tensor->storage_info() == nullptr ? output_tensor->storage_info()->ori_shape.size()
+                                                            : input_tensor->storage_info()->shape.size();
+  auto input_shape = input_tensor->storage_info() == nullptr ? output_tensor->storage_info()->ori_shape
+                                                             : input_tensor->storage_info()->shape;
+  auto input_strides = input_tensor->storage_info() == nullptr ? output_tensor->storage_info()->ori_strides
+                                                               : input_tensor->storage_info()->strides;
+  std::vector<int64_t> simplify_input_shape, simplify_input_strides;
+  simplify_input_shape.reserve(input_rank);
+  simplify_input_strides.reserve(input_rank);
+  for (int64_t i = input_rank - 1; i >= 0; i--) {
+    const auto &axis_size = input_shape[i];
+    const auto &stride = input_strides[i];
+    if (axis_size == 0) {
+      return {ib->OutZeros(input), ib->OutZeros(size), ib->OutZeros(strides_node), ib->OutZeros(offset)};
+    } else if (axis_size != 1) {
+      simplify_input_shape.insert(simplify_input_shape.begin(), axis_size);
+      simplify_input_strides.insert(simplify_input_strides.begin(), stride);
+    }
+  }
+  // The input of as strided maybe an overlap view.
+  auto input_maybe_overlap = MaybeOverlapMemory(simplify_input_shape, simplify_input_strides);
+
+  auto shared_offset = std::min(output_storage_offset, input_storage_offset);
+  int64_t input_effective_offset = input_storage_offset - shared_offset;
+  int64_t output_effective_offset = output_storage_offset - shared_offset;
+  int64_t input_min_storage = GetMindStorageSize(simplify_input_shape, simplify_input_strides, input_effective_offset);
+  int64_t output_min_storage = GetMindStorageSize(out_shape, out_strides, output_effective_offset);
+  auto base_size = std::max(input_min_storage, output_min_storage);
+  std::vector<int64_t> storage_shape{base_size};
+  auto storage = ib->Zeros(ib->Value(storage_shape), ib->Value(static_cast<int64_t>(input->dtype()->type_id())));
+
+  // Index array can be used in both input overlap and output overlap scene.
+  NodePtr flatten_full_indices;
+  if (output_maybe_overlap || input_maybe_overlap) {
+    auto start = ib->EmitValue(MakeValue<int64_t>(0));
+    auto end = ib->EmitValue(MakeValue<int64_t>(base_size));
+    auto step = ib->EmitValue(MakeValue<int64_t>(1));
+    auto dtype = ib->Value(static_cast<int64_t>(TypeId::kNumberTypeInt64));
+    flatten_full_indices = ib->Arange(start, end, step, dtype);
+  }
+
+  // For output overlap, all change to view should be accumulated to the base tensor.
+  if (output_maybe_overlap) {
+    auto output_indices = ib->AsStrided(flatten_full_indices, ib->Value(out_shape), ib->Value(out_strides),
+                                        ib->Value(output_effective_offset));
+    storage = ib->IndexAddExt(storage, ib->Reshape(output_indices, {-1}), ib->Reshape(dout, {-1}),
+                              ib->Value<int64_t>(0LL), ib->Value<int64_t>(1LL));
+  } else {
+    auto view_output =
+      ib->AsStrided(storage, ib->Value(out_shape), ib->Value(out_strides), ib->Value(output_effective_offset));
+    (void)ib->InplaceCopy(view_output, dout);
+  }
+
+  // For input overlap, all change to base tensor should be dived by count.
+  if (input_maybe_overlap) {
+    auto count = ib->ZerosLikeExt(storage, ib->Value(static_cast<int64_t>(TypeId::kNumberTypeFloat32)));
+    auto input_indices = ib->AsStrided(flatten_full_indices, ib->Value(simplify_input_shape),
+                                       ib->Value(simplify_input_strides), ib->Value(input_effective_offset));
+    auto flatten_input_indices = ib->Reshape(input_indices, {-1});
+    ShapeVector one_shape{1};
+    auto source = ib->BroadcastTo(
+      ib->Ones(ib->Value<ShapeVector>(one_shape), ib->Value(static_cast<int64_t>(input->dtype()->type_id()))),
+      flatten_input_indices);
+    count = ib->IndexAddExt(count, flatten_input_indices, source, ib->Value<int64_t>(0LL), ib->Value<int64_t>(1LL));
+    storage = ib->Div(storage, count);
+  }
+  auto input_grad =
+    ib->AsStrided(storage, ib->Value(input_shape), ib->Value(input_strides), ib->Value(input_effective_offset));
+  return {input_grad, ib->OutZeros(size), ib->OutZeros(strides_node), ib->OutZeros(offset)};
 });
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

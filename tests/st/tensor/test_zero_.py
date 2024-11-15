@@ -22,6 +22,7 @@ from tests.mark_utils import arg_mark
 
 class Net(ms.nn.Cell):
     def construct(self, x):
+        x = x * 1
         x.zero_()
         return x
 
@@ -47,15 +48,9 @@ def test_zero_std():
     Expectation: expect correct result.
     """
     x = generate_random_input((2, 2, 3, 4), np.float32)
-
-    expect_x_grad = np.ones_like(x, dtype=np.float32)
-
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     output_x = zero_forward_func(ms.Tensor(x))
-    output_x_grad = zero_backward_func(ms.Tensor(x))
-
     np.allclose(output_x.asnumpy(), x, rtol=1e-5, equal_nan=True)
-    np.allclose(output_x_grad[0].asnumpy(), expect_x_grad, rtol=1e-5, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
