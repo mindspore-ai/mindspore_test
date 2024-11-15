@@ -68,7 +68,7 @@ def test_op_proto_warnings():
     check_output('50', ': log level for printing vlog tags already been used', False)
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_vlog_to_file():
     """
     Feature: test mindspore vlog interface

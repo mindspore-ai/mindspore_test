@@ -20,7 +20,7 @@ from mindspore import SparseTensor
 from tests.mark_utils import arg_mark
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ge_switch_layer_with_const_input():
     """
     Feature: switch_layer with const input
@@ -59,7 +59,7 @@ def test_ge_switch_layer_with_const_input():
     assert output[2] == expect[2]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ge_control_flow_and_nested_list_with_const_input():
     """
     Feature: control flow and nested list with const input
@@ -90,7 +90,7 @@ def test_ge_control_flow_and_nested_list_with_const_input():
     assert np.allclose(output.asnumpy(), expect.asnumpy(), 0.001, 0.001)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ge_control_flow_and_nested_tuple_with_const_input():
     """
     Feature: control flow and nested tuple with const input
