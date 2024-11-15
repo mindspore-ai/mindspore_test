@@ -22,9 +22,6 @@
 
 #include "acl/acl.h"
 #include "utils/dlopen_macro.h"
-#include "utils/hash_map.h"
-#include "utils/log_adapter.h"
-
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 

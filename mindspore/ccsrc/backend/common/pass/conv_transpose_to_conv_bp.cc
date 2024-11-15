@@ -18,9 +18,7 @@
 #include <vector>
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "ir/primitive.h"
-#include "include/common/utils/utils.h"
 #include "utils/trace_base.h"
-#include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
 namespace opt {

@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 #include "plugin/device/ascend/kernel/host/host_kernel_mod.h"
-#include "kernel/kernel.h"
 namespace mindspore {
 namespace kernel {
 class TensorShapeKernelMod : public HostKernelMod {

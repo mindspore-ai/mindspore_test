@@ -24,7 +24,6 @@
 #include <mutex>
 #endif
 #include "include/common/visible.h"
-#include "include/common/utils/contract.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/system/base.h"

@@ -25,7 +25,6 @@
 #include "backend/common/pass/graph_view_replace_pass.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
-#include "include/backend/optimizer/optimizer.h"
 #include "backend/common/pass/add_parallel_group_id_attr.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "plugin/device/ascend/optimizer/ge/all_to_all_v_for_ge.h"

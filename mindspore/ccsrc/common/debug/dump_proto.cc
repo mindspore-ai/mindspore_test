@@ -27,6 +27,7 @@
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "include/common/debug/anf_dump_utils.h"
+#include "include/common/debug/common.h"
 #include "utils/anf_utils.h"
 #include "frontend/parallel/ops_info/ops_utils.h"  // todo: use constant string now
 #include "utils/file_utils.h"

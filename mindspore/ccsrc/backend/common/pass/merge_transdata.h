@@ -21,7 +21,6 @@
 #include "include/backend/visible.h"
 #include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
-#include "ir/anf.h"
 
 namespace mindspore {
 namespace opt {

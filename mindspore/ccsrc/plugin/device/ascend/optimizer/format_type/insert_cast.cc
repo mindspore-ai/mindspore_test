@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "plugin/device/ascend/optimizer/format_type/utils.h"

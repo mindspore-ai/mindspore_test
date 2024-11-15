@@ -28,9 +28,6 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/utils.h"
 #include "ir/primitive.h"
-#include "ir/tensor.h"
-#include "ir/dtype/type_id.h"
-#include "ir/dtype/type.h"
 
 namespace mindspore {
 namespace opt {

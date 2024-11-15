@@ -22,7 +22,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/trace_base.h"
 #include "include/backend/kernel_graph.h"

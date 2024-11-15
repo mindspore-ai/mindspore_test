@@ -24,7 +24,6 @@
 #include <vector>
 #include <limits>
 
-#include "utils/ms_context.h"
 #include "ir/anf.h"
 
 namespace mindspore {

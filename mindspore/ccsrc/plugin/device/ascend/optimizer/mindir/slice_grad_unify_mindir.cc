@@ -23,10 +23,7 @@
 
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "include/common/utils/utils.h"
-#include "utils/ms_context.h"
 #include "utils/trace_base.h"
-#include "include/backend/optimizer/helper.h"
-#include "include/backend/kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 

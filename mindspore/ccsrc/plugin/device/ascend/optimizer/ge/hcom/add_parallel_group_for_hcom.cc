@@ -16,9 +16,7 @@
 
 #include "plugin/device/ascend/optimizer/ge/hcom/add_parallel_group_for_hcom.h"
 
-#include "include/common/utils/parallel_context.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 
 namespace mindspore {

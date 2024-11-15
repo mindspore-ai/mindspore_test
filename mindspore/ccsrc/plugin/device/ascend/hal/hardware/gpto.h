@@ -30,8 +30,6 @@
 #include <tuple>
 
 #include "ir/anf.h"
-#include "ir/manager.h"
-#include "mindapi/base/shape_vector.h"
 #include "mindspore/ccsrc/backend/common/somas/somas_solver_pre.h"
 
 namespace mindspore {

@@ -18,7 +18,6 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_DYNAMIC_AKG_KERNEL_BUILD_H_
 
 #include <vector>
-#include "ir/anf.h"
 #include "kernel/graph_kernel/graph_kernel_builder.h"
 
 namespace mindspore {

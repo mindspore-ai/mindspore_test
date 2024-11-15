@@ -21,7 +21,6 @@
 #include <set>
 #include <vector>
 #include <string>
-#include "utils/hash_map.h"
 #include "backend/common/somas/somas_solver_pre.h"
 
 namespace mindspore {

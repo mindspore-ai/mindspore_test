@@ -19,7 +19,6 @@
 #include <iomanip>
 #include <utility>
 #include "utils/file_utils.h"
-#include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/profiler/profiling.h"

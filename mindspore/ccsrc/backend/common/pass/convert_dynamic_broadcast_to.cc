@@ -19,7 +19,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/anf.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
 namespace opt {

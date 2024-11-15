@@ -26,8 +26,6 @@
 #include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
 #include "ir/anf.h"
-#include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

@@ -19,7 +19,6 @@
 #include <map>
 #include <unordered_map>
 #include <string>
-#include "include/api/data_type.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"

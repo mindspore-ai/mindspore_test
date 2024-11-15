@@ -22,7 +22,6 @@
 #include <mutex>
 #include <optional>
 #include "nlohmann/json.hpp"
-#include "utils/ms_utils.h"
 #include "include/common/visible.h"
 
 namespace mindspore {

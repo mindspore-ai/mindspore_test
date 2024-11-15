@@ -22,10 +22,7 @@
 #include <list>
 #include <tuple>
 #include <algorithm>
-#include "utils/anf_utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "include/common/utils/comm_manager.h"
-#include "include/backend/optimizer/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"

@@ -15,9 +15,9 @@
  */
 
 #include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
+#include <string>
+#include <vector>
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "include/common/utils/utils.h"
-#include "include/common/utils/parallel_context.h"
 
 namespace mindspore {
 namespace opt {

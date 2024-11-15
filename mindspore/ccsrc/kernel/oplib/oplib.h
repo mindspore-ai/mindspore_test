@@ -21,7 +21,6 @@
 #include <memory>
 #include <map>
 #include <nlohmann/json.hpp>
-#include "utils/ms_utils.h"
 #include "kernel/oplib/opinfo.h"
 #include "include/backend/visible.h"
 

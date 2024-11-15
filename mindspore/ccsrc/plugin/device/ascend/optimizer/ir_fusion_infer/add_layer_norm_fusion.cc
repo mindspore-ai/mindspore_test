@@ -27,7 +27,6 @@
 #include "ir/primitive.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace opt {

@@ -21,7 +21,6 @@
 #include <string>
 #include <memory>
 #include "ir/anf.h"
-#include "ir/tensor.h"
 #include "kernel/kernel.h"
 #include "mindapi/base/types.h"
 

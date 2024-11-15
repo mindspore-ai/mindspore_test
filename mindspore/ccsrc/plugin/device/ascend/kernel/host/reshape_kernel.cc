@@ -19,11 +19,9 @@
 #include <algorithm>
 #include <functional>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
 #include "abstract/utils.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "utils/check_convert_utils.h"
-#include "utils/trace_base.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 

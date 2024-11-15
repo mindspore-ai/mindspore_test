@@ -26,7 +26,6 @@
 #include "utils/ms_context.h"
 #include "transform/graph_ir/op_adapter_util.h"
 #include "transform/graph_ir/op_adapter_base.h"
-#include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"

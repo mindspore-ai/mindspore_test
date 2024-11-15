@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_COMMON_PASS_CONVERT_UNUSED_TUPLE_PARA_TO_MAKE_TUPLE_H_
 #define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_CONVERT_UNUSED_TUPLE_PARA_TO_MAKE_TUPLE_H_
 
-#include "ir/anf.h"
 #include "include/backend/optimizer/pass.h"
 
 namespace mindspore {

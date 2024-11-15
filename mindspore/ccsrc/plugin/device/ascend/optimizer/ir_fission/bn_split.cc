@@ -30,7 +30,6 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "plugin/device/ascend/optimizer/get_value_helper.h"
-#include "utils/ms_context.h"
 #include "utils/trace_base.h"
 
 namespace mindspore {

@@ -19,7 +19,6 @@
 #include <string>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

@@ -40,8 +40,6 @@
 #include <utility>
 #include "include/transform/graph_ir/types.h"
 #include "include/transform/graph_ir/utils.h"
-#include "include/backend/kernel_graph.h"
-#include "runtime/device/ms_device_shape_transfer.h"
 #include "ge/ge_graph_compile_summary.h"
 #include "op_proto/inc/array_ops.h"
 

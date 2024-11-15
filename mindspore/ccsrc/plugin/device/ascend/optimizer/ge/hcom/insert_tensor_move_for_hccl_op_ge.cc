@@ -24,7 +24,6 @@
 #include "include/common/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "frontend/optimizer/opt.h"
 #include "utils/trace_base.h"
 namespace mindspore {
 namespace opt {

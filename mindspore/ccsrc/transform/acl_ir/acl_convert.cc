@@ -21,7 +21,6 @@
 #include <limits>
 #include <algorithm>
 #include "transform/acl_ir/acl_adapter_info.h"
-#include "include/common/utils/convert_utils.h"
 #include "transform/acl_ir/acl_helper.h"
 #include "ops_utils/op_utils.h"
 #include "include/backend/device_address.h"
@@ -542,7 +541,6 @@ void AclConverter::ConvertToAclOutput(const PrimitivePtr &prim, const std::vecto
 
   if (prim->HasAttr(kAttrDynOutputSizes)) {
     dyn_output_sizes = GetValue<std::vector<int64_t>>(prim->GetAttr(kAttrDynOutputSizes));
-
     if (dyn_output_sizes.empty()) {
       MS_LOG(EXCEPTION) << "Attribute " << kAttrDynOutputSizes << " of primitive " << prim->name() << " is "
                         << dyn_output_sizes << ", of which size is empty";

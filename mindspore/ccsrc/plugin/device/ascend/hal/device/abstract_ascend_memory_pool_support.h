@@ -22,7 +22,6 @@
 #include <string>
 
 #include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
-#include "utils/hash_map.h"
 
 namespace mindspore {
 namespace device {

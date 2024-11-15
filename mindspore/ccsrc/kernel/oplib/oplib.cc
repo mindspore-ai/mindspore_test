@@ -22,7 +22,6 @@
 #include "kernel/oplib/opinfo.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "utils/file_utils.h"
 
 namespace mindspore::kernel {
 bool OpLib::RegOp(const std::string &json_string, const std::string &impl_path) {
