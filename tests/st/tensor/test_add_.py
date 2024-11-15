@@ -15,12 +15,14 @@
 # pylint: disable=unused-variable
 import numpy as np
 import mindspore as ms
+from mindspore import ops
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
 class Net(ms.nn.Cell):
     def construct(self, x, y, alpha=1):
-        x.add_(y, alpha=alpha)
+        z = x + 0
+        z.add_(y, alpha=alpha)
         return x
 
 
@@ -30,6 +32,11 @@ def generate_random_input(shape, dtype):
 
 def inplace_add_forward_func(x, y, alpha=1):
     return Net()(x, y, alpha)
+
+
+def inplace_add_backward_func(x, y):
+    grad = ops.GradOperation(get_all=True)
+    return grad(Net())(x, y)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -43,17 +50,23 @@ def test_inplace_add_std():
     y = generate_random_input((2, 3, 4), np.float32)
     z = generate_random_input((2, 3, 1), np.float32)  # broadcast
 
-    alpha = 1.5
+    expect_y_grad = np.ones_like(y, dtype=np.float32)
 
-    expect_y = x + y * alpha
-    expect_z = x + z * alpha
+    expect_z = z.repeat(4, axis=2)
+    expect_z_grad = np.ones_like(z, dtype=np.float32) * 4
 
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
-    output_y = inplace_add_forward_func(ms.Tensor(x), ms.Tensor(y), alpha)
-    output_z = inplace_add_forward_func(ms.Tensor(x), ms.Tensor(z), alpha)
+    output_y = inplace_add_forward_func(ms.Tensor(x), ms.Tensor(y))
+    output_y_grad = inplace_add_backward_func(ms.Tensor(x), ms.Tensor(y))
 
-    np.allclose(output_y.asnumpy(), expect_y, rtol=1e-5, equal_nan=True)
+    output_z = inplace_add_forward_func(ms.Tensor(x), ms.Tensor(z))
+    output_z_grad = inplace_add_backward_func(ms.Tensor(x), ms.Tensor(z))
+
+    np.allclose(output_y.asnumpy(), y, rtol=1e-5, equal_nan=True)
+    np.allclose(output_y_grad[1].asnumpy(), expect_y_grad, rtol=1e-5, equal_nan=True)
+
     np.allclose(output_z.asnumpy(), expect_z, rtol=1e-5, equal_nan=True)
+    np.allclose(output_z_grad[1].asnumpy(), expect_z_grad, rtol=1e-5, equal_nan=True)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -67,11 +80,9 @@ def test_copy_dynamic_shape():
     tensor_y1 = ms.Tensor(generate_random_input((2, 3), np.float32))
     tensor_x2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
     tensor_y2 = ms.Tensor(generate_random_input((1, 1, 5), np.float32))  # broadcast
-    alpha1 = 1.5
-    alpha2 = 2.5
 
-    TEST_OP(inplace_add_forward_func, [[tensor_x1, tensor_y1, alpha1], [tensor_x2, tensor_y2, alpha2]],
-            'inplace_add_ext', disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
+    TEST_OP(inplace_add_forward_func, [[tensor_x1, tensor_y1], [tensor_x2, tensor_y2]], 'inplace_add_ext',
+            disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -82,11 +93,14 @@ def test_copy_bfloat16():
     Expectation: the result match with expected result.
     """
     x = generate_random_input((3, 4, 2), np.float32)
-    y = generate_random_input((3, 4, 1), np.float32)
+    y = generate_random_input((3, 1, 2), np.float32)
 
-    expect_y = x + y
+    expect = y.repeat(4, axis=1)
+    expect_grad = np.ones_like(y).astype(np.float32) * 4
 
     ms.context.set_context(mode=ms.PYNATIVE_MODE)
     output = inplace_add_forward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
+    output_grad = inplace_add_backward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
 
-    np.allclose(output.float().asnumpy(), expect_y, 0.004, 0.004, equal_nan=True)
+    np.allclose(output.float().asnumpy(), expect, 0.004, 0.004, equal_nan=True)
+    np.allclose(output_grad[1].float().asnumpy(), expect_grad, 0.004, 0.004, equal_nan=True)
