@@ -782,7 +782,7 @@ DEF_PURE_SHAPE_CALC(g_dense_shapecalc0)
     };
   });
 
-REG_BPROP_BUILDER("Dense").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Dense").FreeUselessValues_IO({i2}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto b = ib->GetInput(kIndex2);
@@ -901,7 +901,7 @@ DEF_PURE_SHAPE_CALC(g_topk_2)
     return {1, 1, 1};
   });
 
-REG_BPROP_BUILDER("TopK").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TopK").FreeUselessValues_IO({i0, i1}, {i0}).SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
@@ -942,7 +942,7 @@ REG_BPROP_BUILDER("TopK").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   }
 });
 
-REG_BPROP_BUILDER("TopkExt").SetUnusedInputs({i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i3, i4}, {i0}).SetBody(BODYFUNC(ib) {
   // x, k, dim, largest, sorted, out(values, indices), dout(grad_values, grad_indices)
   auto input_x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex5);
@@ -1023,7 +1023,7 @@ REG_BPROP_BUILDER("LRN").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Dropout").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Dropout").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto keep_prob = ib->GetInput(kIndex1);
   auto seed0 = ib->GetInput(kIndex2);
   auto seed1 = ib->GetInput(kIndex3);
@@ -1035,7 +1035,7 @@ REG_BPROP_BUILDER("Dropout").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(keep_prob), ib->OutZeros(seed0), ib->OutZeros(seed1)};
 });
 
-REG_BPROP_BUILDER("DropoutExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("DropoutExt").FreeUselessValues_IO({i0}, {i0}).SetBody(BODYFUNC(ib) {
   auto p = ib->GetInput(kIndex1);
   auto seed = ib->GetInput(kIndex2);
   auto offset = ib->GetInput(kIndex3);
@@ -1272,7 +1272,7 @@ REG_BPROP_BUILDER("MaxPoolWithIndices").SetBody(BODYFUNC(ib) {
   return {dx, g_kernel_size, g_strides, g_pads, g_dilation, g_ceil_mode, g_argmax_type};
 });
 
-REG_BPROP_BUILDER("GroupNorm").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("GroupNorm").FreeUselessValues_IO({i4}, {i0}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto num_groups = ib->GetInput(kIndex1);
   auto gamma = ib->GetInput(kIndex2);
@@ -1537,7 +1537,7 @@ REG_BPROP_BUILDER("RNNTLoss").SetUnusedInputs({i0, i1, i2, i3, i5}).SetBody(BODY
   return {grad, ib->OutZeros(labels), ib->OutZeros(act_lens), ib->OutZeros(label_lens)};
 });
 
-REG_BPROP_BUILDER("Conv3D").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Conv3D").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -1583,7 +1583,7 @@ REG_BPROP_BUILDER("Conv3D").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, dw};
 });
 
-REG_BPROP_BUILDER("Conv3DTranspose").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Conv3DTranspose").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC(ib) {
   auto strides = GetValue<std::vector<int64_t>>(ib->GetAttr("strides"));
   auto dilations = GetValue<std::vector<int64_t>>(ib->GetAttr("dilations"));
   std::vector<int64_t> stride = {strides.at(kIndex2), strides.at(kIndex3), strides.at(kIndex4)};
@@ -2076,7 +2076,7 @@ REG_BPROP_BUILDER("SigmoidGrad").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dy, dgrad};
 });
 
-REG_BPROP_BUILDER("LogSigmoid").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("LogSigmoid").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -3136,10 +3136,9 @@ REG_BPROP_BUILDER("PadV3").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) {
   }
 });
 
-REG_BPROP_BUILDER("ConstantPadND").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ConstantPadND").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto paddings = ib->GetInput(kIndex1);
-  bool has_constant_values = ib->GetInputs().size() == kDim5;
-  auto dout = has_constant_values ? ib->GetInput(kIndex4) : ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
   NodePtr neg_pad;
 
   MS_EXCEPTION_IF_NULL(paddings);
@@ -3156,11 +3155,7 @@ REG_BPROP_BUILDER("ConstantPadND").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib
 
   auto constant_values = ib->GetInput(kIndex2);
   auto dx = ib->ConstantPadND(dout, neg_pad, ib->ZerosLike(constant_values));
-  if (has_constant_values) {
-    return {dx, ib->OutZeros(paddings), ib->OutZeros(constant_values)};
-  } else {
-    return {dx, ib->OutZeros(paddings)};
-  }
+  return {dx, ib->OutZeros(paddings), ib->OutZeros(constant_values)};
 });
 
 REG_BPROP_BUILDER("ReflectionPad1D").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
