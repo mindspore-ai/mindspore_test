@@ -61,6 +61,7 @@ bool OnnxQuantizeLinearAdjust::SetQuantParam(const CNodePtr &cnode, const QuantP
                                              bool is_next_node, size_t index) {
   MS_CHECK_TRUE_MSG(quant_param_holder != nullptr, false, "Primitive quant params holder nullptr.");
   auto primitive = GetValueNode<PrimitivePtr>(cnode->input(0));
+  MS_CHECK_TRUE_RET(primitive != nullptr, false);
   auto scale_value = primitive->GetAttr(kAttrScale);
   auto scale_vec_value = primitive->GetAttr(kAttrScaleVec);
   auto zero_point_value = primitive->GetAttr(kAttrZeroPoint);

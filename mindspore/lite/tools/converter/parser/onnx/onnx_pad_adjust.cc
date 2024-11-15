@@ -38,6 +38,7 @@ CNodePtr NewReshapeOpNode(const FuncGraphPtr &func_graph, const AnfNodePtr &inpu
     return nullptr;
   }
   auto prim_c = reshape_prim->GetPrim();
+  MS_CHECK_TRUE_RET(prim_c != nullptr, nullptr);
   prim_c->set_attr("shape", MakeValue(shape));
   ValueNodePtr value_node = NewValueNode(prim_c);
   MS_CHECK_TRUE_MSG(value_node != nullptr, nullptr, "create valuenode return nullptr");

@@ -41,6 +41,7 @@ namespace {
 
 CNodePtr NewCNode(const CNodePtr &cnode, const PrimitivePtr &primitive, const std::vector<AnfNodePtr> &inputs,
                   const abstract::AbstractBasePtr &abstract, const std::string &name) {
+  MS_CHECK_TRUE_RET(cnode != nullptr, nullptr);
   auto func_graph = cnode->func_graph();
   if (func_graph == nullptr) {
     MS_LOG(ERROR) << "Failed to NewCNode, funcGraph cannot be nullptr";
