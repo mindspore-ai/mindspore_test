@@ -680,6 +680,7 @@ def _einsum_convert_sublist_to_label(num, ell_num=False):
         return chr(num + ord('a') - 26)
     raise ValueError(f'For einsum, the number in sublist must be in range [0, 52), but got {num}')
 
+
 def _einsum_convert_label_to_index(label):
     """Convert label to index."""
     label_num = ord(label)
@@ -690,6 +691,7 @@ def _einsum_convert_label_to_index(label):
     if label_num == ord('.'):
         return 52
     raise ValueError(f'For einsum, the label in equation must be in [a-zA-Z] or ., but got {label}')
+
 
 def _einsum_convert_sublist(equation, *operands):
     """Convert the sublist to an equation operand if the received input is a sublist format."""
@@ -715,6 +717,7 @@ def _einsum_convert_sublist(equation, *operands):
         raise ValueError("For einsum, the 'operands' must have at least one operand.")
     return equation, operands
 
+
 def _einsum_check_inputargs(equation, operands):
     """Check equation and operands."""
     if not isinstance(equation, str):
@@ -722,6 +725,7 @@ def _einsum_check_inputargs(equation, operands):
     for operand in operands:
         if not isinstance(operand, Tensor):
             raise TypeError(f"For einsum, members of 'operands' must be Tensor, but got {type(operand)}.")
+
 
 @constexpr
 def _einsum_parse_equation(equation):
@@ -757,6 +761,7 @@ def _einsum_parse_equation(equation):
     r_equationlst = [_einsum_convert_label_to_index(label) for label in r_equation.replace('...', '.')]
 
     return l_equationlst, r_equationlst, ('->' in equation)
+
 
 def _einsum_parse_labels(l_equationlst, operands):
     """Parse left script of equation."""
@@ -795,6 +800,7 @@ def _einsum_parse_labels(l_equationlst, operands):
                              f"'operands[{idx}]'.")
     return labels2dimlst, labels_count, align_rank
 
+
 def _einsum_infer_output(r_equationlst, arrow_exist, labels2dimlst, labels_count):
     """Parse right script of equation and infer output shape."""
     idx = 0
@@ -831,6 +837,7 @@ def _einsum_infer_output(r_equationlst, arrow_exist, labels2dimlst, labels_count
             idx += 1
 
     return output_shape, labels_perm_idx
+
 
 def _einsum_adjust_operands(operands, l_equationlst, labels2dimlst, labels_perm_idx, align_rank):
     """Align operands to output as possible."""
@@ -876,6 +883,7 @@ def _einsum_adjust_operands(operands, l_equationlst, labels2dimlst, labels_perm_
         adjust_operands.append(operand)
     return adjust_operands
 
+
 def _einsum_find_dimlastop(align_rank, operands, adjust_operands):
     """Find dim last operand."""
     dim_last_op = [0 for _ in range(align_rank)]
@@ -894,6 +902,7 @@ def _einsum_find_dimlastop(align_rank, operands, adjust_operands):
                 broadcast_dim = other_dim
         has_zero_dim = has_zero_dim or broadcast_dim == 0
     return dim_last_op, has_zero_dim
+
 
 def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
     """Compute bmm for einsum."""
@@ -966,6 +975,7 @@ def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
 
     return reshape(output, output_squeeze_shape)
 
+
 def _einsum_squeeze(operand, dim):
     '''Will be replaced by mint.squeeze in the future'''
     operand_shape = operand.shape
@@ -974,6 +984,7 @@ def _einsum_squeeze(operand, dim):
         if idx != dim:
             squeeze_shape.append(operand_shape[idx])
     return reshape(operand, squeeze_shape)
+
 
 def _einsum(equation, operands):
     '''Einsum main process'''
@@ -1027,6 +1038,7 @@ def _einsum(equation, operands):
             _result = _einsum_multiplication(sum_dims, _result, operand)
 
     return _result
+
 
 def einsum(equation, *operands):
     r"""
