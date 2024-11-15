@@ -122,7 +122,7 @@ def create_dataset(data_path, batch_size=32, repeat_size=1, num_parallel_workers
     return mnist_ds
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ascend_profiler():
     """
     Feature: profiler support ascend mode.
@@ -143,7 +143,7 @@ def test_ascend_profiler():
             shutil.rmtree(data_path)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("profile_framework", ['all', 'time', None])
 def test_host_profiler(profile_framework):
     """
@@ -163,7 +163,7 @@ def test_host_profiler(profile_framework):
             shutil.rmtree(data_path)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ascend_kbyk_profiler():
     """
     Feature: profiling ascend kbyk host data.
@@ -253,7 +253,7 @@ def _check_host_profiling_file(profiler_path, rank_id, profile_framework='all'):
         assert not os.path.exists(dataset_csv)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ascend_pynative_profiler():
     """
     Feature: profiling ascend pynative host data.

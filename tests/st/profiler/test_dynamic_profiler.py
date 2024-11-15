@@ -127,7 +127,7 @@ def test_tiny_transformer_pynative_with_dynamic_profiler():
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
         FileChecker.check_file_line_count(step_trace_time_path, 2)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tiny_transformer_kbk_with_dynamic_profiler():
     """
     Feature: DynamicProfilerMonitor
@@ -194,7 +194,7 @@ def test_tiny_transformer_kbk_with_dynamic_profiler():
                                          f"ASCEND_PROFILER_OUTPUT/step_trace_time.csv")[0]
         FileChecker.check_file_line_count(step_trace_time_path, 2)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tiny_transformer_o2_with_dynamic_profiler():
     """
     Feature: DynamicProfilerMonitor

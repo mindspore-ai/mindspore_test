@@ -27,7 +27,7 @@ from model_zoo import TinyAddNet
 from file_check import FileChecker
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cpu_profiling():
     """
     Feature: Profiling can collect custom aicpu operators

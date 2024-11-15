@@ -32,7 +32,7 @@ def dataset_generator():
         yield np.ones((32, 2 * i), dtype=np.float32), np.ones((32, 2 * i), dtype=np.float32)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_kbk_with_profiler_all_parameters_on():
     """
     Feature: Dynamic Shape

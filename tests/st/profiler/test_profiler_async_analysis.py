@@ -76,7 +76,7 @@ class TestProfilerAsyncAnalysis:
         """Run after each test case end."""
         cleanup()
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
     def test_ascend_profiler(self):
         status = os.system(
             """python ./run_net_with_profiler.py --target=Ascend --mode=0 --output_path=%s""" % self.profiler_path

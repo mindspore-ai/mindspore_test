@@ -26,7 +26,7 @@ from file_check import FileChecker
 from model_zoo import TinyAddNet
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ascend_profiler_offline_analyse_with_single_device():
     """
     Feature: Ascend Offline Profiler Analysis with Single Device
@@ -49,7 +49,7 @@ def test_ascend_profiler_offline_analyse_with_single_device():
         check_ascend_offline_analyse_files(tmpdir, rank_id)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ascend_profiler_offline_analyse_with_multi_devices():
     """
     Feature: Ascend Offline Profiler Analysis with Multi Devices
