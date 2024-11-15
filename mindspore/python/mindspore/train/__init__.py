@@ -27,7 +27,7 @@ from mindspore.train.loss_scale_manager import LossScaleManager, FixedLossScaleM
 from mindspore.train.serialization import save_checkpoint, load_checkpoint, load_param_into_net, export, \
     load, parse_print, build_searched_strategy, merge_sliced_parameter, load_distributed_checkpoint, \
     async_ckpt_thread_status, restore_group_info_list, convert_model, obfuscate_model, export_split_mindir, \
-    load_checkpoint_async, check_checkpoint, get_ckpt_path_with_strategy
+    load_checkpoint_async, check_checkpoint, get_ckpt_path_with_strategy, ckpt_to_safetensors, safetensors_to_ckpt
 from mindspore.train.callback import Callback, LossMonitor, TimeMonitor, ModelCheckpoint, SummaryCollector, \
     CheckpointConfig, RunContext, LearningRateScheduler, SummaryLandscape, FlopsUtilizationCollector, \
     History, LambdaCallback, ReduceLROnPlateau, EarlyStopping, OnRequestExit, BackupAndRestore, TFTRegister
@@ -41,7 +41,7 @@ __all__ = ["Model", "DatasetHelper", "connect_network_with_dataset", "build_trai
            "load_param_into_net", "export", "load", "export_split_mindir", "parse_print", "build_searched_strategy",
            "merge_sliced_parameter", "load_distributed_checkpoint", "async_ckpt_thread_status",
            "restore_group_info_list", "convert_model", "data_sink", "obfuscate_model", "load_checkpoint_async",
-           "get_ckpt_path_with_strategy"]
+           "get_ckpt_path_with_strategy", "ckpt_to_safetensors", "safetensors_to_ckpt"]
 __all__.extend(callback.__all__)
 __all__.extend(summary.__all__)
 __all__.extend(train_thor.__all__)

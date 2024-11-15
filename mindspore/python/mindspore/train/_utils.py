@@ -21,6 +21,7 @@ from datetime import datetime
 import json
 from collections.abc import Iterable
 
+import time
 import numpy as np
 
 from mindspore.common.tensor import Tensor
@@ -522,3 +523,48 @@ def vlog_print(level, module, file, line, message):
         pid = os.getpid()
         thread_id = threading.get_ident()
         print(f"[V{level}] {module}({pid},{thread_id},python):{formatted_time} [{path}:{line}] {message}", flush=True)
+
+
+def _progress_bar(iterable, total=None):
+    """
+    Decorate an iterable object, returning an iterator which acts exactly
+    like the original iterable, but prints a dynamically updating
+    progressbar every time a value is requested.
+    """
+    if total is None:
+        total = len(iterable)
+
+    start_time = time.time()
+
+    def print_progress_bar(iteration):
+        percent = f"{100 * (iteration / float(total)):.1f}"
+        bar_length = 40
+        filled_length = int(bar_length * iteration // total)
+        bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+        elapsed_time = time.time() - start_time
+        estimated_total_time = elapsed_time / iteration * total
+        remaining_time = estimated_total_time - elapsed_time
+
+        elapsed_time_str = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
+        remaining_time_str = time.strftime("%H:%M:%S", time.gmtime(remaining_time))
+
+        print(f'\r{percent}%|{bar}|[{elapsed_time_str}<{remaining_time_str}]', end='')
+        if iteration == total:
+            print()
+
+    for i, item in enumerate(iterable, start=1):
+        yield item
+        print_progress_bar(i)
+
+
+def _load_and_transform(path, name_map, load_func, transform_func):
+    if load_func is not None:
+        param_dict = load_func(path)
+    else:
+        param_dict = path
+    transform_dict = {}
+    for k, v in param_dict.items():
+        new_name = name_map.get(k, k) if name_map is not None else k
+        transform_dict[new_name] = transform_func(v, new_name)
+    return transform_dict
