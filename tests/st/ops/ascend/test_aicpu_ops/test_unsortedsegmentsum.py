@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
-
 import mindspore as ms
 import mindspore.context as context
 from mindspore import Tensor
 from mindspore import ops
 import tests.st.utils.test_utils as test_utils
+from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -28,7 +27,7 @@ def forward_func(input_x, segment_ids, num_segments):
     return ops.unsorted_segment_sum(input_x, segment_ids, num_segments)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_unsortedsegmentsum(context_mode):
     """

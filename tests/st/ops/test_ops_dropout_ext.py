@@ -18,7 +18,6 @@ import pytest
 
 import mindspore as ms
 import mindspore.common.dtype as mstype
-from mindspore import ops
 from mindspore.ops.auto_generate import dropout_ext_op
 from mindspore.nn import DropoutExt
 from mindspore.ops.function.nn_func import dropout_ext
@@ -38,7 +37,7 @@ def dropout_forward_func(x, p=0.4):
 
 @test_utils.run_with_cell
 def dropout_backward_func(x, p=0.4):
-    return ops.grad(dropout_forward_func, (0))(x, p)
+    return ms.grad(dropout_forward_func, (0))(x, p)
 
 
 def compare_output(x, p, output):
@@ -96,7 +95,7 @@ def test_func_dropout_normal(context_mode, dtype):
     compare_grad(x1, p1, grad)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_func_dropout_bfloat16(context_mode):
     """

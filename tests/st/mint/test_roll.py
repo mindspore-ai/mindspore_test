@@ -19,6 +19,7 @@ import mindspore.ops as ops
 from mindspore import Tensor, mint
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -44,10 +45,8 @@ def roll_backward_func(x, shifts, dims, grad):
     #return ops.grad(roll_forward_func, (0, 1, 2))(x, shifts, dims)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_gpu_training
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_ops_roll_normal(mode):
     """

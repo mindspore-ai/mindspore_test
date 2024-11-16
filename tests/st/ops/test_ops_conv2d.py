@@ -34,7 +34,7 @@ def conv2d_forward_func(x, weight):
 
 @test_utils.run_with_cell
 def conv2d_backward_func(x, weight):
-    return ops.grad(conv2d_forward_func, (0, 1))(x, weight)
+    return ms.grad(conv2d_forward_func, (0, 1))(x, weight)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -42,7 +42,7 @@ def conv2d_backward_func(x, weight):
 def test_conv2d_forward(mode):
     """
     Feature: Ops
-    Description: test op conv2d
+    Description: test op conv2d and auto grad of op conv2d
     Expectation: expect correct result.
     """
     context.set_context(mode=mode)
@@ -51,16 +51,7 @@ def test_conv2d_forward(mode):
     output = conv2d_forward_func(x, weight)
     assert output.shape == (10, 32, 30, 30)
 
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_conv2d_backward(mode):
-    """
-    Feature: Auto grad.
-    Description: test auto grad of op conv2d.
-    Expectation: expect correct result.
-    """
-    context.set_context(mode=mode)
+    ## auto grad
     x = Tensor(np.ones([10, 32, 32, 32]), ms.bfloat16)
     weight = Tensor(np.ones([32, 32, 3, 3]), ms.bfloat16)
     grads = conv2d_backward_func(x, weight)

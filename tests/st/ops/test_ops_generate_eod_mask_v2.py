@@ -19,6 +19,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import ops
+from tests.mark_utils import arg_mark
 
 # pylint: disable=not-callable
 
@@ -126,10 +127,8 @@ def run_generate_eod_mask_v2_on_step(data, ele_pos, start, steps, error_mode='sp
                     assert (source_data == out.asnumpy()).all()
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["GE", "KBK", "PYBOOST"])
 def test_generate_eod_mask_v2(mode):
     """

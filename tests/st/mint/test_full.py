@@ -55,10 +55,7 @@ def full_backward_func(size, fill_value, dtype=None):
     return value_grad
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'pynative', 'KBK'])
 def test_full_forward_backward(mode):
     """
@@ -98,7 +95,7 @@ def test_full_forward_backward(mode):
     assert value_grad.shape == ()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_full_dynamic_shape():
     """
     Feature: Test full with dynamic shape in graph mode.
@@ -120,7 +117,7 @@ def test_full_dynamic_shape():
             disable_yaml_check=True, disable_grad=True)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_full_forward_dynamic_rank(context_mode):
     """

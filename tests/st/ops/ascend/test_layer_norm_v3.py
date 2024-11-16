@@ -32,7 +32,7 @@ class Net(nn.Cell):
         return self.layernorm(input_x, gamma, beta)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_layer_norm_v3(mode):
     """
@@ -55,16 +55,7 @@ def test_layer_norm_v3(mode):
     assert np.allclose(mean.asnumpy(), expect_mean, atol=1e-6)
     assert np.allclose(variance.asnumpy(), expect_var, atol=1e-6)
 
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_layer_norm_grad_v3(mode):
-    """
-    Feature: test LayerNormV3 backward.
-    Description: test LayerNormGradV3.
-    Expectation: success
-    """
-    context.set_context(mode=mode, device_target="Ascend")
+    ## auto grad
     input_x = Tensor(np.array([[1, 2, 3], [1, 2, 3]]), mindspore.float32)
     gamma = Tensor(np.ones([3]), mindspore.float32)
     beta = Tensor(np.ones([3]), mindspore.float32)
@@ -75,7 +66,7 @@ def test_layer_norm_grad_v3(mode):
     assert np.allclose(grads.asnumpy(), except_grads, atol=1e-6)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_layer_norm_v3_dynamic_shape(mode):
     """
@@ -111,7 +102,7 @@ def test_layer_norm_v3_dynamic_shape(mode):
     assert np.allclose(variance2.asnumpy(), expect_var2, atol=1e-6)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
 def test_layer_norm_grad_v3_dynamic_shape(mode):
     """

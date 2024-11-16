@@ -20,6 +20,7 @@ from mindspore import context
 from mindspore import jit, JitConfig
 from mindspore.ops.auto_generate import apply_rotary_pos_emb_
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 def apply_rotary_pos_emb_exec(query, key, cos, sin):
     x1 = query[..., :64]
@@ -42,9 +43,9 @@ def moe_init_routing_forward_func(query, key, cos, sin, layout):
     batch_valid_length = ms.Tensor(np.ones((1, 1)), mstype.int32)
     return apply_rotary_pos_emb_(query, key, cos, sin, batch_valid_length, cos_format=layout)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE'])
 def test_apply_rotary_pos_emb_case0(mode):
     """

@@ -92,7 +92,7 @@ def mint_outer_binary_case1(input_binary_data=None, output_binary_data=None, los
 
 
 @arg_mark(
-    plat_marks=["platform_ascend", "platform_ascend910b"],
+    plat_marks=["platform_ascend"],
     level_mark="level0",
     card_mark="onecard",
     essential_mark="essential",

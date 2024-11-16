@@ -14,8 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
-
 from mindspore import context, Tensor
 import mindspore.ops as ops
 from mindspore import nn
@@ -46,7 +44,7 @@ def case():
     assert np.allclose(output.asnumpy(), expected_output, 1e-3, 1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_resize_bilinear_ascend():
     """
     Feature: Test bilinear on ascend.

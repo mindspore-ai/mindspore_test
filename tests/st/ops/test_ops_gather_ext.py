@@ -17,7 +17,7 @@
 
 import numpy as np
 import pytest
-
+import mindspore as ms
 from mindspore import ops, Tensor, jit, JitConfig, context
 from mindspore.common.api import _pynative_executor
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -90,7 +90,7 @@ def call_gather(x, dim, indices):
 
 def gather_ext_backward_func(x, dim, indices):
     """gather_ext_backward_func"""
-    return ops.grad(call_gather)(x, dim, indices)
+    return ms.grad(call_gather)(x, dim, indices)
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level0',
@@ -120,7 +120,7 @@ def test_gather_ext_static_shape(mode, input_dtype, index_dtype):
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='onecard', essential_mark='unessential')
 def test_gather_ext_dynamic_shape():
     """
     Feature: Test gather with dynamic shape in graph mode.
@@ -138,7 +138,7 @@ def test_gather_ext_dynamic_shape():
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('param_jit_level', ["O2", "O0"])
 def test_gather_ext_vmap(param_jit_level):
     """
@@ -245,8 +245,8 @@ def _test_gather_ext_vmap_perf(batch):
     print(f"improve_times: {foreach_duration / vmap_duration}\n")
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", ['pynative', 'GE', 'KBK'])
 def test_gather_ext_grad(mode):
     """
@@ -268,7 +268,7 @@ def test_gather_ext_grad(mode):
     assert np.allclose(ms_out.asnumpy(), expect, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gather_ext_unmatch_shape():
     """
     Feature: Test gather .

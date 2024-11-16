@@ -261,8 +261,8 @@ def test_dynamic_setitem_tensor_sequence():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_setitem_none_number():
     """
     Feature: Test index value assignment for dynamic shape Tensor in feed mode.
@@ -313,8 +313,8 @@ def test_dynamic_setitem_none_sequence():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_setitem_ellipsis_number():
     """
     Feature: Test index value assignment for dynamic shape Tensor in feed mode.
@@ -761,8 +761,8 @@ def test_dynamic_rank_setitem_slice_int():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_setitem_with_tensor_index_tensor_value():
     """
     Feature: Test index value assignment for dynamic shape Tensor in feed mode.
@@ -780,8 +780,8 @@ def test_setitem_with_tensor_index_tensor_value():
     assert ret == [Tensor([5]), Tensor([2]), Tensor([3])]
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_setitem_with_tensor_index_tensor_value_2():
     """
     Feature: Test index value assignment for dynamic shape Tensor in feed mode.

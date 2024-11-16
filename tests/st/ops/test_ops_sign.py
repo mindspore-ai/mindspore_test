@@ -57,7 +57,7 @@ def test_ops_sign_normal(context_mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 def test_ops_sign_vmap(context_mode):
     """
@@ -73,7 +73,7 @@ def test_ops_sign_vmap(context_mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='onecard', essential_mark='unessential')
 def test_sign_dynamic():
     """
     Feature: Test sign with dynamic shape in graph mode using TEST_OP.

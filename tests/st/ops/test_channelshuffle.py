@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 
@@ -20,6 +19,7 @@ import mindspore.context as context
 from mindspore import Tensor
 from mindspore import nn
 import tests.st.utils.test_utils as test_utils
+from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -27,7 +27,8 @@ def channel_shuffle(x):
     return nn.ChannelShuffle(2)(x)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_net_channelshuffle_float32(context_mode):
     """

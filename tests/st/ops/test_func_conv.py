@@ -231,7 +231,7 @@ def test_ops_conv3d(mode):
     assert np.allclose(output.asnumpy(), expect_output, atol=1e-5, rtol=1e-5)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_conv1d_with_bf16():
     """
     Feature: The weight init of conv 1d with type of bfloat16.

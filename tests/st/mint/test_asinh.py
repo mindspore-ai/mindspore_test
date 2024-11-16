@@ -18,6 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, mint, jit, JitConfig
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -40,9 +41,7 @@ def asinh_backward_func(x):
     return ops.grad(asinh_forward_func, (0,))(x)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_asinh_std(mode):
     """
@@ -65,10 +64,7 @@ def test_asinh_std(mode):
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_asinh_dynamic_shape():
     """
     Feature: dynamic shape forward, backward features.
@@ -81,9 +77,7 @@ def test_asinh_dynamic_shape():
     TEST_OP(asinh_forward_func, [[tensor_1], [tensor_2]], 'asinh_ext', disable_mode=['GRAPH_MODE'])
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_asinh_bfloat16(mode):
     """

@@ -60,7 +60,7 @@ def test_zeros_like_normal(mode):
     np.testing.assert_allclose(input_grad.asnumpy(), expect_grad, rtol=1e-5)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_shape():
     """
     Feature: Test zeros_like with dynamic shape in graph mode.

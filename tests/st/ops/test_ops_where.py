@@ -18,7 +18,7 @@
 import numpy as np
 import pytest
 import mindspore.common.dtype as mstype
-
+import mindspore as ms
 from mindspore.ops import where
 from mindspore import ops, Tensor, jit, JitConfig, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -46,7 +46,7 @@ def where_forward_func(condition, x, y):
 
 @test_utils.run_with_cell
 def where_backward_func(condition, x, y):
-    return ops.grad(where_forward_func, (0, 1, 2))(condition, x, y)
+    return ms.grad(where_forward_func, (0, 1, 2))(condition, x, y)
 
 
 @test_utils.run_with_cell
@@ -179,7 +179,7 @@ def test_functional_where_broadcast(mode):
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
-def test_where_ext_static_shape(mode):
+def test_where_ext_normal(mode):
     """
     Feature: Test where with static shape in graph and pynative mode.
     Description: call ops.where with valid input and index.
@@ -198,6 +198,22 @@ def test_where_ext_static_shape(mode):
 
     expect = generate_expect_forward_output(cond.asnumpy(), x.asnumpy(), y.asnumpy())
     assert np.allclose(ms_out.asnumpy(), expect, rtol=1e-4)
+
+    ## auto grad
+    x = generate_random_input((2, 3, 4, 5), np.float32)
+    y = generate_random_input((2, 3, 4, 5), np.float32)
+    cond = x > 0
+
+    if mode == 'pynative':
+        ms_cond, ms_x, ms_y = where_backward_func(cond, x, y)
+    elif mode == 'KBK':
+        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O0")))(cond, x, y)
+    else:
+        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O2")))(cond, x, y)
+    expect_cond, expect_x, expect_y = generate_expect_backward_output(cond.asnumpy())
+    assert np.allclose(ms_cond.asnumpy(), expect_cond, rtol=1e-4)
+    assert np.allclose(ms_x.asnumpy(), expect_x, rtol=1e-4)
+    assert np.allclose(ms_y.asnumpy(), expect_y, rtol=1e-4)
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',
@@ -257,28 +273,3 @@ def test_where_vmap(param_jit_level):
     output = where_vmap_func(cond, x, y, batch_axis)
     expect = _foreach_run(cond, x, y, batch_axis)
     assert np.allclose(output.asnumpy(), expect.asnumpy(), rtol=1e-4)
-
-
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("mode", ['pynative', 'GE', 'KBK'])
-def test_where_ext_grad(mode):
-    """
-    Feature: Test where with backward.
-    Description: call ops.where with valid input and index.
-    Expectation: return the correct value.
-    """
-    x = generate_random_input((2, 3, 4, 5), np.float32)
-    y = generate_random_input((2, 3, 4, 5), np.float32)
-    cond = x > 0
-
-    if mode == 'pynative':
-        ms_cond, ms_x, ms_y = where_backward_func(cond, x, y)
-    elif mode == 'KBK':
-        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O0")))(cond, x, y)
-    else:
-        ms_cond, ms_x, ms_y = (jit(where_backward_func, jit_config=JitConfig(jit_level="O2")))(cond, x, y)
-    expect_cond, expect_x, expect_y = generate_expect_backward_output(cond.asnumpy())
-    assert np.allclose(ms_cond.asnumpy(), expect_cond, rtol=1e-4)
-    assert np.allclose(ms_x.asnumpy(), expect_x, rtol=1e-4)
-    assert np.allclose(ms_y.asnumpy(), expect_y, rtol=1e-4)

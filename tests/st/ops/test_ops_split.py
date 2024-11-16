@@ -86,7 +86,7 @@ def test_split_ext_int_SD5B(context_mode):
     assert np.allclose(first_output.shape, expect_shape)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_split_ext_int_SDV2(context_mode):
     """
@@ -108,7 +108,7 @@ def test_split_ext_int_SDV2(context_mode):
     assert np.allclose(first_output.shape, expect_shape)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_split_ext_int_forward(context_mode):
     """

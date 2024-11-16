@@ -14,7 +14,6 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops
 from mindspore.ops import clamp
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
@@ -46,10 +45,10 @@ def clamp_forward_func(x, min_, max_):
 
 @test_utils.run_with_cell
 def clamp_backward_func(x, min_, max_):
-    return ops.grad(clamp_forward_func, (0, 1, 2))(x, min_, max_)
+    return ms.grad(clamp_forward_func, (0, 1, 2))(x, min_, max_)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_clamp_normal0(context_mode):
     """

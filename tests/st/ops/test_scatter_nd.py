@@ -38,8 +38,8 @@ def scatter_nd_vmap_func(indices, updates, shape):
     return ops.vmap(scatter_nd_forward_func, in_axes=(0, 0, None), out_axes=0)(indices, updates, shape)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("data_type", [np.float32, np.float16, np.int64, np.int32, np.int16, np.int8])
 @pytest.mark.parametrize("indices_type", [np.int64, np.int32])

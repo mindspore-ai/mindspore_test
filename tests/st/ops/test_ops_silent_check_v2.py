@@ -15,6 +15,7 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 import mindspore as ms
 from mindspore import Tensor, context
@@ -60,9 +61,8 @@ def generate_input_tensors():
     return val, input_grad, sfda, step
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", ["kbk", "pyboost"])
 def test_silent_check_v2_static_shape(mode):
     """
@@ -78,9 +78,8 @@ def test_silent_check_v2_static_shape(mode):
           f"\nstep:\n{outs[2]}\nresult:\n{outs[3]}.")
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_silent_check_v2_dyn_shape():
     """
     Feature: SilentCheckV2.

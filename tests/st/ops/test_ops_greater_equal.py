@@ -41,7 +41,7 @@ def GenInputData(np_data_type, shape=(3, 4, 5)):
     return Tensor(data)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
           level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_greater_equal_op(mode):
@@ -57,17 +57,7 @@ def test_greater_equal_op(mode):
     output = net(x, y)
     assert np.allclose(output.asnumpy(), [False, True])
 
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_greater_equal_op_backward(mode):
-    """
-    Feature: test greater equal op
-    Description: test greater equal run by pyboost
-    Expectation: expect correct forward result.
-    """
-    ms.set_context(mode=mode)
+    ## auto grad
     x = Tensor(np.array([1, 2]).astype(np.float32))
     y = Tensor(np.array([2, 1]).astype(np.float32))
     net = GreaterEqualNet()
@@ -137,7 +127,7 @@ def test_greater_equal_op_dynamic_rank(mode):
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'],
-          level_mark='level1', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_greater_equal_dynamic_shape():
     """
     Feature: Test greater equal with dynamic shape in graph mode.

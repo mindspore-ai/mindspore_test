@@ -93,7 +93,7 @@ def sum_backward_func(x, axis=None, keep_dims=False, dtype=None):
     return ms.grad(sum_forward_func, (0))(x, axis, keep_dims, dtype)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
           level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('keep_dims', [False, True])
@@ -122,8 +122,8 @@ def test_mean_normal(keep_dims, in_dtype, out_dtype, context_mode):
     np.testing.assert_allclose(grads.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_mean_default(context_mode):
     """
@@ -147,7 +147,7 @@ def test_mean_default(context_mode):
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
-          level_mark='level1', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mean_dynamic():
     """
     Feature: pyboost function.
@@ -167,7 +167,7 @@ def test_mean_dynamic():
     TEST_OP(mean_func, [[input3], [input4]], '', disable_yaml_check=True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
           level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('keep_dims', [False, True])
@@ -196,8 +196,8 @@ def test_sum_normal(keep_dims, in_dtype, out_dtype, context_mode):
     np.testing.assert_allclose(grads.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sum_default(context_mode):
     """
@@ -221,7 +221,7 @@ def test_sum_default(context_mode):
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
-          level_mark='level1', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_sum_dynamic():
     """
     Feature: pyboost function.
@@ -286,7 +286,7 @@ def test_sum_default_dtype(axis, in_dtype, context_mode):
     np.testing.assert_equal(grads.dtype, in_dtype)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
           level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('keep_dims', [False, True])
@@ -382,7 +382,7 @@ def test_prod_default(context_mode):
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
                       'cpu_macos'],
-          level_mark='level1', card_mark='onecard', essential_mark='essential')
+          level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_prod_dynamic():
     """
     Feature: pyboost function.

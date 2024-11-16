@@ -31,7 +31,7 @@ def irfft_backward_func(x, signal_ndim, inverse, real, norm='backward', onesided
     return ops.grad(irfft_forward_func, (0,))(x, signal_ndim, inverse, real, norm, onesided, signal_sizes)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_fft_with_size_irfft(mode):
     """
@@ -49,7 +49,7 @@ def test_fft_with_size_irfft(mode):
     assert output.shape == (10, 3, 3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_fft_with_size_irfft_signal_sizes(mode):
     """

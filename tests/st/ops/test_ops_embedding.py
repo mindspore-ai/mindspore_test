@@ -85,7 +85,7 @@ def test_embedding_static_shape():
     assert np.allclose(weight.asnumpy(), expect_w, rtol=1e-4, atol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_embedding_dynamic_shape():
     """
     Feature: dynamic shape of embedding.
@@ -100,7 +100,7 @@ def test_embedding_dynamic_shape():
             disable_input_check=True, disable_yaml_check=True)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_embedding_grad():
     """
     Feature: grad of embedding.
@@ -189,7 +189,7 @@ def test_embedding_grad():
     assert np.allclose(ms_out.asnumpy(), expect_out4, rtol=1e-4, atol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_embedding_nn_api():
     """
     Feature: nn.extend.Embedding.

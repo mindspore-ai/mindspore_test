@@ -67,7 +67,7 @@ def test_arange_forward(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',
-          essential_mark='essential')
+          essential_mark='unessential')
 def test_forward_dynamic_shape():
     """
     Feature: mint.arange

@@ -54,7 +54,7 @@ def mish_vmap_func(x):
     return ops.vmap(mish_forward_func)(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'],
+@arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On

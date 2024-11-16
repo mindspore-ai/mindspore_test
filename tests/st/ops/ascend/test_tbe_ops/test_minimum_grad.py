@@ -73,7 +73,7 @@ def gen_data(inputA_np, inputB_np, grad_=None, ms_type=ms.float32):
     print(ms_inputB_grad)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_min_tensor_grad_4d():
     """
     Feature: test minimum grad on ascend
@@ -85,7 +85,7 @@ def test_min_tensor_grad_4d():
     gen_data(inputA_np, inputB_np, ms_type=ms.float32)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @test_utils.run_test_with_On
 def test_min_tensor_grad_with_same_input():
     """

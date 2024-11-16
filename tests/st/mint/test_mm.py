@@ -66,7 +66,7 @@ def test_ops(mode, dtype):
     np.testing.assert_allclose(res.asnumpy(), expect_forward, rtol=1e-5)
     np.testing.assert_allclose(res_grad.asnumpy(), expect_grad.asnumpy(), rtol=1e-5)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mm_dynamic_shape():
     """
     Feature: Test mm with dynamic shape in graph mode.

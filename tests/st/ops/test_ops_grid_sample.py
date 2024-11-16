@@ -28,14 +28,14 @@ def grid_sample_forward_func(input_x, grid, mode="bilinear", padding_mode="zeros
 
 @test_utils.run_with_cell
 def grid_sample_backward_func(input_x, grid, mode="bilinear", padding_mode="zeros", align_corners=True):
-    return ops.grad(grid_sample_forward_func, (0, 1))(input_x, grid, mode, padding_mode, align_corners)
+    return ms.grad(grid_sample_forward_func, (0, 1))(input_x, grid, mode, padding_mode, align_corners)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
-def test_grid_sampler_2d_forward(mode):
+def test_grid_sampler_2d_normal(mode):
     """
     Feature: Ops.
     Description: test op grid_sampler_2d.
@@ -85,18 +85,7 @@ def test_grid_sampler_2d_forward(mode):
     out = grid_sample_forward_func(input_x, grid)
     assert np.allclose(out.asnumpy(), expect_out, 1e-04, 1e-04)
 
-
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-@test_utils.run_test_with_On
-def test_grid_sampler_backward(mode):
-    """
-    Feature: Auto grad.
-    Description: test auto grad of op grid_sampler_2d.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=mode)
+    ## auto grad
     input_x = ms.Tensor(np.array([[[[0, 1],
                                     [2, 3]],
                                    [[4, 5],
@@ -258,17 +247,7 @@ def test_grid_sampler_5d_forward(mode):
     out = grid_sample_forward_func(input_x, grid)
     assert np.allclose(out.asnumpy(), except_out, 1e-04, 1e-04)
 
-
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
-def test_grid_sampler_5d_backward(mode):
-    """
-    Feature: Auto grad.
-    Description: test auto grad of ops grid_sample with 5d input.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=mode)
+    ## auto grad
     input_x = ms.Tensor(np.array([[[[[0, 1],
                                      [2, 3]],
                                     [[4, 5],

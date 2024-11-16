@@ -17,6 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, nn, mutable
 from mindspore.ops import ihfftn
+from tests.mark_utils import arg_mark
 
 class IHFFTNNet(nn.Cell):
     def __init__(self):
@@ -50,17 +51,13 @@ def generate_expect_backward_output(x, dout, s, dim):
     return np.fft.ifftn(dout, s, dim).astype(x.dtype)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows',
+                      'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ihfftn_forward(mode):
+def test_ops_ihfftn_normal(mode):
     """
     Feature: ops.ihfftn
-    Description: test function ihfftn forward.
+    Description: test function ihfftn forward and auto grad.
     Expectation: success
     """
     ms.context.set_context(mode=mode)
@@ -72,21 +69,7 @@ def test_ops_ihfftn_forward(mode):
     expect = generate_expect_forward_output(x, s, dim)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ihfftn_backward(mode):
-    """
-    Feature: ops.ihfftn
-    Description: test function ihfftn backward.
-    Expectation: success
-    """
-    ms.context.set_context(mode=mode)
+    ## auto grad
     s = (2,)
     dim = (0,)
     x = generate_random_input((2, 3, 4, 5), np.float32)
@@ -99,17 +82,13 @@ def test_ops_ihfftn_backward(mode):
     np.testing.assert_allclose(grad.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'cpu_linux', 'cpu_windows',
+                      'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ihfftn_forward_dynamic_shape(mode):
+def test_ops_ihfftn_dynamic_shape(mode):
     """
     Feature: ops.ihfftn
-    Description: test function ihfftn forward with dynamic shape.
+    Description: test function ihfftn forward and auto grad with dynamic shape.
     Expectation: success
     """
     ms.context.set_context(mode=mode)
@@ -131,55 +110,7 @@ def test_ops_ihfftn_forward_dynamic_shape(mode):
     expect = generate_expect_forward_output(x2, s, dim)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ihfftn_forward_dynamic_rank(mode):
-    """
-    Feature: ops.ihfftn
-    Description: test function ihfftn forward with dynamic rank.
-    Expectation: success
-    """
-    ms.context.set_context(mode=mode)
-    s = (2,)
-    dim = (0,)
-    x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
-    n_dyn = mutable(s)
-    dim_dyn = mutable(dim)
-    net = IHFFTNNet()
-    net.set_inputs(x_dyn, n_dyn, dim_dyn)
-
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
-    output = net(ms.Tensor(x1), n_dyn, dim_dyn)
-    expect = generate_expect_forward_output(x1, s, dim)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
-
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
-    output = net(ms.Tensor(x2), n_dyn, dim_dyn)
-    expect = generate_expect_forward_output(x2, s, dim)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
-
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ihfftn_backward_dynamic_shape(mode):
-    """
-    Feature: ops.ihfftn
-    Description: test function ihfftn backward with dynamic shape.
-    Expectation: success
-    """
-    ms.context.set_context(mode=mode)
-
+    ## auto grad
     net = IHFFTNNet()
     s = (2,)
     dim = (0,)
@@ -206,20 +137,36 @@ def test_ops_ihfftn_backward_dynamic_shape(mode):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'cpu_linux', 'cpu_windows',
+                      'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ihfftn_backward_dynamic_rank(mode):
+def test_ops_ihfftn_dynamic_rank(mode):
     """
     Feature: ops.ihfftn
-    Description: test function ihfftn backward with dynamic rank.
+    Description: test function ihfftn forward and auto grad with dynamic rank.
     Expectation: success
     """
     ms.context.set_context(mode=mode)
+    s = (2,)
+    dim = (0,)
+    x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
+    n_dyn = mutable(s)
+    dim_dyn = mutable(dim)
+    net = IHFFTNNet()
+    net.set_inputs(x_dyn, n_dyn, dim_dyn)
+
+    x1 = generate_random_input((2, 3, 4, 5), np.float32)
+    output = net(ms.Tensor(x1), n_dyn, dim_dyn)
+    expect = generate_expect_forward_output(x1, s, dim)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
+
+    x2 = generate_random_input((3, 4, 5, 6), np.float32)
+    output = net(ms.Tensor(x2), n_dyn, dim_dyn)
+    expect = generate_expect_forward_output(x2, s, dim)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
+
+    ## auto grad
     s = (2,)
     dim = (0,)
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
