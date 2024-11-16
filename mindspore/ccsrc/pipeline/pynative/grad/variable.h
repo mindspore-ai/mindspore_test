@@ -376,6 +376,7 @@ class Variable {
                                        runtime::ProfilerRecorder::kNoName, false);
     MS_EXCEPTION_IF_NULL(func_node_);
     func_node_->set_check_func(nullptr);
+    func_node_->set_op_output(nullptr);
     func_node_->Release();
   }
 

@@ -118,7 +118,8 @@
       "tests/mark_utils.py",
       ".gitignore",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_CPU_Win_Level0"
@@ -394,7 +395,8 @@
       "tests/mark_utils.py",
       ".gitignore",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_Ascend",
@@ -500,7 +502,8 @@
       "tests/mark_utils.py",
       ".gitignore",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_GPU"
@@ -697,7 +700,8 @@
       "tests/mark_utils.py",
       ".gitignore",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_CPU_CentOS_Level0",

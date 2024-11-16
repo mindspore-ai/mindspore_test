@@ -603,10 +603,7 @@ void GradExecutor::InitResourceAndDfBuilder(const InputArgsInfoPtr &input_args_i
   MS_LOG(DEBUG) << "InitResourceAndDfBuilder";
   MS_EXCEPTION_IF_NULL(input_args_info);
   forward()->WaitForwardTask();
-  // We need wait construct bprop task of outer top cell finish if the main thread runs quickly when it executes
-  // gradnet and clear bprop_queue queue, bprop task of outer top cell may not finish; it will cause not found cnode
-  // error.
-  WaitBpropTask();
+  // Because bprop task will not clear now, just not wait bprop task.
   if (input_args_info->is_grad_topest_cell) {
     MS_LOG(DEBUG) << "Make new topest graph";
     ResetMetaGradInfoForNewTopCell(input_args_info);
@@ -1154,7 +1151,7 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
     MS_LOG(DEBUG) << "No need compile graph, graph is ir_grad " << top_cell_->is_ir_grad();
     // If no need compile, we can clear construct bprop queue.
     (void)need_gc_top_cell_list_.emplace_back(top_cell_);
-    ClearBpropTask();
+    WaitBpropTask();
     top_cell_->ClearMetaGradInfo();
     // If top cell is pipeline top cell, finded_top_cell_ will be itself;
     // Otherwise, it ir top cell in already_run_top_cell_;

@@ -17,7 +17,7 @@ import numpy as np
 import mindspore.common.dtype as mstype
 from mindspore.common.tensor import Tensor
 from mindspore.ops import operations as P
-from mindspore.ops.auto_generate import SumExt
+from mindspore.ops.auto_generate import SumExt, OnesLikeExt, ZerosLikeExt, Ones, Zeros
 from mindspore._c_expression import typing
 from mindspore.ops.operations import _grad_ops as G
 from mindspore.ops.vm_impl_registry import vm_impl_registry as vm_impl_getters
@@ -425,5 +425,45 @@ def vm_impl_sum_ext(self):
         else:
             out = np.sum(x, axis=axis, keepdims=keep_dims, dtype=nptype)
         return Tensor(np.array(out))
+
+    return vm_impl
+
+
+@vm_impl_getters.register(OnesLikeExt)
+def vm_impl_ones_like_ext(self):
+    """Generate vm_impl function for ZerosLike"""
+
+    def vm_impl(x, dtype):
+        return Tensor(np.ones_like(x.asnumpy()))
+
+    return vm_impl
+
+
+@vm_impl_getters.register(ZerosLikeExt)
+def vm_impl_zeros_like_ext(self):
+    """Generate vm_impl function for ZerosLike"""
+
+    def vm_impl(x, dtype):
+        return Tensor(np.zeros_like(x.asnumpy()))
+
+    return vm_impl
+
+
+@vm_impl_getters.register(Ones)
+def vm_impl_ones(self):
+    """Generate vm_impl function for ZerosLike"""
+
+    def vm_impl(shape, dtype):
+        return Tensor(np.ones(shape, dtype))
+
+    return vm_impl
+
+
+@vm_impl_getters.register(Zeros)
+def vm_impl_zeros(self):
+    """Generate vm_impl function for ZerosLike"""
+
+    def vm_impl(shape, dtype):
+        return Tensor(np.zeros(shape, dtype))
 
     return vm_impl
