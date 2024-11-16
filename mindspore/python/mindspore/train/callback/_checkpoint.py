@@ -607,6 +607,8 @@ class ModelCheckpoint(Callback):
 
         self._save_ckpt(cb_params, _to_save_last_ckpt)
 
+        _wait_async_save_ckpt(self._config.async_save)
+
         destroy_allgather_cell()
 
     def _check_save_ckpt(self, cb_params, force_to_save):
