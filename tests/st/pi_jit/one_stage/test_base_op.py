@@ -682,7 +682,7 @@ def test_cycle_container_structure_3():
     assert ret2 == b
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_guard_parameter():
     """
     Feature: One stage basic operation.
@@ -712,7 +712,7 @@ def test_guard_parameter():
     assert np.allclose(ret2.asnumpy(), (net2.w * m).asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_dict_items_call_in_control_flow():
     """
     Feature: One stage basic operation.
@@ -737,7 +737,7 @@ def test_dict_items_call_in_control_flow():
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_method_by_ast():
     """
     Feature: One stage basic operation.
@@ -757,7 +757,7 @@ def test_tensor_method_by_ast():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_method_by_ast_2():
     """
     Feature: One stage basic operation.
@@ -777,7 +777,7 @@ def test_tensor_method_by_ast_2():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_method_by_ast_3():
     """
     Feature: One stage basic operation.
@@ -797,7 +797,7 @@ def test_tensor_method_by_ast_3():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_method_by_ast_4():
     """
     Feature: One stage basic operation.
@@ -817,7 +817,7 @@ def test_tensor_method_by_ast_4():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_function_parse_by_ast():
     """
     Feature: One stage basic operation.
@@ -837,7 +837,7 @@ def test_function_parse_by_ast():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_constant_flod_for_variable():
     """
     Feature: One stage basic operation.
