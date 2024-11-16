@@ -87,6 +87,7 @@ STATUS CheckCaffeModel(const caffe::NetParameter &caffe_model, const caffe::NetP
 }
 
 FuncGraphPtr ConvertGraph(api::FuncGraphPtr func_graph) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
   auto impl = func_graph->impl();
   return std::dynamic_pointer_cast<FuncGraph>(impl);
 }

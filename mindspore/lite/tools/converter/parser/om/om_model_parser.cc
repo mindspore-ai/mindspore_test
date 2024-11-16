@@ -100,6 +100,7 @@ bool OMModelParser::CreateGraphOutputs(const FuncGraphPtr &func_graph) {
   MS_CHECK_TRUE_MSG(prim != nullptr, false, "New Custom op failed.");
   prim->set_type("ACL_Fake");
   auto prim_c = prim->GetPrim();
+  MS_CHECK_TRUE_MSG(prim_c != nullptr, false, "Get Prim failed.");
   auto graph_input = func_graph->get_inputs();
   MS_CHECK_TRUE_MSG(!graph_input.empty(), false, "Graph input is empty.");
   auto custom_node = func_graph->NewCNode(prim_c, graph_input);
@@ -173,6 +174,8 @@ bool OMModelParser::SetCustomOutputs(const CNodePtr &custom_node) {
 }
 
 CNodePtr OMModelParser::CreateMakeTupleGraphOutput(const FuncGraphPtr &func_graph, const CNodePtr &custom_node) {
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, nullptr, "func_graph is nullptr.");
+  MS_CHECK_TRUE_MSG(custom_node != nullptr, nullptr, "custom_node is nullptr.");
   std::vector<CNodePtr> node_list;
   for (size_t i = 0; i < custom_outputs_info_.size(); ++i) {
     auto tuple_get_item_prim_ptr = std::make_shared<ops::TupleGetItem>();
@@ -181,6 +184,7 @@ CNodePtr OMModelParser::CreateMakeTupleGraphOutput(const FuncGraphPtr &func_grap
       return nullptr;
     }
     auto tuple_get_item_prim_ptr_c = tuple_get_item_prim_ptr->GetPrim();
+    MS_CHECK_TRUE_MSG(tuple_get_item_prim_ptr_c != nullptr, nullptr, "item_prim_ptr_c is nullptr.");
     auto tuple_get_item_prim = NewValueNode(tuple_get_item_prim_ptr_c);
     MS_CHECK_TRUE_MSG(tuple_get_item_prim != nullptr, nullptr, "item_prim is nullptr.");
     auto get_item_value = NewValueNode(MakeValue<int64_t>(i));
