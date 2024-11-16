@@ -112,34 +112,46 @@ inline void SplitStringToNum(const std::string &str, char delim, std::vector<int
   }
 }
 
-void GetSeqLenFromGraphInputOrEnv(const std::string &kernel_name, const std::string &tensor_name,
-                                  const std::string &env_name, std::vector<int32_t> *seq_len) {
-  seq_len->clear();
-  std::string seq_len_env = common::GetEnv(env_name);
-  if (!seq_len_env.empty()) {
-    // first use env value to set seq_len if exists
-    SplitStringToNum(seq_len_env, ',', seq_len);
-    MS_LOG(INFO) << "For op '" << kernel_name << "', set param seq_len with env '" << env_name << "' as " << (*seq_len);
-    return;
-  }
+bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std::string &tensor_name,
+                                       std::vector<int32_t> *seq_len) {
   auto &llm_manager = LLMManager::GetInstance();
   auto seq_length_tensor = llm_manager.get_graph_input(tensor_name);
   if (seq_length_tensor != nullptr) {
     // then use graph_input tensor value to set seq_len if saved
     auto seq_length_values = static_cast<int32_t *>(seq_length_tensor->data());
     auto seq_length_values_num = seq_length_tensor->nbytes() / sizeof(int32_t);
-    for (size_t i = 0; i < seq_length_values_num; i++) {
-      (*seq_len).emplace_back(seq_length_values[i]);
+
+    bool is_need_update = false;
+    if (seq_len->size() != seq_length_values_num) {
+      is_need_update = true;
+    } else {
+      for (size_t i = 0; i < seq_length_values_num; i++) {
+        if ((*seq_len)[i] != seq_length_values[i]) {
+          is_need_update = true;
+          break;
+        }
+      }
+    }
+    if (is_need_update) {
+      seq_len->clear();
+      for (size_t i = 0; i < seq_length_values_num; i++) {
+        (*seq_len).emplace_back(seq_length_values[i]);
+      }
     }
     MS_LOG(INFO) << "For op '" << kernel_name << "', set param seq_len with graph_input '" << tensor_name << "' as "
                  << (*seq_len);
-    return;
+    return is_need_update;
   }
   MS_LOG(INFO) << "For op '" << kernel_name << "', if custom op disabled, param seq_len must be set, but '"
-               << tensor_name << "' is not in graph_input, and env '" << env_name << "' is not set";
+               << tensor_name << "' is not in graph_input";
+  if (seq_len->empty()) {
+    return false;
+  }
+  seq_len->clear();
+  return true;
 }
 
-std::vector<int32_t> ConvertActualSeqLengthsToVector(KernelTensor *const actual_seq_length_ptr) {
+bool ConvertSeqLenToVectorAndCheckUpadate(KernelTensor *const actual_seq_length_ptr, std::vector<int32_t> *seq_len) {
   MS_EXCEPTION_IF_NULL(actual_seq_length_ptr);
   std::vector<int32_t> actual_seq_lengths_vector;
   if (actual_seq_length_ptr->type_id() != kMetaTypeNone) {
@@ -155,7 +167,15 @@ std::vector<int32_t> ConvertActualSeqLengthsToVector(KernelTensor *const actual_
                         << TypeIdToString(actual_seq_lengths_dtype_id);
     }
   }
-  return actual_seq_lengths_vector;
+
+  if (actual_seq_lengths_vector == *seq_len) {
+    return false;
+  }
+  seq_len->clear();
+  for (const auto &item : actual_seq_lengths_vector) {
+    (*seq_len).emplace_back(item);
+  }
+  return true;
 }
 
 }  // namespace kernel

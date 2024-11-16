@@ -35,42 +35,35 @@ acme::AcmeOpPtr AcmePagedAttentionMask::CreateKernel(const acme::InputsImmutable
                                                      const acme::OutputsImmutableInfoList &outputs_ii,
                                                      const std::vector<KernelTensor *> &ms_inputs,
                                                      const std::vector<KernelTensor *> &ms_outputs) {
-  acme::PagedAttentionParam param;
-  param.head_num = static_cast<int32_t>(ms_inputs[kIndex8]->GetValueWithCheck<int64_t>());
-  param.tor = ms_inputs[kIndex9]->GetValueWithCheck<float>();
-  param.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
-  param.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeNone;
+  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex8]->GetValueWithCheck<int64_t>());
+  param_.tor = ms_inputs[kIndex9]->GetValueWithCheck<float>();
+  param_.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
+  param_.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeNone;
 
-  GetSeqLenFromGraphInputOrEnv(kernel_name_, "batch_valid_length", "MS_INTERNAL_KV_SEQ_LEN", &kv_seq_len_);
-  for (const auto &item : kv_seq_len_) {
-    (void)param.kv_seq_len.emplace_back(item);
-  }
-
-  GetSeqLenFromGraphInputOrEnv(kernel_name_, "q_seq_lens", "MS_INTERNAL_Q_SEQ_LEN", &q_seq_len_);
-  for (const auto &item : q_seq_len_) {
-    (void)param.q_seq_len.emplace_back(item);
-  }
-
-  // input attn_mask is not None
+  // input alibi_mask is not None
   if (!(ms_inputs[kIndex7]->GetType()->isa<TypeNone>())) {
-    param.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeAlibi;
+    param_.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeAlibi;
   }
 
   auto kv_cache_quant_mode = ms_inputs[kIndex11]->GetValueWithCheck<int64_t>();
-  param.kv_cache_quant_mode = kv_cache_quant_mode;
+  param_.kv_cache_quant_mode = kv_cache_quant_mode;
 
-  return acme::CreatePagedAttentionOp(inputs_ii, outputs_ii, param, acme::kAcmePagedAttentionOpName);
+  return acme::CreatePagedAttentionOp(inputs_ii, outputs_ii, param_, acme::kAcmePagedAttentionOpName);
 }
 
 bool AcmePagedAttentionMask::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
                                             const std::vector<KernelTensor *> &outputs) {
-  // (todo) if q_seq_len_ or kv_seq_len_ changed , need to recreate
-  return true;
+  bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &param_.q_seq_len);
+  bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &param_.kv_seq_len);
+  if (q_need_recreate || kv_need_recreate) {
+    return true;
+  }
+  return AcmeKernelMod::IsNeedRecreate(inputs, outputs);
 }
 
 uint64_t AcmePagedAttentionMask::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
   // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
-  return AcmeTilingCache::GenerateKey(kernel_name_, inputs, q_seq_len_, kv_seq_len_);
+  return AcmeTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len);
 }
 
 MS_ACME_KERNEL_FACTORY_REG(PagedAttentionMask, acme::kAcmePagedAttentionOpName, AcmePagedAttentionMask);

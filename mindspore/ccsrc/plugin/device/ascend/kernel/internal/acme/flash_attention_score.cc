@@ -31,26 +31,27 @@ acme::AcmeOpPtr AcmeFlashAttentionScore::CreateKernel(const acme::InputsImmutabl
     MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", inputs number should be larger than " << kIndex17
                       << ", but got " << ms_inputs.size();
   }
-  acme::FlashAttentionScoreParam param;
-  param.mask_dtype = TransAcmeDataType(ms_inputs[kIndex6]->dtype_id());
-  param.mask_dims = ms_inputs[kIndex6]->GetShapeVector();
-  param.q_seq_len = ConvertActualSeqLengthsToVector(ms_inputs[kIndex8]);
-  param.kv_seq_len = ConvertActualSeqLengthsToVector(ms_inputs[kIndex9]);
-  param.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
-  param.tor = ms_inputs[kIndex12]->GetValueWithCheck<float>();
-  param.pre_tokens = static_cast<int32_t>(ms_inputs[kIndex13]->GetValueWithCheck<int64_t>());
-  param.next_tokens = static_cast<int32_t>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
-  param.inner_precise = static_cast<int32_t>(ms_inputs[kIndex15]->GetValueWithCheck<int64_t>());
-  param.input_layout = static_cast<int32_t>(ms_inputs[kIndex16]->GetValueWithCheck<int64_t>());
-  param.sparse_mode = static_cast<int32_t>(ms_inputs[kIndex17]->GetValueWithCheck<int64_t>());
+  param_.mask_dtype = TransAcmeDataType(ms_inputs[kIndex6]->dtype_id());
+  param_.mask_dims = ms_inputs[kIndex6]->GetShapeVector();
+  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
+  param_.tor = ms_inputs[kIndex12]->GetValueWithCheck<float>();
+  param_.pre_tokens = static_cast<int32_t>(ms_inputs[kIndex13]->GetValueWithCheck<int64_t>());
+  param_.next_tokens = static_cast<int32_t>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
+  param_.inner_precise = static_cast<int32_t>(ms_inputs[kIndex15]->GetValueWithCheck<int64_t>());
+  param_.input_layout = static_cast<int32_t>(ms_inputs[kIndex16]->GetValueWithCheck<int64_t>());
+  param_.sparse_mode = static_cast<int32_t>(ms_inputs[kIndex17]->GetValueWithCheck<int64_t>());
 
-  return acme::CreateFlashAttentionScoreOp(inputs_ii, outputs_ii, param, acme::kAcmeFlashAttentionScoreOpName);
+  return acme::CreateFlashAttentionScoreOp(inputs_ii, outputs_ii, param_, acme::kAcmeFlashAttentionScoreOpName);
 }
 
 bool AcmeFlashAttentionScore::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  // (todo) if q_seq_len_ or kv_seq_len_ changed , need to recreate
-  return true;
+  bool q_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &param_.q_seq_len);
+  bool kv_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex9], &param_.kv_seq_len);
+  if (q_need_recreate || kv_need_recreate) {
+    return true;
+  }
+  return AcmeKernelMod::IsNeedRecreate(inputs, outputs);
 }
 
 MS_ACME_KERNEL_FACTORY_REG(FlashAttentionScore, acme::kAcmeFlashAttentionScoreOpName, AcmeFlashAttentionScore);
