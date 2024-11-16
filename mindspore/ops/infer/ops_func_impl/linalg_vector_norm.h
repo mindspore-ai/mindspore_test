@@ -13,23 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_LP_NORM_V2_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_LP_NORM_V2_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_LINALG_VECTOR_NORM_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_LINALG_VECTOR_NORM_H_
 
-#include <vector>
-#include <set>
 #include <memory>
 #include "ir/primitive.h"
 #include "ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ops/infer/ops_func_impl/norm.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API LpNormV2FuncImpl : public OpFuncImpl {
- public:
-  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  bool GeneralInferRegistered() const override { return true; }
-};
+class OPS_API LinalgVectorNormFuncImpl : public NormFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_LP_NORM_V2_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_LINALG_VECTOR_NORM_H_

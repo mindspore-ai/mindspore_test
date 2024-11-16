@@ -121,6 +121,9 @@ class COMMON_EXPORT Emitter {
   NodePtr MulNoNan(const NodePtr &lhs, const NodePtr &rhs) { return UnifyDtypeAndEmit("MulNoNan", lhs, rhs); }
   NodePtr Xdivy(const NodePtr &lhs, const NodePtr &rhs) { return UnifyDtypeAndEmit("Xdivy", lhs, rhs); }
   NodePtr Xlogy(const NodePtr &lhs, const NodePtr &rhs) { return UnifyDtypeAndEmit("Xlogy", lhs, rhs); }
+  NodePtr PowTensorScalar(const NodePtr &input, const NodePtr &exponent) {
+    return Emit("PowTensorScalar", {input, exponent});
+  }
 
   virtual NodePtr Select(const NodePtr &cond, const NodePtr &lhs, const NodePtr &rhs) {
     auto [a, b] = UnifyDtype(lhs, rhs);

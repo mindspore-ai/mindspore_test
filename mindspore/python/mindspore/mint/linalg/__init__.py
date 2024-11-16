@@ -16,7 +16,13 @@
 from __future__ import absolute_import
 
 from mindspore.ops.function.math_func import inverse_ext as inv
+from mindspore.ops.function.math_func import vector_norm_ext as vector_norm
+from mindspore.ops.function.math_func import matrix_norm_ext as matrix_norm
+from mindspore.ops.function.math_func import linalg_norm as norm
 
 __all__ = [
     'inv',
+    'vector_norm',
+    'matrix_norm',
+    'norm',
 ]

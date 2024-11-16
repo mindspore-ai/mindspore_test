@@ -111,5 +111,7 @@ ShapeVector GetShapeByRange(const ShapeVector &v, int64_t begin = 0, int64_t end
 NodePtr MatrixTranspose(BpropBuilder *ib, const NodePtr &x);
 NodePtr MatrixTransposeExt(BpropBuilder *ib, const NodePtr &x);
 NodePtr Adjoint(BpropBuilder *ib, const NodePtr &x);
+NodePtr VectorNormGrad(BpropBuilder *ib, const NodePtr &input_node, const NodePtr &p, const NodePtr &dim_node,
+                       const NodePtr &keepdim, const NodePtr &out_node, const NodePtr &dout_node);
 }  // namespace mindspore::expander::bprop
 #endif  // MINDSPORE_CCSRC_FRONTEND_EXPANDER_BPROP_GRAD_OPS_COMMON_UTILS_H_

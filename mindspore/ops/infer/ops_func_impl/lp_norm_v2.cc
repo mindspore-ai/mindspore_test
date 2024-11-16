@@ -22,14 +22,13 @@
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr LpNormV2FuncImpl::InferShape(const PrimitivePtr &primitive,
-                                          const std::vector<AbstractBasePtr> &input_args) const {
-  return NormInferShape(primitive, input_args);
+ShapeArray LpNormV2FuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return NormInferShape(primitive, input_infos);
 }
 
-TypePtr LpNormV2FuncImpl::InferType(const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[0]->GetType();
+std::vector<TypeId> LpNormV2FuncImpl::InferType(const PrimitivePtr &primitive,
+                                                const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex0]->GetType()};
 }
 }  // namespace ops
 }  // namespace mindspore

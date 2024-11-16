@@ -17,21 +17,15 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NORM_H_
 
 #include <vector>
-#include <set>
-#include <memory>
-#include "ir/primitive.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
 class OPS_API NormFuncImpl : public OpFuncImpl {
  public:
-  NormFuncImpl() = default;
-  virtual ~NormFuncImpl() = default;
-
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; }
 };
 }  // namespace ops
 }  // namespace mindspore

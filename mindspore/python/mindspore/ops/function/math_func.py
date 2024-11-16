@@ -43,7 +43,7 @@ from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
 from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
-                                         cosh, nan_to_num, norm_op, lp_norm_v2_op,
+                                         cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
@@ -7366,6 +7366,16 @@ def _multi_svd_norm(x, row_axis, col_axis, op):
     raise ValueError(f"For svd_norm, the op input must be one of ['amax', 'amin', 'sum'], but got f{op}")
 
 
+def _reshape_matrix_norm(input, res, dim, keepdims):
+    """reshape res of matrix_norm if keepdims is True."""
+    if keepdims:
+        res_shape = list(input.shape)
+        res_shape[dim[0]] = 1
+        res_shape[dim[1]] = 1
+        res = res.reshape(res_shape)
+    return res
+
+
 def _normalize_axis_index(axis, ndim):
     """normalize_axis_index for norm."""
     # pylint: disable=chained-comparison
@@ -7711,6 +7721,289 @@ def _compute_vector_norm_inf(x, dim, keepdims, norm_func):
             ret_norm = ret_norm.reshape(ret_shape)
     return ret_norm
 
+@_primexpr
+def _check_vector_norm_inputs(x, ord):
+    """vector_norm inputs check"""
+    if not isinstance(x, (Tensor, Tensor_)):
+        raise TypeError(f"For `vector_norm`, the `x` must be Tensor!, but get {type(x)}.")
+
+    if not isinstance(ord, (bool, int, float)):
+        raise ValueError(f"For `vector_norm`, the ord mode must be one of [bool, int, float, inf, -inf], "
+                         f"but got {ord}.")
+
+def vector_norm_ext(x, ord=2, dim=None, keepdim=False, *, dtype=None):
+    r"""
+    Returns the vector norm of the given tensor on the specified dimensions.
+
+    `ord` is the calculation mode of norm. The following norm modes are supported.
+
+    ==========================      ==========================================
+    `ord`                           norm for vectors
+    ==========================      ==========================================
+    ``2`` (Default)                 ``2``-norm (see below)
+    ``inf``                         :math:`max(abs(x))`
+    ``-inf``                        :math:`min(abs(x))`
+    ``0``                           :math:`sum(x!=0)`
+    other ``int`` or ``float``      :math:`sum(abs(x)^{ord})^{(1 / ord)}`
+    ==========================      ===========================================
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        x (Tensor): Tensor of shape :math:`(*)` where * is zero s more batch dimensions.
+        ord (Union[bool, int, float, inf, -inf], optional): norm's mode. refer to the table above for
+            behavior. Default: ``2`` .
+        dim (Union[int, List(int), Tuple(int)], optional): The dimensions along which to perform the vector norm
+            calculation. Default: ``None`` .
+
+            - When `dim` is an integer, a list or a tuple, the norm calculation will be performed across these specified
+              dimensions, while the remaining dimensions will be considered as batch dimensions.
+
+            - When `dim` is None, the norm will be calculated after flattening the Tensor `x` .
+
+        keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): When set, `x` will be converted to the specified type,
+            `dtype` before execution, and dtype of returned Tensor will also be `dtype`.
+            When `dtype` is ``None`` , the dtype of `x` is preserved. Default: ``None`` .
+
+    Returns:
+        Tensor, the result of norm calculation on the specified dimension, `dim`.
+
+    Raises:
+        TypeError: If `dim` is not an int or tuple.
+        ValueError: If `ord` is not in [bool, int, float, inf, -inf].
+        ValueError: The elements of `dim` are duplicate.
+        ValueError: If any elements of `dim` is out of range.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> x = ms.ops.arange(0, 12, dtype=ms.float32) - 6
+        >>> print(ms.ops.vector_norm_ext(x, ord=2))
+        12.083046
+        >>> print(ms.ops.vector_norm_ext(x, ord=float('inf')))
+        6.0
+        >>> print(ms.ops.vector_norm_ext(x, ord=float('-inf')))
+        0.0
+        >>> print(ms.ops.vector_norm_ext(x, ord=0))
+        11.0
+        >>> print(ms.ops.vector_norm_ext(x, ord=4.5))
+        7.2243643
+    """
+    _check_vector_norm_inputs(x, ord)
+    if float(ord) in [0.0, 1.0, 2.0, 3.0]:
+        return linalg_vector_norm_op(x, float(ord), dim, keepdim, dtype)
+
+    if x.dtype in [mstype.bfloat16, mstype.float16, mstype.float32]:
+        if dtype is None:
+            return lp_norm_v2_op(x, ord, dim, keepdim, 0.0)
+        return ops.cast(lp_norm_v2_op(x, ord, dim, keepdim, 0.0), dtype)
+
+    cast_dtype = x.dtype if dtype is None else dtype
+    x = ops.cast(x, mstype.float32)
+    return ops.cast(lp_norm_v2_op(x, ord, dim, keepdim, 0.0), cast_dtype)
+
+
+def matrix_norm_ext(A, ord='fro', dim=(-2, -1), keepdim=False, *, dtype=None):
+    r"""
+    Returns the matrix norm of a given tensor on the specified dimensions.
+
+    `ord` is the calculation mode of norm. The following norm modes are supported.
+
+    ====================== ================================
+    `ord`                  norm for matrix
+    ====================== ================================
+    ``'fro'`` (Default)    Frobenius norm
+    ``'nuc'``              nuclear norm
+    ``inf``                :math:`max(sum(abs(x), dim=1))`
+    ``-inf``               :math:`min(sum(abs(x), dim=1))`
+    ``1``                  :math:`max(sum(abs(x), dim=0))`
+    ``-1``                 :math:`min(sum(abs(x), dim=0))`
+    ``2``                  largest singular value
+    ``-2``                 smallest singular value
+    ====================== ================================
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        A (Tensor): Tensor of shape :math:`(*, m, n)` where * is zero or more batch dimensions.
+        ord (Union[int, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
+            behavior. Default: ``'fro'`` .
+        dim (Tuple(int, int), optional): calculate the dimension of the matrix norm.
+            Default: ``(-2, -1)`` .
+        keepdims (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): When set, `A` will be converted to the specified type,
+            `dtype`, before execution, and dtype of returned Tensor will also be `dtype`.
+            When `dtype` is ``None`` , the dtype of `A` is preserved. Default: ``None`` .
+
+    Returns:
+        Tensor, the result of norm calculation on the specified dimension, `dim`.
+
+    Raises:
+        TypeError: If `dim` is not a tuple of int.
+        ValueError: If the length of `dim` is not equal to 2.
+        ValueError: If `ord` is not in [2, -2, 1, -1, float('inf'), float('-inf'), 'fro', 'nuc'].
+        ValueError: If two elements of `dim` is same after normalize.
+        ValueError: If any elements of `dim` is out of range.
+
+    Note:
+        Dynamic shape, Dynamic rank and mutable input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> A = ms.ops.arange(0, 12, dtype=ms.float32).reshape(3, 4)
+        >>> print(ms.ops.matrix_norm_ext(x, ord='fro'))
+        22.494444
+        >>> print(ms.ops.matrix_norm_ext(x, ord='nuc'))
+        24.364643
+        >>> print(ms.ops.matrix_norm_ext(x, ord=float('inf')))
+        38.0
+        >>> print(ms.ops.matrix_norm_ext(x, ord=float('-inf')))
+        6.0
+    """
+    ndim = A.ndim
+    row_axis, col_axis = _check_matrix_norm_axis(dim, ndim)
+    _check_matrix_norm_ord(ord)
+    if ord == 'fro':
+        return vector_norm_ext(A, 2, dim, keepdim, dtype=dtype)
+    if ord == 'nuc':
+        res = _multi_svd_norm(A, row_axis, col_axis, 'sum')
+        return _reshape_matrix_norm(A, res, dim, keepdim)
+    if ord == 2:
+        res = _multi_svd_norm(A, row_axis, col_axis, 'amax')
+        return _reshape_matrix_norm(A, res, dim, keepdim)
+    if ord == -2:
+        res = _multi_svd_norm(A, row_axis, col_axis, 'amin')
+        return _reshape_matrix_norm(A, res, dim, keepdim)
+    if ord in [float('inf'), -float('inf')]:
+        row_axis, col_axis = col_axis, row_axis
+    if not keepdim and col_axis > row_axis:
+        col_axis -= 1
+    if ord < 0:
+        return ops.amin(vector_norm_ext(A, 1, row_axis, keepdim, dtype=dtype), col_axis, keepdim)
+    return ops.amax(vector_norm_ext(A, 1, row_axis, keepdim, dtype=dtype), col_axis, keepdim)
+
+@_primexpr
+def _check_linalg_norm_input(dim, ord, ndim):
+    """dim check"""
+    if dim is None:
+        if ord is not None and ndim > 2:
+            raise ValueError("For `linalg.norm`, the input must be 1D or 2D when `ord` is specified but `dim` is None.")
+        dim = tuple(range(ndim))
+        if (ord is None) or (ord == 'fro' and ndim == 2) or (ord == 2 and ndim == 1):
+            return dim, True
+        return dim, False
+    if isinstance(dim, int):
+        dim = (dim,)
+    elif isinstance(dim, (list, tuple)):
+        if len(dim) > 2:
+            raise ValueError(f"For `linalg.norm`, the length of `dim` must be 1 or 2 when dim is not None",
+                             f"but got {len(dim)}.")
+    else:
+        raise TypeError(f'For `linalg.norm`, the dim should be int, list of int or tuple of int, but got {type(dim)}')
+    return dim, False
+
+def linalg_norm(A, ord=None, dim=None, keepdim=False, *, dtype=None):
+    r"""
+    Returns the matrix norm or vector norm of a given tensor.
+
+    `ord` is the calculation mode of norm. The following norm modes are supported.
+
+    ====================== ================================ ==========================================
+    `ord`                   norm for matrices               norm for vectors
+    ====================== ================================ ==========================================
+    `None` (default)        Frobenius norm                   `2`-norm (see below)
+    `'fro'`                 Frobenius norm                   -- not supported --
+    `'nuc'`                 nuclear norm                     -- not supported --
+    `inf`                   :math:`max(sum(abs(x), dim=1))`  :math:`max(abs(x))`
+    `-inf`                  :math:`min(sum(abs(x), dim=1))`  :math:`min(abs(x))`
+    `0`                     -- not supported --              :math:`sum(x != 0)`
+    `1`                     :math:`max(sum(abs(x), dim=0))`  as below
+    `-1`                    :math:`min(sum(abs(x), dim=0))`  as below
+    `2`                     largest singular value           as below
+    `-2`                    smallest singular value          as below
+    other `int` or `float`  -- not supported --              :math:`sum(abs(x)^{ord})^{(1 / ord)}`
+    ====================== ================================ ==========================================
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        A (Tensor): Tensor of shape :math:`(*, n)` or :math:`(*, m, n)` where * is zero or more batch dimensions.
+        ord (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
+            behavior. Default: ``None`` .
+        dim (Union[int, Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
+            Default: ``None`` .
+
+            - When `dim` is int, it will be calculated by vector norm.
+
+            - When `dim` is a 2-tuple, it will be calculated by matrix norm.
+
+            - If `dim` is None and `ord` is None, `A` will be flattened to 1D and the 2-norm
+              of the vector will be calculated.
+
+            - If `dim` is None and `ord` is not None, `A` must be 1D or 2D.
+
+        keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): When set, `A` will be converted to the specified type,
+            `dtype`, before execution, and dtype of returned Tensor will also be `dtype`. Default: ``None`` .
+
+    Returns:
+        Tensor, the result of norm calculation on the specified dimension, `dim`, has the same dtype as `A`.
+
+    Raises:
+        ValueError: If `dim` is out of range.
+        TypeError: If `dim` is neither an int nor a tuple of int.
+        TypeError: If `A` is a vector and `ord` is a str.
+        ValueError: If `A` is a matrices and `ord` is not in valid mode.
+        ValueError: If two elements of `dim` is same after normalize.
+        ValueError: If any elements of `dim` is out of range.
+
+    Note:
+        Dynamic shape, Dynamic rank and mutable input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import ops
+        >>> data_range = ops.arange(-13, 13, dtype=ms.float32)
+        >>> x = data_range[data_range != 0]
+        >>> print(ops.function.math_func.linalg_norm(x))
+        38.327538
+        >>> print(ops.function.math_func.linalg_norm(x, 1))
+        169.0
+        >>> n = ops.arange(27, dtype=ms.float32).reshape(3, 3, 3)
+        >>> print(ops.function.math_func.linalg_norm(n, dim=(1, 2)))
+        [14.282857 39.76179  66.45299 ]
+        >>> print(ops.function.math_func.linalg_norm(n[0, :, :]), ops.function.math_func.linalg_norm(n[1, :, :]))
+        14.282857 39.76179
+    """
+    dim, immediate = _check_linalg_norm_input(dim, ord, A.ndim)
+    if immediate:
+        return vector_norm_ext(A, 2, dim, keepdim, dtype=dtype)
+    if ord is not None:
+        if ord in ['fro', 'nuc'] or (dim is not None and len(dim) == 2) or (dim is None and A.ndim == 2):
+            return matrix_norm_ext(A, ord, dim, keepdim, dtype=dtype)
+        return vector_norm_ext(A, ord, dim, keepdim, dtype=dtype)
+    return vector_norm_ext(A, 2, dim, keepdim, dtype=dtype)
+
 
 def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
     r"""
@@ -7721,13 +8014,9 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
     ====================== ================================ ==========================================
     `p`                     norm for matrices               norm for vectors
     ====================== ================================ ==========================================
-    `None` (default)        Frobenius norm                   `2`-norm (see below)
     `'fro'`                 Frobenius norm                   -- not supported --
     `'nuc'`                 nuclear norm                     -- not supported --
-    `inf`                   :math:`max(sum(abs(x), dim=1))`  :math:`max(abs(x))`
-    `-inf`                  :math:`min(sum(abs(x), dim=1))`  :math:`min(abs(x))`
-    `0`                     -- not supported --              :math:`sum(x != 0)`
-    other `int` or `float`  -- not supported --              :math:`sum(abs(x)^{ord})^{(1 / ord)}`
+    other `int` or `float`  -- not supported --              :math:`sum(abs(x)^{p})^{(1 / p)}`
     ====================== ================================ ==========================================
 
     .. warning::
@@ -7738,7 +8027,7 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
             The shape is :math:`(*)` where :math:`*` means, any number of additional dimensions.
         p (Union[int, float, inf, -inf, 'fro', 'nuc'], optional): norm's mode. refer to the table above for
             behavior. Default: ``fro`` .
-        dim (Union[int, Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
+        dim (Union[int, List(int), Tuple(int)], optional): calculate the dimension of vector norm or matrix norm.
             Default: ``None`` .
         keepdim (bool): whether the output Tensor retains the original dimension. Default: ``False`` .
 
@@ -7747,19 +8036,21 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
             `dtype`, before execution, and dtype of returned Tensor will also be `dtype`. Default: ``None`` .
 
     Returns:
-        Tensor, the result of norm calculation on the specified dimension, `dim`, has the same dtype as `input`.
+        Tensor, the result of norm calculation on the specified dimension, `dim`.
 
     Raises:
+        TypeError: If `input` is not a Tensor
         ValueError: If `dim` is out of range.
         TypeError: If `dim` is neither an int nor a tuple of int.
         ValueError: If two elements of `dim` is same after normalize.
         ValueError: If any elements of `dim` is out of range.
 
+    Note:
+        Dynamic shape, Dynamic rank and mutable input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
     Supported Platforms:
         ``Ascend``
-
-    Note:
-        Currently, it only support `ops.function.math_func.norm_ext(input, p=number)`.
 
     Examples:
         >>> import mindspore as ms
@@ -7772,25 +8063,18 @@ def norm_ext(input, p='fro', dim=None, keepdim=False, *, dtype=None):
     """
     if not isinstance(input, (Tensor, Tensor_)):
         raise TypeError(f"For `norm_ext`, the `input` must be Tensor!, but get {type(input)}.")
-
-    if (dim is not None) or keepdim or (dtype is not None):
-        raise ValueError(f"For `norm_ext`, the value of `dim`, `keepdim` and `dtype` must be default value currently.")
-
-    if isinstance(p, (int, float)):
-        if float(p) in [0.0, 1.0, 2.0, 3.0]:
-            return norm_op(input, p, dim, keepdim, dtype)
-        if input.dtype in [mstype.bfloat16, mstype.float16, mstype.float32]:
-            return lp_norm_v2_op(input, p, dim, keepdim, 0.0)
-        dtype = input.dtype
-        input = ops.cast(input, mstype.float32)
-        return ops.cast(lp_norm_v2_op(input, p, dim, keepdim, 0.0), dtype)
-
+    if isinstance(p, (bool, int, float)):
+        return vector_norm_ext(input, p, dim, keepdim, dtype=dtype)
     if p == 'fro':
         if isinstance(dim, (list, tuple)) and len(dim) > 2:
             raise ValueError(f"For `norm_ext`, the size of `dim` cannot be greater than 2 "
-                             f"when the mode of norm is `fro`.")
-        return norm_op(input, 2.0, dim, keepdim, dtype)
-    raise ValueError(f"For `norm_ext`, the value of `p` cannot be `{p}` currently.")
+                             f"when the norm mode is `fro`.")
+        return linalg_vector_norm_op(input, 2.0, dim, keepdim, dtype)
+    if p == 'nuc':
+        dim = tuple(range(input.ndim)) if dim is None else dim
+        return matrix_norm_ext(input, p, dim, keepdim, dtype=dtype)
+    raise ValueError(f"For `norm_ext`, the value of `p` must be one of [int, float, inf, -inf, 'fro', 'nuc',] "
+                     f"but got `{p}`.")
 
 def vector_norm(x, ord=2, axis=None, keepdims=False, *, dtype=None):
     r"""
@@ -7884,7 +8168,7 @@ def vector_norm(x, ord=2, axis=None, keepdims=False, *, dtype=None):
 @_primexpr
 def _check_matrix_norm_axis(axis, ndim):
     """matrix_norm axis check"""
-    if not isinstance(axis, tuple):
+    if not isinstance(axis, (list, tuple)):
         raise TypeError(f'For matrix_norm , the axis should be tuple of int, but got {type(axis)}')
     if len(axis) != 2:
         raise ValueError(f'For matrix_norm, the length of axis should be 2, but got {len(axis)}.')

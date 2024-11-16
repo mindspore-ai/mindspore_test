@@ -97,36 +97,33 @@ BaseShapePtr ReduceInferShape(const PrimitivePtr &primitive, const std::vector<A
   return std::make_shared<abstract::Shape>(out_shape);
 }
 
-BaseShapePtr NormInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  auto keep_dims_value = input_args[kInputIndex3]->GetValue();
-  auto keep_dims_opt = GetScalarValue<bool>(keep_dims_value);
-  if (MS_UNLIKELY(!keep_dims_opt.has_value())) {
-    return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
+ShapeArray NormInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) {
+  auto keepdim_opt = input_infos[kInputIndex3]->GetScalarValue<bool>();
+  if (MS_UNLIKELY(!keepdim_opt.has_value())) {
+    return {ShapeVector({abstract::Shape::kShapeRankAny})};
   }
-  auto keep_dims = keep_dims_opt.value();
-  auto x_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
+  auto keepdim = keepdim_opt.value();
+  auto x_shape = input_infos[kInputIndex0]->GetShape();
 
   // If dim is None
-  if (input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
-    return keep_dims
-             ? std::make_shared<abstract::Shape>(IsDynamicRank(x_shape) ? x_shape : ShapeVector(x_shape.size(), 1))
-             : std::make_shared<abstract::Shape>(ShapeVector({}));
+  if (input_infos[kInputIndex2]->IsNone()) {
+    return {keepdim ? IsDynamicRank(x_shape) ? x_shape : ShapeVector(x_shape.size(), 1) : ShapeVector({})};
   }
 
   if (IsDynamicRank(x_shape)) {
-    return std::make_shared<abstract::Shape>(x_shape);
+    return {x_shape};
   }
-  auto dim_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]);
+
+  auto dim_opt = input_infos[kInputIndex2]->GetArrayValue<int64_t>();
   if (dim_opt.has_value()) {
-    // If dim is empty tuple and keep_dims is False, return a zero-dimensional Tensor
-    if (dim_opt->size() == 0 && !keep_dims) {
-      return std::make_shared<abstract::Shape>(ShapeVector({}));
+    // If dim is empty tuple and keepdim is False, return a zero-dimensional Tensor
+    if (dim_opt->size() == 0 && !keepdim) {
+      return {ShapeVector({})};
     }
   }
   if (!dim_opt.has_value()) {
     // dim is dynamic.
-    return keep_dims ? std::make_shared<abstract::Shape>(ShapeVector(x_shape.size(), -1))
-                     : std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
+    return {keepdim ? ShapeVector(x_shape.size(), -1) : ShapeVector({abstract::Shape::kShapeRankAny})};
   }
   auto x_shape_size = x_shape.size();
   auto dim = dim_opt.value();
@@ -137,16 +134,16 @@ BaseShapePtr NormInferShape(const PrimitivePtr &primitive, const std::vector<Abs
     (void)std::transform(
       dim_vec.begin(), dim_vec.end(), std::back_inserter(real_dim_vec),
       [&x_shape_size, &primitive](const int64_t &axis) { return CalRealAixs(axis, x_shape_size, primitive); });
-    auto out_shape = ReduceFuncCalShapeInferImpl(primitive, x_shape, real_dim_vec, keep_dims);
-    return std::make_shared<abstract::Shape>(out_shape);
+    auto out_shape = ReduceFuncCalShapeInferImpl(primitive, x_shape, real_dim_vec, keepdim);
+    return {out_shape};
   }
 
   // If the dim has unknown value, the reduction position will be any of the input dimensions.
-  if (!keep_dims) {
+  if (!keepdim) {
     MS_CHECK_VALUE(x_shape.size() >= dim_opt->size(),
-                   CheckAndConvertUtils::FormatCheckInRangeMsg("axis size", dim_opt->size(), kIncludeLeft,
+                   CheckAndConvertUtils::FormatCheckInRangeMsg("dim size", dim_opt->size(), kIncludeLeft,
                                                                {0, x_shape.size()}, primitive));
-    return std::make_shared<abstract::Shape>(ShapeVector(x_shape.size() - dim_opt->size(), -1));
+    return {ShapeVector(x_shape.size() - dim_opt->size(), -1)};
   }
   auto out_shape = ShapeVector(x_shape.size(), -1);
   for (size_t i = 0; i < dim.size(); ++i) {
@@ -155,7 +152,7 @@ BaseShapePtr NormInferShape(const PrimitivePtr &primitive, const std::vector<Abs
       out_shape[axis] = 1;
     }
   }
-  return std::make_shared<abstract::Shape>(out_shape);
+  return {out_shape};
 }
 
 BaseShapePtr ReduceExtandInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {

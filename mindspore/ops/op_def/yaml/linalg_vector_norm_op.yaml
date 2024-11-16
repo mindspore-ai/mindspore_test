@@ -1,9 +1,9 @@
-#operator lp_norm_v2
-lp_norm_v2:
+#operator linalg_vector_norm
+linalg_vector_norm:
   args:
-    input:
+    x:
       dtype: tensor
-    p:
+    ord:
       dtype: float
       type_cast: int, tensor
       default: 2
@@ -14,13 +14,15 @@ lp_norm_v2:
     keepdim:
       dtype: bool
       default: False
-    epsilon:
-      dtype: float
-      default: 1e-12
+    dtype:
+      dtype: TypeId
+      arg_handler: dtype_to_type_id
+      default: None
   returns:
     output:
       dtype: tensor
-  class:
-    name: LpNormV2
   function:
     disable: True
+  dispatch:
+    enable: True
+    Ascend: LinalgVectorNormAscend
