@@ -31,7 +31,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (item_mint, isnan_mint, sub_mint)
+from mindspore.common._tensor_overload import (item_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -3894,12 +3894,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('isinf')(self)
 
-    @isnan_mint
     def isnan(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.isnan`.
+        For details, please refer to :func:`mindspore.ops.ne`.
         """
-        return tensor_operator_registry.get('isnan')(self)
+        return self.ne(self)
 
     def flip(self, dims):
         """
