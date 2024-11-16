@@ -30,7 +30,7 @@ Fixes #
 
 **Code review checklist [【代码检视checklist说明】](https://gitee.com/mindspore/community/blob/master/security/code_review_checklist_mechanism.md)**:
 
-+ - [ ] 是否进行返回值校验** (禁止使用void屏蔽安全函数、自研函数返回值，C++标准库函数确认无问题可以屏蔽)
++ - [ ] 是否进行返回值校验 (禁止使用void屏蔽安全函数、自研函数返回值，C++标准库函数确认无问题可以屏蔽)
 + - [ ] 是否遵守 ***SOLID原则 / 迪米特法则***
 + - [ ] 是否具备UT测试用例看护 && 测试用例为有效用例 (若新特性无测试用例看护请说明原因)
 + - [ ] 是否为对外接口变更
