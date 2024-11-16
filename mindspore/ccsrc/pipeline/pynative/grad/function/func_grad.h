@@ -152,7 +152,7 @@ class FuncGrad : public AutoGrad {
   void UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) override;
   // Reverse connect jit or higher order sub bprop funcgraph
   bool KPynativeWithFProp(const GradParamPtr &grad_param) override;
-  void CallCustomBprop(const CustomContext &context) override;
+  void CallCustomBprop(const std::shared_ptr<CustomContext> &context) override;
   // Save get and update variable of tensor.
   VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) override;
 
