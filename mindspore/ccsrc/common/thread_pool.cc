@@ -25,8 +25,14 @@ namespace common {
 constexpr size_t kYieldThreshold = 1000;
 
 ThreadPool::ThreadPool() {
+  auto env_thread_num = common::GetEnv("MS_DEV_PARAM_INIT_WORKER_NUM");
+  if (!env_thread_num.empty()) {
+    MS_LOG(WARNING) << "Manually set max_thread_num_ to " << this->max_thread_num_;
+    this->max_thread_num_ = static_cast<size_t>(std::stoi(env_thread_num));
+    return;
+  }
   constexpr size_t LOWER_BOUND = 1;
-  constexpr size_t UPPER_BOUND = 24;
+  constexpr size_t UPPER_BOUND = 4;
   size_t cnt = std::thread::hardware_concurrency() / 8;
   cnt = std::min(cnt, UPPER_BOUND);
   cnt = (cnt > 1 && cnt % 2 != 0) ? cnt - 1 : cnt;

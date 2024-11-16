@@ -2691,10 +2691,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                     np.random.seed(self._np_seed)
                     self.init.seed, _ = self.seed
 
-        if not isinstance(self.init, ZeroInitializer):
-            with seed_context(self.init):
-                if slice_num_of_persistent_data == 1:
-                    self.init(data)
+        with seed_context(self.init):
+            if not isinstance(self.init, ZeroInitializer) and slice_num_of_persistent_data == 1:
+                self.init(data)
         self.init = None
 
         # At embedding cache scenes. When size of tensor is out of range, we store data to persistent storage
