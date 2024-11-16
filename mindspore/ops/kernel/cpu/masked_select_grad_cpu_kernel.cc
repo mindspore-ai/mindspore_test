@@ -99,7 +99,7 @@ bool MaskedSelectGradCpuKernelMod::LaunchKernel(const std::vector<kernel::Kernel
     iter.SetPos(0);
     for (uint64_t i = 0; i < LongToUlong(tensor_size_); ++i) {
       if (mask[iter.GetInputPosB()]) {
-        dx[iter.GetInputPosA()] += grad[j++];
+        dx[i] += grad[j++];
       }
       iter.GenNextPos();
     }
