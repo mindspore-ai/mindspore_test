@@ -40,16 +40,23 @@ void SilentCheckV2Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &in
   c_thresh_l2_ = inputs[kIndex7]->GetValueWithCheck<pyfloat>();
   c_coeff_l2_ = inputs[kIndex8]->GetValueWithCheck<pyfloat>();
   npu_asd_detect_ = inputs[kIndex9]->GetValueWithCheck<int64_t>();
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], c_min_steps_, c_thresh_l1_,
-                        c_coeff_l1_, c_thresh_l2_, c_coeff_l2_, npu_asd_detect_, outputs[kIndex3]);
+  ClearOpsWorkSpaceList();
+  GetWorkspaceForResizeSilentCheck(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], c_min_steps_,
+                                   c_thresh_l1_, c_coeff_l1_, c_thresh_l2_, c_coeff_l2_, npu_asd_detect_,
+                                   outputs[kIndex3]);
+  // copy input_grad to outputs[0]
+  GetWorkspaceForResizeInputGradCopy(outputs[kIndex0], inputs[kIndex1]);
 }
 
 bool SilentCheckV2Ascend::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], c_min_steps_,
-        c_thresh_l1_, c_coeff_l1_, c_thresh_l2_, c_coeff_l2_, npu_asd_detect_, outputs[kIndex3]);
+  RunOpSilentCheck(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3],
+                   c_min_steps_, c_thresh_l1_, c_coeff_l1_, c_thresh_l2_, c_coeff_l2_, npu_asd_detect_,
+                   outputs[kIndex3]);
+  // copy input_grad to outputs[0]
+  RunOpInputGradCopy(stream_ptr, workspace, outputs[kIndex0], inputs[kIndex1]);
   return true;
 }
 
