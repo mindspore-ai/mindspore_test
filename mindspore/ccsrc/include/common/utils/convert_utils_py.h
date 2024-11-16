@@ -57,6 +57,9 @@ COMMON_EXPORT py::object BaseRefToPyData(const BaseRef &value, const AbstractBas
 COMMON_EXPORT py::object ValueToPyData(const ValuePtr &value, const AbstractBasePtr &abs = nullptr);
 COMMON_EXPORT bool IsStubTensor(const py::handle &obj);
 COMMON_EXPORT tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
+// Convert sub node to base tensor, for pynative output tensor.
+COMMON_EXPORT tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj);
+COMMON_EXPORT py::object CTensorToPyStubNodes(const ValuePtr &val);
 COMMON_EXPORT ValuePtr PyStubNodeCast(const py::handle &obj);
 COMMON_EXPORT ValuePtr ConvertTensorNode(const py::object &obj);
 COMMON_EXPORT std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj);
@@ -64,7 +67,8 @@ COMMON_EXPORT bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, c
                                                      const std::shared_ptr<py::object> &ret_val);
 COMMON_EXPORT ValuePtr ShallowCopyTensorValue(const ValuePtr &value);
 COMMON_EXPORT ValuePtr ConvertPyObjectToCTensor(const py::object &input_object);
-COMMON_EXPORT void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors);
+COMMON_EXPORT void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors,
+                                            bool is_base_tensor = false);
 COMMON_EXPORT py::object ConvertCTensorToPyTensor(const py::object &input_arg);
 COMMON_EXPORT std::string ConvertPyObjToString(const py::object &obj);
 COMMON_EXPORT py::tuple CheckBpropOut(const py::object &grads_obj, const py::tuple &py_args,

@@ -496,7 +496,7 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   if (utils::isa<PyObjectRef>(out)) {
     PyObjectRef py_ref = utils::cast<PyObjectRef>(out);
     auto out_py_tuple = py_ref.object_;
-    ConvertPyObjectToCTensor(out_py_tuple, &gradient_values);
+    ConvertPyObjectToCTensor(out_py_tuple, &gradient_values, false);
   }
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Hook fn output is not <PyObjectRef> type!";
@@ -579,7 +579,7 @@ NodePtrList CopySliceNode::CallBackwardImpl(const NodePtr &grad_node, const tens
     view_offset = view_offset - base_tensor->storage_info()->storage_offset;
   }
   // To do, replace zeros to empty_strided.
-  auto result = emitter_->Emitter::Zeros(base_);
+  auto result = emitter_->ZerosLikeExt(base_, emitter_->EmitValue(kNone));
   auto clone_grad = emitter_->InplaceCopy(result, grad_node);
   auto grad_slice =
     emitter_->AsStrided(clone_grad, emitter_->Value(view_tensor->storage_info()->shape),
@@ -597,7 +597,7 @@ NodePtrList CopySliceNode::CallBackwardImpl(const NodePtr &grad_node, const tens
     if (i == 0) {
       // The result of inplace func may be nullptr, we need replace with zeros.
       if (res[i] == nullptr || res[i]->Value()->isa<None>()) {
-        res[i] = emitter_->Emitter::Zeros(node_inputs_[i]);
+        res[i] = emitter_->ZerosLikeExt(node_inputs_[i], emitter_->EmitValue(kNone));
       }
       (void)emitter_->InplaceCopy(grad_slice, res[i]);
       grad_inputs[i] = result;
@@ -996,7 +996,7 @@ void FuncGrad::WeightNodeNotInGradButHasTensorHook(const FuncVariablePtr &variab
   auto tensor = v->cast<tensor::BaseTensorPtr>();
   ValuePtrList grad_in{};
   if (variable->grad() == nullptr) {
-    grad_in.emplace_back(func_impl_->Zeros(v));
+    grad_in.emplace_back(func_impl_->Zeros(tensor));
   } else {
     grad_in.emplace_back(variable->grad());
   }

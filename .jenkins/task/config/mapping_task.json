@@ -118,7 +118,8 @@
       ".gitignore",
       "third_party/patch/openssl",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_CPU_Win_Level0"
@@ -391,7 +392,8 @@
       ".gitignore",
       "third_party/patch/openssl",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_Ascend",
@@ -496,7 +498,8 @@
       ".gitignore",
       "third_party/patch/openssl",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_GPU"
@@ -693,7 +696,8 @@
       ".gitignore",
       "third_party/patch/openssl",
       "tests/device_utils.py",
-      "tests/st"
+      "tests/st",
+      "tests/vm_impl"
     ],
     "LLT": [
       "Smoke_CPU_CentOS_Level0",

@@ -96,6 +96,20 @@ void check_bprop_input_grads(const py::tuple &py_args, const py::tuple &grads, c
     }
   }
 }
+
+ValueSimpleInfoPtr BuildSimpleInfo(const ValueSequencePtr &seq) {
+  auto simple_info = std::make_shared<ValueSimpleInfo>();
+  simple_info->is_tuple_output_ = true;
+  simple_info->size_ = seq->size();
+  for (size_t i = 0; i < seq->size(); ++i) {
+    const auto &val = seq->value()[i];
+    auto tensor = val->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    (void)simple_info->dtype_vector_.emplace_back(tensor->Dtype());
+    (void)simple_info->shape_vector_.emplace_back(tensor->shape());
+  }
+  return simple_info;
+}
 }  // namespace
 py::object BuiltinsToPyData(const Any &value);
 py::object BuiltinsToPyData(const BaseRef &value);
@@ -897,6 +911,49 @@ tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
   return tensor;
 }
 
+tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj) {
+  ValuePtr tensor = nullptr;
+  if (IsStubTensor(obj)) {
+    tensor = PyStubNodeCast(obj);
+  }
+  if (tensor == nullptr) {
+    MS_LOG(EXCEPTION) << "The obj should be a tensor, but got " << py::str(obj);
+  }
+  if (utils::isa<stub::StubNode>(tensor)) {
+    auto stub = utils::cast<stub::StubNodePtr>(tensor);
+    return stub->WaitValue()->cast<tensor::BaseTensorPtr>();
+  }
+  if (tensor->isa<tensor::BaseTensor>()) {
+    return tensor->cast<tensor::BaseTensorPtr>();
+  }
+  MS_LOG(EXCEPTION) << "It should be stub tensor, but got " << tensor->ToString();
+}
+
+py::object CTensorToPyStubNodes(const ValuePtr &val) {
+  // We need acquire gil from outer function before call this method.
+  py::module stub_tensor_module = py::module::import("mindspore.common._stub_tensor");
+  if (val->isa<tensor::BaseTensor>()) {
+    auto node = stub::MakeTopNode(kTensorType);
+    auto tensor = val->cast<tensor::BaseTensorPtr>();
+    auto simple_info = std::make_shared<ValueSimpleInfo>();
+    simple_info->dtype_vector_ = {tensor->Dtype()};
+    simple_info->shape_vector_ = {tensor->shape()};
+    simple_info->size_ = 1;
+    node.second->SetValueSimpleInfo(simple_info);
+    node.second->SetValue(val);
+    return stub_tensor_module.attr("_convert_stub")(node.first);
+  } else if (val->isa<ValueSequence>()) {
+    auto tuple_tensor = val->cast<ValueSequencePtr>();
+    py::tuple tuple_grads(tuple_tensor->size());
+    auto node = stub::MakeTopNode(kTuple);
+    // Note we need first set abstract and then set value.
+    node.second->SetValueSimpleInfo(BuildSimpleInfo(tuple_tensor));
+    node.second->SetValue(val);
+    return stub_tensor_module.attr("_convert_stub")(node.first);
+  }
+  MS_LOG(EXCEPTION) << "grads should be tensor or tuple tensor, but got " << val->ToString();
+}
+
 ValuePtr PyStubNodeCast(const py::handle &obj) {
   auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
   auto stub = py_stub.cast<stub::StubNodePtr>();
@@ -955,12 +1012,18 @@ ValuePtr ShallowCopyTensorValue(const ValuePtr &value) {
   }
 }
 
-ValuePtr ConvertPyObjectToCObject(const py::object &input_object) {
+ValuePtr ConvertPyObjectToCObject(const py::object &input_object, bool is_base_tensor) {
   ValuePtr output = nullptr;
-  if (py::isinstance<tensor::Tensor>(input_object)) {
+  if (IsStubTensor(input_object)) {
+    if (is_base_tensor) {
+      output = StubNodeToTensor(input_object);
+    } else {
+      output = ConvertStubTensor(input_object);
+    }
+  } else if (py::isinstance<tensor::Tensor>(input_object)) {
     output = py::cast<tensor::TensorPtr>(input_object);
-  } else if (IsStubTensor(input_object)) {
-    output = ConvertStubTensor(input_object);
+  } else if (py::isinstance<py::none>(input_object)) {
+    output = kNone;
   } else if (py::isinstance<py::float_>(input_object)) {
     double input_value = py::cast<py::float_>(input_object);
     output = std::make_shared<tensor::Tensor>(input_value, kFloat32);
@@ -970,22 +1033,20 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object) {
     ValuePtrList values;
     auto list_inputs = py::cast<py::list>(input_object);
     for (size_t i = 0; i < list_inputs.size(); ++i) {
-      (void)values.emplace_back(ConvertPyObjectToCObject(list_inputs[i]));
+      (void)values.emplace_back(ConvertPyObjectToCObject(list_inputs[i], is_base_tensor));
     }
     output = std::make_shared<ValueList>(values);
   } else if (py::isinstance<py::tuple>(input_object)) {
     ValuePtrList values;
     auto tuple_inputs = py::cast<py::tuple>(input_object);
     for (size_t i = 0; i < tuple_inputs.size(); ++i) {
-      (void)values.emplace_back(ConvertPyObjectToCObject(tuple_inputs[i]));
+      (void)values.emplace_back(ConvertPyObjectToCObject(tuple_inputs[i], is_base_tensor));
     }
     output = std::make_shared<ValueTuple>(values);
   } else if (py::isinstance<tensor::CSRTensor>(input_object)) {
     output = py::cast<tensor::CSRTensorPtr>(input_object);
   } else if (py::isinstance<tensor::COOTensor>(input_object)) {
     output = py::cast<tensor::COOTensorPtr>(input_object);
-  } else if (py::isinstance<py::none>(input_object)) {
-    output = kNone;
   } else {
     MS_EXCEPTION(TypeError) << "Unreasonable data type: " << input_object.get_type() << ".";
   }
@@ -993,15 +1054,17 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object) {
   return output;
 }
 
-ValuePtr ConvertPyObjectToCTensor(const py::object &input_object) { return ConvertPyObjectToCObject(input_object); }
+ValuePtr ConvertPyObjectToCTensor(const py::object &input_object) {
+  return ConvertPyObjectToCObject(input_object, false);
+}
 
-void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors) {
+void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors, bool is_base_tensor) {
   if (!py::isinstance<py::tuple>(input_object)) {
     MS_LOG(EXCEPTION) << "Input object should be tuple";
   }
   auto tuple_inputs = py::cast<py::tuple>(input_object);
   for (size_t i = 0; i < tuple_inputs.size(); ++i) {
-    (void)tensors->emplace_back(ConvertPyObjectToCObject(tuple_inputs[i]));
+    (void)tensors->emplace_back(ConvertPyObjectToCObject(tuple_inputs[i], is_base_tensor));
   }
 }
 
