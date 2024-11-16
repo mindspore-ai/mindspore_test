@@ -43,6 +43,9 @@
 #ifdef __APPLE__
 #include "async/spinlock.h"
 #endif
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>  // for GetCurrentProcessId()
+#endif
 
 namespace mindspore {
 namespace device {
@@ -73,11 +76,19 @@ class DeviceResManager;
 class GraphExecutor;
 class KernelExecutor;
 
+inline pid_t GetCurrentPID() {
+#if defined(_WIN32) || defined(_WIN64)
+  return GetCurrentProcessId();
+#else
+  return getpid();
+#endif
+}
+
 // DeviceContext is unified interface of interaction with device.
 class DeviceContext {
  public:
   explicit DeviceContext(const DeviceContextKey &device_context_key)
-      : device_context_key_(device_context_key), initialized_(false) {}
+      : device_context_key_(device_context_key), initialized_(false), pid_(GetCurrentPID()) {}
   virtual ~DeviceContext() = default;
 
   // Initialize the device context.
@@ -85,6 +96,11 @@ class DeviceContext {
 
   // Destroy device context and release device resource.
   virtual void Destroy() {}
+
+  // Check whether the device context needs to be released.
+  // The device context is copied by the dataset independent process, but does not need to be released
+  // in the dataset independent process.
+  virtual bool IsNeedDestroy() { return pid_ == GetCurrentPID(); }
 
   // Analysis the function graph to check whether all nodes are supported, if yes, return true, if no, return false and
   // mark the unsupported node as "NotSupport" through SetCNodeNotSupported()
@@ -146,6 +162,7 @@ class DeviceContext {
   inline static std::mutex init_mutex_;
 #endif
   bool initialized_;
+  pid_t pid_;  // Indicates the process id which creates the context.
 
  private:
   std::shared_ptr<KernelExecutor> kernel_executor_;

@@ -538,11 +538,52 @@ void TreeAdapter::SubprocessExit(int exit_code) {
   }
   MS_LOG(INFO) << "[Independent Dataset Process] End waiting for all pipeline threads exit.";
 
+  // wait for python multiprocessing exit
+  for (auto itr = tree_->begin(); itr != tree_->end(); ++itr) {
+    if (itr->Name() == "GeneratorOp") {
+      auto generator_op = dynamic_cast<GeneratorOp *>(itr.get().get());
+      if (generator_op->Terminate() != Status::OK()) {
+        MS_LOG(ERROR) << "Terminate GeneratorOp python multiprocessing failed.";
+      }
+    }
+    if (itr->Name() == kMapOp) {
+      auto map_op = dynamic_cast<MapOp *>(itr.get().get());
+      if (map_op->Terminate() != Status::OK()) {
+        MS_LOG(ERROR) << "Terminate MapOp python multiprocessing failed.";
+      }
+    }
+    if (itr->Name() == kBatchOp) {
+      auto batch_op = dynamic_cast<BatchOp *>(itr.get().get());
+      if (batch_op->Terminate() != Status::OK()) {
+        MS_LOG(ERROR) << "Terminate BatchOp python multiprocessing failed.";
+      }
+    }
+  }
+
   // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
   ret = shared_memmory_queue.ReleaseCurrentShm();
   if (ret != Status::OK()) {
     MS_LOG(ERROR) << ret.ToString();
   }
+
+#if !defined(BUILD_LITE) && defined(ENABLE_D)
+  // If the main process has exited, the independent dataset process does not need to release the device.
+  auto ms_context = MsContext::GetInstance();
+  if (ms_context != nullptr) {
+    device::DeviceContextKey device_context_key = {ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET),
+                                                   ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID)};
+    auto device_context = device::DeviceContextManager::GetInstance().GetDeviceContext(device_context_key.device_name_);
+
+    // destroy the device context when independent dataset exit
+    if (device_context && device_context->initialized()) {
+      // Destroy the device context
+      device_context->Destroy();
+    }
+    MS_LOG(INFO) << "Destroy device context successful.";
+  } else {
+    MS_LOG(ERROR) << "Get ms context failed by MsContext::GetInstance()";
+  }
+#endif
 
   // independent will exit
   _exit(exit_code);

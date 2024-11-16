@@ -53,7 +53,8 @@ ConfigManager::ConfigManager()
       autotune_interval_(kCfgAutoTuneInterval),
       enable_watchdog_(true),
       multiprocessing_timeout_interval_(kCfgMultiprocessingTimeoutInterval),
-      iterator_mode_({{"do_copy", true}, {"parallel_convert", false}}) {
+      iterator_mode_({{"do_copy", true}, {"parallel_convert", false}}),
+      start_method_("fork") {
   autotune_json_filepath_ = kEmptyString;
   num_cpu_threads_ = num_cpu_threads_ > 0 ? num_cpu_threads_ : std::numeric_limits<uint16_t>::max();
   num_parallel_workers_ = num_parallel_workers_ < num_cpu_threads_ ? num_parallel_workers_ : num_cpu_threads_;
@@ -96,6 +97,7 @@ Status ConfigManager::FromJson(const nlohmann::json &j) {
   set_num_connections(j.value("numConnections", num_connections_));
   set_cache_prefetch_size(j.value("cachePrefetchSize", cache_prefetch_size_));
   set_debug_mode(j.value("debug_mode_flag", debug_mode_flag_));
+  set_multiprocessing_start_method(j.value("start_method", start_method_));
   return Status::OK();
 }
 
