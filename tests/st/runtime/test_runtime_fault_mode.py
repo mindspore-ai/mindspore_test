@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from mindspore import context, nn, Tensor, ops
+from mindspore import context, nn, Tensor, ops, jit
 from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
@@ -38,3 +38,22 @@ def test_all_gather_matmul_forward():
         _pynative_executor.sync()
     assert "Sync stream failed" in str(err.value)
 
+
+@arg_mark(plat_marks=["platform_ascend910b"], level_mark="level1", card_mark="onecard", essential_mark="essential")
+def test_max_index_for_gather():
+    '''
+    Feature: Runtime fault test case.
+    Description: Sync stream error when read the illegal memory.
+    Expectation: Run success
+    '''
+    @jit
+    def foo(x, y, z):
+        x = x - y
+        return ops.gather(z, y / x, 0)
+
+    x = Tensor(2)
+    y = Tensor(2)
+    z = Tensor([1, 2, 3, 4])
+    with pytest.raises(RuntimeError) as err:
+        print(foo(x, y, z))
+    assert "Sync stream error" in str(err.value)
