@@ -17,7 +17,7 @@
 """standard_method"""
 
 from __future__ import absolute_import
-from mindspore import Tensor, CSRTensor, COOTensor
+from mindspore import Tensor, CSRTensor, COOTensor, Parameter
 from mindspore import dtype as mstype
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.common import mutable
@@ -4519,3 +4519,9 @@ def _getitem(data, index):
 
 def _setitem(data, index, value):
     return multitype_ops.setitem(data, index, value)
+
+def register_hook(x, func):
+    if isinstance(x, Parameter):
+        raise ValueError("Register hook for Parameter inside graph is not supported.")
+    hook_op = P.InsertGradientOf(func)
+    return hook_op(x)

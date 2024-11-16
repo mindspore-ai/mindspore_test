@@ -37,6 +37,7 @@ namespace pynative::autograd {
 struct RegisterHook {
   uint64_t static RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook);
   static void RemoveTensorBackwardHook(uint64_t id);
+  static py::list GetHooks(const tensor::Tensor &tensor);
 };
 }  // namespace pynative::autograd
 namespace tensor {
@@ -1150,6 +1151,7 @@ void RegMetaTensor(const py::module *m) {
     .def("storage_offset", &Tensor::storage_offset)
     .def("register_hook", &pynative::autograd::RegisterHook::RegisterTensorBackwardHook)
     .def("remove_hook", &pynative::autograd::RegisterHook::RemoveTensorBackwardHook)
+    .def("hooks", &pynative::autograd::RegisterHook::GetHooks)
     .def("__str__", &Tensor::ToString)
     .def("__repr__", &Tensor::ToStringRepr)
     .def("_offload", &TensorPy::Offload)

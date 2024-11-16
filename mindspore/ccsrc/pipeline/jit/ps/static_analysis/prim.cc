@@ -4227,6 +4227,7 @@ class CreateInstanceEvaluator : public TransitionPrimEvaluator {
       // Only support the Scalar parameters type. Bypass class type by offset with 1.
       auto arg = args_abs_list[i + 1];
       MS_EXCEPTION_IF_NULL(arg);
+
       auto param_value = arg->BuildValue();
       MS_EXCEPTION_IF_NULL(param_value);
       if (param_value->ContainsValueAny() && !arg->isa<AbstractFunction>()) {
@@ -4238,7 +4239,7 @@ class CreateInstanceEvaluator : public TransitionPrimEvaluator {
                                 << "', all arguments are required to be constants, but input " << i
                                 << " is a variable, which is " << arg->ToString() << ".";
       }
-      py::object param = ValueToPyData(param_value);
+      py::object param = ValueToPyData(param_value, arg);
       (*params)[i] = param;
     }
     return false;

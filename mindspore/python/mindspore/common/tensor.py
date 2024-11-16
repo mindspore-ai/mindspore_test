@@ -37,6 +37,7 @@ from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common.symbol import Symbol
 
+
 np_types = (np.int8, np.int16, np.int32, np.int64,
             np.uint8, np.uint16, np.uint32, np.uint64, np.float16,
             np.float32, np.float64, np.bool_, np.complex64, np.complex128)
@@ -1206,11 +1207,18 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Registers a backward hook for tensor.
 
         Note:
-            - The `register_backward_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
-            - The 'hook_fn' must be defined as the following code. `grad` is the gradient passed to the tensor,
+            - The `hook_fn` must be defined as the following code. `grad` is the gradient passed to the tensor,
               which may be modified by returning a new output gradient.
-            - The 'hook_fn' should have the following signature:
+            - The `hook_fn` should have the following signature:
               hook_fn(grad) -> New output gradient, but can not return None or not set return value.
+            - The following constraints must be met under graph mode:
+
+              - The `hook_fn` must satisfy the syntax constraints of the graph mode.
+              - Registering `hook_fn` for `Parameter` is not supported in the graph (i.e., function `Cell.construct` or
+                function decorated by `@jit`).
+              - It is not supported to delete `hook_fn` inside graph.
+
+              - Register `hook_fn` in the graph will return then `Tensor` it self.
 
         Args:
             hook_fn (function): Python function. Tensor backward hook function.
@@ -1244,10 +1252,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             (Tensor(shape=[], dtype=Float32, value=8), Tensor(shape=[], dtype=Float32, value=6))
         """
         if not check_hook_fn("register_hook", hook_fn):
-            return _TensorHookHandle()
-        handle = _TensorHookHandle()
+            return _TensorHookHandle(self)
+        handle = _TensorHookHandle(self)
         handle.id = Tensor_.register_hook(self, hook_fn)
         return handle
+
+    def _remove_hook(self):
+        pass
 
     def flush_from_cache(self):
         """
