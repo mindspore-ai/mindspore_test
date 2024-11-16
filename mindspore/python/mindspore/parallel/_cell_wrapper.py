@@ -126,6 +126,8 @@ def _restore_parallel_context(origin_parallel_mode, origin_dataset_strategy):
     if context.get_context("mode") == context.GRAPH_MODE:
         context.set_auto_parallel_context(parallel_mode=origin_parallel_mode)
         if origin_dataset_strategy != "data_parallel":
+            if origin_dataset_strategy is not None and isinstance(origin_dataset_strategy, list):
+                origin_dataset_strategy = tuple(tuple(ds_item) for ds_item in origin_dataset_strategy)
             context.set_auto_parallel_context(dataset_strategy=origin_dataset_strategy)
 
 
