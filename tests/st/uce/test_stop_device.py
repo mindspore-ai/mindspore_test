@@ -16,12 +16,13 @@
 Test stop device api
 """
 import os
-import pytest
 from mindspore._c_expression import _stop_device
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore.ops import operations as P
 from mindspore import Tensor
+from tests.mark_utils import arg_mark
+
 
 class Net(nn.Cell):
     def __init__(self):
@@ -36,9 +37,8 @@ def train():
     net = Net()
     net(Tensor(2.0))
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_single
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 def test_stop_device():
     """
     Feature: Test stop device interface.

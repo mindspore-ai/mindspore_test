@@ -16,12 +16,11 @@
 Test senv_recv interface
 """
 import os
-import pytest
+
+from tests.mark_utils import arg_mark
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 def test_send_recv():
     """
     Feature: Test send_recv interface.

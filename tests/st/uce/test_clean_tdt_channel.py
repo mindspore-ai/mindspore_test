@@ -4,8 +4,8 @@ from mindspore._c_expression import clean_tdt_channel
 import numpy as np
 from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_clean_tdt_channel():
     """
     Feature: clean tdt channel
