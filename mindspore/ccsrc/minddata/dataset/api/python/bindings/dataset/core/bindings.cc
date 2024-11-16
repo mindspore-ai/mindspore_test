@@ -83,6 +83,8 @@ PYBIND_REGISTER(ConfigManager, 0, ([](const py::module *m) {
                     .def("get_error_samples_mode", &ConfigManager::get_error_samples_mode)
                     .def("set_iterator_mode", &ConfigManager::set_iterator_mode)
                     .def("get_iterator_mode", &ConfigManager::get_iterator_mode)
+                    .def("set_multiprocessing_start_method", &ConfigManager::set_multiprocessing_start_method)
+                    .def("get_multiprocessing_start_method", &ConfigManager::get_multiprocessing_start_method)
                     .def("load", [](ConfigManager &c, const std::string &s) { THROW_IF_ERROR(c.LoadFile(s)); });
                 }));
 

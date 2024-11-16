@@ -103,7 +103,8 @@ required_package = [
     'packaging >= 20.0',
     'psutil >= 5.6.1',
     'astunparse >= 1.6.3',
-    'safetensors >= 0.4.0'
+    'safetensors >= 0.4.0',
+    'dill <0.3.9'
 ]
 
 package_data = {

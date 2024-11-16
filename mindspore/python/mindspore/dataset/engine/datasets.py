@@ -35,7 +35,6 @@ import stat
 import subprocess
 import warnings
 
-import gc
 import time
 import uuid
 import multiprocessing
@@ -74,7 +73,8 @@ from .validators import check_batch, check_shuffle, check_map, check_filter, che
     check_save, check_tuple_iterator, check_dict_iterator, check_schema, check_to_device_send, check_padded_batch, \
     check_total_batch, check_sync_update
 from ..core.config import get_callback_timeout, _init_device_info, get_enable_shared_mem, get_num_parallel_workers, \
-    get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, _get_debug_hook_list
+    get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, \
+    _get_debug_hook_list, get_multiprocessing_start_method
 from ..core.datatypes import mstype_to_detype
 from ..core.validator_helpers import replace_none
 from ..core.py_util_helpers import ExceptionHandler
@@ -2757,8 +2757,8 @@ class BatchDataset(UnionBaseDataset):
             if self.num_parallel_workers is None:
                 self.num_parallel_workers = get_num_parallel_workers()
 
-            self.process_pool = _PythonMultiprocessing(str(self), self.num_parallel_workers, [self.per_batch_map],
-                                                       self.max_rowsize)
+            self.process_pool = _PythonMultiprocessing(get_multiprocessing_start_method(), self.num_parallel_workers,
+                                                       str(self), [self.per_batch_map], self.max_rowsize)
             # Wrap per_batch_map into _PythonCallable
             self.per_batch_map = _PythonCallable(self.per_batch_map, 0, self.process_pool)
         else:
@@ -3210,8 +3210,19 @@ def _worker_loop(operations, pipe, worker_id):
 
 
 def worker_target(operations, worker_id):
+    logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
     return lambda pipe: _worker_loop(operations, pipe, worker_id)
 
+
+class WorkerTarget:
+    def __init__(self, operations, pipe, worker_id):
+        self.operations = operations
+        self.pipe = pipe
+        self.worker_id = worker_id
+        logger.info("Multiprocessing start method: {}".format(multiprocessing.get_start_method()))
+
+    def __call__(self):
+        return _worker_loop(self.operations, self.pipe, self.worker_id)
 
 class _MPWorker(multiprocessing.Process):
     """
@@ -3267,6 +3278,12 @@ class _MPWorker(multiprocessing.Process):
 
                 logger.info(f"Closing worker with PID: {self.pid}")
                 self.pipe.master_close()
+
+                process_dir = os.path.join('/proc', str(self.pid))
+                while self.is_alive() and os.path.exists(process_dir):
+                    logger.info("Waiting for worker {} closed ...".format(self.pid))
+                    time.sleep(0.001)
+
                 # del the handle which hold by master
                 del self.pipe.in_queue
                 del self.pipe.res_queue
@@ -3284,6 +3301,41 @@ class _MPWorker(multiprocessing.Process):
             return super().is_alive()
         except ValueError:
             return False
+
+
+def worker_is_alive(worker):
+    """Check the subprocess worker status in spawn mode"""
+    try:
+        return worker.is_alive()
+    except ValueError:
+        return False
+
+
+def close_worker(worker, pipe):
+    """Close the subprocess worker in spawn mode"""
+    try:
+        if worker_is_alive(worker):
+            # release the eager executor which is used by current process
+            transforms.transforms.clean_unused_executors()
+
+            logger.info(f"Closing worker with PID: {worker.pid}")
+            pipe.master_close()
+
+            process_dir = os.path.join('/proc', str(worker.pid))
+            while worker_is_alive(worker) and os.path.exists(process_dir):
+                logger.info("Waiting for worker {} closed ...".format(worker.pid))
+                time.sleep(0.5)
+
+            # del the handle which hold by master
+            del pipe.in_queue
+            del pipe.res_queue
+            worker.terminate()
+            worker.join()
+            worker.close()
+    except ValueError:
+        # Process has been closed already
+        return
+    return
 
 
 class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
@@ -3312,10 +3364,11 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             self.origin_hook(ex_type, value, tb)
             self.mp_pool_exit_preprocess()
 
-    def __init__(self, op_name, num_parallel_workers, operations, max_rowsize=(-1, -1)):
+    def __init__(self, start_method, num_parallel_workers, op_name, operations, max_rowsize=(-1, -1)):
         super(_PythonMultiprocessing, self).__init__()
-        self.op_name = op_name
+        self.start_method = start_method  # python multiprocssing start method: fork / spawn
         self.num_parallel_workers = num_parallel_workers
+        self.op_name = op_name
         self.operations = operations
         self.max_rowsize = max_rowsize
 
@@ -3439,16 +3492,36 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         if self.workers is not None:
             raise Exception("Pool was already created, close it first.")
 
-        # Let gc collect unreferenced memory to avoid child processes in the pool to do it
-        gc.collect()
-
-        # Construct python worker processes
         self.workers = []
+        self.pipes = []
+        self.check_interval = get_multiprocessing_timeout_interval()
         self.warning_ctl = multiprocessing.Value('i', 0)
-        for worker_id in range(self.num_parallel_workers):
-            worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
-            worker.start()
-            self.workers.append(worker)
+        if self.start_method == "fork":
+            # Construct python worker processes
+            for worker_id in range(self.num_parallel_workers):
+                worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
+                worker.start()
+                self.workers.append(worker)
+            for worker_id in range(self.num_parallel_workers):
+                worker = _MPWorker(self.operations, self.warning_ctl, self.max_rowsize, worker_id)
+                worker.start()
+                self.workers.append(worker)
+        else:
+            multiprocessing.set_start_method(self.start_method, True)
+
+            # Construct python worker processes
+            for worker_id in range(self.num_parallel_workers):
+                shared_memory = get_enable_shared_mem()
+                pipe = Pipe(self.warning_ctl, shared_memory=shared_memory, max_rowsize=self.max_rowsize)
+                self.check_interval = get_multiprocessing_timeout_interval()
+                worker = multiprocessing.Process(target=WorkerTarget(self.operations, pipe, worker_id),
+                                                 name="MapWorker" + str(worker_id), daemon=True)
+                self.workers.append(worker)
+                self.pipes.append(pipe)
+                worker.start()
+
+            multiprocessing.set_start_method("fork", True)
+
         logger.info("Launch worker process(es): {}".format(self.get_pids()))
 
         self.hook = _PythonMultiprocessing._ExceptHookHandler()
@@ -3519,7 +3592,40 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
         # todo check_iterator_cleanup
         if self.is_running() and check_iterator_cleanup() is False:
-            return self.workers[worker_id].execute(idx, *args)
+            if self.start_method == "fork":
+                return self.workers[worker_id].execute(idx, *args)
+            # spawn mode
+            self.pipes[worker_id].master_send(idx, args)
+            time_s = time.time()
+            wait_count = 1
+            while True:
+                cost_time = time.time() - time_s
+                if cost_time / self.check_interval >= wait_count:
+                    wait_count += 1
+                    logger.warning("It has been waiting for " + "%.3f" % cost_time + "s because the sub-process "
+                                   "worker of the map operation is hanging. "
+                                   "Check whether the user defined data transform is too slow or the "
+                                   "output data is too large. You can also set the timeout interval by "
+                                   "ds.config.set_multiprocessing_timeout_interval to adjust the output frequency "
+                                   "of this log.")
+                    pid = self.workers[worker_id].pid
+                    logger.warning("Map worker subprocess ID {} is stuck.".format(pid))
+                    install_status, _ = subprocess.getstatusoutput("py-spy --version")
+                    if install_status == 0:
+                        stack = subprocess.getoutput("py-spy dump -p {} -l".format(pid))
+                        logger.warning("Map worker subprocess stack:\n{}".format(stack))
+                    else:
+                        logger.warning("Please `pip install py-spy` to get the stacks of the stuck process.")
+                try:
+                    res = self.pipes[worker_id].master_receive()
+                except queue.Empty:
+                    continue
+                if res is None:
+                    # receive finish signal
+                    return None
+                if isinstance(res, ExceptionHandler):
+                    res.reraise()
+                return res
 
         return None
 
@@ -3556,14 +3662,21 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
     def is_running(self):
         if hasattr(self, 'workers') and self.workers is not None:
-            return all([w.is_alive() for w in self.workers])
+            if self.start_method == "fork":
+                return all([w.is_alive() for w in self.workers])
+            return all([worker_is_alive(w) for w in self.workers])
         return False
 
     def close_all_workers(self):
         """Close all the subprocess workers"""
         if hasattr(self, 'workers') and self.workers is not None:
-            for w in self.workers:
-                w.close()
+            if self.start_method == "fork":
+                for w in self.workers:
+                    w.close()
+            else:
+                for i, w in enumerate(self.workers):
+                    close_worker(w, self.pipes[i])
+
             check_interval = get_multiprocessing_timeout_interval()
             for w in self.workers:
                 try:
@@ -3579,8 +3692,12 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                         continue
                     raise e
                 try:
-                    if w.is_alive():
-                        os.close(subprocess_file_descriptor)
+                    if self.start_method == "fork":
+                        if w.is_alive():
+                            os.close(subprocess_file_descriptor)
+                    else:
+                        if worker_is_alive(w):
+                            os.close(subprocess_file_descriptor)
                 except OSError as e:
                     # Maybe the file descriptor had been released, so ignore the 'Bad file descriptor'
                     if "Bad file descriptor" not in str(e):
@@ -3589,6 +3706,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             # use clear to release the handle which is better than self.workers = None
             self.workers.clear()
             self.workers = None
+            self.pipes.clear()
+            self.pipes = None
             self.pids = None
 
 
@@ -3834,8 +3953,9 @@ class MapDataset(UnionBaseDataset):
                     callable_list.append(op)
 
             if callable_list:
-                self.process_pool = _PythonMultiprocessing(str(self), self.num_parallel_workers, callable_list,
-                                                           self.max_rowsize)
+                self.process_pool = _PythonMultiprocessing(get_multiprocessing_start_method(),
+                                                           self.num_parallel_workers, str(self),
+                                                           callable_list, self.max_rowsize)
                 # Pass #2
                 idx = 0
                 for op in self.operations:

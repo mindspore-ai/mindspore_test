@@ -105,6 +105,10 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   /// \return Status The status code returned
   Status GetNextRowPullMode(TensorRow *const row) override;
 
+  /// Used by independent dataset mode to stop the subprocess
+  /// \return Status The status code returned
+  Status Terminate() override;
+
  protected:
   /// \brief Launch subprocesses in multiprocessing mode.
   /// \return Status Status code.

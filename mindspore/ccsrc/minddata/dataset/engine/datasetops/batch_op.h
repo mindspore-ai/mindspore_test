@@ -167,6 +167,10 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   /// \return vector of int
   std::vector<int32_t> GetMPWorkerPIDs() const override;
 
+  // @Used by independent dataset mode to stop the subprocess
+  // @return Status The status code returned
+  Status Terminate() override;
+
  private:
   // Worker thread for doing the memcpy of batch
   // @param int32_t param workerId

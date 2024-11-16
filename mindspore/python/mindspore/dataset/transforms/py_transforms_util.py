@@ -19,6 +19,8 @@ import json
 import random
 from enum import IntEnum
 from types import FunctionType, MethodType
+
+import dill
 import numpy as np
 
 from mindspore import log as logger
@@ -187,6 +189,7 @@ class FuncWrapper:
             raise ValueError("Input operations should be callable Python function, but got: " + str(transform))
         self.transform = transform
         self.implementation = Implementation.C
+        self.random = False
         try:
             if hasattr(self.transform, "random") and not self.transform.random:
                 self.random = False
@@ -210,6 +213,20 @@ class FuncWrapper:
                            " First element has type: " + str(result0_type)
                 logger.warning(warn_msg)
         return result
+
+    def __getstate__(self):
+        transform = dill.dumps(self.transform)
+        implementation = dill.dumps(self.implementation)
+        local_random = dill.dumps(self.random)
+        logged_list_mixed_type_warning = dill.dumps(self.logged_list_mixed_type_warning)
+        return (transform, implementation, local_random, logged_list_mixed_type_warning)
+
+    def __setstate__(self, state):
+        transform, implementation, local_random, logged_list_mixed_type_warning = state
+        self.transform = dill.loads(transform)
+        self.implementation = dill.loads(implementation)
+        self.random = dill.loads(local_random)
+        self.logged_list_mixed_type_warning = dill.loads(logged_list_mixed_type_warning)
 
     def to_json(self):
         """ Serialize to JSON format """

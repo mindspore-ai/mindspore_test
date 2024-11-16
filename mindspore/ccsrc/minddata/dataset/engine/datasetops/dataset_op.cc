@@ -512,5 +512,7 @@ Status DatasetOp::Launch() {
   }
   return Status::OK();
 }
+
+Status DatasetOp::Terminate() { return Status::OK(); }
 }  // namespace dataset
 }  // namespace mindspore

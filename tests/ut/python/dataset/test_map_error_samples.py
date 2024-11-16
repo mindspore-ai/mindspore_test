@@ -189,8 +189,8 @@ def test_map_replace_errors_failure():
 
 
 @pytest.mark.parametrize("my_num_workers, my_mp",
-                         [(1, False), (4, False), (3, True)])
-def test_map_replace_errors_success1(my_num_workers, my_mp):
+                         [(1, False), (4, False), (2, True)])
+def test_map_replace_errors_success1_part1(my_num_workers, my_mp):
     """
     Feature: Process Error Samples
     Description: Simple replace tests of data pipeline with various number of error rows in different indexes
@@ -241,6 +241,28 @@ def test_map_replace_errors_success1(my_num_workers, my_mp):
     run_replace_test(raise_all_but_last, 100, my_num_workers, my_mp, [99] * 100)
     run_replace_test(raise_all_but_first, 10, my_num_workers, my_mp, [0] * 10)
     run_replace_test(raise_all_but_first, 100, my_num_workers, my_mp, [0] * 100)
+
+    ds.config.set_error_samples_mode(error_samples_mode_original)
+    if my_mp:
+        # Restore configuration for shared memory
+        ds.config.set_enable_shared_mem(mem_original)
+
+
+@pytest.mark.parametrize("my_num_workers, my_mp",
+                         [(1, False), (4, False), (2, True)])
+def test_map_replace_errors_success1_part2(my_num_workers, my_mp):
+    """
+    Feature: Process Error Samples
+    Description: Simple replace tests of data pipeline with various number of error rows in different indexes
+    Expectation: Data pipeline replaces error rows successfully
+    """
+    error_samples_mode_original = ds.config.get_error_samples_mode()
+    ds.config.set_error_samples_mode(ds.config.ErrorSamplesMode.REPLACE)
+    # Check if python_multiprocessing is to be enabled
+    if my_mp:
+        # Reduce memory required by disabling the shared memory optimization
+        mem_original = ds.config.get_enable_shared_mem()
+        ds.config.set_enable_shared_mem(False)
 
     # error rows in the end of dataset
     run_replace_test(raise_last_n, 10, my_num_workers, my_mp, list(range(0, 8)) + [0, 1])
@@ -404,6 +426,28 @@ def test_map_skip_errors_success1(my_num_workers, my_mp):
     run_skip_test(raise_all_but_last, 100, my_num_workers, my_mp, [99])
     run_skip_test(raise_all_but_first, 10, my_num_workers, my_mp, [0])
     run_skip_test(raise_all_but_first, 100, my_num_workers, my_mp, [0])
+
+    ds.config.set_error_samples_mode(error_samples_mode_original)
+    if my_mp:
+        # Restore configuration for shared memory
+        ds.config.set_enable_shared_mem(mem_original)
+
+
+@pytest.mark.parametrize("my_num_workers, my_mp",
+                         [(1, False), (3, False), (2, True)])
+def test_map_skip_errors_success2(my_num_workers, my_mp):
+    """
+    Feature: Process Error Samples
+    Description: Simple skip tests of data pipeline with various number of error rows in different indexes
+    Expectation: Data pipeline replaces error rows successfully
+    """
+    error_samples_mode_original = ds.config.get_error_samples_mode()
+    ds.config.set_error_samples_mode(ds.config.ErrorSamplesMode.SKIP)
+    # Check if python_multiprocessing is to be enabled
+    if my_mp:
+        # Reduce memory required by disabling the shared memory optimization
+        mem_original = ds.config.get_enable_shared_mem()
+        ds.config.set_enable_shared_mem(False)
 
     # error rows in the end of dataset
     run_skip_test(raise_last_n, 10, my_num_workers, my_mp, list(range(0, 8)))
@@ -770,10 +814,12 @@ def test_map_error_samples_imagefolder3(my_error_samples_mode, my_num_workers, m
 
 if __name__ == '__main__':
     test_map_replace_errors_failure()
-    test_map_replace_errors_success1(2, True)
+    test_map_replace_errors_success1_part1(2, True)
+    test_map_replace_errors_success1_part2(2, False)
     test_map_replace_errors_success2(True)
     test_map_replace_errors_success3(3, False)
-    test_map_skip_errors_success1(3, True)
+    test_map_skip_errors_success1(2, True)
+    test_map_skip_errors_success2(2, False)
     test_map_error_samples_imagefolder1_cop(ErrorSamplesMode.RETURN, 4, plot=True)
     test_map_error_samples_imagefolder1_pyop(ErrorSamplesMode.REPLACE, 3, True, plot=True)
     test_map_error_samples_imagefolder2(ErrorSamplesMode.REPLACE, 4, True)

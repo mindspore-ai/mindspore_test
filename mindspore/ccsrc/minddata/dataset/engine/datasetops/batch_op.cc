@@ -1002,6 +1002,15 @@ Status BatchOp::Launch() {
   return DatasetOp::Launch();
 }
 
+Status BatchOp::Terminate() {
+  // Terminate Python multiprocessing. This will stop the MP pooa.
+  if (python_multiprocessing_runtime_) {
+    MS_LOG(INFO) << "Terminate Python Multiprocessing for BatchOp:" << id();
+    python_multiprocessing_runtime_->terminate();
+  }
+  return Status::OK();
+}
+
 std::vector<int32_t> BatchOp::GetMPWorkerPIDs() const {
   if (python_multiprocessing_runtime_ != nullptr) {
     return python_multiprocessing_runtime_->get_pids();

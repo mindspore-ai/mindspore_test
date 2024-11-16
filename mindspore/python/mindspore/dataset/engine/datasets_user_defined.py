@@ -275,6 +275,9 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             if platform.system().lower() != 'windows':
                 self._launch_monitor()
 
+    def terminate(self):
+        self._stop_subprocess()
+
     def _interval_log(self, i, start_time, wait_count):
         cost_time = int(time.time()) - start_time
         if cost_time / self.check_interval >= wait_count:

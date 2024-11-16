@@ -235,6 +235,8 @@ config模块能够设置或获取数据处理的全局配置参数。
     mindspore.dataset.config.ErrorSamplesMode
     mindspore.dataset.config.set_debug_mode
     mindspore.dataset.config.get_debug_mode
+    mindspore.dataset.config.set_multiprocessing_start_method
+    mindspore.dataset.config.get_multiprocessing_start_method
 
 工具
 -----
