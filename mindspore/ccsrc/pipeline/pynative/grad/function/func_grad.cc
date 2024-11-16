@@ -739,22 +739,22 @@ bool FuncGrad::KPynativeWithFProp(const GradParamPtr &grad_param) {
   return true;
 }
 
-void FuncGrad::CallCustomBprop(const CustomContext &context) {
+void FuncGrad::CallCustomBprop(const std::shared_ptr<CustomContext> &context) {
   MS_LOG(DEBUG) << "Begin Call CallCustomBprop";
   BackwardNodePtr custom_fn;
-  PyNativeAlgo::AutoGradUtil::CheckRecomputeInputs(context.inputs, context.is_recompute);
-  auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(context.inputs);
-  auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(context.output);
+  PyNativeAlgo::AutoGradUtil::CheckRecomputeInputs(context->inputs, context->is_recompute);
+  auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(context->inputs);
+  auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(context->output);
   ConstructParameterNodes(flatten_inputs);
   UpdateCreationType(flatten_outputs);
   {
     py::gil_scoped_acquire gil;
-    py::list bprop_inputs = context.original_inputs.cast<py::list>();
-    if (!context.is_recompute) {
-      bprop_inputs.append(context.original_output);
+    py::list bprop_inputs = context->original_inputs.cast<py::list>();
+    if (!context->is_recompute) {
+      bprop_inputs.append(context->original_output);
     }
-    custom_fn = std::make_shared<CustomBackward>("CellCustomBackward", context.bprop_fn, bprop_inputs,
-                                                 GenerateFlattenAbs(flatten_outputs), context.is_recompute,
+    custom_fn = std::make_shared<CustomBackward>("CellCustomBackward", context->bprop_fn, bprop_inputs,
+                                                 GenerateFlattenAbs(flatten_outputs), context->is_recompute,
                                                  flatten_outputs.size());
   }
   UpdateNextEdges(custom_fn, flatten_inputs);

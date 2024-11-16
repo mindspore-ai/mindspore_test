@@ -107,7 +107,7 @@ class ME_EXPORT GradExecutor {
   py::object RunGradGraph();
   CNodePtr ConstructForwardGraph(const OpGradInfoPtr &grad_info, const std::vector<std::string> &input_value_id) const;
   void RecordForwardGraph(const OpGradInfoPtr &grad_info) const;
-  void RecordCustomBprop(const autograd::CustomContext &context) const;
+  void RecordCustomBprop(const std::shared_ptr<autograd::CustomContext> &context) const;
   void RecordForwardGraphForInput(const ValuePtr &value, const string &input_id,
                                   const abstract::AbstractBasePtr &param_abs);
   void RecordNestedGraph(const FuncGraphPtr &first_grad_fg, const GraphInfoPtr &inner_graph_info,
@@ -218,8 +218,7 @@ class ME_EXPORT GradExecutor {
   void EndGraphInner(const py::object &obj, const py::object &out, const py::args &args);
   void EndGraphImpl(const InputArgsInfoPtr &input_args_info);
   void SetForwardLastNodeInfo(const ValuePtr &v) const;
-  void GetCustomBpropPrim(const py::object &obj, const py::args &args, const InputArgsInfoPtr &input_args_info);
-  void DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const;
+  void DoGradForCustomBprop(const std::shared_ptr<autograd::CustomContext> &context);
   void CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info);
   void GetGradGraph(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
                     const std::vector<size_t> &p_args);

@@ -99,6 +99,7 @@ void check_bprop_input_grads(const py::tuple &py_args, const py::tuple &grads, c
   }
 }
 }  // namespace
+
 py::object BuiltinsToPyData(const Any &value);
 py::object BuiltinsToPyData(const BaseRef &value);
 py::object VectorToPyData(const Any &value);

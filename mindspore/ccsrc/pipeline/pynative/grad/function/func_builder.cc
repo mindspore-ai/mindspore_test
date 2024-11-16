@@ -1357,8 +1357,7 @@ ValuePtr FuncBuilder::FillZeros(const ValuePtr &value, const abstract::AbstractB
       MS_EXCEPTION_IF_NULL(tensor_dtype);
       auto dtype = tensor_dtype->element();
       auto shape = PyNativeAlgo::Common::BuildShape(abs);
-      auto out_tensor = std::make_shared<tensor::Tensor>(dtype->type_id(), shape);
-      auto zero_node = ZerosLike(NewFuncNode(out_tensor, abs, InputType::kOpOutput));
+      auto zero_node = Zeros(Value(shape), Value(static_cast<int64_t>(dtype->type_id())));
       convert_value = zero_node->Value();
     } else {
       MS_LOG(DEBUG) << "None value abstract got None abstract!";

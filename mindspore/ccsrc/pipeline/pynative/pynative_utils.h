@@ -55,6 +55,7 @@ struct Common {
   static ValuePtr CreatOutputTensorValueByAbstract(const abstract::AbstractBasePtr &abs);
   static void ReplaceCNodeWithValueNode(const FuncGraphPtr &bprop_graph);
   static const std::shared_ptr<PyNativeExecutor> &GetPyNativeExecutor();
+  static ValuePtr StubNodeToValue(const ValuePtr &val);
   static void StubNodeToValue(const FrontendOpRunInfoPtr &op_run_info);
   static tensor::BaseTensorPtr StubNodeToTensor(const ValuePtr &value);
   static tensor::BaseTensorPtr ConvertStubNodeToTensor(const ValuePtr &v, bool need_contiguous, bool requires_grad);
