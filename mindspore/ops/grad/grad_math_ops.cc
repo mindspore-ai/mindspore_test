@@ -1720,6 +1720,39 @@ REG_BPROP_BUILDER("IndexAdd").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib)
   return {dout, ib->OutZeros(indices), dy};
 });
 
+REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto indices = ib->GetInput(kIndex1);
+  auto values = ib->GetInput(kIndex2);
+  auto accumulate = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto accumulate_value = GetValue<bool>(accumulate->BuildValue());
+  auto zeros = ib->ZerosLikeExt(values, ib->Value(static_cast<int64_t>(ib->GetDtypeId(values))));
+  NodePtr values_grad;
+  if (values->need_compute_grad_out()) {
+    values_grad = ib->Emit("Index", {dout, indices});
+    auto values_shape = ib->GetShape(values);
+    auto values_grad_shape = ib->GetShape(values_grad);
+    if (values_grad_shape != values_shape) {
+      auto bc_axis = ib->BroadcastGradientArgs(values, values_grad);
+      values_grad = ib->Reshape(
+        ib->Emit("SumExt", {values_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), values_shape);
+    }
+  } else {
+    values_grad = ib->OutZeros(values);
+  }
+  NodePtr dx;
+  if (input->need_compute_grad_out()) {
+    dx = dout;
+    if (!accumulate_value) {
+      dx = ib->Emit("InplaceIndexPut", {dx, indices, zeros, accumulate});
+    }
+  } else {
+    dx = ib->OutZeros(input);
+  }
+  return {dx, ib->OutZeros(indices), values_grad, ib->OutZeros(accumulate)};
+});
+
 REG_BPROP_BUILDER("IndexSelect").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);

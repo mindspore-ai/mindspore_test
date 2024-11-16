@@ -1,0 +1,43 @@
+index:
+    description: |
+        Index the Tensor using an `indices`.
+
+        .. warning::
+            This is an experimental optimizer API that is subject to change.
+
+        Args:
+            input (Tensor): The input Tensor.
+            indices (tuple[Tensor], list[Tensor]): the indices of type is bool, uint8, int32 or int64, used to index into the `input`.
+                The size of indices should <= the rank of `input` and the tensors in indices should be broadcastable.
+
+        Returns:
+            Tensor, has the same dtype as input Tensor.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
+            TypeError: If the dtype of tensors in `indices` is not bool, uint8, int32 or int64.
+            ValueError: If the tensors in `indices` is not be broadcastable.
+            ValueError: If size(`indices`) > rank(`input`).
+            ValueError: If rank of `input` = 0.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor, ops
+            >>> input1 = Tensor(np.array([[1, 2, 3], [4, 5, 6]]), mindspore.int32)
+            >>> indices1 = Tensor(np.array([0, 1, 1]), mindspore.int32)
+            >>> indices2 = Tensor(np.array([1, 2, 1]), mindspore.int32)
+            >>> output = ops.auto_generate.index(input1, [indices1, indices2])
+            >>> print(output)
+            [2 6 5]
+            >>> input2 = Tensor(np.arange(4 * 3 * 3).reshape(4, 3, 3), mindspore.int32)
+            >>> indices3 = Tensor(np.array([1, 0]), mindspore.int32)
+            >>> indices4 = Tensor(np.array([1, 1, 0]), mindspore.bool_)
+            >>> output2 = ops.auto_generate.index(input2, [indices3, indices4])
+            >>> print(output2)
+            [[ 9 10 11]
+             [ 3  4  5]]

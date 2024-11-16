@@ -1,0 +1,36 @@
+inner_index:
+    description: |
+        Index the Tensor using an `indices`.
+
+        .. warning::
+            This is an internal and non-standard interface. The target interface is aclnn.
+
+        Inputs:
+            - **input** (Tensor) - The input Tensor.
+            - **indices** (tuple[Tensor], list[Tensor]) - the indices of type is int64, used to index into the `input`.
+              The size of indices should <= the rank of `input` and the tensors in indices should be broadcastable.
+
+        Outputs:
+            Tensor, has the same dtype as input Tensor.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
+            TypeError: If the dtype of tensors in `indices` is int64.
+            ValueError: If the tensors in `indices` is not be broadcastable.
+            ValueError: If size(`indices`) > rank(`input`).
+            ValueError: If rank of `input` = 0.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor, ops
+            >>> input1 = Tensor(np.array([[1, 2, 3], [4, 5, 6]]), mindspore.int64)
+            >>> indices1 = Tensor(np.array([0, 1, 1]), mindspore.int64)
+            >>> indices2 = Tensor(np.array([1, 2, 1]), mindspore.int64)
+            >>> output = ops.auto_generate.InnerIndex()(input1, [indices1, indices2])
+            >>> print(output)
+            [2 6 5]

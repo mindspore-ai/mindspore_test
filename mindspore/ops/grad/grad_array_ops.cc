@@ -1736,6 +1736,15 @@ REG_BPROP_BUILDER("IndexFill").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
   return {x_grad, ib->OutZeros(dim), ib->OutZeros(indices), zero_value};
 });
 
+REG_BPROP_BUILDER("Index").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto indices = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto zero_x = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  auto dy = ib->Emit("InplaceIndexPut", {zero_x, indices, dout, ib->Value(true)});
+  return {dy, ib->OutZeros(indices)};
+});
+
 REG_BPROP_BUILDER("UnsortedSegmentSum").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto segment_ids = ib->GetInput(kIndex1);
   auto num_segments = ib->GetInput(kIndex2);

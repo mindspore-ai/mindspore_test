@@ -115,7 +115,8 @@ ArgSort: 'aclnnArgsort'
 # 15
 
 # 16
-
+InplaceIndexPut: 'aclnnIndexPutImpl'
+InnerIndex: 'aclnnIndex'
 # 17
 
 # 18
@@ -159,6 +160,7 @@ Col2ImExt: 'aclnnIm2colBackward'
 
 # 37
 NonZero: 'aclnnNonzero'
+InnerNonZero: 'aclnnNonzeroV2'
 # 38
 
 # 39

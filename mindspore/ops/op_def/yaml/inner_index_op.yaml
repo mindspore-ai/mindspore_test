@@ -1,0 +1,16 @@
+#operator inner index
+inner_index:
+    args:
+        input:
+            dtype: tensor
+        indices:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: InnerIndexAscend
