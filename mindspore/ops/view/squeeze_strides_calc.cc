@@ -21,17 +21,17 @@
 
 namespace mindspore::ops {
 namespace {
+constexpr size_t kSqueezeCalcInputsNum = 2;
 constexpr auto kSqueezedNum = 1;
 }  // namespace
 TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+  if (CheckInputsNull(inputs, kSqueezeCalcInputsNum) || !inputs[0]->isa<tensor::BaseTensor>() ||
+      !inputs[1]->isa<ValueSequence>()) {
     return {};
   }
   auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
-  auto value_str = prim->GetAttr(kAxis);
-  MS_EXCEPTION_IF_NULL(value_str);
-  auto axis = GetValue<std::vector<int64_t>>(value_str);
+  const auto &axis = GetValue<std::vector<int64_t>>(inputs[1]);
   auto old_tensor_info = GetOldTensorInfo(tensor);
   auto oldShape = old_tensor_info->old_shape;
   auto oldStrides = old_tensor_info->old_strides;
@@ -56,11 +56,6 @@ TensorStorageInfoPtrList SqueezeCalc(const PrimitivePtr &prim, const std::vector
       CheckAndConvertUtils::CheckInRange<int64_t>("element or value of axis", dim, kIncludeLeft, {-ndims, ndims},
                                                   "Squeeze");
       const auto wrap_dim = DynamicDimWrap(dim, ndims);
-      // If shape dims contain unknown dim, ignore it.
-      if (oldShape[LongToSize(wrap_dim)] != abstract::Shape::kShapeDimAny) {
-        const std::string ith_shape = "input_x.shape[" + std::to_string(wrap_dim) + "]";
-        (void)CheckAndConvertUtils::CheckValue<int64_t>(ith_shape, oldShape[wrap_dim], kEqual, kSqueezedNum, "Squeeze");
-      }
       seen_dims[wrap_dim] = true;
     }
   }

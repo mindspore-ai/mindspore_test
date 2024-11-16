@@ -26,6 +26,9 @@ namespace {
 #define EXPAND_DIMS_GPU_REG(T)                                                                     \
   KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeNumber, kNumberTypeInt32).AddOutputAttr(T), \
     KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeNumber, kNumberTypeInt64).AddOutputAttr(T)
+#define SQUEEZE_GPU_REG(T)                                                                        \
+  KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeTuple, kNumberTypeInt32).AddOutputAttr(T), \
+    KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeTuple, kNumberTypeInt64).AddOutputAttr(T)
 
 template <typename T>
 using Complex = mindspore::utils::Complex<T>;
@@ -98,6 +101,18 @@ static std::vector<KernelAttr> expand_dims_valid_types = {
   EXPAND_DIMS_GPU_REG(kNumberTypeBool),      EXPAND_DIMS_GPU_REG(kNumberTypeComplex64),
   EXPAND_DIMS_GPU_REG(kNumberTypeComplex128)};
 
+static std::vector<KernelAttr> squeeze_valid_types = {
+  // index int64
+  SQUEEZE_GPU_REG(kNumberTypeFloat16), SQUEEZE_GPU_REG(kNumberTypeFloat32),   SQUEEZE_GPU_REG(kNumberTypeFloat64),
+
+  SQUEEZE_GPU_REG(kNumberTypeInt8),    SQUEEZE_GPU_REG(kNumberTypeInt16),     SQUEEZE_GPU_REG(kNumberTypeInt32),
+  SQUEEZE_GPU_REG(kNumberTypeInt64),
+
+  SQUEEZE_GPU_REG(kNumberTypeUInt8),   SQUEEZE_GPU_REG(kNumberTypeUInt16),    SQUEEZE_GPU_REG(kNumberTypeUInt32),
+  SQUEEZE_GPU_REG(kNumberTypeUInt64),
+
+  SQUEEZE_GPU_REG(kNumberTypeBool),    SQUEEZE_GPU_REG(kNumberTypeComplex64), SQUEEZE_GPU_REG(kNumberTypeComplex128)};
+
 static std::vector<KernelAttr> reshape_valid_types = {KernelAttr()
                                                         .AddInputAttr(kNumberTypeInt8)
                                                         .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)
@@ -161,7 +176,7 @@ std::vector<KernelAttr> MemcpyGpuKernelMod::GetOpSupport() {
     {kFlatten, common_valid_types_with_single_input},
     {kFlattenGrad, common_valid_types_with_single_input},
     {kExpandDims, expand_dims_valid_types},
-    {kSqueeze, common_valid_types_with_single_input},
+    {kSqueeze, squeeze_valid_types},
   };
 
   auto iter = support_list_map.find(kernel_type_);

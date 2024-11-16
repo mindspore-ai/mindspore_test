@@ -21,7 +21,6 @@
 #include <algorithm>
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/unsqueeze.h"
-#include "infer/squeeze.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore::lite {

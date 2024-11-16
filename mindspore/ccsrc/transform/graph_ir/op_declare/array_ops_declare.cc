@@ -122,7 +122,8 @@ REG_ADPT_DESC(ExpandDims, kNameExpandDims, ADPT_DESC(ExpandDims))
 
 // Squeeze
 INPUT_MAP(Squeeze) = {{1, INPUT_DESC(x)}};
-ATTR_MAP(Squeeze) = {{"axis", ATTR_DESC(axis, AnyTraits<int64_t>(), AnyTraits<std::vector<int64_t>>())}};
+INPUT_ATTR_MAP(Squeeze) = {{2, ATTR_DESC(axis, AnyTraits<std::vector<int64_t>>())}};
+ATTR_MAP(Squeeze) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(Squeeze) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(Squeeze, prim::kPrimSqueeze->name(), ADPT_DESC(Squeeze))
 

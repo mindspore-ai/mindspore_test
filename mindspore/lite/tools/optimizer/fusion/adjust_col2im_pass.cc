@@ -26,7 +26,6 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
-#include "infer/squeeze.h"
 #include "infer/range_v2.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "nnacl/op_base.h"

@@ -35,6 +35,17 @@ TEST_F(TestViewSqueeze, View) {
   std::vector<int64_t> axis_data = {2};
   auto input_axis = MakeValue(axis_data);
 
+  // test size
+  std::vector<ValuePtr> inputs_squeeze_size;
+  inputs_squeeze_size.push_back(input_tensor);
+  ASSERT_TRUE(SqueezeCalc(prim, inputs_squeeze_size).empty());
+
+  // test nullptr
+  std::vector<ValuePtr> inputs_squeeze_null;
+  auto nullinput_tensor = nullptr;
+  inputs_squeeze_null.push_back(nullinput_tensor);
+  ASSERT_TRUE(SqueezeCalc(prim, inputs_squeeze_null).empty());
+
   // test type
   std::vector<ValuePtr> inputs_squeeze_type;
   inputs_squeeze_type.push_back(input_axis);
@@ -42,7 +53,7 @@ TEST_F(TestViewSqueeze, View) {
 
   std::vector<ValuePtr> inputs_squeeze;
   inputs_squeeze.push_back(input_tensor);
-  prim->AddAttr(kAxis, input_axis);
+  inputs_squeeze.push_back(input_axis);
   auto storage_info = SqueezeCalc(prim, inputs_squeeze);
   std::vector<int64_t> expect_shape({2, 1, 5});
 
@@ -50,10 +61,12 @@ TEST_F(TestViewSqueeze, View) {
   ASSERT_TRUE(storage_info[0]->is_contiguous);
   ASSERT_TRUE(storage_info[0]->shape == expect_shape);
 
+  std::vector<ValuePtr> inputs_squeeze_empty_axis;
   axis_data = {};
   input_axis = MakeValue(axis_data);
-  prim->AddAttr(kAxis, input_axis);
-  storage_info = SqueezeCalc(prim, inputs_squeeze);
+  inputs_squeeze_empty_axis.push_back(input_tensor);
+  inputs_squeeze_empty_axis.push_back(input_axis);
+  storage_info = SqueezeCalc(prim, inputs_squeeze_empty_axis);
   std::vector<int64_t> expect_shape_2({2, 5});
   ASSERT_TRUE(storage_info[0]->shape == expect_shape_2);
 }

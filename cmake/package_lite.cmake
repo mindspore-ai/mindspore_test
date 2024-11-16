@@ -109,7 +109,6 @@ function(__install_white_list_ops)
             ${TOP_DIR}/mindspore/ops/infer/space_to_depth.h
             ${TOP_DIR}/mindspore/ops/infer/sparse_softmax_cross_entropy_with_logits.h
             ${TOP_DIR}/mindspore/ops/infer/sparse_to_dense.h
-            ${TOP_DIR}/mindspore/ops/infer/squeeze.h
             ${TOP_DIR}/mindspore/ops/infer/squared_difference.h
             ${TOP_DIR}/mindspore/ops/infer/stack.h
             ${TOP_DIR}/mindspore/ops/infer/switch.h

@@ -1,0 +1,20 @@
+#operator squeeze
+squeeze:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: tuple[int]
+      type_cast: int
+      default: ()
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: Squeeze
+  view: True
+  dispatch:
+    enable: True
