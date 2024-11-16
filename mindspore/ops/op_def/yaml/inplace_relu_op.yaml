@@ -1,0 +1,20 @@
+#operator inplace_relu
+inplace_relu:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  class:
+    name: InplaceReLU
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceReLUAscend

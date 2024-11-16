@@ -537,6 +537,7 @@ from .nn_func import (
     sigmoid,
     logsigmoid,
     relu,
+    relu_,
     relu6,
     rrelu,
     conv3d,

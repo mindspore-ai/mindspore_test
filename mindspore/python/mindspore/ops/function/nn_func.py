@@ -41,8 +41,9 @@ from mindspore.ops.operations.nn_ops import ChannelShuffle
 from mindspore.ops.operations.nn_ops import TripletMarginLoss
 from mindspore.ops.operations._sequence_ops import TupleToTensor, TensorToTuple, ListToTensor
 from mindspore.common.api import _function_forbid_reuse
-from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, relu, fast_gelu, silu, elu, sigmoid, relu6, \
+from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, fast_gelu, silu, elu, sigmoid, relu6, \
     softmax_impl, swiglu, logsigmoid_op
+from mindspore.ops.auto_generate import relu_op, inplace_relu_op
 from mindspore.ops.auto_generate import group_norm_op, rms_norm, layer_norm_ext_op, batch_norm_ext_op, mse_loss_ext
 from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op, add_layernorm_v2_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
@@ -7760,6 +7761,99 @@ def lp_pool2d(x, norm_type, kernel_size, stride=None, ceil_mode=False):
         stride = kernel_size
     out = ops.avg_pool2d(x.pow(norm_type), kernel_size=kernel_size, stride=stride, padding=0, ceil_mode=ceil_mode)
     return ((sign(out) * ops.relu(ops.abs(out))) * (kernel_size[0] * kernel_size[1])).pow(1.0 / norm_type)
+
+
+def relu(input, inplace=False):
+    r"""
+    Computes ReLU (Rectified Linear Unit activation function) of input tensors element-wise.
+
+    It returns :math:`\max(input,\  0)` element-wise. Specially, the neurons with the negative output
+    will be suppressed and the active neurons will stay the same.
+
+    .. math::
+
+        ReLU(input) = (input)^+ = \max(0, input)
+
+    ReLU Activation Function Graph:
+
+    .. image:: ../images/ReLU.png
+        :align: center
+
+    warning:
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input Tensor.
+        inplace (bool, optional): Whether to use inplace mode, Defaults to ``False``.
+
+    Returns:
+        Tensor, with the same dtype and shape as the `input`.
+
+    Raises:
+        TypeError: If dtype of `input` is not Number type.
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> output = ops.relu(input)
+        >>> print(output)
+        [[0. 4. 0.]
+         [2. 0. 9.]]
+    """
+    if inplace:
+        return inplace_relu_op(input)
+    return relu_op(input)
+
+
+def relu_(input):
+    r"""
+    ReLuComputes ReLU (Rectified Linear Unit activation function) inplace of input tensors element-wise.
+
+    It returns :math:`\max(input,\  0)` element-wise. Specially, the neurons with the negative output
+    will be suppressed and the active neurons will stay the same.
+
+    .. math::
+
+        ReLU(input) = (input)^+ = \max(0, input)
+
+    ReLU Activation Function Graph:
+
+    .. image:: ../images/ReLU.png
+        :align: center
+
+    warning:
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input Tensor.
+
+    Returns:
+        Tensor, with the same dtype and shape as the `input`.
+
+    Raises:
+        TypeError: If dtype of `input` is not Number type.
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> ops.relu_(input)
+        >>> print(input)
+        [[0. 4. 0.]
+         [2. 0. 9.]]
+    """
+    return inplace_relu_op(input)
 
 
 def mse_loss(input, target, reduction='mean'):

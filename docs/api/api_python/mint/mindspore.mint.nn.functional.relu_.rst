@@ -1,9 +1,9 @@
-mindspore.mint.nn.functional.relu
-=================================
+mindspore.mint.nn.functional.relu\_
+===================================
 
-.. py:function:: mindspore.mint.nn.functional.relu(input, inplace=False)
+.. py:function:: mindspore.mint.nn.functional.relu_(input)
 
-    对输入Tensor逐元素计算线性修正单元激活函数（Rectified Linear Unit）值。
+    对输入Tensor逐元素原地计算线性修正单元激活函数（Rectified Linear Unit）值。
 
     返回 :math:`\max(input,\  0)` 的值。负值神经元将被设置为0，正值神经元将保持不变。
 
@@ -20,7 +20,6 @@ mindspore.mint.nn.functional.relu
 
     参数：
         - **input** (Tensor) - 输入Tensor。
-        - **inplace** (bool, 可选) - 是否采用原地更新模式，默认值为 ``False``。
 
     返回：
         Tensor，其shape和数据类型与输入一致。
