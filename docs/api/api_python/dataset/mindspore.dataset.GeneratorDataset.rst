@@ -24,6 +24,8 @@
         - **shard_id** (int, 可选) - 指定分布式训练时使用的分片ID号。默认值： ``None`` 。只有当指定了 `num_shards` 时才能指定此参数。
         - **python_multiprocessing** (bool，可选) - 启用Python多进程模式加速运算。默认值： ``True`` 。当传入 `source` 的Python对象的计算量很大时，开启此选项可能会有较好效果。
         - **max_rowsize** (int, 可选) - 指定在多进程之间复制数据时，共享内存分配的基本单位，单位为MB，总占用的共享内存会随着 ``num_parallel_workers`` 和 :func:`mindspore.dataset.config.set_prefetch_size` 增加而变大。如果设置为 ``-1`` ，共享内存将随数据大小动态分配。仅当参数 `python_multiprocessing` 设为 ``True`` 时，此参数才会生效。默认值： ``None`` ，动态分配共享内存。
+        - **batch_sampler** (Iterable，可选) - 与 `sampler` 类似，但每次返回1批索引，对应的数据将被合并为1个Batch。不可与 `num_samples` ，`shuffle` ，`num_shards` ，`shard_id` 和 `sampler` 等参数同时使用。默认值： ``None`` ，不使用批采样器。
+        - **collate_fn** (Callable[List[numpy.ndarray]]，可选) - 定义如何将数据列表合并为1个Batch。仅在使用了 `batch_sampler` 时有效。默认值：``None`` ，不指定合并函数。
 
     异常：
         - **RuntimeError** - Python对象 `source` 在执行期间引发异常。
@@ -34,6 +36,10 @@
         - **ValueError** - 指定了 `num_shards` 参数，但是未指定 `shard_id` 参数。
         - **ValueError** - 指定了 `shard_id` 参数，但是未指定 `num_shards` 参数。
         - **ValueError** - 如果 `shard_id` 取值不在[0, `num_shards` )范围。
+        - **TypeError** -  如果 `batch_sampler` 不为可迭代类型。
+        - **ValueError** - 如果 `batch_sampler` 与 `num_samples` ，`shuffle` ，`num_shards` ，`shard_id` 和 `sampler` 同时指定。
+        - **TypeError** - 如果 `collate_fn` 不为可调用函数。
+        - **ValueError** - 如果在指定 `collate_fn` 时没有指定 `batch_sampler` 。
 
     教程样例：
         - `使用数据Pipeline加载 & 处理数据集

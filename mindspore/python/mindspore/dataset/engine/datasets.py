@@ -403,12 +403,26 @@ class Dataset:
         parent = self.parent
         self.parent = []
         dataset = copy.deepcopy(self)
+        dataset = self.pre_process(dataset)
         global _OP_NAME
         _OP_NAME = Dataset._get_operator_id(dataset)
         ir_tree = dataset.parse_tree(getter_mode)
         self.parent = parent
         _init_device_info()
         return ir_tree, dataset
+
+    def pre_process(self, dataset):
+        """Insert batch operation for GeneratorDataset with batch_sampler."""
+        if hasattr(dataset, "has_batch_sampler") and dataset.has_batch_sampler:
+            original_parent = dataset.parent
+            dataset.parent = []
+            dataset = dataset.batch(batch_size=-1, num_parallel_workers=dataset.num_parallel_workers,
+                                    per_batch_map=dataset.collate_fn)
+            dataset.parent = original_parent
+        else:
+            for index in range(len(dataset.children)):
+                dataset.children[index] = self.pre_process(dataset.children[index])
+        return dataset
 
     def parse_tree(self, getter_mode=False):
         """

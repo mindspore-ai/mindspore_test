@@ -2399,8 +2399,6 @@ def test_generator_with_next_and_dataset_size_when_iter():
 
     count = 0
     for _ in dataset.create_dict_iterator():
-        if count > 2:
-            print("epoch: get_dataset_size: {}".format(dataset.get_dataset_size()), flush=True)
         count += 1
     assert count == 50
 
@@ -2431,7 +2429,6 @@ def test_generator_multiprocessing_with_fixed_handle():
     for i in range(5):
         count = 0
         for item in dataset.create_tuple_iterator(output_numpy=True, num_epochs=1):
-            print("count: {}, type: {}, shape: {}".format(count, item[0].dtype, item[0].shape))
             assert item[0].dtype == np.int32
             assert item[0].shape == (128, 128)
             assert len(item) == 2
@@ -2663,6 +2660,7 @@ def test_generator_with_seed_and_multiprocessing_mode():
 
     def add_column(data):
         return data, np.array(random.randint(1000, 2000))
+
     dataset = dataset.map(add_column, input_columns=["data"], output_columns=["data", "data2"], num_parallel_workers=2,
                           python_multiprocessing=True)
 
@@ -2924,6 +2922,184 @@ def test_generator_dataset_getitem_exception():
         assert "Index [-1] can not be a negative number." in str(err_info.value)
 
 
+class SimpleBatchSampler:
+    def __init__(self):
+        self.indices = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
+
+    def __iter__(self):
+        return iter(self.indices)
+
+
+def test_generator_with_batch_sampler():
+    """
+    Feature: BatchSampler
+    Description: Test GeneratorDataset with batch_sampler
+    Expectation: Result is as expected
+    """
+
+    class SimpleDataset:
+        def __init__(self):
+            self.data = [np.array([i], dtype=np.int32) for i in range(10)]
+
+        def __getitem__(self, index):
+            return self.data[index]
+
+        def __len__(self):
+            return len(self.data)
+
+    dataset = ds.GeneratorDataset(SimpleDataset(), column_names=["data"], batch_sampler=SimpleBatchSampler())
+
+    assert dataset.get_dataset_size() == 5
+    assert dataset.get_col_names() == ["data"]
+    assert dataset.get_batch_size() == -1
+
+    expected_res = [[[0], [1]], [[2], [3]], [[4], [5]], [[6], [7]], [[8], [9]]]
+    for i, data in enumerate(dataset.create_dict_iterator(output_numpy=True, num_epochs=1)):
+        np.testing.assert_array_equal(data["data"], np.array(expected_res[i], dtype=np.int32))
+
+
+def test_generator_with_collate_fn():
+    """
+    Feature: BatchSampler
+    Description: Test GeneratorDataset with batch_sampler and collate_fn
+    Expectation: Result is as expected
+    """
+
+    class DictDataset:
+        def __init__(self):
+            self.data = [{"data": np.array([i], dtype=np.int32)} for i in range(10)]
+
+        def __getitem__(self, index):
+            return self.data[index]
+
+        def __len__(self):
+            return len(self.data)
+
+    def collate_fn(batch):
+        batch = [data["data"] for data in batch]
+        return np.stack(batch, axis=0)
+
+    dataset = ds.GeneratorDataset(DictDataset(), column_names=["data"],
+                                  batch_sampler=SimpleBatchSampler(), collate_fn=collate_fn)
+
+    expected_res = [[[0], [1]], [[2], [3]], [[4], [5]], [[6], [7]], [[8], [9]]]
+    for i, data in enumerate(dataset.create_dict_iterator(output_numpy=True, num_epochs=1)):
+        np.testing.assert_array_equal(data["data"], np.array(expected_res[i], dtype=np.int32))
+
+
+def test_generator_with_batch_sampler_in_recovery_mode():
+    """
+    Feature: BatchSampler
+    Description: Test GeneratorDataset with batch_sampler and collate_fn in recovery mode
+    Expectation: Result is as expected
+    """
+
+    class RandomBatchSampler:
+        def __init__(self):
+            self.indices = [[12, 1, 5], [10], [11, 8, 6, 7], [2, 0], [4], [3, 9]]
+            self.generator = np.random.default_rng(0)
+
+        def __iter__(self):
+            self.generator.shuffle(self.indices)
+            return iter(self.indices)
+
+    class MyDataset:
+        def __init__(self):
+            self.data = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+
+        def __getitem__(self, index):
+            return self.data[index]
+
+        def __len__(self):
+            return len(self.data)
+
+    def collate_fn(batch):
+        return {"data": np.stack(batch, 0)}
+
+    def get_value_from_dict(data):
+        return data["data"]
+
+    dataset1 = ds.GeneratorDataset(MyDataset(), column_names=["data"],
+                                   batch_sampler=RandomBatchSampler(), collate_fn=collate_fn)
+    dataset2 = ds.GeneratorDataset(MyDataset(), column_names=["data"],
+                                   batch_sampler=RandomBatchSampler(), collate_fn=collate_fn)
+    dataset = dataset1 + dataset2
+    dataset = dataset.map(get_value_from_dict, input_columns=["data"])
+
+    dataset_size = dataset.get_dataset_size()
+    assert dataset_size == 12
+
+    num_epochs = 3
+
+    # iterate for the first time to save expected result
+    iterator1 = dataset.create_tuple_iterator(output_numpy=True, num_epochs=num_epochs)
+    res1 = []
+    for _ in range(num_epochs):
+        for data in iterator1:
+            res1.append(data[0].tolist())
+
+    # recovery from the second epoch and check if the result is as expected
+    init_step = dataset_size
+    dataset.set_init_step(init_step)
+    iterator2 = dataset.create_tuple_iterator(output_numpy=True, num_epochs=num_epochs)
+    res2 = []
+    for _ in range(num_epochs - init_step // dataset_size):
+        for data in iterator2:
+            res2.append(data[0].tolist())
+
+    assert res1[init_step:] == res2
+
+
+@pytest.mark.parametrize("kwargs", ({"num_samples": 1}, {"shuffle": True},
+                                    {"num_shards": 8, "shard_id": 0},
+                                    {"sampler": ds.RandomSampler()}))
+def test_generator_batch_sampler_exclusive_with_other_param(kwargs):
+    """
+    Feature: BatchSampler
+    Description: Test GeneratorDataset with batch_sampler and some exclusive params
+    Expectation: Raise error as expected
+    """
+    with pytest.raises(ValueError) as e:
+        _ = ds.GeneratorDataset(source=DatasetGenerator(), column_names=["data"],
+                                batch_sampler=SimpleBatchSampler(), **kwargs)
+    assert ("batch_sampler is mutually exclusive with num_samples, shuffle, num_shards, "
+            "shard_id and sampler") in str(e.value)
+
+
+def test_generator_invalid_batch_sampler():
+    """
+    Feature: BatchSampler
+    Description: Test GeneratorDataset with invalid batch_sampler
+    Expectation: Raise error as expected
+    """
+    with pytest.raises(TypeError) as e:
+        _ = ds.GeneratorDataset(source=DatasetGenerator(), column_names=["data"],
+                                batch_sampler=1)
+    assert "batch_sampler should have __getitem__ or __iter__ method" in str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        _ = ds.GeneratorDataset(source=IterableDataset(), column_names=["data"],
+                                batch_sampler=SimpleBatchSampler())
+    assert "batch_sampler is not supported if source does not have attribute '__getitem__'" in str(e.value)
+
+
+def test_generator_invalid_collate_fn():
+    """
+    Feature: BatchSampler
+    Description: Test GeneratorDataset with invalid collate_fn
+    Expectation: Raise error as expected
+    """
+    with pytest.raises(ValueError) as e:
+        _ = ds.GeneratorDataset(source=DatasetGenerator(), column_names=["data"],
+                                collate_fn=lambda batch: batch)
+    assert "collate_fn can be specified only when batch_sampler is set" in str(e.value)
+
+    with pytest.raises(TypeError) as e:
+        _ = ds.GeneratorDataset(source=DatasetGenerator(), column_names=["data"],
+                                batch_sampler=SimpleBatchSampler(), collate_fn=[])
+    assert "collate_fn should be callable" in str(e.value)
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -2998,3 +3174,9 @@ if __name__ == "__main__":
     test_generator_dataset_getitem_schema()
     test_generator_dataset_getitem_two_level_pipeline()
     test_generator_dataset_getitem_exception()
+    test_generator_with_batch_sampler()
+    test_generator_with_collate_fn()
+    test_generator_with_batch_sampler_in_recovery_mode()
+    test_generator_batch_sampler_exclusive_with_other_param({"num_samples": 1})
+    test_generator_invalid_batch_sampler()
+    test_generator_invalid_collate_fn()

@@ -73,7 +73,7 @@ void BatchNode::Print(std::ostream &out) const {
 
 Status BatchNode::ValidateParams() {
   RETURN_IF_NOT_OK(DatasetNode::ValidateParams());
-  if (batch_size_ <= 0) {
+  if (batch_size_ != -1 && batch_size_ <= 0) {
     std::string err_msg = "Batch: 'batch_size' should be positive integer, but got: " + std::to_string(batch_size_);
     LOG_AND_RETURN_STATUS_SYNTAX_ERROR(err_msg);
   }

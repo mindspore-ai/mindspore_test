@@ -16,6 +16,7 @@
 #ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_DATASETOPS_SOURCE_SAMPLER_PYTHON_SAMPLER_H_
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_DATASETOPS_SOURCE_SAMPLER_PYTHON_SAMPLER_H_
 
+#include <deque>
 #include <limits>
 #include <memory>
 
@@ -50,6 +51,11 @@ class PythonSamplerRT : public SamplerRT {
   // @param int32_t workerId - not meant to be used
   // @return Status The status code returned
   Status GetNextSample(TensorRow *out) override;
+
+  /// \brief Get batch sizes of this epoch for batch sampler.
+  /// \param[in] batch_sizes The list of batch sizes of this epoch.
+  /// \return Status The status code.
+  Status GetBatchSizes(std::deque<int64_t> *batch_sizes);
 
   // Printer for debugging purposes.
   // @param out - output stream to write to

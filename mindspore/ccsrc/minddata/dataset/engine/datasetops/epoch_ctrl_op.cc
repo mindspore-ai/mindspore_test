@@ -47,6 +47,11 @@ Status EpochCtrlOp::GetNextRow(TensorRow *row) {
 
   RETURN_IF_NOT_OK(child_[0]->GetNextRow(row));
 
+  if (row->eob()) {
+    MS_LOG(WARNING) << "EpochCtrlOp got EOB, skip it.";
+    RETURN_IF_NOT_OK(child_[0]->GetNextRow(row));
+  }
+
   // Only intercept EOE for EoeReceived processing, after that the EOE is forwarded to next op.
   // Other TensorRows containing data or EOF will simply be forwarded.
   // EOF can simply be forwarded because this op does not spawn any thread, thus does not require clean up.
