@@ -846,8 +846,8 @@ class TensorAssignWithSlice(Cell):
         a[::] = self.c
         a[::, ::] = b
         a[::, ::] = self.c
-        a[2:3:, 0:, 4:1:-1] = b
-        a[2:3:, 0:, 4:1:-1] = self.c
+        a[2:3:, 0:, 2:5:1] = b
+        a[2:3:, 0:, 2:5:1] = self.c
         z = a + ck
         return z
 
@@ -871,8 +871,8 @@ def test_tensor_assign_slice_value_1():
     a[::] = 2.0
     a[::, ::] = b
     a[::, ::] = 2.0
-    a[2:3:, 0:, 4:1:-1] = b
-    a[2:3:, 0:, 4:1:-1] = 2.0
+    a[2:3:, 0:, 2:5:1] = b
+    a[2:3:, 0:, 2:5:1] = 2.0
     z = a + ck
     assert np.all(z == out.asnumpy())
 

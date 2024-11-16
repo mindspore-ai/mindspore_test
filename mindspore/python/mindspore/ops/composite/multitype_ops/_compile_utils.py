@@ -17,7 +17,7 @@
 from __future__ import absolute_import
 from enum import IntEnum
 
-
+from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops import functional as F
 from mindspore.ops import operations as P
@@ -35,6 +35,8 @@ from mindspore import ops
 from mindspore.ops.primitive import _primexpr
 from mindspore import _checkparam as validator
 from mindspore.common._stub_tensor import _convert_stub
+from mindspore.ops.auto_generate.gen_ops_prim import select_ext_op, inner_strided_slice_op, inplace_copy_op, \
+    index_op, inplace_index_put_op
 
 slice_get_item = SliceGetItem()
 hyper_map = base.HyperMap()
@@ -45,8 +47,14 @@ is_parameter = IsParameter()
 getitem_tensor_index_info = GetitemTensorIndexInfo(const_utils.is_ascend())
 setitem_tensor_index_info = SetitemTensorIndexInfo(const_utils.is_ascend())
 
-selevt_view = SelectView()
+select_view = SelectView()
 copy_with_slice = CopyWithSlice()
+
+tensor_1d = Tensor([0], dtype=mstype.int64)
+empty_tensor_1d = Tensor_(shape=(0,), dtype=mstype.int64)
+empty_tensor_9d = Tensor_(shape=(0,)*9, dtype=mstype.int64)
+
+
 
 def strided_slice(data, begin_strides, end_strides, step_strides, begin_mask=0, end_mask=0, ellipsis_mask=0,
                   new_axis_mask=0, shrink_axis_mask=0):
@@ -148,7 +156,7 @@ def data_update_by_ops(transfer_type, arg, data, new_index, origin_data, value=N
     elif transfer_type == ValueTransferType.kSelect:
         data = F.select(Tensor(new_index), value, data)
     elif transfer_type == ValueTransferType.kSelectView:
-        data = selevt_view(data, arg[0], arg[1])
+        data = select_view(data, arg[0], arg[1])
     elif transfer_type == ValueTransferType.kCopyView:
         value = _broadcast(F.shape(data), F.cast(value, F.dtype(data)))
         data = copy_with_slice(data, value)
@@ -196,14 +204,14 @@ def value_update(transfer_types, args, data, value):
     return value
 
 
-def _tensor_getitem(self, index):
+def _tensor_getitem_origin(self, index):
     """Handle tensor getitem"""
     new_index, tensor_update_types, tensor_update_args = getitem_tensor_index_info(
         self, index)
     return data_update(tensor_update_types, tensor_update_args, self, new_index)
 
 
-def _tensor_setitem(self, index, value):
+def _tensor_setitem_origin(self, index, value):
     """Handle tensor setitem"""
     setitem_info = setitem_tensor_index_info(self, index, value)
     new_index = setitem_info[0]
@@ -218,8 +226,211 @@ def _tensor_setitem(self, index, value):
     return output
 
 
-setattr(tensor_operator_registry, "__getitem__", _tensor_getitem)
-setattr(tensor_operator_registry, "__setitem__", _tensor_setitem)
+setattr(tensor_operator_registry, "_tensor_getitem_origin", _tensor_getitem_origin)
+setattr(tensor_operator_registry, "_tensor_setitem_origin", _tensor_setitem_origin)
+
+
+def _record_tensor_index(index, remain_indexes, dim):
+    """Record indexes remained to be used by aclnnIndex/aclnnIndexPut"""
+    if len(remain_indexes) > dim:
+        remain_indexes[dim] = index
+        return remain_indexes
+
+    while dim > len(remain_indexes):
+        # use empty_tensor with dim_num 9 to indicate unused dim
+        remain_indexes.append(empty_tensor_9d)
+
+    remain_indexes.append(index)
+    return remain_indexes
+
+
+def _count_indexed_dims(indexes):
+    """Count indexed dims"""
+    count = 0
+    for index in indexes:
+        if isinstance(index, Tensor):
+            if index.dtype == mstype.bool_:
+                count += index.ndim
+            else:
+                count += 1
+        elif not isinstance(index, (type(None), type(...), bool)):
+            count += 1
+    return count
+
+
+def _do_select(self: Tensor, dim: int, index: int, dim_index: int, self_shape: list):
+    """call select view operator"""
+    dim_size = self_shape[dim]
+    if index >= dim_size or index < -dim_size:
+        raise IndexError(f"Index {index} is out of bounds for dimension {dim_index} with size {dim_size}")
+    index = index + dim_size if index < 0 else index
+    return select_ext_op(self, dim, index)
+
+
+def _do_slice(self: Tensor, dim: int, index: slice, self_shape: list):
+    """call slice view operator"""
+    def _get_index(index, default):
+        if index is None:
+            return default
+        if isinstance(index, Tensor):
+            return index.__index__()
+        return index
+
+    def _count_slice(start, end, step):
+        if start >= end:
+            return 0
+        count = (end - start) // step
+        if (end - start) % step != 0:
+            count += 1
+        return count
+
+    step = _get_index(index.step, 1)
+    if step <= 0:
+        raise ValueError("slice step must be positive")
+    start = _get_index(index.start, 0)
+    end = _get_index(index.stop, self_shape[dim])
+    count = _count_slice(start, end, step)
+    if start == 0 and end == self_shape[dim] and step == 1:
+        return self, count
+    return inner_strided_slice_op(self, [0] * dim + [start], self_shape[0:dim] + [end], [1] * dim + [step]), count
+
+
+def _process_dim_in_multi_dim_index(prev_result, orig_tensor, index, dim, indexed_dims, dim_index, remain_indexes,
+                                    prev_shape):
+    """Process dim in multi dim index"""
+    if isinstance(index, bool):
+        result = F.expand_dims(prev_result, dim)
+        index_for_bool = tensor_1d if index else empty_tensor_1d
+        _record_tensor_index(index_for_bool, remain_indexes, dim)
+        prev_shape.insert(dim, 1)
+        dim += 1
+        return result, dim, remain_indexes, prev_shape
+    if isinstance(index, int):
+        result = _do_select(prev_result, dim, index, dim_index, prev_shape)
+        del prev_shape[dim]
+        return result, dim, remain_indexes, prev_shape
+    if isinstance(index, slice):
+        result, count = _do_slice(prev_result, dim, index, prev_shape)
+        prev_shape[dim] = count
+        dim += 1
+        return result, dim, remain_indexes, prev_shape
+    if isinstance(index, type(...)):
+        dim += (orig_tensor.ndim - indexed_dims)
+        return prev_result, dim, remain_indexes, prev_shape
+    if index is None:
+        result = F.expand_dims(prev_result, dim)
+        prev_shape.insert(dim, 1)
+        dim += 1
+        return result, dim, remain_indexes, prev_shape
+    if isinstance(index, Tensor):
+        result = prev_result
+        if index.ndim == 0 and index.dtype in mstype.int_type + mstype.uint_type + (mstype.bool_,):
+            if index.dtype in mstype.int_type + mstype.uint_type:
+                result = _do_select(prev_result, dim, index.item(), dim_index, prev_shape)
+                del prev_shape[dim]
+                return result, dim, remain_indexes, prev_shape
+            # process index with Tensor bool type
+            result = F.expand_dims(prev_result, dim)
+            index_for_bool = tensor_1d if index else empty_tensor_1d
+            _record_tensor_index(index_for_bool, remain_indexes, dim)
+            prev_shape.insert(dim, 1)
+            dim += 1
+            return result, dim, remain_indexes, prev_shape
+        _record_tensor_index(index, remain_indexes, dim)
+        dim += 1
+        return result, dim, remain_indexes, prev_shape
+    raise IndexError(f"Invalid tensor index type {index}")
+
+
+def _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims):
+    """Process indexes in tuple"""
+    self_viewed = self
+    self_viewed_shape = list(self.shape)
+    dim = 0
+    for i, index in enumerate(indexes):
+        if isinstance(index, (list, tuple)):
+            index = Tensor(index)
+        self_viewed, dim, remain_indexes, self_viewed_shape = _process_dim_in_multi_dim_index(
+            self_viewed, self, index, dim, indexed_dims, i, remain_indexes, self_viewed_shape)
+    return self_viewed, remain_indexes
+
+
+def _wrap_index_to_tuple(index):
+    """Wrap index to tuple"""
+    if isinstance(index, tuple):
+        return index
+    if isinstance(index, list):
+        if len(index) < 32 and any(isinstance(i, (Tensor, list, tuple, slice, type(None), type(...))) for i in index):
+            return tuple(index)
+    return (index,)
+
+
+def _tensor_getitem(self, index):
+    """Handle tensor getitem"""
+    if isinstance(index, bool):
+        self_viewed = F.expand_dims(self, 0)
+        index_for_bool = tensor_1d if index else empty_tensor_1d
+        return index_op(self_viewed, [index_for_bool,])
+    if isinstance(index, int):
+        return _do_select(self, 0, index, 0, list(self.shape))
+    if isinstance(index, slice):
+        result, _ = _do_slice(self, 0, index, list(self.shape))
+        return result
+    if index is None:
+        return F.expand_dims(self, 0)
+    if isinstance(index, type(...)):
+        return self
+    indexes = _wrap_index_to_tuple(index)
+    indexed_dims = _count_indexed_dims(indexes)
+    if self.ndim < indexed_dims:
+        raise IndexError(f"too many indices for tensor with dimension size {self.ndim}")
+    remain_indexes = []
+    self_viewed, remain_indexes = _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims)
+    if not remain_indexes:
+        return self_viewed
+    return index_op(self_viewed, remain_indexes)
+
+
+def _tensor_setitem(self, index, value):
+    """Handle tensor setitem"""
+    if not isinstance(value, Tensor):
+        if isinstance(value, (bool, int, float)):
+            value = Tensor(value, dtype=self.dtype)
+        else:
+            raise TypeError(f"Can't assign a {type(value)} to a {self.dtype}.")
+
+    if isinstance(index, bool) and index is False:
+        return self
+    if isinstance(index, type(...)):
+        inplace_copy_op(self, value)
+        return self
+    if index is None or (isinstance(index, bool) and index is True):
+        self_viewed = F.expand_dims(self, 0)
+        inplace_copy_op(self_viewed, value)
+        return self
+    if isinstance(index, int):
+        self_viewed = _do_select(self, 0, index, 0, list(self.shape))
+        inplace_copy_op(self_viewed, value)
+        return self
+    if isinstance(index, slice):
+        self_viewed, _ = _do_slice(self, 0, index, list(self.shape))
+        inplace_copy_op(self_viewed, value)
+        return self
+    indexes = _wrap_index_to_tuple(index)
+    indexed_dims = _count_indexed_dims(indexes)
+    if self.ndim < indexed_dims:
+        raise IndexError(f"too many indices for tensor with dimension size {self.ndim}")
+    remain_indexes = []
+    self_viewed, remain_indexes = _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims)
+    if not remain_indexes:
+        inplace_copy_op(self_viewed, value)
+        return self
+    inplace_index_put_op(self_viewed, remain_indexes, value)
+    return self
+
+
+setattr(tensor_operator_registry, "_tensor_getitem", _tensor_getitem)
+setattr(tensor_operator_registry, "_tensor_setitem", _tensor_setitem)
 
 
 def _tensor_add(self, other):

@@ -142,6 +142,10 @@ class TensorPy {
   // return [py::array] Slice Data of the tensor at slice_index.
   static py::array AsNumpyOfSlice(const Tensor &tensor, const int32_t param_key, int slice_index);
 
+  static py::object TensorGetItem(const py::object &self, const py::object &py_index);
+
+  static py::object TensorSetItem(const py::object &self, const py::object &py_index, const py::object &py_value);
+
   static py::tuple GetPyTupleShape(const Tensor &tensor);
 
   static py::tuple GetPyTupleStrides(const Tensor &tensor);
