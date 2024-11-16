@@ -11,20 +11,20 @@ batch_norm_reduce_grad:
       dtype: tensor
     weight:
       dtype: tensor
-    inputG:
+    input_g:
       dtype: bool
-    weightG:
+    weight_g:
       dtype: bool
-    biasG:
+    bias_g:
       dtype: bool
   returns:
-    sumDyOut:
+    sum_dy_out:
       dtype: tensor
-    sumDyXmuOut:
+    sum_dy_xmu_out:
       dtype: tensor
-    gradWeightOut:
+    grad_weight_out:
       dtype: tensor
-    gradBiasOut:
+    grad_bias_out:
       dtype: tensor
   function:
     disable: True

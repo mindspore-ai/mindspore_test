@@ -24,6 +24,8 @@ batch_norm_gather_stats_with_counts:
       default: None
   labels:
     side_effect_mem: True
+  args_signature:
+    rw_write: running_mean, running_var
   returns:
     mean_all:
       dtype: tensor

@@ -18,6 +18,10 @@ batch_norm_elemt:
     eps:
       dtype: float
       default: 1e-5
+  labels:
+    side_effect_mem: True
+  args_signature:
+    rw_write: weight, bias
   returns:
     output:
       dtype: tensor

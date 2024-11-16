@@ -105,6 +105,7 @@ from mindspore.nn.layer import PReLUExt as PReLU
 # 40
 from mindspore.mint.nn.layer.normalization import GroupNorm
 from mindspore.mint.nn.layer.normalization import LayerNorm
+from mindspore.mint.nn.layer.normalization import SyncBatchNorm
 # 41
 
 # 42
@@ -797,7 +798,7 @@ __all__ = [
     # 63
 
     # 64
-
+    'SyncBatchNorm',
     # 65
 
     # 66
