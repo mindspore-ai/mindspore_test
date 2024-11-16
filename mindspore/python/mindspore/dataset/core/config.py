@@ -51,7 +51,8 @@ __all__ = ['set_sending_batches', 'load', '_init_device_info',
            'set_fast_recovery', 'get_fast_recovery',
            'set_debug_mode', 'get_debug_mode',
            'set_error_samples_mode', 'get_error_samples_mode', 'ErrorSamplesMode',
-           'set_multiprocessing_timeout_interval', 'get_multiprocessing_timeout_interval']
+           'set_multiprocessing_timeout_interval', 'get_multiprocessing_timeout_interval',
+           'set_iterator_mode', 'get_iterator_mode']
 
 INT32_MAX = 2147483647
 UINT32_MAX = 4294967295
@@ -1093,3 +1094,41 @@ def get_error_samples_mode():
         >>> error_samples_mode = ds.config.get_error_samples_mode()
     """
     return _CDE_TO_PYTHON_ERROR_SAMPLES_MODE.get(_config.get_error_samples_mode())
+
+
+def set_iterator_mode(do_copy=True, parallel_convert=False):
+    """
+    Select dataset iterator optimization strategy.
+
+    Args:
+        do_copy (bool): Whether dataset iterator creates a Tensor from numpy.ndarray without copy. Default: "True".
+        parallel_convert (bool): Whether dataset iterator starts a thread to organize Tensors to output.
+            Default: "False".
+
+    Raises:
+        TypeError: If `do_copy` is not a boolean data type.
+        TypeError: If `parallel_convert` is not a boolean data type.
+
+    Examples:
+        >>> import mindspore.dataset as ds
+        >>> ds.config.set_iterator_mode(do_copy=False, parallel_convert=False)
+    """
+    type_check(do_copy, (bool,), "do_copy")
+    type_check(parallel_convert, (bool,), "parallel_convert")
+    _config.set_iterator_mode(do_copy, parallel_convert)
+
+
+def get_iterator_mode():
+    """
+    Get dataset iterator mode indicate iterator optimization strategy.
+    If `set_iterator_mode` is never called before, `do_copy` default to "True", `parallel_convert` default to "False".
+
+    Returns:
+        dict, iterator mode dictionary contains the value of `do_copy` and `parallel_convert`.
+
+    Examples:
+        >>> import mindspore.dataset as ds
+        >>> do_copy = ds.config.get_iterator_mode()['do_copy']
+        >>> do_copy = ds.config.get_iterator_mode()['parallel_convert']
+    """
+    return _config.get_iterator_mode()
