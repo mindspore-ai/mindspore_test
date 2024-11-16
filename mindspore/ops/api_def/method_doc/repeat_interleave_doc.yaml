@@ -2,15 +2,15 @@ repeat_interleave:
   description: |
     repeat_interleave(repeats, dim=None) -> Tensor
 
-    Repeat elements of a tensor along an dim, like `numpy.repeat`.
+    Repeat elements of a tensor along a dim, like `numpy.repeat`.
 
     .. note::
         The self tensor to repeat values for. Must be of type: float16, float32, 
-            int8, uint8, int16, int32, or int64.
+        int8, uint8, int16, int32, or int64.
 
     Args:
         repeats (Union[int, tuple, list, Tensor]): The number of times to repeat, must be positive.
-        dim (int, optional): The dim along which to repeat, Default: ``None``. if dims is None,
+        dim (int, optional): The dim along which to repeat, Default: ``None``. if dim is None,
             the input Tensor will be flattened and the output will alse be flattened.
 
     Returns:

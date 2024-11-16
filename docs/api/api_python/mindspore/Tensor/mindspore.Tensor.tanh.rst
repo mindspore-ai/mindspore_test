@@ -12,7 +12,7 @@ mindspore.Tensor.tanh
 
     Tanh函数图：
 
-    .. image:: ../images/Tanh.png
+    .. image:: ../../images/Tanh.png
         :align: center
 
     返回：

@@ -10,10 +10,10 @@ erf:
 
         .. note::
             The input tensor `self` of Gaussian error function. :math:`x` in the following formula.
-                Supported dtypes: 
+            Supported dtypes: 
 
-                - GPU/CPU: float16, float32, float64.
-                - Ascend: float16, float32, float64, int64, bool.
+            - GPU/CPU: float16, float32, float64.
+            - Ascend: float16, float32, float64, int64, bool.
 
         Returns:
             Tensor, has the same shape as the `self`. 
@@ -22,8 +22,8 @@ erf:
 
         :raise TypeError: If `self` is not a Tensor.
         :raise TypeError:
-                * GPU/CPU: If dtype of `self` is not float16, float32, float64.
-                * Ascend: If dtype of `self` is not float16, float32, float64, int64, bool.
+            * GPU/CPU: If dtype of `self` is not float16, float32, float64.
+            * Ascend: If dtype of `self` is not float16, float32, float64, int64, bool.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

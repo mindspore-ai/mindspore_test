@@ -12,8 +12,8 @@ mindspore.Tensor.erf
     .. note::
         高斯误差函数的输入Tensor。上述公式中的 :math:`x` 。支持数据类型：
 
-          - Ascend： float16、float32、int64、bool。
-          - GPU/CPU： float16、float32、float64。
+        - Ascend： float16、float32、int64、bool。
+        - GPU/CPU： float16、float32、float64。
 
     返回：
         Tensor。当输入为 int64、bool 时，返回值类型为float32。
@@ -23,5 +23,5 @@ mindspore.Tensor.erf
         - **TypeError** - `self` 不是Tensor。
         - **TypeError** - `self` 的数据类型不是如下类型：
 
-          - Ascend： float16、float32、int64、bool。
-          - GPU/CPU： float16、float32、float64。
+            - Ascend： float16、float32、int64、bool。
+            - GPU/CPU： float16、float32、float64。
