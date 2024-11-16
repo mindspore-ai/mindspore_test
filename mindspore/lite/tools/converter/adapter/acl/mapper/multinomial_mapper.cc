@@ -52,6 +52,7 @@ STATUS MultinomialMapper::Mapper(const CNodePtr &cnode) {
   }
   if (src_prim->HasAttr(ops::kSeed2)) {
     auto seed2_attr = src_prim->GetAttr(ops::kSeed2);
+    CHECK_NULL_RETURN(seed2_attr);
     dst_prim->AddAttr(ops::kSeed2, seed2_attr);
   }
   auto func_graph = cnode->func_graph();

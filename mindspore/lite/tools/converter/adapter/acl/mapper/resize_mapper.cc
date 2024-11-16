@@ -45,6 +45,7 @@ constexpr auto kNameSizeFour = 4;
 }  // namespace
 
 STATUS ResizeMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   if (cnode->size() != kNameInputNum) {
     MS_LOG(WARNING) << "Input of resize must be " << kNameInputNum << ", real size: " << cnode->size() << ", cnode "
                     << cnode->fullname_with_scope();

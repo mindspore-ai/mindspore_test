@@ -30,6 +30,7 @@ const size_t kNumInputIndex2 = 2;
 const size_t kNumCnodeInputIndex = 1;
 }  // namespace
 STATUS TriuMapper::Mapper(const CNodePtr &cnode) {
+  MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_ERROR, "cnode is nullptr.");
   if (cnode->size() != kNumInputSize) {
     MS_LOG(ERROR) << "cnode input size is " << cnode->size() << ", not equal " << kNumInputSize;
     return RET_ERROR;

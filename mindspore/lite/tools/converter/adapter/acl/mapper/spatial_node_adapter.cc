@@ -76,6 +76,7 @@ static STATUS AdapteNodeWithDynamicInput(const CNodePtr &cnode) {
     return lite::RET_OK;
   }
   auto tuple_node = in_node->cast<CNodePtr>();
+  CHECK_NULL_RETURN(tuple_node);
   std::vector<AnfNodePtr> new_inputs = {cnode->inputs()[0]};
   new_inputs.insert(new_inputs.end(), tuple_node->inputs().begin() + 1, tuple_node->inputs().end());
   cnode->set_inputs(new_inputs);
@@ -89,6 +90,7 @@ static STATUS AdapteNodeWithDynamicInput(const CNodePtr &cnode) {
 }
 
 STATUS AdapteMuitiInputNode(const FuncGraphPtr &func_graph) {
+  CHECK_NULL_RETURN(func_graph);
   auto cnodes = func_graph->GetOrderedCnodes();
   for (const auto &cnode : cnodes) {
     MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_ERROR, "Cnode is nullptr.");
@@ -101,6 +103,8 @@ STATUS AdapteMuitiInputNode(const FuncGraphPtr &func_graph) {
 }
 
 CNodePtr CreateTupleGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &input_cnode) {
+  MS_CHECK_TRUE_MSG(func_graph != nullptr, nullptr, "func graph failed");
+  MS_CHECK_TRUE_MSG(input_cnode != nullptr, nullptr, "input cnode failed");
   CNodePtr get_item_cnode = nullptr;
   auto tuple_get_item_prim_ptr = std::make_shared<ops::TupleGetItem>();
   MS_CHECK_TRUE_MSG(tuple_get_item_prim_ptr != nullptr, nullptr, "New TupleGetItem failed");
@@ -175,6 +179,7 @@ static STATUS AdapteNodeWithMultiOutputs(const FuncGraphPtr &func_graph, const C
 }
 
 STATUS AdapteMuitiOutputNode(const FuncGraphPtr &func_graph, const FuncGraphManagerPtr &manager) {
+  CHECK_NULL_RETURN(func_graph);
   auto cnodes = func_graph->GetOrderedCnodes();
   for (const auto &cnode : cnodes) {
     MS_CHECK_TRUE_MSG(cnode != nullptr, lite::RET_ERROR, "Cnode is nullptr.");

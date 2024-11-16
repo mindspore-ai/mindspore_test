@@ -66,6 +66,7 @@ STATUS MaxPoolFusionMapper::Mapper(const CNodePtr &cnode) {
 }
 
 bool MaxPoolFusionMapper::IsKernelSizeValid(const PrimitivePtr &prim) const {
+  CHECK_NULL_RETURN(prim);
   auto attr_val = prim->GetAttr(ops::kKernelSize);
   if (attr_val == nullptr) {
     return true;

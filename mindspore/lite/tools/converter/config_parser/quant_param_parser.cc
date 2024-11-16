@@ -61,6 +61,7 @@ int QuantParamParser::ParseFilter(const CommonQuantString &common_quant_string, 
 }
 
 int QuantParamParser::ParseBitNum(const CommonQuantString &common_quant_string, quant::CommonQuantParam *common_quant) {
+  MS_CHECK_TRUE_MSG(common_quant != nullptr, RET_ERROR, "common_quant is nullptr.");
   if (!common_quant_string.bit_num.empty() && !ConvertIntNum(common_quant_string.bit_num, &common_quant->bit_num)) {
     MS_LOG(ERROR) << "INPUT ILLEGAL: bit_num should be a valid number.";
     return RET_INPUT_PARAM_INVALID;
@@ -86,6 +87,7 @@ int QuantParamParser::ParseBitNum(const CommonQuantString &common_quant_string, 
 
 int QuantParamParser::ParseEnableEncode(const CommonQuantString &common_quant_string,
                                         quant::CommonQuantParam *common_quant) {
+  MS_CHECK_TRUE_MSG(common_quant != nullptr, RET_ERROR, "common_quant is nullptr.");
   if (!common_quant_string.enable_encode.empty() &&
       !ConvertBool(common_quant_string.enable_encode, &common_quant->enable_encode)) {
     MS_LOG(ERROR) << "INPUT ILLEGAL: enable_encode should be true or false.";
@@ -142,6 +144,7 @@ int QuantParamParser::ParseCommonQuant(const CommonQuantString &common_quant_str
 
 int QuantParamParser::ParseMixedBitWeightQuant(const MixedBitWeightQuantString &mixed_bit_weight_quant_string,
                                                quant::MixedBitWeightQuantParam *mixed_bit_weight_quant) {
+  MS_CHECK_TRUE_MSG(mixed_bit_weight_quant != nullptr, RET_ERROR, "mixed_bit_weight_quant is nullptr.");
   if (!mixed_bit_weight_quant_string.init_scale.empty() &&
       !ConvertDoubleNum(mixed_bit_weight_quant_string.init_scale, &mixed_bit_weight_quant->init_scale)) {
     MS_LOG(ERROR) << "INPUT ILLEGAL: init_scale should be a valid number.";
@@ -177,6 +180,7 @@ int QuantParamParser::ParseMixedBitWeightQuant(const MixedBitWeightQuantString &
 }
 
 int QuantParamParser::ParseFullQuant(const FullQuantString &full_quant_string, quant::FullQuantParam *full_quant) {
+  MS_CHECK_TRUE_MSG(full_quant != nullptr, RET_ERROR, "full_quant is nullptr.");
   if (!full_quant_string.activation_quant_method.empty() &&
       ParseActivationQuantizedMethod(full_quant_string.activation_quant_method, &full_quant->activation_quant_method) !=
         RET_OK) {
@@ -232,6 +236,7 @@ int QuantParamParser::ParseQuantType(const std::string &quant_type_str, quant::Q
 }
 
 int QuantParamParser::ParseTargetDevice(const std::string &target_device_str, quant::TargetDevice *target_device) {
+  MS_CHECK_TRUE_MSG(target_device != nullptr, RET_ERROR, "target_device is nullptr.");
   if (target_device_str == "KIRIN") {
     (*target_device) = quant::KIRIN;
     return RET_OK;
@@ -252,6 +257,7 @@ int QuantParamParser::ParseTargetDevice(const std::string &target_device_str, qu
 
 int QuantParamParser::ParseActivationQuantizedMethod(const std::string &activation_quant_method_str,
                                                      quant::ActivationQuantizedMethod *activation_quant_method) {
+  MS_CHECK_TRUE_MSG(activation_quant_method != nullptr, RET_ERROR, "activation_quant_method is nullptr.");
   if (activation_quant_method_str == "MAX_MIN") {
     (*activation_quant_method) = quant::MAX_MIN;
     return RET_OK;
@@ -269,6 +275,7 @@ int QuantParamParser::ParseActivationQuantizedMethod(const std::string &activati
 
 int QuantParamParser::ParseWeightQuant(const WeightQuantString &weight_quant_string,
                                        quant::WeightQuantParam *weight_quant) {
+  MS_CHECK_TRUE_MSG(weight_quant != nullptr, RET_ERROR, "weight_quant is nullptr.");
   if (!weight_quant_string.dequant_strategy.empty()) {
     if (weight_quant_string.dequant_strategy == "ON_THE_FLY") {
       weight_quant->dequant_strategy = quant::ON_THE_FLY;
@@ -326,6 +333,7 @@ int QuantParamParser::ParseExportPrecisionMode(const std::string &precision_mode
 
 int QuantParamParser::ParseTransformQuant(const TransformQuantString &transform_quant_string,
                                           quant::TransformQuantParam *transform_quant) {
+  MS_CHECK_TRUE_MSG(transform_quant != nullptr, RET_ERROR, "transform_quant is nullptr.");
   if (!transform_quant_string.export_precision_mode.empty()) {
     auto ret = ParseExportPrecisionMode(transform_quant_string.export_precision_mode, &transform_quant->precision_mode);
     if (ret != RET_OK) {
@@ -338,6 +346,7 @@ int QuantParamParser::ParseTransformQuant(const TransformQuantString &transform_
 
 int QuantParamParser::ParseDynamicQuant(const DynamicQuantString &dynamic_quant_string,
                                         quant::DynamicQuantParam *dynamic_quant) {
+  MS_CHECK_TRUE_MSG(dynamic_quant != nullptr, RET_ERROR, "dynamic_quant is nullptr.");
   if (!dynamic_quant_string.quant_strategy.empty()) {
     auto ret = ParseDynamicQuantStrategy(dynamic_quant_string.quant_strategy, &dynamic_quant->quant_strategy);
     if (ret != RET_OK) {

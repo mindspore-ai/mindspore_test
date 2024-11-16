@@ -26,6 +26,7 @@ constexpr auto kInputNum = 2;
 }
 
 STATUS ResizeBilinearMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   if (cnode->inputs().size() != kInputNum) {
     MS_LOG(ERROR) << "Input of resize_bilinear must be " << kInputNum << ", real size: " << cnode->inputs().size()
                   << ", cnode " << cnode->fullname_with_scope();
@@ -53,6 +54,7 @@ STATUS ResizeBilinearMapper::Mapper(const CNodePtr &cnode) {
   // convert "size" attr to input, and add it to inputs list
   ParameterPtr value_param =
     opt::BuildIntVecParameterNode(cnode->func_graph(), size_value_int32, cnode->fullname_with_scope() + "_size_value");
+  CHECK_NULL_RETURN(value_param);
   inputs.push_back(value_param);
   cnode->set_inputs(inputs);
 

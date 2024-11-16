@@ -32,6 +32,7 @@ constexpr const char *kExclusive = "exclusive";
 constexpr int kSizeHW = 20;
 constexpr int kSizeHWMul = 255;
 STATUS AvgPoolFusionMapper::Mapper(const CNodePtr &cnode) {
+  CHECK_NULL_RETURN(cnode);
   ValueNodePtr value_node = nullptr;
   PrimitivePtr src_prim = nullptr;
   if (GetValueNodeAndPrimFromCnode(cnode, &value_node, &src_prim) != lite::RET_OK) {

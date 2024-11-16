@@ -33,6 +33,7 @@ constexpr size_t kInputNum = 3;
 }  // namespace
 
 STATUS UpsampleMapper::Mapper(const CNodePtr &cnode) {
+  MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr.");
   ValueNodePtr value_node = nullptr;
   PrimitivePtr src_prim = nullptr;
   if (GetValueNodeAndPrimFromCnode(cnode, &value_node, &src_prim) != lite::RET_OK) {

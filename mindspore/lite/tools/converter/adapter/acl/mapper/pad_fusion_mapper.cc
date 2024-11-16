@@ -85,6 +85,8 @@ void PadFusionMapper::AdjustPadAttr(const PrimitivePtr &dst_prim) {
 }
 
 STATUS PadFusionMapper::ConvertAttrToInput(const CNodePtr &cnode, const PrimitivePtr &prim) {
+  CHECK_NULL_RETURN(cnode);
+  CHECK_NULL_RETURN(prim);
   if (cnode->size() != kNamePadInputNum) {
     MS_LOG(INFO) << "No need to add attr to input, real input num: " << cnode->size();
     return lite::RET_OK;

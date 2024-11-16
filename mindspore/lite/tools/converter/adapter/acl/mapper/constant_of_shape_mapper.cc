@@ -28,7 +28,7 @@
 namespace mindspore {
 namespace lite {
 STATUS ConstantOfShapeMapper::Mapper(const CNodePtr &cnode) {
-  MS_ASSERT(cnode != nullptr);
+  CHECK_NULL_RETURN(cnode);
   auto func_graph = cnode->func_graph();
   CHECK_NULL_RETURN(func_graph);
   auto prim = ops::GetOperator<ops::ConstantOfShape>(cnode->input(0));

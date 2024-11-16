@@ -111,6 +111,7 @@ STATUS Conv2dTransposeMapper::AdjustGeAttr(const CNodePtr &cnode, const Primitiv
 }
 
 STATUS Conv2dTransposeMapper::AdjustOutputPadding(const PrimitivePtr &dst_prim) {
+  MS_CHECK_TRUE_MSG(dst_prim != nullptr, RET_ERROR, "dst_prim is nullptr.");
   const int kDim3D = 2;
   const int kDim4D = 3;
   std::vector<int64_t> output_padding = {0, 0, 0, 0};
