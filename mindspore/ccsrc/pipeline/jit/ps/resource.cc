@@ -163,6 +163,7 @@ BuiltInTypeMap &GetMethodMap() {
      }},
     {kObjectTypeTensorType,
      {
+       {"register_hook", std::string("register_hook")},                    // C.register_hook
        {"addcdiv", std::string("addcdiv")},                                // C.addcdiv
        {"addcmul", std::string("addcmul")},                                // C.addcmul
        {"all", std::string("all_")},                                       // C.reduce_all

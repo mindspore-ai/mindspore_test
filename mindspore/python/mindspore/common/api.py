@@ -53,7 +53,7 @@ from mindspore.common._register_for_adapter import ms_adapter_registry
 from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, update_auto_dynamic_shape_phase, \
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
 from mindspore.common._pijit_context import PIJitCaptureContext
-from mindspore.common.parameter import Parameter
+from mindspore.common.parameter import Parameter, set_parameter_hook_updated, parameter_hook_updated
 
 # Store ms_function class compiled pipeline cache.
 ms_compile_cache = set()
@@ -551,6 +551,28 @@ def _get_parameter_ids(args, kwargs):
             parameter_ids += str(id(value))
     return parameter_ids
 
+def _get_tensor_hook_key(tensor):
+    """Get the hook key of Tensor/Parameter"""
+    return "_".join(map(str, map(id, tensor.hooks())))
+
+def _get_hook_key(*args, **kwargs):
+    """Get the hook key of Tensors/Parameters"""
+    hook_key = ""
+    for idx, arg in enumerate(args):
+        if idx != 0:
+            hook_key += ","
+        # Only arg of the type Tensor or Parameter is supported now
+        if isinstance(arg, (Tensor, Parameter)):
+            hook_key += _get_tensor_hook_key(arg)
+
+    for idx, value in enumerate(kwargs.values()):
+        if idx != 0:
+            hook_key += ","
+        # Only kwarg of the type Tensor or Parameter is supported now
+        if isinstance(value, (Tensor, Parameter)):
+            hook_key += _get_tensor_hook_key(value)
+
+    return hook_key
 
 class _MindsporeFunctionExecutor:
     """
@@ -671,11 +693,14 @@ class _MindsporeFunctionExecutor:
         parameter_ids = _get_parameter_ids(args, kwargs)
         if parameter_ids != "":
             key = str(key) + '.' + parameter_ids
+
+        key = str(key) + "." + _get_hook_key(*args, **kwargs)
+
         phase = generate_name + '.' + str(key)
 
         update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, self.input_signature)
 
-        if phase in ms_compile_cache:
+        if phase in ms_compile_cache and not parameter_hook_updated():
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
             self._graph_executor.clear_compile_arguments_resource()
@@ -709,6 +734,7 @@ class _MindsporeFunctionExecutor:
 
         if not is_compile:
             raise RuntimeError("Executor compile failed.")
+        set_parameter_hook_updated(False)
         ms_compile_cache.add(phase)
 
         return phase
@@ -1830,8 +1856,12 @@ class _CellGraphExecutor:
             self.enable_tuple_broaden = obj.enable_tuple_broaden
         logger.debug(f"Convert the network: {do_convert}.")
         self._graph_executor.set_enable_tuple_broaden(self.enable_tuple_broaden)
+
         key = self._graph_executor.generate_arguments_key(obj, args, kwargs, self.enable_tuple_broaden)
         obj.arguments_key = str(key)
+
+        obj.arguments_key = obj.arguments_key + "." + _get_hook_key(*args, **kwargs)
+
         # When exist parameter in the top graph inputs, need check if the parameter object has changed.
         parameter_ids = _get_parameter_ids(args, kwargs)
         if parameter_ids != "":
@@ -1841,7 +1871,7 @@ class _CellGraphExecutor:
         obj.phase_cache[raw_phase] = phase
         update_auto_dynamic_shape_phase(args, key_id, phase)
         obj.current_phase = phase
-        if phase in obj.compile_cache and self.has_compiled(phase):
+        if phase in obj.compile_cache and self.has_compiled(phase) and not parameter_hook_updated():
             logger.debug("%r graph has existed.", phase)
             # Release resource should be released when CompileInner won't be executed, such as cur_convert_input_
             # generated in generate_arguments_key.
@@ -1867,6 +1897,7 @@ class _CellGraphExecutor:
         obj.compile_cache.add(phase)
         if not result:
             raise RuntimeError("Executor compile failed.")
+        set_parameter_hook_updated(False)
         graph = self._graph_executor.get_func_graph(phase)
 
         if graph is None:

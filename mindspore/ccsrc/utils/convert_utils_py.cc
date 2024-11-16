@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "Eigen/Core"
 #include "abstract/abstract_value.h"
+#include "abstract/abstract_function.h"
 #include "abstract/utils.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/resolve.h"
@@ -488,7 +489,28 @@ static ValueNameToConverterVector value_name_to_converter = {
   // None
   {None::kTypeId, [](const ValuePtr &, const AbstractBasePtr &) -> py::object { return py::none(); }},
   // ValueAny
-  {ValueAny::kTypeId, [](const ValuePtr &, const AbstractBasePtr &) -> py::object { return py::none(); }},
+  {ValueAny::kTypeId,
+   [](const ValuePtr &, const AbstractBasePtr &abs) -> py::object {
+     if (abs == nullptr) {
+       return py::none();
+     }
+
+     if (!abs->isa<abstract::FuncGraphAbstractClosure>()) {
+       return py::none();
+     }
+
+     auto fg_abs = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
+     auto wrapper_obj = fg_abs->func_graph()->python_obj();
+     if (wrapper_obj == nullptr) {
+       return py::none();
+     }
+
+     if (!wrapper_obj->isa<parse::PyObjectWrapper>()) {
+       return py::none();
+     }
+
+     return wrapper_obj->cast<parse::PyObjectWrapperPtr>()->obj();
+   }},
   // ValueProblem
   {ValueProblem::kTypeId, [](const ValuePtr &, const AbstractBasePtr &) -> py::object { return py::none(); }},
   // FuncGraph

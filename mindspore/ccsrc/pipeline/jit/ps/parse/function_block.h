@@ -52,7 +52,7 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
 
   FuncGraphPtr func_graph() { return func_graph_; }
   std::string ToString() const { return func_graph_->ToString(); }
-  void WriteVariable(const std::string &var_name, const AnfNodePtr &node);
+  void WriteVariable(const std::string &var_name, const AnfNodePtr &node, bool need_reorder = false);
   AnfNodePtr ReadVariable(const std::string &var_name);
   AnfNodePtr ReadLocalVariable(const std::string &var_name);
   bool CheckHasVariable(const std::string &var_name);
@@ -229,6 +229,7 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   bool is_dead_block_{false};
 
   std::pair<AnfNodePtr, bool> FindPredInterpretNode(const std::string &var_name);
+  void ReplaceHiddenNode(const AnfNodePtr &hidden_node, const AnfNodePtr &new_node);
   // Flags help for determine if parallel-if transformation can be performed or not.
   // If inside this block include all inner block there is a return statement.
   // This flag will propagate beyond outer if/else or while/for loop, but not if-by-if;

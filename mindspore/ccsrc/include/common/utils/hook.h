@@ -36,7 +36,8 @@ struct COMMON_EXPORT TensorBackwardHook : public BackWardHook {
   TensorBackwardHook(uint64_t tensor_id, const py::function &obj);
   ~TensorBackwardHook() override;
   ValuePtr operator()(const ValuePtr &grad) override;
-  std::map<uint64_t, py::function> hook_map_;
+  uint64_t tensor_id_;
+  py::function hook_;
 };
 }  // namespace mindspore
 

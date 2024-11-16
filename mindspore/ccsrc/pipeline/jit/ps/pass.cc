@@ -559,6 +559,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
      {"after_resolve", after_resolve_pass},
      {"a_after_grad", a_after_grad},
+     {"special_op_eliminate", opt::OptPassConfig({irpass.special_op_eliminate_})},
      {"renormalize", opt::OptPassConfig::Renormalize()},
      {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
      {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},

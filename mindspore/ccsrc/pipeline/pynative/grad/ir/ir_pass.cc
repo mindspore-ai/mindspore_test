@@ -526,10 +526,7 @@ AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodeP
   }
   AnfNodePtr res = grad_node;
   for (const auto &[id, hook] : auto_grad_meta->backward_hooks()) {
-    if (hook->hook_map_.size() != kSizeOne) {
-      MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
-    }
-    auto hook_fn = hook->hook_map_.begin()->second;
+    auto hook_fn = hook->hook_;
     if (hook_fn.ptr() == nullptr) {
       MS_LOG(DEBUG) << "Hook id " << id << " have been delete by python";
       continue;
