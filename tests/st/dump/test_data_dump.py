@@ -367,7 +367,7 @@ def run_constant_e2e_dump():
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_constant_gpu_e2e_dump():
     """
