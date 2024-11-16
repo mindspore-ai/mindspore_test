@@ -66,6 +66,14 @@ class AddSkipPass : public IRTreePass {
     /// \return Status The status code returned
     Status Visit(std::shared_ptr<ShuffleNode> node, bool *const modified) override;
 
+#ifdef ENABLE_PYTHON
+    /// \brief Performs finder work for batch sampler that has special rules about skip injection.
+    /// \param[in] node The node being visited.
+    /// \param[in, out] modified Indicator if the node was changed at all.
+    /// \return Status The status code returned.
+    Status Visit(std::shared_ptr<GeneratorNode> node, bool *const modified) override;
+#endif
+
     /// \brief Register the DataQueueNode for further action.
     /// \param[in] node The node being visited
     /// \param[in, out] modified Indicator if the node was changed at all
@@ -83,12 +91,15 @@ class AddSkipPass : public IRTreePass {
 
     bool HasShuffleNode() const { return has_shuffle_node_; }
 
+    bool HasBatchSampler() const { return has_batch_sampler_; }
+
    private:
     std::shared_ptr<DatasetNode> injection_point_;
     int64_t step_ = 0;
     int32_t num_epochs_ = 0;
     int64_t dataset_size_ = -1;
     bool has_shuffle_node_;
+    bool has_batch_sampler_;
   };
 
  public:

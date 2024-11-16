@@ -88,15 +88,26 @@ Status BatchOp::operator()() {
         total_step++;
         RETURN_IF_NOT_OK(callback_manager_.StepBegin(CallbackParam(op_current_epochs_ + 1, ep_step, total_step)));
       }
-      (void)table->emplace_back(std::move(new_row));
-      // if # of rows is enough to make 1 batch, send it to worker_queue
-      if (table->size() == static_cast<size_t>(cur_batch_size)) {
+      if (new_row.eob()) {
         RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->EmplaceBack(
           std::make_pair(std::move(table), CBatchInfo(op_current_epochs_, batch_num++, cnt++))));
         table = std::make_unique<TensorQTable>();
-        RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
+        RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+      } else {
+        (void)table->emplace_back(std::move(new_row));
+        // if # of rows is enough to make 1 batch, send it to worker_queue
+        if (table->size() == static_cast<size_t>(cur_batch_size)) {
+          RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->EmplaceBack(
+            std::make_pair(std::move(table), CBatchInfo(op_current_epochs_, batch_num++, cnt++))));
+          table = std::make_unique<TensorQTable>();
+          RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+          if (!new_row.eoe()) {
+            RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
+          }
+        } else {
+          RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+        }
       }
-      RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
     }
     // Reminder logic, execute only when there is a remainder (table is non empty) and don't drop
     if (!drop_ && !table->empty()) {
@@ -109,8 +120,10 @@ Status BatchOp::operator()() {
     RETURN_IF_NOT_OK(
       worker_in_queues_[NextWorkerID()]->EmplaceBack(std::make_pair(nullptr, CBatchInfo(BatchCtrl::kEOE))));
     UpdateRepeatAndEpochCounter();
-    RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
     RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
+    if (!new_row.eof()) {
+      RETURN_IF_NOT_OK(GetBatchSize(&cur_batch_size, CBatchInfo(op_current_epochs_, batch_num, cnt)));
+    }
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && defined(ENABLE_PYTHON)
     if ((num_workers_ > 1 || batch_map_func_) && GetMemoryUsage() > MAX_MEMORY_USAGE_THRESHOLD) {

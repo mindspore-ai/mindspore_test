@@ -350,19 +350,21 @@ PYBIND_REGISTER(GeneratorNode, 2, ([](const py::module *m) {
                       py::init([](const py::function &generator_function, const std::vector<std::string> &column_names,
                                   const std::vector<DataType> &column_types, int64_t dataset_len,
                                   const py::handle &sampler, uint32_t num_parallel_workers,
-                                  std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
+                                  std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime,
+                                  bool has_batch_sampler) {
                         auto gen = std::make_shared<GeneratorNode>(
                           generator_function, column_names, column_types, dataset_len, toSamplerObj(sampler),
-                          num_parallel_workers, std::move(python_multiprocessing_runtime));
+                          num_parallel_workers, std::move(python_multiprocessing_runtime), has_batch_sampler);
                         THROW_IF_ERROR(gen->ValidateParams());
                         return gen;
                       }))
                     .def(py::init([](const py::function &generator_function, const std::shared_ptr<SchemaObj> &schema,
                                      int64_t dataset_len, const py::handle &sampler, uint32_t num_parallel_workers,
-                                     std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
-                      auto gen = std::make_shared<GeneratorNode>(generator_function, schema, dataset_len,
-                                                                 toSamplerObj(sampler), num_parallel_workers,
-                                                                 std::move(python_multiprocessing_runtime));
+                                     std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime,
+                                     bool has_batch_sampler) {
+                      auto gen = std::make_shared<GeneratorNode>(
+                        generator_function, schema, dataset_len, toSamplerObj(sampler), num_parallel_workers,
+                        std::move(python_multiprocessing_runtime), has_batch_sampler);
                       THROW_IF_ERROR(gen->ValidateParams());
                       return gen;
                     }))

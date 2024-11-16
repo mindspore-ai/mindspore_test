@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "minddata/dataset/core/global_context.h"
+#include "minddata/dataset/engine/datasetops/source/sampler/python_sampler.h"
 #include "minddata/dataset/engine/execution_tree.h"
 #include "minddata/dataset/util/task_manager.h"
 
@@ -26,14 +27,15 @@ namespace mindspore {
 namespace dataset {
 GeneratorOp::GeneratorOp(const py::function &generator_function, std::vector<std::string> column_names,
                          std::vector<DataType> column_types, int32_t prefetch_size, int32_t connector_size,
-                         std::shared_ptr<SamplerRT> sampler, int32_t num_parallel_workers)
+                         std::shared_ptr<SamplerRT> sampler, int32_t num_parallel_workers, bool has_batch_sampler)
     : PipelineOp(connector_size, std::move(sampler)),
       column_names_(std::move(column_names)),
       column_types_(std::move(column_types)),
       prefetch_size_(prefetch_size),
       generator_counter_(0),
       num_parallel_workers_(num_parallel_workers),
-      num_rows_sampled_{0} {
+      num_rows_sampled_{0},
+      has_batch_sampler_(has_batch_sampler) {
   py::gil_scoped_acquire gil_acquire;
   generator_function_ = generator_function;
 }
@@ -229,6 +231,42 @@ Status GeneratorOp::GetMappedIndex(int64_t index, int64_t *out_index) {
   return Status::OK();
 }
 
+Status GeneratorOp::GetNextBatchSize(std::deque<int64_t> *batch_sizes_of_epoch, int64_t *next_batch_size) {
+  if (has_batch_sampler_) {
+    RETURN_UNEXPECTED_IF_NULL(batch_sizes_of_epoch);
+    RETURN_UNEXPECTED_IF_NULL(next_batch_size);
+    if (!batch_sizes_of_epoch->empty()) {
+      *next_batch_size = batch_sizes_of_epoch->front();
+      batch_sizes_of_epoch->pop_front();
+    }
+  }
+  return Status::OK();
+}
+
+Status GeneratorOp::GetNextEpochBatchSizes(std::deque<int64_t> *batch_sizes_of_epoch) {
+  if (has_batch_sampler_) {
+    RETURN_UNEXPECTED_IF_NULL(batch_sizes_of_epoch);
+    auto batch_sampler = std::dynamic_pointer_cast<PythonSamplerRT>(sampler_);
+    CHECK_FAIL_RETURN_UNEXPECTED(batch_sampler != nullptr,
+                                 "Batch sampler of GeneratorDataset should be a Python sampler.");
+    RETURN_IF_NOT_OK(batch_sampler->GetBatchSizes(batch_sizes_of_epoch));
+  }
+  return Status::OK();
+}
+
+Status GeneratorOp::CheckAndSendEOB(int64_t size_of_this_batch, int64_t *num_samples_collected) {
+  if (has_batch_sampler_) {
+    RETURN_UNEXPECTED_IF_NULL(num_samples_collected);
+    if ((*num_samples_collected) == size_of_this_batch) {
+      generator_counter_++;
+      MS_LOG(DEBUG) << "Generator operator sends out EOB.";
+      RETURN_IF_NOT_OK(out_connector_->SendEOB());
+      *num_samples_collected = 0;
+    }
+  }
+  return Status::OK();
+}
+
 // Entry point for Generator, called by launch()
 // Note that this function is very easy to break because of the Python GIL mechanism
 // The master thread has the following workflow
@@ -269,6 +307,12 @@ Status GeneratorOp::operator()() {
   num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
   RETURN_IF_NOT_OK(Init());
 
+  int64_t num_samples_collected = 0;
+  int64_t size_of_this_batch = -1;
+  std::deque<int64_t> batch_sizes_of_epoch;
+  RETURN_IF_NOT_OK(GetNextEpochBatchSizes(&batch_sizes_of_epoch));
+  RETURN_IF_NOT_OK(GetNextBatchSize(&batch_sizes_of_epoch, &size_of_this_batch));
+
   bool eof = false;
   while (!eof) {
     // Create new row each iteration
@@ -279,10 +323,6 @@ Status GeneratorOp::operator()() {
       uint64_t start_time = GetSyscnt();
       py::gil_scoped_acquire gil_acquire;
       RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "AcquireGIL", start_time));
-      if (Py_IsInitialized() == 0) {
-        RETURN_STATUS_ERROR(StatusCode::kMDPythonInterpreterFailure,
-                            "[Internal ERROR] Python Interpreter is finalized");
-      }
       try {
         auto start = ProfilingTime::GetCurMilliSecond();
         start_time = GetSyscnt();
@@ -298,7 +338,11 @@ Status GeneratorOp::operator()() {
                                "parameter num_parallel_workers in GeneratorDataset / optimize the efficiency of "
                                "obtaining samples in the user-defined generator function.";
         }
-        generator_counter_++;
+        if (has_batch_sampler_) {
+          num_samples_collected++;
+        } else {
+          generator_counter_++;
+        }
       } catch (py::error_already_set &e) {
         eoe = e.matches(PyExc_StopIteration);
         // Pop up non StopIteration Python Exception
@@ -338,10 +382,16 @@ Status GeneratorOp::operator()() {
       RETURN_IF_NOT_OK(out_connector_->Add(std::move(new_row)));
     }
 
+    RETURN_IF_NOT_OK(CheckAndSendEOB(size_of_this_batch, &num_samples_collected));
+
     if (eoe) {
       // Push out EOE upon StopIteration exception from generator
       MS_LOG(DEBUG) << "Generator operator sends out EOE.";
       RETURN_IF_NOT_OK(out_connector_->SendEOE());
+      if (has_batch_sampler_) {
+        CHECK_FAIL_RETURN_UNEXPECTED(num_samples_collected == 0,
+                                     "The sum of batch sizes should be equal to the total num samples.");
+      }
       if (IsLastIteration()) {
         // If last repeat or not repeated, push out EOF and exit master loop
         MS_LOG(DEBUG) << "Generator operator sends out EOF.";
@@ -360,8 +410,12 @@ Status GeneratorOp::operator()() {
           // Self-reset to start a new iteration
           RETURN_IF_NOT_OK(Reset());
         }
+        RETURN_IF_NOT_OK(GetNextEpochBatchSizes(&batch_sizes_of_epoch));
       }
       UpdateRepeatAndEpochCounter();
+    }
+    if (num_samples_collected == 0 && !eof) {
+      RETURN_IF_NOT_OK(GetNextBatchSize(&batch_sizes_of_epoch, &size_of_this_batch));
     }
   }
   return Status::OK();
