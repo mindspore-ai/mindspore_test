@@ -1175,6 +1175,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> print(z.is_contiguous())
             True
         """
+        if not self._need_contiguous():
+            return self
         return tensor_operator_registry.get('contiguous')(self)
 
     def is_contiguous(self):

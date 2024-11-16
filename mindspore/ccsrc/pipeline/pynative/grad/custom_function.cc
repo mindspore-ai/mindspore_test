@@ -31,7 +31,7 @@ CustomBackward::~CustomBackward() {
 }
 
 ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "Begin CustomBackwardNode CallBackward ";
   auto gradient = PyNativeAlgo::DataConvert::ValueListToValue(grads, out_abstract_);
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -41,8 +41,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
 
   // Run bprop function.
   py::gil_scoped_acquire gil_acquire;
-  auto py_grad = ValueToPyData(filled_zeros_grad);
-  auto py_tensor_grad = ConvertCTensorToPyTensor(py_grad);
+  py::object py_tensor_grad = CTensorToPyStubNodes(filled_zeros_grad);
   py::list list_inputs = bprop_inputs_.cast<py::list>();
   list_inputs.append(py_tensor_grad);
   size_t non_inp_args_size = is_recompute_ ? kSizeOne : kSizeTwo;
@@ -78,7 +77,7 @@ ValuePtrList CustomBackward::CallBackward(const ValuePtrList &grads) {
   }
   auto gradient_tensors = PostProcess(gradient_values);
   MS_LOG(DEBUG) << "End HookBackwardNode CallBackward";
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   return gradient_tensors;
 }
 

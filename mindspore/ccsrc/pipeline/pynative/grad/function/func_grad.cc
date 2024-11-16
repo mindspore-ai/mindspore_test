@@ -213,13 +213,13 @@ void RunTensorHook(ValuePtrList *grad_in, AutoGradMetaData *auto_grad_meta) {
   if (grad_in->size() != kSizeOne) {
     MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
   }
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   for (const auto &hook : auto_grad_meta->backward_hooks()) {
     MS_LOG(DEBUG) << "Run hook id T" << hook.first;
     MS_EXCEPTION_IF_NULL(hook.second);
     (*grad_in)[kIndex0] = (*(hook.second))(grad_in->front());
   }
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
 }
 
@@ -294,7 +294,7 @@ void FuncBackwardNode::Release() {
 ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      name(), false);
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "Begin HookBackwardNode CallBackward ";
   auto gradient = ValueListToValue(grads, out_abstract_);
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -315,7 +315,7 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   }
   auto gradient_tensors = PostProcess(gradient_values);
   MS_LOG(DEBUG) << "End HookBackwardNode CallBackward";
-  runtime::Pipeline::Get().WaitForward();
+  runtime::Pipeline::Get().WaitFrontend();
   return gradient_tensors;
 }
 
@@ -481,21 +481,21 @@ bool FuncGrad::KPynativeWithFProp(const GradParamPtr &grad_param) {
   return true;
 }
 
-void FuncGrad::CallCustomBprop(const CustomContext &context) {
+void FuncGrad::CallCustomBprop(const std::shared_ptr<CustomContext> &context) {
   MS_LOG(DEBUG) << "Begin Call CallCustomBprop";
   BackwardNodePtr custom_fn;
-  PyNativeAlgo::AutoGrad::CheckRecomputeInputs(context.inputs, context.is_recompute);
-  auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(context.inputs);
-  auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(context.output);
+  PyNativeAlgo::AutoGrad::CheckRecomputeInputs(context->inputs, context->is_recompute);
+  auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(context->inputs);
+  auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(context->output);
   ConstructParameterNodes(flatten_inputs);
   {
     py::gil_scoped_acquire gil;
-    py::list bprop_inputs = context.original_inputs.cast<py::list>();
-    if (!context.is_recompute) {
-      bprop_inputs.append(context.original_output);
+    py::list bprop_inputs = context->original_inputs.cast<py::list>();
+    if (!context->is_recompute) {
+      bprop_inputs.append(context->original_output);
     }
-    custom_fn = std::make_shared<CustomBackward>("CellCustomBackward", context.bprop_fn, bprop_inputs,
-                                                 GenerateFlattenAbs(flatten_outputs), context.is_recompute,
+    custom_fn = std::make_shared<CustomBackward>("CellCustomBackward", context->bprop_fn, bprop_inputs,
+                                                 GenerateFlattenAbs(flatten_outputs), context->is_recompute,
                                                  flatten_outputs.size());
   }
   custom_fn->UpdateNextEdges(flatten_inputs);
