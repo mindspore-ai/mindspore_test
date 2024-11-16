@@ -25,6 +25,7 @@ from mindspore.common._auto_dynamic import is_auto_dynamic, convert_new_shapes
 from mindspore.common.dtype import pytype_to_dtype
 from mindspore.common.api import _cell_graph_executor, _is_args_fullmode, ARG_SPECIFIED
 from mindspore.common._utils import is_shape_unknown
+from mindspore.dataset.core import config as dataset_config
 from mindspore.dataset.engine import offload
 from mindspore import context, nn
 from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, _construct_tensor_list
@@ -686,8 +687,9 @@ class _DatasetIterNormal:
         self.dataset = dataset
         self.device_num = _get_device_num()
         self.global_rank = _get_global_rank()
+        do_copy = dataset_config.get_iterator_mode()["do_copy"]
         self.iter = self.dataset.create_tuple_iterator(
-            num_epochs=epoch_num, do_copy=True)
+            num_epochs=epoch_num, do_copy=do_copy)
 
     def __iter__(self):
         return self

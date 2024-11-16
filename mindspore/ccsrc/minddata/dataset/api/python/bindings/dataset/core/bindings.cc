@@ -94,6 +94,8 @@ PYBIND_REGISTER(ConfigManager, 0, ([](const py::module *m) {
                     .def("get_debug_mode", &ConfigManager::get_debug_mode)
                     .def("set_error_samples_mode", &ConfigManager::set_error_samples_mode)
                     .def("get_error_samples_mode", &ConfigManager::get_error_samples_mode)
+                    .def("set_iterator_mode", &ConfigManager::set_iterator_mode)
+                    .def("get_iterator_mode", &ConfigManager::get_iterator_mode)
                     .def("load", [](ConfigManager &c, const std::string &s) { THROW_IF_ERROR(c.LoadFile(s)); });
                 }));
 
