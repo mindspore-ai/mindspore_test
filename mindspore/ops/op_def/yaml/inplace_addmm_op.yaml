@@ -24,3 +24,5 @@ inplace_addmm:
   dispatch:
     enable: True
     Ascend: InplaceAddmmAscend
+  function:
+    disable: True
