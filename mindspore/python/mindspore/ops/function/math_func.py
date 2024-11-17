@@ -857,6 +857,81 @@ def float_power(input, exponent):
     return pow(input, exponent)
 
 
+def float_power_ext(input, exponent):
+    """
+    Computes `input` to the power of `exponent` element-wise in double precision, and always
+    returns a mindspore.float64 tensor.
+
+    .. math::
+
+        out_{i} = input_{i} ^ {exponent_{i}}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Note:
+        Unlike `ops.pow`, this function always uses double precision for calculations, while
+        the precision of `ops.pow` depends on type promotion.
+        Currently, this function does not support complex number calculations.
+        Since float64 calculations are significantly slower on ascend devices compared to other data
+        types, it is strongly recommended to use this function only in scenarios where double precision
+        is required and performance is not a priority. Otherwise, using `ops.pow` is a better choice.
+
+    Args:
+        input (Union[Tensor, Number]): The first input is a tensor or a number.
+        exponent (Union[Tensor, Number]): The second input, if the first input is Tensor,
+            the second input can be Number or Tensor. Otherwise, it must be a Tensor.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting, the return value type
+        is mindspore.float64.
+
+    Raises:
+        TypeError: If neither `input` nor `exponent` is a Tensor.
+        TypeError: If the data type of `input` or `exponent` is neither a tensor nor a number,
+            or it contains complex numbers.
+        ValueError: If `input` and `exponent` have different shapes and cannot be broadcasted
+            to each other.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor([1, 2, 3])
+        >>> ops.float_power(input, 2)
+        Tensor(shape=[3], dtype=Float64, value= [ 1.00000000e+00,  4.00000000e+00,  9.00000000e+00])
+        >>>
+        >>> exp = Tensor([2, -3, -4])
+        >>> ops.float_power(input, exp)
+        Tensor(shape=[3], dtype=Float64, value= [ 1.00000000e+00,  1.25000000e-01,  1.23456790e-02])
+    """
+    if not (isinstance(input, Tensor) or isinstance(exponent, Tensor)):
+        raise TypeError("At least one of the types of inputs must be tensor, " +
+                        f"but the type of 'input' got is {type(input)}, " +
+                        f"and the type of 'exponent' is {type(exponent)}.")
+    if (not isinstance(input, (Tensor, int, float, bool))) or \
+            (isinstance(input, Tensor) and is_complex(input)):
+        raise TypeError("The type of 'input' must be Tensor or Number (excluding complex), " +
+                        f"but got {type(input)}.")
+    if (not isinstance(exponent, (Tensor, int, float, bool))) or \
+            (isinstance(exponent, Tensor) and is_complex(exponent)):
+        raise TypeError("The type of 'exponent' must be Tensor or Number (excluding complex), " +
+                        f"but got {type(exponent)}.")
+
+    op = pow
+    if isinstance(input, Tensor) and isinstance(exponent, numbers.Number):
+        op = pow_tensor_scalar_op
+    if isinstance(input, numbers.Number) and isinstance(exponent, Tensor):
+        op = pow_scalar_tensor_op
+
+    if isinstance(input, Tensor) and input.dtype != mstype.float64:
+        input = cast_(input, mstype.float64)
+    if isinstance(exponent, Tensor) and exponent.dtype != mstype.float64:
+        exponent = cast_(exponent, mstype.float64)
+    return op(input, exponent)
+
+
 def floor_div(x, y):
     """
     Alias for :func:`mindspore.ops.floor_divide` .
