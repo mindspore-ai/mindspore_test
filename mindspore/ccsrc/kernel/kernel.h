@@ -96,6 +96,13 @@ class PointerRefCount {
     }
   }
 
+  std::string PrintInfo() const {
+    std::ostringstream ofs;
+    ofs << this << " ptr:" << ptr_ << " from mem pool:" << from_mem_pool_ << " origin ref count:" << original_ref_count_
+        << " ref count:" << ref_count_ << " dynamic ref count:" << dynamic_ref_count_;
+    return ofs.str();
+  }
+
   // Get raw pointer.
   void *ptr() const { return ptr_; }
   // Set raw pointer.
@@ -335,6 +342,20 @@ struct AddressCommon {
   }
   AddressCommon &operator=(const AddressCommon &) = delete;
 
+  std::string PrintInfo() const {
+    std::ostringstream ofs;
+    ofs << "size:" << size_ << " format:" << format_ << " dtype:" << dtype_id_ << " device id:" << device_id_
+        << " device name:" << device_name_ << " shape vector:{";
+    std::for_each(shape_vector_.begin(), shape_vector_.end(), [&ofs](ShapeValueDType axis) { ofs << axis << " "; });
+    ofs << "} point ref count:";
+    if (pointer_ref_count_ == nullptr) {
+      ofs << "0";
+    } else {
+      ofs << pointer_ref_count_->PrintInfo();
+    }
+    return ofs.str();
+  }
+
   PointerRefCountPtr pointer_ref_count_;
   TensorStorageInfoPtr tensor_storage_info_{nullptr};
   uint32_t stream_id_{0};
@@ -405,6 +426,13 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
   KernelTensor &operator=(const KernelTensor &) = delete;
 
   MS_DECLARE_PARENT(KernelTensor, AbstractBase);
+
+  std::string PrintInfo() const {
+    if (address_common_ == nullptr) {
+      return "address common:0";
+    }
+    return "address common:" + address_common_->PrintInfo();
+  }
 
   // Get the base shape for Tensor/Sequence/Scalar.
   abstract::BaseShapePtr GetShape() const override { return shape_; }
