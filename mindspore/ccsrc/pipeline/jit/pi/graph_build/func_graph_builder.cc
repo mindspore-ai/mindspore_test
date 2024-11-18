@@ -32,6 +32,7 @@
 #include "ir/tensor.h"
 #include "ir/anf.h"
 #include "frontend/operator/composite/unpack_call.h"
+#include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 
 namespace mindspore {
 namespace {
@@ -1001,12 +1002,20 @@ py::object FuncGraphBuilder::ConvertMethod(const py::object &obj) {
     return py::object();
   }
   auto class_name = class_name_obj.cast<std::string>();
-  if (class_name == "Tensor" &&
-      !py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj))) {
-    return py::object();
-  }
-  auto type_id = GetTypeIdFromClassName(class_name);
   auto method_name = method_info[1].cast<std::string>();
+  if (class_name == "Tensor" || class_name == "PyCapsule") {
+    bool is_tensor_method =
+      py::cast<bool>(python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_IS_MS_TENSOR_METHOD, obj));
+    if (class_name == "Tensor" && !is_tensor_method) {
+      return py::object();
+    }
+    if (class_name == "PyCapsule" && is_tensor_method &&
+        ops::tensor_method_overload_map.find(method_name) != ops::tensor_method_overload_map.end()) {
+      class_name = "Tensor";
+    }
+  }
+
+  auto type_id = GetTypeIdFromClassName(class_name);
   MS_LOG(DEBUG) << "type_id: " << type_id << ", method_name: " << method_name;
   Any require = pipeline::Resource::GetMethodPtr(type_id, method_name);
   if (require.empty()) {
