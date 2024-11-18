@@ -1329,6 +1329,20 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return tensor_operator_registry.get("sub_tensor_")(self, other, alpha)
         return tensor_operator_registry.get("sub_scalar_")(self, other, alpha)
 
+    def div_(self, other, *, rounding_mode=None):
+        """
+        For details, please refer to :func:`mindspore.mint.func_div`.
+        """
+        if rounding_mode is not None and rounding_mode not in ['floor', 'trunc']:
+            raise ValueError("For ops.div, rounding_mode value should be None, 'floor' or 'trunc'.")
+        if isinstance(other, (Tensor)):
+            if rounding_mode:
+                return tensor_operator_registry.get("divmod_tensor_")(self, other, rounding_mode)
+            return tensor_operator_registry.get("div_tensor_")(self, other)
+        if rounding_mode:
+            return tensor_operator_registry.get("divmod_scalar_")(self, other, rounding_mode)
+        return tensor_operator_registry.get("div_scalar_")(self, other)
+
     def subtract(self, other, *, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.subtract`.

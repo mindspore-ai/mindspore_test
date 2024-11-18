@@ -1,0 +1,20 @@
+#operator inplace_divs
+inplace_divs:
+    args:
+        input:
+            dtype: tensor
+        other:
+            dtype: number
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input        
+    class:
+        name: InplaceDivs
+    function:
+        name: div_scalar_
+    dispatch:
+        enable: True
+        Ascend: InplaceDivsAscend
