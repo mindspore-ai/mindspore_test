@@ -16,12 +16,10 @@
 Test module for testing silent check.
 """
 import os
-import pytest
+from tests.mark_utils import arg_mark
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_silent_check1():
     """
     Feature: Test silent check for last grad node
@@ -37,9 +35,7 @@ def test_silent_check1():
     os.system(f'rm -rf ms_graphs log_output ascend_log')
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_single
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_silent_check2():
     """
     Feature: Test silent check for last grad node
