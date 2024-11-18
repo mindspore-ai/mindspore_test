@@ -1,12 +1,13 @@
 min:
   description: |
-    min(input) -> Tensor
+    min() -> Tensor
     
     Calculates the minimum value of the input tensor.
     
-    Also see :func:`mindspore.ops.extend.min`.
+    For more details, please refer to :func:`mindspore.ops.extend.min`.
     
-    .. min(input, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> Tensor, number
+    .. method:: min(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> Tensor|number.Number
+        :noindex:
     
     Return the minimum of a tensor or minimum along an axis.
     

@@ -42,6 +42,8 @@
 
     mindspore.Tensor.__abs__
     mindspore.Tensor.__add__
+    mindspore.Tensor.__isub__
+    mindspore.Tensor.__sub__
     mindspore.Tensor.abs
     mindspore.Tensor.absolute
     mindspore.Tensor.acos
