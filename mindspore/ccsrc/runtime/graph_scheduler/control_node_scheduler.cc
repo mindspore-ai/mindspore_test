@@ -21,6 +21,7 @@
 #include "runtime/graph_scheduler/inline_control_flow_scheduler.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "runtime/graph_scheduler/actor/actor_dump.h"
 
 namespace mindspore {
 namespace runtime {
@@ -57,18 +58,10 @@ bool is_need_copy_device_tensor(const AnfNodePtr &backend_node, size_t index) {
   if (real_backend_node != nullptr && (!real_backend_node->isa<CNode>())) {
     return false;
   }
-
-  if (common::AnfAlgo::HasAbstractRef(backend_node)) {
-    return false;
-  }
-
   auto kernel_graph = AnfAlgo::FetchKernelGraph(backend_node.get());
   MS_EXCEPTION_IF_NULL(kernel_graph);
   if (kernel_graph->IsInRefOutputMap({backend_node, index})) {
-    if (!kernel_graph->is_graph_run_mode()) {
-      return false;
-    }
-    const auto &origin_node = kernel_graph->GetRefCorrespondOutput({backend_node, index}).first;
+    const auto &origin_node = kernel_graph->GetRefNodeRecursive({backend_node, index}).first;
     MS_EXCEPTION_IF_NULL(origin_node);
     if (origin_node->isa<ValueNode>() || origin_node->isa<Parameter>()) {
       return false;
@@ -832,11 +825,13 @@ void ControlNodeScheduler::ClearActorData(const ControlActorSet *control_actor_s
 
   for (auto &entrance_actor : control_actor_set->entrance_actors_) {
     MS_EXCEPTION_IF_NULL(entrance_actor);
+    entrance_actor->created_device_tensors_.clear();
     entrance_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
   }
 
   for (auto &stack_actor : control_actor_set->stack_actors_) {
     MS_EXCEPTION_IF_NULL(stack_actor);
+    stack_actor->created_device_tensors_.clear();
     stack_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
   }
 
@@ -1472,10 +1467,11 @@ void ControlNodeScheduler::LinkArrowByValueNode(const AnfNodePtr &value_node, Co
           << " for value node:" << value_node->DebugString() << " to actor:" << to_actor->GetAID();
       }
     }
-    to_actor->local_device_tensors_[to_index] = AnfAlgo::GetMutableOutputAddr(value_node, from_index, false).get();
-    to_actor->local_device_tensors_[to_index]->SetNodeIndex(value_node, from_index);
-    MS_LOG(DEBUG) << "Add local device tensor:" << to_actor->local_device_tensors_[to_index] << " index:" << to_index
-                  << " for actor:" << to_actor->GetAID() << " from index:" << from_index;
+    to_actor->local_device_tensors_[to_index] = {AnfAlgo::GetMutableOutputAddr(value_node, from_index, false).get(),
+                                                 value_node};
+    to_actor->local_device_tensors_[to_index].first->SetNodeIndex(value_node, from_index);
+    MS_LOG(DEBUG) << "Add local device tensor:" << to_actor->local_device_tensors_[to_index].first
+                  << " index:" << to_index << " for actor:" << to_actor->GetAID() << " from index:" << from_index;
   }
 }
 
@@ -2447,6 +2443,24 @@ bool ControlNodeScheduler::IsNoInputActor(const ControlActor *control_actor) con
   MS_EXCEPTION_IF_NULL(control_actor);
   return (control_actor->input_datas_num_ == 0 && control_actor->input_controls_num_ == 0 &&
           control_actor->input_partials_num_ == 0 && control_actor->input_branch_ids_num_ == 0);
+}
+
+void ControlNodeScheduler::DumpFormatControlActorSet(
+  const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info,
+  const std::map<KernelWithIndex, std::pair<AbstractActor *, KernelWithIndex>, session::KernelWithIndexCmp>
+    &graph_output_to_actor,
+  std::ofstream &ofs) {
+  if (actor_set == nullptr || actor_set->control_actors_ == nullptr ||
+      actor_set->control_actors_->exit_actors_.empty() || graph_compiler_info.control_node_parser_ == nullptr ||
+      !graph_compiler_info.control_node_parser_->IsInited()) {
+    return;
+  }
+  try {
+    MS_LOG(DEBUG) << "Dump format control actor set start.";
+    MS_LOG(DEBUG) << "Dump format control actor set end.";
+  } catch (std::exception &e) {
+    MS_LOG(INFO) << "Dump format control actor failed, reason:" << e.what();
+  }
 }
 }  // namespace runtime
 }  // namespace mindspore

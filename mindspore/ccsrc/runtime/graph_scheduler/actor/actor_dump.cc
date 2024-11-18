@@ -539,7 +539,7 @@ void DumpControlActor(const ControlActor *actor, std::ofstream &ofs) {
   if (actor->input_partial_arrow_aids().size() > 0) {
     ofs << "\t\tinput_partial_arrow_actor:" << actor->input_partial_arrow_aids().size() << "\n ";
     for (const auto &input_partial_arrow_aid : actor->input_partial_arrow_aids()) {
-      ofs << "\t\t\tfrom_actor_name:" << input_partial_arrow_aid.Name() << "\n";
+      ofs << "\t\t\tfrom_actor_name:" << input_partial_arrow_aid.first.Name() << "\n";
     }
   }
 
@@ -1203,9 +1203,12 @@ bool IsTopActorType(AbstractActor *actor) {
   MS_EXCEPTION_IF_NULL(actor);
   return actor->type() != KernelTransformType::kStackActor && actor->type() != KernelTransformType::kEntranceActor;
 }
+bool ExistCycle(AbstractActor *const root, AbstractActor *const input_actor) {
+  return input_actor != root && input_actor->type() != KernelTransformType::kLoopCountActor;
+}
 }  // namespace
 
-std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root) {
+std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root, const GetInputAidFunc &get_input_func) {
   std::vector<AbstractActor *> actors;
   auto seen = NewSeenGeneration();
   std::deque<AbstractActor *> todo;
@@ -1230,24 +1233,28 @@ std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root) {
     }
     seen_map[actor] = seen;
     std::vector<std::string> input_aids;
-
-    if (IsTopActorType(actor)) {
-      std::for_each(
-        actor->input_data_arrow_aids().begin(), actor->input_data_arrow_aids().end(),
-        [&input_aids, actor](const auto &pair) {
-          input_aids.emplace_back((actor->type() != KernelTransformType::kFusionActor && pair.second != nullptr &&
-                                   pair.second->to_op_id_.Name().find(kFusionActorNameSuffix) != std::string::npos)
-                                    ? pair.second->to_op_id_.Name()
-                                    : pair.first.Name());
-        });
-      std::for_each(
-        actor->input_control_arrow_aids().begin(), actor->input_control_arrow_aids().end(),
-        [&input_aids, actor](const auto &pair) {
-          input_aids.emplace_back((actor->type() != KernelTransformType::kFusionActor && pair.second != nullptr &&
-                                   pair.second->to_op_id_.Name().find(kFusionActorNameSuffix) != std::string::npos)
-                                    ? pair.second->to_op_id_.Name()
-                                    : pair.first.Name());
-        });
+    if (get_input_func == nullptr) {
+      if (IsTopActorType(actor)) {
+        std::for_each(
+          actor->input_data_arrow_aids().begin(), actor->input_data_arrow_aids().end(),
+          [&input_aids, actor](const auto &pair) {
+            input_aids.emplace_back((actor->type() != KernelTransformType::kFusionActor && pair.second != nullptr &&
+                                     pair.second->to_op_id_.Name().find(kFusionActorNameSuffix) != std::string::npos)
+                                      ? pair.second->to_op_id_.Name()
+                                      : pair.first.Name());
+          });
+        std::for_each(
+          actor->input_control_arrow_aids().begin(), actor->input_control_arrow_aids().end(),
+          [&input_aids, actor](const auto &pair) {
+            input_aids.emplace_back((actor->type() != KernelTransformType::kFusionActor && pair.second != nullptr &&
+                                     pair.second->to_op_id_.Name().find(kFusionActorNameSuffix) != std::string::npos)
+                                      ? pair.second->to_op_id_.Name()
+                                      : pair.first.Name());
+          });
+      }
+    } else {
+      MS_LOG(DEBUG) << "Topo sort for actor:" << actor->GetAID();
+      input_aids = get_input_func(actor);
     }
     for (auto aid : input_aids) {
       const auto &input_actor = FetchActor(aid);
@@ -1269,7 +1276,7 @@ std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root) {
         continue;
       }
       // Loop count has a cycle input and skip it.
-      if (input_actor != root && input_actor->type() != KernelTransformType::kLoopCountActor) {
+      if (ExistCycle(root, input_actor)) {
         MS_LOG(EXCEPTION) << "Actor cycle exists in actor:" << input_actor->GetAID();
       }
     }

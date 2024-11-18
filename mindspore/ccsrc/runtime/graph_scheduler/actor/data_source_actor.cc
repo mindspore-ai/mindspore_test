@@ -234,6 +234,17 @@ void HostQueueDataSourceActor::FillDataBuffer() {
     (void)device_tensors.emplace_back(device_address.get());
   }
 
+  for (const auto &pair : heter_index_pair_) {
+    if (pair.first >= device_tensors.size() || pair.second >= device_tensors.size()) {
+      MS_LOG(EXCEPTION) << "Invalid index:" << pair.first << " " << pair.second
+                        << " device tensor size:" << device_tensors.size() << " for data source actor.";
+    }
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << device_tensors[pair.second]
+                  << " type:" << device_tensors[pair.second]->GetDeviceType() << " and " << device_tensors[pair.first]
+                  << " type:" << device_tensors[pair.first]->GetDeviceType() << " for actor:" << GetAID();
+    DeviceTensorCopyStore::GetInstance().Insert(device_tensors[pair.second], device_tensors[pair.first]);
+  }
+
   buffers_.push(device_tensors);
 }
 

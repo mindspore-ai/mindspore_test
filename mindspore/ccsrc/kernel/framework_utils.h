@@ -85,7 +85,6 @@ BACKEND_EXPORT void GetValidKernelNodes(const FuncGraphPtr &func_graph, std::vec
                                         std::vector<AnfNodePtr> *input_list, std::vector<AnfNodePtr> *output_list);
 void GetFuncGraphOutputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *output_list);
 void GetGraphRealOutput(const FuncGraphPtr &func_graph, std::vector<std::pair<AnfNodePtr, size_t>> *node_list);
-BACKEND_EXPORT bool IsWeightBoundary(const AnfNodePtr &node);
 BACKEND_EXPORT std::vector<int64_t> GetReduceAttrAxis(const CNodePtr &cnode);
 
 struct KernelArgs {

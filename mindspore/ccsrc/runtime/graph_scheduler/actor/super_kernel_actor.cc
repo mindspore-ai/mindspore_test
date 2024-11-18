@@ -1235,6 +1235,8 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
 
   bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||
                                           SchedulerHelper::IsIgnoredInputAddress(kernel_actor, input_index);
+  MS_LOG(DEBUG) << "Kernel:" << kernel->fullname_with_scope() << " input kernel:" << input_kernel->fullname_with_scope()
+                << " need copy:" << need_not_copy_output_device_addr << " for actor:" << GetAID();
   if (need_not_copy_output_device_addr) {
     UpdateRefCount(input_device_tensor.get(), false);
     kernel_actor->SetInputDeviceTensor(input_device_tensor.get(), input_index);
@@ -1266,6 +1268,12 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   const auto &input_copy_device_address = iter->second.first;
   MS_EXCEPTION_IF_NULL(input_copy_device_address);
   UpdateRefCount(input_copy_device_address.get(), false);
+  if (kernel_actor->modifiable_ref_input_indexes_.count(input_index) > 0) {
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << input_copy_device_address
+                  << " type:" << input_copy_device_address->GetDeviceType() << " and " << input_device_tensor
+                  << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+    DeviceTensorCopyStore::GetInstance().Insert(input_copy_device_address.get(), input_device_tensor.get());
+  }
   kernel_actor->SetInputDeviceTensor(input_copy_device_address.get(), input_index);
   kernel_actor->memory_free_list_[input_index] = input_copy_device_address.get();
 }

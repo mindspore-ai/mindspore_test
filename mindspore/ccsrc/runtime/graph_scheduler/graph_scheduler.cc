@@ -1295,10 +1295,21 @@ void GraphScheduler::UpdateDeviceAddressByRefInternalParameter(const GraphCompil
       auto front_output_with_index = graph->GetOriginFrontNodeByInternalParameter(origin_node_pair.first);
       MS_EXCEPTION_IF_NULL(front_output_with_index.first);
       if (graph_output_to_actor_.count(front_output_with_index) == 0) {
+        if (graph_compiler_info.control_node_parser_ != nullptr &&
+            graph_compiler_info.control_node_parser_->IsControlFlowDataArrow(graph, origin_node_pair.first)) {
+          MS_LOG(DEBUG) << "Skip set ref for origin node:" << origin_node_pair.first->DebugString()
+                        << " current node:" << cur_node_pair.first->fullname_with_scope();
+          continue;
+        }
         MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, front_output_with_index.first)
           << "#dmsg#Runtime error info:#dmsg#Can't find graph output by front node:"
-          << front_output_with_index.first->DebugString();
+          << front_output_with_index.first->DebugString()
+          << " backend internal parameter:" << origin_node_pair.first->DebugString();
       }
+      MS_LOG(DEBUG) << "Graph:" << graph->ToString()
+                    << " ref backend internal parameter:" << origin_node_pair.first->DebugString()
+                    << " current node:" << cur_node_pair.first->DebugString()
+                    << " front node:" << front_output_with_index.first->DebugString();
       auto real_origin_node_pair = graph_output_to_actor_[front_output_with_index].second;
       real_origin_node_pair =
         common::AnfAlgo::VisitKernelWithReturnType(real_origin_node_pair.first, real_origin_node_pair.second, false);
@@ -1581,13 +1592,20 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
         // is saved in the host queue data source actor. Particularly, the same front parameter corresponds to multiple
         // backend parameters in heterogeneous scenarios, and these heterogeneous parameters need to be placed in the
         // data source actor.
-        if (front_node_position_temp_map.count(front_node_with_index) > 0 &&
-            (!IsNeedInsertCopyActor(
-              device_context,
-              host_queue_ds_actor->device_contexts_[front_node_position_temp_map[front_node_with_index]]))) {
-          (void)host_queue_ds_actor->data_node_position_map_.emplace(
-            KernelWithIndex(input_node, 0), front_node_position_temp_map[front_node_with_index]);
-          continue;
+        if (front_node_position_temp_map.count(front_node_with_index) > 0) {
+          auto front_node_index = front_node_position_temp_map[front_node_with_index];
+          if (!IsNeedInsertCopyActor(device_context, host_queue_ds_actor->device_contexts_[front_node_index])) {
+            (void)host_queue_ds_actor->data_node_position_map_.emplace(KernelWithIndex(input_node, 0),
+                                                                       front_node_index);
+            continue;
+          } else {
+            host_queue_ds_actor->heter_index_pair_.emplace_back(front_node_index, data_node_position);
+            MS_LOG(DEBUG) << "Add heter ref node:" << input_node->DebugString() << " index:" << data_node_position
+                          << " to node:"
+                          << host_queue_ds_actor->data_node_with_indexs_[front_node_index].first->DebugString()
+                          << " index:" << front_node_index
+                          << " front node:" << front_node_with_index.first->DebugString() << " to data source actor.";
+          }
         }
         (void)host_queue_ds_actor->data_node_with_indexs_.emplace_back(input_node, 0);
         (void)host_queue_ds_actor->device_contexts_.emplace_back(device_context);
@@ -2333,6 +2351,23 @@ void GraphScheduler::LinkDataArrowForKernelActor(AbstractActor *const from_actor
                             graph);
 }
 
+bool IsRefNode(const KernelWithIndex &from_node_with_index, const KernelWithIndex &to_node_with_index) {
+  auto from_node = from_node_with_index.first;
+  MS_EXCEPTION_IF_NULL(from_node);
+  auto to_node = to_node_with_index.first;
+  if (to_node != nullptr && to_node->isa<CNode>()) {
+    const auto &cnode = to_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (to_node_with_index.second < cnode->size() && cnode->input(to_node_with_index.second) != nullptr &&
+        cnode->input(to_node_with_index.second)->isa<CNode>()) {
+      return false;
+    }
+  }
+  return from_node->abstract() != nullptr &&
+         common::AnfAlgo::FetchAbstractByIndex(from_node->abstract(), from_node_with_index.second)
+           ->isa<abstract::AbstractRefTensor>();
+}
+
 void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, AbstractActor *const to_actor,
                                                const KernelWithIndex &from_kernel_with_output_idx,
                                                const KernelWithIndex &to_kernel_with_input_idx) {
@@ -2362,6 +2397,7 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
     (void)copy_actors_.emplace_back(copy_actor_shared_ptr);
     copy_actor = copy_actor_shared_ptr.get();
     MS_EXCEPTION_IF_NULL(copy_actor);
+    MS_LOG(DEBUG) << "Create copy actor:" << copy_actor->GetAID();
     InsertActor(copy_actor);
 
     // Set the member device_contexts_ of the copy actor.
@@ -2396,7 +2432,10 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
       new_kernel_tensor->set_device_ptr(nullptr);
 
       copy_actor->output_ = to_device_context->device_res_manager_->CreateDeviceAddress(new_kernel_tensor);
-      MS_LOG(DEBUG) << "Create device tensor:" << copy_actor->output_;
+      MS_EXCEPTION_IF_NULL(copy_actor->output_);
+      MS_LOG(DEBUG) << "Create output device tensor:" << copy_actor->output_
+                    << " origin ref count:" << copy_actor->output_->original_ref_count()
+                    << " for copy actor:" << copy_actor->GetAID();
     }
     MS_EXCEPTION_IF_NULL(copy_actor->output_);
     if (copy_actor->output_->GetDeviceType() != to_device_context->GetDeviceType()) {
@@ -2417,6 +2456,17 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
   if (!EnableKbkSubGraphExecute() && (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
                                       to_actor->type_ == KernelTransformType::kAnyTypeKernelActor)) {
     UpdateRefCount(copy_actor->output_.get(), true);
+  } else if (IsRefNode(from_kernel_with_output_idx, to_kernel_with_input_idx)) {
+    MS_LOG(DEBUG) << "Set ref count to max for ref output of kernel:" << from_kernel->DebugString()
+                  << " index:" << from_kernel_with_output_idx.second;
+    UpdateRefCount(copy_actor->output_.get(), true);
+    const auto &pre_device_tensor =
+      !to_kernel_with_input_idx.first->isa<CNode>()
+        ? AnfAlgo::GetMutableOutputAddr(to_kernel_with_input_idx.first, 0, false)
+        : AnfAlgo::GetPrevNodeMutableOutputAddr(to_kernel_with_input_idx.first, to_kernel_with_input_idx.second, false);
+    MS_EXCEPTION_IF_NULL(pre_device_tensor);
+    copy_actor->ref_parameter_device_tensors_.emplace(pre_device_tensor);
+    MS_LOG(DEBUG) << "Add ref parameter device address:" << pre_device_tensor << " for actor:" << copy_actor->GetAID();
   } else {
     UpdateRefCount(copy_actor->output_.get(), false);
   }
@@ -2682,6 +2732,8 @@ void GraphScheduler::LinkGlobalControlArrow(ActorSet *const actor_set,
                                     graph_compiler_info.control_node_parser_);
 
   LinkControlArrowForOutputActor(actor_set->output_actor_.get(), actor_set);
+
+  LinkControlArrowForCopyActor(actor_set);
 }
 
 void GraphScheduler::LinkControlArrowForCustomActor(const ActorSet *actor_set,
@@ -3059,6 +3111,42 @@ void GraphScheduler::LinkControlArrowForOutputActor(OutputActor *output_actor, c
   SchedulerHelper::AddControlArrow(output_actor, actor_set->data_prepare_actor_.get());
 }
 
+void GraphScheduler::LinkControlArrowForCopyActor(const ActorSet *actor_set) const {
+  MS_EXCEPTION_IF_NULL(actor_set);
+  MS_LOG(DEBUG) << "Link control arrow for copy actor start, copy actor size:" << copy_actors_.size();
+  for (const auto &copy_actor : copy_actors_) {
+    MS_EXCEPTION_IF_NULL(copy_actor);
+    if (copy_actor->from_kernel_ == nullptr || !copy_actor->from_kernel_->isa<CNode>() ||
+        copy_actor->from_kernel_->abstract() == nullptr ||
+        !copy_actor->from_kernel_->abstract()->isa<abstract::AbstractRefTensor>() ||
+        copy_actor->output_data_arrows_.empty()) {
+      MS_LOG(DEBUG) << "Skip check add control arrow for copy actor:" << copy_actor->GetAID() << " from kernel:"
+                    << (copy_actor->from_kernel_ == nullptr ? "nullptr"
+                                                            : copy_actor->from_kernel_->fullname_with_scope())
+                    << " from graph:"
+                    << (copy_actor->from_graph_ == nullptr ? "nullptr" : copy_actor->from_graph_->ToString());
+      continue;
+    }
+    const auto &output_arrow = copy_actor->output_data_arrows_[0];
+    MS_EXCEPTION_IF_NULL(output_arrow);
+    const auto &to_actor = FetchActor(output_arrow->to_op_id_.Name());
+    if (to_actor == nullptr) {
+      MS_LOG(WARNING) << "Failed to fetch actor by:" << output_arrow->to_op_id_.Name()
+                      << " for copy actor:" << copy_actor->GetAID();
+      continue;
+    }
+    MS_LOG(DEBUG) << "Need add control arrow for copy actor:" << copy_actor->GetAID()
+                  << " by to actor:" << to_actor->GetAID();
+    for (const auto &input_pair : to_actor->input_control_arrow_aids_) {
+      const auto &from_actor = FetchActor(input_pair.first.Name());
+      if (from_actor == nullptr || IsControlFlowActor(from_actor->type())) {
+        continue;
+      }
+      SchedulerHelper::AddControlArrow(from_actor, copy_actor.get());
+    }
+  }
+}
+
 void GraphScheduler::LinkOutputResultArrowForOutputActor(OutputActor *to_actor,
                                                          const GraphCompilerInfo &graph_compiler_info) const {
   if (graph_compiler_info.strategy_ == GraphExecutionStrategy::kStep ||
@@ -3149,6 +3237,7 @@ void GraphScheduler::LinkDeviceTensorStoreForAutoMonadActor(const std::vector<Ab
       }
       auto copy_actor = std::make_shared<CopyActor>(name, from_kernel, from_graph, memory_manager_aid_);
       MS_EXCEPTION_IF_NULL(copy_actor);
+      MS_LOG(DEBUG) << "Create copy actor:" << copy_actor->GetAID();
       (void)copy_actors_.emplace_back(copy_actor);
       InsertActor(copy_actor.get());
 
@@ -3444,6 +3533,7 @@ void GraphScheduler::DumpFinalActor(const ActorSet *actor_set, const GraphCompil
     return;
   }
   SchedulerHelper::DumpFormatActorSet(actor_set, ofs);
+  control_node_scheduler_.DumpFormatControlActorSet(actor_set, graph_compiler_info, graph_output_to_actor_, ofs);
   ChangeFileMode(realpath.value(), S_IRUSR);
 }
 

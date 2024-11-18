@@ -807,6 +807,11 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTupleUnfoldForTupleGetItem(c
 
   auto abs = GenerateAbsByOpInfer(prim::kPrimRealTupleGetItem, {input, index_input});
   MS_EXCEPTION_IF_NULL(abs);
+  if (common::AnfAlgo::HasAbstractRef(node) && abs->isa<abstract::AbstractTensor>()) {
+    abs = std::make_shared<abstract::AbstractRefTensor>(
+      abs->cast<abstract::AbstractTensorPtr>(),
+      node->abstract()->cast<std::shared_ptr<abstract::AbstractRefTensor>>()->ref_key_value());
+  }
   MS_LOG(DEBUG) << "Abstract for RealTupleGetItem op is " << abs->ToString();
   node->set_abstract(abs);
 

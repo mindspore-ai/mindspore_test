@@ -382,8 +382,11 @@ void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (is_max_ref_count) {
     device_tensor->set_original_ref_count(SIZE_MAX);
+    MS_LOG(DEBUG) << "Set origin ref count max for device address:" << device_tensor;
   } else {
     device_tensor->IncreaseOriginalRefCount();
+    MS_LOG(DEBUG) << "Add origin ref count for device address:" << device_tensor
+                  << " origin ref count:" << device_tensor->original_ref_count();
   }
   device_tensor->ResetRefCount();
 }

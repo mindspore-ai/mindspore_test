@@ -170,6 +170,7 @@ class ControlNodeParser {
   const std::unordered_map<FuncGraphPtr, AnfNodePtr> &func_graph_to_partial_node() {
     return func_graph_to_partial_node_;
   }
+  const std::set<KernelGraphGroupInfoPtr> &kernel_graph_group_infos() const { return kernel_graph_group_infos_; }
   // Fetch all funcgraphs that the call node may call.
   const std::set<FuncGraphPtr> &FetchFuncGraphbyCallNode(const AnfNodePtr &control_node);
   // Fetch the branch id corresponding to funcgraph.

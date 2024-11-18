@@ -823,27 +823,19 @@ void DeviceAddressUtils::UpdateDeviceAddress(const session::AnfWithOutIndex &cur
   if (origin_node_output_addr->pointer_ref_count() != cur_node_output_addr->pointer_ref_count()) {
     // Check the device target whether consistent.
     if (origin_node_output_addr->GetDeviceType() != cur_node_output_addr->GetDeviceType()) {
-      std::string error_info =
-        "Device target is not consistent: ref origin kernel is " + origin_pair.first->fullname_with_scope() +
-        ", index is " + std::to_string(origin_pair.second) + ", device target is " +
-        device::GetDeviceNameByType(origin_node_output_addr->GetDeviceType()) + "; cur kernel is " +
-        cur_pair.first->fullname_with_scope() + ", index is " + std::to_string(cur_pair.second) +
-        ", device target is " + device::GetDeviceNameByType(cur_node_output_addr->GetDeviceType());
-
-      MS_LOG(ERROR) << error_info;
-      if (AnfAlgo::IsKernelSelectBackoffOp(origin_pair.first)) {
-        const auto &backoff_info = AnfAlgo::GetKernelSelectBackoffInfo(origin_pair.first);
-        MS_EXCEPTION(backoff_info.second) << "#umsg#Kernel select failed:#umsg#" << backoff_info.second;
-      } else if (AnfAlgo::IsKernelSelectBackoffOp(cur_pair.first)) {
-        const auto &backoff_info = AnfAlgo::GetKernelSelectBackoffInfo(cur_pair.first);
-        MS_EXCEPTION(backoff_info.second) << "#umsg#Kernel select failed:#umsg#" << backoff_info.second;
-      } else {
-        MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << error_info;
-      }
+      MS_LOG(INFO) << "Device target is not consistent: ref origin device address " << origin_node_output_addr
+                   << "kernel is " << origin_pair.first->fullname_with_scope() << ", index is "
+                   << std::to_string(origin_pair.second) << ", device target is "
+                   << device::GetDeviceNameByType(origin_node_output_addr->GetDeviceType()) << "; cur device address "
+                   << cur_node_output_addr << "kernel is " << cur_pair.first->fullname_with_scope() << ", index is "
+                   << std::to_string(cur_pair.second) << ", device target is "
+                   << device::GetDeviceNameByType(cur_node_output_addr->GetDeviceType());
+      return;
     }
-    MS_LOG(INFO) << "Update device address: ref origin kernel is " << origin_pair.first->fullname_with_scope()
-                 << ", index is " << origin_pair.second << "; cur kernel is " << cur_pair.first->fullname_with_scope()
-                 << ", index is " << cur_pair.second;
+    MS_LOG(INFO) << "Update device address: ref origin device address:" << origin_node_output_addr << "kernel is "
+                 << origin_pair.first->fullname_with_scope() << ", index is " << origin_pair.second
+                 << "; cur device address " << cur_node_output_addr << " kernel is "
+                 << cur_pair.first->fullname_with_scope() << ", index is " << cur_pair.second;
     // Update the reference count of device address.
     cur_node_output_addr->DecreaseOriginalRefCount();
     cur_node_output_addr->ResetRefCount();
@@ -868,6 +860,10 @@ void DeviceAddressUtils::UpdateDeviceAddressForRefNode(const KernelGraphPtr &gra
   }
 
   AnfAlgo::UpdateGraphValidRefPair(graph);
+  for (const auto &pair : graph->GetRefMap()) {
+    MS_LOG(DEBUG) << "Ref node pair for node:" << pair.first.first->DebugString() << " index:" << pair.first.second
+                  << " and node:" << pair.second.first->DebugString() << " index:" << pair.second.second;
+  }
   for (const auto &ref_pair : graph->GetRefMap()) {
     const auto &out_pair = ref_pair.first;
     const auto &origin_pair = ref_pair.second;
