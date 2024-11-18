@@ -258,7 +258,7 @@ class AscendEnvChecker(EnvChecker):
 
     def __init__(self, library_path):
         self.library_path = library_path
-        self.version = ["7.3", "7.5"]
+        self.version = ["7.5", "7.6"]
 
         # env
         self.path = os.getenv("PATH")
@@ -266,7 +266,7 @@ class AscendEnvChecker(EnvChecker):
         self.ld_lib_path = os.getenv("LD_LIBRARY_PATH")
         self.ascend_opp_path = os.getenv("ASCEND_OPP_PATH")
         self.ascend_aicpu_path = os.getenv("ASCEND_AICPU_PATH")
-        if not self.ascend_opp_path is None:
+        if self.ascend_opp_path is not None:
             self.compiler_version = self.ascend_opp_path.split("opp")[0] + "compiler/version.info"
         else:
             self.compiler_version = ""
@@ -400,7 +400,7 @@ class AscendEnvChecker(EnvChecker):
                 "Environment Variable PYTHONPATH is set. For details, refer to the installation guidelines: "
                 "https://www.mindspore.cn/install")
 
-        if self.ld_lib_path is None or not self.ld_lib_path_check_fwk in self.ld_lib_path:
+        if self.ld_lib_path is None or self.ld_lib_path_check_fwk not in self.ld_lib_path:
             logger.warning("Can not find driver so(need by mindspore-ascend). Please check whether the "
                            "Environment Variable LD_LIBRARY_PATH is set. For details, refer to the installation "
                            "guidelines: https://www.mindspore.cn/install")
