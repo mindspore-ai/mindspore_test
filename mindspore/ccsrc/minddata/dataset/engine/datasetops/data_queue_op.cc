@@ -979,8 +979,10 @@ Status DataQueueOp::SendDataToGPU() {
   uint64_t batch_record_start;
   uint64_t batch_record_end;
   batch_record_start = ProfilingTime::GetCurMilliSecond();
+  double row_timer_start = GetMilliTimeStamp();
   TensorRow current_row;
   RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&current_row));
+  current_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
   first_fetch_flag_ = true;
   int64_t num_buf = 0;
   bool is_break_loop = false;
@@ -1004,11 +1006,17 @@ Status DataQueueOp::SendDataToGPU() {
       }
 
       PrintBeginInfoWhenFirstBatch(first_push_flag_);
+      if (current_row.Timer()->Enabled()) {
+        // VL_MD is 10900
+        VLOG_MD(current_row.Timer()->Summary());
+      }
       RETURN_IF_NOT_OK(receive_queues_[num_buf++ % num_workers_]->Add(std::move(current_row)));
       PrintEndInfoWhenFirstBatch(&first_push_flag_);
       batch_record_start = ProfilingTime::GetCurMilliSecond();
       if (NoExceptionRaised()) {
+        row_timer_start = GetMilliTimeStamp();
         RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&current_row));
+        current_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
       } else {
         is_break_loop = true;
       }
@@ -1021,7 +1029,9 @@ Status DataQueueOp::SendDataToGPU() {
     }
 
     if (NoExceptionRaised()) {
+      row_timer_start = GetMilliTimeStamp();
       RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&current_row));
+      current_row.TimerRecord(NameWithID(), RowTimer::kThroughputTime, {GetMilliTimeStamp() - row_timer_start});
     } else {
       is_break_loop = true;
     }
