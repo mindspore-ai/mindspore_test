@@ -1,9 +1,6 @@
-import numpy as np
 import mindspore
 from mindspore import mint
 from mindspore import ops
-from mindspore import Parameter
-from mindspore import Tensor
 from mindspore.communication.comm_func import all_gather_into_tensor
 from mindspore.nn.cell import Cell
 from mindspore.ops.auto_generate.gen_ops_prim import BatchNormReduceGrad
@@ -11,13 +8,10 @@ from mindspore.ops.auto_generate.gen_ops_prim import BatchNormElemtGrad
 
 
 class SyncBatchNormInner(Cell):
-    def __init__(self, self_num_features, self_world_size, self_mean_param, self_invstd_param, self_count_all_param):
+    def __init__(self, self_num_features, self_world_size):
         super(SyncBatchNormInner, self).__init__()
         self.num_features = self_num_features
         self.world_size = self_world_size
-        self.mean_param = self_mean_param
-        self.invstd_param = self_invstd_param
-        self.count_all_param = self_count_all_param
         self.batch_norm_reduce_grad = BatchNormReduceGrad()
         self.batch_norm_elemt_grad = BatchNormElemtGrad()
 
@@ -63,27 +57,26 @@ class SyncBatchNormInner(Cell):
             count_all.view(-1)
         )
 
-        self.mean_param.copy_(mean)
-        self.invstd_param.copy_(invstd)
-        self.count_all_param.copy_(count_all.view(-1))
-
         # apply element-wise normalization
         out = mint.batch_norm_elemt(input, weight, bias, mean, invstd, eps)
-        return (out, self.mean_param, self.invstd_param, self.count_all_param)
+        return (out, mean, invstd, count_all.view(-1))
 
     def bprop(self, input_x, weight, bias, running_mean, running_var, eps, momentum,
               process_group, world_size, output, doutput):
-        mean_param, invstd_param, count_all_param = self.mean_param, self.invstd_param, self.count_all_param
+        _, mean_param, invstd_param, count_all_param = output
         dout, _, _, _ = doutput
 
+        # 图模式不支持is_contiguous
         if not dout.is_contiguous():
             dout = dout.contiguous()
 
         grad_input = grad_weight = grad_bias = None
 
-        inputG = input_x.requires_grad
-        weightG = weight.requires_grad
-        biasG = bias.requires_grad
+        # 框架上不支持动态获取tensor/parameter的requires_grad
+        # 临时写死，对所有输入都进行求导
+        inputG = True
+        weightG = True
+        biasG = True
 
         # calculate local stats as well as grad_weight / grad_bias
         sum_dy, sum_dy_xmu, grad_weight, grad_bias = self.batch_norm_reduce_grad(
@@ -102,7 +95,7 @@ class SyncBatchNormInner(Cell):
             num_channels = sum_dy.shape[0]
             combined = mint.cat([sum_dy, sum_dy_xmu], dim=0)
 
-            new_combined = mindspore.communication.comm_func.all_reduce(
+            new_combined, _ = mindspore.communication.comm_func.all_reduce(
                 combined, group=process_group)
 
             sum_dy, sum_dy_xmu = mint.split(new_combined, num_channels)
@@ -135,14 +128,7 @@ class _SyncBatchNorm(Cell):
         super(_SyncBatchNorm, self).__init__()
         self.num_features = num_features
         self.world_size = world_size
-        self.mean_param = Parameter(
-            Tensor(np.empty(num_features), dtype=dtype), requires_grad=False)
-        self.invstd_param = Parameter(
-            Tensor(np.empty(num_features), dtype=dtype), requires_grad=False)
-        self.count_all_param = Parameter(
-            Tensor(np.empty(world_size), dtype=mindspore.int32), requires_grad=False)
-        self.inner = SyncBatchNormInner(
-            self.num_features, self.world_size, self.mean_param, self.invstd_param, self.count_all_param)
+        self.inner = SyncBatchNormInner(self.num_features, self.world_size)
 
     def construct(self, input, weight, bias, running_mean, running_var, eps, momentum, process_group, world_size):
         res = self.inner(input, weight, bias, running_mean,

@@ -11,11 +11,11 @@ batch_norm_elemt_grad:
       dtype: tensor
     weight:
       dtype: tensor
-    sumdDy:
+    sumd_dy:
       dtype: tensor
-    sumDyXmu:
+    sum_dy_xmu:
       dtype: tensor
-    counter:
+    count:
       dtype: tensor
   returns:
     input_grad:
