@@ -1319,7 +1319,7 @@ AbstractBasePtr PrimitiveFunctionEvaluator::AddRefKeyForArgs(const AbstractBaseP
     return output_abs;
   }
   // Convert input tensor to ref if this tensor is rw_write.
-  auto prim_sigs = prim_func_->signatures();
+  const auto &prim_sigs = prim_func_->signatures();
   for (size_t i = 0; i < prim_sigs.size(); ++i) {
     if (prim_sigs[i].rw == SignatureEnumRW::kRWWrite && !input_args[i]->isa<AbstractRefTensor>()) {
       auto ref_tensor = ConvertTensorToRef(input_args[i]);
@@ -1328,10 +1328,10 @@ AbstractBasePtr PrimitiveFunctionEvaluator::AddRefKeyForArgs(const AbstractBaseP
   }
   // If output is a tensor.
   if (output_abs->isa<AbstractTensor>()) {
-    auto inplace_index = op_def_->returns_[0].inplace_input_index_;
+    auto inplace_index = inplace_input_indexes()[0];
     if (inplace_index != -1) {
-      return input_args[inplace_index]->isa<AbstractRefTensor>() ? input_args[inplace_index]
-                                                                 : input_args[inplace_index]->inplace_abstract();
+      auto res_abs = input_args[inplace_index];
+      return res_abs->isa<AbstractRefTensor>() ? res_abs : res_abs->inplace_abstract();
     }
     return output_abs;
   }
@@ -1340,12 +1340,12 @@ AbstractBasePtr PrimitiveFunctionEvaluator::AddRefKeyForArgs(const AbstractBaseP
   if (output_abs->isa<AbstractSequence>()) {
     // Get outputs after infer.
     const auto &output_args = output_abs->cast<AbstractSequencePtr>()->elements();
+    const auto &inplace_indexes = inplace_input_indexes();
     for (size_t i = 0; i < output_args.size(); ++i) {
-      auto inplace_index = op_def_->returns_[i].inplace_input_index_;
+      auto inplace_index = inplace_indexes[i];
       if (inplace_index != -1) {
-        auto outi_arg = input_args[inplace_index]->isa<AbstractRefTensor>()
-                          ? input_args[inplace_index]
-                          : input_args[inplace_index]->inplace_abstract();
+        auto resi_abs = input_args[inplace_index];
+        auto outi_arg = resi_abs->isa<AbstractRefTensor>() ? resi_abs : resi_abs->inplace_abstract();
         (void)output_list.emplace_back(outi_arg);
       } else {
         (void)output_list.emplace_back(output_args[i]);
@@ -1405,11 +1405,11 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
     MS_LOG(DEBUG) << "prim_func_: " << prim_func_->ToString();
     if (op_def_->func_impl_.GeneralInferRegistered()) {
       auto res = ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
-      if (op_def_->is_graph_view_) {
+      if (graph_view_prim()) {
         MS_LOG(DEBUG) << "View prim infer.";
         return UpdateViewOpsAbstract(res, args);
       }
-      return prim_func_->inplace_prim() ? AddRefKeyForArgs(res, args) : res;
+      return inplace_prim() ? AddRefKeyForArgs(res, args) : res;
     } else {
       (void)op_def_->func_impl_.CheckValidation(prim_func_, args);
       if (frontend_func_impl_ != nullptr) {
@@ -1421,11 +1421,11 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       auto type = op_def_->func_impl_.InferType(prim_func_, args);
       auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
       auto res = MakeAbstract(shape, type);
-      if (op_def_->is_graph_view_) {
+      if (graph_view_prim()) {
         MS_LOG(DEBUG) << "View prim infer.";
         return UpdateViewOpsAbstract(res, args);
       }
-      return prim_func_->inplace_prim() ? AddRefKeyForArgs(res, args) : res;
+      return inplace_prim() ? AddRefKeyForArgs(res, args) : res;
     }
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Find infer function failed, primitive: " << prim_func_->ToString();

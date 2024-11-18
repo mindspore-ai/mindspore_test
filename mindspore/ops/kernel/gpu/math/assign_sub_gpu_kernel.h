@@ -25,7 +25,6 @@
 #include <map>
 #include <utility>
 #include <iostream>
-#include "mindspore/ops/infer/assign_sub.h"
 #include "kernel/common_utils.h"
 #include "include/curand.h"
 #include "abstract/utils.h"

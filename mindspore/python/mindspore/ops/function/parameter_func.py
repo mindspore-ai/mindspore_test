@@ -17,59 +17,7 @@
 
 from mindspore.ops import operations as P
 from mindspore.ops._primitive_cache import _get_cache_prim
-from mindspore.ops.auto_generate import assign, assign_add
-
-
-assign_sub_ = P.AssignSub()
-assign_add_ = P.AssignAdd()
-
-
-def assign_sub(variable, value):
-    """
-    Updates a `Parameter` by subtracting a value from it.
-
-    Args of `variable` and `value` comply with the implicit type conversion rules to make the data types consistent.
-    If they have different data types, the lower priority data type will be converted to
-    the relatively highest priority data type.
-    If `value` is a number, the number is automatically converted to Tensor,
-    and the data type is consistent with the Tensor data type involved in the operation.
-
-    Note:
-        Since `variable` is a data type Parameter, the data type cannot be changed,
-        so only the type of `value` is allowed to be promoted to the type of `variable`.
-        And the conversion type supported by different devices will be different,
-        it is recommended to use the same data type when using this operator.
-
-    Args:
-        variable (Parameter): The `Parameter`.
-            :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-        value (Tensor): The value to be subtracted from the `variable`.
-            It must have the same shape as `variable`.
-            it is recommended to use the same data type when using this operator.
-
-    Returns:
-        Tensor, has the same data type and shape as original `variable`.
-
-    Raises:
-        TypeError: If `value` is neither Number nor Tensor.
-        RuntimeError: If the data type of `x`, `y` conversion of Parameter is required
-                      when data type conversion of Parameter is not supported.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore.common.initializer import initializer
-        >>> variable = mindspore.Parameter(initializer(1, [1], mindspore.int32), name="global_step")
-        >>> value = Tensor(np.ones([1]).astype(np.int32) * 100)
-        >>> ops.assign_sub(variable, value)
-        >>> print(variable.asnumpy())
-        [-99]
-    """
-    return assign_sub_(variable, value)
+from mindspore.ops.auto_generate import assign, assign_add, assign_sub
 
 
 def index_add(x, indices, y, axis, use_lock=True, check_index_bound=True):

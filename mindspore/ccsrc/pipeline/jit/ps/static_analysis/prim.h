@@ -44,6 +44,20 @@ class PrimitiveFunctionEvaluator final : public TrivialPrimEvaluator {
 
  protected:
   bool inplace_prim() const override { return prim_func_->inplace_prim(); }
+  bool graph_view_prim() const {
+    MS_EXCEPTION_IF_NULL(op_def_);
+    return op_def_->is_graph_view_;
+  }
+  std::vector<int64_t> inplace_input_indexes() const {
+    MS_EXCEPTION_IF_NULL(op_def_);
+    size_t output_size = op_def_->returns_.size();
+    std::vector<int64_t> indexes;
+    for (size_t index = 0; index < output_size; ++index) {
+      auto inplace_index = op_def_->returns_[index].inplace_input_index_;
+      (void)indexes.emplace_back(inplace_index);
+    }
+    return indexes;
+  }
 
  private:
   AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const AbstractBasePtrList &input_args);
