@@ -202,9 +202,14 @@ class FuseMatMul : public FusePattern {
 
   bool Match(const AreaPtr &dom) override {
     constexpr size_t MAX_FUSE_NUM = 5;
+    constexpr int64_t MAX_FUSION_SIZE = UINT32_MAX;
     size_t current_size = 0;
     auto output_shape = dom->ops().back()->shape;
-    auto matmul_output_size = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+    int64_t matmul_output_size =
+      std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+    if (matmul_output_size > MAX_FUSION_SIZE || output_shape.back() == 1) {
+      return false;
+    }
     auto dom_users = dom->users();
     std::sort(dom_users.begin(), dom_users.end(),
               [](const AreaPtr &a, const AreaPtr &b) { return a->area_outputs().size() < b->area_outputs().size(); });

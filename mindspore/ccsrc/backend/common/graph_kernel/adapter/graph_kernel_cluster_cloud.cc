@@ -228,8 +228,7 @@ class DvmSupportChecker {
     auto a_shape = GetShape(cnode->input(kIndex1));
     auto b_shape = GetShape(cnode->input(kIndex2));
     auto c_shape = GetShape(node);
-    if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE || c_shape.back() > MAX_GM_STRIDE ||
-        c_shape.back() == 1) {
+    if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE) {
       return false;
     }
     if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && c_shape.size() > kSizeFour) {
