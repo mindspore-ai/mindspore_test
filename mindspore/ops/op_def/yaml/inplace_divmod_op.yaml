@@ -1,0 +1,24 @@
+#operator inplace_divmod
+inplace_divmod:
+    args:
+        input:
+            dtype: tensor
+        other:
+            dtype: tensor
+        rounding_mode:
+            dtype: int
+            default: None
+            arg_handler: str_to_enum
+    args_signature:
+        rw_write: input
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    class:
+        name: InplaceDivMod
+    function:
+        name: divmod_tensor_
+    dispatch:
+        enable: True
+        Ascend: InplaceDivModAscend
