@@ -591,6 +591,7 @@ void InitPynativeNoShardParams(const FuncGraphPtr &root) {
 
 void AutoParallelPostProcess(const FuncGraphPtr &root) {
   auto parameters = root->parameters();
+  auto enable_param_init_prof = common::GetEnv("MS_DEV_PARAM_INIT_PROF_COLLECT");
   for (auto &param : parameters) {
     if (ParameterIsCloned(param)) {
       continue;
@@ -601,7 +602,20 @@ void AutoParallelPostProcess(const FuncGraphPtr &root) {
     if (!param_ptr->has_default()) {
       continue;
     }
+    if (layout != nullptr && !enable_param_init_prof.empty()) {
+      auto slice_shape = layout->base_slice_shape().array();
+      std::string opt_shard_group = layout->opt_shard_group();
+      if (!opt_shard_group.empty()) {
+        slice_shape = layout->opt_shard_slice_shape();
+      }
+      auto full_shape = layout->tensor_shape().array();
+      MS_LOG(WARNING) << "Slice start: " << param_ptr->name() << ", full_shape: " << full_shape
+                      << ", slice_shape: " << slice_shape;
+    }
     SliceParameterObj(param_ptr, layout);
+    if (layout != nullptr && !enable_param_init_prof.empty()) {
+      MS_LOG(WARNING) << "Slice finish: " << param_ptr->name();
+    }
   }
 }
 
