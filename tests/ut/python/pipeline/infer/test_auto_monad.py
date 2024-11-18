@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Huawei Technologies Co., Ltd
+# Copyright 2021-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,11 +69,14 @@ def test_assign_only_grad():
         def construct(self, x, y):
             return grad_all_list(self.net, self.parameter_tuple)(x, y)
 
-    assign_net = AssignOnlyNet()
-    net = GradNet(assign_net)
-    x = Tensor(np.array([2.0], np.float32))
-    y = Tensor(np.array([3.0], np.float32))
-    print(net(x, y))
+
+    with pytest.raises(RuntimeError) as err1:
+        assign_net = AssignOnlyNet()
+        net = GradNet(assign_net)
+        x = Tensor(np.array([2.0], np.float32))
+        y = Tensor(np.array([3.0], np.float32))
+        print(net(x, y))
+    assert "A leaf Variable that requires grad is being used in an in-place operation" in str(err1.value)
 
 
 def test_load_assign_grad():
@@ -98,11 +101,13 @@ def test_load_assign_grad():
         def construct(self, x, y):
             return grad_all_list(self.net, self.parameter_tuple)(x, y)
 
-    assign_net = AssignNet()
-    net = GradNet(assign_net)
-    x = Tensor(np.array([2.0], np.float32))
-    y = Tensor(np.array([3.0], np.float32))
-    print(net(x, y))
+    with pytest.raises(RuntimeError) as err1:
+        assign_net = AssignNet()
+        net = GradNet(assign_net)
+        x = Tensor(np.array([2.0], np.float32))
+        y = Tensor(np.array([3.0], np.float32))
+        print(net(x, y))
+    assert "A leaf Variable that requires grad is being used in an in-place operation" in str(err1.value)
 
 
 def test_insert_gradient_of():
@@ -345,12 +350,14 @@ def test_grad_fv_and_insert_gradient_of():
             out = self.getG(x)
             return out
 
-    net = FvAndInsertGradientNet()
-    input_data = Tensor(np.array([1.0], np.float32))
-    # if use grad_all_list, the generated graph will have EnvironSet
-    # as gradient for inputs is constant zero, so it will depend on result of grad.
-    grad_net = grad_by_list(net, ParameterTuple(net.trainable_params()))
-    print(grad_net(input_data))
+    with pytest.raises(RuntimeError) as info:
+        net = FvAndInsertGradientNet()
+        input_data = Tensor(np.array([1.0], np.float32))
+        # if use grad_all_list, the generated graph will have EnvironSet
+        # as gradient for inputs is constant zero, so it will depend on result of grad.
+        grad_net = grad_by_list(net, ParameterTuple(net.trainable_params()))
+        print(grad_net(input_data))
+    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
 
 
 # should compile success as cnode with Partial primitive will not bind an additional U monad.
@@ -433,6 +440,7 @@ def test_grad_with_high_order_cnode():
             self.net = net
 
         def construct(self, x, y):
+            # pylint: disable=E1102
             grad_net = ms.ops.grad(self.net)
             return grad_net(x, y)
 

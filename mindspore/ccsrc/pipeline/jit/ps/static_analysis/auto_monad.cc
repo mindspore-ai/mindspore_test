@@ -1482,6 +1482,37 @@ class AutoMonadConverter {
     return false;
   }
 
+  // Check if the node which has no_eliminate flag has other user except StopGradient,
+  // mean that the StopGradient node can be eliminated.
+  // for example:
+  // %0 = AllReduce(x)   no_eliminate node
+  // %1 = StopGradient(%1)
+  // %2 = Depend(x, %0)
+  // %3 = Depend(%2, %1)
+  // -->
+  // %0 = AllReduce(x)
+  // %1 = Depend(x, %0)
+  bool CheckHasOtherUsers(const CNodePtr &cnode) const {
+    auto fg = cnode->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    auto manager = fg->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    const auto &node_users = manager->node_users();
+    auto found = node_users.find(cnode);
+    if (found == node_users.end()) {
+      return false;
+    }
+    for (auto &user : found->second) {
+      auto user_node = dyn_cast<CNode>(user.first);
+      if (IsPrimitiveCNode(user_node, prim::kPrimStopGradient)) {
+        continue;
+      } else {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Clean no side effect dependency nodes.
   //   From:  output = Depend(output, StopGrad)
   //          return output
@@ -1499,6 +1530,11 @@ class AutoMonadConverter {
     }
     auto attach_cnode = attach_node->cast<CNodePtr>();
     auto input = attach_cnode->input(1);
+    // Do not eliminate the node which has no_eliminate flag.
+    if (input->isa<CNode>() && IsNoEliminateNode(input->cast<CNodePtr>()) &&
+        !CheckHasOtherUsers(input->cast<CNodePtr>())) {
+      return;
+    }
     // Check the input of stop_gradient.
     if (input->isa<CNode>() && input->cast<CNodePtr>()->has_side_effect_node()) {
       auto input_cnode = input->cast<CNodePtr>();
@@ -1783,6 +1819,12 @@ class AutoMonadConverter {
     auto depend_cnode = func_graph_->NewCNode({depend, output, node});
     depend_cnode->set_abstract(output->abstract());
     func_graph_->set_output(depend_cnode);
+    auto need_check = output->user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD);
+    if (need_check != nullptr && (*need_check)) {
+      MS_LOG(DEBUG) << "node need check:" << output->DebugString();
+      output->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(false));
+      depend_cnode->set_user_data<bool>(NODE_FLAG_CHECK_INPLACE_GRAD, std::make_shared<bool>(true));
+    }
   }
 
   AnfNodePtr GetGraphOutput() const {

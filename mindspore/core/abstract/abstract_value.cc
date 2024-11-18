@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2886,6 +2886,19 @@ ValuePtr GetRefKeyValue(const AbstractBasePtr &abs) {
     return abs_map_tensor->ref_key_value();
   }
   return nullptr;
+}
+
+std::string GetRefKeyFromAbstract(const AbstractBasePtr &abs) {
+  auto abs_ref = abs->cast<abstract::AbstractRefPtr>();
+  if (abs_ref == nullptr) {
+    return "";
+  }
+  MS_EXCEPTION_IF_NULL(abs_ref->ref_key_value());
+  auto ref_key = abs_ref->ref_key_value()->cast<StringImmPtr>();
+  if (ref_key == nullptr) {
+    return "";
+  }
+  return ref_key->value();
 }
 }  // namespace abstract
 }  // namespace mindspore

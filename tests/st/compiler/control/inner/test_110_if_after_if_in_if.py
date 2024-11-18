@@ -1,4 +1,4 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2021-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import pytest
 from tests.st.compiler.control.cases_register import case_register
 from mindspore import context
 from mindspore import Tensor, nn
@@ -155,8 +156,10 @@ def test_if_after_if_in_if():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(14, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-
-    control_flow_if_after_if_in_if(IfAfterIfInIfNet, x, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        control_flow_if_after_if_in_if(IfAfterIfInIfNet, x, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
 
 
 @case_register.level1
@@ -171,10 +174,13 @@ def test_if_after_if_in_if_01():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(14, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    control_flow_if_after_if_in_if(IfAfterIfInIfNet1, x, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        control_flow_if_after_if_in_if(IfAfterIfInIfNet1, x, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
 
 
-@case_register.level0
+@case_register.level1
 @case_register.target_gpu
 def test_if_after_if_in_if_02():
     """
@@ -185,7 +191,10 @@ def test_if_after_if_in_if_02():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(12, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    control_flow_if_after_if_in_if(IfAfterIfInIfNet2, x, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        control_flow_if_after_if_in_if(IfAfterIfInIfNet2, x, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
 
 
 @case_register.level1
@@ -199,7 +208,10 @@ def test_if_after_if_in_if_02_ascend():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(12, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    control_flow_if_after_if_in_if(IfAfterIfInIfNet2, x, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        control_flow_if_after_if_in_if(IfAfterIfInIfNet2, x, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
 
 
 @case_register.level1
@@ -214,4 +226,7 @@ def test_if_after_if_in_if_03():
     x = Tensor(2, mstype.int32)
     expect1 = Tensor(6, mstype.int32)
     expect2 = (Tensor(1, mstype.int32),)
-    control_flow_if_after_if_in_if(IfAfterIfInIfNet3, x, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        control_flow_if_after_if_in_if(IfAfterIfInIfNet3, x, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))

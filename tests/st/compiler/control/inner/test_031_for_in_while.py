@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Huawei Technologies Co., Ltd
+# Copyright 2021-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import pytest
 import numpy as np
 from tests.st.compiler.control.cases_register import case_register
 from mindspore import context
@@ -24,7 +25,7 @@ from mindspore.common import dtype as mstype
 grad_all = C.GradOperation(get_all=True)
 
 
-@case_register.level0
+@case_register.level1
 @case_register.target_gpu
 @case_register.target_ascend
 def test_for_in_while_01():
@@ -68,17 +69,21 @@ def test_for_in_while_01():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    for_in_while_net = ForInWhileNet()
-    backward_net = GradNet(for_in_while_net)
+    with pytest.raises(RuntimeError) as err1:
+        for_in_while_net = ForInWhileNet()
+        backward_net = GradNet(for_in_while_net)
 
-    forward_net = ForInWhileNet()
-    graph_forward_res = forward_net(x)
-    graph_backward_res = backward_net(x)
+        forward_net = ForInWhileNet()
+        graph_forward_res = forward_net(x)
+        graph_backward_res = backward_net(x)
 
-    expect_forward_res = Tensor([128], mstype.int32)
-    expect_backward_res = (Tensor([64], mstype.int32),)
-    assert graph_forward_res == expect_forward_res
-    assert graph_backward_res == expect_backward_res
+        expect_forward_res = Tensor([128], mstype.int32)
+        expect_backward_res = (Tensor([64], mstype.int32),)
+        assert graph_forward_res == expect_forward_res
+        assert graph_backward_res == expect_backward_res
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))
+
 
 
 @case_register.level1
@@ -122,12 +127,15 @@ def test_for_in_while_02():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    for_in_while_net = ForInWhileNet()
-    net = GradNet(for_in_while_net)
-    graph_forward_res = for_in_while_net(x)
-    graph_backward_res = net(x)
+    with pytest.raises(RuntimeError) as err1:
+        for_in_while_net = ForInWhileNet()
+        net = GradNet(for_in_while_net)
+        graph_forward_res = for_in_while_net(x)
+        graph_backward_res = net(x)
 
-    expect_forward_res = Tensor([2], mstype.float32)
-    expect_backward_res = (Tensor([1], mstype.float32),)
-    assert graph_forward_res == expect_forward_res
-    assert graph_backward_res == expect_backward_res
+        expect_forward_res = Tensor([2], mstype.float32)
+        expect_backward_res = (Tensor([1], mstype.float32),)
+        assert graph_forward_res == expect_forward_res
+        assert graph_backward_res == expect_backward_res
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))

@@ -36,6 +36,7 @@ def test_tensor_view_inplace_reshape():
         def construct(self, x, y):
             x = x + 2
             reshape_x = P.Reshape()(x, (2,))
+            P.AssignAdd()(reshape_x, y)
             reshape_x.add_(y)
             z = x + 1
             return z
@@ -62,8 +63,8 @@ def test_tensor_view_inplace_split():
 
         def construct(self, x):
             x1, x2 = self.split(x)
-            x1.add_(x2)
-            x2.sub_(x1)
+            P.AssignAdd()(x1, x2)
+            P.AssignSub()(x2, x1)
             y = x * 2
             return y
 

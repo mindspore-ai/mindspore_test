@@ -17,14 +17,36 @@ import pytest
 import numpy as np
 import torch
 import mindspore as ms
-from mindspore import Tensor, nn, context, Parameter
+from mindspore import Tensor, nn, context, Parameter, ParameterTuple
+from mindspore import dtype as mstype
+from mindspore import ops
 from mindspore.ops import operations as P
-
 from tests.mark_utils import arg_mark
 from tests.st.pynative.utils import GradOfAllInputs, GradOfAllParams
 
 
 context.set_context(mode=ms.GRAPH_MODE)
+
+class GradOfFirstInput(nn.Cell):
+    def __init__(self, net):
+        super(GradOfFirstInput, self).__init__()
+        self.net = net
+        self.grad_op = ops.GradOperation()
+
+    def construct(self, x, y):
+        gradient_function = self.grad_op(self.net)
+        return gradient_function(x, y)
+
+class GradOfAllInputsAndParams(nn.Cell):
+    def __init__(self, net):
+        super(GradOfAllInputsAndParams, self).__init__()
+        self.net = net
+        self.params = ParameterTuple(net.trainable_params())
+        self.grad_op = ops.GradOperation(get_all=True, get_by_list=True)
+
+    def construct(self, x, y):
+        gradient_function = self.grad_op(self.net, self.params)
+        return gradient_function(x, y)
 
 class LeafAddInplaceNet(nn.Cell):
     def construct(self, x, y):
@@ -63,7 +85,7 @@ class AddInplaceParamNet(nn.Cell):
 
     def construct(self, x, y):
         out = self.p * 2 + x + y
-        x.add_(y)
+        P.AssignAdd()(x, y)
         return out
 
 
@@ -74,7 +96,7 @@ class AddInplaceParamNet1(nn.Cell):
 
     def construct(self, x, y):
         out = self.p * x + y
-        x.add_(y)
+        P.AssignAdd()(x, y)
         return out
 
 
@@ -126,7 +148,6 @@ def torch_tensor_inplace_after_forward_add_backward_error(x, y):
     out.sum().backward()
 
 
-@pytest.mark.skip(reason="Unsupported")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_leaf_add_grad():
@@ -143,12 +164,13 @@ def test_tensor_inplace_leaf_add_grad():
     t_x = torch.tensor([[3.0, 1.0], [2.0, 1.5]], requires_grad=True)
     t_y = torch.tensor([[2.0, 1.0], [2.0, 1.5]], requires_grad=True)
 
-    with pytest.raises(RuntimeError) as err:
+    with pytest.raises(RuntimeError) as err1:
         GradOfAllInputs(net, sens_param=True)(x, y, sens)
-        torch_tensor_inplace_leaf_add(t_x, t_y)
+    assert "A leaf Variable that requires grad is being used in an in-place operation" in str(err1.value)
 
-    assert "a leaf Variable that requires grad \
-        is being used in an in-place operation" in str(err.value)
+    with pytest.raises(RuntimeError) as err2:
+        torch_tensor_inplace_leaf_add(t_x, t_y)
+    assert "a leaf Variable that requires grad is being used in an in-place operation" in str(err2.value)
 
 
 @pytest.mark.skip(reason="Unsupported")
@@ -173,7 +195,6 @@ def test_tensor_inplace_add_grad():
     np.testing.assert_almost_equal(ms_grad[1].asnumpy(), t_y.grad.numpy())
 
 
-@pytest.mark.skip(reason="Unsupported")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_grad():
@@ -196,7 +217,6 @@ def test_tensor_inplace_after_forward_add_grad():
     np.testing.assert_almost_equal(ms_grad[1].asnumpy(), t_y.grad.numpy())
 
 
-@pytest.mark.skip(reason="Unsupported")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_grad_error():
@@ -213,15 +233,17 @@ def test_tensor_inplace_after_forward_add_grad_error():
     t_x = torch.tensor([[3.0, 1.0], [2.0, 1.5]], requires_grad=True)
     t_y = torch.tensor([[3.0, 1.0], [2.0, 1.5]], requires_grad=True)
 
-    with pytest.raises(RuntimeError) as err:
+    with pytest.raises(RuntimeError) as err1:
         GradOfAllInputs(net, sens_param=True)(x, y, sens)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))
+
+    with pytest.raises(RuntimeError) as err2:
         torch_tensor_inplace_after_forward_add_backward_error(t_x, t_y)
+    assert ("one of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err2.value))
 
-    assert "one of the variables needed for gradient computation \
-        has been modified by an inplace operation" in str(err.value)
 
-
-@pytest.mark.skip(reason="Unsupported")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_param_grad():
@@ -245,7 +267,6 @@ def test_tensor_inplace_after_forward_add_param_grad():
     np.testing.assert_almost_equal(ms_param_grad[0].asnumpy(), t_net.p.grad.numpy())
 
 
-@pytest.mark.skip(reason="Unsupported")
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 def test_tensor_inplace_after_forward_add_param_grad_error():
@@ -264,8 +285,194 @@ def test_tensor_inplace_after_forward_add_param_grad_error():
     t_net = TorchAddInplaceParamNet1()
     t_out = t_net(t_x, t_y)
 
-    with pytest.raises(RuntimeError) as err:
+    with pytest.raises(RuntimeError) as err1:
         GradOfAllParams(net, sens_param=True)(x, y, sens)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))
+
+    with pytest.raises(RuntimeError) as err2:
         t_out.sum().backward()
-    assert "one of the variables needed for gradient computation \
-        has been modified by an inplace operation" in str(err.value)
+    assert ("one of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err2.value))
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_add_grad_first_input():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Support tensor inplace in grad.
+    Expectation: Run success.
+    """
+    class Net1(nn.Cell):
+        def construct(self, x, y):
+            P.AssignAdd()(y, x)
+            return y
+
+    x = Tensor([1], dtype=mstype.float32)
+    y = Tensor([2], dtype=mstype.float32)
+    output = GradOfFirstInput(Net1())(x, y)
+    print("output:", output)
+    assert output == 0
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_add_grad_first_input_wrong():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Support tensor inplace in grad.
+    Expectation: Run success.
+    """
+    class Net2(nn.Cell):
+        def construct(self, x, y):
+            P.AssignAdd()(x, y)
+            return x
+
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor([1], dtype=mstype.float32)
+        y = Tensor([2], dtype=mstype.float32)
+        output = GradOfFirstInput(Net2())(x, y)
+        print("output:", output)
+    assert "A leaf Variable that requires grad is being used in an in-place operation." in str(info.value)
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_add_grad_all_inputs_and_param():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Support tensor inplace in grad.
+    Expectation: Run success.
+    """
+    class Net7(nn.Cell):
+        def __init__(self):
+            super(Net7, self).__init__()
+            self.param1 = Parameter(Tensor([1], dtype=mstype.float32), name="param1")
+            self.param2 = Parameter(Tensor([1], dtype=mstype.float32), name="param2")
+
+        def construct(self, x, y):
+            out = self.param1 + self.param2 + x + y
+            out = out * x
+            P.AssignAdd()(out, y)
+            return out
+
+    x = Tensor([1], dtype=mstype.float32)
+    y = Tensor([2], dtype=mstype.float32)
+    output = GradOfAllInputsAndParams(Net7())(x, y)
+    print("output:", output)
+    assert output == ((6, 1), (1, 1))
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_add_grad_all_inputs_and_param_wrong():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Support tensor inplace in grad.
+    Expectation: Run success.
+    """
+    class Net8(nn.Cell):
+        def __init__(self):
+            super(Net8, self).__init__()
+            self.param1 = Parameter(Tensor([1], dtype=mstype.float32), name="param1")
+            self.param2 = Parameter(Tensor([1], dtype=mstype.float32), name="param2")
+
+        def construct(self, x, y):
+            out = self.param1 + self.param2 + x + y
+            out1 = out * x
+            P.AssignAdd()(out, y)
+            return out1
+
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor([1], dtype=mstype.float32)
+        y = Tensor([2], dtype=mstype.float32)
+        output = GradOfAllInputsAndParams(Net8())(x, y)
+        print("output:", output)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_add_control_flow_grad():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Support tensor inplace in grad.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            if x * 2 > y:
+                z = x + y * x
+                P.AssignAdd()(y, x)
+            else:
+                z = x - y
+            return z
+    with pytest.raises(RuntimeError) as info:
+        input_x = ms.Tensor(2, dtype=ms.int32)
+        input_y = ms.Tensor(3, dtype=ms.int32)
+        out = GradOfAllInputsAndParams(Net())(input_x, input_y)
+        print("out:", out)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
+
+
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_control_flow_grad_2():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Support tensor inplace in grad.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            if x * 2 > y:
+                w = y + x
+                z = w * x
+            else:
+                z = x - y
+            P.AssignAdd()(y, x)
+            return z
+
+    with pytest.raises(RuntimeError) as info:
+        input_x = ms.Tensor(2, dtype=ms.int64)
+        input_y = ms.Tensor(3, dtype=ms.int64)
+        output = GradOfFirstInput(Net())(input_x, input_y)
+        print("output:", output)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
+
+
+@pytest.mark.skip(reason="Unsupported")
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_control_flow_grad_param():
+    """
+    Feature: Support tensor inplace in grad.
+    Description: Support tensor inplace in grad.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.param = Parameter(Tensor(1, dtype=ms.int64), name='param')
+
+        def construct(self, x, y):
+            if x * 2 > y:
+                w = self.param + x
+                z = w * x
+            else:
+                w = y * 2
+                z = x - y
+            P.AssignAdd()(w, x)
+            return z
+
+    with pytest.raises(RuntimeError) as info:
+        input_x = ms.Tensor(2, dtype=ms.int64)
+        input_y = ms.Tensor(3, dtype=ms.int64)
+        output = GradOfFirstInput(Net())(input_x, input_y)
+        print("output:", output)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))

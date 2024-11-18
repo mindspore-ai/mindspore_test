@@ -1,4 +1,4 @@
-# Copyright 2020-2021 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """ test_insert_grad_of """
+import pytest
 import numpy as np
 
 import mindspore
@@ -141,6 +142,9 @@ def test_cell_assign():
             z = z * y
             return z
 
-    input_x = Tensor(np.ones([2, 2], np.float32))
-    input_y = Tensor(np.ones([2, 2], np.float32))
-    GradNetWrap(Mul())(input_x, input_y)
+    with pytest.raises(RuntimeError) as info:
+        input_x = Tensor(np.ones([2, 2], np.float32))
+        input_y = Tensor(np.ones([2, 2], np.float32))
+        GradNetWrap(Mul())(input_x, input_y)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
