@@ -30,7 +30,8 @@ class Net(nn.Cell):
 
 
 def get_output(x, b, data_format, enable_graph_kernel):
-    context.set_context(enable_graph_kernel=enable_graph_kernel)
+    jit_level = "O1" if enable_graph_kernel else "O0"
+    context.set_context(jit_level=jit_level)
     net = Net(data_format)
     output = net(x, b)
     return output
@@ -52,9 +53,21 @@ def run_bias_add(shape1, shape2, data_format, dtype):
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_bias_add_gpu():
     """
-    Feature: todo
-    Description: todo
-    Expectation: todo
+    Feature: test graph kernel BiasAdd
+    Description: run test case on GPU
+    Expectation: the result match with expect
+    """
+    context.set_context(mode=context.GRAPH_MODE)
+    run_bias_add((2, 3), (3,), "NCHW", np.float32)
+    run_bias_add((2, 3, 4, 5), (3,), "NCHW", np.float32)
+    run_bias_add((2, 3, 4, 5), (5,), "NHWC", np.float32)
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_bias_add_ascend():
+    """
+    Feature: test graph kernel BiasAdd
+    Description: run test case on Ascend
+    Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE)
     run_bias_add((2, 3), (3,), "NCHW", np.float32)
