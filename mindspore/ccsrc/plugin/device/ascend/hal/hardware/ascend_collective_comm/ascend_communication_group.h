@@ -41,6 +41,14 @@ class AscendCommunicationGroup : public CommunicationGroup {
   bool Initialize(void *root_info) override;
   bool Finalize() override;
 
+  // Initialize HCCL communicator by root info, using API HcclCommInitRootInfo.
+  bool InitializeByRootInfo(void *root_info, uint32_t group_size, uint32_t group_rank);
+
+  // Initialize HCCL communicator by rank table if the rank table is configured. Note that HCCL initialization APIs
+  // for global_comm (HcclCommInitClusterInfoConfig) and sub_comm (HcclCreateSubCommConfig) are different when using
+  // rank table.
+  bool InitializeByRankTable(std::string rank_table, uint32_t group_size, uint32_t group_rank);
+
   void *GenerateRootInfo(size_t *root_info_size) override;
 
   // Return HCCL communicator because collective operations need it as a input.

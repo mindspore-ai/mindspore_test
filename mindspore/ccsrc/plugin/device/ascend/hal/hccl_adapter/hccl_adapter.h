@@ -63,6 +63,10 @@ class HcclAdapter {
   // common
   bool InitHccl(uint32_t device_id, std::string_view rank_id, std::string_view rank_file, HcclMode hccl_mode);
   bool InitHccl(uint32_t device_id, std::string_view rank_id);
+  HcclResult HcclCommInitClusterInfoConfig(const char *rank_table, uint32_t rank_id, HcclCommConfig *config,
+                                           HcclComm *hccl_comm_);
+  HcclResult HcclCreateSubCommConfig(HcclComm *global_comm, uint32_t rank_size, uint32_t *rank_ids, uint64_t comm_id,
+                                     uint32_t rank_id, HcclCommConfig *config, HcclComm *hccl_comm_);
   bool FinalizeHccl();
   bool HcclWatchdogThread(HcclComm comm, std::string *error_info);
   const bool Inited() const { return init_flag_; }
@@ -141,6 +145,8 @@ class HcclAdapter {
   HcomDestroyFunObj hcom_destroy_ = nullptr;
 
   HcclCommInitClusterInfoFunObj init_hccl_comm_ = nullptr;
+  HcclCommInitClusterInfoConfigFunObj init_hccl_global_comm_ranktable_ = nullptr;
+  HcclCreateSubCommConfigFunObj init_hccl_sub_comm_ranktable_ = nullptr;
   HcclCommDestroyFunObj finalize_hccl_comm_ = nullptr;
   HcclBroadcastFunObj launch_hccl_broadcast_ = nullptr;
   HcclAllReduceFunObj launch_hccl_all_reduce_ = nullptr;
