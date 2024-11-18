@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace ops {
 
-TensorStorageInfoPtrList SplitCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList SplitCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 OPS_API TensorStorageInfoPtrList SplitProcess(const OldTensorInfoPtr &input_tensor, const int64_t &axis,
                                               const int64_t &output_num);
 }  // namespace ops
