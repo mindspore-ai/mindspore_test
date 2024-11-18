@@ -438,9 +438,6 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
                                      name(), false);
   runtime::Pipeline::Get().WaitFrontend();
   MS_LOG(DEBUG) << "Begin HookBackwardNode CallBackward ";
-  if (check_func_ != nullptr) {
-    check_func_(name());
-  }
   auto gradient = ValueListToValue(grads, out_abstract_);
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   // Python grad func can not process None, we need to convert None to zero tensor.
@@ -474,9 +471,6 @@ ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
                                      name(), false);
   MS_LOG(DEBUG) << "Begin GraphBackwardNode CallBackward ";
-  if (check_func_ != nullptr) {
-    check_func_(name());
-  }
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
   auto graph_call_back =
     PyNativeAlgo::AutoGradUtil::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);

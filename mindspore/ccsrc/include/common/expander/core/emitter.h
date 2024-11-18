@@ -269,8 +269,7 @@ class COMMON_EXPORT Emitter {
 
   NodePtr Zeros(const NodePtr &x) {
     auto x_shape = x->shape();
-    if (!x_shape.empty() && !IsDynamicRank(x_shape)) {
-      // There are currently some problems under 0d that need to be fixed later.
+    if (!IsDynamicRank(x_shape)) {
       return Emit("Zeros", {Shape(x), Value<int64_t>(x->dtype()->type_id())});
     }
     return ZerosLike(x);
