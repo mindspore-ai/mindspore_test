@@ -32,7 +32,7 @@ class ConvertFrontEndToGraphKernel : public opt::Pass {
 
  private:
   bool Process(const CNodePtr &cnode, const ops::OpDefPtr &op_def, const PrimitivePtr &primitive);
-  void AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index, const std::string &arg_name,
+  bool AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index, const std::string &arg_name,
                            const std::string &arg_handler, const PrimitivePtr &primitive);
 };
 class ConvertGraphKernelToFrontEnd : public opt::Pass {

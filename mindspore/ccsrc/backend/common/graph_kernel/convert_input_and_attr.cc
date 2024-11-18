@@ -136,7 +136,7 @@ ArgHandlerFunc GetOppArgHandlerFunc(const std::string &arg_handler) {
 }
 }  // namespace
 
-void ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index,
+bool ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, const size_t input_index,
                                                        const std::string &arg_name, const std::string &arg_handler,
                                                        const PrimitivePtr &primitive) {
   if (input_index >= cnode->size() - 1) {
@@ -154,22 +154,24 @@ void ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
     value = parameter_node->abstract()->BuildValue();
   }
   if (value == nullptr) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << cnode->ToString() << " is not Value.";
+    MS_LOG(DEBUG) << cnode->ToString() << " is not Value.";
+    return false;
   }
   if (value->isa<ValueAny>()) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode) << cnode->ToString() << " is ValueAny.";
+    MS_LOG(DEBUG) << cnode->ToString() << " is ValueAny.";
+    return false;
   }
   if (!arg_handler.empty() && !value->isa<None>()) {
     auto arg_handler_func = GetArgHandlerFunc(arg_handler);
     MS_EXCEPTION_IF_NULL(arg_handler_func);
     value = arg_handler_func(value);
     primitive->AddAttr(arg_name, value);
-    return;
+    return true;
   }
 
   if (!value->isa<tensor::BaseTensor>()) {
     primitive->AddAttr(arg_name, value);
-    return;
+    return true;
   }
   auto tensor = value->cast<tensor::BaseTensorPtr>();
   if (tensor->Dtype()->type_id() == kNumberTypeBool) {
@@ -185,6 +187,7 @@ void ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
       primitive->AddAttr(arg_name, MakeValue(value_vector));
     }
   }
+  return true;
 }
 
 bool ConvertFrontEndToGraphKernel::Process(const CNodePtr &cnode, const ops::OpDefPtr &op_def,
@@ -208,7 +211,9 @@ bool ConvertFrontEndToGraphKernel::Process(const CNodePtr &cnode, const ops::OpD
     const auto &arg_handler = iter->arg_handler_;
     MS_LOG(DEBUG) << cnode->ToString() << " convert input to attr: " << arg_name;
     if (auto index_iter = op_def_indexes.find(arg_name); index_iter != op_def_indexes.end()) {
-      AddConstInputToAttr(cnode, index_iter->second, arg_name, arg_handler, primitive);
+      if (!AddConstInputToAttr(cnode, index_iter->second, arg_name, arg_handler, primitive)) {
+        return false;
+      }
       changed = true;
     } else {
       MS_LOG(EXCEPTION) << primitive->name() << " not found index of attr[" << arg_name << "] in op def indexes.";
