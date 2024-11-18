@@ -26,7 +26,7 @@ from fake_dataset import FakeDataset
 from file_check import FileChecker
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_profiler():
     """
     Feature: profiler support GPU  mode.
@@ -41,7 +41,7 @@ def test_gpu_profiler():
         _check_gpu_profiling_file(profiler_path, device_id)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_profiler_pynative():
     """
     Feature: profiler support GPU pynative mode.
@@ -56,7 +56,7 @@ def test_gpu_profiler_pynative():
         _check_gpu_profiling_file(profiler_path, device_id)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_profiler_env():
     """
     Feature: profiler support GPU  mode start by, enabling profiling through environment variables.
@@ -82,7 +82,7 @@ def test_gpu_profiler_env():
             shutil.rmtree(data_path)
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_profiler_pynative_env():
     """
     Feature: profiler support GPU pynative mode, enabling profiling through environment variables.

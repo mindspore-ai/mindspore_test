@@ -108,7 +108,7 @@ class TestEnvEnableProfiler:
         """Run after each test case end."""
         cleanup()
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
     def test_ascend_profiler(self):
         status = os.system(
             """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"all", "data_process":true, "with_stack":false}';
@@ -118,7 +118,7 @@ class TestEnvEnableProfiler:
         CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", "all")
         assert status == 0
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
     def test_host_profiler_none(self):
         status = os.system(
             """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "data_process":true}';
@@ -128,7 +128,7 @@ class TestEnvEnableProfiler:
         CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", None, False)
         assert status == 0
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
     def test_host_profiler_time(self):
         status = os.system(
             """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"time", "data_process":true}';
