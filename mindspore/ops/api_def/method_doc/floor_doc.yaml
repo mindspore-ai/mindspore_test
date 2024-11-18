@@ -23,7 +23,7 @@ floor:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([1.1, 2.5, -1.5]), mindspore.float32)
         >>> output = input.floor(input)
         >>> print(output)

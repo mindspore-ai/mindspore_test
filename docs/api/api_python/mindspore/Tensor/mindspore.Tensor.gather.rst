@@ -1,7 +1,7 @@
 mindspore.Tensor.gather
 =======================
 
-.. py:method:: mindspore.Tensor.gather(dim, index)
+.. py:method:: Tensor.gather(dim, index)
 
     返回输入Tensor在指定 `index` 索引对应的元素组成的切片。
 
@@ -31,13 +31,14 @@ mindspore.Tensor.gather
         - **ValueError** - `index` 的值不在有效范围。
         - **TypeError** - `index` 的数据类型非法。
 
-.. py:method:: mindspore.Tensor.gather(input_indices, axis, batch_dims=0)
+    .. py:method:: Tensor.gather(input_indices, axis, batch_dims=0)
+        :noindex:
 
     返回输入Tensor在指定 `axis` 上 `input_indices` 索引对应的元素组成的切片。
 
     下图展示了Gather常用的计算过程：
 
-    .. image:: Gather.png
+    .. image:: ../../images/Gather.png
 
     其中，params代表输入 `input_params` ，indices代表要切片的索引 `input_indices` 。
 

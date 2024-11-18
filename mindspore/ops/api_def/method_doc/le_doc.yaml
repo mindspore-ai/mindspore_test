@@ -6,7 +6,7 @@ le:
 
     .. math::
 
-        out_{i} =\begin{cases}
+        out_{i} = \begin{cases}
             & \text{True,    if } self_{i}<=other_{i} \\
             & \text{False,   if } self_{i}>other_{i}
             \end{cases}

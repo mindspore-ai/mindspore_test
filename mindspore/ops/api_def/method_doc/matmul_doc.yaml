@@ -5,15 +5,17 @@ matmul:
     Returns the matrix product of two tensors.
     
     Note:
-        Numpy arguments `out`, `casting`, `order`, `subok`, `signature`, and `extobj` are not supported. 
+        Numpy arguments `out`, `casting`, `order`, `subok`, `signature`, and `extobj` are not supported.
+
         The dtype of `self` and `tensor2` must be same.
-        On Ascend platform, the dims of `self` and `tensor2` must be between 1 and 6.
-        On GPU platform, the supported dtypes of `self` and `tensor2` are ms.float16 and ms.float32.
+
+        - On Ascend platform, the dims of `self` and `tensor2` must be between 1 and 6.
+        - On GPU platform, the supported dtypes of `self` and `tensor2` are ms.float16 and ms.float32.
     
     Args:
         tensor2 (Tensor): Input tensor, scalar not allowed.
-          The last dimension of `self` must be the same size as the second last dimension of `tensor2`.
-          And the shape of tensor and other could be broadcast.
+            The last dimension of `self` must be the same size as the second last dimension of `tensor2`.
+            And the shape of tensor and other could be broadcast.
     
     Returns:
         Tensor or scalar, the matrix product of the inputs. This is a scalar only
@@ -39,11 +41,11 @@ matmul:
         >>> output = input.matmul(other)
         >>> print(output)
         [[[  70.   76.   82.   88.   94.]
-        [ 190.  212.  234.  256.  278.]
-        [ 310.  348.  386.  424.  462.]]
-        [[ 430.  484.  538.  592.  646.]
-        [ 550.  620.  690.  760.  830.]
-        [ 670.  756.  842.  928. 1014.]]]
+          [ 190.  212.  234.  256.  278.]
+          [ 310.  348.  386.  424.  462.]]
+         [[ 430.  484.  538.  592.  646.]
+          [ 550.  620.  690.  760.  830.]
+          [ 670.  756.  842.  928. 1014.]]]
         >>> print(output.shape)
         (2, 3, 5)
         >>> # case 2 : the rank of `tensor2` is 1

@@ -20,7 +20,7 @@ greater:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([1, 2, 3]), mindspore.int32)
         >>> other = Tensor(np.array([1, 1, 4]), mindspore.int32)
         >>> output = input.greater(other)

@@ -63,28 +63,29 @@ mean:
         >>> output = Tensor.mean(x, 0, True)
         >>> print(output)
         [[[4. 4. 4. 4. 4. 4.]
-        [5. 5. 5. 5. 5. 5.]
-        [6. 6. 6. 6. 6. 6.]]]
+          [5. 5. 5. 5. 5. 5.]
+          [6. 6. 6. 6. 6. 6.]]]
         >>> # case 3: Reduces a dimension along the axis 1
         >>> output = Tensor.mean(x, 1, True)
         >>> print(output)
         [[[2. 2. 2. 2. 2. 2.]]
-        [[5. 5. 5. 5. 5. 5.]]
-        [[8. 8. 8. 8. 8. 8.]]]
+         [[5. 5. 5. 5. 5. 5.]]
+         [[8. 8. 8. 8. 8. 8.]]]
         >>> # case 4: Reduces a dimension along the axis 2
         >>> output = Tensor.mean(x, 2, True)
         >>> print(output)
         [[[ 2.]
-        [ 2.]
-        [ 2.]]
-        [[ 4.]
-        [ 5.]
-        [ 6.]]
-        [[ 6.]
-        [ 8.]
-        [10.]]]
+          [ 2.]
+          [ 2.]]
+         [[ 4.]
+          [ 5.]
+          [ 6.]]
+         [[ 6.]
+          [ 8.]
+          [10.]]]
     
-    .. function:: mindspore.Tensor.mean(self, axis=None, keep_dims=False) -> Tensor
+    .. method:: Tensor.mean(self, axis=None, keep_dims=False) -> Tensor
+        :noindex:
     
     Reduces all dimension of a tensor by averaging all elements in the dimension, by default.
     And reduce a dimension of `x` along the specified `axis`. `keep_dims`

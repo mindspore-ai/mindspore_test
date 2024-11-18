@@ -21,7 +21,7 @@ masked_select:
     Examples:
         >>> import numpy as np
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([1, 2, 3, 4]), mindspore.int64)
         >>> mask = Tensor(np.array([1, 0, 1, 0]), mindspore.bool_)
         >>> output = x.masked_select(mask)

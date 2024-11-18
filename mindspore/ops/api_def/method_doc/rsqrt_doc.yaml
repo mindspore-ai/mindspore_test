@@ -6,7 +6,7 @@ rsqrt:
 
     .. math::
 
-        out_{i} =  \frac{1}{\sqrt{self_{i}}}
+        out_{i} = \frac{1}{\sqrt{self_{i}}}
 
     Returns:
         Tensor, has the same shape and dtype as the `self`.
@@ -16,7 +16,7 @@ rsqrt:
 
     Examples:
         >>> import mindspore as ms
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor([-0.0370,  0.2970,  1.5420, -0.9105])
         >>> output = input.rsqrt()
         >>> print(output)
