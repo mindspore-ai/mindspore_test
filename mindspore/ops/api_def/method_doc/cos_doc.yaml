@@ -1,18 +1,14 @@
 cos:
   description: |
-    cos(self) -> Tensor
+    cos() -> Tensor
     
     Computes cosine of self element-wise.
     
     .. math::
-        out_i = \cos(x_i)
+        out_i = \cos(self_i)
     
     .. warning::
         Using float64 may cause a problem of missing precision.
-    
-    Args:
-        self (Tensor): The shape of tensor is
-            :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
     
     Returns:
         Tensor, has the same shape as the `self`. 
@@ -21,8 +17,9 @@ cos:
     
     :raise TypeError: If `self` is not a Tensor.
     :raise TypeError:
-        * CPU/GPU: If dtype of `self` is not float16, float32 or float64, complex64, complex128.
-        * Ascend: If dtype of `self` is not bool, int8, uint8, int16, int32, int64, float16, float32, float64, complex64, complex128.
+
+        - CPU/GPU: If dtype of `self` is not float16, float32 or float64, complex64, complex128.
+        - Ascend: If dtype of `self` is not bool, int8, uint8, int16, int32, int64, float16, float32, float64, complex64, complex128.
     
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

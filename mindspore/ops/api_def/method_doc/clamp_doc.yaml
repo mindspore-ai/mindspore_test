@@ -33,8 +33,8 @@ clamp:
     Raises:
           ValueError: If both `min` and `max` are None.
           TypeError: If the type of `self` is not Tensor.
-          TypeError: If the type of `min` is not in None, float or int.
-          TypeError: If the type of `max` is not in None, float or int.
+          TypeError: If the type of `min` is not in None, Tensor, float or int.
+          TypeError: If the type of `max` is not in None, Tensor, float or int.
     
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
