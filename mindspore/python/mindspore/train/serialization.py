@@ -68,7 +68,7 @@ from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_paramet
 from mindspore.parallel._tensor import _load_tensor, _get_tensor_strategy, _get_tensor_slice_index
 from mindspore.parallel._tensor import _reshape_param_data, _reshape_param_data_with_weight
 from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode, \
-    _get_device_num, _is_parallel_mode
+    _get_device_num
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
     _restore_group_info_list, _get_param_list_when_first_dim_sharded
@@ -1604,19 +1604,6 @@ def _whether_load_param(specify_prefix, filter_prefix, param_name):
     return whether_load
 
 
-def _init_parameter_data_in_parallel_mode(net, parameter_dict):
-    """In parallel mode, only init the paraemters in ckpt."""
-    is_train_phase = net.phase.startswith('train')
-    for _, param in net.parameters_and_names():
-        if param.name in parameter_dict and param.from_ckpt and not is_train_phase:
-            param.shape = tuple(parameter_dict[param.name].shape)
-            continue
-        if param.name in parameter_dict and param.has_init:
-            logger.warning("{} is not init while load ckpt.".format(param.name))
-            new_tensor = param.init_data()
-            param._update_tensor_data(new_tensor)
-
-
 def _check_load_param_into_net(net, parameter_dict):
     """check load_param_into_net"""
     if not isinstance(net, nn.Cell):
@@ -1686,12 +1673,6 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
     strict_load = Validator.check_bool(strict_load)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
     logger.info("Execute the process of loading parameters into net.")
-    for _, param in net.parameters_and_names():
-        param.from_ckpt = True
-    if not (_is_in_auto_parallel_mode() or _is_parallel_mode()):
-        net.init_parameters_data()
-    else:
-        _init_parameter_data_in_parallel_mode(net, parameter_dict)
     param_not_load = []
     ckpt_not_load = list(parameter_dict.keys())
     for _, param in net.parameters_and_names():
@@ -1704,6 +1685,8 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
                 continue
             new_param = parameter_dict[param.name]
             _update_param(param, new_param, strict_load)
+            if hasattr(param, "init_param") and not param.init_param:
+                param.init_param = True
             ckpt_not_load.remove(param.name)
         else:
             param_not_load.append(param.name)
@@ -1828,6 +1811,8 @@ def _load_dismatch_prefix_params(net, parameter_dict, param_not_load, strict_loa
                 if param.name in param_not_load and new_param_name in parameter_dict:
                     new_param = parameter_dict[new_param_name]
                     _update_param(param, new_param, strict_load)
+                    if hasattr(param, "init_param") and not param.init_param:
+                        param.init_param = True
                     param_not_load.remove(param.name)
 
 
