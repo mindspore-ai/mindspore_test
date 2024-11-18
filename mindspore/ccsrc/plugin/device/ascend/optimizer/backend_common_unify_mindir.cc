@@ -171,6 +171,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->Add(std::make_shared<opt::QbmmAddFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::InferenceSwiGLUFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::InferenceMatmulSplitFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::AddRmsNormDynamicQuantFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::ShapeReshapeFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::ShapeReshapeFusion2>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::AddRmsNormQuantFusion>(), graphkernel::OptLevel_0);
