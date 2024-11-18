@@ -14,7 +14,7 @@ def find_npy_files(folder_path):
     result = {}
     for file in folder_path.glob('*.npy'):
         file_name = file.stem
-        file_name_without_id = file_name.split('_')[-2]
+        file_name_without_id = file_name.split('_')[0]
         result[file_name_without_id] = str(file.absolute())
     return result
 
@@ -168,6 +168,6 @@ def test_bfloat16():
     net = Net(path)
     net(x)
     time.sleep(0.1)
-    filename = "0_input_bfloat16.npy"
+    filename = "input_bfloat16_0.npy"
     input_x = np.load(str(path) + "/" + filename)
     assert np.allclose(input_x, x_np)
