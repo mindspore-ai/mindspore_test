@@ -22,18 +22,19 @@ mindspore.ops.tensordump
     - 如果mode参数设置为'all'，保存的数据将包含算子A的输出分片以及算子B的输入分片。
     - 如果mode参数设置为'in'，保存的数据将仅包含算子B的输入分片。
 
-    当mode参数被配置为'all'或'in'时，生成的输入分片所对应的npy文件命名格式为：id_fileName_cNodeID_dumpMode_rankID_dtype.npy。
+    当mode参数被配置为'all'或'in'时，生成的输入分片所对应的npy文件命名格式为：fileName_cNodeID_dumpMode_rankID_dtype_id.npy。
 
-    当mode参数被配置为'all'或'out'时，生成的输出分片所对应的npy文件命名格式为：id_filename_dtype.npy。
+    当mode参数被配置为'all'或'out'时，生成的输出分片所对应的npy文件命名格式为：filename_dtype_id.npy。
 
-    - id：一个自增的ID。
     - fileName：参数file_name的值 （若该参数传入时是一个使用者指定的路径，则fileName的值为路径的最后一级）。
     - cNodeID：该tensordump节点在step_parallel_end.ir文件中的节点编号
     - dumpMode：mode参数的值。
     - rankID：逻辑卡号。
     - dtype：原始的数据类型。bfloat16类型数据保存在.npy文件中会被转换成float32。
+    - id：一个自增的ID。
 
     .. note::
+        - 在Ascend平台上的Graph模式下，可以通过设置环境变量 `MS_DUMP_SLICE_SIZE` 和 `MS_DUMP_WAIT_TIME` 解决在输出大Tesnor或输出Tensor比较密集场景下算子执行失败的问题。
         - 当前该算子不支持在控制流中使用。
         - 如果当前的并行模式为STAND_ALONE，参数mode只能设置为'out'。
         - 如使用该算子时不设置参数mode，其默认值为'out'。
