@@ -42,8 +42,8 @@ def grad_layer_norm_net(input_x, normal_shape, eps=1e-05, elementwise_affine=Tru
     return ms.grad(net)(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_LayerNorm_para_customed_dtype(mode):
     """
