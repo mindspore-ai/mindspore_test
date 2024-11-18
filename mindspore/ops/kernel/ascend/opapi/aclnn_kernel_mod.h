@@ -34,6 +34,7 @@
 #include "transform/acl_ir/acl_convert.h"
 #include "transform/acl_ir/op_api_exec.h"
 #include "transform/acl_ir/op_api_util.h"
+#include "utils/ms_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
 #include "mindspore/ops/kernel/ascend/opapi/aclnn_kernel_utils.h"
 
@@ -84,7 +85,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
                                                                                                                      \
   template <typename... Args>                                                                                        \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor##FUNC_NAME(const Args &... args) {                   \
-    if (hash_id_##FUNC_NAME##_ == 0 || !hash_map_.count(hash_id_##FUNC_NAME##_)) {                                   \
+    if (capacity_ == 0 || hash_id_##FUNC_NAME##_ == 0 || !hash_map_.count(hash_id_##FUNC_NAME##_)) {                 \
       aclOpExecutor *executor;                                                                                       \
       std::function<void()> release_func;                                                                            \
       std::tie(std::ignore, executor, release_func) = GEN_EXECUTOR(op_type_##FUNC_NAME##_, args...);                 \
@@ -152,7 +153,7 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
                                                                                                                 \
   template <typename... Args>                                                                                   \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor(const Args &... args) {                         \
-    if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {                                                          \
+    if (capacity_ == 0 || hash_id_ == 0 || !hash_map_.count(hash_id_)) {                                        \
       aclOpExecutor *executor;                                                                                  \
       std::function<void()> release_func;                                                                       \
       std::tie(std::ignore, executor, release_func) = GEN_EXECUTOR(op_type_, args...);                          \
@@ -225,7 +226,13 @@ class EmptyKernelTensor {
 
 class AclnnKernelMod : public KernelMod {
  public:
-  explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {}
+  explicit AclnnKernelMod(std::string &&op_type) : op_type_(std::move(op_type)) {
+    auto capaticy_from_user = common::GetCacheCapaticy();
+    if (!capaticy_from_user.empty()) {
+      capacity_ = std::stoull(capaticy_from_user);
+      MS_LOG(INFO) << "Set aclnn cache queue length of kbyk to " << capacity_;
+    }
+  }
   ~AclnnKernelMod() = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);

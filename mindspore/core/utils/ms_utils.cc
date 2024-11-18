@@ -122,6 +122,11 @@ bool IsDisableRuntimeConfig(const std::string &runtime_config) {
   return ((value == "False") || (value == "false"));
 }
 
+std::string GetRuntimeConfigValue(const std::string &runtime_config) {
+  const auto &value = GetConfigValue(kRuntimeConf, runtime_config);
+  return value;
+}
+
 std::string GetAllocConfigValue(const std::string &alloc_config) {
   const auto &value = GetConfigValue(kAllocConf, alloc_config);
   return value;
@@ -157,6 +162,11 @@ bool IsEnableAclnnViewOp(const std::string &op) {
     return true;
   }
   return false;
+}
+
+std::string GetCacheCapaticy() {
+  static std::string capaticy_from_user = GetRuntimeConfigValue(kRuntimeAclnnCacheQueueLength);
+  return capaticy_from_user;
 }
 }  // namespace common
 }  // namespace mindspore
