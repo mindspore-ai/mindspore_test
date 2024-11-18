@@ -361,6 +361,8 @@ from mindspore.ops.function.array_func import where as where_func
 # 162
 
 ########################################functions########################################
+
+
 # 1 to
 def tensor_to(input, dtype):
     return cast(input, dtype)
@@ -734,6 +736,7 @@ def deprecated_tensor_sort(input_x, axis=-1, descending=False):
 def tensor_sort_ext(input, *, dim=-1, descending=False, stable=False):
     return sort_ext(input, dim=dim, descending=descending, stable=stable)
 
+
 # 98 split
 def deprecated_tensor_split(input, split_size_or_sections, axis=0):
     return split(input, split_size_or_sections, axis)
@@ -758,6 +761,7 @@ def deprecated_tensor_split(input, split_size_or_sections, axis=0):
 # 107 tanh
 def tensor_tanh(input):
     return tanh(input)
+
 
 # 108 tile
 def tensor_tile(input, dims):
