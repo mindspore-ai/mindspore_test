@@ -86,7 +86,15 @@ class TestDeviceResManager : public device::DeviceResManager {
   TestDeviceResManager() = default;
   ~TestDeviceResManager() override = default;
 
-  virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const { return false; }
+  virtual bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const {
+    static size_t total_size_{1024};
+    MS_EXCEPTION_IF_NULL(address);
+    if (address->GetSize() > total_size_) {
+      return false;
+    }
+    total_size_ -= address->GetSize();
+    return true;
+  }
   virtual void FreeMemory(DeviceAddress *const &address) const {}
   virtual void *AllocateMemory(size_t size, const uint32_t stream_id = UINT32_MAX) const { return nullptr; }
   virtual void FreeMemory(void *const ptr) const {}
@@ -96,6 +104,12 @@ class TestDeviceResManager : public device::DeviceResManager {
                                                TypeId type_id, const ShapeVector &shape,
                                                const UserDataPtr &user_data = nullptr) const {
     return std::make_shared<TestDeviceAddress>(device_ptr, device_size, format, type_id, "CPU", 0);
+  }
+
+  virtual DeviceAddressPtr CreateDeviceAddress(void *ptr, size_t size, const ShapeVector &shape_vector,
+                                               const Format &format, TypeId type_id, const std::string &device_name,
+                                               uint32_t device_id, uint32_t stream_id) const {
+    return std::make_shared<TestDeviceAddress>(ptr, size, "falut", type_id, device_name, 0);
   }
 
   DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor) const {
@@ -204,7 +218,31 @@ class TestKernelExecutor : public device::KernelExecutor {
   }
 };
 
-class TestDeviceContext : public device::DeviceInterface<TestKernelExecutor, TestDeviceResManager> {
+class TestGraphExecutor : public device::GraphExecutor {
+ public:
+  ~TestGraphExecutor() override = default;
+  bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
+                std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) {
+    MS_LOG(INFO) << "Ut run test graph.";
+    MS_EXCEPTION_IF_NULL(graph);
+    const auto &kernel_graph = dynamic_cast<KernelGraph *>(graph.get());
+    MS_EXCEPTION_IF_NULL(kernel_graph);
+    for (const auto &kernel : kernel_graph->execution_order()) {
+      MS_EXCEPTION_IF_NULL(kernel);
+      MS_EXCEPTION_IF_NULL(kernel->kernel_info());
+      const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(kernel, 0, false);
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      auto context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+        {device_tensor->device_name(), device_tensor->device_id()});
+      MS_EXCEPTION_IF_NULL(context);
+      context->device_res_manager_->AllocateMemory(device_tensor.get(), device_tensor->stream_id());
+      MS_LOG(INFO) << "Alloc memory in run graph";
+    }
+    return true;
+  }
+};
+
+class TestDeviceContext : public device::DeviceInterface<TestGraphExecutor, TestKernelExecutor, TestDeviceResManager> {
  public:
   explicit TestDeviceContext(const DeviceContextKey &device_context_key) : DeviceInterface(device_context_key) {}
   ~TestDeviceContext() override = default;
