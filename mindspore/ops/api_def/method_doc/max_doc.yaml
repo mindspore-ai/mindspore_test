@@ -57,9 +57,8 @@ max:
         >>> print(indices)
         [1 1]
 
-    .. method:: max() -> Tensor
-    
-    max() -> Tensor
+    .. method:: Tensor.max() -> Tensor
+        :noindex:
     
     Returns the maximum value of all elements in `self` .
     

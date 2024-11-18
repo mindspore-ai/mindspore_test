@@ -55,28 +55,29 @@ prod:
         >>> output = Tensor.prod(x, 0, True)
         >>> print(output)
         [[[ 28.  28.  28.  28.  28.  28.]
-        [ 80.  80.  80.  80.  80.  80.]
-        [162. 162. 162. 162. 162. 162.]]]
+          [ 80.  80.  80.  80.  80.  80.]
+          [162. 162. 162. 162. 162. 162.]]]
         >>> # case 3: Reduces a dimension along axis 1.
         >>> output = Tensor.prod(x, 1, True)
         >>> print(output)
         [[[  6.   6.   6.   6.   6.   6.]]
-        [[120. 120. 120. 120. 120. 120.]]
-        [[504. 504. 504. 504. 504. 504.]]]
+         [[120. 120. 120. 120. 120. 120.]]
+         [[504. 504. 504. 504. 504. 504.]]]
         >>> # case 4: Reduces a dimension along axis 2.
         >>> output = Tensor.prod(x, 2, True)
         >>> print(output)
         [[[1.00000e+00]
-        [6.40000e+01]
-        [7.29000e+02]]
-        [[4.09600e+03]
-        [1.56250e+04]
-        [4.66560e+04]]
-        [[1.17649e+05]
-        [2.62144e+05]
-        [5.31441e+05]]]
+          [6.40000e+01]
+          [7.29000e+02]]
+         [[4.09600e+03]
+          [1.56250e+04]
+          [4.66560e+04]]
+         [[1.17649e+05]
+          [2.62144e+05]
+          [5.31441e+05]]]
 
 
-    .. function:: mindspore.Tensor.prod(axis, keep_dims, dtype)-> Tensor
+    .. method:: Tensor.prod(axis, keep_dims, dtype)-> Tensor
+        :noindex:
 
     For more details, please refer to :func:`mindspore.ops.prod`.

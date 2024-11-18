@@ -22,7 +22,7 @@ sort:
     Returns:
         - y1, a tensor whose values are the sorted values, with the same shape and data type as self.
         - y2, a tensor that consists of the indices of the elements in the original self tensor.
-            Data type is int64.
+          Data type is int64.
 
     Raises:
         TypeError: If `dim` is not an int.
@@ -37,7 +37,7 @@ sort:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), mindspore.float16)
         >>> output = x.sort()
         >>> # The output below is based on the Ascend platform.
@@ -50,7 +50,8 @@ sort:
         [2, 0, 1],
         [0, 1, 2]]))
 
-    .. function:: mindspore.Tensor.sort(self, axis=-1, descending=False) -> (Tensor, Tensor)
+    .. method:: Tensor.sort(self, axis=-1, descending=False) -> (Tensor, Tensor)
+        :noindex:
 
     Args:
         self(Tensor): The self tensor to sort.
@@ -68,7 +69,7 @@ sort:
 
         - y1, a tensor whose values are the sorted values, with the same shape and data type as self.
         - y2, a tensor that consists of the indices of the elements in the original self tensor.
-            Data type is int32.
+          Data type is int32.
 
     Raises:
         TypeError: If `axis` is not an int.
@@ -82,7 +83,7 @@ sort:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), mindspore.float16)
         >>> output = x.sort(axis=-1)
         >>> # The output below is based on the Ascend platform.

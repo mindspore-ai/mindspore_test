@@ -12,7 +12,7 @@ tanh:
 
         Tanh Activation Function Graph:
 
-        .. image:: ../images/Tanh.png
+        .. image:: ../../images/Tanh.png
             :align: center
 
         Args:

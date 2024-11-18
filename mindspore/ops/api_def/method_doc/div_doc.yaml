@@ -46,7 +46,7 @@ div:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> x = Tensor(np.array([1.0, 2.0, 3.0]), mindspore.float32)
         >>> y = Tensor(np.array([4.0, 5.0, 6.0]), mindspore.float32)
         >>> output = x.div(y)

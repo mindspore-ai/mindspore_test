@@ -12,7 +12,7 @@ sigmoid:
     
     Sigmoid Function Graph:
     
-    .. image:: ../images/Sigmoid.png
+    .. image:: ../../images/Sigmoid.png
         :align: center
     
     Args:

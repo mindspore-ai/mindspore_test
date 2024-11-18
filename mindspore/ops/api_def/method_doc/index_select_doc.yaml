@@ -28,7 +28,7 @@ index_select:
 
     Examples:
         >>> import mindspore
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> import numpy as np
         >>> input = Tensor(np.arange(16).astype(np.float32).reshape(2, 2, 4))
         >>> print(input)

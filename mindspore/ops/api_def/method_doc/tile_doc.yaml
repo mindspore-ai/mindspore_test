@@ -18,14 +18,14 @@ tile:
         the dimension of `self` is `self.dim`, and the shape of `self` is :math:`(x_1, x_2, ..., x_S)`.
 
         - If `self.dim = d`, then the shape of their corresponding positions can be multiplied, and
-        the shape of Outputs is :math:`(x_1*y_1, x_2*y_2, ..., x_S*y_S)`.
+          the shape of Outputs is :math:`(x_1*y_1, x_2*y_2, ..., x_S*y_S)`.
         - If `self.dim < d`, prepend 1 to the shape of `self` until their lengths are consistent.
-        Such as set the shape of `self` as :math:`(1, ..., x_1, x_2, ..., x_S)`,
-        then the shape of their corresponding positions can be multiplied, and the shape of Outputs is
-        :math:`(1*y_1, ..., x_R*y_R, x_S*y_S)`.
+          Such as set the shape of `self` as :math:`(1, ..., x_1, x_2, ..., x_S)`,
+          then the shape of their corresponding positions can be multiplied, and the shape of Outputs is
+          :math:`(1*y_1, ..., x_R*y_R, x_S*y_S)`.
         - If `self.dim > d`, prepend 1 to `dims` until their lengths are consistent. Such as set the
-        `dims` as :math:`(1, ..., y_1, y_2, ..., y_S)`, then the shape of their corresponding positions
-        can be multiplied, and the shape of Outputs is :math:`(x_1*1, ..., x_R*y_R, x_S*y_S)`.
+          `dims` as :math:`(1, ..., y_1, y_2, ..., y_S)`, then the shape of their corresponding positions
+          can be multiplied, and the shape of Outputs is :math:`(x_1*1, ..., x_R*y_R, x_S*y_S)`.
 
     Raises:
         TypeError: If `dims` is not a tuple or not all elements are int.
@@ -37,32 +37,33 @@ tile:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([[1, 2], [3, 4]]), mindspore.float32)
         >>> dims = (2, 3)
         >>> output = input.tile(dims)
         >>> print(output)
         [[1.  2.  1.  2.  1.  2.]
-        [3.  4.  3.  4.  3.  4.]
-        [1.  2.  1.  2.  1.  2.]
-        [3.  4.  3.  4.  3.  4.]]
+         [3.  4.  3.  4.  3.  4.]
+         [1.  2.  1.  2.  1.  2.]
+         [3.  4.  3.  4.  3.  4.]]
         >>> dims = (2, 3, 2)
         >>> output = input.tile(dims)
         >>> print(output)
         [[[1. 2. 1. 2.]
-        [3. 4. 3. 4.]
-        [1. 2. 1. 2.]
-        [3. 4. 3. 4.]
-        [1. 2. 1. 2.]
-        [3. 4. 3. 4.]]
-        [[1. 2. 1. 2.]
-        [3. 4. 3. 4.]
-        [1. 2. 1. 2.]
-        [3. 4. 3. 4.]
-        [1. 2. 1. 2.]
-        [3. 4. 3. 4.]]]
+          [3. 4. 3. 4.]
+          [1. 2. 1. 2.]
+          [3. 4. 3. 4.]
+          [1. 2. 1. 2.]
+          [3. 4. 3. 4.]]
+         [[1. 2. 1. 2.]
+          [3. 4. 3. 4.]
+          [1. 2. 1. 2.]
+          [3. 4. 3. 4.]
+          [1. 2. 1. 2.]
+          [3. 4. 3. 4.]]]
 
 
-    .. function:: mindspore.Tensor.tile(reps) -> Tensor
+    .. method:: Tensor.tile(reps) -> Tensor
+        :noindex:
 
     For more details, please refer to :func:`mindspore.ops.tile`.

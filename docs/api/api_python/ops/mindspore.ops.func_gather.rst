@@ -7,7 +7,7 @@ mindspore.ops.gather
 
     下图展示了Gather常用的计算过程：
 
-    .. image:: Gather.png
+    .. image:: ../images/Gather.png
 
     其中，params代表输入 `input_params` ，indices代表要切片的索引 `input_indices` 。
 
