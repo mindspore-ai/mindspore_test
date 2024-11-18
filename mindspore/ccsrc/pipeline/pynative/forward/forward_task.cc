@@ -41,6 +41,14 @@ void PassthroughFrontendTask::Run() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
                                      runtime::ProfilerRecorder::kNoName, false, false, task_id_);
   run_func_();
+  stub_output_ = nullptr;
+}
+
+void PassthroughFrontendTask::SetException(const std::exception_ptr &e) {
+  if (stub_output_ == nullptr) {
+    return;
+  }
+  stub_output_->SetException(e);
 }
 
 void SliceOpFrontendTask::Run() {
