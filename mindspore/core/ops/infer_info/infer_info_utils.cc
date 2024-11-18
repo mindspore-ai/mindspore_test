@@ -36,6 +36,7 @@ namespace mindspore::ops {
 */
 static std::vector<std::string> GetArgNames(const AbstractBasePtrList &abstract_list, const OpDefPtr op_def) {
   size_t n = abstract_list.size();
+  const std::string &op_type = op_def->name_;
   std::vector<std::string> arg_names;
   MS_EXCEPTION_IF_NULL(op_def);
   if (op_def->args_.empty()) {
@@ -47,19 +48,35 @@ static std::vector<std::string> GetArgNames(const AbstractBasePtrList &abstract_
       n -= 1;
     }
   }
-  if (op_def->args_[0].arg_dtype_ > DT_ANY) {  // sequence type
-    auto rest_input_size = op_def->args_.size() - 1;
-    auto tuple_size = n - rest_input_size;
-    auto tuple_arg_name = op_def->args_[0].arg_name_;
-    for (size_t i = 0; i < tuple_size; ++i) {
-      arg_names.push_back(tuple_arg_name + "_" + std::to_string(i));
+  size_t op_arg_size = op_def->args_.size();
+  MS_ASSERT_TRUE(n >= op_arg_size) << "Abstract size [" << n << "] is smaller than the defined input size ["
+                                   << op_arg_size << "] for primitive " << op_type;
+
+  std::vector<size_t> sequence_input_indices;
+  for (size_t i = 0; i < op_arg_size; ++i) {
+    if (op_def->args_[i].arg_dtype_ > DT_ANY) {
+      sequence_input_indices.push_back(i);
     }
-    std::transform(op_def->args_.begin() + 1, op_def->args_.end(), std::back_inserter(arg_names),
+  }
+  if (sequence_input_indices.size() > 1) {  // more than one sequence input, unable to distinguish inputs
+    for (size_t i = 0; i < n; ++i) {
+      arg_names.push_back(op_type + "_" + std::to_string(i));
+    }
+  } else if (sequence_input_indices.size() == 1) {  // one sequence input
+    const size_t sequence_idx = sequence_input_indices.front();
+    size_t tuple_size = n - op_arg_size + 1;
+    auto sequence_arg_name = op_def->args_[sequence_idx].arg_name_;
+    std::transform(op_def->args_.begin(), op_def->args_.begin() + sequence_idx, std::back_inserter(arg_names),
+                   [](const OpInputArg &arg) { return arg.arg_name_; });
+    for (size_t i = 0; i < tuple_size; ++i) {
+      arg_names.push_back(sequence_arg_name + "_" + std::to_string(i));
+    }
+    std::transform(op_def->args_.begin() + sequence_idx + 1, op_def->args_.end(), std::back_inserter(arg_names),
                    [](const OpInputArg &arg) { return arg.arg_name_; });
   } else {
-    MS_CHECK_VALUE(n == op_def->args_.size(), "Abstract number " + std::to_string(n) + " doesn't match input number " +
-                                                std::to_string(op_def->args_.size()) + " for primitive " +
-                                                op_def->name_);
+    MS_CHECK_VALUE(n == op_arg_size, "Abstract number [" + std::to_string(n) +
+                                       "] doesn't match defined input number [" + std::to_string(op_arg_size) +
+                                       "] for primitive " + op_type);
     std::transform(op_def->args_.begin(), op_def->args_.end(), std::back_inserter(arg_names),
                    [](const OpInputArg &arg) { return arg.arg_name_; });
   }
@@ -112,6 +129,9 @@ ValueSimpleInfoPtr DoGeneralInfer(const PrimitivePtr &prim, const ValuePtrList &
     return nullptr;
   }
   MS_LOG(DEBUG) << "DoGeneralInfer for op " << op_type;
+  MS_ASSERT_TRUE(values.size() == op_def->args_.size())
+    << "ValuePtr number [" << values.size() << "] does not match the defined input number [" << op_def->args_.size()
+    << "] for primitive " << op_type;
   std::vector<ops::InferInfoPtr> input_infos(values.size());
   for (size_t i = 0; i < values.size(); ++i) {
     input_infos[i] = std::make_unique<ops::ValueInferInfoAdapter>(values[i], op_type, op_def->args_[i].arg_name_);
