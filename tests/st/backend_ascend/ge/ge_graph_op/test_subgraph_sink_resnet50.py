@@ -315,7 +315,7 @@ def train(net, data, label):
     res = train_network(data, label)
     assert np.abs(np.sum(res.asnumpy()) - 73.68) < 0.01
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_resnet50_lazyinline():
     """
     Feature: subgraph sink to GEGraphOp

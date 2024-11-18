@@ -507,7 +507,7 @@ class CellInList(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 def test_cell_in_list():
     """
     Feature: graph raise.

@@ -87,7 +87,7 @@ def test_fallback_print_asnumpy():
     check_output(cap.output, patterns)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_fallback_print_asnumpy_custom_class_ascend():
     """

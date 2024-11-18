@@ -134,7 +134,7 @@ def test_doubel_elements_hypermap_correct_mix_inputs():
 
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_double_elements_hypermap_inputs_length_mismatch():
     """
     Feature: HyperMap

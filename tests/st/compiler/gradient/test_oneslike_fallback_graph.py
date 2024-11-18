@@ -15,7 +15,6 @@
 """test function grad in graph mode"""
 import random
 import numpy as np
-import pytest
 import mindspore.nn as nn
 import mindspore.context as context
 from mindspore import Tensor
