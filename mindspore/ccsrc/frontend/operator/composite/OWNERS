@@ -4,12 +4,9 @@ approvers:
 - liangzhibo
 
 reviewers:
-- lianliguang
 - Margaret_wangrui
-- irmo
-- huangbingjian
-- liangzhibo
-- ligan15
+- Liangcan-Li
+- shuqian0
 
 options:
   no_parent_owners: true

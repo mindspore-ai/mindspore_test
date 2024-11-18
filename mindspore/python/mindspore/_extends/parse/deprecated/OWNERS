@@ -3,5 +3,9 @@ approvers:
 - ginfung
 - liangzhibo
 
+reviewers:
+- huangbingjian
+- chaijinwei
+
 options:
     no_parent_owners: true

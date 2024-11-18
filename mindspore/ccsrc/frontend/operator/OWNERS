@@ -4,7 +4,9 @@ approvers:
 - liangzhibo
 
 reviewers:
-- lianliguang
+- huangbingjian
+- dingjinshan
+- chaijinwei
 
 options:
     no_parent_owners: true
