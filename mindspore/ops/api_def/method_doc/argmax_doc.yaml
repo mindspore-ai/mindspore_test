@@ -1,30 +1,55 @@
 argmax:
-    description: |
-        argmax(dim=None, keepdim=False) -> Tensor
-        
-        Returns the indices of the maximum value along a specified `axis` of a Tensor.
+  description: |
+    argmax(axis=None, keepdims=False) -> Tensor
+    
+    Return the indices of the maximum values of a tensor across a dimension.
+    
+    Args:
+        axis (Union[int, None], optional): The dimension to reduce. If `axis` is ``None`` , the indices of the maximum value 
+            within the flattened input will be returned. The value of `axis` cannot exceed the dimension of `self`. Default: ``None`` .
+        keepdims (bool, optional): Whether the output tensor retains the specified
+            dimension. Ignored if `dim` is None. Default: ``False`` .
 
-        Refer to :func:`mindspore.ops.argmax` for more details.
+    Returns:
+        Tensor, indices of the maximum values across a dimension.
 
-        Args:
-            axis (int): Axis where the Argmax operation applies to. Default: ``-1`` .
-            output_type (:class:`mindspore.dtype`): Output data type.
-                Supported types: ``mstype.int32`` , ``mstype.int64`` . Default: ``mstype.int32`` .
+    Raises:
+        TypeError: If `keepdims` is not bool.
+        ValueError: If `axis` is out of range.
 
-        Inputs:
-            - **input_x** (Tensor) - The input tensor. :math:`(N, *)` where :math:`*` means, any number of additional
-              dimensions.
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
-        Outputs:
-            Tensor, indices of the max value of input tensor across the axis.
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
+        >>> output = Tensor.argmax(x, axis=-1) # x.argmax(axis=-1)
+        >>> print(output)
+        [1 0 0]
 
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
+    .. method:: Tensor.argmax(dim=None, keepdim=False) -> Tensor
+    
+    Args:
+        dim (Union[int, None], optional): The dimension to reduce. If `axis` is ``None`` , the indices of the maximum value 
+            within the flattened input will be returned. The value of `axis` cannot exceed the dimension of `self`. Default: ``None`` .
+        keepdim (bool, optional): Whether the output tensor retains the specified
+              dimension. Ignored if `dim` is None. Default: ``False`` .
 
-        Examples:
-            >>> import mindspore
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input_x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
-            >>> output = input_x.argmax(output_type=mindspore.int32)
-            >>> print(output)
+    Returns:
+        Tensor, indices of the maximum values across a dimension.
+
+    Raises:
+        TypeError: If `keepdim` is not bool.
+        ValueError: If `dim` is out of range.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> x = Tensor(np.array([[1, 20, 5], [67, 8, 9], [130, 24, 15]]).astype(np.float32))
+        >>> output = Tensor.argmax(x, dim=-1) # x.argmax(dim=-1)
+        >>> print(output)
+        [1 0 0]
