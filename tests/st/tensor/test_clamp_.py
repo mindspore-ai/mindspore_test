@@ -34,6 +34,12 @@ def clamp_forward_func(x, min_, max_):
     return x.clamp_(min_, max_)
 
 
+@test_utils.run_with_cell
+def clamp_forward_func_grad(x, min_, max_):
+    x = x * 1
+    return x.clamp_(min_, max_)
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 def test_mint_clamp_normal0(context_mode):
@@ -104,7 +110,7 @@ def test_mint_clamp_min_max_tensor_dynamic_shape():
     min2 = ms.Tensor(generate_random_input((3, 4, 5, 1), np.float32))
     max2 = ms.Tensor(generate_random_input((3, 4, 1, 6), np.float32))
 
-    TEST_OP(clamp_forward_func, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
+    TEST_OP(clamp_forward_func_grad, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
             disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
 
 
@@ -123,5 +129,5 @@ def test_mint_clamp_min_max_scalar_dynamic_shape():
     min2 = 3
     max2 = 8
 
-    TEST_OP(clamp_forward_func, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
+    TEST_OP(clamp_forward_func_grad, [[x1, min1, max1], [x2, min2, max2]], 'clamp_',
             disable_yaml_check=True, disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0'])
