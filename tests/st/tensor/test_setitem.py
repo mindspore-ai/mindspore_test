@@ -1066,6 +1066,24 @@ def test_setitem_refactor_exception(mode):
         ms_x[0:3:-1] = -1
     assert "slice step must be positive" in str(exc.value)
 
+    with pytest.raises(TypeError) as exc:
+        ms_x[0] = (1, 2, 3)
+    assert "Can't assign a <class 'tuple'> to a Float32" in str(exc.value)
+
+    with pytest.raises(TypeError) as exc:
+        ms_x[0] = [1, 2, 3]
+    assert "Can't assign a <class 'list'> to a Float32" in str(exc.value)
+
+    ms_x = Tensor(0)
+    with pytest.raises(IndexError) as exc:
+        ms_x[0] = -1
+    assert "Invalid index of a 0-dim tensor." in str(exc.value)
+
+    with pytest.raises(IndexError) as exc:
+        ms_x[0:1] = -1
+    assert "Invalid index of a 0-dim tensor." in str(exc.value)
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE,])
 def test_setitem_graph_mode(mode):
