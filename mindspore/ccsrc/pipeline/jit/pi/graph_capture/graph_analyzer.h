@@ -161,9 +161,8 @@ class MindGraphAnalyzer : public GraphAnalyzer {
   bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
   void ResetSideEffectRecord() const override;
   void UpdateUseDefNode();
-  void Validate();
 
-  bool SkipAddGraphOutput(ValueNode *node);
+  bool NeedSkipAddGraphOutput(ValueNode *node);
 
   // find or insert
   ValueNode *GetBuiltinMethodNode(std::vector<ValueNode *> *operations, const std::string &method,

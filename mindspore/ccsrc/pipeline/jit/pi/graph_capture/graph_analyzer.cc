@@ -759,7 +759,6 @@ void MindGraphAnalyzer::Analyze() {
   ResetSideEffectRecord();
   CollectCapturedAndInterpret();
   CollectGraphInputs();
-  Validate();
 
   need_interpret_ = true;
   if (graph_->GetStopTraceBci() != -1 || !GetCaptureInfo().interpret_.operations.empty()) {
@@ -997,7 +996,7 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
     MS_LOG(INFO) << "Start analyze : " << node->ToString() << " abs : "
                  << (node->abstract_wrapper() == nullptr ? "nullptr"
                                                          : node->abstract_wrapper()->abstract()->ToString());
-    if (SkipAddGraphOutput(node)) {
+    if (NeedSkipAddGraphOutput(node)) {
       continue;
     }
     // add output for func_graph
@@ -1013,10 +1012,9 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
     // This code will be redundant after the issue fixed.
     bool is_not_in_top_graph = (func_graph_builder->GetNodeByWrapper(node->abstract_wrapper()) == nullptr);
     // it is top graph node but not find in top func_graph
-    bool is_mutated_node = is_not_in_top_graph && node->GetGraph() == graph_;
 
     // Contains data whose type is not supported by the graph, analyze its inputs
-    if (!IsValidOutput(node) || is_not_in_top_graph || is_mutated_node) {
+    if (!IsValidOutput(node) || is_not_in_top_graph) {
       auto msg = (is_not_in_top_graph ? "Not in top graph node : " : "Invalid output : ");
       MS_LOG(INFO) << msg << node->ToString();
       if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak) && Opcode(node->GetOpcode()).IsCall()) {
@@ -1173,7 +1171,7 @@ static ValueNode *FindDuplicateData(const std::vector<ValueNode *> &nodes, size_
   return nullptr;
 }
 
-bool MindGraphAnalyzer::SkipAddGraphOutput(ValueNode *node) {
+bool MindGraphAnalyzer::NeedSkipAddGraphOutput(ValueNode *node) {
   const auto &values = GetCaptureInfo().interpret_.values;
   const auto &captured = GetCaptureInfo().captured_;
   const auto &outputs_optimize = GetCaptureInfo().outputs_optimize_;
@@ -1225,7 +1223,7 @@ bool MindGraphAnalyzer::SkipAddGraphOutput(ValueNode *node) {
   auto iter_replaced = replaced.find(node);
   if (iter_replaced != replaced.end()) {
     MS_LOG(INFO) << "duplicate node " << node->ToString();
-    return SkipAddGraphOutput(iter_replaced->second);
+    return NeedSkipAddGraphOutput(iter_replaced->second);
   }
   return false;
 }
@@ -1254,71 +1252,28 @@ ValueNode *MindGraphAnalyzer::GetBuiltinMethodNode(std::vector<ValueNode *> *out
   return method_node;
 }
 
-// validate use-def, debug only
-void MindGraphAnalyzer::Validate() {
-  if (!graph_->Config().GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
-    return;
-  }
-  MS_LOG(INFO) << "start validate the results of analysis";
-  // now, interpret.operations is validate by GraphBuilder, here double check
-  // now, captured.operations is all instructions of function, here check graph inputs
-  // now, output_optimize is part of instructions of function and other new operations, here check nodes use-def
-  const auto &info = GetCaptureInfo();
-  const auto &start_locals = graph_->GetFrame(0).GetLocals();
-  const auto &graph_inputs = graph_->prepare().inputs_;
-  const auto &graph_outputs = info.captured_.outputs;
-  std::set<ValueNode *> graph_values{graph_inputs.begin(), graph_inputs.end()};
-  std::set<ValueNode *> py_locals{start_locals.begin(), start_locals.end()};
-  auto not_py_locals = [&py_locals](ValueNode *v) {
-    return py_locals.find(v) == py_locals.end() && !IsNonLocalValue(v);
-  };
-  auto validate = [](const std::vector<ValueNode *> &nodes, std::set<ValueNode *> *locals) -> ValueNode * {
-    // for each node, check it's input is in locals
-    auto not_found = [&locals](ValueNode *v) { return locals->find(v) == locals->end() && !IsNonLocalValue(v); };
-    for (const auto &node : nodes) {
-      auto iter = std::find_if(node->getInputs().begin(), node->getInputs().end(), not_found);
-      if (iter != node->getInputs().end()) {
-        return *iter;
-      }
-      locals->insert(node);  // add current node to following node to find
+static void UpdateNodeInputs(const std::vector<ValueNode *> &nodes, const std::map<ValueNode *, ValueNode *> &map) {
+  auto latest = [&map](ValueNode *node) {
+    int limit = 10000;
+    for (auto iter = map.find(node); limit > 0 && iter != map.end(); iter = map.find(node), --limit) {
+      node = iter->second;
     }
-    return nullptr;
+    MS_EXCEPTION_IF_CHECK_FAIL(limit > 0, "maybe circle map");
+    return node;
   };
-
-  ValueNode *node;
-  // validate interpret, the interpret operations inputs, must be in py_locals
-  node = validate(info.interpret_.operations, &py_locals);
-  if (node != nullptr) {
-    MS_LOG(ERROR) << "the interpret node inputs can't find in locals, or it's order is incorrect [" << node->ToString();
-    return;
-  }
-  // after interpret, the inputs of graph must be in py_locals
-  auto iter = std::find_if(graph_values.begin(), graph_values.end(), not_py_locals);
-  if (iter != graph_values.end()) {
-    MS_LOG(ERROR) << "all inputs of graph must be in interpret locals, but not found [" << (*iter)->ToString();
-    return;
-  }
-  // validate captured, the captured operations inputs, must be in py_locals
-  node = validate(info.captured_.operations, &graph_values);
-  if (node != nullptr) {
-    // maybe missing if sub-graph has side-effect
-    MS_LOG(ERROR) << "the graph node inputs can't find in graph, or it's order is incorrect [" << node->ToString();
-    return;
-  }
-  // check outputs is duplicate
-  for (size_t i = 0, size = graph_outputs.size(); i < size; ++i) {
-    node = FindDuplicateData(graph_outputs, i, graph_outputs[i]);
-    if (node != nullptr) {
-      MS_LOG(ERROR) << "find abstract is duplicate [" << node->ToString() << "] and [" << graph_outputs[i]->ToString();
+  // for each node check it's inputs
+  for (auto node_iter = nodes.begin(); node_iter != nodes.end(); ++node_iter) {
+    auto node = *node_iter;
+    auto &in = node->getInputs();
+    auto in_iter = std::find_if(in.begin(), in.end(), [&map](ValueNode *k) { return map.find(k) != map.end(); });
+    if (in_iter == in.end()) {
+      continue;  // not find, do nothing
     }
-  }
-  // update py_locals after graph execute
-  py_locals.insert(graph_outputs.begin(), graph_outputs.end());
-  // validate outputs_optimize
-  node = validate(info.outputs_optimize_.operations, &py_locals);
-  if (node != nullptr) {
-    MS_LOG(ERROR) << "the outputs_optimize node input is missing [" << node->ToString();
-    return;
+    // collect latest node
+    std::vector<ValueNode *> &new_in = in;
+    for (; in_iter != in.end(); ++in_iter) {
+      new_in[in_iter - in.begin()] = latest(*in_iter);
+    }
   }
 }
 
@@ -1329,49 +1284,7 @@ void MindGraphAnalyzer::UpdateUseDefNode() {
     UpdateUseDefOrder(&nodes);
     return;
   }
-  auto latest = [&map](ValueNode *node) {
-    int limit = 10000;
-    for (auto iter = map.find(node); limit > 0 && iter != map.end(); iter = map.find(node), --limit) {
-      node = iter->second;
-    }
-    MS_EXCEPTION_IF_CHECK_FAIL(limit > 0, "maybe circle map");
-    return node;
-  };
-  bool changed;
-  do {
-    changed = false;
-    // for each node check it's inputs
-    for (auto node_iter = nodes.begin(); node_iter != nodes.end(); ++node_iter) {
-      auto node = *node_iter;
-      auto &in = node->getInputs();
-      auto in_iter = std::find_if(in.begin(), in.end(), [&map](ValueNode *k) { return map.find(k) != map.end(); });
-      if (in_iter == in.end()) {
-        continue;  // not find, do nothing
-      }
-      // collect latest node
-      std::vector<ValueNode *> new_in = node->getInputs();
-      for (; in_iter != in.end(); ++in_iter) {
-        new_in[in_iter - in.begin()] = latest(*in_iter);
-      }
-      // if node is a a new node, update inputs
-      if (node->GetLineNo() < 0) {
-        in = std::move(new_in);
-        continue;
-      }
-      Opcode opcode(node->GetOpcode());
-      ValueNode *new_node;
-      if (opcode.IsCall()) {
-        new_node = graph_->NewCallNode(opcode, node->GetOparg(), std::move(new_in));
-        new_node->SetVobj(node->GetVobj());
-      } else {
-        new_node = graph_->NewValueNode(node->GetVobj(), opcode, node->GetOparg(), std::move(new_in), node->GetName());
-      }
-      *node_iter = new_node;
-      map[node] = new_node;
-      changed = true;
-      MS_LOG(ERROR) << "add copy node for " << node << " new " << new_node;
-    }
-  } while (changed);
+  UpdateNodeInputs(nodes, map);
   UpdateUseDefOrder(&nodes);
 }
 
