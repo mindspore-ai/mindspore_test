@@ -44,9 +44,12 @@ class MsDatasetViewer(BaseViewer):
 
     def save(self, data: Dict[str, Any]) -> None:
         """Process and save dataset profiling data."""
-        op_range_list = data.get("mindspore_op_list", [])
-        dataset_statistics = self._calculate_data(op_range_list)
-        self._save_data(dataset_statistics)
+        try:
+            op_range_list = data.get("mindspore_op_list", [])
+            dataset_statistics = self._calculate_data(op_range_list)
+            self._save_data(dataset_statistics)
+        except Exception as e: # pylint: disable=W0703
+            logger.error("Failed to save dataset.csv: %s", e)
 
     def _save_data(self, dataset_statistics: List[List[Any]]) -> None:
         """Save dataset statistics to a CSV file."""
@@ -60,7 +63,7 @@ class MsDatasetViewer(BaseViewer):
         for data in fwk_tlv_data:
             if (data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.START_NS.value] <
                     data[FileConstant.FIX_SIZE_DATA][OpRangeStructField.END_NS.value]):  # dur > 0
-                name = fwk_tlv_data.get(FwkArgsDecoder.TLV_TYPES.get(EventConstant.OP_NAME), "")
+                name = data.get(FwkArgsDecoder.TLV_TYPES.get(EventConstant.OP_NAME), "")
                 if name.split('::')[0] == self._DATASET_OP_PREFIX:
                     dataset_op_data.append(FwkCompleteEvent(data))
 

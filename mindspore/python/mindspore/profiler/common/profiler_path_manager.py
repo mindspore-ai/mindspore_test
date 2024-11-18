@@ -35,10 +35,16 @@ class ProfilerPathManager:
         self._prof_ctx = ProfilerContext()
         self._output_path = self._prof_ctx.output_path
 
-        # initialize ascend_ms_dir
-        self._prof_ctx.ascend_ms_dir = self._get_ascend_ms_dir()
-        # msprof intermediate cache
-        self._intermediate_cache = [
+        # # initialize ascend_ms_dir
+        # self._prof_ctx.ascend_ms_dir = self._get_ascend_ms_dir()
+
+    def clean_analysis_cache(self):
+        """
+        Clean the profiler analysis cache.
+        """
+        ANALYSIS_CACHE = (
+            # ASEND_PROFILER_OUTPUT_PATH
+            self._prof_ctx.ascend_profiler_output_path,
             # PROF_XXX/mindstudio_profiler_output
             self._prof_ctx.msprof_profile_output_path,
             # PROF_XXX/mindstudio_profiler_log
@@ -51,17 +57,9 @@ class ProfilerPathManager:
             os.path.join(self._prof_ctx.msprof_profile_device_path, "sqlite"),
             # PROF_XXX/device_x/data/all_file.complete
             os.path.join(self._prof_ctx.msprof_profile_device_path, "data", "all_file.complete"),
-        ]
+        )
 
-    def clean_analysis_cache(self):
-        """
-        Clean the profiler analysis cache.
-        """
-        analysis_cache = self._intermediate_cache + [
-            # ASEND_PROFILER_OUTPUT_PATH
-            self._prof_ctx.ascend_profiler_output_path
-        ]
-        for cache_path in analysis_cache:
+        for cache_path in ANALYSIS_CACHE:
             if os.path.isfile(cache_path):
                 PathManager.remove_file_safety(cache_path)
             elif os.path.isdir(cache_path):
@@ -69,9 +67,24 @@ class ProfilerPathManager:
 
     def simplify_data(self):
         """
-        Profiler simplify data.
+        Simplify the profiler data.
         """
-        for cache_path in self._intermediate_cache:
+        SIMPLIFY_CACHE = (
+            # PROF_XXX/mindstudio_profiler_output
+            self._prof_ctx.msprof_profile_output_path,
+            # PROF_XXX/mindstudio_profiler_log
+            self._prof_ctx.msprof_profile_log_path,
+            # PROF_XXX/host/sqlite
+            os.path.join(self._prof_ctx.msprof_profile_host_path, "sqlite"),
+            # PROF_XXX/host/data/all_file.complete
+            os.path.join(self._prof_ctx.msprof_profile_host_path, "data", "all_file.complete"),
+            # PROF_XXX/device_x/sqlite
+            os.path.join(self._prof_ctx.msprof_profile_device_path, "sqlite"),
+            # PROF_XXX/device_x/data/all_file.complete
+            os.path.join(self._prof_ctx.msprof_profile_device_path, "data", "all_file.complete"),
+        )
+
+        for cache_path in SIMPLIFY_CACHE:
             if os.path.isfile(cache_path):
                 PathManager.remove_file_safety(cache_path)
             elif os.path.isdir(cache_path):
@@ -83,7 +96,7 @@ class ProfilerPathManager:
         """
         PathManager.make_dir_safety(self._prof_ctx.ascend_profiler_output_path)
 
-    def reset_ascend_ms_dir(self):
+    def set_ascend_ms_dir(self):
         """
         reset xxx_ascend_ms name
         """

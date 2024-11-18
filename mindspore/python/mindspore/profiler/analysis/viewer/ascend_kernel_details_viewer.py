@@ -23,8 +23,7 @@ from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_con
 from mindspore.profiler.common.constant import OpSummaryHeaders
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.constant import TimelineLayerName
-
-from mindspore.python.mindspore.profiler.common.constant import ProfilerStepNameConstant
+from mindspore.profiler.common.constant import ProfilerStepNameConstant
 
 
 class AscendKernelDetailsViewer(BaseViewer):
@@ -48,7 +47,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             kwargs.get("ascend_profiler_output_path"),
             self.KERNEL_DETAILS_FILE_NAME
         )
-
+        self._is_set_schedule = kwargs.get("is_set_schedule")
         self.op_summary_headers = None
         self.op_summary = None
         self.trace_container = None
@@ -143,7 +142,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             else:
                 launch_ops[index] = f"{fwk_langch_op_name}/{dev_kernel_name}"
 
-            if step_id is None:
+            if step_id is None and self._is_set_schedule:
                 logger.warning(
                     "Can not find step id for dev kernel %s, ts %s",
                     dev_kernel_name,

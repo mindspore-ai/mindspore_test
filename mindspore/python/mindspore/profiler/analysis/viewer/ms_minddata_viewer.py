@@ -47,9 +47,12 @@ class MindDataPipelineRawViewer(BaseViewer):
         )
 
     def save(self, data: Dict[str, Any]) -> None:
-        dict_op_id_info, sampling_interval = data["pipeline_info"]
-        op_info_list = self._analyse_data(dict_op_id_info, sampling_interval)
-        self._save_data(op_info_list)
+        try:
+            dict_op_id_info, sampling_interval = data["pipeline_info"]
+            op_info_list = self._analyse_data(dict_op_id_info, sampling_interval)
+            self._save_data(op_info_list)
+        except Exception as e: # pylint: disable=W0703
+            logger.error("Failed to save minddata %s", e)
 
     def _analyse_data(self, dict_op_id_info: Dict[int, Dict[str, Any]], sample_interval: float) -> List[List[Any]]:
         """

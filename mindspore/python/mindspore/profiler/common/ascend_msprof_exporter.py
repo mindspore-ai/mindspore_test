@@ -21,13 +21,14 @@ from typing import Dict, List, Optional
 from mindspore import log as logger
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.file_manager import FileManager
-from mindspore.profiler.common.ascend_msprof_tool import MsprofCmdTool
+from mindspore.profiler.common.msprof_cmd_tool import MsprofCmdTool
 
 
 class AscendMsprofExporter:
     """Exporter for Ascend MSPROF data."""
 
     _DRV_VERSION = 467473
+    _DEFAULT_MODEL_ID = 4294967295
     _STEP_TRACE_FILE_PATTERN = "step_trace_*.csv"
     _STEP_TRACE_MODEL_ID_INDEX = 9
     _STEP_TRACE_ITERATION_ID_INDEX = 1
@@ -36,30 +37,33 @@ class AscendMsprofExporter:
         """Initialize AscendMsprofExporter."""
         self._msprof_profile_output_path = kwargs.get("msprof_profile_output_path")
         self._msprof_profile_path = kwargs.get("msprof_profile_path")
-        self._model_iteration_dict = kwargs.get("model_iteration_dict")
+        self._step_list = kwargs.get("step_list")
         self._msprof_tool = MsprofCmdTool(self._msprof_profile_path)
 
     def export(self) -> None:
         """Determine the export strategy and execute the appropriate export method."""
         support_all_export = self._check_drv_version()
-        if self._model_iteration_dict or not support_all_export:
-            self._single_export(self._model_iteration_dict)
+        if self._step_list or not support_all_export:
+            self._single_export(self._step_list)
         else:
             self._all_export()
         self._msprof_tool.run_ms_analyze_cmd()
 
-    def _single_export(self, model_iteration_dict: Optional[Dict[int, List[int]]]) -> None:
+    def _single_export(self, step_list: Optional[List[int]]) -> None:
         """Perform single export for each model and iteration.
 
         Args:
-            model_iteration_dict (Optional[Dict[int, List[int]]]): Model IDs to iteration IDs mapping.
+            step_list (Optional[List[int]]): iteration IDs.
         """
-        if not model_iteration_dict:
+        if not step_list:
             model_iteration_dict = self._generate_step_trace()
+            if not model_iteration_dict:
+                return
+        else:
+            model_iteration_dict = {self._DEFAULT_MODEL_ID: step_list}
 
-        if model_iteration_dict:
-            for model_id, iter_list in model_iteration_dict.items():
-                self._msprof_tool.run_ms_py_export_cmd(model_id, iter_list)
+        for model_id, iter_list in model_iteration_dict.items():
+            self._msprof_tool.run_ms_py_export_cmd(model_id, iter_list)
 
     def _all_export(self) -> None:
         """Perform all-export for all data."""

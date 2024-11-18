@@ -83,10 +83,16 @@ class TestPathManager(unittest.TestCase):
     def test_check_directory_path_writeable_should_raise_exception_when_not_writeable(self):
         """Test check_directory_path_writeable with non-writable directory."""
         os.makedirs(self.test_dir)
-        os.chmod(self.test_dir, stat.S_IREAD)
-        with self.assertRaises(ProfilerPathErrorException) as cm:
-            PathManager.check_directory_path_writeable(self.test_dir)
-        self.assertIn("writeable permission check failed", str(cm.exception))
+        os.chmod(self.test_dir, 0)  # 设置权限为000
+
+        # 模拟非root用户的权限检查
+        with patch('os.access') as mock_access:
+            mock_access.return_value = False
+            with self.assertRaises(ProfilerPathErrorException) as cm:
+                PathManager.check_directory_path_writeable(self.test_dir)
+            self.assertIn("writeable permission check failed", str(cm.exception))
+
+        # 恢复权限以便清理
         os.chmod(self.test_dir, stat.S_IRWXU)
 
     def test_make_dir_safety_should_success_when_path_valid(self):
