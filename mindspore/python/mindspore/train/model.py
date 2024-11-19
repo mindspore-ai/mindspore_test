@@ -36,7 +36,7 @@ from mindspore.train.metrics import get_metrics, get_metric_fn
 from mindspore._checkparam import check_input_data, check_output_data
 from mindspore import _checkparam as Validator
 from mindspore.train.callback import _InternalCallbackParam, RunContext, _CallbackManager, Callback, TimeMonitor,\
-    FlopsUtilizationCollector, TFTRegister
+    TFTRegister
 from mindspore.train.callback import __all__ as internal_cb_names
 from mindspore.train.callback._cluster_monitor import ClusterMonitor
 from mindspore import context
@@ -907,10 +907,6 @@ class Model:
         cb_params.list_callback = self._transform_callbacks(callbacks)
         valid_infos = (valid_dataset, valid_frequency, valid_dataset_sink_mode)
         cb_params.list_callback.insert(0, _FrameworkProfilerCallback())
-        if os.environ.get("ENABLE_FLOPS_UTILIZATION_COLLECTOR") == "1" and \
-            FlopsUtilizationCollector not in cb_params.list_callback:
-            cb_params.list_callback.insert(0, FlopsUtilizationCollector(
-                cb_params.batch_num, full_flops=False))
         if context.get_context("mode") == context.PYNATIVE_MODE:
             cb_params.list_callback.insert(0, _StepSync())
         callbacks = cb_params.list_callback
@@ -1779,10 +1775,6 @@ class Model:
         cb_params.mode = "eval"
         cb_params.cur_step_num = 0
         cb_params.list_callback = self._transform_callbacks(callbacks)
-        if os.environ.get("ENABLE_FLOPS_UTILIZATION_COLLECTOR") == "1" and \
-            FlopsUtilizationCollector not in cb_params.list_callback:
-            cb_params.list_callback.insert(0, FlopsUtilizationCollector(
-                cb_params.batch_num, full_flops=False))
         cb_params.network = self._network
 
         self._clear_metrics()

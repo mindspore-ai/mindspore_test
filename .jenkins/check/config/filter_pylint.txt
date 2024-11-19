@@ -70,6 +70,7 @@
 "mindspore/mindspore/python/mindspore/train/amp.py"                                                                      "protected-access"
 "mindspore/mindspore/python/mindspore/train/serialization.py"                                                            "protected-access"
 "mindspore/mindspore/python/mindspore/train/model.py"                                                                    "protected-access"
+"mindspore/mindspore/python/mindspore/train/callback/_flops_collector.py"                                                "broad-except"
 "mindspore/mindspore/python/mindspore/log.py"                                                                            "protected-access"
 "mindspore/mindspore/python/mindspore/rewrite/api/node.py"                                                               "protected-access"
 "mindspore/mindspore/python/mindspore/rewrite/node.py"                                                                   "protected-access"

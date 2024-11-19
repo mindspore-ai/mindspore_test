@@ -412,7 +412,6 @@ def test_pipeline_split_stage0_flops():
     Description: parallel subgraph inline in grad parallel
     Expectation: success
     """
-    context.set_context(save_graphs=True)
     context.set_auto_parallel_context(
         device_num=32, global_rank=0, pipeline_stages=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
@@ -428,10 +427,9 @@ def test_pipeline_split_stage0_flops():
     model.train(2, dataset, dataset_sink_mode=False, callbacks=[
                 FlopsUtilizationCollector(dataset.get_dataset_size())])
 
-
 def test_pipeline_split_stage0_flops_ma():
     """
-    Feature: parallel subgraph inline
+    Feature: record flops info with env and callback
     Description: parallel subgraph inline in grad parallel
     Expectation: success
     """
@@ -446,20 +444,18 @@ def test_pipeline_split_stage0_flops_ma():
     params = net.network.cell1.trainable_params()
     dataset = DatasetLenet(data, label, 3)
     optimizer = nn.Lamb(params, learning_rate=0.01)
-    os.environ["ENABLE_FLOPS_UTILIZATION_COLLECTOR"] = "1"
     os.environ["MA_LOG_DIR"] = os.getcwd()
     model = Model(net, optimizer=optimizer)
-    model.train(2, dataset, dataset_sink_mode=False)
+    model.train(2, dataset, FlopsUtilizationCollector(enable_ma_collector=True), dataset_sink_mode=False)
     file = "flops_rank_0.txt"
-    para = "flops{type=\"model_flops\"} 2097152"
+    para = "flops{type=\"model_flops\", rank_id=\"0\"} 2097152"
     output = subprocess.check_output(
         ["grep '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
     assert out == "1"
-    if os.path.exists("time_step_rank_0"):
-        os.remove("time_step_rank_0")
-    if os.path.exists("flops_rank_0"):
-        os.remove("flops_rank_0")
-    os.environ["ENABLE_FLOPS_UTILIZATION_COLLECTOR"] = ""
+    if os.path.exists("time_step_rank_0.txt"):
+        os.remove("time_step_rank_0.txt")
+    if os.path.exists("flops_rank_0.txt"):
+        os.remove("flops_rank_0.txt")
     os.environ["MA_LOG_DIR"] = ""
