@@ -215,7 +215,7 @@ def test_entry_hccl_reducescatter_fusion_by_attr():
     assert return_code == 0
 
 
-@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="unessential")
 def test_hccl_multi_stream():
     """
     Feature: multiple stream of hccl.

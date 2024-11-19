@@ -24,8 +24,8 @@ def test_msrun_pfa_info_sparse_mode0_8p():
     Expectation: Run success; results before and after enabling this feature should be the same.
     '''
     return_code = os.system(
-        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
-        "--master_port=10969 --join=True --log_dir=./pfa_info_logs " \
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 " \
+        "--master_port=10803 --join=True --log_dir=./pfa_info_logs " \
         "pytest -s test_prompt_flash_attention_info.py::test_prompt_flash_attention_semi_auto_parallel_sparsemode0"
     )
     assert return_code == 0

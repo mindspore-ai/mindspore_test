@@ -24,8 +24,8 @@ def test_msrun_comm_subgraph_8p():
     Expectation: Run success; results before and after enabling this feature should be the same.
     '''
     return_code = os.system(
-        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "\
-        "--master_port=10969 --join=True --log_dir=./comm_subgraph_logs "\
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 " \
+        "--master_port=10802 --join=True --log_dir=./comm_subgraph_logs " \
         "pytest -s test_comm_subgraph.py::test_msrun_compute_process"
     )
     assert return_code == 0

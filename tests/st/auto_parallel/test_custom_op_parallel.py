@@ -25,7 +25,7 @@ def test_msrun_custom_op_no_tuple():
     '''
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 "
-        "--master_port=10969 --join=True --log_dir=./custom_op_parallel_log "
+        "--master_port=10801 --join=True --log_dir=./custom_op_parallel_log "
         "pytest -s custom_op_parallel.py"
     )
     assert return_code == 0

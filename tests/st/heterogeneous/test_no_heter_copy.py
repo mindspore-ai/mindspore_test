@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 # pylint: disable=unused-variable
-import pytest
 import re
 import os
 import numpy as np
@@ -21,6 +20,7 @@ import mindspore as ms
 from mindspore import context
 from mindspore import ops
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -37,10 +37,8 @@ def grep(keyword, path):
                     return True
     return False
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@test_utils.run_test_with_On
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="onecard", essential_mark="unessential")
 def test_range_no_heter_copy():
     """
     Feature: heter no copy generalization.
