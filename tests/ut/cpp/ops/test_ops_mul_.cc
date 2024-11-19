@@ -22,23 +22,23 @@ std::vector<GeneralInferParam> prepare_params() {
   GeneralInferParamGenerator generator;
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{2, 1}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat16},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat16});
   generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
-    .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{1, 3}, kNumberTypeInt32}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
   generator
     .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeComplex128},
-                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+                    InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}})
     .FeedExpectedOutput({{-2}}, {kNumberTypeComplex128});
   return generator.Generate();
 }
 }  // namespace
 
-INSTANTIATE_TEST_CASE_P(Muls, GeneralInferTest, testing::ValuesIn(prepare_params()));
+INSTANTIATE_TEST_CASE_P(InplaceMul, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops

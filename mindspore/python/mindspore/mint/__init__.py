@@ -84,7 +84,7 @@ from mindspore.ops.functional import log
 # 20
 
 # 21
-from mindspore.ops.functional import mul
+from mindspore.ops.function.math_func import mul_ext as mul
 # 22
 
 # 23

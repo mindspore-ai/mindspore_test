@@ -1352,6 +1352,14 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             ret = tensor_operator_registry.get("add_")(self, other, alpha)
         return ret
 
+    def mul_(self, other):
+        r"""
+        For details, please refer to :func:`mindspore.ops.mul`.
+        """
+        if isinstance(other, (bool, int, float)):
+            return tensor_operator_registry.get("muls_")(self, other)
+        return tensor_operator_registry.get("mul_")(self, other)
+
     def subtract(self, other, *, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.subtract`.
