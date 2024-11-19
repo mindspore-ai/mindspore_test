@@ -46,6 +46,9 @@ from mindspore.ops.functional import layer_norm
 
 # 11
 from mindspore.ops.functional import relu
+
+from mindspore.ops.function.nn_func import relu_
+
 # 12
 
 # 13
@@ -673,6 +676,9 @@ __all__ = [
 
     # 11
     'relu',
+
+    'relu_',
+
     # 12
 
     # 13
