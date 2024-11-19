@@ -309,6 +309,7 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
 
   // Only used for ascend ops.
   static bool IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node, size_t input_idx);
+  static std::string GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num);
 };
 }  // namespace session
 

@@ -174,6 +174,16 @@ class DeviceAddress : public mindspore::DeviceSync {
     }
   }
 
+  virtual std::string PrintInfo() const {
+    std::ostringstream ofs;
+    ofs << this << " device type:" << GetDeviceType() << " kernel tensor:" << kernel_tensor_;
+    if (kernel_tensor_ != nullptr) {
+      ofs << " " << kernel_tensor_->PrintInfo();
+    }
+    ofs << " device address deleter:" << (deleter_ != nullptr);
+    return ofs.str();
+  }
+
   virtual bool CopyDeviceToHostWithoutSyncStream(void *dst, size_t dst_size, const void *src, size_t src_size) {
     return true;
   }

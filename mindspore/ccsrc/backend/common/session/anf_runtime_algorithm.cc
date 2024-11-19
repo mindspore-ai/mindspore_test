@@ -2526,4 +2526,62 @@ bool AnfRuntimeAlgorithm::IsLaunchIgnoredInputAddressIdx(const AnfNodePtr &node,
   return true;
 }
 
+std::string AnfRuntimeAlgorithm::GetValueByDeviceAddress(DeviceAddress *const device_address, size_t element_num) {
+  if (device_address == nullptr || device_address->GetPtr() == nullptr) {
+    return "";
+  }
+  size_t size = device_address->GetSize();
+  std::string value;
+  char *buf = new char[size];
+  if (device_address->GetDeviceType() == device::DeviceType::kCPU) {
+    delete[] buf;
+    buf = reinterpret_cast<char *>(device_address->GetMutablePtr());
+  }
+  device_address->SyncDeviceToHost(size, buf);
+  auto is_vaild_index = [element_num](size_t index, size_t total) { return index < total && index < element_num; };
+  std::string result;
+  if (device_address->type_id() == TypeId::kNumberTypeInt32) {
+    for (size_t i = 0; is_vaild_index(i, size / 4); ++i) {
+      value += std::to_string((reinterpret_cast<int *>(buf))[i]);
+      value += ", ";
+    }
+    result = " type int, value:" + value;
+  } else if (device_address->type_id() == TypeId::kNumberTypeInt64) {
+    for (size_t i = 0; is_vaild_index(i, size / 8); ++i) {
+      value += std::to_string((reinterpret_cast<int64_t *>(buf))[i]);
+      value += ", ";
+    }
+    result = " type int64, value:" + value;
+  } else if (device_address->type_id() == TypeId::kNumberTypeFloat32) {
+    for (size_t i = 0; is_vaild_index(i, size / 4); ++i) {
+      value += std::to_string(reinterpret_cast<float *>((reinterpret_cast<void *>(buf)))[i]);
+      value += ", ";
+    }
+    result = " type float32, value:" + value;
+  } else if (device_address->type_id() == TypeId::kNumberTypeFloat64) {
+    for (size_t i = 0; is_vaild_index(i, size / 8); ++i) {
+      value += std::to_string((reinterpret_cast<double *>(reinterpret_cast<void *>(buf)))[i]);
+      value += ", ";
+    }
+    result = " type floa64, value:" + value;
+  } else if (device_address->type_id() == TypeId::kNumberTypeBool) {
+    for (size_t i = 0; is_vaild_index(i, size); ++i) {
+      value += std::to_string((reinterpret_cast<bool *>(buf))[i]);
+      value += ", ";
+    }
+    result = " type bool, value:" + value;
+  } else if (device_address->type_id() == TypeId::kNumberTypeFloat16) {
+    for (size_t i = 0; is_vaild_index(i, size / 2); ++i) {
+      float fp32 = 0;
+      device::HalfToFloat(&fp32, buf + i * 2, 1);
+      value += std::to_string(fp32);
+      value += ", ";
+    }
+    result = " type float16, value:" + value;
+  }
+  if (device_address->GetDeviceType() != device::DeviceType::kCPU) {
+    delete[] buf;
+  }
+  return result;
+}
 }  // namespace mindspore::session
