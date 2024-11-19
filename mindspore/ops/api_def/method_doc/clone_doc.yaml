@@ -1,0 +1,28 @@
+clone:
+    description: |
+        clone() -> Tensor
+
+        Returns a copy of self.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Note:
+            This function is differentiable, and gradients will flow back directly from the calculation
+            result of the function to the `self`.
+
+        Returns:
+            Tensor, with the same data, shape and type as `self`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> input = Tensor(np.ones((3,3)).astype("float32"))
+            >>> output = input.clone()
+            >>> print(output)
+            [[1. 1. 1.]
+             [1. 1. 1.]
+             [1. 1. 1.]]

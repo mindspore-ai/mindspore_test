@@ -360,6 +360,8 @@ from mindspore.ops.function.array_func import where as where_func
 
 # 162
 
+from mindspore.ops.auto_generate import clone
+
 ########################################functions########################################
 
 
@@ -898,3 +900,6 @@ def tensor_triu(input, diagonal=0):
 # 161
 
 # 162
+
+def tensor_clone(input):
+    return clone(input)

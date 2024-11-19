@@ -1,0 +1,7 @@
+clone:
+  op_yaml: clone_op.yaml
+  py_method: tensor_clone
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method
