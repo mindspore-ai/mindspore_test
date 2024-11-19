@@ -61,6 +61,8 @@ class ProfilerInfo:
     CANN_PROFILER_INFO = "cann_profiler_info"
     ANALYSIS_COST_TIME = "analysis_cost_time"
     MS_VERSION = "ms_version"
+    CONTEXT_MODE = "context_mode"
+    JIT_LEVEL = "jit_level"
 
     US_TO_NS = 1000
 
@@ -71,6 +73,8 @@ class ProfilerInfo:
             self.CANN_PROFILER_INFO: {},
             self.ANALYSIS_COST_TIME: {},
             self.MS_VERSION: ms_version,
+            self.CONTEXT_MODE: -1,
+            self.JIT_LEVEL: "",
         }
         # time params
         self._freq = 100.0
@@ -124,6 +128,34 @@ class ProfilerInfo:
         Set profiler parameters.
         """
         self._profiler_info[self.PROFILER_PARAMETERS] = value
+
+    @property
+    def context_mode(self) -> int:
+        """
+        Get context mode.
+        """
+        return self._profiler_info[self.CONTEXT_MODE]
+
+    @context_mode.setter
+    def context_mode(self, value: int):
+        """
+        Set context mode.
+        """
+        self._profiler_info[self.CONTEXT_MODE] = value
+
+    @property
+    def jit_level(self) -> str:
+        """
+        Get jit level.
+        """
+        return self._profiler_info[self.JIT_LEVEL]
+
+    @jit_level.setter
+    def jit_level(self, value: str):
+        """
+        Set jit level.
+        """
+        self._profiler_info[self.JIT_LEVEL] = value
 
     @property
     def ms_profiler_info(self) -> Dict[str, str]:
