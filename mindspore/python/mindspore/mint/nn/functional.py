@@ -248,6 +248,13 @@ from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
 # 324
 from mindspore.ops.auto_generate import elu_ext as elu
 
+# 426
+from mindspore.ops.function.clip_func import clamp
+# 427
+from mindspore.ops.function.math_func import norm_ext
+# 428
+from mindspore.ops.functional import broadcast_to
+
 # 556
 from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
@@ -650,6 +657,48 @@ def dropout2d(input, p=0.5, training=True):
 
     return result
 
+def normalize(input, p=2.0, dim=1, eps=1e-12):
+    r"""
+    Perform normalization of inputs over specified dimension
+
+    For a tensor input of sizes :math:`(n_{0},..., n_{dim},..., n_{k})`, each :math:`n_{dim}` -element vector `v`
+    along dimension `dim` is transformed as
+
+    .. math::
+        v=\frac{v}{\max(\left \| v \right \| _{p},\in )}
+
+    With the default arguments it uses the Euclidean norm over vectors along dimension ``1`` for normalization.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): input tensor of any shape.
+        p (float): the exponent value in the norm formulation. default: ``2``.
+        dim (int): the dimension to reduce. default: ``1``.
+        eps (float): small value to avoid division by zero. default: ``1e-12``.
+
+    Returns:
+        Tensor, shape and data type are the same as input.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> tensor = Tensor(np.array([[0, 1, 2], [3, 4, 5], [6, 7, 8]]), mindspore.float32)
+        >>> output = mint.nn.functional.normalize(tensor)
+        >>> print(output)
+        [[0.0000 0.4472 0.8944]
+         [0.4243 0.5657 0.7071]
+         [0.4915 0.5735 0.6554]]
+    """
+    denom = broadcast_to(clamp(norm_ext(input, p, dim, keepdim=True), min=eps), input.shape)
+    return input / denom
+
+
 
 __all__ = [
     'conv_transpose2d',
@@ -856,6 +905,9 @@ __all__ = [
     # 99
 
     # 100
+
+    # 312
+    'normalize',
 
     # 323
 
