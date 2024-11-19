@@ -257,6 +257,7 @@ enum VLogLevel : int {
 
   VL_GE = COMPONENT_START + (SM_GE - 1) * COMPONENT_RANGE,  // 30. GraphEngine
   VL_ASCEND_KERNEL_SELECT = VL_GE,                          // print ascend kernel select
+  VL_ASCEND_SILENT_CHECK,                                   // silent check
 
   VL_API = COMPONENT_START + (SM_API - 1) * COMPONENT_RANGE,                        // 31. MindAPI
   VL_SYMBOLIC_SHAPE = COMPONENT_START + (SM_SYMBOLIC_SHAPE - 1) * COMPONENT_RANGE,  // 32. symbolic shape

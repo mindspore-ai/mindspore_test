@@ -15,13 +15,13 @@
 
 import mindspore as ms
 from mindspore import nn
-from mindspore.train import Model
+from mindspore.train import Model, LossMonitor
 import mindspore.dataset as ds
 from mindspore.common.initializer import Normal
 from mindspore.ops import operations as P
 import numpy as np
+import sys
 
-ms.set_context(mode=ms.GRAPH_MODE)
 ms.set_context(max_device_memory="2GB")
 ms.set_seed(1)
 np.random.seed(1)
@@ -93,7 +93,11 @@ def create_dataset(batch_size):
 
 
 if __name__ == '__main__':
-    ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    print(f'args: {sys.argv}')
+    if len(sys.argv) == 2 and sys.argv[1] == 'kbk':
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    else:
+        ms.set_context(mode=ms.PYNATIVE_MODE)
 
     dataset = create_dataset(batch_size=32)
     net = LeNet5()
@@ -101,4 +105,4 @@ if __name__ == '__main__':
     loss_scale_manager = ms.FixedLossScaleManager(1024., False)
     optim = nn.Momentum(params=net.trainable_params(), learning_rate=0.1, momentum=0.9)
     model = Model(net, loss_fn=loss, optimizer=optim, metrics=None, loss_scale_manager=loss_scale_manager)
-    model.train(1, dataset, dataset_sink_mode=True, sink_size=1)
+    model.train(1, dataset, dataset_sink_mode=True, sink_size=1, callbacks=[LossMonitor()])

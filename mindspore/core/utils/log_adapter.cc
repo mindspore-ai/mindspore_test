@@ -806,6 +806,7 @@ void DispVerboseLogTags() {
     {VL_PRINT_DUMP_V1, "verbose level1 for print and tensordump, etc."},
     {VL_DISTRIBUTED_FD, "log for cluster under layer socket operation"},
     {VL_DISTRIBUTED_TRACE, "log for cluster business message"},
+    {VL_ASCEND_SILENT_CHECK, "verbose level for silent check."},
   };
 
   for (auto &[tag, desc] : used_tags) {

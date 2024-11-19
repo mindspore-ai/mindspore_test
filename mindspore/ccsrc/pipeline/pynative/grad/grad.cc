@@ -17,6 +17,9 @@
 #include "pipeline/pynative/grad/grad.h"
 #include <algorithm>
 #include <unordered_set>
+#include "ir/named.h"
+#include "ir/primal_attr.h"
+#include "ir/value.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
@@ -42,6 +45,9 @@
 #include "runtime/pynative/op_function/pyboost_grad_functions.h"
 #include "runtime/pynative/op_executor.h"
 #include "pipeline/pynative/grad/custom_function.h"
+#include "availability/silent_check/silent_check.h"
+#include "utils/log_adapter.h"
+#include "runtime/pynative/op_function/value_converter.h"
 
 namespace mindspore {
 namespace pynative {
@@ -462,6 +468,39 @@ FrontendOpRunInfoPtr CustomContext2OpRunInfo(const autograd::CustomContext &cont
   }
   op_run_info->op_grad_info->input_value_grad_type = context.input_value_grad_type;
   return op_run_info;
+}
+
+void InsertCheckForLastGrad(ValuePtr grads) {
+  auto checker = silentcheck::SilentCheckerBase::GetInstance();
+  if (checker == nullptr || !checker->NeedInsertCheckForLastGrad()) {
+    return;
+  }
+  ValueTuplePtr grads_tuple = grads->cast<ValueTuplePtr>();
+  if (grads_tuple != nullptr && grads_tuple->size() > 0) {
+    MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register silent check for last gradient";
+    auto last_grad = (*grads_tuple)[0];
+    kernel::pyboost::PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([checker, last_grad]() {
+      auto dout = mindspore::runtime::ValueConverter::ToTensor(last_grad);
+      const char kNameLastGradOp[] = "last_gradient";
+      checker->DoSilentCheck(kNameLastGradOp, "", dout);
+    }));
+  }
+}
+
+void RegBackpropStageHook(bool is_in_bprop) {
+  auto checker = silentcheck::SilentCheckerBase::GetInstance();
+  if (checker == nullptr || !checker->IsNpuAsdEnable()) {
+    return;
+  }
+  MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Register gradient execution hook " << (is_in_bprop ? "begin" : "end");
+  auto task = std::make_shared<runtime::PyBoostDeviceTask>([checker, is_in_bprop]() {
+    auto launch_task = std::make_shared<runtime::DeviceLaunchTask>([checker, is_in_bprop]() {
+      MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Execute backprop calculation " << (is_in_bprop ? "start" : "finish");
+      checker->SetBackProp(is_in_bprop);
+    });
+    runtime::Pipeline::Get().launch_stage()->Push(launch_task);
+  });
+  runtime::OpExecutor::GetInstance().PushOpRunTask(task);
 }
 }  // namespace
 
@@ -1114,6 +1153,7 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
   // Wait forward task finish.
   runtime::Pipeline::Get().WaitAll();
 
+  RegBackpropStageHook(true);
   GetTopCellWithInputArgsRespectTo(grad, obj, args);
   MS_EXCEPTION_IF_NULL(top_cell_);
   MS_LOG(DEBUG) << "Run top cell " << top_cell_;
@@ -1165,7 +1205,9 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
     GetGradGraph(grad_attr, w_args, p_args);
     return RunGradGraph();
   }
-  return RunGradFunc(grad_attr, w_args, p_args);
+  auto ret = RunGradFunc(grad_attr, w_args, p_args);
+  RegBackpropStageHook(false);
+  return ret;
 }
 
 std::string GradExecutor::GetAlreadyRunCellId(const std::string &obj_id) const {
@@ -1572,6 +1614,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
   top_cell_->set_grad_is_running(true);
   auto grads = auto_grad_cell->Finish(w_args, p_args, grad_attr, sens);
   MS_EXCEPTION_IF_NULL(grads);
+  InsertCheckForLastGrad(grads);
   MS_EXCEPTION_IF_NULL(top_cell_);
   top_cell_->set_grad_is_running(false);
   top_input_args_info_ = top_cell_->input_args_info();
