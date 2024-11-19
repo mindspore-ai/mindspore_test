@@ -26,7 +26,6 @@
 #include <set>
 
 #include "utils/hash_map.h"
-#include "utils/hash_set.h"
 #include "backend/common/somas/somas_node.h"
 #include "backend/common/somas/somas_solver_pre.h"
 #include "backend/common/somas/somas_stream.h"

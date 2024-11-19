@@ -17,7 +17,6 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_MINDIR_REG_ASCEND_VM_OP_ADAPTATION_FUNCS_H_
 
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
-#include "include/common/utils/utils.h"
 
 namespace mindspore::opt {
 bool ApplyAdagradV2PreCheck(const CNodePtr &node);

@@ -26,12 +26,9 @@
 #include <string>
 #include <thread>
 #include "include/common/env_vars.h"
-#include "include/common/utils/utils.h"
 #include "ir/tensor.h"
-#include "utils/file_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "utils/shape_utils.h"
 #include "transform/symbol/acl_tdt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 

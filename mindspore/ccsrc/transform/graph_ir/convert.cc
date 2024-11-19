@@ -27,6 +27,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/config_manager.h"
+#include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
 #include "include/transform/graph_ir/utils.h"
 #include "ir/graph_utils.h"

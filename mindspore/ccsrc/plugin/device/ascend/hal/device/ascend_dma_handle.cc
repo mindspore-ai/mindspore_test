@@ -26,7 +26,6 @@
 #include "runtime/rt_error_codes.h"
 #endif
 #include "utils/log_adapter.h"
-#include "include/common/utils/utils.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"

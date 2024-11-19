@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "include/backend/optimizer/pass_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

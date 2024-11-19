@@ -20,7 +20,6 @@
 #include <memory>
 #include <algorithm>
 #include "include/backend/optimizer/pattern_engine.h"
-#include "utils/any.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "utils/log_adapter.h"

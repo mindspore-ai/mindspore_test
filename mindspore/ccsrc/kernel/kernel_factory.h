@@ -22,7 +22,6 @@
 #include <memory>
 #include <string>
 #include "include/backend/visible.h"
-#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace kernel {

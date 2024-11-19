@@ -29,7 +29,6 @@
 #include <utility>
 #include <vector>
 #include "nlohmann/json.hpp"
-#include "utils/os.h"
 #include "utils/ms_utils.h"
 #include "utils/hash_map.h"
 #include "utils/log_adapter.h"

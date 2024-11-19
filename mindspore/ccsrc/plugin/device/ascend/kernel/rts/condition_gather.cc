@@ -15,7 +15,6 @@
  */
 
 #include "plugin/device/ascend/kernel/rts/condition_gather.h"
-#include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

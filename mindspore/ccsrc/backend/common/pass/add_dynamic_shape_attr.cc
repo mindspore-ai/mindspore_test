@@ -16,7 +16,6 @@
 
 #include "backend/common/pass/add_dynamic_shape_attr.h"
 #include "ir/anf.h"
-#include "include/backend/optimizer/optimizer.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

@@ -26,7 +26,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/graph_utils.h"
-#include "kernel/kernel_build_info.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/hash_map.h"

@@ -20,15 +20,12 @@
 #include <utility>
 #include <vector>
 #include <list>
-#include "include/backend/kernel_info.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace opt {

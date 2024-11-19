@@ -18,7 +18,6 @@
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pattern_engine.h"
-#include "ir/anf.h"
 
 namespace mindspore {
 namespace opt {

@@ -19,8 +19,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "ir/tensor.h"
-#include "utils/file_utils.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore::device::ascend {

@@ -17,8 +17,6 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_PASS_CONVERT_CONST_INPUT_TO_TENSOR_INPUT_H_
 #include <string>
 
-#include "ir/anf.h"
-#include "include/common/utils/convert_utils.h"
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {

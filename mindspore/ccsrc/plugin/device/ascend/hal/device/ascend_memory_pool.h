@@ -27,7 +27,6 @@
 #include "include/backend/visible.h"
 #include "plugin/device/ascend/hal/device/abstract_ascend_memory_pool_support.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
-#include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 

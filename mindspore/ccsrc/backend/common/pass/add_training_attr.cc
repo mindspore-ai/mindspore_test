@@ -23,12 +23,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/hash_map.h"
-#include "utils/hash_set.h"
-#include "ir/graph_utils.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace opt {

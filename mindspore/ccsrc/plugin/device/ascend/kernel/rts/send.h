@@ -19,7 +19,6 @@
 #include <memory>
 #include <vector>
 #include "plugin/device/ascend/kernel/rts/rt_kernel.h"
-#include "plugin/device/ascend/kernel/rts/rt_kernel_info.h"
 #include "plugin/device/ascend/hal/device/ascend_event.h"
 
 namespace mindspore {

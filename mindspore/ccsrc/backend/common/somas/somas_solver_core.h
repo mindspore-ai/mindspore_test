@@ -23,7 +23,6 @@
 #include <string>
 #include <vector>
 
-#include "utils/hash_map.h"
 #include "backend/common/somas/somas_solver_alg.h"
 #include "backend/common/somas/somas_solver_pre.h"
 

@@ -32,7 +32,6 @@
 
 #include "utils/hash_map.h"
 #include "backend/common/somas/somas_solver_pre.h"
-#include "utils/ms_context.h"
 
 using std::pair;
 using std::set;

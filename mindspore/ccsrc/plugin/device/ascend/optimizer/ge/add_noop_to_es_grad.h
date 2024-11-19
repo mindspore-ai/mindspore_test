@@ -17,7 +17,6 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_GE_ADD_NOOP_TO_ES_GRAD_H
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pattern_engine.h"
-#include "ir/anf.h"
 
 namespace mindspore {
 namespace opt {

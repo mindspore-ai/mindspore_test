@@ -24,7 +24,6 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
-#include "utils/trace_base.h"
 
 namespace mindspore {
 namespace opt {

@@ -19,10 +19,8 @@
 #include <string>
 #include <vector>
 #include "include/backend/anf_runtime_algorithm.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "utils/anf_utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

@@ -17,8 +17,6 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_GE_CONVERT_CONST_INPUT_TO_TENSOR_INPUT_H_
 #include <string>
 
-#include "ir/anf.h"
-#include "include/common/utils/convert_utils.h"
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {

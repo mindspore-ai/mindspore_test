@@ -19,7 +19,6 @@
 #include <memory>
 
 #include "include/backend/kernel_graph.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/framework_ops.h"

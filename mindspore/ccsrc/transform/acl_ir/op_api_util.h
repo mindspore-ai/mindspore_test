@@ -19,8 +19,6 @@
 
 #include <vector>
 #include <string>
-#include "utils/ms_context.h"
-#include "ir/anf.h"
 #include "acl/acl_base.h"
 #include "acl/acl_rt.h"
 #include "hccl/hccl.h"

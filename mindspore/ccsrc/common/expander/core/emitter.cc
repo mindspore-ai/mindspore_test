@@ -29,9 +29,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "ir/functor.h"
 #include "ops/primitive_c.h"
-#include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
-#include "utils/ms_context.h"
 #include "ops/op_def.h"
 #include "ir/primitive.h"
 

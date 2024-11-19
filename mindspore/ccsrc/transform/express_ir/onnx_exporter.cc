@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "ir/func_graph.h"
-#include "ir/param_info.h"
 #include "ir/tensor.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/comparison_ops.h"

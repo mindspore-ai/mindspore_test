@@ -22,8 +22,6 @@
 #include <string>
 #include <utility>
 #include "kernel/oplib/op_info_keys.h"
-#include "ir/dtype.h"
-#include "ir/kernel_info_dev.h"
 #include "kernel/kernel.h"
 
 #ifdef OPAQUE

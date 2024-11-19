@@ -23,13 +23,11 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
-#include "mindapi/base/format.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "plugin/device/ascend/optimizer/ir_fission/bn_split.h"
 #include "plugin/device/ascend/optimizer/get_value_helper.h"
-#include "utils/ms_context.h"
 #include "utils/trace_base.h"
 
 namespace mindspore {

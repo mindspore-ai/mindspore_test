@@ -31,7 +31,6 @@
 #include "backend/common/somas/somas_solver_pre.h"
 #include "backend/common/somas/somas_stream.h"
 #include "backend/common/somas/somas_tensor.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "include/common/debug/common.h"
 #include "include/common/debug/anf_ir_dump.h"

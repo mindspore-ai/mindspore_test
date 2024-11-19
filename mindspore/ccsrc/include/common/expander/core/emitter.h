@@ -25,7 +25,6 @@
 #include <vector>
 #include "include/common/expander/core/infer.h"
 #include "include/common/expander/core/node.h"
-#include "include/common/utils/utils.h"
 #include "ir/func_graph.h"
 #include "ir/functor.h"
 #include "mindspore/ops/op_def/array_op_name.h"

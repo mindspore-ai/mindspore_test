@@ -32,9 +32,7 @@
 #include <tuple>
 #include "include/common/utils/utils.h"
 #include "kernel/kernel.h"
-#include "kernel/kash/kernel_pack.h"
 #include "kernel/kernel_build_info.h"
-#include "ops/base_operator.h"
 
 namespace mindspore {
 namespace kernel {

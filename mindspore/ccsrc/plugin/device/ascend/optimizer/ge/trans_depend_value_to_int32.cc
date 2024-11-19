@@ -24,7 +24,6 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/utils/utils.h"
-#include "utils/ms_context.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore::opt {

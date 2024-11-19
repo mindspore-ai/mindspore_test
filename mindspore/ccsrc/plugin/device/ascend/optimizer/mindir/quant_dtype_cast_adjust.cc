@@ -15,12 +15,11 @@
  */
 #include "plugin/device/ascend/optimizer/mindir/quant_dtype_cast_adjust.h"
 
-#include "mindspore/ops/op_def/framework_op_name.h"
-#include "include/common/utils/utils.h"
-#include "utils/ms_context.h"
-#include "include/backend/optimizer/helper.h"
+#include <memory>
+
 #include "include/common/utils/anfalgo.h"
-#include "utils/trace_base.h"
+#include "include/common/utils/utils.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 
 namespace mindspore {

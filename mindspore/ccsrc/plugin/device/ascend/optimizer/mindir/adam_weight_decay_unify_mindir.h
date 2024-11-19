@@ -21,7 +21,6 @@
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

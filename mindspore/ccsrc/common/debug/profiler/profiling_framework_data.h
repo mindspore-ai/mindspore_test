@@ -23,7 +23,6 @@
 #include <set>
 #include <unordered_map>
 #include <utility>
-#include "kernel/kernel.h"
 #include "common/debug/profiler/profiling_data_dumper.h"
 #include "include/common/profiler.h"
 

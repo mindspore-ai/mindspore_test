@@ -22,7 +22,6 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace profiler {

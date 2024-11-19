@@ -18,9 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_ADAPTIVE_MAX_POOL2D_FUSION_H_
 
 #include <string>
-#include "ir/anf.h"
 #include "include/backend/optimizer/pattern_engine.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {

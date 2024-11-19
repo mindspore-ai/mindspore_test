@@ -24,6 +24,7 @@
 #include "backend/common/graph_kernel/adapter/graph_kernel_optimization.h"
 #include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
+#include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/common/debug/dump_proto.h"

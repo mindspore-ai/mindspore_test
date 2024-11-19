@@ -25,7 +25,6 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "ops/base_operator.h"
 
 namespace mindspore {
 namespace expander {

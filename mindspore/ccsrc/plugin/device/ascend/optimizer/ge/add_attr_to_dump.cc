@@ -23,7 +23,6 @@
 #include "op_def/framework_ops.h"
 #include "op_def/sequence_ops.h"
 #include "include/common/env_vars.h"
-#include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 

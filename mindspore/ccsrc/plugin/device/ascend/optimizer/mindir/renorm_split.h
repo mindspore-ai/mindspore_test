@@ -18,10 +18,7 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_MINDIR_RENORM_SPLIT_H_
 #include <string>
 #include <memory>
-#include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
-#include "ir/anf.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {

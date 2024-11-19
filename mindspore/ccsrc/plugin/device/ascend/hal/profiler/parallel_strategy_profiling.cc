@@ -16,6 +16,7 @@
 #include <fstream>
 #include "sys/stat.h"
 #include "include/common/debug/dump_proto.h"
+#include "include/common/utils/comm_manager.h"
 #include "include/common/utils/parallel_context.h"
 #include "plugin/device/ascend/hal/profiler/options.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"

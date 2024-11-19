@@ -17,7 +17,6 @@
 #include "plugin/device/ascend/hal/device/ascend_pin_mem_pool.h"
 #include "utils/ms_context.h"
 #include "utils/log_adapter.h"
-#include "include/common/utils/utils.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"

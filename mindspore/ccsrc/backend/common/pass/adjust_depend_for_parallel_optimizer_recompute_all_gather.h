@@ -21,8 +21,6 @@
 #include <memory>
 #include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
-#include "ir/anf.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {

@@ -18,7 +18,6 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_FORMAT_TYPE_SET_FRACZ_GROUP_ATTR_H_
 
 #include <memory>
-#include "ir/anf.h"
 #include "include/backend/optimizer/pass.h"
 
 namespace mindspore {

@@ -25,6 +25,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "include/common/utils/parallel_context.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "plugin/device/ascend/hal/hardware/ge_utils.h"

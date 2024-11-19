@@ -15,7 +15,6 @@
  */
 
 #include "backend/common/pass/convert_unused_tuple_para_to_make_tuple.h"
-#include "include/backend/optimizer/helper.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/anfalgo.h"
 
