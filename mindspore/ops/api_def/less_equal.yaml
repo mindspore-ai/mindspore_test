@@ -1,5 +1,5 @@
 less_equal:
-  op_yaml: less_equal
+  op_yaml: less_equal_op.yaml
   py_method: tensor_le
   Ascend: pyboost
   CPU: pyboost

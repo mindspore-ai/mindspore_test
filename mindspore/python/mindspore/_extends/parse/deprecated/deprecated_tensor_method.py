@@ -130,10 +130,11 @@ deprecated_tensor_method_map = {
     # 56 log2
 
     # 57 logical_and
-
+    "logical_and": "tensor_logical_and",
     # 58 logical_not
 
     # 59 logical_or
+    "logical_or": "tensor_logical_or",
 
     # 60 long
 
