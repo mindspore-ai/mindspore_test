@@ -570,7 +570,7 @@ class ReducePatternTree : public PatternTree {
   }
   bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
     auto reduce_shape = origin_root->input(0)->shape;
-    if (IsDynamicShape(reduce_shape)) {
+    if (IsDynamic(reduce_shape)) {
       return false;
     }
     if (reduce_shape.empty()) {

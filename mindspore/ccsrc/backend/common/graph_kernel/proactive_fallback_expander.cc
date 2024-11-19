@@ -82,14 +82,24 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
           auto tensor = value->cast<tensor::BaseTensorPtr>();
           info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
           info_builder->SetOutputsDeviceType(std::vector<TypeId>{tensor->Dtype()->type_id()});
+          info_builder->SetOutputsKernelObjectType(
+            std::vector<kernel::KernelObjectType>{kernel::KernelObjectType::TENSOR});
         } else if (value->isa<Scalar>()) {
           auto scalar = value->cast<ScalarPtr>();
           info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
           info_builder->SetOutputsDeviceType(std::vector<TypeId>{scalar->type()->type_id()});
+          info_builder->SetOutputsKernelObjectType(
+            std::vector<kernel::KernelObjectType>{kernel::KernelObjectType::SCALAR});
         } else if (value->isa<ValueSequence>()) {
-          auto valuesequence = value->cast<ValueSequencePtr>();
+          auto vec = value->cast<ValueSequencePtr>()->value();
+          if (vec.size() > 0) {
+            info_builder->SetOutputsDeviceType(std::vector<TypeId>{vec[0]->type()->type_id()});
+          } else {
+            info_builder->SetOutputsDeviceType(std::vector<TypeId>{TypeId::kNumberTypeInt64});
+          }
           info_builder->SetOutputsFormat(std::vector<std::string>{kOpFormat_DEFAULT});
-          info_builder->SetOutputsDeviceType(std::vector<TypeId>{valuesequence->type()->type_id()});
+          info_builder->SetOutputsKernelObjectType(
+            std::vector<kernel::KernelObjectType>{kernel::KernelObjectType::TUPLE});
         } else {
           return false;
         }
