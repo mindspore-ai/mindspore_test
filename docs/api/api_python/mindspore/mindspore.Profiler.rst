@@ -9,6 +9,7 @@ mindspore.Profiler
         - **output_path** (str, 可选) - 表示输出数据的路径。默认值： ``"./data"`` 。
         - **profiler_level** (ProfilerLevel, 可选) -（仅限Ascend）表示采集性能数据级别。默认值：``None`` 。
 
+          - None: 不使用ProfilerLevel来控制采集性能数据级别，用于兼容旧版本，建议根据需要配置ProfilerLevel。
           - ProfilerLevel.Level0: 最精简的采集性能数据级别，采集计算类算子的耗时数据和通信类大算子的基础数据。
           - ProfilerLevel.Level1: 在Level0的基础上额外采集CANN层中AscendCL数据、AICORE性能数据以及通信类小算子数据。
           - ProfilerLevel.Level2: 在Level1的基础上额外采集CANN层中GE和Runtime数据。
