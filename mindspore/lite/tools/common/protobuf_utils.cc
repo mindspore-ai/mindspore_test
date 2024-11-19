@@ -33,6 +33,11 @@ bool ReadProtoFromCodedInputStream(google::protobuf::io::CodedInputStream *coded
     MS_LOG(ERROR) << "incorrect parameter. nullptr == proto";
     return false;
   }
+  if (coded_stream == nullptr) {
+    MS_LOG(ERROR) << "incorrect parameter. nullptr == coded_stream";
+    return false;
+  }
+
   coded_stream->SetTotalBytesLimit(PROTO_READ_BYTES_LIMIT, WARNING_THRESHOLD);
   return proto->ParseFromCodedStream(coded_stream);
 }

@@ -164,6 +164,7 @@ bool ConvertDoubleVector(const std::string &str, std::vector<double> *value) {
 }
 
 size_t Hex2ByteArray(const std::string &hex_str, unsigned char *byte_array, size_t max_len) {
+  MS_CHECK_TRUE_MSG(byte_array != nullptr, 0, "byte_array is nullptr!");
   std::regex r("[0-9a-fA-F]+");
   if (!std::regex_match(hex_str, r)) {
     MS_LOG(ERROR) << "Some characters of dec_key not in [0-9a-fA-F]";

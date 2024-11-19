@@ -114,6 +114,10 @@ std::vector<size_t> GetOutputNodeIdx(const schema::MetaGraphT &graphT, const siz
 }
 
 void ReplaceOutput(const uint32_t &old_index, const uint32_t &new_index, schema::MetaGraphT *graphT) {
+  if (graphT == nullptr) {
+    MS_LOG(ERROR) << "graphT is nullptr!";
+    return;
+  }
   std::replace_if(
     std::begin(graphT->outputIndex), std::end(graphT->outputIndex),
     [&old_index](uint32_t outputIndex) { return outputIndex == old_index; }, new_index);

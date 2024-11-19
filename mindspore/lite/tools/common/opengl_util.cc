@@ -275,6 +275,7 @@ GLuint OpenGLRuntime::GLCreateSSBO(GLsizeiptr size, void *hostData, GLenum type,
 bool OpenGLRuntime::CopyDeviceSSBOToHost(GLuint ssboBufferID, void *hostData, GLsizeiptr size) {
   MS_ASSERT(m_ssbo_pool_.count(ssboBufferID) > 0);
   MS_ASSERT(m_ssbo_pool_[ssboBufferID].first >= size);
+  MS_CHECK_TRUE_MSG(hostData != nullptr, false, "hostData is nullptr!");
 
   glBindBuffer(m_ssbo_pool_[ssboBufferID].second, ssboBufferID);
   OPENGL_CHECK_ERROR;
@@ -294,7 +295,7 @@ bool OpenGLRuntime::CopyDeviceSSBOToHost(GLuint ssboBufferID, void *hostData, GL
 bool OpenGLRuntime::CopyHostToDeviceSSBO(void *hostData, GLuint ssboBufferID, GLsizeiptr size) {
   MS_ASSERT(m_ssbo_pool_.count(ssboBufferID) > 0);
   MS_ASSERT(m_ssbo_pool_[ssboBufferID].first >= size);
-
+  MS_CHECK_TRUE_MSG(hostData != nullptr, false, "hostData is nullptr!");
   glBindBuffer(m_ssbo_pool_[ssboBufferID].second, ssboBufferID);
   OPENGL_CHECK_ERROR;
 
@@ -466,6 +467,10 @@ void *OpenGLRuntime::CopyDeviceTextureToHost(GLuint textureID) {
 }
 
 void OpenGLRuntime::PrintImage2DData(float *data, int w, int h, int c) {
+  if (data == nullptr) {
+    MS_LOG(ERROR) << "data is nullptr!";
+    return;
+  }
   for (int i = 0; i < h; i++) {
     for (int j = 0; j < w; j++) {
       for (int k = 0; k < c; k++) {
