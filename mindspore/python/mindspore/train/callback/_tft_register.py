@@ -109,7 +109,7 @@ or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
     logger.info("Finish _tft_repair_callback")
 
 
-def _tft_clean_callback(is_uce_error, ctx):
+def _tft_clean_callback(is_uce_error, args, ctx):
     """ Callback used for TFT clean function."""
     logger.info("Enter _tft_clean_callback")
     ret = 0
@@ -130,7 +130,7 @@ def _tft_clean_callback(is_uce_error, ctx):
     return ret
 
 
-def _tft_stop_callback(cb_ctx):
+def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
     logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
     _stop_device(cb_ctx.device_id)
@@ -300,7 +300,7 @@ class TFTRegister(Callback):
         replica_info = [
             {
                 "type": 1,
-                "rank_list": dp,
+                "rank_list": list(dp),
                 "replica_cnt": len(dp),
                 "replica_shift": 0
             }
@@ -321,13 +321,12 @@ class TFTRegister(Callback):
         cur_rank = get_rank()
         enable_local_copy = False
         enable_arf = False
-        enable_zit = False
         enable_tls = False
         tls_key_dir = ""
 
         if cur_rank == self._controller_rank_id:
             logger.info(f"Begin to start tft controller on rank_id:{cur_rank}")
-            self.tft.tft_init_controller(cur_rank, world_size, enable_local_copy, enable_arf, enable_zit)
+            self.tft.tft_init_controller(cur_rank, world_size, enable_local_copy, enable_arf)
             self.tft.tft_start_controller(self._controller_ip, self._controller_port, enable_tls, tls_key_dir)
             logger.info("Finish start tft controller.")
 
