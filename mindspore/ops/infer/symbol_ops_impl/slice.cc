@@ -43,6 +43,7 @@ SymbolPtr Slice::Eval() {
     if (size->HasData()) {
       return GenVIntList(size->size());
     }
+    return GenVList();
   }
 
   auto rank = data->size();
