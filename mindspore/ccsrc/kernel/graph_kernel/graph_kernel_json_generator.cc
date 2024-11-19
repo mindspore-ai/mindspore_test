@@ -30,6 +30,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "kernel/graph_kernel/graph_kernel_json_flags.h"
+#include "include/common/symbol_engine/symbol_engine_impl.h"
 #ifdef MSLITE_ENABLE_GRAPH_KERNEL
 #ifdef ENABLE_GPU
 #include <cuda.h>
@@ -393,6 +394,49 @@ std::vector<std::string> GraphKernelJsonGenerator::QuerySymbolicShapeStr(const A
   return res;
 }
 
+std::string QuerySymbolExprHelper(const SymbolPtr &s,
+                                  const std::unordered_map<std::string, std::string> &symbol_expr_map) {
+  auto raw_string = s->ToRawString();
+  if (s->is<ListSymbol>() || s->HasData()) {
+    return raw_string;
+  }
+  if (symbol_expr_map.find(raw_string) != symbol_expr_map.end()) {
+    return raw_string;
+  }
+  auto operation = s->operation();
+  if (operation == nullptr) {
+    return raw_string;
+  }
+  std::ostringstream oss;
+  oss << operation->name() << "(";
+  bool first = true;
+  for (auto &input : operation->inputs()) {
+    if (first == true) {
+      first = false;
+    } else {
+      oss << ", ";
+    }
+    oss << QuerySymbolExprHelper(input, symbol_expr_map);
+  }
+  oss << ")";
+  return oss.str();
+}
+
+void QuerySymbolExpr(const AnfNodePtr &node, std::unordered_map<std::string, std::string> *symbol_expr_map) {
+  // todo, use SymbolVisitor to export symbol expr.
+  auto symbolic_shape = node->abstract()->GetSymbolicShape();
+  if (symbolic_shape == nullptr) {
+    return;
+  }
+  for (const auto &symbol : symbolic_shape->symbols()) {
+    auto name = symbol->ToRawString();
+    if (name[0] == 's' && symbol_expr_map->find(name) == symbol_expr_map->end()) {
+      auto expr = QuerySymbolExprHelper(symbol, *symbol_expr_map);
+      (*symbol_expr_map)[name] = expr;
+    }
+  }
+}
+
 void GraphKernelJsonGenerator::SaveShape(const AnfNodePtr &node, nlohmann::json *kernel_json,
                                          const ShapeVector &shape) {
   if (symbol_engine_ == nullptr) {
@@ -422,7 +466,7 @@ void GraphKernelJsonGenerator::SaveShape(const AnfNodePtr &node, nlohmann::json 
   }
   (*kernel_json)[kJsonKeyShape] = new_shape;
   (*kernel_json)[kJsonKeySymbolicShape] = symbol_shape;
-  (void)symbol_engine_->QuerySymbolExpr(node, &symbol_calc_exprs_);
+  QuerySymbolExpr(node, &symbol_calc_exprs_);
 }
 
 bool GraphKernelJsonGenerator::CreateInputDescJson(const AnfNodePtr &anf_node, const OpInfoPtr &op_info,

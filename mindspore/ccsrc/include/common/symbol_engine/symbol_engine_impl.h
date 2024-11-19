@@ -31,14 +31,10 @@
 #include "symbolic_shape/operation_builder.h"
 #include "symbolic_shape/operation.h"
 #include "include/common/visible.h"
+#include "include/common/symbol_engine/utils.h"
 
 namespace mindspore {
 namespace symshape {
-struct COMMON_EXPORT DependStatus {
-  bool shape{false};
-  bool value{false};
-};
-
 /// \brief When a CNode's input[0] is also a CNode, it's a SpecialCNode.
 class COMMON_EXPORT SpecialCNodeHelper {
  public:
@@ -63,10 +59,8 @@ class COMMON_EXPORT SymbolEngineImpl : public SymbolEngine {
 
   std::mutex *GetInferMutex() { return &infer_mutex_; }
   bool Infer(const AbstractBasePtrList &inputs) override;
-  bool IsDependValue(const AnfNodePtr &node) override;
-  bool IsDependShape(const AnfNodePtr &node) override;
-  bool SupportInfer() override { return support_infer_; }
-  void QuerySymbolExpr(const AnfNodePtr &node, std::unordered_map<std::string, std::string> *symbol_expr_map) override;
+  bool IsDependValue(const AnfNodePtr &node);
+  bool IsDependShape(const AnfNodePtr &node);
 
   std::string ToString() const override { return "SymbolEngine_" + name_; }
   std::string DumpText() const override;
@@ -90,15 +84,10 @@ class COMMON_EXPORT SymbolEngineImpl : public SymbolEngine {
   SymbolPtr BuildCNodeSymbolicValue(OperationBuilder *builder, const PrimitivePtr &prim,
                                     const AbstractBasePtrList &inputs, const AbstractBasePtr &abstract,
                                     const CNodePtr &cnode);
-  virtual AbstractBasePtrList ExtractInputsAbstract(const CNodePtr &cnode);
-
-  std::string QuerySymbolExprHelper(const SymbolPtr &s,
-                                    const std::unordered_map<std::string, std::string> &symbol_expr_map);
 
   void BuildNodesSymbol(const FuncGraphPtr &fg, const AnfNodePtrList &cnodes);
   void BuildCNodeSymbol(const CNodePtr &cnode);
   bool SetParamSymbols(const CNodePtr &cnode, const FuncGraphPtr &sub_fg, size_t begin_input_index, size_t visit_cnt);
-  bool HasAbstractAny(const AbstractBasePtrList &inputs, const AbstractBasePtr &output);
   bool GeneralizeParamShape(const AnfNodePtr &param, const AbstractBasePtr &input_abs);
   bool GeneralizeParamValue(const AnfNodePtr &param, const AbstractBasePtr &input_abs);
   void CleanBuildingTmp();
@@ -108,7 +97,6 @@ class COMMON_EXPORT SymbolEngineImpl : public SymbolEngine {
   std::string name_;
   OpPtrList ops_;
   std::unique_ptr<OperationEmitter> emitter_;
-  bool support_infer_{true};
   std::mutex infer_mutex_;
   std::map<AnfNodePtr, DependStatus> depend_status_map_;
   std::map<FuncGraph *, size_t> visited_graph_;
@@ -119,15 +107,6 @@ class COMMON_EXPORT SymbolEngineImpl : public SymbolEngine {
 };
 
 using SymbolEngineImplPtr = std::shared_ptr<symshape::SymbolEngineImpl>;
-/// \brief nodes have same digital shape may use same abstract object, but their symbolic shape may not same, clone a
-/// new abstract for symbolic info.
-COMMON_EXPORT AbstractBasePtr CloneAbstractIfSymbolExists(const AbstractBasePtr &abs);
-inline AbstractBasePtr CloneAbstractIfSymbolExists(const AnfNodePtr &node) {
-  node->set_abstract(CloneAbstractIfSymbolExists(node->abstract()));
-  return node->abstract();
-}
-
-COMMON_EXPORT void CleanSymbols(const FuncGraphPtr &func_graph);
 }  // namespace symshape
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_SYMBOL_ENGINE_SYMBOL_ENGINE_IMPL_H_

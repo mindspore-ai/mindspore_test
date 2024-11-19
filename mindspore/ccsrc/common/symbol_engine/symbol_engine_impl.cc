@@ -387,50 +387,6 @@ bool SymbolEngineImpl::IsDependShape(const AnfNodePtr &node) {
   return false;
 }
 
-std::string SymbolEngineImpl::QuerySymbolExprHelper(
-  const SymbolPtr &s, const std::unordered_map<std::string, std::string> &symbol_expr_map) {
-  auto raw_string = s->ToRawString();
-  if (s->is<ListSymbol>() || s->HasData()) {
-    return raw_string;
-  }
-  if (symbol_expr_map.find(raw_string) != symbol_expr_map.end()) {
-    return raw_string;
-  }
-  auto operation = s->operation();
-  if (operation == nullptr) {
-    return raw_string;
-  }
-  std::ostringstream oss;
-  oss << operation->name() << "(";
-  bool first = true;
-  for (auto &input : operation->inputs()) {
-    if (first == true) {
-      first = false;
-    } else {
-      oss << ", ";
-    }
-    oss << QuerySymbolExprHelper(input, symbol_expr_map);
-  }
-  oss << ")";
-  return oss.str();
-}
-
-void SymbolEngineImpl::QuerySymbolExpr(const AnfNodePtr &node,
-                                       std::unordered_map<std::string, std::string> *symbol_expr_map) {
-  // todo, use SymbolVisitor to export symbol expr.
-  auto symbolic_shape = node->abstract()->GetSymbolicShape();
-  if (symbolic_shape == nullptr) {
-    return;
-  }
-  for (const auto &symbol : symbolic_shape->symbols()) {
-    auto name = symbol->ToRawString();
-    if (name[0] == 's' && symbol_expr_map->find(name) == symbol_expr_map->end()) {
-      auto expr = QuerySymbolExprHelper(symbol, *symbol_expr_map);
-      (*symbol_expr_map)[name] = expr;
-    }
-  }
-}
-
 bool SymbolEngineImpl::GeneralizeParamShape(const AnfNodePtr &param, const AbstractBasePtr &input_abs) {
   if (generalized_shape_.count(param) > 0) {
     return false;
@@ -618,38 +574,6 @@ SymbolPtr SymbolEngineImpl::BuildCNodeSymbolicValue(OperationBuilder *builder, c
   return s;
 }
 
-AbstractBasePtrList SymbolEngineImpl::ExtractInputsAbstract(const CNodePtr &cnode) {
-  AbstractBasePtrList abs_list;
-  abs_list.reserve(cnode->size());
-  (void)std::transform(cnode->inputs().cbegin() + 1, cnode->inputs().cend(), std::back_inserter(abs_list),
-                       [](const AnfNodePtr &node) {
-                         MS_EXCEPTION_IF_NULL(node);
-                         auto abs = node->abstract();
-                         if (abs == nullptr) {
-                           if (node->isa<ValueNode>()) {
-                             auto vnode = node->cast_ptr<ValueNode>();
-                             MS_EXCEPTION_IF_NULL(vnode);
-                             MS_EXCEPTION_IF_NULL(vnode->value());
-                             abs = vnode->value()->ToAbstract();
-                             MS_EXCEPTION_IF_NULL(abs);
-                             node->set_abstract(abs);
-                             MS_LOG(DEBUG) << "Set new abstract for input node " << node->DebugString();
-                           } else {
-                             // Do not raise exception here, this input may not be used by operation.
-                             MS_LOG(INFO) << "The input " << node->DebugString() << " has null abstract.";
-                           }
-                         }
-                         return abs;
-                       });
-  return abs_list;
-}
-
-bool SymbolEngineImpl::HasAbstractAny(const AbstractBasePtrList &inputs, const AbstractBasePtr &output) {
-  return output->isa<abstract::AbstractAny>() ||
-         std::any_of(inputs.begin(), inputs.end(),
-                     [](const AbstractBasePtr &abs) { return abs->isa<abstract::AbstractAny>(); });
-}
-
 void SymbolEngineImpl::BuildCNodeSymbol(const CNodePtr &cnode) {
   PrimitivePtr prim;
   AbstractBasePtrList inputs;
@@ -711,58 +635,6 @@ void SymbolEngineImpl::GetAllNodes(const FuncGraphPtr &func_graph) {
   for (auto &node : nodes) {
     if (node->isa<CNode>() && !IsPrimitiveCNode(node, prim::kPrimReturn) && node->func_graph() != nullptr) {
       (void)fg_cnodes_[node->func_graph().get()].emplace_back(node);
-    }
-  }
-}
-
-AbstractBasePtr CloneAbstractIfSymbolExists(const AbstractBasePtr &abs) {
-  if (abs == nullptr) {
-    return nullptr;
-  }
-  if (abs->GetSymbolicShape() == nullptr && abs->GetSymbolicValue() == nullptr) {
-    return abs;
-  }
-  // some abstract does not support clone
-  if (abs->isa<abstract::AbstractFuncUnion>()) {
-    return abs;
-  }
-  try {
-    MS_LOG_TRY_CATCH_SCOPE;
-    auto new_abs = abs->Clone();
-    MS_EXCEPTION_IF_NULL(new_abs);
-    new_abs->SetSymbolicShape(nullptr);
-    new_abs->SetSymbolicValue(nullptr);
-    return new_abs;
-  } catch (std::exception &e) {
-    if (IS_OUTPUT_ON(MsLogLevel::kDebug)) {
-      std::string sym_shape = abs->GetSymbolicShape() == nullptr ? "" : abs->GetSymbolicShape()->ToString();
-      std::string sym_value = abs->GetSymbolicValue() == nullptr ? "" : abs->GetSymbolicValue()->ToString();
-      MS_LOG(DEBUG) << "The abstract has symbol (S:" << sym_shape << ", V:" << sym_value
-                    << ") but cannot be cloned. abstract: " << abs->ToString() << ", msg:" << e.what();
-    }
-  }
-  return abs;
-}
-
-void CleanSymbols(const FuncGraphPtr &func_graph) {
-  std::set<AbstractBasePtr> params_abs;
-  for (auto &param : func_graph->parameters()) {
-    (void)params_abs.insert(param->abstract());
-  }
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperWithAttrGraph, AlwaysInclude);
-  for (auto &node : nodes) {
-    auto abs = node->abstract();
-    if (params_abs.find(abs) != params_abs.end()) {
-      // do not clean the parameters' symbol
-      continue;
-    }
-    if (abs != nullptr) {
-      abs->SetSymbolicShape(nullptr);
-      abs->SetSymbolicValue(nullptr);
-    }
-    auto fg = node->func_graph();
-    if (fg != nullptr) {
-      fg->set_symbol_engine(nullptr);
     }
   }
 }
