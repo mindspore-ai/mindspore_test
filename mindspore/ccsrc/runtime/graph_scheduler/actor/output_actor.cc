@@ -372,6 +372,8 @@ void OutputActor::UpdateOutputDeviceAddress() {
   // step or next loop. But the graph output nodes corresponding to device tensor store need to be skipped, because
   // they are fixed addresses and persistent.
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, GetAID().Name(), "UpdateOutputDeviceAddress", "");
+
+  auto repeat_index = GetRepeatDeviceAddressIndexPair(output_device_tensors_);
   for (size_t i = 0; i < output_nodes_.size(); ++i) {
     auto &output_node = output_nodes_[i].first;
     if (i >= output_device_tensors_.size()) {
@@ -389,6 +391,11 @@ void OutputActor::UpdateOutputDeviceAddress() {
         tensor->base_shape_ptr()->cast<abstract::SequenceShapePtr>()->size() == 0) {
       continue;
     }
+    if (repeat_index.find(i) != repeat_index.end() && i > repeat_index[i] && outputs_[i] != nullptr) {
+      tensor->set_device_address(outputs_[repeat_index[i]]->device_address());
+      continue;
+    }
+
     auto tensor_device_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
     MS_EXCEPTION_IF_NULL(tensor_device_address);
     // Update tensor device address by device tensor of output node.

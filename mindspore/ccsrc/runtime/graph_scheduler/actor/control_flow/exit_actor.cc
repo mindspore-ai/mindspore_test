@@ -322,8 +322,8 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
   }
 
+  auto repeat_output_index = GetRepeatDeviceAddressIndexPair(input_device_tensors_);
   std::vector<DeviceTensor *> new_device_tensors;
-  mindspore::HashMap<DeviceTensor *, DeviceTensor *> device_tensor_map;
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
     auto &input_device_tensor = input_device_tensors_[i];
     if (!IsNeedCopyDeviceAddress(input_device_tensor, i)) {
@@ -331,9 +331,13 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
       continue;
     }
 
-    auto iter = device_tensor_map.find(input_device_tensor);
-    if (iter != device_tensor_map.end()) {
-      (void)new_device_tensors.emplace_back(iter->second);
+    auto iter = repeat_output_index.find(i);
+    if (iter != repeat_output_index.end()) {
+      if (iter->second >= new_device_tensors.size()) {
+        MS_LOG(EXCEPTION) << "Invalid output index:" << i << " real index:" << iter->second
+                          << " for actor:" << GetAID();
+      }
+      (void)new_device_tensors.emplace_back(new_device_tensors[iter->second]);
       continue;
     }
 
@@ -368,7 +372,6 @@ void ExitActor::CopyDeviceAddress(OpContext<DeviceTensor> *const context) {
     }
     (void)created_device_tensors_.emplace_back(new_device_tensor);
     (void)new_device_tensors.emplace_back(new_device_tensor.get());
-    device_tensor_map[input_device_tensor] = new_device_tensor.get();
     new_device_tensor->set_need_sync_user_data(input_device_tensor->need_sync_user_data());
     new_device_tensor->SetNodeIndex(node_with_index.first, node_with_index.second);
     new_device_tensor->set_from_persistent_mem(input_device_tensor->from_persistent_mem());

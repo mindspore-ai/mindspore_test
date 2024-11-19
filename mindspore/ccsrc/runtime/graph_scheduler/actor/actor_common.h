@@ -489,6 +489,9 @@ bool is_embedding_cache_server();
 
 std::string GetActorIdByKernel(const AnfNodePtr &node);
 std::string GenerateActorIdByKernel(const AnfNodePtr &node);
+
+// GetThe repeat device tensor index.
+mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<DeviceTensor *> &device_tensors);
 }  // namespace runtime
 }  // namespace mindspore
 

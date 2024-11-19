@@ -895,3 +895,245 @@ def test_nopnode_inplace():
     out = net(input_x)
     print("out:", out)
     assert np.all(out.asnumpy() == [2, 2, 2, 2])
+
+
+def test_inplace_parameter_multi_output():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x):
+            y = self.assignadd(x, 1)
+            return x, y
+
+    x = ms.Tensor(2)
+    net = Net()
+    out = net(x)
+    assert out[0] == 3
+    assert out[1] == 3
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_inplace_cnode_multi_output():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x):
+            x = x + 1
+            y = self.assignadd(x, 1)
+            return x, y
+
+    x = ms.Tensor(2)
+    net = Net()
+    out = net(x)
+    assert out[0] == 4
+    assert out[1] == 4
+
+
+def test_inplace_control_flow_parameter_multi_output():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x):
+            if x < 3:
+                y = self.assignadd(x, 1)
+                return x, y
+            return x, x
+
+    x = ms.Tensor(2)
+    net = Net()
+    out = net(x)
+    assert out[0] == 3
+    assert out[1] == 3
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_inplace_control_flow_cnode_multi_output():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x):
+            x = x + 1
+            if x < 4:
+                x = x + 1
+                y = self.assignadd(x, 1)
+                return x, y
+            return x, x
+
+    x = ms.Tensor(2)
+    net = Net()
+    out = net(x)
+    assert out[0] == 5
+    assert out[1] == 5
+
+
+def test_cnode_nopnode_inplace():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+            self.squeeze = P.Squeeze()
+
+        def construct(self, x):
+            x = x + Tensor([[2, 2, 2, 2]])
+            y = self.squeeze(x)
+            self.assignadd(y, Tensor([3, 3, 3, 3]))
+            return x, y
+
+    context.set_context(device_target="CPU")
+    input_x = Tensor(np.zeros([1, 4]).astype(np.int64))
+    net = Net()
+    out = net(input_x)
+    print("out:", out)
+    assert np.all(out[0].asnumpy() == [2, 2, 2, 2])
+    assert np.all(out[1].asnumpy() == [5, 5, 5, 5])
+
+
+def test_cnode_double_nopnode_inplace1():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+            self.squeeze = P.Squeeze()
+
+        def construct(self, x):
+            x = x + Tensor([[2, 2, 2, 2]])
+            y = self.squeeze(x)
+            z = self.squeeze(y)
+            self.assignadd(z, Tensor([3, 3, 3, 3]))
+            return x, y, z
+
+    context.set_context(device_target="CPU")
+    input_x = Tensor(np.zeros([1, 4]).astype(np.int64))
+    net = Net()
+    out = net(input_x)
+    print("out:", out)
+    assert np.all(out[0].asnumpy() == [[2, 2, 2, 2]])
+    assert np.all(out[1].asnumpy() == [2, 2, 2, 2])
+    assert np.all(out[2].asnumpy() == [5, 5, 5, 5])
+
+
+
+def test_cnode_double_nopnode_inplace2():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+            self.squeeze = P.Squeeze()
+
+        def construct(self, x):
+            x = x + Tensor([[2, 2, 2, 2]])
+            y = self.squeeze(x)
+            z = self.squeeze(y)
+            self.assignadd(z, Tensor([3, 3, 3, 3]))
+            return x, z
+
+    context.set_context(device_target="CPU")
+    input_x = Tensor(np.zeros([1, 4]).astype(np.int64))
+    net = Net()
+    out = net(input_x)
+    print("out:", out)
+    assert np.all(out[0].asnumpy() == [[2, 2, 2, 2]])
+    assert np.all(out[1].asnumpy() == [5, 5, 5, 5])
+
+
+def test_cnode_inplace_nopnode1():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+            self.squeeze = P.Squeeze()
+
+        def construct(self, x):
+            x = x + Tensor([[2, 2, 2, 2]])
+            self.assignadd(x, Tensor([[3, 3, 3, 3]]))
+            y = self.squeeze(x)
+            z = self.squeeze(y)
+            self.assignadd(x, Tensor([[4, 4, 4, 4]]))
+            return x, y, z
+
+    context.set_context(device_target="CPU")
+    input_x = Tensor(np.zeros([1, 4]).astype(np.int64))
+    net = Net()
+    out = net(input_x)
+    print("out:", out)
+    assert np.all(out[0].asnumpy() == [[9, 9, 9, 9]])
+    assert np.all(out[1].asnumpy() == [5, 5, 5, 5])
+    assert np.all(out[2].asnumpy() == [5, 5, 5, 5])
+
+
+def test_cnode_inplace_nopnode2():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+            self.squeeze = P.Squeeze()
+
+        def construct(self, x):
+            x = x + Tensor([[2, 2, 2, 2]])
+            self.assignadd(x, Tensor([[3, 3, 3, 3]]))
+            y = self.squeeze(x)
+            z = self.squeeze(y)
+            zz = self.squeeze(z)
+            self.assignadd(x, Tensor([[4, 4, 4, 4]]))
+            return x, zz
+
+    context.set_context(device_target="CPU")
+    input_x = Tensor(np.zeros([1, 4]).astype(np.int64))
+    net = Net()
+    out = net(input_x)
+    print("out:", out)
+    assert np.all(out[0].asnumpy() == [[9, 9, 9, 9]])
+    assert np.all(out[1].asnumpy() == [5, 5, 5, 5])

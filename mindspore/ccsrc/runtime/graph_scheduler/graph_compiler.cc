@@ -182,20 +182,21 @@ void OptimizeNopNode(KernelGraph *graph) {
   const auto &ref_map = graph->GetRefMap();
   std::set<std::pair<AnfNodePtr, size_t>> ref_out_value;
   for (const auto &iter : ref_map) {
+    ref_out_value.insert(iter.first);
     ref_out_value.insert(iter.second);
   }
   MS_EXCEPTION_IF_NULL(output_node);
   const auto &graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(output_node);
+  auto is_graph_output = [&graph_outputs](const AnfNodePtr &node) {
+    return std::any_of(graph_outputs.begin(), graph_outputs.end(), [&node](const KernelWithIndex &output) {
+      const auto &real_output = common::AnfAlgo::FetchRealNodeSkipMonadControl(output);
+      return real_output == KernelWithIndex(node, 0);
+    });
+  };
   // Collect all the nopnodes that can be eliminated.
   for (const auto &cnode : graph->execution_order()) {
     MS_EXCEPTION_IF_NULL(cnode);
-    if ((!common::AnfAlgo::IsNopNode(cnode)) || ref_map.count({cnode, 0}) != 0 ||
-        ref_out_value.count({cnode, 0}) != 0 ||
-        std::find_if(graph_outputs.begin(), graph_outputs.end(),
-                     [&cnode](const KernelWithIndex &output) {
-                       const auto &real_output = common::AnfAlgo::FetchRealNodeSkipMonadControl(output);
-                       return real_output == KernelWithIndex(cnode, 0);
-                     }) != graph_outputs.end() ||
+    if ((!common::AnfAlgo::IsNopNode(cnode)) || ref_out_value.count({cnode, 0}) != 0 || is_graph_output(cnode) ||
         IsSwitchInlineNopNode(cnode)) {
       continue;
     }
@@ -214,7 +215,8 @@ void OptimizeNopNode(KernelGraph *graph) {
     MS_EXCEPTION_IF_NULL(origin_pair.first);
     // The device address of parameter as input may be not the running used in the heterogeneous or control flow
     // scenarios, and not set the ref node.
-    if (origin_pair.first->isa<Parameter>() || origin_pair.first->isa<ValueNode>()) {
+    if (origin_pair.first->isa<Parameter>() || origin_pair.first->isa<ValueNode>() ||
+        ref_out_value.find(origin_pair) != ref_out_value.end()) {
       continue;
     }
     // The ref node cannot be set for node pairs from different device target(appears in the kernel backoff scene).
