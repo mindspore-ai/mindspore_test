@@ -384,6 +384,9 @@ from mindspore.ops.auto_generate import mm_ext as mm
 # 382
 from mindspore.ops.function.math_func import dstack
 
+# 505
+from mindspore.ops.function.math_func import addmv_ext as addmv
+
 # 533
 from mindspore.ops.function.math_func import frac_ext as frac
 
@@ -2279,6 +2282,9 @@ __all__ = [
 
     # 406
     'allclose',
+
+    # 505
+    'addmv',
 
     # 520
     'bincount',
