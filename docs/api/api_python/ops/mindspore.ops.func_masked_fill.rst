@@ -19,7 +19,7 @@ mindspore.ops.masked_fill
         - **TypeError** - `input_x` 或 `mask` 不是Tensor。
         - **ValueError** - `input_x` 和 `mask` 的shape不可广播。
         - **TypeError** - `input_x` 或 `value` 的数据类型不是bool, uint8, int8, int16, int32, int64, float16, float32, float64, complex64或complex128。
-        - **TypeError** - `value` 的数据类型与 `input_x` 不同。
+        - **TypeError** - 在CPU或GPU上 `value` 的数据类型与 `input_x` 不同。
         - **TypeError** - `value` 既不是Number也不是Tensor。
 
 
