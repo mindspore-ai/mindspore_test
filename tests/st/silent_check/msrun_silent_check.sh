@@ -36,4 +36,4 @@ rm -rf ${LOG_PATH}
 rm -rf ms_graphs
 rm -rf worker_*.log
 
-msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --master_port=10969 --join=True python "$@"
+msrun --worker_num=4 --local_worker_num=4 --master_addr=127.0.0.1 --join=True "$@"
