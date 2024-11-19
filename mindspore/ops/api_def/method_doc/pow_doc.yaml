@@ -25,15 +25,15 @@ pow:
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
+        >>> from mindspore import Tensor
         >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
         >>> exponent = 3.0
-        >>> output = ops.pow(input, exponent)
+        >>> output = input.pow(exponent)
         >>> print(output)
         [ 1.  8. 64.]
         >>>
         >>> input = Tensor(np.array([1.0, 2.0, 4.0]), mindspore.float32)
         >>> exponent = Tensor(np.array([2.0, 4.0, 3.0]), mindspore.float32)
-        >>> output = ops.pow(input, exponent)
+        >>> output = input.pow(exponent)
         >>> print(output)
         [ 1. 16. 64.]
