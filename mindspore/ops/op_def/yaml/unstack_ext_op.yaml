@@ -16,5 +16,5 @@ unstack_ext:
         disable: True
     view: True
     dispatch:
-        enable: False
+        enable: True
         Ascend: UnstackExtAscend
