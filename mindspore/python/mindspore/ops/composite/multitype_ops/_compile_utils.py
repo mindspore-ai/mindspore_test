@@ -370,7 +370,7 @@ def _tensor_getitem(self, index):
     if isinstance(index, bool):
         self_viewed = F.expand_dims(self, 0)
         index_for_bool = tensor_1d if index else empty_tensor_1d
-        return index_op(self_viewed, [index_for_bool,])
+        return index_op(self_viewed, [index_for_bool])
     if isinstance(index, int):
         return _do_select(self, 0, index, 0, list(self.shape))
     if isinstance(index, slice):
