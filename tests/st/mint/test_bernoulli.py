@@ -16,7 +16,7 @@ def bernoulli_backward_func(input_x, generator=None):
     return ops.grad(bernoulli_forward_func, (0))(input_x, generator)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'kbk'])
 def test_bernoulli_normal(mode):
     """

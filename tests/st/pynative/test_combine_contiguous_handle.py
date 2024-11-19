@@ -47,7 +47,7 @@ def test_combine_tensor_list_contiguous_ascend_gpu():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 def test_combine_tensor_list_contiguous_cpu():

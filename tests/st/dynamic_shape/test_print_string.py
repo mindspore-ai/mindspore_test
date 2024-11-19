@@ -311,7 +311,7 @@ def test_print_to_file():
 
 
 @security_off_wrap
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_kbk_control_flow_print_string():
     """

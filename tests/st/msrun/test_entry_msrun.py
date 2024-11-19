@@ -217,7 +217,7 @@ def test_msrun_with_rank_table_wrong_device_num():
     assert result_reassign.find("is not equal to total number of devices") != -1
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='unessential')
 def test_msrun_tail_all_renamed_worker_log():
     """
     Feature: 'msrun' launch utility.
