@@ -26,11 +26,23 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+enum SelectedKernelType {
+  KERNEL_TYPE_BEGIN,
+  GE_KERNEL = KERNEL_TYPE_BEGIN,
+  INTERNAL_KERNEL,
+  ACLNN_KERNEL,
+  ACLOP_KERNEL,
+  HCCL_KERNEL,
+  HOST_KERNEL,
+  KERNEL_TYPE_END,
+  NUM_KERNLE_TYPE = KERNEL_TYPE_END - KERNEL_TYPE_BEGIN
+};
 
 void HandleKernelSelectFailure(const KernelGraphPtr &graph, const CNodePtr &node,
                                const std::pair<std::string, ExceptionType> &failure_info);
 
-std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const KernelGraphPtr &graph, const CNodePtr &node);
+std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const KernelGraphPtr &graph, const CNodePtr &node,
+                                                                     std::vector<size_t> *op_selected_num = nullptr);
 
 bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node);
 
