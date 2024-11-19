@@ -307,7 +307,7 @@ class TensorDump(Primitive):
         >>> net = Net()
         >>> out = net(input_x)
         >>> time.sleep(0.5)
-        >>> add = np.load('0_add_Float32.npy')
+        >>> add = np.load('0_add_float32.npy')
         >>> print(add)
         [[2. 3. 4. 5.]
          [6. 7. 8. 9.]]
@@ -330,6 +330,7 @@ class TensorDump(Primitive):
         dtype = input_x.dtype
         if dtype == mstype.bfloat16:
             input_x = P.Cast()(input_x, mstype.float32)
+        dtype = str(dtype).lower()
         directory, filename = os.path.split(file)
         if directory and not os.path.exists(directory):
             os.makedirs(directory, mode=0o700, exist_ok=True)

@@ -168,6 +168,6 @@ def test_bfloat16():
     net = Net(path)
     net(x)
     time.sleep(0.1)
-    filename = "0_input_BFloat16.npy"
+    filename = "0_input_bfloat16.npy"
     input_x = np.load(str(path) + "/" + filename)
     assert np.allclose(input_x, x_np)
