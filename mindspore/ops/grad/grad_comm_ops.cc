@@ -189,7 +189,7 @@ REG_BPROP_BUILDER("InnerCommReduceScatter").SetUnusedInputs({i0}).SetBody(BODYFU
   return {dx, ib->OutZeros(rank_size), ib->OutZeros(op), ib->OutZeros(group)};
 });
 
-REG_BPROP_BUILDER("InnerCommIrecv").SetUnusedInputs({i2, i4, i5}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InnerCommIrecv").FreeUselessValues_IO({i2, i4}, {}).SetBody(BODYFUNC(ib) {
   auto tag = ib->GetInput(kIndex0);
   auto rank = ib->GetInput(kIndex1);
   auto shape = ib->GetInput(kIndex2);
@@ -208,7 +208,7 @@ REG_BPROP_BUILDER("InnerCommIrecv").SetUnusedInputs({i2, i4, i5}).SetBody(BODYFU
     dx, ib->OutZeros(tag), ib->OutZeros(rank), ib->OutZeros(shape), ib->OutZeros(group), ib->OutZeros(dtype_node)};
 });
 
-REG_BPROP_BUILDER("InnerCommIsend").SetUnusedInputs({i0, i4, i5}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InnerCommIsend").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto rank = ib->GetInput(kIndex1);
   auto group = ib->GetInput(kIndex2);
