@@ -52,11 +52,6 @@ bool RecvKernel::Launch(const std::vector<KernelTensor *> &, const std::vector<K
     MS_LOG(ERROR) << "Recv aclrtStreamWaitEvent failed!";
     return false;
   }
-
-  status = CALL_ASCEND_API(aclrtResetEvent, event_, stream_ptr);
-  if (status != ACL_ERROR_NONE) {
-    MS_LOG(EXCEPTION) << "aclrtResetEvent failed, ret:" << status;
-  }
   return true;
 }
 }  // namespace kernel
