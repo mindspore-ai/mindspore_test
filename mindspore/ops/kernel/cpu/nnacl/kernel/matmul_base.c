@@ -244,7 +244,7 @@ int MatmulBasePackMatrixB(MatmulStruct *matmul) {
 
 int MatmulBaseBackupConstMatrix(MatmulStruct *matmul, MatrixInfo *matrix_info, int index) {
   NNACL_CHECK_TRUE_RET(index < (int)matmul->base_.in_size_, NNACL_ERR);
-  size_t backup_size = (size_t)GetElementNum(matmul->base_.in_[index]) * sizeof(float);
+  size_t backup_size = (size_t)NNACLGetElementNum(matmul->base_.in_[index]) * sizeof(float);
   NNACL_CHECK_TRUE_RET(backup_size > 0, NNACL_ERR);
   matrix_info->origin_ptr_ = (float *)(matmul->base_.env_->Alloc(matmul->base_.env_->allocator_, backup_size));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(matrix_info->origin_ptr_);
@@ -419,7 +419,7 @@ int MatmulBasePackBiasMatrix(MatmulStruct *matmul) {
   float *bias_src = matmul->matrix_c_.origin_ptr_ != NULL ? matmul->matrix_c_.origin_ptr_ : (float *)bias_tensor->data_;
   NNACL_CHECK_NULL_RETURN_ERR(bias_src);
 
-  int bias_num = GetElementNum(bias_tensor);
+  int bias_num = NNACLGetElementNum(bias_tensor);
   NNACL_CHECK_TRUE_RET(bias_num > 0 && matmul->compute_.col_align_ >= bias_num, NNACL_ERR);
 
   matmul->matrix_c_.pack_size_ = matmul->compute_.col_align_;
@@ -580,7 +580,7 @@ int MatmulBasePrepare(struct KernelBase *self) {
 
   if (matmul->base_.in_size_ == THREE_TENSOR) {
     /* deal with const bias */
-    bool bias_const = IsConst(self->in_[THIRD_INPUT]);
+    bool bias_const = NNACLIsConst(self->in_[THIRD_INPUT]);
     if (!matmul->infer_shape_ && bias_const && !matmul->base_.train_session_ && matmul->matrix_c_.origin_ptr_ == NULL) {
       ret = MatmulBaseBackupConstMatrix(matmul, &matmul->matrix_c_, THIRD_INPUT);
       NNACL_CHECK_FALSE(ret != NNACL_OK, ret);

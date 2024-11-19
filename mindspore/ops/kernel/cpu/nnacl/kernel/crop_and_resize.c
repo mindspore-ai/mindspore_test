@@ -29,7 +29,7 @@ int CropAndResizeMallocTmpBuffer(CropAndResizeStruct *crop_and_resize) {
 
   // Malloc buffer to save coordinate.
   // For mode CROP_AND_RESIZE, different output batches require different cache coordinates.
-  crop_and_resize->batch_ = GetBatch(output_tensor);
+  crop_and_resize->batch_ = NNACLGetBatch(output_tensor);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(crop_and_resize->new_height_, crop_and_resize->batch_, NNACL_ERR);
   int height_size = crop_and_resize->new_height_ * crop_and_resize->batch_;
   NNACL_CHECK_MALLOC_SIZE(height_size);
@@ -50,7 +50,7 @@ int CropAndResizeMallocTmpBuffer(CropAndResizeStruct *crop_and_resize) {
   crop_and_resize->x_left_weights_ = (float *)env->Alloc(env->allocator_, width_size * sizeof(float));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(crop_and_resize->x_left_weights_);
 
-  int c = GetChannel(input_tensor);
+  int c = NNACLGetChannel(input_tensor);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(crop_and_resize->new_width_, c, NNACL_ERR);
   int new_wc = crop_and_resize->new_width_ * c;
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(new_wc, crop_and_resize->mapped_point_num_, NNACL_ERR);
@@ -139,7 +139,7 @@ int CropAndResizeCompute(struct KernelBase *self) {
   int32_t *box_idx = (int32_t *)boxidx_tensor->data_;
   NNACL_CHECK_NULL_RETURN_ERR(box_idx);
 
-  if (CheckCropAndResizeBoxIdx(box_idx, boxes_tensor->shape_[Index0], GetBatch(input_tensor)) != NNACL_OK) {
+  if (CheckCropAndResizeBoxIdx(box_idx, boxes_tensor->shape_[Index0], NNACLGetBatch(input_tensor)) != NNACL_OK) {
     return NNACL_CROP_AND_RESIZE_BOX_IDX_INVALID;
   }
 

@@ -64,7 +64,7 @@ int BNGradCPUKernelFp16::ReSize() {
 }
 
 int BNGradCPUKernelFp16::Prepare() {
-  for (int i = 0; i < in_tensors_.size(); i++) {
+  for (size_t i = 0; i < in_tensors_.size(); i++) {
     if (in_tensors_.at(i)->data_type() != kNumberTypeFloat16) {
       MS_LOG(ERROR) << "BNGradCPUKernelFp16 type error in_tensor_[" << i << "]";
     }

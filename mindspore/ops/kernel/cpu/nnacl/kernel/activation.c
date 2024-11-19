@@ -34,7 +34,7 @@ int ActivationResize(struct KernelBase *self) {
   ActivationStruct *activation = (ActivationStruct *)self;
   NNACL_CHECK_NULL_RETURN_ERR(activation);
   self->thread_nr_ = self->UpdateThread(TC_TYPE(PrimType_Activation, activation->act_type_), 1, 1,
-                                        GetElementNum(self->out_[0]), self->thread_nr_);
+                                        NNACLGetElementNum(self->out_[0]), self->thread_nr_);
   return NNACL_OK;
 }
 
@@ -132,7 +132,7 @@ int activation_fp16_run(ActivationStruct *activation, int task_id, int count, in
 int ActivationImpl(void *cdata, int task_id, float l, float r) {
   ActivationStruct *activation = (ActivationStruct *)cdata;
 
-  int ele_num = GetElementNum(activation->base.in_[0]);
+  int ele_num = NNACLGetElementNum(activation->base.in_[0]);
   NNACL_CHECK_ZERO_RETURN_ERR(activation->base.thread_nr_);
   int stride = UP_DIV(ele_num, activation->base.thread_nr_);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(stride, task_id, NNACL_ERR);

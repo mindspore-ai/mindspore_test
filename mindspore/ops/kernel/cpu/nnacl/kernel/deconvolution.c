@@ -161,8 +161,8 @@ int DeConvCheckvResizeValid(ConvolutionBaseStruct *conv) {
   NNACL_CHECK_NULL_RETURN_ERR(input_tensor);
   TensorC *filter_tensor = conv->base_.in_[SECOND_INPUT];
 
-  int resize_out_channel = GetChannel(input_tensor);
-  int filter_out_channel = GetBatch(filter_tensor);
+  int resize_out_channel = NNACLGetChannel(input_tensor);
+  int filter_out_channel = NNACLGetBatch(filter_tensor);
   if (filter_out_channel != resize_out_channel) {
     return NNACL_DECONV_RESIZE_OC_INVALID;
   }

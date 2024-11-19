@@ -23,7 +23,7 @@ void *StackF16InitBuffer(KernelBase *base, TensorC *t, bool init) {
     return t->data_;
   }
 
-  int ele_num = GetElementNum(t);
+  int ele_num = NNACLGetElementNum(t);
   void *f16_buffer = base->env_->Alloc(base->env_->allocator_, ele_num * sizeof(float16_t));
   NNACL_MALLOC_CHECK_NULL_RETURN_NULL(f16_buffer);
   Float32ToFloat16(t->data_, f16_buffer, ele_num);
@@ -52,7 +52,7 @@ void StackF16FreeBuffer(StackF16Struct *stack_f16) {
     /* output transfer */
     Float16ToFloat32((float16_t *)stack_f16->stack_.buffers_[stack_f16->stack_.base_.in_size_],
                      (float *)stack_f16->stack_.base_.out_[OUTPUT_INDEX]->data_,
-                     GetElementNum(stack_f16->stack_.base_.out_[OUTPUT_INDEX]));
+                     NNACLGetElementNum(stack_f16->stack_.base_.out_[OUTPUT_INDEX]));
   }
 
   for (size_t i = 0; i < (stack_f16->stack_.base_.in_size_ + stack_f16->stack_.base_.out_size_); ++i) {

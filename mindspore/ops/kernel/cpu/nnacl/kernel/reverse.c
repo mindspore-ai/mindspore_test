@@ -98,8 +98,8 @@ int ReverseResize(KernelBase *self) {
     return ret;
   }
 
-  reverse->data_size_ = GetElementNum(input);
-  if (GetElementNum(output) != reverse->data_size_) {
+  reverse->data_size_ = NNACLGetElementNum(input);
+  if (NNACLGetElementNum(output) != reverse->data_size_) {
     return NNACL_REVERSE_DATA_SIZE_INVALID;
   }
 

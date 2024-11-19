@@ -30,7 +30,7 @@ int UniqueCompute(KernelBase *self) {
   TensorC *output1 = self->out_[Index1];
   NNACL_CHECK_NULL_RETURN_ERR(output1);
 
-  int num = GetElementNum(input);
+  int num = NNACLGetElementNum(input);
   int output0_len = 0;
 
 #ifdef ENABLE_FP16

@@ -33,7 +33,7 @@ int ConstantOfShapeInferShape(const TensorC *const *inputs, size_t inputs_size, 
   if (!InferFlag(inputs, inputs_size) || in_tensor->data_ == NULL) {
     return NNACL_INFER_INVALID;
   }
-  int size = GetElementNum(in_tensor);
+  int size = NNACLGetElementNum(in_tensor);
   if (size < 0 || size > MAX_SHAPE_SIZE) {
     return NNACL_ERR;
   }

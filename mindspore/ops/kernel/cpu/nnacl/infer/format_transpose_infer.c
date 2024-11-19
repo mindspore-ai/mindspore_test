@@ -40,10 +40,10 @@ int FormatTransposeInferShape(const TensorC *const *inputs, size_t inputs_size, 
     return NNACL_OK;
   }
 
-  int input_b = GetBatch(input);
-  int input_h = GetHeight(input);
-  int input_w = GetWidth(input);
-  int input_c = GetChannel(input);
+  int input_b = NNACLGetBatch(input);
+  int input_h = NNACLGetHeight(input);
+  int input_w = NNACLGetWidth(input);
+  int input_c = NNACLGetChannel(input);
 
   // set output shape
   int out_shape[MAX_SHAPE_SIZE] = {0};

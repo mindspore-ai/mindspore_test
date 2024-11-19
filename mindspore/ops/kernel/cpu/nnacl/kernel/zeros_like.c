@@ -24,7 +24,7 @@ int ZerosLikeCompute(KernelBase *self) {
   TensorC *output = self->out_[OUTPUT_INDEX];
   NNACL_CHECK_NULL_RETURN_ERR(output);
   NNACL_CHECK_NULL_RETURN_ERR(output->data_);
-  (void)memset(output->data_, 0, GetSize(output));
+  (void)memset(output->data_, 0, NNACLGetSize(output));
   return NNACL_OK;
 }
 

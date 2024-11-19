@@ -41,20 +41,20 @@ int Deconv2dInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC
   if (!InferFlag(inputs, inputs_size)) {
     return NNACL_INFER_INVALID;
   }
-  int32_t input_h = GetHeight(input);
-  int32_t input_w = GetWidth(input);
+  int32_t input_h = NNACLGetHeight(input);
+  int32_t input_w = NNACLGetWidth(input);
 
-  int32_t output_n = GetBatch(input);
+  int32_t output_n = NNACLGetBatch(input);
   int32_t output_h = 0;
   int32_t output_w = 0;
-  int32_t output_c = GetChannel(weight);
-  NNACL_CHECK_TRUE_RET(GetChannel(input) == GetBatch(weight), NNACL_ERR);
-  if (param->group_ == GetChannel(input) && 1 == GetChannel(weight)) {
-    output_c = GetBatch(weight); /* depthwise */
+  int32_t output_c = NNACLGetChannel(weight);
+  NNACL_CHECK_TRUE_RET(NNACLGetChannel(input) == NNACLGetBatch(weight), NNACL_ERR);
+  if (param->group_ == NNACLGetChannel(input) && 1 == NNACLGetChannel(weight)) {
+    output_c = NNACLGetBatch(weight); /* depthwise */
   }
 
-  int kernel_w = param->kernel_w_ != -1 ? param->kernel_w_ : GetWidth(weight);
-  int kernel_h = param->kernel_h_ != -1 ? param->kernel_h_ : GetHeight(weight);
+  int kernel_w = param->kernel_w_ != -1 ? param->kernel_w_ : NNACLGetWidth(weight);
+  int kernel_h = param->kernel_h_ != -1 ? param->kernel_h_ : NNACLGetHeight(weight);
   NNACL_CHECK_FALSE(kernel_w <= 0, NNACL_ERR);
   NNACL_CHECK_FALSE(kernel_h <= 0, NNACL_ERR);
   NNACL_CHECK_FALSE(INT_MUL_OVERFLOW(kernel_h, kernel_w), NNACL_ERR);

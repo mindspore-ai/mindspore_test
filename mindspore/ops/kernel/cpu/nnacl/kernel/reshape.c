@@ -39,7 +39,7 @@ int ParallelReshape(void *param, int task_id, float l, float r) {
 int ReshapeResize(struct KernelBase *self) {
   NNACL_CHECK_NULL_RETURN_ERR(self);
   ReshapeStruct *reshape = (ReshapeStruct *)self;
-  reshape->total_num_ = GetElementNum(self->in_[0]);
+  reshape->total_num_ = NNACLGetElementNum(self->in_[0]);
   if (reshape->total_num_ == 0) {
     return NNACL_OK;
   }

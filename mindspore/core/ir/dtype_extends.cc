@@ -27,7 +27,6 @@
 #include "mindapi/base/type_id.h"
 #include "utils/log_adapter.h"
 #include "base/base.h"
-#include "include/robin_hood.h"
 #include "ir/dtype/container.h"
 #include "ir/dtype/empty.h"
 #include "ir/dtype/monad_type.h"

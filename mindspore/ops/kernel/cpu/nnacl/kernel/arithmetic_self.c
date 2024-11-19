@@ -76,7 +76,7 @@ void ArithmeticSelfGetArithmeticSelfF16Function(ArithmeticSelfStruct *arithmetic
 }
 
 int ArithmeticSelfExecute(ArithmeticSelfStruct *arithmetic_self, int task_id) {
-  int elements_num = GetElementNum(arithmetic_self->base_.in_[FIRST_INPUT]);
+  int elements_num = NNACLGetElementNum(arithmetic_self->base_.in_[FIRST_INPUT]);
   NNACL_CHECK_TRUE_RET(arithmetic_self->base_.thread_nr_, NNACL_ERR);
   int stride = UP_DIV(elements_num, arithmetic_self->base_.thread_nr_);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(task_id, stride, NNACL_ERR);
@@ -131,8 +131,8 @@ int ArithmeticSelfRun(void *cdata, int task_id, float l, float r) {
 int ArithmeticSelfResize(KernelBase *self) {
   ArithmeticSelfStruct *arithmetic_self = (ArithmeticSelfStruct *)self;
   NNACL_CHECK_NULL_RETURN_ERR(arithmetic_self);
-  self->thread_nr_ = arithmetic_self->base_.UpdateThread(TC_PTYPE(arithmetic_self->op_type_), 1, 1,
-                                                         GetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
+  self->thread_nr_ = arithmetic_self->base_.UpdateThread(
+    TC_PTYPE(arithmetic_self->op_type_), 1, 1, NNACLGetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
   return NNACL_OK;
 }
 

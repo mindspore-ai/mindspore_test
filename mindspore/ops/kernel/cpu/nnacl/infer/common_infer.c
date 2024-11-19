@@ -92,7 +92,7 @@ int GetInt32DataFromTensor(const TensorC *tensor, int *result, size_t *result_si
   if (tensor->shape_size_ > MAX_SHAPE_SIZE) {
     return NNACL_ERR;
   }
-  int ele_num = GetElementNum(tensor);
+  int ele_num = NNACLGetElementNum(tensor);
   if (ele_num <= 0) {
     return NNACL_ERR;
   }

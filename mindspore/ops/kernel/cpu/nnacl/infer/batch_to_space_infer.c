@@ -72,10 +72,10 @@ int SetOutputShapeFromInput(const TensorC *const *inputs, TensorC **outputs) {
   }
   int *block_shape = (int *)(inputs[1]->data_);
   int *crops = (int *)(inputs[2]->data_);
-  if (GetElementNum(inputs[1]) != 2) {
+  if (NNACLGetElementNum(inputs[1]) != 2) {
     return NNACL_PARAM_INVALID;
   }
-  if (GetElementNum(inputs[2]) != 4) {
+  if (NNACLGetElementNum(inputs[2]) != 4) {
     return NNACL_PARAM_INVALID;
   }
   int mul_block_shape_ = 1;

@@ -25,7 +25,7 @@ void *GetOrAllocFp16Data(TensorC *t, ExecEnv *env, bool cast) {
     return t->data_;
   }
   if (t->data_type_ == kNumberTypeFloat32) {
-    int ele_num = GetElementNum(t);
+    int ele_num = NNACLGetElementNum(t);
     void *fp16_data = env->Alloc(env->allocator_, ele_num * sizeof(float16_t));
     NNACL_MALLOC_CHECK_NULL_RETURN_NULL(fp16_data);
     if (cast) {

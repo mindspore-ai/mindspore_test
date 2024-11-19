@@ -110,7 +110,7 @@ int SoftmaxResize(struct KernelBase *self) {
   int *in_shape = in_tensor->shape_;
 
   self->thread_nr_ = self->UpdateThread(TC_PTYPE(PrimType_Softmax), in_shape[softmax->axis_], in_shape[softmax->axis_],
-                                        GetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
+                                        NNACLGetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
   return NNACL_OK;
 }
 

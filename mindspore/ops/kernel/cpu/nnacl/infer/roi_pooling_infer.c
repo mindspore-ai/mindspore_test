@@ -44,7 +44,7 @@ int ROIPoolingInferShape(const TensorC *const *inputs, size_t inputs_size, Tenso
   output->shape_[0] = roi->shape_[0];
   output->shape_[1] = param->pooledH_;
   output->shape_[2] = param->pooledW_;
-  output->shape_[3] = GetChannel(input);
+  output->shape_[3] = NNACLGetChannel(input);
   return NNACL_OK;
 }
 

@@ -34,7 +34,7 @@ int TensorListGetItemInferShape(const TensorC *const *inputs, size_t inputs_size
   if (get_index->data_ == NULL) {
     return NNACL_INFER_INVALID;
   }
-  if (GetElementNum(get_index) != 1) {
+  if (NNACLGetElementNum(get_index) != 1) {
     return NNACL_ERR;
   }
   TensorC *output = outputs[0];
@@ -69,7 +69,7 @@ int TensorListGetItemInferShape(const TensorC *const *inputs, size_t inputs_size
     NNACL_CHECK_NULL_RETURN_ERR(ele_shape_data);
     int element_shape[MAX_SHAPE_SIZE] = {0};
     size_t element_shape_size = 0;
-    for (int i = 0; i < GetElementNum(input2); ++i) {
+    for (int i = 0; i < NNACLGetElementNum(input2); ++i) {
       ShapePush(element_shape, &element_shape_size, ele_shape_data[i]);
     }
     int status =

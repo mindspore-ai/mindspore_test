@@ -48,30 +48,30 @@ int ConvBaseUpdateComputeInfo(ConvolutionBaseStruct *conv) {
   TensorC *output = conv->base_.out_[OUTPUT_INDEX];
   NNACL_CHECK_NULL_RETURN_ERR(output);
 
-  conv_param->input_batch_ = GetBatch(input);
-  conv_param->input_h_ = GetHeight(input);
-  conv_param->input_w_ = GetWidth(input);
-  conv_param->input_channel_ = GetChannel(input);
-  conv_param->output_batch_ = GetBatch(output);
-  conv_param->output_h_ = GetHeight(output);
-  conv_param->output_w_ = GetWidth(output);
-  conv_param->output_channel_ = GetChannel(output);
+  conv_param->input_batch_ = NNACLGetBatch(input);
+  conv_param->input_h_ = NNACLGetHeight(input);
+  conv_param->input_w_ = NNACLGetWidth(input);
+  conv_param->input_channel_ = NNACLGetChannel(input);
+  conv_param->output_batch_ = NNACLGetBatch(output);
+  conv_param->output_h_ = NNACLGetHeight(output);
+  conv_param->output_w_ = NNACLGetWidth(output);
+  conv_param->output_channel_ = NNACLGetChannel(output);
 
   ConvComputeParam *compute = &conv->compute_;
-  compute->in_n_ = GetBatch(input);
-  compute->in_h_ = GetHeight(input);
-  compute->in_w_ = GetWidth(input);
-  compute->in_c_ = GetChannel(input);
+  compute->in_n_ = NNACLGetBatch(input);
+  compute->in_h_ = NNACLGetHeight(input);
+  compute->in_w_ = NNACLGetWidth(input);
+  compute->in_c_ = NNACLGetChannel(input);
   NNACL_CHECK_FALSE(compute->in_c_ != conv_param->input_channel_, NNACL_ERR);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(compute->in_h_, compute->in_w_, NNACL_ERR);
   compute->in_hw_ = compute->in_h_ * compute->in_w_;
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(compute->in_hw_, compute->in_n_, NNACL_ERR);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(compute->in_hw_ * compute->in_n_, compute->in_c_, NNACL_ERR);
 
-  compute->out_n_ = GetBatch(output);
-  compute->out_h_ = GetHeight(output);
-  compute->out_w_ = GetWidth(output);
-  compute->out_c_ = GetChannel(output);
+  compute->out_n_ = NNACLGetBatch(output);
+  compute->out_h_ = NNACLGetHeight(output);
+  compute->out_w_ = NNACLGetWidth(output);
+  compute->out_c_ = NNACLGetChannel(output);
   NNACL_CHECK_FALSE(compute->out_c_ != conv_param->output_channel_, NNACL_ERR);
   NNACL_CHECK_INT_MUL_NOT_OVERFLOW(compute->out_h_, compute->out_w_, NNACL_ERR);
   compute->out_hw_ = compute->out_h_ * compute->out_w_;
@@ -133,7 +133,7 @@ int ConvBaseInitConvWeightBias(ConvolutionBaseStruct *conv) {
   }
 
   if ((conv->base_.in_size_ == THREE_TENSOR) && (conv->origin_bias_ != NULL)) {
-    memcpy(conv->bias_data_, conv->origin_bias_, GetSize(conv->base_.in_[THIRD_INPUT]));
+    memcpy(conv->bias_data_, conv->origin_bias_, NNACLGetSize(conv->base_.in_[THIRD_INPUT]));
   }
 
   if (!conv->base_.train_session_) {
@@ -153,10 +153,10 @@ int ConvBaseCheckResizeValid(ConvolutionBaseStruct *conv) {
   // ===============check in channel================= //
   TensorC *input_tensor = conv->base_.in_[FIRST_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(input_tensor);
-  int resize_in_channel = GetChannel(input_tensor);
+  int resize_in_channel = NNACLGetChannel(input_tensor);
   TensorC *filter_tensor = conv->base_.in_[SECOND_INPUT];
   NNACL_CHECK_NULL_RETURN_ERR(filter_tensor);
-  int filter_in_channel = GetChannel(filter_tensor);
+  int filter_in_channel = NNACLGetChannel(filter_tensor);
   if (filter_in_channel != resize_in_channel) {
     return NNACL_CONVOLUTION_INPUT_CHANNEL_UNMATCH;
   }

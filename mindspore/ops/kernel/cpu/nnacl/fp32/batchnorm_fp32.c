@@ -30,10 +30,10 @@ int FusedBatchNormEval(KernelBase *self) {
     TensorC *offset_tensor = fused_batch_norm->bn_.base_.in_[THIRD_INPUT];
     TensorC *mean_tensor = fused_batch_norm->bn_.base_.in_[FOURTH_INPUT];
     TensorC *var_tensor = fused_batch_norm->bn_.base_.in_[FIFTH_INPUT];
-    (void)memcpy(fused_batch_norm->scale_, scale_tensor->data_, GetSize(scale_tensor));
-    (void)memcpy(fused_batch_norm->offset_, offset_tensor->data_, GetSize(offset_tensor));
-    (void)memcpy(fused_batch_norm->bn_.mean_, mean_tensor->data_, GetSize(mean_tensor));
-    (void)memcpy(fused_batch_norm->bn_.variance_, var_tensor->data_, GetSize(var_tensor));
+    (void)memcpy(fused_batch_norm->scale_, scale_tensor->data_, NNACLGetSize(scale_tensor));
+    (void)memcpy(fused_batch_norm->offset_, offset_tensor->data_, NNACLGetSize(offset_tensor));
+    (void)memcpy(fused_batch_norm->bn_.mean_, mean_tensor->data_, NNACLGetSize(mean_tensor));
+    (void)memcpy(fused_batch_norm->bn_.variance_, var_tensor->data_, NNACLGetSize(var_tensor));
   }
   return NNACL_OK;
 }

@@ -28,11 +28,11 @@
 int FillResize(struct KernelBase *self) {
   FillStruct *fill = (FillStruct *)self;
   NNACL_CHECK_NULL_RETURN_ERR(fill);
-  fill->base_.thread_nr_ = fill->base_.UpdateThread(TC_PTYPE(PrimType_Fill), 0, 1,
-                                                    GetSize(fill->base_.out_[OUTPUT_INDEX]), fill->base_.thread_nr_);
+  fill->base_.thread_nr_ = fill->base_.UpdateThread(
+    TC_PTYPE(PrimType_Fill), 0, 1, NNACLGetSize(fill->base_.out_[OUTPUT_INDEX]), fill->base_.thread_nr_);
 
   NNACL_CHECK_NULL_RETURN_ERR(fill->base_.out_[OUTPUT_INDEX]);
-  fill->data_size_ = (int)GetElementNum(fill->base_.out_[OUTPUT_INDEX]);
+  fill->data_size_ = (int)NNACLGetElementNum(fill->base_.out_[OUTPUT_INDEX]);
   fill->thread_sz_count_ = MSMIN(fill->base_.thread_nr_, fill->data_size_);
   if (fill->thread_sz_count_ != 0) {
     fill->thread_sz_stride_ = UP_DIV(fill->data_size_, fill->thread_sz_count_);

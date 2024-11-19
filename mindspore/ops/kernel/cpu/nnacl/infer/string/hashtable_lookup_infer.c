@@ -37,7 +37,7 @@ int HashtableLoopupInferShape(const TensorC *const *inputs, size_t inputs_size, 
   output->data_type_ = values->data_type_;
   output->format_ = input->format_;
   hits->shape_size_ = 1;
-  hits->shape_[0] = GetDimensionSize(input, 0);
+  hits->shape_[0] = NNACLGetDimensionSize(input, 0);
   hits->data_type_ = kNumberTypeUInt8;
   hits->format_ = input->format_;
 

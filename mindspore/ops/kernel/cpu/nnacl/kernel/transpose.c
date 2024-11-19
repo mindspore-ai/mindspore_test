@@ -58,7 +58,7 @@ int TransposeComputeinSingleThread(TransposeStruct *transpose) {
 int ResetTransposeStatus(TransposeStruct *transpose) {
   transpose->num_axes_ = 0;
   if (transpose->base_.in_size_ == C2NUM) {
-    transpose->num_axes_ = GetElementNum(transpose->base_.in_[SECOND_INPUT]);
+    transpose->num_axes_ = NNACLGetElementNum(transpose->base_.in_[SECOND_INPUT]);
     transpose->perm_size_ = transpose->base_.in_[SECOND_INPUT]->shape_[0];
   }
 
@@ -88,7 +88,7 @@ int ResetTransposeStatus(TransposeStruct *transpose) {
     }
     perm_data = (int *)(perm_tensor->data_);
     NNACL_CHECK_NULL_RETURN_ERR(perm_data);
-    int ele_num = GetElementNum(perm_tensor);
+    int ele_num = NNACLGetElementNum(perm_tensor);
     for (int i = 0; i < ele_num; i++) {
       for (int j = 0; j < ele_num; j++) {
         if (i == perm_data[j]) {
@@ -232,7 +232,7 @@ int TransposeComputeOfflineInfo(TransposeStruct *transpose) {
   }
   transpose->strides_[transpose->num_axes_ - 1] = 1;
   transpose->out_strides_[transpose->num_axes_ - 1] = 1;
-  transpose->data_num_ = GetElementNum(transpose->base_.in_[FIRST_INPUT]);
+  transpose->data_num_ = NNACLGetElementNum(transpose->base_.in_[FIRST_INPUT]);
   for (int i = transpose->num_axes_ - 2; i >= 0; i--) {
     transpose->strides_[i] = transpose->in_shape_[i + 1] * transpose->strides_[i + 1];
     transpose->out_strides_[i] = transpose->out_shape_[i + 1] * transpose->out_strides_[i + 1];
@@ -248,9 +248,9 @@ int TransposeCopyInputToOutput(TransposeStruct *transpose) {
   NNACL_CHECK_NULL_RETURN_ERR(out_tensor);
   NNACL_CHECK_NULL_RETURN_ERR(out_tensor->data_);
 
-  NNACL_CHECK_FALSE(GetSize(in_tensor) == 0, NNACL_TRANSPOSE_INPUT_TENSOR_VALUD_INVALID);
+  NNACL_CHECK_FALSE(NNACLGetSize(in_tensor) == 0, NNACL_TRANSPOSE_INPUT_TENSOR_VALUD_INVALID);
   if (in_tensor->data_ != out_tensor->data_) {
-    (void)memcpy(out_tensor->data_, in_tensor->data_, GetSize(in_tensor));
+    (void)memcpy(out_tensor->data_, in_tensor->data_, NNACLGetSize(in_tensor));
   }
   return NNACL_OK;
 }

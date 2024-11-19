@@ -66,7 +66,7 @@ TensorC *CreateConstTensor(const TensorC *tensor, const int *shape, const int sh
   new_tensor->shape_size_ = shape_size;
   memcpy(new_tensor->shape_, shape, shape_size * sizeof(int));
 
-  int size = GetSize(new_tensor);
+  int size = NNACLGetSize(new_tensor);
   if (size <= 0) {
     free(new_tensor);
     return NULL;
@@ -86,7 +86,8 @@ TensorC *CreateConstTensor(const TensorC *tensor, const int *shape, const int sh
 
 int GroupConvCreatorNewConstTensor(GroupConvolutionStruct *group_conv, KernelBase *new_conv, int group_id) {
   TensorC *origin_weight = group_conv->conv_base_.base_.in_[SECOND_INPUT];
-  int shape[] = {group_conv->sub_out_c_, GetHeight(origin_weight), GetWidth(origin_weight), group_conv->sub_in_c_};
+  int shape[] = {group_conv->sub_out_c_, NNACLGetHeight(origin_weight), NNACLGetWidth(origin_weight),
+                 group_conv->sub_in_c_};
   TensorC *weight_tensor = CreateConstTensor(origin_weight, shape, DIMENSION_4D, group_id);
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(weight_tensor);
   new_conv->in_[SECOND_INPUT] = weight_tensor;
@@ -111,8 +112,10 @@ int GroupConvCreatorSetShapeOfTensors(GroupConvolutionStruct *group_conv) {
   NNACL_CHECK_NULL_RETURN_ERR(weight_tensor);
   NNACL_CHECK_FALSE(origin_conv_param->group_ == 0, NNACL_GROUP_CONVOLUTION_GROUP_INVALID);
   NNACL_CHECK_FALSE(weight_tensor->shape_size_ != DIMENSION_4D, NNACL_CONVOLUTION_WEIGHT_SHAPE_INVALID);
-  NNACL_CHECK_FALSE(origin_conv_param->kernel_h_ != GetHeight(weight_tensor), NNACL_CONVOLUTION_WEIGHT_SHAPE_INVALID);
-  NNACL_CHECK_FALSE(origin_conv_param->kernel_w_ != GetWidth(weight_tensor), NNACL_CONVOLUTION_WEIGHT_SHAPE_INVALID);
+  NNACL_CHECK_FALSE(origin_conv_param->kernel_h_ != NNACLGetHeight(weight_tensor),
+                    NNACL_CONVOLUTION_WEIGHT_SHAPE_INVALID);
+  NNACL_CHECK_FALSE(origin_conv_param->kernel_w_ != NNACLGetWidth(weight_tensor),
+                    NNACL_CONVOLUTION_WEIGHT_SHAPE_INVALID);
 
   ConvComputeParam *compute = &group_conv->conv_base_.compute_;
   group_conv->ori_in_c_ = compute->in_c_;
@@ -247,11 +250,13 @@ int GroupConvSeparateInput(GroupConvolutionStruct *group_conv, int group_id) {
 void GroupConvUpdateShape(GroupConvolutionStruct *group_conv) {
   for (int i = 0; i < group_conv->group_; i++) {
     TensorC *in_tensor = group_conv->conv_base_.base_.in_[FIRST_INPUT];
-    int in_shape[] = {GetBatch(in_tensor), GetHeight(in_tensor), GetWidth(in_tensor), group_conv->sub_in_c_};
+    int in_shape[] = {NNACLGetBatch(in_tensor), NNACLGetHeight(in_tensor), NNACLGetWidth(in_tensor),
+                      group_conv->sub_in_c_};
     memcpy(group_conv->group_convs_[i]->in_[FIRST_INPUT]->shape_, in_shape, DIMENSION_4D * sizeof(float));
 
     TensorC *out_tensor = group_conv->conv_base_.base_.out_[OUTPUT_INDEX];
-    int out_shape[] = {GetBatch(out_tensor), GetHeight(out_tensor), GetWidth(out_tensor), group_conv->sub_out_c_};
+    int out_shape[] = {NNACLGetBatch(out_tensor), NNACLGetHeight(out_tensor), NNACLGetWidth(out_tensor),
+                       group_conv->sub_out_c_};
     memcpy(group_conv->group_convs_[i]->out_[OUTPUT_INDEX]->shape_, out_shape, DIMENSION_4D * sizeof(float));
   }
   return;
@@ -289,11 +294,11 @@ int GroupConvolutionCompute(KernelBase *self) {
   for (int i = 0; i < group_conv->group_; ++i) {
     // first, malloc data for sub_kernel's tensors.
     TensorC *sub_kernel_in_tensor = group_conv->group_convs_[i]->in_[FIRST_INPUT];
-    sub_kernel_in_tensor->data_ = self->env_->Alloc(self->env_->allocator_, GetSize(sub_kernel_in_tensor));
+    sub_kernel_in_tensor->data_ = self->env_->Alloc(self->env_->allocator_, NNACLGetSize(sub_kernel_in_tensor));
     NNACL_MALLOC_CHECK_NULL_RETURN_ERR(sub_kernel_in_tensor->data_);
 
     TensorC *sub_kernel_out_tensor = group_conv->group_convs_[i]->out_[OUTPUT_INDEX];
-    sub_kernel_out_tensor->data_ = self->env_->Alloc(self->env_->allocator_, GetSize(sub_kernel_out_tensor));
+    sub_kernel_out_tensor->data_ = self->env_->Alloc(self->env_->allocator_, NNACLGetSize(sub_kernel_out_tensor));
     NNACL_MALLOC_CHECK_NULL_RETURN_ERR(sub_kernel_out_tensor->data_);
 
     // second, separate group conv input into several parts. This step must be in runtime stage.
@@ -354,7 +359,7 @@ void GroupConvReleaseSubConv(KernelBase *current_conv) {
 
   if (current_conv->in_ != NULL) {
     for (int j = 0; j < current_conv->in_size_; j++) {
-      if (IsConst(current_conv->in_[j])) {
+      if (NNACLIsConst(current_conv->in_[j])) {
         free(current_conv->in_[j]->data_);
         current_conv->in_[j]->data_ = NULL;
       }

@@ -75,7 +75,7 @@ int LayerNormResize(KernelBase *self) {
     compute->params_inner_size_ *= input->shape_[i];
   }
 
-  int out_num = GetElementNum(self->out_[OUTPUT_INDEX]);
+  int out_num = NNACLGetElementNum(self->out_[OUTPUT_INDEX]);
   self->thread_nr_ = self->UpdateThread(TC_PTYPE(PrimType_LayerNormFusion), compute->norm_inner_size_,
                                         compute->norm_inner_size_, out_num, self->thread_nr_);
   self->thread_nr_ = NNACL_MIN(compute->norm_outer_size_, self->thread_nr_);

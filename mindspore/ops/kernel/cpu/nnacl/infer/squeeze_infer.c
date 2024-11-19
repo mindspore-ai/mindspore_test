@@ -41,7 +41,7 @@ int SqueezeInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC 
                          NNACL_PARAM_INVALID);
     int *axis_data = (int *)(inputs[1]->data_);
     NNACL_CHECK_TRUE_RET(axis_data != NULL, NNACL_PARAM_INVALID);
-    param->axis_size_ = GetElementNum(inputs[1]);
+    param->axis_size_ = NNACLGetElementNum(inputs[1]);
     for (size_t i = 0; i < param->axis_size_; i++) {
       param->axis_[i] = *(axis_data + i);
     }

@@ -117,7 +117,7 @@ void SetDataTypeFormat(TensorC *dst, const TensorC *src) {
   dst->data_type_ = src->data_type_;
 }
 
-int GetBatch(const TensorC *tensor) {
+int NNACLGetBatch(const TensorC *tensor) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return -1;
   }
@@ -149,7 +149,7 @@ int GetBatch(const TensorC *tensor) {
       return -1;
   }
 }
-int GetHeight(const TensorC *tensor) {
+int NNACLGetHeight(const TensorC *tensor) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return -1;
   }
@@ -177,7 +177,7 @@ int GetHeight(const TensorC *tensor) {
       return -1;
   }
 }
-int GetWidth(const TensorC *tensor) {
+int NNACLGetWidth(const TensorC *tensor) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return -1;
   }
@@ -208,7 +208,7 @@ int GetWidth(const TensorC *tensor) {
       return -1;
   }
 }
-int GetChannel(const TensorC *tensor) {
+int NNACLGetChannel(const TensorC *tensor) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return -1;
   }
@@ -241,7 +241,7 @@ int GetChannel(const TensorC *tensor) {
   }
 }
 
-void SetBatch(TensorC *tensor, int batch) {
+void NNACLSetBatch(TensorC *tensor, int batch) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return;
   }
@@ -278,7 +278,7 @@ void SetBatch(TensorC *tensor, int batch) {
   }
 }
 
-void SetHeight(TensorC *tensor, int height) {
+void NNACLSetHeight(TensorC *tensor, int height) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return;
   }
@@ -310,7 +310,7 @@ void SetHeight(TensorC *tensor, int height) {
   }
 }
 
-void SetWidth(TensorC *tensor, int width) {
+void NNACLSetWidth(TensorC *tensor, int width) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return;
   }
@@ -345,7 +345,7 @@ void SetWidth(TensorC *tensor, int width) {
   }
 }
 
-void SetChannel(TensorC *tensor, int channel) {
+void NNACLSetChannel(TensorC *tensor, int channel) {
   if (tensor->shape_size_ != DIMENSION_4D && tensor->shape_size_ != DIMENSION_2D) {
     return;
   }
@@ -382,13 +382,13 @@ void SetChannel(TensorC *tensor, int channel) {
   }
 }
 
-int GetSize(const TensorC *tensor) {
-  int element_num = GetElementNum(tensor);
+int NNACLGetSize(const TensorC *tensor) {
+  int element_num = NNACLGetElementNum(tensor);
   int data_type_size = (int)DataTypeCSize(tensor->data_type_);
   return element_num * data_type_size;
 }
 
-int GetElementNum(const TensorC *tensor) {
+int NNACLGetElementNum(const TensorC *tensor) {
   if (tensor == NULL) {
     return -1;
   }
@@ -401,7 +401,7 @@ int GetElementNum(const TensorC *tensor) {
     res = res * tensor->shape_[i];
   }
 
-  int c = GetChannel(tensor);
+  int c = NNACLGetChannel(tensor);
   if (c == 0) {
     return res;
   }
@@ -414,7 +414,7 @@ int GetElementNum(const TensorC *tensor) {
   return res;
 }
 
-int GetDimensionSize(const TensorC *tensor, const size_t index) {
+int NNACLGetDimensionSize(const TensorC *tensor, const size_t index) {
   int dim_size = -1;
   if (index < tensor->shape_size_) {
     dim_size = tensor->shape_[index];
@@ -422,7 +422,7 @@ int GetDimensionSize(const TensorC *tensor, const size_t index) {
   return dim_size;
 }
 
-bool IsShapeSame(const TensorC *tensor1, const TensorC *tensor2) {
+bool NNACLIsShapeSame(const TensorC *tensor1, const TensorC *tensor2) {
   if (tensor1->shape_size_ != tensor2->shape_size_) {
     return false;
   }
@@ -434,6 +434,6 @@ bool IsShapeSame(const TensorC *tensor1, const TensorC *tensor2) {
   return true;
 }
 
-bool IsConst(const TensorC *tensor) {
+bool NNACLIsConst(const TensorC *tensor) {
   return (tensor->category_ == ConstTensor || tensor->category_ == ConstScalar) && tensor->data_ != NULL;
 }

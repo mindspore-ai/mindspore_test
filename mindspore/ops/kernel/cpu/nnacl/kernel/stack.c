@@ -74,8 +74,8 @@ int StackResize(KernelBase *self) {
   stack->axis_ = origin_axis < 0 ? origin_axis + (int)input->shape_size_ + 1 : origin_axis;
 
   if (self->in_size_ == 1) {
-    NNACL_CHECK_FALSE(GetElementNum(input) <= 0, NNACL_STACK_TENSOR_SHAPE_INVALID);
-    stack->copy_size_ = (size_t)GetElementNum(input) * DataTypeCSize(stack->data_type_);
+    NNACL_CHECK_FALSE(NNACLGetElementNum(input) <= 0, NNACL_STACK_TENSOR_SHAPE_INVALID);
+    stack->copy_size_ = (size_t)NNACLGetElementNum(input) * DataTypeCSize(stack->data_type_);
     stack->outer_size_ = 1;
   } else {
     NNACL_CHECK_FALSE((int)input->shape_size_ < stack->axis_, NNACL_STACK_TENSOR_SHAPE_INVALID);
@@ -85,7 +85,7 @@ int StackResize(KernelBase *self) {
   }
 
   self->thread_nr_ = self->UpdateThread(TC_PTYPE(PrimType_Stack), stack->copy_size_, stack->copy_size_,
-                                        GetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
+                                        NNACLGetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
   self->thread_nr_ = NNACL_MIN(UP_DIV(stack->outer_size_, NNACL_STACK_STEP), self->thread_nr_);
   return NNACL_OK;
 }

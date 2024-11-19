@@ -24,10 +24,11 @@ bool StridedSliceCheckInputs(const TensorC *const *inputs, size_t inputs_size) {
       return false;
     }
   }
-  if (GetElementNum(inputs[2]) > MAX_SHAPE_SIZE) {
+  if (NNACLGetElementNum(inputs[2]) > MAX_SHAPE_SIZE) {
     return false;
   }
-  if (GetElementNum(inputs[2]) != GetElementNum(inputs[3]) && GetElementNum(inputs[2]) != GetElementNum(inputs[4])) {
+  if (NNACLGetElementNum(inputs[2]) != NNACLGetElementNum(inputs[3]) &&
+      NNACLGetElementNum(inputs[2]) != NNACLGetElementNum(inputs[4])) {
     return false;
   }
   return true;  // note: the original code is ndim_ <= in_shape_size
@@ -86,7 +87,7 @@ int StridedSliceGradInferShape(const TensorC *const *inputs, size_t inputs_size,
   int *end_data = (int *)(inputs[3]->data_);
   int *stride_data = (int *)(inputs[4]->data_);
 
-  size_t ndim_ = (size_t)GetElementNum(begin_tensor);
+  size_t ndim_ = (size_t)NNACLGetElementNum(begin_tensor);
   for (size_t i = 0; i < ndim_; ++i) {
     ShapePush(begins_, &begins_size, begin_data[i]);
     ShapePush(ends_, &ends_size, end_data[i]);

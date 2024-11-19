@@ -36,9 +36,9 @@ int GroupNormResize(struct KernelBase *self) {
   NNACL_CHECK_FALSE(in0->shape_size_ < C1NUM, NNACL_GROUP_NORM_SHAPE_SIZE_INVALID);
   NNACL_CHECK_FALSE(in0->format_ != Format_NCHW, NNACL_GROUP_NORM_FORMAT_INVALID);
 
-  param->unit_ = GetHeight(in0) * GetWidth(in0);
-  param->batch_ = GetBatch(in0);
-  param->channel_ = GetChannel(in0);
+  param->unit_ = NNACLGetHeight(in0) * NNACLGetWidth(in0);
+  param->batch_ = NNACLGetBatch(in0);
+  param->channel_ = NNACLGetChannel(in0);
   return self->Prepare(self);
 }
 

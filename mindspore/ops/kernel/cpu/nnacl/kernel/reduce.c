@@ -87,7 +87,7 @@ int ReduceImpl(void *cdata, int task_id, float l, float r) {
 }
 
 int CopyReduceyInputToOutput(ReduceStruct *reduce) {
-  int total_num = GetElementNum(reduce->base_.in_[FIRST_INPUT]);
+  int total_num = NNACLGetElementNum(reduce->base_.in_[FIRST_INPUT]);
   NNACL_CHECK_FALSE(total_num == 0, NNACL_REDUCE_INPUT_SHAPE_SIZE_INVALID);
   int block_num = UP_DIV(total_num, reduce->base_.thread_nr_);
   int tmp_thread_num = UP_DIV(total_num, block_num);
@@ -133,7 +133,7 @@ int CalculateReduceCoeffOutput(KernelBase *base) {
   TensorC *out_tensor = reduce->base_.out_[OUTPUT_INDEX];
   NNACL_CHECK_NULL_RETURN_ERR(out_tensor);
   NNACL_CHECK_NULL_RETURN_ERR(out_tensor->data_);
-  int num = GetElementNum(out_tensor);
+  int num = NNACLGetElementNum(out_tensor);
 
   float *out_data = (float *)out_tensor->data_;
   for (int i = 0; i < num; ++i) {
@@ -153,7 +153,7 @@ void HandleReduceASumAndSumSquare(KernelBase *base) {
   float *data = (float *)in_tensor->data_;
   NNACL_CHECK_NULL_RETURN_VOID(data);
 
-  int num = GetElementNum(in_tensor);
+  int num = NNACLGetElementNum(in_tensor);
 
   if (((ReduceParameter *)base->param_)->mode_ == Reduce_ASum) {
     for (int i = 0; i < num; ++i) {
@@ -205,7 +205,7 @@ int ReduceCommonPrepare(ReduceStruct *reduce) {
   }
 
   TensorC *axes_tensor = reduce->base_.in_[SECOND_INPUT];
-  reduce->num_axes_ = GetElementNum(axes_tensor);
+  reduce->num_axes_ = NNACLGetElementNum(axes_tensor);
   if (axes_tensor->data_ != NULL && (reduce->num_axes_ <= 0 || reduce->num_axes_ > MAX_SHAPE_SIZE)) {
     return NNACL_REDUCE_AXES_TENSOR_ERROR;
   }
@@ -216,8 +216,8 @@ int ReduceCommonPrepare(ReduceStruct *reduce) {
     }
   } else {
     if (axes_tensor->data_type_ == kNumberTypeInt32 || axes_tensor->data_type_ == kNumberTypeInt) {
-      NNACL_CHECK_FALSE(GetSize(axes_tensor) == 0, NNACL_REDUCE_AXES_TENSOR_ERROR);
-      (void)memcpy(reduce->axes_, axes_tensor->data_, GetSize(axes_tensor));
+      NNACL_CHECK_FALSE(NNACLGetSize(axes_tensor) == 0, NNACL_REDUCE_AXES_TENSOR_ERROR);
+      (void)memcpy(reduce->axes_, axes_tensor->data_, NNACLGetSize(axes_tensor));
     } else {
       int64_t *axes_data = axes_tensor->data_;
       for (size_t i = 0; i < reduce->num_axes_; i++) {
@@ -363,7 +363,7 @@ int ReduceResize(struct KernelBase *self) {
       reduce->inner_sizes_[Index0] * reduce->axis_sizes_[Index0], reduce->outer_sizes_[Index0], self->thread_nr_);
   } else {
     self->thread_nr_ = self->UpdateThread(TC_TYPE(PrimType_ReduceFusion, Reduce_Max + 1), 0, 0,
-                                          GetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
+                                          NNACLGetElementNum(self->out_[OUTPUT_INDEX]), self->thread_nr_);
   }
   return NNACL_OK;
 }

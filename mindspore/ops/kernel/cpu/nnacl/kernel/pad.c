@@ -219,9 +219,9 @@ int MirrorPadImpl(void *cdata, int task_id, float l, float r) {
   NNACL_CHECK_NULL_RETURN_ERR(output_data);
 
   /* Common Mirror pad */
-  int unit = UP_DIV(GetElementNum(output), pad->base_.thread_nr_);
+  int unit = UP_DIV(NNACLGetElementNum(output), pad->base_.thread_nr_);
   int begin = unit * task_id;
-  int end = NNACL_MIN(begin + unit, GetElementNum(output));
+  int end = NNACL_MIN(begin + unit, NNACLGetElementNum(output));
   if (pad->data_type_ == kNumberTypeFloat16) {
 #ifdef ENABLE_FP16
     MirrorPadFp16((float16_t *)input_data, (float16_t *)output_data, pad->in_, pad->in_strides_, pad->out_strides_,
@@ -259,7 +259,7 @@ int PadCopyPaddingFromInput(PadStruct *pad) {
   NNACL_CHECK_NULL_RETURN_ERR(padding_data);
 
   (void)PadExtendDims(pad->in_, input_tensor->shape_, DEFAULT_PAD_NDIMS, input_tensor->shape_size_, 1);
-  (void)PadExtendDims(pad->paddings_, padding_data, MAX_PAD_SIZE, GetElementNum(padding_tensor), 0);
+  (void)PadExtendDims(pad->paddings_, padding_data, MAX_PAD_SIZE, NNACLGetElementNum(padding_tensor), 0);
   pad->paddings_size_ = MAX_PAD_SIZE;
 
   return NNACL_OK;
@@ -293,7 +293,7 @@ int PadCompute(KernelBase *self) {
   if (self->in_size_ == THREE_TENSOR) {
     TensorC *pad_value_tensor = self->in_[THIRD_INPUT];
     NNACL_CHECK_NULL_RETURN_ERR(pad_value_tensor);
-    NNACL_CHECK_FALSE(GetElementNum(pad_value_tensor) != 1, NNACL_PAD_PADDING_VALID_INVALID);
+    NNACL_CHECK_FALSE(NNACLGetElementNum(pad_value_tensor) != 1, NNACL_PAD_PADDING_VALID_INVALID);
     void *pad_valud = pad_value_tensor->data_;
     if (pad->data_type_ == kNumberTypeFloat16) {
 #ifdef ENABLE_FP16
@@ -312,7 +312,7 @@ int PadCompute(KernelBase *self) {
   if (pad->pad_mode_ == PaddingMode_Constant) {
     TensorC *output = self->out_[OUTPUT_INDEX];
     NNACL_CHECK_NULL_RETURN_ERR(output);
-    size_t output_size = GetElementNum(output);
+    size_t output_size = NNACLGetElementNum(output);
     void *output_data = output->data_;
     if (fabsf(pad->constant_value_ - 0.0f) < 1e-5) {
       memset(output_data, 0, output_size * (int)DataTypeCSize(pad->data_type_));
@@ -357,7 +357,7 @@ int PadResize(KernelBase *self) {
 
   int rank = input->shape_size_;
   NNACL_CHECK_FALSE(input->shape_size_ > DEFAULT_PAD_NDIMS, NNACL_PAD_SHAPE_INVALID);
-  NNACL_CHECK_FALSE(GetElementNum(padding) != rank + rank, NNACL_PAD_SHAPE_INVALID);
+  NNACL_CHECK_FALSE(NNACLGetElementNum(padding) != rank + rank, NNACL_PAD_SHAPE_INVALID);
 
   if (pad->pad_mode_ == PaddingMode_Constant) {
     (void)PadExtendDims(pad->in_, input->shape_, DEFAULT_PAD_NDIMS, rank, 1);

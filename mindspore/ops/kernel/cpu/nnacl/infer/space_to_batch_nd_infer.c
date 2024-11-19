@@ -68,7 +68,7 @@ int SpaceSetOutputShapeFromInput(const TensorC *const *inputs, size_t inputs_siz
   if (input->shape_size_ != 4) {
     return NNACL_ERR;
   }
-  if (GetElementNum(inputs[2]) != 4) {
+  if (NNACLGetElementNum(inputs[2]) != 4) {
     return NNACL_ERR;
   }
   int *block_shape = (int *)(inputs[1]->data_);
@@ -76,7 +76,7 @@ int SpaceSetOutputShapeFromInput(const TensorC *const *inputs, size_t inputs_siz
   int padding_left = 0;
   int padding_right = 0;
   int block_w = 1;
-  if (GetElementNum(inputs[1]) == 2) {
+  if (NNACLGetElementNum(inputs[1]) == 2) {
     padding_left = padding[2];
     padding_right = padding[3];
     block_w = block_shape[1];

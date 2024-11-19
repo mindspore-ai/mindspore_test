@@ -110,10 +110,10 @@ int FusedBatchNormBatchnorm2Scale(FusedBatchNormStruct *fused_batch_norm, const 
 
   ExecEnv *env = fused_batch_norm->bn_.base_.env_;
   TensorC *scale_tensor = fused_batch_norm->bn_.base_.in_[SECOND_INPUT];
-  fused_batch_norm->scale_ = env->Alloc(env->allocator_, GetSize(scale_tensor));
+  fused_batch_norm->scale_ = env->Alloc(env->allocator_, NNACLGetSize(scale_tensor));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(fused_batch_norm->scale_);
   TensorC *offset_tensor = fused_batch_norm->bn_.base_.in_[THIRD_INPUT];
-  fused_batch_norm->offset_ = env->Alloc(env->allocator_, GetSize(offset_tensor));
+  fused_batch_norm->offset_ = env->Alloc(env->allocator_, NNACLGetSize(offset_tensor));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(fused_batch_norm->offset_);
 
   // new scale: -scale / sqrt(variance + eps)
@@ -137,7 +137,7 @@ int FusedBatchNormInitConstTensor(FusedBatchNormStruct *fused_batch_norm) {
   if (!fused_batch_norm->bn_.base_.train_session_) {
     int ret = FusedBatchNormBatchnorm2Scale(
       fused_batch_norm, (float *)scale_tensor->data_, (float *)offset_tensor->data_, (float *)mean_tensor->data_,
-      (float *)variance_tensor->data_, fused_batch_norm->bn_.epsilon_, GetElementNum(scale_tensor));
+      (float *)variance_tensor->data_, fused_batch_norm->bn_.epsilon_, NNACLGetElementNum(scale_tensor));
     if (ret == NNACL_OK) {
       return NNACL_OK;
     } else {
@@ -149,18 +149,18 @@ int FusedBatchNormInitConstTensor(FusedBatchNormStruct *fused_batch_norm) {
   }
 
   ExecEnv *env = fused_batch_norm->bn_.base_.env_;
-  fused_batch_norm->scale_ = env->Alloc(env->allocator_, GetSize(scale_tensor));
+  fused_batch_norm->scale_ = env->Alloc(env->allocator_, NNACLGetSize(scale_tensor));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(fused_batch_norm->scale_);
-  (void)memcpy(fused_batch_norm->scale_, scale_tensor->data_, GetSize(scale_tensor));
-  fused_batch_norm->offset_ = env->Alloc(env->allocator_, GetSize(offset_tensor));
+  (void)memcpy(fused_batch_norm->scale_, scale_tensor->data_, NNACLGetSize(scale_tensor));
+  fused_batch_norm->offset_ = env->Alloc(env->allocator_, NNACLGetSize(offset_tensor));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(fused_batch_norm->offset_);
-  (void)memcpy(fused_batch_norm->offset_, offset_tensor->data_, GetSize(offset_tensor));
-  fused_batch_norm->bn_.mean_ = env->Alloc(env->allocator_, GetSize(mean_tensor));
+  (void)memcpy(fused_batch_norm->offset_, offset_tensor->data_, NNACLGetSize(offset_tensor));
+  fused_batch_norm->bn_.mean_ = env->Alloc(env->allocator_, NNACLGetSize(mean_tensor));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(fused_batch_norm->bn_.mean_);
-  (void)memcpy(fused_batch_norm->bn_.mean_, mean_tensor->data_, GetSize(mean_tensor));
-  fused_batch_norm->bn_.variance_ = env->Alloc(env->allocator_, GetSize(variance_tensor));
+  (void)memcpy(fused_batch_norm->bn_.mean_, mean_tensor->data_, NNACLGetSize(mean_tensor));
+  fused_batch_norm->bn_.variance_ = env->Alloc(env->allocator_, NNACLGetSize(variance_tensor));
   NNACL_MALLOC_CHECK_NULL_RETURN_ERR(fused_batch_norm->bn_.variance_);
-  (void)memcpy(fused_batch_norm->bn_.variance_, variance_tensor->data_, GetSize(variance_tensor));
+  (void)memcpy(fused_batch_norm->bn_.variance_, variance_tensor->data_, NNACLGetSize(variance_tensor));
   return NNACL_OK;
 }
 
@@ -214,8 +214,8 @@ int FusedBatchNormTrainComputeInit(FusedBatchNormStruct *fbn) {
       return NNACL_FUSED_BATCH_TRAIN_DATA_INVALID;
     }
 
-    memset(current_mean, 0, GetSize(mean_tensor));
-    memset(current_var, 0, GetSize(var_tensor));
+    memset(current_mean, 0, NNACLGetSize(mean_tensor));
+    memset(current_var, 0, NNACLGetSize(var_tensor));
 
     bool isBatch2d = true;
     if (fbn->bn_.base_.in_[FIRST_INPUT]->shape_size_ == Num2) isBatch2d = false;
@@ -230,24 +230,24 @@ int FusedBatchNormTrainComputeInit(FusedBatchNormStruct *fbn) {
                                 (float *)mean_tensor->data_, (float *)var_tensor->data_, isBatch2d);
     }
 
-    (void)memcpy(out_scale->data_, scale_tensor->data_, GetSize(out_scale));
-    (void)memcpy(out_offset->data_, offset_tensor->data_, GetSize(out_offset));
-    (void)memcpy(out_mean->data_, current_mean, GetSize(out_mean));
-    (void)memcpy(out_var->data_, current_var, GetSize(out_var));
+    (void)memcpy(out_scale->data_, scale_tensor->data_, NNACLGetSize(out_scale));
+    (void)memcpy(out_offset->data_, offset_tensor->data_, NNACLGetSize(out_offset));
+    (void)memcpy(out_mean->data_, current_mean, NNACLGetSize(out_mean));
+    (void)memcpy(out_var->data_, current_var, NNACLGetSize(out_var));
 
     // Copy to local variables
-    (void)memcpy(fbn->scale_, scale_tensor->data_, GetSize(scale_tensor));
-    (void)memcpy(fbn->offset_, offset_tensor->data_, GetSize(offset_tensor));
+    (void)memcpy(fbn->scale_, scale_tensor->data_, NNACLGetSize(scale_tensor));
+    (void)memcpy(fbn->offset_, offset_tensor->data_, NNACLGetSize(offset_tensor));
 
     fbn->trained_ = true;  // trained at least once
     return NNACL_OK;
   }
 
   if (fbn->bn_.base_.train_session_) {
-    (void)memcpy(out_scale->data_, fbn->scale_, GetSize(out_scale));
-    (void)memcpy(out_offset->data_, fbn->offset_, GetSize(out_offset));
-    (void)memcpy(out_mean->data_, current_mean, GetSize(out_mean));
-    (void)memcpy(out_var->data_, current_var, GetSize(out_var));
+    (void)memcpy(out_scale->data_, fbn->scale_, NNACLGetSize(out_scale));
+    (void)memcpy(out_offset->data_, fbn->offset_, NNACLGetSize(out_offset));
+    (void)memcpy(out_mean->data_, current_mean, NNACLGetSize(out_mean));
+    (void)memcpy(out_var->data_, current_var, NNACLGetSize(out_var));
   }
 
   return NNACL_OK;

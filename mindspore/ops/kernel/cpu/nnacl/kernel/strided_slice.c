@@ -126,7 +126,7 @@ int StridedSliceSoftCopyInputToOutput(StridedSliceStruct *strided_slice) {
   NNACL_CHECK_NULL_RETURN_ERR(out_tensor);
   NNACL_CHECK_NULL_RETURN_ERR(out_tensor->data_);
 
-  int total_num = GetElementNum(in_tensor);
+  int total_num = NNACLGetElementNum(in_tensor);
   NNACL_CHECK_FALSE(total_num == 0, NNACL_STRIDED_SLICE_INVALID_DATA_SIZE);
 
   strided_slice->base_.thread_nr_ =
@@ -209,7 +209,7 @@ void StridedSliceInitFastRunParam(StridedSliceStruct *strided_slice) {
 
   strided_slice->base_.thread_nr_ = strided_slice->base_.UpdateThread(
     TC_TYPE(PrimType_StridedSlice, strided_slice->parallel_on_outer_), 1, 1,
-    GetElementNum(strided_slice->base_.out_[OUTPUT_INDEX]), strided_slice->base_.thread_nr_);
+    NNACLGetElementNum(strided_slice->base_.out_[OUTPUT_INDEX]), strided_slice->base_.thread_nr_);
 
   strided_slice->cal_num_per_thread_ =
     strided_slice->parallel_on_split_axis_

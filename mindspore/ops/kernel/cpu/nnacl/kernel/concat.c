@@ -27,7 +27,7 @@ int DoConcat(ConcatStruct *concat, int task_id) {
   NNACL_CHECK_FALSE(task_id < 0, NNACL_ERR);
   NNACL_CHECK_FALSE(task_id > concat->block_size_, NNACL_ERR);
 
-  int all_bytes = GetSize(concat->base_.out_[FIRST_INPUT]);
+  int all_bytes = NNACLGetSize(concat->base_.out_[FIRST_INPUT]);
   int64_t start = concat->block_splits_[task_id];
   int64_t end = task_id < (concat->block_size_ - 1) ? concat->block_splits_[task_id + 1] : all_bytes;
   int64_t start_row = start / concat->inner_sizes_[concat->base_.in_size_];
@@ -154,7 +154,7 @@ void ComputeConcatUnitBoundary(ConcatStruct *concat, int64_t *pre_sum, int offse
 int ChooseConcatThreadCuttingStrategy(ConcatStruct *concat) {
   NNACL_CHECK_TRUE_RET(concat->base_.thread_nr_ > 0, NNACL_ERR);
 
-  int all_bytes = GetSize(concat->base_.out_[FIRST_INPUT]);
+  int all_bytes = NNACLGetSize(concat->base_.out_[FIRST_INPUT]);
   int64_t thread_count = MSMAX(1, MSMIN(all_bytes / kConcatMinCostPerThread, concat->base_.thread_nr_));
 
   NNACL_CHECK_ZERO_RETURN_ERR(thread_count);

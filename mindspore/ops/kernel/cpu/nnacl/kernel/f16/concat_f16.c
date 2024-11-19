@@ -102,7 +102,7 @@ int ConcatF16Compute(KernelBase *self) {
       if (output == NULL) {
         ret = NNACL_CONCAT_F16_OUTPUT_DATA_INVALID;
       } else {
-        Float16ToFloat32((float16_t *)concat->output_, output, GetElementNum(output_tensor));
+        Float16ToFloat32((float16_t *)concat->output_, output, NNACLGetElementNum(output_tensor));
       }
     }
   }

@@ -224,7 +224,7 @@ class Tensor {
 
   void set_quant_clusters(const std::vector<float> &clusters);
 
-  virtual bool IsConst() const { return ::IsConst(&tensor_c_); }
+  virtual bool IsConst() const { return ::NNACLIsConst(&tensor_c_); }
 
   bool IsScalar() const { return this->tensor_c_.category_ == CONST_SCALAR && this->tensor_c_.data_ != nullptr; }
 

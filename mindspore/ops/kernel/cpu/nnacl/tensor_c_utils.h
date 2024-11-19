@@ -26,19 +26,19 @@
 extern "C" {
 #endif
 
-int GetBatch(const TensorC *tensor);
-int GetHeight(const TensorC *tensor);
-int GetWidth(const TensorC *tensor);
-int GetChannel(const TensorC *tensor);
-void SetBatch(TensorC *tensor, int batch);
-void SetHeight(TensorC *tensor, int height);
-void SetWidth(TensorC *tensor, int width);
-void SetChannel(TensorC *tensor, int channel);
-int GetElementNum(const TensorC *tensor);
-int GetSize(const TensorC *tensor);
-int GetDimensionSize(const TensorC *tensor, const size_t index);
-bool IsShapeSame(const TensorC *tensor1, const TensorC *tensor2);
-bool IsConst(const TensorC *tensor);
+int NNACLGetBatch(const TensorC *tensor);
+int NNACLGetHeight(const TensorC *tensor);
+int NNACLGetWidth(const TensorC *tensor);
+int NNACLGetChannel(const TensorC *tensor);
+void NNACLSetBatch(TensorC *tensor, int batch);
+void NNACLSetHeight(TensorC *tensor, int height);
+void NNACLSetWidth(TensorC *tensor, int width);
+void NNACLSetChannel(TensorC *tensor, int channel);
+int NNACLGetElementNum(const TensorC *tensor);
+int NNACLGetSize(const TensorC *tensor);
+int NNACLGetDimensionSize(const TensorC *tensor, const size_t index);
+bool NNACLIsShapeSame(const TensorC *tensor1, const TensorC *tensor2);
+bool NNACLIsConst(const TensorC *tensor);
 
 #ifdef __cplusplus
 }

@@ -75,7 +75,7 @@ int WhereRunWithSingleInput(WhereStruct *where) {
       return NNACL_WHERE_CONDITION_DATA_TYPE_ERROR;
   }
   WhereArgs *where_args = &where->args_;
-  where_args->condition_num_ = GetElementNum(input);
+  where_args->condition_num_ = NNACLGetElementNum(input);
   where_args->rank_ = input->shape_size_;
   int strides[MAX_SHAPE_SIZE];
   ComputeStrides(input->shape_, strides, where_args->rank_);
@@ -133,7 +133,7 @@ int WhereRunWithSingleInput(WhereStruct *where) {
 int WhereBroadCastForInput(WhereStruct *where, TensorC *condition, TensorC *x, TensorC *y,
                            void **condition_broadcast_buf, void **x_broadcast_buf, void **y_broadcast_buf,
                            TensorC *output) {
-  size_t broad_cast_buf_size = GetElementNum(output);
+  size_t broad_cast_buf_size = NNACLGetElementNum(output);
   if (output->data_type_ == kNumberTypeFloat32) {
     broad_cast_buf_size *= sizeof(float);
   } else {
@@ -190,10 +190,10 @@ int WhereRunWithTripleInputs(WhereStruct *where) {
   TensorC *output = where->base_.out_[Index0];
   NNACL_CHECK_NULL_RETURN_ERR(output);
 
-  int condition_nums = GetElementNum(condition);
-  int x_num = GetElementNum(x);
-  int y_num = GetElementNum(y);
-  int out_num = GetElementNum(output);
+  int condition_nums = NNACLGetElementNum(condition);
+  int x_num = NNACLGetElementNum(x);
+  int y_num = NNACLGetElementNum(y);
+  int out_num = NNACLGetElementNum(output);
   int num_max = condition_nums > x_num ? condition_nums : (x_num > y_num ? x_num : y_num);
 
   where->x_ = x->data_;
@@ -216,13 +216,13 @@ int WhereRunWithTripleInputs(WhereStruct *where) {
   }
   if (((condition_nums != 1) && (condition_nums != num_max)) || ((x_num != 1) && (x_num != num_max)) ||
       ((y_num != 1) && (y_num != num_max))) {
-    if (condition_nums != GetElementNum(y) && condition->shape_size_ != y->shape_size_) {
+    if (condition_nums != NNACLGetElementNum(y) && condition->shape_size_ != y->shape_size_) {
       int ret = WhereBroadCastForInput(where, condition, x, y, &condition_broadcast_buf, &x_broadcast_buf,
                                        &y_broadcast_buf, output);
       if (ret != NNACL_OK) {
         return NNACL_WHERE_BROAD_CAST_FAILED;
       }
-      int max_num = GetElementNum(output);
+      int max_num = NNACLGetElementNum(output);
       args->condition_ = (bool *)condition_broadcast_buf;
       where->x_ = x_broadcast_buf;
       where->y_ = y_broadcast_buf;

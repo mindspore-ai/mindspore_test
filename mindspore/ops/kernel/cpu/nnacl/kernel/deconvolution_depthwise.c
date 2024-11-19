@@ -131,24 +131,24 @@ void DeConvDwUpdateParam(ConvolutionBaseStruct *conv) {
 
   ConvParameter *conv_param = (ConvParameter *)conv->base_.param_;
   conv_param->thread_num_ = conv->base_.thread_nr_;
-  conv_param->input_batch_ = GetBatch(output);
-  conv_param->input_h_ = GetHeight(output);
-  conv_param->input_w_ = GetWidth(output);
-  conv_param->input_channel_ = GetChannel(output);
-  conv_param->output_batch_ = GetBatch(input);
-  conv_param->output_h_ = GetHeight(input);
-  conv_param->output_w_ = GetWidth(input);
-  conv_param->output_channel_ = GetChannel(input);
+  conv_param->input_batch_ = NNACLGetBatch(output);
+  conv_param->input_h_ = NNACLGetHeight(output);
+  conv_param->input_w_ = NNACLGetWidth(output);
+  conv_param->input_channel_ = NNACLGetChannel(output);
+  conv_param->output_batch_ = NNACLGetBatch(input);
+  conv_param->output_h_ = NNACLGetHeight(input);
+  conv_param->output_w_ = NNACLGetWidth(input);
+  conv_param->output_channel_ = NNACLGetChannel(input);
 
   ConvComputeParam *compute = &conv->compute_;
-  compute->in_n_ = GetBatch(output);
-  compute->in_h_ = GetHeight(output);
-  compute->in_w_ = GetWidth(output);
-  compute->in_c_ = GetChannel(output);
-  compute->out_n_ = GetBatch(input);
-  compute->out_h_ = GetHeight(input);
-  compute->out_w_ = GetWidth(input);
-  compute->out_c_ = GetChannel(input);
+  compute->in_n_ = NNACLGetBatch(output);
+  compute->in_h_ = NNACLGetHeight(output);
+  compute->in_w_ = NNACLGetWidth(output);
+  compute->in_c_ = NNACLGetChannel(output);
+  compute->out_n_ = NNACLGetBatch(input);
+  compute->out_h_ = NNACLGetHeight(input);
+  compute->out_w_ = NNACLGetWidth(input);
+  compute->out_c_ = NNACLGetChannel(input);
 }
 
 int DeConvDwResize(KernelBase *self) {
@@ -205,7 +205,7 @@ int DeConvDwCompute(KernelBase *self) {
   } else {
     deconv_dw->packed_input_ = in_data;
     deconv_dw->packed_output_ = out_data;
-    memset(deconv_dw->packed_output_, 0, GetSize(out_tensor));
+    memset(deconv_dw->packed_output_, 0, NNACLGetSize(out_tensor));
   }
 
   ret = self->env_->ParallelLaunch(self->env_->thread_pool_, DeconvDwRun, self, self->thread_nr_);
