@@ -506,6 +506,9 @@ def tensor_greater(input, other):
 # 43 index_put
 
 # 44 index_select
+def tensor_index_select(input, dim, index):
+    return index_select(input, dim, index)
+
 def deprecated_tensor_index_select(input, axis, index):
     return index_select(input, axis, index)
 
