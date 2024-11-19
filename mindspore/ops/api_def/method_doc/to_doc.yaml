@@ -23,11 +23,11 @@ to:
         Examples:
             >>> import mindspore
             >>> import numpy as np
-            >>> from mindspore import Tensor, ops
+            >>> from mindspore import Tensor
             >>> input_np = np.random.randn(2, 3, 4, 5).astype(np.float32)
             >>> input = Tensor(input_np)
             >>> dtype = mindspore.int32
-            >>> output = ops.to(input, dtype)
+            >>> output = input.to(dtype)
             >>> print(output.dtype)
             Int32
             >>> print(output.shape)
