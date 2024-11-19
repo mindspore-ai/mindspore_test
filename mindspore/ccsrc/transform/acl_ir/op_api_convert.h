@@ -473,6 +473,10 @@ inline aclIntArray *ConvertType(const std::vector<int64_t> &int_array) {
   return converter.CreateIntArray(int_array);
 }
 
+inline aclIntArray *ConvertType(const std::pair<std::vector<int64_t>, bool> &int_array_pair) {
+  return ConvertType(int_array_pair.first);
+}
+
 inline aclFloatArray *ConvertType(const std::vector<float> &float_array) {
   if (float_array.empty()) {
     MS_LOG(ERROR) << "float array is empty!";
@@ -647,7 +651,7 @@ inline std::vector<void *> GetAddr(const std::optional<tensor::BaseTensorPtr> &t
   if (tensor.has_value()) {
     return {tensor.value()->device_address()->GetMutablePtr()};
   }
-  return {};
+  return {nullptr};
 }
 
 inline std::vector<void *> GetAddr(const std::vector<tensor::TensorPtr> &tensor_list) {
@@ -672,6 +676,13 @@ inline std::vector<void *> GetAddr(const std::pair<tensor::TensorPtr, bool> &ten
 inline std::vector<void *> GetAddr(const std::optional<tensor::TensorPtr> &tensor) {
   if (tensor.has_value()) {
     return {tensor.value()->device_address()->GetMutablePtr()};
+  }
+  return {nullptr};
+}
+
+inline std::vector<void *> GetAddr(const std::pair<std::vector<int64_t>, bool> &int_array_input) {
+  if (int_array_input.second) {
+    return {nullptr};
   }
   return {};
 }
