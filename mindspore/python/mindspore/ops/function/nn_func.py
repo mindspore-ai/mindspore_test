@@ -1478,7 +1478,7 @@ def dropout(input, p=0.5, training=True, seed=None):
 
 
 @_function_forbid_reuse
-def dropout_ext(input, p=0.5, training=True):
+def dropout_ext(input, p=0.5, training=True, inplace=False):
     r"""
     During training, randomly zeroes some of the elements of the input tensor
     with probability `p` from a Bernoulli distribution. It plays the role of reducing neuron correlation and
@@ -1490,7 +1490,8 @@ def dropout_ext(input, p=0.5, training=True):
         p (float): The dropping rate of input neurons, between 0 and 1, e.g. `p` = 0.1,
             means dropping out 10% of input neurons. Default: ``0.5`` .
         training (bool): Apply dropout if it is ``True`` , if it is ``False`` , the input is returned directly,
-            and `p` is invalid. Default: ``True``.
+            and `p` is invalid. Default: ``True`` .
+        inplace (bool): If set to ``True`` , will do this operation in-place. Default: ``False`` .
 
     Returns:
         - **output** (Tensor) - Zeroed tensor, with the same shape and data type as `input`.
@@ -1511,10 +1512,14 @@ def dropout_ext(input, p=0.5, training=True):
         (2, 2)
     """
     check_bool_const(training, "training", "dropout_ext")
-    if training is False:
+    check_bool_const(inplace, "inplace", "dropout_ext")
+    if not training:
         return input
     seed, offset = default_generator._step(generator_step_)  # pylint: disable=protected-access
     out, _ = dropout_ext_op(input, p, seed, offset)
+    if inplace:
+        input.copy_(out)
+        return input
     return out
 
 

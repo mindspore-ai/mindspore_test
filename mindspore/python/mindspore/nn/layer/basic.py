@@ -226,6 +226,7 @@ class DropoutExt(Cell):
     Args:
         p (float): The dropout rate of input neurons, E.g. `p` =0.9, dropping out 90% of input neurons.
             Default: ``0.5`` .
+        inplace (bool): If set to ``True`` , will do this operation in-place. Default: ``False`` .
 
     Inputs:
         - **x** (Tensor) - The input of Dropout.
@@ -252,10 +253,11 @@ class DropoutExt(Cell):
         (2, 2, 3)
     """
 
-    def __init__(self, p=0.5):
+    def __init__(self, p=0.5, inplace=False):
         """Initialize DropoutExt."""
         super(DropoutExt, self).__init__()
         self.p = p
+        self.inplace = inplace
         self.generator_step = Tensor(12, mstype.int64)
 
     def construct(self, x):
@@ -264,6 +266,10 @@ class DropoutExt(Cell):
 
         seed, offset = default_generator._step(self.generator_step)  # pylint: disable=protected-access
         out, _ = ops.auto_generate.dropout_ext_op(x, self.p, seed, offset)
+
+        if self.inplace:
+            x.copy_(out)
+            return x
         return out
 
 

@@ -31,13 +31,13 @@ def generate_random_input(shape, dtype):
 
 
 @test_utils.run_with_cell
-def dropout_forward_func(x, p=0.4):
-    return dropout_ext(x, p)
+def dropout_forward_func(x, p=0.4, inplace=False):
+    return dropout_ext(x, p, True, inplace)
 
 
 @test_utils.run_with_cell
-def dropout_backward_func(x, p=0.4):
-    return ms.grad(dropout_forward_func, (0))(x, p)
+def dropout_backward_func(x, p=0.4, inplace=False):
+    return ms.grad(dropout_forward_func, (0))(x, p, inplace)
 
 
 def compare_output(x, p, output):
@@ -74,25 +74,35 @@ def compare_grad(x, p, grad):
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
-def test_func_dropout_normal(context_mode, dtype):
+def test_func_dropout_normal(mode, dtype):
     """
     Feature: pyboost function.
     Description: test function dropout normal.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
-    ms.set_context(jit_level='O0')
-    x = generate_random_input((1280, 77, 77), dtype)
+    x_np = generate_random_input((1280, 77, 77), dtype)
+    x = ms.Tensor(x_np)
     p = 0.1
-    output = dropout_forward_func(ms.Tensor(x), p)
-    compare_output(x, p, output)
 
-    x1 = generate_random_input((3, 4096, 1280), dtype)
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+        inplace = True
+    else:
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+        inplace = False
+
+    output = dropout_forward_func(x, p, inplace)
+    compare_output(x_np, p, output)
+    if inplace:
+        compare_output(x_np, p, x)
+
+    x1_np = generate_random_input((3, 4096, 1280), dtype)
+    x1 = ms.Tensor(x1_np)
     p1 = 0.1
-    grad = dropout_backward_func(ms.Tensor(x1), p1)
-    compare_grad(x1, p1, grad)
+    grad = dropout_backward_func(x1, p1)
+    compare_grad(x1_np, p1, grad)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -151,24 +161,32 @@ def compare_func(x, p, output, mask=None):
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_nn_DropoutExt_normal(context_mode):
+@pytest.mark.parametrize('mode', ['kbk', 'pynative'])
+def test_nn_DropoutExt_normal(mode):
     """
     Feature: nn.DropoutExt
     Description: forward
     Expectation: success
     """
-    ms.set_context(jit_level='O0')
-    ms.context.set_context(mode=context_mode)
-
-    x = np.array(np.random.random((16, 16, 16, 16)), np.float32)
+    x_np = np.array(np.random.random((16, 16, 16, 16)), np.float32)
+    x = ms.tensor(x_np)
     p = 0.4
 
-    net = DropoutExt(p)
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+        inplace = True
+    else:
+        ms.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+        inplace = False
+
+    net = DropoutExt(p, inplace)
     net.set_train()
 
-    output = net(ms.tensor(x))
-    compare_func(x, p, output)
+    output = net(x)
+    compare_func(x_np, p, output)
+
+    if inplace:
+        compare_func(x_np, p, x)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
