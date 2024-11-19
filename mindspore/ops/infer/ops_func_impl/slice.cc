@@ -1,5 +1,5 @@
 /**
- * Copyright 2022-2023 Huawei Technologies Co., Ltd
+ * Copyright 2023 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-#include "infer/slice.h"
-
-#include <map>
-#include <memory>
-#include <set>
 #include <vector>
+#include <set>
+#include <memory>
+#include <map>
 
+#include "utils/check_convert_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
+#include "infer/ops_func_impl/slice.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"
@@ -38,19 +40,14 @@
 #include "mindapi/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
-#include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 
-namespace mindspore {
-namespace ops {
-namespace {
-constexpr size_t kSliceInputNum = 3;
-std::vector<int64_t> InferImplSliceFuncCalInputValue(const PrimitivePtr &primitive,
-                                                     const AbstractBasePtr &input_value) {
+namespace mindspore::ops {
+std::vector<int64_t> SliceFuncImpl::InferImplSliceFuncCalInputValue(const PrimitivePtr &primitive,
+                                                                    const AbstractBasePtr &input_value) const {
   MS_EXCEPTION_IF_NULL(input_value);
   if (auto value_ptr = input_value->GetValue(); value_ptr == nullptr || !IsValueKnown(value_ptr)) {
     MS_EXCEPTION(TypeError) << "For Slice, currently, it is not "
@@ -72,9 +69,10 @@ std::vector<int64_t> InferImplSliceFuncCalInputValue(const PrimitivePtr &primiti
   return tmp_input;
 }
 
-abstract::ShapePtr SliceInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
+BaseShapePtr SliceFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                       const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
+  constexpr size_t kSliceInputNum = 3;
   MS_EXCEPTION_IF_CHECK_FAIL(input_args.size() == kSliceInputNum, "Slice inputs num error");
   auto input_x_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape());
   auto input_x_shape = input_x_shape_map[kShape];
@@ -140,55 +138,8 @@ abstract::ShapePtr SliceInferShape(const PrimitivePtr &primitive, const std::vec
   return std::make_shared<abstract::Shape>(input_size_value);
 }
 
-TypePtr SliceInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  return CheckAndConvertUtils::CheckSubClass("input_x", input_args[0]->GetType(), {kTensorType}, primitive->name());
+TypePtr SliceFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
+  auto x_type = input_args[kIndex0]->GetType();
+  return x_type;
 }
-}  // namespace
-
-MIND_API_OPERATOR_IMPL(Slice, BaseOperator);
-AbstractBasePtr SliceInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                           const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
-  auto prim_name = primitive->name();
-  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, kInputIndex3, prim_name);
-  auto type = SliceInferType(primitive, input_args);
-  auto shape = SliceInferShape(primitive, input_args);
-  return abstract::MakeAbstract(shape, type);
-}
-
-std::vector<int64_t> Slice::get_begin() const {
-  auto value_ptr = GetAttr(kBegin);
-  return GetValue<std::vector<int64_t>>(value_ptr);
-}
-
-std::vector<int64_t> Slice::get_size() const {
-  auto value_ptr = GetAttr(kSize);
-  return GetValue<std::vector<int64_t>>(value_ptr);
-}
-
-// AG means auto generated
-class OPS_API AGSliceInfer : public abstract::OpInferBase {
- public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive,
-                          const std::vector<AbstractBasePtr> &input_args) const override {
-    return SliceInferShape(primitive, input_args);
-  }
-
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
-    return SliceInferType(primitive, input_args);
-  }
-  AbstractBasePtr InferShapeAndType(const abstract::AnalysisEnginePtr &engine, const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const override {
-    return SliceInfer(engine, primitive, input_args);
-  }
-
-  std::set<int64_t> GetValueDependArgIndices() const override { return {1, 2}; }
-};
-
-REGISTER_PRIMITIVE_OP_INFER_IMPL(Slice, prim::kPrimSlice, AGSliceInfer, false);
-}  // namespace ops
-}  // namespace mindspore
+}  // namespace mindspore::ops

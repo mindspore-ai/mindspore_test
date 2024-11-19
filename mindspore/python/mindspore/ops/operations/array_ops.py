@@ -42,7 +42,7 @@ from ..auto_generate import (
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
     MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
-    SearchSorted, TypeAs, Meshgrid, Squeeze)
+    SearchSorted, TypeAs, Meshgrid, Squeeze, Slice)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
@@ -1896,55 +1896,6 @@ class Unstack(Primitive):
         validator.check_value_type("axis", axis, [int], self.name)
         if num is not None:
             validator.check_value_type("num", num, [int], self.name)
-
-
-class Slice(Primitive):
-    """
-    Slices a tensor in the specified shape.
-
-    Refer to :func:`mindspore.ops.slice` for more details.
-
-    Inputs:
-        - **input_x** (Tensor) - The target tensor.
-          The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-        - **begin** (Union[tuple, list]) - The beginning of the slice. Only constant value(>=0) is allowed.
-        - **size** (Union[tuple, list]) - The size of the slice. Only constant value is allowed.
-
-    Outputs:
-        Tensor, the shape is: input `size`, the data type is the same as `input_x`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> data = Tensor(np.array([[[1, 1, 1], [2, 2, 2]],
-        ...                         [[3, 3, 3], [4, 4, 4]],
-        ...                         [[5, 5, 5], [6, 6, 6]]]).astype(np.int32))
-        >>> slice_op = ops.Slice()
-        >>> output = slice_op(data, (1, 0, 0), (1, 1, 3))
-        >>> print(output)
-        [[[3 3 3]]]
-        >>> output = slice_op(data, (1, 0, 0), (1, 1, 2))
-        >>> print(output)
-        [[[3 3]]]
-        >>> output = slice_op(data, (1, 0, 0), (1, 1, 1))
-        >>> print(output)
-        [[[3]]]
-        >>> output = slice_op(data, (1, 1, 0), (1, 1, 3))
-        >>> print(output)
-        [[[4 4 4]]]
-        >>> output = slice_op(data, (1, 0, 1), (1, 1, 2))
-        >>> print(output)
-        [[[3 3]]]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize slice"""
-        self.init_prim_io_names(inputs=['x', 'begin', 'size'], outputs=['output'])
 
 
 class Coalesce(Primitive):

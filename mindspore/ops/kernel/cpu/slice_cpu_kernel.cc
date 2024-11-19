@@ -20,7 +20,6 @@
 #include <unordered_map>
 #include "include/common/thread_pool.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "infer/slice.h"
 
 namespace mindspore {
 namespace kernel {

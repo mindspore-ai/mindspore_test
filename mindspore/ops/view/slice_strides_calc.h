@@ -22,7 +22,7 @@
 namespace mindspore {
 namespace ops {
 
-TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList SliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
 
 }  // namespace ops
 }  // namespace mindspore
