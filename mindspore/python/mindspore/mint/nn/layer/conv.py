@@ -17,9 +17,9 @@ from __future__ import absolute_import
 
 import math
 
-from mindspore import context
 from mindspore.ops.auto_generate.gen_ops_prim import Convolution, ConvolutionStr
-from mindspore.ops.function.nn_func import pad_ext
+from mindspore.ops.function.nn_func import pad_ext, conv_transpose2d
+from mindspore.ops.function.array_func import rank
 import mindspore.common.dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, HeUniform, Uniform, _calculate_fan_in_and_fan_out
@@ -27,8 +27,9 @@ from mindspore import _checkparam as Validator
 from mindspore._checkparam import twice
 from mindspore._extends import cell_attr_register
 from mindspore.nn.cell import Cell
+from mindspore.ops.functional import isconstant
 
-__all__ = ['Conv2d']
+__all__ = ['Conv2d', 'ConvTranspose2d']
 
 
 class _Conv(Cell):
@@ -45,19 +46,13 @@ class _Conv(Cell):
                  transposed,
                  output_padding,
                  groups,
-                 has_bias,
+                 bias,
                  padding_mode,
                  dtype=mstype.float32,
                  weight_init=None,
-                 bias_init=None,
-                 data_format='NCHW'):
+                 bias_init=None):
         """Initialize _Conv."""
         super(_Conv, self).__init__()
-        self.data_format = Validator.check_string(data_format, ['NCHW', 'NHWC', 'NCDHW'], 'format', self.cls_name)
-        if context.get_context("device_target") != "GPU" and self.data_format == "NHWC":
-            raise ValueError(f"For '{self.cls_name}', the \"NHWC\" format only support in GPU target, "
-                             f"but got the 'format' is {self.data_format} and "
-                             f"the platform is {context.get_context('device_target')}.")
         if groups <= 0:
             raise ValueError('groups must be a positive integer.')
         if in_channels % groups != 0:
@@ -86,7 +81,6 @@ class _Conv(Cell):
         self.output_padding = output_padding
         self.groups = Validator.check_positive_int(groups)
         self.padding_mode = padding_mode
-        self.has_bias = has_bias
         for kernel_size_elem in kernel_size:
             Validator.check_positive_int(kernel_size_elem, 'kernel_size item', self.cls_name)
         for stride_elem in stride:
@@ -108,15 +102,14 @@ class _Conv(Cell):
         if transposed:
             shape = [in_channels, out_channels // groups, *kernel_size]
         else:
-            shape = [out_channels, *kernel_size, in_channels // groups] if self.data_format == "NHWC" else \
-                [out_channels, in_channels // groups, *kernel_size]
+            shape = [out_channels, in_channels // groups, *kernel_size]
         if weight_init is None:
             weight_init = HeUniform(math.sqrt(5))
         self.weight_init = weight_init
         self.weight = Parameter(initializer(self.weight_init, shape, dtype=dtype), name='weight')
 
         self.bias_init = bias_init
-        if Validator.check_bool(has_bias, "has_bias", self.cls_name):
+        if Validator.check_bool(bias, "bias", self.cls_name):
             if bias_init is None:
                 fan_in, _ = _calculate_fan_in_and_fan_out(shape)
                 if fan_in != 0:
@@ -134,10 +127,11 @@ class _Conv(Cell):
         raise NotImplementedError
 
     def extend_repr(self):
+        bias = self.bias is not None
         s = 'input_channels={}, output_channels={}, kernel_size={}, ' \
             'stride={}, padding={}, dilation={}, ' \
-            'groups={}, has_bias={}, ' \
-            'weight_init={}, bias_init={}, format={}'.format(
+            'groups={}, bias={}, ' \
+            'weight_init={}, bias_init={}'.format(
                 self.in_channels,
                 self.out_channels,
                 self.kernel_size,
@@ -145,10 +139,9 @@ class _Conv(Cell):
                 self.padding,
                 self.dilation,
                 self.groups,
-                self.has_bias,
+                bias,
                 self.weight_init,
-                self.bias_init,
-                self.data_format)
+                self.bias_init)
         return s
 
 
@@ -280,7 +273,6 @@ class Conv2d(_Conv):
         ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
         ValueError: If `padding` is less than 0.
         ValueError: If `padding` is a tuple whose length is not equal to 4.
-        ValueError: If `data_format` is neither 'NCHW' nor 'NHWC'.
 
     Supported Platforms:
         ``Ascend``
@@ -346,3 +338,214 @@ def batchify(input, num_spatial_dims, ops_name):
     if is_batched:
         return input, is_batched
     return input.unsqueeze(0), is_batched
+
+
+class _ConvTranspose(_Conv):
+    """
+    Applies a N-D convolution over an input signal composed of several input planes.
+    """
+    def __init__(self, in_channels, out_channels, kernel_size, stride,
+                 padding, dilation, transposed, output_padding, groups,
+                 bias, padding_mode, dtype=None):
+        if padding_mode != "zeros":
+            raise ValueError(
+                f'Only "zeros" padding mode is supported for {self.__class__.__name__}'
+            )
+        super(_ConvTranspose, self).__init__(in_channels, out_channels, kernel_size,
+                                             stride, padding, dilation, transposed,
+                                             output_padding, groups, bias, padding_mode, dtype)
+
+    def _check_output_size(self, output_size, min_sizes, max_sizes, input_shape):
+        if isconstant(output_size) and isconstant(min_sizes)\
+            and isconstant(max_sizes) and isconstant(input_shape):
+            for i in range(len(output_size)):
+                size = output_size[i]
+                min_size = min_sizes[i]
+                max_size = max_sizes[i]
+                if size < min_size or size > max_size:
+                    raise ValueError(
+                        f"requested an output size of {output_size}, but valid sizes range "
+                        f"from {min_sizes} to {max_sizes} (for an input of {input_shape})"
+                    )
+
+    # dilation being an optional parameter is for backwards
+    # compatibility
+    def _output_padding(self, input, output_size, stride, padding, kernel_size,
+                        num_spatial_dims, dilation):
+        "the computation of output padding"
+        if output_size is None:
+            ret = tuple(self.output_padding)  # converting to list if was not already
+        else:
+            input_rank = rank(input)
+            has_batch_dim = input_rank == (num_spatial_dims + 2)
+            num_non_spatial_dims = 2 if has_batch_dim else 1
+            if isconstant(output_size) and isconstant(input_rank) and\
+                len(output_size) != num_spatial_dims and len(output_size) != (num_non_spatial_dims + num_spatial_dims):
+                raise ValueError(
+                    f"ConvTranspose{num_spatial_dims}D: for {input_rank}D input, ",
+                    f"output_size must have {num_spatial_dims} ",
+                    f"or {num_non_spatial_dims + num_spatial_dims} elements (got {len(output_size)})"
+                )
+            output_size = output_size[-num_spatial_dims:]
+
+            min_sizes = []
+            max_sizes = []
+            for d in range(num_spatial_dims):
+                dim_size = (
+                    (input.shape[d + num_non_spatial_dims] - 1) * stride[d]
+                    - 2 * padding[d]
+                    + (dilation[d] if dilation is not None else 1)
+                    * (kernel_size[d] - 1)
+                    + 1
+                )
+                min_sizes.append(dim_size)
+                max_sizes.append(min_sizes[d] + stride[d] - 1)
+            self._check_output_size(output_size, min_sizes, max_sizes, input.shape)
+
+            res = []
+            for d in range(num_spatial_dims):
+                res.append(output_size[d] - min_sizes[d])
+            ret = res
+        return ret
+
+    def construct(self, *inputs):
+        """Must be overridden by all subclasses."""
+        raise NotImplementedError
+
+
+def _pair(x, arg_name, class_name):
+    if isinstance(x, int):
+        return (x, x)
+    if isinstance(x, (tuple, list)):
+        if len(x) == 1:
+            return (x[0], x[-1])
+        return x
+    raise ValueError(f"For '{class_name}', '{arg_name}'",
+                     f" should be int, tuple or list, but got {x}")
+
+
+class ConvTranspose2d(_ConvTranspose):
+    r"""
+    Applies a 2D transposed convolution operator over an input image
+    composed of several input planes.
+
+    This module can be seen as the gradient of Conv2d with respect to its input.
+    It is also known as a fractionally-strided convolution or
+    a deconvolution (although it is not an actual deconvolution operation as it does
+    not compute a true inverse of convolution).
+
+    The parameters :attr:`kernel_size`, :attr:`stride`, :attr:`padding`, :attr:`output_padding`
+    can either be:
+
+        - a single ``int`` -- in which case the same value is used for the height and width dimensions
+        - a ``tuple`` of two ints -- in which case, the first `int` is used for the height dimension,
+          and the second `int` for the width dimension
+
+    Args:
+        in_channels (int): Number of channels in the input image
+        out_channels (int): Number of channels produced by the convolution
+        kernel_size (int or tuple): Size of the convolving kernel
+        stride (int or tuple, optional): Stride of the convolution. Default: 1
+        padding (int or tuple, optional): ``dilation * (kernel_size - 1) - padding`` zero-padding
+            will be added to both sides of each dimension in the input. Default: 0
+        output_padding (int or tuple, optional): Additional size added to one side
+            of each dimension in the output shape. Default: 0
+        groups (int, optional): Number of blocked connections from input channels to output channels. Default: 1
+        bias (bool, optional): If ``True``, adds a learnable bias to the output. Default: ``True``
+        dilation (int or tuple, optional): Spacing between kernel elements. Default: 1
+
+    Shape:
+        - Input: :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`
+        - Output: :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`, where
+
+        .. math::
+              H_{out} = (H_{in} - 1) \times \text{stride}[0] - 2 \times \text{padding}[0] + \text{dilation}[0]
+                        \times (\text{kernel\_size}[0] - 1) + \text{output\_padding}[0] + 1
+        .. math::
+              W_{out} = (W_{in} - 1) \times \text{stride}[1] - 2 \times \text{padding}[1] + \text{dilation}[1]
+                        \times (\text{kernel\_size}[1] - 1) + \text{output\_padding}[1] + 1
+
+    Attributes:
+        weight (Tensor): the learnable weights of the module of shape
+                         :math:`(\text{in\_channels}, \frac{\text{out\_channels}}{\text{groups}},`
+                         :math:`\text{kernel\_size[0]}, \text{kernel\_size[1]})`.
+                         The values of these weights are sampled from
+                         :math:`\mathcal{U}(-\sqrt{k}, \sqrt{k})` where
+                         :math:`k = \frac{groups}{C_\text{out} * \prod_{i=0}^{1}\text{kernel\_size}[i]}`
+        bias (Tensor):   the learnable bias of the module of shape (out_channels)
+                         If :attr:`bias` is ``True``, then the values of these weights are
+                         sampled from :math:`\mathcal{U}(-\sqrt{k}, \sqrt{k})` where
+                         :math:`k = \frac{groups}{C_\text{out} * \prod_{i=0}^{1}\text{kernel\_size}[i]}`
+
+    Examples::
+        >>> import mindspore as ms
+        >>> from mindspore import mint
+        >>> # With square kernels and equal stride
+        >>> m = mint.nn.ConvTranspose2d(16, 33, 3, stride=2)
+        >>> # non-square kernels and unequal stride and with padding
+        >>> m = mint.nn.ConvTranspose2d(16, 33, (3, 5), stride=(2, 1), padding=(4, 2))
+        >>> input = mint.randn(20, 16, 50, 100)
+        >>> output = m(input)
+        >>> # exact output size can be also specified as an argument
+        >>> input = mint.randn(1, 16, 12, 12)
+        >>> downsample = mint.nn.Conv2d(16, 16, 3, stride=2, padding=1)
+        >>> upsample = mint.nn.ConvTranspose2d(16, 16, 3, stride=2, padding=1)
+        >>> h = downsample(input)
+        >>> h.shape
+        (1, 16, 6, 6)
+        >>> output = upsample(h, output_size=input.shape)
+        >>> output.shape
+        (1, 16, 12, 12)
+
+    .. _`here`:
+        https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
+
+    .. _`Deconvolutional Networks`:
+        https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf
+    """
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding=0, output_padding=0,
+                 groups=1, bias=True, dilation=1, padding_mode="zeros", dtype=None):
+        dtype = mstype.float32 if dtype is None else dtype
+        kernel_size = _pair(kernel_size, "kernel_size", "ConvTranspose2d")
+        stride = _pair(stride, "kernel_size", "ConvTranspose2d")
+        padding = _pair(padding, "kernel_size", "ConvTranspose2d")
+        dilation = _pair(dilation, "kernel_size", "ConvTranspose2d")
+        output_padding = _pair(output_padding, "kernel_size", "ConvTranspose2d")
+        super(ConvTranspose2d, self).__init__(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            dilation,
+            True,
+            output_padding,
+            groups,
+            bias,
+            padding_mode,
+            dtype
+        )
+
+    def construct(self, input, output_size=None):
+        num_spatial_dims = 2
+        output_padding = self._output_padding(
+            input,
+            output_size,
+            self.stride,  # type: ignore[arg-type]
+            self.padding,  # type: ignore[arg-type]
+            self.kernel_size,  # type: ignore[arg-type]
+            num_spatial_dims,
+            self.dilation,  # type: ignore[arg-type]
+        )
+
+        return conv_transpose2d(
+            input,
+            self.weight,
+            self.bias,
+            self.stride,
+            self.padding,
+            output_padding,
+            self.groups,
+            self.dilation,
+        )

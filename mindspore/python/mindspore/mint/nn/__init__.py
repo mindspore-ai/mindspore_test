@@ -53,7 +53,7 @@ from mindspore.nn.layer import ReLU
 # 14
 from mindspore.nn.layer.basic import DropoutExt as Dropout
 # 15
-from mindspore.mint.nn.layer.conv import Conv2d
+from mindspore.mint.nn.layer.conv import Conv2d, ConvTranspose2d
 # 16
 from mindspore.nn.layer import LogSoftmaxExt as LogSoftmax
 # 17
@@ -702,7 +702,7 @@ __all__ = [
     # 16
     'LogSoftmax',
     # 17
-
+    'ConvTranspose2d',
     # 18
     'PReLU',
     # 19

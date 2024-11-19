@@ -51,7 +51,7 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_nearest1d_op, upsample_nearest2d_op, upsample_nearest3d_op,
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
-                                         masked_fill_op, masked_select, ones, flatten_ext)
+                                         masked_fill_op, masked_select, ones, flatten_ext, convolution)
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, ConstantPadND, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask, ConvolutionStr
 from mindspore.common.generator import default_generator
@@ -6199,6 +6199,20 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
                     f"or a string, but got {type(padding)}")
 
 
+def _batchify(input, num_spatial_dims, ops_name):
+    """Conv input batchify"""
+    dim_count_no_batch = num_spatial_dims + 1
+    dim_count_batch = dim_count_no_batch + 1
+    input_rank = F.rank(input)
+    is_batched = (input_rank == dim_count_batch)
+    if  F.isconstant(input_rank) and not (input_rank == dim_count_no_batch or is_batched):
+        raise TypeError(f"For {ops_name}, Expected {dim_count_no_batch}D (unbatched) or {dim_count_batch}D (batched)," \
+                        f"but got input of ndim: {input_rank}D")
+    if is_batched:
+        return input, is_batched
+    return input.unsqueeze(0), is_batched
+
+
 def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1):
     r"""
     Calculates a 2D transposed convolution, which can be regarded as Conv2d for the gradient of the input,
@@ -6264,8 +6278,11 @@ def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_paddi
         >>> print(output.shape)
         (1, 3, 36, 36)
     """
-    conv = _get_cache_prim(Convolution)(stride, padding, dilation, True, output_padding, groups)
-    return conv(input, weight, bias)
+    input_, is_batched = _batchify(input, 2, "conv_transpose2d")
+    output = convolution(input_, weight, bias, stride, padding, dilation, True, output_padding, groups)
+    if is_batched:
+        return output
+    return output.squeeze(0)
 
 
 def hardtanh(input, min_val=-1.0, max_val=1.0):
