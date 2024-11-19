@@ -53,7 +53,7 @@ def repeat_interleave_backward(input_tensor, repeats, dim, output_size=None):
     return input_grad
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize('dim', [0, None])
 def test_repeat_interleave_forward_backward_int(mode, dim):
@@ -83,7 +83,7 @@ def test_repeat_interleave_forward_backward_int(mode, dim):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize('dim', [None, 1])
 def test_repeat_interleave_forward_backward_tensor(mode, dim):
@@ -150,7 +150,7 @@ def test_repeat_interleave_bfloat16(mode, dim):
     assert np.allclose(output.float().asnumpy(), expect, 0.004, 0.004)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_interleave_dynamic_shape_int():
     """
     Feature: Test dynamic shape.

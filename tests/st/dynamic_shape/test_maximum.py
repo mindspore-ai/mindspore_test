@@ -16,10 +16,9 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-
-from mindspore import ops
-import mindspore as ms
 from tests.mark_utils import arg_mark
+import mindspore as ms
+from mindspore import ops
 
 
 @test_utils.run_with_cell
@@ -146,7 +145,7 @@ def test_maximum_op_dynamic_rank(context_mode):
 
 # 反向动态shape有公共问题，待解决后再放开用例
 @pytest.mark.skip
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_maximum_op_dynamic_shape_backward(context_mode):
@@ -176,7 +175,7 @@ def test_maximum_op_dynamic_shape_backward(context_mode):
 
 # 反向动态shape有公共问题，待解决后再放开用例
 @pytest.mark.skip
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_maximum_op_dynamic_rank_backward(context_mode):

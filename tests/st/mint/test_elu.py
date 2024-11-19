@@ -44,7 +44,7 @@ def elu_vmap_func(x, alpha):
     return ms.ops.vmap(elu_forward_func, in_axes=(0, None), out_axes=0)(x, alpha)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_elu_normal(mode):
     """

@@ -73,7 +73,8 @@ def test_relu_grad_ascend():
     run_relu_grad((4, 3), (4, 3), np.int32)
     run_relu_grad((12, 1), (12, 1), np.float16)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_relu_grad_corner_case_ascend():
     """
     Feature: Test the behavor of ReluGrad with NAN input
