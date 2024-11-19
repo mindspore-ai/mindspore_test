@@ -35,7 +35,7 @@ def test_ascend_graph_mode_profiler_with_static_shape_all_parameters_on():
                  in the temporary directory.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_level="O2")
+    context.set_context(jit_config={"jit_level": "O2"})
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(
@@ -112,7 +112,7 @@ def test_ascend_kbk_mode_profiler_with_static_shape_all_parameters_on():
                  in the temporary directory.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    context.set_context(jit_level="O0")
+    context.set_context(jit_config={"jit_level": "O0"})
     with tempfile.TemporaryDirectory() as tmpdir:
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         profiler = Profiler(
@@ -205,6 +205,15 @@ def check_ascend_profiler_all_parameters_on_common_files(profiler_path: str, ran
 
 def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
+
+    ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
+    # check profile_info_*.json has context_mode and jit level
+    profile_info_path = os.path.join(ascend_ms_dir, f"profiler_info_{rank_id}.json")
+    FileChecker.check_json_items(profile_info_path, {
+        "context_mode": 0,
+        "jit_level": "O2",
+    })
+
     ascend_framework_path = glob.glob(f"{profiler_path}/*_ascend_ms/FRAMEWORK")[0]
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
@@ -223,6 +232,15 @@ def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
 
 def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
+
+    ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
+    # check profile_info_*.json has context_mode and jit level
+    profile_info_path = os.path.join(ascend_ms_dir, f"profiler_info_{rank_id}.json")
+    FileChecker.check_json_items(profile_info_path, {
+        "context_mode": 1,
+        "jit_level": "",
+    })
+
     ascend_framework_path = glob.glob(f"{profiler_path}/*_ascend_ms/FRAMEWORK")[0]
 
     # check operate_memory.csv
@@ -234,6 +252,15 @@ def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
 
 def check_ascend_profiler_kbk_files(profiler_path: str, rank_id: int):
     check_ascend_profiler_all_parameters_on_common_files(profiler_path, rank_id)
+
+    ascend_ms_dir = glob.glob(f"{profiler_path}/*_ascend_ms")[0]
+    # check profile_info_*.json has context_mode and jit level
+    profile_info_path = os.path.join(ascend_ms_dir, f"profiler_info_{rank_id}.json")
+    FileChecker.check_json_items(profile_info_path, {
+        "context_mode": 0,
+        "jit_level": "O0",
+    })
+
     ascend_framework_path = glob.glob(f"{profiler_path}/*_ascend_ms/FRAMEWORK")[0]
 
     # check operate_memory.csv

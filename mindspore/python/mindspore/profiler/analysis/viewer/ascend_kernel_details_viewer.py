@@ -23,7 +23,7 @@ from mindspore.profiler.analysis.parser.timeline_assembly_factory.trace_view_con
 from mindspore.profiler.common.constant import OpSummaryHeaders
 from mindspore.profiler.common.path_manager import PathManager
 from mindspore.profiler.common.constant import TimelineLayerName
-from mindspore.profiler.common.constant import ProfilerStepNameConstant
+from mindspore.profiler.common.constant import ProfilerStepNameConstant, JitLevel
 
 
 class AscendKernelDetailsViewer(BaseViewer):
@@ -48,6 +48,7 @@ class AscendKernelDetailsViewer(BaseViewer):
             self.KERNEL_DETAILS_FILE_NAME
         )
         self._is_set_schedule = kwargs.get("is_set_schedule")
+        self._jit_level = kwargs.get("jit_level")
         self.op_summary_headers = None
         self.op_summary = None
         self.trace_container = None
@@ -100,6 +101,8 @@ class AscendKernelDetailsViewer(BaseViewer):
             for header in self.op_summary_headers
             if header not in self.EXCLUDE_HEADERS
         ]
+        if not self._is_set_schedule or self._jit_level == JitLevel.GRAPH_LEVEL:
+            self.op_summary_headers.remove(OpSummaryHeaders.STEP_ID.value)
         # rename headers
         self.kernel_details_headers = [
             self.RENAME_HEADERS.get(header, header)
@@ -111,7 +114,7 @@ class AscendKernelDetailsViewer(BaseViewer):
         Update op summary op name to framework launch op name.
         """
         dev_kernels = self.trace_container.hardware_op_event
-        generate_step_id_dev_event_dict_by_trace_container(self.trace_container)
+        _generate_step_id_by_trace_container(self.trace_container)
 
         if dev_kernels is None or not dev_kernels:
             logger.warning("device kernels is empty")
@@ -155,24 +158,14 @@ class AscendKernelDetailsViewer(BaseViewer):
         self.op_summary[OpSummaryHeaders.OP_NAME.value] = launch_ops
 
         # update op summary step id
-        self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
+        if self._is_set_schedule:
+            if not self._jit_level == JitLevel.GRAPH_LEVEL:
+                self.op_summary[OpSummaryHeaders.STEP_ID.value] = step_ids
 
 
-def generate_step_id_dev_event_dict_by_trace_container(trace_container: TraceViewContainer):
+def _generate_step_id_by_trace_container(trace_container: TraceViewContainer):
     """
-    Generates a dictionary mapping hardware operation events to their corresponding step IDs.
-
-    This method processes events from the trace container to identify step events and kernel launch events.
-    It then associates each hardware operation event with the step ID based on the timestamp.
-
-    Args:
-        trace_container: TraceViewContainer
-
-    Returns:
-        dict: A dictionary with keys step IDs and values as tuples of (first_hardware_op_event, last_hardware_op_event).
-
-    Raises:
-        None
+    Generate the step id of the kernel event.
     """
     # Retrieve all events from the trace container for the Mindspore timeline layer
     events = trace_container.get_pool_by_name(TimelineLayerName.MINDSPORE.value).get_all_events()

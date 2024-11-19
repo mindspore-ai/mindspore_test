@@ -152,6 +152,7 @@ class FileConstant:
     CANN_FILE_REGEX = r"^PROF_\d+_\d+_[0-9a-zA-Z]+"
     FRAMEWORK_DIR = "FRAMEWORK"
 
+
 class ProfilerStepNameConstant:
     """Profiler step name."""
 
@@ -178,3 +179,10 @@ class TimelineLayerName(Enum):
     SIO = "SIO"
     QOS = "QoS"
     OVERLAP_ANALYSIS = "Overlap Analysis"
+
+
+class JitLevel:
+    """jit level"""
+    KBK_LEVEL = "O0"
+    KBK_DVM_LEVEL = "O1"
+    GRAPH_LEVEL = "O2"
