@@ -165,6 +165,7 @@ void SetEdgeForDepend(const NodeUsersMap &node_users, const FuncGraphManagerPtr 
                       const CNodePtr depend_node, bool use_replace) {
   if (use_replace) {
     (void)manager->Replace(comm_node, depend_node);
+    return;
   }
   const auto &users = node_users.find(comm_node);
   if (users == node_users.end()) {
@@ -175,6 +176,9 @@ void SetEdgeForDepend(const NodeUsersMap &node_users, const FuncGraphManagerPtr 
       continue;
     }
     if (!pair.first->cast<CNodePtr>()) {
+      continue;
+    }
+    if (pair.first->cast<CNodePtr>() == depend_node) {
       continue;
     }
     manager->SetEdge(pair.first, pair.second, depend_node);
