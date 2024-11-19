@@ -232,7 +232,7 @@ deprecated_tensor_method_map = {
     # 107 tanh
 
     # 108 tile
-
+    "tile": "deprecated_tensor_tile",
     # 109 tolist
 
     # 110 topk
