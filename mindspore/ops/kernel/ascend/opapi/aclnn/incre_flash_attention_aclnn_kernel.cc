@@ -100,12 +100,12 @@ bool IncreFlashAttentionAscend::Launch(const std::vector<KernelTensor *> &inputs
   auto inner_precise = transform::ConvertKernelTensor<int64_t>(inputs[kIndex20]);
 
   auto actual_seq_lengths_vector = ConvertActualSeqLengthsToVector(inputs[kIndex4]);
+  auto actual_seq_lengths_vector_pair = std::make_pair(actual_seq_lengths_vector, true);
   // For interface aclnnIncreFlashAttentionV4, param inputs[kIndex5] (pse_shift) should follow param value_vector
-  hash_id_ = 0;
   RunOp(stream_ptr, workspace, inputs[kIndex0], key_vector, value_vector, inputs[kIndex5], inputs[kIndex3],
-        actual_seq_lengths_vector, inputs[kIndex6], inputs[kIndex7], inputs[kIndex8], inputs[kIndex9], inputs[kIndex10],
-        inputs[kIndex11], inputs[kIndex12], inputs[kIndex13], inputs[kIndex14], num_heads, scale_value_d,
-        input_layout_str, num_key_value_heads, block_size, inner_precise, outputs[kIndex0]);
+        actual_seq_lengths_vector_pair, inputs[kIndex6], inputs[kIndex7], inputs[kIndex8], inputs[kIndex9],
+        inputs[kIndex10], inputs[kIndex11], inputs[kIndex12], inputs[kIndex13], inputs[kIndex14], num_heads,
+        scale_value_d, input_layout_str, num_key_value_heads, block_size, inner_precise, outputs[kIndex0]);
   return true;
 }
 
