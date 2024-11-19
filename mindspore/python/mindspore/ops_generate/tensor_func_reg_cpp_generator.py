@@ -239,7 +239,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             func_name = func_proto.func_name
             class_name = func_proto.op_proto.op_class.name
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
-            signature_str = self._generate_single_signature_str(func_proto.op_proto)
+            signature_str = self._generate_single_signature_str(func_proto.op_proto, func_proto.kw_only_args)
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
             self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
@@ -418,10 +418,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if not first_sig:
                 sig_str += ',\n'
             first_sig = False
-            sig_str += self._generate_single_signature_str(op_proto)
+            sig_str += self._generate_single_signature_str(op_proto, tensor_proto.kw_only_args)
         return sig_str
 
-    def _generate_single_signature_str(self, op_proto: OpProto) -> str:
+    def _generate_single_signature_str(self, op_proto: OpProto, kw_only_args) -> str:
         """
         Generates a single function signature string for the given operation prototype.
 
@@ -433,6 +433,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         """
         args_str = f'"{op_proto.op_class.name}('
         first_arg = True
+        kw_args_init_flag = False
         for _, arg in enumerate(op_proto.op_args):
             if arg.arg_name in self.input_args_name:
                 continue
@@ -458,6 +459,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 arg_default = str(arg.default)
                 single_arg += '='
                 single_arg += arg_default
+            if kw_only_args and not kw_args_init_flag and arg_name == kw_only_args[0]:
+                single_arg = ", *" + single_arg
+                kw_args_init_flag = True
             args_str += single_arg
         return args_str + ')"'
 

@@ -27,12 +27,14 @@ class OpApiProto:
                  func_name,
                  op_proto,
                  py_method,
+                 kw_only_args,
                  ascend,
                  gpu,
                  cpu):
         self.func_name = func_name
         self.op_proto = op_proto
         self.py_method = py_method
+        self.kw_only_args = kw_only_args
         self.ascend = ascend
         self.gpu = gpu
         self.cpu = cpu
@@ -64,6 +66,19 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
                 raise TypeError(
                     f"For generating tensor functions, op_proto should not be empty. Func name is {func_name}")
             py_method = func_data.get('py_method', '')
+            kw_only_args = func_data.get('kwonlyargs', None)
+            if kw_only_args:
+                kw_only_args = kw_only_args.split(',')
+                op_args = op_proto.op_args
+                kw_args_start_idx = len(op_args) - len(kw_only_args)
+                for idx, kw_arg in enumerate(kw_only_args):
+                    kw_args_idx = kw_args_start_idx + idx
+                    print(op_name)
+                    if kw_args_idx > len(op_args) or kw_arg != op_args[kw_args_idx].arg_name:
+                        raise TypeError(
+                            f"For generating tensor functions, "
+                            f"the order of kwonlyargs should be consistent with the definition in the YAML. "
+                            f"The different position kwonlyargs is {kw_arg}")
             if py_method == '':
                 raise TypeError(
                     f'For generating tensor functions, py method should not be empty. Func name is {func_name}')
@@ -84,7 +99,7 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
                     f"'method, function', or 'function, method'. File name is {func_name}.yaml")
 
             proto = OpApiProto(func_name=func_name, op_proto=op_proto,
-                               py_method=py_method, ascend=ascend, gpu=gpu, cpu=cpu)
+                               py_method=py_method, kw_only_args=kw_only_args, ascend=ascend, gpu=gpu, cpu=cpu)
             if 'method' in interface:
                 tensor_method_protos[func_name].append(proto)
             if 'function' in interface:

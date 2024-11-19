@@ -38,6 +38,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
         self.class_to_method_template = template.Template("{\"${class_name}\", \"${method_name}\"}")
         self.functional_map_template = template.Template("{\"${func_api_name}\", {${class_to_method_str}}},")
         self.k_prim_op_template = template.Template("prim::kPrim${camel_op_name}")
+        self.tensor_method_kwonlyargs_map_template = template.Template("{\"${op_name}\", {${kw_only_args_list}}},")
         self.deprecated_method_decl_template = template.Template(
             "auto ${dep_op_name} = std::make_shared<prim::DeprecatedTensorMethod>(\"${dep_op_name}\", \"${op_name}\");")
         self.functional_method_map_template = template.Template("{\"${op_name}\", {${sort_func_method_list_str}}},")
@@ -77,6 +78,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
         dep_method_decl_list = self._get_dep_method_decl_list(tensor_method_protos_data)
         tensor_method_overload_list = self._get_functional_method_map(tensor_method_protos_data, alias_func_mapping)
         mint_overload_list = self._get_functional_mint_map(mint_func_protos_data, alias_func_mapping)
+        tensor_method_kw_only_args_list = self._get_tensor_method_kwonlyargs_map(tensor_method_protos_data)
+        mint_kw_only_args_list = self._get_mint_kwonlyargs_map(mint_func_protos_data, alias_func_mapping)
         funcs_sig_map_list = (
             self._get_func_sigs_list(tensor_method_protos_data, alias_func_mapping, is_tensor_method=True))
         funcs_mint_sigs_map = (
@@ -85,6 +88,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
             self.FUNCTIONAL_MAP_CC_TEMPLATE.replace(deprecated_method_decl=dep_method_decl_list,
                                                     tensor_method_map=tensor_method_overload_list,
                                                     mint_map=mint_overload_list,
+                                                    tensor_method_kwonlyargs_map=tensor_method_kw_only_args_list,
+                                                    mint_kwonlyargs_map=mint_kw_only_args_list,
                                                     tensor_method_sigs_map=funcs_sig_map_list,
                                                     mint_sigs_map=funcs_mint_sigs_map))
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
@@ -128,27 +133,28 @@ class FunctionalMapCppGenerator(BaseGenerator):
         sig_str = '{' + f'\"{func_api_name}\",\n ' + '{'
         first_sig = True
         for tensor_proto in func_protos:
-            op_proto = tensor_proto.op_proto
             if not first_sig:
                 sig_str += ',\n'
             first_sig = False
-            sig_str += self._generate_single_signature_str(func_api_name, op_proto, is_tensor_method)
+            sig_str += self._generate_single_signature_str(func_api_name, tensor_proto, is_tensor_method)
         sig_str += '}\n},'
         return sig_str
 
-    def _generate_single_signature_str(self, func_api_name, op_proto, is_tensor_method) -> str:
+    def _generate_single_signature_str(self, func_api_name, tensor_proto, is_tensor_method) -> str:
         """
         Generates a single function signature string for the given operation prototype.
 
         Args:
             func_api_name (str): The name of the API to generate signatures for.
-            op_proto (OpProto): Operation prototype to generate the signature for.
+            tensor_proto (OpProto): TensorFuncProto objects representing the function prototypes.
 
         Returns:
             str: Generated function signature string.
         """
+        op_proto = tensor_proto.op_proto
         args_str = f'"Tensor.{func_api_name}(' if is_tensor_method else f'"{func_api_name}('
         first_arg = True
+        kw_args_init_flag = False
         arg_valid_types = []
         for _, arg in enumerate(op_proto.op_args):
             arg_name = arg.arg_name
@@ -173,7 +179,11 @@ class FunctionalMapCppGenerator(BaseGenerator):
                 args_str += single_arg
                 first_arg = False
             else:
-                args_str += ", " + single_arg
+                if tensor_proto.kw_only_args and not kw_args_init_flag and arg_name == tensor_proto.kw_only_args[0]:
+                    args_str += ", *, " + single_arg
+                    kw_args_init_flag = True
+                else:
+                    args_str += ", " + single_arg
             arg_valid_types = []
         return args_str + ')"'
 
@@ -298,3 +308,60 @@ class FunctionalMapCppGenerator(BaseGenerator):
                     self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
                                                                 sort_func_method_list_str=mint_func_list))
         return mint_func_decl_list
+
+    def _get_and_append_single_op_kw_only_args_list(self, func_api_name, func_protos, single_op_kw_only_args_list):
+        """
+        Extracts keyword-only arguments from a list of function prototypes and appends them to a list.
+
+        Args:
+            func_api_name (str): The name of the function API.
+            func_protos (list): A list of function prototypes.
+            single_op_kw_only_args_list (list): The list to append the keyword-only arguments to.
+
+        Returns:
+            None
+        """
+        for func_proto in func_protos:
+            kw_only_args = func_proto.kw_only_args
+            if kw_only_args:
+                kw_only_args_list = ", ".join(f"\"{kw_arg}\"" for kw_arg in kw_only_args)
+                single_op_kw_only_args_list.append(
+                    self.tensor_method_kwonlyargs_map_template.replace(op_name=func_api_name,
+                                                                       kw_only_args_list=kw_only_args_list)
+                )
+
+    def _get_tensor_method_kwonlyargs_map(self, tensor_method_protos_data):
+        """
+        Generates a list of keyword-only arguments for tensor methods.
+
+        Args:
+            tensor_method_protos_data (dict): A dictionary of tensor method prototype data.
+
+        Returns:
+            list: A list of formatted strings representing the keyword-only arguments.
+        """
+        tensor_method_kw_only_args_list = []
+        for func_api_name, func_protos in tensor_method_protos_data.items():
+            self._get_and_append_single_op_kw_only_args_list(func_api_name, func_protos, tensor_method_kw_only_args_list)
+        return tensor_method_kw_only_args_list
+
+    def _get_mint_kwonlyargs_map(self, mint_func_protos_data, alias_func_mapping):
+        """
+        Generates a list of keyword-only arguments for mint functions.
+
+        Args:
+            mint_func_protos_data (dict): A dictionary of mint function prototype data.
+            alias_func_mapping (dict): A dictionary mapping original function names to alias function names.
+
+        Returns:
+            list: A list of formatted strings representing the keyword-only arguments.
+        """
+        mint_kw_only_args_list = []
+        for func_api_name, func_protos in mint_func_protos_data.items():
+            mint_func_list = self._get_and_append_single_op_kw_only_args_list(func_api_name, func_protos, mint_kw_only_args_list)
+
+            if mint_func_list and func_api_name in alias_func_mapping:
+                mint_kw_only_args_list.append(
+                    self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
+                                                                sort_func_method_list_str=mint_func_list))
+        return mint_kw_only_args_list

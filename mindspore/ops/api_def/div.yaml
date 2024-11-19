@@ -8,6 +8,7 @@ div:
 
   - op_yaml: divmod_op.yaml
     py_method: tensor_div
+    kwonlyargs: rounding_mode
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
