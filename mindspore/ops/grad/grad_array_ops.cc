@@ -1139,8 +1139,7 @@ REG_BPROP_BUILDER("StackExt").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODYFUN
   if (axis < 0) {
     axis += SizeToLong(input_shape.size());
   }
-  auto num = input_shape[axis];
-  auto ret = ib->Emit("Unstack", {dout}, {{"num", MakeValue(num)}, {"axis", MakeValue(axis)}});
+  auto ret = ib->Emit("UnstackExt", {dout, ib->Value(axis)});
   return {ret, ib->OutZeros(axis_node)};
 });
 
