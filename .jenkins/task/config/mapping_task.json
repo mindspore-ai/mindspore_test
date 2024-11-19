@@ -24,6 +24,7 @@
   },
   "Compile_CPU_Win": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -99,6 +100,7 @@
   },
   "Compile_Lite_Windows_AVX": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -136,6 +138,7 @@
   },
   "Compile_CPU_X86_MacOS": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -207,6 +210,7 @@
   },
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -310,6 +314,7 @@
   },
   "Compile_GPU_X86_CentOS_Cuda11.6": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -390,6 +395,7 @@
   },
   "Compile_GPU_X86_CentOS_Cuda10": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -466,6 +472,7 @@
   },
   "Compile_CPU_X86_CentOS": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -544,6 +551,7 @@
   },
   "Compile_UT": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
@@ -702,6 +710,7 @@
   },
   "Compile_Lite_X86_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -777,6 +786,7 @@
   },
   "Compile_Lite_ARM64_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
       "mindspore/ccsrc/backend/common/mem_reuse",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -944,6 +954,7 @@
   },
   "Compile_Lite_ARM64_Linux": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -987,6 +998,7 @@
   },
   "Compile_Lite_X86": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -1092,6 +1104,7 @@
   "Compile_Lite_X86_AVX": {
     "DIR_ARRAY": [
       "include/api",
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -1179,6 +1192,7 @@
   },
   "Compile_Lite_X86_ASAN": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -1225,6 +1239,7 @@
   },
   "Compile_Lite_X86_SD3403": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -1271,6 +1286,7 @@
   },
   "Compile_Lite_X86_KERNEL_EXECUTOR": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
@@ -1336,6 +1352,7 @@
   },
   "Compile_Lite_X86_3516D": {
     "DIR_ARRAY": [
+      "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
       "mindspore/ccsrc/backend/operator",
       "mindspore/ccsrc/common/debug",
