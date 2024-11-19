@@ -68,7 +68,7 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     broadcast_to, strided_slice, ones, zeros, max_, min_, select, zero_, view_as, type_as, inplace_fill_tensor, \
     inplace_fill_scalar, expand_as
 from mindspore.ops.auto_generate import tensor_scatter_elements as tensor_scatter_elements_ext
-from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op
+from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, gather_d_op, slice_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
 
@@ -117,7 +117,7 @@ tensor_scatter_mul_ = P.TensorScatterMul()
 tensor_scatter_sub_ = P.TensorScatterSub()
 tensor_select_ = P.Select()
 tensor_shape_ = P.TensorShape()
-tensor_slice = P.Slice()
+tensor_slice = slice_op
 tile_ = P.Tile()
 transpose_ = P.Transpose()
 tuple_to_array_ = P.TupleToArray()

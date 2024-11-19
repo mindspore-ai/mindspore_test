@@ -27,7 +27,6 @@
 #include "infer/ops_func_impl/incre_flash_attention.h"
 #include "infer/ops_func_impl/prompt_flash_attention.h"
 #include "infer/cxx_api/pad_fusion.h"
-#include "infer/slice.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "infer/custom.h"

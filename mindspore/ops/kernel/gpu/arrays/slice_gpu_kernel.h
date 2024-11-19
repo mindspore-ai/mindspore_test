@@ -22,7 +22,6 @@
 #include <algorithm>
 #include <memory>
 #include <map>
-#include "mindspore/ops/infer/slice.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_class/slice_helper.h"
