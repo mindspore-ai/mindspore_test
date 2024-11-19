@@ -1,7 +1,7 @@
 mindspore.Tensor.choose
 =======================
 
-.. py:method:: mindspore.Tensor.choose(choices, mode='clip')
+.. py:method:: Tensor.choose(choices, mode='clip')
 
     根据原始Tensor数组和一个索引数组构造一个新的Tensor。
 

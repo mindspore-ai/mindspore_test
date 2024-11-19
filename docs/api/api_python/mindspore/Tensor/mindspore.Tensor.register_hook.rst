@@ -1,7 +1,7 @@
 mindspore.Tensor.register_hook
 ==============================
 
-.. py:method:: mindspore.Tensor.register_hook(hook_fn)
+.. py:method:: Tensor.register_hook(hook_fn)
 
     设置Tensor对象的反向hook函数。
 

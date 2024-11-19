@@ -1,7 +1,7 @@
 mindspore.Tensor.rsqrt
 =======================
 
-.. py:method:: mindspore.Tensor.rsqrt()
+.. py:method:: Tensor.rsqrt()
 
     逐元素计算输入Tensor元素的平方根倒数。
 

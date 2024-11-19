@@ -1,7 +1,7 @@
 mindspore.Tensor.reshape
 ========================
 
-.. py:method:: mindspore.Tensor.reshape(*shape)
+.. py:method:: Tensor.reshape(*shape)
 
     基于给定的 `shape` ，对当前Tensor进行重新排列。
 

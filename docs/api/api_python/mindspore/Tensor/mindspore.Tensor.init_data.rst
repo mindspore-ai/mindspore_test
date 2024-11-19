@@ -1,7 +1,7 @@
 mindspore.Tensor.init_data
 ==========================
 
-.. py:method:: mindspore.Tensor.init_data(slice_index=None, shape=None, opt_shard_group=None)
+.. py:method:: Tensor.init_data(slice_index=None, shape=None, opt_shard_group=None)
 
     获取此Tensor的数据。
 

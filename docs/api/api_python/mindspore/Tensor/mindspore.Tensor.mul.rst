@@ -1,7 +1,7 @@
 mindspore.Tensor.mul
 ==========================
 
-.. py:method:: mindspore.Tensor.mul(value)
+.. py:method:: Tensor.mul(value)
 
     两个Tensor逐元素相乘。
 

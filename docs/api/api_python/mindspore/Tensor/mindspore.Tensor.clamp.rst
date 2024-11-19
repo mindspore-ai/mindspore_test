@@ -1,7 +1,7 @@
 mindspore.Tensor.clamp
 =======================
 
-.. py:method:: mindspore.Tensor.clamp(min=None, max=None)
+.. py:method:: Tensor.clamp(min=None, max=None)
 
     将输入Tensor的值裁剪到指定的最小值和最大值之间。
 

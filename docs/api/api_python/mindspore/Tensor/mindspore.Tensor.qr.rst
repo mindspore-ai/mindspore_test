@@ -1,6 +1,6 @@
 mindspore.Tensor.qr
 ===================
 
-.. py:method:: mindspore.Tensor.qr(some=True)
+.. py:method:: Tensor.qr(some=True)
 
     详情请参考 :func:`mindspore.ops.qr`。

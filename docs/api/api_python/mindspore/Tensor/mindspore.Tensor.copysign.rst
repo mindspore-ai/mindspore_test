@@ -1,6 +1,6 @@
 mindspore.Tensor.copysign
 ==========================
 
-.. py:method:: mindspore.Tensor.copysign(other)
+.. py:method:: Tensor.copysign(other)
 
     详情请参考 :func:`mindspore.ops.copysign`。

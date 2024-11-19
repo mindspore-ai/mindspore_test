@@ -1,7 +1,7 @@
 mindspore.Tensor.round
 ======================
 
-.. py:method:: mindspore.Tensor.round(decimals=0)
+.. py:method:: Tensor.round(decimals=0)
 
     对输入数据进行四舍五入到最接近的整数数值。
 

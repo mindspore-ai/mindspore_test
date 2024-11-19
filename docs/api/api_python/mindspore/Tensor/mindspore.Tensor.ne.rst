@@ -1,7 +1,7 @@
 mindspore.Tensor.ne
 ===================
 
-.. py:method:: mindspore.Tensor.ne(other)
+.. py:method:: Tensor.ne(other)
 
     计算两个Tensor是否不相等。
 

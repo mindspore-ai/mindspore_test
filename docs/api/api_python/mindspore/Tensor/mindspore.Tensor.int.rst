@@ -1,7 +1,7 @@
 mindspore.Tensor.int
 ====================
 
-.. py:method:: mindspore.Tensor.int()
+.. py:method:: Tensor.int()
 
     将输入Tensor转换为 `int32` 类型，其中Tensor中的值为浮点数时，则会丢弃小数部分。
 

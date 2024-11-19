@@ -1,7 +1,7 @@
 mindspore.Tensor.pow
 ====================
 
-.. py:method:: mindspore.Tensor.pow(exponent)
+.. py:method:: Tensor.pow(exponent)
 
     计算 `self` 中每个元素的 `exponent` 次幂。
 

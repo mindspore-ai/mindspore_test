@@ -1,7 +1,7 @@
 mindspore.Tensor.trace
 ======================
 
-.. py:method:: mindspore.Tensor.trace(offset=0, axis1=0, axis2=1, dtype=None)
+.. py:method:: Tensor.trace(offset=0, axis1=0, axis2=1, dtype=None)
 
     在Tensor的对角线方向上的总和。
 
@@ -18,4 +18,4 @@ mindspore.Tensor.trace
         - **ValueError** - 输入Tensor的维度少于2。
 
     其他API参考：
-        - :func:`mindspore.Tensor.diagonal`：返回特定对角线方向上的数据。
+        - :func:`Tensor.diagonal`：返回特定对角线方向上的数据。

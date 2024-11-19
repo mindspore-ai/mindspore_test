@@ -1,7 +1,7 @@
 mindspore.Tensor.float
 ======================
 
-.. py:method:: mindspore.Tensor.float()
+.. py:method:: Tensor.float()
 
     将输入Tensor转换为 `float32` 类型。
 

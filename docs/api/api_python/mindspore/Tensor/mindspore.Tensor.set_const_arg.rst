@@ -1,7 +1,7 @@
 mindspore.Tensor.set_const_arg
 ==============================
 
-.. py:method:: mindspore.Tensor.set_const_arg(const_arg=True)
+.. py:method:: Tensor.set_const_arg(const_arg=True)
 
     指定该Tensor在作为网络入参时是否是一个常量。
 

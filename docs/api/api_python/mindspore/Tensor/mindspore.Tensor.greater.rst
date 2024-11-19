@@ -1,7 +1,7 @@
 mindspore.Tensor.greater
 ========================
 
-.. py:method:: mindspore.Tensor.greater(other)
+.. py:method:: Tensor.greater(other)
 
     按元素比较输入参数 :math:`self > other` 的值，输出结果为bool值。
 

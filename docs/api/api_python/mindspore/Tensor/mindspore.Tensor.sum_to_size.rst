@@ -1,7 +1,7 @@
 mindspore.Tensor.sum_to_size
 ============================
 
-.. py:method:: mindspore.Tensor.sum_to_size(*size)
+.. py:method:: Tensor.sum_to_size(*size)
 
     将原Tensor按照指定 `size` 进行求和。`size` 必须可以扩展到Tensor的shape。
 

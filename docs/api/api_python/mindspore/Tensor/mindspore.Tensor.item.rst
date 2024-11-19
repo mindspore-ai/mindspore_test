@@ -1,7 +1,7 @@
 mindspore.Tensor.item
 =====================
 
-.. py:method:: mindspore.Tensor.item(index=None)
+.. py:method:: Tensor.item(index=None)
 
     获取Tensor中指定索引的元素。
 

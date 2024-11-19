@@ -1,7 +1,7 @@
 mindspore.Tensor.min
 ====================
 
-.. py:method:: mindspore.Tensor.min(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False)
+.. py:method:: Tensor.min(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False)
 
     返回Tensor元素中的最小值或沿 `axis` 轴方向上的最小值。
 
@@ -24,6 +24,6 @@ mindspore.Tensor.min
         - **TypeError** - 参数的数据类型与上述不一致。
 
     其他API参考：
-        - :func:`mindspore.Tensor.argmin` ：返回沿轴最小值的索引。
-        - :func:`mindspore.Tensor.argmax` ：返回沿轴最大值的索引。
-        - :func:`mindspore.Tensor.max` ：返回整个Tensor最大值或沿轴最大值。
+        - :func:`Tensor.argmin` ：返回沿轴最小值的索引。
+        - :func:`Tensor.argmax` ：返回沿轴最大值的索引。
+        - :func:`Tensor.max` ：返回整个Tensor最大值或沿轴最大值。

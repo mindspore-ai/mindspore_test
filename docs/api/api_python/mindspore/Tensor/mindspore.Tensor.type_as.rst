@@ -1,7 +1,7 @@
 mindspore.Tensor.type_as
 ========================
 
-.. py:method:: mindspore.Tensor.type_as(other)
+.. py:method:: Tensor.type_as(other)
 
     将Tensor的dtype转换成 `other` 的dtype。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.bool
 =====================
 
-.. py:method:: mindspore.Tensor.bool()
+.. py:method:: Tensor.bool()
 
     将输入Tensor转换为 `bool` 类型，其中Tensor中的值为0时，则为False；非0时，则为True。
 

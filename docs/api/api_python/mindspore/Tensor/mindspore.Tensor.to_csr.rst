@@ -1,7 +1,7 @@
 mindspore.Tensor.to_csr
 =======================
 
-.. py:method:: mindspore.Tensor.to_csr()
+.. py:method:: Tensor.to_csr()
 
     将常规Tensor转为稀疏化的CSRTensor。
 

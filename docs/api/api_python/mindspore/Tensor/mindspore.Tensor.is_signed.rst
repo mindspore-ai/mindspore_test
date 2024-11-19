@@ -1,7 +1,7 @@
 mindspore.Tensor.is_signed
 ===========================
 
-.. py:method:: mindspore.Tensor.is_signed()
+.. py:method:: Tensor.is_signed()
 
     判断输入Tensor的dtype是否是有符号数类型。
 

@@ -8,7 +8,7 @@ mindspore.common.initializer
     初始化器的抽象基类。
 
     .. note::
-        Initializer本意是用于在并行模式中延迟Tensor的数据的初始化，而非初始化Tensor。如果必须使用Initializer来初始化Tensor，大多情况下需要在初始化之后使用 :func:`mindspore.Tensor.init_data` 。
+        Initializer本意是用于在并行模式中延迟Tensor的数据的初始化，而非初始化Tensor。如果必须使用Initializer来初始化Tensor，大多情况下需要在初始化之后使用 :func:`Tensor.init_data` 。
 
     参数：
         - **kwargs** (dict) - `Initializer` 的关键字参数。
