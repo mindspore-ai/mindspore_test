@@ -109,7 +109,7 @@ or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
     logger.info("Finish _tft_repair_callback")
 
 
-def _tft_clean_callback(is_uce_error, ctx):
+def _tft_clean_callback(is_uce_error, args, ctx):
     """ Callback used for TFT clean function."""
     logger.info("Enter _tft_clean_callback")
     ret = 0
@@ -130,7 +130,7 @@ def _tft_clean_callback(is_uce_error, ctx):
     return ret
 
 
-def _tft_stop_callback(cb_ctx):
+def _tft_stop_callback(args, cb_ctx):
     """ Callback used for TFT stop function."""
     logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
     _stop_device(cb_ctx.device_id)
@@ -300,7 +300,7 @@ class TFTRegister(Callback):
         replica_info = [
             {
                 "type": 1,
-                "rank_list": dp,
+                "rank_list": list(dp),
                 "replica_cnt": len(dp),
                 "replica_shift": 0
             }
