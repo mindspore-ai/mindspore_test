@@ -14,7 +14,6 @@
 # ==============================================================================
 import os
 import re
-import pytest
 import numpy as np
 import mindspore as ms
 import mindspore.ops.operations as P

@@ -16,7 +16,6 @@ from tests.mark_utils import arg_mark
 
 import sys
 import numpy as np
-import pytest
 import mindspore.nn as nn
 import mindspore.context as context
 import mindspore.common.dtype as mstype

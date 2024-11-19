@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 
-import pytest
 from mindspore.nn import Cell
 from mindspore.common import Tensor, Parameter
 from mindspore import context, ops, lazy_inline, nn, no_inline, jit
