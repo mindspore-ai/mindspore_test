@@ -69,6 +69,9 @@ def _enable_all_finite():
         if not checker.check_custom_version():
             logger.debug("Disable AllFinite due to version check failure.")
             return False
+    else:
+        return False
+
     runtime_conf = os.environ.get('MS_DEV_RUNTIME_CONF')
     global_jit_config = context.get_jit_config()
     if runtime_conf is not None and ("all_finite:True" in runtime_conf or "all_finite:true" in runtime_conf):
@@ -82,7 +85,7 @@ def _enable_all_finite():
     if global_jit_config:
         logger.debug("Current global jit config is: {}".format(global_jit_config["jit_level"]))
         return global_jit_config["jit_level"] == "O0" or global_jit_config["jit_level"] == "O1"
-    return False
+    return True
 
 
 def _grad_unscale(scale, grad):

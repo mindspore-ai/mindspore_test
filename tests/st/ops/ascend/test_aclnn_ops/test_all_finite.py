@@ -23,7 +23,7 @@ from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):
-    def __init__(self, ):
+    def __init__(self):
         super(Net, self).__init__()
         self.all_finite = AllFinite()
 
@@ -33,7 +33,7 @@ class Net(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_all_finite(mode):
     """
     Feature: Add all_finite ops.
@@ -77,7 +77,7 @@ def test_all_finite(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE])
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_all_finite_small(mode):
     """
     Feature: Add all_finite ops.
@@ -91,54 +91,54 @@ def test_all_finite_small(mode):
     in1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     fp16_in = Tensor(in1, ms.float16)
-    output = net(fp16_in)
+    output = net([fp16_in])
     assert output == False
 
     fp32_in = Tensor(in1, ms.float32)
-    output = net(fp32_in)
+    output = net([fp32_in])
     assert output == False
 
     bf16_in = Tensor(in1, ms.bfloat16)
-    output = net(bf16_in)
+    output = net([bf16_in])
     assert output == False
 
     in1[5] = np.inf
 
     fp16_in = Tensor(in1, ms.float16)
-    output = net(fp16_in)
+    output = net([fp16_in])
     assert output == True
 
     fp32_in = Tensor(in1, ms.float32)
-    output = net(fp32_in)
+    output = net([fp32_in])
     assert output == True
 
     bf16_in = Tensor(in1, ms.bfloat16)
-    output = net(bf16_in)
+    output = net([bf16_in])
     assert output == True
 
     in2 = [2]
     fp16_in = Tensor(in2, ms.float16)
-    output = net(fp16_in)
+    output = net([fp16_in])
     assert output == False
 
     fp32_in = Tensor(in2, ms.float32)
-    output = net(fp32_in)
+    output = net([fp32_in])
     assert output == False
 
     bf16_in = Tensor(in2, ms.bfloat16)
-    output = net(bf16_in)
+    output = net([bf16_in])
     assert output == False
 
     in2[0] = np.nan
 
     fp16_in = Tensor(in2, ms.float16)
-    output = net(fp16_in)
+    output = net([fp16_in])
     assert output == True
 
     fp32_in = Tensor(in2, ms.float32)
-    output = net(fp32_in)
+    output = net([fp32_in])
     assert output == True
 
     bf16_in = Tensor(in2, ms.bfloat16)
-    output = net(bf16_in)
+    output = net([bf16_in])
     assert output == True
