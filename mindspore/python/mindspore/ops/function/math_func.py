@@ -52,7 +52,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
-                                         frac_ext, pow_tensor_scalar_op, not_equal_op, isinf)
+                                         frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op)
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
@@ -5265,6 +5265,53 @@ def addmv(input, mat, vec, *, beta=1, alpha=1):
         beta = ops.scalar_cast(beta, mstype.int64)
     out = beta * input + alpha * mv(mat, vec)
     return out
+
+
+def addmv_ext(input, mat, vec, *, beta=1, alpha=1):
+    """
+    Performs a matrix-vector product of `mat` and `vec`, and add the input vector `input` to the final result.
+
+    If `mat` is a tensor of size :math:`(N, M)` , `vec` is a 1-D tensor of size :math:`M` , then `input` must be
+    broadcastable with a 1-D tensor of size :math:`N` . In this case, `output` is a 1-D Tensor of size :math:`N` .
+
+    .. math::
+        output = \beta input + \alpha (mat @ vec)
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Vector to be added.
+        mat (Tensor): The first tensor needs to be multiplied.
+        vec (Tensor): The second tensor needs to be multiplied.
+
+    Keyword Args:
+        beta (Union[float, int], optional): Coefficient of `input`, Default: ``1``.
+        alpha (Union[float, int], optional): Coefficient of :math:`mat @ vec` , Default: ``1``.
+
+    Returns:
+        Tensor, with a shape of :math:`(N,)` , and its dtype is the same as `input`.
+
+    Raises:
+        TypeError: If dtype of `input`, `mat`, `vec` is not tensor.
+        TypeError: If dtype of `mat`, `vec` are not the same.
+        ValueError: If `mat` is not a 2-D tensor.
+        ValueError: If `vec` is not a 1-D tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.array([2., 3.]).astype(np.float32))
+        >>> mat = Tensor(np.array([[2., 5., 3.], [4., 2., 2.]]).astype(np.float32))
+        >>> vec = Tensor(np.array([3., 2., 4.]).astype(np.float32))
+        >>> output = mint.addmv(input, mat, vec)
+        >>> print(output)
+        [30. 27.]
+    """
+    return addmv_op(input, mat, vec, beta, alpha)
 
 
 def adjoint(x):
