@@ -5,6 +5,8 @@
       ".clang-format",
       "docker",
       "docs",
+      "mindspore/lite/examples",
+      "mindspore/lite/python/api",
       "README.md",
       "Readme.md",
       "readme.md",

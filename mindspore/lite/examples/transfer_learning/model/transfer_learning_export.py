@@ -14,6 +14,7 @@
 # ============================================================================
 """transfer_learning_export."""
 
+import os
 import numpy as np
 import mindspore as M
 from mindspore.nn import Cell
@@ -37,8 +38,9 @@ class TransferNet(Cell):
 BACKBONE = effnet(num_classes=1000)
 load_checkpoint("efficient_net_b0.ckpt", BACKBONE)
 
-M.context.set_context(mode=M.context.GRAPH_MODE,
-                      device_target="GPU", save_graphs=False)
+M.context.set_context(mode=M.context.GRAPH_MODE, device_target="GPU")
+os.environ["MS_DEV_SAVE_GRAPHS"] = "0"
+
 BATCH_SIZE = 16
 X = M.Tensor(np.ones((BATCH_SIZE, 3, 224, 224)), M.float32)
 export(BACKBONE, X, file_name="transfer_learning_tod_backbone", file_format='MINDIR')

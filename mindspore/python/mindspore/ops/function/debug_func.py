@@ -154,7 +154,8 @@ def tensordump(file_name, tensor, mode='out'):
         ...         out2 = self.matmul2(out1, b)
         ...         return out2
         ...
-        >>> ms.set_context(mode=ms.GRAPH_MODE, save_graphs=2)
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> os.environ["MS_DEV_SAVE_GRAPHS"] = "2"
         >>> context.set_auto_parallel_context(parallel_mode='semi_auto_parallel', full_batch=True)
         >>> strategy1 = ((1, 2), (2, 1))
         >>> strategy2 = ((1, 2), (2, 1))

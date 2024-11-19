@@ -15,6 +15,7 @@
 """emnist_transfer_export."""
 
 import sys
+import os
 import numpy as np
 from train_utils import save_inout_transfer, train_wrap
 from emoji_model import EmojiModel
@@ -22,7 +23,8 @@ import mindspore.common.dtype as mstype
 from mindspore import context, Tensor, nn
 from mindspore.train.serialization import export
 
-context.set_context(mode=context.GRAPH_MODE, device_target="GPU", save_graphs=False)
+context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
+os.environ["MS_DEV_SAVE_GRAPHS"] = "0"
 
 BATCH = 1
 CLS_NUM = 10
