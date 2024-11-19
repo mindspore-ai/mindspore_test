@@ -434,48 +434,55 @@ class ConvTranspose2d(_ConvTranspose):
     a deconvolution (although it is not an actual deconvolution operation as it does
     not compute a true inverse of convolution).
 
-    The parameters :attr:`kernel_size`, :attr:`stride`, :attr:`padding`, :attr:`output_padding`
-    can either be:
+    The parameters `kernel_size`, `stride`, `padding`, `output_padding` can either be:
 
-        - a single ``int`` -- in which case the same value is used for the height and width dimensions
-        - a ``tuple`` of two ints -- in which case, the first `int` is used for the height dimension,
-          and the second `int` for the width dimension
+    - a single ``int`` -- in which case the same value is used for the height and width dimensions
+    - a ``tuple`` of two ints -- in which case, the first `int` is used for the height dimension,
+      and the second `int` for the width dimension
 
     Args:
-        in_channels (int): Number of channels in the input image
-        out_channels (int): Number of channels produced by the convolution
-        kernel_size (int or tuple): Size of the convolving kernel
-        stride (int or tuple, optional): Stride of the convolution. Default: 1
-        padding (int or tuple, optional): ``dilation * (kernel_size - 1) - padding`` zero-padding
-            will be added to both sides of each dimension in the input. Default: 0
-        output_padding (int or tuple, optional): Additional size added to one side
-            of each dimension in the output shape. Default: 0
-        groups (int, optional): Number of blocked connections from input channels to output channels. Default: 1
-        bias (bool, optional): If ``True``, adds a learnable bias to the output. Default: ``True``
-        dilation (int or tuple, optional): Spacing between kernel elements. Default: 1
+        in_channels (int): Number of channels in the input image.
+        out_channels (int): Number of channels produced by the convolution.
+        kernel_size (Union[int, tuple(int)]): Size of the convolving kernel.
+        stride (Union[int, tuple(int)], optional): Stride of the convolution. Default: ``1`` .
+        padding (Union[int, tuple(int)], optional): :math:`dilation * (kernel_size - 1) - padding` zero-padding
+            will be added to both sides of each dimension in the input. Default: ``0`` .
+        output_padding (Union[int, tuple(int)], optional): Additional size added to one side
+            of each dimension in the output shape. Default: ``0`` .
+        groups (int, optional): Number of blocked connections from input channels to output channels. Default: ``1``
+        bias (bool, optional): If ``True``, adds a learnable bias to the output. Default: ``True`` .
+        dilation (Union[int, tuple(int)], optional): Spacing between kernel elements. Default: ``1`` .
+        padding_mode (str, optional): Specifies the padding mode with a padding value. For now, it can only be
+            set to: ``"zeros"``. Default: ``"zeros"`` .
+        dtype (mindspore.dtype, optional): Dtype of Parameters. Default: ``None`` , when it's ``None`` ,
+            the dtype of Parameters would be mstype.float32.
 
-    Shape:
-        - Input: :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})`
-        - Output: :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`, where
+    Attributes:
+        - **weigh** (Parameter) - the learnable weights of the module of shape
+          :math:`(\text{in_channels}, \frac{\text{out_channels}}{\text{groups}},
+          \text{kernel_size[0]}, \text{kernel_size[1]})` . The values of these weights are sampled from
+          :math:`\mathcal{U}(-\sqrt{k}, \sqrt{k})` where
+          :math:`k = \frac{groups}{C_\text{out} * \prod_{i=0}^{1}\text{kernel_size}[i]}`
+        - **bias** (Parameter) - the learnable bias of the module of shape :math:`(\text{out_channels},)` .
+          If :attr:`bias` is ``True``, then the values of these weights are sampled from
+          :math:`\mathcal{U}(-\sqrt{k}, \sqrt{k})` where
+          :math:`k = \frac{groups}{C_\text{out} * \prod_{i=0}^{1}\text{kernel_size}[i]}` .
+
+    Inputs:
+        - **input** (Tensor) - Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})` or :math:`(C_{in}, H_{in}, W_{in})` .
+
+    Outputs:
+        Tensor of shape :math:`(N, C_{out}, H_{out}, W_{out})` or :math:`(C_{out}, H_{out}, W_{out})`, where
 
         .. math::
               H_{out} = (H_{in} - 1) \times \text{stride}[0] - 2 \times \text{padding}[0] + \text{dilation}[0]
-                        \times (\text{kernel\_size}[0] - 1) + \text{output\_padding}[0] + 1
+                        \times (\text{kernel_size}[0] - 1) + \text{output_padding}[0] + 1
         .. math::
               W_{out} = (W_{in} - 1) \times \text{stride}[1] - 2 \times \text{padding}[1] + \text{dilation}[1]
-                        \times (\text{kernel\_size}[1] - 1) + \text{output\_padding}[1] + 1
+                        \times (\text{kernel_size}[1] - 1) + \text{output_padding}[1] + 1
 
-    Attributes:
-        weight (Tensor): the learnable weights of the module of shape
-                         :math:`(\text{in\_channels}, \frac{\text{out\_channels}}{\text{groups}},`
-                         :math:`\text{kernel\_size[0]}, \text{kernel\_size[1]})`.
-                         The values of these weights are sampled from
-                         :math:`\mathcal{U}(-\sqrt{k}, \sqrt{k})` where
-                         :math:`k = \frac{groups}{C_\text{out} * \prod_{i=0}^{1}\text{kernel\_size}[i]}`
-        bias (Tensor):   the learnable bias of the module of shape (out_channels)
-                         If :attr:`bias` is ``True``, then the values of these weights are
-                         sampled from :math:`\mathcal{U}(-\sqrt{k}, \sqrt{k})` where
-                         :math:`k = \frac{groups}{C_\text{out} * \prod_{i=0}^{1}\text{kernel\_size}[i]}`
+    Supported Platforms:
+        ``Ascend``
 
     Examples::
         >>> import mindspore as ms
@@ -504,7 +511,7 @@ class ConvTranspose2d(_ConvTranspose):
         https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf
     """
 
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding=0, output_padding=0,
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, output_padding=0,
                  groups=1, bias=True, dilation=1, padding_mode="zeros", dtype=None):
         dtype = mstype.float32 if dtype is None else dtype
         kernel_size = _pair(kernel_size, "kernel_size", "ConvTranspose2d")
