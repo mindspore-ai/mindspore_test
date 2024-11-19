@@ -31,6 +31,9 @@ class OPS_API BroadcastTo : public InferShapeOp {
 SymbolPtr BroadcastTo::Eval() {
   auto x = input_as<ListSymbol>(kIndex0);
   auto out_shape = input_as<ListSymbol>(kIndex1);
+  if (!out_shape->HasData()) {
+    return GenVList();
+  }
   if (x->size() > out_shape->size()) {
     MS_EXCEPTION(ValueError)
       << "For BroadcastTo, the input out_shape's size should be less equal to output size, but got " << x->size()
