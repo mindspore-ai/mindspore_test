@@ -17,12 +17,15 @@
 from __future__ import absolute_import
 
 from copy import copy
+from contextlib import contextmanager
+
 import time
 import os
 import sys
 import math
 import numbers
 import numpy as np
+
 from mindspore import log as logger
 from mindspore.log import _LogActionOnce
 from mindspore._c_expression import ParamInfo
@@ -52,6 +55,16 @@ PARAMETER_NAME_PREFIX_MAX_LEN = 1024
 
 # Global variable for parameter unique key.
 _GLOBAL_PARAMETER_KEY = -1
+
+
+@contextmanager
+def no_init_parameters():
+    init_class = globals()["Parameter"]
+    setattr(init_class, "init_param", False)
+    try:
+        yield
+    finally:
+        setattr(init_class, "init_param", True)
 
 
 def _is_in_auto_parallel_mode():
@@ -243,14 +256,14 @@ class Parameter(Tensor_):
     def __new__(cls, default_input, *args, **kwargs):
         init_data_flag = bool(isinstance(default_input, Tensor) and default_input.has_init)
         rc = sys.getrefcount(default_input)
-        input_class, *class_init_args = Parameter._get_parameter_new_args(default_input, rc)
+        init_param = getattr(cls, "init_param", True)
+        input_class, *class_init_args = Parameter._get_parameter_new_args(default_input, rc, init_param)
         new_type = Parameter._get_base_class(input_class)
         obj = input_class.__new__(new_type)
         input_class.__init__(obj, *class_init_args)
         # it's better to make the Initializer a kind of tensor.
         obj.init_mode = None
         obj.is_default_input_init = init_data_flag
-        obj.from_ckpt = False
         if obj.has_init:
             obj.init_mode = default_input
         else:
@@ -291,7 +304,6 @@ class Parameter(Tensor_):
         self.is_in_shard = False
         self._pipeline_stage_list = []
         self.slice_num = 1
-        self.from_ckpt = False
         if -1 in self.shape:
             raise ValueError(f"All shape elements of the Parameter must be positive. But got None.")
         if isinstance(default_input, (Tensor_, Tensor)):
@@ -355,7 +367,7 @@ class Parameter(Tensor_):
         return new_type
 
     @staticmethod
-    def _get_parameter_new_args(data, rc):
+    def _get_parameter_new_args(data, rc, init_param=True):
         """Set `set_data` of current `Parameter`."""
         if isinstance(data, bool):
             raise ValueError('Parameter data can not be `bool`')
@@ -370,8 +382,8 @@ class Parameter(Tensor_):
                     return (Tensor, data.asnumpy(), mstype.qint4x2)
                 return (Tensor, data.asnumpy())
 
-            not_init_data = _is_role_sched() or (_is_role_pserver() and _cache_enable()
-                                                 ) or _is_in_auto_parallel_mode() or _is_parallel_mode()
+            not_init_data = not init_param or _is_role_sched() or (_is_role_pserver() and _cache_enable()) \
+                            or _is_in_auto_parallel_mode() or _is_parallel_mode()
             if not_init_data:
                 # do not init data while in auto parallel.
                 return (Tensor, None, data.dtype, get_slice_shape(data.dtype, data.shape), data.init)
@@ -845,8 +857,8 @@ class Parameter(Tensor_):
                         f"Use .set_dtype(xxx) to change the dtype.")
 
     @staticmethod
-    def _set_data_check_input_valid(current_tensor_is_init, incoming_tensor_is_init, from_ckpt):
-        if not from_ckpt and incoming_tensor_is_init and not current_tensor_is_init:
+    def _set_data_check_input_valid(current_tensor_is_init, incoming_tensor_is_init):
+        if incoming_tensor_is_init and not current_tensor_is_init:
             raise TypeError("The original tensor data is initialized, but the argument 'data' is not initialized."
                             "Please initialize 'data' before call this method.")
 
@@ -895,7 +907,7 @@ class Parameter(Tensor_):
         # both not init.
         incoming_tensor_is_init = isinstance(data, Tensor) and not data.has_init
         current_tensor_is_init = isinstance(self, Tensor) and not self.has_init
-        Parameter._set_data_check_input_valid(current_tensor_is_init, incoming_tensor_is_init, self.from_ckpt)
+        Parameter._set_data_check_input_valid(current_tensor_is_init, incoming_tensor_is_init)
         if self.dtype != data.dtype:
             if mstype.implicit_conversion_seq.get(self.dtype) < mstype.implicit_conversion_seq.get(data.dtype):
                 self._raise_type_error(data.dtype)
@@ -969,6 +981,8 @@ class Parameter(Tensor_):
         """
         if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
             raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
+        if hasattr(self, "init_param") and self.init_param:
+            return self
         if self.init_mode is None:
             return self
         if self.inited_param is not None:
