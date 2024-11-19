@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -20,8 +21,8 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-import mindspore.mint as mint
-import mindspore.context as context
+from mindspore import mint
+from mindspore import context
 from mindspore import Tensor
 from mindspore.common import dtype as mstype
 
@@ -70,7 +71,7 @@ def test_net_2d_float32(context_mode):
     expect = np.isinf(input_np)
     assert np.array_equal(output, expect)
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_net_3d_int16(context_mode):
     """
@@ -79,6 +80,8 @@ def test_net_3d_int16(context_mode):
     Expectation: expect correct result.
     """
     context.set_context(mode=context_mode, device_target="Ascend")
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_config={"jit_level": "O0"})
     input_np = np.random.randn(3, 4).astype(np.int16)
     input_x = Tensor(input_np, mstype.int16)
     output = isinf_forward(input_x).asnumpy()
