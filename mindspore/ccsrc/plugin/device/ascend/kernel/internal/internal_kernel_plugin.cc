@@ -21,7 +21,6 @@
 #include <vector>
 #include <unordered_map>
 
-#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
 #include "plugin/device/ascend/hal/device/kernel_select_ascend.h"
@@ -57,12 +56,12 @@ static const std::unordered_map<std::string, std::vector<std::vector<size_t> > >
 // ATTENTION_INPUT_QKV: ms_nd_shape{b, s, h} need convert to {b * s, h}, then transform nz format
 // ATTENTION_INPUT_MASK: ms_nd_shape{b, 1, s, s} need convert to {b, 1, s, s}, then transform nz format
 static const std::unordered_map<std::string, std::unordered_map<size_t, int64_t> > kSpecialNzFormatOpsList = {
-  {kPagedAttentionOpName, {{0, internal::TransDataParam::ATTENTION_INPUT_QKV}}},
+  {kPagedAttentionOpName, {{0, acme::TransDataParam::ATTENTION_INPUT_QKV}}},
   {kFlashAttentionScoreOpName,
-   {{0, internal::TransDataParam::ATTENTION_INPUT_QKV},
-    {1, internal::TransDataParam::ATTENTION_INPUT_QKV},
-    {2, internal::TransDataParam::ATTENTION_INPUT_QKV},
-    {6, internal::TransDataParam::ATTENTION_INPUT_MASK}}}};
+   {{0, acme::TransDataParam::ATTENTION_INPUT_QKV},
+    {1, acme::TransDataParam::ATTENTION_INPUT_QKV},
+    {2, acme::TransDataParam::ATTENTION_INPUT_QKV},
+    {6, acme::TransDataParam::ATTENTION_INPUT_MASK}}}};
 
 bool IsAscend310PSoc() {
   const char *soc_name_c = aclrtGetSocName();
@@ -79,7 +78,7 @@ bool IsAscend310PSoc() {
 int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_node, const size_t input_idx) {
   MS_EXCEPTION_IF_NULL(cur_node);
   MS_EXCEPTION_IF_NULL(input_node);
-  int64_t special_format_input = internal::TransDataParam::NORMAL;
+  int64_t special_format_input = acme::TransDataParam::NORMAL;
 
   // cur cnode has special format input
   auto special_format_iter = kSpecialNzFormatOpsList.find(AnfUtils::GetCNodeName(cur_node));
@@ -88,13 +87,13 @@ int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_nod
     if (iter != special_format_iter->second.end()) {
       special_format_input = iter->second;
     } else {
-      special_format_input = internal::TransDataParam::NORMAL;
+      special_format_input = acme::TransDataParam::NORMAL;
     }
   } else if (input_node->isa<CNode>()) {
     // input cnode has special format output: pa & fa output format is nz
     auto special_iter = kSpecialNzFormatOpsList.find(AnfUtils::GetCNodeName(input_node));
     if (special_iter != kSpecialNzFormatOpsList.end()) {
-      special_format_input = internal::TransDataParam::ATTENTION_INPUT_QKV;
+      special_format_input = acme::TransDataParam::ATTENTION_INPUT_QKV;
     }
   }
   return special_format_input;
@@ -163,9 +162,6 @@ KernelModPtr InternalKernelPlugin::BuildKernel(const AnfNodePtr &anf_node) {
   if (Factory<AcmeKernelMod>::Instance().IsRegistered(opname)) {
     MS_LOG(INFO) << "Supported by AcmeKernel: " << opname;
     kernel_ptr = std::static_pointer_cast<KernelMod>(Factory<AcmeKernelMod>::Instance().Create(opname));
-  } else {
-    MS_LOG(INFO) << "Supported by InternalKernel [" << opname << "]";
-    kernel_ptr = std::static_pointer_cast<KernelMod>(Factory<InternalKernelMod>::Instance().Create(opname));
   }
 
   if (kernel_ptr == nullptr) {
@@ -206,21 +202,6 @@ bool InternalKernelPlugin::IsRegisteredKernel(const AnfNodePtr &anf_node) {
     return acme::IsAcmeKernelDtypesSupported(acme_op_name, acme_in_dtypes, acme_out_dtypes);
   }
 
-  if (Factory<InternalKernelMod>::Instance().IsRegistered(opname)) {
-    if (opname == kReshapeOpName) {
-      return true;
-    }
-    internal::DtypesParamPtr check_param = std::make_shared<internal::DtypesParam>();
-    check_param->op_id_ = InternalKernelUtils::ToInternalOpId(opname);
-    if (check_param->op_id_ == -1) {
-      MS_LOG(INFO) << "internal can't find Kernel[" << opname << "]";
-      return false;
-    }
-
-    check_param->in_dtypes_ = InternalKernelModInOutMap::GetInstance()->MapInternelInputDtypes(opname, ms_in_dtypes);
-    check_param->out_dtypes_ = InternalKernelModInOutMap::GetInstance()->MapInternelOutputDtypes(opname, ms_out_dtypes);
-    return internal::IsInternalKernelDtypesSupported(check_param);
-  }
   return false;
 }
 
@@ -280,7 +261,7 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   if (!special_inputs.empty()) {
     common::AnfAlgo::SetNodeAttr(kAttrAclSpecialInputFormat, MakeValue(special_inputs), node);
     if (std::any_of(special_format_inputs.begin(), special_format_inputs.end(),
-                    [](const int64_t format_type) { return format_type != internal::TransDataParam::NORMAL; })) {
+                    [](const int64_t format_type) { return format_type != acme::TransDataParam::NORMAL; })) {
       common::AnfAlgo::SetNodeAttr(kAttrInternalSepcialFormat, MakeValue(special_format_inputs), node);
     }
   }

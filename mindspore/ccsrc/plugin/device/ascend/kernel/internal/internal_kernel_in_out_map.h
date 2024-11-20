@@ -63,8 +63,6 @@ class InternalKernelModInOutMap {
   void AppendMutableList(const std::string &op_name, InternalKernelMapDtype map_dtype);
   std::vector<int> GetKernelInMap(const std::string &op_name, bool *is_mutable);
   std::vector<int> GetKernelOutMap(const std::string &op_name, bool *is_mutable);
-  std::vector<int64_t> MapInternelInputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
-  std::vector<int64_t> MapInternelOutputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
 
   std::vector<acme::DataType> MapAcmeInputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
   std::vector<acme::DataType> MapAcmeOutputDtypes(const std::string &op_name, const std::vector<TypeId> &ms_dtypes);
