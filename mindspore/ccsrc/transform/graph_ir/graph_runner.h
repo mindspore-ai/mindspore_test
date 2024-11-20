@@ -48,6 +48,7 @@ class GraphRunner {
   Status RegisterExternalAllocator(const void *const stream, GeAllocatorPtr allocator);
   Status UnregisterExternalAllocator(const void *const stream);
   const bool IsAllocatorRegistered() const { return is_allocator_registered; }
+  string ExportDFGraph(const std::string &file_name, const std::string &name, bool is_save_to_file);
 
  private:
   Status GetWrapper(const std::string &name, DfGraphWrapperPtr *wrapper) const;

@@ -35,6 +35,7 @@
 #endif
 #include "utils/ms_context.h"
 #include "include/common/utils/scoped_long_running.h"
+#include "graph/graph_buffer.h"
 
 #ifndef ENABLE_LITE_ACL
 namespace py = pybind11;
@@ -539,6 +540,38 @@ Status GraphRunner::GetWrapper(const std::string &name, DfGraphWrapperPtr *wrapp
 
   *wrapper = wrap_ptr;
   return Status::SUCCESS;
+}
+
+string GraphRunner::ExportDFGraph(const std::string &file_name, const std::string &name, bool is_save_to_file) {
+  MS_LOG(DEBUG) << "Export graph begin.";
+
+  DfGraphWrapperPtr wrap_ptr = graph_manager_.GetGraphByName(name);
+  if (wrap_ptr == nullptr) {
+    MS_LOG(EXCEPTION) << "Get graph form DfGraphManager failed, graph name = " << name;
+  }
+
+  transform::DfGraphPtr ge_graph = wrap_ptr->graph_ptr_;
+  if (ge_graph == nullptr) {
+    MS_LOG(EXCEPTION) << "The graph is null";
+  }
+
+  if (is_save_to_file) {
+    // save to file
+    if (ge_graph->SaveToFile(file_name) != 0) {
+      MS_LOG(EXCEPTION) << "Export air model failed.";
+    }
+    return "";
+  }
+
+  //  save to mem and return string
+  ::ge::GraphBuffer model_data;
+  auto ge_ret = ge_graph->SaveToMem(model_data);
+  if (ge_ret != ::ge::SUCCESS) {
+    MS_LOG(EXCEPTION) << "ERROR: GE model save fail";
+  }
+
+  std::string str(reinterpret_cast<const char *>(model_data.GetData()), model_data.GetSize());
+  return str;
 }
 }  // namespace transform
 }  // namespace mindspore

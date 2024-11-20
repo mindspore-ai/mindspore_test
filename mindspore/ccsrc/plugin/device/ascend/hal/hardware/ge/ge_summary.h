@@ -39,9 +39,7 @@
 #include <string>
 #include <utility>
 #include "include/transform/graph_ir/types.h"
-#include "include/transform/graph_ir/utils.h"
 #include "ge/ge_graph_compile_summary.h"
-#include "op_proto/inc/array_ops.h"
 
 namespace mindspore {
 namespace device {

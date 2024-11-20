@@ -26,6 +26,8 @@
 #include "transform/symbol/acl_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "include/common/debug/common.h"
+#include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace device {
@@ -255,6 +257,33 @@ std::string GetFormatMode() {
     }
   }
   return format_mode;
+}
+
+void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stream) {
+  for (const auto &node : weights) {
+    if (!node->isa<Parameter>()) {
+      continue;
+    }
+    auto param = node->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param);
+    if (common::AnfAlgo::IsParameterWeight(param)) {
+      auto tensor = param->default_param()->cast<tensor::TensorPtr>();
+      MS_EXCEPTION_IF_NULL(tensor);
+      auto out_addr = AnfAlgo::GetMutableOutputAddr(param, 0, false);
+      if (out_addr == nullptr || out_addr->GetPtr() == nullptr || IsOneOfHWSpecialFormat(out_addr->format())) {
+        // skip async copy if addr is nullptr.
+        // special format need convert to default format at host, so skip async copy if format is a special format.
+        continue;
+      }
+      auto size = tensor->Size();
+      auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, tensor->data_c(), size, out_addr->GetMutablePtr(), size,
+                                 ACL_MEMCPY_DEVICE_TO_HOST, stream);
+      if (ret != ACL_ERROR_NONE) {
+        MS_LOG_WITH_NODE(EXCEPTION, param) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
+      }
+      tensor->set_copy_done_flag(true);
+    }
+  }
 }
 }  // namespace ascend
 }  // namespace device

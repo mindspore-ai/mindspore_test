@@ -247,6 +247,9 @@ void AscendKernelRuntime::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
 
 void AscendKernelRuntime::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Ascend finalize start";
+  if (!initialized_) {
+    return;
+  }
   SetContextForce();
 
   // release ge runtime

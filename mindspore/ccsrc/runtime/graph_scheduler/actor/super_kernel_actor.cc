@@ -752,8 +752,8 @@ void SuperKernelActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const contex
   }
 
   try {
-    const std::vector<tensor::Tensor> inputs;
-    std::vector<tensor::Tensor> outputs;
+    const std::vector<tensor::TensorPtr> inputs;
+    std::vector<tensor::TensorPtr> outputs;
     const std::map<string, string> compile_options;
     if (device_contexts_.empty() || device_contexts_[0] == nullptr) {
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR_BY_STRATEGY(GraphExecutionStrategy::kPipeline, (*context),

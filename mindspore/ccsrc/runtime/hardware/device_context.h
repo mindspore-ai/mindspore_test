@@ -23,7 +23,7 @@
 #include <vector>
 #include <unordered_map>
 #include <utility>
-
+#include <unordered_set>
 #include "include/backend/device_type.h"
 #include "include/backend/device_address.h"
 #include "runtime/device/gsm/swap_manager.h"
@@ -388,14 +388,37 @@ class BACKEND_EXPORT DeviceResManager {
 class GraphExecutor {
  public:
   virtual ~GraphExecutor() = default;
+  virtual void Initialize() { return; }
+  virtual void Finalize() { return; }
+  virtual void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph) { return; }
   virtual bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) { return true; }
-  virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
-                        std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) {
+  virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
+                        std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   virtual std::string GetRandomStatus(const std::vector<FuncGraphPtr> &graphs) { return ""; }
   virtual size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const { return 0; }
-  virtual void InitGraphInfo(const FuncGraphPtr &graph) { return; };
+  virtual void InitGraphInfo(const FuncGraphPtr &graph) { return; }
+  virtual void InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const { return; }
+  virtual void AllocGEInputOutputMemory(const KernelGraphPtr &graph) const { return; }
+  virtual void AllocGEFixMemory() const { return; }
+  virtual void RunCheckpointGraph(const KernelGraphPtr &graph) { return; }
+  virtual void AllocGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
+  virtual void FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph) { return; }
+  virtual FuncGraphPtr BuildDFGraph(const FuncGraphPtr &anf_graph,
+                                    const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_inputs_map,
+                                    bool export_air) {
+    return nullptr;
+  }
+  virtual string ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph, bool is_save_to_file) {
+    return "";
+  }
+
+  virtual std::unordered_set<std::string> GetInferParameterNames() { return {}; }
+  virtual DeviceAddressPtr CreateDeviceAddress(const KernelTensorPtr &kernel_tensor, bool is_need_alloc_mem) const {
+    return nullptr;
+  }
+  virtual void FreeInputOutputMemory(const KernelGraphPtr &graph) const { return; }
 
  protected:
   DeviceContext *device_context_{nullptr};
@@ -422,7 +445,7 @@ class BACKEND_EXPORT KernelExecutor {
   // Generate 'KernelMod' for all kernels and set 'KernelMod' into kernel,
   // 'KernelMod' is real executive object of kernel.
   virtual void CreateKernel(const std::vector<CNodePtr> &nodes) const {}
-  virtual kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const { MS_LOG(EXCEPTION) << "Unrealized"; };
+  virtual kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const { MS_LOG(EXCEPTION) << "Unrealized"; }
 
   // Adjust kernel graph before run graph.
   virtual void PreprocessBeforeRun(const FuncGraphPtr &graph) const {}
@@ -443,12 +466,10 @@ class BACKEND_EXPORT KernelExecutor {
   };
   // Unify the MindIR, the default behavior uses the common unified MindIR.
   virtual void UnifyMindIR(const KernelGraphPtr &graph) const;
-  virtual void AddMindIRPass(const KernelGraphPtr &graph) const {};
+  virtual void AddMindIRPass(const KernelGraphPtr &graph) const {}
 
   // Get rank id for distributed training.
   virtual uint32_t GetRankID() const { return 0; }
-
-  virtual void AllocGraphFixedMemory() const {}
 
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
 

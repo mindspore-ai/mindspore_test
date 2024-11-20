@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/hal/hardware/ge_memory_allocator.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_memory_allocator.h"
 #include <tuple>
 #include <functional>
 #include <algorithm>
@@ -30,22 +30,13 @@
 #include "include/backend/kernel_graph.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/optimizer/ge_optimization.h"
-#include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
-#include "plugin/device/ascend/hal/hardware/ge_memory_manager.h"
-#include "plugin/device/ascend/hal/hardware/ge_utils.h"
-#include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "kernel/kernel_build_info.h"
 #include "ops/array_ops.h"
-#include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {
 namespace device {
@@ -126,7 +117,7 @@ void SetKernelInfo(const AnfNodePtr &node) {
 }
 
 DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_graph, const KernelWithIndex &output_with_index,
-                                           size_t need_alloc_output_cnt, GeDeviceResManager *res_manager) {
+                                           size_t need_alloc_output_cnt, GeDeviceResManagerPtr res_manager) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto output_node = output_with_index.first;
   MS_EXCEPTION_IF_NULL(output_node);
@@ -211,7 +202,7 @@ void AllocParameterMemory(const KernelGraphPtr &kernel_graph, DeviceContext *dev
   runtime::DeviceAddressUtils::CreateParameterDeviceAddress(device_context, kernel_graph);
 }
 
-void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManager *res_manager) {
+void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManagerPtr res_manager) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(INFO) << "Start AllocOutputMemory, kernel graph: " << kernel_graph->ToString();
 
@@ -308,7 +299,7 @@ void EnableGraphOutputZeroCopy(const KernelGraphPtr &graph) {
 }
 
 void AllocConstMemory(const transform::RunOptions &options, const KernelGraphPtr &graph, size_t memory_size,
-                      GeDeviceResManager *res_manager) {
+                      GeDeviceResManagerPtr res_manager) {
   if (memory_size == 0) {
     return;
   }
@@ -333,16 +324,13 @@ void AllocConstMemory(const transform::RunOptions &options, const KernelGraphPtr
   MS_LOG(INFO) << "End AllocConstMemory";
 }
 
-void AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size, GeDeviceResManager *res_manager) {
+void AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size, GeDeviceResManagerPtr res_manager) {
   if (memory_size == 0) {
     return;
   }
   MS_LOG(INFO) << "Start AllocFeatureMemory, memory_size: " << memory_size;
   MS_EXCEPTION_IF_NULL(res_manager);
-  auto memory_manager = res_manager->mem_manager();
-  MS_EXCEPTION_IF_NULL(memory_manager);
-  memory_manager->ResetDynamicMemory();
-  auto memory = memory_manager->MallocWorkSpaceMem(memory_size);
+  auto memory = res_manager->AllocateWorkSpaceMemory(memory_size);
   if (memory == nullptr) {
     MS_LOG(EXCEPTION) << "AllocFeatureMemory error, memory not enough, memory size: " << memory_size;
   }
@@ -352,7 +340,7 @@ void AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size
   if (ret != transform::Status::SUCCESS) {
     MS_LOG(EXCEPTION) << "UpdateFeatureMemory for graph " << options.name << " failed.";
   }
-  memory_manager->ResetDynamicMemory();
+
   MS_LOG(INFO) << "End AllocFeatureMemory";
 }
 }  // namespace
@@ -435,7 +423,7 @@ void GEMemoryAllocator::AllocOutputHostMemory(const KernelGraphPtr &kernel_graph
 }
 
 void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, const AnfNodePtr &input_node,
-                                        DeviceAddress *output_addr, GeDeviceResManager *res_manager) {
+                                        DeviceAddress *output_addr, GeDeviceResManagerPtr res_manager) {
   std::vector<size_t> shape = Convert2SizeT(common::AnfAlgo::GetOutputInferShape(input_node, 0));
   size_t type_size = GetTypeByte(TypeIdToType(common::AnfAlgo::GetOutputInferDataType(input_node, 0)));
   size_t memory_size = std::accumulate(shape.begin(), shape.end(), type_size, std::multiplies<size_t>{});
@@ -454,7 +442,7 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, cons
 }
 
 void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, KernelTensor *tensor,
-                                        GeDeviceResManager *res_manager) {
+                                        GeDeviceResManagerPtr res_manager) {
   MS_EXCEPTION_IF_NULL(res_manager);
   MS_EXCEPTION_IF_NULL(tensor);
   auto memory = res_manager->AllocateMemory(tensor->size());
@@ -468,7 +456,7 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, Kern
 }
 
 void GEMemoryAllocator::ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph, DeviceContext *device_context,
-                                                  GeDeviceResManager *res_manager) {
+                                                  GeDeviceResManagerPtr res_manager) {
   AllocParameterMemory(kernel_graph, device_context, nullptr);
   AllocOutputMemory(kernel_graph, res_manager);
   EnableGraphInputZeroCopy(kernel_graph);
@@ -477,7 +465,7 @@ void GEMemoryAllocator::ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_g
 
 void GEMemoryAllocator::AllocGraphMemory(const transform::RunOptions &options, const KernelGraphPtr &graph,
                                          const GraphSummary &summary, size_t stream_id,
-                                         GeDeviceResManager *res_manager) {
+                                         GeDeviceResManagerPtr res_manager) {
   AllocConstMemory(options, graph, summary.const_memory_size, res_manager);
   if (IsDisableGeKernel()) {
     AllocFeatureMemory(options, summary.fixed_memory_size, res_manager);

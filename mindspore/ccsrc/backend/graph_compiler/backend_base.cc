@@ -248,6 +248,7 @@ MindRTBackendBase::MindRTBackendBase(const std::string &backend_name, const std:
   SetDebuggerInit();
 #endif
   runtime::GraphScheduler::GetInstance().Initialize();
+  ge_backend_ = std::make_shared<GEBackend>();
 }
 
 void MindRTBackendBase::ProcessNotSupportCnode(const FuncGraphPtr &func_graph,
@@ -874,7 +875,43 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
 }
 }  // namespace
 
-const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph) {
+FuncGraphPtr MindRTBackendBase::BuildDFGraph(
+  const FuncGraphPtr &anf_graph, const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_tensors) {
+  if (device_name_ != kAscendDevice) {
+    MS_LOG(INFO) << "BuildDFGraph only support in ascend.";
+    return nullptr;
+  }
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+  MS_EXCEPTION_IF_NULL(anf_graph);
+  return ge_backend_->BuildDFGraph(device_context, anf_graph, init_tensors);
+}
+
+string MindRTBackendBase::ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph,
+                                        bool is_save_to_file) {
+  if (device_name_ != kAscendDevice) {
+    MS_LOG(EXCEPTION) << "Only support export file in 'AIR' format with Ascend backend.";
+    return nullptr;
+  }
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+  MS_EXCEPTION_IF_NULL(anf_graph);
+  return ge_backend_->ExportDFGraph(device_context, file_name, anf_graph, is_save_to_file);
+}
+
+std::unordered_set<std::string> MindRTBackendBase::GetInferParameterNames() {
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+  return ge_backend_->GetInferParameterNames(device_context);
+}
+
+const ActorInfo MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph) {
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -926,21 +963,21 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
     bool is_dynamic_graph = common::AnfAlgo::IsDynamicShapeFuncGraph(func_graph);
     auto sub_graph_run_mode = is_dynamic_graph ? run_mode : device::RunMode::kUnknown;
     PROF_START(CompileSubGraph);
-    if (all_support) {
-      if (run_mode == device::RunMode::kGraphMode && pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
-        auto graph_id = graph_compiler_->CompileWholeGraphForGraphRunMode(func_graph, device_context);
-        graph_id_to_device_context_[graph_id] = device_context;
-      } else {
-        BuildSymbolEngine(func_graph, run_mode);
-        CompileSubGraph(func_graph, sub_graph_run_mode);
-      }
-    } else {
-      if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
-        ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
-      }
-      BuildSymbolEngine(func_graph, run_mode);
-      CompileSubGraph(func_graph, sub_graph_run_mode);
+    if (all_support && run_mode == device::RunMode::kGraphMode &&
+        pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
+      auto actor_info = ge_backend_->CompileGraph(func_graph, device_context);
+      is_ge_backend_ = true;
+      MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString()
+                   << ", actor_info: " << actor_info;
+      PROF_END(CompileSubGraph);
+      PROF_END(compile_backend_graph);
+      return actor_info;
     }
+    if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
+      ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
+    }
+    BuildSymbolEngine(func_graph, run_mode);
+    CompileSubGraph(func_graph, sub_graph_run_mode);
     PROF_END(CompileSubGraph);
   }
 
@@ -1644,6 +1681,27 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
 
   // Open abstract_lock for dynamic_shape
   AnfUtils::OpenAbstractLock();
+
+  if (is_ge_backend_) {
+    // For pynative and graph mix execution.
+    // wait for other task finish
+    WaitTaskFinish();
+    // wait for other streams finish
+    auto device_context =
+      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+    MS_EXCEPTION_IF_NULL(device_context);
+    device_context->device_res_manager_->SyncNotDefaultStreams();
+
+    std::vector<tensor::TensorPtr> output_tensors;
+    ge_backend_->RunGraph(actor_info, device_context, args, &output_tensors);
+    if (output_tensors.empty()) {
+      return;
+    }
+    size_t output_position = 0;
+    std::vector<tensor::TensorPtr> tuple_tensors;
+    ConstructOutputs(root_graph_->output(), output_tensors, &output_position, outputs, &tuple_tensors);
+    return;
+  }
 
   // Fetch the graph compiler info.
   const auto &graph_iter = actor_to_graph_compiler_info_.find(actor_info);

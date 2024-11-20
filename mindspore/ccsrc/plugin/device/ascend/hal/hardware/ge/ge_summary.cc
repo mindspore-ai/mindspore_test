@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ge_summary.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_summary.h"
 #include <vector>
 #include <string>
 
