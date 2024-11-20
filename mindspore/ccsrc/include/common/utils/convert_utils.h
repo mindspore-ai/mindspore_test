@@ -28,7 +28,6 @@
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "utils/convert_utils_base.h"
-#include "utils/any.h"
 #include "base/base_ref.h"
 #include "base/base.h"
 #include "ir/anf.h"

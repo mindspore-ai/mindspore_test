@@ -25,7 +25,6 @@
 #include <string>
 #include <functional>
 #include "abstract/abstract_value.h"
-#include "utils/any.h"
 #include "utils/misc.h"
 #include "utils/shape_utils.h"
 #include "mindapi/base/macros.h"

@@ -25,7 +25,6 @@
 #include <cassert>
 #include "abstract/abstract_value.h"
 #include "abstract/utils.h"
-#include "utils/any.h"
 #include "ir/primitive.h"
 #include "mindapi/base/macros.h"
 
