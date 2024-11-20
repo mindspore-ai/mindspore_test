@@ -128,24 +128,23 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             func_protos_data (dict): Dictionary mapping function names to lists of TensorFuncProto objects.
             alias_func_mapping (dict): A dictionary mapping function name to its alias function names.
         """
-        func_header_body_list, func_header_def_list = [], []
-        func_call_body_list, func_def_body_list = [], []
+        func_header_body_list, func_call_body_list = [], []
 
-        single_op_func_data, overload_op_func_data = op_api_proto.categorize_func_data(func_protos_data)
+        all_op_func_data, single_op_func_data, overload_op_func_data = op_api_proto.categorize_func_data(
+            func_protos_data)
 
-        def process_func_data_wrapper(processor, func_data, alias_mapping):
+        def process_func_data_wrapper(processor, func_data):
             """
-            A wrapper func to process func_data and alias_func_mapping.
+            A wrapper func to process func_data.
             """
-            header_body, header_def, call_body, def_body = processor(func_data, alias_mapping)
+            header_body, call_body = processor(func_data)
             func_header_body_list.extend(header_body)
-            func_header_def_list.extend(header_def)
             func_call_body_list.extend(call_body)
-            func_def_body_list.extend(def_body)
 
-        process_func_data_wrapper(self._get_single_op_str, single_op_func_data, alias_func_mapping)
-        process_func_data_wrapper(self._get_overload_op_str, overload_op_func_data, alias_func_mapping)
+        process_func_data_wrapper(self._get_single_op_str, single_op_func_data)
+        process_func_data_wrapper(self._get_overload_op_str, overload_op_func_data)
 
+        func_def_body_list, func_header_def_list = self._get_sorted_func_def_body(all_op_func_data, alias_func_mapping)
         func_cc_reg = self.TENSOR_FUNC_CC_REG.replace(func_call_body=func_call_body_list,
                                                       func_def_body=func_def_body_list)
         func_header_reg = self.TENSOR_FUNC_HEADER_REG.replace(func_header_body=func_header_body_list,
@@ -154,43 +153,77 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.h", func_header_reg)
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.cc", func_cc_reg)
 
+    def _get_sorted_func_def_body(self, all_op_func_data, alias_func_mapping):
+        """
+        Generate sorted function definitions and headers for operations.
 
+        This function processes a dictionary of operation function data and an alias mapping,
+        producing two lists: one containing function definition bodies and another containing
+        function header definitions.
 
-    def _get_single_op_str(self, single_op_func_data, alias_func_mapping):
+        Args:
+            all_op_func_data (dict): A dictionary where keys are function API names (str), and
+                values are lists of function prototypes.
+            alias_func_mapping (dict): A mapping of function names to a list of their alias names.
+
+        Returns:
+            tuple: A tuple containing two lists:
+                - func_def_body_list (list of str): A list of formatted function definition strings.
+                - func_header_def_list (list of str): A list of formatted function header strings.
+        """
+        func_def_body_list = []
+        func_header_def_list = []
+        for func_api_name, func_protos in all_op_func_data.items():
+            if len(func_protos) == 1:
+                func_proto = func_protos[0]
+                func_name = func_proto.func_name
+                class_name = func_proto.op_proto.op_class.name
+                func_header_def_list.append(self.header_func_def_template.replace(class_name=class_name))
+                func_def_body_list.append(self.func_def_reg.replace(func_name=func_name, class_name=class_name))
+                if func_name in alias_func_mapping:
+                    for alias_func_name in alias_func_mapping[func_name]:
+                        func_def_body_list.append(
+                            self.func_def_reg.replace(func_name=alias_func_name, class_name=class_name))
+            elif len(func_protos) > 1:
+                formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
+                func_header_def_list.append(self.header_func_def_template.replace(class_name=formatted_class_name))
+                func_def_body_list.append(
+                    self.func_def_reg.replace(func_name=func_api_name, class_name=formatted_class_name))
+                if func_api_name in alias_func_mapping:
+                    for alias_func_name in alias_func_mapping[func_api_name]:
+                        func_def_body_list.append(self.func_def_reg.replace(func_name=alias_func_name,
+                                                                            class_name=formatted_class_name))
+        return func_def_body_list, func_header_def_list
+
+    def _get_single_op_str(self, single_op_func_data):
         """
         Generates C++ strings for single operation function registrations.
 
         Args:
             single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
-            alias_func_mapping (dict): Dictionary mapping alias names to func names.
 
         Returns:
             tuple: Updated str list for generating C++ header and source files.
         """
         func_header_body_list = self._get_single_func_header_body_list(single_op_func_data)
-        func_header_def_list = self._get_single_func_header_def_list(single_op_func_data)
         func_call_body_list = self._get_single_func_call_body_list(single_op_func_data)
-        func_def_body_list = self._get_single_func_def_body_list(single_op_func_data, alias_func_mapping)
 
-        return func_header_body_list, func_header_def_list, func_call_body_list, func_def_body_list
+        return func_header_body_list, func_call_body_list
 
-    def _get_overload_op_str(self, overload_op_func_data, alias_func_mapping):
+    def _get_overload_op_str(self, overload_op_func_data):
         """
         Generates C++ strings for overloaded operation function registrations.
 
         Args:
             overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
-            alias_func_mapping (dict): Dictionary mapping alias names to func names.
 
         Returns:
             tuple: Updated str list for generating C++ header and source files.
         """
         func_header_body_list = self._get_overload_func_header_body_list(overload_op_func_data)
-        func_header_def_list = self._get_overload_func_header_def_list(overload_op_func_data)
         func_call_body_list = self._get_overload_func_call_body_list(overload_op_func_data)
-        func_def_body_list = self._get_overload_func_def_body_list(overload_op_func_data, alias_func_mapping)
 
-        return func_header_body_list, func_header_def_list, func_call_body_list, func_def_body_list
+        return func_header_body_list, func_call_body_list
 
     def _get_single_func_header_body_list(self, single_op_func_data):
         """
@@ -207,22 +240,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             class_name = func_proto.op_proto.op_class.name
             func_header_body_list.append(self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name))
         return func_header_body_list
-
-    def _get_single_func_header_def_list(self, single_op_func_data):
-        """
-        Generates the list of header definition strings for single operation functions.
-
-        Args:
-            single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
-
-        Returns:
-            list: Updated str list for generating C++ header definition files.
-        """
-        func_header_def_list = []
-        for _, func_proto in single_op_func_data.items():
-            class_name = func_proto.op_proto.op_class.name
-            func_header_def_list.append(self.header_func_def_template.replace(class_name=class_name))
-        return func_header_def_list
 
     def _get_single_func_call_body_list(self, single_op_func_data):
         """
@@ -257,28 +274,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 ut_body=ut_body))
         return func_call_body_list
 
-    def _get_single_func_def_body_list(self, single_op_func_data, alias_func_mapping):
-        """
-        Generates the list of definition body strings for single operation functions.
-
-        Args:
-            single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
-            alias_func_mapping (dict): Dictionary mapping alias names to func names.
-
-        Returns:
-            list: Updated str list for generating C++ function definition bodies.
-        """
-        func_def_body_list = []
-        for func_name, func_proto in single_op_func_data.items():
-            func_name = func_proto.func_name
-            class_name = func_proto.op_proto.op_class.name
-            func_def_body_list.append(self.func_def_reg.replace(func_name=func_name, class_name=class_name))
-            if func_name in alias_func_mapping:
-                for alias_func_name in alias_func_mapping[func_name]:
-                    func_def_body_list.append(
-                        self.func_def_reg.replace(func_name=alias_func_name, class_name=class_name))
-        return func_def_body_list
-
     def _get_overload_func_header_body_list(self, overload_op_func_data):
         """
         Generates the list of header body strings for overloaded operation functions.
@@ -294,22 +289,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             func_header_body_list.append(self._get_overload_tensor_func_header_body_str(func_protos))
         return func_header_body_list
 
-    def _get_overload_func_header_def_list(self, overload_op_func_data):
-        """
-        Generates the list of header definition strings for overloaded operation functions.
-
-        Args:
-            overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
-
-        Returns:
-            list: Updated str list for generating C++ header definition files.
-        """
-        func_header_def_list = []
-        for func_api_name, _ in overload_op_func_data.items():
-            formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
-            func_header_def_list.append(self.header_func_def_template.replace(class_name=formatted_class_name))
-        return func_header_def_list
-
     def _get_overload_func_call_body_list(self, overload_op_func_data):
         """
         Generates the list of call body strings for overloaded operation functions.
@@ -324,28 +303,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         for func_api_name, func_protos in overload_op_func_data.items():
             func_call_body_list.append(self._get_overload_func_call_str(func_api_name, func_protos))
         return func_call_body_list
-
-    def _get_overload_func_def_body_list(self, overload_op_func_data, alias_func_mapping):
-        """
-        Generates the list of definition body strings for overloaded operation functions.
-
-        Args:
-            overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
-            alias_func_mapping (dict): Dictionary mapping alias names to func names.
-
-        Returns:
-            list: Updated str list for generating C++ function definition bodies.
-        """
-        func_def_body_list = []
-        for func_api_name, _ in overload_op_func_data.items():
-            formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
-            func_def_body_list.append(
-                self.func_def_reg.replace(func_name=func_api_name, class_name=formatted_class_name))
-            if func_api_name in alias_func_mapping:
-                for alias_func_name in alias_func_mapping[func_api_name]:
-                    func_def_body_list.append(self.func_def_reg.replace(func_name=alias_func_name,
-                                                                        class_name=formatted_class_name))
-        return func_def_body_list
 
     def _get_overload_tensor_func_header_body_str(self, func_protos):
         """
