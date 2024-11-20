@@ -1,23 +1,18 @@
 new_ones:
     description: |
-        Return a tensor of `size` filled with ones.
+        new_ones(size, dtype=None) -> Tensor
 
-        .. warning::
-            This is an experimental API that is subject to change or deletion.
+        Return a tensor of `size` filled with ones.
 
         Args:
             size (Union[int, tuple(int), list(int)]): An int, list or tuple of integers defining the output shape.
             dtype (:class:`mindspore.dtype`, optional): The desired dtype of the output tensor. If None, the returned
-                tensor has the same dtype as `input`. Default: ``None``.
-
-        Inputs:
-            - **input** (Tensor) - Tensor of any dimension.
+                tensor has the same dtype as `self`. Default: ``None``.
 
         Outputs:
             Tensor, the shape and dtype is defined above and filled with ones.
 
         Raises:
-            TypeError: If `input` is not a Tensor.
             TypeError: If `size` is neither an int nor a tuple/list of int.
             TypeError: If `dtype` is not a MindSpore dtype.
             ValueError: If `size` contains negative values.
@@ -26,9 +21,9 @@ new_ones:
             ``Ascend`` ``GPU`` ``CPU``
 
         Examples:
-            >>> from mindspore import Tensor, ops
+            >>> from mindspore import Tensor
             >>> x = Tensor([1, 2, 3, 4], mindspore.int32)
-            >>> output = ops.auto_generate.NewOnes()(x, (2, 3))
+            >>> output = x.new_ones((2, 3))
             >>> print(output)
             [[1 1 1]
              [1 1 1]]
