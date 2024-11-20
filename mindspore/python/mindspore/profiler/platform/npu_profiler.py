@@ -211,6 +211,8 @@ class NPUProfilerAnalysis:
 
         prof_info.load_info(ascend_ms_dir, prof_ctx.rank_id)
         prof_ctx.load_offline_profiler_params(prof_info.profiler_parameters)
+        prof_ctx.jit_level = prof_info.jit_level
+        prof_ctx.context_mode = prof_info.context_mode
         TimeConverter.init_parameters(**prof_info.time_parameters)
 
     @classmethod

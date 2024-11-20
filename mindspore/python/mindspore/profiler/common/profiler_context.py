@@ -39,6 +39,7 @@ from mindspore.profiler.schedule import Schedule
 
 from mindspore import context
 from mindspore import log as logger
+from mindspore.profiler.common.profiler_info import ProfilerInfo
 
 
 @Singleton
@@ -56,10 +57,13 @@ class ProfilerContext:
         self._step_list: Optional[int] = None
         self._pretty: bool = False
         self._profiler_path_mgr: ProfilerOutputPath = None
+        self._jit_level: Optional[str] = ""
+        self._context_mode: Optional[int] = -1
 
         self._init_device_target()
         self._init_device_id()
         self._init_rank_id()
+        self._init_context_mode()
 
     def set_params(self, **kwargs):
         """
@@ -83,6 +87,8 @@ class ProfilerContext:
             "device_target": self._device_target,
             "dynamic_status": self._dynamic_status,
             "step_list": self._step_list,
+            "jit_level": self._jit_level,
+            "context_mode": self._context_mode
         }
 
     def load_offline_profiler_params(self, profiler_parameters: Dict[str, Any]) -> None:
@@ -355,6 +361,32 @@ class ProfilerContext:
         """Get the is set schedule from ProfilerParameters."""
         return self._profiler_params_mgr.is_set_schedule
 
+    @property
+    def context_mode(self) -> int:
+        return self._context_mode
+
+    @context_mode.setter
+    def context_mode(self, value: int) -> None:
+        """Set context mode value."""
+        if not isinstance(value, int):
+            logger.warning(f"For profiler, the parameter context_mode must be int, "
+                           f"but got {type(value)}, reset to -1.")
+            value = -1
+        self._context_mode = value
+
+    @property
+    def jit_level(self) -> str:
+        return self._jit_level
+
+    @jit_level.setter
+    def jit_level(self, value: str) -> None:
+        """Set jit level value."""
+        if not isinstance(value, str):
+            logger.warning(f"For profiler, the parameter jit_level must be str, "
+                           f"but got {type(value)}, reset to ''.")
+            value = ""
+        self._jit_level = value
+
     def _init_device_target(self) -> None:
         """
         Initialize the device target.
@@ -398,3 +430,14 @@ class ProfilerContext:
         if not self._rank_id or not self._rank_id.isdigit():
             self._rank_id = "0"
             logger.warning("Fail to get RANK_ID, use 0 instead.")
+
+    def _init_context_mode(self):
+        """
+        Initialize the jit level.
+        """
+        if context.get_context("mode") == context.GRAPH_MODE:
+            jit_config = context.get_jit_config()
+            self._jit_level = jit_config.get("jit_level", "")
+            ProfilerInfo().jit_level = self._jit_level
+        ProfilerInfo().context_mode = context.get_context("mode")
+        self._context_mode = context.get_context("mode")
