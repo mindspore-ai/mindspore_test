@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ge_graph_executor.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_graph_executor.h"
 #include <tuple>
 #include <functional>
 #include <algorithm>
@@ -31,39 +31,27 @@
 #include "include/backend/kernel_graph.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "runtime/device/device_address_utils.h"
-#include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
-#include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "plugin/device/ascend/optimizer/ge_optimization.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
-#include "plugin/device/ascend/hal/hardware/ge_memory_allocator.h"
-#include "plugin/device/ascend/hal/hardware/ge_utils.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_memory_allocator.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
-#include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
-#include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
-#include "include/backend/debug/profiler/profiling.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "ge/ge_graph_compile_summary.h"
 #include "op_proto/inc/array_ops.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
-#include "mindspore/ops/op_def/array_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
-#include "utils/phase.h"
-using InputNameAndType = std::vector<std::pair<std::string, bool>>;
-using Data = ::ge::op::Data;
-using RefData = ::ge::op::RefData;
+#include "utils/singleton.h"
+#include "transform/graph_ir/op_adapter_map.h"
+#include "plugin/device/ascend/optimizer/ge_backend_optimization.h"
+#include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
 namespace {
 const std::set<std::string> kIgnoreGEShapeOps = {kSoftMarginLossOpName};
-mindspore::HashMap<std::string, size_t> feature_memorys;
-mindspore::HashMap<std::string, size_t> streams;
-constexpr size_t kNeedRecycleOutput = 5;
 
 void GetMeRetDataType(const AbstractBasePtr &cnode_data, std::vector<TypeId> *me_types) {
   MS_EXCEPTION_IF_NULL(cnode_data);
@@ -166,14 +154,14 @@ void RunGEInitGraph(const FuncGraphPtr &anf_graph) {
   MS_EXCEPTION_IF_NULL(anf_graph);
 
   transform::RunOptions run_options;
-  run_options.name = "init_subgraph." + anf_graph->ToString();
+  run_options.name = "init_subgraph." + GetGraphName(anf_graph);
 
   auto graph_runner = transform::CheckAndGetGraphRunner(run_options);
   if (graph_runner == nullptr) {
     return;
   }
 
-  std::vector<transform::GeTensorPtr> ge_tensors;
+  std::vector<transform::GeTensorPtr> ge_tensors = GetInputTensors(anf_graph);
   std::vector<transform::GeTensorPtr> ge_outputs;
   {
     // Release GIL before calling into (potentially long-running) C++ code
@@ -188,7 +176,6 @@ void RunGEInitGraph(const FuncGraphPtr &anf_graph) {
     if ((ConfigManager::GetInstance().parallel_strategy() == ParallelStrategy::DISTRIBUTION) &&
         (transform::GetGraphByName(BROADCAST_GRAPH_NAME) != nullptr)) {
       run_options.name = BROADCAST_GRAPH_NAME;
-      ge_tensors = GetInputTensors(anf_graph);
       ret = transform::RunGraph(graph_runner, run_options, ge_tensors, &ge_outputs);
       if (ret != transform::Status::SUCCESS) {
         MS_LOG(EXCEPTION) << "Exec BROADCAST_GRAPH_NAME failed.";
@@ -196,6 +183,8 @@ void RunGEInitGraph(const FuncGraphPtr &anf_graph) {
       MS_LOG(DEBUG) << "Exec broadcast graph success.";
     }
   }
+  auto &infer_need_update_parameter_names = Singleton<InferNeedUpdateParaNames>::Instance().GetInferParameterNames();
+  infer_need_update_parameter_names.clear();
 }
 
 void UpdateOutputNodeShape(const AnfNodePtr &node, size_t index, TypeId output_type, const ShapeVector &output_shape) {
@@ -284,19 +273,6 @@ void ClearForwardOutputAddress(const KernelGraphPtr &graph, const DeviceContext 
   }
 }
 
-class ContextReset {
- public:
-  explicit ContextReset(DeviceContext *device_context) : device_context_(device_context) {}
-  ~ContextReset() {
-    if (device_context_ != nullptr && device_context_->device_res_manager_ != nullptr) {
-      device_context_->device_res_manager_->BindDeviceToCurrentThread(true);
-    }
-  }
-
- private:
-  DeviceContext *device_context_;
-};
-
 void UpdateFMTracker(size_t feature_memory_size, const std::string &graph_name) {
   device::tracker::CALL_MEMORY_TRACKER(AllocMemBlock, 0, feature_memory_size, "Ascend",
                                        AscendMemAdapter::GetInstance()->GetActualPeakMemory(), 0, 0, 0);
@@ -359,7 +335,7 @@ void SetOutputs(const std::vector<KernelWithIndex> &graph_outputs,
   }
 }
 
-void SetOutput(GeDeviceResManager *res_manager, GeTensor *ge_output, const AnfNodePtr &output_node, size_t idx) {
+void SetOutput(GeDeviceResManagerPtr res_manager, GeTensor *ge_output, const AnfNodePtr &output_node, size_t idx) {
   if (output_node->isa<ValueNode>()) {
     auto &&ge_data_uni = ge_output->ResetData();
     auto deleter = ge_data_uni.get_deleter();
@@ -405,7 +381,7 @@ void SetOutput(GeDeviceResManager *res_manager, GeTensor *ge_output, const AnfNo
 }
 
 void SetDynamicOutputs(const std::vector<KernelWithIndex> &graph_outputs, std::vector<GeTensor> *ge_outputs,
-                       GeDeviceResManager *res_manager) {
+                       GeDeviceResManagerPtr res_manager) {
   MS_EXCEPTION_IF_NULL(res_manager);
   size_t ge_outputs_index = 0;
   size_t ge_outputs_size = ge_outputs->size();
@@ -428,7 +404,7 @@ void SetDynamicOutputs(const std::vector<KernelWithIndex> &graph_outputs, std::v
 
 void SetDynamicOutputsForKernel(const std::vector<GeTensor> &ge_outputs,
                                 const std::vector<KernelTensor *> &kernel_outputs, const AnfNodeWeakPtr &node,
-                                GeDeviceResManager *res_manager) {
+                                GeDeviceResManagerPtr res_manager) {
   size_t index_ge = 0;
   for (size_t index_kernel = 0; index_kernel < kernel_outputs.size(); ++index_kernel) {
     auto kernel_output = kernel_outputs[index_kernel];
@@ -447,6 +423,19 @@ void SetDynamicOutputsForKernel(const std::vector<GeTensor> &ge_outputs,
     SetOutput(res_manager, &ge_output, node.lock(), index_kernel);
     ++index_ge;
   }
+}
+
+void UpdateTracker(const std::string &task_name, const std::string &node_name, const std::string &graph_str,
+                   device::tracker::MemType mem_type, DeviceAddress *device_tensor) {
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node_name, graph_str);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, task_name, mem_type, device_tensor->GetSize(),
+                                                 device_tensor);
+}
+
+static inline std::string GetNodeInfo(const AnfNodeWeakPtr &node) {
+  auto input_node = node.lock();
+  MS_EXCEPTION_IF_NULL(input_node);
+  return input_node->DebugString();
 }
 }  // namespace
 
@@ -557,27 +546,13 @@ void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph
   MS_LOG(INFO) << "BuildOutputDataGeTensor finish.";
 }
 
-GeDeviceResManager *GeGraphExecutor::ResManager() const {
-  MS_EXCEPTION_IF_NULL(device_context_);
-  auto res_manager = dynamic_cast<GeDeviceResManager *>(device_context_->device_res_manager_.get());
-  MS_EXCEPTION_IF_NULL(res_manager);
-  return res_manager;
-}
-
-void GeGraphExecutor::PreprocessBeforeRun(const KernelGraphPtr &graph) {
-  auto ret = CompileGraph(graph, {});
-  if (!ret) {
-    MS_LOG(EXCEPTION) << "Compile graph fail, graph id: " << graph->graph_id();
-  }
-  InitGEFixMemory(graph, 0);
-}
-
 bool GeGraphExecutor::BuildGraph(const KernelGraphPtr &graph, const transform::TensorOrderMap &tensor_order_map) {
   auto &compile_cache_context = CompileCacheContext::GetInstance();
   auto use_compile_cache = compile_cache_context.UseCompileCache();
+  auto init_compile_cache = compile_cache_context.init_compile_cache();
   auto name = GetGraphName(graph);
   bool has_cache = CacheFileExists(name);
-  if (use_compile_cache && has_cache) {
+  if (use_compile_cache && init_compile_cache && has_cache) {
     MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
     if (!BuildFakeGraph(graph)) {
       return false;
@@ -592,21 +567,10 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
                                    const std::map<string, string> & /* compile_options */) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "ge graph executor compile graph " << graph->ToString();
-  auto &compile_cache_context = CompileCacheContext::GetInstance();
-  auto use_compile_cache = compile_cache_context.UseCompileCache();
   std::map<std::string, ShapeVector> origin_shape;
   const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
-  auto name = GetGraphName(graph);
-  auto init_compile_cache = compile_cache_context.init_compile_cache();
-  bool has_cache = CacheFileExists(name);
-  if (use_compile_cache && init_compile_cache && has_cache) {
-    MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
-    if (!BuildFakeGraph(graph)) {
-      return false;
-    }
-  } else {
-    (void)BuildGraph(graph, tensor_order_map);
-  }
+  (void)BuildGraph(graph, tensor_order_map);
+
   SetDynamicShapeAttr(graph);
   transform::RunOptions run_options;
   run_options.name = GetGraphName(graph);
@@ -614,8 +578,9 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
   if (graph_runner == nullptr) {
     MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
   }
-  // create loop var
+  // create loop var, must run before compile_graph, otherwise sink_size not take effort
   RunInitGraph(run_options.name);
+
   if (graph->is_dynamic_shape()) {
     // Release GIL before calling into (potentially long-running) C++ code
     GilReleaseWithCheck gil_release;
@@ -644,7 +609,7 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
       graph->SetGraphDynamicAttr(true);
     }
   }
-  GEMemoryAllocator::ProcessGraphDeviceAddress(graph, device_context_, ResManager());
+  GEMemoryAllocator::ProcessGraphDeviceAddress(graph, device_context_, ge_res_manager_);
 
   graph->set_run_mode(RunMode::kGraphMode);
   graph->set_memory_managed_by_ge(true);
@@ -676,7 +641,9 @@ void GeGraphExecutor::SetGraphWorkspaceMemory(const KernelGraphPtr &graph, void 
   }
 }
 
-size_t GeGraphExecutor::GetGraphWorkSpaceMemory(const std::string &graph_name) const {
+size_t GeGraphExecutor::GetGraphWorkSpaceMemory(const KernelGraphPtr &graph) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto graph_name = GetGraphName(graph);
   if (!ge_message_manager_.SummaryExist(graph_name)) {
     MS_LOG(INFO) << "The summary of graph: " << graph_name << " is not exist.";
     return 0;
@@ -685,10 +652,148 @@ size_t GeGraphExecutor::GetGraphWorkSpaceMemory(const std::string &graph_name) c
   return summary.workspace_memory_size;
 }
 
+void GeGraphExecutor::AllocGERefreshableFeatureMemory(const KernelGraphPtr &graph) {
+  MS_LOG(INFO) << "Start AllocGERefreshableFeatureMemory";
+  size_t size = GetGraphWorkSpaceMemory(graph);
+  if (size == 0) {
+    return;
+  }
+  auto device_ptr = ge_res_manager_->AllocateMemory(size, kDefaultStreamIndex);
+  SetGraphWorkspaceMemory(graph, device_ptr, size);
+  graph_refreshable_feature_mem_[graph] = device_ptr;
+}
+
+void GeGraphExecutor::FreeGERefreshableFeatureMemory(const KernelGraphPtr &graph) {
+  if (graph_refreshable_feature_mem_.find(graph) == graph_refreshable_feature_mem_.end() ||
+      graph_refreshable_feature_mem_[graph] == nullptr) {
+    return;
+  }
+
+  ge_res_manager_->FreeMemory(graph_refreshable_feature_mem_[graph]);
+  graph_refreshable_feature_mem_[graph] = nullptr;
+}
+
+void GeGraphExecutor::AllocGEInputOutputMemory(const KernelGraphPtr &graph) const {
+  if (!IsEnableRefMode()) {
+    return;
+  }
+  MS_LOG(INFO) << "Start Alloc GE input and output Memory";
+
+  // input
+  std::vector<DeviceAddress *> input_datas;
+  std::vector<std::pair<AnfNodeWeakPtr, size_t>> need_update_input;
+  auto in_iter = input_datas_.find(graph.get());
+  if (in_iter != input_datas_.end()) {
+    input_datas = in_iter->second.device_addrs;
+    need_update_input = in_iter->second.need_update_input;
+  }
+
+  for (size_t i = 0; i < input_datas.size(); ++i) {
+    auto input_address = input_datas[i];
+    if (input_address->GetPtr() == nullptr) {
+      auto mem_type = device::tracker::MemType::kKernel;
+      if (need_update_input[i].first.lock()->isa<Parameter>() &&
+          need_update_input[i].first.lock()->cast<ParameterPtr>()->has_default()) {
+        mem_type = device::tracker::MemType::kWeight;
+      }
+      UpdateTracker("AllocInputs", need_update_input[i].first.lock()->fullname_with_scope(), graph->ToString(),
+                    mem_type, input_address);
+      if (!ge_res_manager_->AllocateMemory(input_address, kDefaultStreamIndex)) {
+        MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:"
+                          << device_context_->device_context_key().device_id_
+                          << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
+                          << input_address->GetSize() << "B.";
+      }
+    }
+  }
+
+  // output
+  std::vector<DeviceAddress *> output_datas;
+  std::vector<std::pair<AnfNodeWeakPtr, size_t>> graph_outputs;
+  auto out_iter = output_datas_.find(graph.get());
+  if (out_iter != output_datas_.end()) {
+    output_datas = out_iter->second.device_addrs;
+    graph_outputs = out_iter->second.graph_outputs;
+  }
+
+  // for io_index
+  auto graph_name = GetGraphName(graph);
+  if (ge_message_manager_.SummaryExist(graph_name)) {
+    auto io_index = ge_message_manager_.GetSummary(graph_name).io_indexes;
+
+    for (auto io : io_index) {
+      if (output_datas[io.second]->GetPtr() != nullptr &&
+          output_datas[io.second]->GetPtr() != input_datas[io.first]->GetPtr()) {
+        MS_LOG(INFO) << "The io_index[" << io.first << ", " << io.second << "] ptr is already exist and not same.";
+        continue;
+      }
+      output_datas[io.second]->set_is_ptr_persisted(input_datas[io.first]->is_ptr_persisted());
+      output_datas[io.second]->set_pointer_ref_count(input_datas[io.first]->pointer_ref_count());
+    }
+  }
+
+  for (size_t i = 0; i < output_datas.size(); ++i) {
+    auto output_address = output_datas[i];
+    if (output_address->GetPtr() == nullptr) {
+      UpdateTracker("AllocOutputs", graph_outputs[i].first.lock()->fullname_with_scope(), graph->ToString(),
+                    device::tracker::MemType::kGraphOutput, output_address);
+      if (!ge_res_manager_->AllocateMemory(output_address, kDefaultStreamIndex)) {
+        MS_LOG(EXCEPTION) << "#umsg#Memory not enough:#umsg#Device(id:"
+                          << device_context_->device_context_key().device_id_
+                          << ") memory isn't enough and alloc failed, kernel name: Split tuple outputs, alloc size: "
+                          << output_address->GetSize() << "B.";
+      }
+    }
+  }
+}
+
+void GeGraphExecutor::FreeInputOutputMemory(const KernelGraphPtr &graph) const {
+  if (!IsEnableRefMode()) {
+    return;
+  }
+  MS_LOG(INFO) << "Start Free GE input and output Memory";
+
+  // input, free memory not weight
+  std::vector<DeviceAddress *> input_datas;
+  auto in_iter = input_datas_.find(graph.get());
+  if (in_iter != input_datas_.end()) {
+    input_datas = in_iter->second.device_addrs;
+  }
+
+  for (size_t i = 0; i < input_datas.size(); ++i) {
+    auto input_address = input_datas[i];
+    if (input_address->GetPtr() != nullptr && !input_address->is_ptr_persisted()) {
+      ge_res_manager_->FreeMemory(input_address);
+    }
+  }
+
+  // output, free memory not persist(same address as input weight)
+  std::vector<DeviceAddress *> output_datas;
+  auto out_iter = output_datas_.find(graph.get());
+  if (out_iter != output_datas_.end()) {
+    output_datas = out_iter->second.device_addrs;
+  }
+
+  for (size_t i = 0; i < output_datas.size(); ++i) {
+    auto output_address = output_datas[i];
+    if (output_address->GetPtr() != nullptr && !output_address->is_ptr_persisted()) {
+      ge_res_manager_->FreeMemory(output_address);
+    }
+  }
+}
+
+DeviceAddressPtr GeGraphExecutor::CreateDeviceAddress(const KernelTensorPtr &kernel_tensor,
+                                                      bool is_need_alloc_mem) const {
+  auto address = ge_res_manager_->CreateDeviceAddress(kernel_tensor);
+  if (is_need_alloc_mem) {
+    ge_res_manager_->AllocateMemory(address.get(), kDefaultStreamIndex);
+  }
+  return address;
+}
+
 void GeGraphExecutor::AllocGEFixMemory() const {
   MS_LOG(INFO) << "Start AllocGEFixMemory";
-  auto res_manager = ResManager();
-  auto alloc_func = [&res_manager](size_t size) { return res_manager->AllocateStaticMemory(size); };
+  auto alloc_func = [this](size_t size) { return ge_res_manager_->AllocateStaticMemory(size); };
   auto update_func = [](bool is_refreshable, const transform::RunOptions &options, const void *const memory,
                         size_t size) {
     MS_LOG(INFO) << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
@@ -709,13 +814,17 @@ void GeGraphExecutor::AllocGEFixMemory() const {
 }
 
 void GeGraphExecutor::InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const {
+  if (!IsEnableRefMode()) {
+    return;
+  }
   transform::RunOptions run_options;
   run_options.name = GetGraphName(graph);
-  if (graph->is_dynamic_shape()) {
+  if (!ge_message_manager_.SummaryExist(run_options.name)) {
+    MS_LOG(INFO) << "The summary of graph: " << run_options.name << " is not exist.";
     return;
   }
   auto summary = ge_message_manager_.GetSummary(run_options.name);
-  GEMemoryAllocator::AllocGraphMemory(run_options, graph, summary, stream_id, ResManager());
+  GEMemoryAllocator::AllocGraphMemory(run_options, graph, summary, stream_id, ge_res_manager_);
 }
 
 bool GeGraphExecutor::CompileGraphForKernel(const KernelGraphPtr &graph) { return CompileGraph(graph, {}); }
@@ -830,39 +939,24 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
 
-  // cppcheck-suppress unreadVariable
-  ContextReset reset_context(device_context_);
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
   MS_EXCEPTION_IF_NULL(kg);
+  is_init_graph_run_[graph] = false;
 
   if (IsEnableRefMode()) {
     auto ret = CompileGraph(kg, compile_options);
 
     (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
                                     profiler::GetClockSyscnt(), 1);
-    InitGEFixMemory(kg, 0);
+    InitGEFixMemory(kg, kDefaultStreamIndex);
     return ret;
   } else {
     // delete SetCPUMemManager when delete env MS_DISABLE_REF_MODE
-    ResManager()->SetCPUMemManager();
+    // ResManager()->SetCPUMemManager();
     std::map<std::string, ShapeVector> origin_shape;
     const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
-    auto &compile_cache_context = CompileCacheContext::GetInstance();
-    auto use_compile_cache = compile_cache_context.UseCompileCache();
-    auto init_compile_cache = compile_cache_context.init_compile_cache();
-    auto name = GetGraphName(graph);
-    bool has_cache = CacheFileExists(name);
-    if (use_compile_cache && init_compile_cache && has_cache) {
-      MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
+    (void)BuildGraph(kg, tensor_order_map);
 
-      if (!BuildFakeGraph(kg)) {
-        (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
-                                        profiler::GetClockSyscnt(), 1);
-        return false;
-      }
-    } else {
-      (void)BuildGraph(kg, tensor_order_map);
-    }
     SetDynamicShapeAttr(kg);
     GEMemoryAllocator::AllocInputHostMemory(kg, device_context_);
     GEMemoryAllocator::AllocOutputHostMemory(kg, device_context_);
@@ -870,13 +964,20 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     if (ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE) {
       kg->set_is_loop_count_sink(true);
     }
-    // copy init weight to device
-    RunGEInitGraph(kg);
+
     RevertOriginShape(kg, origin_shape);
     (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
                                     profiler::GetClockSyscnt(), 1);
     return true;
   }
+  (void)ge_res_manager_->BindDeviceToCurrentThread(true);
+}
+
+void GeGraphExecutor::OptimizeBeforeCompileGraph(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  device::ascend::GEGraphOptimization::GetInstance().GEMindIRPass(graph);
+  std::set<KernelGraphPtr> memo;
+  device::ascend::GEGraphOptimization::GetInstance().OptimizeGEGraph(graph, &memo);
 }
 
 size_t GeGraphExecutor::GetGraphFeatureMemory(const FuncGraphPtr &graph) const {
@@ -885,7 +986,7 @@ size_t GeGraphExecutor::GetGraphFeatureMemory(const FuncGraphPtr &graph) const {
   MS_LOG(WARNING) << "Need Profile Memory, graph: " << graph_name
                   << ", stream: " << ge_message_manager_.GetStream(graph_name);
   if (disable_ge_kernel_) {
-    auto max_static_memory_size = ResManager()->GetMaxUsedMemorySize();
+    auto max_static_memory_size = ge_res_manager_->GetMaxUsedMemorySize();
     auto feature_memory_size = ge_message_manager_.GetFeatureMemory(graph_name);
     auto total_memory_size = max_static_memory_size + feature_memory_size;
     AscendMemAdapter::GetInstance()->UpdateActualPeakMemory(total_memory_size);
@@ -916,9 +1017,8 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
                                             std::vector<GeTensor> *ge_outputs, void *stream) {
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
-  RunInitGraph(graph_name);
   MS_LOG(INFO) << "GE run graph start in ref mode, graph: " << graph_name << ".";
-  (void)ResManager()->BindDeviceToCurrentThread(false);
+  (void)ge_res_manager_->BindDeviceToCurrentThread(false);
 
   // call ge rungraph
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
@@ -931,7 +1031,7 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
 
   bool is_dynamic_shape = kg->is_dynamic_shape();
   if (IsMemoryPoolRecycle() && !is_dynamic_shape) {
-    auto max_static_memory_size = ResManager()->GetMaxUsedMemorySize();
+    auto max_static_memory_size = ge_res_manager_->GetMaxUsedMemorySize();
     auto feature_memory_size = ge_message_manager_.GetFeatureMemory(graph_name);
     if (feature_memory_size != 0) {
       size_t total_memory_size = max_static_memory_size + feature_memory_size;
@@ -965,21 +1065,21 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
   return true;
 }
 
-bool GeGraphExecutor::RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs) {
+bool GeGraphExecutor::RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs) {
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
   MS_LOG(INFO) << "Run graph begin, inputs size is: " << inputs.size() << ", " << graph_name;
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
   std::vector<GeTensor> ge_inputs = GenerateInputGeTensor(kg);
   std::vector<GeTensor> ge_outputs = GenerateOutputGeTensor(kg);
-  auto ret = RunGraphRefModeInnner(graph, ge_inputs, &ge_outputs, ResManager()->GetStream());
+  auto ret = RunGraphRefModeInnner(graph, ge_inputs, &ge_outputs, ge_res_manager_->GetStream());
   if (!ret) {
     return ret;
   }
   if (kg->is_dynamic_shape()) {
     auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
-    SetDynamicOutputs(graph_outputs, &ge_outputs, ResManager());
-    auto sync_ret = ResManager()->SyncStream();
+    SetDynamicOutputs(graph_outputs, &ge_outputs, ge_res_manager_);
+    auto sync_ret = ge_res_manager_->SyncStream(ge_res_manager_->GetStream());
     if (!sync_ret) {
       MS_LOG(EXCEPTION) << "Sync stream failed";
     }
@@ -1004,7 +1104,7 @@ bool GeGraphExecutor::RunGraphRefModeForKernel(const KernelGraphPtr &graph, cons
   }
   if (is_dynamic_shape) {
     MS_LOG(INFO) << "Update outputs for graph: " << graph_name;
-    SetDynamicOutputsForKernel(ge_outputs, outputs, node, ResManager());
+    SetDynamicOutputsForKernel(ge_outputs, outputs, node, ge_res_manager_);
   }
   return true;
 }
@@ -1046,7 +1146,7 @@ std::vector<GeTensor> GeGraphExecutor::CreateInputGeTensorList(const std::vector
     if (tensor->device_ptr() == nullptr) {
       // alloc static memory for unused inputs
       // error in ge when set nullptr into ge tensor
-      GEMemoryAllocator::AllocUnuseInput(graph, tensor, ResManager());
+      GEMemoryAllocator::AllocUnuseInput(graph, tensor, ge_res_manager_);
     }
 
     if (tensor->device_ptr() != ge_inputs[index].GetData() || tensor->size() != ge_inputs[index].GetSize()) {
@@ -1135,17 +1235,40 @@ void GeGraphExecutor::DoAsyncCkpt(const FuncGraphPtr &graph) {
   if (cur_step >= (last_triggered_step + save_steps)) {
     if (SkipOrResetCopyAction()) {
       MS_LOG(INFO) << "Enable async d2h copy";
-      SavePrevStepWeight(kg->GetRootWeights(), ResManager()->GetCopyDataStream());
+      SavePrevStepWeight(kg->GetRootWeights(), ge_res_manager_->GetCopyDataStream());
     }
     if (kg->has_attr(kIsRefGraph) && GetValue<bool>(kg->get_attr(kIsRefGraph)) && SkipOrResetSyncAction()) {
       MS_LOG(INFO) << "Ref graph sync once action";
-      SyncCopyStream(ResManager()->GetCopyDataStream());
+      ge_res_manager_->SyncCopyStream();
     }
   }
 }
 
-bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
-                               std::vector<tensor::Tensor> *outputs,
+void GeGraphExecutor::RunCheckpointGraph(const KernelGraphPtr &graph) {
+  transform::RunOptions run_options;
+  run_options.name = "save." + GetGraphName(graph);
+  auto graph_runner = transform::GetGraphRunner();
+  if (graph_runner == nullptr) {
+    MS_LOG(ERROR) << "Can not found GraphRunner";
+    return;
+  }
+
+  {
+    std::vector<transform::GeTensorPtr> ge_inputs;
+    std::vector<transform::GeTensorPtr> ge_outputs;
+    auto ret = transform::RunGraph(graph_runner, run_options, ge_inputs, &ge_outputs);
+    if (ret == transform::Status::NOT_FOUND) {
+      MS_LOG(INFO) << "Exec graph:" << run_options.name << "not found, skip.";
+      return;
+    } else if (ret != transform::Status::SUCCESS) {
+      MS_LOG(WARNING) << "Exec graph:" << run_options.name << " failed";
+      return;
+    }
+  }
+}
+
+bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
+                               std::vector<tensor::TensorPtr> *outputs,
                                const std::map<string, string> & /* compile_options */) {
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
@@ -1157,24 +1280,35 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
                                       profiler::GetClockSyscnt(), 1);
       return false;
     }
+
   } else {
     MS_LOG(INFO) << "GE run graph start, graph: " << graph_name << ".";
-    (void)ResManager()->BindDeviceToCurrentThread(false);
-    // copy input from device to host
-    const auto &cur_inputs = graph->get_inputs();
-    std::vector<tensor::TensorPtr> input_tensors;
-    for (const auto &input : cur_inputs) {
-      MS_EXCEPTION_IF_NULL(input);
-      auto output_addr = AnfAlgo::GetMutableOutputAddr(input, 0);
-      auto shapes = trans::GetRuntimePaddingShape(input, 0);
-      auto host_type = common::AnfAlgo::GetOutputInferDataType(input, 0);
-      auto tensor = std::make_shared<tensor::Tensor>(host_type, shapes);
-      MS_EXCEPTION_IF_NULL(tensor);
-      tensor->set_device_address(output_addr, false);
-      tensor->data_sync();
-      (void)input_tensors.emplace_back(std::move(tensor));
+    (void)ge_res_manager_->BindDeviceToCurrentThread(false);
+    if (!is_init_graph_run_[graph]) {
+      RunGEInitGraph(graph);
+      is_init_graph_run_[graph] = true;
     }
-    auto ge_inputs = transform::ConvertInputTensors(input_tensors, kOpFormat_NCHW);
+
+    std::vector<transform::GeTensorPtr> ge_inputs;
+    if (!inputs.empty()) {
+      ge_inputs = transform::ConvertInputTensors(inputs, kOpFormat_NCHW);
+    } else {
+      // copy input from device to host
+      std::vector<tensor::TensorPtr> input_tensors;
+      const auto &cur_inputs = graph->get_inputs();
+      for (const auto &input : cur_inputs) {
+        MS_EXCEPTION_IF_NULL(input);
+        auto output_addr = AnfAlgo::GetMutableOutputAddr(input, 0);
+        auto shapes = trans::GetRuntimePaddingShape(input, 0);
+        auto host_type = common::AnfAlgo::GetOutputInferDataType(input, 0);
+        auto tensor = std::make_shared<tensor::Tensor>(host_type, shapes);
+        MS_EXCEPTION_IF_NULL(tensor);
+        tensor->set_device_address(output_addr, false);
+        tensor->data_sync();
+        (void)input_tensors.emplace_back(std::move(tensor));
+      }
+      ge_inputs = transform::ConvertInputTensors(input_tensors, kOpFormat_NCHW);
+    }
 
     // call ge rungraph
     KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
@@ -1236,8 +1370,9 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
   return true;
 }
 
-FuncGraphPtr GeGraphExecutor::BuildDFGraph(const FuncGraphPtr &anf_graph,
-                                           const transform::TensorOrderMap &init_inputs_map, bool export_air) {
+FuncGraphPtr GeGraphExecutor::BuildDFGraph(
+  const FuncGraphPtr &anf_graph, const std::map<std::string, std::shared_ptr<tensor::Tensor>> &init_inputs_map,
+  bool export_air) {
   MS_EXCEPTION_IF_NULL(anf_graph);
 #ifdef ENABLE_DUMP_IR
   auto context = MsContext::GetInstance();
@@ -1267,10 +1402,11 @@ FuncGraphPtr GeGraphExecutor::BuildDFGraph(const FuncGraphPtr &anf_graph,
   return anf_graph;
 }
 
-static inline std::string GetNodeInfo(const AnfNodeWeakPtr &node) {
-  auto input_node = node.lock();
-  MS_EXCEPTION_IF_NULL(input_node);
-  return input_node->DebugString();
+string GeGraphExecutor::ExportDFGraph(const std::string &file_name, const FuncGraphPtr &anf_graph,
+                                      bool is_save_to_file) {
+  MS_EXCEPTION_IF_NULL(anf_graph);
+  auto graph_name = GetGraphName(anf_graph);
+  return transform::ExportDFGraph(file_name, graph_name, is_save_to_file);
 }
 
 std::vector<GeTensor> GeGraphExecutor::GenerateInputGeTensor(const KernelGraphPtr &kernel_graph) const {
@@ -1299,7 +1435,7 @@ std::vector<GeTensor> GeGraphExecutor::GenerateInputGeTensor(const KernelGraphPt
       MS_EXCEPTION_IF_NULL(input_node);
       // alloc static memory for unused inputs
       // error in ge when set nullptr into ge tensor
-      GEMemoryAllocator::AllocUnuseInput(kernel_graph, input_node, output_addr, ResManager());
+      GEMemoryAllocator::AllocUnuseInput(kernel_graph, input_node, output_addr, ge_res_manager_);
     }
     MS_LOG(INFO) << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update input "
                  << GetNodeInfo(iter->second.need_update_input[i].first) << " address to "
@@ -1390,6 +1526,144 @@ void GeGraphExecutor::RunInitGraph(const std::string &graph_name) {
     }
     MS_LOG(INFO) << "Exec " << run_options.name << " graph success.";
   }
+}
+
+void GeGraphExecutor::Initialize() {
+  if (initialized_) {
+    return;
+  }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+
+  if (ms_context->get_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT)) {
+    return;
+  }
+
+  if (static_cast<bool>(ms_context->get_param<uint32_t>(MS_CTX_GE_REF))) {
+    ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
+    return;
+  }
+
+  ge_res_manager_ = std::make_shared<GeDeviceResManager>();
+  ge_res_manager_->Initialize();
+
+  std::map<std::string, std::string> ge_options;
+  GetGeOptions(&ge_options);
+  SetPassthroughGeOptions(true, &ge_options);
+  {
+    // Release GIL before calling into (potentially long-running) C++ code
+    GilReleaseWithCheck gil_release;
+    if (::ge::GEInitialize(ge_options) != ::ge::GRAPH_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Initialize GE failed!";
+    }
+  }
+
+  CreateSessionAndGraphRunner();
+  auto graph_runner = transform::GetGraphRunner();
+  MS_EXCEPTION_IF_NULL(graph_runner);
+  if (IsEnableRefMode()) {
+    ge_allocator_ = std::make_shared<GeAllocator>(ge_res_manager_.get());
+    transform::Status ret =
+      transform::RegisterExternalAllocator(graph_runner, ge_res_manager_->GetStream(), ge_allocator_);
+    if (ret != transform::Status::SUCCESS) {
+      MS_LOG(EXCEPTION) << "RegisterExternalAllocator failed";
+    }
+    MS_LOG(INFO) << "Create session and graphrunner successful.";
+  }
+
+  ms_context->increase_param<uint32_t>(MS_CTX_GE_REF);
+  MS_LOG(INFO) << "Init ge successful, ge reference = " << ms_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
+  initialized_ = true;
+  return;
+}
+
+void GeGraphExecutor::CreateSessionAndGraphRunner() const {
+  auto sess = transform::GetGeSession();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (sess == nullptr) {
+    transform::SessionOptions options;
+    GetGeSessionOptions(&options);
+    SetPassthroughGeOptions(false, &options);
+    sess = transform::NewSession(options);
+    transform::SetGeSession(sess);
+  }
+
+  transform::GraphRunnerOptions options;
+  options.sess_ptr = sess;
+  auto graph_runner = transform::NewGraphRunner(options);
+  transform::SetGraphRunner(graph_runner);
+}
+
+void GeGraphExecutor::Finalize() {
+  if (!initialized_) {
+    return;
+  }
+  // clear ge op adapter
+  transform::OpAdapterMap::get().clear();
+  // remove ge graph
+  transform::DfGraphManager::GetInstance().ClearGraph();
+  // unregister allocator, before ResManager Destroy(use stream)
+  UnregisterExternalAllocator();
+  // Free GeTensorMemory before device_res_manager_ Destroy
+  FreeGeTensorMemory();
+  // set GeAllocator's resmanager as nullptr
+  if (ge_allocator_ != nullptr) {
+    ge_allocator_->ResetResManager();
+  }
+  // Device resource manager must be destroyed before 'FinalizeGe' unless some runtime APIs will throw exception.
+  ge_res_manager_->Destroy();
+
+  // clear graphrunner and session, and GEFinalize
+  (void)FinalizeGe();
+  initialized_ = false;
+}
+
+void GeGraphExecutor::UnregisterExternalAllocator() {
+  auto graph_runner = transform::GetGraphRunner();
+  if (graph_runner == nullptr) {
+    MS_LOG(INFO) << "The graph_runner is not exist";
+    return;
+  }
+  if (!graph_runner->IsAllocatorRegistered()) {
+    return;
+  }
+  auto ret = transform::UnregisterExternalAllocator(graph_runner, ge_res_manager_->GetStream());
+  if (ret != transform::Status::SUCCESS) {
+    MS_LOG(EXCEPTION) << "UnregisterExternalAllocator failed";
+  }
+}
+
+bool GeGraphExecutor::FinalizeGe() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<uint32_t>(MS_CTX_GE_REF) == 0) {
+    return true;
+  }
+  ms_context->decrease_param<uint32_t>(MS_CTX_GE_REF);
+  if (ms_context->get_param<uint32_t>(MS_CTX_GE_REF) == 0) {
+    ms_context->set_param<uint32_t>(MS_CTX_GE_REF, 0);
+    try {
+      transform::ClearGeSessionAndRunner();
+    } catch (const std::exception &e) {
+      MS_LOG(ERROR) << "Error occurred when deleting GE graph runner and session fail. Error: " << e.what();
+    } catch (...) {
+      std::string exName(abi::__cxa_current_exception_type()->name());
+      MS_LOG(ERROR) << "Error occurred when deleting GE graph runner and session fail. Exception name: " << exName;
+    }
+    if (::ge::GEFinalize() != ::ge::GRAPH_SUCCESS) {
+      MS_LOG(WARNING) << "Finalize GE failed!";
+    }
+    ms_context->set_param<bool>(MS_CTX_IS_PYNATIVE_GE_INIT, false);
+  } else {
+    MS_LOG(INFO) << "Ge is used, no need to finalize, tsd reference = "
+                 << ms_context->get_param<uint32_t>(MS_CTX_GE_REF) << ".";
+  }
+  return true;
+}
+
+std::unordered_set<std::string> GeGraphExecutor::GetInferParameterNames() {
+  return Singleton<InferNeedUpdateParaNames>::Instance().GetInferParameterNames();
 }
 }  // namespace ascend
 }  // namespace device

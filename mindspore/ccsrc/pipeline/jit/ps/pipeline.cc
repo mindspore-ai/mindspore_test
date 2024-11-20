@@ -807,13 +807,13 @@ void GraphExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std:
   it->second->jit_grad_graph = grad_graph;
 }
 
-compile::VmEvalFuncPtr GraphExecutorPy::GetVmEvalFunc(const std::string &phase) {
+compile::VmEvalFuncPtr GraphExecutorPy::GetVmEvalFunc(const std::string &phase, const std::string &kind) {
   ResourcePtr res = GetResource(phase);
   MS_EXCEPTION_IF_NULL(res);
-  if (res->HasResult(kOutput) && res->GetResult(kOutput).is<compile::VmEvalFuncPtr>()) {
-    return res->GetResult(kOutput).cast<compile::VmEvalFuncPtr>();
+  if (res->HasResult(kind) && res->GetResult(kind).is<compile::VmEvalFuncPtr>()) {
+    return res->GetResult(kind).cast<compile::VmEvalFuncPtr>();
   }
-  MS_LOG(ERROR) << "GetVmEvalFunc vm model can't find kOutput:" << kOutput;
+  MS_LOG(ERROR) << "GetVmEvalFunc vm model can't find kind:" << kind;
   return nullptr;
 }
 
@@ -1846,20 +1846,6 @@ py::object GraphExecutorPy::Run(const py::tuple &args, const py::object &phase) 
   return res;
 }
 
-#ifdef WITH_BACKEND
-void GraphExecutorPy::GeFirstInitParams() {
-  static bool inited = false;
-  if (!inited) {
-    MS_LOG(INFO) << "Start init params.";
-    const auto &init_params = GetParams(phase_);
-    auto ret = InitParams(init_params, phase_);
-    if (ret) {
-      inited = true;
-    }
-  }
-}
-#endif
-
 void GraphExecutorPy::ClearRunArgumentsResource(size_t input_arg_size, VectorRef *arg_list) {
   for (std::size_t i = 0; i < input_arg_size; ++i) {
     (*arg_list)[i] = nullptr;
@@ -1892,22 +1878,15 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   }
 #ifdef WITH_BACKEND
   if (ms_context->backend_policy() == "ge") {
-    if (!IsEnableRefMode()) {
-      GeFirstInitParams();
-    }
-
     if (phase_prefix == "save") {
-      auto pos = phase.find('.');
-      std::string origin_phase = phase.substr(pos + 1);
-      FuncGraphPtr func_graph = info_["train." + origin_phase]->func_graph;
-      MS_EXCEPTION_IF_NULL(func_graph);
-      MS_EXCEPTION_IF_NULL(MsContext::GetInstance());
-      auto device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-        {MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET),
-         MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-      MS_EXCEPTION_IF_NULL(device_context);
-      MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-      device_context->GetDeprecatedInterface()->DoExecNonInputGraph("save." + func_graph->ToString());
+      phase.erase(0, 5);
+      compile::VmEvalFuncPtr run = GetVmEvalFunc("train." + phase, kCkptOutput);
+      if (run == nullptr) {
+        MS_LOG(INTERNAL_EXCEPTION) << "Can't find run graph func for " << phase;
+      }
+
+      VectorRef ckpt_args;
+      (void)(*run)(ckpt_args);
       ConfigManager::GetInstance().ResetConfig();
       return py::none();
     }
@@ -1963,42 +1942,82 @@ py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &ph
   return res;
 }  // namespace pipeline
 
-bool GraphExecutorPy::InitParams(const py::dict &init_params, const std::string &phase) const {
-  MS_LOG(INFO) << "Init params when ge backend, phase = " << phase;
-  if (info_.count(phase) == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "No phase in executor: " << GetPhasePrefix(phase);
-  }
-  DeviceContext *device_context = nullptr;
-  try {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({kAscendDevice, device_id});
-  } catch (const std::exception &) {
-    return false;
-  }
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-  return device_context->GetDeprecatedInterface()->RunInitGraph(info_.at(phase)->func_graph, init_params);
-}
-
 FuncGraphPtr GraphExecutorPy::BuildGraph(const py::dict &init_params, const std::string &phase) const {
   MS_LOG(INFO) << "Start build df graph, phase = " << phase;
   if (info_.count(phase) == 0) {
     MS_LOG(INTERNAL_EXCEPTION) << "No phase in executor: " << GetPhasePrefix(phase);
   }
-  DeviceContext *device_context = nullptr;
-  try {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({kAscendDevice, device_id});
-  } catch (const std::exception &) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (target != kAscendDevice) {
+    MS_LOG(INFO) << "Only Support ascend.";
     return nullptr;
   }
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-  return device_context->GetDeprecatedInterface()->BuildDFGraph(info_.at(phase)->func_graph, init_params);
+
+  auto iter = info_.find(phase);
+  if (iter == info_.end()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Phase " << phase << " must compile.";
+  }
+  auto backend = compile::CreateBackend();
+  MS_EXCEPTION_IF_NULL(backend);
+  const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
+  MS_EXCEPTION_IF_NULL(mindrt_backend);
+  std::map<std::string, std::shared_ptr<Tensor>> init_tensors{};
+  ConvertObjectToTensors(mindrt_backend, init_params, &init_tensors, info_.at(phase)->func_graph);
+  return mindrt_backend->BuildDFGraph(info_.at(phase)->func_graph, init_tensors);
+}
+
+void GraphExecutorPy::ConvertObjectToTensors(const std::shared_ptr<compile::MindRTBackend> &backend,
+                                             const py::dict &dict,
+                                             std::map<std::string, std::shared_ptr<Tensor>> *const tensors,
+                                             const FuncGraphPtr &anf_graph) const {
+  const auto &infer_need_update_parameter_names = backend->GetInferParameterNames();
+  bool infer = false;
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  bool enable_ge = context_ptr->backend_policy() == "ge";
+  bool is_train = false;
+  if (anf_graph->has_attr("phase")) {
+    std::string phase = anf_graph->get_attr("phase")->ToString();
+    is_train = phase == "train";
+  }
+  if (enable_ge && !is_train) {
+    infer = true;
+  }
+  for (auto item : dict) {
+    if ((!py::isinstance<py::str>(item.first))) {
+      MS_LOG(WARNING) << "Type of key of py_dict is not string, ignore it.";
+      continue;
+    }
+    std::shared_ptr<Tensor> tensor;
+    std::string name = py::cast<std::string>(item.first);
+
+    if (infer && infer_need_update_parameter_names.find(name) == infer_need_update_parameter_names.end() &&
+        !IsEnableRefMode()) {
+      continue;
+    }
+    if (py::isinstance<py::float_>(item.second.attr("data"))) {
+      // convert float to tensor with shape([1])
+      tensor = std::make_shared<Tensor>(kNumberTypeFloat32, std::vector<int64_t>({1}));
+      *(static_cast<float *>(tensor->data_c())) = py::cast<float>(item.second.attr("data"));
+    } else if (py::isinstance<py::int_>(item.second.attr("data"))) {
+      // convert int64_t to tensor with shape([1])
+      tensor = std::make_shared<Tensor>(kNumberTypeInt32, std::vector<int64_t>({1}));
+      *(static_cast<float *>(tensor->data_c())) = py::cast<float>(item.second.attr("data"));
+    } else if (py::isinstance<Tensor>(item.second.attr("data"))) {
+      // cast tensor
+      tensor = py::cast<std::shared_ptr<Tensor>>(item.second.attr("data"));
+    } else if (IsStubTensor(item.second.attr("data"))) {
+      // cast stub_tensor
+      tensor = ConvertStubTensor(item.second.attr("data"));
+    }
+
+    if (tensor == nullptr) {
+      MS_LOG(EXCEPTION) << "Get default value for " << name << " failed";
+    }
+    (void)tensors->emplace(name, tensor);
+  }
 }
 
 void GraphExecutorPy::UpdataParamNodeDefaultInput(
@@ -2283,20 +2302,55 @@ uint32_t GetHcclRankSize() {
 
 void GraphExecutorPy::ExportGraph(const std::string &file_name, const std::string &phase, const py::object encrypt,
                                   char *key) {
-  DeviceContext *device_context = nullptr;
-  try {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({kAscendDevice, device_id});
-  } catch (const std::exception &) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  auto target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (target != kAscendDevice) {
     MS_EXCEPTION(ValueError) << "Only support export file in 'AIR' format with Ascend backend.";
   }
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
+
+  bool is_save_to_file = true;
+  if (key != nullptr) {
+    if (py::isinstance<py::none()>(encrypt)) {
+      MS_LOG(ERROR) << "ERROR: encrypt is not a function";
+      return;
+    }
+    is_save_to_file = false;
+  }
+  auto iter = info_.find(phase);
+  if (iter == info_.end()) {
+    MS_LOG(ERROR) << "Phase " << phase << " must compile.";
+    return;
+  }
+  auto backend = compile::CreateBackend();
+  MS_EXCEPTION_IF_NULL(backend);
+  const auto &mindrt_backend = std::dynamic_pointer_cast<compile::MindRTBackend>(backend);
+  MS_EXCEPTION_IF_NULL(mindrt_backend);
   FuncGraphPtr func_graph = info_[phase]->func_graph;
   MS_EXCEPTION_IF_NULL(func_graph);
-  device_context->GetDeprecatedInterface()->ExportDFGraph(file_name, func_graph->ToString(), encrypt, key);
+
+  string save_str = mindrt_backend->ExportDFGraph(file_name, func_graph, is_save_to_file);
+  if (is_save_to_file) {
+    return;
+  }
+  // save_to_mem in GE & save to file use encrypt
+  py::bytes model_bytes(save_str);
+  py::bytes key_bytes(key);
+
+  // call python encrypt func
+  py::bytes encrypted_model_stream = encrypt(model_bytes, key_bytes);
+  if (encrypted_model_stream == py::none()) {
+    MS_LOG(ERROR) << "ERROR: Model encrypt fail";
+    return;
+  }
+  // save to file
+  std::ofstream ofs(file_name);
+  if (!ofs.is_open()) {
+    MS_LOG(ERROR) << "ERROR: Open File '" << file_name << "' failed!";
+    return;
+  }
+  ofs << std::string(encrypted_model_stream);
+  ofs.close();
 }
 
 FuncGraphPtr LoadMindIR(const std::string &file_name, const char *dec_key, const size_t key_len,
@@ -2602,15 +2656,6 @@ void ClearResPart1() {
   runtime::ProfilerAnalyzer::GetInstance().Clear();
   opt::PassConfigure::Instance().Clear();
 
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->backend_policy() != "ge") {
-    // clear runtime resource before destroy hccl comm
-    MS_LOG(INFO) << "Start clear kernel runtime...";
-    device::KernelRuntimeManager::Instance().ClearRuntimeResource();
-    MS_LOG(INFO) << "End clear kernel runtime.";
-  }
-
   MS_LOG(INFO) << "Start Finalize StreamSynchronizer...";
   device::StreamSynchronizer::GetInstance()->Finalize();
   MS_LOG(INFO) << "End Finalize StreamSynchronizer...";
@@ -2634,41 +2679,24 @@ void ClearResPart2() {
   pynative::PyNativeExecutor::GetInstance()->ClearRes();
   MS_LOG(INFO) << "End clear PyNativeExecutor.";
 
-#ifndef ENABLE_TEST
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->backend_policy() == "ge") {
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    DeviceContext *device_context =
-      device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({kAscendDevice, device_id});
-    MS_EXCEPTION_IF_NULL(device_context);
-    MS_EXCEPTION_IF_NULL(device_context->GetDeprecatedInterface());
-    device_context->GetDeprecatedInterface()->ClearGraphWrapper();
-    device_context->GetDeprecatedInterface()->ClearOpAdapterMap();
-    // unregister external allocator, before clear stream and graphrunner
-    device_context->GetDeprecatedInterface()->UnregisterExternalAllocator();
-    // clear runtime resource after clear graph when ge
-    MS_LOG(INFO) << "Start clear kernel runtime...";
-    device::KernelRuntimeManager::Instance().ClearRuntimeResource();
-    MS_LOG(INFO) << "End clear kernel runtime.";
-  } else {
-    MS_LOG(INFO) << "Start clear ConfigManager...";
-    ConfigManager::GetInstance().ResetIterNum();
-    MS_LOG(INFO) << "End clear ConfigManager.";
-  }
-#else
   MS_LOG(INFO) << "Start clear ConfigManager...";
   ConfigManager::GetInstance().ResetIterNum();
   MS_LOG(INFO) << "End clear ConfigManager.";
-#endif
 
   session::ExecutorManager::Instance().Clear();
-  // for GE, HcclCommDestroy should after RemoveGraph in ClearGraphWrapper
-  (void)distributed::collective::CollectiveManager::instance()->Finalize();
 
   MS_LOG(INFO) << "Start clear device context...";
   device::DeviceContextManager::GetInstance().ClearDeviceContexts();
   MS_LOG(INFO) << "End clear device context.";
+
+  MS_LOG(INFO) << "Start clear kernel runtime...";
+  device::KernelRuntimeManager::Instance().ClearRuntimeResource();
+  MS_LOG(INFO) << "End clear kernel runtime.";
+
+  MS_LOG(INFO) << "Start clear CollectiveManager...";
+  // for GE, HcclCommDestroy should after RemoveGraph in ClearGraphWrapper in ClearDeviceContexts
+  (void)distributed::collective::CollectiveManager::instance()->Finalize();
+  MS_LOG(INFO) << "End clear CollectiveManager.";
 
   MS_LOG(INFO) << "Start clear AnalysisResultCacheMgr...";
   abstract::AnalysisResultCacheMgr::GetInstance().Clear();

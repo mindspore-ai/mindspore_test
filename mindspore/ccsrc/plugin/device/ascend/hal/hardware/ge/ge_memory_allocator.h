@@ -22,8 +22,8 @@
 #include "include/backend/kernel_graph.h"
 #include "include/transform/graph_ir/types.h"
 #include "runtime/hardware/device_context.h"
-#include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
-#include "plugin/device/ascend/hal/hardware/ge_summary.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_device_res_manager.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_summary.h"
 
 namespace mindspore {
 namespace device {
@@ -31,15 +31,15 @@ namespace ascend {
 class GEMemoryAllocator {
  public:
   static void ProcessGraphDeviceAddress(const KernelGraphPtr &kernel_graph, DeviceContext *device_context,
-                                        GeDeviceResManager *res_manager);
+                                        GeDeviceResManagerPtr res_manager);
   static void AllocInputHostMemory(const KernelGraphPtr &kernel_graph, DeviceContext *device_context);
   static void AllocOutputHostMemory(const KernelGraphPtr &kernel_graph, DeviceContext *device_context);
   static void AllocGraphMemory(const transform::RunOptions &options, const KernelGraphPtr &graph,
-                               const GraphSummary &summary, size_t stream_id, GeDeviceResManager *res_manager);
+                               const GraphSummary &summary, size_t stream_id, GeDeviceResManagerPtr res_manager);
   static void AllocUnuseInput(const KernelGraphPtr &kernel_graph, const AnfNodePtr &input_node,
-                              DeviceAddress *output_addr, GeDeviceResManager *res_manager);
+                              DeviceAddress *output_addr, GeDeviceResManagerPtr res_manager);
   static void AllocUnuseInput(const KernelGraphPtr &kernel_graph, KernelTensor *tensor,
-                              GeDeviceResManager *res_manager);
+                              GeDeviceResManagerPtr res_manager);
 };
 }  // namespace ascend
 }  // namespace device

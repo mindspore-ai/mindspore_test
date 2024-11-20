@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/hal/hardware/ge_memory_manager.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_memory_manager.h"
 #include <algorithm>
 #include "include/backend/mem_reuse/mem_tracker.h"
 

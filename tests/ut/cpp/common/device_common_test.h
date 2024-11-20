@@ -221,8 +221,8 @@ class TestKernelExecutor : public device::KernelExecutor {
 class TestGraphExecutor : public device::GraphExecutor {
  public:
   ~TestGraphExecutor() override = default;
-  bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
-                std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) {
+  bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
+                std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) {
     MS_LOG(INFO) << "Ut run test graph.";
     MS_EXCEPTION_IF_NULL(graph);
     const auto &kernel_graph = dynamic_cast<KernelGraph *>(graph.get());

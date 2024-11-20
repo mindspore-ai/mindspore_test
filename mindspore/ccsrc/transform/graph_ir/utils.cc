@@ -516,5 +516,13 @@ bool SinkGraphCheck(const AnfNodePtr &node, bool train) {
   }
   return true;
 }
+
+string ExportDFGraph(const std::string &file_name, const std::string &graph_name, bool is_save_to_file) {
+  auto graph_runner = transform::GetGraphRunner();
+  if (graph_runner == nullptr) {
+    MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
+  }
+  return graph_runner->ExportDFGraph(file_name, graph_name, is_save_to_file);
+}
 }  // namespace transform
 }  // namespace mindspore

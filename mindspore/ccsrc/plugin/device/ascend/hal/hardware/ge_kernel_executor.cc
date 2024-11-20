@@ -24,7 +24,6 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/common/session/kernel_graph_mgr.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "plugin/device/ascend/hal/hardware/ge_utils.h"
 #include "plugin/device/ascend/device_context_conf/op_debug_conf.h"
 #include "plugin/device/ascend/device_context_conf/op_precision_conf.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
@@ -100,7 +99,7 @@ std::string GetKernelTypeStr(const KernelType &kernel_type) {
 
 kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel);
 
-bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *graph_executor = nullptr) {
+bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
   for (const auto &kernel : kernels) {
     MS_EXCEPTION_IF_NULL(kernel);
     if (AnfAlgo::GetKernelMod(kernel)) {
@@ -127,7 +126,7 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *gr
     } else if (kernel_type == KernelType::INTERNAL_KERNEL) {
       kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
     } else if (kernel_type == KernelType::GE_KERNEL) {
-      kernel_mod_ptr = kernel::GeOpBuild(kernel, graph_executor);
+      kernel_mod_ptr = kernel::GeOpBuild(kernel);
     } else {
       MS_LOG_WITH_NODE(EXCEPTION, kernel)
         << "The kernel: " << kernel->fullname_with_scope()
@@ -904,7 +903,6 @@ void GeKernelExecutor::Initialize() {
   MS_EXCEPTION_IF_NULL(device_context_);
   res_manager_ = device_context_->device_res_manager_.get();
   MS_EXCEPTION_IF_NULL(res_manager_);
-  graph_executor_ = dynamic_cast<GeGraphExecutor *>(device_context_->graph_executor_.get());
   SetAclDebugKernel();
   // not check graph executor, may use in ascend device context
   SetAclOpPrecisionMode();
@@ -917,7 +915,6 @@ void GeKernelExecutor::Destroy() {
     return;
   }
   res_manager_ = nullptr;
-  graph_executor_ = nullptr;
   initialized_ = false;
 }
 
@@ -975,7 +972,7 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   MS_LOG(DEBUG) << "Status record: start create kernel.";
   uint64_t start_time = profiler::GetClockSyscnt();
   SetKernelInfoBeforeCreateKernel(nodes);
-  auto ret = GenerateKernelMod(nodes, graph_executor_);
+  auto ret = GenerateKernelMod(nodes);
   if (!ret) {
     MS_LOG(EXCEPTION) << "Kernel build error.";
   }
@@ -1071,8 +1068,6 @@ void GeKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
   PROF_END(OptimizeExecutionOrder);
 }
 
-void GeKernelExecutor::AllocGraphFixedMemory() const { graph_executor_->AllocGEFixMemory(); }
-
 namespace {
 void InitGeMemory(const KernelGraphPtr &kernel_graph) {
   auto execution_order = kernel_graph->execution_order();
@@ -1116,13 +1111,14 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
     std::cout << "The size of execution order: " << nodes.size() << std::endl;
     std::cout << "The size of all node: " << all_nodes.size() << std::endl;
   }
-  // use GE
+
+  // use GE, delete when delete disable_ge_kernel
   if (kernel_graph->is_graph_run_mode() && IsEnableRefMode()) {
     if (AnfAlgo::IsNoRealKernelGraph(kernel_graph)) {
       return;
     }
-    MS_EXCEPTION_IF_NULL(graph_executor_);
-    graph_executor_->PreprocessBeforeRun(kernel_graph);
+    MS_EXCEPTION_IF_NULL(device_context_->graph_executor_);
+    dynamic_cast<GeGraphExecutor *>(device_context_->graph_executor_.get())->CompileGraph(graph, {});
     (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
                                     profiler::GetClockSyscnt(), 1);
     return;
@@ -1228,7 +1224,7 @@ void GeKernelExecutor::DoAsyncCkpt(const CNodePtr &kernel) const {
     if (common::AnfAlgo::HasNodeAttr(kFromRefGraph, kernel) &&
         common::AnfAlgo::GetNodeAttr<bool>(kernel, kFromRefGraph) && SkipOrResetSyncAction()) {
       MS_LOG(INFO) << "Ref op sync once action";
-      SyncCopyStream(AscendStreamMng::GetInstance().GetCopyStream());
+      AscendStreamMng::GetInstance().SyncStream(AscendStreamMng::GetInstance().GetCopyStream());
     }
   }
 }
@@ -1333,7 +1329,13 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
       MS_LOG(EXCEPTION) << "input_addr_list.size() or output_addr_list.size() is invalid, input_addr_list.size():"
                         << input_addr_list.size() << ", output_addr_list.size():" << output_addr_list.size();
     }
-    kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
+    if (std::dynamic_pointer_cast<device::cpu::CPUDeviceAddress>(input_addr_list[0]) != nullptr &&
+        std::dynamic_pointer_cast<device::cpu::CPUDeviceAddress>(output_addr_list[0]) != nullptr) {
+      // for unrefmode, the output is on host, just copy the device ptr
+      output_addr_list[0]->set_ptr(input_addr_list[0]->GetMutablePtr());
+    } else {
+      kernel::pyboost::CustomizeCopyAscend(device_context_, input_addr_list[0], output_addr_list[0], stream_id);
+    }
   }
 
   auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);

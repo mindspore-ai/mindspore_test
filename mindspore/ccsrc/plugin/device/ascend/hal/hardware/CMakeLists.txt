@@ -8,6 +8,7 @@ file(GLOB_RECURSE MS_HARDWARE_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "ascend_deprecated_interface.cc"
         "ge_device_context.cc"
         "ge_summary.cc"
+        "ascend_device_res_manager.cc"
         "ge_device_res_manager.cc"
         "ge_memory_allocator.cc"
         "ge_memory_manager.cc"

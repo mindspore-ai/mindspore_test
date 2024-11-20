@@ -245,7 +245,7 @@ void TaskEmitActionForMindRT(const ResourcePtr &resource) {
 
 void ExecuteActionForMindRT(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
-  const auto actor_info = resource->GetResult(kOutput).cast<compile::ActorInfo>();
+  auto actor_info = resource->GetResult(kOutput).cast<compile::ActorInfo>();
   // Get the mindRT backend.
   auto bc_ptr = resource->GetBackend();
   auto mindrt_bc_ptr = (std::dynamic_pointer_cast<compile::MindRTBackend>(bc_ptr)).get();
@@ -265,6 +265,17 @@ void ExecuteActionForMindRT(const ResourcePtr &resource) {
       }
     });
   resource->SetResult(kOutput, run);
+  if (MsContext::GetInstance()->backend_policy() == "ge") {
+    compile::VmEvalFuncPtr ckpt_run =
+      std::make_shared<compile::VmEvalFunc>([mindrt_bc_ptr, actor_info](const VectorRef &args) -> BaseRef {
+        MS_LOG(DEBUG) << "Execute args size " << args.size();
+        auto ckpt_actor_info = "save." + actor_info;
+        VectorRef outputs;
+        mindrt_bc_ptr->RunGraph(ckpt_actor_info, args, &outputs);
+        return VectorRef();
+      });
+    resource->SetResult(kCkptOutput, ckpt_run);
+  }
 }
 
 FuncGraphPtr ConstructGraphForEval(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {

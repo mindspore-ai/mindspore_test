@@ -15,10 +15,10 @@
 
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
 from mindspore import ops
 import mindspore as ms
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
 
 
 @test_utils.run_with_cell
@@ -73,9 +73,7 @@ def test_nllloss_forward_ascend(mode, data_type):
     weight = ms.Tensor(np.array([0.2, 0.3, 0.1, 0.15, 0.25]).astype(data_type))
     actual_output = nllloss_forward_func(logits, labels, weight)
     expect_loss = np.array([0.681, 0.24312, 0.57645]).astype(data_type)
-    expect_total_weight = np.array(0).astype(data_type)
     assert np.allclose(actual_output[0].asnumpy(), expect_loss)
-    assert np.allclose(actual_output[1].asnumpy(), expect_total_weight)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',

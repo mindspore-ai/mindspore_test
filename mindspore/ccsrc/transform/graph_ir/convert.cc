@@ -46,7 +46,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/hal/hardware/ge_utils.h"
+#include "plugin/device/ascend/hal/hardware/ge/ge_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "transform/graph_ir/op_adapter.h"
 #include "transform/graph_ir/op_adapter_desc.h"
