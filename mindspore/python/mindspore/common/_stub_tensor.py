@@ -21,6 +21,7 @@ from mindspore.common.dtype import type_size_in_bytes
 from mindspore._c_expression import TensorNode, SequenceNode, NoneTypeNode, AnyTypeNode
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.common.api import _convert_python_data
+from mindspore.common._tensor_cpp_method import tensor_cpp_methods
 
 
 def _stub_member(var, init):
@@ -182,7 +183,7 @@ def _init_stub_tensor_api():
     cpp_tensor_func = dir(Tensor_)
     for attr in need_init_func:
         func = inspect.getattr_static(Tensor, attr)
-        if attr in cpp_tensor_func:
+        if attr in cpp_tensor_func and attr not in tensor_cpp_methods:
             # for cpp tensor api, we always need to sync for real tensor first
             setattr(StubTensor, attr, _stub_method(func))
         else:

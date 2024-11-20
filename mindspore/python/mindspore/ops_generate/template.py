@@ -167,6 +167,10 @@ TENSOR_FUNC_UT_OVERLOAD_BODY = Template.load_from_file(
     os.path.join(WORK_PATH,
                  './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_ut_overload_body.tpl'))
 
+TENSOR_CPP_METHOD = Template.load_from_file(
+    os.path.join(WORK_PATH,
+                 './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_cpp_method.tpl'))
+
 TENSOR_FUNC_CLASS_REG = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_func_class_reg.tpl'))
 
