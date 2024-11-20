@@ -28,8 +28,8 @@ from mindspore.profiler.common.ascend_msprof_exporter import AscendMsprofExporte
 class AscendMsprofParser(BaseParser):
     """Parser for MindSpore profiling data on Ascend platform."""
 
-    _MSPROF_TIMELINE_FILE_PATTERN = "msprof*.json"
-    _OP_SUMMARY_FILE_PATTERN = "op_summary_*.csv"
+    _MSPROF_TIMELINE_FILE_PATTERN = "msprof_[0-9]*.json"
+    _OP_SUMMARY_FILE_PATTERN = "op_summary_[0-9]*.csv"
 
     def __init__(self, next_parser: Optional[BaseParser] = None, **kwargs):
         """Initialize AscendMsprofParser."""
