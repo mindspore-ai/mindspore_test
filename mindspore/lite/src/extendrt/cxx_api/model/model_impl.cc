@@ -959,8 +959,8 @@ Status ModelImpl::Preprocess(const std::vector<std::vector<MSTensor>> &inputs, s
     size_t offset = 0;
     for (size_t j = 0; j < output_unbatch.size(); j++) {
       auto ret =
-        memcpy_s(reinterpret_cast<unsigned uint8_t *>(output_batched[i].MutableData()) + offset,
-                 output_unbatch[j][i].DataSize(), output_unbatch[j][i].MutableData(), output_unbatch[j][i].DataSize());
+        memcpy_s(reinterpret_cast<uint8_t *>(output_batched[i].MutableData()) + offset, output_unbatch[j][i].DataSize(),
+                 output_unbatch[j][i].MutableData(), output_unbatch[j][i].DataSize());
       if (ret) {
         MS_LOG(ERROR) << "Memory copy failed to construct High-Dim Tensor.";
         return Status(kMEFailed, "Memory copy failed to construct High-Dim Tensor.");
