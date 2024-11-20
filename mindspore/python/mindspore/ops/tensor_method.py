@@ -348,7 +348,8 @@ from mindspore.ops.function.array_func import where as where_func
 
 # 153
 
-# 154
+# 154 isneginf
+from mindspore.ops.auto_generate import isneginf_ext
 
 # 155
 
@@ -973,6 +974,8 @@ def tensor_triu(input, diagonal=0):
 # 153
 
 # 154
+def tensor_isneginf(input):
+    return isneginf_ext(input)
 
 # 155
 

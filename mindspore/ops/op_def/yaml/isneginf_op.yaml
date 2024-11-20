@@ -1,0 +1,14 @@
+#operator isneginf
+isneginf:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: IsNegInf
+  function:
+    name: isneginf_ext
+  dispatch:
+    enable: True
