@@ -177,16 +177,25 @@ void OutputActor::RunOpControl(AID *const, OpContext<DeviceTensor> *const contex
       if (device_tensor_store_key.second != nullptr && device_tensor_store_key.second->isa<ValueNode>()) {
         const auto &value = device_tensor_store_key.second->cast<ValueNodePtr>()->value();
         MS_EXCEPTION_IF_NULL(value);
-        if (!flatten_stub_nodes_.empty()) {
-          const auto &stub_node = flatten_stub_nodes_.at(device_tensor_store_key.first);
-          MS_EXCEPTION_IF_NULL(stub_node);
-          stub_node->SetValue(value);
-        }
         if (value->isa<tensor::Tensor>()) {
           outputs_[device_tensor_store_key.first] = value->cast<tensor::TensorPtr>();
+          if (!flatten_stub_nodes_.empty()) {
+            const auto &stub_node = flatten_stub_nodes_.at(device_tensor_store_key.first);
+            MS_EXCEPTION_IF_NULL(stub_node);
+            MS_LOG(DEBUG) << "Begin set tensor value for: " << device_tensor_store_key.second->fullname_with_scope()
+                          << ", value: " << value->ToString();
+            stub_node->SetValue(value);
+          }
           continue;
         } else if (value->isa<Scalar>()) {
           outputs_[device_tensor_store_key.first] = ScalarToTensor(value->cast<ScalarPtr>());
+          if (!flatten_stub_nodes_.empty()) {
+            const auto &stub_node = flatten_stub_nodes_.at(device_tensor_store_key.first);
+            MS_EXCEPTION_IF_NULL(stub_node);
+            MS_LOG(DEBUG) << "Begin set scalar value for: " << device_tensor_store_key.second->fullname_with_scope()
+                          << ", value: " << value->ToString();
+            stub_node->SetValue(value);
+          }
           continue;
         } else if (value->isa<StringImm>()) {
           MS_LOG(DEBUG) << "Output value node:" << device_tensor_store_key.second->DebugString();
@@ -272,7 +281,9 @@ void OutputActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<De
     const auto &stub_node = flatten_stub_nodes_.at(output_position);
     MS_EXCEPTION_IF_NULL(stub_node);
     tensor->set_need_pipeline_sync(true);
-    stub_node->SetValue(tensor);
+    if (!stub_node->isa<stub::StringNode>()) {
+      stub_node->SetValue(tensor);
+    }
   }
   current_outputs_num_++;
 }

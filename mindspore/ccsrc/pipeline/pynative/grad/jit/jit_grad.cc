@@ -586,8 +586,7 @@ py::object Jit::GradJit(const py::object &out, const py::args &args) {
   MS_EXCEPTION_IF_NULL(jit_forward_graph);
   // Get an actual forward output object.
   py::object ret = out;
-  bool forward_modify_output = jit_forward_graph->modify_output();
-  if (forward_modify_output) {
+  if (jit_forward_graph->modify_output()) {
     auto tuple_out = py::cast<py::tuple>(out);
     ret = tuple_out[0];
   }

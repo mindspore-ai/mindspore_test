@@ -107,6 +107,7 @@ class StringNode : public StubNode {
   StringNode() = default;
   MS_DECLARE_PARENT(StringNode, StubNode);
   bool SetAbstract(const AbstractBasePtr &abs) override;
+  void SetValue(const ValuePtr &val) override;
 };
 using StringNodePtr = std::shared_ptr<StringNode>;
 

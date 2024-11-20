@@ -283,6 +283,14 @@ bool StringNode::SetAbstract(const AbstractBasePtr &abs) {
   return StubNode::SetAbstract(abs);
 }
 
+void StringNode::SetValue(const ValuePtr &val) {
+  MS_EXCEPTION_IF_NULL(val);
+  if (!val->isa<StringImm>()) {
+    MS_LOG(EXCEPTION) << "Expect a StringImm value for StringNode, but got: " << val->ToString();
+  }
+  StubNode::SetValue(val);
+}
+
 bool ScalarNode::SetAbstract(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   if (!abs->isa<abstract::AbstractScalar>()) {
@@ -329,7 +337,7 @@ std::pair<py::object, StubNodePtr> MakeTopNode(const TypePtr &type) {
 
 std::pair<StubNodePtr, bool> MakeStubNode(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
-  MS_LOG(DEBUG) << "Make stub node for Abstract: " << abs->ToString();
+  MS_LOG(INFO) << "Make stub node for Abstract: " << abs->ToString();
   const auto &type = abs->GetType();
   MS_EXCEPTION_IF_NULL(type);
   const auto &shape = abs->GetShape();
@@ -367,8 +375,14 @@ std::pair<StubNodePtr, bool> MakeStubNode(const AbstractBasePtr &abs) {
     if (string_value && string_value->isa<StringImm>()) {
       str_node->SetValue(string_value);
       MS_LOG(DEBUG) << "Make stub string node, value: " << string_value->ToString();
+    } else {
+      MS_LOG(INFO) << "There is no string value in abstract: " << abs->ToString();
+      return {nullptr, false};
     }
-    str_node->SetAbstract(abs);
+    if (!str_node->SetAbstract(abs)) {
+      MS_LOG(INFO) << "Set abstract for StringNode failed, abstract: " << abs->ToString();
+      return {nullptr, false};
+    }
     return {str_node, true};
   } else if (type->IsFromTypeId(Number::kTypeId)) {
     MS_LOG(DEBUG) << "Make stub scalar node";
@@ -378,7 +392,10 @@ std::pair<StubNodePtr, bool> MakeStubNode(const AbstractBasePtr &abs) {
       scalar_node->SetValue(scalar_value);
       MS_LOG(DEBUG) << "Make stub scalar node, value: " << scalar_node->ToString();
     }
-    scalar_node->SetAbstract(abs);
+    if (!scalar_node->SetAbstract(abs)) {
+      MS_LOG(INFO) << "Set abstract for ScalarNode failed, abstract: " << abs->ToString();
+      return {nullptr, false};
+    }
     return {scalar_node, true};
   }
   MS_LOG(INFO) << "Unsupported stub tensor for type: " << type->ToString();
@@ -426,10 +443,12 @@ py::object StubNodeToPyObject(const StubNodePtr &node) {
   } else if (node->isa<StringNode>()) {
     MS_LOG(DEBUG) << "Begin wait value for stub string node.";
     const auto &value = node->WaitValue();
-    MS_LOG(DEBUG) << "Begin wait value for stub string node.";
+    MS_LOG(DEBUG) << "End wait value for stub string node.";
     MS_EXCEPTION_IF_NULL(value);
     const auto &string_value = value->cast<StringImmPtr>();
-    MS_EXCEPTION_IF_NULL(string_value);
+    if (!string_value) {
+      MS_LOG(EXCEPTION) << "Expect a StringImm in stub string node, but got: " << value->ToString();
+    }
     py::str res = string_value->value();
     return res;
   } else if (node->isa<ScalarNode>()) {
