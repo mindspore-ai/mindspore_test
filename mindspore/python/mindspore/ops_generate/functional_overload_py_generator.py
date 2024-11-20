@@ -42,7 +42,11 @@ class FunctionalOverloadPyGenerator(BaseGenerator):
         self.FUNCTIONAL_OVERLOAD_PY_TEMPLATE = template.FUNCTIONAL_OVERLOAD_PY_TEMPLATE
 
         self.import_mint_template = Template("from mindspore._c_expression import ${cpp_func_name}Functional_\n")
-        self.mint_init_template = Template("${mint_func_name} = ${cpp_func_name}Functional_()\n")
+        self.mint_init_template = Template("_${mint_func_name} = ${cpp_func_name}Functional_()\n")
+        self.mint_def_template = Template(
+            'def ${mint_func_name}(*args, **kwargs):\n'
+            '    return _${mint_func_name}(*args, **kwargs)\n\n\n'
+        )
 
     def generate(self, work_path, mint_func_protos_data, alias_api_mapping):
         """
@@ -51,21 +55,24 @@ class FunctionalOverloadPyGenerator(BaseGenerator):
         Args:
             mint_func_protos_data (dict): A dictionary mapping mint API names to their prototype data.
         """
-        import_mint_list, mint_init_list, add_to_all_list = [], [], []
+        import_mint_list, mint_init_list, mint_def_list, add_to_all_list = [], [], [], []
         for mint_api_name, _ in mint_func_protos_data.items():
             cpp_func_name = pyboost_utils.format_func_api_name(mint_api_name)
             import_mint_list.append(self.import_mint_template.replace(cpp_func_name=cpp_func_name))
             mint_init_list.append(self.mint_init_template.replace(mint_func_name=mint_api_name,
                                                                   cpp_func_name=cpp_func_name))
+            mint_def_list.append(self.mint_def_template.replace(mint_func_name=mint_api_name))
             add_to_all_list.append(f'"{mint_api_name}",\n')
             if mint_api_name in alias_api_mapping:
                 for alias_api_name in alias_api_mapping[mint_api_name]:
                     mint_init_list.append(self.mint_init_template.replace(mint_func_name=alias_api_name,
                                                                           cpp_func_name=cpp_func_name))
+                    mint_def_list.append(self.mint_def_template.replace(mint_func_name=alias_api_name))
                     add_to_all_list.append(f'"{alias_api_name}",\n')
 
         func_overload_py_file = self.FUNCTIONAL_OVERLOAD_PY_TEMPLATE.replace(import_mint_list=import_mint_list,
                                                                              mint_init_list=mint_init_list,
+                                                                             mint_def_list=mint_def_list,
                                                                              add_to_all_list=add_to_all_list)
         save_path = os.path.join(work_path, K.MS_MINT_FUNC_PATH)
         file_name = "functional_overload.py"

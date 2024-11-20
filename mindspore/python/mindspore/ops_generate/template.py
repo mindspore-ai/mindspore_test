@@ -117,14 +117,17 @@ REGISTER_PYBOOST_GRAD_DEFINE_TEMPLATE = Template(
     "MS_REG_PYBOOST_GRAD_OP(${pyboost_op_name}, mindspore::runtime::${pyboost_cfunc_name});\n")
 REGISTER_PYBOOST_GRAD_TEMPLATE = Template("${register_func}")
 
+PYBOOST_FUNCTION_HEADER_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_functions_h.tpl'))
+
 PYBOOST_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_function.tpl'))
 
 PYBOOST_COMM_FUNCTION_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_comm_function.tpl'))
 
-PYBOOST_HEADER_TEMPLATE = Template.load_from_file(
-    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_function_header.tpl'))
+PYBOOST_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/pyboost_functions_cc.tpl'))
 
 PYBOOST_OVERLOAD_FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
     os.path.join(

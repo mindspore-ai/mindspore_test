@@ -17,6 +17,9 @@ ${import_mint_list}
 
 ${mint_init_list}
 
+
+${mint_def_list}
+
 __all__ = [
     ${add_to_all_list}
 ]

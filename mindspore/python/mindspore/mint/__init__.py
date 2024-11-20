@@ -345,7 +345,7 @@ from mindspore.ops.auto_generate import log1p
 # 261
 from mindspore.ops.function.random_func import multinomial_ext as multinomial
 # 275
-from mindspore.ops.function.math_func import remainder_ext as remainder
+from mindspore.mint.functional_overload import remainder
 # 285
 from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 # 289

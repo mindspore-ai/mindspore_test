@@ -64,7 +64,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         self.PYBOOST_COMM_FUNCTION_TEMPLATE = template.PYBOOST_COMM_FUNCTION_TEMPLATE
         self.REGISTER_DEFINE_TEMPLATE = template.REGISTER_DEFINE_TEMPLATE
         self.REGISTER_TEMPLATE = template.REGISTER_TEMPLATE
-        self.PYBOOST_HEADER_TEMPLATE = template.PYBOOST_HEADER_TEMPLATE
+        self.PYBOOST_HEADER_TEMPLATE = template.PYBOOST_FUNCTIONS_CC_TEMPLATE
         self.TENSOR_FUNC_CLASS_REG = template.TENSOR_FUNC_CLASS_REG
 
     def generate(self, work_path, op_protos, tensor_func_protos_data):

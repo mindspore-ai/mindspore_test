@@ -147,11 +147,11 @@ from mindspore.ops.function.math_func import le
 # 56 log2
 
 # 57 logical_and
-from mindspore.ops.function.math_func import  logical_and
+from mindspore.ops.function.math_func import logical_and
 # 58 logical_not
-from mindspore.ops.function.math_func import  logical_not
+from mindspore.ops.function.math_func import logical_not
 # 59 logical_or
-from mindspore.ops.function.math_func import  logical_or
+from mindspore.ops.function.math_func import logical_or
 # 60 long
 
 # 61 lt
@@ -280,6 +280,8 @@ from mindspore.ops.function.array_func import tril
 
 # 122 where
 from mindspore.ops.function.array_func import where as where_func
+
+
 # 123 div_
 
 # 124 fill_
@@ -509,6 +511,7 @@ def tensor_greater(input, other):
 def tensor_index_select(input, dim, index):
     return index_select(input, dim, index)
 
+
 def deprecated_tensor_index_select(input, axis, index):
     return index_select(input, axis, index)
 
@@ -689,7 +692,11 @@ def tensor_reciprocal(input):
 
 
 # 85 remainder
-def tensor_remainder(input, divisor):
+def tensor_remainder(input, other):
+    return remainder(input, other)
+
+
+def deprecated_tensor_remainder(input, divisor):
     return remainder(input, divisor)
 
 
@@ -874,7 +881,6 @@ def tensor_not_equal(input, other):
 # 149 triu
 def tensor_triu(input, diagonal=0):
     return F.triu(input, diagonal)
-
 
 # 150 __eq__
 
