@@ -755,9 +755,11 @@ def tensor_neg(input):
 # 81 permute
 
 # 82 pow
-def tensor_pow(input, exponent):
+def tensor_pow_tensor_tensor(input, exponent):
     return pow(input, exponent)
 
+def deprecated_tensor_pow(input, exponent):
+    return pow(input, exponent)
 
 # 83 prod
 def tensor_prod(input, axis=None, keep_dims=False, dtype=None):
