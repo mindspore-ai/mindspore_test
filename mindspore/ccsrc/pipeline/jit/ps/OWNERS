@@ -6,10 +6,14 @@ approvers:
 reviewers:
 - lanzhineng
 - Margaret_wangrui
-- irmo
 - huangbingjian
 - Liangcan-Li
-- ligan15
+- dingjinshan
+- propathee
+- shuqian0
+- yuanqi1104
+- chaijinwei
+- nuohang
 
 options:
     no_parent_owners: true
