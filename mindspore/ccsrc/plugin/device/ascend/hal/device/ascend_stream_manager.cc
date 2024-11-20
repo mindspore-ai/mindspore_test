@@ -185,9 +185,11 @@ void AscendStreamMng::CreateStreamWithFlags(size_t *stream_id, uint32_t flags, i
 
 aclrtEvent AscendStreamMng::ApplyRtEvent() {
   aclrtEvent rt_event = nullptr;
-  auto ret = CALL_ASCEND_API(aclrtCreateEvent, &rt_event);
+  // Use ex api of event, so that no limits on event total size.
+  uint32_t flag = ACL_EVENT_SYNC;
+  auto ret = CALL_ASCEND_API(aclrtCreateEventExWithFlag, &rt_event, flag);
   if (ret != ACL_ERROR_NONE) {
-    MS_LOG(EXCEPTION) << "aclrtCreateEvent failed, ret:" << ret;
+    MS_LOG(EXCEPTION) << "aclrtCreateEventExWithFlag failed, ret : " << ret << ".";
   }
   (void)events_.emplace_back(rt_event);
   return rt_event;
