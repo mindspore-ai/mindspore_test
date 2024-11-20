@@ -388,7 +388,8 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         elif global_jit_config:
             logger.debug("Current global jit config is: {}".format(global_jit_config["jit_level"]))
             self.enable_allfinite = global_jit_config["jit_level"] == "O0" or global_jit_config["jit_level"] == "O1"
-
+        if "RANK_TABLE_FILE" in os.environ:
+            self.enable_allfinite = False
         if self.ascend_910b_target:
             checker = AscendEnvChecker(None)
             if not checker.check_custom_version():

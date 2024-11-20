@@ -72,6 +72,9 @@ def _enable_all_finite():
     else:
         return False
 
+    if "RANK_TABLE_FILE" in os.environ:
+        return False
+
     runtime_conf = os.environ.get('MS_DEV_RUNTIME_CONF')
     global_jit_config = context.get_jit_config()
     if runtime_conf is not None and ("all_finite:True" in runtime_conf or "all_finite:true" in runtime_conf):
