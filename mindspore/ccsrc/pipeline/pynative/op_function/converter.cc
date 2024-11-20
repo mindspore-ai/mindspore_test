@@ -566,7 +566,7 @@ bool FunctionSignature::parse(const py::list &args, const py::dict &kwargs, py::
   return nkwargs == 0;
 }
 
-FunctionSignature::FunctionSignature(const std::string &fmt, int index) : min_args_(0), max_args_(0), index_(index) {
+FunctionSignature::FunctionSignature(const std::string &fmt, int index) : max_args_(0), index_(index) {
   auto open_paren = fmt.find('(');
   if (open_paren == std::string::npos) {
     MS_LOG(EXCEPTION) << "parse failed";
@@ -575,6 +575,7 @@ FunctionSignature::FunctionSignature(const std::string &fmt, int index) : min_ar
 
   auto last_offset = open_paren + 1;
   bool done = false;
+  bool has_kwonlyargs = false;
   while (!done) {
     auto offset = fmt.find(", ", last_offset);
     auto next_offset = offset + 2;
@@ -593,15 +594,15 @@ FunctionSignature::FunctionSignature(const std::string &fmt, int index) : min_ar
     }
 
     auto param_str = fmt.substr(last_offset, offset - last_offset);
-    last_offset = next_offset;
-    params_.emplace_back(param_str);
-  }
-
-  max_args_ = params_.size();
-  for (auto &param : params_) {
-    if (!param.optional_) {
-      min_args_++;
+    if (param_str.compare("*") != 0) {
+      if (!has_kwonlyargs) {
+        max_args_++;
+      }
+      params_.emplace_back(param_str);
+    } else {
+      has_kwonlyargs = true;
     }
+    last_offset = next_offset;
   }
 }
 
