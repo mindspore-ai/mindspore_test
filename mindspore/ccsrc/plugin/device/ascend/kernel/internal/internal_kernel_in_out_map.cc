@@ -75,34 +75,6 @@ std::vector<int> InternalKernelModInOutMap::GetKernelOutMap(const std::string &o
   return {};
 }
 
-std::vector<int64_t> InternalKernelModInOutMap::MapInternelInputDtypes(const std::string &op_name,
-                                                                       const std::vector<TypeId> &ms_dtypes) {
-  std::vector<int64_t> internel_dtypes;
-  auto map_iter = input_idx_.find(op_name);
-  if (map_iter == input_idx_.end()) {
-    return internel_dtypes;
-  }
-  auto idx_list = map_iter->second;
-  for (size_t i = 0; i < idx_list.size(); i++) {
-    internel_dtypes.push_back(InternalKernelUtils::ToInternalDType(ms_dtypes[idx_list.at(i)]));
-  }
-  return internel_dtypes;
-}
-
-std::vector<int64_t> InternalKernelModInOutMap::MapInternelOutputDtypes(const std::string &op_name,
-                                                                        const std::vector<TypeId> &ms_dtypes) {
-  std::vector<int64_t> internel_dtypes;
-  auto map_iter = output_idx_.find(op_name);
-  if (map_iter == output_idx_.end()) {
-    return internel_dtypes;
-  }
-  auto idx_list = map_iter->second;
-  for (size_t i = 0; i < idx_list.size(); i++) {
-    internel_dtypes.push_back(InternalKernelUtils::ToInternalDType(ms_dtypes[idx_list.at(i)]));
-  }
-  return internel_dtypes;
-}
-
 std::vector<acme::DataType> InternalKernelModInOutMap::MapAcmeInputDtypes(const std::string &op_name,
                                                                           const std::vector<TypeId> &ms_dtypes) {
   std::vector<acme::DataType> acme_dtypes;
