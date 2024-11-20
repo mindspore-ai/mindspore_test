@@ -40,10 +40,10 @@ TypePtr AbstractInferInfoAdapter::GetTypePtr() {
 
 ShapeVector AbstractInferInfoAdapter::GetShape() {
   if (MS_UNLIKELY(IsSequence())) {
-    MS_LOG(EXCEPTION) << "Calling GetType on a sequence, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetShape() on a sequence, " << BaseDebugInfo();
   }
   if (MS_UNLIKELY(IsNone())) {
-    MS_LOG(EXCEPTION) << "Calling GetType on a None object, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetShape() on a None object, " << BaseDebugInfo();
   }
   auto shape_ptr = GetShapePtr();
   if (MS_LIKELY(shape_ptr->isa<abstract::TensorShape>())) {
@@ -61,10 +61,10 @@ bool AbstractInferInfoAdapter::IsDynamicRank() { return GetShapePtr()->IsDimUnkn
 
 TypeId AbstractInferInfoAdapter::GetType() {
   if (MS_UNLIKELY(IsSequence())) {
-    MS_LOG(EXCEPTION) << "Calling GetType on a sequence, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetType() on a sequence, " << BaseDebugInfo();
   }
   if (MS_UNLIKELY(IsNone())) {
-    MS_LOG(EXCEPTION) << "Calling GetType on a None object, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetType() on a None object, " << BaseDebugInfo();
   }
   const auto &type_ptr = GetTypePtr();
   if (type_ptr->isa<TensorType>()) {
@@ -73,7 +73,7 @@ TypeId AbstractInferInfoAdapter::GetType() {
   } else if (type_ptr->isa<Number>()) {
     return type_ptr->type_id();
   } else {
-    MS_LOG(EXCEPTION) << "Calling GetType on unsupported value type '" << type_ptr->type_name() << "',"
+    MS_LOG(EXCEPTION) << "Calling GetType() on unsupported value type '" << type_ptr->type_name() << "',"
                       << BaseDebugInfo();
   }
 }
@@ -93,7 +93,7 @@ bool AbstractInferInfoAdapter::IsSequence() {
 bool AbstractInferInfoAdapter::IsDynamicSequence() {
   RETURN_IF_OPTIONAL_HAS_VALUE(is_dynamic_seq_);
   if (!IsSequence()) {
-    MS_LOG(EXCEPTION) << "Calling IsDynamicSequence on a non-sequence, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling IsDynamicSequence() on a non-sequence, " << BaseDebugInfo();
   }
   is_dynamic_seq_ = abs_->GetShape()->isa<abstract::DynamicSequenceShape>();
   return is_dynamic_seq_.value();

@@ -23,10 +23,10 @@
 namespace mindspore::ops {
 ShapeVector ValueInferInfoAdapter::GetShape() {
   if (MS_UNLIKELY(IsSequence())) {
-    MS_LOG(EXCEPTION) << "Calling GetShape on a sequence, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetShape() on a sequence, " << BaseDebugInfo();
   }
   if (MS_UNLIKELY(IsNone())) {
-    MS_LOG(EXCEPTION) << "Calling GetShape on a None object, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetShape() on a None object, " << BaseDebugInfo();
   }
   if (value_->isa<tensor::BaseTensor>()) {
     auto tensor = value_->cast<tensor::BaseTensorPtr>();
@@ -34,7 +34,7 @@ ShapeVector ValueInferInfoAdapter::GetShape() {
   } else if (value_->isa<Scalar>()) {
     return {};
   } else {
-    MS_LOG(EXCEPTION) << "Calling GetShape on unsupported value type '" << value_->type_name() << "',"
+    MS_LOG(EXCEPTION) << "Calling GetShape() on unsupported value type '" << value_->type_name() << "',"
                       << BaseDebugInfo();
   }
 }
@@ -45,10 +45,10 @@ bool ValueInferInfoAdapter::IsDynamicRank() { return false; }
 
 TypeId ValueInferInfoAdapter::GetType() {
   if (MS_UNLIKELY(IsSequence())) {
-    MS_LOG(EXCEPTION) << "Calling GetType on a sequence, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetType() on a sequence, " << BaseDebugInfo();
   }
   if (MS_UNLIKELY(IsNone())) {
-    MS_LOG(EXCEPTION) << "Calling GetType on a None object, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetType() on a None object, " << BaseDebugInfo();
   }
   if (value_->isa<tensor::BaseTensor>()) {
     auto tensor = value_->cast<tensor::BaseTensorPtr>();
@@ -58,7 +58,7 @@ TypeId ValueInferInfoAdapter::GetType() {
     MS_EXCEPTION_IF_NULL(type_ptr);
     return type_ptr->type_id();
   } else {
-    MS_LOG(EXCEPTION) << "Calling GetType on unsupported value type, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetType() on unsupported value type, " << BaseDebugInfo();
   }
 }
 
@@ -76,7 +76,7 @@ bool ValueInferInfoAdapter::IsSequence() {
 
 std::vector<InferInfoPtr> ValueInferInfoAdapter::GetSequenceElements() {
   if (MS_UNLIKELY(!IsSequence())) {
-    MS_LOG(EXCEPTION) << "Calling GetSequenceElements on a non-sequence, " << BaseDebugInfo();
+    MS_LOG(EXCEPTION) << "Calling GetSequenceElements() on a non-sequence, " << BaseDebugInfo();
   }
   auto value_sequence = value_->cast<ValueSequencePtr>();
   MS_EXCEPTION_IF_NULL(value_sequence);
@@ -92,7 +92,7 @@ std::vector<InferInfoPtr> ValueInferInfoAdapter::GetSequenceElements() {
 bool ValueInferInfoAdapter::IsDynamicSequence() { return false; }
 
 InferInfoPtr ValueInferInfoAdapter::GetDynamicSequenceElement() {
-  MS_LOG(EXCEPTION) << "Calling GetDynamicSequenceElement on a non-dynamic sequence, " << BaseDebugInfo();
+  MS_LOG(EXCEPTION) << "Calling GetDynamicSequenceElement() on a non-dynamic sequence, " << BaseDebugInfo();
 }
 
 ValuePtr ValueInferInfoAdapter::GetValuePtr() { return value_; }
