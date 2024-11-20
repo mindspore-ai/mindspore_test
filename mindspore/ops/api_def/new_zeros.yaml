@@ -1,0 +1,7 @@
+new_zeros:
+  op_yaml: new_zeros_op.yaml
+  py_method: tensor_new_zeros
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method
