@@ -248,7 +248,7 @@ from mindspore.ops.auto_generate import square
 # 103 sub
 
 # 104 sum
-
+from mindspore.ops.function.math_func import sum
 # 105 swapaxes
 
 # 106 t
@@ -885,6 +885,15 @@ def tensor_square(input):
 # 103 sub
 
 # 104 sum
+def deprecated_tensor_sum(input, axis=None, dtype=None, keepdims=False, initial=None):
+    if initial is None:
+        res = sum(input, axis, keepdims, dtype=dtype)
+    else:
+        res = sum(input, axis, keepdims, dtype=dtype) + initial
+    if dtype is not None and (dtype == mstype.bool_):
+        res = res.astype(mstype.bool_)
+    return res
+
 
 # 105 swapaxes
 

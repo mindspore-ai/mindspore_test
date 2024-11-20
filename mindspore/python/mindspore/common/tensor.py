@@ -3039,63 +3039,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         x_var = self.var(axis, ddof, keepdims)
         return tensor_operator_registry.get('__pow__')(x_var, 0.5)
 
-    def sum(self, axis=None, dtype=None, keepdims=False, initial=None):
-        """
-        Return sum of tensor elements over a given axis.
-
-        Note:
-            Numpy arguments `out`, `where`, `casting`, `order`, `subok`, `signature`, and `extobj` are not supported.
-            The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
-
-        Args:
-            axis (Union[None, int, tuple(int), list(int), Tensor]): Axis or axes along which a sum is performed.
-                Default: ``None`` .
-                If ``None`` , sum all the elements of the input tensor.
-                If the `axis` is negative, it counts from the last to the first `axis`.
-                If the `axis` is a tuple or list of ints, a sum is performed on all the axes specified in the tuple
-                or list instead of a single `axis` or all the axes as before.
-            dtype (:class:`mindspore.dtype`, optional): defaults to ``None`` . Overrides the dtype of the
-                output Tensor.
-            keepdims (bool): If this is set to ``True`` , the axes which are reduced are left in the result as
-                dimensions with size one. With this option, the result will broadcast correctly against the input
-                array. If the default value is passed, then `keepdims` will not be passed through to the sum method
-                of sub-classes of ndarray, however any non-default value will be. If the sub-class method does not
-                implement `keepdims` any exceptions will be raised. Default: ``False`` .
-            initial (scalar): Starting value for the sum. Default: ``None`` .
-
-        Returns:
-            Tensor. A tensor with the same shape as input, with the specified `axis` removed.
-            If the input tensor is a 0-d array, or if the `axis` is ``None`` , a scalar is returned.
-
-        Raises:
-            TypeError: If input is not array_like, or `axis` is not int, tuple of ints, list of ints or Tensor,
-                or `keepdims` is not integer, or `initial` is not scalar.
-            ValueError: If any `axis` is out of range or duplicate axes exist.
-
-        See also:
-            - :func:`mindspore.Tensor.cumsum`: Return the cumulative sum of the elements along a given `axis`.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> from mindspore import Tensor
-            >>> input_x = Tensor(np.array([-1, 0, 1]).astype(np.float32))
-            >>> print(input_x.sum())
-            0.0
-            >>> input_x = Tensor(np.arange(10).reshape(2, 5).astype(np.float32))
-            >>> print(input_x.sum(axis=1))
-            [10. 35.]
-        """
-        if initial is None:
-            res = tensor_operator_registry.get("sum")(self, axis, keepdims, dtype=dtype)
-        else:
-            res = tensor_operator_registry.get("sum")(self, axis, keepdims, dtype=dtype) + initial
-        if dtype is not None and (dtype == mstype.bool_):
-            res = res.astype(mstype.bool_)
-        return res
-
     def sum_to_size(self, *size):
         r"""
         Sum self Tensor to the `size`. `size` must be expandable to the Tensor size.
