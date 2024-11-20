@@ -140,6 +140,9 @@ void AsyncRQueue::Wait() {
     return;
   }
 
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kWait, name_, false,
+                                     false);
+
   MS_LOG(DEBUG) << "Start to wait thread " << name_;
   while (!tasks_queue_.IsEmpty()) {
   }
