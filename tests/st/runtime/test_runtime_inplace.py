@@ -755,6 +755,7 @@ def test_heter_control_flow_inplace_from_stack_actor():
     assert out == 17
 
 
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
 def test_heter_backoff_inplace_in_super_kernel_actor():
     """
     Feature: Support tensor inplace.
@@ -781,9 +782,11 @@ def test_heter_backoff_inplace_in_super_kernel_actor():
     input_y = ms.Tensor(3)
     input_z = mutable([input_x, input_y], dynamic_len=True)
     net = Net()
-    out = net(input_x, input_y, input_z)
-    print("out:", out)
-    assert out == 10
+    out1 = net(input_x, input_y, input_z)
+    out2 = net(input_x, input_y, input_z)
+    print("out:", out1)
+    assert out1 == 10
+    assert out2 == 10
 
 
 def test_heter_backoff_control_flow_inplace_in_super_kernel_actor():
@@ -1137,3 +1140,46 @@ def test_cnode_inplace_nopnode2():
     print("out:", out)
     assert np.all(out[0].asnumpy() == [[9, 9, 9, 9]])
     assert np.all(out[1].asnumpy() == [5, 5, 5, 5])
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="onecard", essential_mark="essential")
+def test_heter_inplace_dynamic_shape():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd_ascend = P.AssignAdd()
+            self.assignadd = P.AssignAdd()
+            self.assignadd.set_device("CPU")
+
+        def construct(self, x, y, z):
+            while x < 4:
+                x = x + 1
+                self.assignadd(z, x)
+                self.assignadd_ascend(z, y)
+                self.assignadd(z, x)
+                self.assignadd_ascend(z, y)
+            return z
+
+    x_dyn = Tensor(shape=[None], dtype=ms.int64)
+    y_dyn = Tensor(shape=[None], dtype=ms.int64)
+    z_dyn = Tensor(shape=[None], dtype=ms.int64)
+    net = Net()
+    net.set_inputs(x_dyn, y_dyn, z_dyn)
+
+    input_x = Tensor([1])
+    input_y = Tensor([3])
+    input_z = Tensor([1])
+    out1 = net(input_x, input_y, input_z)
+
+    input_x = Tensor([1, 1, 1])
+    input_y = Tensor([3, 3, 3])
+    input_z = Tensor([1, 1, 1])
+    out2 = net(input_x, input_y, input_z)
+
+    assert out1 == 37
+    assert np.all(out2.asnumpy() == [37, 37, 37])

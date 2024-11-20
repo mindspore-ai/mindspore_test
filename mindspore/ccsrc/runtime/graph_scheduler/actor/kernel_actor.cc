@@ -775,10 +775,8 @@ void KernelActor::CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t inpu
   }
 
   MS_LOG(INFO) << GetAID().Name() << " the input position:" << input_index
-               << " copy from device address:" << device_tensor << " ptr:" << device_tensor->GetPtr()
-               << ", type:" << device_tensor->GetDeviceType() << ", format:" << device_tensor->format()
-               << " to device address:" << new_device_tensor.get() << " ptr:" << new_device_tensor->GetPtr()
-               << ", type:" << new_device_tensor->GetDeviceType() << ", format:" << new_device_tensor->format();
+               << " copy from device address:" << device_tensor << " " << device_tensor->PrintInfo()
+               << " to device address:" << new_device_tensor << " " << new_device_tensor->PrintInfo();
   // Copy from the real parameter to formal parameter and insert the device tensor copy store.
   if (!Copy(new_device_tensor.get(), device_tensor)) {
     std::string error_info = "Copy device tensor failed: " + GetAID().Name();

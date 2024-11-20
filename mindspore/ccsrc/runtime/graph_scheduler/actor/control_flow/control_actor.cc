@@ -426,11 +426,16 @@ void ControlActor::CreateHeterDeviceTensor(DeviceTensor *const node_device_tenso
                                            DeviceTensor *const input_device_tensor, DeviceContext *const device_context,
                                            size_t index, OpContext<DeviceTensor> *const context,
                                            const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node_device_tensor);
+  MS_EXCEPTION_IF_NULL(input_device_tensor);
+  MS_EXCEPTION_IF_NULL(device_context);
+  MS_EXCEPTION_IF_NULL(node);
   const auto &kernel_tensor = node_device_tensor->kernel_tensor();
   MS_EXCEPTION_IF_NULL(kernel_tensor);
   auto new_kernel_tensor = kernel_tensor->CloneKernelTensor();
   MS_EXCEPTION_IF_NULL(new_kernel_tensor);
   new_kernel_tensor->set_device_ptr(nullptr);
+  new_kernel_tensor->SetShape(input_device_tensor->kernel_tensor()->GetShape());
   auto new_device_tensor = device_context->device_res_manager_->CreateDeviceAddress(new_kernel_tensor);
   MS_EXCEPTION_IF_NULL(new_device_tensor);
   UpdateRefCount(new_device_tensor.get(), true);
@@ -541,6 +546,7 @@ void ControlActor::UpdateOutputData(OpData<DeviceTensor> *const output_data, con
                     << " type:" << dst_device_tensor->GetDeviceType() << " to:" << device_tensor
                     << " type:" << device_tensor->GetDeviceType();
       device_tensor->set_ptr(dst_device_tensor->GetMutablePtr());
+      device_tensor->kernel_tensor()->SetShape(dst_device_tensor->kernel_tensor()->GetShape());
       MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << device_tensor
                     << " type:" << device_tensor->GetDeviceType() << " and " << data
                     << " type:" << data->GetDeviceType() << " for copy actor:" << GetAID();
@@ -549,6 +555,7 @@ void ControlActor::UpdateOutputData(OpData<DeviceTensor> *const output_data, con
       continue;
     }
     device_tensor->set_ptr(data->GetMutablePtr());
+    device_tensor->kernel_tensor()->SetShape(data->kernel_tensor()->GetShape());
     MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << device_tensor
                   << " type:" << device_tensor->GetDeviceType() << " and " << data << " type:" << data->GetDeviceType()
                   << " for copy actor:" << GetAID();
