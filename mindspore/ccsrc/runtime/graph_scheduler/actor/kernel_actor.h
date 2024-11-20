@@ -58,6 +58,19 @@ struct InputDataInfo {
   TypeId type_id_;
 };
 
+struct KernelLaunchInfo {
+  KernelLaunchInfo(std::vector<KernelTensor *> input_kernel_tensors, std::vector<KernelTensor *> output_kernel_tensors,
+                   std::vector<KernelTensor *> workspace_kernel_tensors, void *stream)
+      : input_kernel_tensors_(input_kernel_tensors),
+        output_kernel_tensors_(output_kernel_tensors),
+        workspace_kernel_tensors_(workspace_kernel_tensors),
+        stream_(stream) {}
+  std::vector<KernelTensor *> input_kernel_tensors_;
+  std::vector<KernelTensor *> output_kernel_tensors_;
+  std::vector<KernelTensor *> workspace_kernel_tensors_;
+  void *stream_;
+};
+
 // The kernel actor is used to receive the device tensors and control info to luanch kernel.
 // The processing flow is RunOpData/RunOpControl -> CheckRunningCondition -> SendMemoryAllocReq
 // -> OnMemoryAllocFinish -> LaunchKernel -> SendMemoryFreeReq -> SendOutput.
@@ -100,6 +113,9 @@ class KernelActor : public DebugAwareActor {
   void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
 
   const CNodePtr &kernel() const { return kernel_; }
+  KernelLaunchInfo kernel_launch_info() const {
+    return KernelLaunchInfo(input_kernel_tensors_, output_kernel_tensors_, workspace_kernel_tensors_, stream_);
+  }
   const std::set<size_t> &modifiable_ref_input_indexes() const { return modifiable_ref_input_indexes_; }
   const std::set<size_t> &modifiable_ref_output_indexes() const { return modifiable_ref_output_indexes_; }
   bool is_dynamic_shape() const { return is_dynamic_shape_; }

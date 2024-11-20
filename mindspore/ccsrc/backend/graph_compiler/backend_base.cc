@@ -40,12 +40,14 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/device/multi_stream_controller.h"
+#include "runtime/device/pre_launch_comm.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/pynative/graph_adapter.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "utils/log_adapter.h"
 #include "utils/llm_manager.h"
+#include "utils/ms_utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -1662,6 +1664,13 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   // Run actor DAG.
   const auto &actor_set = runtime::GraphScheduler::GetInstance().Fetch(actor_info);
   MS_EXCEPTION_IF_NULL(actor_set);
+  static auto disable_pre_build_comm = common::IsDisableRuntimeConfig(common::kRuntimePreBuildCommKernel);
+  if (!disable_pre_build_comm && !has_pre_build_comm_) {
+    PROF_START(PreLaunchCommKernel);
+    has_pre_build_comm_ = true;
+    runtime::PreLaunchComm::GetInstance().PreLaunchCommKernel(actor_set);
+    PROF_END(PreLaunchCommKernel);
+  }
   runtime::GraphScheduler::GetInstance().Run(actor_set, input_tensors, args);
 
   {
