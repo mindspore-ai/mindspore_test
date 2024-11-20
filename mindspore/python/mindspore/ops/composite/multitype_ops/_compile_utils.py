@@ -35,7 +35,7 @@ from mindspore import ops
 from mindspore.ops.primitive import _primexpr
 from mindspore import _checkparam as validator
 from mindspore.common._stub_tensor import _convert_stub
-from mindspore.ops.auto_generate.gen_ops_prim import select_ext_op, inner_strided_slice_op, inplace_copy_op, \
+from mindspore.ops.auto_generate.gen_ops_prim import select_ext_op, slice_ext_op, inplace_copy_op, \
     index_op, inplace_index_put_op
 
 slice_get_item = SliceGetItem()
@@ -292,7 +292,7 @@ def _do_slice(self: Tensor, dim: int, index: slice, self_shape: list):
     count = _count_slice(start, end, step)
     if start == 0 and end == self_shape[dim] and step == 1:
         return self, count
-    return inner_strided_slice_op(self, [0] * dim + [start], self_shape[0:dim] + [end], [1] * dim + [step]), count
+    return slice_ext_op(self, dim, start, end, step), count
 
 
 def _process_dim_in_multi_dim_index(prev_result, orig_tensor, index, dim, indexed_dims, dim_index, remain_indexes,
