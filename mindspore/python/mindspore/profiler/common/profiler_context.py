@@ -429,7 +429,6 @@ class ProfilerContext:
 
         if not self._rank_id or not self._rank_id.isdigit():
             self._rank_id = "0"
-            logger.warning("Fail to get RANK_ID, use 0 instead.")
 
     def _init_context_mode(self):
         """
