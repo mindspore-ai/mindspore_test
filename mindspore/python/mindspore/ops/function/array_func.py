@@ -33,7 +33,7 @@ from mindspore.ops.operations._sequence_ops import TupleToTensor
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.operations._sequence_ops import TensorToList
 from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, FillTensor, Arange, Chunk, UniqueDim, \
-    Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue
+    Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl
@@ -132,6 +132,8 @@ one_hot_ext_impl = _PyboostOneHotExtPrim()
 zeros_like_ = P.ZerosLike()
 ones_like_ext_ = OnesLikeExt()
 zeros_like_ext_ = ZerosLikeExt()
+new_ones_ = NewOnes()
+new_zeros_ = NewZeros()
 fill_scalar_ = FillScalar()
 fill_tensor_ = FillTensor()
 sort_ext_ = SortExt()
@@ -1210,6 +1212,82 @@ def zeros_like_ext(input, *, dtype=None):
          [0. 0.]]
     """
     return zeros_like_ext_(input, dtype)
+
+
+def new_ones(input, size, *, dtype=None):
+    """
+    Return a tensor of `size` filled with ones.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor of any dimension.
+        size (Union[int, tuple(int), list(int)]): An int, list or tuple of integers defining the output shape.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired dtype of the output tensor. If None, the returned
+            tensor has the same dtype as `self`. Default: ``None``.
+
+    Returns:
+        Tensor, the shape and dtype is defined above and filled with ones.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `size` is neither an int nor a tuple/list of int.
+        TypeError: If `dtype` is not a MindSpore dtype.
+        ValueError: If `size` contains negative values.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor([1, 2, 3, 4], mindspore.int32)
+        >>> output = ops.function.array_func.new_ones(input, (2, 3))
+        >>> print(output)
+        [[1 1 1]
+         [1 1 1]]
+    """
+    return new_ones_(input, size, dtype)
+
+
+def new_zeros(input, size, *, dtype=None):
+    """
+    Return a tensor of `size` filled with zeros.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor of any dimension.
+        size (Union[int, tuple(int), list(int)]): An int, list or tuple of integers defining the output shape.
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired dtype of the output tensor. If None, the returned
+            tensor has the same dtype as `self`. Default: ``None``.
+
+    Returns:
+        Tensor, the shape and dtype is defined above and filled with zeros.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `size` is neither an int nor a tuple/list of int.
+        TypeError: If `dtype` is not a MindSpore dtype.
+        ValueError: If `size` contains negative values.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor([1, 2, 3, 4], mindspore.int32)
+        >>> output = ops.function.array_func.new_zeros(input, (2, 3))
+        >>> print(output)
+        [[0 0 0]
+         [0 0 0]]
+    """
+    return new_zeros_(input, size, dtype)
 
 
 ##############################

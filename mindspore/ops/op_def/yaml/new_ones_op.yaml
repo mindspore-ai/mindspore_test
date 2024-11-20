@@ -1,0 +1,22 @@
+#operator new_ones
+new_ones:
+    args:
+        input:
+            dtype: tensor
+        size:
+            dtype: tuple[int]
+            type_cast: int, list[int]
+        dtype:
+            dtype: TypeId
+            arg_handler: dtype_to_type_id
+            default: None
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: NewOnesAscend
+        GPU: NewOnesGPU
+        CPU: NewOnesCPU
