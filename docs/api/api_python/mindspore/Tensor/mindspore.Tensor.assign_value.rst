@@ -1,7 +1,7 @@
 mindspore.Tensor.assign_value
 =============================
 
-.. py:method:: mindspore.Tensor.assign_value(value)
+.. py:method:: Tensor.assign_value(value)
 
     将另一个Tensor的值赋给当前Tensor。
 

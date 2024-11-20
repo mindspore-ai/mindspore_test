@@ -1,7 +1,7 @@
 mindspore.Tensor.cos
 ====================
 
-.. py:method:: mindspore.Tensor.cos()
+.. py:method:: Tensor.cos()
 
     逐元素计算输入的余弦。
 

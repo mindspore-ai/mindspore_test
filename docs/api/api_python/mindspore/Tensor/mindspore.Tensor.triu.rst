@@ -1,7 +1,7 @@
 mindspore.Tensor.triu
 =====================
 
-.. py:method:: mindspore.Tensor.triu(diagonal=0)
+.. py:method:: Tensor.triu(diagonal=0)
 
     返回 `self` 的上三角形部分(包含对角线和下面的元素)，并将其他元素设置为0。
 

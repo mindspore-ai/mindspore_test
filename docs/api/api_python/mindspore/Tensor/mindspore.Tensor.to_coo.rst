@@ -1,7 +1,7 @@
 mindspore.Tensor.to_coo
 =======================
 
-.. py:method:: mindspore.Tensor.to_coo()
+.. py:method:: Tensor.to_coo()
 
     将常规Tensor转为稀疏化的COOTensor。
 

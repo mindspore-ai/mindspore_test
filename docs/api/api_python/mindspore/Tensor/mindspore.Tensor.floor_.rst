@@ -1,7 +1,7 @@
 mindspore.Tensor.floor\_
 ========================
 
-.. py:method:: mindspore.Tensor.floor_()
+.. py:method:: Tensor.floor_()
 
     逐元素向下取整函数。
 

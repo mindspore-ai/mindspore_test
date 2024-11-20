@@ -1,7 +1,7 @@
 mindspore.Tensor.contiguous
 ===========================
 
-.. py:method:: mindspore.Tensor.contiguous()
+.. py:method:: Tensor.contiguous()
 
     将Tensor转成一个连续内存的Tensor，该Tensor包含与原Tensor相同的数据。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.take
 =====================
 
-.. py:method:: mindspore.Tensor.take(indices, axis=None, mode='clip')
+.. py:method:: Tensor.take(indices, axis=None, mode='clip')
 
     在指定维度上获取Tensor中的元素。
 

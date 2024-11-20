@@ -1,6 +1,6 @@
 mindspore.Tensor.true_divide
 ============================
 
-.. py:method:: mindspore.Tensor.true_divide(value)
+.. py:method:: Tensor.true_divide(value)
 
-    :func:`mindspore.Tensor.div` 中 :math:`rounding\_mode=None` 的别名。
+    :func:`Tensor.div` 中 :math:`rounding\_mode=None` 的别名。

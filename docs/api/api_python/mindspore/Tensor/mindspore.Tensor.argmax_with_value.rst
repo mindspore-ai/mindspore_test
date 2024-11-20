@@ -1,7 +1,7 @@
 mindspore.Tensor.argmax_with_value
 ===================================
 
-.. py:method:: mindspore.Tensor.argmax_with_value(axis=0, keep_dims=False)
+.. py:method:: Tensor.argmax_with_value(axis=0, keep_dims=False)
 
     根据指定的索引计算最大值，并返回索引和值。
 

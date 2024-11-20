@@ -1,7 +1,7 @@
 mindspore.Tensor.expand_as
 ==========================
 
-.. py:method:: mindspore.Tensor.expand_as(x)
+.. py:method:: Tensor.expand_as(x)
 
     将目标张量的维度扩展为输入张量的维度。
 

@@ -1,6 +1,6 @@
 mindspore.Tensor.nelement
 ==========================
 
-.. py:method:: mindspore.Tensor.nelement()
+.. py:method:: Tensor.nelement()
 
-    :func:`mindspore.Tensor.numel` 的别名。
+    :func:`Tensor.numel` 的别名。

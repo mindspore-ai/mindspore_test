@@ -1,7 +1,7 @@
 mindspore.Tensor.sum
 ====================
 
-.. py:method:: mindspore.Tensor.sum(axis=None, dtype=None, keepdims=False, initial=None)
+.. py:method:: Tensor.sum(axis=None, dtype=None, keepdims=False, initial=None)
 
     返回指定维度上数组元素的总和。
 
@@ -23,4 +23,4 @@ mindspore.Tensor.sum
         - **ValueError** - 任意 `axis` 超出范围或存在重复的 `axis` 。
 
     其他API参考：
-        - :func:`mindspore.Tensor.cumsum` ：返回沿给定 `axis` 的元素累加和。
+        - :func:`Tensor.cumsum` ：返回沿给定 `axis` 的元素累加和。

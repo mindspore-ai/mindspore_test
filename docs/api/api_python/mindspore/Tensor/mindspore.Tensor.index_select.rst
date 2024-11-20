@@ -1,7 +1,7 @@
 mindspore.Tensor.index_select
 =============================
 
-.. py:method:: mindspore.Tensor.index_select(axis, index)
+.. py:method:: Tensor.index_select(axis, index)
 
     返回一个新的Tensor，该Tensor沿维度 `axis` 按 `index` 中给定的索引对 `self` 进行选择。
 

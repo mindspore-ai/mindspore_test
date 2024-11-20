@@ -1,7 +1,7 @@
 mindspore.Tensor.logical_not
 ============================
 
-.. py:method:: mindspore.Tensor.logical_not()
+.. py:method:: Tensor.logical_not()
 
     逐元素计算一个Tensor的逻辑非运算。
 

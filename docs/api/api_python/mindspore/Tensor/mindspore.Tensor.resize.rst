@@ -1,7 +1,7 @@
 mindspore.Tensor.resize
 =======================
 
-.. py:method:: mindspore.Tensor.resize(*new_shape)
+.. py:method:: Tensor.resize(*new_shape)
 
     将Tensor改为输入的新shape，并将不足的元素补0。
 
@@ -15,5 +15,5 @@ mindspore.Tensor.resize
         Tensor。
 
     其他API参考：
-        - :func:`mindspore.Tensor.reshape` ：为Tensor指定新的shape，不改变其数据。
-        - :func:`mindspore.Tensor.repeat` ：重复Tensor的元素。
+        - :func:`Tensor.reshape` ：为Tensor指定新的shape，不改变其数据。
+        - :func:`Tensor.repeat` ：重复Tensor的元素。

@@ -1,7 +1,7 @@
 mindspore.Tensor.is_contiguous
 ==============================
 
-.. py:method:: mindspore.Tensor.is_contiguous()
+.. py:method:: Tensor.is_contiguous()
 
     判断Tensor的内存是否连续。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.less_equal
 ===========================
 
-.. py:method:: mindspore.Tensor.less_equal(other)
+.. py:method:: Tensor.less_equal(other)
 
     逐元素计算 :math:`self <= other` 的bool值。
 

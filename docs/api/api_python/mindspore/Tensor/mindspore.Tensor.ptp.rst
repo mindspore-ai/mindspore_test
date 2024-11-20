@@ -1,7 +1,7 @@
 mindspore.Tensor.ptp
 ====================
 
-.. py:method:: mindspore.Tensor.ptp(axis=None, keepdims=False)
+.. py:method:: Tensor.ptp(axis=None, keepdims=False)
 
     该函数名称是"peak to peak"的缩写。计算沿着axis的最大值与最小值的差值。
 

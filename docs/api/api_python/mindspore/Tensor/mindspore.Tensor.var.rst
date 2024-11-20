@@ -1,7 +1,7 @@
 mindspore.Tensor.var
 ====================
 
-.. py:method:: mindspore.Tensor.var(axis=None, ddof=0, keepdims=False)
+.. py:method:: Tensor.var(axis=None, ddof=0, keepdims=False)
 
     在指定维度上的方差。
 
@@ -21,7 +21,7 @@ mindspore.Tensor.var
         含有方差值的Tensor。
 
     其他API参考：
-        - :func:`mindspore.Tensor.mean` ：通过对Tensor中的所有元素求平均值来减少Tensor的维数。
-        - :func:`mindspore.Tensor.std` ：计算沿指定轴的标准差。
+        - :func:`Tensor.mean` ：通过对Tensor中的所有元素求平均值来减少Tensor的维数。
+        - :func:`Tensor.std` ：计算沿指定轴的标准差。
 
         

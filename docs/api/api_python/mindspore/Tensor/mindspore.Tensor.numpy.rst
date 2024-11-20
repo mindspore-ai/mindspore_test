@@ -1,6 +1,6 @@
 mindspore.Tensor.numpy
 ======================
 
-.. py:method:: mindspore.Tensor.numpy(*, force=False)
+.. py:method:: Tensor.numpy(*, force=False)
 
-    :func:`mindspore.Tensor.asnumpy` 的别名。
+    :func:`Tensor.asnumpy` 的别名。

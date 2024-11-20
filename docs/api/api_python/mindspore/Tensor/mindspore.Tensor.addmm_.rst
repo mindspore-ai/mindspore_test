@@ -1,7 +1,7 @@
 mindspore.Tensor.addmm\_
 ========================
 
-.. py:method:: mindspore.Tensor.addmm_(mat1, mat2, *, beta=1, alpha=1)
+.. py:method:: Tensor.addmm_(mat1, mat2, *, beta=1, alpha=1)
 
     详情请参考 :func:`mindspore.ops.addmm`。
 

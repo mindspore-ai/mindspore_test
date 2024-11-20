@@ -1,6 +1,6 @@
 mindspore.Tensor.clip
 =====================
 
-.. py:method:: mindspore.Tensor.clip(min=None, max=None)
+.. py:method:: Tensor.clip(min=None, max=None)
 
-    :func:`mindspore.Tensor.clamp` 的别名。
+    :func:`Tensor.clamp` 的别名。

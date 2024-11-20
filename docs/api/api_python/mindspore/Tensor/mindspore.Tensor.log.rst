@@ -1,7 +1,7 @@
 mindspore.Tensor.log
 ====================
 
-.. py:method:: mindspore.Tensor.log()
+.. py:method:: Tensor.log()
 
     逐元素返回Tensor的自然对数。
 

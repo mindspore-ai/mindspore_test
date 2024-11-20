@@ -1,7 +1,7 @@
 mindspore.Tensor.argmax
 =======================
 
-.. py:method:: mindspore.Tensor.argmax(axis=None, keepdims=False)
+.. py:method:: Tensor.argmax(axis=None, keepdims=False)
 
     返回 `self` 在指定轴上的最大值索引。
 
@@ -16,7 +16,8 @@ mindspore.Tensor.argmax
         - **TypeError** - 如果入参 `keepdims` 的类型不是布尔值。
         - **ValueError** - 如果入参 `axis` 的设定值超出了范围。
 
-.. py:method:: mindspore.Tensor.argmax(dim=None, keepdim=False)
+    .. py:method:: Tensor.argmax(dim=None, keepdim=False)
+        :noindex:
 
     返回 `self` 在指定轴上的最大值索引。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.byte
 =====================
 
-.. py:method:: mindspore.Tensor.byte()
+.. py:method:: Tensor.byte()
 
     将输入Tensor转换为 `uint8` 类型。
 
