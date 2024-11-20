@@ -126,14 +126,20 @@ class AscendKernelDetailsViewer(BaseViewer):
             for kernel in per_tid_kernels:
                 dev_kernel_name = kernel.name
                 dev_kerel_ts = str(kernel.ts)
-                dev_kernel_to_fwk_op[(dev_kernel_name, dev_kerel_ts)] = (kernel.parent.name, kernel.step_id)
+                dev_kernel_to_fwk_op[(dev_kernel_name, dev_kerel_ts)] = kernel
 
         launch_ops = [None] * len(self.op_summary)
         step_ids = [None] * len(self.op_summary)
         for index, summary in enumerate(self.op_summary):
             dev_kernel_name = summary[OpSummaryHeaders.OP_NAME.value]
             dev_kernel_ts = str(summary[OpSummaryHeaders.TASK_START_TIME.value]).strip("\t")
-            fwk_langch_op_name, step_id = dev_kernel_to_fwk_op.get((dev_kernel_name, dev_kernel_ts), None)
+            fwk_langch_op_name = None
+            step_id = None
+            if dev_kernel_to_fwk_op.get((dev_kernel_name, dev_kernel_ts)):
+                kernel = dev_kernel_to_fwk_op.get((dev_kernel_name, dev_kernel_ts))
+                if kernel.parent:
+                    fwk_langch_op_name = kernel.parent.name
+                step_id = kernel.step_id
 
             if fwk_langch_op_name is None:
                 logger.warning(
@@ -175,7 +181,6 @@ def _generate_step_id_by_trace_container(trace_container: TraceViewContainer):
     for event in events:
         event_name = event.name
         if ProfilerStepNameConstant.PROFILER_STEP in event_name:
-            print(event.ts, event.dur + event.ts)
             step_time_to_id_dict[event.name.split("#")[-1]] = (event.ts, event.dur + event.ts)
 
     # Get kernel launch events and sort them by timestamp
