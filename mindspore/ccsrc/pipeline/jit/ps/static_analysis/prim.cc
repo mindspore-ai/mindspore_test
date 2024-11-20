@@ -1877,20 +1877,23 @@ EvalResultPtr GenerateFuncGraphForOverriddenMethod(AnfNodePtr node, const ValueP
   FuncGraphPtr inner_fg = nullptr;
   py::object overridden_method = py::none();
   py::object value_obj = py::none();
-  if (item_str != nullptr) {
-    const std::string &item_name = item_str->value();
-    if (node->has_user_data(item_name)) {
-      value_obj = *node->user_data<py::object>(item_name);
-      overridden_method = value_obj.attr("__class__").attr(item_name.c_str());
-    }
+  if (item_str == nullptr) {
+    return nullptr;
+  }
+  const std::string &item_name = item_str->value();
+  if (node->has_user_data(item_name)) {
+    value_obj = *node->user_data<py::object>(item_name);
+    overridden_method = value_obj.attr("__class__").attr(item_name.c_str());
   }
   bool is_getattr = node->has_user_data("__getattr__");
   if (is_getattr) {
     value_obj = *node->user_data<py::object>("__getattr__");
-    try {
-      overridden_method = value_obj.attr("__class__").attr("__getattr__");
-    } catch (const std::exception &e) {
-      MS_LOG(DEBUG) << value_obj << " has no attribute getattr.";
+    if (!py::hasattr(value_obj, item_name.c_str())) {
+      try {
+        overridden_method = value_obj.attr("__class__").attr("__getattr__");
+      } catch (const std::exception &e) {
+        MS_LOG(DEBUG) << value_obj << " has no attribute getattr.";
+      }
     }
   }
   if (py::isinstance<py::none>(overridden_method) || py::isinstance<py::none>(value_obj)) {
