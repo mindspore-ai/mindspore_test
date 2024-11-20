@@ -35,6 +35,3 @@ if(Python3_FOUND)
   endif()
 endif()
 include(${TOP_DIR}/cmake/external_libs/libevent.cmake)
-
-# add_subdirectory(${OPS_DIR}/kernel/cpu mindspore_ccsrc_plugin_device_cpu_kernel)
-add_subdirectory(${CCSRC_DIR}/backend/common/session mindspore_ccsrc_backend_common_session)

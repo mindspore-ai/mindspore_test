@@ -577,7 +577,6 @@ endif()
 
 if(SUPPORT_CUDA AND NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE))
     set(CUDA_PATH $ENV{CUDA_HOME})
-    include_directories(${OPS_DIR}/kernel/gpu)
     set(ENABLE_GPU on)
     add_definitions(-DENABLE_GPU)
     set(CUDA_VERSION 11.1)
@@ -586,7 +585,6 @@ if(SUPPORT_CUDA AND NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_C
     find_package(CUDA)
     add_subdirectory(extendrt/kernel/cuda)
     list(APPEND CUDA_NVCC_FLAGS -arch=sm_53 --expt-relaxed-constexpr)
-    add_subdirectory(${OPS_DIR}/kernel/gpu/cuda_impl/cuda_ops cuda_ops)
     target_link_libraries(mindspore-lite cuda_lite_kernel_mid cuda_ops mindspore_core mindspore_ops)
 endif()
 
