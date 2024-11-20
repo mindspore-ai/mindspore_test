@@ -91,7 +91,7 @@ bool AxisNormalizer::Process(const AnfNodePtr &graph_kernel_node) const {
   bool changed = false;
   auto todos = TopoSort(sub_func_graph->get_return());
   for (auto node : todos) {
-    if (!IsReduce(node)) {
+    if (!IsReduce(node) || common::AnfAlgo::IsDynamicRankNode(node)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();

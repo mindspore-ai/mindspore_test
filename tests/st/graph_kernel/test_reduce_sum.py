@@ -16,6 +16,7 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
+import mindspore as ms
 import mindspore.ops as ops
 from mindspore import context, Tensor
 from mindspore.nn import Cell
@@ -33,7 +34,7 @@ class ReduceNet(Cell):
 
 
 class ReduceAxisNet(Cell):
-    def __init__(self, axis):
+    def __init__(self, axis=()):
         super(ReduceAxisNet, self).__init__()
         self.sum = ops.ReduceSum(keep_dims=False)
         self.axis = axis
@@ -86,3 +87,21 @@ def test_reduce_arithmetic_simplify(shape, axis):
     context.set_context(jit_level='O0')
     context.set_context(mode=context.GRAPH_MODE, enable_graph_kernel=True)
     run_reduce_with_axis(shape, axis)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_reduce_dynamic_rank():
+    """
+    Feature: test reduce sum with enable_graph_kernel=True under dynamic rank situation
+    Description: reduce sum under dynamic rank situation
+    Expectation: the result match with numpy result
+    """
+    context.set_context(jit_level='O1')
+    np.random.seed(1)
+    x = np.random.normal(0, 1, [256, 3, 24, 24]).astype(np.float32)
+    expect = np.sum(x, keepdims=False)
+    net = ReduceAxisNet()
+    input_dyn = Tensor(shape=None, dtype=ms.float32)
+    net.set_inputs(input_dyn)
+    output = net(Tensor(x))
+    assert np.allclose(expect, output.asnumpy(), 1.e-4, 1.e-4, equal_nan=True)
