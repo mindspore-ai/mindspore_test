@@ -203,7 +203,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
         """
         Calculate step trace time data
         """
-        self.step_trace_time_data[StepTraceTimeHeaders.STEP.value] = ""
+        self.step_trace_time_data[StepTraceTimeHeaders.STEP.value] = "0"
         self.step_trace_time_data[StepTraceTimeHeaders.COMPUTING.value] = np.sum(self.computing_np["dur"])
         self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION.value] = np.sum(self.communication_np["dur"])
         self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value] = np.sum(
@@ -223,7 +223,7 @@ class AscendStepTraceTimeViewer(BaseViewer):
             self.step_trace_time_data[StepTraceTimeHeaders.COMMUNICATION_NOT_OVERLAPPED.value]
             - self.step_trace_time_data[StepTraceTimeHeaders.BUBBLE.value]
         )
-        self.step_trace_time_data[StepTraceTimeHeaders.PREPARING.value] = ""
+        self.step_trace_time_data[StepTraceTimeHeaders.PREPARING.value] = "0"
 
     def _calculate_stage_bubble(self) -> Tuple[Decimal, Decimal]:
         """
