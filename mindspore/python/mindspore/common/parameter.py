@@ -907,7 +907,6 @@ class Parameter(Tensor_):
         # both not init.
         incoming_tensor_is_init = isinstance(data, Tensor) and not data.has_init
         current_tensor_is_init = isinstance(self, Tensor) and not self.has_init
-        Parameter._set_data_check_input_valid(current_tensor_is_init, incoming_tensor_is_init)
         if self.dtype != data.dtype:
             if mstype.implicit_conversion_seq.get(self.dtype) < mstype.implicit_conversion_seq.get(data.dtype):
                 self._raise_type_error(data.dtype)
