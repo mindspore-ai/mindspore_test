@@ -22,12 +22,11 @@ assign_sub:
                 it is recommended to use the same data type when using this operator.
 
         Returns:
-            Tensor, has the same data type and shape as original `variable`.
+            Tensor, has the same data type and shape as `variable`.
 
         Raises:
             TypeError: If `value` is neither Number nor Tensor.
-            RuntimeError: If the data type of `x`, `y` conversion of Parameter is required
-                          when data type conversion of Parameter is not supported.
+            RuntimeError: If the type conversion between `variable` and `value` is not supported.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
