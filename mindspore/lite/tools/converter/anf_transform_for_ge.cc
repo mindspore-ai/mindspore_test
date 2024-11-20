@@ -43,6 +43,7 @@
 #include "tools/optimizer/fusion/kv_cache_mgr_load_fusion.h"
 #include "tools/optimizer/fusion/kv_cache_mgr_assign_fusion.h"
 #include "tools/optimizer/fusion/flash_attention_fusion.h"
+#include "tools/optimizer/fusion/groupnormsilu_fusion.h"
 #include "tools/optimizer/fusion/matmul_allreduce_fusion.h"
 #include "tools/optimizer/graph/scalar_op_pass.h"
 #include "tools/optimizer/graph/make_list_pass.h"
@@ -79,6 +80,10 @@ void EnableFlashAttentionAntiquantFusion(std::vector<opt::PassPtr> *fusions,
   fusions->push_back(std::make_shared<opt::FlashAttentionAntiquantFusion>());
 }
 
+void EnableGroupNormSiluFusion(std::vector<opt::PassPtr> *fusions, const std::shared_ptr<ConverterPara> &param) {
+  fusions->push_back(std::make_shared<opt::GroupNormSiluFusion>());
+}
+
 AnfTransformForGe::AnfTransformForGe() = default;
 
 AnfTransformForGe::~AnfTransformForGe() = default;
@@ -104,7 +109,10 @@ int AnfTransformForGe::RunGeFusionPass(const FuncGraphPtr &old_graph, const std:
          EnableFlashAttentionFusion)},
       {kFusionNameFlashAttentionAntiquant,
        std::function<void(std::vector<opt::PassPtr> *, const std::shared_ptr<ConverterPara> &)>(
-         EnableFlashAttentionAntiquantFusion)}};
+         EnableFlashAttentionAntiquantFusion)},
+      {kFusionNameGroupNormSilu,
+       std::function<void(std::vector<opt::PassPtr> *, const std::shared_ptr<ConverterPara> &)>(
+         EnableGroupNormSiluFusion)}};
 
   auto plugin_custom_ops = param->ascendGeOptionCfg.plugin_custom_ops;
   MS_LOG(INFO) << "plugin_custom_ops: " << plugin_custom_ops;
@@ -113,6 +121,7 @@ int AnfTransformForGe::RunGeFusionPass(const FuncGraphPtr &old_graph, const std:
     EnableFlashAttentionFusion(&fusions, param);
     EnableKVCacheFusion(&fusions, param);
     EnableFlashAttentionAntiquantFusion(&fusions, param);
+    EnableGroupNormSiluFusion(&fusions, param);
     // MatMulAllReduce has performance degradation in incremental inference scenarios,
     // and is not controlled by "All" temporarily.
     if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), kFusionNameMatMulAllReduce) !=

@@ -52,6 +52,9 @@ class GroupNormSiluFusion : public MultiplePatternProcessPass {
   CNodePtr CreateGroupNormSiluNodeForSDWithoutSilu(const std::string &pattern_name, const FuncGraphPtr &func_graph,
                                                    const AnfNodePtr &node, const EquivPtr &equiv) const;
 
+  CNodePtr CreateGroupNormSiluNodeForGroupNorm(const std::string &pattern_name, const FuncGraphPtr &func_graph,
+                                               const AnfNodePtr &node, const EquivPtr &equiv) const;
+
   /*
    * --------------------------------------------------
    *  Pattern GroupNormSiluPatternForSD15:            |
@@ -93,6 +96,8 @@ class GroupNormSiluFusion : public MultiplePatternProcessPass {
    * --------------------------------------------------
    */
   const VectorRef DefineGroupNormSiluPatternForSDWithoutSilu() const;
+
+  const VectorRef DefineGroupNormSiluPatternForGroupNorm() const;
 };
 }  // namespace opt
 }  // namespace mindspore
