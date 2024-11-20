@@ -26,7 +26,6 @@ class AscendIntegrateViewer(BaseViewer):
     """Ascend integrate viewer"""
 
     CSV_PREFIX_NAME = ["data_preprocess", "l2_cache", "api_statistic", "op_statistic", "static_op_mem"]
-    ANALYZE_JSON_PREFIX_NAME = ["communication", "communication_matrix"]
     FWK_MEM_CSV_PREFIX_NAME = ["operator_memory"]
 
     def __init__(self, **kwargs):
@@ -42,7 +41,6 @@ class AscendIntegrateViewer(BaseViewer):
         """
         try:
             self._copy_msprof_csv_files()
-            self._copy_analyze_json_files()
         except Exception as e: # pylint: disable=W0703
             logger.error("Failed to save ascend integrate data, error: %s", e)
 
@@ -72,15 +70,3 @@ class AscendIntegrateViewer(BaseViewer):
         Copy fwk mem_track csv files from source path to output path.
         """
         self._copy_csv_files(self.FWK_MEM_CSV_PREFIX_NAME, self._framework_path)
-
-    def _copy_analyze_json_files(self):
-        """
-        Copy analyze json files from source path to output path.
-        """
-        for json_name in self.ANALYZE_JSON_PREFIX_NAME:
-            src_file = os.path.join(self._msprof_profile_output_path, json_name + ".json")
-            src_file_list = glob.glob(src_file)
-            if src_file_list:
-                dst_file = os.path.join(self._output_path, json_name + ".json")
-                FileManager.copy_file(src_file_list[0], dst_file)
-                logger.info("Copy json file %s to %s", src_file_list[0], dst_file)

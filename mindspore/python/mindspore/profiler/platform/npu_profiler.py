@@ -23,6 +23,8 @@ from mindspore import context
 from mindspore import log as logger
 import mindspore._c_dataengine as cde
 import mindspore._c_expression as c_expression
+
+from mindspore.profiler.analysis.viewer.ascend_communication_viewer import AscendCommunicationViewer
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
 
@@ -230,7 +232,8 @@ class NPUProfilerAnalysis:
             .register_post_hook(AscendTimelineViewer(**kwargs).save)
             .register_post_hook(AscendKernelDetailsViewer(**kwargs).save)
             .register_post_hook(AscendStepTraceTimeViewer(**kwargs).save)
-            .register_post_hook(AscendIntegrateViewer(**kwargs).save),
+            .register_post_hook(AscendIntegrateViewer(**kwargs).save)
+            .register_post_hook(AscendCommunicationViewer(**kwargs).save),
             flow_name="cann_flow",
             show_process=True,
         )
