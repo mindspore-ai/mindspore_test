@@ -36,10 +36,12 @@
 
 namespace mindspore {
 using DumpChunk = acldumpChunk;
+using ProtoDataType = toolkit::dumpdata::OutputDataType;
 namespace ascend {
 struct dump_data_t {
   std::string dump_file_path;
   char *data_ptr;
+  ProtoDataType original_data_type;
   mindspore::TypeId data_type;
   std::string format;
   ShapeVector device_shape;

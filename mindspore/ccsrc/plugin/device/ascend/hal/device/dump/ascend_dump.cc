@@ -34,6 +34,7 @@ constexpr int kAiCoreInfoSize = 256;
 constexpr int kDhaAtomicAddStatusSize = 256;
 constexpr int kL2AtomicAddStatusSize = 256;
 constexpr int kUint64Size = sizeof(uint64_t);
+constexpr auto kNumberTypeUInt1 = "uint1";
 using ProtoFormat = toolkit::dumpdata::OutputFormat;
 using ProtoDataType = toolkit::dumpdata::OutputDataType;
 const std::set<std::pair<std::string, std::string>> kSuppTransFormatPair = {
@@ -82,7 +83,8 @@ const std::map<ProtoDataType, mindspore::TypeId> kDataTypetoMSTypeMap = {
   {ProtoDataType::DT_BF16, mindspore::TypeId::kNumberTypeBFloat16},
   {ProtoDataType::DT_COMPLEX64, mindspore::TypeId::kNumberTypeComplex64},
   {ProtoDataType::DT_COMPLEX128, mindspore::TypeId::kNumberTypeComplex128},
-  {ProtoDataType::DT_INT4, mindspore::TypeId::kNumberTypeInt4}};
+  {ProtoDataType::DT_INT4, mindspore::TypeId::kNumberTypeInt4},
+  {ProtoDataType::DT_UINT1, mindspore::TypeId::kNumberTypeUInt8}};
 
 inline uint64_t UnpackUint64Value(const char *ptr) {
 #if defined(__APPLE__)
@@ -101,6 +103,8 @@ inline std::string IntToHexString(const uint64_t value) {
 template <typename T>
 dump_data_t ParseAttrsFromDumpData(const std::string &dump_path, char *data_ptr, const T &tensor, const std::string &io,
                                    uint32_t slot) {
+  // get original data type
+  auto original_data_type = tensor.data_type();
   // get data type
   auto iter_dtype = kDataTypetoMSTypeMap.find(tensor.data_type());
   if (iter_dtype == kDataTypetoMSTypeMap.end()) {
@@ -133,7 +137,8 @@ dump_data_t ParseAttrsFromDumpData(const std::string &dump_path, char *data_ptr,
   // get size and sub_format
   size_t data_size = static_cast<size_t>(tensor.size());
   int32_t sub_format = tensor.sub_format();
-  return dump_data_t{dump_path, data_ptr, data_type, device_format, shape_d, shape_to, data_size, sub_format, io, slot};
+  return dump_data_t{dump_path, data_ptr,  original_data_type, data_type, device_format, shape_d,
+                     shape_to,  data_size, sub_format,         io,        slot};
 }
 }  // namespace
 
@@ -276,11 +281,19 @@ bool AscendAsyncDump::DumpTensorStatsIfNeeded(const dump_data_t &dump_tensor_inf
   if (trans_buf) {
     data->SetByteSize(trans_buf->Size());
     data->SetDataPtr(static_cast<char *>(trans_buf->data_c()));
-    data->SetType(static_cast<TypeId>(trans_buf->data_type_c()));
+    if (dump_tensor_info.original_data_type == ProtoDataType::DT_UINT1) {
+      data->SetType(kNumberTypeUInt1);
+    } else {
+      data->SetType(static_cast<TypeId>(trans_buf->data_type_c()));
+    }
   } else {
     data->SetByteSize(dump_tensor_info.data_size);
     data->SetDataPtr(dump_tensor_info.data_ptr);
-    data->SetType(dump_tensor_info.data_type);
+    if (dump_tensor_info.original_data_type == ProtoDataType::DT_UINT1) {
+      data->SetType(kNumberTypeUInt1);
+    } else {
+      data->SetType(dump_tensor_info.data_type);
+    }
   }
   data->SetShape(dump_tensor_info.host_shape);
   TensorStatDump stat_dump(op_type, op_name, task_id, stream_id, timestamp, dump_tensor_info.in_out_str,
@@ -299,6 +312,9 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
     return true;
   }
   std::string type_str = TypeIdToString(dump_tensor_info.data_type);
+  if (dump_tensor_info.original_data_type == ProtoDataType::DT_UINT1) {
+    type_str = kNumberTypeUInt1;
+  }
   transform(type_str.begin(), type_str.end(), type_str.begin(), tolower);
   // dump_path: dump_dir/op_type.op_name.task_id.stream_id.timestamp
   std::ostringstream dump_path_ss;
@@ -318,6 +334,12 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
         return false;
       }
       trans_buf = tensor_int8;
+    } else if (dump_tensor_info.original_data_type == ProtoDataType::DT_UINT1) {
+      auto tensor_uint8 =
+        std::make_shared<tensor::Tensor>(TypeId::kNumberTypeUInt8, dump_tensor_info.trans_buf->shape_c());
+      SplitUint1x8ToUint8s(dump_tensor_info.trans_buf->data_c(), dump_tensor_info.trans_buf->Size(),
+                           dump_tensor_info.trans_buf->shape_c(), tensor_uint8->data_c());
+      trans_buf = tensor_uint8;
     } else {
       trans_buf = dump_tensor_info.trans_buf;
     }
@@ -333,6 +355,11 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
       return false;
     }
     trans_buf = tensor_int8;
+  } else if (dump_tensor_info.original_data_type == ProtoDataType::DT_UINT1) {
+    auto tensor_uint8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeUInt8, dump_tensor_info.host_shape);
+    SplitUint1x8ToUint8s(dump_tensor_info.data_ptr, dump_tensor_info.data_size, dump_tensor_info.host_shape,
+                         tensor_uint8->data_c());
+    trans_buf = tensor_uint8;
   }
   bool dump_succ = false;
   if (trans_buf) {
