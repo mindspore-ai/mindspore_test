@@ -167,6 +167,9 @@ CNodePtr ConstInputToAttr(const CNodePtr &cnode, const mindspore::HashSet<size_t
     }
     if (input_attrs.find(i) != input_attrs.end() && input_node->isa<ValueNode>() && !HasAbstractMonad(input_node)) {
       auto input_name = ops::GetInputNameByIndex(op_name, i);
+      if (op_name == "Cast" && i == 1) {
+        input_name = "dst_type";
+      }
       if (input_name == "") {
         // operators that are not developed by yaml
         if (input_names_vec.empty()) {
