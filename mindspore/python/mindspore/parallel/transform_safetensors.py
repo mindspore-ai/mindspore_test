@@ -840,7 +840,7 @@ def _process_hyper_params(file_list, total_safetensors_dir, name_map, total_para
             for key in f.keys():
                 cur_param_name = name_map.get(key) if name_map is not None and key in name_map else key
                 _check_name_map_value_is_str(cur_param_name)
-                total_param[cur_param_name] = ms.Parameter(f.get_tensor(key))
+                total_param[cur_param_name] = ms.Parameter(ms.Tensor.from_numpy(f.get_tensor(key)))
     return total_param
 
 
@@ -934,7 +934,7 @@ def _load_parallel_checkpoint(file_info):
             slice_param = sf_obj[:]
         cur_param_name = name_map.get(param_name) if name_map is not None and param_name in name_map else param_name
         _check_name_map_value_is_str(cur_param_name)
-        total_param[cur_param_name] = ms.Parameter(slice_param)
+        total_param[cur_param_name] = ms.Parameter(ms.Tensor.from_numpy(slice_param))
 
     total_param = _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param)
     if net is not None:

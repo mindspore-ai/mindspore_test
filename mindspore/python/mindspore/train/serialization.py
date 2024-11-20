@@ -1202,7 +1202,7 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
     if format == "safetensors":
         with safe_open(ckpt_file_name, framework='np') as f:
             for k in f.keys():
-                parameter_dict[k] = Parameter(f.get_tensor(k))
+                parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
         return
     checkpoint_list = _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check)
     try:
