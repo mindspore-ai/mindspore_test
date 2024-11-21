@@ -107,4 +107,4 @@ endif()
 add_subdirectory(cuda_impl)
 
 target_link_libraries(tensorrt_plugin cuda_kernel_mid gpu_distribution_collective)
-target_link_libraries(tensorrt_plugin mindspore-extendrt mindspore_core mindspore_ops mindspore::fast_transformers)
+target_link_libraries(tensorrt_plugin mindspore-extendrt mindspore_core mindspore_ops)
