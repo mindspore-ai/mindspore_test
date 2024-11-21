@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import context, Tensor, Parameter
@@ -394,3 +395,30 @@ def test_tensor_inplace_add_control_flow_multi_2():
     out = net(input_x, input_y)
     print("out:", out)
     assert out == 6
+
+
+@pytest.mark.skip(reason="In GRAPH_MODE, the result is not as expected")
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_inplace_index_add():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.op = P.InplaceIndexAdd(axis=0)
+
+        def construct(self, input_x, indices, updates):
+            self.op(input_x, indices, updates)
+            return input_x
+
+    input_x = ms.Tensor([[1, 2], [3, 4], [5, 6]], dtype=ms.int32)
+    indices = ms.Tensor([0, 1], dtype=ms.int32)
+    updates = ms.Tensor([[1, 2], [7, 8]], dtype=ms.int32)
+    net = Net()
+    out = net(input_x, indices, updates)
+    print("out:", out)
+    assert (out.asnumpy() == [[2, 4], [10, 12], [5, 6]]).all()

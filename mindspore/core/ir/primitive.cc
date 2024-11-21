@@ -62,6 +62,7 @@ Primitive::Primitive(const Primitive &prim)
       const_prim_(false),
       inplace_prim_(prim.inplace_prim_),
       const_input_indexes_(prim.const_input_indexes_),
+      rw_write_input_indexes_(prim.rw_write_input_indexes_),
       id_(prim.id_) {}
 
 Primitive &Primitive::operator=(const Primitive &other) {
@@ -80,6 +81,7 @@ Primitive &Primitive::operator=(const Primitive &other) {
   inplace_prim_ = other.inplace_prim_;
   id_ = other.id_;
   const_input_indexes_ = other.const_input_indexes_;
+  rw_write_input_indexes_ = other.rw_write_input_indexes_;
   return *this;
 }
 
@@ -128,6 +130,11 @@ std::string Primitive::GetAttrsText() const {
 void Primitive::set_signatures(const std::vector<Signature> &signatures) {
   signatures_ = signatures;
   set_has_signature(!signatures.empty());
+  for (size_t i = 0; i < signatures.size(); ++i) {
+    if (signatures[i].rw == SignatureEnumRW::kRWWrite) {
+      (void)rw_write_input_indexes_.emplace_back(i);
+    }
+  }
 }
 
 std::string Primitive::ToString() const {

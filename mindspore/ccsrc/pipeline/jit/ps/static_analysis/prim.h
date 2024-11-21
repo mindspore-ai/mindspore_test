@@ -48,6 +48,7 @@ class PrimitiveFunctionEvaluator final : public TrivialPrimEvaluator {
     MS_EXCEPTION_IF_NULL(op_def_);
     return op_def_->is_graph_view_;
   }
+  std::vector<size_t> rw_write_input_indexes() const { return prim_func_->rw_write_input_indexes(); }
   std::vector<int64_t> inplace_input_indexes() const {
     MS_EXCEPTION_IF_NULL(op_def_);
     size_t output_size = op_def_->returns_.size();
@@ -60,7 +61,6 @@ class PrimitiveFunctionEvaluator final : public TrivialPrimEvaluator {
   }
 
  private:
-  AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const AbstractBasePtrList &input_args);
   AbstractBasePtr CheckAndInfer(const AbstractBasePtrList &args);
   void CheckArgsSizeAndType(const AbstractBasePtrList &args);
   PrimitivePtr prim_func_;
@@ -83,6 +83,32 @@ class StandardPrimEvaluator final : public TrivialPrimEvaluator {
 
  protected:
   bool inplace_prim() const override { return prim_->inplace_prim(); }
+  std::vector<size_t> rw_write_input_indexes() const { return prim_->rw_write_input_indexes(); }
+  std::vector<int64_t> inplace_input_indexes() const {
+    auto input_names = prim_->GetAttr("input_names");
+    auto output_names = prim_->GetAttr("output_names");
+    std::vector<int64_t> inplace_indexes{};
+    if (input_names != nullptr && output_names != nullptr) {
+      const auto &input_name_list = GetValue<std::vector<std::string>>(input_names);
+      std::vector<std::string> output_name_list{};
+      if (output_names->isa<StringImm>()) {
+        (void)output_name_list.emplace_back(GetValue<std::string>(output_names));
+      } else {
+        output_name_list = GetValue<std::vector<std::string>>(output_names);
+      }
+      for (const auto &output : output_name_list) {
+        const auto &rw_write_indexes = rw_write_input_indexes();
+        auto iter = std::find(input_name_list.begin(), input_name_list.end(), output);
+        auto index = std::distance(input_name_list.begin(), iter);
+        // Record the ref index when output's name is one of inputs' names and this input is rw_write.
+        bool is_ref = (iter != input_name_list.end()) &&
+                      (std::find(rw_write_indexes.begin(), rw_write_indexes.end(), index) != rw_write_indexes.end());
+        auto inplace_index = is_ref ? index : -1;
+        (void)inplace_indexes.emplace_back(inplace_index);
+      }
+    }
+    return inplace_indexes;
+  }
 
  private:
   EvalResultPtr EvalPyCheckPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args);
