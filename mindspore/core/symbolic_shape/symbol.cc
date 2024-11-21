@@ -83,7 +83,7 @@ ValuePtr FloatSymbol::ToValueOf(const TypePtr &type) const {
     case kNumberTypeFloat32:
       return MakeValue<float>(static_cast<float>(value_));
     default:
-      MS_LOG(INTERNAL_EXCEPTION) << "Cannot convert the IntSymbol to type " << type->ToString();
+      MS_LOG(INTERNAL_EXCEPTION) << "Cannot convert the FloatSymbol to type " << type->ToString();
   }
   return ToValue();
 }

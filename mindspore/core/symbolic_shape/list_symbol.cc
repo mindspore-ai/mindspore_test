@@ -77,9 +77,54 @@ ValuePtr ListSymbol::ToValue() const {
   return std::make_shared<ValueTuple>(values);
 }
 
+template <typename T, typename S>
+ValuePtr ToTensor(TypeId type, const SymbolPtrList &symbols) {
+  std::vector<T> values;
+  values.reserve(symbols.size());
+  (void)std::transform(symbols.begin(), symbols.end(), std::back_inserter(values),
+                       [](const SymbolPtr &s) { return static_cast<T>(s->as<S>()->value()); });
+  return std::make_shared<tensor::Tensor>(type, ShapeVector{static_cast<int64_t>(values.size())}, values.data(), type);
+}
+
+ValuePtr ToTensorOf(const TypePtr &type, const SymbolPtrList &symbols) {
+  auto tensor_type = type->cast_ptr<TensorType>();
+  MS_EXCEPTION_IF_NULL(tensor_type);
+  auto type_id = tensor_type->element()->type_id();
+  switch (type_id) {
+    // IntSymbol
+    case kNumberTypeInt64:
+      return ToTensor<int64_t, IntSymbol>(type_id, symbols);
+    case kNumberTypeInt32:
+      return ToTensor<int32_t, IntSymbol>(type_id, symbols);
+    case kNumberTypeInt16:
+      return ToTensor<int16_t, IntSymbol>(type_id, symbols);
+    case kNumberTypeInt8:
+      return ToTensor<int8_t, IntSymbol>(type_id, symbols);
+    case kNumberTypeUInt64:
+      return ToTensor<uint64_t, IntSymbol>(type_id, symbols);
+    case kNumberTypeUInt32:
+      return ToTensor<uint32_t, IntSymbol>(type_id, symbols);
+    case kNumberTypeUInt16:
+      return ToTensor<uint16_t, IntSymbol>(type_id, symbols);
+    case kNumberTypeUInt8:
+      return ToTensor<uint8_t, IntSymbol>(type_id, symbols);
+    // FloatSymbol
+    case kNumberTypeFloat64:
+      return ToTensor<double, FloatSymbol>(type_id, symbols);
+    case kNumberTypeFloat32:
+      return ToTensor<float, FloatSymbol>(type_id, symbols);
+    default:
+      break;
+  }
+  MS_LOG(INTERNAL_EXCEPTION) << "Cannot convert the symbols to tensor. type: " << type->ToString();
+}
+
 ValuePtr ListSymbol::ToValueOf(const TypePtr &type) const {
   if (!AllHaveData()) {
     return kValueAny;
+  }
+  if (type->isa<TensorType>()) {
+    return ToTensorOf(type, symbols());
   }
   ValuePtrList values;
   values.reserve(symbols_.size());
