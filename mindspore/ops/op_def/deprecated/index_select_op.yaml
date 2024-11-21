@@ -3,7 +3,7 @@ index_select:
     args:
         input:
             dtype: tensor
-        dim:
+        axis:
             dtype: int
         index:
             dtype: tensor
