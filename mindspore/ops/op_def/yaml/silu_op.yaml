@@ -1,4 +1,4 @@
-#SiLU operator
+#operator SiLU
 silu:
     args:
         input:

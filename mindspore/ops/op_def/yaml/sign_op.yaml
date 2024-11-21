@@ -1,4 +1,4 @@
-#sign operator
+#operator sign
 sign:
   args:
     input:
