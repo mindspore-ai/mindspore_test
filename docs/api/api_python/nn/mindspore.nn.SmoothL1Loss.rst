@@ -31,7 +31,10 @@ mindspore.nn.SmoothL1Loss
         - :class:`mindspore.ops.L2Loss` 通常更快收敛，但对离群值的鲁棒性较差。该损失函数具有较好的鲁棒性。
 
     参数：
-        - **beta** (float) - 损失函数计算在L1Loss和L2Loss间变换的阈值。默认值： ``1.0`` 。
+        - **beta** (number，可选) - 损失函数计算在L1Loss和L2Loss间变换的阈值。默认值： ``1.0`` 。
+          
+          - Ascend: 该值必须大于等于0。
+          - CPU/GPU: 该值必须大于0。 
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'none'`` 。
 
           - ``"none"``：不应用规约方法。
@@ -39,17 +42,22 @@ mindspore.nn.SmoothL1Loss
           - ``"sum"``：计算输出元素的总和。
 
     输入：
-        - **logits** (Tensor) - 预测值，任意维度Tensor。数据类型为float16或float32。
+        - **logits** (Tensor) - 预测值，任意维度Tensor。支持数据类型：
+          
+          - Ascend：float16、float32、bfloat16。
+          - CPU/GPU: float16、float32、float64。
         - **labels** (Tensor) - 目标值，数据类型和shape与 `logits` 相同的Tensor。
+          
+          - Ascend: 与 `logits` 的shape相同， `logits` 和 `labels` 遵循隐式类型转换规则，使数据类型一致。
+          - CPU/GPU: 与 `logits` 的shape和数据类型相同。
 
     输出：
         Tensor。如果 `reduction` 为'none'，则输出为Tensor且与 `logits` 的shape相同。否则shape为 :math:`()`。
 
     异常：
-        - **TypeError** - `beta` 不是float。
-        - **ValueError** - `reduction` 不是'none'，'mean'和'sum'中的任意一个。
         - **TypeError** - `logits` 或 `labels` 不是Tensor。
-        - **TypeError** - `logits` 或 `labels` 的数据类型不是float16或float32中的任一者。
-        - **TypeError** - `logits` 的数据类型与 `labels` 不同。
-        - **ValueError** - `beta` 小于0。
-        - **ValueError** - `logits` 的shape与 `labels` 不同。
+        - **RuntimeError** - `logits` 或 `labels` 的数据类型不是float16，float32，float64和bfloat16中的任一者。
+        - **ValueError** - `logits` 与 `labels` 的shape不同。
+        - **ValueError** - `reduction` 不是 ``'none'`` ， ``'mean'`` 和 ``'sum'`` 中的任一者。
+        - **RuntimeError** - `beta` 不是float，bool或int。
+        - **ValueError** - `beta` 小于等于0。

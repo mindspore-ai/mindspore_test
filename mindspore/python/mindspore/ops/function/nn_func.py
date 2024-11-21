@@ -4598,11 +4598,22 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
     :math:`\text{beta}>0` , its default value is ``1.0`` . :math:`N` is the batch size.
 
     Args:
-        input (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-            Data type is float16, float32 or float64.
-        target (Tensor): Ground truth data, tensor of shape :math:`(N, *)`, same shape and dtype as the `input`.
-        beta (float): A parameter used to control the point where the function will change between
-            L1 to L2 loss. The value should be greater than zero. Default: ``1.0`` .
+        input (Tensor): Tensor of shape :math:`(N, *)` where :math:`*` means,
+            any number of additional dimensions.Supported dtypes:
+
+            - Ascend: float16, float32, bfloat16.
+            - CPU/GPU: float16, float32, float64.
+        target (Tensor): Ground truth data, tensor of shape :math:`(N, *)`.
+
+            - Ascend: has the same shape as the `input`, `target` and `input`
+              comply with the implicit type conversion rules to make the data types consistent.
+            - CPU/GPU: has the same shape and dtype as the `input`.
+
+        beta (number, optional): A parameter used to control the point where the function will change between
+            L1 to L2 loss. Default: ``1.0`` .
+
+            - Ascend: The value should be equal to or greater than zero.
+            - CPU/GPU: The value should be greater than zero.
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'none'`` .
 
@@ -4612,14 +4623,15 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
 
     Returns:
         Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `input`.
-        Otherwise, the shape of output tensor is :math:`(1,)`.
+        Otherwise, the shape of output tensor is :math:`()`.
 
     Raises:
-        TypeError: If `beta` is not a float.
-        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
-        TypeError: If dtype of `input` or `target` is not one of float16, float32, float64.
-        ValueError: If `beta` is less than or equal to 0.
+        TypeError: If input `input`, `target` is not Tensor.
+        RuntimeError: If dtype of `input` or `target` is not one of float16, float32, float64, bfloat16.
         ValueError: If shape of `input` is not the same as `target`.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
+        TypeError: If `beta` is not a float, int or bool.
+        ValueError: If `beta` is less than or equal to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
