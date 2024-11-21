@@ -35,7 +35,7 @@ ShapeArray NLLLossFuncImpl::InferShape(const PrimitivePtr &primitive, const Infe
   ShapeVector weight_out_shape = {};
   auto reduction = static_cast<Reduction>(input_infos[kInputIndex3]->GetScalarValue<int64_t>().value());
   if (reduction == Reduction::NONE) {
-    if (target_shape.size() == 1 && target_shape[0] == -2) {
+    if (target_shape.size() == kDim1 && target_shape[0] == abstract::TensorShape::kShapeRankAny) {
       target_shape = {-1};
     }
     return {target_shape, weight_out_shape};
