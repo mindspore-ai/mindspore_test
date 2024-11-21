@@ -57,7 +57,7 @@ class PyboostGradFunctionsCppGenerator(BaseGenerator):
         self.native_include_header_template = Template(
             f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
         self.convert_template = Template(
-            "auto convert_$arg_name = runtime::ValueConverter::${convert_func}($arg_name->Value());\n")
+            "auto convert_$arg_name = runtime::ValueConverter::${convert_func}(ConvertNode2Value($arg_name));\n")
 
     def generate(self, work_path, op_protos):
         """

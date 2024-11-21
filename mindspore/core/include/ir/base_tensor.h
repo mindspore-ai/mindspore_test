@@ -919,6 +919,11 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   /// \param[in] lazy_callback Wait for async tasks finish before data_sync.
   static void RegisterLazyCallback(const std::function<void(void)> &lazy_callback) { lazy_callback_ = lazy_callback; }
 
+  /// \brief Contiguous callback function to this BaseTensor
+  ///
+  /// \return The contiguous callback function
+  const std::function<DeviceSyncPtr(const DeviceSyncPtr &)> &contiguous_callback() { return contiguous_callback_; }
+
   /// \brief Set contiguous callback function to this BaseTensor
   ///
   /// \param[in] contiguous_callback The callback from backend when need to make tensor contiguous.
