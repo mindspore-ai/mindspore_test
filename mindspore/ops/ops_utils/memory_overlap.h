@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_IR_MEMORY_OVERLAP_H
-#define MINDSPORE_CORE_IR_MEMORY_OVERLAP_H
+#ifndef MINDSPORE_OPS_OPS_UTILS_MEMORY_OVERLAP_H
+#define MINDSPORE_OPS_OPS_UTILS_MEMORY_OVERLAP_H
 
 #include "ir/base_tensor.h"
 
@@ -26,10 +26,10 @@ enum class MemOverlap { No, Yes, TooHard };
 ///
 /// \param[in] variable_tensor The tensor to be judged.
 /// \return No:no overlap, Yes:has overlap, TooHard:too hard to judge.
-MS_EXPORT MemOverlap IsInternalOverlap(const BaseTensorPtr &variable_tensor);
+MS_CORE_API MemOverlap IsInternalOverlap(const BaseTensorPtr &variable_tensor);
 
 /// \brief throw expcetion when there is overlap in tensor, used for tensor of inplace operator.
-MS_EXPORT void ThrowExpectionWhenInternalOverlap(const BaseTensorPtr &variable_tensor);
+MS_CORE_API void ThrowExpectionWhenInternalOverlap(const BaseTensorPtr &variable_tensor);
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_IR_MEMORY_OVERLAP_H
+#endif  // MINDSPORE_OPS_OPS_UTILS_MEMORY_OVERLAP_H
