@@ -89,6 +89,21 @@ FlashSPInfo::FlashSPInfo(CNodePtr fa_score_node) {
 namespace {
 using CNodePtrPair = std::pair<CNodePtr, CNodePtr>;
 using FSPInfo = FlashSPInfo;
+constexpr int64_t kAttnMaskSize = 2048;
+constexpr int64_t kSplitNum = 2;
+
+struct LayoutInfo {
+  int64_t fa_b;
+  int64_t fa_s1;
+  int64_t fa_s2;
+  int64_t fa_h1;
+  int64_t fa_h2;
+  int64_t fa_n1;
+  int64_t input_layout;
+  vector<int64_t> q_shape;
+  vector<int64_t> kv_shape;
+  TypeId output_id;
+};
 
 std::vector<CNodePtr> FindFWFlashAttentionScore(const FuncGraphManagerPtr &manager,
                                                 const std::vector<AnfNodePtr> &origin_nodes_topological) {
@@ -984,7 +999,22 @@ CNodePtr NewReceiveNode(const AnfNodePtr &parameter, int64_t tag, int64_t src_ra
 void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePtr *acc_attention,
                            const CNodePtr &softmax_max, const CNodePtr &softmax_sum, const CNodePtr &attention_output,
                            int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t input_layout,
-                           int fa_index, int index, TypeId output_type_id, bool is_last_update = false) {
+                           int fa_index, int index, TypeId output_type_id, bool is_last_update = false,
+                           bool need_split = false) {
+  CNodePtr split_max_0, split_sum_0, split_attn_0;
+  if (need_split) {
+    auto split_max = NewSplitNode(*history_max, kDim2, kIndex2);
+    *history_max = NewTupleGetItemNode(split_max, kIndex1);
+    auto split_sum = NewSplitNode(*history_sum, kDim2, kIndex2);
+    *history_sum = NewTupleGetItemNode(split_sum, kIndex1);
+    auto axis = input_layout == FASInputLayoutMode::BSH ? kDim1 : kDim2;
+    auto split_attn = NewSplitNode(*acc_attention, axis, kIndex2);
+    *acc_attention = NewTupleGetItemNode(split_attn, kIndex1);
+
+    split_max_0 = NewTupleGetItemNode(split_max, kIndex0);
+    split_sum_0 = NewTupleGetItemNode(split_sum, kIndex0);
+    split_attn_0 = NewTupleGetItemNode(split_attn, kIndex0);
+  }
   auto temp_max = NewMaxNode(*history_max, softmax_max);
   auto m_h_sub_temp = NewSubNode(*history_max, temp_max);
   auto m_i_sub_temp = NewSubNode(softmax_max, temp_max);
@@ -1002,7 +1032,8 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
   }
   auto e_m_h_div_concat = NewTileNode(e_m_h_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
   if (input_layout == FASInputLayoutMode::BSH) {
-    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, fa_s1, fa_h1});
+    auto real_seq = need_split ? fa_s1 / kSplitNum : fa_s1;
+    e_m_h_div_concat = NewReshapeNode(e_m_h_div_concat, {fa_b, real_seq, fa_h1});
   }
 
   auto e_m_i_div_split = NewSplitNode(e_m_i_div, 3, 8);
@@ -1012,20 +1043,32 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
   }
   auto e_m_i_div_concat = NewTileNode(e_m_i_div_item, parallel::CreateTuple({1, 1, 1, fa_h1 / fa_n1}));
   if (input_layout == FASInputLayoutMode::BSH) {
-    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, fa_s1, fa_h1});
+    auto real_seq = need_split ? fa_s1 / kSplitNum : fa_s1;
+    e_m_i_div_concat = NewReshapeNode(e_m_i_div_concat, {fa_b, real_seq, fa_h1});
   }
   auto weighted_history = NewMulNode(e_m_h_div_concat, *acc_attention);
   auto weighted_attention = NewMulNode(e_m_i_div_concat, attention_output);
-  if (is_last_update) {
-    weighted_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_MUL, MakeValue<int>(fa_index));
-  }
   (*acc_attention) = NewAddNode(weighted_history, weighted_attention);
+  if (need_split) {
+    auto merge_max = NewMakeTupleNode({split_max_0, temp_max});
+    temp_max = NewConcatNode(merge_max, kIndex2);
+
+    auto merge_sum = NewMakeTupleNode({split_sum_0, l});
+    l = NewConcatNode(merge_sum, kIndex2);
+
+    auto merge_attn = NewMakeTupleNode({split_attn_0, *acc_attention});
+    auto axis = input_layout == FASInputLayoutMode::BSH ? kDim1 : kDim2;
+    *acc_attention = NewConcatNode(merge_attn, axis);
+  }
+  (*history_max) = temp_max;
+  *acc_attention = CreateDepend(*acc_attention, *history_max);
+  (*history_sum) = l;
+  *acc_attention = CreateDepend(*acc_attention, *history_sum);
   common::AnfAlgo::SetNodeAttr(kAttrAccumulatedAttention, MakeValue(1), *acc_attention);
   common::AnfAlgo::SetNodeAttr("FLASH_INDEX", MakeValue<std::string>(GetFlashIndexString(fa_index, index)),
                                *acc_attention);
-  (*history_max) = temp_max;
-  (*history_sum) = l;
   if (is_last_update) {
+    weighted_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_MUL, MakeValue<int>(fa_index));
     (*history_max)->AddPrimalAttr(RING_ATTENTION_UPDATE_MAX, MakeValue<int>(fa_index));
     (*history_sum)->AddPrimalAttr(RING_ATTENTION_UPDATE_SUM, MakeValue<int>(fa_index));
   }
@@ -1902,25 +1945,7 @@ void SetFAInputs(const AnfNodePtr &query_node, const AnfNodePtr &key_node, const
   } else if (IsValueNode<None>(attn_node) && !eod_masks.empty()) {  // eod reset attention mask
     actual_mask = eod_masks[pos_index];
   } else {
-    if (index == 0) {
-      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
-        CreatInt64Imm(kIndex3);
-      actual_mask = *first_actual_mask;
-    } else {
-      (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
-        CreatInt64Imm(kIndex0);
-      actual_mask = (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputPaddingMaskIndex];
-      if (index > pos) {
-        actual_mask = *full_mask;
-        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputAttnMaskIndex] = actual_mask;
-        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] =
-          CreatInt64Imm(kIndex4);
-        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputPreTokensIndex] =
-          CreatInt64Imm(kIndex0);
-        (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputNextTokensIndex] =
-          CreatInt64Imm(kIndex0);
-      }
-    }
+    actual_mask = GetActualMask(index, pos, TypeId::kNumberTypeUInt8, shape);
   }
   if (actual_mask != nullptr) {
     (*fa_inputs)[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputAttnMaskIndex] = actual_mask;
@@ -2353,17 +2378,233 @@ CNodePtr DynCreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr 
   return attention_results;
 }
 
+void GetLayoutInfo(LayoutInfo *li, const CNodePtr &fa_score_node) {
+  std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  li->q_shape = operator_info->inputs_tensor_info()[kIndex0].tensor_layout().base_slice_shape().array();
+  li->kv_shape = operator_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
+  li->fa_n1 = GetValue<int64_t>(
+    fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputHeadNumIndex + 1)
+      ->cast<ValueNodePtr>()
+      ->value());
+  auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
+  li->input_layout = flash_score_info_ptr->input_layout();
+  if (li->input_layout == FASInputLayoutMode::BSH) {
+    li->fa_b = li->q_shape[kIndex0];
+    li->fa_s1 = li->q_shape[kIndex1];
+    li->fa_h1 = li->q_shape[kIndex2];
+    li->fa_s2 = li->q_shape[kIndex1];
+    li->fa_h2 = li->q_shape[kIndex2];
+  } else if (li->input_layout == FASInputLayoutMode::BNSD) {
+    li->fa_b = li->q_shape[kIndex0];
+    li->fa_s1 = li->q_shape[kIndex2];
+    li->fa_h1 = li->q_shape[kIndex1] * li->q_shape[kIndex3];
+    li->fa_s2 = li->kv_shape[kIndex2];
+    li->fa_h2 = li->kv_shape[kIndex1] * li->kv_shape[kIndex3];
+  }
+  li->output_id = common::AnfAlgo::GetOutputInferDataType(fa_score_node, kIndex3);
+}
+
+void CreateP2PCommunication(const vector<AnfNodePtr> &orig_qkv, const CNodePtr &last_recv_node, int64_t pos,
+                            int64_t send_rank_id, int64_t recv_rank_id, int fa_index, size_t step, const LayoutInfo &li,
+                            CNodePtr *send_node, CNodePtr *recv_node) {
+  AnfNodePtr send_data;
+  if (step == 0) {
+    std::vector<AnfNodePtr> kv_nodes = {orig_qkv[kIndex1], orig_qkv[kIndex2]};
+    auto kv_tuple = NewMakeTupleNode(kv_nodes);
+    send_data = NewConcatNode(kv_tuple, 0);
+  } else {
+    send_data = last_recv_node;
+  }
+
+  auto neigh_shape = li.kv_shape;
+  if (neigh_shape[kIndex0] != -1) {
+    neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex2;
+  }
+  if (pos % kIndex2 == 0) {
+    *send_node = NewSendNode(send_data, 0, send_rank_id, neigh_shape, li.output_id, g_device_manager->world_group());
+    *recv_node =
+      NewReceiveNode(*send_node, 0, recv_rank_id, neigh_shape, li.output_id, g_device_manager->world_group());
+  } else {
+    *recv_node = NewReceiveNode(send_data, 0, recv_rank_id, neigh_shape, li.output_id, g_device_manager->world_group());
+    *send_node = NewSendNode(CreateDepend(send_data, *recv_node), 0, send_rank_id, neigh_shape, li.output_id,
+                             g_device_manager->world_group());
+  }
+  string str_fa_index = GetFlashIndexString(fa_index, static_cast<int>(step));
+  (*send_node)->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(str_fa_index));
+  (*recv_node)->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(str_fa_index));
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(str_fa_index), (*send_node));
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(str_fa_index), (*recv_node));
+  (*send_node)->AddPrimalAttr(RING_ATTENTION_POS, MakeValue<int64_t>(pos));
+  (*recv_node)->AddPrimalAttr(RING_ATTENTION_POS, MakeValue<int64_t>(pos));
+}
+
+void PrepareQKV(const vector<AnfNodePtr> &orig_qkv, const CNodePtr &last_recv_node, size_t i, size_t rank,
+                const LayoutInfo &li, vector<AnfNodePtr> *inputs) {
+  AnfNodePtr cur_q;
+  AnfNodePtr cur_k;
+  AnfNodePtr cur_v;
+  if (i == 0) {
+    cur_q = orig_qkv[kIndex0];
+    cur_k = orig_qkv[kIndex1];
+    cur_v = orig_qkv[kIndex2];
+  } else if (i > 0) {
+    auto recv_kv_split = NewSplitNode(last_recv_node, 0, kIndex2);
+    auto recv_k = NewTupleGetItemNode(recv_kv_split, kIndex0);
+    auto recv_v = NewTupleGetItemNode(recv_kv_split, kIndex1);
+    auto axis = li.input_layout == FASInputLayoutMode::BSH ? kDim1 : kDim2;
+    if (i <= rank) {
+      cur_q = orig_qkv[kIndex0];
+      auto k_split = NewSplitNode(recv_k, axis, kIndex2);
+      auto v_split = NewSplitNode(recv_v, axis, kIndex2);
+      cur_k = NewTupleGetItemNode(k_split, kIndex0);
+      cur_v = NewTupleGetItemNode(v_split, kIndex0);
+    } else {
+      auto q_split = NewSplitNode(orig_qkv[kIndex0], axis, kIndex2);
+      cur_q = NewTupleGetItemNode(q_split, kIndex1);
+      cur_k = recv_k;
+      cur_v = recv_v;
+    }
+  }
+  inputs->emplace_back(cur_q);
+  inputs->emplace_back(cur_k);
+  inputs->emplace_back(cur_v);
+}
+
+void CreateFANode(const CNodePtr &fa_score_node, const vector<AnfNodePtr> &cur_qkv, const LayoutInfo &li, size_t step,
+                  int64_t pos, int fa_index, size_t sp_num, CNodePtr *local_fa_node) {
+  std::vector<AnfNodePtr> fa_inputs;
+  for (size_t i = 0; i < ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputsNum; ++i) {
+    fa_inputs.push_back(fa_score_node->input(i + 1));
+  }
+
+  fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputQueryIndex] = cur_qkv[kIndex0];
+  fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex] = cur_qkv[kIndex1];
+  fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex] = cur_qkv[kIndex2];
+  if (step == 0) {
+    fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputSparseModeIndex] = CreatInt64Imm(kIndex3);
+    auto actual_mask = GetActualMask(0, pos, TypeId::kNumberTypeUInt8, {kAttnMaskSize, kAttnMaskSize});
+    fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputAttnMaskIndex] = actual_mask;
+  }
+
+  *local_fa_node = NewFlashAttentionScoreNode(fa_inputs, fa_index, static_cast<int>(step), false);
+  common::AnfAlgo::CopyNodeAttrs(fa_score_node, *local_fa_node);
+  (*local_fa_node)->AddPrimalAttr("sp_num", MakeValue<int64_t>(static_cast<int>(sp_num)));
+  std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  (*local_fa_node)->set_user_data<parallel::OperatorInfo>(operator_info);
+}
+
+void AdjustCPDependency(const FuncGraphManagerPtr &manager, const vector<AnfNodePtr> &depend_nodes, size_t pos,
+                        CNodePtr *local_fa_node, CNodePtr *send_node, CNodePtr *recv_node) {
+  if (pos % kIndex2 == 0) {
+    auto send_input = (*send_node)->input(1);
+    send_input = CreateDepends(send_input, depend_nodes);
+    manager->SetEdge(*send_node, 1, send_input);
+  } else {
+    auto recv_input = (*recv_node)->input(1);
+    recv_input = CreateDepends(recv_input, depend_nodes);
+    manager->SetEdge(*recv_node, 1, recv_input);
+  }
+
+  auto fa_input = (*local_fa_node)->input(1);
+  fa_input = CreateDepends(fa_input, depend_nodes);
+  fa_input = CreateDepends(fa_input, {*send_node, *recv_node});
+  manager->SetEdge(*local_fa_node, 1, fa_input);
+}
+
+CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
+                                      const std::vector<CNodePtr> &origin_nodes_topological,
+                                      const CNodePtr &fa_score_node, FSPInfo *fsp_info, int fa_index) {
+  auto query_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputQueryIndex + 1);
+  auto key_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex + 1);
+  auto value_node = fa_score_node->input(ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex + 1);
+  vector<AnfNodePtr> orig_qkv = {query_node, key_node, value_node};
+  size_t sp_num = fsp_info->GetSPNum();
+  size_t rank_id = fsp_info->GetRankId();
+  int64_t send_rank_id = fsp_info->GetSendRankId();
+  int64_t recv_rank_id = fsp_info->GetRecvRankId();
+  LayoutInfo li;
+  GetLayoutInfo(&li, fa_score_node);
+  std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
+  auto pos = GetPosInSpDevice(flash_score_info_ptr, static_cast<int>(rank_id));
+  CNodePtr local_fa_node;
+  CNodePtr last_fa_node;
+  CNodePtr history_max, history_sum, acc_attention;
+  CNodePtr last_send_node;
+  CNodePtr last_recv_node;
+  CNodePtr send_node;
+  CNodePtr recv_node;
+  for (size_t i = 0; i < sp_num; ++i) {
+    if (i > 0) {
+      last_recv_node = CreateDepends(last_recv_node, {last_fa_node, last_send_node});
+    }
+    vector<AnfNodePtr> cur_qkv;
+    PrepareQKV(orig_qkv, last_recv_node, i, pos, li, &cur_qkv);
+    if (i < sp_num - 1) {
+      CreateP2PCommunication(cur_qkv, last_recv_node, pos, send_rank_id, recv_rank_id, fa_index, i, li, &send_node,
+                             &recv_node);
+    }
+    CreateFANode(fa_score_node, cur_qkv, li, i, pos, fa_index, sp_num, &local_fa_node);
+    if (i < sp_num - 1) {
+      vector<AnfNodePtr> last_nodes = {last_fa_node, last_send_node, last_recv_node};
+      AdjustCPDependency(manager, last_nodes, pos, &local_fa_node, &send_node, &recv_node);
+    }
+    last_fa_node = local_fa_node;
+    last_send_node = send_node;
+    last_recv_node = recv_node;
+
+    bool last_step = i == sp_num - 1;
+    auto softmax_max = NewTupleGetItemNode(local_fa_node, kIndex0);
+    auto softmax_sum = NewTupleGetItemNode(local_fa_node, kIndex1);
+    auto attention_output = NewTupleGetItemNode(local_fa_node, kIndex3);
+    if (i == 0) {
+      acc_attention = attention_output->cast<CNodePtr>();
+      history_max = softmax_max->cast<CNodePtr>();
+      history_sum = softmax_sum->cast<CNodePtr>();
+    } else if (static_cast<int>(i) <= pos) {
+      UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
+                            li.fa_b, li.fa_s1, li.fa_n1, li.fa_h1, li.input_layout, fa_index, static_cast<int>(i),
+                            li.output_id, last_step);
+      last_fa_node = acc_attention;
+    } else {
+      UpdateAttentionOutput(&history_max, &history_sum, &acc_attention, softmax_max, softmax_sum, attention_output,
+                            li.fa_b, li.fa_s1, li.fa_n1, li.fa_h1, li.input_layout, fa_index, static_cast<int>(i),
+                            li.output_id, last_step, true);
+      last_fa_node = acc_attention;
+    }
+  }
+  auto softmax_out = NewTupleGetItemNode(local_fa_node, kIndex2);
+  acc_attention->AddPrimalAttr(RING_ATTENTION_UPDATE_ATTN, MakeValue<int>(fa_index));
+  std::vector<AnfNodePtr> output_tuple = {history_max, history_sum, softmax_out, acc_attention};
+  auto attention_results = NewMakeTupleNode(output_tuple);
+  return attention_results;
+}
+
 void CreateAndReplaceRingAttentionFAScore(const FuncGraphManagerPtr &manager,
                                           const std::vector<CNodePtr> &origin_nodes_topological,
-                                          const CNodePtr &fa_score_node, FSPInfo *fsp_info, int i, bool use_send_recv) {
+                                          const CNodePtr &fa_score_node, FSPInfo *fsp_info, int i) {
   auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != kSemiAutoParallel) {
     MS_LOG(ERROR) << "ring attention & flash sp only supports semi parallel mode";
     return;
   }
+  auto fa_score_node_prim = GetCNodePrimitive(fa_score_node);
+  MS_EXCEPTION_IF_NULL(fa_score_node_prim);
+  bool use_send_recv = false;
+  if (fa_score_node_prim->HasAttr(parallel::ENABLE_RA_SEND_RECV) &&
+      GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RA_SEND_RECV)))) {
+    use_send_recv = GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RA_SEND_RECV)));
+  }
+  bool enable_ra_context_parallel = false;
+  if (fa_score_node_prim->HasAttr(parallel::ENABLE_RA_CONTEXT_PARALLEL) &&
+      GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RA_CONTEXT_PARALLEL)))) {
+    enable_ra_context_parallel = GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RA_CONTEXT_PARALLEL)));
+  }
   CNodePtr cnode;
   bool has_dyn_shape = IsDynamicShape(fa_score_node);
-  if (use_send_recv == true) {
+  if (enable_ra_context_parallel) {
+    cnode = CreateReplaceRingAttentionCP(manager, origin_nodes_topological, fa_score_node, fsp_info, i);
+  } else if (use_send_recv) {
     if (!has_dyn_shape) {
       cnode = CreateReplaceRingAttentionGraphBySendRecv(manager, origin_nodes_topological, fa_score_node, fsp_info, i);
     } else {
@@ -2384,7 +2625,7 @@ void CreateAndReplaceRingAttentionFAScore(const FuncGraphManagerPtr &manager,
 
 void CreateAndReplaceFlashSPFAScore(const FuncGraphManagerPtr &manager,
                                     const std::vector<CNodePtr> &origin_nodes_topological,
-                                    const CNodePtr &fa_score_node, FSPInfo *fsp_info, int i, bool use_send_recv) {
+                                    const CNodePtr &fa_score_node, FSPInfo *fsp_info, int i) {
   auto parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (parallel_mode != kSemiAutoParallel) {
     MS_LOG(ERROR) << "ring attention & flash sp only supports semi parallel mode";
@@ -2434,11 +2675,6 @@ bool SetFlashSP(const FuncGraphPtr &func_graph) {
          !GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_FLASH_SP))))) {
       continue;
     }
-    bool use_send_recv = false;
-    if (fa_score_node_prim->HasAttr(parallel::ENABLE_RA_SEND_RECV) &&
-        GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RA_SEND_RECV)))) {
-      use_send_recv = GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RA_SEND_RECV)));
-    }
     auto fsp_info = FSPInfo(fa_score_node);
     if (!CheckUserSettings(func_graph, &fsp_info)) {
       return false;
@@ -2450,9 +2686,9 @@ bool SetFlashSP(const FuncGraphPtr &func_graph) {
     std::vector<CNodePtr> nodes_topological(orders.cbegin(), orders.cend());
     if (fa_score_node_prim->HasAttr(parallel::ENABLE_FLASH_SP) &&
         GetValue<bool>(fa_score_node_prim->GetAttr(parallel::ENABLE_FLASH_SP))) {
-      CreateAndReplaceFlashSPFAScore(manager, nodes_topological, fa_score_node, &fsp_info, i, use_send_recv);
+      CreateAndReplaceFlashSPFAScore(manager, nodes_topological, fa_score_node, &fsp_info, i);
     } else {
-      CreateAndReplaceRingAttentionFAScore(manager, nodes_topological, fa_score_node, &fsp_info, i, use_send_recv);
+      CreateAndReplaceRingAttentionFAScore(manager, nodes_topological, fa_score_node, &fsp_info, i);
     }
     is_changed = true;
   }
