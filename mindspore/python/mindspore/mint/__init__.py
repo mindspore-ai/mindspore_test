@@ -270,7 +270,7 @@ from mindspore.ops.function.math_func import diff_ext as diff
 # 109
 from mindspore.ops.auto_generate import argmin_ext as argmin
 # 110
-
+from mindspore.ops.function.nn_func import softmax_ext
 # 111
 
 # 112
@@ -804,6 +804,16 @@ def not_equal(input, other):
     Alias of mint.ne().
     """
     return ne(input, other)
+
+
+def softmax(input, dim, *, dtype=None):
+    r"""
+    Alias of :func:`mindspore.mint.nn.functional.softmax`.
+
+    Supported Platforms:
+        ``Ascend``
+    """
+    return softmax_ext(input, dim, dtype)
 
 
 def _einsum_convert_sublist_to_label(num, ell_num=False):
@@ -2266,7 +2276,7 @@ __all__ = [
     # 109
     'argmin',
     # 110
-
+    'softmax',
     # 111
 
     # 112
