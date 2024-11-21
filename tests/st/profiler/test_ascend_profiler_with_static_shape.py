@@ -214,11 +214,10 @@ def check_ascend_profiler_graph_files(profiler_path: str, rank_id: int):
         "jit_level": "O2",
     })
 
-    ascend_framework_path = glob.glob(f"{profiler_path}/*_ascend_ms/FRAMEWORK")[0]
     ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
-    operate_memory_path = os.path.join(ascend_framework_path, f"operator_memory_{rank_id}.csv")
+    operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
         "Name": ["model.encoder*", "model.decoder*"]
     })
@@ -241,10 +240,10 @@ def check_ascend_profiler_pynative_files(profiler_path: str, rank_id: int):
         "jit_level": "",
     })
 
-    ascend_framework_path = glob.glob(f"{profiler_path}/*_ascend_ms/FRAMEWORK")[0]
+    ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
-    operate_memory_path = os.path.join(ascend_framework_path, f"operator_memory_{rank_id}.csv")
+    operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
         "Name": ["*Add*", "*Sqrt*", "*LayerNorm*"]
     })
@@ -261,10 +260,10 @@ def check_ascend_profiler_kbk_files(profiler_path: str, rank_id: int):
         "jit_level": "O0",
     })
 
-    ascend_framework_path = glob.glob(f"{profiler_path}/*_ascend_ms/FRAMEWORK")[0]
+    ascend_profiler_output_path = glob.glob(f"{profiler_path}/*_ascend_ms/ASCEND_PROFILER_OUTPUT")[0]
 
     # check operate_memory.csv
-    operate_memory_path = os.path.join(ascend_framework_path, f"operator_memory_{rank_id}.csv")
+    operate_memory_path = os.path.join(ascend_profiler_output_path, "operator_memory.csv")
     FileChecker.check_csv_items(operate_memory_path, {
         "Name": ["*Add*", "*MatMul*", "*LayerNorm*"]
     })
