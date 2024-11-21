@@ -1136,8 +1136,7 @@ bool GeKernelExecutor::PySyncRuning(void *stream) const {
   MS_EXCEPTION_IF_NULL(res_manager_);
   auto ms_context = MsContext::GetInstance();
   static bool sync_stream = common::IsEnableRuntimeConfig(common::kRuntimeSynchronize);
-  if ((sync_stream || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||
-       ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON") &&
+  if ((sync_stream || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE)) &&
       !AscendStreamMng::GetInstance().SyncStream(stream)) {
     return false;
   }
