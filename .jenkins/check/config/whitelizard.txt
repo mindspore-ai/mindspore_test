@@ -67,6 +67,7 @@ mindspore/mindspore/python/mindspore/ops/function/random_func.py:multinomial
 mindspore/mindspore/python/mindspore/ops/function/random_func.py:multinomial_ext
 mindspore/mindspore/python/mindspore/ops_generate/arg_dtype_cast.py:type_it
 mindspore/mindspore/python/mindspore/context.py:set_auto_parallel_context
+mindspore/mindspore/python/mindspore/context.py:set_context
 mindspore/mindspore/python/mindspore/common/tensor.py:__init__
 mindspore/mindspore/python/mindspore/common/parameter.py:set_data
 mindspore/mindspore/python/mindspore/ops/_grad_experimental/grad_math_ops.py:get_bprop_fft_with_size.bprop

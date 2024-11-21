@@ -51,10 +51,6 @@ mindspore.set_context
     +-------------------------+------------------------------+----------------------------+
     | 执行控制                |   mode                       |   CPU/GPU/Ascend           |
     |                         +------------------------------+----------------------------+
-    |                         |  enable_graph_kernel         |  Ascend/GPU                |
-    |                         +------------------------------+----------------------------+
-    |                         |  graph_kernel_flags          |  Ascend/GPU                |
-    |                         +------------------------------+----------------------------+
     |                         |  enable_reduce_precision     |  Ascend                    |
     |                         +------------------------------+----------------------------+
     |                         |  aoe_tune_mode               |  Ascend                    |
@@ -144,26 +140,6 @@ mindspore.set_context
 
         - **pynative_synchronize** (bool) - 表示是否在PyNative模式下启动设备同步执行。默认值： ``False`` 。设置为 ``False`` 时，将在设备上异步执行算子。当算子执行出错时，将无法定位特定错误脚本代码的位置。当设置为 ``True`` 时，将在设备上同步执行算子。这将降低程序的执行性能。此时，当算子执行出错时，可以根据错误的调用栈来定位错误脚本代码的位置。
         - **mode** (int) - 表示在GRAPH_MODE(0)或PYNATIVE_MODE(1)模式中运行，两种模式都支持所有后端。默认值： ``PYNATIVE_MODE`` 。
-        - **enable_graph_kernel** (bool) - 表示开启图算融合去优化网络执行性能。默认值： ``False`` 。如果 `enable_graph_kernel` 设置为 ``True`` ，则可以启用加速。有关图算融合的详细信息，请查看 `使能图算融合 <https://www.mindspore.cn/docs/zh-CN/master/model_train/optimize/graph_fusion_engine.html>`_ 。
-        - **graph_kernel_flags** (str) - 图算融合的优化选项，当与enable_graph_kernel冲突时，它的优先级更高。其仅适用于有经验的用户。例如：
-
-          .. code-block::
-
-              mindspore.set_context(graph_kernel_flags="--opt_level=2 --dump_as_text")
-
-          一些常用选项：
-
-          - **opt_level**：设置优化级别。默认值： ``2`` 。当opt_level的值大于0时，启动图算融合。可选值包括：
-
-            - 0：关闭图算融合。
-            - 1：启动算子的基本融合。
-            - 2：包括级别1的所有优化，并打开更多的优化，如CSE优化算法、算术简化等。
-            - 3：包括级别2的所有优化，并打开更多的优化，如SitchingFusion、ParallelFusion等。在某些场景下，该级别的优化激进且不稳定。使用此级别时要小心。
-
-          - **dump_as_text**：将关键过程的详细信息生成文本文件保存到"graph_kernel_dump"目录里。默认值： ``False`` 。
-          - **enable_cluster_ops**：把对应算子加入参与融合的算子集合。例如，通过设置 ``--enable_cluster_ops=MatMul`` 可以让MatMul算子参与融合。
-          - **enable_pass/disable_pass**：使能/禁用用户指定的融合pass。详见 `自定义融合Pass <https://www.mindspore.cn/docs/zh-CN/master/model_train/custom_program/fusion_pass.html>`_ 。
-
         - **enable_reduce_precision** (bool) - 表示是否开启降低精度计算。默认值： ``True`` 。设置为 ``True`` 时，不支持用户指定的精度，且精度将自动更改。设置为 ``False`` 时，如果未指定用例的精度，则会报错并退出。
         - **aoe_tune_mode** (str) - 表示启动AOE调优，默认不设置。设置为 ``online`` 时，将启动在线调优，设置为 ``offline`` 时，将为离线调优保存GE图 。
         - **aoe_config** (dict) - 设置aoe工具专用的参数，默认不设置。
