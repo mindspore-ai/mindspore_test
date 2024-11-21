@@ -2334,7 +2334,10 @@ class Cell(Cell_):
         Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
         """
-        ret = self._cell_backward_pre_hook(outputs)
+        if isinstance(outputs, tuple):
+            ret = self._cell_backward_pre_hook(*outputs)
+        else:
+            ret = self._cell_backward_pre_hook(outputs)
         if isinstance(outputs, tuple):
             if not isinstance(ret, tuple):
                 ret = (ret,)
@@ -2452,8 +2455,10 @@ class Cell(Cell_):
                 outputs = self.construct(*outputs, **kwargs)
             else:
                 outputs = self.construct(outputs, **kwargs)
-
-        outputs = self._cell_backward_hook(outputs)
+        if isinstance(outputs, tuple):
+            outputs = self._cell_backward_hook(*outputs)
+        else:
+            outputs = self._cell_backward_hook(outputs)
         return outputs
 
     def set_param_ps(self, recurse=True, init_in_server=False):

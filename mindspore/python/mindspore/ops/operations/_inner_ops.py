@@ -1570,7 +1570,29 @@ class CellBackwardHook(PrimitiveWithInfer):
         # If args is empty, just return.
         if not args:
             return args
-        return _run_op(self, self.name, args)
+
+        # Collect the indices and values of arguments that are instances of Tensor
+        tensors_idx = []
+        tensors = []
+        for i, arg in enumerate(args):
+            if isinstance(arg, Tensor):
+                tensors_idx.append(i)
+                tensors.append(arg)
+
+        # If there are no Tensor arguments, return the single argument or the original tuple
+        if not tensors:
+            return args[0] if len(args) == 1 else args
+
+        new_tensors = _run_op(self, self.name, tensors)
+        if not isinstance(new_tensors, tuple):
+            new_tensors = (new_tensors,)
+
+        # Replace the original Tensor arguments with the processed ones
+        arg_list = list(args)
+        for idx, val in zip(tensors_idx, new_tensors):
+            arg_list[idx] = val
+
+        return arg_list[0] if len(arg_list) == 1 else tuple(arg_list)
 
     def infer_shape(self, *inputs_shape):
         if len(inputs_shape) == 1:
