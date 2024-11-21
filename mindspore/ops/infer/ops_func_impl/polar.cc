@@ -63,6 +63,10 @@ ShapeArray PolarFuncImpl::InferShape(const PrimitivePtr &primitive, const InferI
 }
 
 std::vector<TypeId> PolarFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto type = input_infos[kInputIndex0]->GetType();
+  if (type == kNumberTypeFloat64) {
+    return {kNumberTypeComplex128};
+  }
   return {kNumberTypeComplex64};
 }
 }  // namespace ops
