@@ -44,9 +44,16 @@ TensorStorageInfoPtrList NarrowCalc(const PrimitivePtr &prim, const std::vector<
   dim = DynamicDimWrap(dim, shape_size);
   auto dim_value = old_shape[dim];
   auto start = GetValue<int64_t>(inputs[kInputIndex2]);
+  MS_CHECK_VALUE(start >= -dim_value && start <= dim_value,
+                 "For primitive [Narrow]: start value error, start: " + std::to_string(start) +
+                   ", start should be in [" + std::to_string(-dim_value) + ", " + std::to_string(dim_value) + "].");
+  start = start < 0 ? start + dim_value : start;
+
   auto length = GetValue<int64_t>(inputs[kInputIndex3]);
-  MS_CHECK_VALUE(length >= 0 && start <= dim_value - length,
-                 "For primitive [Narrow], start + length exceeds dimension size.");
+  auto max_length = dim_value - start;
+  MS_CHECK_VALUE(length >= 0 && length <= max_length, "length value error. length: " + std::to_string(length) +
+                                                        ", length should be in [0, " + std::to_string(max_length) +
+                                                        "].");
 
   auto new_inputs = inputs;
   new_inputs.pop_back();

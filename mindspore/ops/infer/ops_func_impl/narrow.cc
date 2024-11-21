@@ -56,7 +56,7 @@ BaseShapePtr NarrowFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   auto begin_value = begin_value_opt.value();
   MS_CHECK_VALUE(begin_value >= -x_axis_size && begin_value <= x_axis_size,
-                 "For primitive [SliceExt]: start value error, start: " + std::to_string(begin_value) +
+                 "For primitive [Narrow]: start value error, start: " + std::to_string(begin_value) +
                    ", start should be in [" + std::to_string(-x_axis_size) + ", " + std::to_string(x_axis_size) + "].");
   begin_value = begin_value < 0 ? begin_value + x_axis_size : begin_value;
 
