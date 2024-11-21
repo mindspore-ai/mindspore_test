@@ -234,6 +234,7 @@ mindspore.set_context
             - **bias_add_comm_swap** (bool): 为 ``True`` 时表示开启matmul-add结构下，通信算子与add算子执行顺序互换。当前仅支持bias为一维的情况。默认值： ``False`` 。
             - **enable_allreduce_slice_to_reducescatter** (bool): 为 ``True`` 时，表示开启allreduce优化。在batchmatmul模型并行引入allreduce的场景中，如果后续节点是配置了模型并行的stridedslice算子，在已识别可优化的模式中，将allreduce优化为reducescatter。典型的用在开启了groupwise alltoall的MoE模块。默认值： ``False`` 。
             - **enable_interleave_split_concat_branch** (bool): 为 ``True`` 时，表示针对带enable_interleave属性的split和concat算子形成的分支，开启通信计算并行优化。典型的使用场景为MoE模块并行场景，对输入数据进行split后，各切片数据进行MoE模块运算，再对分支结果进行concat，开启后各分支的MoE模块进行通信计算并行。默认值： ``False`` 。
+            - **enable_interleave_parallel_branch** (bool): 为 ``True`` 时，表示针对可并行的分支，如果分支汇聚点带parallel_branch属性，开启通信计算并行优化。典型的使用场景为MoE模块带路由专家和共享专家分支的并行场景，开启后并行分支进行通信计算并行。默认值： ``False`` 。
           - **host_scheduling_max_threshold** (int): 控制静态小图（根图）执行时是否使用动态shape调度的最大阈值，默认阈值为0。如果静态根图节点个数小于最大阈值，则使用动态shape调度。大模型场景，该方式可以节约stream资源。如果静态根图节点个数大于最大阈值，则保持原有流程不变。
           - **hccl_watchdog** (bool): 开启一个线程监控集合通信故障。默认值： ``True`` 。
 
