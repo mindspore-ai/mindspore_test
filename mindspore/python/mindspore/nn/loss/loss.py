@@ -650,8 +650,11 @@ class SmoothL1Loss(LossBase):
           robust to outliers, and the loss function has better robustness.
 
     Args:
-        beta (float): The loss function calculates the threshold of the transformation between L1Loss and L2Loss.
-            Default: ``1.0`` .
+        beta (number, optional): The loss function calculates the threshold of the transformation
+            between L1Loss and L2Loss. Default: ``1.0`` .
+
+            - Ascend: The value should be equal to or greater than zero.
+            - CPU/GPU: The value should be greater than zero.
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'none'`` .
 
@@ -660,22 +663,26 @@ class SmoothL1Loss(LossBase):
             - ``'sum'``: the output elements will be summed.
 
     Inputs:
-        - **logits** (Tensor) - Predictive value. Tensor of any dimension. Data type must be one of float16 or
-          float32.
-        - **labels** (Tensor) - Ground truth data, same shape and dtype as the `logits`.
+        - **logits** (Tensor) - Predictive value. Tensor of any dimension. Supported dtypes:
 
+          - Ascend: float16, float32, bfloat16.
+          - CPU/GPU: float16, float32, float64.
+        - **labels** (Tensor) - Ground truth data.
+
+          - Ascend: has the same shape as the `logits`,
+            `logits` and `labels` comply with the implicit type conversion rules to make the data types consistent.
+          - CPU/GPU: has the same shape and dtype as the `logits`.
     Outputs:
         Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `logits`.
         Otherwise the shape of output tensor is :math:`()`.
 
     Raises:
-        TypeError: If `beta` is not a float.
-        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
-        TypeError: If `logits` or `labels` are not Tensor.
-        TypeError: If dtype of `logits` or `labels` is neither float16 not float32.
-        TypeError: If dtype of `logits` is not the same as `labels`.
-        ValueError: If `beta` is less than or equal to 0.
+        TypeError: If input `logits` or `labels` are not Tensor.
+        RuntimeError: If dtype of `logits` or `labels` is not one of float16, float32, float64, bfloat16.
         ValueError: If shape of `logits` is not the same as `labels`.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
+        TypeError: If `beta` is not a float, int or bool.
+        ValueError: If `beta` is less than or equal to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

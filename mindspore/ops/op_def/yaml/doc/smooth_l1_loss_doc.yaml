@@ -3,10 +3,13 @@ smooth_l1_loss:
         Calculate the smooth L1 loss, and the L1 loss function has robustness.
 
         Refer to :func:`mindspore.ops.smooth_l1_loss` for more details.
-
+        
         Args:
-            beta (float, optional): A parameter used to control the point where the function will change between
-                L1 to L2 loss. The value should be greater than zero. Default: ``1.0`` .
+            beta (number, optional): A parameter used to control the point where the function will change between
+                L1 to L2 loss. Default: ``1.0`` .
+
+                - Ascend: The value should be equal to or greater than zero.
+                - CPU/GPU: The value should be greater than zero.
             reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
                 ``'sum'`` . Default: ``'none'`` .
 
@@ -15,11 +18,16 @@ smooth_l1_loss:
                 - ``'sum'``: the output elements will be summed.
 
         Inputs:
-            - **logits** (Tensor) - Input Tensor of any dimension. Data type must be float16, float32 or float64.
-            - **labels** (Tensor) - Ground truth data, has the same shape and dtype as the `logits`.
+            - **logits** (Tensor) - Input Tensor of any dimension. Supported dtypes: 
 
+              - Ascend: float16, float32, bfloat16.
+              - CPU/GPU: float16, float32, float64.
+            - **labels** (Tensor) - Ground truth data.
+                
+              - Ascend: has the same shape as the `logits`, `logits` and `labels` comply with the implicit type conversion rules to make the data types consistent.
+              - CPU/GPU: has the same shape and dtype as the `logits`.
         Outputs:
-            Tensor, loss float tensor, same shape and dtype as the `logits`.
+            Tensor, if `reduction` is ``'none'``, then output is a tensor with the same shape as `logits`. Otherwise the shape of output tensor is :math:`()`.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
