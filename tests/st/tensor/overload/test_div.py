@@ -19,6 +19,7 @@ import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
+from mindspore.common.api import _pynative_executor
 
 
 class NetNone(nn.Cell):
@@ -36,15 +37,26 @@ class NetTrunc(nn.Cell):
         return x.div(other, rounding_mode="trunc")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+class NetKwFault1(nn.Cell):
+    def construct(self, x, other):
+        return x.div(other, "trunc")
+
+
+class NetKwFault2(nn.Cell):
+    def construct(self, x, other):
+        return x.div(other, a="trunc")
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
+                      'platform_ascend910b'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_divide_none(mode):
     """
-    Feature: tensor.divide()
-    Description: Verify the result of tensor.divide
+    Feature: tensor.div()
+    Description: Verify the result of tensor.div when rounding mode is None
     Expectation: success
     """
     context.set_context(mode=mode, jit_config={"jit_level": "O0"})
@@ -56,15 +68,16 @@ def test_divide_none(mode):
     assert np.allclose(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
+                      'platform_ascend910b'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_divide_floor(mode):
     """
-    Feature: tensor.divide()
-    Description: Verify the result of tensor.divide
+    Feature: tensor.div()
+    Description: Verify the result of tensor.div when rounding mode is floor
     Expectation: success
     """
     context.set_context(mode=mode, jit_config={"jit_level": "O0"})
@@ -76,15 +89,16 @@ def test_divide_floor(mode):
     assert np.allclose(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
+                      'platform_ascend910b'],
           level_mark='level1',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_divide_trunc(mode):
     """
-    Feature: tensor.divide()
-    Description: Verify the result of tensor.divide
+    Feature: tensor.div()
+    Description: Verify the result of tensor.div when rounding mode is truncate
     Expectation: success
     """
     context.set_context(mode=mode, jit_config={"jit_level": "O0"})
@@ -94,3 +108,31 @@ def test_divide_trunc(mode):
     output = net(x, y)
     expected = np.array([0.0, 2.0, 3.0], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend',
+                      'platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_divide_kwonlyargs(mode):
+    """
+    Feature: tensor.divide()
+    Description: Verify the result of tensor.divide
+    Expectation: success
+    """
+    context.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net1 = NetKwFault1()
+    net2 = NetKwFault2()
+    x = Tensor(np.array([1.0, 5.0, 9.5]), mstype.float32)
+    y = Tensor(np.array([4.0, 2.0, 3.0]), mstype.float32)
+    with pytest.raises(TypeError) as error_info:
+        net1(x, y)
+        _pynative_executor.sync()
+    assert "Failed calling div with " in str(error_info.value)
+
+    with pytest.raises(TypeError) as error_info:
+        net2(x, y)
+        _pynative_executor.sync()
+    assert "Failed calling div with " in str(error_info.value)
