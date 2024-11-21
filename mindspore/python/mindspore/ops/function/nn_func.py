@@ -8561,10 +8561,11 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
     H -- Hidden size
 
     Self attention constructs an attention model based on the relationship between input samples themselves. The
-    principle is to assume that there is a length of the input sample sequence :math:`x` of :math:`n`, and each
+    principle is to assume that there is an input sample sequence :math:`x` of length :math:`n`, and each
     element of :math:`x` is a :math:`d` dimensional vector, which can be viewed as a token embedding. This sequence
-    can be transformed through 3 weight matrices to obtain 3 matrices with dimensions of :math:`n\times d`. The self
-    attention calculation formula is defined as:
+    can be transformed through 3 weight matrices to obtain 3 matrices with dimensions of :math:`n\times d`.
+
+    The self attention calculation formula is defined as:
 
     .. math::
         Attention(Q,K,V)=Softmax(\frac{QK^{T} }{\sqrt{d} } )V
@@ -8574,9 +8575,8 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
     normalization on each row, yields a matrix of :math:`n\times d` after multiplying :math:`V`.
 
     .. warning::
-        - This is an experimental API that is subject to change or deletion.
         - Support dtype of float16 for `attn_mask` will be deprecated in the future.
-        - When `sparse_mode` is 2, 3 or 4, `attn_mask` shape must be  :math:`(2048, 2048)` /
+        - When `sparse_mode` is 2, 3 or 4, the shape of `attn_mask` must be :math:`(2048, 2048)` /
           :math:`(B, 1, 2048, 2048)` / :math:`(1, 1, 2048, 2048)`.
 
     Note:
@@ -8674,12 +8674,12 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
             Default: ``1.0``.
         pre_tokens (int, optional): For sparse cumputing, indicating the number of previous tokens Attention needs to
             associated with.
-            Default: 2147483647.
+            Default: ``2147483647``.
         next_tokens (int, optional): For sparse cumputing, indicating the number of next tokens Attention needs to
             associated with.
-            Default: 0.
+            Default: ``0``.
         input_layout (str, optional): the data layout of the input qkv, support `(BSH)` and `(BNSD)`.
-            Default `BSH`.
+            Default ``BSH``.
         num_key_value_heads (int, optional): An int indicates head numbers of ``key``/``value`` which are used
             in GQA algorithm. The value 0 indicates if the key and value have the same head nums, use `num_heads`.
             It it is specified(not 0), it must be a factor of `num_heads` and it must be equal to kv_n.
@@ -8704,9 +8704,6 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
         attention_out (Tensor) - Output tensor, has the same shape as` query` of
         :math:`(B, q_S, q_H)` / :math:`(B, q_N, q_S, q_D)`.
         Output dtype is determined by multiple factors, please refer to Note above for details.
-
-    Supported Platforms:
-        ``Ascend``
 
     Raises:
         TypeError: Dtype of `query` is not int8, float16 or bfloat16.
@@ -8734,6 +8731,9 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
         RuntimeError: `input_layout` is BSH and kv_h is not divisible by `num_key_value_heads`.
         RuntimeError: D-axis of `query`, `key` and `value` is not the same.
         RuntimeError: In post quant per-channel scenario, D-axis is not 32 Byte aligned.
+
+    Supported Platforms:
+        ``Ascend``
 
     Examples:
         >>> from mindspore.ops.function.nn_func import prompt_flash_attention
@@ -8998,6 +8998,7 @@ __all__ = [
     'hardshrink',
     'is_floating_point',
     'incre_flash_attention',
+    'prompt_flash_attention',
     'flip',
     'fliplr',
     'flipud',
