@@ -14,7 +14,9 @@
 # ============================================================================
 """Profiling api file."""
 import os
-from typing import Optional
+import json
+from typing import Optional, Dict
+from sys import getsizeof
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from mindspore import log as logger
@@ -26,6 +28,7 @@ from mindspore.profiler.profiler_interface import ProfilerInterface
 from mindspore.profiler.schedule import _default_schedule_fn, ProfilerAction
 from mindspore.profiler.common.record_function import RecordFunction
 from mindspore.profiler.common.path_manager import PathManager
+from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
 
 
@@ -42,8 +45,10 @@ class Profiler:
     """
     Refactor Profiler class
     """
+    MAX_META_SIZE = 100 * 1024 * 1024  # 100MB
 
     def __init__(self, **kwargs) -> None:
+        self._metadata: Dict[str, str] = {}
         self._prof_context: ProfilerContext = ProfilerContext()
         self._prof_context.set_params(**kwargs)
         self._has_started: bool = False
@@ -93,6 +98,7 @@ class Profiler:
             self.action_controller.transit_action(self.current_action, None)
         else:
             ProfilerInterface.stop()
+        self._dump_metadata()
 
     def analyse(self, offline_path=None, pretty=False, step_list=None, mode="sync") -> None:
         """
@@ -187,6 +193,76 @@ class Profiler:
         self._step_rec_fn = RecordFunction(ProfilerStepNameConstant.PROFILER_STEP + str(self.step_num))
         self._step_rec_fn.start()
         self._schedule_no_use_step = False
+
+    def add_metadata(self, key: str, value: str):
+        """
+        Report custom metadata key-value pair data.
+
+        Args:
+            key (str): The key to the metadata.
+            value (str): The value to the metadata.
+
+        Examples:
+            >>> from mindspore import Profiler
+            >>> # Profiler init.
+            >>> profiler = Profiler()
+            >>> # Call Profiler add_metadata
+            >>> profiler.add_metadata("test_key", "test_value")
+            >>> # Profiler end
+            >>> profiler.analyse()
+        """
+        if not isinstance(key, str) or not isinstance(value, str):
+            logger.warning("The key and value of metadata must be string. Skip this metadata.")
+            return
+
+        add_size = getsizeof(key) + getsizeof(value)
+        if getsizeof(self._metadata) + add_size < self.MAX_META_SIZE:
+            if key in self._metadata:
+                logger.warning(f"{key} is already saved as metadata, override it.")
+            self._metadata[key] = value
+        else:
+            logger.warning("Too many metadata added. Skip this metadata")
+
+    def add_metadata_json(self, key: str, value: str):
+        """
+        Report custom metadata key-value pair data with the value as a JSON string data.
+
+        Args:
+            key (str): The key to the metadata.
+            value (str): The json str format value to the metadata.
+
+        Examples:
+            >>> import json
+            >>> from mindspore import Profiler
+            >>> # Profiler init.
+            >>> profiler = Profiler()
+            >>> # Call Profiler add_metadata_json
+            >>> profiler.add_metadata_json("test_key", json.dumps({"key1": 1, "key2": 2}))
+            >>> # Profiler end, metadata will be saved in profiler_metadata.json
+            >>> profiler.analyse()
+        """
+        if not isinstance(key, str) or not isinstance(value, str):
+            logger.warning("The key and value of metadata must be string. Skip this metadata.")
+            return
+
+        add_size = getsizeof(key) + getsizeof(value)
+        if getsizeof(self._metadata) + add_size < self.MAX_META_SIZE:
+            try:
+                if key in self._metadata:
+                    logger.warning(f"{key} is already saved as metadata, override it.")
+                self._metadata[key] = json.loads(value)
+            except ValueError:
+                logger.warning("The metadata value must be json format string. Skip this metadata")
+        else:
+            logger.warning("Too many metadata added. Skip this metadata")
+
+    def _dump_metadata(self):
+        """Dump metadata to file."""
+        if not self._metadata:
+            return
+        save_path = os.path.join(self._prof_context.ascend_ms_dir, "profiler_metadata.json")
+        FileManager.create_json_file(save_path, self._metadata, indent=4)
+        self._metadata.clear()
 
     def __enter__(self) -> 'Profiler':
         self.start()
