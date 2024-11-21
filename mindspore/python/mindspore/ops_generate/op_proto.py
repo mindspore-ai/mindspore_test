@@ -140,6 +140,7 @@ class OpProto:
                  op_args_signature,
                  op_returns,
                  op_view=False,
+                 op_graph_view=False,
                  op_labels=None,
                  op_deprecated=None):
         self.op_name = op_name
@@ -150,6 +151,7 @@ class OpProto:
         self.op_args_signature = op_args_signature
         self.op_returns = op_returns
         self.op_view = op_view
+        self.op_graph_view = op_graph_view
         self.op_labels = op_labels
         self.op_deprecated = op_deprecated
 
@@ -184,13 +186,19 @@ class OpProto:
         if not isinstance(op_view, bool):
             raise TypeError(
                 f'The view value should be bool, but get {type(op_view)}, op name is {op_name}.')
+        # get op graph view
+        op_graph_view = op_data.get('graph_view', False)
+        if not isinstance(op_graph_view, bool):
+            raise TypeError(
+                f'The graph view value should be bool, but get {type(op_graph_view)}, op name is {op_name}.')
         # get op labels
         op_labels = op_data.get('labels', None)
         # get op deprecated
         op_deprecated = op_data.get('deprecated', None)
         op_proto = OpProto(op_name=op_name, op_args=op_args, op_returns=op_returns, op_function=op_function,
                            op_class=op_class, op_dispatch=op_dispatch, op_args_signature=op_args_signature,
-                           op_view=op_view, op_labels=op_labels, op_deprecated=op_deprecated)
+                           op_view=op_view, op_graph_view=op_graph_view, op_labels=op_labels,
+                           op_deprecated=op_deprecated)
         return op_proto
 
 
