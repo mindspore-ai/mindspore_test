@@ -658,11 +658,11 @@ void FreeTensorsOfMul(const PynativeCallback &cb) {
   // For operators like Mul, the dx ONLY rely on y, and dy ONLY rely on x.
   // so if y is a valuenode, the dy is useless, we can free x in ahead.
   auto &inputs = *cb.GetInputs();
-  if (cb.IsConstantInput(kIndex0) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex0) && inputs[kIndex1]->isa<tensor::BaseTensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex1]);
     MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << cb.opname();
   }
-  if (cb.IsConstantInput(kIndex1) && inputs[kIndex0]->isa<tensor::BaseTensor>()) {
+  if (cb.IsNotRequiresGrad(kIndex1) && inputs[kIndex0]->isa<tensor::BaseTensor>()) {
     cb.FreeDeviceAddress(&inputs[kIndex0]);
     MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << cb.opname();
   }
@@ -671,7 +671,7 @@ void FreeTensorsOfMul(const PynativeCallback &cb) {
 void FreeTensorsOfDiv(const PynativeCallback &cb) {
   cb.FreeInputDeviceAddress({kIndex0});
   // For operators like Div, the dy does not rely on output node, so if y is a valuenode, we can free output.
-  if (cb.IsConstantInput(kIndex1)) {
+  if (cb.IsNotRequiresGrad(kIndex1)) {
     cb.FreeOutputDeviceAddress();
   }
 }

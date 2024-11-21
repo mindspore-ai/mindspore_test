@@ -183,8 +183,16 @@ NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuil
   NodePtrList node_inputs;
   node_inputs.reserve(op_grad_info->input_value.size() + kSizeFive);
   for (size_t i = 0; i < op_grad_info->input_value.size(); ++i) {
-    auto func_node = emitter->NewFuncNode(op_grad_info->input_value[i], op_grad_info->input_abs[i],
-                                          op_grad_info->input_value_grad_type[i]);
+    auto input = op_grad_info->input_value[i];
+    if (op_grad_info->clone_value != nullptr && i == kIndex0) {
+      // Replace input with clone value.
+      // Copy auto grad meta data to avoid need_compute_output flag error.
+      auto src_tensor = input->cast<tensor::BaseTensorPtr>();
+      MS_EXCEPTION_IF_NULL(src_tensor);
+      op_grad_info->clone_value->set_auto_grad_meta_data(src_tensor->auto_grad_meta_data());
+      input = op_grad_info->clone_value;
+    }
+    auto func_node = emitter->NewFuncNode(input, op_grad_info->input_abs[i], op_grad_info->input_value_grad_type[i]);
     (void)node_inputs.emplace_back(func_node);
   }
   (void)node_inputs.emplace_back(
@@ -417,6 +425,7 @@ void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr
     auto value = node_inputs_[i]->Value();
     auto func_node = std::dynamic_pointer_cast<expander::FuncNode>(node_inputs_[i]);
     MS_EXCEPTION_IF_NULL(func_node);
+
     func_node->set_need_compute_grad_out(IsNeedComputeGrad(value));
   }
   if (dout.size() == kSizeOne && !op_output->isa<ValueSequence>()) {

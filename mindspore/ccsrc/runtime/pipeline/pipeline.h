@@ -40,6 +40,8 @@ class BACKEND_EXPORT Pipeline {
 
   void WaitFrontend();
 
+  void WaitBpropStage();
+
   void ChildAfterFork();
 
  private:

@@ -1524,7 +1524,8 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const OpGradInfoPtr &grad
   if (op->output_value_simple_info() == nullptr) {
     MS_LOG(EXCEPTION) << "The simple info of " << op->primitive()->name() << " infer is null";
   }
-
+  // Inplace op need save clone tensor.
+  grad_info->clone_value = op->clone_tensor();
   // Check and set input auto grad meta info and InputType
   if (MS_LIKELY(!forward->grad()->top_cell()->is_bprop_need_get_forward_graph())) {
     MarkPyBoostInputs(grad_info, forward->grad()->top_cell());
@@ -1539,28 +1540,25 @@ void PyBoost::MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCell
   for (size_t index = 0; index < input_size; ++index) {
     const auto &v = op_grad_info->input_value[index];
     if (v->isa<tensor::BaseTensor>()) {
-      op_grad_info->input_value_grad_type[index] =
-        AutoGradUtil::SetTensorGradInfo(v->cast<tensor::BaseTensorPtr>(), op_grad_info->operator_type);
+      op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(v->cast<tensor::BaseTensorPtr>());
     } else if (v->isa<ValueSequence>()) {
       const auto &value_sequence = v->cast<ValueSequencePtr>();
       const auto &tuple_inputs = value_sequence->value();
       if (!tuple_inputs.empty() && tuple_inputs[0]->isa<tensor::BaseTensor>()) {
         op_grad_info->input_value_grad_type[index] = InputType::kOpOutput;
         for (const auto &elem : tuple_inputs) {
-          auto grad_type =
-            AutoGradUtil::SetTensorGradInfo(elem->cast<tensor::BaseTensorPtr>(), op_grad_info->operator_type);
+          auto grad_type = AutoGradUtil::SetTensorGradInfo(elem->cast<tensor::BaseTensorPtr>());
           if (AutoGradUtil::IsParam(grad_type)) {
             op_grad_info->input_value_grad_type[index] = InputType::kParameter;
           }
         }
       }
     } else if (v->isa<tensor::MapTensor>()) {
-      op_grad_info->input_value_grad_type[index] =
-        AutoGradUtil::SetTensorGradInfo(v->cast<tensor::MapTensorPtr>(), op_grad_info->operator_type);
+      op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(v->cast<tensor::MapTensorPtr>());
     } else if (v->isa<tensor::CSRTensor>()) {
       const auto &csr_tensor = v->cast<tensor::CSRTensorPtr>();
       auto fn = [&op_grad_info, index](const auto &csr_tensor_input) {
-        auto grad_type = AutoGradUtil::SetTensorGradInfo(csr_tensor_input, op_grad_info->operator_type);
+        auto grad_type = AutoGradUtil::SetTensorGradInfo(csr_tensor_input);
         if (AutoGradUtil::IsParam(grad_type)) {
           op_grad_info->input_value_grad_type[index] = InputType::kParameter;
         }
@@ -1657,8 +1655,7 @@ void DataConvert::ConvertMapTensor(const FrontendOpRunInfoPtr &op_run_info, cons
   const auto it = op_run_info->base_op_run_info.input_types.end();
   (void)op_run_info->base_op_run_info.input_types.insert(it, input_num, InputType::kParameter);
   if (op_run_info->requires_grad) {
-    op_run_info->op_grad_info->input_value_grad_type[index] =
-      AutoGradUtil::SetTensorGradInfo(map_tensor, op_run_info->op_grad_info->operator_type);
+    op_run_info->op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(map_tensor);
   }
 }
 
@@ -1738,8 +1735,7 @@ void DataConvert::MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const Valu
       input_type = InputType::kParameter;
     }
     if (op_run_info->requires_grad) {
-      op_run_info->op_grad_info->input_value_grad_type[index] =
-        AutoGradUtil::SetTensorGradInfo(tensor_ptr, op_run_info->op_grad_info->operator_type);
+      op_run_info->op_grad_info->input_value_grad_type[index] = AutoGradUtil::SetTensorGradInfo(tensor_ptr);
     }
   } else if (v->isa<BoolImm>() || v->isa<FloatImm>() || v->isa<Type>() || v->isa<StringImm>() || v->isa<None>()) {
     (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(v);

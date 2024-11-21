@@ -305,28 +305,10 @@ std::string GetWeightsObjIdsByWeights(const py::object &weights) {
   return weights_obj_id;
 }
 
-class BpropCallback final : public expander::bprop::PynativeCallback {
- public:
-  explicit BpropCallback(const OpGradInfoPtr &op_grad_info_ptr) : op_grad_info(op_grad_info_ptr) {}
-  const std::string &opname() const override { return op_grad_info->op_prim->name(); }
-  ValuePtr *GetInput(size_t index) const override { return &op_grad_info->input_value.at(index); }
-  ValuePtrList *GetInputs() const override { return &op_grad_info->input_value; }
-  ValuePtr *GetOutput() const override { return &op_grad_info->out_value; }
-  bool IsConstantInput(size_t index) const override {
-    return PyNativeAlgo::Common::IsConstant(op_grad_info->input_value_grad_type[index]);
-  }
-  void FreeDeviceAddress(ValuePtr *value) const override {
-    *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
-  }
-
- private:
-  const OpGradInfoPtr &op_grad_info;
-};
-
 GradParamPtr CreateOpGradParam(const OpGradInfoPtr &grad_info, const TopCellInfoPtr &top_cell) {
   auto grad_param = std::make_shared<GradParam>(grad_info, top_cell->use_dynamic_shape_process());
   if (!top_cell->is_high_order_top_cell()) {
-    BpropExpander::FreeUselessValues(BpropCallback(grad_info));
+    BpropExpander::FreeUselessValues(BpropCallback(grad_info->op_prim, &grad_info->input_value, &grad_info->out_value));
   }
   return grad_param;
 }
