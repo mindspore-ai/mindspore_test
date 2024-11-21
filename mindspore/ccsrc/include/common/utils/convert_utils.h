@@ -113,6 +113,14 @@ COMMON_EXPORT TypeId GetMixPrecisionPromoteType(const std::vector<TypeId> &args_
 COMMON_EXPORT std::string ValueSimpleInfoToString(const ValueSimpleInfo &value_simple_info);
 
 COMMON_EXPORT abstract::AbstractBasePtr TransformValueSimpleInfoToAbstract(const ValueSimpleInfo &value_simple_info);
+
+template <typename T>
+ValuePtr OptionalToValue(const std::optional<T> &val) {
+  if (!val.has_value()) {
+    return kNone;
+  }
+  return val.value();
+}
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_H_

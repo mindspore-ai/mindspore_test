@@ -25,6 +25,11 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 using BaseTensorPtr = std::shared_ptr<tensor::BaseTensor>;
+using CloneFunc = void (*)(const OpPtr &inplace_op, const PrimitivePtr &prim, const std::string &device_target,
+                           ValuePtrList &&inputs);
+
+void BACKEND_EXPORT RegisterCloneFunc(const CloneFunc &clone_func);
+const CloneFunc& GetCloneFunc();
 
 ${op_call_with_grad}
 }  // namespace pyboost

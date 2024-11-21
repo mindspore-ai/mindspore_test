@@ -34,12 +34,29 @@ namespace mindspore {
 namespace pynative {
 using CallBackFn = std::function<VectorRef(const VectorRef &arg_list)>;
 enum class SpecialType { kZerosLikeType = 0, kOnesLikeType = 1 };
+
+class BpropCallback final : public expander::bprop::PynativeCallback {
+ public:
+  BpropCallback(const PrimitivePtr &prim, ValuePtrList *inputs, ValuePtr *output)
+      : prim_(prim), inputs_(inputs), output_(output) {}
+  const std::string &opname() const override { return prim_->name(); }
+  ValuePtr *GetInput(size_t index) const override { return &(*inputs_)[index]; }
+  ValuePtrList *GetInputs() const override { return inputs_; }
+  ValuePtr *GetOutput() const override { return output_; }
+  bool IsNotRequiresGrad(size_t index) const override;
+  void FreeDeviceAddress(ValuePtr *value) const override;
+
+ private:
+  const PrimitivePtr &prim_;
+  ValuePtrList *inputs_;
+  ValuePtr *output_;
+};
+
 namespace PyNativeAlgo {
 struct AutoGradUtil {
   // Common grad function
   static InputType SetValueGradInfo(const ValuePtr &value, InputType grad_type);
-  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor,
-                                     OperatorType op_type = OperatorType::kDefault);
+  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor);
   static ValuePtr BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence, size_t op_index = 0);
   static ValuePtr VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence,
                                    size_t op_index = 0);
@@ -57,6 +74,7 @@ struct AutoGradUtil {
   static void BumpVersion(const ValuePtr &value);
 
   static bool IsPrimNeedGrad(const PrimitivePtr &prim);
+  static bool NeedGrad(const tensor::BaseTensorPtr &input_tensor);
   static bool NeedGrad(const std::vector<ValuePtr> &input_values);
   static bool IsZerosLikeNode(const AnfNodePtr &node);
   static ValuePtr GetFakeZeroTensor();
@@ -85,6 +103,8 @@ struct AutoGradUtil {
   static void ClearAutoGradStaticCache();
   static void CheckAndSetAbstract(const OpGradInfoPtr &op_grad_info);
   static void CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs);
+  static void CheckAndCloneInplaceInput(const kernel::pyboost::OpPtr &inplace_op, const PrimitivePtr &prim,
+                                        const std::string &device_target, ValuePtrList &&inputs);
 };
 };  // namespace PyNativeAlgo
 }  // namespace pynative

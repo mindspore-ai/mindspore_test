@@ -102,7 +102,7 @@ struct OpGradInfo {
 
   std::vector<ValuePtr> input_value{};
   ValuePtr out_value{nullptr};
-
+  tensor::BaseTensorPtr clone_value{nullptr};
   std::vector<InputType> input_value_grad_type{};
   ValueSimpleInfoPtr output_value_simple_info{nullptr};
 };

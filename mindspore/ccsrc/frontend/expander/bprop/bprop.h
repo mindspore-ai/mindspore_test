@@ -44,6 +44,7 @@ class BpropExpander {
   bool Run(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values = {});
   static const mindspore::HashSet<size_t> &GetUnusedInputs(const string &op_name);
   static void FreeUselessValues(const PynativeCallback &cb);
+  static bool IsCloneInplaceInput(const PynativeCallback &cb);
 
  protected:
   bool RunBprop(const CNodePtr &cnode, const std::vector<ValuePtr> &input_values);

@@ -92,6 +92,9 @@ class FunctionsGenerator(BaseGenerator):
         self.pyboost_func_include_header_template = Template(
             f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n'
         )
+        self.clone_inplace_input_template = Template(
+            'GetCloneFunc()(op, prim::kPrim${class_name}, device_target, {${grad_args}});'
+        )
 
     def generate(self, work_path, op_protos):
         """
@@ -127,10 +130,13 @@ class FunctionsGenerator(BaseGenerator):
         """
         input_args = self._get_input_args(op_proto, False)
         input_args_with_type = self._get_input_args(op_proto, True)
+        inplace_clone_args = self._get_clone_input_args(op_proto, False, False)
+        clone_func_str = self._get_clone_inplace_str(op_proto.op_inplace, op_proto.op_class.name, inplace_clone_args)
         return_type_str = _get_return_type_str(op_proto)
         return self.FUNCTION_BODY_TEMPLATE.replace(op_name=op_proto.op_name,
                                                    class_name=op_proto.op_class.name,
                                                    input_args=input_args,
+                                                   clone_func=clone_func_str,
                                                    input_args_with_type=input_args_with_type,
                                                    return_type=return_type_str)
 
@@ -152,6 +158,46 @@ class FunctionsGenerator(BaseGenerator):
                 args_list.append("const " + input_dtype + " &" + op_arg.arg_name)
             else:
                 args_list.append(op_arg.arg_name)
+        return args_list
+
+    def _get_clone_inplace_str(self, is_inplace_op: bool, class_name: str, grad_args: list):
+        """
+        Generates the view base str of arguments for the operator.
+
+        This method constructs a list of argument names that need to be cast to their corresponding types.
+
+        Args:
+            is_view_or_inplace (bool): Whether the op is view op or inplace op.
+            grad_args (list): grad args
+
+        Returns:
+            str: Formatted view or inplace first argument names.
+        """
+        if not is_inplace_op:
+            return ''
+        return self.clone_inplace_input_template.replace(class_name=class_name, grad_args=grad_args)
+
+    def _get_clone_input_args(self, op_proto, has_type, with_optional):
+        """
+        Get the input arguments for the DoGrad function.
+
+        Args:
+            op_proto: The operator prototype.
+            has_type (bool): Whether to include type information for the arguments.
+
+        Returns:
+            list: A list of input arguments for the DoGrad function.
+        """
+        args_list = []
+        for op_arg in op_proto.op_args:
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            if has_type:
+                args_list.append(f"const {input_dtype} &{op_arg.arg_name}")
+            else:
+                if not with_optional and is_optional_param(op_arg):
+                    args_list.append(f"OptionalToValue({op_arg.arg_name})")
+                else:
+                    args_list.append(f"{op_arg.arg_name}")
         return args_list
 
 
