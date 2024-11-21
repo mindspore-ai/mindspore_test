@@ -346,6 +346,9 @@ def _get_device_num_from_strategy(strategy_file=None):
         src_strategy = strategy_file
     strategy_list = _convert_to_list(src_strategy)
     device_mat = list(strategy_list.values())[0][0]
+    if not device_mat:
+        raise ValueError("The parallel strategy file only contains pipeline-parallelism, which is not supported for "
+                         "parallel strategy conversion now.")
     return np.prod(device_mat)
 
 
