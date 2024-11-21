@@ -1,9 +1,9 @@
 mindspore.ops.prompt_flash_attention
 ====================================
 
-.. py:function:: mindspore.ops.prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=None, actual_seq_lengths_kv=None,
-                                                      pse_shift=None, deq_scale1=None, quant_scale1=None, deq_scale2=None, quant_scale2=None,
-                                                      quant_offset2=None, num_heads=1, scale_value=1.0, pre_tokens=2147483647, next_tokens=0,
+.. py:function:: mindspore.ops.prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=None, actual_seq_lengths_kv=None,\
+                                                      pse_shift=None, deq_scale1=None, quant_scale1=None, deq_scale2=None, quant_scale2=None,\
+                                                      quant_offset2=None, num_heads=1, scale_value=1.0, pre_tokens=2147483647, next_tokens=0,\
                                                       input_layout='BSH', num_key_value_heads=0, sparse_mode=0, inner_precise=1)
 
     全量推理场景接口。
