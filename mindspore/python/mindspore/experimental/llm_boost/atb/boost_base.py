@@ -259,15 +259,15 @@ class AtbBoostBase:
         r"""
         LlmBoost forward.
         """
-        input_ids = boost_inputs["input_ids"]
-        position_ids = boost_inputs["position_ids"]
-        cos_embed = boost_inputs["cos_embed"]
-        sin_embed = boost_inputs["sin_embed"]
-        block_tables = boost_inputs["block_tables"]
-        slot_mapping = boost_inputs["slot_mapping"]
-        batch_valid_length = boost_inputs["batch_valid_length"]
-        lm_head_indices = boost_inputs["lm_head_indices"]
-        seqLen = boost_inputs["seq_lens"]
+        input_ids = boost_inputs.get("input_ids", None)
+        position_ids = boost_inputs.get("position_ids", None)
+        cos_embed = boost_inputs.get("cos_embed", None)
+        sin_embed = boost_inputs.get("sin_embed", None)
+        block_tables = boost_inputs.get("block_tables", None)
+        slot_mapping = boost_inputs.get("slot_mapping", None)
+        batch_valid_length = boost_inputs.get("batch_valid_length", None)
+        lm_head_indices = boost_inputs.get("lm_head_indices", None)
+        seqLen = boost_inputs.get("seq_lens", None)
         input_ids = self.reshape(input_ids, (-1,))
         if self.is_first_iteration:
             attention_mask = self.attn_mask
@@ -275,6 +275,15 @@ class AtbBoostBase:
             position_ids = batch_valid_length - 1
             attention_mask = self.placeholder
             lm_head_indices = self.lm_head_indices_fake
+
+        if input_ids is not None and input_ids.dtype != mstype.int64:
+            input_ids = self.cast(input_ids, mstype.int64)
+        if position_ids is not None and position_ids.dtype != mstype.int64:
+            position_ids = self.cast(position_ids, mstype.int64)
+        if batch_valid_length is not None and batch_valid_length.dtype != mstype.int32:
+            batch_valid_length = self.cast(batch_valid_length, mstype.int32)
+        if lm_head_indices is not None and lm_head_indices.dtype != mstype.int64:
+            lm_head_indices = self.cast(lm_head_indices, mstype.int64)
 
         acl_inputs, acl_param = self._prepare_inputs(
             prefill=self.is_first_iteration,

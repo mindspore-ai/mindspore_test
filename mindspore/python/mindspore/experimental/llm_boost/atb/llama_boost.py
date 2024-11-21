@@ -107,14 +107,6 @@ class LlamaBoost(AtbBoostBase):
                 "seqLen": seqLen,
             }
         )
-        if input_ids.dtype != mstype.int64:
-            input_ids = self.cast(input_ids, mstype.int64)
-        if position_ids != mstype.int32:
-            position_ids = self.cast(position_ids, mstype.int32)
-        if input_lengths != mstype.int32:
-            input_lengths = self.cast(input_lengths, mstype.int32)
-        if lm_head_indices != mstype.int64:
-            lm_head_indices = self.cast(lm_head_indices, mstype.int64)
 
         self.acl_decoder_operation_inputs[0] = input_ids
         self.acl_decoder_operation_inputs[1] = self.placeholder
