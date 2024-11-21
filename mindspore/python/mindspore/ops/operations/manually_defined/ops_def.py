@@ -37,7 +37,6 @@ from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
 from mindspore.common.initializer import Zero
 from mindspore.common.parameter import Parameter
 from mindspore.ops.auto_generate.gen_ops_prim import FlashAttentionScore
-from mindspore.common.jit_context import jit_context
 
 
 dtype_to_type_id = DtypeToEnum()
@@ -1006,16 +1005,7 @@ class Tile(Primitive):
         """Initialize."""
 
     def __call__(self, input, dims):
-        # Add for jit context.
-        if jit_context() and jit_context().compiled:
-            return None
-        res = _convert_stub(pyboost_tile(self, [input, dims]))
-        # Add for jit context.
-        if jit_context():
-            if validator.is_stub_tensor(res):
-                res = res.stub_sync()
-            return jit_context().run_op(self, res, input, dims)
-        return res
+        return _convert_stub(pyboost_tile(self, [input, dims]))
 
     # pylint: disable=missing-docstring
     def check_elim(self, *args):
@@ -1195,19 +1185,10 @@ class Cast(Primitive):
         return (False, None)
 
     def __call__(self, input_x, dtype):
-        # Add for jit context.
-        if jit_context() and jit_context().compiled:
-            return None
         should_elim, output = self.check_elim(input_x, dtype)
         if should_elim:
             return output
-        res = _convert_stub(pyboost_cast(self, [input_x, dtype_to_type_id('Cast', 'dtype', dtype)]))
-        # Add for jit context.
-        if jit_context():
-            if validator.is_stub_tensor(res):
-                res = res.stub_sync()
-            return jit_context().run_op(self, res, input_x, dtype)
-        return res
+        return _convert_stub(pyboost_cast(self, [input_x, dtype_to_type_id('Cast', 'dtype', dtype)]))
 
 
 def to_sequence(val):
@@ -1842,18 +1823,8 @@ class Ones(Primitive):
         pass
 
     def __call__(self, size, type=None):
-        # Add for jit context.
-        if jit_context() and jit_context().compiled:
-            return None
-        res = _convert_stub(pyboost_ones(self, [size, type if type is None \
+        return _convert_stub(pyboost_ones(self, [size, type if type is None \
             else handler.dtype_to_type_id('Ones', 'type', type)]))
-        # Add for jit context.
-        if jit_context():
-            if validator.is_stub_tensor(res):
-                res = res.stub_sync()
-            return jit_context().run_op(self, res, size, type if type is None \
-                else handler.dtype_to_type_id('Ones', 'type', type))
-        return res
 
 
 class Zeros(Primitive):
@@ -1902,18 +1873,8 @@ class Zeros(Primitive):
         pass
 
     def __call__(self, size, type=None):
-        # Add for jit context.
-        if jit_context() and jit_context().compiled:
-            return None
-        res = _convert_stub(pyboost_zeros(self, [size, type if type is None else \
+        return _convert_stub(pyboost_zeros(self, [size, type if type is None else \
             handler.dtype_to_type_id('Zeros', 'type', type)]))
-        # Add for jit context.
-        if jit_context():
-            if validator.is_stub_tensor(res):
-                res = res.stub_sync()
-            return jit_context().run_op(self, res, size, type if type is None else \
-                handler.dtype_to_type_id('Zeros', 'type', type))
-        return res
 
 
 def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mask=None, padding_mask=None,
