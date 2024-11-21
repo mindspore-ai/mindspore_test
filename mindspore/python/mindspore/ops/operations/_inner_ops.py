@@ -31,9 +31,11 @@ from mindspore.ops.primitive import PrimitiveWithCheck, PrimitiveWithInfer, prim
     _run_op, _check_contains_variable
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore._c_expression import typing, HookType
+from mindspore._c_expression import pyboost_generator
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
+from mindspore.common._stub_tensor import _convert_stub
 from mindspore.communication.management import GlobalComm, get_rank, _get_group, get_group_size
 from mindspore.common.api import _pynative_executor
 from mindspore.common._register_for_adapter import ms_adapter_registry
@@ -79,7 +81,7 @@ class Generator(Primitive):
     def __call__(self, cmd, inputs):
         if cmd == 0:  # step cmd
             return inputs[0], inputs[1]
-        return super().__call__(cmd, inputs)
+        return _convert_stub(pyboost_generator(self, [cmd, inputs]))
 
 
 class Quant(PrimitiveWithInfer):
