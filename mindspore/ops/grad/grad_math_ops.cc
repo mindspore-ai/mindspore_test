@@ -1463,10 +1463,9 @@ REG_BPROP_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
   return {ib->OutZeros(input_x), dexponent};
 });
 
-REG_BPROP_BUILDER("PowTensorScalar").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("PowTensorScalar").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
   auto exponent = ib->GetInput(kIndex1);
-  auto out = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex3);
   auto exponent_ptr = exponent->BuildValue();
   auto type_id = exponent_ptr->type()->type_id();
@@ -1506,8 +1505,7 @@ REG_BPROP_BUILDER("Exp").FreeUselessValues_I({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Expm1").SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
+REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
   TypeId exp_type = ib->GetDtypeId(out);
@@ -2034,7 +2032,7 @@ REG_BPROP_BUILDER("FloorMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {BinopGradCommon(ib, x, y, bc_dx, bc_dy)};
 });
 
-REG_BPROP_BUILDER("RemainderTensorScalar").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("RemainderTensorScalar").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto other = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   return {dout, ib->OutZeros(other)};
