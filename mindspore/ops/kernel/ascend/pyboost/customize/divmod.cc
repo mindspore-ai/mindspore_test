@@ -42,7 +42,11 @@ tensor::BaseTensorPtr DivModAscendCustomize(const std::shared_ptr<OpRunner> &op,
     // Malloc for output tensors
     PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-    auto mode = GetValue<int64_t>(rounding_mode.value());
+    auto mode = 0;
+    if (rounding_mode.has_value()) {
+      mode = GetValue<int64_t>(rounding_mode.value());
+    }
+
     LAUNCH_ACLNN(aclnnDivMod, device_context, op->stream_id(), x_tensor, y_tensor, mode, outputs[0]);
     MS_LOG(DEBUG) << "Run device task DivMod end";
   }));
