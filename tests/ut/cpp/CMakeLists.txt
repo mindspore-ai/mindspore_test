@@ -285,8 +285,7 @@ foreach(comp ${ALL_UT_COMPS})
     endif()
     target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static
             -Wl,--end-group)
-    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
-            proto_input)
+    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::gtest mindspore::gmock mindspore::mockcpp
                 mindspore::event mindspore::event_pthreads mindspore::event_openssl mindspore::ssl mindspore::crypto
@@ -306,5 +305,5 @@ foreach(comp ${ALL_UT_COMPS})
                 ${PYTHON_LIBRARIES})
     endif()
     target_link_libraries(ut_${comp}_tests PRIVATE mindspore::glog)
-    target_link_libraries(ut_${comp}_tests PRIVATE securec mindspore::grpc++ mindspore::protobuf)
+    target_link_libraries(ut_${comp}_tests PRIVATE securec mindspore::grpc++)
 endforeach()

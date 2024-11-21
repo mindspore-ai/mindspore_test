@@ -41,13 +41,8 @@ else()
                 -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
         endif()
     else()
-        if(ENABLE_TESTCASES)
-            set(protobuf_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
-                -fPIC -fvisibility=default -D_FORTIFY_SOURCE=2 -O2")
-        else()
-            set(protobuf_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
-                -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
-        endif()
+        set(protobuf_CXXFLAGS "-fstack-protector-all -Wno-maybe-uninitialized -Wno-unused-parameter \
+            -fPIC -fvisibility=hidden -D_FORTIFY_SOURCE=2 -O2")
         if(NOT ENABLE_GLIBCXX)
             set(protobuf_CXXFLAGS "${protobuf_CXXFLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
         endif()
@@ -96,7 +91,8 @@ mindspore_add_pkg(protobuf
         CMAKE_PATH cmake/
         CMAKE_OPTION -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
         PATCHES ${PROTOBUF_PATCH_ROOT}/CVE-2021-22570.patch
-        PATCHES ${PROTOBUF_PATCH_ROOT}/CVE-2022-1941.patch)
+        PATCHES ${PROTOBUF_PATCH_ROOT}/CVE-2022-1941.patch
+        PATCHES ${PROTOBUF_PATCH_ROOT}/protobuf.patch001)
 endif()
 include_directories(${protobuf_INC})
 include_directories(${CMAKE_BINARY_DIR}/proto_py)
