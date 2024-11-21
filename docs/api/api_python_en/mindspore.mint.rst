@@ -168,6 +168,7 @@ Pointwise Operations
     mindspore.mint.sin
     mindspore.mint.sinc
     mindspore.mint.sinh
+    mindspore.mint.softmax
     mindspore.mint.sqrt
     mindspore.mint.square
     mindspore.mint.sub
