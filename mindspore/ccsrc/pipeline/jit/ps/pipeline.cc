@@ -1137,6 +1137,7 @@ void GraphExecutorPy::ParallelPostProcess(const std::string &phase, bool use_com
 // Clean all resource not used in the future and cache generated during compiling.
 void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
   MS_LOG(INFO) << "Clean compile resource start";
+  parallel::ParallelContext::GetInstance()->set_dynamic_shape_parallel_flag(false);
   ProcessStatus::GetInstance().RecordStart(kPipelineClean);
   uint64_t start_time = profiler::GetClockSyscnt();
   abstract::AnalysisContext::ClearContext();

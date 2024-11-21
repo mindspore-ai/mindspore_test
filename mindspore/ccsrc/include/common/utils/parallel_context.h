@@ -75,6 +75,7 @@ class COMMON_EXPORT ParallelContext {
 
   std::unordered_set<AnfNodePtr> get_redundancy_node() const { return redundancy_node_; }
 
+  void set_dynamic_shape_parallel_flag(bool flag) { dynamic_shape_parallel_flag_is_set_ = flag; }
   void set_gradients_mean(bool gradients_mean);
   bool gradients_mean() const { return gradients_mean_; }
 
