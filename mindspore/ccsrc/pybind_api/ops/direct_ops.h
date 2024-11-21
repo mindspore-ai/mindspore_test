@@ -21,5 +21,6 @@ namespace mindspore::kernel::pyboost {
 
 py::object Empty(const py::list &args);
 py::object EmptyLike(const py::list &args);
+py::object NewEmpty(const py::list &args);
 
 }  // namespace mindspore::kernel::pyboost
