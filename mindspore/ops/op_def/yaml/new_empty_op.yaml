@@ -1,0 +1,20 @@
+#operator new_empty
+new_empty:
+    args:
+        input:
+            dtype: tensor
+        size:
+            dtype: tuple[int]
+            type_cast: int, list[int]
+        dtype:
+            dtype: TypeId
+            arg_handler: dtype_to_type_id
+            default: None
+        device:
+            dtype: str
+            default: None
+    returns:
+        y:
+            dtype: tensor
+    function:
+        disable: True
