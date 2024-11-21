@@ -462,6 +462,12 @@ std::string GetPythonStackStr() {
   return ss.str();
 }
 
+bool JitRunning() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  return context->jit_running();
+}
+
 AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node) {
   if (node == nullptr) {
     return {};

@@ -552,6 +552,12 @@ void CheckAbstractConsistency(const AbstractBasePtrList &compile_abstracts, cons
     }
   }
 }
+
+class JitRunningScope {
+ public:
+  JitRunningScope() { MsContext::GetInstance()->set_jit_running(true); }
+  ~JitRunningScope() { MsContext::GetInstance()->set_jit_running(false); }
+};
 }  // namespace
 
 std::string GetObjDesc(const py::object &source) {
@@ -1161,6 +1167,7 @@ void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
 
 bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
                                    const std::string &phase, bool use_vm, bool trace_flag) {
+  JitRunningScope jit_running_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);
@@ -1222,6 +1229,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
 
 bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
                                    const py::object &phase, bool use_vm) {
+  JitRunningScope jit_running_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);
@@ -1842,6 +1850,7 @@ void GraphExecutorPy::ClearRunArgumentsResource(size_t input_arg_size, VectorRef
 }
 
 py::object GraphExecutorPy::RunInner(const py::tuple &args, const py::object &phase_obj) {
+  JitRunningScope jit_running_scope;
   if (common::GetEnv(kSimulationLevel) == kSimulationLevelCompileGraph) {
     py::int_ ret = 0;
     return ret;

@@ -310,6 +310,9 @@ class MS_CORE_API MsContext {
   void set_not_convert_jit(bool not_convert_jit) { not_convert_jit_ = not_convert_jit; }
   bool not_convert_jit() { return not_convert_jit_; }
 
+  void set_jit_running(bool jit_running) { jit_running_ = jit_running; }
+  bool jit_running() const { return jit_running_; }
+
  private:
   void RefreshExecutionMode();
   void RefreshMemoryOffload();
@@ -348,6 +351,7 @@ class MS_CORE_API MsContext {
   static std::map<std::string, std::string> &PluginPathMap();
   enum CellReuseLevel cell_reuse_level_ = CellReuseLevel::kNoCellReuse;
   bool not_convert_jit_{false};
+  bool jit_running_{false};
 
   std::optional<bool> enable_infer_boost_ = std::nullopt;
   std::set<std::string> ms_internal_enable_custom_kernel_list_;
