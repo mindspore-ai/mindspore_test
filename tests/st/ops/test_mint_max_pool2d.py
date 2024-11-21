@@ -15,7 +15,6 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops
 from mindspore.mint.nn.functional import max_pool2d
 from mindspore import dtype as mstype
 from tests.st.utils import test_utils
@@ -30,8 +29,8 @@ def max_pool2d_forward_func(x, kernel_size, stride, padding, dilation, ceil_mode
 
 @test_utils.run_with_cell
 def max_pool2d_backward_func(x, kernel_size, stride, padding, dilation, ceil_mode, return_indices):
-    return ops.grad(max_pool2d_forward_func, (0,))(x, kernel_size, stride, padding, dilation,
-                                                   ceil_mode, return_indices)
+    return ms.grad(max_pool2d_forward_func, (0,))(x, kernel_size, stride, padding, dilation,
+                                                  ceil_mode, return_indices)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')

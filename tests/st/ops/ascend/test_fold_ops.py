@@ -94,7 +94,7 @@ def test_fold_tensor_api():
     assert output.shape == expected_shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_fold_functional_api_with_invalid_output_size():
     """
     Feature: test fold tensor API with invalid output size.

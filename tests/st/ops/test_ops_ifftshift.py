@@ -78,12 +78,12 @@ def test_ops_ifftshift_normal(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ifftshift_forward_dynamic_shape(mode):
+def test_ops_ifftshift_dynamic_shape(mode):
     """
     Feature: ops.ifftshift
-    Description: test function ifftshift forward with dynamic shape.
+    Description: test function ifftshift forward and auto grad with dynamic shape.
     Expectation: success
     """
     ms.context.set_context(mode=mode)
@@ -103,45 +103,7 @@ def test_ops_ifftshift_forward_dynamic_shape(mode):
     expect = generate_expect_forward_output(x2, dim)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
-
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-@test_utils.run_test_with_On
-def test_ops_ifftshift_forward_dynamic_rank(mode):
-    """
-    Feature: ops.ifftshift
-    Description: test function ifftshift forward with dynamic rank.
-    Expectation: success
-    """
-    ms.context.set_context(mode=mode)
-    dim = (0,)
-    x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
-    dim_dyn = mutable(dim)
-    net = IFFTShiftNet()
-    net.set_inputs(x_dyn, dim_dyn)
-
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
-    output = net(ms.Tensor(x1), dim_dyn)
-    expect = generate_expect_forward_output(x1, dim)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
-
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
-    output = net(ms.Tensor(x2), dim_dyn)
-    expect = generate_expect_forward_output(x2, dim)
-    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_ifftshift_backward_dynamic_shape(mode):
-    """
-    Feature: ops.ifftshift
-    Description: test function ifftshift backward with dynamic shape.
-    Expectation: success
-    """
-    ms.context.set_context(mode=mode)
+    ## auto grad
     dim = 0
     x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float32)
     dim_dyn = mutable(dim)
@@ -164,16 +126,33 @@ def test_ops_ifftshift_backward_dynamic_shape(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='essential')
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
-def test_ops_ifftshift_backward_dynamic_rank(mode):
+def test_ops_ifftshift_dynamic_rank(mode):
     """
     Feature: ops.ifftshift
-    Description: test function ifftshift backward with dynamic rank.
+    Description: test function ifftshift forward and auto grad with dynamic rank.
     Expectation: success
     """
     ms.context.set_context(mode=mode)
+    dim = (0,)
+    x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
+    dim_dyn = mutable(dim)
+    net = IFFTShiftNet()
+    net.set_inputs(x_dyn, dim_dyn)
+
+    x1 = generate_random_input((2, 3, 4, 5), np.float32)
+    output = net(ms.Tensor(x1), dim_dyn)
+    expect = generate_expect_forward_output(x1, dim)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+
+    x2 = generate_random_input((3, 4, 5, 6), np.float32)
+    output = net(ms.Tensor(x2), dim_dyn)
+    expect = generate_expect_forward_output(x2, dim)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+
+    ## auto grad
     dim = (0,)
     x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
     dim_dyn = mutable(dim)

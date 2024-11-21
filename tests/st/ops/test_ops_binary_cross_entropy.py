@@ -14,7 +14,6 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops
 from mindspore.mint.nn.functional import binary_cross_entropy
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
@@ -86,12 +85,12 @@ def binary_cross_entropy_forward_func(inputx, target, weight=None, reduction="me
 
 @test_utils.run_with_cell
 def binary_cross_entropy_backward_func(inputx, target, weight=None, reduction="mean"):
-    grad_op = ops.grad(binary_cross_entropy_forward_func, (0, 1, 2, 3))
+    grad_op = ms.grad(binary_cross_entropy_forward_func, (0, 1, 2, 3))
     return grad_op(inputx, target, weight, reduction)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='unessential')
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK", "graph"])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_ops_binary_cross_entropy_normal(mode, reduction):

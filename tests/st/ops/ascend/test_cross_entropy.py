@@ -14,7 +14,7 @@
 # ============================================================================
 import torch
 import numpy as np
-
+import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -110,23 +110,13 @@ def _test_cross_entropy_default_input_precision():
     allclose_nparray(torch_grad.astype(dtype), ms_grad, loss, loss)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_default_input_pynative_mode():
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
+def test_default_input_pynative_mode(mode):
     """
-    Feature: Test cross_entropy ops infer and grad precision in pynative model.
+    Feature: Test cross_entropy ops infer and grad precision in pynative and graph mode.
     Description: Compare the forward result and grad result between mindspore and torch.
     Expectation: assert pass.
     """
-    context.set_context(mode=context.PYNATIVE_MODE)
-    _test_cross_entropy_default_input_precision()
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_default_input_graph_mode():
-    """
-    Feature: Test cross_entropy ops infer and grad precision in graph model.
-    Description: Compare the forward result and grad result between mindspore and torch.
-    Expectation: assert pass.
-    """
-    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(mode=mode)
     _test_cross_entropy_default_input_precision()

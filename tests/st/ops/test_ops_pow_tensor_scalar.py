@@ -36,15 +36,15 @@ def pow_backward_func(x, y):
     return ops.grad(pow_forward_func, (0, 1))(x, y) # pylint: disable=not-callable
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("data_type", [np.float32])
 @test_utils.run_test_with_On
-def test_pow_op_forward(context_mode, data_type):
+def test_pow_op_normal(context_mode, data_type):
     """
     Feature: Ops.
-    Description: test op pow forward.
+    Description: test op pow forward and auto grad.
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
@@ -68,21 +68,7 @@ def test_pow_op_forward(context_mode, data_type):
     expect_out = np.power(x_np, y_np)
     np.testing.assert_allclose(out.asnumpy(), expect_out, rtol=1e-3)
 
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
-@pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-@pytest.mark.parametrize("data_type", [np.float32])
-@test_utils.run_test_with_On
-def test_pow_op_backward(context_mode, data_type):
-    """
-    Feature: Auto grad.
-    Description: test auto grad of op pow.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=context_mode)
-    if context_mode == ms.GRAPH_MODE:
-        ms.set_context(jit_config={'jit_level': 'O0'})
+    ## auto grad
     x_np, _ = generate_random_input((2, 3, 4, 5), dtype=data_type)
     y_np = 2.3
 

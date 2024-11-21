@@ -19,7 +19,7 @@ def find_npy_files(folder_path):
     return result
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize(
     "dtype",
     [
@@ -68,7 +68,7 @@ def test_net(dtype, mode):
     assert np.allclose(out, np.load(name2file["x"]))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_net_bool(mode):
     """
@@ -107,7 +107,7 @@ def test_net_bool(mode):
     assert np.allclose(out, np.load(name2file["out"]))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_tensordump_when_jit(mode):
     """
@@ -141,7 +141,7 @@ def test_tensordump_when_jit(mode):
     assert np.allclose(x3.asnumpy(), np.load(name2file["mul"]))
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_bfloat16():
     """
     Feature: Check TensorDump ops

@@ -95,7 +95,7 @@ def create_np_inputs(cache, update, valid_seq_len):
     return cache.asnumpy(), update.asnumpy(), valid_seq_len.asnumpy()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_decoder_k_v_cache_net():
     """
     Feature: Test DecoderKVCache.

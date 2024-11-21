@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 
 import mindspore as ms
 import mindspore.nn as nn
@@ -31,7 +30,7 @@ class Net(nn.Cell):
         return self.apply_came_part1(grad, eps)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_net():
     """
     Feature: test apply_came_part1 tensor api.

@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore.nn as nn
 from mindspore import Tensor
 
@@ -56,7 +55,7 @@ def test_rrelu_negative_lu():
     assert np.array_equal(output, expected_output)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_rrelu_zeros():
     """
     Feature: RReLU

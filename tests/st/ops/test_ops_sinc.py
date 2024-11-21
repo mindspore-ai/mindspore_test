@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops, jit, JitConfig
 from mindspore.mint import sinc
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
@@ -36,7 +37,7 @@ def sinc_forward_func(x):
 
 @test_utils.run_with_cell
 def sinc_backward_func(x):
-    return ops.grad(sinc_forward_func, (0))(x)
+    return ms.grad(sinc_forward_func, (0))(x)
 
 
 @test_utils.run_with_cell
@@ -44,11 +45,8 @@ def sinc_vmap_func(x):
     return ops.vmap(sinc_forward_func)(x)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
+                      'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_ops_sinc_forward_backward(mode):
     """
@@ -75,11 +73,8 @@ def test_ops_sinc_forward_backward(mode):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
+                      'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_ops_sinc_vmap(mode):
     """
@@ -97,11 +92,8 @@ def test_ops_sinc_vmap(mode):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
+                      'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_sinc_dynamic_shape():
     """
     Feature: pyboost function.

@@ -14,7 +14,6 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops
 from mindspore.mint import topk
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
@@ -49,7 +48,7 @@ def topk_forward_func(x, k, dim=-1, largest=True, issorted=True):
 
 @test_utils.run_with_cell
 def topk_backward_func(x, k, dim=-1, largest=True, issorted=True):
-    return ops.grad(topk_forward_func, (0, 1, 2, 3, 4))(x, k, dim, largest, issorted)
+    return ms.grad(topk_forward_func, (0, 1, 2, 3, 4))(x, k, dim, largest, issorted)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -80,7 +79,7 @@ def test_ops_topk_ext_normal0(context_mode):
     assert output.asnumpy().shape == (7, 8, 9)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 def test_ops_topk_ext_normal1(context_mode):
     """
@@ -108,7 +107,7 @@ def test_ops_topk_ext_normal1(context_mode):
     assert output.asnumpy().shape == (7, 8, 9)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 def test_ops_topk_ext_normal2(context_mode):
     """

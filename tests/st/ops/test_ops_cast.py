@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 from mindspore import ops
 from mindspore.ops import cast
 import mindspore.common.dtype as mstype
 import mindspore as ms
-import tests.st.utils.test_utils as test_utils
-
+from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
@@ -33,7 +32,7 @@ def cast_forward_func(x, dtype):
 
 @test_utils.run_with_cell
 def cast_backward_func(x, dtype):
-    return ops.grad(cast_forward_func, (0, 1))(x, dtype)
+    return ms.grad(cast_forward_func, (0, 1))(x, dtype)
 
 
 @test_utils.run_with_cell
@@ -64,7 +63,7 @@ def test_ops_cast_normal(context_mode):
     assert output.asnumpy().shape == (1280,)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_cast_bf16(context_mode):
     """

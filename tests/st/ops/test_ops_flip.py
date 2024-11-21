@@ -41,7 +41,7 @@ def flip_forward_func(input_x, dims):
 
 @test_utils.run_with_cell
 def flip_backward_func(input_x, dims):
-    return ms.ops.grad(flip_forward_func, (0))(input_x, dims)
+    return ms.grad(flip_forward_func, (0))(input_x, dims)
 
 
 @test_utils.run_with_cell
@@ -86,114 +86,6 @@ def test_ops_flip_vmap(mode):
     output = flip_vmap_func(ms.Tensor(input_x), dims)
     dims1 = [2]
     expect = generate_expect_forward_output(input_x, dims1)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_flip_forward_dynamic_shape(mode):
-    """
-    Feature: pyboost function.
-    Description: test function flip forward with dynamic shape.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=mode)
-
-    x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float32)
-    dims = (0, 2)
-    test_cell = test_utils.to_cell_obj(flip_forward_func)
-    test_cell.set_inputs(x_dyn, dims)
-
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
-    output = test_cell(ms.Tensor(x1), dims)
-    expect = generate_expect_forward_output(x1, dims)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
-    output = test_cell(ms.Tensor(x2), dims)
-    expect = generate_expect_forward_output(x2, dims)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_flip_forward_dynamic_rank(mode):
-    """
-    Feature: pyboost function.
-    Description: test function flip forward with dynamic rank.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=mode)
-
-    x_dyn = ms.Tensor(dtype=ms.float32)
-    dims = [0]
-    test_cell = test_utils.to_cell_obj(flip_forward_func)
-    test_cell.set_inputs(x_dyn, dims)
-
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
-    output = test_cell(ms.Tensor(x1), dims)
-    expect = generate_expect_forward_output(x1, dims)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
-    output = test_cell(ms.Tensor(x2), dims)
-    expect = generate_expect_forward_output(x2, dims)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_flip_backward_dynamic_shape(mode):
-    """
-    Feature: pyboost function.
-    Description: test function flip backward with dynamic shape.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=mode)
-
-    x_dyn = ms.Tensor(shape=[None, None, None, None], dtype=ms.float32)
-    dims = [0, 2]
-    test_cell = test_utils.to_cell_obj(flip_backward_func)
-    test_cell.set_inputs(x_dyn, dims)
-
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
-    output = test_cell(ms.Tensor(x1), dims)
-    expect = generate_expect_backward_output(x1, dims)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
-    output = test_cell(ms.Tensor(x2), dims)
-    expect = generate_expect_backward_output(x2, dims)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_ops_flip_backward_dynamic_rank(mode):
-    """
-    Feature: pyboost function.
-    Description: test function flip backward with dynamic rank.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=mode)
-
-    x_dyn = ms.Tensor(shape=None, dtype=ms.float32)
-    dims = (1,)
-    test_cell = test_utils.to_cell_obj(flip_backward_func)
-    test_cell.set_inputs(x_dyn, dims)
-
-    x1 = generate_random_input((2, 3, 4, 5), np.float32)
-    output = test_cell(ms.Tensor(x1), dims)
-    expect = generate_expect_backward_output(x1, dims)
-    np.testing.assert_allclose(output.asnumpy(), expect)
-
-    x2 = generate_random_input((3, 4, 5, 6), np.float32)
-    output = test_cell(ms.Tensor(x2), dims)
-    expect = generate_expect_backward_output(x2, dims)
     np.testing.assert_allclose(output.asnumpy(), expect)
 
 

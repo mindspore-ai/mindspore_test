@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops, mint, Tensor, jit, JitConfig, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -37,10 +38,7 @@ def bitwise_and_backward_func(x, y):
     return ops.grad(bitwise_and_forward_func, 0)(x, y)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_bitwise_and_forward_backward(mode):
     """
@@ -89,10 +87,7 @@ def test_bitwise_and_forward_backward(mode):
     assert np.allclose(grad2.asnumpy(), expect)
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_bitwise_and_dynamic_shape_scalar():
     """
     Feature: Test bitwise_and op.
@@ -109,10 +104,7 @@ def test_bitwise_and_dynamic_shape_scalar():
             disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_bitwise_and_dynamic_shape_tensor():
     """
     Feature: Test bitwise_and op.

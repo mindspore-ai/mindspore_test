@@ -42,7 +42,7 @@ def square_forward_func(x):
 
 @test_utils.run_with_cell
 def square_backward_func(x):
-    return ops.grad(square_forward_func, (0))(x)
+    return ms.grad(square_forward_func, (0))(x)
 
 
 @test_utils.run_with_cell
@@ -51,7 +51,7 @@ def square_vmap_func(x, in_axes=0):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 def test_square_normal(mode):
     """

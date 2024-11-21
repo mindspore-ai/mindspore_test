@@ -13,10 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-
 import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -45,11 +42,11 @@ class DenseGrad(nn.Cell):
         return self.grad(self.network, self.params)(*inputs)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_1d_forward():
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_1d_forward_backward():
     """
     Feature: Test dense 1d.
-    Description: Test dense 1d forward for Graph mode.
+    Description: Test dense 1d forward and backward for Graph mode.
     Expectation: The result match to the expect value.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
@@ -83,54 +80,7 @@ def test_1d_forward():
     out_ms = net(x_ms, w_ms, b_ms).asnumpy()
     assert np.abs(out_ms - out_np).mean() < error
 
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_3d_forward():
-    """
-    Feature: Test dense 3d forward.
-    Description: Test dense 3d forward for Graph mode.
-    Expectation: The result match to the expect value.
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-    dtype = np.float32
-    error = 1e-3
-    x_np = np.array([[[1, 2, 3], [4, 5, 6]]]).astype(dtype)
-    w_np = np.array([[7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]]).astype(dtype)
-    b_np = np.array([19, 20, 21, 22]).astype(dtype)
-    out_np = np.array([[69, 88, 107, 126], [141, 187, 233, 279]]).astype(dtype)
-    x_ms = Tensor(x_np)
-    w_ms = Tensor(w_np)
-    b_ms = Tensor(b_np)
-    net = Dense()
-    net.set_train()
-
-    # dynamic shape
-    net.set_inputs(
-        Tensor(shape=[None for _ in x_ms.shape], dtype=x_ms.dtype),
-        Tensor(shape=[None for _ in w_ms.shape], dtype=w_ms.dtype),
-        b_ms,
-    )
-    out_ms = net(x_ms, w_ms, b_ms).asnumpy()
-    assert np.abs(out_ms - out_np).mean() < error
-
-    # dynamic rank
-    net.set_inputs(
-        Tensor(dtype=x_ms.dtype),
-        Tensor(dtype=w_ms.dtype),
-        b_ms,
-    )
-    out_ms = net(x_ms, w_ms, b_ms).asnumpy()
-    assert np.abs(out_ms - out_np).mean() < error
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_1d_backward():
-    """
-    Feature: Test dense 1d backward.
-    Description: Test dense 1d backward for Graph mode.
-    Expectation: The result match to the expect value.
-    """
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    ## backward
     dtype = np.float32
     error = 1e-3
     x_np = np.array([1, 2, 3]).astype(dtype)
@@ -182,13 +132,44 @@ def test_1d_backward():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-def test_3d_backward():
+def test_3d_forward_backward():
     """
-    Feature: Test dense 3d backward.
-    Description: Test dense 3d backward for Graph mode.
+    Feature: Test dense 3d forward.
+    Description: Test dense 3d forward and backward for Graph mode.
     Expectation: The result match to the expect value.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    dtype = np.float32
+    error = 1e-3
+    x_np = np.array([[[1, 2, 3], [4, 5, 6]]]).astype(dtype)
+    w_np = np.array([[7, 8, 9], [10, 11, 12], [13, 14, 15], [16, 17, 18]]).astype(dtype)
+    b_np = np.array([19, 20, 21, 22]).astype(dtype)
+    out_np = np.array([[69, 88, 107, 126], [141, 187, 233, 279]]).astype(dtype)
+    x_ms = Tensor(x_np)
+    w_ms = Tensor(w_np)
+    b_ms = Tensor(b_np)
+    net = Dense()
+    net.set_train()
+
+    # dynamic shape
+    net.set_inputs(
+        Tensor(shape=[None for _ in x_ms.shape], dtype=x_ms.dtype),
+        Tensor(shape=[None for _ in w_ms.shape], dtype=w_ms.dtype),
+        b_ms,
+    )
+    out_ms = net(x_ms, w_ms, b_ms).asnumpy()
+    assert np.abs(out_ms - out_np).mean() < error
+
+    # dynamic rank
+    net.set_inputs(
+        Tensor(dtype=x_ms.dtype),
+        Tensor(dtype=w_ms.dtype),
+        b_ms,
+    )
+    out_ms = net(x_ms, w_ms, b_ms).asnumpy()
+    assert np.abs(out_ms - out_np).mean() < error
+
+    ## backward
     dtype = np.float32
     error = 1e-3
     x_np = np.array([[[1, 2, 3], [4, 5, 6]]]).astype(dtype)

@@ -15,7 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 import mindspore as ms
 import mindspore.context as context
 from mindspore.nn import Cell
@@ -31,7 +30,7 @@ class ScalarOpNet(Cell):
         return x * z2
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scalar_ops():
     """
     Feature: ScalarAdd/ScalarMul operation

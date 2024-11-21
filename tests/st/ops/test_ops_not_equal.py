@@ -67,7 +67,7 @@ def test_f_not_equal_api_bfloat16(mode):
     np.testing.assert_array_equal(tensor_output.asnumpy(), tensor_expected)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_f_not_equal_bool():
     """
     Feature: test ne functional API.

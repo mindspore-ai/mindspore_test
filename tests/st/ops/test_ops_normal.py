@@ -63,7 +63,7 @@ def normal_float_float_forward_func(mean, std, size, seed, offset):
 
 @test_utils.run_with_cell
 def normal_backward_func(mean, std, seed, offset):
-    return ms.ops.grad(normal_tensor_tensor_forward_func, (0))(mean, std, seed, offset)
+    return ms.grad(normal_tensor_tensor_forward_func, (0))(mean, std, seed, offset)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -94,7 +94,7 @@ def test_normal_tensor_tensor_forward():
     assert output.shape == (10, 10)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_normal_tensor_float_forward():
     """
     Feature: pyboost function.
@@ -107,7 +107,7 @@ def test_normal_tensor_float_forward():
     assert output.shape == (10, 10)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_normal_float_tensor_forward():
     """
     Feature: pyboost function.
@@ -120,7 +120,7 @@ def test_normal_float_tensor_forward():
     assert output.shape == (10, 10)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_normal_float_float_forward():
     """
     Feature: pyboost function.

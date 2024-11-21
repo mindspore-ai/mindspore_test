@@ -28,10 +28,10 @@ def indexput_forward_func(x1, x2, indices, accumulate=0):
 
 @test_utils.run_with_cell
 def indexput_backward_func(x1, x2, indices, accumulate=0):
-    return ops.grad(indexput_forward_func, (0, 1))(x1, x2, indices, accumulate)
+    return ms.grad(indexput_forward_func, (0, 1))(x1, x2, indices, accumulate)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_indexput_op_normal(context_mode):

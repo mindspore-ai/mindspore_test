@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, Tensor
+from mindspore import Tensor
 from mindspore import mint
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
@@ -41,7 +41,7 @@ def argmax_ext_forward_func(x, dim=None, keepdim=False):
 
 @test_utils.run_with_cell
 def argmax_ext_backward_func(x, dim=None, keepdim=False):
-    return ops.grad(argmax_ext_forward_func)(x, dim, keepdim)
+    return ms.grad(argmax_ext_forward_func)(x, dim, keepdim)
 
 
 def GenInputData(np_data_type, shape=(3, 4, 5)):
@@ -75,7 +75,7 @@ def test_ops_argmax_ext_normal(context_mode):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_argmax_ext_dynamic_shape():
     """
     Feature: Test argmax with dynamic shape in graph mode.

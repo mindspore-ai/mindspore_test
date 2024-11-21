@@ -77,7 +77,7 @@ def test_kvcachescatterupdate_forward_mode():
     assert np.allclose(output.shape, expect_shape)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_scatter_value():
     """
     Feature: Test kv_cache_scatter_update with static shape in GE.

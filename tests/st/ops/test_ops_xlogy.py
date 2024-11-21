@@ -23,6 +23,7 @@ from mindspore.mint import xlogy
 from mindspore import ops, Tensor
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -72,7 +73,7 @@ def xlogy_forward_func(x, y):
 
 @test_utils.run_with_cell
 def xlogy_backward_func(x, y):
-    return ops.grad(xlogy_forward_func, (0, 1))(x, y)
+    return ms.grad(xlogy_forward_func, (0, 1))(x, y)
 
 
 @test_utils.run_with_cell
@@ -138,9 +139,8 @@ def test_ops_xlogy(mode):
     np.testing.assert_allclose(douty3.asnumpy(), expect_douty3, rtol=1e-3)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_ops_xlogy_forward_910b_nan(mode):
     """

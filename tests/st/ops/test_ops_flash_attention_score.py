@@ -267,7 +267,7 @@ def test_ops_flash_attention_score(mode, dtype):
     np.testing.assert_allclose(dv_diff, expect_dv_diff, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD", "SBH", "BSND", "TND"])
 def test_ops_flash_attention_score_dynamic(input_layout):
     """
@@ -316,7 +316,7 @@ def generate_unpad_full_attn_mask(batch, seq_len, actual_seq_qlen, actual_seq_kv
     return Tensor(attn_mask)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [mstype.float16, mstype.bfloat16])
 def test_ops_flash_attention_score_tnd(mode, dtype):

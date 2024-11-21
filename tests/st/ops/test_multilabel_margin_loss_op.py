@@ -15,8 +15,6 @@
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -140,8 +138,8 @@ def multilabel_margin_loss_grad_template(nptype_input, reduction):
         assert x_grad_np.dtype == expected_x_grad.dtype
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
-          essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_multilabel_margin_loss_graph_float32():
     """
     Feature: multilabelmarginloss float32

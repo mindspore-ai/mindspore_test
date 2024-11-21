@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import ops
 from mindspore.ops.auto_generate import not_equal
-import tests.st.utils.test_utils as test_utils
+from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -36,7 +36,7 @@ def not_equal_forward_func(x, other):
 
 @test_utils.run_with_cell
 def not_equal_backward_func(x, other):
-    return ops.grad(not_equal_forward_func, (0, 1))(x, other)
+    return ms.grad(not_equal_forward_func, (0, 1))(x, other)
 
 
 @test_utils.run_with_cell
@@ -63,7 +63,7 @@ def test_ops_not_equal_normal(context_mode):
     not_equal_backward_func(ms.Tensor(x), ms.Tensor(other))
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_not_equal_bf16(context_mode):
     """

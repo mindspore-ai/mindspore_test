@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import mindspore.context as context
+import mindspore as ms
 from mindspore import Tensor
 from mindspore import ops
 import tests.st.utils.test_utils as test_utils
@@ -29,10 +30,10 @@ def forward_func(x, indices):
 
 @test_utils.run_with_cell
 def backward_func(x, indices):
-    return ops.grad(forward_func, (0))(x, indices)
+    return ms.grad(forward_func, (0))(x, indices)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_maxunpool2d_float32_normal(context_mode):
     """

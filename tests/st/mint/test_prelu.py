@@ -140,7 +140,7 @@ def test_nn_prelu(mode):
     assert np.allclose(output_grad2.asnumpy(), expect_grad2)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_prelu_dynamic_shape():
     """
     Feature: Test leaky relu with dynamic shape in graph mode.

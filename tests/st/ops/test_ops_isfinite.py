@@ -42,7 +42,7 @@ def isfinite_forward_func(x):
 
 @test_utils.run_with_cell
 def isfinite_backward_func(x):
-    return ops.grad(isfinite_forward_func, (0))(x)
+    return ms.grad(isfinite_forward_func, (0))(x)
 
 
 @test_utils.run_with_cell
@@ -51,13 +51,13 @@ def isfinite_vmap_func(x, in_axes=0):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
-          essential_mark='unessential')
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 def test_isfinite_normal(mode):
     """
     Feature: Test isfinite with static shape in graph and pynative mode.
     Description: call ops.isfinite with valid input and index.
-    Expectation: return the correct value.
+    Expectation: return the correct value.1
     """
     x = generate_random_input((7168, 8192), np.float32)
     x1 = generate_random_input((8192, 7168), np.float32)

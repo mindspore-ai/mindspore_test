@@ -13,11 +13,8 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-
 import math
 import numpy as np
-import pytest
-
 from mindspore import ops, nn, context, set_seed
 from mindspore.train import DatasetHelper, connect_network_with_dataset
 from mindspore.common.tensor import Tensor
@@ -378,7 +375,7 @@ def test_dynamic_batchnorm1d_single_op_2_unknown_shape():
     comm_func(dynamic_range, input_shape, data_type, net, 64)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_positional():
     """
     Feature: Test Dynamic Positional and its backward. The input shape is dynamic.

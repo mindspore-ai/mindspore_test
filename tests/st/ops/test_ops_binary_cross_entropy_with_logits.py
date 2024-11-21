@@ -14,7 +14,6 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops
 from mindspore.mint.nn.functional import binary_cross_entropy_with_logits
 from mindspore.mint.nn import BCEWithLogitsLoss
 import mindspore as ms
@@ -34,12 +33,12 @@ def binary_cross_entropy_with_logits_forward_func(inputx, target, weight=None, p
 
 @test_utils.run_with_cell
 def binary_cross_entropy_with_logits_backward_func(inputx, target, weight=None, posWeight=None, reduction="mean"):
-    grad_op = ops.grad(binary_cross_entropy_with_logits_forward_func, (0, 1, 2, 3, 4))
+    grad_op = ms.grad(binary_cross_entropy_with_logits_forward_func, (0, 1, 2, 3, 4))
     return grad_op(inputx, target, weight, posWeight, reduction)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='unessential')
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK", "graph"])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_ops_binary_cross_entropy_with_logits_forward(mode, reduction):
@@ -106,7 +105,7 @@ def test_ops_binary_cross_entropy_with_logits_dynamic_shape():
             "binary_cross_entropy_with_logits", disable_mode=['GRAPH_MODE'], disable_yaml_check=True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK", "graph"])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
@@ -136,7 +135,7 @@ def test_ops_bce_with_logits_loss_forward(mode, reduction):
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
         op = BCEWithLogitsLoss(weight, reduction, pos_weight)
         out_fw = op(inputx, target)
-        grad_op = ops.grad(op, (0, 1))
+        grad_op = ms.grad(op, (0, 1))
         out_bw = grad_op(inputx, target)
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
@@ -150,7 +149,7 @@ def test_ops_bce_with_logits_loss_forward(mode, reduction):
         opx = BCEWithLogitsLoss(weight, reduction, pos_weight)
 
         def func2(inputx, target):
-            return ops.grad(opx, (0, 1))(inputx, target)
+            return ms.grad(opx, (0, 1))(inputx, target)
 
         op2 = ms.jit(func2, jit_config=ms.JitConfig(jit_level="O0"))
         out_bw = op2(inputx, target)
@@ -158,7 +157,7 @@ def test_ops_bce_with_logits_loss_forward(mode, reduction):
         ms.context.set_context(mode=ms.GRAPH_MODE)
         op = BCEWithLogitsLoss(weight, reduction, pos_weight)
         out_fw = op(inputx, target)
-        grad_op = ops.grad(op, (0, 1))
+        grad_op = ms.grad(op, (0, 1))
         out_bw = grad_op(inputx, target)
 
     np.testing.assert_allclose(out_fw.asnumpy(), expect_fw, rtol=1e-3)

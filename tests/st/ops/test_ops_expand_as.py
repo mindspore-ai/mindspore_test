@@ -54,6 +54,13 @@ def test_expand_as(mode):
     expect = np.broadcast_to(input_np, shape)
     assert np.allclose(output.asnumpy(), expect)
 
+    shape = (128, 1, 77, 77)
+    input_np = np.arange(128).reshape((128, 1, 1, 1)).astype(np.float32)
+    other_np = np.random.rand(*shape).astype(np.float32)
+    out = expand_as_forward_func(Tensor(input_np), Tensor(other_np))
+    expect = np.broadcast_to(input_np, shape)
+    assert np.allclose(out.asnumpy(), expect)
+
 
 def expand_as_dtype(dtype):
     """
@@ -101,22 +108,3 @@ def test_expand_as_exception(mode):
         assert "ValueError: For 'ExpandAs', each dimension pair, input_x shape and target shape must be equal or \
         input dimension is 1 or target dimension is -1. But got input_x shape: [const vector][], target shape: \
         [const vector][0]." in str(info.value)
-
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
-@test_utils.run_test_with_On
-def test_expand_as_forward(mode):
-    """
-    Feature: Ops.
-    Description: test expand_as.
-    Expectation: expect correct result.
-    """
-    ms.context.set_context(mode=mode)
-    shape = (128, 1, 77, 77)
-    input_np = np.arange(128).reshape((128, 1, 1, 1)).astype(np.float32)
-    other_np = np.random.rand(*shape).astype(np.float32)
-    out = expand_as_forward_func(Tensor(input_np), Tensor(other_np))
-    expect = np.broadcast_to(input_np, shape)
-    assert np.allclose(out.asnumpy(), expect)

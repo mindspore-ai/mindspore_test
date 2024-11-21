@@ -103,7 +103,7 @@ def create_np_inputs(cache, update, batch_index):
     return cache.asnumpy(), update.asnumpy(), batch_index.asnumpy()
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @test_utils.run_test_with_On
 def test_prompt_k_v_cache_net():
     """

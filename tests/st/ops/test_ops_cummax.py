@@ -19,6 +19,7 @@ from mindspore import ops, Tensor
 import mindspore as ms
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -32,7 +33,7 @@ def cummax_forward_func(x, axis):
 
 @test_utils.run_with_cell
 def cummax_backward_func(x, axis):
-    return ops.grad(cummax_forward_func, (0))(x, axis)
+    return ms.grad(cummax_forward_func, (0))(x, axis)
 
 
 @test_utils.run_with_cell
@@ -40,9 +41,8 @@ def cummax_vmap_func(x, axis):
     return ops.vmap(cummax_forward_func, in_axes=(0, None), out_axes=(0, None))(x, axis)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8,
                                    np.float64, np.float32, np.float16])
@@ -72,9 +72,8 @@ def test_mint_cummax(mode, dtype):
     assert np.allclose(output_grad.asnumpy(), expect_grad)
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8,
                                    np.float64, np.float32, np.float16])
@@ -96,9 +95,8 @@ def test_cummax_vmap(context_mode, dtype):
     assert (indices.asnumpy() == expect_indices).all()
 
 
-@pytest.mark.level1
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_cummax_dynamic():
     """
     Feature: cummax ops.

@@ -16,9 +16,10 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.mint import cross
-from mindspore import Tensor, ops
+from mindspore import Tensor
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 def generate_random_input(shape, dtype):
@@ -30,12 +31,10 @@ def cross_forward_func(input1, other, dim=None):
 
 
 def cross_backward_func(input1, other, dim=None):
-    return ops.grad(cross_forward_func, (0, 1))(input1, other, dim)
+    return ms.grad(cross_forward_func, (0, 1))(input1, other, dim)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', "graph"])
 @pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8, np.float64,
                                    np.float32, np.float16, np.complex128])

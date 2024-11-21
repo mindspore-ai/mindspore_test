@@ -14,8 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
-
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 from mindspore.ops import auto_generate as ops
@@ -79,7 +77,7 @@ class Net1(nn.Cell):
         return self.tuple_to_tensor(x, mstype.int64), self.scalar_to_tensor(y, mstype.int64)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_seq_to_tensor2():
     """
     Feature: test xxToTensor.
@@ -106,7 +104,7 @@ class Net2(nn.Cell):
         return self.tuple_to_tensor(x, mstype.float32), self.scalar_to_tensor(y, mstype.float32)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_seq_to_tensor3():
     """
     Feature: test xxToTensor.

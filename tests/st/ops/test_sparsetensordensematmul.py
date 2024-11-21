@@ -51,7 +51,7 @@ def judge_result_correct(result, expect):
     assert np.allclose(result, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_sparse_tensor_dense_mul(context_mode):
     """

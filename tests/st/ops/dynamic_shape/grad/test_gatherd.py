@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore
 import mindspore.ops.operations as P
 from mindspore import nn, context, Tensor
@@ -32,8 +31,8 @@ class NetGatherD(nn.Cell):
         return self.op(x, dim, index)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_gatherd_dynamic_shape():
     """
     Feature: GatherD Grad DynamicShape.

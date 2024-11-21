@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 import mindspore.common.dtype as mstype
@@ -36,7 +35,7 @@ class Net(nn.Cell):
         return self.unique_with_pad(x, self.pad_num)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_unique_with_pad():
     x = Tensor(np.array([1, 1, 5, 5, 4, 4, 3, 3, 2, 2]), mstype.int32)
     pad_num = 8

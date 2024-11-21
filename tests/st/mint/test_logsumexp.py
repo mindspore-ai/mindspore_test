@@ -73,7 +73,7 @@ def test_logsumexp_forward_backward(mode):
     assert np.allclose(input_grad.asnumpy(), expect_input_grad)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_f_logsumexp_dynamic():
     """
     Feature: test dynamiclogsumexp.

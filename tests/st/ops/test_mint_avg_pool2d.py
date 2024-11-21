@@ -24,30 +24,30 @@ from mindspore import ops, context, mint
 
 @test_utils.run_with_cell
 def avg_pool2d_forward_func(image, kernel_size, stride=None, padding=0,
-                            ceil_mode=False, count_include_pad=True, divisor_override=None, ):
+                            ceil_mode=False, count_include_pad=True, divisor_override=None):
     return mint.nn.functional.avg_pool2d(image, kernel_size, stride, padding,
-                                         ceil_mode, count_include_pad, divisor_override, )
+                                         ceil_mode, count_include_pad, divisor_override)
 
 
 @test_utils.run_with_cell
 def avg_pool2d_backward_func(image, kernel_size, stride=None, padding=0, ceil_mode=False,
                              count_include_pad=True, divisor_override=None):
-    return ops.grad(avg_pool2d_forward_func, (0,))(image, kernel_size, stride, padding,
-                                                   ceil_mode, count_include_pad, divisor_override)
+    return ms.grad(avg_pool2d_forward_func, (0,))(image, kernel_size, stride, padding,
+                                                  ceil_mode, count_include_pad, divisor_override)
 
 
 @test_utils.run_with_cell
 def avg_pool2d_backward_forward_func(grad, image, kernel_size, stride, padding=0, ceil_mode=False,
-                                     count_include_pad=True, divisor_override=None, ):
+                                     count_include_pad=True, divisor_override=None):
     return ops.auto_generate.AvgPool2DGrad()(grad, image, kernel_size, stride, padding, ceil_mode,
                                              count_include_pad, divisor_override)
 
 
 @test_utils.run_with_cell
 def avg_pool2d_double_backward_func(grad, image, kernel_size, stride, padding=0, ceil_mode=False,
-                                    count_include_pad=True, divisor_override=None, ):
-    return ops.grad(avg_pool2d_backward_forward_func, (0))(grad, image, kernel_size, stride, padding,
-                                                           ceil_mode, count_include_pad, divisor_override, )
+                                    count_include_pad=True, divisor_override=None):
+    return ms.grad(avg_pool2d_backward_forward_func, (0))(grad, image, kernel_size, stride, padding,
+                                                          ceil_mode, count_include_pad, divisor_override)
 
 
 def set_context(mode):
@@ -63,11 +63,10 @@ def compare_result(actual, expected):
     assert np.all(diff < error)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_avg_pool2d(mode):
+def test_avg_pool2d_and_double_backward(mode):
     """
     Feature: Ops
     Description: test op avg_pool2d and avg_pool2d_grad
@@ -93,23 +92,13 @@ def test_avg_pool2d(mode):
                           [0.2500, 0.2500, 0.2500, 0.2500]]]).astype(np.float32)
     compare_result(grad, expected)
 
-
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize("mode", [context.GRAPH_MODE])
-def test_avg_pool2d_double_backward(mode):
-    """
-    Feature: Auto grad.
-    Description: test auto grad of op SoftmaxBackward.
-    Expectation: expect correct result.
-    """
-    set_context(mode)
-    image = Tensor(np.random.rand(4, 3, 10, 10).astype(np.float32))
-    grad = avg_pool2d_forward_func(image, 4)
-    double_grad = avg_pool2d_double_backward_func(grad, image, 4, 2)
-    expected = np.ones((4, 3, 4, 4)).astype(np.float32)
-    compare_result(double_grad, expected)
+    ## double_backward
+    if mode == context.GRAPH_MODE:
+        image = Tensor(np.random.rand(4, 3, 10, 10).astype(np.float32))
+        grad = avg_pool2d_forward_func(image, 4)
+        double_grad = avg_pool2d_double_backward_func(grad, image, 4, 2)
+        expected = np.ones((4, 3, 4, 4)).astype(np.float32)
+        compare_result(double_grad, expected)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
