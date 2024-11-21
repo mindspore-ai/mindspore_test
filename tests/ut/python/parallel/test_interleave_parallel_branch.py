@@ -30,7 +30,7 @@ def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
 
 
-def check_output(dir_name, num_comm_ops=10):
+def check_output(dir_name, num_comm_ops=12):
     file = "%s/rank_0/*validate*.ir" % dir_name
     prim_name = "Depend("
     tag_name = "split_concat_depend"
@@ -40,44 +40,62 @@ def check_output(dir_name, num_comm_ops=10):
     out = str(output, 'utf-8').strip()
     assert out > str(num_comm_ops)
 
-class SplitConcatNet(Cell):
-    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, split_count, flag):
-        super(SplitConcatNet, self).__init__()
+
+class SharedExpert(Cell):
+    def __init__(self, hidden_size, ffn_hidden_size, mp):
+        super(SharedExpert, self).__init__()
+        self.w1 = Linear(in_channels=hidden_size, out_channels=ffn_hidden_size)
+        self.w2 = Linear(in_channels=ffn_hidden_size, out_channels=hidden_size)
+        self.w1.shard(strategy_matmul=((1, 1, 1, 1), (1, mp, 1)))
+        self.w2.shard(strategy_matmul=((1, 1, 1, mp), (1, 1, mp)))
+
+    def construct(self, x):
+        output = self.w1(x)
+        output = self.w2(output)
+        return output
+
+
+class ParallelSharedExpertNet(Cell):
+    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, parallel_flag):
+        super(ParallelSharedExpertNet, self).__init__()
         self.embed = Linear(in_channels=hidden_size, out_channels=hidden_size)
         self.head = Linear(in_channels=hidden_size, out_channels=hidden_size)
+        self.shared_expert = SharedExpert(hidden_size, ffn_hidden_size, mp)
         self.moe_net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp)
+        split_count = 2
         self.split = ops.Split(axis=2, output_num=split_count)
+        self.add = ops.Add()
         self.concat = ops.Concat(2)
         self.split.shard(((dp, 1, 1, 1),))
         self.concat.shard(tuple((dp, 1, 1, 1) for _ in range(split_count)))
-        self.split.add_prim_attr("enable_interleave", flag)
-        self.concat.add_prim_attr("enable_interleave", flag)
+        self.add.add_prim_attr("parallel_branch", parallel_flag)
 
     def construct(self, x):
         x = self.embed(x)
+        se = self.shared_expert(x)
         output_list = []
         for sub_x in self.split(x):
             sub_output = self.moe_net(sub_x)
             output_list.append(sub_output)
         output = self.concat(output_list)
+        output = self.add(output, se)
         output = self.head(output)
         return output
 
-@pytest.mark.parametrize('split_count', [2, 8])
 @pytest.mark.parametrize('parallel_flag', [1, 2])
-def test_interleave_split_concat_branch(split_count, parallel_flag):
+def test_interleave_parallel_branch(parallel_flag):
     """
-    Feature: interleave split/concat branches.
-    Description: interleave split/concat branches.
-    Expectation: compile done without error and find split/concat branch control depend.
+    Feature: interleave parallel branches.
+    Description: interleave parallel branches.
+    Expectation: compile done without error and find parallel branch control depend.
     """
-    dir_name = "./split_concat_branch_interleave_" + str(split_count) + "_" + str(parallel_flag)
-    config = {"enable_interleave_split_concat_branch": True,}
-    with open("./parallel_speed_up_interleave.json", "w") as file:
+    dir_name = "./parallel_branch_interleave_" + str(parallel_flag)
+    config = {"enable_interleave_parallel_branch": True,}
+    with open("./parallel_speed_up_parallel_branch.json", "w") as file:
         json.dump(config, file, indent=4, separators=(',', ': '))
     context.set_context(mode=context.GRAPH_MODE, save_graphs=True,
                         save_graphs_path=dir_name,
-                        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_interleave.json"})
+                        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_parallel_branch.json"})
 
     context.set_context()
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
@@ -92,7 +110,7 @@ def test_interleave_split_concat_branch(split_count, parallel_flag):
     ep = 16
     mp = 8
     sp = False
-    net = SplitConcatNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, split_count, parallel_flag)
+    net = ParallelSharedExpertNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, parallel_flag)
     x = Tensor(np.ones([expert_num, expert_num, channel, hidden_size]), dtype=ms.float16)
 
     if os.path.exists(dir_name):
@@ -102,8 +120,8 @@ def test_interleave_split_concat_branch(split_count, parallel_flag):
     check_output(dir_name)
 
     context.set_context(save_graphs=False)
-    config = {"enable_interleave_split_concat_branch": False,}
-    with open("./parallel_speed_up_interleave.json", "w") as file:
+    config = {"enable_interleave_parallel_branch": False,}
+    with open("./parallel_speed_up_parallel_branch.json", "w") as file:
         json.dump(config, file, indent=4, separators=(',', ': '))
     context.set_context(
-        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_interleave.json"})
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_parallel_branch.json"})
