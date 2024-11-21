@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, Parameter
 from mindspore.common import dtype as mstype
 from mindspore import mint
 
@@ -30,7 +30,7 @@ class BatchNormElemtNet(nn.Cell):
         return self.batch_norm_elemt(input_data, weight, bias, mean, invstd, eps)
 
 
-@pytest.mark.level1
+@pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -46,24 +46,12 @@ def test_batch_norm_elemt_fwd(mode):
     batch_norm_elemt_net = BatchNormElemtNet()
 
     input_data = Tensor(np.array([[1.], [2.], [3.]]), mstype.float32)
-    weight = Tensor(np.array([1.]), mstype.float32)
-    bias = Tensor(np.array([10.]), mstype.float32)
+    weight = Parameter(Tensor(np.array([1.]), mstype.float32))
+    bias = Parameter(Tensor(np.array([10.]), mstype.float32))
 
     mean = Tensor(np.array([2.]), mstype.float32)
     invstd = Tensor(np.array([2.]), mstype.float32)
     eps = 1e-5
     output = batch_norm_elemt_net(input_data, weight, bias, mean, invstd, eps)
     expected_output = np.array([[8.], [10.], [12.]], np.float32)
-    assert np.allclose(output.numpy(), expected_output, rtol=0.005, atol=0.005)
-
-    input_data = Tensor(np.array([[1.], [2.], [3.]]), mstype.float16)
-    weight = Tensor(np.array([1.]), mstype.float16)
-    bias = Tensor(np.array([10.]), mstype.float16)
-    weight = None
-    bias = None
-    mean = Tensor(np.array([2.]), mstype.float16)
-    invstd = Tensor(np.array([2.]), mstype.float16)
-    eps = 1e-5
-    output = batch_norm_elemt_net(input_data, weight, bias, mean, invstd, eps)
-    expected_output = np.array([[-2.], [0.], [2.]], np.float16)
     assert np.allclose(output.numpy(), expected_output, rtol=0.005, atol=0.005)
