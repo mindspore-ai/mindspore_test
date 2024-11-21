@@ -3315,7 +3315,23 @@ REG_BPROP_BUILDER("BatchMatMulExt").FreeUselessValues_O({}).SetBody(BODYFUNC(ib)
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
-  return {ib->BatchMatMul(dout, w, false, true), ib->BatchMatMul(x, dout, true, false)};
+  NodePtr dx;
+  NodePtr dw;
+  if (x->need_compute_grad_out()) {
+    ShapeVector perm_w = {0, 2, 1};
+    auto w_t = ib->Transpose(w, perm_w);
+    dx = ib->Emit("BatchMatMulExt", {dout, w_t});
+  } else {
+    dx = ib->OutZeros(x);
+  }
+  if (w->need_compute_grad_out()) {
+    ShapeVector perm_x = {0, 2, 1};
+    auto x_t = ib->Transpose(x, perm_x);
+    dw = ib->Emit("BatchMatMulExt", {x_t, dout});
+  } else {
+    dw = ib->OutZeros(w);
+  }
+  return {dx, dw};
 });
 
 REG_BPROP_BUILDER("Eps").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
