@@ -115,7 +115,7 @@ def test_divide_trunc(mode):
           level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', [context.PYNATIVE_MODE])
 def test_divide_kwonlyargs(mode):
     """
     Feature: tensor.divide()

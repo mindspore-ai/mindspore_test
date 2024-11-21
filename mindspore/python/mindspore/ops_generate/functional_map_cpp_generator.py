@@ -360,12 +360,12 @@ class FunctionalMapCppGenerator(BaseGenerator):
         """
         mint_kw_only_args_list = []
         for func_api_name, func_protos in mint_func_protos_data.items():
-            mint_func_list = self._get_and_append_single_op_kw_only_args_list(func_api_name,
-                                                                              func_protos,
-                                                                              mint_kw_only_args_list)
+            self._get_and_append_single_op_kw_only_args_list(func_api_name,
+                                                             func_protos,
+                                                             mint_kw_only_args_list)
 
-            if mint_func_list and func_api_name in alias_func_mapping:
-                mint_kw_only_args_list.append(
-                    self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
-                                                                sort_func_method_list_str=mint_func_list))
+            if mint_kw_only_args_list and func_api_name in alias_func_mapping:
+                self._get_and_append_single_op_kw_only_args_list(alias_func_mapping[func_api_name],
+                                                                 func_protos,
+                                                                 mint_kw_only_args_list)
         return mint_kw_only_args_list
