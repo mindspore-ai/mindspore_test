@@ -594,7 +594,7 @@ output = net(input_)
 
 ## Receive
 
-`Send`发送张量到指定线程。
+`Receive`从src_rank接收张量。
 
 ```python
 import numpy as np
