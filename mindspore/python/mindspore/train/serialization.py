@@ -2838,8 +2838,13 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
     return merged_parameter
 
 
+<<<<<<< HEAD
 def _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
                            output_format, name_map):
+=======
+def _gather_tasks(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
+                  output_format, name_map):
+>>>>>>> 9f9dcab6144 (expand load distributed checkpoint)
     """gather transform tasks"""
     tasks = []
     for rank in range(0, dst_device_num):
@@ -2851,7 +2856,11 @@ def _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, d
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
                                 train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
                                 format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
+<<<<<<< HEAD
                                 output_format='safetensors', name_map=None, max_process_num=64):
+=======
+                                output_format='ckpt', name_map=None, max_process_num=64):
+>>>>>>> 9f9dcab6144 (expand load distributed checkpoint)
     """
     Load checkpoint into net for distributed predication. Used in the case of distributed inference.
 
@@ -2886,7 +2895,11 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                        globally by initializing the network; In save mode, save the file according to the input
                        sequence number. If it is not input, save the entire file.
         output_format (str, optional): Control the format of the output checkpoint after conversion.
+<<<<<<< HEAD
             It can be set to either "ckpt" or "safetensors". Default: "safetensors".
+=======
+            It can be set to either "ckpt" or "safetensors". Default: "ckpt".
+>>>>>>> 9f9dcab6144 (expand load distributed checkpoint)
         name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
             dictionary before loading or saving the segmented weights into the network. Default: None.
         max_process_num (int): Maximum number of processes. Default: 64.
@@ -3015,7 +3028,10 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                 rank_id = get_rank()
             except RuntimeError:
                 rank_id = 0
+<<<<<<< HEAD
                 logger.warning(f"Get rank failed, default loading weight for rank 0.")
+=======
+>>>>>>> 9f9dcab6144 (expand load distributed checkpoint)
             _load_parallel_checkpoint(
                 (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map))
         else:
@@ -3030,8 +3046,13 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                 dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
                 dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
                 dst_device_num = dst_stage_device_num * dst_stage_num
+<<<<<<< HEAD
                 tasks = _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
                                                dst_device_num, output_format, name_map)
+=======
+                tasks = _gather_tasks(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                                      dst_device_num, output_format, name_map)
+>>>>>>> 9f9dcab6144 (expand load distributed checkpoint)
                 with Pool(processes=max_process_num) as pool:
                     list(pool.imap(_load_parallel_checkpoint, tasks))
         return
