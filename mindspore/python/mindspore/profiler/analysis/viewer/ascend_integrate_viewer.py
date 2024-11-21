@@ -41,6 +41,7 @@ class AscendIntegrateViewer(BaseViewer):
         """
         try:
             self._copy_msprof_csv_files()
+            self._copy_fwk_mem_csv_file()
         except Exception as e: # pylint: disable=W0703
             logger.error("Failed to save ascend integrate data, error: %s", e)
 

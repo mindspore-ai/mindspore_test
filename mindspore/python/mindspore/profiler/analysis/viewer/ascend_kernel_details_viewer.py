@@ -142,7 +142,7 @@ class AscendKernelDetailsViewer(BaseViewer):
                 step_id = kernel.step_id
 
             if fwk_langch_op_name is None:
-                logger.warning(
+                logger.info(
                     "Can not find fwk launch op for dev kernel %s, ts %s",
                     dev_kernel_name,
                     dev_kernel_ts,
@@ -152,7 +152,7 @@ class AscendKernelDetailsViewer(BaseViewer):
                 launch_ops[index] = f"{fwk_langch_op_name}/{dev_kernel_name}"
 
             if step_id is None and self._is_set_schedule:
-                logger.warning(
+                logger.info(
                     "Can not find step id for dev kernel %s, ts %s",
                     dev_kernel_name,
                     dev_kernel_ts,
