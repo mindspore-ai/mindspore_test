@@ -342,7 +342,9 @@ class FunctionalMapCppGenerator(BaseGenerator):
         """
         tensor_method_kw_only_args_list = []
         for func_api_name, func_protos in tensor_method_protos_data.items():
-            self._get_and_append_single_op_kw_only_args_list(func_api_name, func_protos, tensor_method_kw_only_args_list)
+            self._get_and_append_single_op_kw_only_args_list(func_api_name,
+                                                             func_protos,
+                                                             tensor_method_kw_only_args_list)
         return tensor_method_kw_only_args_list
 
     def _get_mint_kwonlyargs_map(self, mint_func_protos_data, alias_func_mapping):
@@ -358,7 +360,9 @@ class FunctionalMapCppGenerator(BaseGenerator):
         """
         mint_kw_only_args_list = []
         for func_api_name, func_protos in mint_func_protos_data.items():
-            mint_func_list = self._get_and_append_single_op_kw_only_args_list(func_api_name, func_protos, mint_kw_only_args_list)
+            mint_func_list = self._get_and_append_single_op_kw_only_args_list(func_api_name,
+                                                                              func_protos,
+                                                                              mint_kw_only_args_list)
 
             if mint_func_list and func_api_name in alias_func_mapping:
                 mint_kw_only_args_list.append(
