@@ -46,6 +46,7 @@ class ProfilerOutputPath:
     _MINISTUDIO_PROFILER_DEVICE = "device_{}"
     _MINISTUDIO_PROFILER_LOG = "mindstudio_profiler_log"
     _MINISTUDIO_PROFILER_OUTPUT = "mindstudio_profiler_output"
+    _MINISTUDIO_ANALYZE_OUTPUT = "analyze"
 
     def __init__(self, rank_id: int, device_id: int):
         if not isinstance(rank_id, int) or not isinstance(device_id, int):
@@ -64,6 +65,7 @@ class ProfilerOutputPath:
         self._msprof_profile_device_path: Optional[str] = None
         self._msprof_profile_log_path: Optional[str] = None
         self._msprof_profile_output_path: Optional[str] = None
+        self._msprof_analyze_output_path: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -79,6 +81,7 @@ class ProfilerOutputPath:
             "msprof_profile_device_path": self._msprof_profile_device_path,
             "msprof_profile_log_path": self._msprof_profile_log_path,
             "msprof_profile_output_path": self._msprof_profile_output_path,
+            "msprof_analyze_output_path": self._msprof_analyze_output_path,
         }
 
     @property
@@ -219,6 +222,22 @@ class ProfilerOutputPath:
             raise ValueError("msprof_profile_output_path has not been set")
         return self._msprof_profile_output_path
 
+    @property
+    def msprof_analyze_output_path(self) -> str:
+        """
+        Get the msprof analyze output path.
+
+        Returns:
+            str: The msprof analyze output path.
+            eg. ascend_ms_dir/PROF_XXX/analyze
+
+        Raises:
+            ValueError: If msprof_analyze_output_path has not been set.
+        """
+        if self._msprof_analyze_output_path is None:
+            raise ValueError("msprof_analyze_output_path has not been set")
+        return self._msprof_analyze_output_path
+
     @output_path.setter
     def output_path(self, value: str):
         """Set the output path."""
@@ -256,4 +275,7 @@ class ProfilerOutputPath:
         )
         self._msprof_profile_output_path = os.path.join(
             self._msprof_profile_path, ProfilerOutputPath._MINISTUDIO_PROFILER_OUTPUT
+        )
+        self._msprof_analyze_output_path = os.path.join(
+            self._msprof_profile_path, ProfilerOutputPath._MINISTUDIO_ANALYZE_OUTPUT
         )
