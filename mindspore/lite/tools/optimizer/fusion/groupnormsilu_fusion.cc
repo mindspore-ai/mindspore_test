@@ -29,8 +29,12 @@ namespace {
 constexpr auto kNameGroupNormSiluPatternForSD15 = "GroupNormSiluPatternForSD15";
 constexpr auto kNameGroupNormSiluPatternForSDWithCast = "GroupNormSiluPatternForSDWithCast";
 constexpr auto kNameGroupNormSiluPatternForSDWithoutSilu = "GroupNormSiluPatternForSDWithoutSilu";
+constexpr auto kNameGroupNormSiluPatternForGroupNorm = "GroupNormSiluPatternForGroupNorm";
 constexpr size_t kNumIndex1 = 1;
 constexpr size_t kNumIndex2 = 2;
+constexpr size_t kNumIndex3 = 3;
+constexpr size_t kNumIndex4 = 4;
+constexpr size_t kNumIndex5 = 5;
 constexpr float kNumEps = 0.00001;
 
 std::vector<int64_t> GetTensorShape(CNodePtr cnode, size_t input_index) {
@@ -79,6 +83,7 @@ std::unordered_map<std::string, VectorRef> GroupNormSiluFusion::DefinePatterns()
   patterns[kNameGroupNormSiluPatternForSD15] = DefineGroupNormSiluPatternForSD15();
   patterns[kNameGroupNormSiluPatternForSDWithCast] = DefineGroupNormSiluPatternForSDWithCast();
   patterns[kNameGroupNormSiluPatternForSDWithoutSilu] = DefineGroupNormSiluPatternForSDWithoutSilu();
+  patterns[kNameGroupNormSiluPatternForGroupNorm] = DefineGroupNormSiluPatternForGroupNorm();
   return patterns;
 }
 
@@ -243,6 +248,25 @@ const VectorRef GroupNormSiluFusion::DefineGroupNormSiluPatternForSDWithoutSilu(
   return add;
 }
 
+const VectorRef GroupNormSiluFusion::DefineGroupNormSiluPatternForGroupNorm() const {
+  auto groupnorm_input_1 = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(groupnorm_input_1 != nullptr, {});
+  auto groupnorm_input_2 = std::make_shared<Var>();  // num_groups
+  MS_CHECK_TRUE_RET(groupnorm_input_2 != nullptr, {});
+  auto groupnorm_input_3 = std::make_shared<Var>();  // gamma
+  MS_CHECK_TRUE_RET(groupnorm_input_3 != nullptr, {});
+  auto groupnorm_input_4 = std::make_shared<Var>();  // beta
+  MS_CHECK_TRUE_RET(groupnorm_input_4 != nullptr, {});
+  auto groupnorm_input_5 = std::make_shared<Var>();  // eps
+  MS_CHECK_TRUE_RET(groupnorm_input_5 != nullptr, {});
+  auto is_groupnorm = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimGroupNorm>);
+  MS_CHECK_TRUE_RET(is_groupnorm != nullptr, {});
+  auto groupnorm = VectorRef(
+    {is_groupnorm, groupnorm_input_1, groupnorm_input_2, groupnorm_input_3, groupnorm_input_4, groupnorm_input_5});
+
+  return groupnorm;
+}
+
 CNodePtr GroupNormSiluFusion::ReshapeCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                            const string &node_name) const {
   // reshape [x, 1, 1] to [x], node_name is unique and used to avoid repeat name
@@ -308,7 +332,7 @@ CNodePtr GroupNormSiluFusion::CreateGroupNormSiluNode(const FuncGraphPtr &func_g
     MS_LOG(ERROR) << "new groupnormsilu cnode failed.";
     return nullptr;
   }
-  groupnorm_silu_cnode->set_fullname_with_scope(node->fullname_with_scope() + "_groupnormsilu_sd");
+  groupnorm_silu_cnode->set_fullname_with_scope(node->fullname_with_scope() + "_groupnormsilu");
   if (node->abstract() != nullptr) {
     groupnorm_silu_cnode->set_abstract(node->abstract()->Clone());
   }
@@ -459,6 +483,139 @@ CNodePtr GroupNormSiluFusion::CreateGroupNormSiluNodeForSDWithoutSilu(const std:
   return groupnorm_silu_cnode;
 }
 
+int64_t GetNumGroupsFromGroupNorm(const AnfNodePtr &groupnorm_input_2) {
+  ValuePtr value_node = nullptr;
+  if (groupnorm_input_2->isa<ValueNode>()) {
+    auto value_node_ptr = groupnorm_input_2->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node_ptr != nullptr, -1);
+    value_node = GetValueNode(value_node_ptr);
+    MS_CHECK_TRUE_RET(value_node != nullptr && value_node->isa<Int64Imm>(), -1);
+    return GetValue<int64_t>(value_node);
+  } else if (groupnorm_input_2->isa<Parameter>()) {
+    auto param_node = groupnorm_input_2->cast<ParameterPtr>();
+    MS_CHECK_TRUE_RET(param_node != nullptr, -1);
+    auto num_groups_param = param_node->default_param();
+    MS_CHECK_TRUE_RET(num_groups_param != nullptr, -1);
+    auto num_groups_value = std::dynamic_pointer_cast<tensor::Tensor>(num_groups_param);
+    MS_CHECK_TRUE_RET(num_groups_value != nullptr, -1);
+    if (num_groups_value->ElementsNum() != 1) {
+      MS_LOG(WARNING) << "num_groups value elements num is not 1, ElementsNum is: " << num_groups_value->ElementsNum();
+      return -1;
+    }
+    if (num_groups_value->data_type() == kNumberTypeInt64) {
+      auto num_groups_data = static_cast<int64_t *>(num_groups_value->data_c());
+      if (num_groups_data == nullptr) {
+        MS_LOG(WARNING) << "num_groups_data is nullptr.";
+        return -1;
+      }
+      return static_cast<int64_t>(num_groups_data[0]);
+    } else {
+      MS_LOG(WARNING) << "num_groups data type must be int64, but got " << num_groups_value->data_type();
+      return -1;
+    }
+  } else {
+    MS_LOG(WARNING) << "groupnorm_input_2 is not ValueNode or Parameter";
+    return -1;
+  }
+}
+
+float GetEpsFromGroupNorm(const AnfNodePtr &groupnorm_input_5) {
+  ValuePtr value_node = nullptr;
+  if (groupnorm_input_5->isa<ValueNode>()) {
+    auto value_node_ptr = groupnorm_input_5->cast<ValueNodePtr>();
+    MS_CHECK_TRUE_RET(value_node_ptr != nullptr, -1);
+    value_node = GetValueNode(value_node_ptr);
+    MS_CHECK_TRUE_RET(value_node != nullptr && value_node->isa<FP32Imm>(), -1);
+    return GetValue<float>(value_node);
+  } else if (groupnorm_input_5->isa<Parameter>()) {
+    auto param_node = groupnorm_input_5->cast<ParameterPtr>();
+    MS_CHECK_TRUE_RET(param_node != nullptr, -1);
+    auto eps_param = param_node->default_param();
+    MS_CHECK_TRUE_RET(eps_param != nullptr, -1);
+    auto eps_value = std::dynamic_pointer_cast<tensor::Tensor>(eps_param);
+    MS_CHECK_TRUE_RET(eps_value != nullptr, -1);
+    if (eps_value->ElementsNum() != 1) {
+      MS_LOG(WARNING) << "eps value elements num is not 1, ElementsNum is: " << eps_value->ElementsNum();
+      return -1;
+    }
+    if (eps_value->data_type() == kNumberTypeFloat) {
+      auto eps_data = static_cast<float *>(eps_value->data_c());
+      if (eps_data == nullptr) {
+        MS_LOG(WARNING) << "eps_data is nullptr.";
+        return -1;
+      }
+      return static_cast<float>(eps_data[0]);
+    } else {
+      MS_LOG(WARNING) << "eps data type must be float, but got " << eps_value->data_type();
+      return -1;
+    }
+  } else {
+    MS_LOG(WARNING) << "groupnorm_input_5 is not ValueNode or Parameter";
+    return -1;
+  }
+}
+
+CNodePtr GroupNormSiluFusion::CreateGroupNormSiluNodeForGroupNorm(const std::string &pattern_name,
+                                                                  const FuncGraphPtr &func_graph,
+                                                                  const AnfNodePtr &node, const EquivPtr &equiv) const {
+  MS_LOG(INFO) << "replace GroupNorm with GroupNormSilu";
+  MS_CHECK_TRUE_RET(node != nullptr, nullptr);
+  auto cnode = node->cast<CNodePtr>();  // GroupNorm
+  MS_CHECK_TRUE_RET(cnode != nullptr, nullptr);
+  auto groupnorm_input_1 = cnode->input(kNumIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(groupnorm_input_1 != nullptr, nullptr);
+  auto groupnorm_input_2 = cnode->input(kNumIndex2);  // num_groups
+  MS_CHECK_TRUE_RET(groupnorm_input_2 != nullptr, nullptr);
+  auto groupnorm_input_3 = cnode->input(kNumIndex3);  // gamma
+  MS_CHECK_TRUE_RET(groupnorm_input_3 != nullptr, nullptr);
+  auto groupnorm_input_4 = cnode->input(kNumIndex4);  // beta
+  MS_CHECK_TRUE_RET(groupnorm_input_4 != nullptr, nullptr);
+  auto groupnorm_input_5 = cnode->input(kNumIndex5);  // eps
+  MS_CHECK_TRUE_RET(groupnorm_input_5 != nullptr, nullptr);
+
+  auto num_groups = GetNumGroupsFromGroupNorm(groupnorm_input_2);
+  if (num_groups == -1) {
+    MS_LOG(ERROR) << "get num_groups failed!";
+    return nullptr;
+  }
+  auto eps = GetEpsFromGroupNorm(groupnorm_input_5);
+  if (eps < 0) {
+    MS_LOG(ERROR) << "get eps failed!";
+    return nullptr;
+  }
+  MS_LOG(INFO) << "num_groups: " << num_groups << ", eps: " << eps;
+
+  auto groupnorm_silu_prim = std::make_shared<ops::GroupNormSilu>();
+  if (groupnorm_silu_prim == nullptr) {
+    MS_LOG(ERROR) << "new GroupNormSilu prim failed!";
+    return nullptr;
+  }
+  groupnorm_silu_prim->AddAttr("num_groups", api::MakeValue(num_groups));
+  groupnorm_silu_prim->AddAttr("eps", api::MakeValue(eps));
+  groupnorm_silu_prim->AddAttr("activate_silu", api::MakeValue(false));
+
+  auto GNS_prim_c = groupnorm_silu_prim->GetPrim();
+  if (GNS_prim_c == nullptr) {
+    MS_LOG(ERROR) << "GNS_prim_c is nullptr!";
+    return nullptr;
+  }
+  auto groupnorm_silu_cnode =
+    func_graph->NewCNode(GNS_prim_c, {groupnorm_input_1, groupnorm_input_3, groupnorm_input_4});
+  if (groupnorm_silu_cnode == nullptr) {
+    MS_LOG(ERROR) << "new groupnormsilu cnode failed!";
+    return nullptr;
+  }
+  groupnorm_silu_cnode->set_fullname_with_scope(node->fullname_with_scope() + "_groupnormsilu");
+  if (node->abstract() != nullptr) {
+    groupnorm_silu_cnode->set_abstract(node->abstract()->Clone());
+  }
+
+  auto manager = Manage(func_graph);
+  (void)manager->Replace(cnode, groupnorm_silu_cnode);
+  MS_LOG(INFO) << "create GroupNormSilu with cast success.";
+  return groupnorm_silu_cnode;
+}
+
 AnfNodePtr GroupNormSiluFusion::Process(const std::string &patten_name, const FuncGraphPtr &func_graph,
                                         const AnfNodePtr &node, const EquivPtr &equiv) const {
   MS_LOG(INFO) << "do GroupNormSilu fusion, pattern name: " << patten_name;
@@ -489,6 +646,9 @@ AnfNodePtr GroupNormSiluFusion::Process(const std::string &patten_name, const Fu
   } else if (patten_name == kNameGroupNormSiluPatternForSDWithoutSilu) {
     MS_LOG(INFO) << "start create GroupNormSilu node for SD15 without silu.";
     groupnormsilu_node = CreateGroupNormSiluNodeForSDWithoutSilu(patten_name, func_graph, node, equiv);
+  } else if (patten_name == kNameGroupNormSiluPatternForGroupNorm) {
+    MS_LOG(INFO) << "start create GroupNormSilu node to replace GroupNorm.";
+    groupnormsilu_node = CreateGroupNormSiluNodeForGroupNorm(patten_name, func_graph, node, equiv);
   } else {
     MS_LOG(ERROR) << " not pattern.";
   }

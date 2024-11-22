@@ -34,6 +34,7 @@ constexpr auto kFusionNameKVCache = "KVCache";
 constexpr auto kFusionNameFlashAttention = "FlashAttention";
 constexpr auto kFusionNameFlashAttentionAntiquant = "FlashAttentionAntiquant";
 constexpr auto kFusionNameMatMulAllReduce = "MatMulAllReduce";
+constexpr auto kFusionNameGroupNormSilu = "GroupNormSilu";
 class AnfTransformForGe {
  public:
   AnfTransformForGe();
