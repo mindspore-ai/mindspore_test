@@ -148,6 +148,8 @@ void TensorDumpUtils::AsyncSaveDatasetToNpyFile(const ScopeAclTdtDataset &datase
     }
     auto tensor_ptr = std::get<mindspore::tensor::TensorPtr>(data_elem);
     std::string data_type = TypeIdToType(tensor_ptr->data_type())->ToString();
+    std::transform(data_type.begin(), data_type.end(), data_type.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
     auto file_name = TensorNameToArrayName(tensor_name, data_type);
     file_writer.Submit(std::bind(SaveTensor2NPY, file_name, tensor_ptr));
   }

@@ -167,7 +167,7 @@ def test_bfloat16():
     net = Net(path)
     net(x)
     time.sleep(0.1)
-    filename = "add_BFloat16_0.npy"
+    filename = "add_bfloat16_0.npy"
     add = np.load(str(path) + "/" + filename)
     result = np.array([[2, 3, 4, 5], [6, 7, 8, 9]]).astype(np.float32)
     assert np.allclose(add, result)
