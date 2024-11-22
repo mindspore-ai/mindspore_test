@@ -18,6 +18,7 @@
 
 #include <map>
 
+#include "runtime/device/loadable_device_address.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
 
 namespace mindspore {
@@ -41,21 +42,27 @@ void MemorySwapActor::FetchRealParameters(OpContext<mindspore::runtime::DeviceTe
 void MemorySwapActor::UpdateDeviceTensors(OpContext<mindspore::runtime::DeviceTensor> *context) {
   MS_EXCEPTION_IF_NULL(context);
   const auto &data_iter = input_op_datas_.find(context->sequential_num_);
-  if (data_iter == input_op_datas_.end()) {
-    return;
+  size_t total_device_tensor_num = fixed_device_tensor_num_ + device_tensor_store_keys_.size();
+  if (data_iter != input_op_datas_.end()) {
+    total_device_tensor_num += data_iter->second.size();
   }
-  const size_t total_device_tensor_num = fixed_device_tensor_num_ + data_iter->second.size();
   if (device_tensors_to_swap_.size() < total_device_tensor_num) {
     device_tensors_to_swap_.resize(total_device_tensor_num);
   }
-  for (const auto &input_data : data_iter->second) {
-    MS_EXCEPTION_IF_NULL(input_data);
-    size_t input_index = IntToSize(input_data->index_);
-    const size_t swap_device_tensor_index = input_index + fixed_device_tensor_num_;
-    if (swap_device_tensor_index >= total_device_tensor_num) {
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input index is out of range.");
+  if (data_iter != input_op_datas_.end()) {
+    for (const auto &input_data : data_iter->second) {
+      MS_EXCEPTION_IF_NULL(input_data);
+      size_t input_index = IntToSize(input_data->index_);
+      const size_t swap_device_tensor_index = input_index + fixed_device_tensor_num_;
+      if (swap_device_tensor_index >= total_device_tensor_num) {
+        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "The input index is out of range.");
+      }
+      device_tensors_to_swap_[swap_device_tensor_index] = input_data->data_;
     }
-    device_tensors_to_swap_[swap_device_tensor_index] = input_data->data_;
+  }
+  for (const auto &key : device_tensor_store_keys_) {
+    auto device_tensor = DeviceTensorStore::GetInstance().Fetch(key.second.get(), device_contexts_[0]->GetDeviceType());
+    device_tensors_to_swap_[key.first] = device_tensor.get();
   }
 }
 
