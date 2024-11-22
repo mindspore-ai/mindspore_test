@@ -14,6 +14,7 @@
 # ============================================================================
 
 import os
+import csv
 import numpy as np
 import math
 import pytest
@@ -22,17 +23,13 @@ import mindspore as ms
 from mindspore.ops.operations.nn_ops import PagedAttention
 from mindspore.nn import Cell
 from mindspore import context, Profiler
-from test_paged_attention_mask import PagedAttentionBase
+from paged_attention_base import PagedAttentionBase, QuantMethod
 
 
 class PagedAttentionNet(Cell):
-    """
-    PagedAttention must use correct input name so that framework can save the input tensor on host
-    """
-
-    def __init__(self, num_head=0, scale_value=0, kv_head=0):
+    def __init__(self, *args, **kwargs):
         super().__init__()
-        self.net = PagedAttention(num_head, scale_value, kv_head)
+        self.net = PagedAttention(*args, **kwargs)
 
     def construct(self, query, key_cache, value_cache, block_tables, batch_valid_length, antiquant_scale=None,
                   antiquant_offset=None, attn_mask=None, q_seq_lens=None):
@@ -40,24 +37,55 @@ class PagedAttentionNet(Cell):
                         antiquant_offset, attn_mask, q_seq_lens)
 
 
-class PagedAttentionTest(PagedAttentionBase):
-    def __init__(self, i_test: dict, mode="gen"):
-        super().__init__(i_test, mode)
-        i_test["use_asdop"] = i_test.get("use_asdop", False)
-        if i_test["is_alibi"]:
-            raise Exception("[Error] alibi_mask can only be in PagedAttentionMaskTest")
-        if i_test["layout"] == "TH":
-            raise Exception("[Error] layout 'TH' can only be in Asdop kernel")
-        self.calc_expect_func()
-        self.calc_actual_func()
-        self.compare()
+def to_pad_fp32(arr, dim=2):
+    original_shape = arr.shape
+    new_shape = original_shape[:dim] + (original_shape[dim] * 2,) + original_shape[dim + 1:]
+    float32_array = np.frombuffer(arr.tobytes(), dtype=np.float32)
+    float32_array = float32_array.reshape(new_shape)
+    return float32_array
 
-    def calc_actual_func(self):
+
+class PagedAttentionTest(PagedAttentionBase):
+    def __init__(self, ipt: dict, mode="gen"):
+        '''
+        ipt: input of one testcase or dict of testcases
+        '''
+        self.mode = mode
+
+        self.names = list()  # testcases name list
+        self.i_test_dict = dict()
+        self.check_dynamic_shape(ipt)
+
+        self.net = None
+        self.npu_init(PagedAttentionNet)
+
+        self.i_test = self.i_test_dict[self.names[0]]
+        if self.i_test["is_alibi"]:
+            raise Exception("[Error] alibi_mask can only be in PagedAttentionMaskTest")
+        if self.i_test["layout"] == "TH":
+            raise Exception("[Error] layout 'TH' can only be in Asdop kernel")
+        self.set_inputs()
+
+        # construct
+        np.random.seed(0)  # lock Skv
+        for k in self.names:
+            print(k, "start")
+            self.i_test = self.i_test_dict[k]
+            self.gen = dict()
+            self.load = dict()
+            self.i_construct = dict()
+            self.o_ascend = dict()
+            self.calc_expect_func()
+            self.calc_actual_func()
+            self.compare()
+            print(k, "success")
+
+    def set_inputs(self):
         if self.i_test["type"] == "float32":
             q_type = ms.bfloat16
         else:  # float16
             q_type = ms.float16
-        if self.i_test["is_quant"]:
+        if self.i_test["quant_mode"]:
             kv_type = ms.int8
         else:  # not quant
             kv_type = q_type
@@ -67,12 +95,106 @@ class PagedAttentionTest(PagedAttentionBase):
             "key_cache": None,
             "value_cache": None,
             "block_tables": None,
-            "context_lens": None,
+            "batch_valid_length": None,
             "antiquant_scale": None,
             "antiquant_offset": None,
             "attn_mask": None,
             "q_seq_lens": None
         }
+
+        # query
+        if self.i_test["layout"] == "BSH":
+            query = [None, None, None]
+        elif self.i_test["layout"] == "TH":
+            query = [None, None]
+        else:  # BNSD
+            query = [None, None, None, None]
+        self.i_construct["query"] = ms.Tensor(shape=query, dtype=q_type)
+        # key_cache value_cache
+        key_value = [None, None, None, None]
+        self.i_construct["key_cache"] = ms.Tensor(shape=key_value, dtype=kv_type)
+        self.i_construct["value_cache"] = ms.Tensor(shape=key_value, dtype=kv_type)
+        # block_tables
+        self.i_construct["block_tables"] = ms.Tensor(shape=[None, None], dtype=ms.int32)
+        # batch_valid_length
+        self.i_construct["batch_valid_length"] = ms.Tensor(shape=[None], dtype=ms.int32)
+        # quant
+        if self.i_test["quant_mode"]:
+            quant_method = self.i_test.get("quant_method", 0)
+            if quant_method == QuantMethod.FP16_VEC:
+                scale_type = ms.float16
+                offset_type = ms.float16
+            elif quant_method == QuantMethod.FP32_VEC:
+                scale_type = ms.float32
+                offset_type = ms.float32
+                raise ValueError("quant_method does not support FP32_VEC yet.")
+            elif quant_method == QuantMethod.INT_CUBE:
+                if self.i_test.get("antiquant_scale_int64_to_fp32", False):
+                    scale_type = ms.float32  # 在动态量化场景Pertoken，需要将scale_type配合to_pad_fp32使用。
+                else:
+                    scale_type = ms.int64
+                offset_type = ms.int32
+            else:
+                raise ValueError("plz set quant_method properly when quant_mode > 0.")
+            self.i_construct["antiquant_scale"] = ms.Tensor(
+                shape=[None, None, None, None, None, None], dtype=scale_type)
+            self.i_construct["antiquant_offset"] = ms.Tensor(
+                shape=[None, None, None, None, None, None], dtype=offset_type)
+        # alibi_mask
+        if self.i_test["is_alibi"]:
+            self.i_construct["alibi_mask"] = ms.Tensor(shape=[None, None, None, None], dtype=q_type)
+        # attn_mask
+        if self.i_test["is_amask"]:
+            self.i_construct["attn_mask"] = ms.Tensor(shape=[None, None, None], dtype=ms.float16)
+        # q_seq_lens
+        self.i_construct["q_seq_lens"] = ms.Tensor(shape=[None], dtype=ms.int32)
+
+        self.net.set_inputs(*tuple(self.i_construct.values()))
+
+    def calc_actual_func(self):
+        if self.i_test["type"] == "float32":
+            q_type = ms.bfloat16
+        else:  # float16
+            q_type = ms.float16
+        if self.i_test["quant_mode"]:
+            kv_type = ms.int8
+        else:  # not quant
+            kv_type = q_type
+
+        self.i_construct = {
+            "query": None,
+            "key_cache": None,
+            "value_cache": None,
+            "block_tables": None,
+            "batch_valid_length": None,
+            "antiquant_scale": None,
+            "antiquant_offset": None,
+            "attn_mask": None,
+            "q_seq_lens": None
+        }
+
+        if self.mode == "load":
+            self.i_construct["query"] = ms.Tensor(self.load["query"], dtype=q_type)
+            self.i_construct["key_cache"] = ms.Tensor(self.load["key_cache"], dtype=kv_type)
+            self.i_construct["value_cache"] = ms.Tensor(self.load["value_cache"], dtype=kv_type)
+            self.i_construct["block_tables"] = ms.Tensor(self.load["block_tables"])
+            self.i_construct["batch_valid_length"] = ms.Tensor(self.load["batch_valid_length"])
+            self.o_ascend = {
+                "attention_out": None,  # dtype: tensor
+            }
+            if os.environ.get("ENABLE_PROFILING") == "on":
+                self.save_running_data()
+            if "msprof" in self.i_test and self.i_test["msprof"]:
+                profiler = Profiler(start_profile=False, output_path="./profiler", data_simplification=False)
+                profiler.start()
+                for i in range(self.i_test["msprof"]):
+                    self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
+                profiler.stop()
+                profiler.analyse()
+            else:
+                self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
+            return
+
         # query
         if self.i_test["layout"] == "BSH":
             B, Sq, N, G, D = self.gen["query"].shape
@@ -98,64 +220,128 @@ class PagedAttentionTest(PagedAttentionBase):
         self.i_construct["value_cache"] = ms.Tensor(value_cache, dtype=kv_type)
         # block_tables
         self.i_construct["block_tables"] = ms.Tensor(self.gen["block_tables"])
-        # context_lens
-        self.i_construct["context_lens"] = ms.Tensor(self.gen["context_lens"])
+        # batch_valid_length
+        self.i_construct["batch_valid_length"] = ms.Tensor(self.gen["batch_valid_length"])
         # quant
-        if "antiquant_scale" in self.gen and "antiquant_offset" in self.gen:
-            self.i_construct["antiquant_scale"] = ms.Tensor(self.gen["antiquant_scale"])
-            self.i_construct["antiquant_offset"] = ms.Tensor(self.gen["antiquant_offset"])
+        if self.i_test["quant_mode"]:
+            antiquant_scale = self.gen["antiquant_scale"]
+            antiquant_offset = self.gen["antiquant_offset"]
+            if self.i_test.get("antiquant_scale_int64_to_fp32", False):
+                antiquant_scale = to_pad_fp32(antiquant_scale)
+            self.i_construct["antiquant_scale"] = ms.Tensor(antiquant_scale)
+            self.i_construct["antiquant_offset"] = ms.Tensor(antiquant_offset)
         # alibi_mask
-        if "alibi_mask" in self.gen:
+        if self.i_test["is_alibi"]:
             B, N, G, Sq, MaxSkv = self.gen["alibi_mask"].shape
             alibi_mask = np.reshape(
                 self.gen["alibi_mask"],
                 newshape=[B, N * G, Sq, MaxSkv])
             self.i_construct["alibi_mask"] = ms.Tensor(alibi_mask, dtype=q_type)
         # attn_mask
-        if "attn_mask" in self.gen:
+        if self.i_test["is_amask"]:
             B, _, _, Sq, MaxSkv = self.gen["attn_mask"].shape
             attn_mask = np.reshape(
                 self.gen["attn_mask"],
                 newshape=[B, Sq, MaxSkv])
             self.i_construct["attn_mask"] = ms.Tensor(attn_mask, dtype=ms.float16)
-            self.i_construct["q_seq_lens"] = ms.Tensor(self.gen["sq"])
-
-        self.i_init = {
-            "head_num": self.i_test["nq"],  # dtype: int
-            "scale_value": 1 / math.sqrt(self.i_test["d"]),  # dtype: float
-            "kv_head_num": self.i_test["nkv"]  # dtype: int
-        }
+        self.i_construct["q_seq_lens"] = ms.Tensor(self.gen["sq"])
 
         self.o_ascend = {
             "attention_out": None,  # dtype: tensor
         }
-
-        if "ASCEND_HOME_PATH" not in os.environ:
-            os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-        context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
-        context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
-        net = PagedAttentionNet(*tuple(self.i_init.values()))
-
+        if os.environ.get("ENABLE_PROFILING") == "on":
+            self.save_running_data()
         if "msprof" in self.i_test and self.i_test["msprof"]:
             profiler = Profiler(start_profile=False, output_path="./profiler", data_simplification=False)
             profiler.start()
-            for _ in range(self.i_test["msprof"]):
-                self.o_ascend["attention_out"] = net(*tuple(self.i_construct.values()))
+            for i in range(self.i_test["msprof"]):
+                self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
             profiler.stop()
             profiler.analyse()
         else:
-            self.o_ascend["attention_out"] = net(*tuple(self.i_construct.values()))
+            self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
+
+    def save_running_data(self):
+        shape = {
+            "query": self.i_construct["query"].shape,
+            "key_cache": self.i_construct["key_cache"].shape,
+            "value_cache": self.i_construct["value_cache"].shape,
+            "block_tables": self.i_construct["block_tables"].shape,
+            "batch_valid_length_shape": self.i_construct["batch_valid_length"].shape,
+            "batch_valid_length_value": self.i_construct["batch_valid_length"],
+            "antiquant_scale": self.i_construct["antiquant_scale"].shape if self.i_construct[
+                "antiquant_scale"] is not None else None,
+            "antiquant_offset": self.i_construct["antiquant_offset"].shape if self.i_construct[
+                "antiquant_offset"] is not None else None,
+            "attn_mask": self.i_construct["attn_mask"].shape if self.i_construct["attn_mask"] is not None else None,
+            "q_seq_lens_shape": self.i_construct["q_seq_lens"].shape,
+            "q_seq_lens_value": self.i_construct["q_seq_lens"]
+        }
+        key = [
+            ','.join(map(str, self.i_construct["query"].shape)),
+            ','.join(map(str, self.i_construct["key_cache"].shape)),
+            ','.join(map(str, self.i_construct["value_cache"].shape)),
+            ','.join(map(str, self.i_construct["batch_valid_length"].shape)),
+            ','.join(map(str, self.i_construct["block_tables"].shape)),
+            ','.join(map(str, self.i_construct["antiquant_scale"].shape))
+            if self.i_construct["antiquant_scale"] is not None else "1",
+            ','.join(map(str, self.i_construct["antiquant_offset"].shape))
+            if self.i_construct["antiquant_offset"] is not None else "1",
+            ','.join(map(str, self.i_construct["attn_mask"].shape))
+            if self.i_construct["attn_mask"] is not None else "1"
+        ]
+        test_input = self.i_test_dict
+        running_data = [shape, test_input, '\"' + ';'.join(key) + '\"']
+        header = ["shape", "test_input", "key"]
+        # 文件名
+        csv_file = 'tmp_data/pa_tmp_data.csv'
+
+        # 写入数据到 CSV 文件
+        with open(csv_file, mode='a+', newline='') as file:
+            writer = csv.writer(file)
+
+            # 检查文件是否为空，如果是，则写入表头
+            if os.stat(csv_file).st_size == 0:
+                writer.writerow(header)  # 写入表头
+
+            # 写入数据
+            writer.writerow(running_data)
+
+
+description = {
+    "type": "Type of query/alibi_mask/attention_out. float16 or float32. If type is float32, kernel will caculate with bfloat16.",
+    "layout": "BSH or BNSD. Where H = N * D",
+    "b": "Batch size. int",
+    "sq": "Squence length of query. int or list[int]. If sq is int, query will has same squence length every batch. If sq is list[int], squence length of query will be list[idx] in batch[idx], length of list[int] must be equal with batch size.",
+    "skv": "Real Squence length of key_cache and value_cache. max/int/list[int]/rand-1/rand-b. If skv is string of max, skv will be same with max_skv. If skv is int/list[int], skv will be the numbers you set. If skv is string of rand-1/rand-b, skv will generated with random. If skv is int/rand-1, key_cache and value_cache will has same squence length every batch. If skv is list[int]/rand-b, squence length of key_cache and value_cache will be list[idx] in batch[idx], length of list[int] must be equal with batch size.",
+    "max_skv": "Max Squence length of key_cache and value_cache. int.",
+    "nq": "Number head of query. int.",
+    "nkv": "Number head of key_cache and value_cache. int.",
+    "d": "Head dim size. int of 16/32/64/128/256.",
+    "blk_sz": "Block size. int of 16/32/64/128.",
+    "drop_prop": "Drop probability. float. Not use in pa.",
+    "quant_mode": "no quant = 0, per channel = 1, per token = 2",
+    "is_alibi": "Only support in paged_attention_mask.",
+    "is_amask": "Only support in paged_attention_mask.",
+    "blk_sparse": "Block sparse. int. Not use for now.",
+    "msprof": "Open msprof. int. Kernel will run the val you set times, 0 is off."
+}
 
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+@pytest.mark.paged_attention
 def test_paged_attention_bnsd():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op in BNSD.
+    Feature: paged_attention operator
+    Description: test_paged_attention_bnsd
     Expectation: the result is correct
     """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
+    i_test_dict = dict()
+
     i_test = {
         "type": "float32",
         "layout": "BNSD",
@@ -168,24 +354,33 @@ def test_paged_attention_bnsd():
         "d": 128,
         "blk_sz": 16,
         "drop_prop": 0.0,
-        "is_quant": False,
-        "is_alibi": False,
-        "is_amask": False,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 0,
         "blk_sparse": 0,
-        "msprof": 0
+        "msprof": int(env_var) if env_var else 0
     }
-    PagedAttentionTest(i_test)
+    i_test_dict["dynamic_shape0"] = i_test
+
+    i_test = i_test.copy()
+    i_test["b"] = 3
+    i_test_dict["dynamic_shape1"] = i_test
+
+    PagedAttentionTest(i_test_dict)
 
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
+@pytest.mark.paged_attention
+@pytest.mark.profilable
 def test_paged_attention_fd_long():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op with long sequence.
+    Feature: paged_attention operator
+    Description: test_paged_attention_fd_long
     Expectation: the result is correct
     """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
     i_test = {
         "type": "float16",
         "layout": "BSH",
@@ -198,11 +393,11 @@ def test_paged_attention_fd_long():
         "d": 128,
         "blk_sz": 64,
         "drop_prop": 0.0,
-        "is_quant": False,
-        "is_alibi": False,
-        "is_amask": False,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 0,
         "blk_sparse": 0,
-        "msprof": 0
+        "msprof": int(env_var) if env_var else 0
     }
     PagedAttentionTest(i_test)
 
@@ -210,42 +405,51 @@ def test_paged_attention_fd_long():
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+@pytest.mark.paged_attention
+@pytest.mark.profilable
 def test_paged_attention_quant0():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op with quant.
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant0
     Expectation: the result is correct
     """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
     i_test = {
         "type": "float16",
         "layout": "BSH",
         "b": 2,
         "sq": 1,
-        "skv": "rand-1",
+        "skv": "rand-b",
         "max_skv": 1024,
         "nq": 9,
         "nkv": 3,
         "d": 128,
         "blk_sz": 128,
         "drop_prop": 0.0,
-        "is_quant": True,
-        "is_alibi": False,
-        "is_amask": False,
+        "quant_mode": 1,
+        "is_alibi": 0,
+        "is_amask": 0,
         "blk_sparse": 0,
-        "msprof": 0
+        "quant_method": QuantMethod.FP16_VEC,
+        "msprof": int(env_var) if env_var else 0
     }
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+@pytest.mark.paged_attention
+@pytest.mark.profilable
 def test_paged_attention_quant1():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op with quant.
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant1
     Expectation: the result is correct
     """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
     i_test = {
         "type": "float16",
         "layout": "BSH",
@@ -258,11 +462,12 @@ def test_paged_attention_quant1():
         "d": 128,
         "blk_sz": 16,
         "drop_prop": 0.0,
-        "is_quant": True,
-        "is_alibi": False,
-        "is_amask": False,
+        "quant_mode": 1,
+        "is_alibi": 0,
+        "is_amask": 0,
         "blk_sparse": 0,
-        "msprof": 0
+        "quant_method": QuantMethod.FP16_VEC,
+        "msprof": int(env_var) if env_var else 0
     }
     PagedAttentionTest(i_test)
 
@@ -270,12 +475,50 @@ def test_paged_attention_quant1():
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
-def test_paged_attention_lookahead0():
+@pytest.mark.skip_test_in_asdop
+@pytest.mark.paged_attention
+@pytest.mark.profilable
+def test_paged_attention_quant_pertoken():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op with lookahead.
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken
     Expectation: the result is correct
     """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
+    i_test = {
+        "type": "float32",
+        "layout": "BSH",
+        "b": 1,
+        "sq": 1,
+        "skv": 63,
+        "max_skv": 8192,
+        "nq": 32,
+        "nkv": 32,
+        "d": 128,
+        "blk_sz": 16,
+        "drop_prop": 0.0,
+        "quant_mode": 1,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": QuantMethod.FP16_VEC,
+        "msprof": int(env_var) if env_var else 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+@pytest.mark.paged_attention
+@pytest.mark.profilable
+def test_paged_attention_lookahead0():
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_lookahead0
+    Expectation: the result is correct
+    """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
     i_test = {
         "type": "float16",
         "layout": "BSH",
@@ -288,24 +531,28 @@ def test_paged_attention_lookahead0():
         "d": 128,
         "blk_sz": 128,
         "drop_prop": 0.0,
-        "is_quant": False,
-        "is_alibi": False,
-        "is_amask": True,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 1,
         "blk_sparse": 0,
-        "msprof": 0
+        "msprof": int(env_var) if env_var else 0
     }
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
+@pytest.mark.paged_attention
 def test_paged_attention_lookahead1():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op with lookahead.
+    Feature: paged_attention operator
+    Description: test_paged_attention_lookahead1
     Expectation: the result is correct
     """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
+    i_test_dict = dict()
+
     i_test = {
         "type": "float16",
         "layout": "BSH",
@@ -318,24 +565,34 @@ def test_paged_attention_lookahead1():
         "d": 256,
         "blk_sz": 16,
         "drop_prop": 0.0,
-        "is_quant": False,
-        "is_alibi": False,
-        "is_amask": True,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 1,
         "blk_sparse": 0,
-        "msprof": 0
+        "msprof": int(env_var) if env_var else 0
     }
-    PagedAttentionTest(i_test)
+    i_test_dict["dynamic_shape0"] = i_test
+
+    i_test = i_test.copy()
+    i_test["b"] = 3
+    i_test["sq"] = 12
+    i_test_dict["dynamic_shape1"] = i_test
+
+    PagedAttentionTest(i_test_dict)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
+@pytest.mark.paged_attention
+@pytest.mark.profilable
 def test_paged_attention_fake_lookahead():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op with fake_lookahead.
+    Feature: paged_attention operator
+    Description: test_paged_attention_fake_lookahead
     Expectation: the result is correct
     """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
     i_test = {
         "type": "float16",
         "layout": "BSH",
@@ -348,10 +605,339 @@ def test_paged_attention_fake_lookahead():
         "d": 128,
         "blk_sz": 16,
         "drop_prop": 0.0,
-        "is_quant": False,
-        "is_alibi": False,
-        "is_amask": True,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 1,
         "blk_sparse": 0,
+        "msprof": int(env_var) if env_var else 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+@pytest.mark.paged_attention
+@pytest.mark.profilable
+def test_paged_attention_large_gsq():
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_large_gsq
+    Expectation: the result is correct
+    """
+    env_var = os.environ.get('KERNEL_RUN_TIMES')
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 2,
+        "sq": 177,
+        "skv": "rand-b",
+        "max_skv": 512,
+        "nq": 384,
+        "nkv": 3,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 1,
+        "blk_sparse": 0,
+        "msprof": int(env_var) if env_var else 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_pertoken_bsh(quant_method):
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken_bsh
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 2,
+        "sq": 1,
+        "skv": 512,
+        "max_skv": 512,
+        "nq": 9,
+        "nkv": 3,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": quant_method,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_pertoken_bnsd(quant_method):
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken_bnsd
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BNSD",
+        "b": 2,
+        "sq": 1,
+        "skv": 1024,
+        "max_skv": 1024,
+        "nq": 1,
+        "nkv": 1,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": quant_method,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken_with_anti_shape
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 1,
+        "sq": 1,
+        "skv": 4096,
+        "max_skv": 8192,
+        "nq": 20,
+        "nkv": 20,
+        "d": 128,
+        "blk_sz": 16,
+        "anti_max_b": 2,
+        "anti_max_sq": 4096,
+        "drop_prop": 0.0,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": quant_method,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_large_gsq_pertoken(quant_method):
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_large_gsq_pertoken
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 2,
+        "sq": 177,
+        "skv": 512,
+        "max_skv": 512,
+        "nq": 384,
+        "nkv": 3,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": quant_method,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_no_quant_pangu38b():
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_no_quant_pangu38b
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 48,
+        "sq": 1,
+        "skv": 4096,
+        "max_skv": 4096,
+        "nq": 8,
+        "nkv": 8,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_pertoken_pangu38b(quant_method):
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken_pangu38b
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 48,
+        "sq": 1,
+        "skv": 4096,
+        "max_skv": 4096,
+        "nq": 8,
+        "nkv": 8,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": quant_method,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_no_quant_jiutian():
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_no_quant_jiutian
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 8,
+        "sq": 1,
+        "skv": 2048,
+        "max_skv": 4096,
+        "nq": 8,
+        "nkv": 8,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 0,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_pertoken_jiutian(quant_method):
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken_jiutian
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 8,
+        "sq": 1,
+        "skv": 2048,
+        "max_skv": 4096,
+        "nq": 8,
+        "nkv": 8,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": quant_method,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level1
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32():
+    """
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 8,
+        "sq": 1,
+        "skv": 2048,
+        "max_skv": 4096,
+        "nq": 8,
+        "nkv": 8,
+        "d": 128,
+        "blk_sz": 128,
+        "drop_prop": 0.0,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
+        "blk_sparse": 0,
+        "quant_method": QuantMethod.INT_CUBE,
+        "antiquant_scale_int64_to_fp32": True,
         "msprof": 0
     }
     PagedAttentionTest(i_test)
@@ -360,29 +946,31 @@ def test_paged_attention_fake_lookahead():
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
-def test_paged_attention_asd_quant():
+@pytest.mark.skip_test_in_asdop
+def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32_small():
     """
-    Feature: test PagedAttention op in kbk enabling infer_boost
-    Description: test PagedAttention op with asdop quant mode.
+    Feature: paged_attention operator
+    Description: test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32_small
     Expectation: the result is correct
     """
     i_test = {
         "type": "float16",
         "layout": "BSH",
-        "b": 8,
+        "b": 1,
         "sq": 1,
-        "skv": 1024,
-        "max_skv": 4096,
-        "nq": 8,
-        "nkv": 8,
+        "skv": 3,
+        "max_skv": 1024,
+        "nq": 20,
+        "nkv": 20,
         "d": 128,
         "blk_sz": 16,
         "drop_prop": 0.0,
-        "is_quant": True,
-        "is_alibi": False,
-        "is_amask": False,
+        "quant_mode": 2,
+        "is_alibi": 0,
+        "is_amask": 0,
         "blk_sparse": 0,
-        "use_asdop": True,
+        "quant_method": QuantMethod.INT_CUBE,
+        "antiquant_scale_int64_to_fp32": True,
         "msprof": 0
     }
     PagedAttentionTest(i_test)
