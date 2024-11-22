@@ -86,7 +86,12 @@ def tensor_getitem_func(x):
     y5 = x[...]
     y6 = x[0:2, None, ...]
     y7 = x[[0, 1]]
-    return y0, y1, y2, y3, y4, y5, y6, y7
+    y8 = x[np.array(0)]
+    y9 = x[np.array(True)]
+    y10 = x[np.array(False)]
+    y11 = x[np.array(0), np.array(1)]
+    y12 = x[np.array([0, 1])]
+    return y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
