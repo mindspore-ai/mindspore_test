@@ -296,7 +296,7 @@ class NLLLoss(Cell):
     Args:
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, the shape is :math:`(C,)`, data type must be float16 or float32 or bfloat16(only supported by
-            Atlas A2 training series products). Default: ``None`` .
+            Atlas A2 training series products). It should have the same data type as `input` . Default: ``None`` .
         ignore_index (int, optional): Specifies a target value that is ignored and does not contribute to the input
             gradient. Only valid in class indices, please set it to a negative number in probabilities.
             Default: ``-100`` .

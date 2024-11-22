@@ -28,7 +28,7 @@ mindspore.mint.nn.NLLLoss
 
     参数：
         - **weight** (Tensor, 可选) - 指定各类别的权重。若值不为 ``None`` ，则shape为 :math:`(C,)`。
-          数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。默认值： ``None`` 。
+          数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。要求与 `input` 的数据类型保持一致。默认值： ``None`` 。
         - **ignore_index** (int, 可选) - 指定target中需要忽略的值(一般为填充值)，使其不对梯度产生影响。仅在目标值为类别索引下生效，在类别概率下请设置为负数。默认值： ``-100`` 。
         - **reduction** (str, 可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
