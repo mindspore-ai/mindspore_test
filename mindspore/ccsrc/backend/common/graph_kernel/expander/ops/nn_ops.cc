@@ -73,11 +73,16 @@ REG_EXPANDER_FUNC("AdamApplyOneWithDecayAssign").SetBody(BODYFUNC(ib) {
 
 REG_EXPANDER_FUNC("Sigmoid").SetBody(BODYFUNC(ib) {
   const auto &input_x = ib->input(kIndex0);
-  auto const_one = ib->Tensor(1.0, input_x->GetDtype());
-  auto neg_x = ib->Neg(input_x);
+  auto need_cast = input_x->GetDtype()->type_id() != kNumberTypeFloat32;
+  auto cast_x = need_cast ? ib->Cast(input_x, kFloat32) : input_x;
+  auto const_one = ib->Tensor(1.0, kFloat32);
+  auto neg_x = ib->Neg(cast_x);
   auto exp_neg_x = ib->Exp(neg_x);
   auto add_exp = ib->Add(exp_neg_x, const_one);
   auto result = ib->Div(const_one, add_exp);
+  if (need_cast && !ib->is_int_or_bool(input_x)) {
+    result = ib->Cast(result, input_x->GetDtype());
+  }
   return {result};
 });
 

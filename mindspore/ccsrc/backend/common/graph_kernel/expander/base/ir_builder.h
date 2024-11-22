@@ -90,7 +90,10 @@ class IrBuilder {
     return e->EmitValue(tensor);
   }
   const std::string &processor() const { return processor_; }
-
+  bool is_int_or_bool(const NodePtr &node) const {
+    auto node_type = node->GetDtype()->type_id();
+    return node_type == kNumberTypeInt32 || node_type == kNumberTypeBool;
+  }
   // meta ops begin
   inline NodePtr Abs(const NodePtr &node) const { return e->Emit(MetaOp::Abs, {node}); }
   inline NodePtr Add(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Add, {lhs, rhs}); }
