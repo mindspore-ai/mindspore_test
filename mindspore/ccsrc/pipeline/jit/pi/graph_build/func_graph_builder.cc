@@ -1338,6 +1338,31 @@ FuncGraphPtr FuncGraphBuilder::graph(bool force) {
   return graph_;
 }
 
+void FuncGraphBuilder::PrintConstantAbstract(const AbstractBasePtr &abstract) {
+  if (abstract == nullptr) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractFunction>()) {
+    return;
+  }
+  if (abstract->isa<abstract::AbstractSequence>()) {
+    const auto &elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e); });
+  }
+  if (abstract->isa<abstract::AbstractDictionary>()) {
+    const auto &elements = abstract->cast<abstract::AbstractDictionaryPtr>()->elements();
+    std::for_each(elements.begin(), elements.end(), [](const auto &e) { PrintConstantAbstract(e.second); });
+  }
+  if (abstract->isa<abstract::AbstractTensor>()) {
+    if (abstract->isa<abstract::AbstractRefTensor>()) {
+      return;
+    }
+    MS_LOG(WARNING) << "Encounter constant Tensor node with abstract: " << abstract->ToString();
+    return;
+  }
+  MS_LOG(INFO) << "Encounter constant valeu node with abstract: " << abstract->ToString();
+}
+
 void FuncGraphBuilder::ClearNodeAbstract() {
   if (!has_set_output_) {
     MS_LOG(INTERNAL_EXCEPTION) << "Graph not generated, can not clear abstract.";
@@ -1350,6 +1375,9 @@ void FuncGraphBuilder::ClearNodeAbstract() {
   for (const auto &node : mindspore::TopoSort(top_graph->get_return(), SuccDeeperSimple)) {
     MS_EXCEPTION_IF_NULL(node);
     const AbstractBasePtr &prev_inferred = node->abstract();
+    if (node->isa<ValueNode>()) {
+      PrintConstantAbstract(prev_inferred);
+    }
     auto is_func =
       node->isa<mindspore::ValueNode>() && prev_inferred != nullptr && prev_inferred->isa<abstract::AbstractFunction>();
     // Keep previous inferred value for parameter and ValueNode if the inferred value is not AbstractFunction.
