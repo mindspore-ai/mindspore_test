@@ -1235,8 +1235,6 @@ def get_offload_context():
 def _check_target_specific_cfgs(device, arg_key):
     """Checking whether a config is suitable for a specified device"""
     device_cfgs = {
-        'enable_graph_kernel': ['Ascend', 'GPU', 'CPU'],
-        'graph_kernel_flags': ['Ascend', 'GPU', 'CPU'],
         'enable_reduce_precision': ['Ascend'],
         'print_file_path': ['Ascend'],
         'variable_memory_max_size': ['Ascend'],
@@ -1337,10 +1335,6 @@ def set_context(**kwargs):
     |                         |  debug_level                 |  CPU/GPU/Ascend            |
     +-------------------------+------------------------------+----------------------------+
     | Executive Control       |   mode                       |   CPU/GPU/Ascend           |
-    |                         +------------------------------+----------------------------+
-    |                         |  enable_graph_kernel         |  Ascend/GPU                |
-    |                         +------------------------------+----------------------------+
-    |                         |  graph_kernel_flags          |  Ascend/GPU                |
     |                         +------------------------------+----------------------------+
     |                         |  enable_reduce_precision     |  Ascend                    |
     |                         +------------------------------+----------------------------+
@@ -1477,43 +1471,6 @@ def set_context(**kwargs):
             of the error.
         mode (int): Running in GRAPH_MODE(0) or PYNATIVE_MODE(1).
             Both modes support all backends. Default: ``PYNATIVE_MODE`` .
-        enable_graph_kernel (bool): Whether to enable graph kernel fusion to optimize network execution performance.
-            Default: ``False`` .
-            Indicates whether to enable image-computing convergence to optimize network execution performance.
-            If enable_graph_kernel is set to ``True`` , acceleration can be enabled.
-            For details of graph kernel fusion, please check
-            `Enabling Graph Kernel Fusion
-            <https://www.mindspore.cn/docs/en/master/model_train/optimize/graph_fusion_engine.html>`_.
-        graph_kernel_flags (str):
-            Optimization options of graph kernel fusion, and the priority is higher when it conflicts
-            with enable_graph_kernel. Only for experienced users.
-            For example,
-
-            .. code-block::
-
-                mindspore.set_context(graph_kernel_flags="--opt_level=2 --dump_as_text")
-
-            Some general options:
-
-            - opt_level: Set the optimization level.
-              Default: ``2`` . Graph kernel fusion can be enabled equivalently by setting opt_level greater than 0.
-              Available values are:
-
-              - 0: disables graph kernel fusion;
-              - 1: enables the basic fusion of operators;
-              - 2: includes all optimizations of level 1,
-                and turns on more optimizations such as CSE, arithmetic simplification and so on;
-              - 3: includes all optimizations of level 2, and turns on more optimizations such as SitchingFusion,
-                ParallelFusion and so on. Optimizations of this level are radical and unstable in some scenarios.
-                Be caution when using this level.
-
-            - dump_as_text: dumps detail info as text files. Default: ``False`` .
-            - enable_cluster_ops: Add user-specified operator to the set of operators involved in fusion. For example,
-              by setting ``--enable_cluster_ops=MatMul``, MatMul operator can be included in the fusion process.
-            - enable_pass/disable_pass: Enable/disable user-specified custom fusion passes. See details in
-              `Custom Fusion Pass
-              <https://www.mindspore.cn/docs/en/master/model_train/custom_program/fusion_pass.html>`_.
-
         enable_reduce_precision (bool): Whether to enable precision reduction.
             If the operator does not support the user-specified precision, the precision will
             be changed automatically. Default: ``True`` .
@@ -1831,8 +1788,6 @@ def set_context(**kwargs):
         >>> ms.set_context(device_id=0)
         >>> ms.set_context(save_graphs=True, save_graphs_path="./model.ms")
         >>> ms.set_context(enable_reduce_precision=True)
-        >>> ms.set_context(enable_graph_kernel=True)
-        >>> ms.set_context(graph_kernel_flags="--opt_level=2 --dump_as_text")
         >>> ms.set_context(reserve_class_name_in_scope=True)
         >>> ms.set_context(variable_memory_max_size="6GB")
         >>> ms.set_context(aoe_tune_mode="online")
@@ -1898,6 +1853,14 @@ def set_context(**kwargs):
             setattr(ctx, key, value)
             ctx.set_param(ms_ctx_param.__members__[key], int(value))
             continue
+        if key == 'enable_graph_kernel':
+            logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated, "
+                           "and will be removed in the next version. "
+                           "Please use jit_config={'jit_level': 'O1'} instead.")
+        if key == 'graph_kernel_flags':
+            logger.warning(f"For 'context.set_context', '{key}' parameter is deprecated, "
+                           "and will be removed in the next version. "
+                           "Please use environ variable 'MS_DEV_GRAPH_KERNEL_FLAGS' instead.")
         if not _check_target_specific_cfgs(device, key):
             continue
         if key in ctx.setters:
