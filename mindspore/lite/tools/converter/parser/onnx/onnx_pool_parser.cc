@@ -114,6 +114,7 @@ PrimitiveCPtr OnnxMaxPoolParser::Parse(const onnx::GraphProto &onnx_graph, const
   auto prim_c = prim->GetPrim();
   MS_CHECK_TRUE_RET(prim_c != nullptr, nullptr);
   (void)prim_c->AddAttr(mindspore::ops::kOriginalFormat, MakeValue<int64_t>(mindspore::Format::NCHW));
+  prim->set_kernel_size({1, 1});
   mindspore::RoundMode round_mode = mindspore::RoundMode::FLOOR;
   std::vector<int64_t> kernels;
   std::vector<int64_t> strides;
@@ -176,9 +177,7 @@ PrimitiveCPtr OnnxMaxPoolParser::Parse(const onnx::GraphProto &onnx_graph, const
     strides.push_back(1);
   }
   prim->set_strides(strides);
-
   prim->set_global(onnx_node.op_type() == "GlobalMaxPool");
-
   int fmk_type = converter::FmkType::kFmkTypeOnnx;
   (void)prim_c->AddAttr(ops::kFmkType, MakeValue(fmk_type));
   return prim->GetPrim();
