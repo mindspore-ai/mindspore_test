@@ -1377,7 +1377,7 @@ REG_BPROP_BUILDER("Flatten").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {ib->Reshape(dout, x_shape)};
 });
 
-REG_BPROP_BUILDER("FlattenExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("FlattenExt").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto start = ib->GetInput(kIndex1);
   auto end = ib->GetInput(kIndex2);
@@ -1949,7 +1949,7 @@ REG_BPROP_BUILDER("NormalFloatFloat").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).
 
 REG_BPROP_BUILDER("UniformExt").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("ScatterAddExt").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("ScatterAddExt").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto indices = ib->GetInput(kIndex2);
@@ -2036,7 +2036,7 @@ REG_BPROP_BUILDER("ExpandDims").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(i
   return {dx, ib->OutZeros(axis)};
 });
 
-REG_BPROP_BUILDER("Squeeze").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Squeeze").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -2097,7 +2097,7 @@ REG_BPROP_BUILDER("TransposeExt").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib)
   return {dx, ib->OutZeros(dim0), ib->OutZeros(dim1)};
 });
 
-REG_BPROP_BUILDER("TExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("TExt").FreeUselessValues_IO({}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
   auto x_shape = ib->GetShape(x);
@@ -2237,7 +2237,7 @@ DEF_PURE_SHAPE_CALC(g_tile)
     auto max_sz = x_sz > multiples_sz ? x_sz : multiples_sz;
     return {2 * max_sz, max_sz};
   });
-REG_BPROP_BUILDER("Tile").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Tile").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto input_multiples = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
