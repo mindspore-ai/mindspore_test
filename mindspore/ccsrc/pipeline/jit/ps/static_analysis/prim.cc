@@ -1888,12 +1888,10 @@ EvalResultPtr GenerateFuncGraphForOverriddenMethod(AnfNodePtr node, const ValueP
   bool is_getattr = node->has_user_data("__getattr__");
   if (is_getattr) {
     value_obj = *node->user_data<py::object>("__getattr__");
-    if (!py::hasattr(value_obj, item_name.c_str())) {
-      try {
-        overridden_method = value_obj.attr("__class__").attr("__getattr__");
-      } catch (const std::exception &e) {
-        MS_LOG(DEBUG) << value_obj << " has no attribute getattr.";
-      }
+    try {
+      overridden_method = value_obj.attr("__class__").attr("__getattr__");
+    } catch (const std::exception &e) {
+      MS_LOG(DEBUG) << value_obj << " has no attribute getattr.";
     }
   }
   if (py::isinstance<py::none>(overridden_method) || py::isinstance<py::none>(value_obj)) {
@@ -2320,16 +2318,20 @@ EvalResultPtr GetFuncAbstractAttr(const AbstractFunctionPtr &data_args, const Ab
 bool CheckHasOverriddenMethod(AnfNodePtr node, ValuePtr item_value) {
   const auto &item_str = item_value->cast_ptr<StringImm>();
   py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
-  if (item_str != nullptr) {
-    const std::string &item_name = item_str->value();
-    if (node->has_user_data(item_name)) {
-      auto value_obj = *node->user_data<py::object>(item_name);
-      py::bool_ check = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_CHECK_ATTRS, value_obj, item_name);
-      return py::cast<bool>(check);
-    }
+  if (item_str == nullptr) {
+    return false;
+  }
+  const std::string &item_name = item_str->value();
+  if (node->has_user_data(item_name)) {
+    auto value_obj = *node->user_data<py::object>(item_name);
+    py::bool_ check = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_CHECK_ATTRS, value_obj, item_name);
+    return py::cast<bool>(check);
   }
   if (node->has_user_data("__getattr__")) {
     auto value_obj = *node->user_data<py::object>("__getattr__");
+    if (py::hasattr(value_obj, item_name.c_str())) {
+      return false;
+    }
     py::bool_ check = python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_CHECK_ATTRS, value_obj, "__getattr__");
     return py::cast<bool>(check);
   }
