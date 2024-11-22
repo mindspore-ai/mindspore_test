@@ -256,9 +256,19 @@ bool SliceCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs
   return true;
 }
 
-#define SLICE_CPU_REGISTER_KERNEL_ATTR(DT)                                                                       \
-  KernelAttr().AddInputAttr(DT).AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(DT), \
-    KernelAttr().AddInputAttr(DT).AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(DT)
+#define SLICE_CPU_REGISTER_KERNEL_ATTR(DT)                                                                         \
+  KernelAttr().AddInputAttr(DT).AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(DT),   \
+    KernelAttr().AddInputAttr(DT).AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(DT), \
+    KernelAttr()                                                                                                   \
+      .AddInputAttr(DT)                                                                                            \
+      .AddInputAttr(kObjectTypeTuple, kNumberTypeInt32)                                                            \
+      .AddInputAttr(kObjectTypeTuple, kNumberTypeInt32)                                                            \
+      .AddOutputAttr(DT),                                                                                          \
+    KernelAttr()                                                                                                   \
+      .AddInputAttr(DT)                                                                                            \
+      .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)                                                            \
+      .AddInputAttr(kObjectTypeTuple, kNumberTypeInt64)                                                            \
+      .AddOutputAttr(DT)
 
 std::vector<KernelAttr> SliceCpuKernelMod::GetOpSupport() {
   static const std::vector<KernelAttr> support_list = {
