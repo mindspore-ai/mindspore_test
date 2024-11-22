@@ -17,6 +17,7 @@
 #include "ops/ops_frontend_func_impl.h"
 #include "ops_utils/op_utils.h"
 #include "utils/tensor_construct_utils.h"
+#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -31,6 +32,12 @@ class OnesFrontendFuncImpl : public OpFrontendFuncImpl {
     if (SizeOf(out_shape) > INT_MAX) {
       MS_LOG(EXCEPTION) << "For '" << primitive->name() << "', the output elements num can not larger than " << INT_MAX
                         << "(INT_MAX), but got " << SizeOf(out_shape);
+    }
+    for (size_t i = 0; i < out_shape.size(); i++) {
+      const auto shape_i = out_shape[i];
+      MS_CHECK_VALUE(shape_i >= 0, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                     "the " + std::to_string(i) + "th dimension of input shape", shape_i, kGreaterEqual,
+                                     0, primitive));
     }
     TypePtr out_type = nullptr;
     auto dtype_type = input_args[kInputIndex1]->GetType();

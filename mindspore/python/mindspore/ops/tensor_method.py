@@ -360,6 +360,10 @@ from mindspore.ops.function.array_func import where as where_func
 
 # 162
 
+from mindspore.ops.auto_generate import clone
+from mindspore.ops.function.array_func import new_ones
+from mindspore.ops.function.array_func import new_zeros
+
 ########################################functions########################################
 
 
@@ -901,3 +905,14 @@ def tensor_triu(input, diagonal=0):
 # 161
 
 # 162
+
+def tensor_clone(input):
+    return clone(input)
+
+
+def tensor_new_ones(input, size, dtype=None):
+    return new_ones(input, size, dtype=dtype)
+
+
+def tensor_new_zeros(input, size, dtype=None):
+    return new_zeros(input, size, dtype=dtype)

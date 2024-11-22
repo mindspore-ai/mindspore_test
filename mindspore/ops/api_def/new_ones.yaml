@@ -1,0 +1,7 @@
+new_ones:
+  op_yaml: new_ones_op.yaml
+  py_method: tensor_new_ones
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: method

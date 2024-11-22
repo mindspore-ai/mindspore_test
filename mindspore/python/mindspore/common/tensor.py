@@ -2373,12 +2373,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get("copy_")(self, src)
 
-    def clone(self):
-        """
-        For details, please refer to :func:`mindspore.ops.clone`.
-        """
-        return tensor_operator_registry.get("clone")(self)
-
     def scatter_add(self, indices, updates):
         """
         For details, please refer to :func:`mindspore.ops.scatter_add`.
@@ -4152,41 +4146,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('msort')(self)
 
-
-
-    def new_zeros(self, size, dtype=None):
-        r"""
-        Return a tensor of `size` filled with zeros.
-
-        .. warning::
-            For argument `size`, Tensor type input will be deprecated in the future version.
-
-        Args:
-            size (Union[int, tuple, list, Tensor]): An int, list or tuple of integers defining the output shape.
-            dtype (mindspore.dtype, optional): The desired dtype of the output tensor. If None, the returned tensor has
-                thesame dtype as `self`. Default: ``None``.
-
-        Returns:
-            Tensor, the shape and dtype is defined above and filled with zeros.
-
-        Raises:
-            TypeError: If `size` is neither an int nor an tuple/list/Tensor of int.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([1, 2, 3]), mindspore.float32)
-            >>> output = x.new_zeros((2, 2))
-            >>> print(output)
-            [[0. 0.]
-             [0. 0.]]
-        """
-        return tensor_operator_registry.get('zeros')(size, dtype)
-
     def zero_(self):
         r"""
         Return a tensor filled with zeros.
@@ -4211,39 +4170,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
              [0. 0.]]
         """
         return tensor_operator_registry.get('zero_')(self)
-
-    def new_ones(self, size, dtype=None):
-        r"""
-        Return a tensor of `size` filled with ones.
-
-        .. warning::
-            For argument `size`, Tensor type input will be deprecated in the future version.
-
-        Args:
-            size (Union[int, tuple, list, Tensor]): An int, list or tuple of integers defining the output shape.
-            dtype (mindspore.dtype, optional): The desired dtype of the output tensor. If None, the returned
-                tensor has the same dtype as `self`. Default: ``None``.
-
-        Returns:
-            Tensor, the shape and dtype is defined above and filled with ones.
-
-        Raises:
-            TypeError: If `size` is neither an int nor an tuple/list/Tensor of int.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import numpy as np
-            >>> import mindspore
-            >>> from mindspore import Tensor
-            >>> x = Tensor(np.array([1, 2, 3]), mindspore.float32)
-            >>> output = x.new_ones((2, 2))
-            >>> print(output)
-            [[1. 1.]
-             [1. 1.]]
-        """
-        return tensor_operator_registry.get('ones')(size, dtype)
 
     def sign(self):
         r"""
