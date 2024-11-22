@@ -31,6 +31,7 @@ class ReLU : public OpDesc {
   }
 
  protected:
+  bool CheckInputs() override { return inputs_info_[0].type != kNumberTypeBool; }
   NodePtrList Expand(const NodePtrList &inputs) override { return {Exec(gb, inputs)}; }
 };
 EXPANDER_OP_DESC_REGISTER("ReLU", ReLU);
