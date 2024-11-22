@@ -130,6 +130,7 @@ mindspore/ccsrc/pybind_api/ir/tensor_func_reg.h
 mindspore/ccsrc/pybind_api/ir/tensor_func_reg.cc
 mindspore/ccsrc/pipeline/pynative/op_function/auto_generate/functional_map.cc
 mindspore/python/mindspore/common/_tensor_docs.py
+mindspore/python/mindspore/common/_tensor_cpp_method.py
 mindspore/ops/kernel/ascend/opapi/aclnn_auto_gen/
 
 # ascendc compile
