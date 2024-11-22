@@ -170,8 +170,7 @@ void ProcessSucceedTupleGetItem(const FuncGraphPtr &func_graph, const AnfNodePtr
     ReplaceNodeWithNewMakeTupleNode(func_graph, tuplegetitem_node, new_maketuple_node);
   } else {
     if (tuplegetitem_cnode->input(kRealInputNodeIndexInTupleGetItem) != node) {
-      MS_LOG(DEBUG) << "The function only process the tuplegetitem node used by origin maketuple node directly.";
-      return;
+      MS_LOG(DEBUG) << "The tuplegetitem is not a consumer of the original maketuple node";
     }
     if (real_nodes.size() > kSizeOne) {
       MS_LOG(ERROR) << "The size of real_nodes must equal to 1 when tuplegetitem node has single output, but it's: "
