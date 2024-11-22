@@ -162,8 +162,8 @@ def tensordump(file_name, tensor, mode='out'):
         >>> b = Tensor(0.1 * np.random.randn(64, 64).astype(np.float32))
         >>> out = net(x, y, b)
         >>> print(f"out shape is: {out.shape}")
-        >>> matmul1_output_slice = np.load('0_mul1_mul2_Float32.npy')                       # load matmul1's output slice
-        >>> matmul2_input_slice = np.load('1_mul1_mul2_CNode_64_all_rank_0_Float32.npy')    # load matmul2's input slice
+        >>> matmul1_output_slice = np.load('0_mul1_mul2_float32.npy')                       # load matmul1's output slice
+        >>> matmul2_input_slice = np.load('1_mul1_mul2_CNode_64_all_rank_0_float32.npy')    # load matmul2's input slice
     """
     if not isinstance(file_name, str):
         raise TypeError(f"Parameter file_name should only be build_in str type but got: {type(file_name)}")
