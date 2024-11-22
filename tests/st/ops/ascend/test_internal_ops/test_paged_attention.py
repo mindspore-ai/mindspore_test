@@ -16,13 +16,12 @@
 import os
 import csv
 import numpy as np
-import math
 import pytest
 
 import mindspore as ms
 from mindspore.ops.operations.nn_ops import PagedAttention
 from mindspore.nn import Cell
-from mindspore import context, Profiler
+from mindspore import Profiler
 from paged_attention_base import PagedAttentionBase, QuantMethod
 
 
@@ -31,15 +30,33 @@ class PagedAttentionNet(Cell):
         super().__init__()
         self.net = PagedAttention(*args, **kwargs)
 
-    def construct(self, query, key_cache, value_cache, block_tables, batch_valid_length, antiquant_scale=None,
-                  antiquant_offset=None, attn_mask=None, q_seq_lens=None):
-        return self.net(query, key_cache, value_cache, block_tables, batch_valid_length, antiquant_scale,
-                        antiquant_offset, attn_mask, q_seq_lens)
+    def construct(
+            self,
+            query,
+            key_cache,
+            value_cache,
+            block_tables,
+            batch_valid_length,
+            antiquant_scale=None,
+            antiquant_offset=None,
+            attn_mask=None,
+            q_seq_lens=None):
+        return self.net(
+            query,
+            key_cache,
+            value_cache,
+            block_tables,
+            batch_valid_length,
+            antiquant_scale,
+            antiquant_offset,
+            attn_mask,
+            q_seq_lens)
 
 
 def to_pad_fp32(arr, dim=2):
     original_shape = arr.shape
-    new_shape = original_shape[:dim] + (original_shape[dim] * 2,) + original_shape[dim + 1:]
+    new_shape = original_shape[:dim] + \
+        (original_shape[dim] * 2,) + original_shape[dim + 1:]
     float32_array = np.frombuffer(arr.tobytes(), dtype=np.float32)
     float32_array = float32_array.reshape(new_shape)
     return float32_array
@@ -61,7 +78,8 @@ class PagedAttentionTest(PagedAttentionBase):
 
         self.i_test = self.i_test_dict[self.names[0]]
         if self.i_test["is_alibi"]:
-            raise Exception("[Error] alibi_mask can only be in PagedAttentionMaskTest")
+            raise Exception(
+                "[Error] alibi_mask can only be in PagedAttentionMaskTest")
         if self.i_test["layout"] == "TH":
             raise Exception("[Error] layout 'TH' can only be in Asdop kernel")
         self.set_inputs()
@@ -112,12 +130,16 @@ class PagedAttentionTest(PagedAttentionBase):
         self.i_construct["query"] = ms.Tensor(shape=query, dtype=q_type)
         # key_cache value_cache
         key_value = [None, None, None, None]
-        self.i_construct["key_cache"] = ms.Tensor(shape=key_value, dtype=kv_type)
-        self.i_construct["value_cache"] = ms.Tensor(shape=key_value, dtype=kv_type)
+        self.i_construct["key_cache"] = ms.Tensor(
+            shape=key_value, dtype=kv_type)
+        self.i_construct["value_cache"] = ms.Tensor(
+            shape=key_value, dtype=kv_type)
         # block_tables
-        self.i_construct["block_tables"] = ms.Tensor(shape=[None, None], dtype=ms.int32)
+        self.i_construct["block_tables"] = ms.Tensor(
+            shape=[None, None], dtype=ms.int32)
         # batch_valid_length
-        self.i_construct["batch_valid_length"] = ms.Tensor(shape=[None], dtype=ms.int32)
+        self.i_construct["batch_valid_length"] = ms.Tensor(
+            shape=[None], dtype=ms.int32)
         # quant
         if self.i_test["quant_mode"]:
             quant_method = self.i_test.get("quant_method", 0)
@@ -135,19 +157,23 @@ class PagedAttentionTest(PagedAttentionBase):
                     scale_type = ms.int64
                 offset_type = ms.int32
             else:
-                raise ValueError("plz set quant_method properly when quant_mode > 0.")
+                raise ValueError(
+                    "plz set quant_method properly when quant_mode > 0.")
             self.i_construct["antiquant_scale"] = ms.Tensor(
                 shape=[None, None, None, None, None, None], dtype=scale_type)
             self.i_construct["antiquant_offset"] = ms.Tensor(
                 shape=[None, None, None, None, None, None], dtype=offset_type)
         # alibi_mask
         if self.i_test["is_alibi"]:
-            self.i_construct["alibi_mask"] = ms.Tensor(shape=[None, None, None, None], dtype=q_type)
+            self.i_construct["alibi_mask"] = ms.Tensor(
+                shape=[None, None, None, None], dtype=q_type)
         # attn_mask
         if self.i_test["is_amask"]:
-            self.i_construct["attn_mask"] = ms.Tensor(shape=[None, None, None], dtype=ms.float16)
+            self.i_construct["attn_mask"] = ms.Tensor(
+                shape=[None, None, None], dtype=ms.float16)
         # q_seq_lens
-        self.i_construct["q_seq_lens"] = ms.Tensor(shape=[None], dtype=ms.int32)
+        self.i_construct["q_seq_lens"] = ms.Tensor(
+            shape=[None], dtype=ms.int32)
 
         self.net.set_inputs(*tuple(self.i_construct.values()))
 
@@ -174,25 +200,35 @@ class PagedAttentionTest(PagedAttentionBase):
         }
 
         if self.mode == "load":
-            self.i_construct["query"] = ms.Tensor(self.load["query"], dtype=q_type)
-            self.i_construct["key_cache"] = ms.Tensor(self.load["key_cache"], dtype=kv_type)
-            self.i_construct["value_cache"] = ms.Tensor(self.load["value_cache"], dtype=kv_type)
-            self.i_construct["block_tables"] = ms.Tensor(self.load["block_tables"])
-            self.i_construct["batch_valid_length"] = ms.Tensor(self.load["batch_valid_length"])
+            self.i_construct["query"] = ms.Tensor(
+                self.load["query"], dtype=q_type)
+            self.i_construct["key_cache"] = ms.Tensor(
+                self.load["key_cache"], dtype=kv_type)
+            self.i_construct["value_cache"] = ms.Tensor(
+                self.load["value_cache"], dtype=kv_type)
+            self.i_construct["block_tables"] = ms.Tensor(
+                self.load["block_tables"])
+            self.i_construct["batch_valid_length"] = ms.Tensor(
+                self.load["batch_valid_length"])
             self.o_ascend = {
                 "attention_out": None,  # dtype: tensor
             }
             if os.environ.get("ENABLE_PROFILING") == "on":
                 self.save_running_data()
             if "msprof" in self.i_test and self.i_test["msprof"]:
-                profiler = Profiler(start_profile=False, output_path="./profiler", data_simplification=False)
+                profiler = Profiler(
+                    start_profile=False,
+                    output_path="./profiler",
+                    data_simplification=False)
                 profiler.start()
-                for i in range(self.i_test["msprof"]):
-                    self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
+                for _ in range(self.i_test["msprof"]):
+                    self.o_ascend["attention_out"] = self.net(
+                        *tuple(self.i_construct.values()))
                 profiler.stop()
                 profiler.analyse()
             else:
-                self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
+                self.o_ascend["attention_out"] = self.net(
+                    *tuple(self.i_construct.values()))
             return
 
         # query
@@ -221,7 +257,8 @@ class PagedAttentionTest(PagedAttentionBase):
         # block_tables
         self.i_construct["block_tables"] = ms.Tensor(self.gen["block_tables"])
         # batch_valid_length
-        self.i_construct["batch_valid_length"] = ms.Tensor(self.gen["batch_valid_length"])
+        self.i_construct["batch_valid_length"] = ms.Tensor(
+            self.gen["batch_valid_length"])
         # quant
         if self.i_test["quant_mode"]:
             antiquant_scale = self.gen["antiquant_scale"]
@@ -236,14 +273,16 @@ class PagedAttentionTest(PagedAttentionBase):
             alibi_mask = np.reshape(
                 self.gen["alibi_mask"],
                 newshape=[B, N * G, Sq, MaxSkv])
-            self.i_construct["alibi_mask"] = ms.Tensor(alibi_mask, dtype=q_type)
+            self.i_construct["alibi_mask"] = ms.Tensor(
+                alibi_mask, dtype=q_type)
         # attn_mask
         if self.i_test["is_amask"]:
             B, _, _, Sq, MaxSkv = self.gen["attn_mask"].shape
             attn_mask = np.reshape(
                 self.gen["attn_mask"],
                 newshape=[B, Sq, MaxSkv])
-            self.i_construct["attn_mask"] = ms.Tensor(attn_mask, dtype=ms.float16)
+            self.i_construct["attn_mask"] = ms.Tensor(
+                attn_mask, dtype=ms.float16)
         self.i_construct["q_seq_lens"] = ms.Tensor(self.gen["sq"])
 
         self.o_ascend = {
@@ -252,14 +291,19 @@ class PagedAttentionTest(PagedAttentionBase):
         if os.environ.get("ENABLE_PROFILING") == "on":
             self.save_running_data()
         if "msprof" in self.i_test and self.i_test["msprof"]:
-            profiler = Profiler(start_profile=False, output_path="./profiler", data_simplification=False)
+            profiler = Profiler(
+                start_profile=False,
+                output_path="./profiler",
+                data_simplification=False)
             profiler.start()
-            for i in range(self.i_test["msprof"]):
-                self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
+            for _ in range(self.i_test["msprof"]):
+                self.o_ascend["attention_out"] = self.net(
+                    *tuple(self.i_construct.values()))
             profiler.stop()
             profiler.analyse()
         else:
-            self.o_ascend["attention_out"] = self.net(*tuple(self.i_construct.values()))
+            self.o_ascend["attention_out"] = self.net(
+                *tuple(self.i_construct.values()))
 
     def save_running_data(self):
         shape = {
@@ -306,26 +350,6 @@ class PagedAttentionTest(PagedAttentionBase):
 
             # 写入数据
             writer.writerow(running_data)
-
-
-description = {
-    "type": "Type of query/alibi_mask/attention_out. float16 or float32. If type is float32, kernel will caculate with bfloat16.",
-    "layout": "BSH or BNSD. Where H = N * D",
-    "b": "Batch size. int",
-    "sq": "Squence length of query. int or list[int]. If sq is int, query will has same squence length every batch. If sq is list[int], squence length of query will be list[idx] in batch[idx], length of list[int] must be equal with batch size.",
-    "skv": "Real Squence length of key_cache and value_cache. max/int/list[int]/rand-1/rand-b. If skv is string of max, skv will be same with max_skv. If skv is int/list[int], skv will be the numbers you set. If skv is string of rand-1/rand-b, skv will generated with random. If skv is int/rand-1, key_cache and value_cache will has same squence length every batch. If skv is list[int]/rand-b, squence length of key_cache and value_cache will be list[idx] in batch[idx], length of list[int] must be equal with batch size.",
-    "max_skv": "Max Squence length of key_cache and value_cache. int.",
-    "nq": "Number head of query. int.",
-    "nkv": "Number head of key_cache and value_cache. int.",
-    "d": "Head dim size. int of 16/32/64/128/256.",
-    "blk_sz": "Block size. int of 16/32/64/128.",
-    "drop_prop": "Drop probability. float. Not use in pa.",
-    "quant_mode": "no quant = 0, per channel = 1, per token = 2",
-    "is_alibi": "Only support in paged_attention_mask.",
-    "is_amask": "Only support in paged_attention_mask.",
-    "blk_sparse": "Block sparse. int. Not use for now.",
-    "msprof": "Open msprof. int. Kernel will run the val you set times, 0 is off."
-}
 
 
 @pytest.mark.level0
@@ -650,7 +674,8 @@ def test_paged_attention_large_gsq():
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.parametrize('quant_method',
+                         [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 @pytest.mark.env_onecard
 @pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_bsh(quant_method):
@@ -683,7 +708,8 @@ def test_paged_attention_quant_pertoken_bsh(quant_method):
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.parametrize('quant_method',
+                         [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 @pytest.mark.env_onecard
 @pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_bnsd(quant_method):
@@ -716,7 +742,8 @@ def test_paged_attention_quant_pertoken_bnsd(quant_method):
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.parametrize('quant_method',
+                         [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 @pytest.mark.env_onecard
 @pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
@@ -751,7 +778,8 @@ def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.parametrize('quant_method',
+                         [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 @pytest.mark.env_onecard
 @pytest.mark.skip_test_in_asdop
 def test_paged_attention_large_gsq_pertoken(quant_method):
@@ -815,7 +843,8 @@ def test_paged_attention_quant_no_quant_pangu38b():
 
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.parametrize('quant_method',
+                         [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 @pytest.mark.env_onecard
 @pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_pangu38b(quant_method):
@@ -879,7 +908,8 @@ def test_paged_attention_quant_no_quant_jiutian():
 
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('quant_method', [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
+@pytest.mark.parametrize('quant_method',
+                         [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
 @pytest.mark.env_onecard
 @pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_jiutian(quant_method):
