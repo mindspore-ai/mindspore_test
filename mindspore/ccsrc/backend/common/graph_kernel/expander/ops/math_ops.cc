@@ -142,8 +142,14 @@ REG_EXPANDER_FUNC("SiLU").SetBody(BODYFUNC(ib) {
 });
 
 REG_EXPANDER_FUNC("SiLUGrad").SetBody(BODYFUNC(ib) {
-  const auto &input_x = ib->input(kIndex1);
-  const auto &dout = ib->input(kIndex0);
+  auto input_x = ib->input(kIndex1);
+  auto dout = ib->input(kIndex0);
+  auto x_type = input_x->GetDtype()->type_id();
+  auto need_cast = x_type == kNumberTypeFloat16;
+  if (need_cast) {
+    input_x = ib->Cast(input_x, kFloat32);
+    dout = ib->Cast(dout, kFloat32);
+  }
   auto const_one = ib->Tensor(1.0, input_x->GetDtype());
   auto neg_x = ib->Neg(input_x);
   auto exp_neg_x = ib->Exp(neg_x);
@@ -152,7 +158,11 @@ REG_EXPANDER_FUNC("SiLUGrad").SetBody(BODYFUNC(ib) {
   auto out = ib->Div(input_x, add_exp);
 
   auto result = ib->Sub(ib->Add(sigmod, out), ib->Mul(sigmod, out));
-  return {ib->Mul(result, dout)};
+  result = ib->Mul(result, dout);
+  if (need_cast) {
+    result = ib->Cast(result, x_type);
+  }
+  return {result};
 });
 
 REG_EXPANDER_FUNC("Addcmul").SetBody(BODYFUNC(ib) {
