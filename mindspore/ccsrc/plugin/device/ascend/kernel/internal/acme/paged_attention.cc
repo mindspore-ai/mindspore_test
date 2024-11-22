@@ -30,21 +30,25 @@ bool AcmePagedAttention::Init(const std::vector<KernelTensor *> &inputs, const s
   return AcmeKernelMod::Init(inputs, outputs);
 }
 
-acme::AcmeOpPtr AcmePagedAttention::CreateKernel(const acme::InputsImmutableInfoList &inputs_ii,
-                                                 const acme::OutputsImmutableInfoList &outputs_ii,
-                                                 const std::vector<KernelTensor *> &ms_inputs,
-                                                 const std::vector<KernelTensor *> &ms_outputs) {
+void AcmePagedAttention::CreateOpParam(const std::vector<KernelTensor *> &ms_inputs,
+                                       const std::vector<KernelTensor *> &ms_outputs) {
   auto last_input_index = kIndex12;
   if (ms_inputs.size() <= last_input_index) {
     MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", inputs number should be larger than " << last_input_index
                       << ", but got " << ms_inputs.size();
   }
-
   param_.head_num = static_cast<int32_t>(ms_inputs[kIndex9]->GetValueWithCheck<int64_t>());
   param_.tor = ms_inputs[kIndex10]->GetValueWithCheck<float>();
   param_.kv_head_num = static_cast<int32_t>(ms_inputs[kIndex11]->GetValueWithCheck<int64_t>());
   param_.kv_cache_quant_mode = ms_inputs[last_input_index]->GetValueWithCheck<int64_t>();
 
+  if (!init_) {
+    MS_LOG(INFO) << "PagedAttention: Update of q_seq_len & kv_seq_len is skipped here as they have been updated in "
+                    "IsParamChanged function after initialized";
+    (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &param_.q_seq_len);
+    (void)GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &param_.kv_seq_len);
+    init_ = true;
+  }
   param_.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeNone;
   bool enable_lookahead =
     std::any_of(param_.q_seq_len.begin(), param_.q_seq_len.end(), [](int32_t seq_len) { return seq_len > 1; });
@@ -57,17 +61,23 @@ acme::AcmeOpPtr AcmePagedAttention::CreateKernel(const acme::InputsImmutableInfo
   } else {
     param_.q_seq_len.clear();
   }
+}
+
+acme::AcmeOpPtr AcmePagedAttention::CreateKernel(const acme::InputsImmutableInfoList &inputs_ii,
+                                                 const acme::OutputsImmutableInfoList &outputs_ii,
+                                                 const std::vector<KernelTensor *> &ms_inputs,
+                                                 const std::vector<KernelTensor *> &ms_outputs) {
+  CreateOpParam(ms_inputs, ms_outputs);
   return acme::CreatePagedAttentionOp(inputs_ii, outputs_ii, param_, acme::kAcmePagedAttentionOpName);
 }
 
-bool AcmePagedAttention::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
-                                        const std::vector<KernelTensor *> &outputs) {
+bool AcmePagedAttention::IsParamChanged() {
   bool q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &param_.q_seq_len);
   bool kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &param_.kv_seq_len);
   if (q_need_recreate || kv_need_recreate) {
     return true;
   }
-  return AcmeKernelMod::IsNeedRecreate(inputs, outputs);
+  return false;
 }
 
 uint64_t AcmePagedAttention::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
