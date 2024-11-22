@@ -821,6 +821,8 @@ COMMON_EXPORT bool SkipOrResetSyncAction(bool need_reset = false);
 // Return vec<filename, line number, function name>
 COMMON_EXPORT std::vector<std::tuple<std::string, int, std::string>> GetPythonStack();
 COMMON_EXPORT std::string GetPythonStackStr();
+// Return whether it is running in jit compilation.
+COMMON_EXPORT bool JitRunning();
 
 // The map between kernel's output and input ref relationship.
 // Key is the output index while the value is input index which will be used as the reference of output.
