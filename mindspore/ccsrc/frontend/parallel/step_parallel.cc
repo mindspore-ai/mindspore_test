@@ -128,6 +128,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   }
 
   if (root->has_flag(SEMI_AUTO_PARALLEL_RUN_ONCE_ONLY)) {
+    // whole graph (forward and backward) process
     auto whole_graph_processor = std::make_shared<ParallelWholeGraphProcessor>(processor_context);
     whole_graph_processor->Process();
     return false;
@@ -149,7 +150,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
   // ForwardCommunication BackwardCommunication TensorRedistribution
   processor->Process();
 
-  //
+  // forward process with inserted parallel communication op
   postprocessor->Process();
 
   DumpGraph(root, std::string(STEP_PARALLEL_END));

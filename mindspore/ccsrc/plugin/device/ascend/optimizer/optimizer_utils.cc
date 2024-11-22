@@ -27,7 +27,7 @@ void OptimizerUtils::MoveContrlDepend(const FuncGraphPtr &func_graph, const AnfN
   MS_EXCEPTION_IF_NULL(to_node);
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  auto &node_users = manager->node_users()[from_node];
+  auto node_users = manager->node_users()[from_node];
   constexpr size_t kDependControlIdx = 2;
   for (auto &node_user : node_users) {
     if (!IsPrimitiveCNode(node_user.first, prim::kPrimDepend)) {
@@ -48,7 +48,7 @@ std::vector<CNodePtr> OptimizerUtils::MoveDataDepend(const FuncGraphPtr &func_gr
   MS_EXCEPTION_IF_NULL(to_node);
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  auto &node_users = manager->node_users()[from_node];
+  auto node_users = manager->node_users()[from_node];
   constexpr size_t kDependDataIdx = 1;
   std::vector<CNodePtr> data_depend_nodes;
   for (auto &node_user : node_users) {
