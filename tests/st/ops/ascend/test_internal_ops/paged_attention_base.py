@@ -14,6 +14,7 @@
 # ============================================================================
 
 import os
+import ast
 import numpy as np
 import math
 from enum import Enum
@@ -133,7 +134,7 @@ def sq2multi(data: np.ndarray, axis: int, sq: np.ndarray):
         string[axis] = "%d: %d" % (cnt, cnt + sq[i])
         cnt += sq[i]
         string = "data[" + ", ".join(string) + "]"
-        res.append(eval(string))
+        res.append(ast.literal_eval(string))
     return res
 
 
@@ -147,7 +148,7 @@ def skv2multi(data: np.ndarray, axis: int, skv: np.ndarray):
         string[0] = "i"
         string[axis] = ":%d" % skv[i]
         string = "data[" + ", ".join(string) + "]"
-        res.append(eval(string))
+        res.append(ast.literal_eval(string))
     return res
 
 
@@ -281,13 +282,6 @@ class PagedAttentionBase:
             raise Exception("[Error] quant mode can only be quant-off=0 "
                             "per-channel=1 per-token=2 but got %s" % quant_mode)
         gen_id = multi_sq * 2 + multi_skv
-        '''
-        gen_id multi_sq multi_skv Gen_speed Shape      Detail
-        0      False    False     Fast      b, sq
-        1      False    True      Slow      b, sq
-        2      True     False     Slow      np.sum(sq) multi_skv go to gen_id=3
-        3      True     True      Slow      np.sum(sq)
-        '''
         if gen_id == 2:  # go to 3
             skv = np.array([skv] * b, dtype=np.int32)
         diff_skv = max_skv - skv  # int or tensor
@@ -311,10 +305,7 @@ class PagedAttentionBase:
                             "try block_size = 64")
         drop_prop = self.i_test["drop_prop"]
         assert 0.0 <= drop_prop <= 1.0
-        if drop_prop > 0.0:
-            is_dropout = True
-        else:
-            is_dropout = False
+        is_dropout = drop_prop > 0.0
         layout = self.i_test["layout"]
         if layout not in LAYOUT_SET:
             raise Exception("[Error] layout can only be %s, but got %s" % (
@@ -391,7 +382,7 @@ class PagedAttentionBase:
                     actual_antiquant_scale[:, :min_batch, :min_q, 0, 0,
                                            0] = antiquant_scale[:, :min_batch, :min_q, 0, 0, 0]
                     actual_antiquant_offset[:, :min_batch, :min_q, 0, 0,
-                                            0] = antiquant_offset[:, :min_batch, :min_q,  0, 0, 0]
+                                            0] = antiquant_offset[:, :min_batch, :min_q, 0, 0, 0]
 
             if gen_id in (0, 1):
                 batch_valid_length = np.ones((b,)).astype(np.int32) * skv
