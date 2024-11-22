@@ -30,7 +30,7 @@ std::map<std::string, std::vector<ValuePtr>> tensor_method_overload_map = {
   ${tensor_method_map}
 };
 
-std::map<std::string, std::vector<ValuePtr>> mint_overload_map = {
+std::map<std::string, std::vector<ValuePtr>> function_overload_map = {
   ${mint_map}
 };
 
@@ -38,7 +38,7 @@ std::map<std::string, std::set<std::string>> tensor_method_kwonlyargs_map = {
   ${tensor_method_kwonlyargs_map}
 };
 
-std::map<std::string, std::set<std::string>> mint_kwonlyargs_map = {
+std::map<std::string, std::set<std::string>> function_kwonlyargs_map = {
   ${mint_kwonlyargs_map}
 };
 
@@ -46,7 +46,7 @@ std::map<std::string, std::vector<std::string>> tensor_method_overload_signature
   ${tensor_method_sigs_map}
 };
 
-std::map<std::string, std::vector<std::string>> mint_overload_signature_map = {
+std::map<std::string, std::vector<std::string>> function_overload_signature_map = {
   ${mint_sigs_map}
 };
 }  // namespace mindspore::ops

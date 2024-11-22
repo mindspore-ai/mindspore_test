@@ -1,6 +1,7 @@
 min:
   - op_yaml: deprecated/min_op.yaml
     py_method: deprecated_tensor_min # callback to python function "def deprecated_tensor_min"
+    kwonlyargs: initial, where, return_indices
     Ascend: py_method
     CPU: py_method
     GPU: py_method

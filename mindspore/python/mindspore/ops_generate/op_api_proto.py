@@ -91,7 +91,7 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
                 raise TypeError(f"{py_method} is not defined in tensor_method.py.")
             kw_only_args = func_data.get('kwonlyargs', None)
             if kw_only_args:
-                kw_only_args = kw_only_args.split(',')
+                kw_only_args = [item.strip() for item in kw_only_args.split(',')]
                 check_kwonlyargs(func_data, kw_only_args, op_name, op_proto, py_method, tensor_method_def_ast_dict)
             ascend = func_data.get('Ascend', 'aclnn')
             gpu = func_data.get('GPU', 'aclnn')
