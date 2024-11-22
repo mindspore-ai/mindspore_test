@@ -40,6 +40,7 @@ public final class MindsporeLite {
             NativeLibrary.load();
         } catch (UnsatisfiedLinkError e) {
             LOGGER.severe("Failed to load MindSporLite native library.");
+            LOGGER.severe(e.getMessage());
         }
     }
 
