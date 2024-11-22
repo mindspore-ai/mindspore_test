@@ -1075,7 +1075,9 @@ def is_ms_tensor_method(obj):
     if not hasattr(obj, '__name__') or not hasattr(Tensor, obj.__name__):
         return False
     fn = inspect.unwrap(obj.__func__ if isinstance(obj, types.MethodType) else obj)
-    return fn == getattr(Tensor, obj.__name__)
+    tensor_method = getattr(Tensor, obj.__name__)
+    tensor_method = tensor_method.__func__ if hasattr(tensor_method, "__func__") else tensor_method
+    return fn == tensor_method
 
 
 def can_constant_fold(obj):
