@@ -14,6 +14,8 @@
 # ============================================================================
 
 """Tensor Func Proto module for defining tensor_py function prototypes and their arguments."""
+import ast
+import os
 from collections import defaultdict
 import gen_constants as K
 
@@ -27,15 +29,32 @@ class OpApiProto:
                  func_name,
                  op_proto,
                  py_method,
+                 kw_only_args,
                  ascend,
                  gpu,
                  cpu):
         self.func_name = func_name
         self.op_proto = op_proto
         self.py_method = py_method
+        self.kw_only_args = kw_only_args
         self.ascend = ascend
         self.gpu = gpu
         self.cpu = cpu
+
+
+def get_tensor_method_ast_dict():
+    """
+        Generates a dictionary mapping function names to their Abstract Syntax Tree (AST) nodes
+        for all functions defined in the 'tensor_method.py' file.
+    """
+    tensor_method_ast_dict = dict()
+    tensor_method_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../ops/tensor_method.py')
+    with open(tensor_method_file, "r", encoding="utf-8") as file:
+        tree = ast.parse(file.read(), filename=tensor_method_file)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            tensor_method_ast_dict[node.name] = node
+    return tensor_method_ast_dict
 
 
 def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_protos):
@@ -50,6 +69,7 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
     tensor_method_protos = defaultdict(list)
     mint_func_protos = defaultdict(list)
     alias_api_mapping = defaultdict(list)
+    tensor_method_def_ast_dict = get_tensor_method_ast_dict()
     for func_name, tensor_func_data in tensor_func_yaml_data.items():
         func_data_list = [tensor_func_data] if isinstance(tensor_func_data, dict) else tensor_func_data
         for func_data in func_data_list:
@@ -67,6 +87,12 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
             if py_method == '':
                 raise TypeError(
                     f'For generating tensor functions, py method should not be empty. Func name is {func_name}')
+            if py_method not in tensor_method_def_ast_dict:
+                raise TypeError(f"{py_method} is not defined in tensor_method.py.")
+            kw_only_args = func_data.get('kwonlyargs', None)
+            if kw_only_args:
+                kw_only_args = kw_only_args.split(',')
+                check_kwonlyargs(func_data, kw_only_args, op_name, op_proto, py_method, tensor_method_def_ast_dict)
             ascend = func_data.get('Ascend', 'aclnn')
             gpu = func_data.get('GPU', 'aclnn')
             cpu = func_data.get('CPU', 'aclnn')
@@ -84,13 +110,36 @@ def load_api_protos_from_yaml(tensor_func_yaml_data, op_protos, deprecated_op_pr
                     f"'method, function', or 'function, method'. File name is {func_name}.yaml")
 
             proto = OpApiProto(func_name=func_name, op_proto=op_proto,
-                               py_method=py_method, ascend=ascend, gpu=gpu, cpu=cpu)
+                               py_method=py_method, kw_only_args=kw_only_args, ascend=ascend, gpu=gpu, cpu=cpu)
             if 'method' in interface:
                 tensor_method_protos[func_name].append(proto)
             if 'function' in interface:
                 mint_func_protos[func_name].append(proto)
 
     return tensor_method_protos, mint_func_protos, alias_api_mapping
+
+
+def check_kwonlyargs(func_data, kw_only_args, op_name, op_proto, py_method, tensor_method_def_ast_dict):
+    """
+    Verifies that the keyword-only arguments (kwonlyargs) specified in the YAML definition
+    match the order and names of the keyword-only arguments in the Python method definition.
+    """
+    op_args = op_proto.op_args
+    kw_args_start_idx = len(op_args) - len(kw_only_args)
+    node = tensor_method_def_ast_dict[py_method]
+    tensor_method_kwonlyargs = [arg.arg for arg in node.args.kwonlyargs]
+    for idx, kw_arg in enumerate(kw_only_args):
+        kw_args_idx = kw_args_start_idx + idx
+        if kw_args_idx > len(op_args) or kw_arg != op_args[kw_args_idx].arg_name:
+            op_kw_args = [op_arg.arg_name for op_arg in op_args]
+            op_yaml = func_data.get('op_yaml')
+            raise TypeError(
+                f"For generating tensor functions from {op_name}.yaml, "
+                f"the order of kwonlyargs should be consistent with the definition in the {op_yaml}. "
+                f"Expect kwonlyarg: {op_kw_args[kw_args_start_idx:]}, current kwonlyarg: {kw_only_args}.")
+    if tensor_method_kwonlyargs != kw_only_args:
+        raise TypeError(f"The order of kwonlyargs in {py_method} should be consistent with the definition. "
+                        f"Expect kwonlyarg: {kw_only_args}, current kwonlyarg: {tensor_method_kwonlyargs}.")
 
 
 def _get_op_name_from_op_yaml(func_name: str, func_data: dict) -> str:

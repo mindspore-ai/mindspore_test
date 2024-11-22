@@ -73,7 +73,6 @@ struct FunctionSignature {
 
   std::string name_;
   std::vector<FunctionParameter> params_;
-  size_t min_args_;
   size_t max_args_;
   int index_;
 };

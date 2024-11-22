@@ -17,6 +17,7 @@
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 
 #include <map>
+#include <set>
 #include <vector>
 #include <string>
 #include "frontend/operator/composite/functional_overload.h"
@@ -31,6 +32,14 @@ std::map<std::string, std::vector<ValuePtr>> tensor_method_overload_map = {
 
 std::map<std::string, std::vector<ValuePtr>> mint_overload_map = {
   ${mint_map}
+};
+
+std::map<std::string, std::set<std::string>> tensor_method_kwonlyargs_map = {
+  ${tensor_method_kwonlyargs_map}
+};
+
+std::map<std::string, std::set<std::string>> mint_kwonlyargs_map = {
+  ${mint_kwonlyargs_map}
 };
 
 std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map = {

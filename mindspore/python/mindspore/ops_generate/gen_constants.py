@@ -82,7 +82,7 @@ ARG_SIGNATURE_KEYS = {'rw_write', 'rw_read', 'rw_ref', 'dtype_group'}
 CLASS_KEYS = {'name', 'disable'}
 FUNCTION_KEYS = {'name', 'disable'}
 DISPATCH_KEYS = {'enable', 'is_comm_op', 'Ascend', 'GPU', 'CPU'}
-TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'alias', 'Ascend', 'GPU', 'CPU', 'interface'}
+TENSOR_FUNC_KEYS = {'op_yaml', 'py_method', 'kwonlyargs', 'alias', 'Ascend', 'GPU', 'CPU', 'interface'}
 
 # infer
 MS_OPS_FUNC_IMPL_PATH = "mindspore/ops/infer/ops_func_impl"
