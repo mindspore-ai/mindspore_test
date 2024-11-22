@@ -283,6 +283,17 @@ int AcmeKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::
     acme_outputs_shape_[i] = std::move(shape);
   }
 
+  if (IsParamChanged()) {
+    CreateOpParam(inputs, outputs);
+    auto param = GetParam();
+    MS_EXCEPTION_IF_NULL(param);
+    ret = acme_op_->UpdateParam(param);
+    if (ret != acme::kAcmeOk) {
+      MS_LOG(ERROR) << "AcmeKernel UpdateParam failed, kernel_name: " << kernel_name_;
+      return KRET_RESIZE_FAILED;
+    }
+  }
+
   auto acme_ret = acme_op_->UpdateShape(acme_inputs_shape_, acme_outputs_shape_);
   if (acme_ret != acme::kAcmeOk) {
     MS_LOG(ERROR) << "AcmeKernel UpdateShape failed, kernel_name: " << kernel_name_;
