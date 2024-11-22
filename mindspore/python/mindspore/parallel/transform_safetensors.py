@@ -19,6 +19,7 @@ import os
 import glob
 import math
 import json
+import re
 from collections import defaultdict
 
 import time
@@ -534,6 +535,12 @@ def transform_safetensors_by_rank(rank_id, safetensor_files_map, save_safetensor
     save_file(transform_param_dict, save_safetensor_file_name)
 
 
+def _extrace_number(file_name):
+    """get file last two number"""
+    number_ls = re.findall(r'\d+', file_name)
+    number_ls = [int(i) for i in number_ls]
+    return number_ls[-2:]
+
 def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_suffix=None):
     """
     Collects all safetensors files from the specified directory and its subdirectories.
@@ -557,7 +564,7 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors', file_su
         else:
             safetensor_file_name = os.path.join(safetensor_dir, f"*{file_suffix}.{format}")
         rank_ckpts = glob.glob(safetensor_file_name)
-        rank_ckpts.sort(key=os.path.getctime)
+        rank_ckpts.sort(key=_extrace_number)
         if rank_ckpts:
             all_safetensor_files_map[rank_id] = rank_ckpts[-1]
     return all_safetensor_files_map
