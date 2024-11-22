@@ -273,6 +273,8 @@ class FuncGraphBuilder {
 
   static AbstractBasePtr BuildAbstractForInputObject(const py::object &object);
 
+  static void PrintConstantAbstract(const AbstractBasePtr &abs);
+
   AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) const;
 
   void UpdateParameterFuncGraph(const AnfNodePtr &node);
