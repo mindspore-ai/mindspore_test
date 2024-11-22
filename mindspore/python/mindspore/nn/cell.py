@@ -490,14 +490,17 @@ class Cell(Cell_):
         if self._forward_pre_hook:
             inputs = self._run_forward_pre_hook(inputs)
 
-        if self._backward_hook:
-            output = self._backward_hook_construct(*inputs, **kwargs)
-        elif self._shard_fn is not None:
+        if self._shard_fn is not None:
             output = self._shard_fn(*inputs, **kwargs)
-        elif self._recompute_cell is not None:
-            output = self._recompute_cell(*inputs, **kwargs)
-        elif self.has_bprop and _pynative_executor.requires_grad():
-            output = self._call_custom_bprop(*inputs, **kwargs)
+        elif _pynative_executor.requires_grad():
+            if self._backward_hook:
+                output = self._backward_hook_construct(*inputs, **kwargs)
+            elif self._recompute_cell is not None:
+                output = self._recompute_cell(*inputs, **kwargs)
+            elif self.has_bprop:
+                output = self._call_custom_bprop(*inputs, **kwargs)
+            else:
+                output = self.construct(*inputs, **kwargs)
         else:
             output = self.construct(*inputs, **kwargs)
 
