@@ -23,11 +23,11 @@ from mindspore.common import dtype as mstype
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
-        self.mm = ops.BatchMatMul(transpose_a=True)
+        self.bmm = ops.BatchMatMul(transpose_a=True)
         self.cast = ops.Cast()
 
     def construct(self, x, y):
-        o = self.bamm(x, y)
+        o = self.bmm(x, y)
         return self.cast(o, mstype.float32)
 
 

@@ -179,7 +179,7 @@ bool AtomicAddCheckerGPU::SuitableForAtomicAdd(const AnfNodePtr &node) {
 
   // For reduce whose last dim is reduced (including all-reduce),
   // it is suitable for atomic add only the reduce num is greater than or equal to 1024.
-  if (axis_set.count(src_shape_vec.size() - 1) != 0) {
+  if (!src_shape_vec.empty() && axis_set.count(src_shape_vec.size() - 1) != 0) {
     size_t reduce_size = std::accumulate(
       axis_set.begin(), axis_set.end(), LongToSize(1),
       [&src_shape_vec](size_t size, int64_t axis) { return size * LongToSize(src_shape_vec[LongToSize(axis)]); });

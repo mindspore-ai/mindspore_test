@@ -217,15 +217,12 @@ ShapeVector GetShape(const AnfNodePtr &node) {
                                       << " should be of type Shape, but got " << shape->ToString();
   }
   auto shape_vec = shape->cast<abstract::ShapePtr>()->shape();
-  if (shape_vec.empty()) {
-    shape_vec.push_back(1);
-  }
   return shape_vec;
 }
 
 ShapeVector GetDeviceShape(const AnfNodePtr &node) {
   ShapeVector res_device_shape = AnfAlgo::GetOutputDeviceShape(node, 0);
-  return res_device_shape.empty() ? ShapeVector({1}) : res_device_shape;
+  return res_device_shape;
 }
 
 std::vector<int64_t> GetReduceAxis(const AnfNodePtr &node) {
