@@ -43,12 +43,11 @@ clamp:
         >>> # case 1: the data type of input is Tensor
         >>> import mindspore
         >>> from mindspore import Tensor
-        >>> from mindspore.ops.auto_generate import clamp_tensor
         >>> import numpy as np
         >>> min_value = Tensor(5, mindspore.float32)
         >>> max_value = Tensor(20, mindspore.float32)
         >>> input = Tensor(np.array([[1., 25., 5., 7.], [4., 11., 6., 21.]]), mindspore.float32)
-        >>> output = clamp_tensor(input, min_value, max_value)
+        >>> output = input.clamp(min_value, max_value)
         >>> print(output)
         [[ 5. 20.  5.  7.]
          [ 5. 11.  6. 20.]]
