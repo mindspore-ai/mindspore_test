@@ -329,9 +329,7 @@ bool AscendDeprecatedInterface::CloseTsd(const std::shared_ptr<MsContext> &ms_co
     ms_context_ptr->set_param<uint32_t>(MS_CTX_TSD_REF, 0);
     pybind11::gil_scoped_release gil_release;
     MbufDataHandlerManager::GetInstance().DestoryPrintHandler();
-    if (ms_context_ptr->backend_policy() == "ge") {
-      MbufDataHandlerManager::GetInstance().DestoryHandler();
-    }
+    MbufDataHandlerManager::GetInstance().DestoryHandler();
     (void)ErrorManagerAdapter::Init();
     uint32_t device_id = ms_context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     auto ret = CALL_ASCEND_API(aclrtResetDevice, static_cast<int32_t>(device_id));
