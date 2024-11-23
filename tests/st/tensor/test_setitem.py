@@ -81,8 +81,9 @@ def do_copy(x):
     return copy.deepcopy(x)
 
 def tensor_setitem_func(x):
-    y0, y1, y2, y3, y4, y5, y6, y7, y8, y9 = do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), \
-                                             do_copy(x), do_copy(x), do_copy(x), do_copy(x)
+    y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14 = \
+        do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), \
+        do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x), do_copy(x)
     y0[0] = -1
     y1[0:2] = -1
     y2[True] = -1
@@ -93,7 +94,12 @@ def tensor_setitem_func(x):
     y7[0:2, None, ...] = -1
     y8[[0, 1]] = -1
     y9[[0, 1]] = -1.0
-    return y0, y1, y2, y3, y4, y5, y6, y7, y8, y9
+    y10[np.array(0)] = -1
+    y11[np.array(True)] = -1
+    y12[np.array(False)] = -1
+    y13[np.array(0), np.array(1)] = -1
+    y14[np.array([0, 1])] = -1
+    return y0, y1, y2, y3, y4, y5, y6, y7, y8, y9, y10, y11, y12, y13, y14
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')

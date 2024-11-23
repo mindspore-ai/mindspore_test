@@ -16,6 +16,7 @@
 """constexpr util"""
 from __future__ import absolute_import
 from enum import IntEnum
+import numpy as np
 
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
@@ -348,8 +349,15 @@ def _process_multi_dim_index(self, indexes, remain_indexes, indexed_dims):
     self_viewed_shape = list(self.shape)
     dim = 0
     for i, index in enumerate(indexes):
-        if isinstance(index, (list, tuple)):
-            index = Tensor(index)
+        if isinstance(index, (list, tuple, np.ndarray)):
+            index_np = np.array(index) if isinstance(index, (list, tuple)) else index
+            if index_np.dtype in (np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64,
+                                  np.float16, np.float32, np.float64):
+                index = Tensor(index_np, mstype.int64)
+            elif index_np.dtype == np.bool_:
+                index = Tensor(index_np, mstype.bool_)
+            else:
+                raise TypeError(f"Index {index} contain unsupported elements")
         self_viewed, dim, remain_indexes, self_viewed_shape = _process_dim_in_multi_dim_index(
             self_viewed, self, index, dim, indexed_dims, i, remain_indexes, self_viewed_shape)
     return self_viewed, remain_indexes
