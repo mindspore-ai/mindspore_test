@@ -65,6 +65,11 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   op->UpdateOutputShape(op->output(kIndex2), output_real_shape2);
   MS_LOG(DEBUG) << "Run device task unique_dim end";
 
+  const auto &release_func = std::get<kIndex3>(return_value);
+  if (release_func) {
+    release_func();
+  }
+
   return std::make_tuple(op->output(kIndex0), op->output(kIndex1), op->output(kIndex2));
 }
 }  // namespace pyboost
