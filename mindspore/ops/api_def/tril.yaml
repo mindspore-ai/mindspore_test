@@ -4,11 +4,11 @@ tril:
     Ascend: py_method
     CPU: py_method
     GPU: py_method
-    interface: method
+    interface: tensor
 
   - op_yaml: tril_ext_op.yaml
     py_method: deprecated_tensor_tril # callback to python function "def deprecated_tensor_tril"
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: method
+    interface: tensor

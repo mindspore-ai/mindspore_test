@@ -4,11 +4,11 @@ sort:
     Ascend: py_method
     CPU: py_method
     GPU: py_method
-    interface: method
+    interface: tensor
 
   - op_yaml: sort_ext_op.yaml
     py_method: tensor_sort_ext
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
-    interface: method
+    interface: tensor

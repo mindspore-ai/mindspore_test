@@ -4,4 +4,4 @@ eq:
   Ascend: pyboost
   CPU: pyboost
   GPU: pyboost
-  interface: method
+  interface: tensor
