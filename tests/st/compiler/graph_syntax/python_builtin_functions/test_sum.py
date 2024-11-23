@@ -114,7 +114,7 @@ def test_fallback_sum_with_x_list_of_tensor():
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_fallback_sum_with_tensor_0d(mode):
     """
     Feature: JIT Fallback

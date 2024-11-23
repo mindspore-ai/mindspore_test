@@ -261,6 +261,8 @@ def _count_indexed_dims(indexes):
 
 def _do_select(self: Tensor, dim: int, index: int, dim_index: int, self_shape: list):
     """call select view operator"""
+    if not self_shape:
+        raise IndexError("Invalid index of a 0-dim tensor.")
     dim_size = self_shape[dim]
     if index >= dim_size or index < -dim_size:
         raise IndexError(f"Index {index} is out of bounds for dimension {dim_index} with size {dim_size}")
@@ -277,23 +279,16 @@ def _do_slice(self: Tensor, dim: int, index: slice, self_shape: list):
             return index.__index__()
         return index
 
-    def _count_slice(start, end, step):
-        if start >= end:
-            return 0
-        count = (end - start) // step
-        if (end - start) % step != 0:
-            count += 1
-        return count
-
+    if not self_shape:
+        raise IndexError("Invalid index of a 0-dim tensor.")
     step = _get_index(index.step, 1)
     if step <= 0:
         raise ValueError("slice step must be positive")
     start = _get_index(index.start, 0)
     end = _get_index(index.stop, self_shape[dim])
-    count = _count_slice(start, end, step)
     if start == 0 and end == self_shape[dim] and step == 1:
-        return self, count
-    return slice_ext_op(self, dim, start, end, step), count
+        return self
+    return slice_ext_op(self, dim, start, end, step)
 
 
 def _process_dim_in_multi_dim_index(prev_result, orig_tensor, index, dim, indexed_dims, dim_index, remain_indexes,
@@ -311,8 +306,8 @@ def _process_dim_in_multi_dim_index(prev_result, orig_tensor, index, dim, indexe
         del prev_shape[dim]
         return result, dim, remain_indexes, prev_shape
     if isinstance(index, slice):
-        result, count = _do_slice(prev_result, dim, index, prev_shape)
-        prev_shape[dim] = count
+        result = _do_slice(prev_result, dim, index, prev_shape)
+        # current dim in prev_shape will not be used later, ignore it
         dim += 1
         return result, dim, remain_indexes, prev_shape
     if isinstance(index, type(...)):
@@ -382,7 +377,7 @@ def _tensor_getitem(self, index):
     if isinstance(index, int):
         return _do_select(self, 0, index, 0, list(self.shape))
     if isinstance(index, slice):
-        result, _ = _do_slice(self, 0, index, list(self.shape))
+        result = _do_slice(self, 0, index, list(self.shape))
         return result
     if index is None:
         return F.expand_dims(self, 0)
@@ -421,7 +416,7 @@ def _tensor_setitem(self, index, value):
         inplace_copy_op(self_viewed, value)
         return self
     if isinstance(index, slice):
-        self_viewed, _ = _do_slice(self, 0, index, list(self.shape))
+        self_viewed = _do_slice(self, 0, index, list(self.shape))
         inplace_copy_op(self_viewed, value)
         return self
     indexes = _wrap_index_to_tuple(index)
