@@ -24,6 +24,8 @@ from mindspore.nn import Cell
 from mindspore import Profiler
 from paged_attention_base import PagedAttentionBase, QuantMethod
 
+from tests.mark_utils import arg_mark
+
 
 class PagedAttentionNet(Cell):
     def __init__(self, *args, **kwargs):
@@ -352,11 +354,7 @@ class PagedAttentionTest(PagedAttentionBase):
             writer.writerow(running_data)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
-@pytest.mark.paged_attention
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_bnsd():
     """
     Feature: paged_attention operator
@@ -393,11 +391,7 @@ def test_paged_attention_bnsd():
     PagedAttentionTest(i_test_dict)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.paged_attention
-@pytest.mark.profilable
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_fd_long():
     """
     Feature: paged_attention operator
@@ -426,12 +420,7 @@ def test_paged_attention_fd_long():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
-@pytest.mark.paged_attention
-@pytest.mark.profilable
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant0():
     """
     Feature: paged_attention operator
@@ -461,12 +450,7 @@ def test_paged_attention_quant0():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
-@pytest.mark.paged_attention
-@pytest.mark.profilable
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant1():
     """
     Feature: paged_attention operator
@@ -496,12 +480,7 @@ def test_paged_attention_quant1():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
-@pytest.mark.paged_attention
-@pytest.mark.profilable
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant_pertoken():
     """
     Feature: paged_attention operator
@@ -531,11 +510,7 @@ def test_paged_attention_quant_pertoken():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.paged_attention
-@pytest.mark.profilable
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_lookahead0():
     """
     Feature: paged_attention operator
@@ -564,10 +539,7 @@ def test_paged_attention_lookahead0():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.paged_attention
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_lookahead1():
     """
     Feature: paged_attention operator
@@ -605,11 +577,7 @@ def test_paged_attention_lookahead1():
     PagedAttentionTest(i_test_dict)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.paged_attention
-@pytest.mark.profilable
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_fake_lookahead():
     """
     Feature: paged_attention operator
@@ -638,12 +606,7 @@ def test_paged_attention_fake_lookahead():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
-@pytest.mark.paged_attention
-@pytest.mark.profilable
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_large_gsq():
     """
     Feature: paged_attention operator
@@ -672,12 +635,9 @@ def test_paged_attention_large_gsq():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_bsh(quant_method):
     """
     Feature: paged_attention operator
@@ -706,12 +666,9 @@ def test_paged_attention_quant_pertoken_bsh(quant_method):
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_bnsd(quant_method):
     """
     Feature: paged_attention operator
@@ -740,12 +697,9 @@ def test_paged_attention_quant_pertoken_bnsd(quant_method):
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
     """
     Feature: paged_attention operator
@@ -776,12 +730,9 @@ def test_paged_attention_quant_pertoken_with_anti_shape(quant_method):
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
 def test_paged_attention_large_gsq_pertoken(quant_method):
     """
     Feature: paged_attention operator
@@ -810,10 +761,7 @@ def test_paged_attention_large_gsq_pertoken(quant_method):
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant_no_quant_pangu38b():
     """
     Feature: paged_attention operator
@@ -841,12 +789,9 @@ def test_paged_attention_quant_no_quant_pangu38b():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_pangu38b(quant_method):
     """
     Feature: paged_attention operator
@@ -875,10 +820,7 @@ def test_paged_attention_quant_pertoken_pangu38b(quant_method):
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant_no_quant_jiutian():
     """
     Feature: paged_attention operator
@@ -906,12 +848,9 @@ def test_paged_attention_quant_no_quant_jiutian():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('quant_method',
                          [QuantMethod.FP16_VEC, QuantMethod.INT_CUBE])
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
 def test_paged_attention_quant_pertoken_jiutian(quant_method):
     """
     Feature: paged_attention operator
@@ -940,10 +879,7 @@ def test_paged_attention_quant_pertoken_jiutian(quant_method):
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32():
     """
     Feature: paged_attention operator
@@ -973,10 +909,7 @@ def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32():
     PagedAttentionTest(i_test)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.skip_test_in_asdop
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_quant_pertoken_antiquant_scale_int64_to_fp32_small():
     """
     Feature: paged_attention operator

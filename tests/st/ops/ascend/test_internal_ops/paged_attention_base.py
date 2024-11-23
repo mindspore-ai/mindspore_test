@@ -14,7 +14,6 @@
 # ============================================================================
 
 import os
-import ast
 import numpy as np
 import math
 from enum import Enum
@@ -134,7 +133,8 @@ def sq2multi(data: np.ndarray, axis: int, sq: np.ndarray):
         string[axis] = "%d: %d" % (cnt, cnt + sq[i])
         cnt += sq[i]
         string = "data[" + ", ".join(string) + "]"
-        res.append(ast.literal_eval(string))
+        # pylint: disable=eval-used
+        res.append(eval(string))
     return res
 
 
@@ -148,7 +148,8 @@ def skv2multi(data: np.ndarray, axis: int, skv: np.ndarray):
         string[0] = "i"
         string[axis] = ":%d" % skv[i]
         string = "data[" + ", ".join(string) + "]"
-        res.append(ast.literal_eval(string))
+        # pylint: disable=eval-used
+        res.append(eval(string))
     return res
 
 
