@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MULS_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MULS_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_MUL_BASE_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_MUL_BASE_H_
 
 #include <memory>
 #include <vector>
@@ -24,37 +24,12 @@
 
 namespace mindspore {
 namespace ops {
-
-static inline bool IsBoolType(TypeId t) { return t == kNumberTypeBool; }
-
-static inline bool IsIntegralType(TypeId t) {
-  return t == kNumberTypeInt8 || t == kNumberTypeInt16 || t == kNumberTypeInt32 || t == kNumberTypeInt64 ||
-         t == kNumberTypeUInt8 || t == kNumberTypeUInt16 || t == kNumberTypeUInt32 || t == kNumberTypeUInt64;
-}
-
-static inline bool IsFloatingType(TypeId t) {
-  return t == kNumberTypeFloat16 || t == kNumberTypeFloat32 || t == kNumberTypeFloat64 || t == kNumberTypeBFloat16;
-}
-
-static inline int TypeToLevel(TypeId t) {
-  if (IsBoolType(t)) {
-    return 0;
-  } else if (IsIntegralType(t)) {
-    return 1;
-  } else if (IsFloatingType(t)) {
-    return 2;
-  } else {
-    return 3;
-  }
-}
-
-class OPS_API MulsFuncImpl : public OpFuncImpl {
+class OPS_API InplaceMulBase : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
-  bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MULS_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_MUL_BASE_H_
