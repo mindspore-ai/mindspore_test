@@ -50,6 +50,12 @@ tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner
 
   op->UpdateOutputShape(op->output(kIndex0), output_real_shape);
   MS_LOG(DEBUG) << "Run device task MaskedSelect end";
+
+  const auto &release_func = std::get<kIndex3>(return_value);
+  if (release_func) {
+    release_func();
+  }
+
   return op->output(0);
 }
 }  // namespace pyboost
