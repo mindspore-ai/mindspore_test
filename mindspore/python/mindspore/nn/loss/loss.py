@@ -1722,22 +1722,11 @@ class BCELoss(LossBase):
     def __init__(self, weight=None, reduction='mean'):
         """Initialize BCELoss."""
         super(BCELoss, self).__init__(reduction)
-        self.binary_cross_entropy = P.BinaryCrossEntropy(reduction=reduction)
-        self.weight_one = weight is None
-        if not self.weight_one:
-            self.weight = weight
-        else:
-            self.ones = P.OnesLike()
+        self.reduction = reduction
+        self.weight = weight
 
     def construct(self, logits, labels):
-        _check_is_tensor('logits', logits, self.cls_name)
-        _check_is_tensor('labels', labels, self.cls_name)
-        if self.weight_one:
-            weight = self.ones(logits)
-        else:
-            weight = self.weight
-        loss = self.binary_cross_entropy(logits, labels, weight)
-        return loss
+        return F.binary_cross_entropy(logits, labels, self.weight, self.reduction)
 
 
 class CosineEmbeddingLoss(LossBase):
