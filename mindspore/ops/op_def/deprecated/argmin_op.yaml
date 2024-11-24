@@ -1,0 +1,13 @@
+argmin:
+  args:
+    input:
+      dtype: tensor
+    axis:
+      dtype: int
+      default: None
+    keepdims:
+      dtype: bool
+      default: False
+  returns:
+    output:
+      dtype: tensor

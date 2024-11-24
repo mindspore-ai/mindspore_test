@@ -1,0 +1,14 @@
+argmin:
+  - op_yaml: argmin_ext_op.yaml
+    py_method: tensor_argmin
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: method
+
+  - op_yaml: deprecated/argmin_op.yaml
+    py_method: deprecated_tensor_argmin
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: method

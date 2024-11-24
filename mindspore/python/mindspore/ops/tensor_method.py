@@ -54,7 +54,7 @@ from mindspore.ops.auto_generate import cast
 # 10 argmax
 from mindspore.ops.function.array_func import argmax
 # 11 argmin
-
+from mindspore.ops.function.math_func import argmin
 # 12 argsort
 
 # 13 atan2
@@ -401,6 +401,13 @@ def deprecated_tensor_argmax(input, axis=None, keepdims=False):
 
 
 # 11 argmin
+def tensor_argmin(input, dim=None, keepdim=False):
+    return argmin(input, dim, keepdim)
+
+
+def deprecated_tensor_argmin(input, axis=None, keepdims=False):
+    return argmin(input, axis, keepdims)
+
 
 # 12 argsort
 
