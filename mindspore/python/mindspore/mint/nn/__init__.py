@@ -22,6 +22,7 @@ import mindspore.ops as ops
 from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
+import mindspore.nn as nn
 
 # 1
 
@@ -840,6 +841,85 @@ class SmoothL1Loss(Cell):
         return out
 
 
+class BCELoss(Cell):
+    r"""
+    Compute the binary cross entropy between the true labels and predicted labels.
+
+    Set the predicted labels as :math:`x`, true labels as :math:`y`, the output loss as :math:`\ell(x, y)`.
+    The formula is as follow:
+
+    .. math::
+        L = \{l_1,\dots,l_n,\dots,l_N\}^\top, \quad
+        l_n = - w_n \left[ y_n \cdot \log x_n + (1 - y_n) \cdot \log (1 - x_n) \right]
+
+    where N is the batch size. Then,
+
+    .. math::
+        \ell(x, y) = \begin{cases}
+        L, & \text{if reduction} = \text{'none';}\\
+        \operatorname{mean}(L), & \text{if reduction} = \text{'mean';}\\
+        \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    .. note::
+        Note that the predicted labels should always be the output of sigmoid. Because it is a two-class
+        classification, the true labels should be numbers between 0 and 1.
+        And if :math:`x_n` is either 0 or 1, one of the log terms would be mathematically undefined in the above loss
+        equation.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
+            And it must have the same shape and data type as `inputs`. Default: ``None`` .
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the weighted mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Inputs:
+        - **input** (Tensor) - The input tensor with shape :math:`(N, *)` where :math:`*` means, any number
+          of additional dimensions. The data type must be float16 or float32 or bfloat16(only supported
+          by Atlas A2 training series products).
+        - **target** (Tensor) - The label tensor with shape :math:`(N, *)` where :math:`*` means, any number
+          of additional dimensions. The same shape and data type as `input`.
+
+    Outputs:
+        Tensor, has the same dtype as `input`. if `reduction` is ``'none'``, then it has the same shape as `input`.
+        Otherwise, it is a scalar Tensor.
+
+    Raises:
+        TypeError: If dtype of `input`, `target` or `weight` (if given) is not float16, float32 or bfloat16.
+        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
+        ValueError: If shape of `input` is not the same as `target` or `weight` (if given).
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import nn
+        >>> import numpy as np
+        >>> weight = ms.Tensor(np.array([[1.0, 2.0, 3.0], [4.0, 3.3, 2.2]]), ms.float32)
+        >>> loss = nn.BCELoss(weight=weight, reduction='mean')
+        >>> input = ms.Tensor(np.array([[0.1, 0.2, 0.3], [0.5, 0.7, 0.9]]), ms.float32)
+        >>> target = ms.Tensor(np.array([[0, 1, 0], [0, 0, 1]]), ms.float32)
+        >>> output = loss(input, target)
+        >>> print(output)
+        1.8952923
+    """
+
+    def __init__(self, weight=None, reduction='mean'):
+        super(BCELoss, self).__init__()
+        self.bce_loss = nn.loss.BCELoss(weight, reduction)
+
+    def construct(self, input, target):
+        return self.bce_loss(input, target)
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
@@ -1088,8 +1168,11 @@ __all__ = [
     # 412
     'Hardtanh',
     'ReLU6',
+    # 413
+    'BCELoss',
     # 421
     'Tanh',
+
     # 556
     'LogSigmoid',
     # 674
