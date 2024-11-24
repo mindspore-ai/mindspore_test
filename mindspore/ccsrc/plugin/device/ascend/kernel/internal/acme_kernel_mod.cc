@@ -84,6 +84,9 @@ bool AcmeKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::v
 
 bool AcmeKernelMod::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs) {
+  if (acme_op_ == nullptr) {
+    return true;
+  }
   transform::g_hash_offset = 0;
   for (auto idx : recreate_cared_indices_) {
     auto input = inputs[idx];
@@ -210,7 +213,7 @@ void AcmeKernelMod::GetOrGenerateTiling(const std::vector<KernelTensor *> &input
 
 void AcmeKernelMod::GetAcmeKernel(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
-  if (acme_op_ == nullptr || IsNeedRecreate(inputs, outputs)) {
+  if (IsNeedRecreate(inputs, outputs)) {
     acme::InputsImmutableInfoList inputs_ii;
     acme::OutputsImmutableInfoList outputs_ii;
     for (size_t i = 0; i < acme_to_ms_input_indices_mapper_.size(); i++) {
@@ -278,6 +281,17 @@ int AcmeKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::
       shape = {};
     }
     acme_outputs_shape_[i] = std::move(shape);
+  }
+
+  if (IsParamChanged()) {
+    CreateOpParam(inputs, outputs);
+    auto param = GetParam();
+    MS_EXCEPTION_IF_NULL(param);
+    ret = acme_op_->UpdateParam(param);
+    if (ret != acme::kAcmeOk) {
+      MS_LOG(ERROR) << "AcmeKernel UpdateParam failed, kernel_name: " << kernel_name_;
+      return KRET_RESIZE_FAILED;
+    }
   }
 
   auto acme_ret = acme_op_->UpdateShape(acme_inputs_shape_, acme_outputs_shape_);

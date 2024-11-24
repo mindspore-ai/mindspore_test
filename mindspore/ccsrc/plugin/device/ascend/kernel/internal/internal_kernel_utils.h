@@ -33,9 +33,9 @@ class InternalKernelUtils {
   static internal::DeviceRawBuf ToDeviceRawBuf(const KernelTensor *kernel_tensor);
 };
 
-void GetSeqLenFromGraphInputOrEnv(const std::string &kernel_name, const std::string &tensor_name,
-                                  const std::string &env_name, std::vector<int32_t> *seq_len);
-std::vector<int32_t> ConvertActualSeqLengthsToVector(KernelTensor *const actual_seq_length_ptr);
+bool GetSeqLenFromGraphAndCheckUpadate(const std::string &kernel_name, const std::string &tensor_name,
+                                       std::vector<int32_t> *seq_len);
+bool ConvertSeqLenToVectorAndCheckUpadate(KernelTensor *const actual_seq_length_ptr, std::vector<int32_t> *seq_len);
 }  // namespace kernel
 }  // namespace mindspore
 

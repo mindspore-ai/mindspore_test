@@ -32,16 +32,18 @@ class AcmePagedAttention : public AcmeKernelMod {
 
  protected:
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  void CreateOpParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
                                const acme::OutputsImmutableInfoList &outputs,
                                const std::vector<KernelTensor *> &ms_inputs,
                                const std::vector<KernelTensor *> &ms_outputs) override;
-  bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  bool IsParamChanged() override;
+  void *GetParam() override { return &param_; }
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
-  std::vector<int32_t> q_seq_len_;
-  std::vector<int32_t> kv_seq_len_;
+  acme::PagedAttentionParam param_;
+  bool init_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore
