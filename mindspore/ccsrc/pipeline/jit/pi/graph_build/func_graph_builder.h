@@ -219,6 +219,22 @@ class FuncGraphBuilder {
   static bool IsValidScalar(const AbstractBasePtr &abs);
   static bool IsValidTensor(const AbstractBasePtr &abs);
 
+  /// \brief Determine whether there is a hook on the object.
+  ///
+  /// \param[in] obj The python object of tensor.
+  static bool HasRegisterHook(const py::object &obj);
+
+  /// \brief Get the hook function on the tensor object.
+  ///
+  /// \param[in] obj The python object of tensor.
+  static py::list GetRegisterHookList(const py::object &obj);
+
+  /// \brief Save the register hook of Tensor to the abstract.
+  ///
+  /// \param[in] obj The python object of tensor.
+  /// \param[in] node The anf node in the func graph corresponding to Tensor.
+  static void SaveTensorRegisterHook(const py::object &obj, const AnfNodePtr &node);
+
  private:
   static bool CheckCallable(const ValuePtr &value, const AbstractBasePtr &abs);
 

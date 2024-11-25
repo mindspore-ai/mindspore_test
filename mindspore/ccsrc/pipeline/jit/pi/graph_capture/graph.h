@@ -147,6 +147,7 @@ class Graph {
   CellVarNode *NewCellNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
                            const std::string &name = "");
 
+  ParamNode *NewParamNode(AObject *, int index, const std::string &name = "");
   CallNode *NewCallNode(int op, int arg, const std::vector<ValueNode *> &);
   const std::vector<LoopInfo *> &loops() const { return loops_; }
   void AddLoop(LoopInfo *loop) { loops_.emplace_back(loop); }

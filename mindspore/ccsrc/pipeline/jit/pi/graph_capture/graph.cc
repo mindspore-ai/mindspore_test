@@ -107,15 +107,18 @@ void Graph::SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_eff
 static void SetNodeInfo(Graph *graph, ValueNode *node, AObject *obj_info, const std::string &name) {
   node->SetName(name);
   node->SetGraph(graph);
+  auto new_object = obj_info ? obj_info->GetPyObject().ptr() : nullptr;
+  if (new_object != nullptr && !CheckConstPyObject(new_object)) {  // literal not need track
+    graph->GetSideEffect()->data()->Track(new_object, node);
+  }
+  if (node->GetType() == ValueNode::Param) {
+    return;
+  }
   ConstantInfo::CollectConstantInfo(node);
   if (node->IsConstantValue() && obj_info && CheckConstPyObject(obj_info->GetPyObject().ptr())) {
     node->SetOpcode(LOAD_CONST);
     node->SetOparg(-1);
     node->ClearInputs();
-  }
-  auto new_object = obj_info ? obj_info->GetPyObject().ptr() : nullptr;
-  if (new_object != nullptr && !CheckConstPyObject(new_object)) {  // literal not need track
-    graph->GetSideEffect()->data()->Track(new_object, node);
   }
 }
 
@@ -145,6 +148,12 @@ CellVarNode *Graph::NewCellNode(AObject *obj_info, int op, int arg, const std::v
   node->SetOpcode(op);
   node->SetOparg(arg);
   node->SetVobj(obj_info);
+  return node;
+}
+
+ParamNode *Graph::NewParamNode(AObject *obj_info, int index, const std::string &name) {
+  ParamNode *node = this->allocator().NewNode<ParamNode>(obj_info, index);
+  SetNodeInfo(this, node, obj_info, name);
   return node;
 }
 
