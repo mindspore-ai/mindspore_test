@@ -725,7 +725,8 @@ Status FlashAttentionScoreInfo::CheckInputInRingAttention() {
   if (!common::IsFloatEqual(keep_prob_, 1.0)) {
     MS_LOG(ERROR) << "Ring attention currently only supports keep prob 1.0";
   }
-  if (is_input_passed_[ops::kFlashAttentionScoreInputAttnMaskIndex] && (enable_flash_sp_ || enable_load_balance_)) {
+  if (is_input_passed_[ops::kFlashAttentionScoreInputAttnMaskIndex] &&
+      (enable_flash_sp_ || enable_load_balance_ || enable_ra_cp_)) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "ring attention load balance don't supports user defined mask";
   }
   return SUCCESS;
@@ -734,6 +735,9 @@ Status FlashAttentionScoreInfo::CheckInputInRingAttention() {
 void FlashAttentionScoreInfo::CheckDynamicShape() {
   if (is_dynamic_rank_) {
     MS_LOG(EXCEPTION) << name_ << ": Not support dynamic rank currently.";
+  }
+  if (is_dynamic_shape_ && enable_ra_cp_) {
+    MS_LOG(EXCEPTION) << name_ << ": Not support dynamic shape currently when enable ring attention cp.";
   }
 }
 
@@ -746,6 +750,55 @@ void FlashAttentionScoreInfo::InitFromInput() {
   input_layout_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputLayoutIndex + 1);
   sparse_mode_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputSparseModeIndex + 1);
   is_flatten_batch_seq_ = (input_layout_ == FASInputLayoutMode::TND) || (input_layout_ == FASInputLayoutMode::TH);
+}
+
+Status FlashAttentionScoreInfo::GetAttrsForRA() {
+  auto enable_ring_attention_iter = attrs_.find(ENABLE_RING_ATTENTION);
+  if (enable_ring_attention_iter != attrs_.end()) {
+    MS_EXCEPTION_IF_NULL(enable_ring_attention_iter->second);
+    if (enable_ring_attention_iter->second->isa<BoolImm>()) {
+      enable_ring_attention_ = enable_ring_attention_iter->second->cast<BoolImmPtr>()->value();
+      enable_load_balance_ = false;
+    } else {
+      MS_LOG(ERROR) << "enable_ring_attention should be bool";
+      return FAILED;
+    }
+  }
+  auto enable_ra_send_recv_iter = attrs_.find(ENABLE_RA_SEND_RECV);
+  if (enable_ra_send_recv_iter != attrs_.end()) {
+    MS_EXCEPTION_IF_NULL(enable_ra_send_recv_iter->second);
+    if (enable_ra_send_recv_iter->second->isa<BoolImm>()) {
+      enable_ra_send_recv_ = enable_ra_send_recv_iter->second->cast<BoolImmPtr>()->value();
+    }
+  }
+  auto enable_ra_cp_iter = attrs_.find(ENABLE_RA_CONTEXT_PARALLEL);
+  if (enable_ra_cp_iter != attrs_.end()) {
+    MS_EXCEPTION_IF_NULL(enable_ra_cp_iter->second);
+    if (enable_ra_cp_iter->second->isa<BoolImm>()) {
+      enable_ra_cp_ = enable_ra_cp_iter->second->cast<BoolImmPtr>()->value();
+    }
+  }
+  if (!enable_ring_attention_ && (enable_ra_send_recv_ || enable_ra_cp_)) {
+    MS_LOG(ERROR) << "Enable ring attention should be true.";
+    return FAILED;
+  }
+  auto enable_flash_sp_iter = attrs_.find("enable_flash_sp");
+  if (enable_flash_sp_iter != attrs_.end()) {
+    MS_EXCEPTION_IF_NULL(enable_flash_sp_iter->second);
+    if (enable_flash_sp_iter->second->isa<BoolImm>()) {
+      enable_flash_sp_ = enable_flash_sp_iter->second->cast<BoolImmPtr>()->value();
+      enable_load_balance_ = false;
+    } else {
+      MS_LOG(ERROR) << "enable_flash_sp should be bool";
+      return FAILED;
+    }
+  }
+  if (enable_ring_attention_ || enable_flash_sp_) {
+    if (CheckInputInRingAttention() != Status::SUCCESS) {
+      return FAILED;
+    }
+  }
+  return SUCCESS;
 }
 
 Status FlashAttentionScoreInfo::GetAttrs() {
@@ -761,42 +814,8 @@ Status FlashAttentionScoreInfo::GetAttrs() {
     enable_load_balance_ = false;
   }
 
-  auto enable_ring_attention_iter = attrs_.find(ENABLE_RING_ATTENTION);
-  if (enable_ring_attention_iter != attrs_.end()) {
-    MS_EXCEPTION_IF_NULL(enable_ring_attention_iter->second);
-    if (enable_ring_attention_iter->second->isa<BoolImm>()) {
-      enable_ring_attention_ = enable_ring_attention_iter->second->cast<BoolImmPtr>()->value();
-      enable_load_balance_ = false;
-      MS_LOG(DEBUG) << "enable_ring_attention_: " << enable_ring_attention_;
-    } else {
-      MS_LOG(ERROR) << "enable_ring_attention should be bool";
-    }
-  }
-  auto enable_ra_send_recv_iter = attrs_.find(ENABLE_RA_SEND_RECV);
-  if (enable_ra_send_recv_iter != attrs_.end()) {
-    MS_EXCEPTION_IF_NULL(enable_ra_send_recv_iter->second);
-    if (enable_ra_send_recv_iter->second->isa<BoolImm>()) {
-      enable_ra_send_recv_ = enable_ra_send_recv_iter->second->cast<BoolImmPtr>()->value();
-    }
-  }
-  if (!enable_ring_attention_ && enable_ra_send_recv_) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "only in ring attention can set send/recv";
-  }
-  auto enable_flash_sp_iter = attrs_.find("enable_flash_sp");
-  if (enable_flash_sp_iter != attrs_.end()) {
-    MS_EXCEPTION_IF_NULL(enable_flash_sp_iter->second);
-    if (enable_flash_sp_iter->second->isa<BoolImm>()) {
-      enable_flash_sp_ = enable_flash_sp_iter->second->cast<BoolImmPtr>()->value();
-      enable_load_balance_ = false;
-      MS_LOG(INFO) << "enable_flash_sp_: " << enable_flash_sp_;
-    } else {
-      MS_LOG(ERROR) << "enable_flash_sp should be bool";
-    }
-  }
-  if (enable_ring_attention_ || enable_flash_sp_) {
-    if (CheckInputInRingAttention() != Status::SUCCESS) {
-      return FAILED;
-    }
+  if (GetAttrsForRA() != Status::SUCCESS) {
+    return FAILED;
   }
 
   is_attn_mask_compressed_ =
