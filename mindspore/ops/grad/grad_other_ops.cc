@@ -36,6 +36,12 @@ REG_BPROP_BUILDER("InplaceCopy").FreeUselessValues_IO({i0, i1}, {}).SetBody(BODY
   return {ib->OutZeros(x), ib->Cast(res[1], y_dtype)};
 });
 
+REG_BPROP_BUILDER("InplaceZero").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto res = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  return {res};
+});
+
 REG_BPROP_BUILDER("InvertPermutation").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("RandExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
