@@ -56,7 +56,6 @@ struct ParallelProcessorContext {
 
     is_pp_interleave = parallel_context->pipeline_interleave();
     parallel_mode = parallel_context->parallel_mode();
-    load_strategy = StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn();
     pipeline_stages = parallel_context->pipeline_stage_split_num();
   }
 
@@ -66,7 +65,6 @@ struct ParallelProcessorContext {
   bool is_pp_interleave{false};
   bool is_apply_adasum{false};
   std::string parallel_mode;
-  bool load_strategy{false};
   int64_t pipeline_stages{1};
   std::vector<AnfNodePtr> all_nodes;
   std::shared_ptr<PipelinePostProcess> pipeline_processor{nullptr};

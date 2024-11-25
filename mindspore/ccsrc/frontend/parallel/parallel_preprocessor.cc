@@ -1228,7 +1228,7 @@ void ParallelPreprocessor::MarkAndModifyGraph() {
   // mark the forward cnodes, parallel only care these nodes
   MarkForwardCNode(root);
   UpdateMicroBatchInterleavedStatus(all_nodes);
-  if (processor_context_->load_strategy || processor_context_->parallel_mode != kAutoParallel) {
+  if (processor_context_->parallel_mode != kAutoParallel) {
     TOTAL_OPS = 0;
     ExceptionIfHasCommunicationOp(all_nodes);
 
@@ -1243,12 +1243,10 @@ void ParallelPreprocessor::MarkAndModifyGraph() {
 }
 
 void ParallelPreprocessor::SetOperatorInfo() {
-  auto &all_nodes = processor_context_->all_nodes;
-  StrategyLoader::LoadStrategyFromFile(all_nodes);
-  if (!processor_context_->load_strategy &&
-      (processor_context_->parallel_mode != kAutoParallel || CheckShardingPropagation())) {
+  if (processor_context_->parallel_mode != kAutoParallel || CheckShardingPropagation()) {
     // semi: extract shape and strategy, set operator_info
     // auto: create opInfo for step parallel generated op and reset cnode for existing ones
+    auto &all_nodes = processor_context_->all_nodes;
     ExtractInformation(all_nodes);
 
     // print dump IR parallel detail
@@ -1272,7 +1270,6 @@ void ParallelPreprocessor::SetOperatorInfo() {
       }
     }
   }
-  StrategyLoader::SaveStrategyToFile(all_nodes);
 }
 
 void ParallelPreprocessor::Process() {
