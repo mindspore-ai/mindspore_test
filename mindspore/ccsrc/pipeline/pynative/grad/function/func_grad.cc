@@ -880,8 +880,11 @@ void FuncGrad::BackPropagate() {
     }
     auto gradient_out = fn->CallBackward(gradient_in);
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_out, "Begin print gradient out: ");
-    if (gradient_out.size() != fn->next_edges().size()) {
-      MS_LOG(EXCEPTION) << "Fn gradient size should be same as next edges size";
+    if (gradient_out.size() < fn->next_edges().size()) {
+      MS_LOG(EXCEPTION) << "Fn gradient size should larger than next edges size, but got " << gradient_out.size()
+                        << " vs " << fn->next_edges().size()
+                        << ". This may because your network has self defined bprop function which args of construct "
+                           "function not same as bprop function outputs, please check it";
     }
     for (size_t i = 0; i < fn->next_edges().size(); ++i) {
       const auto &next_edge = fn->next_edges()[i];
