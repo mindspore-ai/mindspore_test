@@ -12,17 +12,14 @@ convolution:
       dtype: tuple[int]
       default: 1
       type_cast: int, list[int]
-      arg_handler: to_strides
     padding:
       dtype: tuple[int]
       default: 0
       type_cast: int, list[int]
-      arg_handler: to_2d_paddings
     dilation:
       dtype: tuple[int]
       default: 1
       type_cast: int, list[int]
-      arg_handler: to_dilations
     transposed:
       dtype: bool
       default: False
@@ -30,7 +27,6 @@ convolution:
       dtype: tuple[int]
       default: 0
       type_cast: int, list[int]
-      arg_handler: to_output_padding
     groups:
       dtype: int
       default: 1

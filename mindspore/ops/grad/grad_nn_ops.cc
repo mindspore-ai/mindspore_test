@@ -17,6 +17,7 @@
 #include <memory>
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/bprop/common_utils.h"
+#include "include/common/expander/core/node.h"
 #include "include/common/utils/utils.h"
 #include "ir/value.h"
 #include "infer/conv2d.h"
@@ -476,6 +477,55 @@ REG_BPROP_BUILDER("Conv2D").FreeUselessValues(FreeTensorsOfMul).SetBody(BODYFUNC
                                                    {"pad_list", pad_list}})
                                        : ib->OutZeros(w);
   return {dx, dw};
+});
+
+DEF_PURE_SHAPE_CALC(g_conv_transpose2d)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto input_shape = inputs.at(kIndex0);
+    if (input_shape.size() != i4) {
+      MS_ASSERT(input_shape.size() == i3);
+      input_shape.insert(input_shape.begin(), 1);
+    }
+    return {std::move(input_shape)};
+  })
+  .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> { return {4}; });
+
+REG_BPROP_BUILDER("ConvTranspose2D").SetUnusedInputs({i8}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto weight = ib->GetInput(kIndex1);
+  auto bias = ib->GetInput(kIndex2);
+  auto stride = ib->GetInput(kIndex3);
+  auto padding = ib->GetInput(kIndex4);
+  auto output_padding = ib->GetInput(kIndex5);
+  auto groups = ib->GetInput(kIndex6);
+  auto dilation = ib->GetInput(kIndex7);
+  auto dout = ib->GetInput(kIndex9);
+
+  auto transposed = ib->Value<bool>(true);
+  auto bias_type = bias->abstract()->BuildType();
+  bool bias_mask = bias_type->isa<TypeNone>() ? false : bias->need_compute_grad_out();
+  std::vector<int64_t> output_mask_vec = {input->need_compute_grad_out(), weight->need_compute_grad_out(), bias_mask};
+  auto output_mask = ib->Value(output_mask_vec);
+
+  // batchify input and dout
+  auto new_input_shape = ib->ShapeCalc(g_conv_transpose2d, {input})[0];
+  auto batched_input = ib->Reshape(input, new_input_shape);
+  auto new_dout_shape = ib->ShapeCalc(g_conv_transpose2d, {dout})[0];
+  auto batched_dout = ib->Reshape(dout, new_dout_shape);
+  auto gradients = ib->ConvolutionGrad(batched_dout, batched_input, weight, bias, stride, padding, dilation, transposed,
+                                       output_padding, groups, output_mask);
+  // inverse batchify
+  auto dinput = ib->Reshape(ib->TupleGetItem(gradients, kIndex0), ib->Shape(input));
+  auto dweight = ib->TupleGetItem(gradients, kIndex1);
+  auto dbias = ib->TupleGetItem(gradients, kIndex2);
+  return {dinput,
+          dweight,
+          dbias,
+          ib->OutZeros(stride),
+          ib->OutZeros(padding),
+          ib->OutZeros(output_padding),
+          ib->OutZeros(groups),
+          ib->OutZeros(dilation)};
 });
 
 REG_BPROP_BUILDER("Convolution").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {

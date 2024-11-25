@@ -1,0 +1,37 @@
+#operator conv_transpose2d
+conv_transpose2d:
+    args:
+        input:
+            dtype: tensor
+        weight:
+            dtype: tensor
+        bias:
+            dtype: tensor
+            default: None
+        stride:
+            dtype: tuple[int]
+            default: 1
+            type_cast: int, list[int]
+        padding:
+            dtype: tuple[int]
+            default: 0
+            type_cast: int, list[int]
+        output_padding:
+            dtype: tuple[int]
+            default: 0
+            type_cast: int, list[int]
+        groups:
+            dtype: int
+            default: 1
+        dilation:
+            dtype: tuple[int]
+            default: 1
+            type_cast: int, list[int]
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: ConvTranspose2D
+    dispatch:
+        enable: True
+        Ascend: ConvTranspose2DAscend
