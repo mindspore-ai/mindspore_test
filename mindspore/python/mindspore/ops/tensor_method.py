@@ -1053,6 +1053,13 @@ def deprecated_tensor_where(input, condition, y):
 # 136 lcm
 
 # 137 mm
+def tensor_mm(input, mat2):
+    return F.mm(input, mat2)
+
+
+def deprecated_tensor_mm(input, mat2):
+    return F.mm(input, mat2)
+
 
 # 138 ravel
 
