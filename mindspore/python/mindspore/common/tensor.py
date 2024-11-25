@@ -2047,7 +2047,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         dtype = _check_astype_and_convert(dtype)
         if not copy and dtype == self.dtype:
             return self
-        return tensor_operator_registry.get('cast')(self, dtype)
+        return self.to(dtype)
 
     def argmax_with_value(self, axis=0, keep_dims=False):
         """
@@ -3728,6 +3728,48 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return self.to(mstype.float32)
 
+    def bfloat16(self):
+        r"""
+        Converts input tensor dtype to `bfloat16`.
+
+        Returns:
+            Tensor, converted to the `bfloat16` dtype.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> input_x = Tensor(np.ones([2,2]), mindspore.int32)
+            >>> output = input_x.bfloat16()
+            >>> print(output.dtype)
+            BFloat16
+        """
+        return self.to(mstype.bfloat16)
+
+    def double(self):
+        r"""
+        Converts input tensor dtype to `float64`.
+
+        Returns:
+            Tensor, converted to the `float64` dtype.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> input_x = Tensor(np.ones([2,2]), mindspore.int32)
+            >>> output = input_x.double()
+            >>> print(output.dtype)
+            Float64
+        """
+        return self.to(mstype.float64)
+
     def half(self):
         r"""
         Converts input tensor dtype to `float16`.
@@ -4106,12 +4148,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         """
         return tensor_operator_registry.get('matrix_power')(self, n)
-
-    def mm(self, mat2):
-        r"""
-        For details, please refer to :func:`mindspore.ops.mm`.
-        """
-        return tensor_operator_registry.get('mm')(self, mat2)
 
     def msort(self):
         r"""

@@ -1,0 +1,10 @@
+#deprecated mm
+mm:
+  args:
+    input:
+      dtype: tensor
+    mat2:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor

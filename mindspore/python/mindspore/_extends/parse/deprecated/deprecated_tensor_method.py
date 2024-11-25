@@ -292,7 +292,7 @@ deprecated_tensor_method_map = {
     # 136 lcm
 
     # 137 mm
-
+    "mm": "deprecated_tensor_mm",
     # 138 ravel
 
     # 139 nelement
