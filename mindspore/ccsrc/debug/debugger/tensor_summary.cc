@@ -161,8 +161,8 @@ void TensorSummary<T>::TensorStatistics(DbgDataType dtype_value) {
     summary_future_vec[i].get();
     auto &cur_summary = *(summary_vec[i]);
     num_elements_ += cur_summary.num_elements_;
-    min_ = std::min(min_, cur_summary.min_);
-    max_ = std::max(max_, cur_summary.max_);
+    min_ = std::isnan(cur_summary.min_) ? cur_summary.min_ : std::min(min_, cur_summary.min_);
+    max_ = std::isnan(cur_summary.max_) ? cur_summary.max_ : std::max(max_, cur_summary.max_);
     sum += cur_summary.avg_ * cur_summary.num_elements_;
     neg_zero_count_ += cur_summary.neg_zero_count_;
     pos_zero_count_ += cur_summary.pos_zero_count_;
