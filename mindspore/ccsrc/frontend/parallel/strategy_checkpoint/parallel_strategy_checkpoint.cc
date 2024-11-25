@@ -193,14 +193,15 @@ Status StrategyCheckpoint::SaveGroupInfo(const GroupInfoMap &group_info_map, con
 
 Status StrategyCheckpoint::LoadAutoOpStrategy(StrategyMap *strategy_map, StrategyMap *out_strategy_map) {
   if (strategy_map == nullptr) {
-    MS_LOG(EXCEPTION) << "Failure:strategy_map is nullptr";
+    MS_LOG(WARNING) << "Failure:strategy_map is nullptr";
+    return FAILED;
   }
   if (!CheckPath(auto_op_strategy_file_)) {
-    MS_LOG(EXCEPTION) << "CheckPoint file is invalid";
+    MS_LOG(WARNING) << "Op strategy json path is invalid";
     return FAILED;
   }
   if (!CheckPointExit(auto_op_strategy_file_)) {
-    MS_LOG(EXCEPTION) << "CheckPoint file is not found";
+    MS_LOG(WARNING) << "Op strategy json file is not found";
     return FAILED;
   }
   std::fstream input(auto_op_strategy_file_, std::ios::in);

@@ -42,6 +42,7 @@
 #include "frontend/parallel/parameter_manager.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
+#include "frontend/parallel/strategy_loader.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
 #include "frontend/parallel/strategy_checkpoint/parallel_strategy_checkpoint.h"
 #include "include/common/utils/parallel_context.h"
@@ -68,6 +69,13 @@ namespace mindspore {
 namespace parallel {
 void SearchParallelStrategy(const std::string &strategy_search_mode, const FuncGraphPtr &root,
                             const std::vector<AnfNodePtr> &all_nodes) {
+  if (StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
+    if (StrategyLoader::LoadStrategyFromFile(all_nodes) == SUCCESS) {
+      MS_LOG(INFO) << "Load strategies success, jump search strategy.";
+      return;
+    }
+    MS_LOG(EXCEPTION) << "Load strategies failed, please check whether your config is changed.";
+  }
   if ((strategy_search_mode == kDynamicProgramming) || (strategy_search_mode == kShardingPropagation)) {
     if (ParallelStrategySearch(all_nodes, root) != SUCCESS) {
       MS_LOG(EXCEPTION) << "Auto-parallel strategy search failed when using " << strategy_search_mode
@@ -79,6 +87,9 @@ void SearchParallelStrategy(const std::string &strategy_search_mode, const FuncG
     }
   } else {
     MS_LOG(EXCEPTION) << "Auto-parallel strategy searching mode unexpected: " << strategy_search_mode;
+  }
+  if (StrategyCheckpoint::GetInstance().SaveAutoOpStrategyOn()) {
+    StrategyLoader::SaveStrategyToFile(all_nodes);
   }
 }
 
@@ -98,8 +109,7 @@ bool IsSkipAutoParallel(const FuncGraphPtr &root, const std::string &strategy_se
   root->set_flag(kHasShard, HasCellShard(root));
   std::string parallel_mode = ParallelContext::GetInstance()->parallel_mode();
   if (root->has_flag(kSkipAutoParallelCompile) || parallel_mode != kAutoParallel ||
-      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY) || StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn() ||
-      HasNestedMetaFg(root)) {
+      root->has_flag(AUTO_PARALLEL_RUN_ONCE_ONLY) || HasNestedMetaFg(root)) {
     return true;
   }
 
