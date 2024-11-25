@@ -63,6 +63,12 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
 
 #define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                  \
   [](const std::string &api_str, const auto &... args) -> auto {                                  \
+    if (capacity_ == 0) {                                                                         \
+      auto [ws_size, executor, release_func] = GEN_EXECUTOR(api_str, args...);                    \
+      ProcessCache cache = nullptr;                                                               \
+      std::function<void()> update_func = nullptr;                                                \
+      return std::make_tuple(ws_size, executor, cache, release_func, update_func);                \
+    }                                                                                             \
     uint64_t hash_id = mindspore::transform::AclnnHash(api_str, args...);                         \
     if (hash_id != 0 && hash_map_.count(hash_id) != 0) {                                          \
       hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id]);                   \
@@ -110,7 +116,14 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
     static const std::string aclnn_name = #aclnn_api;                                                               \
     static std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;                                 \
     static std::list<CacheTuple> hash_cache_;                                                                       \
-    static const size_t capacity_{1024};                                                                            \
+    static size_t capacity_{1024};                                                                                  \
+    static std::string capaticy_from_user = common::GetCacheCapaticy();                                             \
+    static bool not_set_capaticy = true;                                                                            \
+    if (!capaticy_from_user.empty() && not_set_capaticy) {                                                          \
+      capacity_ = std::stoull(capaticy_from_user);                                                                  \
+      not_set_capaticy = false;                                                                                     \
+      MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                                   \
+    }                                                                                                               \
     runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,                                    \
                                              runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);       \
     auto stream_ptr = device_context->device_res_manager_->GetStream(stream_id);                                    \

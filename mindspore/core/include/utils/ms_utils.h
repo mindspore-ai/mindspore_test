@@ -98,6 +98,7 @@ const char kRuntimeMemoryStat[] = "memory_statistics";
 const char kRuntimeCompileStat[] = "compile_statistics";
 const char kRuntimePerformanceStat[] = "performance_statistics";
 const char kRuntimePerformanceStatTopNum[] = "performance_statistics_top_num";
+const char kRuntimeAclnnCacheQueueLength[] = "aclnn_cache_queue_length";
 const char kSingleQuote = '\'';
 const char kDoubleQuote = '"';
 const char kSemicolon = ';';
@@ -108,10 +109,12 @@ MS_CORE_API void ResetConfig(const std::string &config);
 MS_CORE_API std::string GetConfigValue(const std::string &config, const std::string &config_key);
 MS_CORE_API bool IsEnableRuntimeConfig(const std::string &runtime_config);
 MS_CORE_API bool IsDisableRuntimeConfig(const std::string &runtime_config);
+MS_CORE_API std::string GetRuntimeConfigValue(const std::string &runtime_config);
 MS_CORE_API std::string GetAllocConfigValue(const std::string &alloc_config);
 MS_CORE_API bool IsEnableAllocConfig(const std::string &alloc_config);
 MS_CORE_API bool IsDisableAllocConfig(const std::string &alloc_config);
 MS_CORE_API bool IsEnableAclnnViewOp(const std::string &op);
+MS_CORE_API std::string GetCacheCapaticy();
 
 static inline std::string GetEnv(const std::string &envvar, const std::string &default_value = "") {
   const char *value = std::getenv(envvar.c_str());
