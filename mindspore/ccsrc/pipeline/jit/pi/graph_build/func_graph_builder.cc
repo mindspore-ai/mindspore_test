@@ -35,6 +35,7 @@
 #include "frontend/operator/composite/unpack_call.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
+#include "include/common/utils/hook.h"
 
 namespace mindspore {
 namespace {
@@ -44,6 +45,7 @@ constexpr auto kGradNetInputs = "grad_net_inputs";
 constexpr auto kTensorModule = "mindspore.common";
 constexpr auto kAdapterFlag = "adapter_flag";
 constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
+constexpr auto kRegisterHookKey = "backward_register_hook";
 
 bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
   static HashSet<std::string> prims_should_fallback_in_runtime = {kListInplaceExtendOpName,
@@ -159,6 +161,51 @@ bool IsTensorOrNumber(const AbstractBasePtr &abs) {
 }
 }  // namespace
 
+bool FuncGraphBuilder::HasRegisterHook(const py::object &obj) {
+  if (!py::isinstance<tensor::BaseTensor>(obj)) {
+    return false;
+  }
+  auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
+  auto grad_meta = tensor->auto_grad_meta_data();
+  if (grad_meta == nullptr || !grad_meta->is_register_hook()) {
+    return false;
+  }
+  return !grad_meta->backward_hooks().empty();
+}
+
+// HasRegisterHook must be called before calling this function and the return value must be True
+py::list FuncGraphBuilder::GetRegisterHookList(const py::object &obj) {
+  if (!HasRegisterHook(obj)) {
+    return py::list();
+  }
+  py::list hook_fn_list;
+  auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
+  auto backward_hooks = tensor->auto_grad_meta_data()->backward_hooks();
+  for (const auto &[id, hook] : backward_hooks) {
+    auto hook_map = hook->hook_map_;
+    MS_EXCEPTION_IF_CHECK_FAIL(hook_map.size() == kSizeOne, "Tensor hook just work on one tensor value.");
+    auto fn = hook_map.begin()->second;
+    if (py::isinstance<py::none>(fn)) {
+      MS_LOG(DEBUG) << "Hook of Tensor[" << id << "] is None.";
+      continue;
+    }
+    hook_fn_list.append(fn);
+  }
+  return hook_fn_list;
+}
+
+void FuncGraphBuilder::SaveTensorRegisterHook(const py::object &obj, const AnfNodePtr &node) {
+  if (node->abstract() == nullptr) {
+    return;
+  }
+  auto hook_list = GetRegisterHookList(obj);
+  if (hook_list.empty()) {
+    return;
+  }
+  MS_LOG(INFO) << "Save Hook " << py::str(py::object(hook_list)) << " to " << node->DebugString();
+  node->abstract()->set_user_data<py::tuple>(kRegisterHookKey, std::make_shared<py::tuple>(py::tuple(hook_list)));
+}
+
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
   if (!IsParameterSequence(input_obj)) {
     return nullptr;
@@ -181,6 +228,7 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
     if (cur_abs == nullptr) {
       return nullptr;
     }
+    SaveTensorRegisterHook(py::cast<py::object>(obj), cur_node);
     inputs.push_back(cur_node);
     inputs_abs.push_back(cur_abs);
   }

@@ -44,6 +44,8 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/tensor_py.h"
 #include "frontend/operator/composite/composite.h"
+#include "include/common/utils/hook.h"
+#include "utils/anf_utils.h"
 
 namespace mindspore {
 namespace pijit {
@@ -62,6 +64,7 @@ static const int infer_primitive_object = 2;
 static const int infer_primitive_func = 4;
 static int infer_func_count = 0;
 static constexpr const char *kPIJitCopyFuncKey = ".<pijit.copy>.";
+constexpr auto kRegisterHookKey = "backward_register_hook";
 
 const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilder::bytecode_meth_map_ = {
   {POP_TOP, &GraphBuilder::DoStackOp},
@@ -1923,8 +1926,7 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
       continue;
     }
     auto vo = AObject::Convert(fast_locals[i]);
-    ParamNode *n = graph_->allocator().NewNode<ParamNode>(vo, i);
-    n->SetName(PyUnicode_AsUTF8(PyTuple_GET_ITEM(names, i)));
+    ParamNode *n = graph_->NewParamNode(vo, i, PyUnicode_AsUTF8(PyTuple_GET_ITEM(names, i)));
     frame_.SetLocal(i, n);
     graph_->GetSideEffect()->data()->Track(fast_locals[i], n);
   }
@@ -4582,12 +4584,83 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> MindGraphBuilder::Buil
   return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(fg, bind_helper);
 }
 
+TracePtr CreateRegisterHookTrace(const TracePtr &trace) {
+  auto obj = py::cast<py::object>(trace->GetObject());
+  auto hooks = FuncGraphBuilder::GetRegisterHookList(obj);
+  auto hook_str = std::string(py::str(py::object(hooks)));
+  auto hook_trace = std::make_shared<CustomizedTrace>(
+    Py_True,
+    [trace, hooks](PTraceContext context) -> PyObject * {
+      auto obj = py::cast<py::object>(trace->Retrieve(context));
+      auto hook_list = FuncGraphBuilder::GetRegisterHookList(obj);
+      if (hook_list.size() != hooks.size()) {
+        return Py_False;
+      }
+      for (size_t index = 0; index < hooks.size(); index++) {
+        if (hook_list[index].ptr() != hooks[index].ptr()) {
+          return Py_False;
+        }
+      }
+      return Py_True;
+    },
+    [trace, hook_str](bool simple) -> std::string {
+      auto obj = py::cast<py::object>(trace->GetObject());
+      if (!py::isinstance<tensor::BaseTensor>(obj)) {
+        return "Hook can't be attached to non-tensor.";
+      }
+      auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
+      if (simple) {
+        return "Guard backward hook fn on Tensor[" + std::string(tensor->id()) + "].";
+      }
+      auto hook_list = FuncGraphBuilder::GetRegisterHookList(obj);
+      auto hook_list_str = std::string(py::str(hook_list));
+      return "{Backward hook fn of Tensor[" + std::string(tensor->id()) + "] Now : " + hook_str +
+             " Before : " + hook_list_str + "}(type:" + std::to_string(TraceType::Customized) + ")";
+    });
+  return std::move(hook_trace);
+}
+
+void GuardRegisterHook(ValueNode *node) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(node->abstract_wrapper());
+  auto abs = node->abstract_wrapper()->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  bool has_hook = abs->has_user_data(kRegisterHookKey);
+  if (!has_hook && !abs->isa<abstract::AbstractTuple>()) {
+    return;
+  }
+  auto graph = node->GetGraph();
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &guard = graph->GetGuard()->GetGuard();
+  auto trace = node->GetTrace();
+  if (trace == nullptr) {
+    trace = graph->TraceValueNode(node);
+  }
+  if (has_hook) {
+    auto hook_trace = CreateRegisterHookTrace(trace);
+    guard->GuardOn(hook_trace, mindspore::pijit::GuardLevel::GEqual, true);
+  } else {
+    auto tuple = py::cast<py::tuple>(trace->GetObject());
+    auto strict = graph->Config().GetBoolConfig(GraphJitConfig::kStrictTrace);
+    for (size_t index = 0; index < tuple.size(); index++) {
+      if (!FuncGraphBuilder::HasRegisterHook(py::cast<py::object>(tuple[index]))) {
+        continue;
+      }
+      auto index_trace = CreateOpTrace(py::int_(index).ptr(), LOAD_CONST, -1, {}, "", "", strict);
+      auto param_trace = CreateOpTrace(tuple[index].ptr(), BINARY_SUBSCR, 2, {trace, index_trace}, "", "", strict);
+      auto hook_trace = CreateRegisterHookTrace(trace);
+      guard->GuardOn(hook_trace, mindspore::pijit::GuardLevel::GEqual, true);
+    }
+  }
+}
+
 AbstractWrapperPtrList MindGraphBuilder::HandleInputsForGrad(CallNode *call_node,
                                                              BindArgumentsHelper<ValueNode *> forward_inputs) {
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   MS_EXCEPTION_IF_NULL(grad_net_node);
   constexpr size_t grad_operation_index = 0;
   constexpr size_t forward_node_index = 1;
+  constexpr size_t param_tuple_index = 2;
   auto grad_operation_node = grad_net_node->input(grad_operation_index);
   auto grad_object = grad_operation_node->GetVobj()->GetPyObject();
   auto forward_node = grad_net_node->input(forward_node_index);
@@ -4602,6 +4675,28 @@ AbstractWrapperPtrList MindGraphBuilder::HandleInputsForGrad(CallNode *call_node
 
   auto wrapper_args = HandleInputArgs(bind_args);
   const auto &wrapper_vargs = HandleInputArgs(bind_vargs);
+
+  bool get_all = py::hasattr(grad_object, "get_all") && (grad_object.attr("get_all").ptr() == Py_True);
+  bool get_by_list = py::hasattr(grad_object, "get_by_list") && (grad_object.attr("get_by_list").ptr() == Py_True);
+  std::vector<ValueNode *> forward_input(bind_args.begin() + 1, bind_args.end());
+  size_t input_grad_cnt = get_all ? forward_input.size() : (get_by_list ? 0 : (forward_input.empty() ? 0 : 1));
+
+  for (size_t index = 0; index < input_grad_cnt; index++) {
+    if (!forward_input[index]->has_abstract_wrapper() || forward_input[index]->GetVobj() == nullptr) {
+      continue;
+    }
+    auto obj = forward_input[index]->GetVobj()->GetPyObject();
+    if (py::isinstance<py::none>(obj)) {
+      continue;
+    }
+    auto wrapper = forward_input[index]->abstract_wrapper();
+    auto node = FGBuilder()->ReadLocalVariable(wrapper);
+    FuncGraphBuilder::SaveTensorRegisterHook(obj, node);
+    GuardRegisterHook(forward_input[index]);
+  }
+  if (get_by_list) {
+    GuardRegisterHook(grad_net_node->input(param_tuple_index));
+  }
 
   if (has_sense) {
     if (!bind_vargs.empty() || !bind_kwargs.empty()) {
@@ -4620,6 +4715,70 @@ AbstractWrapperPtrList MindGraphBuilder::HandleInputsForGrad(CallNode *call_node
   (void)std::copy(wrapper_args.begin() + input_offset, wrapper_args.end(), std::back_inserter(final_wrapper));
   (void)std::copy(wrapper_vargs.begin(), wrapper_vargs.end(), std::back_inserter(final_wrapper));
   return final_wrapper;
+}
+
+AnfNodePtr CreateInsertGradientOfNode(const AnfNodePtr &node, const FuncGraphPtr &func_graph) {
+  auto hooks = node->abstract()->user_data<py::tuple>(kRegisterHookKey);
+  MS_LOG(INFO) << "Apply " << py::str(py::object(*hooks)) << " to " << node->DebugString();
+  auto ops_mod = python_adapter::GetPyModule("mindspore.ops.operations.debug_ops");
+  auto op_class = python_adapter::GetPyObjAttr(ops_mod, "InsertGradientOf");
+  auto insert_grad_of = node;
+  for (const auto &hook : *hooks) {
+    // Create class instance.
+    auto params = py::make_tuple(hook);
+    auto obj = parse::data_converter::CreatePythonObject(op_class, params);
+    if (py::isinstance<py::none>(obj)) {
+      MS_LOG(ERROR) << "Create python object `" << py::str(op_class)
+                    << "` failed, only support to create 'Cell', 'Primitive' or "
+                    << "user-defined Class decorated with 'jit_class'.";
+      return nullptr;
+    }
+    ValuePtr converted_res = nullptr;
+    bool converted = parse::ConvertData(obj, &converted_res, false);
+    if (!converted) {
+      MS_LOG(ERROR) << "Convert the python object failed";
+      return nullptr;
+    }
+    MS_EXCEPTION_IF_NULL(converted_res);
+    insert_grad_of = func_graph->NewCNode({NewValueNode(converted_res), insert_grad_of});
+    insert_grad_of->set_abstract(node->abstract());
+  }
+  return insert_grad_of;
+}
+
+bool ApplyRegisterHook(const AnfNodePtr &node) {
+  if (node->abstract() == nullptr || !node->abstract()->has_user_data(kRegisterHookKey)) {
+    return true;
+  }
+  auto func_graph = node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  auto node_users = manager->node_users()[node];
+  for (const auto &node_and_index : node_users) {
+    if (IsPrimitiveCNode(node_and_index.first, prim::kPrimInsertGradientOf)) {
+      continue;
+    }
+    auto insert_grad_of = CreateInsertGradientOfNode(node, node_and_index.first->func_graph());
+    if (insert_grad_of == nullptr) {
+      return false;
+    }
+    manager->SetEdge(node_and_index.first, node_and_index.second, insert_grad_of);
+  }
+  return true;
+}
+
+void HandleRegisterHook(const FuncGraphPtr &func_graph, StopTraceReason *stop_reason) {
+  if (func_graph->manager() == nullptr) {
+    auto mng = Manage(func_graph, true);
+    func_graph->set_manager(mng);
+  }
+  AnfNodePtrList nodes(func_graph->parameters());
+  auto vars = func_graph->free_variables();
+  std::transform(vars.begin(), vars.end(), std::back_inserter(nodes), [](const auto &var) { return var.first; });
+  if (!std::all_of(nodes.begin(), nodes.end(), [](const auto &node) { return ApplyRegisterHook(node); })) {
+    *stop_reason = StopTraceReason::kStopTraceTensorHook;
+  }
 }
 
 py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason) {
@@ -4673,6 +4832,7 @@ py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReaso
     call_node->set_abstract_wrapper(ret);
     *stop_reason = StopTraceReason::kNonStopTrace;
   }
+  HandleRegisterHook(forward_fg, stop_reason);
   return py::object();
 }
 
