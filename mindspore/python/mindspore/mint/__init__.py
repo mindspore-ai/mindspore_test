@@ -751,6 +751,13 @@ def cummax(input, dim):
     return ops.auto_generate.cummax(input, dim)
 
 
+def not_equal(input, other):
+    r"""
+    Alias of mint.ne().
+    """
+    return ne(input, other)
+
+
 def _einsum_convert_sublist_to_label(num, ell_num=False):
     """Convert sublist to label."""
     if num == Ellipsis or ell_num and num == 52:
@@ -1848,6 +1855,7 @@ __all__ = [
     'squeeze',
     # 10
     'ne',
+    'not_equal',
     # 11
     'unsqueeze',
     # 12
