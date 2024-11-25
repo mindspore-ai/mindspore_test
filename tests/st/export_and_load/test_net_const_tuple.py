@@ -32,7 +32,7 @@ class ConstTupleNet(nn.Cell):
         return self.tuple1
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_export_const_tuple_net():
     """
     Feature: export AIR.
