@@ -72,6 +72,7 @@ PYBOOST_NATIVE_GRAD_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/grad/func
 PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/auto_generate"
 RUNTIME_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/runtime/pynative/op_function/auto_generate"
 TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/"
+TENSOR_FUNC_PATH = "mindspore/ccsrc/pybind_api/ir/tensor_api"
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
 
 # yaml keys def

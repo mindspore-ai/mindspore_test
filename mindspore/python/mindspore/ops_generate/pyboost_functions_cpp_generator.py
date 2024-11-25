@@ -87,7 +87,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
         pyboost_func_pybind_def = ''
         pyboost_func_include_headers_str = ''
         for op_proto in op_protos:
-            if op_proto.op_dispatch is None:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch:
                 continue
             op_parser = OpTemplateParser(op_proto)
             op_pyboost_func_name = op_parser.get_pyboost_func_name()
@@ -130,7 +130,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
             pyboost_func_include_headers_str += self.pyboost_func_include_header_template.replace(
                 operator_name=op_proto.op_name)
         register_func_str = self.REGISTER_TEMPLATE.replace(register_func=pyboost_func_pybind_def)
-        function_class_register = self._get_function_class_register(tensor_func_protos_data)
+        function_class_register = self._get_function_class_register(op_protos)
         pyboost_func_file = self.PYBOOST_HEADER_TEMPLATE.replace(include_op_header=pyboost_func_include_headers_str,
                                                                  function_body=pyboost_func_str,
                                                                  register_function_body=register_func_str,
@@ -139,27 +139,24 @@ class PyboostFunctionsGenerator(BaseGenerator):
         file_name = "pyboost_functions.cc"
         save_file(save_path, file_name, pyboost_func_file)
 
-    def _get_function_class_register(self, tensor_func_protos_data) -> str:
+    def _get_function_class_register(self, op_protos) -> str:
         """
         Generates a function class registration string for tensor functions.
 
         Args:
-            tensor_func_protos_data (dict): A dictionary where the keys are function names and
-                                            the values are lists of tensor function prototypes.
+            op_protos (list): A list of tensor op prototypes.
 
         Returns:
             str: A concatenated string representing the registration information for tensor
                  function classes.
         """
         function_class_register = ''
-        for _, tensor_func_protos in tensor_func_protos_data.items():
-            for func_proto in tensor_func_protos:
-                # deprecated op should not be registered
-                if 'deprecated' in func_proto.op_proto.op_name:
-                    continue
-                class_name, op_name = func_proto.op_proto.op_class.name, func_proto.op_proto.op_name
-                function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,
-                                                                              op_name=op_name)
+        for op_proto in op_protos:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch:
+                continue
+            class_name, op_name = op_proto.op_class.name, op_proto.op_name
+            function_class_register += self.TENSOR_FUNC_CLASS_REG.replace(class_name=class_name,
+                                                                          op_name=op_name)
         return function_class_register
 
     def _generate_parser_func(self, op_proto: OpProto) -> str:
