@@ -1,6 +1,6 @@
 sort:
   description: |
-    sort(self, dim=-1, descending=False) -> (Tensor, Tensor)
+    sort(dim=-1, descending=False) -> (Tensor, Tensor)
 
     Sorts the elements of the self tensor along the given dimension in the specified order.
 
@@ -8,16 +8,10 @@ sort:
         Currently, the data types of float16, uint8, int8, int16, int32, int64 are well supported.
         If use float32, it may cause loss of accuracy.
 
-    Args:
-        self(Tensor): The self tensor to sort.
-            The shape is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
-
     Keyword Args:
         dim (int, optional): The dimension to sort along. Default: ``-1``, means the last dimension.
         descending (bool, optional): Controls the sort order. If `descending` is True, the elements
             are sorted in descending order, or else sorted in ascending order. Default: ``False`` .
-        stable (bool, optional): Controls the sort order. If stable is True then the sorting routine
-            becomes stable, preserving the order of equivalent elements. Default: ``False`` .
 
     Returns:
         - y1, a tensor whose values are the sorted values, with the same shape and data type as self.
@@ -39,7 +33,7 @@ sort:
         >>> import numpy as np
         >>> from mindspore import Tensor
         >>> x = Tensor(np.array([[8, 2, 1], [5, 9, 3], [4, 6, 7]]), mindspore.float16)
-        >>> output = x.sort()
+        >>> output = x.sort(dim=-1)
         >>> # The output below is based on the Ascend platform.
         >>> print(output)
         (Tensor(shape=[3, 3], dtype=Float16, value=
@@ -50,12 +44,12 @@ sort:
         [2, 0, 1],
         [0, 1, 2]]))
 
-    .. method:: Tensor.sort(self, axis=-1, descending=False) -> (Tensor, Tensor)
+    .. method:: Tensor.sort(axis=-1, descending=False) -> (Tensor, Tensor)
         :noindex:
 
+    Sorts the elements of the input tensor along the given dimension in the specified order.
+
     Args:
-        self(Tensor): The self tensor to sort.
-            The shape is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
         axis (int, optional): The dimension to sort along. Default: ``-1``, means the last dimension.
             The Ascend backend only supports sorting the last dimension.
         descending (bool, optional): Controls the sort order. If `descending` is True, the elements
@@ -66,7 +60,6 @@ sort:
         If use float32, it may cause loss of accuracy.
 
     Returns:
-
         - y1, a tensor whose values are the sorted values, with the same shape and data type as self.
         - y2, a tensor that consists of the indices of the elements in the original self tensor.
           Data type is int32.
