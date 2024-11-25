@@ -1001,7 +1001,7 @@ def test_dict_inner_method_overrrided_1():
     assert ms_out == 'aaa'
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_dict_inner_method_overrrided_2():
     """
@@ -1137,7 +1137,7 @@ def test_jitclass_grad():
     assert ms_grad == -1
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_dict_inner_method_overrrided_4():
     """
