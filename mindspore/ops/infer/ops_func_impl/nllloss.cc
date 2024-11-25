@@ -18,6 +18,7 @@
 #include <set>
 #include <algorithm>
 #include <memory>
+#include <string>
 #include "abstract/dshape.h"
 #include "mindapi/base/types.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -26,12 +27,60 @@
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
+void CheckNLLLossShapeValid(const PrimitivePtr &primitive, const ShapeVector &logits_shape,
+                            const ShapeVector &labels_shape, const ShapeVector &weight_shape) {
+  if (logits_shape.size() == 1) {
+    if (logits_shape[0] > abstract::Shape::kShapeDimAny) {
+      if (labels_shape[0] > abstract::Shape::kShapeDimAny) {
+        MS_CHECK_VALUE(labels_shape[0] == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                               "labels shape", labels_shape[0], kEqual, 1, primitive));
+      }
+      if (weight_shape[0] > abstract::Shape::kShapeDimAny) {
+        MS_CHECK_VALUE(weight_shape[0] == logits_shape[0],
+                       CheckAndConvertUtils::FormatCheckIntegerMsg("weight shape", weight_shape[0], kEqual,
+                                                                   logits_shape[0], primitive));
+      }
+    }
+  } else if (logits_shape.size() == 2) {
+    if (logits_shape[0] > abstract::Shape::kShapeDimAny && labels_shape[0] > abstract::Shape::kShapeDimAny) {
+      MS_CHECK_VALUE(labels_shape[0] == logits_shape[0],
+                     CheckAndConvertUtils::FormatCheckIntegerMsg("labels shape", labels_shape[0], kEqual,
+                                                                 logits_shape[0], primitive));
+    }
+    if (logits_shape[1] > abstract::Shape::kShapeDimAny && weight_shape[0] > abstract::Shape::kShapeDimAny) {
+      MS_CHECK_VALUE(weight_shape[0] == logits_shape[1],
+                     CheckAndConvertUtils::FormatCheckIntegerMsg("weight shape", weight_shape[0], kEqual,
+                                                                 logits_shape[1], primitive));
+    }
+  }
+}
 
 ShapeArray NLLLossFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   auto target_shape = input_infos[kInputIndex1]->GetShape();
+
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device_target == kGPUDevice || device_target == kCPUDevice) {
+    auto logits_shape = input_infos[kInputIndex0]->GetShape();
+    auto weight_shape = input_infos[kInputIndex2]->GetShape();
+
+    const size_t x_rank = 1;
+    const size_t DIM_2 = 2;
+    MS_CHECK_VALUE(target_shape.size() == x_rank, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                                    "target_rank", target_shape.size(), kEqual, x_rank, primitive));
+    MS_CHECK_VALUE(weight_shape.size() == x_rank, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                                    "weight_rank", weight_shape.size(), kEqual, x_rank, primitive));
+    MS_CHECK_VALUE(logits_shape.size() >= x_rank && logits_shape.size() <= DIM_2,
+                   CheckAndConvertUtils::FormatCheckInRangeMsg("logits_shape_rank", logits_shape.size(), kIncludeBoth,
+                                                               {1, 2}, primitive));
+    CheckNLLLossShapeValid(primitive, logits_shape, target_shape, weight_shape);
+  }
+
   ShapeVector weight_out_shape = {};
   auto reduction = static_cast<Reduction>(input_infos[kInputIndex3]->GetScalarValue<int64_t>().value());
   if (reduction == Reduction::NONE) {
