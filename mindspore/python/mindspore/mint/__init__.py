@@ -408,6 +408,9 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 
 
 
+#1023
+from mindspore.ops.function.array_func import unbind_ext as unbind
+
 def add(input, other, *, alpha=1):
     r"""
     Adds scaled other value to input Tensor.
@@ -2204,6 +2207,9 @@ __all__ = [
 
     # 1007
     't',
+
+    # 1023
+    'unbind',
 
     # 1100
     'diff',

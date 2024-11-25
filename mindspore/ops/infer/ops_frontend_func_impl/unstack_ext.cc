@@ -24,36 +24,31 @@
 namespace mindspore::ops {
 namespace {
 AbstractBasePtr InferOutputForRankKnown(const PrimitivePtr &primitive, const ShapeVector &input_shape,
-                                        const ValuePtr &axis_value, const TypePtr &element_type) {
+                                        const ValuePtr &dim_value, const TypePtr &element_type) {
   size_t element_size = 1;
   size_t input_rank = input_shape.size();
   MS_CHECK_VALUE(input_rank > 0,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("input rank", input_rank, kGreaterThan, 0, primitive));
-  auto axis_res = GetScalarValue<int64_t>(axis_value);
+  auto dim_opt = GetScalarValue<int64_t>(dim_value);
   bool dynamic_len = false;
   ShapeVector element_shape;
-  if (MS_UNLIKELY(!axis_res.has_value())) {
+  if (MS_UNLIKELY(!dim_opt.has_value())) {
     dynamic_len = true;
     element_shape = ShapeVector(input_rank - 1, abstract::TensorShape::kShapeDimAny);
   } else {
-    auto axis_temp = axis_res.value();
-    MS_CHECK_VALUE(-SizeToLong(input_rank) <= axis_temp && axis_temp < SizeToLong(input_rank),
+    auto dim_temp = dim_opt.value();
+    MS_CHECK_VALUE(-SizeToLong(input_rank) <= dim_temp && dim_temp < SizeToLong(input_rank),
                    CheckAndConvertUtils::FormatCheckInRangeMsg(
-                     "axis", axis_temp, kIncludeLeft, {-SizeToLong(input_rank), SizeToLong(input_rank)}, primitive));
-    auto axis = LongToSize(axis_temp < 0 ? SizeToLong(input_rank) + axis_temp : axis_temp);
-    auto target_num = input_shape[axis];
-    if (target_num == abstract::TensorShape::kShapeDimAny) {
+                     "dim", dim_temp, kIncludeLeft, {-SizeToLong(input_rank), SizeToLong(input_rank)}, primitive));
+    auto dim = LongToSize(dim_temp < 0 ? dim_temp + SizeToLong(input_rank) : dim_temp);
+    if (input_shape[dim] == abstract::TensorShape::kShapeDimAny) {
       dynamic_len = true;
     } else {
-      MS_CHECK_VALUE(target_num > 0,
-                     CheckAndConvertUtils::FormatCheckIntegerMsg("out number", target_num, kGreaterThan, 0, primitive));
-      element_size = LongToSize(target_num);
-      // For Ascend only, move to backend pass latter.
-      primitive->AddAttr("num", MakeValue(target_num));
+      element_size = LongToSize(input_shape[dim]);
     }
     element_shape.reserve(input_rank - 1);
     for (size_t i = 0; i < input_rank; ++i) {
-      if (MS_UNLIKELY(i == axis)) {
+      if (MS_UNLIKELY(i == dim)) {
         continue;
       }
       element_shape.push_back(input_shape[i]);
@@ -68,7 +63,6 @@ AbstractBasePtr InferOutputForRankKnown(const PrimitivePtr &primitive, const Sha
 
   auto out_tuple = std::make_shared<abstract::AbstractTuple>(out_tensors);
   if (MS_UNLIKELY(dynamic_len)) {
-    MS_LOG(EXCEPTION) << "Unstack's output is dynamic tuple is not supported";
     out_tuple->CheckAndConvertToDynamicLenSequence();
   }
   return out_tuple;
@@ -82,9 +76,8 @@ class UnstackExtBaseFrontendFuncImpl : public OpFrontendFuncImpl {
     auto tensor_type = input_type->cast<TensorTypePtr>();
     MS_EXCEPTION_IF_NULL(tensor_type);
     auto element_type = tensor_type->element()->Clone();
-    auto input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
+    const auto &input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
     if (MS_UNLIKELY(IsDynamicRank(input_shape))) {
-      MS_LOG(EXCEPTION) << "Unstack's output is dynamic tuple is not supported";
       abstract::AbstractBasePtrList out_tensors = {
         std::make_shared<abstract::AbstractTensor>(element_type, ShapeVector{abstract::TensorShape::kShapeRankAny})};
 
@@ -93,8 +86,8 @@ class UnstackExtBaseFrontendFuncImpl : public OpFrontendFuncImpl {
       return out_tuple;
     }
 
-    auto axis_value = input_args[kInputIndex1]->GetValue();
-    return InferOutputForRankKnown(primitive, input_shape, axis_value, element_type);
+    auto dim_value = input_args[kInputIndex1]->GetValue();
+    return InferOutputForRankKnown(primitive, input_shape, dim_value, element_type);
   }
 };
 
