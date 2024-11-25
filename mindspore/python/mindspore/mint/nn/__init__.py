@@ -32,6 +32,12 @@ from mindspore.nn.layer.basic import Identity
 # 4
 
 # 5
+from mindspore.mint.nn.layer.padding import (
+    ConstantPad1d, ConstantPad2d, ConstantPad3d,
+    ZeroPad1d, ZeroPad2d, ZeroPad3d,
+    ReflectionPad1d, ReflectionPad2d, ReflectionPad3d,
+    ReplicationPad1d, ReplicationPad2d, ReplicationPad3d
+)
 
 # 6
 from mindspore.nn.layer.basic import UnfoldExt as Unfold
@@ -762,6 +768,18 @@ __all__ = [
     # 4
 
     # 5
+    'ConstantPad1d',
+    'ConstantPad2d',
+    'ConstantPad3d',
+    'ZeroPad1d',
+    'ZeroPad2d',
+    'ZeroPad3d',
+    'ReflectionPad1d',
+    'ReflectionPad2d',
+    'ReflectionPad3d',
+    'ReplicationPad1d',
+    'ReplicationPad2d',
+    'ReplicationPad3d',
 
     # 6
     'Fold',
