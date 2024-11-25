@@ -2967,7 +2967,7 @@ def test_generator_with_collate_fn():
 
     class DictDataset:
         def __init__(self):
-            self.data = [{"data": np.array([i], dtype=np.int32)} for i in range(10)]
+            self.data = [({"data": np.array([i], dtype=np.int32)}, 1) for i in range(10)]
 
         def __getitem__(self, index):
             return self.data[index]
@@ -2975,16 +2975,17 @@ def test_generator_with_collate_fn():
         def __len__(self):
             return len(self.data)
 
-    def collate_fn(batch):
-        batch = [data["data"] for data in batch]
-        return np.stack(batch, axis=0)
+    def collate_fn(data, label):
+        data = [sample["data"] for sample in data]
+        return np.stack(data, axis=0), np.stack(label, axis=0)
 
-    dataset = ds.GeneratorDataset(DictDataset(), column_names=["data"],
+    dataset = ds.GeneratorDataset(DictDataset(), column_names=["data", "label"],
                                   batch_sampler=SimpleBatchSampler(), collate_fn=collate_fn)
 
     expected_res = [[[0], [1]], [[2], [3]], [[4], [5]], [[6], [7]], [[8], [9]]]
     for i, data in enumerate(dataset.create_dict_iterator(output_numpy=True, num_epochs=1)):
         np.testing.assert_array_equal(data["data"], np.array(expected_res[i], dtype=np.int32))
+        np.testing.assert_array_equal(data["label"], np.array(1))
 
 
 def test_generator_with_batch_sampler_in_recovery_mode():

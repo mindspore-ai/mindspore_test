@@ -918,7 +918,8 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
         self.max_rowsize = max_rowsize if max_rowsize is not None else -1
         self.sample_fn = None
-        self.collate_fn = (lambda data, batch_info: collate_fn(data)) if collate_fn is not None else None
+        # Ignore batch_info in the input parameter.
+        self.collate_fn = (lambda *args: collate_fn(*args[:-1])) if collate_fn is not None else None
 
     def _calculate_source_length(self):
         """Calculate the source length according to the source and sampler."""
