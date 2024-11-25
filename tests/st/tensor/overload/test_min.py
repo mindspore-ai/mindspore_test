@@ -13,16 +13,17 @@
 # limitations under the License.
 # ============================================================================
 """Test the overload functional method"""
-import mindspore as ms
-import mindspore.nn as nn
 import numpy as np
 import pytest
-
 from tests.mark_utils import arg_mark
+
+import mindspore as ms
+import mindspore.nn as nn
+from mindspore.common.api import _pynative_executor
 
 
 class MinPythonNet(nn.Cell):
-    def construct(self, x, axis=None, keepdims=False, initial=None, where=None, return_indices=False):
+    def construct(self, x, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
         return x.min(axis, keepdims, initial=initial, where=where, return_indices=return_indices)
 
 
@@ -47,8 +48,12 @@ def test_method_min_python(mode):
     # test 1: using positional args
     net = MinPythonNet()
     x = ms.Tensor(np.arange(4).reshape((2, 2)).astype(np.float32))
-    output = net(x, 0, False, 9, ms.Tensor([False, True]), False)
+    output = net(x, 0, False, initial=9, where=ms.Tensor([False, True]), return_indices=False)
     expect_output = np.array([9., 1.], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expect_output)
+
+    output = net(x, (0, 1), False, initial=9, where=ms.Tensor([False, True]), return_indices=False)
+    expect_output = 1.0
     assert np.allclose(output.asnumpy(), expect_output)
 
     # test 2: using default args.
@@ -59,6 +64,22 @@ def test_method_min_python(mode):
     output = net(x, axis=0, keepdims=False, initial=9, where=ms.Tensor([False, True]), return_indices=False)
     expect_output = np.array([9., 1.], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expect_output)
+
+    # test 4: error input.
+    with pytest.raises(TypeError) as error_info:
+        net(x, axis=0, keepdims=False, initial=9, where=None, return_indices=False)
+        _pynative_executor.sync()
+    assert "Failed calling Min with " in str(error_info.value)
+
+    with pytest.raises(TypeError) as error_info:
+        net(x, axis=0, keepdims=False, initial=True, where=ms.Tensor([False, True]), return_indices=False)
+        _pynative_executor.sync()
+    assert "Failed calling Min with " in str(error_info.value)
+
+    with pytest.raises(TypeError) as error_info:
+        net(x, axis=0, keepdims=False, initial=9, where=ms.Tensor([False, True]), return_indices=1)
+        _pynative_executor.sync()
+    assert "Failed calling Min with " in str(error_info.value)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
