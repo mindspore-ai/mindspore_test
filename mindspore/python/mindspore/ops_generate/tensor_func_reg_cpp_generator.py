@@ -42,10 +42,11 @@ class TensorFuncRegCppGenerator(BaseGenerator):
 
     def __init__(self):
         self.TENSOR_FUNC_CC_REG = template.TENSOR_FUNC_CC_REG
-        self.TENSOR_FUNC_HEADER_REG = template.TENSOR_FUNC_HEADER_REG
-        self.TENSOR_FUNC_HEADER_BODY = template.TENSOR_FUNC_HEADER_BODY
         self.TENSOR_FUNC_CALL_BODY = template.TENSOR_FUNC_CALL_BODY
         self.TENSOR_FUNC_OVERLOAD_CALL_BODY = template.TENSOR_FUNC_OVERLOAD_CALL_BODY
+        self.TENSOR_FUNC_HEADER = template.TENSOR_FUNC_HEADER
+        self.TENSOR_FUNC_SOURCE = template.TENSOR_FUNC_SOURCE
+        self.TENSOR_FUNC_UTILS = template.TENSOR_FUNC_UTILS
         self.TENSOR_FUNC_UT_BODY = template.TENSOR_FUNC_UT_BODY
         self.TENSOR_FUNC_UT_OVERLOAD_BODY = template.TENSOR_FUNC_UT_OVERLOAD_BODY
         self.TENSOR_CPP_METHOD = template.TENSOR_CPP_METHOD
@@ -75,7 +76,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         self.pyboost_return_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
-            'return ToPython(Tensor${class_name}Register::GetOp()(arg_list));\n'
+            'return ToPython(TensorPyboostMethodRegister::'
+            'GetOp(tensor::TensorPyboostMethod::k${class_name})(arg_list));\n'
         )
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
@@ -102,10 +104,9 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             '  ${arg_handler_str}\n'
             '}\n'
         )
-        self.header_func_def_template = Template(
-            'py::object TensorMethod${class_name}(const py::object &self, '
-            'const py::args &py_args, '
-            'const py::kwargs &py_kwargs);'
+        self.header_func_header_template = Template(
+            "py::object TensorMethod${class_name}"
+            "(const py::object &self, const py::args &py_args, const py::kwargs &py_kwargs);\n"
         )
         # The format of arg_handler_map is {arg_handler_name : list of supported types}.
         # The first one of type list is the target dtype. Types corresponds to type_str_map.
@@ -120,41 +121,56 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                                 "to_rates": "int|tuple[int]|list[int]"}
         self.input_args_name = {"input", "x", "input_x"}
 
-    def generate(self, work_path, func_protos_data, alias_func_mapping):
+    def generate(self, work_path, op_protos, func_protos_data, alias_func_mapping):
         """
         Generates C++ header and source files for tensor function registrations.
 
         Args:
             work_path (str): The directory where the generated files will be saved.
+            op_protos (list): A list of tensor op prototypes.
             func_protos_data (dict): Dictionary mapping function names to lists of TensorFuncProto objects.
             alias_func_mapping (dict): A dictionary mapping function name to its alias function names.
         """
-        func_header_body_list, func_call_body_list = [], []
 
         all_op_func_data, single_op_func_data, overload_op_func_data = op_api_proto.categorize_func_data(
             func_protos_data)
 
-        def process_func_data_wrapper(processor, func_data):
-            """
-            A wrapper func to process func_data.
-            """
-            header_body, call_body = processor(func_data)
-            func_header_body_list.extend(header_body)
-            func_call_body_list.extend(call_body)
+        tensor_method_list = self._get_op_enum_name_list(op_protos)
+        self._create_single_op_source_files(work_path, single_op_func_data)
+        self._create_overload_op_source_files(work_path, overload_op_func_data)
 
-        process_func_data_wrapper(self._get_single_op_str, single_op_func_data)
-        process_func_data_wrapper(self._get_overload_op_str, overload_op_func_data)
-
-        func_def_body_list, func_header_def_list, tensor_cpp_methods_list = self._get_sorted_func_def_body(
+        func_def_body_list, tensor_cpp_methods_list, tensor_api_declaration_list = self._get_sorted_func_def_body(
             all_op_func_data, alias_func_mapping)
+        tensor_func_header = self.TENSOR_FUNC_HEADER.replace(tensor_api_declaration_list=tensor_api_declaration_list)
+        save_file(os.path.join(work_path, K.TENSOR_FUNC_PATH), f"tensor_api.h",
+                  tensor_func_header)
         self._generate_func_name_for_stub_tensor(work_path, tensor_cpp_methods_list)
-        func_cc_reg = self.TENSOR_FUNC_CC_REG.replace(func_call_body=func_call_body_list,
-                                                      func_def_body=func_def_body_list)
-        func_header_reg = self.TENSOR_FUNC_HEADER_REG.replace(func_header_body=func_header_body_list,
-                                                              func_def_list=func_header_def_list)
+        func_cc_reg = self.TENSOR_FUNC_CC_REG.replace(func_def_body=func_def_body_list)
+        tensor_methods = self.TENSOR_FUNC_UTILS.replace(tensor_methods=tensor_method_list)
 
-        save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.h", func_header_reg)
+        save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_utils.h", tensor_methods)
         save_file(os.path.join(work_path, K.TENSOR_FUNC_REGISTER_PATH), "tensor_func_reg.cc", func_cc_reg)
+
+    def _get_op_enum_name_list(self, op_protos):
+        """
+        Extracts operation class names and returns them as a formatted list.
+
+        Args:
+            op_protos (list): A list of operation prototype objects, where each object has an `op_class`
+                              with a `name` attribute.
+
+        Returns:
+            list: A list of formatted strings, where each string is of the form 'k<name>,\n', where <name>
+                  is the class name from the `op_class` attribute.
+
+        """
+        tensor_method_list = []
+        for op_proto in op_protos:
+            if op_proto.op_dispatch is None or not op_proto.op_dispatch:
+                continue
+            class_name = op_proto.op_class.name
+            tensor_method_list.append(f"k{class_name},\n")
+        return tensor_method_list
 
     def _generate_func_name_for_stub_tensor(self, work_path, tensor_cpp_methods_list):
         """
@@ -187,19 +203,19 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         Returns:
             tuple: A tuple containing two lists:
                 - func_def_body_list (list of str): A list of formatted function definition strings.
-                - func_header_def_list (list of str): A list of formatted function header strings.
+                - tensor_cpp_methods_list (list of str): A list of formatted function header strings.
         """
         func_def_body_list = []
-        func_header_def_list = []
         tensor_cpp_methods_list = []
+        tensor_api_declaration_list = ""
         for func_api_name, func_protos in all_op_func_data.items():
             if len(func_protos) == 1:
                 func_proto = func_protos[0]
                 func_name = func_proto.func_name
                 class_name = func_proto.op_proto.op_class.name
-                func_header_def_list.append(self.header_func_def_template.replace(class_name=class_name))
                 func_def_body_list.append(self.func_def_reg.replace(func_name=func_name, class_name=class_name))
                 tensor_cpp_methods_list.append(func_name)
+                tensor_api_declaration_list += self.header_func_header_template.replace(class_name=class_name)
                 if func_name in alias_func_mapping:
                     for alias_func_name in alias_func_mapping[func_name]:
                         func_def_body_list.append(
@@ -207,64 +223,18 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                         tensor_cpp_methods_list.append(alias_func_name)
             elif len(func_protos) > 1:
                 formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
-                func_header_def_list.append(self.header_func_def_template.replace(class_name=formatted_class_name))
                 func_def_body_list.append(
                     self.func_def_reg.replace(func_name=func_api_name, class_name=formatted_class_name))
                 tensor_cpp_methods_list.append(func_api_name)
+                tensor_api_declaration_list += self.header_func_header_template.replace(class_name=formatted_class_name)
                 if func_api_name in alias_func_mapping:
                     for alias_func_name in alias_func_mapping[func_api_name]:
                         func_def_body_list.append(self.func_def_reg.replace(func_name=alias_func_name,
                                                                             class_name=formatted_class_name))
                         tensor_cpp_methods_list.append(alias_func_name)
-        return func_def_body_list, func_header_def_list, tensor_cpp_methods_list
+        return func_def_body_list, tensor_cpp_methods_list, tensor_api_declaration_list
 
-    def _get_single_op_str(self, single_op_func_data):
-        """
-        Generates C++ strings for single operation function registrations.
-
-        Args:
-            single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
-
-        Returns:
-            tuple: Updated str list for generating C++ header and source files.
-        """
-        func_header_body_list = self._get_single_func_header_body_list(single_op_func_data)
-        func_call_body_list = self._get_single_func_call_body_list(single_op_func_data)
-
-        return func_header_body_list, func_call_body_list
-
-    def _get_overload_op_str(self, overload_op_func_data):
-        """
-        Generates C++ strings for overloaded operation function registrations.
-
-        Args:
-            overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
-
-        Returns:
-            tuple: Updated str list for generating C++ header and source files.
-        """
-        func_header_body_list = self._get_overload_func_header_body_list(overload_op_func_data)
-        func_call_body_list = self._get_overload_func_call_body_list(overload_op_func_data)
-
-        return func_header_body_list, func_call_body_list
-
-    def _get_single_func_header_body_list(self, single_op_func_data):
-        """
-        Generates the list of header body strings for single operation functions.
-
-        Args:
-            single_op_func_data (dict): Dictionary of tensor function prototypes with only one definition.
-
-        Returns:
-            list: Updated str list for generating C++ header body files.
-        """
-        func_header_body_list = []
-        for _, func_proto in single_op_func_data.items():
-            class_name = func_proto.op_proto.op_class.name
-            func_header_body_list.append(self.TENSOR_FUNC_HEADER_BODY.replace(class_name=class_name))
-        return func_header_body_list
-
-    def _get_single_func_call_body_list(self, single_op_func_data):
+    def _create_single_op_source_files(self, work_path, single_op_func_data):
         """
         Generates the list of call body strings for single operation functions.
 
@@ -274,7 +244,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         Returns:
             list: Updated str list for generating C++ function call bodies.
         """
-        func_call_body_list = []
         for _, func_proto in single_op_func_data.items():
             func_name = func_proto.func_name
             class_name = func_proto.op_proto.op_class.name
@@ -287,32 +256,20 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 raise ValueError(
                     f'There must be only one field named \'input\'. But got {len(self_index)} in {func_name}')
             ut_body = self.TENSOR_FUNC_UT_BODY.replace(py_method=func_proto.py_method)
-            func_call_body_list.append(self.TENSOR_FUNC_CALL_BODY.replace(
+            tensor_func_single_call_body = self.TENSOR_FUNC_CALL_BODY.replace(
                 class_name=class_name,
                 func_name=func_name,
                 device_dispatcher=device_dispatcher_str,
                 signatures=signature_str,
                 max_args=max_size,
                 self_index=self_index,
-                ut_body=ut_body))
-        return func_call_body_list
+                ut_body=ut_body)
+            tensor_func_source = self.TENSOR_FUNC_SOURCE.replace(tenosr_func_call_body=tensor_func_single_call_body,
+                                                                 func_name=func_name)
+            save_file(os.path.join(work_path, K.TENSOR_FUNC_PATH), f"tensor_{func_name}.cc",
+                      tensor_func_source)
 
-    def _get_overload_func_header_body_list(self, overload_op_func_data):
-        """
-        Generates the list of header body strings for overloaded operation functions.
-
-        Args:
-            overload_op_func_data (dict): Dictionary of tensor function prototypes with overloaded definitions.
-
-        Returns:
-            list: Updated str list for generating C++ header body files.
-        """
-        func_header_body_list = []
-        for _, func_protos in overload_op_func_data.items():
-            func_header_body_list.append(self._get_overload_tensor_func_header_body_str(func_protos))
-        return func_header_body_list
-
-    def _get_overload_func_call_body_list(self, overload_op_func_data):
+    def _create_overload_op_source_files(self, work_path, overload_op_func_data):
         """
         Generates the list of call body strings for overloaded operation functions.
 
@@ -322,28 +279,12 @@ class TensorFuncRegCppGenerator(BaseGenerator):
         Returns:
             list: Updated str list for generating C++ function call bodies.
         """
-        func_call_body_list = []
         for func_api_name, func_protos in overload_op_func_data.items():
-            func_call_body_list.append(self._get_overload_func_call_str(func_api_name, func_protos))
-        return func_call_body_list
-
-    def _get_overload_tensor_func_header_body_str(self, func_protos):
-        """
-        Generates C++ header body string for overloaded tensor functions.
-
-        Args:
-            func_protos (list): List of TensorFuncProto objects representing the function prototypes.
-
-        Returns:
-            str: Generated header body string for the overloaded functions.
-        """
-        overload_tensor_func_header_body_str = ''
-        for tensor_proto in func_protos:
-            if 'deprecated' in tensor_proto.op_proto.op_name:
-                continue
-            overload_tensor_func_header_body_str += self.TENSOR_FUNC_HEADER_BODY.replace(
-                class_name=tensor_proto.op_proto.op_class.name)
-        return overload_tensor_func_header_body_str
+            tensor_func_overload_call_body = self._get_overload_func_call_str(func_api_name, func_protos)
+            tensor_func_source = self.TENSOR_FUNC_SOURCE.replace(tenosr_func_call_body=tensor_func_overload_call_body,
+                                                                 func_name=func_api_name)
+            save_file(os.path.join(work_path, K.TENSOR_FUNC_PATH), f"tensor_{func_api_name}.cc",
+                      tensor_func_source)
 
     def _get_overload_func_call_str(self, func_api_name, func_protos):
         """
