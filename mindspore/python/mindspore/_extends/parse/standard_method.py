@@ -39,7 +39,7 @@ from ...ops import operations as P
 from ...ops import composite
 from ...ops.operations import array_ops
 from ...ops.composite import MultitypeFuncGraph, env_get, hyper_add, \
-    zeros_like, ones_like, repeat_elements, multitype_ops, _ones_like_for_grad
+    zeros_like, ones_like, multitype_ops, _ones_like_for_grad
 from ...ops.composite.multitype_ops import _constexpr_utils as const_utils
 from ...ops.composite.multitype_ops import _compile_utils as compile_utils
 from ...ops.operations._inner_ops import Format
@@ -2183,71 +2183,54 @@ def nanmedian(input, axis=-1, keepdims=False):
     return F.nanmedian(input, axis, keepdims)
 
 
-def repeat(x, repeats, axis=None):
+def repeat(x, *args, repeats=None):
     """
     Repeat elements of an array.
 
     Args:
         x (Tensor): Input tensor.
-        repeats (Union[int, tuple, list]): The number of repetitions for each element.
-            `repeats` is broadcasted to fit the shape of the given axis.
-        axis (int, optional): The axis along which to repeat values. By default,
-            use the flattened input tensor, and return a flat output tensor.
+        args (*int): To simulate an overload like ``repeat(x, *repeats: int)``.
+        repeats (Union[int, tuple[int], list[int]]): The number of repetitions of `a` along
+            each axis. Requires that ``len(repeats) >= x.rank``.
 
     Returns:
-        Tensor, has the same shape as input tensor except along the given axis.
+        Tensor, the repeated output array.
 
     Raises:
-        ValueError: if axis is out of range.
         TypeError: if input is not a Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
-        >>> import mindspore.numpy as np
-        >>> x = np.array(3)
-        >>> print(x.repeat(4))
-        [3 3 3 3]
-        >>> x = np.array([[1,2],[3,4]])
-        >>> print(x.repeat(2))
-        [1 1 2 2 3 3 4 4]
-        >>> print(x.repeat(3, axis=1))
-        [[1 1 1 2 2 2]
-        [3 3 3 4 4 4]]
-        >>> print(x.repeat([1,2], axis=0))
-        [[1 2]
-        [3 4]
-        [3 4]]
+        >>> from mindspore import Tensor
+        >>> a = tensor([0, 1, 2])
+        >>> output = a.repeat(2, 2)  # same as a.repeat((2, 2))
+        >>> print(output)
+        [[0 1 2 0 1 2]
+         [0 1 2 0 1 2]]
     """
-    if not isinstance(repeats, (tuple, list)):
-        repeats = (repeats,)
-    for element in repeats:
-        if not isinstance(element, int):
-            const_utils.raise_type_error("Each element should be integer")
-    if axis is None:
-        x = ravel(x)
-        axis = 0
-    if not isinstance(axis, int):
-        const_utils.raise_type_error('axes should be integers')
-    check_axis_in_range(axis, x.ndim)
-    axis = axis + x.ndim if axis < 0 else axis
-
-    if len(repeats) == 1:
-        repeats = repeats[0]
-        if repeats == 0:
-            return empty_tensor(x.dtype)
-        return repeat_elements(x, repeats, axis)
-    size = x.shape[axis]
-    if len(repeats) != size:
-        const_utils.raise_value_error(
-            'operands could not be broadcast together')
-    subs = P.Split(axis, size)(x)
-    repeated_subs = []
-    for sub_item, rep in zip(subs, repeats):
-        if rep != 0:
-            repeated_subs.append(repeat_elements(sub_item, rep, axis))
-    return P.Concat(axis)(repeated_subs)
+    # only simulate 2 overload of repeat. Further check by F.tile
+    if repeats is None:
+        # called as x.repeat(...)
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            repeats = tuple(args[0])  # called as x.repeat([x0, x1, ...])
+        else:
+            repeats = args  # called as x.repeat(x0, x1, ...)
+    else:
+        if args:  # simulate an exception thrown by Python interpreter
+            raise TypeError("repeat() got multiple values for argument 'repeat'")
+        # called as x.repeat(repeats=[x0, x1, ...])
+        if isinstance(repeats, list):
+            repeats = tuple(repeats)
+    # else called as x.repeat(repeats=...)
+    x_rank = F.rank(x)
+    if len(repeats) < x_rank:
+        raise ValueError(
+            "For repeat, number of items of repeats can not be smaller than the number of "
+            f"dimensions of self tensor, but got repeats with {len(repeats)}"
+            f" items and rank of self Tensor is {x_rank}.")
+    return F.tile(x, repeats)
 
 
 def repeat_interleave(x, repeats, dim=None):

@@ -1,0 +1,11 @@
+repeat:
+  op_yaml: repeat_op.yaml
+  py_method: tensor_repeat
+  Ascend: pyboost
+  CPU: py_method  # raise a not-supported exception
+  GPU: py_method  # raise a not-supported exception
+  interface: tensor
+  varargs: repeats
+  # Tensor.repeat(*repeats)
+  # Tensor.repeat(repeats=[...])
+  # Tensor.repeat(repeats=(...,))

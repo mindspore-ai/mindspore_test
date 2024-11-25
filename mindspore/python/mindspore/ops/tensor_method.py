@@ -932,6 +932,9 @@ def deprecated_tensor_remainder(input, divisor):
 
 
 # 86 repeat
+def tensor_repeat(input, *repeats):
+    raise RuntimeError("'repeat' is not supported on this device.")
+
 
 # 87 repeat_interleave
 def deprecated_tensor_repeat_interleave(input, repeats, dim=None):

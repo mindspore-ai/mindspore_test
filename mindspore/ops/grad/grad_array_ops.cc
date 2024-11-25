@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <iterator>
 #include <numeric>
+#include <tuple>
 #include <vector>
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/array_op_name.h"
@@ -120,6 +121,10 @@ bool MaybeOverlapMemory(const std::vector<int64_t> &shapes, const std::vector<in
     }
   }
   return false;
+}
+
+inline NodePtr IsEmptySequence(Emitter *e, const NodePtr &x) {
+  return e->Equal(e->Emit("sequence_len", {x}), e->Value<ShapeValueDType>(0));
 }
 }  // namespace
 
@@ -3229,6 +3234,132 @@ REG_BPROP_BUILDER("TransShape").SetUnusedInputs({i1, i2}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("TransShape", {dout, ib->Shape(x)});
   return {dx, ib->OutZeros(shape)};
+});
+
+/**
+ * @brief Calculate the shape for gradient of repeat to do reduce (twice) and reshape. Cases:
+ *        Generate 3 ShapeVector:
+ *        0. The shape to pre-reduce the grad (if empty, skip this option);
+ *        1. The new shape for the grad to call Reshape after pre-reduce;
+ *        2. The dims to call ReduceSum after Reshape.
+ *        If 2 is empty, the grad func should skip both step 1 and 2 (it means all of repeats are ones)
+ *        except dynamic shape case in graph mode.
+ *
+ * @param input The shape of forward inputs[0] (input / self).
+ * @param repeats The value of forward inputs[1] (repeats).
+ * @return std::tuple<ShapeVector, ShapeVector, ShapeVector> Return shapes. See brief.
+ */
+static std::tuple<ShapeVector, ShapeVector, ShapeVector> RepeatGradShapesCalcCommonFunc(const ShapeVector &input,
+                                                                                        const ShapeVector &repeats) {
+  const auto input_rank = static_cast<ShapeValueDType>(input.size());
+  const auto extra_rank = static_cast<ShapeValueDType>(repeats.size()) - input_rank;
+  ShapeVector pre_reduce_dims{};
+  pre_reduce_dims.reserve(extra_rank);
+  // If has broadcasted dims, reduce them first to let the rank be smaller for reshape and reduceSum.
+  for (ShapeValueDType i = 0; i < extra_rank; ++i) {
+    pre_reduce_dims.push_back(i);
+  }
+  // For existing dims, size of each dim x of grad equals to repeats[x] * input.shape[x].
+  // If repeat of this dim larger than 1,
+  // reshape to split this dim into (repeats[x], input.shape[x]), and then reduce the `repeat` dim.
+  // OtherWise, no need to reduce.
+  ShapeVector reduce_dims{}, grad_new_shape{};
+  reduce_dims.reserve(input_rank);
+  grad_new_shape.reserve(input.size() * i2);
+  for (ShapeValueDType input_dim = 0; input_dim < input_rank; ++input_dim) {
+    const auto input_size = *(input.begin() + input_dim), repeat = *(repeats.begin() + (input_dim + extra_rank));
+    if (repeat > 1) {
+      reduce_dims.push_back(grad_new_shape.size());
+      grad_new_shape.push_back(repeat);
+    }
+    grad_new_shape.push_back(repeat == 0 ? 0 : input_size);
+  }
+  return {pre_reduce_dims, grad_new_shape, reduce_dims};
+}
+
+// Inputs are: shape of input, value of repeats
+// Generate 4 ShapeVector. If element 0 is empty, dynamic shape grad func should directly return Zeros.
+// element 1 to 3 is the same as RepeatGradShapesCalcCommonFunc if returns[0] is false, else are all empty.
+DEF_PURE_SHAPE_CALC(g_repeat)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    const auto &input = inputs[kIndex0], &repeats = inputs[kIndex1];
+    if (IsShapeNone(input) || IsShapeNone(repeats)) {
+      return {{0}, {}, {}, {}};
+    }
+    const auto [pre_reduce, new_shape, reduce] = RepeatGradShapesCalcCommonFunc(input, repeats);
+    return {{1}, pre_reduce, new_shape, reduce};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    const auto &input = inputs[kIndex0], &repeats = inputs[kIndex1];
+    const auto has_unknown = IsDynamicRank(input) || IsDynamicShape(input) || !unknown_inputs.empty();
+    if (has_unknown) {
+      return {abstract::TensorShape::kShapeDimAny, abstract::TensorShape::kShapeDimAny,
+              abstract::TensorShape::kShapeDimAny, abstract::TensorShape::kShapeDimAny};
+    }
+    if (IsShapeNone(input) || IsShapeNone(repeats)) {
+      return {i0, i0, i0, i0};
+    }
+    // len(repeats) < input.rank is forbidden by forward infer
+    const auto input_rank = static_cast<ShapeValueDType>(input.size());
+    const auto repeats_len = static_cast<ShapeValueDType>(repeats.size());
+    const auto extra_rank = repeats_len - input_rank;
+    // If repeat of this dim larger than 1,
+    // reshape to split this dim into (repeats[-x], input.shape[-x]), and then reduce the `repeat` dim.
+    ShapeValueDType num_splited = 0;
+    for (auto it = repeats.begin() + extra_rank; it != repeats.end(); ++it) {
+      if (*it > 1) {
+        ++num_splited;
+      }
+    }
+    return {i1, extra_rank, input_rank + num_splited, num_splited};
+  });
+
+REG_BPROP_BUILDER("Repeat").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+  const auto input = ib->GetInput(kIndex0);
+  const auto &input_shape = ib->GetShape(input);
+  const auto repeats = ib->GetInput(kIndex1);
+  const auto repeats_optional = GetArrayValue<ShapeValueDType>(repeats->BuildValue());
+  auto grad = ib->GetInput(kIndex3);
+  const auto repeats_unknown = (!repeats_optional.has_value()) || repeats_optional->HasUnknownValue();
+  const auto is_dyn_case = IsDynamic(input_shape) || repeats_unknown;
+  if (is_dyn_case) {
+    const auto calc_result = ib->ShapeCalc(g_repeat, {input, repeats}, {kIndex1});
+    const auto return_zeros = calc_result[0];  // If it's empty, directly return zeros
+    const auto pre_reduce = calc_result[1], new_shape = calc_result[2], reduce = calc_result[3];
+    const auto input_dtype = ib->Value(static_cast<int64_t>(ib->GetDtypeId(input)));
+    auto input_grad = ib->Conditional(
+      IsEmptySequence(ib, return_zeros),
+      [input, input_dtype](Emitter *e) -> NodePtrList { return {e->ZerosLikeExt(input, input_dtype)}; },
+      [grad, pre_reduce, new_shape, reduce](Emitter *e) -> NodePtrList {
+        auto grad1 = e->Conditional(
+          IsEmptySequence(e, pre_reduce), [grad](Emitter *e) -> NodePtrList { return {grad}; },
+          [grad, pre_reduce](Emitter *e) -> NodePtrList {
+            return {e->SumExt(grad, pre_reduce, e->Value<bool>(false))};
+          });
+        return {e->Conditional(
+          IsEmptySequence(e, reduce), [grad1](Emitter *e) -> NodePtrList { return {grad1}; },
+          [grad1, new_shape, reduce](Emitter *e) -> NodePtrList {
+            // Slow path when need to call reduce: not all of repeats are all 1.
+            return {e->SumExt(e->Reshape(grad1, new_shape), reduce, e->Value<bool>(false))};
+          })};
+      });
+    return {input_grad, ib->OutZeros(repeats)};
+  } else {
+    auto repeats_val = repeats_optional->ToVector();
+    // Fast path for empty
+    if (IsShapeNone(input_shape) || IsShapeNone(repeats_val)) {
+      return {ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input)))), ib->OutZeros(repeats)};
+    }
+    const auto [pre_reduce, new_shape, reduce] = RepeatGradShapesCalcCommonFunc(input_shape, repeats_val);
+    if (!pre_reduce.empty()) {
+      grad = ib->SumExt(grad, ib->Value(pre_reduce), ib->Value<bool>(false));
+    }
+    if (!reduce.empty()) {
+      // Slow path when need to call reduce: not all of repeats are all 1.
+      grad = ib->SumExt(ib->Reshape(grad, new_shape), ib->Value(reduce), ib->Value<bool>(false));
+    }
+    return {grad, ib->OutZeros(repeats)};
+  }
 });
 
 REG_BPROP_BUILDER("RepeatInterleaveInt").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
