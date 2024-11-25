@@ -52,7 +52,7 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_nearest1d_op, upsample_nearest2d_op, upsample_nearest3d_op,
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
-                                         masked_fill_op, masked_select, ones, flatten_ext, convolution)
+                                         masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d)
 from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, ConstantPadND, MaxPoolWithIndices, \
     PromptFlashAttention, MaxPoolWithMask, ConvolutionStr
 from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_padding_op
@@ -6284,92 +6284,6 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
         return conv(input, weight, bias, stride, padding, dilation, False, (0, 0), groups)
     raise TypeError(f"For conv2d, the parameter 'padding' must be a tuple/list " \
                     f"or a string, but got {type(padding)}")
-
-
-def _batchify(input, num_spatial_dims, ops_name):
-    """Conv input batchify"""
-    dim_count_no_batch = num_spatial_dims + 1
-    dim_count_batch = dim_count_no_batch + 1
-    input_rank = F.rank(input)
-    is_batched = (input_rank == dim_count_batch)
-    if  F.isconstant(input_rank) and not (input_rank == dim_count_no_batch or is_batched):
-        raise TypeError(f"For {ops_name}, Expected {dim_count_no_batch}D (unbatched) or {dim_count_batch}D (batched)," \
-                        f"but got input of ndim: {input_rank}D")
-    if is_batched:
-        return input, is_batched
-    return input.unsqueeze(0), is_batched
-
-
-def conv_transpose2d(input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1):
-    r"""
-    Calculates a 2D transposed convolution, which can be regarded as Conv2d for the gradient of the input,
-    also called deconvolution (although it is not an actual deconvolution).
-
-    The input is typically of shape :math:`(N, C_{in}, H_{in}, W_{in})`,
-    where :math:`N` is batch size, :math:`C_{in}` is space dimension,
-    :math:`H_{in}, W_{in}` are the height and width of the feature layer respectively.
-
-    When Conv2d and Conv2dTranspose are initialized with the same parameters, and `pad_mode` is set to 'pad',
-    :math:`dilation * (kernel\_size - 1) - padding` amount of zero will be paded to the height and width
-    directions of the input, they are inverses of each other in regard to the input and output shapes in this case.
-    However, when `stride` > 1, Conv2d maps multiple input shapes to the same output shape. Deconvolutional network
-    can refer to `Deconvolutional Networks <https://www.matthewzeiler.com/mattzeiler/deconvolutionalnetworks.pdf>`_.
-
-    Args:
-        input (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
-        weight (Tensor): Tensor of shape
-            :math:`(N, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`, then the size of kernel
-            is :math:`(\text{kernel_size[0]}, \text{kernel_size[1]})`.
-        bias (Tensor, optional): Bias Tensor with shape :math:`(C_{out})`.
-            When bias is ``None`` , zeros will be used. Default: ``None`` .
-        stride (Union(int, tuple[int]), optional): The distance of kernel moving, an int number that represents
-            the height and width of movement are both strides, or a tuple of two int numbers that
-            represent height and width of movement respectively. Default: ``1`` .
-        padding (Union(int, tuple[int], list[int]), optional): Implicit paddings on both sides of the input `x`.
-            Can be an integer or a tuple/list with 2 integers.
-        output_padding (Union[int, tuple[int]]): The number of padding on the height and width directions of the output.
-            The data type is an integer or a tuple of two integers. If `output_padding` is an integer,
-            then the bottom and right padding are all equal to `output_padding`. If `output_padding` is a tuple of
-            2 integers, then the bottom and right padding is equal to `output_padding[0]`, `output_padding[1]`
-            respectively.
-        groups (int, optional): Splits `input` into groups. Default: ``1`` .
-        dilation (Union(int, tuple[int]), optional): Gaps between kernel elements.The data type is int or a tuple of
-            2 integers. Specifies the dilation rate to use for dilated convolution. If set to be :math:`k > 1`,
-            there will be :math:`k - 1` pixels skipped for each sampling location. Its value must
-            be greater than or equal to 1 and bounded by the height and width of the input `x`. Default: ``1`` .
-
-    Returns:
-        Tensor, the value that applied 2D convolution. The shape is :math:`(N, C_{out}, H_{out}, W_{out})`.
-        To see how different pad modes affect the output shape, please refer to
-        :class:`mindspore.nn.Conv2dTranspose` for more details.
-
-
-    Raises:
-        TypeError: If `stride`, `padding` or `dilation` is neither an int nor a tuple.
-        TypeError: `groups` is not an int.
-        TypeError: If `bias` is not a Tensor.
-        ValueError: If  the shape of `bias` is not :math:`(C_{out})` .
-        ValueError: If `stride` or `dilation` is less than 1.
-        ValueError: If `padding` is a tuple/list whose length is not equal to 2.
-
-    Supported Platforms:
-        ``Ascend``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.ones([1, 6, 32, 32]), mindspore.float32)
-        >>> weight = Tensor(np.ones([6, 3, 5, 5]), mindspore.float32)
-        >>> output = ops.conv_transpose2d(x, weight)
-        >>> print(output.shape)
-        (1, 3, 36, 36)
-    """
-    input_, is_batched = _batchify(input, 2, "conv_transpose2d")
-    output = convolution(input_, weight, bias, stride, padding, dilation, True, output_padding, groups)
-    if is_batched:
-        return output
-    return output.squeeze(0)
 
 
 def hardtanh(input, min_val=-1.0, max_val=1.0):

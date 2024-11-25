@@ -48,9 +48,7 @@ class _Conv(Cell):
                  groups,
                  bias,
                  padding_mode,
-                 dtype=mstype.float32,
-                 weight_init=None,
-                 bias_init=None):
+                 dtype=mstype.float32):
         """Initialize _Conv."""
         super(_Conv, self).__init__()
         if groups <= 0:
@@ -103,22 +101,17 @@ class _Conv(Cell):
             shape = [in_channels, out_channels // groups, *kernel_size]
         else:
             shape = [out_channels, in_channels // groups, *kernel_size]
-        if weight_init is None:
-            weight_init = HeUniform(math.sqrt(5))
-        self.weight_init = weight_init
-        self.weight = Parameter(initializer(self.weight_init, shape, dtype=dtype), name='weight')
+        weight_init = HeUniform(math.sqrt(5))
+        self.weight = Parameter(initializer(weight_init, shape, dtype=dtype), name='weight')
 
-        self.bias_init = bias_init
         if Validator.check_bool(bias, "bias", self.cls_name):
-            if bias_init is None:
-                fan_in, _ = _calculate_fan_in_and_fan_out(shape)
-                if fan_in != 0:
-                    bound = 1 / math.sqrt(fan_in)
-                    bias_init = Uniform(bound)
-                else:
-                    bias_init = 'zeros'
-                self.bias_init = bias_init
-            self.bias = Parameter(initializer(self.bias_init, [out_channels], dtype=dtype), name='bias')
+            fan_in, _ = _calculate_fan_in_and_fan_out(shape)
+            if fan_in != 0:
+                bound = 1 / math.sqrt(fan_in)
+                bias_init = Uniform(bound)
+            else:
+                bias_init = 'zeros'
+            self.bias = Parameter(initializer(bias_init, [out_channels], dtype=dtype), name='bias')
         else:
             self.bias = None
 
@@ -130,8 +123,7 @@ class _Conv(Cell):
         bias = self.bias is not None
         s = 'input_channels={}, output_channels={}, kernel_size={}, ' \
             'stride={}, padding={}, dilation={}, ' \
-            'groups={}, bias={}, ' \
-            'weight_init={}, bias_init={}'.format(
+            'groups={}, bias={}'.format(
                 self.in_channels,
                 self.out_channels,
                 self.kernel_size,
@@ -139,9 +131,7 @@ class _Conv(Cell):
                 self.padding,
                 self.dilation,
                 self.groups,
-                bias,
-                self.weight_init,
-                self.bias_init)
+                bias)
         return s
 
 
@@ -607,12 +597,15 @@ class ConvTranspose2d(_ConvTranspose):
     - a ``tuple`` of two ints -- in which case, the first `int` is used for the height dimension,
       and the second `int` for the width dimension
 
+    .. warning::
+        - This is an experimental API that is subject to change or deletion.
+
     Args:
         in_channels (int): Number of channels in the input image.
         out_channels (int): Number of channels produced by the convolution.
         kernel_size (Union[int, tuple(int)]): Size of the convolving kernel.
         stride (Union[int, tuple(int)], optional): Stride of the convolution. Default: ``1`` .
-        padding (Union[int, tuple(int)], optional): :math:`dilation * (kernel_size - 1) - padding` zero-padding
+        padding (Union[int, tuple(int)], optional): :math:`dilation * (kernel\_size - 1) - padding` zero-padding
             will be added to both sides of each dimension in the input. Default: ``0`` .
         output_padding (Union[int, tuple(int)], optional): Additional size added to one side
             of each dimension in the output shape. Default: ``0`` .
@@ -624,7 +617,7 @@ class ConvTranspose2d(_ConvTranspose):
         dtype (mindspore.dtype, optional): Dtype of Parameters. Default: ``None`` , when it's ``None`` ,
             the dtype of Parameters would be mstype.float32.
 
-    Attributes:
+    Variables:
         - **weigh** (Parameter) - the learnable weights of the module of shape
           :math:`(\text{in_channels}, \frac{\text{out_channels}}{\text{groups}},
           \text{kernel_size[0]}, \text{kernel_size[1]})` . The values of these weights are sampled from

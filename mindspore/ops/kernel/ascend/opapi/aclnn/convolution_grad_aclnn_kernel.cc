@@ -25,23 +25,35 @@
 
 namespace mindspore {
 namespace kernel {
+namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+}  // namespace
 
 void ConvolutionGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
+  const auto &dout_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
+  bias_size_ = {dout_shape[1]};
+
+  auto spatial_len = dout_shape.size() - kIndex2;
   stride_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex4]);
+  ExpandParamIfNeeded(&stride_, spatial_len);
   padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
+  ExpandParamIfNeeded(&padding_, spatial_len);
   dilation_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex6]);
+  ExpandParamIfNeeded(&dilation_, spatial_len);
   transposed_ = transform::ConvertKernelTensor<bool>(inputs[kIndex7]);
   output_padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex8]);
+  ExpandParamIfNeeded(&output_padding_, spatial_len);
   groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex9]);
   cube_math_type_ = OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32());
   const auto &output_mask_vec = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex10]);
   output_mask_.clear();
   std::transform(output_mask_vec.begin(), output_mask_vec.end(), std::back_inserter(output_mask_),
                  [](const int64_t &value) { return static_cast<uint8_t>(value); });
-
-  const auto &dout_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
-  bias_size_ = {dout_shape[1]};
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], bias_size_, stride_, padding_, dilation_,
                         transposed_, output_padding_, groups_, output_mask_, cube_math_type_, outputs[kIndex0],

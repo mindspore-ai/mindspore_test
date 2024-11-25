@@ -14,15 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV_TRANSPOSE_2D_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV_TRANSPOSE_2D_H_
 
+#include <memory>
+#include <vector>
 #include "infer/ops_func_impl/conv_base.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API ConvolutionFuncImpl final : public ConvBaseFunImpl {};
+class OPS_API ConvTranspose2DFuncImpl final : public ConvBaseFunImpl {
+ public:
+  ConvTranspose2DFuncImpl() {
+    idxes_.input_idx = 0;
+    idxes_.weight_idx = 1;
+    idxes_.bias_idx = 2;
+    idxes_.stride_idx = 3;
+    idxes_.padding_idx = 4;
+    idxes_.output_padding_idx = 5;
+    idxes_.groups_idx = 6;
+    idxes_.dilation_idx = 7;
+  }
+  ~ConvTranspose2DFuncImpl() = default;
+
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+};
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV_TRANSPOSE_2D_H_
