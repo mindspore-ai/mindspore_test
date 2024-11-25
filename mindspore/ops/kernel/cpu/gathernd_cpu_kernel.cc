@@ -89,13 +89,13 @@ int GatherNdCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 template <typename S, typename T>
 bool GatherNdCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                         const std::vector<kernel::KernelTensor *> &outputs) {
-  const auto *input_addr = static_cast<T *>(inputs[0]->device_ptr());
-  const auto *indices_addr = static_cast<S *>(inputs[1]->device_ptr());
-  auto output_addr = static_cast<T *>(outputs[0]->device_ptr());
+  const auto *input_addr = GetDeviceAddress<T>(inputs, 0);
+  const auto *indices_addr = GetDeviceAddress<S>(inputs, 1);
+  auto output_addr = GetDeviceAddress<T>(outputs, 0);
 
   size_t output_dim0 = dims_[0];
-  size_t output_dim1 = dims_[1];
-  size_t indices_dim1 = dims_[2];
+  size_t output_dim1 = dims_[kIndex1];
+  size_t indices_dim1 = dims_[kIndex2];
 
   size_t num = output_dim0 * output_dim1;
   auto task = [&](size_t start, size_t end) {

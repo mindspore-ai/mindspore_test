@@ -60,9 +60,9 @@ void SigmoidCrossEntropyWithLogitsCpuKernelMod::LaunchKernel(const std::vector<K
                                                              const std::vector<KernelTensor *> &outputs) const {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSigmoidCrossEntropyWithLogitsInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSigmoidCrossEntropyWithLogitsOutputsNum, kernel_name_);
-  auto *logits_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *labels_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *logits_addr = GetDeviceAddress<T>(inputs, 0);
+  auto *labels_addr = GetDeviceAddress<T>(inputs, 1);
+  auto *output_addr = GetDeviceAddress<T>(outputs, 0);
   auto zero = static_cast<T>(0.0);
   auto one = static_cast<T>(1.0);
   auto two = static_cast<T>(2.0);

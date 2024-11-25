@@ -89,8 +89,8 @@ void DCTCpuKernelMod::UpdateParam() {
 template <typename T_in, typename T_out>
 bool DCTCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                    const std::vector<kernel::KernelTensor *> &outputs) {
-  auto *input_ptr = reinterpret_cast<T_in *>(inputs[kIndex0]->device_ptr());
-  auto *output_ptr = reinterpret_cast<T_out *>(outputs[kIndex0]->device_ptr());
+  auto *input_ptr = GetDeviceAddress<T_in>(inputs, kIndex0);
+  auto *output_ptr = GetDeviceAddress<T_out>(outputs, kIndex0);
 
   // Calculate the required memory based on s and dim.
   T_out fct = static_cast<T_out>(norm_weight_);
@@ -118,8 +118,8 @@ bool DCTCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &in
 template <typename T_in, typename T_out>
 bool DCTCpuKernelMod::LaunchKernelComplex(const std::vector<kernel::KernelTensor *> &inputs,
                                           const std::vector<kernel::KernelTensor *> &outputs) {
-  auto *input_ptr = reinterpret_cast<T_in *>(inputs[kIndex0]->device_ptr());
-  auto *output_ptr = reinterpret_cast<T_in *>(outputs[kIndex0]->device_ptr());
+  auto *input_ptr = GetDeviceAddress<T_in>(inputs, kIndex0);
+  auto *output_ptr = GetDeviceAddress<T_in>(outputs, kIndex0);
 
   // Calculate the required memory based on s and dim.
   T_out fct = static_cast<T_out>(norm_weight_);
@@ -156,6 +156,10 @@ bool DCTCpuKernelMod::LaunchKernelComplex(const std::vector<kernel::KernelTensor
   free(calculate_input_imag);
   calculate_input_real = nullptr;
   calculate_input_imag = nullptr;
+  free(output_real);
+  free(output_imag);
+  output_real = nullptr;
+  output_imag = nullptr;
   return true;
 }
 

@@ -76,8 +76,8 @@ bool SpaceToDepthCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
                                             const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSpaceToDepthInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSpaceToDepthOutputsNum, kernel_name_);
-  auto input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input_addr = GetDeviceAddress<T>(inputs, 0);
+  auto output_addr = GetDeviceAddress<T>(outputs, 0);
   size_t size = inputs[0]->size() / sizeof(T);
 
   auto input_shape = input_shape_;
@@ -103,11 +103,11 @@ bool SpaceToDepthCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
       input_pos_array.back() = tmp_pos;
       int64_t output_pos = input_pos_array[0];
       output_pos = (output_pos * output_shape[1]) +
-                   (input_pos_array[1] + (block_size * (input_pos_array[2] % SizeToLong(block_size)) +
-                                          input_pos_array[3] % SizeToLong(block_size)) *
+                   (input_pos_array[1] + (block_size * (input_pos_array[kIndex2] % SizeToLong(block_size)) +
+                                          input_pos_array[kIndex3] % SizeToLong(block_size)) *
                                            input_shape[1]);
-      output_pos = (output_pos * output_shape[2]) + (input_pos_array[2] / SizeToLong(block_size));
-      output_pos = (output_pos * output_shape[3]) + (input_pos_array[3] / SizeToLong(block_size));
+      output_pos = (output_pos * output_shape[kIndex2]) + (input_pos_array[kIndex2] / SizeToLong(block_size));
+      output_pos = (output_pos * output_shape[kIndex3]) + (input_pos_array[kIndex3] / SizeToLong(block_size));
       output_addr[output_pos] = input_addr[i];
     }
   };

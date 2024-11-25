@@ -75,7 +75,6 @@ ShapeArray RandpermExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   auto n_opt = input_infos[kInputIndex0]->GetScalarValue<int64_t>();
   auto type_opt = input_infos[kInputIndex3]->GetScalarValue<int64_t>();
-
   if (!n_opt.has_value() || !type_opt.has_value()) {
     return {{abstract::Shape::kShapeDimAny}};
   }

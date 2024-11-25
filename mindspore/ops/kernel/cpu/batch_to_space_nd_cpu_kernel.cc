@@ -78,8 +78,8 @@ bool BatchToSpaceNDCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
     return false;
   }
 
-  const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const auto *input = GetDeviceAddress<T>(inputs, 0);
+  auto *output = GetDeviceAddress<T>(outputs, 0);
   int ret = memset_s(output, outputs[0]->size(), 0, sizeof(T) * LongToSize(output_size_));
   if (ret != EOK) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << "', memset_s error. Error no: " << ret;

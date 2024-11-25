@@ -33,10 +33,10 @@ bool DebugCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs
                                const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kDebugInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kDebugOutputsNum, kernel_name_);
-  const auto *val = reinterpret_cast<int *>(inputs[0]->device_ptr());
+  const auto *val = GetDeviceAddress<int>(inputs, kIndex0);
   MS_LOG(DEBUG) << " launch DebugCpuKernelMod";
 
-  auto output = reinterpret_cast<int *>(outputs[0]->device_ptr());
+  auto *output = GetDeviceAddress<int>(outputs, kIndex0);
   size_t elem_num = inputs[0]->size() / sizeof(int);
   for (size_t i = 0; i < elem_num; i++) {
     output[i] = static_cast<int>(val[i]);

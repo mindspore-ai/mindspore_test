@@ -267,10 +267,10 @@ int ResizeBilinearGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &in
   if (is_null_input_) {
     return static_cast<int>(KRET_OK);
   }
-  size_t in_height = shape_[2];
-  size_t in_width = shape_[3];
-  size_t out_height = size_[2];
-  size_t out_width = size_[3];
+  size_t in_height = shape_[kIndex2];
+  size_t in_width = shape_[kIndex3];
+  size_t out_height = size_[kIndex2];
+  size_t out_width = size_[kIndex3];
   align_corners_ = inputs.at(kIndex2)->GetValueWithCheck<bool>();
   half_pixel_centers_ = inputs.at(kIndex3)->GetValueWithCheck<bool>();
   height_scale = Scaling(out_height, in_height, align_corners_);

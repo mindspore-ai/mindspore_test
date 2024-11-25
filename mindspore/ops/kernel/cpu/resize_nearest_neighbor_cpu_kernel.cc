@@ -68,8 +68,8 @@ template <typename T>
 bool ResizeNearestNeighborCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &,
                                                      const std::vector<KernelTensor *> &outputs) {
-  auto *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *input_addr = GetDeviceAddress<T>(inputs, 0);
+  auto *output_addr = GetDeviceAddress<T>(outputs, 0);
 
   if (out_height_ == in_height_ && out_width_ == in_width_) {
     for (size_t i = 0; i < output_size_; ++i) {

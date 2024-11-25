@@ -121,14 +121,14 @@ int ApplyAdamWithAmsgradCpuKernelMod::Resize(const std::vector<KernelTensor *> &
 template <typename T>
 void ApplyAdamWithAmsgradCpuKernelMod::LaunchApplyAdamWithAmsgrad(const std::vector<KernelTensor *> &inputs,
                                                                   const std::vector<KernelTensor *> &) {
-  T *var = reinterpret_cast<T *>(inputs[kIndexVar]->device_ptr());
-  T *m = reinterpret_cast<T *>(inputs[kIndexM]->device_ptr());
-  T *v = reinterpret_cast<T *>(inputs[kIndexV]->device_ptr());
-  T *vhat = reinterpret_cast<T *>(inputs[kIndexVhat]->device_ptr());
-  T *beta1_power = reinterpret_cast<T *>(inputs[kIndexBeta1Power]->device_ptr());
-  T *beta2_power = reinterpret_cast<T *>(inputs[kIndexBeta2Power]->device_ptr());
-  T *lr = reinterpret_cast<T *>(inputs[kIndexLr]->device_ptr());
-  T *gradient = reinterpret_cast<T *>(inputs[kIndexGrad]->device_ptr());
+  T *var = GetDeviceAddress<T>(inputs, kIndexVar);
+  T *m = GetDeviceAddress<T>(inputs, kIndexM);
+  T *v = GetDeviceAddress<T>(inputs, kIndexV);
+  T *vhat = GetDeviceAddress<T>(inputs, kIndexVhat);
+  T *beta1_power = GetDeviceAddress<T>(inputs, kIndexBeta1Power);
+  T *beta2_power = GetDeviceAddress<T>(inputs, kIndexBeta2Power);
+  T *lr = GetDeviceAddress<T>(inputs, kIndexLr);
+  T *gradient = GetDeviceAddress<T>(inputs, kIndexGrad);
 
   T beta1 = static_cast<T>(beta1_);
   T beta2 = static_cast<T>(beta2_);

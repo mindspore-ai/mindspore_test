@@ -93,7 +93,7 @@ int MatrixDiagV3CpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
 template <typename T>
 bool MatrixDiagV3CpuKernelMod::InitializeDiagonalIndices(const std::vector<kernel::KernelTensor *> &inputs) {
-  auto *k_data = static_cast<int32_t *>(inputs[1]->device_ptr());
+  auto *k_data = GetDeviceAddress<int32_t>(inputs, 1);
   MS_EXCEPTION_IF_NULL(k_data);
   size_t k_num = static_cast<size_t>(inputs[1]->size() / sizeof(int32_t));
   const size_t k_num_max = 2;

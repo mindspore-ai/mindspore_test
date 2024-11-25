@@ -75,10 +75,10 @@ bool ApplyAdagradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
                                             const std::vector<kernel::KernelTensor *> &workspace,
                                             const std::vector<kernel::KernelTensor *> &outputs) {
   CheckParam(inputs, outputs);
-  auto *var = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *accum = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  const auto *lr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  const auto *gradient = reinterpret_cast<T *>(inputs[3]->device_ptr());
+  auto *var = GetDeviceAddress<T>(inputs, 0);
+  auto *accum = GetDeviceAddress<T>(inputs, 1);
+  const auto *lr = GetDeviceAddress<T>(inputs, 2);
+  const auto *gradient = GetDeviceAddress<T>(inputs, 3);
 
   // multithreading
   size_t length = inputs[0]->size() / sizeof(T);
@@ -88,8 +88,8 @@ bool ApplyAdagradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
   CPUKernelUtils::ParallelForAutoSearch(task, length, &parallel_search_info_);
 
   // Copy result to output tensor
-  auto output_var = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto output_accum = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  auto output_var = GetDeviceAddress<T>(outputs, 0);
+  auto output_accum = GetDeviceAddress<T>(outputs, 1);
   auto ret = memcpy_s(output_var, outputs[0]->size(), var, inputs[0]->size());
   if (ret != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', launch kernel error: memcpy failed. Error no: " << ret;

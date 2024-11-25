@@ -46,8 +46,8 @@ class CastCpuKernelFunc : public CpuKernelFunc {
 template <typename S, typename T>
 bool CastCpuKernelFunc<S, T>::RunFunc(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                       const std::vector<KernelTensor *> &outputs) {
-  const auto *input = reinterpret_cast<S *>(inputs[0]->device_ptr());
-  auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const auto *input = GetDeviceAddress<S>(inputs, kIndex0);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
   MS_LOG(DEBUG) << "Type source: " << typeid(S).name() << "; target: " << typeid(T).name();
   Cast<S, T>(input, output, outputs[0]->size() / sizeof(T));
   return true;

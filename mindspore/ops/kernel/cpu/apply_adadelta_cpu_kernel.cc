@@ -117,7 +117,7 @@ int ApplyAdadeltaCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   if (!lr_shape.empty()) {
     batch_size_ = std::accumulate(lr_shape.begin(), lr_shape.end(), batch_size_, std::multiplies<int64_t>());
   }
-  if (batch_size_ == 0) {
+  if (batch_size_ <= 0) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', batch_size_ must be greater than 0, but got batch_size: " << batch_size_;
     return KRET_RESIZE_FAILED;
@@ -134,13 +134,13 @@ bool ApplyAdadeltaCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
                                        const std::vector<kernel::KernelTensor *> &workspace,
                                        const std::vector<kernel::KernelTensor *> &) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kApplyAdadeltaInputsNum, kernel_name_);
-  auto var = reinterpret_cast<float *>(inputs[kVarIndex]->device_ptr());
-  auto accum = reinterpret_cast<float *>(inputs[kAccumIndex]->device_ptr());
-  auto accum_update = reinterpret_cast<float *>(inputs[kAccumUpdateIndex]->device_ptr());
-  auto lr = reinterpret_cast<float *>(inputs[kLRIndex]->device_ptr());
-  auto rho = reinterpret_cast<float *>(inputs[kRhoIndex]->device_ptr());
-  auto epsilon = reinterpret_cast<float *>(inputs[kEpsilonIndex]->device_ptr());
-  auto grad = reinterpret_cast<float *>(inputs[kGradIndex]->device_ptr());
+  auto var = GetDeviceAddress<float>(inputs, kVarIndex);
+  auto accum = GetDeviceAddress<float>(inputs, kAccumIndex);
+  auto accum_update = GetDeviceAddress<float>(inputs, kAccumUpdateIndex);
+  auto lr = GetDeviceAddress<float>(inputs, kLRIndex);
+  auto rho = GetDeviceAddress<float>(inputs, kRhoIndex);
+  auto epsilon = GetDeviceAddress<float>(inputs, kEpsilonIndex);
+  auto grad = GetDeviceAddress<float>(inputs, kGradIndex);
 
   for (int64_t b = 0; b < batch_size_; b++) {
     auto task = [&](size_t start, size_t end) {

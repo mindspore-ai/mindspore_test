@@ -45,16 +45,16 @@ template <typename T>
 void AdamCpuKernelMod::LaunchAdam(const std::vector<kernel::KernelTensor *> &inputs,
                                   const std::vector<kernel::KernelTensor *> &) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kAdamInputsNum, kernel_name_);
-  T *var = static_cast<T *>(inputs[kIndexVar]->device_ptr());
-  T *m = static_cast<T *>(inputs[kIndexM]->device_ptr());
-  T *v = static_cast<T *>(inputs[kIndexV]->device_ptr());
-  float *beta1_power = static_cast<float *>(inputs[kIndexBeta1Power]->device_ptr());
-  float *beta2_power = static_cast<float *>(inputs[kIndexBeta2Power]->device_ptr());
-  float *lr = static_cast<float *>(inputs[kIndexLr]->device_ptr());
-  T beta1 = static_cast<T>(static_cast<float *>(inputs[kIndexBeta1]->device_ptr())[kScalarIndex]);
-  T beta2 = static_cast<T>(static_cast<float *>(inputs[kIndexBeta2]->device_ptr())[kScalarIndex]);
-  T epsilon = static_cast<T>(static_cast<float *>(inputs[kIndexEpsilon]->device_ptr())[kScalarIndex]);
-  T *gradient = static_cast<T *>(inputs[kIndexGrad]->device_ptr());
+  T *var = GetDeviceAddress<T>(inputs, kIndexVar);
+  T *m = GetDeviceAddress<T>(inputs, kIndexM);
+  T *v = GetDeviceAddress<T>(inputs, kIndexV);
+  float *beta1_power = GetDeviceAddress<float>(inputs, kIndexBeta1Power);
+  float *beta2_power = GetDeviceAddress<float>(inputs, kIndexBeta2Power);
+  float *lr = GetDeviceAddress<float>(inputs, kIndexLr);
+  T beta1 = static_cast<T>(GetDeviceAddress<float>(inputs, kIndexBeta1)[kScalarIndex]);
+  T beta2 = static_cast<T>(GetDeviceAddress<float>(inputs, kIndexBeta2)[kScalarIndex]);
+  T epsilon = static_cast<T>(GetDeviceAddress<float>(inputs, kIndexEpsilon)[kScalarIndex]);
+  T *gradient = GetDeviceAddress<T>(inputs, kIndexGrad);
   constexpr float ONE = 1.0;
 
   for (int64_t b = 0; b < batch_size_; b++) {
@@ -84,16 +84,16 @@ void AdamCpuKernelMod::LaunchAdam(const std::vector<kernel::KernelTensor *> &inp
 void AdamCpuKernelMod::LaunchAdamNnacl(const std::vector<kernel::KernelTensor *> &inputs,
                                        const std::vector<kernel::KernelTensor *> &) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kAdamInputsNum, kernel_name_);
-  float *var = static_cast<float *>(inputs[kIndexVar]->device_ptr());
-  float *m = static_cast<float *>(inputs[kIndexM]->device_ptr());
-  float *v = static_cast<float *>(inputs[kIndexV]->device_ptr());
-  float *beta1_power = static_cast<float *>(inputs[kIndexBeta1Power]->device_ptr());
-  float *beta2_power = static_cast<float *>(inputs[kIndexBeta2Power]->device_ptr());
-  float *lr = static_cast<float *>(inputs[kIndexLr]->device_ptr());
-  float beta1 = reinterpret_cast<float *>(inputs[kIndexBeta1]->device_ptr())[kScalarIndex];
-  float beta2 = reinterpret_cast<float *>(inputs[kIndexBeta2]->device_ptr())[kScalarIndex];
-  float epsilon = reinterpret_cast<float *>(inputs[kIndexEpsilon]->device_ptr())[kScalarIndex];
-  float *gradient = reinterpret_cast<float *>(inputs[kIndexGrad]->device_ptr());
+  float *var = GetDeviceAddress<float>(inputs, kIndexVar);
+  float *m = GetDeviceAddress<float>(inputs, kIndexM);
+  float *v = GetDeviceAddress<float>(inputs, kIndexV);
+  float *beta1_power = GetDeviceAddress<float>(inputs, kIndexBeta1Power);
+  float *beta2_power = GetDeviceAddress<float>(inputs, kIndexBeta2Power);
+  float *lr = GetDeviceAddress<float>(inputs, kIndexLr);
+  float beta1 = GetDeviceAddress<float>(inputs, kIndexBeta1)[kScalarIndex];
+  float beta2 = GetDeviceAddress<float>(inputs, kIndexBeta2)[kScalarIndex];
+  float epsilon = GetDeviceAddress<float>(inputs, kIndexEpsilon)[kScalarIndex];
+  float *gradient = GetDeviceAddress<float>(inputs, kIndexGrad);
   constexpr float ONE = 1.0;
   for (int64_t b = 0; b < batch_size_; b++) {
     float new_lr = lr[b] * std::sqrt(ONE - beta2_power[b]) / (ONE - beta1_power[b]);

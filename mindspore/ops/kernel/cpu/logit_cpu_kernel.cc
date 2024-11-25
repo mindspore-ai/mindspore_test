@@ -72,8 +72,8 @@ bool LogitCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs
 
 bool LogitCpuKernelMod::LaunchKernelHalf(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) const {
-  float16 *input = static_cast<float16 *>(inputs[0]->device_ptr());
-  float16 *output = static_cast<float16 *>(outputs[0]->device_ptr());
+  float16 *input = GetDeviceAddress<float16>(inputs, 0);
+  float16 *output = GetDeviceAddress<float16>(outputs, 0);
   float16 one = float16(1);
   float16 up_bound = float16(static_cast<float>(1) - static_cast<float>(eps));
   size_t output_size = outputs[0]->size();
@@ -99,8 +99,8 @@ bool LogitCpuKernelMod::LaunchKernelHalf(const std::vector<KernelTensor *> &inpu
 template <typename T>
 bool LogitCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs) const {
-  T *input = static_cast<T *>(inputs[0]->device_ptr());
-  T *output = static_cast<T *>(outputs[0]->device_ptr());
+  T *input = GetDeviceAddress<T>(inputs, 0);
+  T *output = GetDeviceAddress<T>(outputs, 0);
   T one = T(1);
   T up_bound = static_cast<T>(1) - static_cast<T>(eps);
   size_t output_size = outputs[0]->size();

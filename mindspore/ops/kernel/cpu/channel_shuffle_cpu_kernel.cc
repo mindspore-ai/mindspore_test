@@ -101,8 +101,8 @@ bool ChannelShuffleCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> 
   for (int64_t i = 2; i < dims; i++) {
     area = area * input_shape_[i];
   }
-  auto *in = static_cast<T *>(inputs[0]->device_ptr());
-  auto *out = static_cast<T *>(outputs[0]->device_ptr());
+  auto *in = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *out = GetDeviceAddress<T>(outputs, kIndex0);
 
   /*
     view the shape to n g c/g h*w,and transpose dim 1 and dim 2

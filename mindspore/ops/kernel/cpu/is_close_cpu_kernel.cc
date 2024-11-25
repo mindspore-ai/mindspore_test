@@ -79,9 +79,9 @@ bool IsCloseCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
                                        const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kIsCloseInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kIsCloseOutputsNum, kernel_name_);
-  auto input = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto other = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
-  auto output = reinterpret_cast<bool *>(outputs[kIndex0]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto other = GetDeviceAddress<T>(inputs, kIndex1);
+  auto output = GetDeviceAddress<bool>(outputs, kIndex0);
 
   if (has_null_input_) {
     return true;
