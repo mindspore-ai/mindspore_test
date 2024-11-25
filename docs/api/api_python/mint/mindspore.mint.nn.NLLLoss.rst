@@ -13,7 +13,7 @@ mindspore.mint.nn.NLLLoss
         \quad w_{c}=\text { weight }[c] \cdot \mathbb{1}
         \{c \not= \text{ignore_index}\},
 
-    其中， :math:`x` 表示预测值， :math:`t` 表示目标值， :math:`w` 表示权重，N表示batch size， :math:`c` 限定范围为 :math:`[0, C-1]`，表示类索引，其中 :math:`C` 表示类的数量。
+    其中， :math:`x` 表示预测值， :math:`t` 表示目标值， :math:`w` 表示权重， :math:`N` 表示batch size， :math:`c` 限定范围为 :math:`[0, C-1]`，表示类索引，其中 :math:`C` 表示类的数量。
 
     若reduction不为 ``'none'`` （默认为 ``'mean'`` ），则
 
@@ -35,7 +35,6 @@ mindspore.mint.nn.NLLLoss
           - ``'none'``：不应用规约方法。
           - ``'mean'``：计算输出元素的加权平均值。
           - ``'sum'``：计算输出元素的总和。
-
 
     输入：
         - **input** (Tensor) - 输入预测值，shape为 :math:`(N)` 或 :math:`(N, C)` 或 :math:`(N, C, H, W)`

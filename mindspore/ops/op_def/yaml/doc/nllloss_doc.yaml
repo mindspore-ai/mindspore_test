@@ -26,31 +26,48 @@ nllloss:
         .. warning::
             This is an experimental API that is subject to change or deletion.
             
-        Inputs:
-            - **input** (Tensor) - Input logits, with shape :math:`(N, C)`. Data type only supports float32 or float16
-              or bfloat16(only supported by Atlas A2 training series products).
-            - **target** (Tensor) - Ground truth labels, with shape :math:`(N,)`, where each value belong to
-              :math:`[0, C-1]`. Data type only supports uint8 or int32 or int64.
-            - **weight** (Tensor) - The rescaling weight to each class, with shape :math:`(C,)` and data type only
+        Args:
+            - **weight** (Tensor, optional) - The rescaling weight to each class, with shape :math:`(C,)` and data type only
               supports float32 or float16 or bfloat16(only supported by Atlas A2 training series products). It should
-              have the same data type as `input` . Default: ``'None'`` .
-            - **ignore_index** (int) - Specifies a target value that is ignored
-                and does not contribute to the input gradient. Default: ``-100`` .
-            - **reduction** (str, optional) - Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+              have the same data type as `logits` . Default: ``'None'`` .
+            - **reduction** (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
                 ``'sum'`` . Default: ``'mean'`` .
     
-        Outputs:
-            Tensor, the data type is the same as `input` .
+                - ``'none'``: no reduction will be applied.
+                - ``'mean'``: compute and return the weighted mean of elements in the output.
+                - ``'sum'``: the output elements will be summed.
+    
+            - **ignore_index** (int, optional): Specifies a target value that is ignored
+                and does not contribute to the input gradient. Default: ``-100`` .
+    
+        Inputs:
+            - **logits** (Tensor) - Input logits, with shape :math:`(N, C)`. Data type only supports float32 or float16
+              or bfloat16(only supported by Atlas A2 training series products).
+            - **labels** (Tensor) - Ground truth labels, with shape :math:`(N,)`, where each value belong to
+              :math:`[0, C-1]`. Data type only supports uint8 or int32 or int64.
+    
+        Returns:
+            Tuple of 2 tensors composed with `loss` and `total_weight`.
+    
+            - **loss** (Tensor) - When `reduction` is ``'none'`` and `logits` is a 2D tensor,
+              the `loss` shape is :math:`(N,)`. Otherwise, the `loss` is a scalar.
+              The data type is the same with `input's`.
+            - **total_weight** (Tensor) - The `total_weight` is a scalar. The data type is the same with `weight's`.
        
         Supported Platforms:
-            ``Ascend``
+            ``Ascend`` ``GPU`` ``CPU``
     
         Examples:
             >>> import numpy as np
-            >>> from mindspore import Tensor, mint
-            >>> input = Tensor(np.array([[0.5488135, 0.71518934],
+            >>> from mindspore import Tensor, ops
+            >>> logits = Tensor(np.array([[0.5488135, 0.71518934],
             ...                           [0.60276335, 0.5448832],
             ...                           [0.4236548, 0.6458941]]).astype(np.float32))
-            >>> target = Tensor(np.array([0, 0, 0]).astype(np.int32))
+            >>> labels = Tensor(np.array([0, 0, 0]).astype(np.int32))
             >>> weight = Tensor(np.array([0.3834415, 0.79172504]).astype(np.float32))
-            >>> output = mint.nn.functional.nll_loss(input, target, weight, ignore_index=-100, reduction="mean")
+            >>> nll_loss = ops.NLLLoss(reduction="mean")
+            >>> loss, weight = nll_loss(logits, labels, weight)
+            >>> print(loss)
+            -0.52507716
+            >>> print(weight)
+            1.1503246

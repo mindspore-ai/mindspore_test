@@ -4276,6 +4276,74 @@ def _nll_loss(inputs, target, target_dim=-1, weight=None, ignore_index=None, red
     return loss
 
 
+def nll_loss_ext(input, target, weight=None, ignore_index=-100, reduction='mean'):
+    r"""
+    Gets the negative log likelihood loss between input and target.
+
+    The nll loss with reduction=none can be described as:
+
+    .. math::
+
+        \ell(x, t)=L=\left\{l_{1}, \ldots, l_{N}\right\}^{\top},
+        \quad l_{n}=-w_{t_{n}} x_{n, t_{n}},
+        \quad w_{c}=\text { weight }[c] \cdot \mathbb{1}
+        \{c \not= \text{ignore_index}\},
+
+    where :math:`x` is the input, :math:`t` is the target, :math:`w` is the weight,
+    :math:`N` is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index,
+    where :math:`C` is the number of classes.
+
+    If `reduction` is not ``None`` (default ``'mean'``), then
+
+    .. math::
+
+        \ell(x, t)=\left\{\begin{array}{ll}
+        \sum_{n=1}^{N} \frac{1}{\sum_{n=1}^{N} w_{t n}} l_{n}, & \text { if reduction }=\text { 'mean', } \\
+        \sum_{n=1}^{N} l_{n}, & \text { if reduction }=\text { 'sum' }
+        \end{array}\right.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
+            in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
+            `input` is expected to be log-probabilities.
+            Data type only supports float32 or float16 or bfloat16(only supported by
+            Atlas A2 training series products).
+        target (Tensor): :math:`(N)` or :math:`(N, d_1, d_2, ..., d_K)` for
+            high-dimensional loss, data type must be int32, int64, uint8.
+        weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
+            If not None, the shape is :math:`(C,)`.
+            The data type must be float16 or float32 or bfloat16(only supported by Atlas A2 training series products).
+            It should have the same data type as `input` . Default: ``'None'`` .
+        ignore_index (int, optional): Specifies a target value that is ignored
+            and does not contribute to the input gradient. Default: ``-100`` .
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the weighted mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Returns:
+        Tensor. The data type is the same as that of `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = mindspore.Tensor(np.random.randn(3, 5), mindspore.float32)
+        >>> target = mindspore.Tensor(np.array([1, 0, 4]), mindspore.int32)
+        >>> output = mint.nn.functional.nll_loss(input, target)
+
+    """
+    return _nllloss_nd(input, target, weight, ignore_index, reduction)
+
+
 def _nllloss_nd(input, target, weight=None, ingore_index=-100, reduction='mean'):
     """nllloss_nd inner function"""
     input_dim = input.ndim

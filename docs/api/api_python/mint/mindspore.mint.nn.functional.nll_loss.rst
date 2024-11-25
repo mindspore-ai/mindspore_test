@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.nll_loss
 =======================================
 
-.. py:function:: mindspore.mint.nn.functional.nll_loss(inputs, target, weight=None, ignore_index=-100, reduction='mean')
+.. py:function:: mindspore.mint.nn.functional.nll_loss(input, target, weight=None, ignore_index=-100, reduction='mean')
 
     获取预测值和目标值之间的负对数似然损失。
 
@@ -13,7 +13,7 @@ mindspore.mint.nn.functional.nll_loss
         \quad w_{c}=\text { weight }[c] \cdot \mathbb{1}
         \{c \not= \text{ignore_index}\},
 
-    其中， :math:`x` 表示预测值， :math:`t` 表示目标值， :math:`w` 表示权重，N表示batch size， :math:`c` 限定范围为 :math:`[0, C-1]`，表示类索引，其中 :math:`C` 表示类的数量。
+    其中， :math:`x` 表示预测值， :math:`t` 表示目标值， :math:`w` 表示权重， :math:`N` 表示batch size， :math:`c` 限定范围为 :math:`[0, C-1]`，表示类索引，其中 :math:`C` 表示类的数量。
 
     若reduction不为 ``'none'`` （默认为 ``'mean'`` ），则
 
@@ -26,14 +26,14 @@ mindspore.mint.nn.functional.nll_loss
     .. warning::
         这是一个实验性API，后续可能修改或删除。
 
-    输入：
+    参数：
         - **input** (Tensor) - 输入预测值，shape为 :math:`(N, C)` 或 :math:`(N, C, H, W)`
-          (针对二维数据)，或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`inputs` 需为对数概率。数据类型仅支持float32或float16。
+          (针对二维数据)，或 :math:`(N, C, d_1, d_2, ..., d_K)` (针对高维数据)。`input` 需为对数概率。数据类型仅支持float32或float16或bfloat16(仅Atlas A2训练系列产品支持)。
         - **target** (Tensor) - 输入目标值，shape为 :math:`(N)` 或 :math:`(N, d_1, d_2, ..., d_K)` (针对高维数据)。
           数据类型支持int32、int64、uint8。
-        - **weight** (Tensor) - 指定各类别的权重。若值不为 ``None`` ，则shape为 :math:`(C,)`。
+        - **weight** (Tensor，可选) - 指定各类别的权重。若值不为 ``None`` ，则shape为 :math:`(C,)`。
           数据类型仅支持float16或float32或bfloat16(仅Atlas A2训练系列产品支持)。要求与 `input` 的数据类型保持一致。默认值： ``None`` 。
-        - **ignore_index** (int) - 指定target中需要忽略的值(一般为填充值)，使其不对梯度产生影响。默认值： ``-100`` 。
+        - **ignore_index** (int，可选) - 指定target中需要忽略的值(一般为填充值)，使其不对梯度产生影响。默认值： ``-100`` 。
         - **reduction** (str，可选) - 指定应用于输出结果的规约计算方式，可选 ``'none'`` 、 ``'mean'`` 、 ``'sum'`` ，默认值： ``'mean'`` 。
 
           - ``'none'``：不应用规约方法。
@@ -41,4 +41,4 @@ mindspore.mint.nn.functional.nll_loss
           - ``'sum'``：计算输出元素的总和。
 
     返回：
-        Tensor，数据类型与 `inputs` 相同。
+        Tensor，数据类型与 `input` 相同。
