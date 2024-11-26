@@ -77,7 +77,7 @@ MindSpore offers build options across multiple backends:
 
 | Hardware Platform | Operating System | Status |
 | :---------------- | :--------------- | :----- |
-| Ascend910 | Ubuntu-x86 | ✔️ |
+| Ascend | Ubuntu-x86 | ✔️ |
 |  | Ubuntu-aarch64 | ✔️ |
 |  | EulerOS-aarch64 | ✔️ |
 |  | CentOS-x86 | ✔️ |
