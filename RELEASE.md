@@ -985,10 +985,10 @@ Contributions of any kind are welcome!
 
 ### Bug Fixes
 
-- [#I8ALW3] Fixed networks including Faster R-CNN, DeepText, MaskRCNN-ResNet50, which had errors while training RandomChoiceWithMask operator in Ascend 910 8P scenario.
-- [#I8LKG7] Fixed graph compilation error of UNet-2D in Ascend 910 1P/8P scenario.
-- [#I8KU3X] Fixed CRNN-ResNet34 network, which stuck in training phase in Ascend 910 1P/8P PyNative mode.
-- [#I8KTHH] Fixed BERT network error when training without allreduce grouped fusion with enable_parallel_optimizer=True, in Ascend 910 8P scenario.
+- [#I8ALW3] Fixed networks including Faster R-CNN, DeepText, MaskRCNN-ResNet50, which had errors while training RandomChoiceWithMask operator in Ascend 8P scenario.
+- [#I8LKG7] Fixed graph compilation error of UNet-2D in Ascend 1P/8P scenario.
+- [#I8KU3X] Fixed CRNN-ResNet34 network, which stuck in training phase in Ascend 1P/8P PyNative mode.
+- [#I8KTHH] Fixed BERT network error when training without allreduce grouped fusion with enable_parallel_optimizer=True, in Ascend 8P scenario.
 
 ### Contributors
 
@@ -1123,7 +1123,7 @@ Contributions of any kind are welcome!
 
 #### FlashAttention Operator Fusion
 
-- [STABLE] The OptiX OSN Ascend 910 series supports the FlashAttention large operator fusion of the LLAMA and stable diffusion models.
+- [STABLE] The OptiX OSN Ascend series supports the FlashAttention large operator fusion of the LLAMA and stable diffusion models.
 
 ## MindSpore 2.1.1 Release Notes
 
@@ -3152,7 +3152,7 @@ The original cloud inference integrated through MindSpore training can be change
 
 - [STABLE] Support MindIR model files.
 - [STABLE] Third-party Onnx, TensorFlow, and Caffe models can be converted to MindIR model files using the MindSpore Lite conversion tool.
-- [STABLE] One release package supports multiple hardware backends: Ascend 310/310P/910, NVIDIA GPU, CPU.
+- [STABLE] One release package supports multiple hardware backends: Ascend, NVIDIA GPU, CPU.
 - [STABLE] Supports the `Model` interface and `ModelParallelRunner` concurrent inference interface.
 - [STABLE] Supports C++, Python, and Java inference interfaces.
 
@@ -4218,7 +4218,6 @@ Contributions of any kind are welcome!
 - [STABLE] MindSpore GPU support CUDA11 with cuDNN8.
 - [STABLE] MindSpore GPU inference performance optimization by integrating TensorRT.
 - [STABLE] MindSpore built on one Linux distribution can now be used on multiple Linux distributions with the same CPU architecture (e.g. EulerOS, Ubuntu, CentOS).
-- [STABLE] MindSpore now supports Ascend310 and Ascend910 environments with one single wheel package and provides an alternate binary package for Ascend310 specifically.
 - [STABLE] MindSpore Ascend support group convolution.
 
 #### DataSet
@@ -6386,14 +6385,14 @@ Contributions of any kind are welcome!
 
 ### MindSpore Training and Inference Framework
 
-#### Ascend 910
+#### Ascend
 
 - New models
     - DenseNet121: a dense convolutional neural network, which connects each layer to every other layer in a feed-forward fashion for object recognition on ImageNet dataset.
     - UNet2D-Medical: Unet Medical model for 2D image segmentation, Convolutional Networks for Biomedical Image Segmentation on ISBI Challenge database.
 - Frontend and user interface
     - Second-Order Optimization
-        - Enable second-order optimization for Bert on Ascend 910, which can achieve a masked lm accuracy of 71.3% in 800 seconds using 8 Ascend 910 (Bert-Large @MLPerf v0.7 dataset).
+        - Enable second-order optimization for Bert on Ascend, which can achieve a masked lm accuracy of 71.3% in 800 seconds using 8 Ascend (Bert-Large @MLPerf v0.7 dataset).
     - New GNN model BGCF
         - Bayesian Graph Convolutional Filtering network which naturally incorporate the uncertainty in the user-item interaction graph shows excellent recommendation performance on Amazon-Beauty dataset.
     - Add append interface for SequentialCell.
@@ -6505,7 +6504,7 @@ Contributions of any kind are welcome!
 
 ### MindSpore Training and Inference Framework
 
-#### Ascend 910
+#### Ascend
 
 - New models
     - TinyBert: a smaller and faster version of BERT using transformer distillation for natural language understanding on GLUE benchmark.
@@ -6620,7 +6619,7 @@ Contributions of any kind are welcome!
 
 ## Major Features and Improvements
 
-### Ascend 910 Training and Inference Framework
+### Ascend Training and Inference Framework
 
 - New models
     - There are official, research and community under modelzoo.
@@ -6699,7 +6698,7 @@ Contributions of any kind are welcome!
 
 ## Major Features and Improvements
 
-### Ascend 910 Training and Inference Framework
+### Ascend Training and Inference Framework
 
 - New models
     - DenseNet121: a convolution based neural network for the task of image classification on ImageNet 2012 dataset.
@@ -6722,7 +6721,7 @@ Contributions of any kind are welcome!
 
 ## Major Features and Improvements
 
-### Ascend 910 Training and Inference Framework
+### Ascend Training and Inference Framework
 
 - New models
     - ResNext50: a simple, highly modularized network architecture using aggregated resdiual transformations for image classification on ImageNet 2012 dataset.
@@ -6746,7 +6745,7 @@ Contributions of any kind are welcome!
         - Checkpoint add model_type([!2517](https://gitee.com/mindspore/mindspore/pulls/2517))
 - Executor and performance optimization
     - Heterogeneous execution on CPU and Ascend devices supported, and is verified in Wide&Deep model.
-    - Quantitative training of MobileNetV2, Lenet and Resnet50 on Ascend-910 are supported.
+    - Quantitative training of MobileNetV2, Lenet and Resnet50 on Ascend are supported.
     - Support new fusion architecture, which can do fusion optimization across graphs and kernels to improve execution speed.
 - Data processing, augmentation, and save format
     - Support data processing pipeline performance profiling.
@@ -6801,7 +6800,7 @@ Contributions of any kind are welcome!
 
 ## Major Features and Improvements
 
-### Ascend 910 Training and Inference Framework
+### Ascend Training and Inference Framework
 
 - Frontend and User Interface
     - Independent model init interface.
@@ -6819,7 +6818,7 @@ Contributions of any kind are welcome!
 
 ## Major Features and Improvements
 
-### Ascend 910 Training and Inference Framework
+### Ascend Training and Inference Framework
 
 - New models
     - DeepFM: a factorization-machine based neural network for CTR prediction on Criteo dataset.
@@ -6892,7 +6891,7 @@ Contributions of any kind are welcome!
 
 ## Major Features and Improvements
 
-### Ascend 910 Training and Inference Framework
+### Ascend Training and Inference Framework
 
 - New models
     - MobileNetV2: Inverted Residuals and Linear Bottlenecks.
@@ -6968,7 +6967,7 @@ Contributions of any kind are welcome!
 
 ## Main Features
 
-### Ascend 910 Training and Inference Framework
+### Ascend Training and Inference Framework
 
 - Recommended OS: Ubuntu 16.04 (or later) or EulerOS 2.5 or EulerOS 2.8
 - Python version: 3.7.5
