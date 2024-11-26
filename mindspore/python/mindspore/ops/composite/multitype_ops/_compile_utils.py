@@ -262,7 +262,7 @@ def _count_indexed_dims(indexes):
 def _do_select(self: Tensor, dim: int, index: int, dim_index: int, self_shape: list):
     """call select view operator"""
     if not self_shape:
-        raise IndexError("Invalid index of a 0-dim tensor.")
+        raise TypeError("Invalid index of a 0-dim tensor.")
     dim_size = self_shape[dim]
     if index >= dim_size or index < -dim_size:
         raise IndexError(f"Index {index} is out of bounds for dimension {dim_index} with size {dim_size}")
@@ -280,7 +280,7 @@ def _do_slice(self: Tensor, dim: int, index: slice, self_shape: list):
         return index
 
     if not self_shape:
-        raise IndexError("Invalid index of a 0-dim tensor.")
+        raise TypeError("Invalid index of a 0-dim tensor.")
     step = _get_index(index.step, 1)
     if step <= 0:
         raise ValueError("slice step must be positive")

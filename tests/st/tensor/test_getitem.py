@@ -688,10 +688,14 @@ def test_getitem_refactor_exception(mode):
     assert "slice step must be positive" in str(exc.value)
 
     ms_x = Tensor(0)
-    with pytest.raises(IndexError) as exc:
+    with pytest.raises(TypeError) as exc:
         _ = ms_x[0]
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
-    with pytest.raises(IndexError) as exc:
+    with pytest.raises(TypeError) as exc:
         _ = ms_x[0:1]
+    assert "Invalid index of a 0-dim tensor." in str(exc.value)
+
+    with pytest.raises(TypeError) as exc:
+        _ = sum(ms_x)
     assert "Invalid index of a 0-dim tensor." in str(exc.value)

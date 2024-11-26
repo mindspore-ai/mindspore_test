@@ -1081,11 +1081,11 @@ def test_setitem_refactor_exception(mode):
     assert "Can't assign a <class 'list'> to a Float32" in str(exc.value)
 
     ms_x = Tensor(0)
-    with pytest.raises(IndexError) as exc:
+    with pytest.raises(TypeError) as exc:
         ms_x[0] = -1
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
-    with pytest.raises(IndexError) as exc:
+    with pytest.raises(TypeError) as exc:
         ms_x[0:1] = -1
     assert "Invalid index of a 0-dim tensor." in str(exc.value)
 
