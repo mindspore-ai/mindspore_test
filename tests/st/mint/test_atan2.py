@@ -19,6 +19,7 @@ import mindspore as ms
 from mindspore import mint, jit, JitConfig
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(shape, dtype):
@@ -99,3 +100,38 @@ def test_atan2_bfloat16(mode):
     output = atan2_forward_func(ms.Tensor(x, dtype=ms.bfloat16), ms.Tensor(y, dtype=ms.bfloat16))
     expect = generate_expect_forward_output(x, y).astype(np.float32)
     assert np.allclose(output.float().asnumpy(), expect, 0.004, 0.004)
+
+
+def mint_atan2_binary_compare(input_binary_data, output_binary_data, mode):
+    if mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+        out_forward = atan2_forward_func(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]))
+        out_grad = atan2_backward_func(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]))
+    else:
+        out_forward = (jit(atan2_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(input_binary_data[0]),
+                                                                                      ms.Tensor(input_binary_data[1]))
+        out_grad = (jit(atan2_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(input_binary_data[0]),
+                                                                                    ms.Tensor(input_binary_data[1]))
+
+    assert np.allclose(out_forward.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+    assert np.allclose(out_grad[0].asnumpy(), output_binary_data[1], 1e-04, 1e-04)
+    assert np.allclose(out_grad[1].asnumpy(), output_binary_data[2], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1024,), np.float32), ((1024,), np.float32)],
+                                output_info=[((1024,), np.float32), ((1024,), np.float32), ((1024,), np.float32)],
+                                extra_info='auto_drive'))
+def mint_atan2_binary_case1(input_binary_data=None, output_binary_data=None, mode='pynative'):
+    mint_atan2_binary_compare(input_binary_data, output_binary_data, mode)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ['pynative', 'KBK'])
+def test_atan2_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test mint atan2
+    Expectation: expect correct result.
+    """
+
+    mint_atan2_binary_case1()

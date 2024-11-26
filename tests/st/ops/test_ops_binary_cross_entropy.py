@@ -19,6 +19,7 @@ import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 
 def generate_random_input(shape, dtype):
@@ -178,3 +179,51 @@ def test_ops_binary_cross_entropy_dynamic_shape(context_mode, reduction):
     test_cell = test_utils.to_cell_obj(binary_cross_entropy_forward_func)
     TEST_OP(test_cell, [[x1, target1, weight1, reduction], [x2, target2, weight2, reduction]],
             "binary_cross_entropy", disable_input_check=True)
+
+
+def ops_binary_cross_entropy_binary_compare(input_binary_data, output_binary_data):
+
+    @test_utils.run_with_cell
+    def binary_cross_entropy_binary_backward_func(inputx, target, weight, reduction):
+        grad_op = ms.grad(binary_cross_entropy_forward_func, (0, 1))
+        return grad_op(inputx, target, weight, reduction)
+
+    inputx = ms.Tensor(input_binary_data[0])
+    target = ms.Tensor(input_binary_data[1])
+    weight = ms.Tensor(input_binary_data[2])
+    reduction = 'none'
+
+    output = binary_cross_entropy_forward_func(inputx, target, weight, reduction)
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+    output = binary_cross_entropy_binary_backward_func(inputx, target, weight, reduction)
+    assert np.allclose(output[0].asnumpy(), output_binary_data[1], 1e-04, 1e-04)
+    assert np.allclose(output[1].asnumpy(), output_binary_data[2], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 576, 128, 16), np.float32), ((1, 576, 128, 16), np.float32),
+                                            ((1, 576, 128, 16), np.float32)],
+                                output_info=[((1, 576, 128, 16), np.float32), ((1, 576, 128, 16), np.float32),
+                                             ((1, 576, 128, 16), np.float32)],
+                                extra_info='auto_drive'))
+def ops_binary_cross_entropy_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_binary_cross_entropy_binary_compare(input_binary_data, output_binary_data)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", ["pynative", "KBK", "graph"])
+def test_binary_cross_entropy_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test op binary_cross_entropy
+    Expectation: expect correct result.
+    """
+
+    if mode == "pynative":
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+    else:
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O2')
+
+    ops_binary_cross_entropy_binary_case1()

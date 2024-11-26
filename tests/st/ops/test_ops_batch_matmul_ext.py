@@ -22,6 +22,7 @@ from mindspore.ops.auto_generate.gen_ops_def import bmm_ext as bmm
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.pynative.utils import allclose_nparray
 from tests.mark_utils import arg_mark
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 loss = 1e-3
 
@@ -106,3 +107,30 @@ def test_ops_dynamic():
 
 def random_input(shape, dtype=np.float32):
     return np.random.randint(0, 10, shape).astype(dtype)
+
+
+def ops_bmm_binary_compare(input_binary_data, output_binary_data):
+    bmm_cell = BmmCell()
+    output = bmm_cell(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]))
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 3, 3), np.float32), ((1, 3, 4608), np.float32)],
+                                output_info=[((1, 3, 4608), np.float32)],
+                                extra_info='auto_drive'))
+def ops_bmm_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_bmm_binary_compare(input_binary_data, output_binary_data)
+
+
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_bmm_binary_cases_daily(mode):
+    """
+    Feature: Ops
+    Description: test op bmm
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=mode)
+
+    ops_bmm_binary_case1()

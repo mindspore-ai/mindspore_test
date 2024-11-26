@@ -17,11 +17,12 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import ops, JitConfig
+from mindspore import JitConfig
 from mindspore.nn import Cell
 from mindspore.ops.auto_generate.gen_ops_def import add_ext as add
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 
 rtol = 1e-3
 
@@ -106,7 +107,7 @@ def test_ops_backward(context_mode):
     y = np.array([[5, 6], [7, 8]], np.float32)
     alpha = 2.0
 
-    output = ops.grad(add_cell, (0))(ms.tensor(x), ms.tensor(y), alpha).asnumpy()
+    output = ms.grad(add_cell, (0))(ms.tensor(x), ms.tensor(y), alpha).asnumpy()
     expect = np.ones_like(y)
 
     np.testing.assert_allclose(output, expect, rtol=rtol)
@@ -130,7 +131,7 @@ def test_ops_bf16(context_mode):
     y = np.array([[5, 6], [7, 8]], np.float32)
     alpha = 2.0
 
-    output = ops.grad(add_cell, (0))(ms.tensor(x, ms.bfloat16), ms.tensor(y, ms.bfloat16), alpha).float().asnumpy()
+    output = ms.grad(add_cell, (0))(ms.tensor(x, ms.bfloat16), ms.tensor(y, ms.bfloat16), alpha).float().asnumpy()
     expect = np.ones_like(y)
 
     np.testing.assert_allclose(output, expect, rtol=rtol)
@@ -158,3 +159,80 @@ def test_ops_bool(context_mode):
     expect = x + y * alpha
 
     np.testing.assert_allclose(output, expect, rtol=rtol)
+
+
+def ops_add_binary_compare(input_binary_data, output_binary_data):
+    add_cell = AddCell()
+    output = add_cell(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]), 1.0)
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+    output = ms.grad(add_cell, (0))(ms.Tensor(input_binary_data[0]), ms.Tensor(input_binary_data[1]), 1.0)
+    assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((6, 64, 88, 160), np.float32), ((6, 64, 88, 160), np.float32)],
+                                output_info=[((6, 64, 88, 160), np.float32), ((6, 64, 88, 160), np.float32)],
+                                extra_info='auto_drive'))
+def ops_add_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_add_binary_compare(input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((84, 144, 32), np.float32), ((84, 144, 32), np.float32)],
+                                output_info=[((84, 144, 32), np.float32), ((84, 144, 32), np.float32)],
+                                extra_info='auto_drive'))
+def ops_add_binary_case2(input_binary_data=None, output_binary_data=None):
+    ops_add_binary_compare(input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1024,), np.float32), ((), np.float32)],
+                                output_info=[((1024,), np.float32), ((1024,), np.float32)],
+                                extra_info='auto_drive'))
+def ops_add_binary_case3(input_binary_data=None, output_binary_data=None):
+    ops_add_binary_compare(input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((48, 32, 32), np.float32), ((), np.float32)],
+                                output_info=[((48, 32, 32), np.float32), ((48, 32, 32), np.float32)],
+                                extra_info='auto_drive'))
+def ops_add_binary_case4(input_binary_data=None, output_binary_data=None):
+    ops_add_binary_compare(input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 6, 288, 64), np.float32), ((), np.float32)],
+                                output_info=[((1, 6, 288, 64), np.float32), ((1, 6, 288, 64), np.float32)],
+                                extra_info='auto_drive'))
+def ops_add_binary_case5(input_binary_data=None, output_binary_data=None):
+    ops_add_binary_compare(input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 1, 1, 288, 64), np.float32), ((), np.float32)],
+                                output_info=[((1, 1, 1, 288, 64), np.float32), ((1, 1, 1, 288, 64), np.float32)],
+                                extra_info='auto_drive'))
+def ops_add_binary_case6(input_binary_data=None, output_binary_data=None):
+    ops_add_binary_compare(input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 576, 128, 16, 2), np.float32), ((1, 576, 128, 16, 1), np.float32)],
+                                output_info=[((1, 576, 128, 16, 2), np.float32), ((1, 576, 128, 16, 2), np.float32)],
+                                extra_info='auto_drive'))
+def ops_add_binary_case7(input_binary_data=None, output_binary_data=None):
+    ops_add_binary_compare(input_binary_data, output_binary_data)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_add_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test op add
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=mode)
+
+    ops_add_binary_case1()
+    ops_add_binary_case2()
+    ops_add_binary_case3()
+    ops_add_binary_case4()
+    ops_add_binary_case5()
+    ops_add_binary_case6()
+    ops_add_binary_case7()

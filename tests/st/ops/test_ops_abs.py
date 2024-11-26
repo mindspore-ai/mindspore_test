@@ -14,26 +14,28 @@
 # ============================================================================
 import pytest
 import numpy as np
-import test_utils
 import mindspore as ms
 from mindspore import Tensor
-from mindspore.ops.auto_generate import abs
+from mindspore.ops.auto_generate import abs as abs_
 from mindspore import ops
 from mindspore import context
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
+
 
 @test_utils.run_with_cell
 def abs_forward_func(x):
-    return abs(x)
+    return abs_(x)
 
 
 @test_utils.run_with_cell
 def abs_backward_func(x):
-    return ops.grad(abs_forward_func, (0))(x)
+    return ms.grad(abs_forward_func, (0))(x)
 
 
 def abs_dyn_shape_func(x):
-    return abs(x)
+    return abs_(x)
 
 
 @arg_mark(plat_marks=['platform_ascend'],
@@ -139,3 +141,39 @@ def test_abs_dynamic_rank(mode):
     out = test_cell(x)
     expect = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     assert np.allclose(out.asnumpy(), expect, rtol=1e-4, atol=1e-4)
+
+
+def ops_abs_binary_compare(input_binary_data, output_binary_data):
+    output = abs_forward_func(Tensor(input_binary_data[0]))
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+    output = abs_backward_func(Tensor(input_binary_data[0]))
+    assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 500, 6), np.float32)],
+                                output_info=[((1, 500, 6), np.float32), ((1, 500, 6), np.float32)],
+                                extra_info='auto_drive'))
+def ops_abs_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_abs_binary_compare(input_binary_data, output_binary_data)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((1, 2, 288, 64), np.float32)],
+                                output_info=[((1, 2, 288, 64), np.float32), ((1, 2, 288, 64), np.float32)],
+                                extra_info='auto_drive'))
+def ops_abs_binary_case2(input_binary_data=None, output_binary_data=None):
+    ops_abs_binary_compare(input_binary_data, output_binary_data)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_abs_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test op abs
+    Expectation: expect correct result.
+    """
+    context.set_context(mode=mode)
+
+    ops_abs_binary_case1()
+    ops_abs_binary_case2()
