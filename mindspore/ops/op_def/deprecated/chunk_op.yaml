@@ -1,0 +1,13 @@
+#deprecated chunk
+chunk:
+  args:
+    input:
+      dtype: tensor
+    chunks:
+      dtype: int
+    axis:
+      dtype: int
+      default: 0
+  returns:
+    y:
+      dtype: tuple[tensor]

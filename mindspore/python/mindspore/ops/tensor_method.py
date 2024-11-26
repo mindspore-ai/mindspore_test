@@ -23,7 +23,7 @@ from mindspore.ops.composite.multitype_ops import _compile_utils as utils
 # 2 common import
 
 # 3 common import
-
+from mindspore.common import dtype as mstype
 # 4 common import
 
 # 5 common import
@@ -72,7 +72,7 @@ from mindspore.ops.function.array_func import argmax
 # 19 ceil
 from mindspore.ops.function.math_func import ceil
 # 20 chunk
-
+from mindspore.ops.function.array_func import chunk, chunk_ext
 # 21 clamp
 from mindspore.ops.auto_generate import clamp_tensor, clamp_scalar
 # 22 clip
@@ -82,7 +82,8 @@ from mindspore.ops.function.math_func import cos
 # 24 cumprod
 
 # 25 cumsum
-
+from mindspore.ops.function.math_func import cumsum
+from mindspore.ops.auto_generate import cumsum_ext
 # 26 dim
 
 # 27 div
@@ -100,6 +101,8 @@ from mindspore.ops.auto_generate import exp
 # 33 expand_as
 
 # 34 flatten
+from mindspore.ops.function.array_func import flatten
+from mindspore.ops.auto_generate import flatten_ext
 
 # 35 flip
 
@@ -422,6 +425,13 @@ def tensor_ceil(input):
 
 
 # 20 chunk
+def deprecated_tensor_chunk(input, chunks, axis=0):
+    return chunk(input, chunks, axis)
+
+
+def tensor_chunk_ext(input, chunks, dim=0):
+    return chunk_ext(input, chunks, dim)
+
 
 # 21 clamp
 def tensor_clamp_tensor(input, min=None, max=None):
@@ -442,6 +452,26 @@ def tensor_cos(input):
 # 24 cumprod
 
 # 25 cumsum
+def deprecated_tensor_cumsum(x, axis=None, dtype=None):
+    r"""
+    For details, please refer to :func:`mindspore.ops.cumsum`.
+    """
+    original_dtype = x.dtype
+    # If original tensor is int, and has precision less then int32, convert to int32
+    if x.dtype in (mstype.bool_, mstype.int8, mstype.int16, mstype.uint8, mstype.int16):
+        x = x.astype(mstype.int32)
+    if axis is None:
+        x = x.ravel()
+        axis = 0
+    validator.check_axis_in_range(axis, x.ndim)
+    if dtype is not None and original_dtype != dtype:
+        return cumsum(x, axis).astype(dtype, copy=False)
+    return cumsum(x, axis)
+
+
+def tensor_cumsum_ext(input, dim, dtype=None):
+    return cumsum_ext(input, dim, dtype)
+
 
 # 26 dim
 
@@ -472,6 +502,13 @@ def tensor_exp(input):
 # 33 expand_as
 
 # 34 flatten
+def deprecated_tensor_flatten(input, order='C', *, start_dim=0, end_dim=-1):
+    return flatten(input, order, start_dim=start_dim, end_dim=end_dim)
+
+
+def tensor_flatten_ext(input, start_dim=0, end_dim=-1):
+    return flatten_ext(input, start_dim, end_dim)
+
 
 # 35 flip
 

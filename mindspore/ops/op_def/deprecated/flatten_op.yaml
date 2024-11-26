@@ -1,0 +1,17 @@
+#deprecated flatten
+flatten:
+  args:
+    input:
+      dtype: tensor
+    order:
+      dtype: str
+      default: "'C'"
+    start_dim:
+      dtype: int
+      default: 0
+    end_dim:
+      dtype: int
+      default: -1
+  returns:
+    output:
+      dtype: tensor
