@@ -19,7 +19,6 @@ After declaring the dataset object, you can further apply dataset operations
 (e.g. filter, skip, concat, map, batch) on it.
 """
 import builtins
-import collections
 import copy
 import errno
 import itertools
@@ -907,7 +906,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         self.has_batch_sampler = False
         if batch_sampler is not None:
             self.has_batch_sampler = True
-            if isinstance(batch_sampler, collections.abc.Iterable):
+            if not isinstance(batch_sampler, samplers.BuiltinSampler):
                 self.sampler = samplers.IterSampler(batch_sampler)
             else:
                 self.sampler = batch_sampler

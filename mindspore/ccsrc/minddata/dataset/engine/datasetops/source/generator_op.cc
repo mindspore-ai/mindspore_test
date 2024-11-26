@@ -35,7 +35,10 @@ GeneratorOp::GeneratorOp(const py::function &generator_function, std::vector<std
       generator_counter_(0),
       num_parallel_workers_(num_parallel_workers),
       num_rows_sampled_{0},
-      has_batch_sampler_(has_batch_sampler) {
+      has_batch_sampler_(has_batch_sampler),
+      num_samples_collected_(0),
+      size_of_this_batch_(-1),
+      batch_sizes_of_epoch_({}) {
   py::gil_scoped_acquire gil_acquire;
   generator_function_ = generator_function;
 }
@@ -231,37 +234,34 @@ Status GeneratorOp::GetMappedIndex(int64_t index, int64_t *out_index) {
   return Status::OK();
 }
 
-Status GeneratorOp::GetNextBatchSize(std::deque<int64_t> *batch_sizes_of_epoch, int64_t *next_batch_size) {
+Status GeneratorOp::GetNextBatchSize() {
   if (has_batch_sampler_) {
-    RETURN_UNEXPECTED_IF_NULL(batch_sizes_of_epoch);
-    RETURN_UNEXPECTED_IF_NULL(next_batch_size);
-    if (!batch_sizes_of_epoch->empty()) {
-      *next_batch_size = batch_sizes_of_epoch->front();
-      batch_sizes_of_epoch->pop_front();
+    if (!batch_sizes_of_epoch_.empty()) {
+      size_of_this_batch_ = batch_sizes_of_epoch_.front();
+      batch_sizes_of_epoch_.pop_front();
     }
   }
   return Status::OK();
 }
 
-Status GeneratorOp::GetNextEpochBatchSizes(std::deque<int64_t> *batch_sizes_of_epoch) {
+Status GeneratorOp::GetNextEpochBatchSizes() {
   if (has_batch_sampler_) {
-    RETURN_UNEXPECTED_IF_NULL(batch_sizes_of_epoch);
     auto batch_sampler = std::dynamic_pointer_cast<PythonSamplerRT>(sampler_);
     CHECK_FAIL_RETURN_UNEXPECTED(batch_sampler != nullptr,
                                  "Batch sampler of GeneratorDataset should be a Python sampler.");
-    RETURN_IF_NOT_OK(batch_sampler->GetBatchSizes(batch_sizes_of_epoch));
+    RETURN_IF_NOT_OK(batch_sampler->GetBatchSizes(&batch_sizes_of_epoch_));
+    CHECK_FAIL_RETURN_UNEXPECTED(!batch_sizes_of_epoch_.empty(), "Batch sizes should not be empty.");
   }
   return Status::OK();
 }
 
-Status GeneratorOp::CheckAndSendEOB(int64_t size_of_this_batch, int64_t *num_samples_collected) {
+Status GeneratorOp::CheckAndSendEOB() {
   if (has_batch_sampler_) {
-    RETURN_UNEXPECTED_IF_NULL(num_samples_collected);
-    if ((*num_samples_collected) == size_of_this_batch) {
+    if (num_samples_collected_ == size_of_this_batch_) {
       generator_counter_++;
       MS_LOG(DEBUG) << "Generator operator sends out EOB.";
       RETURN_IF_NOT_OK(out_connector_->SendEOB());
-      *num_samples_collected = 0;
+      num_samples_collected_ = 0;
     }
   }
   return Status::OK();
@@ -307,11 +307,8 @@ Status GeneratorOp::operator()() {
   num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
   RETURN_IF_NOT_OK(Init());
 
-  int64_t num_samples_collected = 0;
-  int64_t size_of_this_batch = -1;
-  std::deque<int64_t> batch_sizes_of_epoch;
-  RETURN_IF_NOT_OK(GetNextEpochBatchSizes(&batch_sizes_of_epoch));
-  RETURN_IF_NOT_OK(GetNextBatchSize(&batch_sizes_of_epoch, &size_of_this_batch));
+  RETURN_IF_NOT_OK(GetNextEpochBatchSizes());
+  RETURN_IF_NOT_OK(GetNextBatchSize());
 
   bool eof = false;
   while (!eof) {
@@ -339,7 +336,7 @@ Status GeneratorOp::operator()() {
                                "obtaining samples in the user-defined generator function.";
         }
         if (has_batch_sampler_) {
-          num_samples_collected++;
+          num_samples_collected_++;
         } else {
           generator_counter_++;
         }
@@ -382,14 +379,14 @@ Status GeneratorOp::operator()() {
       RETURN_IF_NOT_OK(out_connector_->Add(std::move(new_row)));
     }
 
-    RETURN_IF_NOT_OK(CheckAndSendEOB(size_of_this_batch, &num_samples_collected));
+    RETURN_IF_NOT_OK(CheckAndSendEOB());
 
     if (eoe) {
       // Push out EOE upon StopIteration exception from generator
       MS_LOG(DEBUG) << "Generator operator sends out EOE.";
       RETURN_IF_NOT_OK(out_connector_->SendEOE());
       if (has_batch_sampler_) {
-        CHECK_FAIL_RETURN_UNEXPECTED(num_samples_collected == 0,
+        CHECK_FAIL_RETURN_UNEXPECTED(num_samples_collected_ == 0,
                                      "The sum of batch sizes should be equal to the total num samples.");
       }
       if (IsLastIteration()) {
@@ -410,12 +407,12 @@ Status GeneratorOp::operator()() {
           // Self-reset to start a new iteration
           RETURN_IF_NOT_OK(Reset());
         }
-        RETURN_IF_NOT_OK(GetNextEpochBatchSizes(&batch_sizes_of_epoch));
+        RETURN_IF_NOT_OK(GetNextEpochBatchSizes());
       }
       UpdateRepeatAndEpochCounter();
     }
-    if (num_samples_collected == 0 && !eof) {
-      RETURN_IF_NOT_OK(GetNextBatchSize(&batch_sizes_of_epoch, &size_of_this_batch));
+    if (num_samples_collected_ == 0 && !eof) {
+      RETURN_IF_NOT_OK(GetNextBatchSize());
     }
   }
   return Status::OK();
@@ -458,6 +455,7 @@ Status GeneratorOp::GetNextRowPullMode(TensorRow *const row) {
     RETURN_IF_NOT_OK(Init());
     num_rows_sampled_ = sampler_ ? sampler_->CalculateNumSamples(num_rows_) : num_rows_;
     MS_LOG(DEBUG) << "num_rows_sampled: " << num_rows_sampled_;
+    RETURN_IF_NOT_OK(GetNextEpochBatchSizes());
     prepared_data_ = true;
   }
 
@@ -466,16 +464,29 @@ Status GeneratorOp::GetNextRowPullMode(TensorRow *const row) {
     return Status::OK();
   }
 
+  if (has_batch_sampler_) {
+    if (num_samples_collected_ == 0) {
+      RETURN_IF_NOT_OK(GetNextBatchSize());
+    }
+    if (num_samples_collected_ == size_of_this_batch_) {
+      generator_counter_++;
+      num_samples_collected_ = 0;
+      *row = TensorRow(TensorRow::kFlagEOB);
+      return Status::OK();
+    }
+  }
+
   bool eoe = false;
   TensorRow new_row;
   {
     py::gil_scoped_acquire gil_acquire;
-    if (Py_IsInitialized() == 0) {
-      RETURN_STATUS_ERROR(StatusCode::kMDPythonInterpreterFailure, "[Internal ERROR] Python Interpreter is finalized");
-    }
     try {
       RETURN_IF_NOT_OK(PyRowToTensorRow(generator_.attr("__next__")(), &new_row));
-      generator_counter_++;
+      if (has_batch_sampler_) {
+        num_samples_collected_++;
+      } else {
+        generator_counter_++;
+      }
     } catch (py::error_already_set &e) {
       eoe = e.matches(PyExc_StopIteration);
       // Pop up non StopIteration Python Exception
@@ -512,11 +523,16 @@ Status GeneratorOp::GetNextRowPullMode(TensorRow *const row) {
 
   if (eoe) {
     *row = TensorRow(TensorRow::kFlagEOE);
+    if (has_batch_sampler_) {
+      CHECK_FAIL_RETURN_UNEXPECTED(num_samples_collected_ == 0,
+                                   "The sum of batch sizes should be equal to the total num samples.");
+    }
     if (IsLastIteration()) {
       eof_received_ = true;
     } else {
       // Self-reset to start a new iteration
       RETURN_IF_NOT_OK(Reset());
+      RETURN_IF_NOT_OK(GetNextEpochBatchSizes());
       UpdateRepeatAndEpochCounter();
     }
   }

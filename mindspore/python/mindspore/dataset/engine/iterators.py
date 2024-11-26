@@ -112,6 +112,8 @@ class Iterator:
             init_step = dataset.get_init_step()
             dataset_size = dataset.get_dataset_size()
         if get_debug_mode():
+            if dataset.get_init_step() != 0:
+                logger.warning("Dataset init step will be ignored in debug mode.")
             consumer = cde.PythonPullBasedIteratorConsumer(num_epochs)
             consumer.Init(self.ir_tree)
         else:
