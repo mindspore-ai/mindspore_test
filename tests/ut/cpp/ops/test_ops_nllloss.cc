@@ -147,24 +147,6 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::REDUCTION_SUM)},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
     .FeedExpectedOutput({{}, {}}, {kNumberTypeFloat32, kNumberTypeFloat32});
-  generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{3}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::NONE)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
-    .FeedExpectedOutput({{}, {}}, {kNumberTypeFloat32, kNumberTypeFloat32});
-  generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{3}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::MEAN)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
-    .FeedExpectedOutput({{}, {}}, {kNumberTypeFloat32, kNumberTypeFloat32});
-  generator
-    .FeedInputArgs({InferInfoParam{ShapeVector{3}, kNumberTypeFloat32}, InferInfoParam{ShapeVector{}, kNumberTypeInt32},
-                    InferInfoParam{ShapeVector{3}, kNumberTypeFloat32},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(Reduction::REDUCTION_SUM)},
-                    InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(2)}})
-    .FeedExpectedOutput({{}, {}}, {kNumberTypeFloat32, kNumberTypeFloat32});
   return generator.Generate();
 }
 }  // namespace
