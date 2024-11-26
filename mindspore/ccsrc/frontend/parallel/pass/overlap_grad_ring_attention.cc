@@ -68,14 +68,7 @@ struct FaGradCompareMethod {
     a_stream >> a_1 >> underline >> a_2;
     b_stream >> b_1 >> underline >> b_2;
 
-    if (a_1 < b_1) {
-      return true;
-    }
-    if (a_1 > b_1) {
-      return false;
-    }
-
-    return a_2 < b_2;
+    return a_1 == b_1 ? a_2 < b_2 : a_1 > b_1;
   }
 };
 
@@ -83,7 +76,7 @@ namespace mindspore {
 namespace parallel {
 namespace {
 
-std::string GetNewStr(std::string origin_str) {
+std::string GetPreviousStr(std::string origin_str) {
   size_t underscore_pos = origin_str.find('_');
   if (underscore_pos == std::string::npos) {
     MS_LOG(ERROR) << "Flash_Index ERROR";
@@ -94,6 +87,25 @@ std::string GetNewStr(std::string origin_str) {
 
   std::string second_number_str = origin_str.substr(underscore_pos + 1);
   int second_number = std::stoi(second_number_str) + 1;
+
+  std::stringstream ss;
+  ss << first_number << '_' << second_number;
+
+  std::string new_str = ss.str();
+  return new_str;
+}
+
+std::string GetNextStr(std::string origin_str) {
+  size_t underscore_pos = origin_str.find('_');
+  if (underscore_pos == std::string::npos) {
+    MS_LOG(ERROR) << "Flash_Index ERROR";
+  }
+
+  std::string first_number_str = origin_str.substr(0, underscore_pos);
+  int first_number = std::stoi(first_number_str);
+
+  std::string second_number_str = origin_str.substr(underscore_pos + 1);
+  int second_number = std::stoi(second_number_str) - 1;
 
   std::stringstream ss;
   ss << first_number << '_' << second_number;
@@ -118,6 +130,35 @@ std::string GetFirstStr(std::string origin_str, int64_t sp_num) {
 
   std::string new_str = ss.str();
   return new_str;
+}
+
+std::string GetLastStr(std::string origin_str) {
+  size_t underscore_pos = origin_str.find('_');
+  if (underscore_pos == std::string::npos) {
+    MS_LOG(ERROR) << "Flash_Index ERROR";
+  }
+
+  std::string first_number_str = origin_str.substr(0, underscore_pos);
+  int64_t first_number = std::stoi(first_number_str);
+
+  int64_t second_number = 0;
+
+  std::stringstream ss;
+  ss << first_number << '_' << second_number;
+
+  std::string new_str = ss.str();
+  return new_str;
+}
+
+int GetSecondNumber(std::string origin_str) {
+  size_t underscore_pos = origin_str.find('_');
+  if (underscore_pos == std::string::npos) {
+    MS_LOG(ERROR) << "Flash_Index ERROR";
+  }
+
+  std::string second_number_str = origin_str.substr(underscore_pos + 1);
+  int second_number = std::stoi(second_number_str);
+  return second_number;
 }
 
 void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *attention_out_map,
@@ -149,9 +190,9 @@ void FindFAGradInputNode(const CNodePtr &node, std::map<int64_t, AnfNodePtr> *at
 void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<std::string, AnfNodePtr> *fwd_fas,
                     std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map,
                     std::map<std::string, AnfNodePtr> *grad_recv_map, std::map<std::string, AnfNodePtr> *grad_send_map,
-                    CNodePtr *loss_node, std::map<int64_t, AnfNodePtr> *attention_out_map,
-                    std::map<int64_t, AnfNodePtr> *softmax_max_map, std::map<int64_t, AnfNodePtr> *softmax_sum_map,
-                    std::map<int64_t, AnfNodePtr> *dout_map) {
+                    std::map<std::string, AnfNodePtr> *kv_recv_map, CNodePtr *loss_node,
+                    std::map<int64_t, AnfNodePtr> *attention_out_map, std::map<int64_t, AnfNodePtr> *softmax_max_map,
+                    std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *dout_map) {
   auto pipeline_stages = ParallelContext::GetInstance()->pipeline_stage_split_num();
   for (auto &anf_node : *origin_nodes_topological) {
     CNodePtr node = anf_node->cast<CNodePtr>();
@@ -183,12 +224,13 @@ void FindTargetNode(std::vector<AnfNodePtr> *origin_nodes_topological, std::map<
       (*grad_recv_map).insert({flash_index, node});
     }
 
-    if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
-      if (!node->HasPrimalAttr(RING_ATTENTION_INDEX) || !node->HasPrimalAttr("forward_unique_id")) {
-        continue;
-      }
+    if (IsPrimitiveCNode(node, prim::kPrimReceive) && node->HasPrimalAttr(RING_ATTENTION_INDEX)) {
       auto flash_index = GetValue<std::string>(node->GetPrimalAttr(RING_ATTENTION_INDEX));
-      (*grad_send_map).insert({flash_index, node});
+      if (node->HasPrimalAttr("forward_unique_id")) {
+        (*grad_send_map).insert({flash_index, node});
+      } else {
+        (*kv_recv_map).insert({flash_index, node});
+      }
     }
   }
 }
@@ -356,7 +398,7 @@ CNodePtr NewSplitNode(const AnfNodePtr &split_node, size_t split_dim, size_t spl
   return split;
 }
 
-CNodePtr NewTupleGetItemNode(const AnfNodePtr &input_node, size_t output_index) {
+AnfNodePtr NewTupleGetItemNode(const AnfNodePtr &input_node, size_t output_index) {
   MS_EXCEPTION_IF_NULL(input_node);
   auto idx = NewValueNode(SizeToLong(output_index));
   MS_EXCEPTION_IF_NULL(idx);
@@ -372,10 +414,22 @@ CNodePtr NewTupleGetItemNode(const AnfNodePtr &input_node, size_t output_index) 
   return getitem;
 }
 
-CNodePtr CreateDepend(const AnfNodePtr &latter_node, const AnfNodePtr &former_node, const CNodePtr &node) {
+CNodePtr NewAddNode(const AnfNodePtr &left_node, const AnfNodePtr &right_node) {
+  std::vector<AnfNodePtr> add_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimAdd->name())), left_node,
+                                        right_node};
+  auto add_node = left_node->func_graph()->NewCNode(add_inputs);
+  MS_EXCEPTION_IF_NULL(add_node);
+  add_node->set_scope(left_node->scope());
+  add_node->set_abstract(left_node->abstract()->Clone());
+  return add_node;
+}
+
+AnfNodePtr CreateDepend(const AnfNodePtr &latter_node, const AnfNodePtr &former_node, const CNodePtr &node) {
   if (former_node == nullptr) {
-    return latter_node->cast<CNodePtr>();
+    return latter_node;
   }
+  MS_EXCEPTION_IF_NULL(latter_node);
+  MS_EXCEPTION_IF_NULL(node);
   std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), latter_node, former_node};
   auto depend_node = node->func_graph()->NewCNode(depend_inputs);
   MS_EXCEPTION_IF_NULL(depend_node);
@@ -383,12 +437,12 @@ CNodePtr CreateDepend(const AnfNodePtr &latter_node, const AnfNodePtr &former_no
   return depend_node;
 }
 
-void GetPreNode(CNodePtr *pre_grad_recv_node, CNodePtr *pre_grad_send_node, const std::string &new_str,
-                std::map<std::string, AnfNodePtr> *grad_recv_map, std::map<std::string, AnfNodePtr> *grad_send_map) {
-  if ((*grad_recv_map).find(new_str) != (*grad_recv_map).end() &&
-      (*grad_send_map).find(new_str) != (*grad_send_map).end()) {
-    (*pre_grad_recv_node) = (*grad_recv_map).at(new_str)->cast<CNodePtr>();
-    (*pre_grad_send_node) = (*grad_send_map).at(new_str)->cast<CNodePtr>();
+void GetPreNode(const std::map<std::string, AnfNodePtr> &grad_recv_map,
+                const std::map<std::string, AnfNodePtr> &grad_send_map, const std::string &new_str,
+                CNodePtr *pre_grad_recv_node, CNodePtr *pre_grad_send_node) {
+  if (grad_recv_map.find(new_str) != grad_recv_map.end() && grad_send_map.find(new_str) != grad_send_map.end()) {
+    *pre_grad_recv_node = grad_recv_map.at(new_str)->cast<CNodePtr>();
+    *pre_grad_send_node = grad_send_map.at(new_str)->cast<CNodePtr>();
   }
 }
 
@@ -412,10 +466,8 @@ std::shared_ptr<OperatorInfo> GetAttentionInfo(const std::map<std::string, AnfNo
     auto fa_score_node_i = fa.second;
     auto fa_score_node_prim = GetCNodePrimitive(fa_score_node_i);
     MS_EXCEPTION_IF_NULL(fa_score_node_prim);
-    if ((!fa_score_node_prim->HasAttr(parallel::ENABLE_RING_ATTENTION) ||
-         !GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RING_ATTENTION)))) &&
-        (!fa_score_node_prim->HasAttr(parallel::ENABLE_FLASH_SP) ||
-         !GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_FLASH_SP))))) {
+    if (!fa_score_node_prim->HasAttr(parallel::ENABLE_RING_ATTENTION) ||
+        !GetValue<bool>((fa_score_node_prim->GetAttr(parallel::ENABLE_RING_ATTENTION)))) {
       continue;
     }
     fwd_score = fa_score_node_i->cast<CNodePtr>();
@@ -573,9 +625,9 @@ void CreateCommForRAGrad(const FuncGraphPtr &graph, const CNodePtr &pre_grad_rec
     manager->Replace(*grad_fa_node, CreateDepend(*grad_fa_node, *grad_recv_node, *grad_fa_node));
   } else {
     auto kv_concat = CreateDepend(split_input, *grad_send_node, *grad_send_node);
-    *recv_node = NewReceiveNode(CreateDepend(kv_concat, pre_grad_send_kv_node, kv_concat), 0, recv_rank_id, neigh_shape,
+    *recv_node = NewReceiveNode(CreateDepend(kv_concat, pre_grad_send_kv_node, kv_split), 0, recv_rank_id, neigh_shape,
                                 output_type_id, g_device_manager->world_group());
-    *send_node = NewSendNode(CreateDepend(kv_concat, *recv_node, kv_concat), 0, send_rank_id, neigh_shape,
+    *send_node = NewSendNode(CreateDepend(kv_concat, *recv_node, kv_split), 0, send_rank_id, neigh_shape,
                              output_type_id, g_device_manager->world_group());
     auto grad_recv_input = (*grad_recv_node)->input(1);
     grad_recv_input = CreateDepend(grad_recv_input, pre_grad_send_kv_node, *grad_recv_node);
@@ -617,8 +669,8 @@ void DynOverlapGradRingAttention(const FuncGraphPtr &graph) {
 
     CNodePtr pre_grad_recv_node;
     CNodePtr pre_grad_send_node;
-    auto new_str = GetNewStr(it->first);
-    GetPreNode(&pre_grad_recv_node, &pre_grad_send_node, new_str, &grad_recv_map, &grad_send_map);
+    auto new_str = GetPreviousStr(it->first);
+    GetPreNode(grad_recv_map, grad_send_map, new_str, &pre_grad_recv_node, &pre_grad_send_node);
 
     auto grad_recv_pos = GetValue<int64_t>(grad_recv_node->GetPrimalAttr(RING_ATTENTION_POS));
     if (grad_recv_pos % kIndex2 == 0) {
@@ -689,20 +741,417 @@ void DynOverlapGradRingAttention(const FuncGraphPtr &graph) {
   }
 }
 
+bool IsRingAttentionCP(const AnfNodePtr &fa_node) {
+  auto fa_score_node_prim = GetCNodePrimitive(fa_node);
+  return fa_score_node_prim->HasAttr(parallel::ENABLE_RING_ATTENTION) &&
+         GetValue<bool>(fa_score_node_prim->GetAttr(parallel::ENABLE_RING_ATTENTION)) &&
+         fa_score_node_prim->HasAttr(parallel::ENABLE_RA_CONTEXT_PARALLEL) &&
+         GetValue<bool>(fa_score_node_prim->GetAttr(parallel::ENABLE_RA_CONTEXT_PARALLEL));
+}
+
+void CreateParameterWhenLazyInline(const FuncGraphPtr &fwd_graph, const FuncGraphPtr &bck_graph,
+                                   const vector<AnfNodePtr> &inputs, vector<AnfNodePtr> *outputs) {
+  auto ret = fwd_graph->get_return();
+  auto manager = fwd_graph->manager();
+  auto origin_nodes_topological = DeepScopedGraphSearch(ret);
+  for (const auto &node : origin_nodes_topological) {
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto call_cnode = node->cast<CNodePtr>();
+    if (call_cnode->inputs().size() <= 1 || !IsValueNode<FuncGraph>(call_cnode->input(1))) {
+      continue;
+    }
+    auto g = GetValueNode<FuncGraphPtr>(call_cnode->input(1));  // partial
+    MS_EXCEPTION_IF_NULL(g);
+    if (g == bck_graph) {
+      auto sub_func_graph = GetValueNode<FuncGraphPtr>(call_cnode->input(1));
+      auto sub_graph_parameters = sub_func_graph->parameters();
+      auto new_user_graph_parameters(sub_graph_parameters);
+
+      auto call_inputs(call_cnode->inputs());
+      for (const auto &in : inputs) {
+        call_inputs.insert(call_inputs.begin() + kIndex2, in);
+
+        auto new_parameter = sub_func_graph->add_parameter();
+        new_parameter->set_abstract(in->abstract());
+        new_user_graph_parameters.insert(new_user_graph_parameters.begin(), new_parameter);
+        outputs->emplace_back(new_parameter);
+      }
+      auto new_call_cnode = call_cnode->func_graph()->NewCNode(call_inputs);
+      (void)manager->Replace(call_cnode, new_call_cnode);
+      sub_func_graph->set_parameters(new_user_graph_parameters);
+    }
+  }
+}
+
+void PrepareFAGradInput(const FuncGraphPtr &graph,
+                        const std::map<std::string, AnfNodePtr, FaGradCompareMethod> &grad_fa_map,
+                        const std::map<int64_t, AnfNodePtr> &attention_out_map,
+                        const std::map<int64_t, AnfNodePtr> &softmax_max_map,
+                        const std::map<int64_t, AnfNodePtr> &softmax_sum_map,
+                        const std::map<int64_t, AnfNodePtr> &dout_map, int64_t rank, int64_t input_layout) {
+  auto manager = graph->manager();
+  AnfNodePtr cur_attn_out;
+  AnfNodePtr cur_dout;
+  AnfNodePtr cur_max;
+  AnfNodePtr cur_sum;
+  int64_t step = 0;
+  for (auto it = grad_fa_map.rbegin(); it != grad_fa_map.rend(); ++it, ++step) {
+    string fa_index = it->first;
+    size_t underscore_pos = fa_index.find('_');
+    std::string first_number_str = fa_index.substr(0, underscore_pos);
+    int first_number = std::stoi(first_number_str);
+    auto dout_node = dout_map.find(first_number)->second;
+    MS_EXCEPTION_IF_NULL(dout_node);
+    dout_node = dout_node->cast<CNodePtr>()->input(kIndex2);
+    auto filter_func = [&](const CNodePtr &cnode) {
+      bool filter = IsPrimitiveCNode(cnode, prim::kPrimSplit) || IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem) ||
+                    IsPrimitiveCNode(cnode, prim::kPrimDepend);
+      return std::make_pair(filter, 1);
+    };
+    auto full_dout_node = GetInputNodeWithFilter(dout_node, filter_func);
+    auto softmax_max_node = softmax_max_map.find(first_number)->second;
+    MS_EXCEPTION_IF_NULL(softmax_max_node);
+    auto softmax_sum_node = softmax_sum_map.find(first_number)->second;
+    MS_EXCEPTION_IF_NULL(softmax_sum_node);
+    auto attention_out_node = attention_out_map.find(first_number)->second;
+    MS_EXCEPTION_IF_NULL(attention_out_node);
+
+    auto grad_fa_node = it->second->cast<CNodePtr>();
+    auto sp_num = GetValue<int64_t>(grad_fa_node->GetPrimalAttr("sp_num"));
+    step = step % sp_num;
+    if (step >= sp_num - rank - 1) {
+      cur_attn_out = attention_out_node;
+      cur_dout = full_dout_node;
+      cur_max = softmax_max_node;
+      cur_sum = softmax_sum_node;
+    } else {
+      auto split_max = NewSplitNode(softmax_max_node, kDim2, kIndex2);
+      cur_max = NewTupleGetItemNode(split_max, kIndex1);
+      auto split_sum = NewSplitNode(softmax_sum_node, kDim2, kIndex2);
+      cur_sum = NewTupleGetItemNode(split_sum, kIndex1);
+      auto axis = input_layout == ops::FASInputLayoutMode::BSH ? kDim1 : kDim2;
+      auto split_attn = NewSplitNode(attention_out_node, axis, kIndex2);
+      cur_attn_out = NewTupleGetItemNode(split_attn, kIndex1);
+      cur_dout = dout_node;
+    }
+
+    MS_EXCEPTION_IF_NULL(cur_attn_out);
+    MS_EXCEPTION_IF_NULL(cur_dout);
+    MS_EXCEPTION_IF_NULL(cur_max);
+    MS_EXCEPTION_IF_NULL(cur_sum);
+    auto fwd_graph = softmax_max_node->func_graph();
+    auto bck_graph = grad_fa_node->func_graph();
+    if (fwd_graph != bck_graph) {
+      vector<AnfNodePtr> outputs;
+      CreateParameterWhenLazyInline(fwd_graph, bck_graph, {cur_max, cur_sum, cur_attn_out}, &outputs);
+      cur_max = outputs[0];
+      cur_sum = outputs[1];
+      cur_attn_out = outputs[kIndex2];
+    }
+    manager->SetEdge(grad_fa_node, ops::FASGradInputIndex::kFASGradInputDyIndex + kIndex1, cur_dout);
+    manager->SetEdge(grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxMaxIndex + kIndex1, cur_max);
+    manager->SetEdge(grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxSumIndex + kIndex1, cur_sum);
+    auto none_node = NewValueNode(std::make_shared<None>());
+    none_node->set_abstract(std::make_shared<abstract::AbstractNone>());
+    manager->SetEdge(grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxOutIndex + kIndex1, none_node);
+    manager->SetEdge(grad_fa_node, ops::FASGradInputIndex::kFASGradInputAttentionInIndex + kIndex1, cur_attn_out);
+  }
+}
+
+void AdjustCommDepForCPGrad(const FuncGraphPtr &graph, const CNodePtr &pre_recv_kv_dkv_node,
+                            const CNodePtr &pre_send_kv_dkv_node, const CNodePtr &pre_fa_grad, CNodePtr *grad_fa_node,
+                            CNodePtr *dkv_recv_node, CNodePtr *dkv_send_node, int64_t pos) {
+  auto manager = graph->manager();
+  if (pos % kIndex2 == 0) {
+    auto grad_send_input = (*dkv_send_node)->input(1);
+    grad_send_input = CreateDepend(grad_send_input, pre_recv_kv_dkv_node, *dkv_send_node);
+    grad_send_input = CreateDepend(grad_send_input, pre_fa_grad, *dkv_send_node);
+    manager->SetEdge(*dkv_send_node, 1, grad_send_input);
+
+    // ensure grad split which is output of receive(grad send) sort after fa
+    manager->Replace(*dkv_send_node, CreateDepend(*dkv_send_node, *grad_fa_node, *dkv_send_node));
+
+    auto grad_recv_input = (*dkv_recv_node)->input(1);
+    manager->SetEdge(*dkv_recv_node, 1, CreateDepend(grad_recv_input, *dkv_send_node, *dkv_recv_node));
+
+    // ensure fa sort after current grad send/recv
+    auto grad_fa_input = (*grad_fa_node)->input(1);
+    grad_fa_input = CreateDepend(grad_fa_input, pre_fa_grad, *grad_fa_node);
+    grad_fa_input = CreateDepend(grad_fa_input, *dkv_recv_node, *grad_fa_node);
+    manager->SetEdge(*grad_fa_node, 1, grad_fa_input);
+
+    manager->Replace(*grad_fa_node, CreateDepend(*grad_fa_node, *dkv_recv_node, *grad_fa_node));
+  } else {
+    auto grad_recv_input = (*dkv_recv_node)->input(1);
+    grad_recv_input = CreateDepend(grad_recv_input, pre_send_kv_dkv_node, *dkv_recv_node);
+    grad_recv_input = CreateDepend(grad_recv_input, pre_fa_grad, *dkv_recv_node);
+    manager->SetEdge(*dkv_recv_node, 1, grad_recv_input);
+
+    // ensure grad split which is output of receive(grad send) sort after fa
+    manager->Replace(*dkv_send_node, CreateDepend(*dkv_send_node, *grad_fa_node, *dkv_send_node));
+
+    auto grad_send_input = (*dkv_send_node)->input(1);
+    manager->SetEdge(*dkv_send_node, 1, CreateDepend(grad_send_input, *dkv_recv_node, *dkv_send_node));
+
+    // ensure fa sort after current grad send/recv
+    auto grad_fa_input = (*grad_fa_node)->input(1);
+    grad_fa_input = CreateDepend(grad_fa_input, pre_fa_grad, *grad_fa_node);
+    grad_fa_input = CreateDepend(grad_fa_input, *dkv_send_node, *grad_fa_node);
+    manager->SetEdge(*grad_fa_node, 1, grad_fa_input);
+
+    manager->Replace(*grad_fa_node, CreateDepend(*grad_fa_node, *dkv_send_node, *grad_fa_node));
+  }
+}
+
+void CreateCommForFirstStep(const FuncGraphPtr &graph, const std::map<std::string, AnfNodePtr> &fa_map,
+                            const std::map<std::string, AnfNodePtr> &kv_recv_map, const string &fa_index,
+                            CNodePtr *grad_fa_node, CNodePtr *kv_send_node, CNodePtr *kv_recv_node) {
+  auto manager = graph->manager();
+  auto first_fwd_fa = fa_map.begin()->second->cast<CNodePtr>();
+  auto operator_info = first_fwd_fa->user_data<parallel::OperatorInfo>();
+  int64_t pos = 0;
+  int64_t recv_rank_id = 0;
+  int64_t send_rank_id = 0;
+  GetCommInfo(&send_rank_id, &recv_rank_id, &operator_info, &pos);
+  auto kv_shape = operator_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
+  auto neigh_shape = kv_shape;
+  if (neigh_shape[kIndex0] != -1) {
+    neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex2;
+  }
+  auto output_type_id = common::AnfAlgo::GetOutputInferDataType(*grad_fa_node, kIndex3);
+
+  auto dout = (*grad_fa_node)->input(ops::FASGradInputIndex::kFASGradInputDyIndex + kIndex1);
+  auto sp_num = GetValue<int64_t>((*grad_fa_node)->GetPrimalAttr("sp_num"));
+  auto first_str = GetFirstStr(fa_index, sp_num - 1);  // last send/recv node in fwd graph
+  auto kv_concat = kv_recv_map.at(first_str);
+  MS_EXCEPTION_IF_NULL(kv_concat);
+  AnfNodePtr recv_kv;
+  auto fwd_graph = kv_concat->func_graph();
+  auto bck_graph = (*grad_fa_node)->func_graph();
+  if (fwd_graph == bck_graph) {
+    recv_kv = kv_concat;
+  } else {
+    vector<AnfNodePtr> outputs;
+    CreateParameterWhenLazyInline(fwd_graph, bck_graph, {kv_concat}, &outputs);
+    recv_kv = outputs[0];
+  }
+  MS_EXCEPTION_IF_NULL(recv_kv);
+  recv_kv = CreateDepend(recv_kv, dout, *grad_fa_node);
+  if (pos % kIndex2 == kIndex0) {
+    *kv_send_node = NewSendNode(recv_kv, 0, send_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
+    *kv_recv_node =
+      NewReceiveNode(*kv_send_node, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
+
+    auto grad_fa_node_input = (*grad_fa_node)->input(1);
+    grad_fa_node_input = CreateDepend(grad_fa_node_input, *kv_recv_node, *grad_fa_node);
+    manager->SetEdge(*grad_fa_node, 1, grad_fa_node_input);
+  } else {
+    *kv_recv_node =
+      NewReceiveNode(recv_kv, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
+    *kv_send_node = NewSendNode(CreateDepend(recv_kv, *kv_recv_node, *kv_recv_node), 0, send_rank_id, neigh_shape,
+                                output_type_id, g_device_manager->world_group());
+
+    auto grad_fa_node_input = (*grad_fa_node)->input(1);
+    grad_fa_node_input = CreateDepend(grad_fa_node_input, *kv_send_node, *grad_fa_node);
+    manager->SetEdge(*grad_fa_node, 1, grad_fa_node_input);
+  }
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(fa_index + "grad"), *kv_send_node);
+  common::AnfAlgo::SetNodeAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(fa_index + "grad"), *kv_recv_node);
+}
+
+void CreateCommForCPGrad(const FuncGraphPtr &graph, const std::map<std::string, AnfNodePtr> &fa_map,
+                         const CNodePtr &pre_recv_kv_dkv_node, const CNodePtr &pre_send_kv_dkv_node,
+                         const CNodePtr &pre_fa_grad, const string &fa_index, int64_t step, CNodePtr *grad_fa_node,
+                         CNodePtr *dkv_recv_node, CNodePtr *dkv_send_node) {
+  auto manager = graph->manager();
+  auto first_fwd_fa = fa_map.begin()->second->cast<CNodePtr>();
+  auto operator_info = first_fwd_fa->user_data<parallel::OperatorInfo>();
+  auto fa_info = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
+  auto input_layout = fa_info->input_layout();
+  int64_t pos = 0;
+  int64_t recv_rank_id = 0;
+  int64_t send_rank_id = 0;
+  GetCommInfo(&send_rank_id, &recv_rank_id, &operator_info, &pos);
+  auto sp_num = GetValue<int64_t>((*grad_fa_node)->GetPrimalAttr("sp_num"));
+
+  auto split_input = CreateDepend(pre_send_kv_dkv_node, pre_fa_grad, pre_send_kv_dkv_node);
+  AnfNodePtr kv_node;
+  AnfNodePtr kv_split;
+  if (step == 1) {  // pre step just receive kv
+    kv_node = pre_send_kv_dkv_node;
+    kv_split = NewSplitNode(split_input, kDim0, kIndex2);
+  } else {  // pre step receive kv and dkv
+    auto kv_dkv_split = NewSplitNode(split_input, kDim0, kIndex2);
+    kv_node = NewTupleGetItemNode(kv_dkv_split, kIndex0);
+    kv_split = NewSplitNode(kv_node, kDim0, kIndex2);
+  }
+  auto key_node = NewTupleGetItemNode(kv_split, kIndex0);
+  auto value_node = NewTupleGetItemNode(kv_split, kIndex1);
+  if (step >= sp_num - pos - 1 && step != sp_num - 1) {  // split kv when step>sp_num-pos-1 or last step not casual
+    auto axis = input_layout == ops::FASInputLayoutMode::BSH ? kDim1 : kDim2;
+    auto split_k = NewSplitNode(key_node, axis, kIndex2);
+    key_node = NewTupleGetItemNode(split_k, kIndex0);
+    auto split_v = NewSplitNode(value_node, axis, kIndex2);
+    value_node = NewTupleGetItemNode(split_v, kIndex0);
+  }
+  manager->SetEdge(*grad_fa_node, kIndex2, key_node);
+  manager->SetEdge(*grad_fa_node, kIndex3, value_node);
+
+  if (step != sp_num - 1) {  // merge kv and dkv, send tuple of kv and dkv if not last step
+    auto dkv_recv_node_input = (*dkv_recv_node)->input(1);
+    auto kv_dkv_tuple = NewMakeTupleNode({kv_node, dkv_recv_node_input});
+    auto kv_dkv_concat = NewConcatNode(kv_dkv_tuple, 0);
+    manager->SetEdge(*dkv_recv_node, 1, kv_dkv_concat);
+
+    // update output shape infer
+    auto neigh_shape = operator_info->inputs_tensor_info()[kIndex1].tensor_layout().base_slice_shape().array();
+    auto output_type_id = common::AnfAlgo::GetOutputInferDataType(*grad_fa_node, kIndex3);
+    neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex4;
+    common::AnfAlgo::SetOutputInferTypeAndShape({output_type_id}, {neigh_shape}, (*dkv_send_node).get());
+    common::AnfAlgo::SetOutputInferTypeAndShape({output_type_id}, {neigh_shape}, (*dkv_recv_node).get());
+
+    // replace input of receive output node
+    auto kv_dkv_split = NewSplitNode(*dkv_send_node, kDim0, kIndex2);
+    auto dkv_node = NewTupleGetItemNode(kv_dkv_split, kIndex1);  // receive dkv
+    auto node_users_map = manager->node_users()[*dkv_send_node];
+    for (auto &it : node_users_map) {
+      auto user_node = it.first->cast<CNodePtr>();
+      manager->SetEdge(user_node, it.second, dkv_node);
+    }
+  }
+  AdjustCommDepForCPGrad(graph, pre_recv_kv_dkv_node, pre_send_kv_dkv_node, pre_fa_grad, grad_fa_node, dkv_recv_node,
+                         dkv_send_node, pos);
+}
+
+void ReplaceDqAdd(const FuncGraphPtr &graph,
+                  const std::map<std::string, AnfNodePtr, FaGradCompareMethod> &grad_fa_map) {
+  auto manager = graph->manager();
+  CNodePtr make_tuple_node;
+  CNodePtr tmp_node;
+  for (auto it = grad_fa_map.rbegin(); it != grad_fa_map.rend(); ++it) {
+    auto grad_fa_node = it->second->cast<CNodePtr>();
+    auto sp_num = GetValue<int64_t>(grad_fa_node->GetPrimalAttr("sp_num"));
+    auto last_str = GetLastStr(GetValue<std::string>(grad_fa_node->GetPrimalAttr(RING_ATTENTION_INDEX)));
+    auto last_fa_grad_node = grad_fa_map.at(last_str);
+    auto last_fa_grad_node_users_map = manager->node_users()[last_fa_grad_node];
+    for (auto &last_fa_grad_node_it : last_fa_grad_node_users_map) {
+      auto user_node = last_fa_grad_node_it.first->cast<CNodePtr>();
+      if (IsPrimitiveCNode(user_node, prim::kPrimTupleGetItem)) {
+        auto value_node = user_node->input(kIndex2)->cast<ValueNodePtr>();
+        if (GetValue<int64_t>(value_node->value()) == 0) {
+          auto tuple_get_item_node_users_map = manager->node_users()[user_node];
+          for (auto &maketuple_it : tuple_get_item_node_users_map) {
+            make_tuple_node = maketuple_it.first->cast<CNodePtr>();
+          }
+        }
+      }
+    }
+    if (make_tuple_node == nullptr) {
+      return;
+    }
+    int second_number = GetSecondNumber(GetValue<std::string>(grad_fa_node->GetPrimalAttr(RING_ATTENTION_INDEX)));
+    if (second_number < sp_num - 1) {
+      if (second_number == sp_num - 2) {
+        tmp_node = NewAddNode(make_tuple_node->input(second_number + 1), make_tuple_node->input(second_number + 2));
+      } else {
+        tmp_node = NewAddNode(make_tuple_node->input(second_number + 1), tmp_node);
+      }
+      if (second_number == 0) {
+        auto make_tuple_node_users_map = manager->node_users()[make_tuple_node];
+        for (auto &addn_it : make_tuple_node_users_map) {
+          auto addn_node = addn_it.first->cast<CNodePtr>();
+          if (IsPrimitiveCNode(addn_node, prim::kPrimAddN)) {
+            manager->Replace(addn_node, tmp_node);
+          }
+        }
+      } else {
+        auto next_str = GetNextStr(GetValue<std::string>(grad_fa_node->GetPrimalAttr(RING_ATTENTION_INDEX)));
+        auto next_grad_fa_node = grad_fa_map.at(next_str)->cast<CNodePtr>();
+        auto next_grad_fa_input = next_grad_fa_node->input(1);
+        next_grad_fa_input = CreateDepend(next_grad_fa_input, tmp_node, next_grad_fa_node);
+        manager->SetEdge(next_grad_fa_node, 1, next_grad_fa_input);
+      }
+    }
+  }
+}
+
+bool OverlapGradRingAttentionCP(
+  const FuncGraphPtr &graph, const std::map<std::string, AnfNodePtr, FaGradCompareMethod> &grad_fa_map,
+  const std::map<std::string, AnfNodePtr> &fa_map, const std::map<std::string, AnfNodePtr> &grad_send_map,
+  const std::map<std::string, AnfNodePtr> &grad_recv_map, const std::map<std::string, AnfNodePtr> &kv_recv_map,
+  const std::map<int64_t, AnfNodePtr> &attention_out_map, const std::map<int64_t, AnfNodePtr> &softmax_max_map,
+  const std::map<int64_t, AnfNodePtr> &softmax_sum_map, const std::map<int64_t, AnfNodePtr> &dout_map) {
+  auto first_fwd_fa = fa_map.begin()->second->cast<CNodePtr>();
+  auto operator_info = first_fwd_fa->user_data<parallel::OperatorInfo>();
+  auto fa_info = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
+  auto input_layout = fa_info->input_layout();
+  int64_t pos;
+  int64_t recv_rank_id;
+  int64_t send_rank_id;
+  GetCommInfo(&send_rank_id, &recv_rank_id, &operator_info, &pos);
+  PrepareFAGradInput(graph, grad_fa_map, attention_out_map, softmax_max_map, softmax_sum_map, dout_map, pos,
+                     input_layout);
+
+  int64_t step = 0;
+  CNodePtr pre_recv_kv_dkv_node;
+  CNodePtr pre_send_kv_dkv_node;
+  CNodePtr pre_fa_grad;
+
+  ReplaceDqAdd(graph, grad_fa_map);
+  for (auto it = grad_fa_map.rbegin(); it != grad_fa_map.rend(); ++it, ++step) {
+    auto grad_fa_node = it->second->cast<CNodePtr>();
+    auto sp_num = GetValue<int64_t>(grad_fa_node->GetPrimalAttr("sp_num"));
+    step = step % sp_num;
+    CNodePtr dkv_recv_node;
+    CNodePtr dkv_send_node;
+    CNodePtr kv_send_node;
+    CNodePtr kv_recv_node;
+    if (grad_recv_map.count(it->first) != 0) {
+      dkv_recv_node = grad_recv_map.at(it->first)->cast<CNodePtr>();
+    }
+    if (grad_send_map.count(it->first) != 0) {
+      dkv_send_node = grad_send_map.at(it->first)->cast<CNodePtr>();
+    }
+    auto new_str = GetPreviousStr(it->first);
+    if (grad_fa_map.count(new_str) != 0) {
+      pre_fa_grad = grad_fa_map.at(new_str)->cast<CNodePtr>();
+    }
+    if (step == 0) {
+      CreateCommForFirstStep(graph, fa_map, kv_recv_map, it->first, &grad_fa_node, &kv_send_node, &kv_recv_node);
+      pre_recv_kv_dkv_node = kv_send_node;
+      pre_send_kv_dkv_node = kv_recv_node;
+    } else {
+      CreateCommForCPGrad(graph, fa_map, pre_recv_kv_dkv_node, pre_send_kv_dkv_node, pre_fa_grad, it->first, step,
+                          &grad_fa_node, &dkv_recv_node, &dkv_send_node);
+      pre_recv_kv_dkv_node = dkv_recv_node;
+      pre_send_kv_dkv_node = dkv_send_node;
+    }
+  }
+  return true;
+}
+
 bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
   auto manager = graph->manager();
   std::map<std::string, AnfNodePtr> fa_map, grad_send_map, grad_recv_map;
   std::map<std::string, AnfNodePtr, FaGradCompareMethod> grad_fa_map;
   std::map<int64_t, AnfNodePtr> attention_out_map, softmax_max_map, softmax_sum_map, dout_map;
+  std::map<std::string, AnfNodePtr> kv_recv_map;
   auto ret = graph->get_return();
   auto origin_nodes_topological = DeepScopedGraphSearch(ret);
   CNodePtr loss_node;
 
-  FindTargetNode(&origin_nodes_topological, &fa_map, &grad_fa_map, &grad_recv_map, &grad_send_map, &loss_node,
-                 &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
+  FindTargetNode(&origin_nodes_topological, &fa_map, &grad_fa_map, &grad_recv_map, &grad_send_map, &kv_recv_map,
+                 &loss_node, &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
   if (grad_fa_map.empty() || fa_map.empty() || grad_fa_map.size() != fa_map.size() || grad_recv_map.empty() ||
       grad_send_map.empty()) {
     return false;
+  }
+
+  if (IsRingAttentionCP(fa_map.begin()->second)) {
+    return OverlapGradRingAttentionCP(graph, grad_fa_map, fa_map, grad_send_map, grad_recv_map, kv_recv_map,
+                                      attention_out_map, softmax_max_map, softmax_sum_map, dout_map);
   }
 
   auto operator_info = GetAttentionInfo(fa_map);
@@ -715,12 +1164,13 @@ bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
   if (neigh_shape[kIndex0] != -1) {
     neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex2;
   }
+
   ChangeFAGradInput(&grad_fa_map, graph, &attention_out_map, &softmax_max_map, &softmax_sum_map, &dout_map);
 
   for (auto it = grad_fa_map.rbegin(); it != grad_fa_map.rend(); ++it) {
     auto grad_fa_node = it->second->cast<CNodePtr>();
     auto output_type_id = common::AnfAlgo::GetOutputInferDataType(grad_fa_node, kIndex3);
-    auto new_str = GetNewStr(it->first);
+    auto new_str = GetPreviousStr(it->first);
 
     CNodePtr grad_recv_node;
     CNodePtr grad_send_node;
@@ -728,7 +1178,6 @@ bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
       grad_recv_node = grad_recv_map.at(it->first)->cast<CNodePtr>();
       grad_send_node = grad_send_map.at(it->first)->cast<CNodePtr>();
     }
-
     if (grad_recv_node == nullptr || grad_send_node == nullptr) {
       GradFirstStepCommKV(it->first, &fa_map, graph, &grad_fa_node, pos, send_rank_id, recv_rank_id, neigh_shape,
                           output_type_id, &grad_send_kv_map, &grad_recv_kv_map);
@@ -737,9 +1186,8 @@ bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
 
     CNodePtr pre_grad_recv_kv_node;
     CNodePtr pre_grad_send_kv_node;
-    GetPreNode(&pre_grad_recv_kv_node, &pre_grad_send_kv_node, new_str, &grad_recv_kv_map, &grad_send_kv_map);
+    GetPreNode(grad_recv_kv_map, grad_send_kv_map, new_str, &pre_grad_recv_kv_node, &pre_grad_send_kv_node);
     auto pre_fa_grad = grad_fa_map.at(new_str)->cast<CNodePtr>();
-
     AnfNodePtr send_node;
     AnfNodePtr recv_node;
     CreateCommForRAGrad(graph, pre_grad_recv_kv_node, pre_grad_send_kv_node, pre_fa_grad, loss_node, pos, send_rank_id,
@@ -747,7 +1195,6 @@ bool StaticOverlapGradRingAttention(const FuncGraphPtr &graph) {
                         &send_node, &recv_node);
     common::AnfAlgo::SetNodeAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(it->first + "grad"), send_node);
     common::AnfAlgo::SetNodeAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(it->first + "grad"), recv_node);
-
     if (!IsFwdBeginningNode(it->first)) {
       grad_send_kv_map.insert({it->first, send_node});
       grad_recv_kv_map.insert({it->first, recv_node});

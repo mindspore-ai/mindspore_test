@@ -372,6 +372,7 @@ constexpr char INPUT_LAYOUT[] = "input_layout";
 constexpr char SPARSE_MODE[] = "sparse_mode";
 constexpr char ENABLE_RING_ATTENTION[] = "enable_ring_attention";
 constexpr char ENABLE_RA_SEND_RECV[] = "enable_ra_send_recv";
+constexpr char ENABLE_RA_CONTEXT_PARALLEL[] = "enable_ra_context_parallel";
 constexpr char ENABLE_FLASH_SP[] = "enable_flash_sp";
 constexpr char FLASH_INDEX[] = "FLASH_INDEX";
 constexpr char FLASH_LOSS_NODE[] = "FLASH_LOSS_NODE";
