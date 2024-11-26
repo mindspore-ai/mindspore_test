@@ -17,6 +17,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -35,15 +36,16 @@ class Net2(nn.Cell):
         return x.repeat_interleave(dim=dim, repeats=repeats)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend910b'],
-          level_mark='level1',
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu',
+                      'platform_ascend', 'platform_ascend910b'],
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_repeat_interleave(mode):
+def test_repeat_interleave_python(mode):
     """
     Feature: Tensor.repeat_interleave
-    Description: Verify the result of repeat_interleave.
+    Description: Verify the result of repeat_interleave in python
     Expectation: expect correct result.
     """
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
@@ -74,3 +76,67 @@ def test_repeat_interleave(mode):
             net2(input_y, Tensor(np.array([1, 2])), 0)
         return
     assert np.allclose(net2(input_y, Tensor(np.array([1, 2])), 0).asnumpy(), output4)
+
+
+class Net3(nn.Cell):
+    def construct(self, x, repeats, dim, output_size):
+        return x.repeat_interleave(repeats, dim, output_size)
+
+
+class Net4(nn.Cell):
+    def construct(self, x, repeats, dim, output_size):
+        return x.repeat_interleave(repeats, dim, output_size=output_size)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu',
+                      'platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_repeat_interleave_pyboost_fault(mode):
+    """
+    Feature: Tensor.repeat_interleave
+    Description: Verify the result of repeat_interleave in pyboost which raises fault
+    Expectation: expect correct result.
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net4 = Net4()
+    input_x = Tensor(np.array([1, 2, 3]), ms.int32)
+    # aclnn oprrator only supports ascend 910b
+    if ms.get_context('device_target') != 'platform_ascend910b':
+        with pytest.raises(RuntimeError):
+            net4(input_x, 2, None, None)
+            _pynative_executor.sync()
+        return
+
+
+@arg_mark(plat_marks=['platform_ascend910b'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_repeat_interleave_pyboost_ok(mode):
+    """
+    Feature: Tensor.repeat_interleave
+    Description: Verify the result of repeat_interleave in pyboost
+    Expectation: expect correct result.
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    net3 = Net3()
+    net4 = Net4()
+    input_x = Tensor(np.array([1, 2, 3]), ms.int32)
+    # test kwonlyargs in pynative mode
+    if ms.get_context('mode') == ms.PYNATIVE_MODE:
+        with pytest.raises(TypeError) as error_info:
+            net3(input_x, 2, None, None)
+            _pynative_executor.sync()
+        assert "Failed calling repeat_interleave with " in str(error_info.value)
+
+    output1 = np.array([1, 1, 2, 2, 3, 3])
+    assert np.allclose(net4(input_x, 2, None, None).asnumpy(), output1)
+    input_y = Tensor(np.array([[1, 2], [3, 4]]), ms.int32)
+    output2 = np.array([[1, 2],
+                        [3, 4],
+                        [3, 4]])
+    assert np.allclose(net4(input_y, Tensor(np.array([1, 2])), 0, None).asnumpy(), output2)
