@@ -2930,12 +2930,16 @@ class SimpleBatchSampler:
         return iter(self.indices)
 
 
-def test_generator_with_batch_sampler():
+@pytest.mark.parametrize("debug_mode", (False, True))
+def test_generator_with_batch_sampler(debug_mode):
     """
     Feature: BatchSampler
     Description: Test GeneratorDataset with batch_sampler
     Expectation: Result is as expected
     """
+
+    original_mode = ds.config.get_debug_mode()
+    ds.config.set_debug_mode(debug_mode)
 
     class SimpleDataset:
         def __init__(self):
@@ -2950,6 +2954,8 @@ def test_generator_with_batch_sampler():
     dataset = ds.GeneratorDataset(SimpleDataset(), column_names=["data"], batch_sampler=SimpleBatchSampler())
 
     assert dataset.get_dataset_size() == 5
+    assert dataset.output_shapes() == [[2, 1]]
+    assert dataset.output_types() == [np.int32]
     assert dataset.get_col_names() == ["data"]
     assert dataset.get_batch_size() == -1
 
@@ -2957,13 +2963,19 @@ def test_generator_with_batch_sampler():
     for i, data in enumerate(dataset.create_dict_iterator(output_numpy=True, num_epochs=1)):
         np.testing.assert_array_equal(data["data"], np.array(expected_res[i], dtype=np.int32))
 
+    ds.config.set_debug_mode(original_mode)
 
-def test_generator_with_collate_fn():
+
+@pytest.mark.parametrize("debug_mode", (False, True))
+def test_generator_with_collate_fn(debug_mode):
     """
     Feature: BatchSampler
     Description: Test GeneratorDataset with batch_sampler and collate_fn
     Expectation: Result is as expected
     """
+
+    original_mode = ds.config.get_debug_mode()
+    ds.config.set_debug_mode(debug_mode)
 
     class DictDataset:
         def __init__(self):
@@ -2986,6 +2998,8 @@ def test_generator_with_collate_fn():
     for i, data in enumerate(dataset.create_dict_iterator(output_numpy=True, num_epochs=1)):
         np.testing.assert_array_equal(data["data"], np.array(expected_res[i], dtype=np.int32))
         np.testing.assert_array_equal(data["label"], np.array(1))
+
+    ds.config.set_debug_mode(original_mode)
 
 
 def test_generator_with_batch_sampler_in_recovery_mode():
@@ -3175,8 +3189,8 @@ if __name__ == "__main__":
     test_generator_dataset_getitem_schema()
     test_generator_dataset_getitem_two_level_pipeline()
     test_generator_dataset_getitem_exception()
-    test_generator_with_batch_sampler()
-    test_generator_with_collate_fn()
+    test_generator_with_batch_sampler(False)
+    test_generator_with_collate_fn(False)
     test_generator_with_batch_sampler_in_recovery_mode()
     test_generator_batch_sampler_exclusive_with_other_param({"num_samples": 1})
     test_generator_invalid_batch_sampler()

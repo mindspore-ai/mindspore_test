@@ -435,13 +435,8 @@ def test_dict_generator_batch_8(batch_size):
             assert d["renamed_col1"]["boolean"].dtype == np.bool_
             assert isinstance(d["renamed_col1"]["string"], np.ndarray)
             assert d["renamed_col1"]["string"].dtype.type == np.str_
-            if min(batch_size, dataset_size - i * batch_size) == 1:  # last batch has 1 row
-                assert isinstance(d["renamed_col1"]["tuple"], tuple)
-                assert isinstance(d["renamed_col1"]["tuple"][0], np.ndarray)
-                assert d["renamed_col1"]["tuple"][0].dtype == int
-            else:
-                assert isinstance(d["renamed_col1"]["tuple"], np.ndarray)
-                assert d["renamed_col1"]["tuple"].dtype == int
+            assert isinstance(d["renamed_col1"]["tuple"], np.ndarray)
+            assert d["renamed_col1"]["tuple"].dtype == int
             assert isinstance(d["renamed_col1"][1], np.ndarray)
             assert d["renamed_col1"][1].dtype == np.int32
             assert d["renamed_col1"][1].shape[-1] == 3  # other dimensions are different for last batch
@@ -449,7 +444,7 @@ def test_dict_generator_batch_8(batch_size):
                 d["renamed_col1"][1],
                 np.array([[batch_size * i + j, 100 + batch_size * i + j, 1000 + batch_size * i + j]
                           for j in range(min((i + 1) * batch_size, dataset_size) - i * batch_size)],
-                         dtype=np.int32).squeeze())
+                         dtype=np.int32))
 
     assert count == 2 * math.ceil(dataset_size / batch_size)
 
@@ -617,6 +612,24 @@ def test_dict_generator_nested_dicts(output_numpy):
     assert count == 10
 
 
+def test_dict_generator_with_batch_size_one():
+    """
+    Feature: GeneratorDataset with data in type of Python dict
+    Description: Test applying a batch operation with a batch size of 1
+    Expectation: The dimensions of the data are correctly expanded and the length of dimension 0 is 1
+    """
+
+    def simple_dict_generator():
+        for i in range(10):
+            yield {'label': np.array([i])}
+
+    dataset = ds.GeneratorDataset(simple_dict_generator, column_names=["data"])
+    dataset = dataset.batch(1)
+
+    for index, sample in enumerate(dataset.create_dict_iterator(num_epochs=1, output_numpy=True)):
+        np.testing.assert_array_equal(sample["data"]["label"], np.expand_dims(np.array([index]), axis=0))
+
+
 if __name__ == '__main__':
     test_dict_generator("tuple", False)
     test_dict_generator_map_1()
@@ -633,3 +646,4 @@ if __name__ == '__main__':
     test_dict_advanced_pyfunc_dict()
     test_dict_generator_mixed("tuple", False)
     test_dict_generator_nested_dicts(True)
+    test_dict_generator_with_batch_size_one()
