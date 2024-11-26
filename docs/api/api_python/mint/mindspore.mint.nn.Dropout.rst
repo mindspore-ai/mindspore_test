@@ -1,7 +1,7 @@
 mindspore.mint.nn.Dropout
 =========================
 
-.. py:class:: mindspore.mint.nn.Dropout(p=0.5)
+.. py:class:: mindspore.mint.nn.Dropout(p=0.5, inplace=False)
 
     随机丢弃层。
 
@@ -15,6 +15,7 @@ mindspore.mint.nn.Dropout
 
     参数：
         - **p** (float) - 输入神经元丢弃概率，例如，`p` =0.9，删除90%的神经元。默认值： ``0.5`` 。
+        - **inplace** (bool) - 若为 ``True`` 则启用原地更新功能。默认值： ``False`` 。
 
     输入：
         - **x** (Tensor) - Dropout的输入。
