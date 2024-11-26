@@ -1,7 +1,7 @@
 mindspore.Tensor.sort
 =====================
 
-.. py:method:: Tensor.sort(dim=-1, descending=False)
+.. py:method:: mindspore.Tensor.sort(dim=-1, descending=False)
 
     按指定顺序对输入Tensor的指定维上的元素进行排序。
 
@@ -23,7 +23,7 @@ mindspore.Tensor.sort
         - **TypeError** -  `stable` 不是bool类型。
         - **ValueError** - `dim` 不在[-len(self.shape), len(self.shape))范围内。
 
-    .. py:method:: Tensor.sort(axis=-1, descending=False)
+    .. py:method:: mindspore.Tensor.sort(axis=-1, descending=False)
         :noindex:
 
     按指定顺序对输入Tensor的指定维上的元素进行排序。

@@ -1,7 +1,7 @@
 mindspore.Tensor.max
 ====================
 
-.. py:method:: Tensor.max(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False)
+.. py:method:: mindspore.Tensor.max(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False)
 
     返回Tensor的最大值或轴方向上的最大值。
 
@@ -24,11 +24,11 @@ mindspore.Tensor.max
         - **TypeError** - 参数具有前面未指定的类型。
 
     其他API参考：
-        - :func:`Tensor.argmin` ：返回沿轴最小值的索引。
-        - :func:`Tensor.argmax` ：返回沿轴最大值的索引。
-        - :func:`Tensor.min` ：返回整个Tensor最小值或沿轴最小值。
+        - :func:`mindspore.Tensor.argmin` ：返回沿轴最小值的索引。
+        - :func:`mindspore.Tensor.argmax` ：返回沿轴最大值的索引。
+        - :func:`mindspore.Tensor.min` ：返回整个Tensor最小值或沿轴最小值。
 
-    .. py:method:: Tensor.max() -> Tensor
+    .. py:method:: mindspore.Tensor.max() -> Tensor
         :noindex:
 
     返回自身张量 `self` 中所有元素的最大值。

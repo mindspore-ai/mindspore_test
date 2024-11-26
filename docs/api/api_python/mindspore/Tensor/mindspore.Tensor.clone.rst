@@ -1,7 +1,7 @@
 mindspore.Tensor.clone
 ======================
 
-.. py:method:: Tensor.clone()
+.. py:method:: mindspore.Tensor.clone()
 
     返回一个当前Tensor的副本。
 

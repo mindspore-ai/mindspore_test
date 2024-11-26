@@ -1,7 +1,7 @@
 mindspore.Tensor.to
 ===================
 
-.. py:method:: Tensor.to(dtype)
+.. py:method:: mindspore.Tensor.to(dtype)
 
     执行Tensor类型的转换。
 

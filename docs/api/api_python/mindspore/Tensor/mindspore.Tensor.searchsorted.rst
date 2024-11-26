@@ -1,7 +1,7 @@
 mindspore.Tensor.searchsorted
 =============================
 
-.. py:method:: Tensor.searchsorted(v, side='left', sorter=None)
+.. py:method:: mindspore.Tensor.searchsorted(v, side='left', sorter=None)
 
     查找应插入元素在有序数列中的位置索引。
 

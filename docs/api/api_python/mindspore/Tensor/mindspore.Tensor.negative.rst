@@ -1,6 +1,6 @@
 mindspore.Tensor.negative
 ==========================
 
-.. py:method:: Tensor.negative()
+.. py:method:: mindspore.Tensor.negative()
 
-    :func:`Tensor.neg` 的别名。
+    :func:`mindspore.Tensor.neg` 的别名。

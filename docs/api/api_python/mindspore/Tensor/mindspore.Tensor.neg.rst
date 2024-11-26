@@ -1,7 +1,7 @@
 mindspore.Tensor.neg
 ====================
 
-.. py:method:: Tensor.neg()
+.. py:method:: mindspore.Tensor.neg()
 
     计算 `self` 的相反数并返回。
 

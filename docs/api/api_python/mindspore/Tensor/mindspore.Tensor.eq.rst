@@ -1,7 +1,7 @@
 mindspore.Tensor.eq
 ===================
 
-.. py:method:: Tensor.eq(other)
+.. py:method:: mindspore.Tensor.eq(other)
 
     逐元素比较两个输入Tensor是否相等。
 

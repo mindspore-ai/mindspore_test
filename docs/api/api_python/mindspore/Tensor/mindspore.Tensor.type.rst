@@ -1,7 +1,7 @@
 mindspore.Tensor.type
 =====================
 
-.. py:method:: Tensor.type(dtype=None)
+.. py:method:: mindspore.Tensor.type(dtype=None)
 
     将Tensor的dtype转换成 `dtype` 。如果 `dtype` 为 ``None`` ，则返回原类型。
 

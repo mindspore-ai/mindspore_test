@@ -1,7 +1,7 @@
 mindspore.Tensor.tile
 =====================
 
-.. py:method:: Tensor.tile(dims)
+.. py:method:: mindspore.Tensor.tile(dims)
 
     按照给定的次数复制输入Tensor。
 
@@ -22,7 +22,7 @@ mindspore.Tensor.tile
         - **TypeError** - `dims` 不是tuple或者其元素并非全部是int。
         - **ValueError** - `dims` 的元素并非全部大于或等于0。
 
-    .. py:method:: Tensor.tile(reps)
+    .. py:method:: mindspore.Tensor.tile(reps)
         :noindex:
 
     详情请参考 :func:`mindspore.ops.tile`。

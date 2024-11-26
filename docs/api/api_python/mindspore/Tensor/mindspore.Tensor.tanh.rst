@@ -1,7 +1,7 @@
 mindspore.Tensor.tanh
 =====================
 
-.. py:method:: Tensor.tanh()
+.. py:method:: mindspore.Tensor.tanh()
 
     逐元素计算自身元素的双曲正切。Tanh函数定义为：
 

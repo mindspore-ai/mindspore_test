@@ -1,7 +1,7 @@
 mindspore.Tensor.cumsum
 =======================
 
-.. py:method:: Tensor.cumsum(dim, dtype=None)
+.. py:method:: mindspore.Tensor.cumsum(dim, dtype=None)
 
     计算输入Tensor `self` 沿轴 `dim` 的累积和。
 
@@ -18,8 +18,8 @@ mindspore.Tensor.cumsum
     异常：
         - **ValueError** - 如果 `dim` 超出范围。
 
-    .. py:method:: Tensor.cumsum(axis=None, dtype=None)
-        noindex:
+    .. py:method:: mindspore.Tensor.cumsum(axis=None, dtype=None)
+        :noindex:
 
     计算输入Tensor `self` 沿轴 `axis` 的累积和。
 

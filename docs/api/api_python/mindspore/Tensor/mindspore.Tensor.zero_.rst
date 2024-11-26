@@ -1,7 +1,7 @@
 mindspore.Tensor.zero\_
 =======================
 
-.. py:method:: Tensor.zero_()
+.. py:method:: mindspore.Tensor.zero_()
 
     返回填充0的tensor。
 

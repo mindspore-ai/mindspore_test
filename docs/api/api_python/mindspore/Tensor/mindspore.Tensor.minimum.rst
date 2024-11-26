@@ -1,7 +1,7 @@
 mindspore.Tensor.minimum
 ========================
 
-.. py:method:: Tensor.minimum(other)
+.. py:method:: mindspore.Tensor.minimum(other)
 
     逐元素计算两个输入Tensor中的最小值。
 

@@ -1,6 +1,6 @@
 mindspore.Tensor.lt
 ===================
 
-.. py:method:: Tensor.lt(other)
+.. py:method:: mindspore.Tensor.lt(other)
 
-    :func:`Tensor.less` 的别名。
+    :func:`mindspore.Tensor.less` 的别名。

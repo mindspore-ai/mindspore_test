@@ -1,7 +1,7 @@
 mindspore.Tensor.astype
 =======================
 
-.. py:method:: Tensor.astype(dtype, copy=True)
+.. py:method:: mindspore.Tensor.astype(dtype, copy=True)
 
     将Tensor转为指定数据类型，可指定是否返回副本。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.copy
 =====================
 
-.. py:method:: Tensor.copy()
+.. py:method:: mindspore.Tensor.copy()
 
     复制一个Tensor并返回。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.logical_and
 ============================
 
-.. py:method:: Tensor.logical_and(other)
+.. py:method:: mindspore.Tensor.logical_and(other)
 
     逐元素计算两个Tensor的逻辑与运算。
 

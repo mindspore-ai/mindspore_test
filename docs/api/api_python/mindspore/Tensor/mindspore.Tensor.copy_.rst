@@ -1,7 +1,7 @@
 mindspore.Tensor.copy\_
 =======================
 
-.. py:method:: Tensor.copy_(src, non_blocking=False)
+.. py:method:: mindspore.Tensor.copy_(src, non_blocking=False)
 
     将src中的元素复制到Tensor中并返回这个Tensor。
 

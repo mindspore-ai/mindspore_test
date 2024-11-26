@@ -1,7 +1,7 @@
 mindspore.Tensor.itemset
 ========================
 
-.. py:method:: Tensor.itemset(*args)
+.. py:method:: mindspore.Tensor.itemset(*args)
 
     将标量插入到Tensor（并将标量转换为Tensor的数据类型）。
 

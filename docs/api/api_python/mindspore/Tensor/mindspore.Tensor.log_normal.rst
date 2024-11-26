@@ -1,7 +1,7 @@
 mindspore.Tensor.log_normal
 ============================
 
-.. py:method:: Tensor.log_normal(mean=1.0, std=2.0)
+.. py:method:: mindspore.Tensor.log_normal(mean=1.0, std=2.0)
 
     使用给定均值 `mean` 和标准差 `std` 的对数正态分布的数值填充当前Tensor。
 

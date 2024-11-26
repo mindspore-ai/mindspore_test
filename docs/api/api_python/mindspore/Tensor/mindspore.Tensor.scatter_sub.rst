@@ -1,7 +1,7 @@
 mindspore.Tensor.scatter_sub
 ============================
 
-.. py:method:: Tensor.scatter_sub(indices, updates)
+.. py:method:: mindspore.Tensor.scatter_sub(indices, updates)
 
     根据指定的更新值和输入索引，通过减法进行运算，将结果赋值到输出Tensor中。当同一索引有不同值时，更新的结果将分别减去这些值。此操作几乎等同于使用 :class:`mindspore.ops.ScatterNdSub` ，只是更新后的结果是通过算子output返回，而不是直接原地更新input。
 

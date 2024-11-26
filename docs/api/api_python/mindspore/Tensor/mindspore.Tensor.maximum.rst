@@ -1,7 +1,7 @@
 mindspore.Tensor.maximum
 ========================
 
-.. py:method:: Tensor.maximum(other)
+.. py:method:: mindspore.Tensor.maximum(other)
 
     逐元素计算两个输入Tensor中的最大值。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.erf
 ====================
 
-.. py:method:: Tensor.erf()
+.. py:method:: mindspore.Tensor.erf()
 
     逐元素计算 `self` 的高斯误差函数。
 

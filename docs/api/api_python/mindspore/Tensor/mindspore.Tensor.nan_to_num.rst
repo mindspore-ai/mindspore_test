@@ -1,7 +1,7 @@
 mindspore.Tensor.nan_to_num
 ============================
 
-.. py:method:: Tensor.nan_to_num(nan=None, posinf=None, neginf=None)
+.. py:method:: mindspore.Tensor.nan_to_num(nan=None, posinf=None, neginf=None)
 
     将 `self` 中的 `NaN` 、正无穷大和负无穷大值分别替换为 `nan` 、`posinf` 和 `neginf` 指定的值。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.masked_fill
 ============================
 
-.. py:method:: Tensor.masked_fill(mask, value)
+.. py:method:: mindspore.Tensor.masked_fill(mask, value)
 
     将掩码位置为True的位置填充指定的值。此tensor和 `mask` 的shape需相同或可广播。
 
