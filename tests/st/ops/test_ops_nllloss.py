@@ -104,12 +104,12 @@ def test_ops_nll_loss_dynamic_shape(reduction):
     Expectation: expect correct result.
     """
     x1 = ms.Tensor(np.random.rand(7, 8, 9).astype(np.float32))
-    target1 = ms.Tensor(generate_random_input((7, 9), np.float32))
+    target1 = ms.Tensor(generate_random_input((7, 9), np.int64))
     weight1 = ms.Tensor(generate_random_input((8,), np.float32))
     ignore_index1 = 3
 
     x2 = ms.Tensor(np.random.rand(9, 8).astype(np.float32))
-    target2 = ms.Tensor(generate_random_input((9,), np.float32))
+    target2 = ms.Tensor(generate_random_input((9,), np.int64))
     weight2 = ms.Tensor(generate_random_input((8,), np.float32))
     ignore_index2 = 2
 

@@ -262,7 +262,7 @@ from mindspore.ops.auto_generate import adaptive_avg_pool1d
 
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
 from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
-from mindspore.ops.function.nn_func import _nllloss_nd as nll_loss
+from mindspore.ops.function.nn_func import nll_loss_ext as nll_loss
 
 
 def binary_cross_entropy(input, target, weight=None, reduction='mean'):
