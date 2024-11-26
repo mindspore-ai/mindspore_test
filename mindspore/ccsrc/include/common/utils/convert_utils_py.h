@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,8 @@ COMMON_EXPORT py::object BaseRefToPyData(const BaseRef &value, const AbstractBas
 COMMON_EXPORT py::object ValueToPyData(const ValuePtr &value, const AbstractBasePtr &abs = nullptr);
 COMMON_EXPORT bool IsStubTensor(const py::handle &obj);
 COMMON_EXPORT tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
+COMMON_EXPORT tensor::TensorPtr ConvertTensor(const py::handle &obj);
+COMMON_EXPORT tensor::BaseTensorPtr ConvertBaseTensor(const py::handle &obj);
 COMMON_EXPORT ValuePtr PyStubNodeCast(const py::handle &obj);
 COMMON_EXPORT std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj);
 COMMON_EXPORT bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, const py::tuple &args,
@@ -70,6 +72,8 @@ COMMON_EXPORT py::tuple CheckBpropOut(const py::object &grads_obj, const py::tup
                                       const std::string &bprop_cls_name);
 bool IsStubTensor(const py::handle &obj);
 tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
+tensor::TensorPtr ConvertTensor(const py::handle &obj);
+tensor::BaseTensorPtr ConvertBaseTensor(const py::handle &obj);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_PY_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@
 #include "include/common/fallback.h"
 #include "include/common/utils/stub_tensor.h"
 #include "include/common/utils/convert_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace {
@@ -876,18 +877,45 @@ py::object MakeCOOTensor(const VectorRef &value_list) {
 bool IsStubTensor(const py::handle &obj) { return py::hasattr(obj, stub::PY_ATTR_STUB); }
 
 tensor::TensorPtr ConvertStubTensor(const py::handle &obj) {
+  bool is_jit = JitRunning();
   auto py_stub = py::getattr(obj, stub::PY_ATTR_STUB);
   auto stub = py_stub.cast<stub::StubNodePtr>();
   if (stub == nullptr) {
     auto tensor = py::getattr(obj, stub::PY_ATTR_TENSOR).cast<tensor::TensorPtr>();
     MS_EXCEPTION_IF_NULL(tensor);
+    if (is_jit && tensor->device_address() != nullptr) {
+      tensor->data_sync();
+    }
     return tensor;
   }
   auto func_sync = obj.attr(stub::PY_ATTR_SYNC);
   auto res = func_sync();
   auto tensor = res.cast<tensor::TensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
+  if (is_jit && tensor->device_address() != nullptr) {
+    tensor->data_sync();
+  }
   return tensor;
+}
+
+tensor::TensorPtr ConvertTensor(const py::handle &obj) {
+  auto tensor = py::cast<mindspore::tensor::TensorPtr>(obj);
+  MS_EXCEPTION_IF_NULL(tensor);
+  bool is_jit = JitRunning();
+  if (is_jit && tensor->device_address() != nullptr) {
+    tensor->data_sync();
+  }
+  return tensor;
+}
+
+tensor::BaseTensorPtr ConvertBaseTensor(const py::handle &obj) {
+  auto base_tensor = py::cast<mindspore::tensor::BaseTensorPtr>(obj);
+  MS_EXCEPTION_IF_NULL(base_tensor);
+  bool is_jit = JitRunning();
+  if (is_jit && base_tensor->device_address() != nullptr) {
+    base_tensor->data_sync();
+  }
+  return base_tensor;
 }
 
 ValuePtr PyStubNodeCast(const py::handle &obj) {
