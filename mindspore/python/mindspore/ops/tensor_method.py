@@ -18,6 +18,7 @@ from mindspore import _checkparam as validator
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops.composite.multitype_ops import _compile_utils as utils
+from mindspore.ops.composite.multitype_ops._compile_utils import sequence_to_tensor
 # 1 common import
 
 # 2 common import
@@ -38,19 +39,19 @@ from mindspore.ops.auto_generate import cast
 # 2 masked_fill
 
 # 3 abs
-
+from mindspore.ops.auto_generate import abs
 # 4 __abs__
 
 # 5 add
-
+from mindspore.ops.auto_generate import add_ext, add
 # 6 all
-
+from mindspore.ops.auto_generate import all
 # 7 allclose
 
 # 8 any
-
+from mindspore.ops.function.math_func import any
 # 9 arctan2
-
+from mindspore.ops.function.math_func import arctan2
 # 10 argmax
 from mindspore.ops.function.array_func import argmax
 # 11 argmin
@@ -58,7 +59,7 @@ from mindspore.ops.function.math_func import argmin
 # 12 argsort
 
 # 13 atan2
-
+from mindspore.ops.function.math_func import atan2
 # 14 bfloat16
 
 # 15 bmm
@@ -228,7 +229,7 @@ from mindspore.ops.auto_generate import rsqrt
 # 94 sigmoid
 from mindspore.ops.auto_generate import sigmoid
 # 95 sin
-
+from mindspore.ops.auto_generate import sin
 # 96 size
 
 # 97 sort
@@ -236,9 +237,9 @@ from mindspore.ops.function.array_func import sort, sort_ext
 # 98 split
 from mindspore.ops.function.array_func import split
 # 99 sqrt
-
+from mindspore.ops.auto_generate import sqrt
 # 100 square
-
+from mindspore.ops.auto_generate import square
 # 101 squeeze
 
 # 102 std
@@ -383,18 +384,39 @@ def tensor_masked_fill(input_x, mask, value):
 
 
 # 3 abs
-
+def tensor_abs(input):
+    return abs(input)
 # 4 __abs__
 
 # 5 add
+def tensor_add_ext(input, other, alpha=1):
+    return add_ext(input, other, alpha)
+
+
+def deprecated_tensor_add(input, other):
+    if isinstance(other, (tuple, list)):
+        other = sequence_to_tensor(other, F.dtype(input))
+    return add(input, other)
+
 
 # 6 all
+def tensor_all(x, axis=None, keep_dims=False):
+    return all(x, axis, keep_dims)
+
 
 # 7 allclose
 
 # 8 any
+def tensor_any(x, axis=None, keep_dims=False):
+    if axis is None:
+        axis = ()
+    return any(x, axis, keep_dims)
+
 
 # 9 arctan2
+def tensor_arctan2(input, other):
+    return arctan2(input, other)
+
 
 # 10 argmax
 def tensor_argmax(input, dim=None, keepdim=False):
@@ -417,6 +439,9 @@ def deprecated_tensor_argmin(input, axis=None, keepdims=False):
 # 12 argsort
 
 # 13 atan2
+def tensor_atan2(input, other):
+    return atan2(input, other)
+
 
 # 14 bfloat16
 
@@ -783,6 +808,9 @@ def tensor_sigmoid(input):
 
 
 # 95 sin
+def tensor_sin(input):
+    return sin(input)
+
 
 # 96 size
 
@@ -801,8 +829,14 @@ def deprecated_tensor_split(input, split_size_or_sections, axis=0):
 
 
 # 99 sqrt
+def tensor_sqrt(x):
+    return sqrt(x)
+
 
 # 100 square
+def tensor_square(input):
+    return square(input)
+
 
 # 101 squeeze
 
