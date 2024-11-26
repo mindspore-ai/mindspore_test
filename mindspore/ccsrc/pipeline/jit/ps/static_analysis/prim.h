@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "utils/hash_map.h"
 #include "pipeline/jit/ps/static_analysis/evaluator.h"
@@ -375,6 +376,11 @@ AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const st
                                             const std::vector<ops::OpInputArg> &op_args,
                                             const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
                                             const FuncGraphPtr &graph);
+
+bool IsMonad(const AnfNodePtr &input);
+
+void GetKeywordArgsMap(const AbstractBasePtr &input_abs, const std::vector<ops::OpInputArg> &op_args,
+                       const AnfNodePtr &input, const FuncGraphPtr &graph, std::map<std::string, AnfNodePtr> *key_map);
 
 // Process the primitive's arguments (such as dtype auto-cast, add argument with default-value...),
 // then generate the primitive CNode and add it to graph.

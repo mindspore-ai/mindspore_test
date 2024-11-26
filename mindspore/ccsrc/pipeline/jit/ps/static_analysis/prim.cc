@@ -2732,6 +2732,24 @@ void AddLabelsToPrimitiveFunction(const PrimitivePtr &prim_func) {
 }
 }  // namespace
 
+bool IsMonad(const AnfNodePtr &input) {
+  return HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) || IsValueNode<Monad>(input));
+}
+
+void GetKeywordArgsMap(const AbstractBasePtr &input_abs, const std::vector<ops::OpInputArg> &op_args,
+                       const AnfNodePtr &input, const FuncGraphPtr &graph, std::map<std::string, AnfNodePtr> *key_map) {
+  auto input_kwarg_abs = input_abs->cast<AbstractKeywordArgPtr>();
+  const auto &key = input_kwarg_abs->get_key();
+  bool is_key_valid = std::any_of(op_args.begin(), op_args.end(),
+                                  [&key](const ops::OpInputArg &op_arg) { return key == op_arg.arg_name_; });
+  if (is_key_valid) {
+    const auto &kwarg_value = graph->NewCNode({NewValueNode(prim::kPrimExtractKeywordArg), NewValueNode(key), input});
+    (*key_map)[key] = kwarg_value;
+  } else {
+    MS_LOG(EXCEPTION) << "Got an unexpected keyword argument '" << key << "'.";
+  }
+}
+
 AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const std::vector<AnfNodePtr> &args_list,
                                             const std::vector<ops::OpInputArg> &op_args,
                                             const std::function<AbstractBasePtr(const AnfNodePtr &)> &eval_func,
@@ -2741,29 +2759,19 @@ AnfNodePtrList GeneratePrimitiveDefaultArgs(const std::string &op_name, const st
   std::map<std::string, AnfNodePtr> key_map;
   for (size_t idx = 0; idx < args_list.size(); ++idx) {
     auto input = args_list[idx];
-    if (HasAbstractMonad(input) || (IsPrimitiveCNode(input, prim::kPrimUpdateState) || IsValueNode<UMonad>(input) ||
-                                    IsValueNode<IOMonad>(input))) {
+    if (IsMonad(input)) {
+      --args_size;
       continue;
     }
     auto input_abs = eval_func(input);
     if (input_abs->isa<AbstractKeywordArg>()) {
-      auto input_kwarg_abs = input_abs->cast<AbstractKeywordArgPtr>();
-      const auto &key = input_kwarg_abs->get_key();
-      bool is_key_valid = std::any_of(op_args.begin(), op_args.end(),
-                                      [&key](const ops::OpInputArg &op_arg) { return key == op_arg.arg_name_; });
-      if (is_key_valid) {
-        const auto &kwarg_value =
-          graph->NewCNode({NewValueNode(prim::kPrimExtractKeywordArg), NewValueNode(key), input});
-        key_map[key] = kwarg_value;
-        --args_size;
-      } else {
-        MS_LOG(EXCEPTION) << "Got an unexpected keyword argument '" << key << "'.";
-      }
+      GetKeywordArgsMap(input_abs, op_args, input, graph, &key_map);
     } else {
       (void)nodes.emplace_back(input);
       continue;
     }
   }
+  args_size -= key_map.size();
   if (args_size < op_args.size()) {
     for (size_t i = args_size; i < op_args.size(); ++i) {
       auto arg_name = op_args[i].arg_name_;
