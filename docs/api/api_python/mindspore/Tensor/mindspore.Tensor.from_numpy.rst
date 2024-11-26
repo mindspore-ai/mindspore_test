@@ -1,7 +1,7 @@
 mindspore.Tensor.from_numpy
 ===========================
 
-.. py:method:: Tensor.from_numpy(array)
+.. py:method:: mindspore.Tensor.from_numpy(array)
     :staticmethod:
 
     将Numpy数组转换为张量。

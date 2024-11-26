@@ -1,7 +1,7 @@
 mindspore.Tensor.greater_equal
 ==============================
 
-.. py:method:: Tensor.greater_equal(other)
+.. py:method:: mindspore.Tensor.greater_equal(other)
 
     逐元素比较 'self' Tensor 是否大于等于第二个Tensor。
 

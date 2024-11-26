@@ -1,7 +1,7 @@
 mindspore.Tensor.where
 =======================
 
-.. py:method:: Tensor.where(condition, y)
+.. py:method:: mindspore.Tensor.where(condition, y)
 
     返回一个Tensor，Tensor的元素从 `self` 或 `y` 中根据 `condition` 选择。
 

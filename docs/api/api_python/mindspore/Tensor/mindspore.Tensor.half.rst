@@ -1,7 +1,7 @@
 mindspore.Tensor.half
 =====================
 
-.. py:method:: Tensor.half()
+.. py:method:: mindspore.Tensor.half()
 
     将输入Tensor转换为 `float16` 类型。
 

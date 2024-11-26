@@ -1,7 +1,7 @@
 mindspore.Tensor.div
 ====================
 
-.. py:method:: Tensor.div(y, *, rounding_mode=None)
+.. py:method:: mindspore.Tensor.div(y, *, rounding_mode=None)
 
     逐元素计算当前Tensor除以输入的另一个Tensor的商。
 

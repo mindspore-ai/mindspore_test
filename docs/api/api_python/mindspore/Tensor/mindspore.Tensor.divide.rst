@@ -1,6 +1,6 @@
 mindspore.Tensor.divide
 =======================
 
-.. py:method:: Tensor.divide(y, *, rounding_mode=None)
+.. py:method:: mindspore.Tensor.divide(y, *, rounding_mode=None)
 
-    :func:`Tensor.div` 的别名。
+    :func:`mindspore.Tensor.div` 的别名。

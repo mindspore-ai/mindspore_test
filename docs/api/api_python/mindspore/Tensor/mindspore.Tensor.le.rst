@@ -1,7 +1,7 @@
 mindspore.Tensor.le
 ===================
 
-.. py:method:: Tensor.le(other)
+.. py:method:: mindspore.Tensor.le(other)
 
     逐元素计算 :math: `self <= other` 的bool值。
 

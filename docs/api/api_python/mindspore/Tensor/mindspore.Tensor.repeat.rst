@@ -1,7 +1,7 @@
 mindspore.Tensor.repeat
 =======================
 
-.. py:method:: Tensor.repeat(repeats, axis=None)
+.. py:method:: mindspore.Tensor.repeat(repeats, axis=None)
 
     对数组中的元素进行重复复制。
 
@@ -17,5 +17,5 @@ mindspore.Tensor.repeat
         - **TypeError** - 参数类型不匹配。
 
     其他API参考：
-        - :func:`Tensor.reshape` ：为Tensor指定新的shape，不更改Tensor的数据。
-        - :func:`Tensor.resize` ：就地改变Tensor的shape和size。
+        - :func:`mindspore.Tensor.reshape` ：为Tensor指定新的shape，不更改Tensor的数据。
+        - :func:`mindspore.Tensor.resize` ：就地改变Tensor的shape和size。

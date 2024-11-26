@@ -1,6 +1,6 @@
 mindspore.Tensor.multiply
 ==========================
 
-.. py:method:: Tensor.multiply(value)
+.. py:method:: mindspore.Tensor.multiply(value)
 
     详情请参考 :func:`mindspore.ops.multiply`。

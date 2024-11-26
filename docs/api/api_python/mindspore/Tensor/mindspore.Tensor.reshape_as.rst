@@ -1,7 +1,7 @@
 mindspore.Tensor.reshape_as
 ============================
 
-.. py:method:: Tensor.reshape_as(other)
+.. py:method:: mindspore.Tensor.reshape_as(other)
 
     不改变数据的情况下，将Tensor的shape改为 `other` 的shape。
 

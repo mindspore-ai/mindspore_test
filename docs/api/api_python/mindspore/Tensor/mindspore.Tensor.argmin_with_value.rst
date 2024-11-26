@@ -1,7 +1,7 @@
 mindspore.Tensor.argmin_with_value
 ===================================
 
-.. py:method:: Tensor.argmin_with_value(axis=0, keep_dims=False)
+.. py:method:: mindspore.Tensor.argmin_with_value(axis=0, keep_dims=False)
 
     根据指定的索引计算最小值，并返回索引和值。
 

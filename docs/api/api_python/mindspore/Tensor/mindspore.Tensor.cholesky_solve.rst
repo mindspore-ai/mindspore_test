@@ -1,7 +1,7 @@
 mindspore.Tensor.cholesky_solve
 ===============================
 
-.. py:method:: Tensor.cholesky_solve(input2, upper=False)
+.. py:method:: mindspore.Tensor.cholesky_solve(input2, upper=False)
 
     详情请参考 :func:`mindspore.ops.cholesky_solve`。
 

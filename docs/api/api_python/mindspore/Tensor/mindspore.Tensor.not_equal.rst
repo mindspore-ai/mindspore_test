@@ -1,6 +1,6 @@
 mindspore.Tensor.not_equal
 ===========================
 
-.. py:method:: Tensor.not_equal(other)
+.. py:method:: mindspore.Tensor.not_equal(other)
 
-    :func:`Tensor.ne` 的别名。
+    :func:`mindspore.Tensor.ne` 的别名。

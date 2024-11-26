@@ -1,7 +1,7 @@
 mindspore.Tensor.view
 =====================
 
-.. py:method:: Tensor.view(*shape)
+.. py:method:: mindspore.Tensor.view(*shape)
 
     根据输入shape重新创建一个Tensor，与原Tensor数据相同。该方法与reshape方法相同，都是依靠底层reshape算子实现的。
 

@@ -1,7 +1,7 @@
 mindspore.Tensor.ceil
 =====================
 
-.. py:method:: Tensor.ceil()
+.. py:method:: mindspore.Tensor.ceil()
 
     向上取整函数。
 

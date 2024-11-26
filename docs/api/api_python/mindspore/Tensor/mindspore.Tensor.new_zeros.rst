@@ -1,7 +1,7 @@
 mindspore.Tensor.new_zeros
 ===========================
 
-.. py:method:: Tensor.new_zeros(size, dtype=None)
+.. py:method:: mindspore.Tensor.new_zeros(size, dtype=None)
 
     返回一个大小为 `size` 的Tensor，填充值为0。
 

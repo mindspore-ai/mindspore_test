@@ -1,7 +1,7 @@
 mindspore.Tensor.cauchy
 ========================
 
-.. py:method:: Tensor.cauchy(median=0.0, sigma=1.0)
+.. py:method:: mindspore.Tensor.cauchy(median=0.0, sigma=1.0)
 
     使用柯西分布生成的数值填充当前Tensor。
 

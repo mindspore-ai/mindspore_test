@@ -1,7 +1,7 @@
 mindspore.Tensor.exp
 =====================
 
-.. py:method:: Tensor.exp()
+.. py:method:: mindspore.Tensor.exp()
 
     逐元素计算 `self` 的指数。
 

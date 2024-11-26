@@ -1,7 +1,7 @@
 mindspore.Tensor.index_put\_
 =============================
 
-.. py:method:: Tensor.index_put_(indices, values, accumulate=False)
+.. py:method:: mindspore.Tensor.index_put_(indices, values, accumulate=False)
 
     返回一个Tensor。根据 `indices` 中的下标值，使用 `values` 中的数值替换Tensor本身中的相应元素的值。
 

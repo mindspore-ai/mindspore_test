@@ -1,6 +1,6 @@
 mindspore.Tensor.arctanh
 =========================
 
-.. py:method:: Tensor.arctanh()
+.. py:method:: mindspore.Tensor.arctanh()
 
-    :func:`Tensor.atanh` 的别名。
+    :func:`mindspore.Tensor.atanh` 的别名。

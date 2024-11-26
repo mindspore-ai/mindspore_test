@@ -1,6 +1,6 @@
 mindspore.Tensor.arccos
 =======================
 
-.. py:method:: Tensor.arccos()
+.. py:method:: mindspore.Tensor.arccos()
 
-    :func:`Tensor.acos` 的别名。
+    :func:`mindspore.Tensor.acos` 的别名。

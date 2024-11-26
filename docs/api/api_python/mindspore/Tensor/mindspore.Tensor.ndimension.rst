@@ -1,6 +1,6 @@
 mindspore.Tensor.ndimension
 ===========================
 
-.. py:method:: Tensor.ndimension()
+.. py:method:: mindspore.Tensor.ndimension()
 
-    :func:`Tensor.ndim` 的别名。
+    :func:`mindspore.Tensor.ndim` 的别名。
