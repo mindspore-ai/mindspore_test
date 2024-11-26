@@ -182,6 +182,7 @@ Comparison Operations
     mindspore.mint.maximum
     mindspore.mint.minimum
     mindspore.mint.ne
+    mindspore.mint.not_equal
     mindspore.mint.topk
     mindspore.mint.sort
 
