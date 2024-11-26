@@ -334,4 +334,38 @@ REG_EXPANDER_FUNC("Erf").SetBody(BODYFUNC(ib) {
   result = need_cast ? ib->Cast(result, x->GetDtype()) : result;
   return {result};
 });
+
+NodePtrList BinaryExtCommon(const DefaultIrBuilder *ib, bool is_add) {
+  auto x0 = ib->input(kIndex0);
+  auto x1 = ib->input(kIndex1);
+  auto alpha = ib->input(kIndex2);
+  auto x0_type = x0->GetDtype()->type_id();
+  auto x1_type = x1->GetDtype()->type_id();
+  auto alpha_type = alpha->GetDtype()->type_id();
+  if (x1_type != x0_type) {
+    MS_LOG(DEBUG) << "x0 and x1 have different data type: " << TypeIdToString(x0_type) << " vs "
+                  << TypeIdToString(x1_type);
+    return {};
+  }
+  if (alpha_type != x0_type) {
+    if (x0_type == kNumberTypeBFloat16 && alpha_type == kNumberTypeFloat32) {
+      // in this case, do not cast alpha because input tensors will be cast to fp32 later,
+      // cast alpha to bf16 here and back to fp32 later will cause precision reduction
+      x0 = ib->Cast(x0, alpha_type);
+      x1 = ib->Cast(x1, alpha_type);
+    } else {
+      alpha = ib->Cast(alpha, x0_type);
+    }
+  }
+  x1 = ib->Mul(x1, alpha);
+  auto result = is_add ? ib->Add(x0, x1) : ib->Sub(x0, x1);
+  if (result->GetDtype()->type_id() != x0_type) {
+    result = ib->Cast(result, x0_type);
+  }
+  return {result};
+}
+
+REG_EXPANDER_FUNC("AddExt").SetBody(BODYFUNC(ib) { return BinaryExtCommon(ib, true); });
+
+REG_EXPANDER_FUNC("SubExt").SetBody(BODYFUNC(ib) { return BinaryExtCommon(ib, false); });
 }  // namespace mindspore::graphkernel::expander
