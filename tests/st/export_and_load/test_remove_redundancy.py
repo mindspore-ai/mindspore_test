@@ -108,7 +108,7 @@ def test_remove_redundancy_1_1(mode):
         shutil.rmtree(f"device{i}_redundancy11")
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend_training
 @pytest.mark.platform_x86_ascend_training
 @pytest.mark.env_single
@@ -129,7 +129,7 @@ def test_remove_redundancy_1_0(mode):
         shutil.rmtree(f"device{i}_redundancy10")
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend_training
 @pytest.mark.platform_x86_ascend_training
 @pytest.mark.env_single
