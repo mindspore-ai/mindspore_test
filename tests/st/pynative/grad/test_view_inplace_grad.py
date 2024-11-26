@@ -287,6 +287,32 @@ class OverlapViewCopyNet(nn.Cell):
         x.copy_(y)
         return x
 
+class MsViewInplaceHasBprop(nn.Cell):
+    def construct(self, x, y):
+        z = x * 2
+        b = as_strided(z, (3, 3), (3, 1))
+        b.copy_(y)
+        return b
+
+    def bprop(self, x, y, out, dout):
+        a = Tensor([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])
+        b = Tensor([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]])
+        return a, b
+
+
+class TorchViewInplaceHasBprop(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, y):
+        z = x*2
+        b = z.as_strided((3, 3), (3, 1))
+        b.copy_(y)
+        return b
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        a = torch.tensor(np.array([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]]).astype(np.float32))
+        b = torch.tensor(np.array([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]]).astype(np.float32))
+        return a, b
 
 @arg_mark(plat_marks=['platform_ascend'],
           level_mark='level0',
@@ -573,6 +599,34 @@ def test_as_strided_overlap_grad():
     grad_fn3 = GradOfAllInputs(inputoverlap_net, sens_param=True)
     grads3 = grad_fn3(x3, sens)
     np.testing.assert_almost_equal(grads3[0].asnumpy(), x_torch3.grad.numpy())
+
+
+@arg_mark(plat_marks=['platform_ascend'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_view_inplace_with_bprop():
+    """
+    Feature: Test view inplace grad with bprop.
+    Description: test view copy grad with bprop.
+    Expectation: No exception.
+    """
+    x1_np = np.array([[1.0, 3.0, 4.0], [2.0, 2.0, 2.0], [2.0, 3.0, 4.0]]).astype(np.float32)
+    y1_np = np.array([[2.0, 2.0, 2.0], [2.0, 2.0, 2.0], [2.0, 2.0, 2.0]]).astype(np.float32)
+    x1_ms = Tensor(x1_np)
+    y1_ms = Tensor(y1_np)
+    sens = Tensor([[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]])
+    net1 = MsViewInplaceHasBprop()
+    net1.set_inputs()
+    grad_fn1 = GradOfAllInputs(net1, sens_param=True)
+    grads1 = grad_fn1(x1_ms, y1_ms, sens)
+
+    x1_torch = torch.tensor(x1_np, requires_grad=True)
+    y1_torch = torch.tensor(x1_np, requires_grad=True)
+    out_torch = TorchViewInplaceHasBprop.apply(x1_torch, y1_torch)
+    out_torch.sum().backward()
+    np.testing.assert_almost_equal(grads1[0].asnumpy(), x1_torch.grad.numpy())
+    np.testing.assert_almost_equal(grads1[1].asnumpy(), y1_torch.grad.numpy())
 
 
 @arg_mark(plat_marks=['platform_ascend'],
