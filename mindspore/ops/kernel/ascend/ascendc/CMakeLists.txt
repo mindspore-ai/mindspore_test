@@ -1,44 +1,17 @@
-set(CMAKE_BUILD_TYPE "Release")
-set(CAMKE_SKIP_RPATH TRUE)
-set(CMAKE_EXE_LINKER_FLAGS
-    "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,relro,-z,now,-z,noexecstack -pie")
-add_compile_options(-fstack-protector-all -D_FORTIFY_SOURCE=2 -O2)
-cmake_minimum_required(VERSION 3.5.1)
 project(ascendc_opp)
 
-if(${ENABLE_CROSS_COMPILE})
-    if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL x86_64)
-        set(CROSS_COMPILE_PLATFORM aarch64)
-    else()
-        set(CROSS_COMPILE_PLATFORM x86_64)
+macro(run_shell_script script)
+    execute_process(
+            COMMAND bash ${script}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE result
+            OUTPUT_VARIABLE output
+            ERROR_VARIABLE error
+    )
+    if(NOT result EQUAL 0)
+        message(FATAL_ERROR "Custom ascendc opp compile failed: ${error}")
     endif()
-    set(PLATFORM ${CMAKE_SYSTEM_PROCESSOR})
-    set(CMAKE_COMPILE_COMPILER_LIBRARY
-      ${ASCEND_CANN_PACKAGE_PATH}/${PLATFORM}-linux/devlib/linux/${CROSS_COMPILE_PLATFORM}/)
-    set(CMAKE_COMPILE_RUNTIME_LIBRARY ${ASCEND_CANN_PACKAGE_PATH}/${PLATFORM}-linux/devlib/${CROSS_COMPILE_PLATFORM}/)
-    set(CMAKE_SYSTEM_PROCESSOR ${CROSS_COMPILE_PLATFORM})
-    set(CMAKE_COMPILE ${CMAKE_CXX_COMPILER})
-    set(CMAKE_CXX_COMPILER ${CMAKE_CROSS_PLATFORM_COMPILER})
-else()
-    set(CMAKE_COMPILE ${CMAKE_CXX_COMPILER})
-endif()
+    message(STATUS "Custom ascendc opp compile succeed.")
+endmacro()
 
-include(${PROJECT_SOURCE_DIR}/cmake/config.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/func.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/intf.cmake)
-
-execute_process(COMMAND mkdir -p ${PKG_PATH})
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/op_host)
-  add_subdirectory(op_host)
-endif()
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/op_kernel)
-  add_subdirectory(op_kernel)
-endif()
-
-add_custom_target(gen_version_info ALL
-        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/cmake/util/gen_version_info.sh
-        ${ASCEND_CANN_PACKAGE_PATH} ${CMAKE_CURRENT_BINARY_DIR})
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/version.info
-        DESTINATION ${PKG_PATH}/${vendor_name}/)
+run_shell_script("${CMAKE_SOURCE_DIR}/scripts/ascendc/ascendc_compile.sh")
