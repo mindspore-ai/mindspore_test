@@ -1889,10 +1889,6 @@ def get_slice_vmap_rule(prim, axis_size):
 @vmap_rules_getters.register(P.Squeeze)
 def get_squeeze_vmap_rule(prim, axis_size):
     """VmapRule for `Squeeze`."""
-    if hasattr(prim, 'axis'):
-        prim_axis = prim.axis
-    else:
-        prim_axis = None
 
     @_primexpr
     def move_axis(axes):
@@ -1911,27 +1907,26 @@ def get_squeeze_vmap_rule(prim, axis_size):
             new_axis += (i,)
         return new_axis
 
-    def vmap_rule(x_bdim):
-        is_all_none, result = vmap_general_preprocess(prim, x_bdim)
+    def vmap_rule(x_bdim, axis_bdim):
+        is_all_none, result = vmap_general_preprocess(prim, x_bdim, axis_bdim)
         if is_all_none:
             return result
 
         x, x_dim = x_bdim
+        axis, _ = axis_bdim
         x = _bdim_at_front(x, x_dim, axis_size)
 
-        if prim_axis is None:
+        if axis is None:
             if axis_size == 1:
                 new_axis = generate_all_axis_except_first(F.rank(x))
-                batch_squeeze = P.Squeeze(axis=new_axis)
-                out = batch_squeeze(x)
+                out = prim(x, new_axis)
                 return out, 0
 
-            out = prim(x)
+            out = prim(x, axis)
             return out, 0
 
-        new_axis = move_axis(prim_axis)
-        batch_squeeze = P.Squeeze(axis=new_axis)
-        out = batch_squeeze(x)
+        new_axis = move_axis(axis)
+        out = prim(x, new_axis)
         return out, 0
 
     return vmap_rule

@@ -1771,14 +1771,18 @@ REG_BPROP_BUILDER("ExpandDims").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(i
   return {dx, ib->OutZeros(axis)};
 });
 
-REG_BPROP_BUILDER("Squeeze").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Squeeze").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
+  auto axis = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
   auto shapex = ib->GetShape(x);
+  NodePtr dx;
   if (IsDynamic(shapex)) {
-    return {ib->Reshape(dout, ib->Shape(x))};
+    dx = ib->Reshape(dout, ib->Shape(x));
+  } else {
+    dx = ib->Reshape(dout, shapex);
   }
-  return {ib->Reshape(dout, shapex)};
+  return {dx, ib->OutZeros(axis)};
 });
 
 REG_BPROP_BUILDER("Padding").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {

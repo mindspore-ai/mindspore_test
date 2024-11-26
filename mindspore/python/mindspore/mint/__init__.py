@@ -373,6 +373,8 @@ from mindspore.ops.function.math_func import nan_to_num
 # 695
 from mindspore.ops.auto_generate import count_nonzero
 
+#1007
+from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 
 def add(input, other, *, alpha=1):
     r"""
@@ -1490,6 +1492,53 @@ def sqrt(input):
     return ops.auto_generate.sqrt(input)
 
 
+def squeeze(input, dim):
+    r"""
+    Return the Tensor after deleting the dimension of size 1 in the specified `axis`.
+
+    If :math:`dim=()`, it will remove all the dimensions of size 1.
+    If `dim` is specified, it will remove the dimensions of size 1 in the given `dim`.
+    For example, if the dimension is not specified :math:`dim=()`, input shape is (A, 1, B, C, 1, D),
+    then the shape of the output Tensor is (A, B, C, D). If the dimension is specified, the squeeze operation
+    is only performed in the specified dimension. If input shape is (A, 1, B), input Tensor will be changed
+    to (A, B) when :math:`dim=1`, but when :math:`dim=0` or :math:`dim=2`, an error will occur.
+
+    Note:
+        - Squeezing a dimension that is not 1 will raise an error.
+        - Please note that in dynamic graph mode, the output Tensor will share data with the input Tensor,
+          and there is no Tensor data copy process.
+        - The dimension index starts at 0 and must be in the range `[-input.ndim, input.ndim]`.
+
+    Args:
+        input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
+        dim (Union[int, tuple(int)]): Specifies the dimension indexes of shape to be removed, which will
+            remove all the dimensions of size 1 in the given dim parameter. If specified, it must be int32 or int64.
+
+    Returns:
+        Tensor, the shape of tensor is :math:`(x_1, x_2, ..., x_S)`.
+
+    Raises:
+        TypeError: If `input` is not a tensor.
+        TypeError: If `dim` is not an int, tuple.
+        TypeError: If `dim` is a tuple whose elements are not all int.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.ones(shape=[3, 2, 1]), mindspore.float32)
+        >>> output = mint.squeeze(input, 2)
+        >>> print(output)
+        [[1. 1.]
+         [1. 1.]
+         [1. 1.]]
+    """
+    return squeeze_impl(input, dim)
+
+
 def sub(input, other, *, alpha=1):
     r"""
     Subtracts scaled other value from input Tensor.
@@ -1713,7 +1762,7 @@ __all__ = [
     'transpose',
     'swapaxes',
     # 9
-
+    'squeeze',
     # 10
     'ne',
     # 11

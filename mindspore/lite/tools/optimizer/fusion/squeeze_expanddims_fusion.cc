@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "ops_utils/op_utils.h"
-#include "infer/squeeze.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "include/registry/converter_context.h"

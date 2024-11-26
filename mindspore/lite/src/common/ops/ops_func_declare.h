@@ -90,7 +90,6 @@
 #include "infer/sparse_fill_empty_rows.h"
 #include "infer/sparse_reshape.h"
 #include "infer/sparse_segment_sum.h"
-#include "infer/squeeze.h"
 #include "infer/squared_difference.h"
 #include "infer/stack.h"
 #include "infer/switch.h"
