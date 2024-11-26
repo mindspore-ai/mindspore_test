@@ -131,7 +131,11 @@ bool TensorStatDump::DumpTensorStatsToFile(const std::string &dump_path, const s
   csv.WriteToCsv(slot_);
   csv.WriteToCsv(stat.data_size);
   if (data_type_ != mindspore::TypeId::kTypeUnknown) {
-    csv.WriteToCsv(TypeIdToString(data_type_, true));
+    if (data->GetType() == DbgDataType::DT_UINT1) {
+      csv.WriteToCsv(type);
+    } else {
+      csv.WriteToCsv(TypeIdToString(data_type_, true));
+    }
   } else {
     csv.WriteToCsv(type);
   }
