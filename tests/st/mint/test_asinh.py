@@ -18,11 +18,8 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, mint, jit, JitConfig
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.mark_utils import arg_mark
-
-
-def generate_random_input(shape, dtype):
-    return np.random.randn(*shape).astype(dtype)
 
 
 def generate_expect_forward_output(x):
@@ -49,7 +46,7 @@ def test_asinh_std(mode):
     Description: test function asinh.
     Expectation: expect correct result.
     """
-    x = generate_random_input((2, 3, 4), np.float32)
+    x = generate_numpy_ndarray_by_randn((2, 3, 4), np.float32, 'x')
     expect = generate_expect_forward_output(x)
     expect_grad = generate_expect_backward_output(x)
     if mode == 'pynative':
@@ -60,7 +57,7 @@ def test_asinh_std(mode):
         output = (jit(asinh_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
         output_grad = (jit(asinh_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
 
-    np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
+    np.allclose(output.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
 
 
@@ -71,8 +68,8 @@ def test_asinh_dynamic_shape():
     Description: test asinh forward with dynamic shape.
     Expectation: expect correct result.
     """
-    tensor_1 = ms.Tensor(generate_random_input((2, 3), np.float32))
-    tensor_2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
+    tensor_1 = ms.Tensor(generate_numpy_ndarray_by_randn((2, 3), np.float32, 'tensor_1'))
+    tensor_2 = ms.Tensor(generate_numpy_ndarray_by_randn((3, 4, 5), np.float32, 'tensor_2'))
 
     TEST_OP(asinh_forward_func, [[tensor_1], [tensor_2]], 'asinh_ext', disable_mode=['GRAPH_MODE'])
 
@@ -85,7 +82,7 @@ def test_asinh_bfloat16(mode):
     Description: testcase for asinh functional API.
     Expectation: the result match with expected result.
     """
-    x = generate_random_input((2, 3), np.float32)
+    x = generate_numpy_ndarray_by_randn((2, 3), np.float32, 'x')
     expect = generate_expect_forward_output(x).astype(np.float32)
     expect_grad = generate_expect_backward_output(x).astype(np.float32)
 
