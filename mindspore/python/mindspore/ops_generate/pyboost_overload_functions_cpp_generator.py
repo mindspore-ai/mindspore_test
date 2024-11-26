@@ -28,6 +28,7 @@ import pyboost_utils
 import op_api_proto
 from gen_utils import save_file
 from op_proto import OpProto
+from op_template_parser import OpTemplateParser
 from base_generator import BaseGenerator
 
 
@@ -67,12 +68,12 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         self.pyboost_return_template = Template(
             '${arg_handler_processor}\n'
             'MS_LOG(INFO) << "Call Tensor${class_name}";\n'
-            'return mindspore::tensor::ToPython(tensor::Tensor${class_name}Register::GetOp()(arg_list));\n'
+            'return mindspore::tensor::ToPython(${pyboost_base_func_name}_Base(${prim_name}, arg_list));\n'
         )
         self.callback_python_template = Template(
             'MS_LOG(INFO) << "Callback python method: ${py_method}";\n'
             'py::function fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'py::object res = fn(self, *args, **kwargs);\n'
+            'py::object res = fn(*args, **kwargs);\n'
             'return res;\n'
         )
         self.arg_handler_prt_template = Template(
@@ -97,7 +98,7 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         self.callback_python_in_ut_template = Template(
             'MS_LOG(INFO) << "Callback python method in UT: ${py_method}";\n'
             'fn = python_adapter::GetPyFn(\"mindspore.ops.tensor_method\", \"${py_method}\");\n'
-            'res = fn(self, *args, **kwargs);\n'
+            'res = fn(*args, **kwargs);\n'
             'break;\n'
         )
         self.single_case_in_ut_template = Template(
@@ -167,10 +168,6 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             signature_str = self._generate_single_signature_str(func_proto.op_proto)
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
-            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
-            if len(self_index) != 1:
-                raise ValueError(
-                    f'There must be only one field named \'input\'. But got {len(self_index)} in {func_name}')
             ut_body = self.TENSOR_FUNC_UT_BODY.replace(py_method=func_proto.py_method)
             func_call_body_list.append(self.PYBOOST_MINT_CLASS_DEF.replace(
                 class_name=class_name,
@@ -178,7 +175,6 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
                 device_dispatcher=device_dispatcher_str,
                 signatures=signature_str,
                 max_args=max_size,
-                self_index=self_index,
                 ut_body=ut_body))
         return func_call_body_list
 
@@ -214,22 +210,16 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         ut_overload_body = self.TENSOR_FUNC_UT_OVERLOAD_BODY.replace(ut_dispatch_cases=ut_dispatch_cases)
 
         max_size = 0
-        self_index = 0
         for tensor_proto in func_protos:
             op_proto = tensor_proto.op_proto
             op_args = op_proto.op_args
             max_size = max(len(op_args), max_size)
-            self_index = [i for i in range(len(op_args)) if op_args[i].arg_name in self.input_args_name]
-            if len(self_index) != 1:
-                raise ValueError(
-                    f'There must be only one field named \'input\'. But got {len(self_index)} in {func_api_name}')
         formatted_class_name = pyboost_utils.format_func_api_name(func_api_name)
         overload_func_call_str = self.PYBOOST_OVERLOAD_MINT_CLASS_DEF.replace(class_name=formatted_class_name,
                                                                               func_name=func_api_name,
                                                                               signatures=signatures_str,
                                                                               dispatch_cases=dispatch_cases,
                                                                               max_args=max_size,
-                                                                              self_index=self_index,
                                                                               ut_overload_body=ut_overload_body)
         return overload_func_call_str
 
@@ -266,8 +256,6 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         args_str = f'"{op_proto.op_class.name}('
         first_arg = True
         for _, arg in enumerate(op_proto.op_args):
-            if arg.arg_name in self.input_args_name:
-                continue
             single_arg = ''
             if not first_arg:
                 single_arg = ', '
@@ -363,8 +351,13 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         func_proto_device = getattr(func_proto, device)
         if func_proto_device == 'pyboost':
             arg_handler_processor_str = self._get_arg_handler_processor(func_proto)
+            op_parser = OpTemplateParser(func_proto.op_proto)
+            op_pyboost_func_name = op_parser.get_pyboost_func_name()
+            prim_name = f"prim::kPrim{func_proto.op_proto.op_class.name}"
             return self.pyboost_return_template.replace(arg_handler_processor=arg_handler_processor_str,
-                                                        class_name=func_proto.op_proto.op_class.name)
+                                                        class_name=func_proto.op_proto.op_class.name,
+                                                        prim_name=prim_name,
+                                                        pyboost_base_func_name=op_pyboost_func_name,)
 
         if func_proto_device == 'py_method':
             return self.callback_python_template.replace(py_method=func_proto.py_method)

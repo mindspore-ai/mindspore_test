@@ -18,6 +18,7 @@ Generate pyboost function from pyboost_op.yaml
 
 from pyboost_inner_prim_generator import PyboostInnerPrimGenerator
 from pyboost_functions_py_generator import PyboostFunctionsPyGenerator
+from pyboost_functions_h_generator import PyboostFunctionsHeaderGenerator
 from pyboost_functions_cpp_generator import PyboostFunctionsGenerator
 from pyboost_grad_function_cpp_generator import PyboostGradFunctionsGenerator
 from pyboost_native_grad_functions_generator import (
@@ -40,6 +41,7 @@ def gen_pyboost_code(work_path, op_protos, doc_yaml_data, tensor_method_protos, 
     """ gen_pyboost_code """
     call_pyboost_inner_prim_generator(work_path, op_protos)
     call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data)
+    call_pyboost_functions_h_generator(work_path, op_protos)
     call_pyboost_functions_cpp_generator(work_path, op_protos, tensor_method_protos)
     call_pyboost_overload_functions_cpp_generator(work_path, op_protos, mint_func_protos, alias_func_mapping)
     call_pyboost_grad_functions_cpp_generator(work_path, op_protos)
@@ -55,6 +57,11 @@ def call_pyboost_inner_prim_generator(work_path, op_protos):
 def call_pyboost_functions_py_generator(work_path, op_protos, doc_yaml_data):
     generator = PyboostFunctionsPyGenerator()
     generator.generate(work_path, op_protos, doc_yaml_data)
+
+
+def call_pyboost_functions_h_generator(work_path, op_protos):
+    generator = PyboostFunctionsHeaderGenerator()
+    generator.generate(work_path, op_protos)
 
 
 def call_pyboost_functions_cpp_generator(work_path, op_protos, tensor_method_protos):

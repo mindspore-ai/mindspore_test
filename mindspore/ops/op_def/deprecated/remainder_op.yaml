@@ -1,0 +1,11 @@
+#deprecated remainder
+remainder:
+  args:
+    input:
+      dtype: tensor
+    divisor:
+      dtype: tensor
+      type_cast: number
+  returns:
+    output:
+      dtype: tensor

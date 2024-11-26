@@ -187,6 +187,7 @@ deprecated_tensor_method_map = {
     # 84 reciprocal
 
     # 85 remainder
+    "remainder": "deprecated_tensor_remainder",
 
     # 86 repeat
 

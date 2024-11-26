@@ -2,13 +2,27 @@ remainder:
   - op_yaml: remainder_tensor_tensor_op.yaml
     py_method: tensor_remainder
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
+    CPU: py_method
+    GPU: py_method
     interface: method, function
 
   - op_yaml: remainder_tensor_scalar_op.yaml
     py_method: tensor_remainder
     Ascend: pyboost
-    CPU: pyboost
-    GPU: pyboost
+    CPU: py_method
+    GPU: py_method
     interface: method, function
+
+  - op_yaml: remainder_scalar_tensor_op.yaml
+    py_method: tensor_remainder
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: function
+
+  - op_yaml: deprecated/remainder_op.yaml
+    py_method: deprecated_tensor_remainder
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: method
