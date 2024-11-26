@@ -74,7 +74,7 @@ MindSpore提供跨多个后端的构建选项：
 
 | 硬件平台      | 操作系统        | 状态  |
 | :------------ | :-------------- | :--- |
-| Ascend 910    | Ubuntu-x86      | ✔️   |
+| Ascend    | Ubuntu-x86      | ✔️   |
 |               | Ubuntu-aarch64  | ✔️   |
 |               | EulerOS-aarch64 | ✔️   |
 |               | CentOS-x86      | ✔️   |

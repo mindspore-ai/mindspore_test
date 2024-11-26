@@ -982,10 +982,10 @@ wangtongyu6, zhuguodong, 徐永飞, 徐安越, yeyunpeng2020, moran, XinDu, geng
 
 ### 问题修复
 
-- [#I8ALW3]修复Faster R-CNN、DeepTextMask、RCNN-ResNet50等网络在Ascend 910上8卡训练RandomChoiceWithMask算子报错问题
-- [#I8LKG7]修复UNet-2D在Ascend 910 1卡、8卡图编译报错问题
-- [#I8KU3X]修复CRNN-ResNet34在Ascend 910 1卡、8卡PyNative模式下训练进程卡住问题
-- [#I8KTHH]修复在Ascend 910 8卡上使能enable_parallel_optimizer=True，不使用allreduce分组融合时，BERT网络训练报错问题
+- [#I8ALW3]修复Faster R-CNN、DeepTextMask、RCNN-ResNet50等网络在Ascend上8卡训练RandomChoiceWithMask算子报错问题
+- [#I8LKG7]修复UNet-2D在Ascend 1卡、8卡图编译报错问题
+- [#I8KU3X]修复CRNN-ResNet34在Ascend 1卡、8卡PyNative模式下训练进程卡住问题
+- [#I8KTHH]修复在Ascend 8卡上使能enable_parallel_optimizer=True，不使用allreduce分组融合时，BERT网络训练报错问题
 
 ### 贡献者
 
@@ -1120,7 +1120,7 @@ bantao, Bingliang, BJ-WANG, Brian-K, caifubi, ccsszz, changzherui, chenfei_minds
 
 #### 支持FlashAttention算子融合
 
-- [STABLE] 在Ascend 910系列硬件上，支持LLAMA、stable diffusion系列模型的FlashAttention大算子融合。
+- [STABLE] 在Ascend系列硬件上，支持LLAMA、stable diffusion系列模型的FlashAttention大算子融合。
 
 ## MindSpore 2.1.1 Release Notes
 
@@ -3149,7 +3149,7 @@ alashkari,anzhengqi,archer2049,B.L.LAN,baihuawei,bichaoyang,BJ-WANG,Bokai Li,Bri
 
 - [STABLE] 支持MindIR模型文件。
 - [STABLE] 支持将第三方Onnx、Tensorflow、Caffe模型通过MindSpore Lite转换工具转换为MindIR模型文件。
-- [STABLE] 一个发布包支持多种硬件后端：Ascend 310/310P/910、Nvidia GPU、CPU。
+- [STABLE] 一个发布包支持多种硬件后端：Ascend、Nvidia GPU、CPU。
 - [STABLE] 支持`Model`接口和`ModelParallelRunner`并行推理接口。
 - [STABLE] 支持C++、Python和Java推理接口。
 
