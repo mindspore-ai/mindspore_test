@@ -1,15 +1,15 @@
 if(ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/dirent/repository/archive/1.23.2.zip")
-    set(SHA256 "8a442ab85f670ed9db275b4f3e62f61872afbd8acbcbd1bb4cf212b7658e8838")
+    set(REQ_URL "https://gitee.com/mirrors/dirent/repository/archive/1.24.zip")
+    set(SHA256 "d762a87c01b63a1bc8d13e573a38dd067a8c290f365398cbc1a9519c8fdc720a")
 else()
-    set(REQ_URL "https://github.com/tronkko/dirent/archive/refs/tags/1.23.2.zip")
-    set(SHA256 "4bcf07266f336bcd540fec5f75e90f027bd5081d3752f9ea5d408ef6ae30a897")
+    set(REQ_URL "https://github.com/tronkko/dirent/archive/refs/tags/1.24.zip")
+    set(SHA256 "46fa2833610e60275e30949c9cb4268430f945ca11fdbfa80dfad68de967103a")
 endif()
 
 
 if(MSVC)
     mindspore_add_pkg(dirent
-        VER 1.23.2
+        VER 1.24
         HEAD_ONLY ./include
         RELEASE on
         URL ${REQ_URL}
