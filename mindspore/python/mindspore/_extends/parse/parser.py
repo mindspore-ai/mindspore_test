@@ -1226,7 +1226,8 @@ class Parser:
                 self.col_offset = \
                     len(original_src.split('\n')[0]) - len(src.split('\n')[0])
                 logger.debug("Get source: %s", src)
-                self.check_lambda(src)
+                if not hasattr(self.fn, attr):
+                    self.check_lambda(src)
                 try:
                     ast_tokens = asttokens.ASTTokens(src, parse=True)
                 except IndentationError as idt_err:
