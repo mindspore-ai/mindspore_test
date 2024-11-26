@@ -24,6 +24,7 @@
 #include "ops_utils/op_utils.h"
 #include "src/common/log_util.h"
 #include "tools/common/tensor_util.h"
+#include "mindspore/ops/kernel/cpu/nnacl/base/cast_base.h"
 
 namespace mindspore {
 namespace lite {
@@ -82,8 +83,9 @@ STATUS ConstantOfShapeMapper::Mapper(const CNodePtr &cnode) {
     } break;
     case kNumberTypeFloat16: {
       if (values.size() == 1) {
+        auto value = Float32ToFloat16_(values[0]);
         value_param =
-          opt::BuildFloat16ValueParameterNode(func_graph, values[0], cnode->fullname_with_scope() + "_value", true);
+          opt::BuildFloat16ValueParameterNode(func_graph, value, cnode->fullname_with_scope() + "_value", true);
       }
     } break;
     default:
