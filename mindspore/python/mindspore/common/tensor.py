@@ -3129,26 +3129,29 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def random_(self, from_=0, to=None, *, generator=None):
         r"""
-        Fill the tensor with numbers sampled from a discrete uniform distribution over an interval :math:`[from_, to)`.
+        Fill the tensor with numbers sampled from a discrete uniform distribution over an
+        interval :math:`[from_, to-1]`.
 
         .. warning::
             This is an experimental API that is subject to change or deletion.
 
         Args:
-            from_ (int, optional): the lower bound of the generated random number. Default: 0.
+            from_ (int, optional): the lower bound of the generated random number. It can be a scalar value
+                or a tensor of any dimension with only a single element. Default: 0.
             to (int, optional): the upper bound of the generated random number. By default it's the upper limit of
-                the input data type. Default: ``None``.
+                the input data type. It can be a scalar value or a tensor of any dimension with only a single element.
+                Default: ``None``.
 
         Keyword Args:
             generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
                 Default: ``None``, uses the default pseudorandom number generator.
 
         Returns:
-            `self`.
+            The input tensor.
 
         Raises:
             TypeError: If `from_` or `to` is not integer.
-            ValueError: If `from_` >= `to`.
+            RuntimeError: If `from_` >= `to`.
 
         Supported Platforms:
             ``Ascend``
