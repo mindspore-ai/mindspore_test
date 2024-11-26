@@ -38,7 +38,7 @@ deprecated_tensor_method_map = {
     # 10 argmax
     "argmax": "deprecated_tensor_argmax",
     # 11 argmin
-
+    "argmin": "deprecated_tensor_argmin",
     # 12 argsort
 
     # 13 atan2
