@@ -1716,6 +1716,8 @@ def deprecated_tensor_var(input, axis=None, ddof=0, keepdims=False):
             nums *= input.shape[ax]
     return _tensor_div(x_sum, nums - ddof)
 
+def tensor_kthvalue(input, k, dim=-1, keepdim=False):
+    raise ValueError("should not come here for kthvalue py_method.")
 
 def tensor_sub_empty_(input, other, alpha=1):
     raise ValueError("should not come here for sub_ method.")

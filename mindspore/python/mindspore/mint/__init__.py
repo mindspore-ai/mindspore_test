@@ -415,7 +415,8 @@ from mindspore.ops.function.math_func import frac_ext as frac
 
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
-
+# 549
+from mindspore.ops.functional_overload import kthvalue
 # 552
 from mindspore.ops.auto_generate import log10_ext as log10
 
@@ -2043,6 +2044,9 @@ __all__ = [
 
     # 538
     'histc',
+
+    # 549
+    'kthvalue',
 
     # 552
     'log10',

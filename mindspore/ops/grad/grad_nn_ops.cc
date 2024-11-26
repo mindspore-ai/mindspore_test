@@ -1789,6 +1789,39 @@ REG_BPROP_BUILDER("TopkExt").FreeUselessValues_IO({i3, i4}, {i0}).SetBody(BODYFU
           ib->OutZeros(ib->GetInput(kIndex3)), ib->OutZeros(ib->GetInput(kIndex4))};
 });
 
+REG_BPROP_BUILDER("Kthvalue").FreeUselessValues_IO({i1}, {i0}).SetBody(BODYFUNC(ib) {
+  // x, k, dim, keepdim, out(values, indices), dout(grad_values, grad_indices)
+  auto input_x = ib->GetInput(kIndex0);
+  auto keepdim = ib->GetInput(kIndex3);
+  auto keepdim_opt = mindspore::GetScalarValue<bool>(keepdim->BuildValue());
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+  auto indices = ib->TupleGetItem(out, kIndex1);
+  auto dout0 = ib->TupleGetItem(dout, kIndex0);
+  auto dim = ib->GetInput(kIndex2);
+  auto dim_opt = mindspore::GetScalarValue<int64_t>(dim->BuildValue());
+  auto zeros = ib->Emit("ZerosLikeExt", {input_x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input_x)))});
+  auto reduce = ib->Value(static_cast<int64_t>(Reduce::REDUCE_NONE));
+  if (keepdim_opt.has_value()) {
+    if (!keepdim_opt.value()) {
+      auto dim_value = dim_opt.value();
+      indices = ib->ExpandDims(indices, dim_value);
+      dout0 = ib->ExpandDims(dout0, dim_value);
+    }
+  } else {
+    auto true_branch = [&indices, &dout0](Emitter *e) -> NodePtrList { return {indices, dout0}; };
+    auto false_branch = [&indices, &dout0, &dim](Emitter *e) -> NodePtrList {
+      return {e->Emit("ExpandDims", {indices, dim}), e->Emit("ExpandDims", {dout0, dim})};
+    };
+    auto unsqueezed_outputs = ib->Conditional(keepdim, true_branch, false_branch);
+    indices = ib->TupleGetItem(unsqueezed_outputs, 0);
+    dout0 = ib->TupleGetItem(unsqueezed_outputs, 1);
+  }
+  auto out_grad = ib->Emit("Scatter", {zeros, dim, indices, dout0, reduce});
+  return {out_grad, ib->OutZeros(ib->GetInput(kIndex1)), ib->OutZeros(ib->GetInput(kIndex2)),
+          ib->OutZeros(ib->GetInput(kIndex3))};
+});
+
 REG_BPROP_BUILDER("PReLU").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
