@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 from mindspore._c_expression import stress_detect
 from .utils import ExitByRequest
+from .runtime_execution_order_check import runtime_execution_order_check
 
 # Symbols from utils module.
-__all__ = ["stress_detect", "ExitByRequest"]
+__all__ = ["stress_detect", "ExitByRequest", "runtime_execution_order_check"]
