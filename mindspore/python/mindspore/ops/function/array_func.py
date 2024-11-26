@@ -4159,8 +4159,9 @@ def meshgrid_ext(*tensors, indexing='ij'):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        tensors (List[Tensor]): List of 1-D tensors.
-            The length of tensors should be greater than 1. The data type is Number.
+        tensors (Union(tuple[Tensor], list[Tensor])): In GRAPH_MODE, a tuple of N 1-D Tensor objects and
+            the length of input should be greater than 1. In PYNATIVE_MODE, a tuple of N 0-D or 1-D Tensor objects
+            and the length of input should be greater than 0. The data type is Number.
 
     Keyword Args:
         indexing (str, optional): Cartesian ('xy', default) or
@@ -4242,8 +4243,9 @@ def meshgrid(*inputs, indexing='xy'):
     coordinate tensors for evaluating expressions on an N-D grid.
 
     Args:
-        inputs (List[Tensor]): List of 1-D tensors.
-            The length of inputs should be greater than 1. The data type is Number.
+        inputs (Union(tuple[Tensor], list[Tensor])): In GRAPH_MODE, a tuple of N 1-D Tensor objects and
+            the length of input should be greater than 1. In PYNATIVE_MODE, a tuple of N 0-D or 1-D Tensor objects
+            and the length of input should be greater than 0. The data type is Number.
 
     Keyword Args:
         indexing (str, optional): Cartesian ('xy', default) or

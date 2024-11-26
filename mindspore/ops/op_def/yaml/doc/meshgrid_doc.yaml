@@ -14,8 +14,9 @@ meshgrid:
                 Default: ``'xy'`` .
 
         Inputs:
-            - **inputs** (Union[tuple]) - A Tuple of N 1-D Tensor objects.
-              The length of input should be greater than 1. The data type is Number.
+            - **inputs** (Union(tuple[Tensor], list[Tensor])) - In GRAPH_MODE, a tuple of N 1-D Tensor objects and
+              the length of input should be greater than 1. In PYNATIVE_MODE, a tuple of N 0-D or 1-D Tensor objects
+              and the length of input should be greater than 0. The data type is Number.
 
         Outputs:
             Tensors, A Tuple of N N-D Tensor objects. The data type is the same with the Inputs.
