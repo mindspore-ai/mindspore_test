@@ -104,6 +104,7 @@ class DvmSupportChecker {
     check_func_["GreaterEqual"] = {compare_check};
     check_func_["Less"] = {compare_check};
     check_func_["LessEqual"] = {compare_check};
+    check_func_["IsFinite"] = {compare_check};
     // select op
     check_func_["Select"] = {DvmSupportChecker::DvmSelectSupported, [](const AnfNodePtr &node) {
                                return InputCheck(node, {2, 3});

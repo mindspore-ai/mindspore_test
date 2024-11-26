@@ -390,11 +390,12 @@ ValueNodePtr CreateTensorValueNode(const DataInfo &info, void *value_ptr, size_t
   tensor->set_device_info(device_info);
   auto data_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
-  auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->data().nbytes()), value_ptr, data_length);
-  if (ret_code != EOK) {
-    MS_LOG(EXCEPTION) << "Failed to copy data into scalar tensor, memcpy_s errorno: " << ret_code;
+  if (data_length) {
+    auto ret_code = memcpy_s(data_ptr, static_cast<size_t>(tensor->data().nbytes()), value_ptr, data_length);
+    if (ret_code != EOK) {
+      MS_LOG(EXCEPTION) << "Failed to copy data into scalar tensor, memcpy_s errorno: " << ret_code;
+    }
   }
-
   // Create value node.
   ValueNodePtr new_value_node = std::make_shared<ValueNode>(tensor);
   new_value_node->set_abstract(tensor->ToAbstract());
