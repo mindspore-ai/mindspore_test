@@ -50,6 +50,11 @@ def where_backward_func(condition, x, y):
 
 
 @test_utils.run_with_cell
+def where_overload_forward_func(condition):
+    return where(condition)
+
+
+@test_utils.run_with_cell
 def where_vmap_func(condition, x, y, in_axes=0):
     return ops.vmap(where_forward_func, in_axes, out_axes=0)(condition, x, y)
 
@@ -69,6 +74,22 @@ def test_ops_where(mode):
     condition = x < 3
     output = where_forward_func(condition, x, y)
     expected = np.array([[0, 1], [2, 1]], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expected)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_ops_where_overload(mode):
+    """
+    Feature: ops.where(condition)
+    Description: Verify the result of ops.where(condition)
+    Expectation: success
+    """
+    context.set_context(mode=mode, jit_level="O0")
+    x = Tensor([[0, 1], [2, 3]], dtype=ms.float32)
+    output = where_overload_forward_func(x)
+    expected = np.array([[0, 1], [1, 0], [1, 1]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
 
 
