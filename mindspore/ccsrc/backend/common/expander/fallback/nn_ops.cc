@@ -65,11 +65,11 @@ REG_FALLBACK_BUILDER("ArgMaxExt").SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
   auto dim = ib->GetInput(kIndex1);
   auto keepdim = ib->GetInput(kIndex2);
-  if (input_x->dtype() == kBool) {
+  if (input_x->dtype()->type_id() == kBool->type_id()) {
     input_x = ib->Cast(input_x, kInt32);
   }
   bool is_dim_none = True;
-  auto dim_value = ib->Value(0);
+  auto dim_value = ib->Value<int64_t>(0);
   auto dim_value_ptr = dim->BuildValue();
   if (dim_value_ptr->isa<None>()) {
     input_x = ib->Reshape(input_x, {-1});
