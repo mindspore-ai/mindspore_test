@@ -84,6 +84,7 @@ void LoadSimulationApiSymbols() {
   LoadSimulationAclBaseApi();
   LoadSimulationRtApi();
   LoadSimulationTdtApi();
+  LoadSimulationAclOpCompilerApi();
   load_simulation_api = true;
   MS_LOG(INFO) << "Load simulation api success!";
 }

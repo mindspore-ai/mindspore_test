@@ -40,5 +40,12 @@ void LoadAclOpCompilerApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl op compiler api success!";
 }
 
+void LoadSimulationAclOpCompilerApi() {
+  ASSIGN_SIMU(aclopCompileAndExecute);
+  ASSIGN_SIMU(aclopCompileAndExecuteV2);
+  ASSIGN_SIMU(aclSetCompileopt);
+  ASSIGN_SIMU(aclopSetCompileFlag);
+  ASSIGN_SIMU(aclGenGraphAndDumpForOp);
+}
 }  // namespace transform
 }  // namespace mindspore
