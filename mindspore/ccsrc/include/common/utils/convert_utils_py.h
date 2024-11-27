@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ COMMON_EXPORT tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
 // Convert sub node to base tensor, for pynative output tensor.
 COMMON_EXPORT tensor::BaseTensorPtr StubNodeToTensor(const py::object &obj);
 COMMON_EXPORT py::object CTensorToPyStubNodes(const ValuePtr &val);
+COMMON_EXPORT tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj);
 COMMON_EXPORT ValuePtr PyStubNodeCast(const py::handle &obj);
 COMMON_EXPORT ValuePtr ConvertTensorNode(const py::object &obj);
 COMMON_EXPORT std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj);
@@ -77,6 +78,7 @@ py::object ScalarPtrToPyData(const ScalarPtr &value);
 py::object CheckAndConvertToScalar(const tensor::BaseTensorPtr &tensor, const AbstractBasePtr &abs);
 bool IsStubTensor(const py::handle &obj);
 tensor::TensorPtr ConvertStubTensor(const py::handle &obj);
+tensor::TensorPtr ConvertTensorAndSyncCompiling(const py::handle &obj);
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_CONVERT_UTILS_PY_H_

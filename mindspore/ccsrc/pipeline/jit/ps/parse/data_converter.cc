@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -900,7 +900,7 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
     // AdapterTensor needs to be processed before Tensor because it inherits from Tensor.
     std::make_shared<ByFuncDataConvertFunc>(IsStubTensor, ConvertStubTensor),
     std::make_shared<ByFuncDataConvertFunc>(IsNamedTuple, ConvertNamedTuple),
-    std::make_shared<ByTypeDataConvertFunc<Tensor>>(ObjCast<TensorPtr>),
+    std::make_shared<ByTypeDataConvertFunc<Tensor>>(ConvertTensorAndSyncCompiling),
     std::make_shared<ByAttrDataConvertFunc>(ConvertMsClass, PYTHON_MS_CLASS),
     std::make_shared<ByTypeDataConvertFunc<BaseTensor>>(ObjCast<BaseTensorPtr>),
     std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ConvertTensorNode),
