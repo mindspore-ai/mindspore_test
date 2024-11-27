@@ -289,10 +289,13 @@ class Sampler(BuiltinSampler):
                 # If number, we convert it to list first. So they can be handled in the same way.
                 if isinstance(idx, numbers.Number):
                     idx = [idx]
+                    # normal sampler does not have batch sizes
+                    batch_sizes.append(0)
+                else:
+                    # Using extend instead of append will flatten the list, so we need to save the
+                    # batch size information here.
+                    batch_sizes.append(len(idx))
                 ret.extend(idx)
-                # Using extend instead of append will flatten the list, so we need to save the
-                # batch size information here.
-                batch_sizes.append(len(idx))
             except StopIteration:
                 break
         self.batch_sizes.append(batch_sizes)

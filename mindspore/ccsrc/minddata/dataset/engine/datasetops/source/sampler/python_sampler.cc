@@ -68,6 +68,9 @@ Status PythonSamplerRT::GetNextSample(TensorRow *out) {
         std::shared_ptr<Tensor> ids_from_np;
         RETURN_IF_NOT_OK(Tensor::CreateFromNpArray(np_sample_ids, &ids_from_np));  // copy numpy to tensor
         // date type of sample ids got from numpy is not sure on different platforms, so cast it to int64
+        CHECK_FAIL_RETURN_UNEXPECTED(
+          ids_from_np->type().IsInt(),
+          "Python sampler should return index of type integer, but got: " + ids_from_np->type().ToString());
         RETURN_IF_NOT_OK(TypeCast(ids_from_np, &sample_ids, DataType(DataType::DE_INT64)));
 
         if (HasChildSampler()) {
