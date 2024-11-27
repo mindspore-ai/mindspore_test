@@ -264,6 +264,7 @@ constexpr auto kAttrGlobalPooling = "global_pooling";
 constexpr auto kAttrNonTask = "non_task";
 constexpr auto kAttrIsGrad = "is_grad";
 constexpr auto kAttrRecompute = "recompute";
+constexpr auto kAttrParallelOptLoad = "parallel_opt_load";
 constexpr auto kAttrCheckpoint = "checkpoint";
 constexpr auto kAttrSliceActivation = "slice_activation";
 constexpr auto kAttrNeedCseAfterRecompute = "need_cse_after_recompute";
