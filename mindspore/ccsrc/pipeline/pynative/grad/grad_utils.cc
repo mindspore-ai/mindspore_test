@@ -294,9 +294,24 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor
   if (view_meta != nullptr) {
     output->set_version(src_tensor->version());
     output->set_auto_grad_meta_data(std::make_shared<autograd::ViewAutoGradMetaData>(
-      view_meta->view_info().Union(), op_index, InputType::kOpOutput, creation_type));
+      view_meta->view_info().Union(), op_index, InputType::kOpOutput,
+      creation_type != autograd::CreationType::kDefault ? creation_type : view_meta->creation_type()));
   } else {
-    ViewInfo view_info(src_tensor);
+    if (src_tensor->auto_grad_meta_data() == nullptr) {
+      // If base tensor is input of view op, we need construct auto_grad_meta_data for base tensor, to
+      // avoid view tensor being inplaced by inpalce op, which will need update grad info of base tensor.
+      // we need construct auto_grad_meta_data in second thread rather than bprop thread.
+      MS_LOG(DEBUG) << "Create new auto grad meta for input tensor of view op " << src_tensor->id();
+      auto auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
+      src_tensor->set_auto_grad_meta_data(auto_grad_meta_data);
+    }
+    // Temp method to avoid view tensor hold by grad.
+    auto base_tensor = std::make_shared<tensor::BaseTensor>(*src_tensor);
+    if (src_tensor->is_parameter()) {
+      base_tensor->set_param_info(src_tensor->param_info());
+    }
+    base_tensor->set_device_address(nullptr);
+    ViewInfo view_info(base_tensor);
     output->set_version(src_tensor->version());
     output->set_auto_grad_meta_data(std::make_shared<autograd::ViewAutoGradMetaData>(
       std::move(view_info), op_index, InputType::kOpOutput, creation_type));

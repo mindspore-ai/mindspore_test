@@ -277,6 +277,14 @@ class MultiOutputViewCopyNet(nn.Cell):
         return view
 
 
+class MultiOutputViewCopyNet2(nn.Cell):
+    def construct(self, x, y):
+        view1 = mint.split(x, 2)
+        view2 = view1[0]
+        view2.copy_(y)
+        return view2
+
+
 class LeafViewCopyNet(nn.Cell):
     def construct(self, x, y):
         x.copy_(y)
@@ -674,10 +682,19 @@ def test_view_inplace_grad_check_exception():
 
     x4 = Tensor([[2.], [2.], [3.]])
     y4 = Tensor([[1., 2.], [2., 2.], [1, 1]])
-    sens = Tensor([[1., 1.], [1., 1.], [1, 1]])
     z4 = mint.broadcast_to(x4, (3, 2))
     overlap_view_copy = OverlapViewCopyNet()
     with pytest.raises(RuntimeError) as err:
         overlap_view_copy.construct(z4, y4)
         _pynative_executor.sync()
     assert "This tensor has multi element reference to the same memory address" in str(err.value)
+
+    x5 = Tensor([[1., 2.], [2., 2.], [3., 3.], [1, 1.]])
+    y5 = Tensor([[1., 2.]])
+    sens = Tensor([[1., 1.]])
+    multi_output_view_net = MultiOutputViewCopyNet2()
+    grad_fn2 = GradOfAllInputs(multi_output_view_net, sens_param=True)
+    with pytest.raises(RuntimeError) as err:
+        grad_fn2(x5, y5, sens)
+        _pynative_executor.sync()
+    assert "This view is one of output for multi output operator" in str(err.value)
