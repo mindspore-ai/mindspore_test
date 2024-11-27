@@ -312,7 +312,7 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                   origin_dst_strategy_list,
                                   ckpt_prefix, dst_safetensors_dir, output_format,
                                   _transform_param_list, pipe_param_list=None, file_index=None, unified_flag=False,
-                                  src_strategy_file=None):
+                                  src_strategy_file=None, choice_func=None):
     """
     Transforms safetensors files to a specified format without using parallel processing.
     """
@@ -367,7 +367,18 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                 # param not in ckpt file, check reason
                                 continue
                             output = f.get_tensor(param_name)
-                            saftensor_dict[param_name] = output
+                            save_param_name = param_name
+                            if choice_func is not None:
+                                choice_out = choice_func(param_name)
+                                if isinstance(choice_out, bool):
+                                    if not choice_out:
+                                        continue
+                                elif isinstance(choice_out, str):
+                                    save_param_name = choice_out
+                                else:
+                                    raise ValueError("For 'unified_safetensors', the return value type of the function "
+                                                     f"'choice_func' must be bool or str, but got {type(choice_out)}.")
+                            saftensor_dict[save_param_name] = output
             else:
                 saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
             for param_name, param in saftensor_dict.items():
@@ -669,7 +680,7 @@ def _transform_parallel_safetensor(rank_id, param_total_dict, param_attr_dict, s
 
 
 def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundancy=True, file_suffix=None,
-                        max_process_num=64):
+                        max_process_num=64, choice_func=None):
     """
     Merge multiple safetensor files into a unified safetensor file.
 
@@ -682,6 +693,8 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         file_suffix (str, optional): Specify the filename suffix for merging safetensors files. Default: ``None``,
             meaning all safetensors files in the source weight directory will be merged.
         max_process_num (int): Maximum number of processes. Default: 64.
+        choice_func (callable): A callable function used to filter parameters or modify parameter names.
+            The return value of the function must be of type str (string) or bool (boolean). Default: None.
 
     Raises:
         ValueError: If the safetensors file of rank is missing.
@@ -748,7 +761,15 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
     param_name_dict = dict()
     for index, part_list in enumerate(split_list):
         for name in part_list:
-            param_name_dict[name] = f"part{index}.safetensors"
+            save_param_name = name
+            if choice_func is not None:
+                choice_out = choice_func(name)
+                if isinstance(choice_out, bool):
+                    if not choice_out:
+                        continue
+                elif isinstance(choice_out, str):
+                    save_param_name = choice_out
+            param_name_dict[save_param_name] = f"part{index}.safetensors"
     json_str = json.dumps(param_name_dict, indent=4)
     map_file = os.path.join(dst_dir, "param_name_map.json")
     with open(map_file, 'w') as f:
@@ -765,7 +786,7 @@ def unified_safetensors(src_dir, src_strategy_file, dst_dir, merge_with_redundan
         p = mp.Process(target=_transform_safetensors_single_semaphore, args=(
             needed_rank_list_map, all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
             src_strategy_dict, None, origin_src_strategy_list, origin_dst_strategy_list,
-            "", dst_dir, "safetensors", None, split_list, res[i], True, src_strategy_name))
+            "", dst_dir, "safetensors", None, split_list, res[i], True, src_strategy_name, choice_func))
         p.start()
         processes.append(p)
     for p in processes:
@@ -779,13 +800,14 @@ def _transform_safetensors_single_semaphore(needed_rank_list_map, all_safetensor
                                             origin_dst_strategy_list,
                                             ckpt_prefix, dst_safetensors_dir, output_format,
                                             _transform_param_list, pipe_param_list=None, file_index=None,
-                                            unified_flag=False, src_strategy_file=None):
+                                            unified_flag=False, src_strategy_file=None, choice_func=None):
     for i in file_index:
         _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
                                       dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
                                       origin_src_strategy_list,
                                       origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir, output_format,
-                                      _transform_param_list, pipe_param_list[i], i, unified_flag, src_strategy_file)
+                                      _transform_param_list, pipe_param_list[i], i, unified_flag, src_strategy_file,
+                                      choice_func)
 
 
 def _split_list(split_list, split_num):
@@ -851,11 +873,8 @@ def _process_hyper_params(file_list, total_safetensors_dir, name_map, total_para
     return total_param
 
 
-def _load_parallel_checkpoint(file_info):
-    """load parallel safetensors by merged file."""
-    total_safetensors_dir, dst_strategy_file, net, dst_safetensors_dir, rank_id, output_format, name_map = file_info
-    file_list = os.listdir(total_safetensors_dir)
-    json_files = [file for file in file_list if file.endswith('.json')]
+def _cal_param_name_map_and_param_list(file_list, total_safetensors_dir, json_files, dst_strategy_file, rank_id):
+    """calculate param_name_map and param_list"""
     if len(file_list) == 1:
         logger.info("There is only one weight file in the directory, which will be automatically mapped.")
         file_name = os.path.join(total_safetensors_dir, file_list[0])
@@ -881,7 +900,18 @@ def _load_parallel_checkpoint(file_info):
     else:
         dst_strategy_list = None
         param_list = param_name_map.keys()
+    return param_name_map, param_list, dst_strategy_list
 
+
+def _load_parallel_checkpoint(file_info):
+    """load parallel safetensors by merged file."""
+    total_safetensors_dir, dst_strategy_file, net, dst_safetensors_dir, \
+    rank_id, output_format, name_map, return_param_dict = file_info
+    file_list = os.listdir(total_safetensors_dir)
+    json_files = [file for file in file_list if file.endswith('.json')]
+    param_name_map, param_list, dst_strategy_list = _cal_param_name_map_and_param_list(file_list, total_safetensors_dir,
+                                                                                       json_files, dst_strategy_file,
+                                                                                       rank_id)
     total_param = dict()
     dst_stage_device_num = np.prod(dst_strategy_list.get(list(dst_strategy_list.keys())[0])[0]) if dst_strategy_list \
                                                                                                    is not None else 1
@@ -945,8 +975,10 @@ def _load_parallel_checkpoint(file_info):
 
     total_param = _process_hyper_params(file_list, total_safetensors_dir, name_map, total_param)
     if net is not None:
-        param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
-        return param_not_load, ckpt_not_load
+        if not return_param_dict:
+            param_not_load, ckpt_not_load = ms.load_param_into_net(net, total_param)
+            return param_not_load, ckpt_not_load
+        return total_param
     _make_dir(os.path.join(dst_safetensors_dir, f"rank_{rank_id}"), "path")
     ms.save_checkpoint(total_param, os.path.join(dst_safetensors_dir, f"rank_{rank_id}", f"net.{output_format}"),
                        format=output_format)
