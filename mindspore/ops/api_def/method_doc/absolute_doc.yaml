@@ -1,0 +1,5 @@
+absolute:
+  description: |
+    absolute() -> Tensor
+    
+    Alias for :func:`Tensor.abs`.

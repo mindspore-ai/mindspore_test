@@ -1,0 +1,103 @@
+add:
+  description: |
+    add(other) -> Tensor
+  
+    Adds other value to `self` element-wise.
+
+    .. math::
+
+        out_{i} = self_{i} + other_{i}
+
+    Note:
+        - When `self` and `other` have different shapes,
+          they must be able to broadcast to a common shape.
+        - `self` and `other` can not be bool type at the same time,
+          [True, Tensor(True, bool\_), Tensor(np.array([True]), bool\_)] are all considered bool type.
+        - `self` and `other` comply with the implicit type conversion rules to make the data types
+          consistent.
+        - The dimension of `self` should be greater than or equal to 1.
+
+    Args:
+        other (Union[Tensor, number.Number, bool]): `other` is a number.Number or a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+
+    Returns:
+        Tensor with a shape that is the same as the broadcasted shape of `self` and `other`,
+        and the data type is the one with higher precision or higher digits between `self` and `other`.
+
+    Raises:
+        TypeError: If `other` is not one of the following: Tensor, number.Number, bool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> # case 1: x and y are both Tensor.
+        >>> x = Tensor(np.array([1, 2, 3]).astype(np.float32))
+        >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
+        >>> output = Tensor.add(x, y)  # x.add(y)
+        >>> print(output)
+        [5. 7. 9.]
+        >>> # case 2: x is a scalar and y is a Tensor
+        >>> x = Tensor(1, mindspore.int32)
+        >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
+        >>> output = Tensor.add(x, y)  # x.add(y)
+        >>> print(output)
+        [5. 6. 7.]
+        >>> # the data type of x is int32, the data type of y is float32,
+        >>> # and the output is the data format of higher precision float32.
+        >>> print(output.dtype)
+        Float32
+
+    .. method:: Tensor.add(other, alpha=1) -> Tensor
+        :noindex:
+    
+    Adds scaled other value to `self`.
+
+    .. math::
+
+        out_{i} = self_{i} + alpha \times other_{i}
+
+    Note:
+        - When `self` and `other` have different shapes,
+          they must be able to broadcast to a common shape.
+        - `self`, `other` and alpha comply with the implicit type conversion rules to make the data types
+          consistent.
+        - Only support in PyNative mode.
+
+    Args:
+        other (Union[Tensor, number.Number, bool]): `other` is a number.Number or a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
+        alpha (number.Number): A scaling factor applied to `other`, default 1.
+
+    Returns:
+        Tensor with a shape that is the same as the broadcasted shape of the `self` and `other`,
+        and the data type is the one with higher precision or higher digits among `self`, `other` and `alpha`.
+
+    Raises:
+        TypeError: If the type of `other` or `alpha` is not one of the following: Tensor, number.Number, bool.
+        TypeError: If `alpha` is of type float but `self` and `other` are not of type float.
+        TypeError: If `alpha` is of type bool but `self` and `other` are not of type bool.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindspore
+        >>> from mindspore import Tensor
+        >>> x = Tensor(1, mindspore.int32)
+        >>> y = Tensor(np.array([4, 5, 6]).astype(np.float32))
+        >>> alpha = 0.5
+        >>> output = Tensor.add(x, y, alpha=alpha)  # x.add(y, alpha=alpha)
+        >>> print(output)
+        [3. 3.5 4.]
+        >>> # the data type of x is int32, the data type of y is float32,
+        >>> # alpha is a float, and the output is the data format of higher precision float32.
+        >>> print(output.dtype)
+        Float32

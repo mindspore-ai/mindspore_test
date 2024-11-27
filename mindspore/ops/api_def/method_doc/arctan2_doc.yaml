@@ -1,0 +1,5 @@
+arctan2:
+  description: |
+    arctan2(other) -> Tensor
+    
+    Alias for :func:`Tensor.atan2`.

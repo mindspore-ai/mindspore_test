@@ -1,0 +1,5 @@
+__abs__:
+  description: |
+    __abs__() -> Tensor
+    
+    Alias for :func:`Tensor.abs`.
