@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <algorithm>
 #include <unordered_map>
 #include "custom_op_proto/cust_math_ops.h"
 #include "op_proto/inc/math_ops.h"
@@ -711,4 +712,76 @@ CUST_IMPLEMT_INFERFUNC(Logit, LogitInfer) {
 }
 CUST_INFER_FUNC_REG(Logit, LogitInfer);
 // ----------------Logit END-------------------
+
+// ----------------Diagonal-------------------
+CUST_IMPLEMT_INFERFUNC(Diagonal, DiagonalInfer) {
+  int64_t offset;
+  int64_t dim1;
+  int64_t dim2;
+  RETURN_IF_FAILURE(op.GetAttr("offset", offset));
+  RETURN_IF_FAILURE(op.GetAttr("dim1", dim1));
+  RETURN_IF_FAILURE(op.GetAttr("dim2", dim2));
+  Shape x_shape = op.GetInputDescByName("x").GetShape();
+  DataType x_type = op.GetInputDescByName("x").GetDataType();
+
+  TensorDesc y_desc = op.GetOutputDescByName("y");
+  y_desc.SetDataType(x_type);
+  if ((!RankKnown(x_shape))) {
+    Shape y_shape(UNKNOWN_RANK);
+    y_desc.SetShape(y_shape);
+    if (op.UpdateOutputDesc("y", y_desc) != GRAPH_SUCCESS) {
+      OP_LOGE(TbeGetName(op).c_str(), "update y failed");
+      return GRAPH_FAILED;
+    }
+    return GRAPH_SUCCESS;
+  }
+
+  const int64_t min_rank = 2;
+  int64_t x_rank = static_cast<int64_t>(x_shape.GetDimNum());
+  if (x_rank < min_rank) {
+    OP_LOGE(TbeGetName(op).c_str(), "rank of x is less than 2");
+    return GRAPH_FAILED;
+  }
+  if (dim1 < -x_rank || dim1 > x_rank - 1) {
+    OP_LOGE(TbeGetName(op).c_str(), "dim1 is not in [-x_rank, x_rank - 1]");
+    return GRAPH_FAILED;
+  }
+  if (dim2 < -x_rank || dim2 > x_rank - 1) {
+    OP_LOGE(TbeGetName(op).c_str(), "dim2 is not in [-x_rank, x_rank - 1]");
+    return GRAPH_FAILED;
+  }
+  int64_t tmp_dim1 = dim1 < 0 ? dim1 + x_rank : dim1;
+  int64_t tmp_dim2 = dim2 < 0 ? dim2 + x_rank : dim2;
+  if (tmp_dim1 == tmp_dim2) {
+    OP_LOGE(TbeGetName(op).c_str(), "dim1 can not be equal to dim2");
+    return GRAPH_FAILED;
+  }
+
+  std::vector<int64_t> x_shape_vec = x_shape.GetDims();
+  std::vector<int64_t> y_shape_vec;
+  for (int64_t dim = 0; dim < x_rank; dim++) {
+    if (dim != tmp_dim1 && dim != tmp_dim2) {
+      y_shape_vec.emplace_back(x_shape_vec[dim]);
+    }
+  }
+  int64_t dsize = UNKNOWN_DIM;
+  if (x_shape_vec[tmp_dim1] != UNKNOWN_DIM && x_shape_vec[tmp_dim2] != UNKNOWN_DIM) {
+    if (offset >= 0) {
+      dsize = std::max<int64_t>(std::min(x_shape_vec[tmp_dim1], x_shape_vec[tmp_dim2] - offset), 0);
+    } else {
+      dsize = std::max<int64_t>(std::min(x_shape_vec[tmp_dim1] + offset, x_shape_vec[tmp_dim2]), 0);
+    }
+  }
+  y_shape_vec.emplace_back(dsize);
+
+  Shape y_shape(y_shape_vec);
+  y_desc.SetShape(y_shape);
+  if (op.UpdateOutputDesc("y", y_desc) != GRAPH_SUCCESS) {
+    OP_LOGE(TbeGetName(op).c_str(), "update y failed");
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+CUST_INFER_FUNC_REG(Diagonal, DiagonalInfer);
+// ----------------Diagonal END-------------------
 }  // namespace ge
