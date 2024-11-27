@@ -1,6 +1,6 @@
 max:
   description: |
-    max(axis=None, keepdims=False, *, initial=None, where=None, return_indices=False) -> tuple(Tensor)
+    max(axis=None, keepdims=False, *, initial=None, where=True, return_indices=False) -> tuple(Tensor)
     
     Return the maximum of a tensor or maximum along an axis.
 

@@ -1,6 +1,6 @@
 nan_to_num:
   description: |
-    nan_to_num(nan, posinf, neginf) -> Tensor
+    nan_to_num(nan=None, posinf=None, neginf=None) -> Tensor
     
     Replace the `NaN`, positive infinity and negative infinity values of the `self` with the
     specified values in `nan`, `posinf` and `neginf` respectively.

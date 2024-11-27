@@ -1,6 +1,6 @@
 triu:
   description: |
-    triu(diagonal) -> Tensor
+    triu(diagonal=0) -> Tensor
     
     Returns the upper triangle part of 'self' (elements that contain the diagonal and below),
     and set the other elements to zeros.

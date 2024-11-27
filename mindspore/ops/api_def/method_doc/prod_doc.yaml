@@ -1,6 +1,6 @@
 prod:
   description: |
-    prod(dim, keepdim, dtype) -> Tensor
+    prod(dim=None, keepdim=False, dtype=None) -> Tensor
 
     Reduces a dimension of a tensor by multiplying all elements in the dimension, by default. And also can
     reduce a dimension of `self` along the `dim`. Determine whether the dimensions of the output and self are the

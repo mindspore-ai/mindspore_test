@@ -59,5 +59,5 @@ mindspore.nn.SmoothL1Loss
         - **RuntimeError** - `logits` 或 `labels` 的数据类型不是float16，float32，float64和bfloat16中的任一者。
         - **ValueError** - `logits` 与 `labels` 的shape不同。
         - **ValueError** - `reduction` 不是 ``'none'`` ， ``'mean'`` 和 ``'sum'`` 中的任一者。
-        - **RuntimeError** - `beta` 不是float，bool或int。
+        - **TypeError** - `beta` 不是float，bool或int。
         - **ValueError** - `beta` 小于等于0。

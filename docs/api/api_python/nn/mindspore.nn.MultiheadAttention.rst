@@ -32,7 +32,7 @@ mindspore.nn.MultiheadAttention
           当 `batch_first=True` 时，shape为 :math:`(N, S, E_k)`。其中， :math:`S` 为源序列的长度， :math:`N` 为batch size，:math:`E_k` 为Key矩阵的维数 `kdim`。数据类型：float16、float32或者float64。
         - **value** (Tensor) - Value矩阵。当输入非Batch数据时，shape为： :math:`(S, E_v)` 。当输入Batch数据，参数 `batch_first=False` 时，shape为 :math:`(S, N, E_v)` ，
           当 `batch_first=True` 时，shape为 :math:`(N, S, E_v)`。其中， :math:`S` 为源序列的长度， :math:`N` 为batch size，:math:`E_v` 为Key矩阵的维数 `vdim`。数据类型：float16、float32或者float64。
-        - **key_padding_mask** (Tensor, 可选) - 如果指定此值，则表示shape为 :math:`(N, S)`的掩码将被用于 `key`。当输入非Batch数据时，shape为： :math:`(S)` 。支持Bool和float类型。
+        - **key_padding_mask** (Tensor, 可选) - 如果指定此值，则表示shape为 :math:`(N, S)` 的掩码将被用于 `key`。当输入非Batch数据时，shape为： :math:`(S)` 。支持Bool和float类型。
           如果输入Tensor为Bool类型，则 `key` 中对应为 ``True`` 的位置将在Attention计算时被忽略。如果输入Tensor为float类型，则将直接与 `key` 相加。float支持数据类型：float16、float32或者float64。默认值：``None``。
         - **need_weights** (bool) - 是否需要返回 `attn_output_weights`，如果为 ``True``，则输出包含 `attn_output_weights`。默认值：``True``。
         - **attn_mask** (Tensor, 可选) - 如果指定此值，则表示shape为 :math:`(L, S)` 或 :math:`(N\cdot\text{num_heads}, L, S)` 的掩码将被用于Attention计算。其中 :math:`N` 为batch size，

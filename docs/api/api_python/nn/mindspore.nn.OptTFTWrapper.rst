@@ -1,7 +1,7 @@
 mindspore.nn.OptTFTWrapper
 ==========================
 
-.. py:class:: mindspore.nn.OptTFTWrapper(opt)
+.. py:class:: mindspore.nn.OptTFTWrapper(opt, **kwargs)
 
     实现TFT优化器封装器。该封装器将在优化器更新前向MindIO TFT上报状态。
 
