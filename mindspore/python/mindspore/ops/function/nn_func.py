@@ -7881,9 +7881,6 @@ def relu(input, inplace=False):
     .. image:: ../images/ReLU.png
         :align: center
 
-    warning:
-        This is an experimental API that is subject to change or deletion.
-
     Args:
         input (Tensor): The input Tensor.
         inplace (bool, optional): Whether to use inplace mode, Defaults to ``False``.
