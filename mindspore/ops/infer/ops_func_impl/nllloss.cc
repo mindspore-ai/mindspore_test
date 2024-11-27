@@ -65,7 +65,10 @@ ShapeArray NLLLossFuncImpl::InferShape(const PrimitivePtr &primitive, const Infe
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (device_target == kGPUDevice || device_target == kCPUDevice) {
+  auto jit_level = context_ptr->GetJitLevel();
+  auto execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
+  if (device_target == kGPUDevice || device_target == kCPUDevice ||
+      (execution_mode == kGraphMode && jit_level == "O2")) {
     auto logits_shape = input_infos[kInputIndex0]->GetShape();
     auto weight_shape = input_infos[kInputIndex2]->GetShape();
 
