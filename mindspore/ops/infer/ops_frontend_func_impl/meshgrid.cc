@@ -35,6 +35,14 @@ class MeshgridFrontendFuncImpl : public OpFrontendFuncImpl {
     auto input_type = input_abs->GetType();
     auto tuple_type = input_type->cast<TuplePtr>();
     auto elements = tuple_type->elements();
+    for (size_t i = 0; i < elements.size() - 1; ++i) {
+      auto type_ptr_x = elements[i]->cast<TensorTypePtr>();
+      MS_EXCEPTION_IF_NULL(type_ptr_x);
+      auto type_ptr_y = elements[i + 1]->cast<TensorTypePtr>();
+      MS_EXCEPTION_IF_NULL(type_ptr_y);
+      MS_CHECK_VALUE(type_ptr_x->element()->type_id() == type_ptr_y->element()->type_id(),
+                     "For Primitive [Meshgrid], all tensors should have the same type.");
+    }
     auto first_element = elements[kIndex0]->cast<TensorTypePtr>();
     auto element_type = first_element->element();
     AbstractBasePtrList output_list{};
@@ -56,6 +64,8 @@ class MeshgridFrontendFuncImpl : public OpFrontendFuncImpl {
     if (!indexing_opt.has_value()) {
       element_shape = ShapeVector(out_rank, abstract::TensorShape::kShapeDimAny);
     } else {
+      (void)CheckAndConvertUtils::CheckInteger("number of input tensors", SizeToLong(tuple_shape->size()), kGreaterThan,
+                                               1, primitive->name());
       auto indexing_res = static_cast<ops::Indexing>(indexing_opt.value());
       for (size_t i = 0; i < tuple_shape->size(); ++i) {
         auto single_shape = (*tuple_shape)[i]->GetShapeVector();

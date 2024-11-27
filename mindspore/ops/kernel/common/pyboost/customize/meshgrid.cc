@@ -36,6 +36,8 @@ std::vector<tensor::BaseTensorPtr> MeshgridCustomizeCall(const std::shared_ptr<O
   std::vector<BaseTensorPtr> tensors_list_vector;
 
   const auto &tensors_value = tensors_list->value();
+  MS_CHECK_VALUE(tensors_value.size() > 0,
+                 "For Primitive [Meshgrid], the size of input tensors must be greater than 0.");
   for (const auto &tensor : tensors_value) {
     if (tensor->isa<BaseTensor>()) {
       (void)tensors_list_vector.emplace_back(GetValue<BaseTensorPtr>(tensor));
