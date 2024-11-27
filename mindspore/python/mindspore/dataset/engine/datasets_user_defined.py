@@ -975,9 +975,11 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
     def split(self, sizes, randomize=True):
         if hasattr(self.source, "__getitem__"):
-            # If the source has __getitem__ attribute, call the split method of MappableDataset.
-            # Otherwise, call the split method of Dataset.
-            return super().split(sizes, randomize)
+            if not self.has_batch_sampler:
+                # If the source has __getitem__ attribute, call the split method of MappableDataset.
+                # Otherwise, call the split method of Dataset.
+                return super().split(sizes, randomize)
+            logger.warning("The performance of split will be degraded since batch_sampler is detected.")
         return super(MappableDataset, self).split(sizes, randomize)
 
     def prepare_multiprocessing(self):

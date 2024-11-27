@@ -239,6 +239,7 @@ Status GeneratorOp::GetNextBatchSize() {
     if (!batch_sizes_of_epoch_.empty()) {
       size_of_this_batch_ = batch_sizes_of_epoch_.front();
       batch_sizes_of_epoch_.pop_front();
+      CHECK_FAIL_RETURN_UNEXPECTED(size_of_this_batch_ > 0, "Batch sampler should return a list, but got an integer.");
     }
   }
   return Status::OK();

@@ -2930,6 +2930,17 @@ class SimpleBatchSampler:
         return iter(self.indices)
 
 
+class SimpleDataset:
+    def __init__(self):
+        self.data = [np.array([i], dtype=np.int32) for i in range(10)]
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def __len__(self):
+        return len(self.data)
+
+
 @pytest.mark.parametrize("debug_mode", (False, True))
 def test_generator_with_batch_sampler(debug_mode):
     """
@@ -2940,16 +2951,6 @@ def test_generator_with_batch_sampler(debug_mode):
 
     original_mode = ds.config.get_debug_mode()
     ds.config.set_debug_mode(debug_mode)
-
-    class SimpleDataset:
-        def __init__(self):
-            self.data = [np.array([i], dtype=np.int32) for i in range(10)]
-
-        def __getitem__(self, index):
-            return self.data[index]
-
-        def __len__(self):
-            return len(self.data)
 
     dataset = ds.GeneratorDataset(SimpleDataset(), column_names=["data"], batch_sampler=SimpleBatchSampler())
 
@@ -2964,6 +2965,21 @@ def test_generator_with_batch_sampler(debug_mode):
         np.testing.assert_array_equal(data["data"], np.array(expected_res[i], dtype=np.int32))
 
     ds.config.set_debug_mode(original_mode)
+
+
+def test_generator_with_batch_sampler_and_split():
+    """
+    Feature: BatchSampler
+    Description: Test GeneratorDataset with batch_sampler and split
+    Expectation: Result is as expected
+    """
+
+    dataset = ds.GeneratorDataset(SimpleDataset(), column_names=["data"], batch_sampler=SimpleBatchSampler())
+    train_dataset, _ = dataset.split(sizes=[3, 2], randomize=False)
+
+    expected_res = [[[0], [1]], [[2], [3]], [[4], [5]]]
+    for i, data in enumerate(train_dataset.create_dict_iterator(output_numpy=True, num_epochs=1)):
+        np.testing.assert_array_equal(data["data"], np.array(expected_res[i], dtype=np.int32))
 
 
 @pytest.mark.parametrize("debug_mode", (False, True))
@@ -3097,6 +3113,20 @@ def test_generator_invalid_batch_sampler():
                                 batch_sampler=SimpleBatchSampler())
     assert "batch_sampler is not supported if source does not have attribute '__getitem__'" in str(e.value)
 
+    with pytest.raises(RuntimeError) as e:
+        dataset = ds.GeneratorDataset(source=DatasetGenerator(), column_names=["data"],
+                                      batch_sampler=[1, 2, 3])
+        for _ in dataset.create_dict_iterator(num_epochs=1):
+            pass
+    assert "Batch sampler should return a list, but got an integer" in str(e.value)
+
+    with pytest.raises(RuntimeError) as e:
+        dataset = ds.GeneratorDataset(source=DatasetGenerator(), column_names=["data"],
+                                      batch_sampler=[["1"], ["2"], ["3"]])
+        for _ in dataset.create_dict_iterator(num_epochs=1):
+            pass
+    assert "Python sampler should return index of type integer" in str(e.value)
+
 
 def test_generator_invalid_collate_fn():
     """
@@ -3190,6 +3220,7 @@ if __name__ == "__main__":
     test_generator_dataset_getitem_two_level_pipeline()
     test_generator_dataset_getitem_exception()
     test_generator_with_batch_sampler(False)
+    test_generator_with_batch_sampler_and_split()
     test_generator_with_collate_fn(False)
     test_generator_with_batch_sampler_in_recovery_mode()
     test_generator_batch_sampler_exclusive_with_other_param({"num_samples": 1})
