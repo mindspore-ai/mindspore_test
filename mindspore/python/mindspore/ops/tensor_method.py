@@ -694,7 +694,7 @@ def tensor_min(input):
 
 def deprecated_tensor_min(input, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
     if isinstance(axis, (list, tuple)):
-        reduce_min = P.ReduceMin()
+        reduce_min = P.ReduceMin
         minimum = F.minimum
         return utils.reduce_(input, reduce_min(keepdims), cmp_fn=minimum, axis=axis, keepdims=keepdims,
                              initial=initial, where=where)

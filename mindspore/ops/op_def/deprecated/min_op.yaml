@@ -15,7 +15,8 @@ min:
       default: None
     where:
       dtype: tensor
-      default: None
+      type_cast: bool
+      default: True
     return_indices:
       dtype: bool
       default: False
