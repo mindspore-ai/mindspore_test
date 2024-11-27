@@ -395,5 +395,23 @@ REG_FALLBACK_BUILDER("EqualCount").SetBody(BODYFUNC(ib) {
   }
   return {result};
 });
+
+REG_FALLBACK_BUILDER("PowTensorScalar").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto exponent = ib->GetInput(kIndex1);
+
+  auto exp_tensor = ib->ScalarToTensor(exponent, exponent->dtype());
+  auto out = ib->Pow(input, exp_tensor);
+  return {out};
+});
+
+REG_FALLBACK_BUILDER("PowScalarTensor").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto exponent = ib->GetInput(kIndex1);
+
+  auto input_tensor = ib->ScalarToTensor(input, input->dtype());
+  auto out = ib->Pow(input_tensor, exponent);
+  return {out};
+});
 }  // namespace expander
 }  // namespace mindspore
