@@ -31,10 +31,7 @@ AnfNodePtr ReduceExtendGetCastInputByDtype(const FuncGraphPtr &func_graph, const
 
   auto src_type_id = GetSingleNodeOutputTypeId(input);
   MS_CHECK_TRUE_MSG(src_type_id != kTypeUnknown, nullptr, "get src_type_id failed.");
-  auto dtype_value_node_ptr = dtype->cast<ValueNodePtr>();
-  MS_CHECK_TRUE_MSG(dtype_value_node_ptr != nullptr, nullptr, "dtype cannot be converted to a ValueNode.");
-  auto dtype_value_ptr = utils::cast<ValuePtr>(dtype_value_node_ptr->value());
-  if (dtype_value_ptr->isa<None>()) {
+  if (IsValueNode<None>(dtype)) {
     const std::set<TypeId> kIntergralSet = {kNumberTypeBool, kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16,
                                             kNumberTypeInt32};
     if (kIntergralSet.find(src_type_id) != kIntergralSet.end()) {
@@ -45,6 +42,9 @@ AnfNodePtr ReduceExtendGetCastInputByDtype(const FuncGraphPtr &func_graph, const
     return input;
   }
 
+  auto dtype_value_node_ptr = dtype->cast<ValueNodePtr>();
+  MS_CHECK_TRUE_MSG(dtype_value_node_ptr != nullptr, nullptr, "dtype cannot be converted to a ValueNode.");
+  auto dtype_value_ptr = utils::cast<ValuePtr>(dtype_value_node_ptr->value());
   auto dst_type_id = static_cast<TypeId>(GetValue<int64_t>(dtype_value_ptr));
   return dst_type_id != src_type_id ? GetCastNode(func_graph, input, dst_type_id) : input;
 }
@@ -54,9 +54,6 @@ AnfNodePtr ConvertSumExtPass(const FuncGraphPtr &func_graph, const mindspore::An
   auto sum_ext_cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(sum_ext_cnode != nullptr, nullptr);
   MS_CHECK_TRUE_RET(sum_ext_cnode->size() == kInputSizeFive, nullptr);
-  if (IsMarkedTrainOp(sum_ext_cnode)) {
-    return nullptr;
-  }
   if (!CheckPrimitiveType(sum_ext_cnode, prim::kPrimSumExt)) {
     return nullptr;
   }
@@ -64,10 +61,7 @@ AnfNodePtr ConvertSumExtPass(const FuncGraphPtr &func_graph, const mindspore::An
   auto input = ReduceExtendGetCastInputByDtype(func_graph, sum_ext_cnode);
   MS_CHECK_TRUE_MSG(input != nullptr, nullptr, "input is invalid.");
   auto axis = sum_ext_cnode->input(kInputIndexTwo);
-  auto axis_value_node_ptr = axis->cast<ValueNodePtr>();
-  MS_CHECK_TRUE_MSG(axis_value_node_ptr != nullptr, nullptr, "axis cannot be converted to a ValueNode.");
-  auto axis_value_ptr = utils::cast<ValuePtr>(axis_value_node_ptr->value());
-  if (axis_value_ptr->isa<None>()) {
+  if (IsValueNode<None>(axis)) {
     auto new_axis_value = MakeValue<std::vector<int64_t>>({});
     auto new_axis = NewValueNode(new_axis_value);
     new_axis->set_scope(axis->scope());

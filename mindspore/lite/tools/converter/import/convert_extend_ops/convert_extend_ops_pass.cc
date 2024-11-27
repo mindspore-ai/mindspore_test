@@ -27,6 +27,9 @@ namespace mindspore::opt {
 namespace {
 constexpr auto kNameSumExtPatternName = "SumExtPatternName";
 constexpr auto kNameMatMulExtPatternName = "MatMulExtPatternName";
+constexpr auto kNameMaxPatternName = "MaxPatternName";
+constexpr auto kNameMinPatternName = "MinPatternName";
+constexpr auto kNameDensePatternName = "DensePatternName";
 }  // namespace
 
 VectorRef ConvertExtendOpsPass::DefineSumExtPattern() const {
@@ -55,10 +58,44 @@ VectorRef ConvertExtendOpsPass::DefineMatMulExtPattern() const {
   return matmul_ext_ref;
 }
 
+VectorRef ConvertExtendOpsPass::DefineMaxPattern() const {
+  auto is_max = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimMax>);
+  MS_CHECK_TRUE_RET(is_max != nullptr, {});
+  auto input = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(input != nullptr, {});
+  VectorRef max_ref = VectorRef({is_max, input});
+  return max_ref;
+}
+
+VectorRef ConvertExtendOpsPass::DefineMinPattern() const {
+  auto is_min = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimMin>);
+  MS_CHECK_TRUE_RET(is_min != nullptr, {});
+  auto input = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(input != nullptr, {});
+  VectorRef min_ref = VectorRef({is_min, input});
+  return min_ref;
+}
+
+VectorRef ConvertExtendOpsPass::DefineDensePattern() const {
+  auto is_dense = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimDense>);
+  MS_CHECK_TRUE_RET(is_dense != nullptr, {});
+  auto input = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(input != nullptr, {});
+  auto weight = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(weight != nullptr, {});
+  auto bias = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(bias != nullptr, {});
+  VectorRef dense_ref = VectorRef({is_dense, input, weight, bias});
+  return dense_ref;
+}
+
 std::unordered_map<std::string, VectorRef> ConvertExtendOpsPass::DefinePatterns() const {
   std::unordered_map<std::string, VectorRef> patterns;
   patterns[kNameSumExtPatternName] = DefineSumExtPattern();
   patterns[kNameMatMulExtPatternName] = DefineMatMulExtPattern();
+  patterns[kNameMaxPatternName] = DefineMaxPattern();
+  patterns[kNameMinPatternName] = DefineMinPattern();
+  patterns[kNameDensePatternName] = DefineDensePattern();
   return patterns;
 }
 
@@ -74,7 +111,9 @@ AnfNodePtr ConvertExtendOpsPass::Process(const std::string &pattern_name, const 
   static std::unordered_map<std::string, ConvertExtendOpsSubPass> sub_pass_map = {
     {kNameSumExtPatternName, ConvertSumExtPass},
     {kNameMatMulExtPatternName, ConvertMatMulExtPass},
-  };
+    {kNameMaxPatternName, ConvertMaxMinPass},
+    {kNameMinPatternName, ConvertMaxMinPass},
+    {kNameDensePatternName, ConvertDensePass}};
 
   if (sub_pass_map.find(pattern_name) != sub_pass_map.end()) {
     MS_LOG(INFO) << "The node " << node->fullname_with_scope() << " is matched pattern[" << pattern_name

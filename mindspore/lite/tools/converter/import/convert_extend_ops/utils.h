@@ -27,6 +27,8 @@ AnfNodePtr GetReshapeNode(const FuncGraphPtr &func_graph, const mindspore::AnfNo
                           const ShapeVector &dst_shape);
 AnfNodePtr GetBroadcastToNode(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node,
                               const ShapeVector &dst_shape);
+AnfNodePtr GetMatMulNode(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &input,
+                         const mindspore::AnfNodePtr &other, const bool &transpose_a, const bool &transpose_b);
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_LITE_TOOLS_CONVERTER_IMPORT_CONVERT_EXTEND_OPS_UTILS_H_

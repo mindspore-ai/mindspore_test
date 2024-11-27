@@ -87,45 +87,6 @@ AnfNodePtr GetExpandNode(const FuncGraphPtr &func_graph, const mindspore::AnfNod
   return GetReshapeNode(func_graph, node, shape_vec);
 }
 
-AnfNodePtr GetMatMulNode(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &input,
-                         const mindspore::AnfNodePtr &other, const bool &transpose_a = false,
-                         const bool &transpose_b = false) {
-  auto matmul_prim = std::make_shared<Primitive>(prim::kPrimMatMul->name());
-  MS_CHECK_TRUE_MSG(matmul_prim != nullptr, nullptr, "create MatMul Primitive failed.");
-  matmul_prim->AddAttr("primitive_function", MakeValue<bool>(true));
-  matmul_prim->AddAttr("transpose_a", MakeValue<bool>(transpose_a));
-  matmul_prim->AddAttr("transpose_b", MakeValue<bool>(transpose_b));
-  std::vector<AnfNodePtr> matmul_inputs = {NewValueNode(matmul_prim), input, other};
-  auto matmul_node = func_graph->NewCNode(matmul_inputs);
-  MS_CHECK_TRUE_MSG(matmul_node != nullptr, nullptr, "create MatMul CNode failed.");
-
-  auto input_shape_vec = GetNodeShape(input);
-  auto other_shape_vec = GetNodeShape(other);
-  ShapeVector out_shape_vec = {kMatMulRank, abstract::TensorShape::kShapeDimAny};
-  out_shape_vec[kIndex0] = transpose_a ? input_shape_vec[kIndex1] : input_shape_vec[kIndex0];
-  out_shape_vec[kIndex1] = transpose_b ? other_shape_vec[kIndex0] : other_shape_vec[kIndex1];
-
-  auto input_type_id = GetSingleNodeOutputTypeId(input);
-  MS_CHECK_TRUE_MSG(input_type_id != kTypeUnknown, nullptr, "get input_type_id failed.");
-  auto matmul_type_id = input_type_id;
-
-  auto context_ptr = MsContext::GetInstance();
-  MS_CHECK_TRUE_MSG(context_ptr != nullptr, nullptr, "get context failed.");
-  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  if (input_type_id == kNumberTypeInt8 && device_target == kAscendDevice) {
-    matmul_type_id = kNumberTypeInt32;
-  }
-
-  auto matmul_abs = std::make_shared<mindspore::abstract::AbstractTensor>(TypeIdToType(matmul_type_id), out_shape_vec);
-  matmul_node->set_abstract(matmul_abs);
-
-  if (input_type_id != matmul_type_id) {
-    return GetCastNode(func_graph, matmul_node, input_type_id);
-  }
-
-  return matmul_node;
-}
-
 AnfNodePtr GetBatchMatMulNode(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &input,
                               const mindspore::AnfNodePtr &other, const bool &transpose_a = false,
                               const bool &transpose_b = false) {
@@ -168,13 +129,49 @@ AnfNodePtr GetBatchMatMulNode(const FuncGraphPtr &func_graph, const mindspore::A
 }
 }  // namespace
 
+AnfNodePtr GetMatMulNode(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &input,
+                         const mindspore::AnfNodePtr &other, const bool &transpose_a = false,
+                         const bool &transpose_b = false) {
+  auto matmul_prim = std::make_shared<Primitive>(prim::kPrimMatMul->name());
+  MS_CHECK_TRUE_MSG(matmul_prim != nullptr, nullptr, "create MatMul Primitive failed.");
+  matmul_prim->AddAttr("primitive_function", MakeValue<bool>(true));
+  matmul_prim->AddAttr("transpose_a", MakeValue<bool>(transpose_a));
+  matmul_prim->AddAttr("transpose_b", MakeValue<bool>(transpose_b));
+  std::vector<AnfNodePtr> matmul_inputs = {NewValueNode(matmul_prim), input, other};
+  auto matmul_node = func_graph->NewCNode(matmul_inputs);
+  MS_CHECK_TRUE_MSG(matmul_node != nullptr, nullptr, "create MatMul CNode failed.");
+
+  auto input_shape_vec = GetNodeShape(input);
+  auto other_shape_vec = GetNodeShape(other);
+  ShapeVector out_shape_vec = {kMatMulRank, abstract::TensorShape::kShapeDimAny};
+  out_shape_vec[kIndex0] = transpose_a ? input_shape_vec[kIndex1] : input_shape_vec[kIndex0];
+  out_shape_vec[kIndex1] = transpose_b ? other_shape_vec[kIndex0] : other_shape_vec[kIndex1];
+
+  auto input_type_id = GetSingleNodeOutputTypeId(input);
+  MS_CHECK_TRUE_MSG(input_type_id != kTypeUnknown, nullptr, "get input_type_id failed.");
+  auto matmul_type_id = input_type_id;
+
+  auto context_ptr = MsContext::GetInstance();
+  MS_CHECK_TRUE_MSG(context_ptr != nullptr, nullptr, "get context failed.");
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (input_type_id == kNumberTypeInt8 && device_target == kAscendDevice) {
+    matmul_type_id = kNumberTypeInt32;
+  }
+
+  auto matmul_abs = std::make_shared<mindspore::abstract::AbstractTensor>(TypeIdToType(matmul_type_id), out_shape_vec);
+  matmul_node->set_abstract(matmul_abs);
+
+  if (input_type_id != matmul_type_id) {
+    return GetCastNode(func_graph, matmul_node, input_type_id);
+  }
+
+  return matmul_node;
+}
+
 AnfNodePtr ConvertMatMulExtPass(const FuncGraphPtr &func_graph, const mindspore::AnfNodePtr &node) {
   auto matmul_ext_cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(matmul_ext_cnode != nullptr, nullptr);
   MS_CHECK_TRUE_RET(matmul_ext_cnode->size() == kInputSizeThree, nullptr);
-  if (IsMarkedTrainOp(matmul_ext_cnode)) {
-    return nullptr;
-  }
   if (!CheckPrimitiveType(matmul_ext_cnode, prim::kPrimMatMulExt)) {
     return nullptr;
   }
