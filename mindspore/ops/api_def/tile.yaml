@@ -4,11 +4,11 @@ tile:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: method
+    interface: tensor
 
   - op_yaml: deprecated/tile_op.yaml
     py_method: deprecated_tensor_tile
     Ascend: py_method
     CPU: py_method
     GPU: py_method
-    interface: method
+    interface: tensor

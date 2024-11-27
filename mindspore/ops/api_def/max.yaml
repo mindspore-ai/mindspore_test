@@ -4,11 +4,11 @@ max:
     Ascend: py_method
     CPU: py_method
     GPU: py_method
-    interface: method
+    interface: tensor
 
   - op_yaml: max_op.yaml
     py_method: tensor_max
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: method
+    interface: tensor
