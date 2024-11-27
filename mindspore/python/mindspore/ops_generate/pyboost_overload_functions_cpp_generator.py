@@ -414,7 +414,13 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         """
         mint_func_reg_list = []
         for func_name in mint_func_protos_data.keys():
-            formatted_class_name = pyboost_utils.format_func_api_name(func_name)
-            mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=formatted_class_name,
-                                                                            cpp_func_name=formatted_class_name))
+            api_def_list = mint_func_protos_data[func_name]
+            mint_func_name = pyboost_utils.format_func_api_name(func_name)
+            if len(api_def_list) == 1:
+                cpp_func_name = pyboost_utils.format_func_api_name(mint_func_protos_data[func_name][0].op_proto.op_name)
+            elif len(api_def_list) > 1:
+                cpp_func_name = pyboost_utils.format_func_api_name(func_name)
+
+            mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=mint_func_name,
+                                                                            cpp_func_name=cpp_func_name))
         return mint_func_reg_list
