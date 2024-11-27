@@ -68,15 +68,21 @@ TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::ve
   auto is_calc_stat = [&stat_name_list](std::string name) {
     return (std::find(stat_name_list.begin(), stat_name_list.end(), name) != stat_name_list.end());
   };
-  std::string max_value =
-    is_calc_stat("max") ? TensorToString(CalStatistic("max", tensor_info.device_context, tensor, stream_id)) : "0";
-  std::string min_value =
-    is_calc_stat("min") ? TensorToString(CalStatistic("min", tensor_info.device_context, tensor, stream_id)) : "0";
-  std::string mean_value =
-    is_calc_stat("avg") ? TensorToString(CalStatistic("avg", tensor_info.device_context, tensor, stream_id)) : "0";
-  std::string norm_value = is_calc_stat("l2norm")
-                             ? TensorToString(CalStatistic("l2norm", tensor_info.device_context, tensor, stream_id))
-                             : "0";
+  std::string max_value = data_type == "none" ? "null" : "0";
+  std::string min_value = data_type == "none" ? "null" : "0";
+  std::string mean_value = data_type == "none" ? "null" : "0";
+  std::string norm_value = data_type == "none" ? "null" : "0";
+  if (data_type != "none" && data_size != 0) {
+    max_value =
+      is_calc_stat("max") ? TensorToString(CalStatistic("max", tensor_info.device_context, tensor, stream_id)) : "0";
+    min_value =
+      is_calc_stat("min") ? TensorToString(CalStatistic("min", tensor_info.device_context, tensor, stream_id)) : "0";
+    mean_value =
+      is_calc_stat("avg") ? TensorToString(CalStatistic("avg", tensor_info.device_context, tensor, stream_id)) : "0";
+    norm_value = is_calc_stat("l2norm")
+                   ? TensorToString(CalStatistic("l2norm", tensor_info.device_context, tensor, stream_id))
+                   : "0";
+  }
 
   size_t task_id = 0;  // Under the kbyk, there is no concept of task_id. The default setting is 0.
   uint64_t timestamp = Common::GetTimeStamp();
@@ -113,6 +119,9 @@ void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::D
     auto tensor = tensors[i]->kernel_tensor().get();
     DumpTensorInfo tensor_info(device_context, tensor, is_input, i, node_name, node_type);
     auto stat = GetKernelTensorStats(tensor_info, stat_name_list, stream_id);
+    if (stat.data_size_ == 0) {
+      continue;
+    }
     stat.UpdateHeaderItemMap();
 
     csv.WriteToCsv(stat.type_);
