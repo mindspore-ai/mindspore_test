@@ -27,17 +27,17 @@ nllloss:
             This is an experimental API that is subject to change or deletion.
             
         Args:
-            - **weight** (Tensor, optional) - The rescaling weight to each class, with shape :math:`(C,)` and data type only
+            weight (Tensor, optional): The rescaling weight to each class, with shape :math:`(C,)` and data type only
               supports float32 or float16 or bfloat16(only supported by Atlas A2 training series products). It should
               have the same data type as `logits` . Default: ``'None'`` .
-            - **reduction** (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
                 ``'sum'`` . Default: ``'mean'`` .
     
                 - ``'none'``: no reduction will be applied.
                 - ``'mean'``: compute and return the weighted mean of elements in the output.
                 - ``'sum'``: the output elements will be summed.
     
-            - **ignore_index** (int, optional): Specifies a target value that is ignored
+            ignore_index (int, optional): Specifies a target value that is ignored
                 and does not contribute to the input gradient. Default: ``-100`` .
     
         Inputs:
@@ -51,8 +51,8 @@ nllloss:
     
             - **loss** (Tensor) - When `reduction` is ``'none'`` and `logits` is a 2D tensor,
               the `loss` shape is :math:`(N,)`. Otherwise, the `loss` is a scalar.
-              The data type is the same with `input's`.
-            - **total_weight** (Tensor) - The `total_weight` is a scalar. The data type is the same with `weight's`.
+              The data type is the same with that of `logits`.
+            - **total_weight** (Tensor) - The `total_weight` is a scalar. The data type is the same with that of `weight`.
        
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
