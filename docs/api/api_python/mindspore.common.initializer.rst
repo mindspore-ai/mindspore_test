@@ -29,7 +29,7 @@ mindspore.common.initializer
         - **dtype** (mindspore.dtype) - 被初始化的Tensor的数据类型，默认值： ``mstype.float32`` 。
 
     返回：
-        Tensor。
+        返回shape是入参 `shape` 的Tensor。如果 `shape` 是 ``None``，返回Tensor的shape是 `init` 的shape。
 
     异常：
         - **TypeError** - 参数 `init` 的类型不正确。
