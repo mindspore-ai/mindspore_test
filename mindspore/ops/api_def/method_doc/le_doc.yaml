@@ -2,7 +2,7 @@ le:
   description: |
     le(other) -> Tensor
 
-    Computes the boolean value of :math: `self <= other` element-wise.
+    Computes the boolean value of :math:`self <= other` element-wise.
 
     .. math::
 

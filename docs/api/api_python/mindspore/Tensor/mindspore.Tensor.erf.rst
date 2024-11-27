@@ -23,5 +23,5 @@ mindspore.Tensor.erf
         - **TypeError** - `self` 不是Tensor。
         - **TypeError** - `self` 的数据类型不是如下类型：
 
-            - Ascend： float16、float32、int64、bool。
-            - GPU/CPU： float16、float32、float64。
+          - Ascend： float16、float32、int64、bool。
+          - GPU/CPU： float16、float32、float64。

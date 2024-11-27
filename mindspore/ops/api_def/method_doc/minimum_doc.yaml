@@ -18,7 +18,7 @@ minimum:
         - If one of the elements being compared is a NaN, then that element is returned.
 
     Args:
-        other (Union[Tensor, Number, bool]): The input is a number or
+        other (Union[Tensor, number.Number, bool]): The input is a number or
             a bool or a tensor whose data type is number or bool.
 
     Returns:
