@@ -530,10 +530,16 @@ void CheckAbstractConsistency(const AbstractBasePtrList &compile_abstracts, cons
   }
 }
 
+class JitCompilingScope {
+ public:
+  JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kJitCompiling); }
+  ~JitCompilingScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
+};
+
 class JitRunningScope {
  public:
-  JitRunningScope() { MsContext::GetInstance()->set_jit_running(true); }
-  ~JitRunningScope() { MsContext::GetInstance()->set_jit_running(false); }
+  JitRunningScope() { MsContext::GetInstance()->set_jit_status(kJitRunning); }
+  ~JitRunningScope() { MsContext::GetInstance()->set_jit_status(kNotJit); }
 };
 }  // namespace
 
@@ -1156,7 +1162,7 @@ void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
 
 bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &args, const py::dict &kwargs,
                                    const std::string &phase, bool use_vm, bool trace_flag) {
-  JitRunningScope jit_running_scope;
+  JitCompilingScope jit_compiling_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);
@@ -1218,7 +1224,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
 
 bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &args, const py::dict &kwargs,
                                    const py::object &phase, bool use_vm) {
-  JitRunningScope jit_running_scope;
+  JitCompilingScope jit_compiling_scope;
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);

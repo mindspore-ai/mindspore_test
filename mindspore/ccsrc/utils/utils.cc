@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -479,10 +479,22 @@ std::string GetPythonStackStr() {
   return ss.str();
 }
 
+bool IsJit() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  return (context->jit_status() == JitStatus::kJitCompiling) || (context->jit_status() == JitStatus::kJitRunning);
+}
+
+bool JitCompiling() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  return context->jit_status() == JitStatus::kJitCompiling;
+}
+
 bool JitRunning() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  return context->jit_running();
+  return context->jit_status() == JitStatus::kJitRunning;
 }
 
 AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node) {

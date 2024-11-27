@@ -363,6 +363,11 @@ COMMON_EXPORT bool SkipOrResetSyncAction(bool need_reset = false);
 // Return vec<filename, line number, function name>
 COMMON_EXPORT std::vector<std::tuple<std::string, int, std::string>> GetPythonStack();
 COMMON_EXPORT std::string GetPythonStackStr();
+
+// Return whether it is jit.
+COMMON_EXPORT bool IsJit();
+// Return whether it is compiling in jit compilation.
+COMMON_EXPORT bool JitCompiling();
 // Return whether it is running in jit compilation.
 COMMON_EXPORT bool JitRunning();
 
