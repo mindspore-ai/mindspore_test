@@ -236,7 +236,6 @@ BACKEND_EXPORT void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
 BACKEND_EXPORT void GatherHash(const mindspore::tensor::TensorPtr &);
 BACKEND_EXPORT void GatherHash(const std::optional<tensor::TensorPtr> &);
 BACKEND_EXPORT void GatherHash(const std::vector<tensor::TensorPtr> &);
-BACKEND_EXPORT void GatherHash(const std::vector<int64_t> &);
 
 template <typename T>
 BACKEND_EXPORT void GatherHash(const T &value) {

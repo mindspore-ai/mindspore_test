@@ -76,6 +76,7 @@ tensor::BaseTensorPtr IncreFlashAttentionAscendCustomize(
   std::vector<BaseTensorPtr> key_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(key_tensor_list);
   std::vector<BaseTensorPtr> value_tensor_list_vector = ConvertValueTupleToVector<BaseTensorPtr>(value_tensor_list);
   auto actual_seq_lengths_vector = ConvertActualSeqLengthsToVector(actual_seq_lengths_tensor);
+  auto actual_seq_lengths_vector_pair = std::make_pair(actual_seq_lengths_vector, true);
   // Convert ValuePtr to c++ scalar
   // Convert ValuePtr to c++ scalar
   auto num_heads_imm = GetValue<int64_t>(num_heads);
@@ -97,9 +98,10 @@ tensor::BaseTensorPtr IncreFlashAttentionAscendCustomize(
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
     [op, query_tensor, key_tensor_list_vector, value_tensor_list_vector, pse_shift_tensor, attn_mask_tensor,
-     actual_seq_lengths_vector, dequant_scale1_tensor, quant_scale1_tensor, dequant_scale2_tensor, quant_scale2_tensor,
-     quant_offset2_tensor, antiquant_scale_tensor, antiquant_offset_tensor, block_table_tensor, kv_padding_size_tensor,
-     num_heads_imm, scale_value_imm_d, input_layout_str, num_key_value_heads_imm, block_size_imm, inner_precise_imm]() {
+     actual_seq_lengths_vector_pair, dequant_scale1_tensor, quant_scale1_tensor, dequant_scale2_tensor,
+     quant_scale2_tensor, quant_offset2_tensor, antiquant_scale_tensor, antiquant_offset_tensor, block_table_tensor,
+     kv_padding_size_tensor, num_heads_imm, scale_value_imm_d, input_layout_str, num_key_value_heads_imm,
+     block_size_imm, inner_precise_imm]() {
       const string op_name = "IncreFlashAttention";
       MS_LOG(DEBUG) << "Run device task " << op_name << " start";
       auto device_context = op->device_context();
@@ -114,7 +116,7 @@ tensor::BaseTensorPtr IncreFlashAttentionAscendCustomize(
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
       LAUNCH_ACLNN(aclnnIncreFlashAttentionV4, device_context, op->stream_id(), query_tensor, key_tensor_list_vector,
-                   value_tensor_list_vector, pse_shift_tensor, attn_mask_tensor, actual_seq_lengths_vector,
+                   value_tensor_list_vector, pse_shift_tensor, attn_mask_tensor, actual_seq_lengths_vector_pair,
                    dequant_scale1_tensor, quant_scale1_tensor, dequant_scale2_tensor, quant_scale2_tensor,
                    quant_offset2_tensor, antiquant_scale_tensor, antiquant_offset_tensor, block_table_tensor,
                    kv_padding_size_tensor, num_heads_imm, scale_value_imm_d, input_layout_str, num_key_value_heads_imm,
