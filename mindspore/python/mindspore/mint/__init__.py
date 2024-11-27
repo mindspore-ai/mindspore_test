@@ -406,6 +406,9 @@ from mindspore.ops.function.math_func import var_mean_ext as var_mean
 # 610
 from mindspore.ops.function.math_func import nan_to_num
 
+# 613
+from mindspore.ops.auto_generate import nansum
+
 # 664
 from mindspore.ops.function.array_func import meshgrid_ext as meshgrid
 
@@ -2240,6 +2243,9 @@ __all__ = [
 
     # 610
     'nan_to_num',
+
+    # 613
+    'nansum',
 
     # 664
     'meshgrid',
