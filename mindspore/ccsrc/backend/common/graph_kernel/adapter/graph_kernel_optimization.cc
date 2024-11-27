@@ -269,7 +269,7 @@ PassManagerPtr GraphKernelOptimizer::Combine() const {
   pm->Add(std::make_shared<ParallelOpFusion>(target, ParallelConfig(PARALLEL_OPS_LIMIT)), level, is_gpu || is_ascend);
 
   // For memory efficiency, insert UpdateState for op with no cnode/param inputs to avoid early launching
-  pm->Add(std::make_shared<CompactTensorLiveness>(), OptLevel_2);
+  pm->Add(std::make_shared<CompactTensorLiveness>(), OptLevel_2, is_gpu);
   return pm;
 }
 
