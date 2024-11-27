@@ -609,7 +609,10 @@ FunctionSignature::FunctionSignature(const std::string &fmt, int index) : max_ar
 ops::OP_DTYPE GetOpDtype(const std::string &type_str) {
   auto it = type_str_map.find(type_str);
   if (it == type_str_map.end()) {
-    MS_LOG(EXCEPTION) << "Parse function parameter failed! invalid type string:" << type_str;
+    it = type_not_in_yaml_str_map.find(type_str);
+    if (it == type_not_in_yaml_str_map.end()) {
+      MS_LOG(EXCEPTION) << "Parse function parameter failed! invalid type string:" << type_str;
+    }
   }
   return it->second;
 }
@@ -728,6 +731,8 @@ bool CheckListType(const py::object &obj, const ops::OP_DTYPE &type) {
   switch (type) {
     case OP_DTYPE::DT_LIST_TENSOR:
       return is_tensor_list<py::list>(obj);
+    case OP_DTYPE::DT_LIST_ANY:
+      return py::isinstance<py::list>(obj);
     case OP_DTYPE::DT_LIST_INT:
       return check_list_type<py::list, py::int_>(obj);
     case OP_DTYPE::DT_LIST_FLOAT:
@@ -738,6 +743,8 @@ bool CheckListType(const py::object &obj, const ops::OP_DTYPE &type) {
       return check_list_type<py::list, py::str>(obj);
     case OP_DTYPE::DT_LIST_NUMBER:
       return is_scalar_list<py::list>(obj);
+    case OP_DTYPE::DT_TUPLE_ANY:
+      return py::isinstance<py::tuple>(obj);
     case OP_DTYPE::DT_TUPLE_INT:
       return check_list_type<py::tuple, py::int_>(obj);
     case OP_DTYPE::DT_TUPLE_FLOAT:

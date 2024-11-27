@@ -1,0 +1,7 @@
+sqrt:
+  op_yaml: sqrt_op.yaml
+  py_method: tensor_sqrt
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

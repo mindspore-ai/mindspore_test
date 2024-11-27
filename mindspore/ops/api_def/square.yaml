@@ -1,0 +1,7 @@
+square:
+  op_yaml: square_op.yaml
+  py_method: tensor_square
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor

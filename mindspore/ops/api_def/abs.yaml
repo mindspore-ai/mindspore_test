@@ -1,0 +1,7 @@
+abs:
+  op_yaml: abs_op.yaml
+  py_method: tensor_abs
+  Ascend: pyboost
+  CPU: pyboost
+  GPU: pyboost
+  interface: tensor
