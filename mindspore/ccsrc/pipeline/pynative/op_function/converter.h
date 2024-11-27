@@ -49,12 +49,6 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
   {"str", ops::OP_DTYPE::DT_STR},
   {"type", ops::OP_DTYPE::DT_TYPE},
 };
-
-static std::unordered_map<std::string, ops::OP_DTYPE> type_not_in_yaml_str_map = {
-  {"tuple[any]", ops::OP_DTYPE::DT_TUPLE_ANY},
-  {"list[any]", ops::OP_DTYPE::DT_LIST_ANY},
-};
-
 // information of single parameter
 struct FunctionParameter {
   explicit FunctionParameter(const std::string &fmt);
