@@ -17,12 +17,13 @@ import pytest
 import mindspore as ms
 from mindspore import ops, mint, Tensor, jit, JitConfig, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.st.utils import test_utils
 
 
 def generate_random_input(shape, dtype):
-    x = np.random.randn(*shape).astype(dtype)
-    y = np.random.randn(*shape).astype(dtype)
+    x = generate_numpy_ndarray_by_randn(shape, dtype, 'x')
+    y = generate_numpy_ndarray_by_randn(shape, dtype, 'y')
     expect = np.logical_xor(x, y)
     return x, y, expect
 

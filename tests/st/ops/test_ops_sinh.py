@@ -19,6 +19,7 @@ from mindspore import ops, jit, JitConfig
 from mindspore.mint import sinh
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 
 
 def generate_random_input(shape, dtype):
@@ -56,7 +57,7 @@ def test_ops_sinh_forward_backward(mode):
     Description: test function sinh forward and backward.
     Expectation: expect correct result.
     """
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_numpy_ndarray_by_randn((2, 3, 4, 5), np.float32, 'x')
     if mode == 'pynative':
         ms.set_context(mode=ms.PYNATIVE_MODE)
         output = sinh_forward_func(ms.Tensor(x))

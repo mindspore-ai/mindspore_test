@@ -18,12 +18,13 @@ import numpy as np
 import mindspore as ms
 from mindspore import mint, jit, JitConfig
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.mark_utils import arg_mark
 
 def generate_random_input(shape, shape1, shape2):
-    x = np.random.randn(*shape).astype(np.float32)
-    batch1 = np.random.randn(*shape1).astype(np.float32)
-    batch2 = np.random.randn(*shape2).astype(np.float32)
+    x = generate_numpy_ndarray_by_randn(shape, np.float32, 'x')
+    batch1 = generate_numpy_ndarray_by_randn(shape1, np.float32, 'batch1')
+    batch2 = generate_numpy_ndarray_by_randn(shape2, np.float32, 'batch2')
     return x, batch1, batch2
 
 
