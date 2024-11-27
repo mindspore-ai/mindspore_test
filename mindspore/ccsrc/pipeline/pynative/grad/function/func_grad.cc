@@ -257,6 +257,7 @@ void UpdateCreationType(const ValuePtrList &flatten_outputs) {
         return;
       }
       view_meta->set_creation_type(CreationType::kCustomBprop);
+      view_meta->set_version_attr(output_tensor->version().current_version());
     }
   }
 }
