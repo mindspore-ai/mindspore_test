@@ -24,6 +24,9 @@
 namespace mindspore {
 namespace device {
 namespace cpu {
+using distributed::GetRetryNumBasedOnScale;
+using distributed::kClusterScaleBound;
+using distributed::SleepBasedOnScale;
 using distributed::cluster::topology::kDefaultRetryInterLower;
 using distributed::cluster::topology::kDefaultRetryInterUpper;
 using distributed::cluster::topology::kEnvNodeTimeOut;
@@ -48,7 +51,9 @@ bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_
   }
 
   // Only use AllReduceLauncher when this is CPU backend.
-  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
+  // Do not initialize AllReduceLauncher if this is a large-scale cluster.
+  if (MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice &&
+      global_rank_size <= kClusterScaleBound) {
     launcher_ = std::make_unique<AllReduceLauncher>();
     CHECK_IF_NULL(launcher_);
     if (!launcher_->Initialize()) {
@@ -64,9 +69,9 @@ bool MsCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_rank_
   std::string timeout_env = common::GetEnv(kEnvNodeTimeOut);
   if (!timeout_env.empty()) {
     MS_LOG(INFO) << "MS_NODE_TIMEOUT env set by user: " << timeout_env;
-    retry_count_ = IntToUint(std::stoi(timeout_env)) / kSizeNum3;
+    retry_count_ = GetRetryNumBasedOnScale(IntToUint(std::stoi(timeout_env)), kSizeNum3);
   } else {
-    retry_count_ = kMSCollectiveRetryTime / kSizeNum3;
+    retry_count_ = GetRetryNumBasedOnScale(kMSCollectiveRetryTime, kSizeNum3);
   }
   MS_LOG(INFO) << "Query retry count is " << retry_count_;
 
@@ -127,7 +132,7 @@ bool MsCollectiveCommLib::AllGatherHostHashName(size_t host_hash_name, std::vect
       auto sleep_time = rand_distrib_(gen);
       MS_LOG(WARNING) << "Retry to get hostname from the meta server node...Retry time: " << retry << "/"
                       << retry_count_ << ", sleep " << sleep_time;
-      (void)sleep(sleep_time);
+      SleepBasedOnScale(sleep_time);
       continue;
     } else if (hostnames.size() > host_hash_names->size()) {
       MS_LOG(ERROR) << "Invalid number of hostnames, expected number of hostnames: " << host_hash_names->size()
@@ -195,7 +200,7 @@ bool MsCollectiveCommLib::SendUniqueID(const std::string &group_name, size_t roo
     if (!success) {
       MS_LOG(WARNING) << "Failed to send unique id for group " << group_name << ". Retry time: " << retry << "/"
                       << retry_count_;
-      (void)sleep(interval);
+      SleepBasedOnScale(interval);
     }
   }
   if (!success) {
@@ -230,7 +235,7 @@ bool MsCollectiveCommLib::QueryUniqueID(const std::string &group_name, size_t ro
       MS_LOG(WARNING) << "Retry to lookup the unique id for group " << group_name
                       << " from the meta server node...Retry time: " << retry << "/" << retry_count_ << ", sleep "
                       << sleep_time;
-      (void)sleep(sleep_time);
+      SleepBasedOnScale(sleep_time);
     }
   }
   if (!success) {

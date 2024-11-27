@@ -196,6 +196,7 @@ void SSLSocketOperation::NewConnEventHandler(int fd, uint32_t events, void *cont
   }
   uint32_t error = events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP);
   if (error > 0) {
+    MS_VLOG(VL_DISTRIBUTED_TRACE) << "ssl connect failed.";
     conn->state = ConnectionState::kDisconnecting;
     return;
   }
@@ -221,6 +222,7 @@ void SSLSocketOperation::ConnEstablishedEventHandler(int fd, uint32_t events, vo
   }
   uint32_t error = events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP);
   if (error > 0) {
+    MS_VLOG(VL_DISTRIBUTED_TRACE) << "ssl connect failed.";
     conn->state = ConnectionState::kDisconnecting;
     return;
   }

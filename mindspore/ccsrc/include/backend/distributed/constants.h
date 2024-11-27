@@ -20,6 +20,7 @@
 #include <set>
 #include <map>
 #include <chrono>
+#include <thread>
 #include <string>
 #include <vector>
 #include <utility>
@@ -99,6 +100,8 @@ constexpr uint32_t kDefaultFinishTimeout = 30;
 // Each node has range number 2048, and the port started from 8118.
 constexpr uint32_t kStartPort = 8118;
 constexpr uint32_t kNodePortRangeNum = 4096;
+// We consider device number on one node is 32.
+constexpr uint32_t kMaxDeviceNumPerNode = 32;
 constexpr char kNodePortRange[] = "node_port_range";
 using ServerPortRange = std::pair<uint32_t, uint32_t>;
 
@@ -149,6 +152,72 @@ using MemAllocateCallback = std::function<void *(size_t size)>;
  * @return {bool}: Whether the memory is successfully released.
  */
 using MemFreeCallback = std::function<bool(void *data)>;
+
+// Default retry interval 3 seconds.
+static const uint32_t kExecuteInterval = 3;
+// Default retry interval 500 milliseconds.
+static const uint32_t kExecuteIntervalM = 500;
+
+// If cluster has greater than 128 workers, consider it as a large-scale cluster.
+static const uint32_t kClusterScaleBound = 128;
+
+// Sleep for a duration according to cluster scale. The input 'interval_sec' is used only when this is a
+// large-scale cluster.
+inline void SleepBasedOnScale(size_t interval_sec) {
+  // Get cluster size by MS_WORKER_NUM env. If it's not set, consider cluster has 128 workers by default.
+  static uint32_t cluster_size = 0;
+  if (cluster_size == 0) {
+    if (common::GetEnv(kEnvWorkerNum).empty()) {
+      cluster_size = kClusterScaleBound;
+    } else {
+      cluster_size = std::stoi(common::GetEnv(kEnvWorkerNum));
+    }
+  }
+  // If this is a large-scale cluster, sleep for a duration in a range of seconds.
+  // Otherwise sleep for 100 ms.
+  if (cluster_size > kClusterScaleBound) {
+    std::this_thread::sleep_for(std::chrono::seconds(interval_sec));
+  } else {
+    std::this_thread::sleep_for(std::chrono::milliseconds(kExecuteIntervalM));
+  }
+}
+
+// Returns the retry number according to cluster scale. With same timeout window, the retry number of same logic could
+// be different for small and large scale clusters.
+inline size_t GetRetryNumBasedOnScale(size_t timeout_sec, size_t interval_sec) {
+  static uint32_t cluster_size = 0;
+  if (cluster_size == 0) {
+    if (common::GetEnv(kEnvWorkerNum).empty()) {
+      cluster_size = kClusterScaleBound;
+    } else {
+      cluster_size = std::stoi(common::GetEnv(kEnvWorkerNum));
+    }
+  }
+  if (cluster_size > kClusterScaleBound) {
+    return timeout_sec / interval_sec;
+  } else {
+    // For small-scale cluster, the retry number is timeout_sec / (kExecuteIntervalM / 1000), which is equal to
+    // timeout_sec * 2.
+    return timeout_sec * 2;
+  }
+}
+
+#define EXECUTE_WITH_RETRY(func, retry, interval, err_msg)                     \
+  do {                                                                         \
+    bool success = false;                                                      \
+    for (size_t i = 1; i <= retry; ++i) {                                      \
+      success = func();                                                        \
+      if (!success) {                                                          \
+        MS_LOG(WARNING) << err_msg << ", retry(" << i << "/" << retry << ")."; \
+        SleepBasedOnScale(interval);                                           \
+      } else {                                                                 \
+        break;                                                                 \
+      }                                                                        \
+    }                                                                          \
+    if (!success) {                                                            \
+      return false;                                                            \
+    }                                                                          \
+  } while (false)
 }  // namespace distributed
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_DISTRIBUTED_CONSTANTS_H_

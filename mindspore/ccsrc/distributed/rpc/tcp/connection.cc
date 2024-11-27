@@ -22,6 +22,7 @@
 #include "distributed/rpc/tcp/tcp_socket_operation.h"
 #include "distributed/rpc/tcp/ssl_socket_operation.h"
 #include "distributed/rpc/tcp/connection_pool.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace distributed {
@@ -55,6 +56,7 @@ void SocketEventHandler(int fd, uint32_t events, void *context) {
   }
   // Handle write event.
   if ((events & EPOLLOUT) > 0) {
+    MS_VLOG(VL_DISTRIBUTED_FD) << "Handle write message for fd : " << fd << ".";
     (void)conn->recv_event_loop->UpdateEpollEvent(fd, EPOLLIN | EPOLLHUP | EPOLLERR);
     if (conn->write_callback != nullptr) {
       conn->write_callback(conn);
@@ -62,6 +64,7 @@ void SocketEventHandler(int fd, uint32_t events, void *context) {
   }
   // Handle read event.
   if (events & EPOLLIN) {
+    MS_VLOG(VL_DISTRIBUTED_FD) << "Handle read message for fd : " << fd << ".";
     if (conn->read_callback != nullptr) {
       conn->read_callback(conn);
     }
@@ -83,6 +86,7 @@ void SocketEventHandler(int fd, uint32_t events, void *context) {
         (void)usleep(kPrintTimeInterval);
       }
     }
+    MS_VLOG(VL_DISTRIBUTED_FD) << "Change connection stat to disconnecting, fd : " << conn->socket_fd << ".";
     conn->state = ConnectionState::kDisconnecting;
     if (conn->event_callback != nullptr) {
       conn->event_callback(conn);
@@ -109,14 +113,26 @@ void NewConnectEventHandler(int fd, uint32_t events, void *context) {
     return;
   }
 
+  MS_VLOG(VL_DISTRIBUTED_FD) << "New connect event handler for fd : " << fd << ".";
   retval = conn->recv_event_loop->DeleteEpollEvent(fd);
   if (retval > 0) {
     MS_LOG(ERROR) << "Failed to remove epoll remove connect handler for fd: " << fd;
     return;
   }
 
-  retval = conn->recv_event_loop->SetEventHandler(conn->socket_fd, EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR,
-                                                  SocketEventHandler, reinterpret_cast<void *>(conn));
+  if (conn->event_loop_group_) {
+    // No need to process read handler now, note ET flag must not be specified.
+    retval = conn->event_loop_group_->SetEventHandler(conn->socket_fd, EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR,
+                                                      SocketEventHandler, reinterpret_cast<void *>(conn));
+    if (retval != RPC_OK) {
+      MS_LOG(ERROR) << "Failed to add socket event handler for fd: " << fd << ", events: " << events << ".";
+      conn->Disconnect(fd);
+    }
+    return;
+  } else {
+    retval = conn->recv_event_loop->SetEventHandler(conn->socket_fd, EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR,
+                                                    SocketEventHandler, reinterpret_cast<void *>(conn));
+  }
   if (retval != RPC_OK) {
     MS_LOG(ERROR) << "Failed to add socket event handler for fd: " << fd << ", events: " << events;
     conn->Disconnect(fd);
@@ -208,6 +224,7 @@ bool Connection::ReconnectSourceSocket(int fd, uint32_t events, int *soError, ui
   MS_EXCEPTION_IF_NULL(recv_event_loop);
   socklen_t len = sizeof(*soError);
 
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Reconnect event handler for fd : " << fd << ".";
   int retval = recv_event_loop->DeleteEpollEvent(fd);
   if (retval > 0) {
     MS_LOG(ERROR) << "Failed to delete event for fd: " << fd << ", event: " << events;
@@ -233,6 +250,7 @@ bool Connection::ReconnectSourceSocket(int fd, uint32_t events, int *soError, ui
 }
 
 void Connection::Disconnect(int fd) {
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Disconnect fd : " << fd << ".";
   if (LOG_CHECK_EVERY_N()) {
     MS_LOG(INFO) << "New connection fail fd: " << fd << ", state: " << state << ", errno: " << errno
                  << ", to: " << destination.c_str() << ", type: " << recv_message_type;
@@ -243,9 +261,17 @@ void Connection::Disconnect(int fd) {
 }
 
 void Connection::Close() {
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Close fd : " << socket_fd << ".";
   if (recv_event_loop != nullptr) {
     if (recv_event_loop->DeleteEpollEvent(socket_fd) == RPC_ERROR) {
-      MS_LOG(WARNING) << "Failed to delete epoll event " << socket_fd;
+      if (event_loop_group_ != nullptr) {
+        if (event_loop_group_->DeleteEpollEvent(socket_fd) == RPC_ERROR) {
+          MS_LOG(WARNING) << "Failed to delete epoll event fd : " << socket_fd << ".";
+        }
+      } else {
+        MS_LOG(WARNING) << "Failed to delete epoll event fd : " << socket_fd << " , eventloop : " << recv_event_loop
+                        << ".";
+      }
     }
   }
 
@@ -432,7 +458,7 @@ void Connection::FillRecvMessage() {
   size_t recvBodyLen = static_cast<size_t>(recv_msg_header.body_len);
   if (recvNameLen > MAX_KMSG_NAME_LEN || recvToLen > MAX_KMSG_TO_LEN || recvFromLen > MAX_KMSG_FROM_LEN ||
       recvBodyLen > MAX_KMSG_BODY_LEN) {
-    MS_LOG(ERROR) << "Drop invalid tcp data.";
+    MS_LOG(ERROR) << "Drop invalid tcp data, fd : " << socket_fd << ".";
     state = ConnectionState::kDisconnecting;
     return;
   }
@@ -516,8 +542,8 @@ size_t Connection::Flush() {
     } else {
       // update metrics
       send_metrics->UpdateError(true, error_code);
-      MS_LOG(WARNING) << "Failed to send data, change connection state to disconnecting, errno: " << errno << " "
-                      << strerror(errno);
+      MS_LOG(WARNING) << "Failed to send data, change connection fd : " << socket_fd
+                      << " state to disconnecting, errno: " << errno << " " << strerror(errno);
       state = ConnectionState::kDisconnecting;
       break;
     }
@@ -541,6 +567,7 @@ bool Connection::ParseMessage() {
       recvBuf = reinterpret_cast<char *>(&recv_msg_header) + recv_len;
       retval = socket_operation->Receive(this, recvBuf, sizeof(MessageHeader) - recv_len, &recvLen);
       if (retval != IO_RW_OK) {
+        MS_VLOG(VL_DISTRIBUTED_TRACE) << "Parse message failed, fd : " << socket_fd << ".";
         state = ConnectionState::kDisconnecting;
         recv_len += recvLen;
         return false;
@@ -570,6 +597,7 @@ bool Connection::ParseMessage() {
       retval = socket_operation->ReceiveMessage(this, &recv_kernel_msg, total_recv_len, &recvLen);
       if (recvLen != total_recv_len) {
         if (retval != IO_RW_OK) {
+          MS_VLOG(VL_DISTRIBUTED_TRACE) << "Recv message failed, fd : " << socket_fd << ".";
           state = ConnectionState::kDisconnecting;
           return false;
         }
