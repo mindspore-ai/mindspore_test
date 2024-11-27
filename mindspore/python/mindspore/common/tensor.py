@@ -31,7 +31,7 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (item_mint, isnan_mint, sub_mint)
+from mindspore.common._tensor_overload import (add_mint, item_mint, isnan_mint, sub_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -383,6 +383,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def __pos__(self):
         return self
+
+    def __abs__(self):
+        return tensor_operator_registry.get('abs')(self)
+
+    @add_mint
+    def __add__(self, other):
+        return tensor_operator_registry.get('__add__')(self, other)
 
     def __and__(self, other):
         if isinstance(other, (int, bool, float, Tensor)):
@@ -840,6 +847,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.arctan`.
         """
         return tensor_operator_registry.get('atan')(self)
+
+    def arctan2(self, other):
+        r"""
+        For details, please refer to :func:`mindspore.ops.arctan2`.
+        """
+        return tensor_operator_registry.get('atan2')(self, other)
 
     def cauchy(self, median=0.0, sigma=1.0):
         r"""
@@ -1301,6 +1314,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('addcmul')(self, tensor1, tensor2, value)
 
+    @add_mint
+    def add(self, other):
+        r"""
+        For details, please refer to :func:`mindspore.ops.add`.
+        """
+        return tensor_operator_registry.get('add')(self, other)
+
     def add_(self, other, *, alpha=1):
         """
         inplace update self by following compute:
@@ -1386,6 +1406,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('adjoint')(self)
 
+    def all(self, axis=None, keep_dims=False):
+        r"""
+        For details, please refer to :func:`mindspore.ops.all`.
+        """
+        return tensor_operator_registry.get('all')(self, axis, keep_dims)
 
     def angle(self):
         r"""
@@ -1393,6 +1418,19 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('angle')(self)
 
+    def any(self, axis=None, keep_dims=False):
+        r"""
+        For details, please refer to :func:`mindspore.ops.any`.
+        """
+        if axis is None:
+            axis = ()
+        return tensor_operator_registry.get('any')(self, axis, keep_dims)
+
+    def atan2(self, other):
+        r"""
+        For details, please refer to :func:`mindspore.ops.atan2`.
+        """
+        return tensor_operator_registry.get('atan2')(self, other)
 
     def baddbmm(self, batch1, batch2, beta=1, alpha=1):
         r"""
@@ -1562,6 +1600,18 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('real')(self)
 
+    def sqrt(self):
+        """
+        For details, please refer to :func:`mindspore.ops.sqrt`.
+        """
+        return tensor_operator_registry.get('sqrt')(self)
+
+    def square(self):
+        """
+        For details, please refer to :func:`mindspore.ops.square`.
+        """
+        return tensor_operator_registry.get('square')(self)
+
     @sub_mint
     def sub(self, y):
         r"""
@@ -1610,6 +1660,18 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.asin`.
         """
         return tensor_operator_registry.get('asin')(self)
+
+    def abs(self):
+        """
+        For details, please refer to :func:`mindspore.ops.abs`.
+        """
+        return tensor_operator_registry.get('abs')(self)
+
+    def absolute(self):
+        """
+        Alias for :func:`mindspore.Tensor.abs`.
+        """
+        return self.abs()
 
     def floor_(self):
         r"""
@@ -4091,6 +4153,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.sgn`.
         """
         return tensor_operator_registry.get('sgn')(self)
+
+    def sin(self):
+        r"""
+        For details, please refer to :func:`mindspore.ops.sin`.
+        """
+        return tensor_operator_registry.get('sin')(self)
 
     def sinc(self):
         r"""

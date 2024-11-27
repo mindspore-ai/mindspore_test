@@ -1,4 +1,4 @@
-# Copyright 2024 Huawei Technologies Co., Ltd
+# Copyright 2022 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+from math import pi
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
@@ -21,25 +22,24 @@ from mindspore import Tensor
 
 
 class Net(nn.Cell):
-    def construct(self, x, other):
-        return x.atan2(other)
+    def construct(self, x):
+        return x.sin()
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
-          level_mark='level0',
+          level_mark='level2',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_tensor_atan2(mode):
+def test_tensor_sin(mode):
     """
-    Feature: tensor.atan2
-    Description: Verify the result of atan2
+    Feature: tensor.sin
+    Description: Verify the result of sin
     Expectation: success
     """
     ms.set_context(mode=mode)
-    x = Tensor(np.array([0.9041, 0.0196, -0.3108, -2.4423]), ms.float32)
-    y = Tensor(np.array([0.5, 0.5, 0.5, 0.5]), ms.float32)
+    x = Tensor(np.array([-pi/6, pi/6, pi*10]), ms.float32)
     net = Net()
-    output = net(x, y)
-    expect_output = [1.06562507e+000, 3.91799398e-002, -5.56150615e-001, -1.36886156e+000]
-    assert np.allclose(output.asnumpy(), expect_output)
+    output = net(x)
+    expect_output = np.array([-0.5, 0.5, 0], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expect_output, rtol=5e-3, atol=1e-4)
