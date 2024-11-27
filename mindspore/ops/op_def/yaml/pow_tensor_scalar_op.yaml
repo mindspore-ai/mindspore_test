@@ -12,5 +12,5 @@ pow_tensor_scalar:
         disable: True
     dispatch:
         enable: True
-
-
+        GPU: PowTensorScalarGPU
+        CPU: PowTensorScalarCPU
