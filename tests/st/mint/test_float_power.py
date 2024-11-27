@@ -68,6 +68,9 @@ def test_float_power_tensor_tensor_backward(context_mode, data_type):
     Description: test auto grad of op float_power.
     Expectation: expect correct result.
     """
+    ms.context.set_context(mode=context_mode)
+    if context_mode == ms.GRAPH_MODE:
+        ms.set_context(jit_config={'jit_level': 'O0'})
     x_np = generate_random_input((2, 3, 4, 5), dtype=data_type)
     y_np = generate_random_input((2, 3, 4, 5), dtype=data_type)
 

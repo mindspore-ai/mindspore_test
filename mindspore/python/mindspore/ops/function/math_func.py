@@ -894,7 +894,7 @@ def float_power_ext(input, exponent):
             to each other.
 
     Supported Platforms:
-        ``Ascend``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> from mindspore import Tensor, ops
