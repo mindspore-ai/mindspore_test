@@ -33,6 +33,7 @@ constexpr auto kAnfPrimitiveIndex = 0;
 constexpr auto kRealInputNodeIndexInTupleGetItem = 1;
 constexpr auto kInputNodeOutputIndexInTupleGetItem = 2;
 constexpr auto kRealInputIndexInDepend = 1;
+constexpr auto kInputIndexInLoad = 1;
 constexpr auto kUpdateStateRealInput = 2;
 constexpr auto kTupleGetItemInputSize = 3;
 
@@ -397,44 +398,60 @@ int64_t AnfUtils::GetIntValue(const ValuePtr &value) {
   }
 }
 
-std::pair<AnfNodePtr, size_t> AnfUtils::VisitKernel(const AnfNodePtr &anf_node, size_t index) {
+std::pair<AnfNodePtr, size_t> VisitKernelImpl(const AnfNodePtr &anf_node, size_t index, bool in_getitem) {
   MS_EXCEPTION_IF_NULL(anf_node);
-  const PrimitiveSet follow_first_input_prims = {prim::kPrimDepend, prim::kPrimLoad};
   if (anf_node->isa<ValueNode>()) {
     return std::make_pair(anf_node, 0);
   } else if (anf_node->isa<Parameter>()) {
     return std::make_pair(anf_node, 0);
-  } else if (IsCustomActorNode(anf_node)) {
+  } else if (AnfUtils::IsCustomActorNode(anf_node)) {
     return std::make_pair(anf_node, 0);
-  } else if (anf_node->isa<CNode>()) {
+  } else {  // cnode
     auto cnode = anf_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    auto input0 = cnode->input(0);
-    MS_EXCEPTION_IF_NULL(input0);
-    if (IsPrimitive(input0, prim::kPrimMakeTuple)) {
-      if (GetInputTensorNum(cnode) == 0) {
-        return std::make_pair(nullptr, 0);
-      }
-      auto node = cnode->input(index + IntToSize(1));
-      MS_EXCEPTION_IF_NULL(node);
-      return VisitKernel(node, 0);
-    } else if (IsPrimitive(input0, prim::kPrimTupleGetItem)) {
-      if (cnode->size() != kTupleGetItemInputSize) {
-        MS_LOG(INTERNAL_EXCEPTION) << "The node tuple_get_item must have 2 inputs!";
-      }
-      auto input2 = cnode->input(kInputNodeOutputIndexInTupleGetItem);
-      auto item_idx = AnfUtils::GetIntValue(input2);
-      return VisitKernel(cnode->input(kRealInputNodeIndexInTupleGetItem), LongToSize(item_idx));
-    } else if (IsPrimitiveCNode(cnode, prim::kPrimUpdateState)) {
-      return VisitKernel(cnode->input(kUpdateStateRealInput), 0);
-    } else if (IsOneOfPrimitive(input0, follow_first_input_prims)) {
-      return VisitKernel(cnode->input(kRealInputIndexInDepend), 0);
+    if (GetCNodeFuncGraph(cnode) != nullptr) {
+      auto fg = GetCNodeFuncGraph(cnode);
+      return VisitKernelImpl(fg->output(), index, in_getitem);
     } else {
-      return std::make_pair(anf_node, index);
+      if (IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
+        if (in_getitem) {
+          return std::make_pair(anf_node, index);
+        }
+        if (AnfUtils::GetInputTensorNum(cnode) == 0) {
+          return std::make_pair(nullptr, 0);
+        }
+        auto node = cnode->input(index + IntToSize(1));
+        MS_EXCEPTION_IF_NULL(node);
+        return VisitKernelImpl(node, 0, false);
+      } else if (IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem)) {
+        if (cnode->size() != kTupleGetItemInputSize) {
+          MS_LOG(INTERNAL_EXCEPTION) << "The node tuple_get_item must have 2 inputs!";
+        }
+        auto input2 = cnode->input(kInputNodeOutputIndexInTupleGetItem);
+        auto item_idx = AnfUtils::GetIntValue(input2);
+        auto ret = VisitKernelImpl(cnode->input(kRealInputNodeIndexInTupleGetItem), LongToSize(item_idx), true);
+        if (!IsPrimitiveCNode(ret.first, prim::kPrimMakeTuple)) {
+          return ret;
+        }
+        return VisitKernelImpl(ret.first->cast<CNodePtr>()->input(ret.second + 1), index, in_getitem);
+      } else if (IsPrimitiveCNode(cnode, prim::kPrimUpdateState)) {
+        return VisitKernelImpl(cnode->input(kUpdateStateRealInput), index, in_getitem);
+      } else if (IsPrimitiveCNode(cnode, prim::kPrimDepend)) {
+        return VisitKernelImpl(cnode->input(kRealInputIndexInDepend), index, in_getitem);
+      } else if (IsPrimitiveCNode(cnode, prim::kPrimLoad)) {
+        return VisitKernelImpl(cnode->input(kInputIndexInLoad), 0, false);
+      } else {
+        return std::make_pair(anf_node, index);
+      }
     }
-  } else {
-    MS_LOG(INTERNAL_EXCEPTION) << "The input is invalid";
   }
+}
+
+std::pair<AnfNodePtr, size_t> AnfUtils::VisitKernel(const AnfNodePtr &anf_node, size_t index) {
+  MS_LOG(DEBUG) << "Visit the real output of node: " << anf_node->fullname_with_scope() << ", output index: " << index;
+  auto res = VisitKernelImpl(anf_node, index, false);
+  MS_LOG(DEBUG) << "The real output node is:" << res.first->fullname_with_scope() << ", output index: " << res.second;
+  return res;
 }
 
 bool AnfUtils::IsGraphKernel(const AnfNodePtr &node) {
