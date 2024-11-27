@@ -22,25 +22,20 @@
 namespace mindspore {
 namespace transform {
 
-ORIGIN_METHOD(aclopCompileAndExecute, aclError, const char *, int, const aclTensorDesc *const[],
-              const aclDataBuffer *const[], int, const aclTensorDesc *const[], aclDataBuffer *const[],
-              const aclopAttr *, aclopEngineType, aclopCompileType, const char *, aclrtStream);
-ORIGIN_METHOD(aclopCompileAndExecuteV2, aclError, const char *, int, aclTensorDesc *[], aclDataBuffer *[], int,
-              aclTensorDesc *[], aclDataBuffer *[], aclopAttr *, aclopEngineType, aclopCompileType, const char *,
-              aclrtStream);
-ORIGIN_METHOD(aclSetCompileopt, aclError, aclCompileOpt, const char *);
-ORIGIN_METHOD(aclopSetCompileFlag, aclError, aclOpCompileFlag);
-ORIGIN_METHOD(aclGenGraphAndDumpForOp, aclError, const char *, int, const aclTensorDesc *const[],
-              const aclDataBuffer *const[], int, const aclTensorDesc *const[], aclDataBuffer *const[],
-              const aclopAttr *, aclopEngineType, const char *, const aclGraphDumpOption *);
-
-extern aclopCompileAndExecuteFunObj aclopCompileAndExecute_;
-extern aclopCompileAndExecuteV2FunObj aclopCompileAndExecuteV2_;
-extern aclSetCompileoptFunObj aclSetCompileopt_;
-extern aclopSetCompileFlagFunObj aclopSetCompileFlag_;
-extern aclGenGraphAndDumpForOpFunObj aclGenGraphAndDumpForOp_;
+ORIGIN_METHOD_WITH_SIMU(aclopCompileAndExecute, aclError, const char *, int, const aclTensorDesc *const[],
+                        const aclDataBuffer *const[], int, const aclTensorDesc *const[], aclDataBuffer *const[],
+                        const aclopAttr *, aclopEngineType, aclopCompileType, const char *, aclrtStream);
+ORIGIN_METHOD_WITH_SIMU(aclopCompileAndExecuteV2, aclError, const char *, int, aclTensorDesc *[], aclDataBuffer *[],
+                        int, aclTensorDesc *[], aclDataBuffer *[], aclopAttr *, aclopEngineType, aclopCompileType,
+                        const char *, aclrtStream);
+ORIGIN_METHOD_WITH_SIMU(aclSetCompileopt, aclError, aclCompileOpt, const char *);
+ORIGIN_METHOD_WITH_SIMU(aclopSetCompileFlag, aclError, aclOpCompileFlag);
+ORIGIN_METHOD_WITH_SIMU(aclGenGraphAndDumpForOp, aclError, const char *, int, const aclTensorDesc *const[],
+                        const aclDataBuffer *const[], int, const aclTensorDesc *const[], aclDataBuffer *const[],
+                        const aclopAttr *, aclopEngineType, const char *, const aclGraphDumpOption *);
 
 void LoadAclOpCompilerApiSymbol(const std::string &ascend_path);
+void LoadSimulationAclOpCompilerApi();
 }  // namespace transform
 }  // namespace mindspore
 
