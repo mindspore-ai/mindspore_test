@@ -1,7 +1,7 @@
 mindspore.ops.relu
 ==================
 
-.. py:function:: mindspore.ops.relu(input)
+.. py:function:: mindspore.ops.relu(input, inplace=False)
 
     对输入Tensor逐元素计算线性修正单元激活函数（Rectified Linear Unit）值。
 
@@ -17,6 +17,7 @@ mindspore.ops.relu
 
     参数：
         - **input** (Tensor) - 输入Tensor。
+        - **inplace** (bool, 可选) - 是否采用原地更新模式，默认值为 ``False``。
 
     返回：
         Tensor，其shape和数据类型与输入一致。
