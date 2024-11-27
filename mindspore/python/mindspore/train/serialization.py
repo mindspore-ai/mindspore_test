@@ -84,7 +84,6 @@ from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_
 from mindspore.common.generator import Generator
 from ..ops.operations._opaque_predicate_registry import add_opaque_predicate, clean_funcs
 
-
 tensor_to_ms_type = {"Int8": mstype.int8, "UInt8": mstype.uint8, "Int16": mstype.int16, "UInt16": mstype.uint16,
                      "Int32": mstype.int32, "UInt32": mstype.uint32, "Int64": mstype.int64, "UInt64": mstype.uint64,
                      "Float16": mstype.float16, "Float32": mstype.float32, "Float64": mstype.float64,
@@ -386,10 +385,21 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save ckpt cost time:{cost_time}.")
             elif format == "safetensors":
                 save_dict = {}
-                for name, value in data_list.items():
+                crc_num = 0
+                for name in sorted(data_list.keys()):
+                    value = data_list[name]
                     save_dict[name] = value[2].asnumpy()
+
+                    if crc_check:
+                        crc_num = binascii.crc32(bytes(name, encoding='utf-8'), crc_num)
+                        crc_num = binascii.crc32(
+                            bytes(save_dict[name]), crc_num)
                 safetensors_save_time_start = time.time()
-                save_file(save_dict, tmp_name)
+                if crc_check:
+                    save_file(save_dict, tmp_name, metadata={
+                        "crc_num": str(crc_num)})
+                else:
+                    save_file(save_dict, tmp_name)
                 safetensors_save_time_end = time.time()
                 cost_time = safetensors_save_time_end - safetensors_save_time_start
                 vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors cost time:{cost_time}.")
@@ -532,9 +542,9 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
     return ckpt_file_name
 
 
-def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, async_save=False, map_param_inc=False,
+def _check_format_and_other_params(format, enc_key, enc_mode, async_save=False, map_param_inc=False,
                                    global_step_num=None):
-    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or async_save
+    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or async_save
                          or map_param_inc or global_step_num is not None)
     if format == "safetensors" and param_not_default:
         raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
@@ -616,7 +626,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     map_param_inc = kwargs.get('incremental', False)
     logger.info("Execute the process of saving checkpoint files.")
     global_step_num = kwargs.get('global_step_num', None)
-    _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, map_param_inc, global_step_num)
+    _check_format_and_other_params(format, enc_key, enc_mode, async_save, map_param_inc, global_step_num)
 
     if append_dict and "__exception_save__" in append_dict:
         s1 = mindspore.hal.Stream()
@@ -1211,12 +1221,28 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
     ckpt_file_name = _check_ckpt_file_name(ckpt_file_name, format)
     if format == "safetensors":
         with safe_open(ckpt_file_name, framework='np') as f:
+            cal_crc_num = 0
             sf_load_time_start = time.time()
-            for k in f.keys():
-                parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
+            for k in sorted(f.keys()):
+                if crc_check:
+                    cal_crc_num = binascii.crc32(bytes(k, encoding='utf-8'), cal_crc_num)
+                    cal_crc_num = binascii.crc32(bytes(f.get_tensor(k)), cal_crc_num)
+                if choice_func is not None and not choice_func(k):
+                    continue
+                parameter_dict[k] = Parameter(f.get_tensor(k))
             sf_load_time_end = time.time()
             cost_time = sf_load_time_end - sf_load_time_start
             vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load safetensors cost time:{cost_time}.")
+            if crc_check:
+                if f.metadata() is None or f.metadata().get("crc_num") is None:
+                    logger.warning(
+                        "For 'load_checkpoint', the safetensors file do not contain the crc code, "
+                        "please check the file.")
+                else:
+                    crc_num = int(f.metadata()["crc_num"])
+                    if cal_crc_num != crc_num:
+                        raise ValueError("For 'load_checkpoint', the crc check has failed. "
+                                         "Please check whether the ckpt file is damaged.")
         return
     checkpoint_list = _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check)
     try:
@@ -1367,7 +1393,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     dec_mode = Validator.check_isinstance('dec_mode', dec_mode, str)
     crc_check = Validator.check_isinstance('crc_check', crc_check, bool)
     remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
-    _check_format_and_other_params(format, dec_key, dec_mode, crc_check)
+    _check_format_and_other_params(format, dec_key, dec_mode)
     logger.info("Execute the process of loading checkpoint files.")
 
     parameter_dict = {}
@@ -2860,19 +2886,21 @@ def merge_sliced_parameter(sliced_parameters, strategy=None):
 
 
 def _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, dst_device_num,
-                           output_format, name_map):
+                           output_format, name_map, return_param_dict):
     """gather transform tasks"""
     tasks = []
     for rank in range(0, dst_device_num):
         tasks.append(
-            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map))
+            (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir, rank, output_format, name_map,
+             return_param_dict))
     return tasks
 
 
 def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_strategy=None,
                                 train_strategy_filename=None, strict_load=False, dec_key=None, dec_mode='AES-GCM',
                                 format='ckpt', unified_safetensors_dir=None, dst_safetensors_dir=None, rank_id=None,
-                                output_format='safetensors', name_map=None, max_process_num=64):
+                                output_format='safetensors', name_map=None, max_process_num=64,
+                                return_param_dict=False):
     """
     Load checkpoint into net for distributed predication. Used in the case of distributed inference.
 
@@ -2912,6 +2940,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
         name_map (dict): The weight mapping dictionary will modify the weight names according to the mapping
             dictionary before loading or saving the segmented weights into the network. Default: None.
         max_process_num (int): Maximum number of processes. Default: 64.
+        return_param_dict (bool): Whether to return the param_dict. Default: False.
 
     Raises:
         TypeError: The type of inputs do not match the requirements.
@@ -3038,25 +3067,27 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
             except RuntimeError:
                 rank_id = 0
                 logger.warning(f"Get rank failed, default loading weight for rank 0.")
+            param_dict = _load_parallel_checkpoint(
+                (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map,
+                 return_param_dict))
+            return param_dict
+        if dst_safetensors_dir is None:
+            raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
+                             f"when network is None.")
+        if rank_id is not None:
             _load_parallel_checkpoint(
-                (unified_safetensors_dir, predict_strategy, network, None, rank_id, output_format, name_map))
+                (unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                 rank_id, output_format, name_map, return_param_dict))
         else:
-            if dst_safetensors_dir is None:
-                raise ValueError(f"For 'load_distributed_checkpoint', 'dst_safetensors_dir' can not be None "
-                                 f"when network is None.")
-            if rank_id is not None:
-                _load_parallel_checkpoint((unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                                           rank_id, output_format, name_map))
-            else:
-                dst_strategy_dict = _build_searched_strategy(predict_strategy)
-                dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
-                dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
-                dst_device_num = dst_stage_device_num * dst_stage_num
-                tasks = _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
-                                               dst_device_num, output_format, name_map)
-                with Pool(processes=max_process_num) as pool:
-                    list(pool.imap(_load_parallel_checkpoint, tasks))
-        return
+            dst_strategy_dict = _build_searched_strategy(predict_strategy)
+            dst_stage_device_num = _get_device_num_from_strategy(dst_strategy_dict)
+            dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
+            dst_device_num = dst_stage_device_num * dst_stage_num
+            tasks = _gather_tasks_load_dis(unified_safetensors_dir, predict_strategy, network, dst_safetensors_dir,
+                                           dst_device_num, output_format, name_map, return_param_dict)
+            with Pool(processes=max_process_num) as pool:
+                list(pool.imap(_load_parallel_checkpoint, tasks))
+        return True
 
     network = Validator.check_isinstance("network", network, nn.Cell)
     _check_checkpoint_file(checkpoint_filenames)
@@ -3175,6 +3206,7 @@ def load_distributed_checkpoint(network, checkpoint_filenames=None, predict_stra
                        .format(param_not_in_ckpt))
 
     load_param_into_net(network, param_dict, strict_load=strict_load)
+    return True
 
 
 def async_ckpt_thread_status():
