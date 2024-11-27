@@ -108,8 +108,8 @@ enum class DATASET_API ManualOffloadMode {
 enum class DATASET_API MapTargetDevice {
   kCpu = 0,     ///< CPU Device.
   kGpu,         ///< Gpu Device.
-  kAscend310,   ///< Ascend310 Device.
-  kAscend910B,  ///< Ascend910B Device.
+  kAscend310,   ///<
+  kAscend910B,  ///<
   kInvalid = 100
 };
 

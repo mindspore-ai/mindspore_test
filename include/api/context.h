@@ -236,7 +236,7 @@ std::string DeviceInfoContext::GetProviderDevice() const { return CharToString(G
 void DeviceInfoContext::SetProviderDevice(const std::string &device) { SetProviderDevice(StringToChar(device)); }
 
 /// \brief Derived from DeviceInfoContext, The configuration of the model running auto on the Host Devices, include
-/// CPU/GPU/NPU/Ascend310/Ascend910. This option is only valid for MindSpore Lite.
+/// CPU/GPU/NPU/Ascend. This option is only valid for MindSpore Lite.
 class MS_API AutoDeviceInfo : public DeviceInfoContext {
  public:
   /// \brief Get the type of this DeviceInfoContext.
