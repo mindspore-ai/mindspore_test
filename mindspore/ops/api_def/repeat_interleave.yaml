@@ -1,20 +1,22 @@
 repeat_interleave:
   - op_yaml: deprecated/repeat_interleave_op.yaml
-    py_method: tensor_repeat_interleave
+    py_method: deprecated_tensor_repeat_interleave
     Ascend: py_method
     CPU: py_method
     GPU: py_method
     interface: tensor
 
   - op_yaml: repeat_interleave_tensor_op.yaml
-    py_method: tensor_repeat_interleave
+    py_method: tensor_repeat_interleave_ext
+    kwonlyargs: output_size
     Ascend: pyboost
     CPU: py_method
     GPU: py_method
     interface: tensor, function
 
   - op_yaml: repeat_interleave_int_op.yaml
-    py_method: tensor_repeat_interleave
+    py_method: tensor_repeat_interleave_ext
+    kwonlyargs: output_size
     Ascend: pyboost
     CPU: py_method
     GPU: py_method

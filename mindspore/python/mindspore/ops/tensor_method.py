@@ -213,7 +213,7 @@ from mindspore.ops.function.math_func import remainder
 # 86 repeat
 
 # 87 repeat_interleave
-from mindspore.ops.function.array_func import repeat_interleave
+from mindspore.ops.function.array_func import repeat_interleave, repeat_interleave_ext
 # 88 reshape
 from mindspore.ops.auto_generate import reshape
 # 89 round
@@ -776,8 +776,12 @@ def deprecated_tensor_remainder(input, divisor):
 # 86 repeat
 
 # 87 repeat_interleave
-def tensor_repeat_interleave(input, repeats, dim=None):
+def deprecated_tensor_repeat_interleave(input, repeats, dim=None):
     return repeat_interleave(input, repeats, dim)
+
+
+def tensor_repeat_interleave_ext(input, repeats, dim=None, *, output_size=None):
+    return repeat_interleave_ext(input, repeats, dim, output_size)
 
 
 # 88 reshape

@@ -4,6 +4,9 @@ repeat_interleave:
 
     Repeat elements of a tensor along a dim, like `numpy.repeat`.
 
+    .. warning::
+        Only support on Atlas A2 training series.
+
     .. note::
         The self tensor to repeat values for. Must be of type: float16, float32, 
         int8, uint8, int16, int32, or int64.
