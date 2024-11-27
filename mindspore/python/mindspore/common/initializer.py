@@ -841,7 +841,8 @@ def initializer(init, shape=None, dtype=mstype.float32):
         dtype (:class:`mindspore.dtype`): The type of data in initialized tensor. Default: ``mstype.float32`` .
 
     Returns:
-        Tensor, return is Tensor object.
+        Returns a Tensor with the shape specified by the input `shape`. If `shape` is ``None``,
+        the returned Tensor will have the same shape as ``init``.
 
     Raises:
         TypeError: The type of the argument 'init' is not correct.
