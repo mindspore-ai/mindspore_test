@@ -51,8 +51,7 @@ class DataPrepareActor : public DebugAwareActor {
         host_data_source_actor_(host_data_source_actor),
         host_tensor_queue_(host_tensor_queue),
         has_continuous_memory_(false),
-        first_step_(true),
-        has_parameter_input_(false) {}
+        first_step_(true) {}
   ~DataPrepareActor() override = default;
 
   // The process entry of data prepare.
@@ -134,13 +133,7 @@ class DataPrepareActor : public DebugAwareActor {
   void PreprocessBeforePrepareData() const;
 
   // Remove after refact.
-  bool enable_prepare_case() {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-    return !tensors_need_reprepare_.empty() || (has_parameter_input_ && !enable_infer_boost) || is_sub_data_ ||
-           has_heter_weights_;
-  }
+  bool enable_prepare_case() { return !tensors_need_reprepare_.empty() || is_sub_data_ || has_heter_weights_; }
 
   const GraphCompilerInfo *graph_compiler_info_;
   GraphExecutionStrategy strategy_;
@@ -154,7 +147,6 @@ class DataPrepareActor : public DebugAwareActor {
   std::set<AnfNode *> address_modified_input_nodes_;
   bool first_step_;
   std::vector<ShapeVector> host_tensors_;
-  bool has_parameter_input_;
 
   // The tensor of parameter(weight) maybe update host value by Python phase and need re-prepare to sync new host value
   // to device side. 'tensors_need_reprepare_' records all tensors whose host value has updated, this HashSet will be
