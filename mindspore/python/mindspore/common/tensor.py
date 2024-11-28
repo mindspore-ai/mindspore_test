@@ -2158,13 +2158,33 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         Alias for :func:`mindspore.Tensor.numel`.
         """
-        return tensor_operator_registry.get('nelement')(self)
+        return self.size
 
     def numel(self):
         r"""
-        For details, please refer to :func:`mindspore.ops.numel`.
+        Returns a Scalar of type int that represents the total number of elements in the Tensor.
+
+        Args:
+            input (Tensor): Input Tensor.
+
+        Returns:
+            int. A scalar representing the total of elements in the Tensor.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input_x = Tensor(np.array([[2, 2], [2, 2]]), mindspore.float32)
+            >>> print(ops.numel(input_x))
+            4
         """
-        return tensor_operator_registry.get('numel')(self)
+        return self.size
 
     def permute(self, *axis):
         """
