@@ -1,0 +1,30 @@
+scatter_:
+  - op_yaml: inplace_scatter_src_op.yaml
+    py_method: tensor_inplace_scatter_src
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: inplace_scatter_src_reduce_op.yaml
+    py_method: tensor_inplace_scatter_src_reduce
+    kwonlyargs: reduce
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: inplace_scatter_value_op.yaml
+    py_method: tensor_inplace_scatter_value
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: inplace_scatter_value_reduce_op.yaml
+    py_method: tensor_inplace_scatter_value_reduce
+    kwonlyargs: reduce
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor

@@ -1333,6 +1333,26 @@ REG_BPROP_BUILDER("Scatter").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(
   return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), src_grad, ib->OutZeros(reduce)};
 });
 
+REG_BPROP_BUILDER("InplaceScatterSrc").FreeUselessValues_IO({i0, i3}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto src = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto input_grad = input->need_compute_grad_out()
+                      ? (IsShapeNone(ib->GetShape(dout))  // ScatterValue does not accepts empty input
+                           ? dout
+                           : ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)),
+                                                       ib->EmitValue(MakeValue<int64_t>(0))}))
+                      : ib->OutZeros(input);
+  auto src_grad = src->need_compute_grad_out() && !IsShapeNone(ib->GetShape(index)) ? ib->GatherD(dout, dim, index)
+                                                                                    : ib->OutZeros(src);
+  return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), src_grad};
+});
+
+// Grad of inplace scatter with reduce is not supported, returns zeros of self / dim / index / src / reduce
+REG_BPROP_BUILDER("InplaceScatterSrcReduce").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
+
 REG_BPROP_BUILDER("ScatterValue").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib) {
   auto dim = ib->GetInput(kIndex1);
   auto index = ib->GetInput(kIndex2);
@@ -1342,6 +1362,24 @@ REG_BPROP_BUILDER("ScatterValue").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODY
   auto input_grad = ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)), reduce});
   return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), ib->OutZeros(src), ib->OutZeros(reduce)};
 });
+
+REG_BPROP_BUILDER("InplaceScatterValue").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto input_grad = input->need_compute_grad_out()
+                      ? (IsShapeNone(ib->GetShape(dout))  // ScatterValue does not accepts empty input
+                           ? dout
+                           : ib->Emit("ScatterValue", {dout, dim, index, ib->EmitValue(MakeValue<float>(0)),
+                                                       ib->EmitValue(MakeValue<int64_t>(0))}))
+                      : ib->OutZeros(input);
+  return {input_grad, ib->OutZeros(dim), ib->OutZeros(index), ib->OutZeros(value)};
+});
+
+// Grad of inplace scatter with reduce is not supported, returns zeros of self / dim / index / value / reduce
+REG_BPROP_BUILDER("InplaceScatterValueReduce").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("ScatterNdUpdate").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);

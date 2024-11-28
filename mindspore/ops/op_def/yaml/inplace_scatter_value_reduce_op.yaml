@@ -1,0 +1,29 @@
+#operator InplaceScatterValueReduce
+inplace_scatter_value_reduce:
+  args:
+    input:
+      dtype: tensor
+    dim:
+      dtype: int
+      type_cast: tensor
+    index:
+      dtype: tensor
+    value:
+      dtype: number
+      type_cast: tensor
+    reduce:
+      dtype: int
+      arg_handler: str_to_enum
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  dispatch:
+    enable: True
+    Ascend: InplaceScatterValueReduceAscend
+  function:
+    disable: True
