@@ -40,8 +40,7 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
 
   auto comm_handle = op->comm_handle();
   auto device_context = op->device_context();
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||
-                     MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";
+  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
 
   // Need to bind context if the comm_op is the first op launched in this thread.
   device_context->device_res_manager_->BindDeviceToCurrentThread(false);
