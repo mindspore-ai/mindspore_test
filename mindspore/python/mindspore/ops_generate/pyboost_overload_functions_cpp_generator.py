@@ -90,10 +90,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
             '}\n'
         )
         self.pybind_register_template = Template(
-            '(void)py::class_ <${cpp_func_name}Functional, Functional, std::shared_ptr<${cpp_func_name}Functional>>(\n'
-            '*m, "${mint_func_name}Functional_")\n'
-            '.def(py::init<>())\n'
-            '.def("__call__", &${cpp_func_name}Functional::Call, "Call ${mint_func_name} functional.");\n'
+            '(void)py::class_<${cpp_func_name}Functional, Functional, std::shared_ptr<${cpp_func_name}Functional>>\n'
+            '  (*m, "${cpp_func_name}Functional_")\n'
+            '  .def("__call__", &${cpp_func_name}Functional::Call, "Call ${cpp_func_name} functional.");\n'
+            'm->attr("_${mint_func_name}_instance") = ${mint_func_name}_instance;'
         )
         self.callback_python_in_ut_template = Template(
             'MS_LOG(INFO) << "Callback python method in UT: ${py_method}";\n'
@@ -415,12 +415,10 @@ class PyboostOverloadFunctionsGenerator(BaseGenerator):
         mint_func_reg_list = []
         for func_name in mint_func_protos_data.keys():
             api_def_list = mint_func_protos_data[func_name]
-            mint_func_name = pyboost_utils.format_func_api_name(func_name)
             if len(api_def_list) == 1:
                 cpp_func_name = pyboost_utils.format_func_api_name(mint_func_protos_data[func_name][0].op_proto.op_name)
             elif len(api_def_list) > 1:
                 cpp_func_name = pyboost_utils.format_func_api_name(func_name)
-
-            mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=mint_func_name,
+            mint_func_reg_list.append(self.pybind_register_template.replace(mint_func_name=func_name,
                                                                             cpp_func_name=cpp_func_name))
         return mint_func_reg_list

@@ -170,9 +170,9 @@ def gen_tensor_docs_code(work_path, tensor_docs_data):
     generator.generate(work_path, tensor_docs_data)
 
 
-def gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping):
+def gen_functional_overload_py(work_path, mint_func_protos, function_doc_data, alias_api_mapping):
     generator = FunctionalOverloadPyGenerator()
-    generator.generate(work_path, mint_func_protos, alias_api_mapping)
+    generator.generate(work_path, mint_func_protos, function_doc_data, alias_api_mapping)
 
 
 def main():
@@ -180,8 +180,8 @@ def main():
     work_path = os.path.join(current_path, '../../../../')
 
     # merge ops yaml
-    doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path, tensor_method_doc_yaml_path \
-        = merge_ops_yaml(work_path)
+    (doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path,
+     tensor_method_doc_yaml_path, mint_func_doc_yaml_path) = merge_ops_yaml(work_path)
 
     # make auto_generate dir
     cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
@@ -196,6 +196,7 @@ def main():
     deprecated_ops_yaml_dict = safe_load_yaml(deprecated_ops_yaml_path)
     ops_api_yaml_dict = safe_load_yaml(ops_api_yaml_path)
     tensor_method_doc_yaml_dict = safe_load_yaml(tensor_method_doc_yaml_path)
+    mint_function_doc_yaml_dict = safe_load_yaml(mint_func_doc_yaml_path)
 
     op_protos = load_op_protos_from_ops_yaml(ops_yaml_dict)
     deprecated_op_protos = load_deprecated_op_protos_from_ops_yaml(deprecated_ops_yaml_dict)
@@ -221,7 +222,7 @@ def main():
     # generate _tensor_docs.py that attaches docs to tensor func APIs when import mindspore
     gen_tensor_docs_code(work_path, tensor_method_doc_yaml_dict)
     # generate functional_overload.py which init pybind mint APIs from cpp
-    gen_functional_overload_py(work_path, mint_func_protos, alias_api_mapping)
+    gen_functional_overload_py(work_path, mint_func_protos, mint_function_doc_yaml_dict, alias_api_mapping)
 
 
 def load_op_protos_from_ops_yaml(ops_yaml_data):
@@ -273,7 +274,12 @@ def merge_ops_yaml(work_path):
     tensor_method_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_method_doc.yaml')
     merge_files(tensor_method_doc_yaml_dir_path, tensor_method_doc_yaml_path, '*doc.yaml')
 
-    return doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path, ops_api_yaml_path, tensor_method_doc_yaml_path
+    mint_func_doc_yaml_dir_path = os.path.join(work_path, K.MS_MINT_FUNC_DOC_YAML_PATH)
+    mint_func_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'mint_func_doc.yaml')
+    merge_files(mint_func_doc_yaml_dir_path, mint_func_doc_yaml_path, '*doc.yaml')
+
+    return (doc_yaml_path, ops_yaml_path, deprecated_ops_yaml_path,
+            ops_api_yaml_path, tensor_method_doc_yaml_path, mint_func_doc_yaml_path)
 
 
 if __name__ == "__main__":

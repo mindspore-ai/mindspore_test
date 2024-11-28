@@ -19,12 +19,14 @@
       "NOTICE",
       "SECURITY.md",
       "Third_Party_Open_Source_Software",
-      ".gitattributes"
+      ".gitattributes",
+      ".gitignore"
     ],
     "ENVIRONMENT": "BASE"
   },
   "Compile_CPU_Win": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
@@ -105,6 +107,7 @@
   },
   "Compile_Lite_Windows_AVX": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -146,6 +149,7 @@
   },
   "Compile_CPU_X86_MacOS": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
@@ -222,6 +226,7 @@
   },
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
@@ -330,6 +335,7 @@
   },
   "Compile_GPU_X86_CentOS_Cuda11.6": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
@@ -415,6 +421,7 @@
   },
   "Compile_GPU_X86_CentOS_Cuda10": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
@@ -496,6 +503,7 @@
   },
   "Compile_CPU_X86_CentOS": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
@@ -579,6 +587,7 @@
   },
   "Compile_UT": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -680,6 +689,7 @@
   },
   "Compile_Lite_X86_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -758,6 +768,7 @@
   },
   "Compile_Lite_ARM64_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -832,6 +843,7 @@
   },
   "Compile_Lite_Java": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/core/include",
       "mindspore/core/mindrt/src",
@@ -857,6 +869,7 @@
   },
   "Compile_Lite_ARM64": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -892,6 +905,7 @@
   },
   "Compile_Lite_ARM64_SD3403": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/core/include",
       "mindspore/core/mindrt/src",
@@ -914,6 +928,7 @@
   },
   "Compile_Lite_ARM64_CROP": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -941,6 +956,7 @@
   },
   "Compile_Lite_ARM64_Linux": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -988,6 +1004,7 @@
   },
   "Compile_Lite_X86": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -1064,6 +1081,7 @@
   },
   "Compile_Lite_X86_SSE": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -1099,6 +1117,7 @@
   },
   "Compile_Lite_X86_AVX": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "include/api",
       "mindspore/ccsrc/include",
@@ -1163,6 +1182,7 @@
   },
   "Compile_Lite_X86_AVX512": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -1194,6 +1214,7 @@
   },
   "Compile_Lite_X86_ASAN": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -1244,6 +1265,7 @@
   },
   "Compile_Lite_X86_SD3403": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -1294,6 +1316,7 @@
   },
   "Compile_Lite_X86_KERNEL_EXECUTOR": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -1341,6 +1364,7 @@
   },
   "Compile_Lite_ARM32_3516D": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/core/include",
       "mindspore/core/mindrt/src/thread",
@@ -1366,6 +1390,7 @@
   },
   "Compile_Lite_X86_3516D": {
     "DIR_ARRAY": [
+      ".gitignore",
       ".gitattributes",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
