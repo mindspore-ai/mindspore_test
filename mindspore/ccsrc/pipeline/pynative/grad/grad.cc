@@ -317,13 +317,10 @@ class BpropCallback final : public expander::bprop::PynativeCallback {
   const OpGradInfoPtr &op_grad_info;
 };
 
-GradParamPtr CreateOpGradParam(const FrontendOpRunInfoPtr &op_run_info, const TopCellInfoPtr &top_cell) {
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  op_run_info->op_grad_info->out_value = op_run_info->real_out;
-  op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
-  auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, top_cell->use_dynamic_shape_process());
+GradParamPtr CreateOpGradParam(const OpGradInfoPtr &grad_info, const TopCellInfoPtr &top_cell) {
+  auto grad_param = std::make_shared<GradParam>(grad_info, top_cell->use_dynamic_shape_process());
   if (!top_cell->is_high_order_top_cell()) {
-    BpropExpander::FreeUselessValues(BpropCallback(op_run_info->op_grad_info));
+    BpropExpander::FreeUselessValues(BpropCallback(grad_info));
   }
   return grad_param;
 }
@@ -456,6 +453,8 @@ FrontendOpRunInfoPtr CustomContext2OpRunInfo(const autograd::CustomContext &cont
   op_run_info->base_op_run_info.abstract =
     PyNativeAlgo::Common::SetAbstractValueToAnyValue(context.output->ToAbstract());
   op_run_info->op_grad_info->input_value_grad_type.resize(op_run_info->input_size);
+  op_run_info->op_grad_info->out_value = context.output;
+  op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
   for (size_t i = 0; i < op_run_info->input_size; ++i) {
     const auto &value = context.inputs[i];
     (void)op_run_info->op_grad_info->input_abs.emplace_back(
@@ -2107,14 +2106,13 @@ TopCellInfoPtr GradExecutor::GetTopCell(const std::string &already_run_cell_id, 
   return nullptr;
 }
 
-void GradExecutor::ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) const {
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  RecordForwardGraph(op_run_info);
+void GradExecutor::ProcessOpGradInfo(const OpGradInfoPtr &grad_info) const {
+  RecordForwardGraph(grad_info);
   if (top_cell_->is_bprop_need_get_forward_graph()) {
     MS_LOG(DEBUG) << "Just need forward graph";
     return;
   }
-  DoOpGrad(op_run_info);
+  DoOpGrad(grad_info);
 }
 
 void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, const py::args &args) {
@@ -2161,28 +2159,22 @@ void GradExecutor::CallCustomBprop(const py::object &obj, const py::object out, 
   MS_LOG(DEBUG) << "End CallCustomBprop";
 }
 
-void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const FrontendOpRunInfoPtr &op_run_info,
-                                     const CNodePtr &cnode) const {
+void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const OpGradInfoPtr &grad_info, const CNodePtr &cnode,
+                                     const std::vector<std::string> &input_value_id) const {
   MS_EXCEPTION_IF_NULL(cnode);
   MS_LOG(DEBUG) << "Cnode is " << cnode->DebugString() << ", out value id " << obj_id;
-  // In hook compute, output is a copy of input; If hook input is a input param, follow op use hook output as input,
-  // which GetInput will always find input param, so need delete from input param map
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  if (op_run_info->run_in_vm && kHookOp.find(op_run_info->base_op_run_info.op_name) != kHookOp.end()) {
-    for (size_t i = 0; i < op_run_info->input_size; ++i) {
-      top_cell()->DeleteParamNodeInfo(curr_g(), op_run_info->input_value_id[i]);
+  if (grad_info->run_in_vm && kHookOp.find(grad_info->op_prim->name()) != kHookOp.end()) {
+    for (size_t i = 0; i < grad_info->input_value.size(); ++i) {
+      top_cell()->DeleteParamNodeInfo(curr_g(), input_value_id[i]);
     }
   }
   top_cell()->SetNodeMapInGraphInfoMap(obj_id, cnode);
 }
 
-// Run ad grad for curr op and connect grad graph with previous op
-void GradExecutor::DoOpGrad(const FrontendOpRunInfoPtr &op_run_info) const {
-  MS_EXCEPTION_IF_NULL(op_run_info);
-  top_cell()->GetOpInfo(op_run_info, false);
-  auto pre_top_cell = PyNativeAlgo::Common::FindPreTopcell(this, op_run_info->op_grad_info,
-                                                           op_run_info->op_grad_info->op_info, op_run_info->real_out);
-  auto &&grad_param = CreateOpGradParam(op_run_info, top_cell());
+void GradExecutor::DoOpGrad(const OpGradInfoPtr &grad_info) const {
+  top_cell()->GetOpInfo(grad_info, grad_info->op_prim->name(), false);
+  auto pre_top_cell = PyNativeAlgo::Common::FindPreTopcell(this, grad_info, grad_info->op_info, grad_info->out_value);
+  auto &&grad_param = CreateOpGradParam(grad_info, top_cell());
   if (forward()->enable_async()) {
     auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
     auto task = [auto_grad_cell_ptr, grad_param, pre_top_cell, this]() {
@@ -2196,46 +2188,41 @@ void GradExecutor::DoOpGrad(const FrontendOpRunInfoPtr &op_run_info) const {
   }
 }
 
-CNodePtr GradExecutor::ConstructForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const {
-  MS_EXCEPTION_IF_NULL(op_run_info);
+CNodePtr GradExecutor::ConstructForwardGraph(const OpGradInfoPtr &grad_info,
+                                             const std::vector<std::string> &input_value_id) const {
   AnfNodePtrList inputs;
-  (void)inputs.emplace_back(NewValueNode(op_run_info->op_grad_info->op_prim));
-  for (size_t i = 0; i < op_run_info->input_size; i++) {
-    (void)inputs.emplace_back(GetInput(op_run_info->op_grad_info->input_value[i], op_run_info->input_value_id[i]));
+  (void)inputs.emplace_back(NewValueNode(grad_info->op_prim));
+  for (size_t i = 0; i < grad_info->input_value.size(); i++) {
+    (void)inputs.emplace_back(GetInput(grad_info->input_value[i], input_value_id[i]));
   }
   const auto &cnode = curr_g()->NewCNodeInOrder(inputs);
-  MS_LOG(DEBUG) << "Make CNode for " << op_run_info->base_op_run_info.op_name << ", new cnode is "
-                << cnode->DebugString();
+  MS_LOG(DEBUG) << "Make CNode for " << grad_info->op_prim->name() << ", new cnode is " << cnode->DebugString();
   return cnode;
 }
 
-void GradExecutor::RecordForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const {
+void GradExecutor::RecordForwardGraph(const OpGradInfoPtr &grad_info) const {
   if (save_graphs_ || top_cell_->is_bprop_need_get_forward_graph()) {
-    MS_EXCEPTION_IF_NULL(op_run_info);
-    if (op_run_info->input_value_id.empty()) {
-      (void)std::transform(op_run_info->op_grad_info->input_value.begin(), op_run_info->op_grad_info->input_value.end(),
-                           std::back_inserter(op_run_info->input_value_id),
-                           [](const ValuePtr &value) { return PyNativeAlgo::Common::GetIdByValue(value); });
-    }
-    if (op_run_info->out_value_id.empty()) {
-      op_run_info->out_value_id = PyNativeAlgo::Common::GetIdByValue(op_run_info->real_out);
-    }
-    const auto &cnode = ConstructForwardGraph(op_run_info);
+    std::string out_value_id;
+    // Hold tensorGradType
+    std::vector<std::string> input_value_id;
+    (void)std::transform(grad_info->input_value.begin(), grad_info->input_value.end(),
+                         std::back_inserter(input_value_id),
+                         [](const ValuePtr &value) { return PyNativeAlgo::Common::GetIdByValue(value); });
+
+    out_value_id = PyNativeAlgo::Common::GetIdByValue(grad_info->out_value);
+    const auto &cnode = ConstructForwardGraph(grad_info, input_value_id);
     MS_EXCEPTION_IF_NULL(cnode);
     // By simple infer, abstract is nullptr
-    if (op_run_info->base_op_run_info.abstract == nullptr) {
-      cnode->set_abstract(PyNativeAlgo::Common::SetAbstractValueToAnyValue(op_run_info->real_out->ToAbstract()));
-    } else {
-      cnode->set_abstract(op_run_info->base_op_run_info.abstract);
-    }
-    SaveOutputNodeMap(op_run_info->out_value_id, op_run_info, cnode);
+    cnode->set_abstract(PyNativeAlgo::Common::SetAbstractValueToAnyValue(grad_info->out_value->ToAbstract()));
+
+    SaveOutputNodeMap(out_value_id, grad_info, cnode, input_value_id);
   }
 }
 
 void GradExecutor::RecordCustomBprop(const autograd::CustomContext &context) const {
   if (save_graphs_) {
     auto op_run_info = CustomContext2OpRunInfo(context);
-    RecordForwardGraph(op_run_info);
+    RecordForwardGraph(op_run_info->op_grad_info);
   }
 }
 

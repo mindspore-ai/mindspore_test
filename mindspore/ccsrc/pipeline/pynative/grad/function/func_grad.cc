@@ -998,6 +998,7 @@ BackwardNodePtr FuncGrad::BuildFuncBackwardNode(const PrimitivePtr &prim, const 
 
 BackwardNodePtr FuncGrad::BuildCustomBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
                                                   const OpGradInfoPtr &op_grad_info, size_t flatten_output_size) {
+  PyNativeAlgo::AutoGradUtil::CheckAndSetAbstract(op_grad_info);
   MS_EXCEPTION_IF_NULL(prim);
   MS_LOG(DEBUG) << "Try build custom bprop: " << prim->name();
   {

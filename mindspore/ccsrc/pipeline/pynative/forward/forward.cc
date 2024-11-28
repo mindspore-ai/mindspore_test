@@ -386,11 +386,10 @@ void ForwardExecutor::DispatchFrontendTask(const FrontendOpRunInfoPtr &op_run_in
   runtime::Pipeline::Get().frontend_stage()->Push(forward_task);
 }
 
-void ForwardExecutor::ForwardOpGradImpl(const FrontendOpRunInfoPtr &op_run_info) const {
-  // If jit is compiled in first step, op info will not be find in second training step
-  MS_LOG(DEBUG) << "Current custom bprop cell count " << op_run_info->async_status.custom_bprop_cell_count;
-  if (!op_run_info->async_status.is_jit_compiling && op_run_info->async_status.custom_bprop_cell_count <= 0) {
-    grad()->ProcessOpGradInfo(op_run_info);
+void ForwardExecutor::ForwardOpGradImpl(const OpGradInfoPtr &grad_info, const AsyncStatus &async_status) const {
+  MS_LOG(DEBUG) << "Current custom bprop cell count " << async_status.custom_bprop_cell_count;
+  if (!async_status.is_jit_compiling && async_status.custom_bprop_cell_count <= 0) {
+    grad()->ProcessOpGradInfo(grad_info);
   }
 }
 
@@ -492,7 +491,9 @@ bool ForwardExecutor::ProcessViewOp(const FrontendOpRunInfoPtr &op_run_info,
   GilReleaseWithCheck release_gil;
   ForwardRunViewKernelTask(op_run_info, task_type, false);
   if (op_run_info->requires_grad) {
-    ForwardOpGradImpl(op_run_info);
+    op_run_info->op_grad_info->out_value = op_run_info->real_out;
+    op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
+    ForwardOpGradImpl(op_run_info->op_grad_info, op_run_info->async_status);
   }
   MS_LOG(DEBUG) << "End";
   return true;
@@ -617,8 +618,11 @@ void ForwardExecutor::RunOpBackendSync(const FrontendOpRunInfoPtr &op_run_info) 
     UpdateStubTensor(op_run_info);
     return;
   }
+
+  op_run_info->op_grad_info->out_value = op_run_info->real_out;
+  op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
   // Do op grad and record op info
-  ForwardOpGradImpl(op_run_info);
+  ForwardOpGradImpl(op_run_info->op_grad_info, op_run_info->async_status);
   // output is dynamic shape. Need to update abstract and value.
   UpdateStubTensor(op_run_info);
 }
@@ -782,7 +786,7 @@ ValuePtr ForwardExecutor::RunOpWithBackendPolicy(const FrontendOpRunInfoPtr &op_
 ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) const {
   MS_LOG(DEBUG) << "RunOpInVM start";
   MS_EXCEPTION_IF_NULL(op_run_info);
-  op_run_info->run_in_vm = true;
+  op_run_info->op_grad_info->run_in_vm = true;
   if (op_run_info->requires_grad) {
     for (size_t i = 0; i < op_run_info->input_size; i++) {
       op_run_info->op_grad_info->input_value_grad_type[i] =

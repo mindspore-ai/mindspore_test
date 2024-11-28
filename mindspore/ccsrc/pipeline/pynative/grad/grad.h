@@ -97,8 +97,8 @@ class ME_EXPORT GradExecutor {
   py::object RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
                          const std::vector<size_t> &p_args);
   py::object RunGradGraph();
-  CNodePtr ConstructForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const;
-  void RecordForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const;
+  CNodePtr ConstructForwardGraph(const OpGradInfoPtr &grad_info, const std::vector<std::string> &input_value_id) const;
+  void RecordForwardGraph(const OpGradInfoPtr &grad_info) const;
   void RecordCustomBprop(const autograd::CustomContext &context) const;
   void RecordForwardGraphForInput(const ValuePtr &value, const string &input_id,
                                   const abstract::AbstractBasePtr &param_abs);
@@ -115,7 +115,7 @@ class ME_EXPORT GradExecutor {
   void GetTopCellWithInputArgsRespectTo(const prim::GradOperationPtr &grad, const py::object &obj,
                                         const py::args &args);
   bool ReplacePipelineTopCellForwardOutput();
-  void ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) const;
+  void ProcessOpGradInfo(const OpGradInfoPtr &op_run_info) const;
   void CallCustomBprop(const py::object &obj, const py::object out, const py::args &args);
   AnfNodePtr GetInput(const ValuePtr &v, const string &obj_id) const;
   AnfNodePtr GetParamInput(const ValuePtr &v, const std::string &id) const;
@@ -162,9 +162,9 @@ class ME_EXPORT GradExecutor {
     MS_LOG(DEBUG) << "Push top cell " << top_cell << " on top cell stack";
   }
   bool NeedIncreaseGradOrder(const std::string &obj_id);
-  void SaveOutputNodeMap(const std::string &obj_id, const FrontendOpRunInfoPtr &op_run_info,
-                         const CNodePtr &cnode) const;
-  void DoOpGrad(const FrontendOpRunInfoPtr &op_run_info) const;
+  void SaveOutputNodeMap(const std::string &obj_id, const OpGradInfoPtr &grad_info, const CNodePtr &cnode,
+                         const std::vector<std::string> &input_value_id) const;
+  void DoOpGrad(const OpGradInfoPtr &grad_info) const;
   void SetBpropGraphJitLevel(const py::object &obj) const;
   void ClearGlobalRes() const;
   void ClearGradRes();

@@ -133,8 +133,8 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   }
 
   void CreateOutputSimpleInfoForView() {
-    if (output_value_simple_info_ != nullptr || output_abs_ != nullptr) {
-      MS_LOG(DEBUG) << "op:" << primitive_->name() << ", already have simple-info or output_abs.";
+    if (output_value_simple_info_ != nullptr) {
+      MS_LOG(DEBUG) << "op:" << primitive_->name() << ", already have simple-info";
       return;
     }
     output_value_simple_info_ = std::make_shared<ValueSimpleInfo>();

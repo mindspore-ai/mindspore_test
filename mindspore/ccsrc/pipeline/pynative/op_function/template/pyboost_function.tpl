@@ -48,7 +48,10 @@ py::object ME_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list 
 
           // Do auto grad
           if (op_run_info->requires_grad) {
-            PyNativeAlgo::PyBoost::DoGrad(op, op_run_info, {${grad_args}});
+            op_run_info->op_grad_info->op_prim = op->primitive();
+            op_run_info->op_grad_info->input_value = {${grad_args}};
+            op_run_info->op_grad_info->out_value = op_run_info->real_out;
+            PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
           } else if (op_type == OperatorType::kInplaceOp) {
             PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
           }
