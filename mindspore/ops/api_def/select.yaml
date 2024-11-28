@@ -6,7 +6,7 @@ select:
     GPU: py_method
     interface: tensor
 
-  - op_yaml: deprecated/select_op.yaml
+  - op_yaml: deprecated/select_method.yaml
     py_method: deprecated_tensor_select # callback to python function "def deprecated_tensor_select"
     Ascend: py_method
     CPU: py_method

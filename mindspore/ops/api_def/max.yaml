@@ -6,7 +6,7 @@ max:
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/max_op.yaml
+  - op_yaml: deprecated/max_method.yaml
     py_method: deprecated_tensor_max
     kwonlyargs: initial, where, return_indices
     Ascend: py_method

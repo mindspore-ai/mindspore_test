@@ -6,7 +6,7 @@ any:
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/reduce_any_op.yaml
+  - op_yaml: deprecated/reduce_any_method.yaml
     py_method: tensor_any
     Ascend: py_method
     CPU: py_method

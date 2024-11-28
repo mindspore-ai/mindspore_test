@@ -1,5 +1,5 @@
 repeat_interleave:
-  - op_yaml: deprecated/repeat_interleave_op.yaml
+  - op_yaml: deprecated/repeat_interleave_method.yaml
     py_method: deprecated_tensor_repeat_interleave
     Ascend: py_method
     CPU: py_method
