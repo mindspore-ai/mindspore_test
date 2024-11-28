@@ -13,25 +13,31 @@
 # limitations under the License.
 # ============================================================================
 """Test the overload functional method"""
-import mindspore as ms
-import mindspore.nn as nn
 import numpy as np
 import pytest
-
 from tests.mark_utils import arg_mark
+
+import mindspore as ms
+import mindspore.nn as nn
+from mindspore.common.api import _pynative_executor
 
 
 class MeanNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False):
-        return x.mean(axis, keep_dims)
+    def construct(self, x, axis=None, keep_dims=False, dtype=None):
+        return x.mean(axis, keep_dims, dtype)
 
 
 class MeanKVNet(nn.Cell):
-    def construct(self, x, axis=None, keep_dims=False):
-        return x.mean(axis=axis, keep_dims=keep_dims)
+    def construct(self, x, axis=None, keep_dims=False, dtype=None):
+        return x.mean(axis=axis, keep_dims=keep_dims, dtype=dtype)
 
 
 class MeanKVDisruptNet(nn.Cell):
+    def construct(self, x, axis=None, keep_dims=False, dtype=None):
+        return x.mean(keep_dims=keep_dims, axis=axis, dtype=dtype)
+
+
+class MeanNetpython(nn.Cell):
     def construct(self, x, axis=None, keep_dims=False):
         return x.mean(keep_dims=keep_dims, axis=axis)
 
@@ -41,7 +47,7 @@ class MeanKVDisruptNet(nn.Cell):
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_method_mean(mode):
+def test_method_mean_python(mode):
     """
     Feature: Functional.
     Description: Test functional feature with Tensor.mean.
@@ -50,7 +56,7 @@ def test_method_mean(mode):
     ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
 
     # test 1: using positional args
-    net = MeanNet()
+    net = MeanNetpython()
     x = ms.Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
     output = net(x, 1, True)
     result = output.shape
@@ -66,7 +72,6 @@ def test_method_mean(mode):
     assert np.allclose(output.asnumpy(), expected)
 
     # test 3: using k-v args.
-    net = MeanKVNet()
     output = net(x, axis=0, keep_dims=True)
     expected = np.array([[[4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
                           [5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
@@ -74,9 +79,71 @@ def test_method_mean(mode):
     assert np.allclose(output.asnumpy(), expected)
 
     # test 4: using k-v out of order args.
-    net = MeanKVDisruptNet()
     output = net(x, axis=1, keep_dims=True)
     expected = np.array([[[2.0, 2.0, 2.0, 2.0, 2.0, 2.0]],
                          [[5.0, 5.0, 5.0, 5.0, 5.0, 5.0]],
                          [[8.0, 8.0, 8.0, 8.0, 8.0, 8.0]]], dtype=np.float32)
     assert np.allclose(output.asnumpy(), expected)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
+def test_method_mean_pyboost(mode):
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.mean.
+    Expectation: Run success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+
+    # test 1: using positional args
+    net = MeanNet()
+    x = ms.Tensor(np.random.randn(3, 4, 5, 6).astype(np.float32))
+    output = net(x, 1, True, None)
+    result = output.shape
+    expected = np.array([3, 1, 5, 6], dtype=np.float32)
+    assert np.allclose(result, expected)
+
+    # test 2: using default args.
+    x = ms.Tensor(np.array([[[2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2]],
+                            [[4, 4, 4, 4, 4, 4], [5, 5, 5, 5, 5, 5], [6, 6, 6, 6, 6, 6]],
+                            [[6, 6, 6, 6, 6, 6], [8, 8, 8, 8, 8, 8], [10, 10, 10, 10, 10, 10]]]), ms.float32)
+    output = net(x)
+    expected = 5.0
+    assert np.allclose(output.asnumpy(), expected)
+
+    # test 3: using k-v args.
+    net = MeanKVNet()
+    output = net(x, axis=0, keep_dims=True, dtype=None)
+    expected = np.array([[[4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+                          [5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
+                          [6.0, 6.0, 6.0, 6.0, 6.0, 6.0]]], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expected)
+
+    # test 4: using k-v out of order args.
+    net = MeanKVDisruptNet()
+    output = net(x, keep_dims=True, axis=1, dtype=None)
+    expected = np.array([[[2.0, 2.0, 2.0, 2.0, 2.0, 2.0]],
+                         [[5.0, 5.0, 5.0, 5.0, 5.0, 5.0]],
+                         [[8.0, 8.0, 8.0, 8.0, 8.0, 8.0]]], dtype=np.float32)
+    assert np.allclose(output.asnumpy(), expected)
+
+    # test 5: error input
+    net = MeanNet()
+    with pytest.raises(TypeError) as error_info:
+        net(x, axis=float(2.0), keep_dims=True, dtype=None)
+        _pynative_executor.sync()
+    assert "Failed calling mean with " in str(error_info.value)
+
+    with pytest.raises(TypeError) as error_info:
+        net(x, axis=1, keep_dims=1, dtype=None)
+        _pynative_executor.sync()
+    assert "Failed calling mean with " in str(error_info.value)
+
+    with pytest.raises(TypeError) as error_info:
+        net(x, axis=5, keep_dims=1, dtype=None)
+        _pynative_executor.sync()
+    assert "Failed calling mean with " in str(error_info.value)
