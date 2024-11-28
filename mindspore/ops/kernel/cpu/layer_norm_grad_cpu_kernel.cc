@@ -109,14 +109,14 @@ bool LayerNormGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
 template <typename T>
 void LayerNormGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  auto *x = reinterpret_cast<T *>(inputs[kLayerNormGradInputXIndex]->device_ptr());
-  auto *dy = reinterpret_cast<T *>(inputs[kLayerNormGradInputDyIndex]->device_ptr());
-  auto *var = reinterpret_cast<float *>(inputs[kLayerNormGradInputVarIndex]->device_ptr());
-  auto *mean = reinterpret_cast<float *>(inputs[kLayerNormGradInputMeanIndex]->device_ptr());
-  auto *gamma = reinterpret_cast<T *>(inputs[kLayerNormGradInputGammaIndex]->device_ptr());
-  auto *dx = reinterpret_cast<T *>(outputs[kLayerNormGradOutputDxIndex]->device_ptr());
-  auto *dg = reinterpret_cast<T *>(outputs[kLayerNormGradOutputDgIndex]->device_ptr());
-  auto *db = reinterpret_cast<T *>(outputs[kLayerNormGradOutputDbIndex]->device_ptr());
+  auto *x = GetDeviceAddress<T>(inputs, kLayerNormGradInputXIndex);
+  auto *dy = GetDeviceAddress<T>(inputs, kLayerNormGradInputDyIndex);
+  auto *var = GetDeviceAddress<float>(inputs, kLayerNormGradInputVarIndex);
+  auto *mean = GetDeviceAddress<float>(inputs, kLayerNormGradInputMeanIndex);
+  auto *gamma = GetDeviceAddress<T>(inputs, kLayerNormGradInputGammaIndex);
+  auto *dx = GetDeviceAddress<T>(outputs, kLayerNormGradOutputDxIndex);
+  auto *dg = GetDeviceAddress<T>(outputs, kLayerNormGradOutputDgIndex);
+  auto *db = GetDeviceAddress<T>(outputs, kLayerNormGradOutputDbIndex);
   size_t thread_num = common::ThreadPool::GetInstance().GetSyncRunThreadNum();
   auto thread_num1 = param_num_ < thread_num ? param_num_ : thread_num;
   std::vector<common::Task> tasks1;

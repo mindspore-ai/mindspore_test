@@ -80,12 +80,12 @@ int LUSolverCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 template <typename T>
 bool LUSolverCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                         const std::vector<KernelTensor *> &outputs) {
-  T *a_value = reinterpret_cast<T *>(inputs[kLUaIndex]->device_ptr());
+  T *a_value = GetDeviceAddress<T>(inputs, kLUaIndex);
   Map<Matrix<T, RowMajor>> input_a(a_value, a_row_, a_col_);
 
-  T *b_value = reinterpret_cast<T *>(inputs[kLUbIndex]->device_ptr());
+  T *b_value = GetDeviceAddress<T>(inputs, kLUbIndex);
   Map<Matrix<T, RowMajor>> input_b(b_value, b_row_, b_col_);
-  T *output_lu_value = reinterpret_cast<T *>(outputs[kLuIndex]->device_ptr());
+  T *output_lu_value = GetDeviceAddress<T>(outputs, kLuIndex);
   Map<Matrix<T, RowMajor>> output_lu(output_lu_value, out_row_, out_col_);
   if (trans_ == "N") {
     output_lu.noalias() = input_a.template triangularView<UnitLower>().solve(input_b);
