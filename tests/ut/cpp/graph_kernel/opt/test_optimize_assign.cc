@@ -49,6 +49,7 @@ FuncGraphPtr ConstructGraph_1() {
 /// Expectation: After optimize assign pass, the output node should still be Sub.
 TEST_F(GraphKernelCommonTestSuite, optimize_assign_skip_output_node) {
   SetDeviceTarget(kAscendDevice);
+  SetGraphKernelFlags("--enable_cluster_ops=Sub,Assign");
   auto fg = ConstructGraph_1();
   RunPass(fg, {std::make_shared<graphkernel::StaticShapeCluster>(), std::make_shared<graphkernel::OptimizeAssign>()});
   EXPECT_EQ(GetAllGKNodes(fg).size(), 1);
