@@ -3,7 +3,7 @@ matmul_ext:
   args:
     input:
       dtype: tensor
-    mat2:
+    other:
       dtype: tensor
   returns:
     output:
