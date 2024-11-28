@@ -44,6 +44,7 @@
 #include "include/common/pynative/abstract_converter.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
+#include "kernel/functions/auto_grad_guard.h"
 
 namespace mindspore {
 namespace pynative {
@@ -179,16 +180,18 @@ tensor::BaseTensorPtr GetContiguousTensor(const tensor::BaseTensorPtr &input_ten
     contiguous_op->CreateOutputSimpleInfoForView();
     const auto &contiguous_run_info = std::make_shared<FrontendOpRunInfo>();
     contiguous_run_info->requires_grad = true;
-    AutoGradUtil::MakeOutput(contiguous_run_info, contiguous_op,
-                             PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index());
-    PyBoost::UpdateStubOutput(contiguous_run_info, contiguous_op->output_abs(), contiguous_op);
+    auto real_output = AutoGradUtil::MakeOutput(
+      true, contiguous_op, PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index());
+    PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(contiguous_run_info->op_grad_info, contiguous_op);
+    PyBoost::UpdateStubOutput(contiguous_op, contiguous_run_info->stub_output, contiguous_op->output_abs(),
+                              real_output);
     contiguous_run_info->base_op_run_info.device_target = device_target;
     contiguous_run_info->input_size = 1;
     contiguous_run_info->base_op_run_info.op_name = ops::kNameContiguous;
     contiguous_run_info->op_grad_info->op_prim = prim::kPrimContiguous;
 
     contiguous_run_info->op_grad_info->input_value = {input_tensor};
-    contiguous_run_info->op_grad_info->out_value = contiguous_run_info->real_out;
+    contiguous_run_info->op_grad_info->out_value = real_output;
     PyBoost::DoGrad(contiguous_op, contiguous_run_info->op_grad_info, contiguous_run_info->async_status);
   }
   return contiguous_tensor;
@@ -1420,30 +1423,29 @@ FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &arg
   return op_run_info;
 }
 
-void PyBoost::UpdateStubOutput(const FrontendOpRunInfoPtr &op_run_info, const AbstractBasePtr &abstract,
-                               const kernel::pyboost::OpPtr &op) {
+void PyBoost::UpdateStubOutput(const kernel::pyboost::OpPtr &op, const stub::StubNodePtr &stub_output,
+                               const AbstractBasePtr &abstract, const ValuePtr &real_out) {
   MS_EXCEPTION_IF_NULL(op);
-  if (op_run_info->stub_output == nullptr || op_run_info->stub_output->isa<stub::NoneTypeNode>()) {
+  if (stub_output == nullptr || stub_output->isa<stub::NoneTypeNode>()) {
     return;
   }
   if (MS_UNLIKELY(op->output_value_simple_info() != nullptr)) {
-    op_run_info->stub_output->SetValueSimpleInfo(op->output_value_simple_info());
+    stub_output->SetValueSimpleInfo(op->output_value_simple_info());
   } else {
     MS_EXCEPTION_IF_NULL(abstract);
-    auto success = op_run_info->stub_output->SetAbstract(abstract);
+    auto success = stub_output->SetAbstract(abstract);
     if (!success) {
-      const auto &op_name = op_run_info->base_op_run_info.op_name;
       MS_EXCEPTION(TypeError) << "The predict type and infer type is not match, predict type is "
-                              << PredictOutType(op_run_info) << ", infer type is " << abstract->BuildType()
-                              << ", the name of operator is [" << op_name
+                              << PredictOutTypeByName(op->primitive()->name()) << ", infer type is "
+                              << abstract->BuildType() << ", the name of operator is [" << op->primitive()->name()
                               << "]. Please modify or add predict type of operator in predict_out_type_map.h.";
     }
     MS_LOG(DEBUG) << "Update StubNode abstract " << abstract->ToString();
   }
-  op_run_info->stub_output->SetValue(op_run_info->real_out);
+  stub_output->SetValue(real_out);
 }
 
-void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&op_inputs) {
+void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
@@ -1457,16 +1459,6 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&
       }
       runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output);
       output->data_sync(true);
-    }
-    for (const auto &input : op_inputs) {
-      if (input->isa<tensor::BaseTensor>()) {
-        auto tensor = input->cast<tensor::BaseTensorPtr>();
-        auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
-        if (device_address == nullptr) {
-          continue;
-        }
-        runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
-      }
     }
   }
 }

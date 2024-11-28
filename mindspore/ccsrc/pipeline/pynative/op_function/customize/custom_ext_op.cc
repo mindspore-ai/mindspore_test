@@ -22,10 +22,12 @@
 #include "pipeline/pynative/predict_out_type_map.h"
 #include "pipeline/pynative/forward/forward_task.h"
 #include "op_def/auto_generate/gen_ops_def.h"
+#include "kernel/functions/auto_grad_guard.h"
+#include "mindspore/ops/kernel/functions/base.h"
 #include "mindspore/ops/kernel/common/pyboost/auto_generate/custom_ext.h"
 
 namespace mindspore::pynative {
-py::object ME_EXPORT Pyboost_CustomExt_Base(const PrimitivePtr &prim, const py::list &args) {
+py::object ME_EXPORT PyboostCustomExtBase(const PrimitivePtr &prim, const py::list &args) {
 #ifndef ENABLE_TEST
   MS_LOG(DEBUG) << "Run Pyboost_CustomExt start";
   auto op_run_info = PyNativeAlgo::PyBoost::Init(prim, args);
@@ -37,7 +39,7 @@ py::object ME_EXPORT Pyboost_CustomExt_Base(const PrimitivePtr &prim, const py::
   static auto top_type = PredictOutType(op_run_info);
   auto node = stub::MakeTopNode(top_type);
   GilReleaseWithCheck release_gil;
-  static auto op_type = PyNativeAlgo::Common::GetOpTypeFromOpdef(ops::gCustomExt);
+  static auto op_type = kernel::pyboost::GetOpTypeFromOpdef(ops::gCustomExt);
   op_run_info->stub_output = node.second;
   op_run_info->source_type = converter.source_type();
   op_run_info->op_grad_info->operator_type = op_type;
@@ -51,35 +53,38 @@ py::object ME_EXPORT Pyboost_CustomExt_Base(const PrimitivePtr &prim, const py::
       auto tensors_tensor_list =
         PyNativeAlgo::Common::ConvertStubNodeToValueTuple(tensors, true, op_run_info->requires_grad);
 
-      // Create op
-      auto op = CREATE_PYBOOST_OP(CustomExt, op_run_info->base_op_run_info.device_target);
-      op->set_primitive(prim);
-
       // Do mixed precision and implicit cast
       static const std::vector<std::vector<size_t>> same_type_table{};
       auto [cast_tensors_tensor_list] =
         PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<0>(op_run_info, same_type_table, tensors_tensor_list);
 
+      // Create op
+      auto op = CREATE_PYBOOST_OP(CustomExt, op_run_info->base_op_run_info.device_target);
+      op->set_primitive(prim);
+      // Run op
       (void)op->Call(cast_tensors_tensor_list);
-      PyNativeAlgo::PyBoost::DataSyncForGraph(op, {cast_tensors_tensor_list});
-      PyNativeAlgo::AutoGradUtil::MakeOutput(
-        op_run_info, op,
+
+      // Create output value
+      auto real_out = PyNativeAlgo::AutoGradUtil::MakeOutput(
+        op_run_info->requires_grad, op,
         op_run_info->requires_grad
           ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index()
           : 0);
-
-      // Set output value to python
-      PyNativeAlgo::PyBoost::UpdateStubOutput(op_run_info, op->output_abs(), op);
-
       // Do auto grad
       if (op_run_info->requires_grad) {
         op_run_info->op_grad_info->op_prim = op->primitive();
         op_run_info->op_grad_info->input_value = {cast_tensors_tensor_list};
-        op_run_info->op_grad_info->out_value = op_run_info->real_out;
+        op_run_info->op_grad_info->out_value = real_out;
+        PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(op_run_info->op_grad_info, op);
         PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
       } else if (op_type == OperatorType::kInplaceOp) {
         PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
       }
+
+      // Set output value to python
+      PyNativeAlgo::PyBoost::UpdateStubOutput(op, op_run_info->stub_output, op->output_abs(), real_out);
+      // Data sync in mix mode(Graph and PyNative)
+      PyNativeAlgo::PyBoost::DataSyncForGraph(op);
       kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
 
       MS_LOG(DEBUG) << "Run frontend task Pyboost_CustomExt end";
@@ -100,7 +105,7 @@ py::object ME_EXPORT Pyboost_CustomExt(const py::args &args) {
   const auto &prim = PyNativeAlgo::PyBoost::ConvertPrimitive(args[0]);
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, prim->name(),
                                      false, true);
-  return Pyboost_CustomExt_Base(prim, args[1]);
+  return PyboostCustomExtBase(prim, args[1]);
 }
 
 class ME_EXPORT CustomExtPrimAdapter : public PrimitiveFunctionAdapter {
@@ -111,7 +116,7 @@ class ME_EXPORT CustomExtPrimAdapter : public PrimitiveFunctionAdapter {
   py::object Call(const py::list &args) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunOp, "CustomExt",
                                        false, true);
-    return Pyboost_CustomExt_Base(prim::kPrimCustomExt, args);
+    return PyboostCustomExtBase(prim::kPrimCustomExt, args);
   }
 };
 

@@ -467,3 +467,21 @@ FUNCTIONAL_MAP_H_TEMPLATE = Template.load_from_file(
 
 ADD_TENSOR_DOCS_TEMPLATE = Template.load_from_file(
     os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/tensor_docs_py.tpl'))
+
+AUTO_GRAD_IMPL_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/auto_grad_impl_cc.tpl'))
+
+AUTO_GRAD_REG_H_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/auto_grad_reg_h.tpl'))
+
+FUNCTIONS_CC_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/functions_cc.tpl'))
+
+FUNCTION_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/function_body.tpl'))
+
+FUNCTIONS_H_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/functions_h.tpl'))
+
+DO_GRAD_FUNCTION_BODY_TEMPLATE = Template.load_from_file(
+    os.path.join(WORK_PATH, './mindspore/ccsrc/pipeline/pynative/op_function/template/do_grad_function.tpl'))

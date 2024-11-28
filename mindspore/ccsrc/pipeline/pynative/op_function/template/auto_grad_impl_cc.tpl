@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "pipeline/pynative/op_function/auto_generate/pyboost_functions.h"
-#include "include/common/pybind_api/api_register.h"
-#include "pipeline/pynative/pynative_execute.h"
-#include "pipeline/pynative/grad/grad_utils.h"
-#include "pipeline/pynative/pynative_utils.h"
-#include "pipeline/pynative/op_function/converter.h"
-#include "pybind_api/gil_scoped_long_running.h"
-#include "pipeline/pynative/predict_out_type_map.h"
-#include "pipeline/pynative/forward/forward_task.h"
+
 #include "op_def/auto_generate/gen_ops_def.h"
-#include "pybind_api/hal/comm_handle_py.h"
-#include "pybind_api/ir/tensor_func_reg.h"
-#include "frontend/expander/bprop/bprop_irbuilder.h"
+#include "mindspore/ops/kernel/functions/auto_grad_reg.h"
+#include "pipeline/pynative/pynative_utils.h"
+#include "mindspore/ops/kernel/common/pyboost/op_runner.h"
 #include "mindspore/ops/kernel/functions/auto_grad_guard.h"
-#include "mindspore/ops/kernel/functions/auto_generate/functions.h"
-${include_op_header}
+#include "frontend/expander/bprop/bprop_irbuilder.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 
 namespace mindspore::pynative {
-AsyncStatus GetAsyncStatus() {
+namespace {
+inline AsyncStatus GetAsyncStatus() {
   const auto &op_status = kernel::pyboost::OpGlobalStatus::Get().op_status();
   AsyncStatus status = {
     op_status.disable_mix_precision,
@@ -41,9 +34,13 @@ AsyncStatus GetAsyncStatus() {
   return status;
 }
 
-${function_body}
+inline bool NeedAutoGrad() {
+  MS_LOG(DEBUG) << "require grad " << kernel::pyboost::OpGlobalStatus::Get().RequireGrad();
+  return kernel::pyboost::OpGlobalStatus::Get().RequireGrad();
+}
+}
 
-${register_function_body}
+${do_grad_op}
 
-${function_class_register}
-}// namespace mindspore::pynative
+${auto_grad_reg}
+}  // namespace mindspore::pynative

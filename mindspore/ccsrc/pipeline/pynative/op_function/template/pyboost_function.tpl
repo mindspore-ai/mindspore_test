@@ -11,10 +11,8 @@ py::object ME_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list 
     auto node = stub::MakeTopNode(top_type);
     {
       GilReleaseWithCheck release_gil;
-      static auto op_type = PyNativeAlgo::Common::GetOpTypeFromOpdef(ops::${op_def_name});
       op_run_info->stub_output = node.second;
       op_run_info->source_type = converter.source_type();
-      op_run_info->op_grad_info->operator_type = op_type;
       DispatchOp(
         std::make_shared<FrontendTask>(
           [${op_args}, prim](const FrontendOpRunInfoPtr &op_run_info) {
@@ -25,37 +23,26 @@ py::object ME_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list 
             // stub tensor to tensor.
             ${convert_stub}
 
-            // Create op
-            auto op = CREATE_PYBOOST_OP(${op_name}, op_run_info->base_op_run_info.device_target);
-            op->set_primitive(prim);
-
             // Do mixed precision and implicit cast
             static const std::vector<std::vector<size_t>> same_type_table{${same_type}};
             auto [${cast_args}] = PyNativeAlgo::PyBoost::SetPyBoostCastForInputs<${type_num}>(op_run_info, same_type_table, ${call_args});
 
-            // Run op
-            (void)op->Call(${cast_args});
-            ${optional_to_value}
+            kernel::pyboost::OpGlobalStatus::Get().set_run_info(
+                kernel::pyboost::OpStatus(op_run_info->async_status.disable_mix_precision,
+                                          op_run_info->async_status.is_jit_compiling,
+                                          op_run_info->async_status.custom_bprop_cell_count,
+                                          op_run_info->base_op_run_info.device_target));
+            kernel::pyboost::RequireGradGuard require_grad_guard(op_run_info->requires_grad);
 
-            // Data sync in mix mode(Graph and PyNative)
-            PyNativeAlgo::PyBoost::DataSyncForGraph(op, {${grad_args}});
+            auto outputs = kernel::pyboost::${operator_name}(${cast_args});
+            auto op = kernel::pyboost::OpGlobalStatus::Get().GetLastOp();
 
-            // Create output value
-            PyNativeAlgo::AutoGradUtil::Make${is_multi}Output(op_run_info, op,
-                                                              op_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index() : 0${view_arg});
-
+            // Tensor/tuple<Tensor> to ValuePtr
+            auto real_out = PyNativeAlgo::PyBoost::${is_multi}OutputToValue(outputs);
             // Set output value to python
-            PyNativeAlgo::PyBoost::UpdateStubOutput(op_run_info, op->output_abs(), op);
-
-            // Do auto grad
-            if (op_run_info->requires_grad) {
-              op_run_info->op_grad_info->op_prim = op->primitive();
-              op_run_info->op_grad_info->input_value = {${grad_args}};
-              op_run_info->op_grad_info->out_value = op_run_info->real_out;
-              PyNativeAlgo::PyBoost::DoGrad(op, op_run_info->op_grad_info, op_run_info->async_status);
-            } else if (op_type == OperatorType::kInplaceOp) {
-              PyNativeAlgo::PyBoost::BumpVersionAsync(op->outputs()[0]);
-            }
+            PyNativeAlgo::PyBoost::UpdateStubOutput(op, op_run_info->stub_output, op->output_abs(), real_out);
+            // Data sync in mix mode(Graph and PyNative)
+            PyNativeAlgo::PyBoost::DataSyncForGraph(op);
             kernel::pyboost::PyBoostUtils::set_cur_stream_id(old_stream_id);
 
             MS_LOG(DEBUG) << "Run frontend task ${func_name} end";

@@ -4,7 +4,7 @@ include_directories(${CMAKE_BINARY_DIR})
 
 # Pyboost
 if(NOT BUILD_LITE)
-    file(GLOB_RECURSE PYBOOST_SRC ${OPS_DIR}/kernel/common/pyboost/*.cc)
+    file(GLOB_RECURSE PYBOOST_SRC ${OPS_DIR}/kernel/common/pyboost/*.cc ${OPS_DIR}/kernel/functions/*.cc)
     add_library(_mindspore_common_pyboost_obj OBJECT ${PYBOOST_SRC})
     if(CMAKE_SYSTEM_NAME MATCHES "Windows")
         target_compile_definitions(_mindspore_common_pyboost_obj PRIVATE BACKEND_DLL)
