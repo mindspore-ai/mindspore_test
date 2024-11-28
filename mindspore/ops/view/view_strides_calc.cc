@@ -53,10 +53,7 @@ ShapeVector update_shape(const ShapeVector &input_shape, ShapeVector shape) {
   return shape;
 }
 
-TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::BaseTensorPtr &input_tensor,
-                                      const std::vector<int64_t> &shape) {
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+TensorStorageInfoPtrList ViewStridesCalc(const OldTensorInfoPtr old_tensor_info, const std::vector<int64_t> &shape) {
   const auto &old_shape = old_tensor_info->old_shape;
   auto storage_offset = old_tensor_info->old_offset;
 
@@ -66,6 +63,14 @@ TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::Ba
     std::make_shared<TensorStorageInfo>(new_shape, new_strides, storage_offset, old_tensor_info->ori_shape,
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
+}
+
+TensorStorageInfoPtrList ViewCalcImpl(const PrimitivePtr &prim, const tensor::BaseTensorPtr &input_tensor,
+                                      const std::vector<int64_t> &shape) {
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+
+  return ViewStridesCalc(old_tensor_info, shape);
 }
 
 TensorStorageInfoPtrList ViewCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {

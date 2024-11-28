@@ -57,13 +57,28 @@ bool ContiguousGpuKernel::LaunchContiguous(TypeId input_type_id, const device::D
   }
   int64_t type_size = GetDataTypeSize(input_type_id) / GetDataTypeSize(output_type_id);
 
+  return iter->second(this, input.get(), input_storage_info, output.get(), shape_addr, strides_addr, type_size,
+                      stream_ptr);
+}
+
+bool ContiguousGpuKernel::LaunchContiguous(TypeId input_type_id, device::DeviceAddress *input,
+                                           const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
+                                           device::DeviceAddress *output, const device::DeviceAddressPtr &shape_addr,
+                                           const device::DeviceAddressPtr &strides_addr, void *stream_ptr) {
+  MS_LOG(DEBUG) << "Launch contiguous gpu kernel.";
+  const auto &iter = func_list_.find(std::make_pair(input_type_id, output_type_id));
+  if (iter == func_list_.end()) {
+    MS_EXCEPTION(TypeError) << "type:" << TypeIdToString(input_type_id) << " is invalid";
+  }
+  int64_t type_size = GetDataTypeSize(input_type_id) / GetDataTypeSize(output_type_id);
+
   return iter->second(this, input, input_storage_info, output, shape_addr, strides_addr, type_size, stream_ptr);
 }
 
 template <typename T>
-bool ContiguousGpuKernel::LaunchContiguousImpl(const device::DeviceAddressPtr &input,
+bool ContiguousGpuKernel::LaunchContiguousImpl(device::DeviceAddress *input,
                                                const TensorStorageInfoPtr &input_storage_info,
-                                               const device::DeviceAddressPtr &output,
+                                               device::DeviceAddress *output,
                                                const device::DeviceAddressPtr &shape_addr,
                                                const device::DeviceAddressPtr &strides_addr, const int64_t &type_size,
                                                void *stream_ptr) {

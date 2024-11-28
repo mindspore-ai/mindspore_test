@@ -26,7 +26,7 @@ namespace kernel {
 
 class TransposeView : public AclnnKernelMod {
  public:
-  TransposeView() : AclnnKernelMod("transposeView") {}
+  TransposeView() : AclnnKernelMod("InnerTransposeView") {}
   ~TransposeView() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;

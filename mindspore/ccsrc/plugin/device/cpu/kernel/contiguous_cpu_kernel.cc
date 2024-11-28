@@ -54,13 +54,26 @@ bool ContiguousCpuKernel::LaunchContiguous(TypeId input_type_id, const device::D
   }
   int64_t type_size = SizeToLong(GetDataTypeSize(input_type_id) / GetDataTypeSize(output_type_id));
 
+  return iter->second(this, input.get(), input_storage_info, output.get(), type_size);
+}
+
+bool ContiguousCpuKernel::LaunchContiguous(TypeId input_type_id, device::DeviceAddress *input,
+                                           const TensorStorageInfoPtr &input_storage_info, TypeId output_type_id,
+                                           device::DeviceAddress *output) {
+  MS_LOG(DEBUG) << "Launch contiguous cpu kernel.";
+  const auto &iter = func_list_.find(std::make_pair(input_type_id, output_type_id));
+  if (iter == func_list_.end()) {
+    MS_EXCEPTION(TypeError) << "type_id:" << TypeIdToString(input_type_id) << " is invalid";
+  }
+  int64_t type_size = SizeToLong(GetDataTypeSize(input_type_id) / GetDataTypeSize(output_type_id));
+
   return iter->second(this, input, input_storage_info, output, type_size);
 }
 
 template <typename T>
-bool ContiguousCpuKernel::LaunchContiguousImpl(const device::DeviceAddressPtr &input,
+bool ContiguousCpuKernel::LaunchContiguousImpl(device::DeviceAddress *input,
                                                const TensorStorageInfoPtr &input_storage_info,
-                                               const device::DeviceAddressPtr &output, const int64_t &type_size) {
+                                               device::DeviceAddress *output, const int64_t &type_size) {
   MS_EXCEPTION_IF_NULL(input_storage_info);
   T *input_addr = reinterpret_cast<T *>(input->GetMutablePtr());
   T *output_addr = reinterpret_cast<T *>(output->GetMutablePtr());
