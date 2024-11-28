@@ -21,40 +21,28 @@
 #include "view/split_with_size_strides_calc.h"
 
 namespace mindspore::ops {
-void SplitSizeInputsCheck(const PrimitivePtr &prim, const int64_t &output_num, const int64_t &axis,
-                          const std::vector<int64_t> &tensor_shape) {
-  auto prim_name = prim->name();
+void SplitSizeInputsCheck(const int64_t &output_num, const int64_t &axis, const std::vector<int64_t> &tensor_shape) {
   if (output_num != tensor_shape[axis]) {
-    MS_EXCEPTION(ValueError) << "For '" << prim_name << "', output_num must be equal with dimIndex, but got "
-                             << output_num << ".";
+    MS_EXCEPTION(ValueError) << "For 'SplitWithTensor', output_num must be equal with dimIndex, but got " << output_num
+                             << ".";
     return;
   }
 }
 
-TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
-    MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
-  }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto split_size = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
-  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(old_tensor_info);
+OPS_API TensorStorageInfoPtrList SplitWithSizeStridesCalc(const OldTensorInfoPtr old_tensor_info,
+                                                          const std::vector<int64_t> &split_size, const int64_t &dim) {
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
   auto old_storage_offset = old_tensor_info->old_offset;
 
   auto rank = SizeToLong(old_shape.size());
-  MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, 1, prim));
+  if (rank <= 0) {
+    MS_EXCEPTION(ValueError) << "For SplitWithSize, rank should > 0, but got " << rank;
+  }
   const auto ndim = old_shape.size();
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
   int64_t sum_split_size = std::accumulate(split_size.begin(), split_size.end(), 0);
-  SplitSizeInputsCheck(prim, sum_split_size, wrap_dim, old_shape);
+  SplitSizeInputsCheck(sum_split_size, wrap_dim, old_shape);
 
   std::vector<TensorStorageInfoPtr> storage_info_list;
   size_t current_offset = old_storage_offset;
@@ -74,6 +62,23 @@ TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::
     storage_info_list.emplace_back(new_storage_info);
   }
   return storage_info_list;
+}
+
+TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+    MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
+  }
+
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto split_size = GetValue<std::vector<int64_t>>(inputs[kInputIndex1]);
+  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
+  auto input_type = input_tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
+                                             prim->name());
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  MS_EXCEPTION_IF_NULL(old_tensor_info);
+  return SplitWithSizeStridesCalc(old_tensor_info, split_size, dim);
 }
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(SplitWithSize, SplitWithSizeCalc);
 }  // namespace mindspore::ops

@@ -26,7 +26,7 @@ namespace kernel {
 
 class ConcatView : public AclnnKernelMod {
  public:
-  ConcatView() : AclnnKernelMod("concatView") {}
+  ConcatView() : AclnnKernelMod("InnerConcatView") {}
   ~ConcatView() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;

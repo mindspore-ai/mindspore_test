@@ -25,37 +25,22 @@ constexpr size_t kSelectExtInputsNum = 3;
 
 namespace mindspore::ops {
 
-TensorStorageInfoPtrList SelectExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (CheckInputsNull(inputs, kSelectExtInputsNum) || !inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
-    MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
-  }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(old_tensor_info);
+TensorStorageInfoPtrList SelectExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
+                                              const int64_t ori_index) {
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
   auto old_storage_offset = old_tensor_info->old_offset;
 
-  auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
-  auto index = GetValue<int64_t>(inputs[kInputIndex2]);
-
   int dim_size = SizeToLong(old_shape.size());
-  MS_CHECK_VALUE(dim_size > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("rank", dim_size, kGreaterEqual, 1, prim));
+  MS_CHECK_VALUE(dim_size > 0, "For Primitive [SelectExt] rank must >= 1");
 
-  dim = DynamicDimWrap(dim, dim_size);
+  auto dim = DynamicDimWrap(ori_dim, dim_size);
   auto dim_value = old_shape[dim];
 
-  if (index < -dim_value || index >= dim_value) {
-    MS_EXCEPTION(IndexError) << "For Primitive [SelectExt] start exceed range. start: " + std::to_string(index) +
-                                  ", start should be in [" + std::to_string(-dim_value) + ", " +
-                                  std::to_string(dim_value) + ").";
-  }
-  index = index < 0 ? index + dim_value : index;
+  MS_CHECK_VALUE(ori_index >= -dim_value && ori_index < dim_value,
+                 "For Primitive [SelectExt] start exceed range. start: " + std::to_string(ori_index) +
+                   ", start should be in [" + std::to_string(-dim_value) + ", " + std::to_string(dim_value) + ").");
+  auto index = ori_index < 0 ? ori_index + dim_value : ori_index;
 
   auto new_shape = old_shape;
   auto new_strides = old_strides;
@@ -68,6 +53,22 @@ TensorStorageInfoPtrList SelectExtCalc(const PrimitivePtr &prim, const std::vect
     std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, old_tensor_info->ori_shape,
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
+}
+TensorStorageInfoPtrList SelectExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (CheckInputsNull(inputs, kSelectExtInputsNum) || !inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+    MS_LOG(EXCEPTION) << "inputs num is invalid, num:" << inputs.size();
+  }
+
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto input_type = input_tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
+                                             prim->name());
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  MS_EXCEPTION_IF_NULL(old_tensor_info);
+  auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
+  auto index = GetValue<int64_t>(inputs[kInputIndex2]);
+  return SelectExtStridesCalc(old_tensor_info, dim, index);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(SelectExt, SelectExtCalc);

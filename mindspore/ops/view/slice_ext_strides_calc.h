@@ -23,6 +23,9 @@ namespace mindspore {
 namespace ops {
 
 OPS_API TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList SliceExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
+                                                     const int64_t ori_start, const int64_t ori_end,
+                                                     const int64_t ori_step);
 
 }  // namespace ops
 }  // namespace mindspore

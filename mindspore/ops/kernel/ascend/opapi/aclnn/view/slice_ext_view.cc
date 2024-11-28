@@ -13,41 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/view/transpose_view.h"
+#include "kernel/ascend/opapi/aclnn/view/slice_ext_view.h"
 
+#include "abstract/ops/primitive_infer_map.h"
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
-#include "mindspore/ops/view/transpose_strides_calc.h"
+#include "mindspore/ops/view/slice_ext_strides_calc.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/device/kernel_runtime.h"
 
 namespace mindspore {
 namespace kernel {
 
-void TransposeView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
-                                           const std::vector<KernelTensor *> &outputs) {
+void SliceExtView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &outputs) {
   ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[kIndex0]);
-  const auto &dims = inputs[kIndex1]->GetValueWithCheck<std::vector<int64_t>>();
-  auto shape = inputs[kIndex0]->GetShapeVector();
-  auto size = shape.size();
-  if (dims.size() != size) {
-    MS_LOG(EXCEPTION) << "DIMS should be same with shape size which is " << dims << " ,and shape " << shape;
-  }
-  info_ = ops::TransposeStridesCalc(old_info, dims);
+  const auto dim = inputs[kIndex1]->GetValueWithCheck<int64_t>();
+  const auto start = inputs[kIndex2]->GetValueWithCheck<int64_t>();
+  const auto end = inputs[kIndex3]->GetValueWithCheck<int64_t>();
+  const auto step = inputs[kIndex4]->GetValueWithCheck<int64_t>();
+  info_ = ops::SliceExtStridesCalc(old_info, dim, start, end, step);
   info_[0]->ori_size = inputs[0]->size();
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
   GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
 
-void TransposeView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                     const std::vector<KernelTensor *> &outputs) {
+void SliceExtView::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                    const std::vector<KernelTensor *> &outputs) {
   UpdateOutputTensorInfo(inputs, outputs);
 }
 
-bool TransposeView::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool SliceExtView::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                          const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(TransposeView, TransposeView);
+MS_ACLNN_KERNEL_FACTORY_REG(SliceExtView, SliceExtView);
 }  // namespace kernel
 }  // namespace mindspore

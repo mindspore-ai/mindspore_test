@@ -62,9 +62,8 @@ bool BroadcastToCheck(const std::string &prim_name, const std::vector<int64_t> &
   return true;
 }
 
-TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::BaseTensorPtr input_tensor,
-                                            const std::vector<int64_t> &input_x) {
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+TensorStorageInfoPtrList BroadCastToStrideCalc(const OldTensorInfoPtr old_tensor_info,
+                                               const std::vector<int64_t> &input_x) {
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
   auto old_storage_offset = old_tensor_info->old_offset;
@@ -101,6 +100,12 @@ TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tens
     std::make_shared<TensorStorageInfo>(new_shape, new_strides, old_storage_offset, old_tensor_info->ori_shape,
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
+}
+
+TensorStorageInfoPtrList BroadCastToProcess(const PrimitivePtr &prim, const tensor::BaseTensorPtr input_tensor,
+                                            const std::vector<int64_t> &input_x) {
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return BroadCastToStrideCalc(old_tensor_info, input_x);
 }
 
 TensorStorageInfoPtrList BroadcastToCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {

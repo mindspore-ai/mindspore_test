@@ -23,6 +23,8 @@ namespace mindspore {
 namespace ops {
 
 OPS_API TensorStorageInfoPtrList SplitWithSizeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
+OPS_API TensorStorageInfoPtrList SplitWithSizeStridesCalc(const OldTensorInfoPtr old_tensor_info,
+                                                          const std::vector<int64_t> &split_size, const int64_t &dim);
 
 }  // namespace ops
 }  // namespace mindspore
