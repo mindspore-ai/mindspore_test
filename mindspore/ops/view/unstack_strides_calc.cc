@@ -22,24 +22,8 @@
 #include "ops_utils/op_utils.h"
 
 namespace mindspore::ops {
-OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
-    return {};
-  }
 
-  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(tensor);
-  auto type = tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input_x", type, common_valid_types_with_complex_and_bool, "Unstack");
-  auto axis_value_ptr = prim->GetAttr(kAxis);
-  MS_EXCEPTION_IF_NULL(axis_value_ptr);
-  auto dim = GetValue<int64_t>(axis_value_ptr);
-
-  auto old_tensor_info = GetOldTensorInfo(tensor);
-  return UnstackStridesCalc(old_tensor_info, dim);
-}
-
-OPS_API TensorStorageInfoPtrList UnstackStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim) {
+TensorStorageInfoPtrList UnstackStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t &dim) {
   auto oldShape = old_tensor_info->old_shape;
   auto oldStrides = old_tensor_info->old_strides;
   auto oldStorageOffset = old_tensor_info->old_offset;
@@ -67,6 +51,20 @@ OPS_API TensorStorageInfoPtrList UnstackStridesCalc(const OldTensorInfoPtr old_t
   }
   return res_storage_info;
 }
-REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Unstack, UnstackCalc);
+OPS_API TensorStorageInfoPtrList UnstackCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+    return {};
+  }
+  auto tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto type = tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input_x", type, common_valid_types_with_complex_and_bool, "Unstack");
+  auto axis_value_ptr = prim->GetAttr(kAxis);
+  MS_EXCEPTION_IF_NULL(axis_value_ptr);
+  auto dim = GetValue<int64_t>(axis_value_ptr);
 
+  auto old_tensor_info = GetOldTensorInfo(tensor);
+  return UnstackStridesCalc(old_tensor_info, dim);
+}
+REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Unstack, UnstackCalc);
 }  // namespace mindspore::ops

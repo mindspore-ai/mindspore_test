@@ -26,30 +26,22 @@ constexpr size_t kSliceExtInputsNum = 5;
 
 namespace mindspore::ops {
 
-TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
+TensorStorageInfoPtrList SliceExtStridesCalc(const OldTensorInfoPtr old_tensor_info, const int64_t ori_dim,
+                                             const int64_t ori_start, const int64_t ori_end, const int64_t step) {
+  MS_CHECK_VALUE(step > 0, "slice step must be positive");
 
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(old_tensor_info);
   auto old_shape = old_tensor_info->old_shape;
   auto old_strides = old_tensor_info->old_strides;
-
-  auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
-  auto start = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto end = GetValue<int64_t>(inputs[kInputIndex3]);
-  auto step = GetValue<int64_t>(inputs[kInputIndex4]);
-  MS_CHECK_VALUE(step > 0, "slice step must be positive");
 
   int dim_size = SizeToLong(old_shape.size());
   MS_CHECK_VALUE(dim_size > 0, "slice cannot be applied to a 0-dim tensor.");
 
-  dim = DynamicDimWrap(dim, dim_size);
+  auto dim = DynamicDimWrap(ori_dim, dim_size);
   auto dim_value = old_shape[dim];
 
-  start = start < 0 ? start + dim_value : start;
+  auto start = ori_start < 0 ? ori_start + dim_value : ori_start;
 
-  end = end < 0 ? end + dim_value : end;
+  auto end = ori_end < 0 ? ori_end + dim_value : ori_end;
 
   if (start < 0) {
     start = 0;
@@ -75,6 +67,21 @@ TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vecto
     std::make_shared<TensorStorageInfo>(new_shape, new_strides, new_storage_offset, old_tensor_info->ori_shape,
                                         old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
   return {new_storage_info};
+}
+
+TensorStorageInfoPtrList SliceExtCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  MS_EXCEPTION_IF_NULL(old_tensor_info);
+
+  auto dim = GetValue<int64_t>(inputs[kInputIndex1]);
+  auto start = GetValue<int64_t>(inputs[kInputIndex2]);
+  auto end = GetValue<int64_t>(inputs[kInputIndex3]);
+  auto step = GetValue<int64_t>(inputs[kInputIndex4]);
+
+  return SliceExtStridesCalc(old_tensor_info, dim, start, end, step);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(SliceExt, SliceExtCalc);

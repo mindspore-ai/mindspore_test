@@ -31,6 +31,9 @@ namespace pyboost {
 OPS_ASCEND_API void CustomizeCopyAscend(device::DeviceContext *device_context,
                                         const device::DeviceAddressPtr &input_addr,
                                         const device::DeviceAddressPtr &output_addr, const size_t &stream_id);
+
+OPS_ASCEND_API void CustomizeCopyAscend(device::DeviceContext *device_context, device::DeviceAddress *input_addr,
+                                        device::DeviceAddress *output_addr, const size_t &stream_id);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

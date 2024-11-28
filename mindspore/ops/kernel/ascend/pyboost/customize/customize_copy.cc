@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/ascend/pyboost/customize/customize_copy.h"
+#include <string>
 #include "plugin/res_manager/ascend/stream_manager/ascend_stream_manager.h"
 #include "mindspore/ccsrc/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -68,6 +69,41 @@ void CustomizeCopyAscend(device::DeviceContext *device_context, const device::De
   CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
   MS_LOG(DEBUG) << "Launch end";
 }
+void CustomizeCopyAscend(device::DeviceContext *device_context, device::DeviceAddress *input_addr,
+                         device::DeviceAddress *output_addr, const size_t &stream_id) {
+  MS_LOG(DEBUG) << "Graph call contiguous start";
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "Graph", "Contiguous", "");
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "Graph", device::tracker::MemType::kPyNativeOutput,
+                                                 output_addr->GetSize(), output_addr);
+  if (output_addr->GetPtr() == nullptr) {
+    if (!device_context->device_res_manager_->AllocateMemory(output_addr)) {
+      MS_LOG(EXCEPTION) << "Allocate memory failed";
+    }
+  }
+  const auto &input_storage_info = input_addr->address_common()->tensor_storage_info_;
+  const auto &output_storage_info = output_addr->address_common()->tensor_storage_info_;
+  MS_LOG(DEBUG) << "Input_storage_info:" << (input_storage_info == nullptr ? "" : input_storage_info->ToString())
+                << ", output_storage_info:" << (output_storage_info == nullptr ? "" : output_storage_info->ToString())
+                << ", input address size:" << input_addr->GetSize()
+                << ", output address size:" << output_addr->GetSize();
+  auto stream_ptr = device_context->device_res_manager_->GetStream(stream_id);
+  auto res = GEN_EXECUTOR_FOR_RESIZE(std::string("aclnnInplaceCopy"), output_addr, input_addr);
+  auto workspace_size = std::get<0>(res);
+  auto executor = std::get<1>(res);
+  std::function<void()> release_func{nullptr};
+  if (workspace_size == 0) {
+    RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), nullptr, 0, executor, stream_ptr, release_func);
+  } else {
+    auto workspace_addr = device_context->device_res_manager_->AllocateMemory(workspace_size);
+    RUN_OP_API_ASYNC(std::string("aclnnInplaceCopy"), workspace_addr, workspace_size, executor, stream_ptr,
+                     release_func);
+    device_context->device_res_manager_->FreeMemory(workspace_addr);
+  }
+  MS_LOG(DEBUG) << "Graph call contiguous end";
+}
+
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

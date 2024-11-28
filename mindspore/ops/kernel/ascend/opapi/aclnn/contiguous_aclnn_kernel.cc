@@ -13,32 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/view/contiguous.h"
-#include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
+#include "kernel/ascend/opapi/aclnn/contiguous_aclnn_kernel.h"
 
 namespace mindspore {
 namespace kernel {
 
 void ContiguousAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
-  for (auto input : inputs) {
-    GetWorkspaceForResize(input, outputs[kIndex0]);
-  }
+  GetWorkspaceForResize(outputs[kIndex0], inputs[kIndex0]);
 }
 
 bool ContiguousAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  release_func_ = nullptr;
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    const bool use_huge_pages = false;
-    auto res = GEN_EXECUTOR_CUST(op_type_, use_huge_pages, inputs[i], outputs[kIndex0]);
-    RUN_OP_API_ASYNC(op_type_, nullptr, 0, std::get<kIndex1>(res), stream_ptr, release_func_);
-  }
+  RunOp(stream_ptr, workspace, outputs[kIndex0], inputs[kIndex0]);
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(ContiguousView, ContiguousAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(Contiguous, ContiguousAscend);
 }  // namespace kernel
 }  // namespace mindspore

@@ -36,6 +36,7 @@ void StridedSliceView::UpdateTensorInfo(const std::vector<KernelTensor *> &input
   auto shape = inputs[kIndex0]->GetShapeVector();
   auto size = shape.size();
   info_ = ops::StridedSliceStridesCalc(old_info, size, &shape, &begin, &end, &step);
+  info_[0]->ori_size = inputs[kIndex0]->size();
   outputs[kIndex0]->set_tensor_storage_info(info_[0]);
   GEN_EXECUTOR_FOR_VIEW(op_type_, inputs, outputs);
 }
@@ -50,6 +51,6 @@ bool StridedSliceView::Launch(const std::vector<KernelTensor *> &inputs, const s
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(StridedSliceView, StridedSliceView);
+MS_ACLNN_KERNEL_FACTORY_REG(InnerStridedSliceView, StridedSliceView);
 }  // namespace kernel
 }  // namespace mindspore

@@ -20,37 +20,22 @@
 #include "view/split_tensor_strides_calc.h"
 
 namespace mindspore::ops {
-void SplitTensorInputsCheck(const PrimitivePtr &prim, const int64_t &output_num, const int64_t &axis) {
-  auto prim_name = prim->name();
-  if (output_num <= 0) {
-    MS_EXCEPTION(ValueError) << "For '" << prim_name << "', output_num must be positive, but got " << output_num << ".";
-  }
-}
-
-TensorStorageInfoPtrList SplitTensorCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
-    MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
-  }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto split_size = GetValue<int64_t>(inputs[kInputIndex1]);
-  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto input_type = input_tensor->Dtype();
-  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
-                                             prim->name());
-  auto tensor_shape = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(tensor_shape);
+TensorStorageInfoPtrList SplitTensorStridesCalc(const OldTensorInfoPtr tensor_shape, const int64_t &split_size,
+                                                const int64_t &dim) {
   auto old_shape = tensor_shape->old_shape;
   auto old_strides = tensor_shape->old_strides;
 
   auto rank = SizeToLong(old_shape.size());
-  MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, 1, prim));
+  if (rank <= 0) {
+    MS_EXCEPTION(ValueError) << "For SplitTensor, rank should > 0, but got " << rank;
+  }
   const auto ndim = old_shape.size();
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
 
   // Check if the output quantity is positive
-  SplitTensorInputsCheck(prim, split_size, wrap_dim);
+  if (split_size <= 0) {
+    MS_EXCEPTION(ValueError) << "For 'SplitTensor', output_num must be positive, but got " << split_size << ".";
+  }
 
   // Calculate the number of sub tensors after segmentation
   auto num_splits = (old_shape[wrap_dim] + split_size - 1) / split_size;
@@ -77,6 +62,23 @@ TensorStorageInfoPtrList SplitTensorCalc(const PrimitivePtr &prim, const std::ve
     storage_info_list.emplace_back(new_storage_info);
   }
   return storage_info_list;
+}
+
+TensorStorageInfoPtrList SplitTensorCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+    MS_LOG(EXCEPTION) << "For [" << prim->name() << "], first input is not tensor.";
+  }
+
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto split_size = GetValue<int64_t>(inputs[kInputIndex1]);
+  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
+  auto input_type = input_tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, common_valid_types_with_complex_and_bool,
+                                             prim->name());
+  auto tensor_shape = GetOldTensorInfo(input_tensor);
+  MS_EXCEPTION_IF_NULL(tensor_shape);
+  return SplitTensorStridesCalc(tensor_shape, split_size, dim);
 }
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(SplitTensor, SplitTensorCalc);
 }  // namespace mindspore::ops

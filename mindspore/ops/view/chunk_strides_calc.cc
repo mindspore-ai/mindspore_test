@@ -27,25 +27,15 @@ void ChunkInputsCheck(const PrimitivePtr &prim, const int64_t &output_num, const
   }
 }
 
-TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
-  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
-    MS_LOG(EXCEPTION) << "For '" << prim->name()
-                      << ", first inputs must be a Tensor, but got: " << inputs[kInputIndex0]->ToString();
-  }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto chunks = GetValue<int64_t>(inputs[kInputIndex1]);
-  MS_CHECK_VALUE(chunks > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("chunks", chunks, kGreaterEqual, 1, prim));
-  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
-  auto tensor_info = GetOldTensorInfo(input_tensor);
-  MS_EXCEPTION_IF_NULL(tensor_info);
+TensorStorageInfoPtrList ChunkStridesCalc(const OldTensorInfoPtr tensor_info, TensorStorageInfoPtr storage_info,
+                                          const int64_t &chunks, const int64_t &dim) {
   auto old_shape = tensor_info->old_shape;
   auto old_strides = tensor_info->old_strides;
 
   auto rank = SizeToLong(old_shape.size());
-  MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, 1, prim));
-
+  if (rank <= 0) {
+    MS_LOG(EXCEPTION) << "For 'Chunk', rank should > 0, but get " << rank;
+  }
   const auto ndim = old_shape.size();
   const auto wrap_dim = DynamicDimWrap(dim, ndim);
   int64_t dim_size = old_shape[wrap_dim];
@@ -53,14 +43,13 @@ TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<V
 
   if (dim_size == 0) {
     if (split_size == 0) {
-      auto storage_info = input_tensor->storage_info();
       if (storage_info == nullptr) {
         storage_info = std::make_shared<TensorStorageInfo>(old_shape, old_strides, old_shape, old_strides,
                                                            IsContiguous(old_shape, old_strides));
       }
       return {storage_info};
     }
-    MS_EXCEPTION(ValueError) << "For '" << prim->name() << "', output_num must be positive, but got 0.";
+    MS_EXCEPTION(ValueError) << "For 'Chunk', output_num must be positive, but got 0.";
   }
 
   // Calculate the number of sub tensors after segmentation
@@ -83,6 +72,23 @@ TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<V
     storage_info_list.emplace_back(new_storage_info);
   }
   return storage_info_list;
+}
+
+TensorStorageInfoPtrList ChunkCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
+  if (!inputs[kInputIndex0]->isa<tensor::BaseTensor>()) {
+    MS_LOG(EXCEPTION) << "For '" << prim->name()
+                      << ", first inputs must be a Tensor, but got: " << inputs[kInputIndex0]->ToString();
+  }
+
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto chunks = GetValue<int64_t>(inputs[kInputIndex1]);
+  MS_CHECK_VALUE(chunks > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("chunks", chunks, kGreaterEqual, 1, prim));
+  auto dim = GetValue<int64_t>(inputs[kInputIndex2]);
+  auto tensor_info = GetOldTensorInfo(input_tensor);
+  MS_EXCEPTION_IF_NULL(tensor_info);
+  auto storage_info = input_tensor->storage_info();
+  return ChunkStridesCalc(tensor_info, storage_info, chunks, dim);
 }
 REG_TUPLE_OUT_VIEW_STRIDES_CALC_FUN(Chunk, ChunkCalc);
 }  // namespace mindspore::ops

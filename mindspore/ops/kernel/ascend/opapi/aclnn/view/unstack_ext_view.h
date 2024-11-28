@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_RESHAPE_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_RESHAPE_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UNSTACKEXT_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UNSTACKEXT_KERNEL_MOD_H_
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
@@ -24,10 +24,10 @@
 namespace mindspore {
 namespace kernel {
 
-class ReshapeView : public AclnnKernelMod {
+class UnstackExtView : public AclnnKernelMod {
  public:
-  ReshapeView() : AclnnKernelMod("InnerReshapeView") {}
-  ~ReshapeView() = default;
+  UnstackExtView() : AclnnKernelMod("InnerUnstackExtView") {}
+  ~UnstackExtView() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
@@ -35,9 +35,8 @@ class ReshapeView : public AclnnKernelMod {
 
  private:
   mindspore::TensorStorageInfoPtrList info_;
-  bool is_input_not_contiguous_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_RESHAPE_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UNSTACKEXT_KERNEL_MOD_H_
