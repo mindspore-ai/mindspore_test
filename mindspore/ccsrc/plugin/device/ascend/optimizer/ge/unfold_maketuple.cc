@@ -117,11 +117,7 @@ bool IsNestedMaketuple(const AnfNodePtr &node, std::vector<AnfNodePtr> *unfold_n
 
 std::vector<AnfNodePtr> GetRealInputNode(const AnfNodePtr &node) {
   std::vector<AnfNodePtr> real_nodes;
-  auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  const auto &idx_node = cnode->input(kInputNodeOutputIndexInTupleGetItem);
-  int64_t tuplegetitem_idx = AnfUtils::GetIntValue(idx_node);
-  auto real_node = common::AnfAlgo::VisitKernelWithReturnType(node, tuplegetitem_idx).first;
+  auto real_node = common::AnfAlgo::VisitKernelWithReturnType(node, 0).first;
   if (IsPrimitiveCNode(real_node, prim::kPrimMakeTuple)) {
     GetUnfoldInputs(real_node, &real_nodes);
   } else {
@@ -171,6 +167,7 @@ void ProcessSucceedTupleGetItem(const FuncGraphPtr &func_graph, const AnfNodePtr
   } else {
     if (tuplegetitem_cnode->input(kRealInputNodeIndexInTupleGetItem) != node) {
       MS_LOG(DEBUG) << "The tuplegetitem is not a consumer of the original maketuple node";
+      return;
     }
     if (real_nodes.size() > kSizeOne) {
       MS_LOG(ERROR) << "The size of real_nodes must equal to 1 when tuplegetitem node has single output, but it's: "
@@ -244,6 +241,8 @@ AnfNodePtr ProcessSucceedNodes(const FuncGraphPtr &func_graph, const AnfNodePtr 
 
 bool UnfoldMaketuple::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return(), SuccDeeperSimple);
   for (const auto node : node_list) {
     MS_EXCEPTION_IF_NULL(node);
@@ -254,6 +253,19 @@ bool UnfoldMaketuple::Run(const FuncGraphPtr &func_graph) {
     std::vector<AnfNodePtr> maketuple_inputs;
     std::unordered_map<AnfNodePtr, int64_t> unfold_nodes_index;
     if (IsNestedMaketuple(node, &unfold_nodes, &maketuple_inputs, &unfold_nodes_index)) {
+      bool is_last_maketuple = true;
+      const auto &users = manager->node_users();
+      auto iter = users.find(node);
+      for (auto user : iter->second) {
+        if (user.first != nullptr && IsPrimitiveCNode(user.first, prim::kPrimMakeTuple)) {
+          is_last_maketuple = false;
+          break;
+        }
+      }
+      if (!is_last_maketuple) {
+        MS_LOG(WARNING) << "There are multiple nested tuples, please check the script.";
+        continue;
+      }
       auto unfold_maketuple_node =
         ProcessSucceedNodes(func_graph, node, unfold_nodes, maketuple_inputs, unfold_nodes_index);
       ReplaceNodeWithNewMakeTupleNode(func_graph, node, unfold_maketuple_node);
