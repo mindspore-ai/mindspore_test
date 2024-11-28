@@ -211,6 +211,49 @@ CUST_IMPLEMT_INFERFUNC(MaskedSelectGrad, MaskedSelectGradInfer) {
 CUST_INFER_FUNC_REG(MaskedSelectGrad, MaskedSelectGradInfer);
 // ---------------MaskedSelectGrad End---------------
 
+// -------------------------------Meshgrid Begin-------------------------------
+// //
+IMPLEMT_INFERFUNC(Meshgrid, MeshgridInfer) {
+  if (op.GetInputsSize() < 2) {
+    OP_LOGE("Meshgrid", "input tensors size must be greater than 1.");
+  }
+
+  std::vector<int64_t> out_shapes;
+  for (size_t i = 0; i < op.GetInputsSize(); i++) {
+    auto input_desc = op.GetInputDesc(i);
+    auto input_dims = input_desc.GetShape().GetDims();
+    if (input_dims.size() != 1) {
+      OP_LOGE("Meshgrid", "input tensors shape must be 1.");
+    }
+    out_shapes.push_back(input_dims[0]);
+  }
+
+  string indexing = "";
+  if (op.GetAttr("indexing", indexing) != GRAPH_SUCCESS) {
+    OP_LOGE("Meshgrid", "Get attr [indexing] failed.");
+    return GRAPH_FAILED;
+  }
+
+  if (indexing == "XY" || indexing == "xy") {
+    std::swap(out_shapes[0], out_shapes[1]);
+  }
+
+  for (size_t i = 0; i < op.GetInputsSize(); ++i) {
+    auto input_desc = op.GetInputDesc(i);
+    auto output_desc = op.GetOutputDesc(i);
+    output_desc.SetShape(Shape(out_shapes));
+    auto intput_dtype = input_desc.GetDataType();
+    output_desc.SetDataType(intput_dtype);
+    op.UpdateDynamicOutputDesc("y", i, output_desc);
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+INFER_FUNC_REG(Meshgrid, MeshgridInfer);
+// -------------------------------Meshgrid End-------------------------------
+// //
+
 // -------------------------------IdentityN Begin-------------------------------
 // //
 IMPLEMT_INFERFUNC(IdentityN, IdentityNInfer) {
