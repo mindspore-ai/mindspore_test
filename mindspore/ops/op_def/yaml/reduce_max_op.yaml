@@ -16,3 +16,5 @@ reduce_max:
       dtype: tensor
   function:
     disable: True
+  dispatch:
+    enable: True
