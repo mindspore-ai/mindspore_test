@@ -204,8 +204,7 @@ bool ComputeGraphNode::Register() {
   auto message = CreateMessage(server_url, MessageName::kRegistration, content);
   MS_EXCEPTION_IF_NULL(message);
 
-  const uint32_t timeout = 10;
-  MessageBase *response = hb_client_->ReceiveSync(std::move(message), timeout);
+  MessageBase *response = hb_client_->ReceiveSync(std::move(message));
   if (response == nullptr) {
     return false;
   }
@@ -325,7 +324,7 @@ bool ComputeGraphNode::Heartbeat() {
 
       uint32_t interval = IntToUint(distrib(gen));
       MS_LOG(DEBUG) << "Heart beat interval " << interval;
-      (void)sleep(interval);
+      SleepBasedOnScale(interval);
     }
   } catch (const std::exception &e) {
     MsException::Instance().SetException();
@@ -342,7 +341,7 @@ bool ComputeGraphNode::ReconnectIfNeeded(const std::function<bool(void)> &func, 
     if (!success) {
       // Retry to reconnect to the meta server.
       MS_LOG(WARNING) << error;
-      (void)sleep(kExecuteInterval);
+      SleepBasedOnScale(kExecuteInterval);
       (void)Reconnect();
     }
     --retry;
@@ -360,7 +359,7 @@ bool ComputeGraphNode::ReconnectWithTimeoutWindow(const std::function<bool(void)
     if (!success) {
       // Retry to reconnect to the meta server.
       MS_LOG(WARNING) << error;
-      (void)sleep(kExecuteInterval);
+      SleepBasedOnScale(kExecuteInterval);
       (void)Reconnect();
     }
   }

@@ -489,7 +489,7 @@ bool TCPComm::Connect(const std::string &dst_url, const MemFreeCallback &free_cb
     while (conn->state < ConnectionState::kConnected && retry-- > 0) {
       MS_LOG(WARNING) << "Waiting for the state of the connection to " << dst_url
                       << " to be connected...Retry number: " << ++total_retry_count;
-      (void)sleep(interval);
+      SleepBasedOnScale(interval);
     }
     if (conn->state != ConnectionState::kConnected) {
       return false;
