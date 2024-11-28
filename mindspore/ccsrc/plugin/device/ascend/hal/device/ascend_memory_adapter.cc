@@ -22,6 +22,7 @@
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "utils/ms_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -63,7 +64,7 @@ size_t AscendMemAdapter::GetDeviceMemSizeFromContext() const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   size_t size_from_context;
-  auto max_device_memory = context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  auto max_device_memory = runtime::RuntimeConf::GetInstance()->mem_max_size();
   float total_device_memory = 32.0f;
   if (context->ascend_soc_version() == kAscendVersion910b || context->ascend_soc_version() == kAscendVersion910_93) {
     total_device_memory = 64.0f;

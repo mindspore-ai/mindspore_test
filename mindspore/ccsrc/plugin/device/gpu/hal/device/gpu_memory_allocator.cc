@@ -20,6 +20,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -33,7 +34,7 @@ bool GPUMemoryAllocator::Init() {
   size_t free_size = CudaDriver::free_mem_size();
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  limited_device_memory_ = context_ptr->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  limited_device_memory_ = runtime::RuntimeConf::GetInstance()->mem_max_size();
   available_device_memory_ = FloatToSize(limited_device_memory_ * kGBToByte);
   if (total_size > 0 && free_size > 0 && available_device_memory_ > 0) {
     MS_LOG(INFO) << "GPU device total memory size " << total_size << ", current free memory size " << free_size
@@ -57,7 +58,7 @@ bool GPUMemoryAllocator::Init() {
 void GPUMemoryAllocator::CheckMaxDeviceMemory() const {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  auto max_device_memory = context_ptr->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  auto max_device_memory = runtime::RuntimeConf::GetInstance()->mem_max_size();
   //  Currently not support modifying the max device memory.
   if (!common::IsFloatEqual(limited_device_memory_, max_device_memory)) {
     MS_LOG(EXCEPTION) << "#umsg#Can't change or set context param max_device_memory during running:#umsg#Currently "

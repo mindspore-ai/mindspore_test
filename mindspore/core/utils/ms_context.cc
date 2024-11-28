@@ -433,6 +433,7 @@ void MsContext::ChildAfterFork() {
     // set device_target to 'CPU' as default.
     MS_LOG(INFO) << "Process " << getpid() << " config changed: 'device_target' is reset to 'CPU'.";
     SetDeviceTargetFromUser("CPU");
+    DeviceManagerConf::GetInstance()->set_device("CPU", 0, false);
   }
 }
 

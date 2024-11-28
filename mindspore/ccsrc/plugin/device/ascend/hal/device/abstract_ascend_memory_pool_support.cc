@@ -27,6 +27,7 @@
 #include "utils/convert_utils_base.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -38,7 +39,7 @@ constexpr char kGlobalOverflowWorkspace[] = "GLOBAL_OVERFLOW_WORKSPACE";
 void AbstractAscendMemoryPoolSupport::SetMemPoolBlockSize(size_t available_device_mem_size) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  float mem_block_size = ms_context->get_param<float>(MS_CTX_MEMPOOL_BLOCK_SIZE);
+  float mem_block_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
   // set from context configuration
   if (!common::IsFloatEqual(mem_block_size, kDefaultMempoolBlockSize)) {
     size_t config_size = FloatToSize(mem_block_size * kGBToByte);

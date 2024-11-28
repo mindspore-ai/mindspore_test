@@ -76,6 +76,7 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "runtime/device/tensor_array.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace device {
@@ -533,7 +534,7 @@ void GPUKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   // somas
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     auto somas = std::make_shared<GPUSomas>();
     bool ret = somas->Assign(kernel_graph);
     if (ret) {

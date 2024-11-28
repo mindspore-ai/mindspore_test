@@ -30,6 +30,7 @@
 #include "runtime/device/memory_offload_strategy.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/graph_scheduler/control_node_parser.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -180,7 +181,7 @@ std::shared_ptr<device::SwapContext> GetSwapContext() {
   const auto &offload_context = OffloadContext::GetInstance();
   MS_EXCEPTION_IF_NULL(offload_context);
   const auto &swap_context = std::make_shared<device::SwapContext>();
-  const auto max_hbm_size = context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  const auto max_hbm_size = runtime::RuntimeConf::GetInstance()->mem_max_size();
   swap_context->hbm_mem_size_ = FloatToSize(max_hbm_size * kGBToByte * offload_context->hbm_ratio());
   auto cpu_mem_size = offload_context->offload_cpu_size();
   if (!mindspore::IsStandAlone() && !offload_context->cpu_size_configured()) {

@@ -30,6 +30,7 @@
 #include "mindapi/base/type_id.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
 #include "utils/anf_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace kernel {
@@ -805,8 +806,18 @@ void ComputeThreadNums(size_t *actor_thread_num, size_t *actor_and_kernel_thread
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   const size_t cpu_core_num = std::thread::hardware_concurrency();
+
+  auto runtime_conf_instance = runtime::RuntimeConf::GetInstance();
+  MS_EXCEPTION_IF_NULL(runtime_conf_instance);
   auto inter_op_parallel_num = static_cast<size_t>(context_ptr->get_param<uint32_t>(MS_CTX_INTER_OP_PARALLEL_NUM));
+  if (runtime_conf_instance->IsDispatchThreadsNumConfigured()) {
+    inter_op_parallel_num = runtime_conf_instance->dispatch_threads_num();
+  }
   auto runtime_num_threads = static_cast<size_t>(context_ptr->get_param<uint32_t>(MS_CTX_RUNTIME_NUM_THREADS));
+  if (runtime_conf_instance->IsOpThreadsNumConfigured()) {
+    runtime_num_threads = runtime_conf_instance->op_threads_num();
+  }
+
   size_t runtime_num_threads_min = std::min(runtime_num_threads, cpu_core_num);
   size_t inter_op_parallel_num_min = std::min(inter_op_parallel_num, cpu_core_num);
   const float kActorUsage = 0.18;

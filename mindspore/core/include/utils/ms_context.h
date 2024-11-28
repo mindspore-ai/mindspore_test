@@ -27,6 +27,7 @@
 #include <optional>
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
+#include "utils/device_manager_conf.h"
 
 namespace mindspore {
 enum MsBackendPolicy {
@@ -404,6 +405,11 @@ inline const int &MsContext::get_param<int>(MsCtxParam param) const {
 template <>
 inline const uint32_t &MsContext::get_param<uint32_t>(MsCtxParam param) const {
   MarkReadStatus(param);
+  // The configuration of api interface takes priority effect.
+  if (param == MS_CTX_DEVICE_ID && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
+    return DeviceManagerConf::GetInstance()->device_id();
+  }
+
   return uint32_params_[param - MS_CTX_TYPE_UINT32_BEGIN];
 }
 
@@ -416,6 +422,14 @@ inline const float &MsContext::get_param<float>(MsCtxParam param) const {
 template <>
 inline const std::string &MsContext::get_param<std::string>(MsCtxParam param) const {
   MarkReadStatus(param);
+  // The configuration of api interface takes priority effect.
+  if (param == MS_CTX_DEVICE_TARGET && DeviceManagerConf::GetInstance()->IsDeviceEnable()) {
+    return DeviceManagerConf::GetInstance()->device_target();
+  }
+  if (param == MS_CTX_DETERMINISTIC && DeviceManagerConf::GetInstance()->IsDeterministicConfigured()) {
+    return DeviceManagerConf::GetInstance()->deterministic();
+  }
+
   return string_params_[param - MS_CTX_TYPE_STRING_BEGIN];
 }
 

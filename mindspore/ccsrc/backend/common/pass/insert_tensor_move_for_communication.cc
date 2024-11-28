@@ -18,6 +18,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace opt {
@@ -87,7 +88,7 @@ bool InsertTensorMoveForCommunication::Run(const FuncGraphPtr &graph) {
 
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) == kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() == kOptimizeO0) {
     // not use somas
     return true;
   }
