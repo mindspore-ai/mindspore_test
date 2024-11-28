@@ -55,6 +55,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/python_utils.h"
+#include "include/backend/debug/execute_order_tracker/execute_order_tracker.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
@@ -2713,6 +2714,7 @@ void ClearSingleton() {
   device::DataQueueMgr::GetInstance().Clear();
   session::SessionFactory::Get().Clear();
   device::KernelRuntimeManager::Instance().Clear();
+  ExecuteOrderTracker::GetInstance().Clear();
   OpPrimPyRegister::GetInstance().Clear();
   DumpJsonParser::Finalize();
   AclDumpJsonWriter::Finalize();

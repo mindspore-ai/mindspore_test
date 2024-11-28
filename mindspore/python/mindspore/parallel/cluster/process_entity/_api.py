@@ -27,7 +27,8 @@ class _Node:
     Base class for dynamic networking nodes.
 
     """
-    def __init__(self, worker_num, sched_host, sched_port, timeout, args_list, output_file, tail_worker_log, join):
+    def __init__(self, worker_num, sched_host, sched_port, timeout, args_list, output_file, tail_worker_log,
+                 join, is_simulation):
         self.worker_num = worker_num
         self.sched_host = sched_host
         self.sched_port = sched_port
@@ -36,6 +37,8 @@ class _Node:
         self.timeout = timeout
         self.tail_worker_log = tail_worker_log
         self.join = join
+        self.is_simulation = is_simulation
+
 
     def run(self):
         """
@@ -43,9 +46,11 @@ class _Node:
 
         """
         os.environ["MS_WORKER_NUM"] = str(self.worker_num)
-        os.environ["MS_SCHED_HOST"] = self.sched_host
-        os.environ["MS_SCHED_PORT"] = str(self.sched_port)
-        os.environ["MS_TOPO_TIMEOUT"] = str(self.timeout)
+        # If simulation level is set, environment variables for dynamic networking will not be set and scheduler will not be started.
+        if not self.is_simulation:
+            os.environ["MS_SCHED_HOST"] = self.sched_host
+            os.environ["MS_SCHED_PORT"] = str(self.sched_port)
+            os.environ["MS_TOPO_TIMEOUT"] = str(self.timeout)
 
 class _MetaServerNode(_Node):
     """
@@ -67,9 +72,9 @@ class _ComputeGraphNode(_Node):
     Worker node for dynamic networking. Inherits from the Node class.
     """
     def __init__(self, worker_num, sched_host, sched_port, timeout, node_id, args_list, output_file,
-                 tail_worker_log, join):
+                 tail_worker_log, join, is_simulation):
         super().__init__(worker_num, sched_host, sched_port, timeout, args_list, output_file,
-                         tail_worker_log, join)
+                         tail_worker_log, join, is_simulation)
         self.node_id = node_id
 
 
@@ -83,7 +88,9 @@ class _ComputeGraphNode(_Node):
         super().run()
         if self.node_id is not None:
             os.environ["MS_NODE_ID"] = str(self.node_id)
-        os.environ["MS_ROLE"] = "MS_WORKER"
+        # If simulation level is set, environment variable 'MS_ROLE' will not be set.
+        if not self.is_simulation:
+            os.environ["MS_ROLE"] = "MS_WORKER"
         tail_worker_process = None
         with open(self.output_file, "w") as file_handle:
             worker_process = subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
@@ -141,19 +148,15 @@ class _ProcessManager:
         self.sim_rank_id = args.sim_rank_id
         self.is_simulation = (self.sim_level != -1)
         if self.is_simulation:
-            # If simulation level is set, reset the worker_num and local_worker_num to 1
-            # so that host cluster could be initialized.
-            self.worker_num = 1
-            self.local_worker_num = 1
             os.environ["MS_SIMULATION_LEVEL"] = str(self.sim_level)
         elif os.getenv("MS_SIMULATION_LEVEL"):
-            # If simulation level env is set, load RANK_ID and RANK_SIZE envs.
-            self.worker_num = 1
-            self.local_worker_num = 1
             self.is_simulation = True
-            self.sim_rank_id = os.getenv("RANK_ID", "0")
             if os.getenv("RANK_SIZE"):
                 self.exported_rank_size = os.getenv("RANK_SIZE")
+        # If sim_rank_id is set, single worker can be started.
+        if self.is_simulation and self.sim_rank_id:
+            self.worker_num = 1
+            self.local_worker_num = 1
 
         self.cmd = args.task_script
         self.cmd_args = args.task_script_args
@@ -191,7 +194,7 @@ class _ProcessManager:
             else:
                 sys.exit()
         else:
-            if self.is_master:
+            if self.is_master and not self.is_simulation:
                 self.start_scheduler()
         self.start_workers()
 
@@ -208,7 +211,8 @@ class _ProcessManager:
         os.environ['RANK_ID'] = str(0)
         msn = _MetaServerNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
                               _generate_cmd_args_list(self.cmd, self.cmd_args),
-                              os.path.join(self.log_dir, "scheduler.log"), self.tail_worker_log, self.join)
+                              os.path.join(self.log_dir, "scheduler.log"), self.tail_worker_log, self.join,
+                              self.is_simulation)
         self.msn_process = msn.run()
 
     def start_workers(self):
@@ -226,8 +230,8 @@ class _ProcessManager:
                            "You can access 'RANK_ID' environment variable after calling "
                            "'mindspore.communication.init()'")
 
-        if self.is_simulation and self.worker_num != 1:
-            raise ValueError(f"Simulation level is set, worker_num must be 1, but got {self.worker_num}.")
+        if self.is_simulation and self.sim_rank_id and self.worker_num != 1:
+            raise ValueError(f"Simulation rank_id is set, worker_num must be 1, but got {self.worker_num}.")
 
         for i in range(self.local_worker_num):
             os.environ["DEVICE_ID"] = str(i)
@@ -241,8 +245,8 @@ class _ProcessManager:
                 os.environ["RANK_ID"] = str(node_id)
                 logger.warning(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
                                "Environment variable [RANK_ID] is exported.")
-            if self.is_simulation:
-                # Reset RANK_ID env to sim_rank_id.
+            if self.is_simulation and self.sim_rank_id:
+                # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
                 os.environ["RANK_ID"] = str(self.sim_rank_id)
 
             cpu_num = subprocess.getoutput("cat /proc/cpuinfo|grep processor|wc -l")
@@ -256,7 +260,7 @@ class _ProcessManager:
             else:
                 cmd = _generate_cmd_args_list(self.cmd, self.cmd_args)
             cgn = _ComputeGraphNode(self.worker_num, self.master_addr, self.master_port, self.cluster_time_out,
-                                    node_id, cmd, log_name, self.tail_worker_log, self.join)
+                                    node_id, cmd, log_name, self.tail_worker_log, self.join, self.is_simulation)
             process, tail_process = cgn.run()
             self.cgn_processes.append(process)
             self.tail_cgn_processes.append(tail_process)
