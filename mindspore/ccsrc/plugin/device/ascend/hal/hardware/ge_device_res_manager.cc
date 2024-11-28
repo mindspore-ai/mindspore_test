@@ -862,6 +862,19 @@ void GeDeviceResManager::StopDevice(int32_t device_id) {
     MS_EXCEPTION(DeviceProcessError) << "Call aclrtDeviceTaskAbort failed, ret code: " << ret;
   }
 }
+
+void *GeDeviceResManager::GetCopyDataStream() const {
+  auto copy_data_stream = AscendStreamMng::GetInstance().GetCopyStream();
+  if (copy_data_stream == nullptr) {
+    size_t copy_stream_id;
+    AscendStreamMng::GetInstance().CreateStream(&copy_stream_id);
+    MS_LOG(INFO) << "Create ascend copy data stream, stream id: " << copy_stream_id;
+    copy_data_stream = AscendStreamMng::GetInstance().GetStream(copy_stream_id);
+    AscendStreamMng::GetInstance().SetCopyStream(copy_data_stream);
+  }
+  return copy_data_stream;
+}
+
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
