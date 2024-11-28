@@ -57,12 +57,12 @@ void OpExecutor::WorkerJoin() {
   runtime::Pipeline::Get().launch_stage()->WorkerJoin();
 }
 
-void OpExecutor::DispatchLaunchTask(const std::function<void()> &func) {
+void OpExecutor::DispatchLaunchTask(std::function<void()> &&func) {
   if (NeedSync()) {
     runtime::Pipeline::Get().WaitForward();
     func();
   } else {
-    auto task = std::make_shared<runtime::DeviceLaunchTask>([=]() { func(); });
+    auto task = std::make_shared<runtime::DeviceLaunchTask>(std::move(func));
     runtime::ProfilerAnalyzer::GetInstance().RecordFlowData(task->task_id());
     runtime::Pipeline::Get().launch_stage()->Push(task);
   }
