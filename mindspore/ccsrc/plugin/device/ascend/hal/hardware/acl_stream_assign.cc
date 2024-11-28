@@ -74,21 +74,57 @@ void AddStreamIdForSendRecv(const AnfNodePtr &node, bool is_pp_interleave) {
   MS_EXCEPTION_IF_NULL(cnode);
   if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kSendOpName))) {
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-      AnfAlgo::SetStreamId(kBackwardSendStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardSendStreamIndex), node);
+      auto backward_send_stream = AscendStreamMng::GetInstance().GetBackwardSendStream();
+      size_t backward_send_stream_id;
+      if (backward_send_stream == nullptr) {
+        AscendStreamMng::GetInstance().CreateStream(&backward_send_stream_id);
+        MS_LOG(INFO) << "Create ascend backward send stream, stream id: " << backward_send_stream_id;
+        backward_send_stream = AscendStreamMng::GetInstance().GetStream(backward_send_stream_id);
+        AscendStreamMng::GetInstance().SetBackwardSendStream(backward_send_stream);
+      }
+      backward_send_stream_id = AscendStreamMng::GetInstance().GetStreamId(backward_send_stream);
+      AnfAlgo::SetStreamId(backward_send_stream_id, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(backward_send_stream_id), node);
     } else {
-      AnfAlgo::SetStreamId(kForwardSendStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardSendStreamIndex), node);
+      auto forward_send_stream = AscendStreamMng::GetInstance().GetForwardSendStream();
+      size_t forward_send_stream_id;
+      if (forward_send_stream == nullptr) {
+        AscendStreamMng::GetInstance().CreateStream(&forward_send_stream_id);
+        MS_LOG(INFO) << "Create ascend forward send stream, stream id: " << forward_send_stream_id;
+        forward_send_stream = AscendStreamMng::GetInstance().GetStream(forward_send_stream_id);
+        AscendStreamMng::GetInstance().SetForwardSendStream(forward_send_stream);
+      }
+      forward_send_stream_id = AscendStreamMng::GetInstance().GetStreamId(forward_send_stream);
+      AnfAlgo::SetStreamId(forward_send_stream_id, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(forward_send_stream_id), node);
     }
     MS_LOG(INFO) << "Set stream id for vpp send op " << node->fullname_with_scope()
                  << ", stream id: " << AnfAlgo::GetStreamId(node);
   } else if (IsPrimitiveCNode(node, std::make_shared<Primitive>(kReceiveOpName))) {
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-      AnfAlgo::SetStreamId(kBackwardReceiveStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kBackwardReceiveStreamIndex), node);
+      auto backward_recv_stream = AscendStreamMng::GetInstance().GetBackwardRecvStream();
+      size_t backward_recv_stream_id;
+      if (backward_recv_stream == nullptr) {
+        AscendStreamMng::GetInstance().CreateStream(&backward_recv_stream_id);
+        MS_LOG(INFO) << "Create ascend backward recv stream, stream id: " << backward_recv_stream_id;
+        backward_recv_stream = AscendStreamMng::GetInstance().GetStream(backward_recv_stream_id);
+        AscendStreamMng::GetInstance().SetBackwardRecvStream(backward_recv_stream);
+      }
+      backward_recv_stream_id = AscendStreamMng::GetInstance().GetStreamId(backward_recv_stream);
+      AnfAlgo::SetStreamId(backward_recv_stream_id, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(backward_recv_stream_id), node);
     } else {
-      AnfAlgo::SetStreamId(kForwardReceiveStreamIndex, node.get());
-      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kForwardReceiveStreamIndex), node);
+      auto forward_recv_stream = AscendStreamMng::GetInstance().GetForwardRecvStream();
+      size_t forward_recv_stream_id;
+      if (forward_recv_stream == nullptr) {
+        AscendStreamMng::GetInstance().CreateStream(&forward_recv_stream_id);
+        MS_LOG(INFO) << "Create ascend forward recv stream, stream id: " << forward_recv_stream_id;
+        forward_recv_stream = AscendStreamMng::GetInstance().GetStream(forward_recv_stream_id);
+        AscendStreamMng::GetInstance().SetForwardRecvStream(forward_recv_stream);
+      }
+      forward_recv_stream_id = AscendStreamMng::GetInstance().GetStreamId(forward_recv_stream);
+      AnfAlgo::SetStreamId(forward_recv_stream_id, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(forward_recv_stream_id), node);
     }
     MS_LOG(INFO) << "Set stream id for vpp recv op " << node->fullname_with_scope()
                  << ", stream id: " << AnfAlgo::GetStreamId(node);
