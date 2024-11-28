@@ -120,7 +120,7 @@ std::string TensorDumpUtils::TensorNameToArrayName(const std::string &tensor_pat
     file_name = file_name.value().substr(0, file_name.value().length() - npy_suffix.length());
   }
   std::optional<std::string> new_file_name =
-    std::to_string(name_id++) + separator + file_name.value() + separator + data_type;
+    file_name.value() + separator + data_type + separator + std::to_string(name_id++);
   new_file_name.value() += npy_suffix;
   std::optional<std::string> new_file_path;
   FileUtils::ConcatDirAndFileName(&realpath, &new_file_name, &new_file_path);
