@@ -382,6 +382,9 @@ from mindspore.ops.auto_generate import mm_ext as mm
 # 382
 from mindspore.ops.function.math_func import dstack
 
+# 533
+from mindspore.ops.function.math_func import frac_ext as frac
+
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
 
@@ -2213,6 +2216,9 @@ __all__ = [
 
     # 520
     'bincount',
+
+    # 533
+    'frac',
 
     # 538
     'histc',
