@@ -140,32 +140,8 @@ if(Python3_FOUND)
     endif()
 endif()
 
-file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "../../../mindspore/ccsrc/distributed/cluster/topology/*.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/rdma/*.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_device_address.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_device_synchronizer.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_hash_table.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/hardware/cpu_memory_pool.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/hal/hardware/ms_collective_topo.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
-        "../../../mindspore/ccsrc/ps/*.cc"
-        "../../../mindspore/ops/kernel/cpu/adam_delta_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/akg/*.cc"
-        "../../../mindspore/ops/kernel/cpu/cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/fused_ada_factor_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/nnacl/fp32/adam_fp32.c"
-        "../../../mindspore/ops/kernel/cpu/rpc/rpc_recv_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/sparse_apply_adam_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/sparse_apply_ftrl_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/sparse_apply_lazy_adam_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/sparse_apply_proximal_adagrad_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/unique_cpu_kernel.cc"
-        "../../../mindspore/ops/kernel/cpu/unique_with_pad_cpu_kernel.cc"
-        )
-
 file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/common/ascend_utils.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/abstract_ascend_memory_pool_support.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_address.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/ascend_device_synchronizer.cc"
@@ -241,24 +217,10 @@ file(GLOB_RECURSE MINDSPORE_ASCEND_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/transform/symbol/*.cc"
         )
 
-list(REMOVE_ITEM MINDSPORE_SRC_LIST
-        "../../../mindspore/ccsrc/distributed/rpc/rdma/rdma_client.cc"
-        "../../../mindspore/ccsrc/distributed/rpc/rdma/rdma_server.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/core/communicator/task_executor.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/ps_context.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/util.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/ps/scheduler.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ops/kernel/cpu/akg/akg_cpu_kernel_mod.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ops/kernel/cpu/akg/akg_cpu_kernel_build.cc")
-
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/profiler/parallel_strategy_profiling.cc")
 list(REMOVE_ITEM MINDSPORE_ASCEND_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/hcom_matmul_all_reduce.cc")
-
-add_library(_ut_mindspore_obj STATIC ${MINDSPORE_SRC_LIST})
-target_link_libraries(_ut_mindspore_obj PRIVATE mindspore_backend mindspore_core _c_dataengine
-        mindspore_common)
 
 add_library(_ut_mindspore_ascend_obj STATIC ${MINDSPORE_ASCEND_SRC_LIST})
 target_link_libraries(_ut_mindspore_ascend_obj PRIVATE mindspore_backend mindspore_core
@@ -279,13 +241,13 @@ foreach(comp ${ALL_UT_COMPS})
     # ci envs have no enough memory, so make link target sequentially
     list(FIND UT_COMPS ${comp} comp_index)
     if(${comp_index} LESS 0)
-        message("${comp} start link _ut_mindspore_obj")
-        target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group _ut_mindspore_ascend_obj _ut_mindspore_obj)
+        message("${comp} start link _ut_mindspore_ascend_obj")
+        target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group _ut_mindspore_ascend_obj)
         target_link_libraries(ut_${comp}_tests PRIVATE _c_mindrecord _c_dataengine)
     endif()
-    target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static
-            -Wl,--end-group)
-    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
+    target_link_libraries(ut_${comp}_tests PRIVATE -Wl,--start-group mindspore _ut_obj_static)
+    target_link_libraries(ut_${comp}_tests PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common
+            ps_cache)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         target_link_libraries(ut_${comp}_tests PRIVATE mindspore::gtest mindspore::gmock mindspore::mockcpp
                 mindspore::event mindspore::event_pthreads mindspore::event_openssl mindspore::ssl mindspore::crypto
