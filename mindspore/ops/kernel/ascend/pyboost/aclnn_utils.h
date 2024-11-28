@@ -127,8 +127,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
       DISPATCH_LAUNCH_KERNEL(device_context, aclnn_name, work_ptr->ptr_, ws_size, executor_handle, stream_ptr,      \
                              release_function, update_function);                                                    \
     }                                                                                                               \
-    static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||             \
-                       MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";              \
+    static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);               \
     if (sync) {                                                                                                     \
       if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {                                       \
         MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;                                             \
