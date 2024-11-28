@@ -289,7 +289,7 @@ from mindspore.ops.auto_generate import argmin_ext as argmin
 # 119
 
 # 120
-
+from mindspore.ops.auto_generate import isneginf_ext as isneginf
 # 121
 
 # 122
@@ -2091,7 +2091,7 @@ __all__ = [
     # 119
 
     # 120
-
+    'isneginf',
     # 121
 
     # 122

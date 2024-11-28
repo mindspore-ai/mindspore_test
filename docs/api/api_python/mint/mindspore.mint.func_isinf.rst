@@ -1,7 +1,7 @@
 mindspore.mint.isinf
 =======================
 
-.. py:function:: mindspore.ops.isinf(input)
+.. py:function:: mindspore.mint.isinf(input)
 
     确定输入Tensor每个位置上的元素是否为正无穷或负无穷。
 
