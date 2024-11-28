@@ -44,11 +44,15 @@ class PassthroughFrontendTask : public runtime::AsyncTask {
  public:
   explicit PassthroughFrontendTask(std::function<void(void)> run_func)
       : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)) {}
+  explicit PassthroughFrontendTask(std::function<void(void)> run_func, const stub::StubNodePtr &stub_output)
+      : AsyncTask(runtime::kFrontendTask), run_func_(std::move(run_func)), stub_output_(stub_output) {}
   ~PassthroughFrontendTask() override = default;
   void Run() override;
+  void SetException(const std::exception_ptr &e) override;
 
  private:
   std::function<void(void)> run_func_;
+  stub::StubNodePtr stub_output_{nullptr};
 };
 
 class SliceOpFrontendTask : public runtime::AsyncTask {

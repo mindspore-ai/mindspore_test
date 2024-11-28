@@ -1,0 +1,16 @@
+#operator empty_like
+empty_like:
+    args:
+        input:
+            dtype: tensor
+        dtype:
+            dtype: TypeId
+            default: None
+        device:
+            dtype: str
+            default: None
+    returns:
+        y:
+            dtype: tensor
+    function:
+        disable: True
