@@ -482,7 +482,7 @@ void GradExecutor::Init() {
   MS_LOG(DEBUG) << "Do windows bprop expander register";
 #endif
   init_ = true;
-  config_no_graph_ = (common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE") == "");
+  config_no_graph_ = (common::GetEnv("MS_PYNATIVE_CONFIG_STATIC_SHAPE") != "1");
 }
 
 TopCellInfoPtr GradExecutor::PopTopCellStack() {
