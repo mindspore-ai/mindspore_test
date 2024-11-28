@@ -92,6 +92,8 @@ class MS_CORE_API AnfUtils {
   static bool IsGraphKernel(const AnfNodePtr &node);
   // check whether the node is a node in GraphKernel's subgraph.
   static bool IsNodeInGraphKernel(const AnfNodePtr &node);
+  // check whether the node is a KernelPacket node.
+  static bool IsKernelPacket(const AnfNodePtr &node);
   // Set dump flag to CNode's primitive.
   static void SetDumpFlag(const AnfNodePtr &node);
   // Get dump flag from CNode's primitive.
