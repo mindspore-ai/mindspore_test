@@ -4528,5 +4528,11 @@ REG_BPROP_BUILDER("Var").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
 
   return {grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
+
+REG_BPROP_BUILDER("Frac").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  return {dout};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop
