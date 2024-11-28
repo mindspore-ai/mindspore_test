@@ -1,0 +1,24 @@
+#operator dist scatter
+dist_comm_scatter_tensor:
+    args:
+        other:
+            dtype: tensor
+        input:
+            dtype: tensor
+        rank_size:
+            dtype: int
+        src:
+            dtype: int
+        rank_id:
+            dtype: int
+        group:
+            dtype: str
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: DistCommScatterTensorAscend

@@ -46,6 +46,7 @@ constexpr auto kReservoirReplayBufferSampleOpName = "ReservoirReplayBufferSample
 constexpr auto kAllGatherOpName = "AllGather";
 constexpr auto kAllReduceOpName = "AllReduce";
 constexpr auto kReduceOpName = "Reduce";
+constexpr auto kScatterOpName = "Scatter";
 constexpr auto kCollectiveScatterOpName = "CollectiveScatter";
 constexpr auto kCollectiveGatherOpName = "CollectiveGather";
 constexpr auto kReduceScatterOpName = "ReduceScatter";

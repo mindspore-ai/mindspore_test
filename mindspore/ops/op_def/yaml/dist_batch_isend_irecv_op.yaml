@@ -1,0 +1,23 @@
+#operator inner irecv
+dist_comm_batch_isend_irecv:
+    args:
+        input:
+            dtype: tuple[tensor]
+            type_cast: list[tensor]
+        group:
+            dtype: str
+        op_types:
+            dtype: tuple[int]
+            type_cast: list[int]
+        remotes_ranks:
+            dtype: tuple[int]
+            type_cast: list[int]
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: DistCommBatchIsendIrecvAscend

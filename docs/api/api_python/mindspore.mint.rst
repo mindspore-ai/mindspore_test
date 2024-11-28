@@ -469,7 +469,30 @@ mindspore.mint.distributed
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.mint.distributed.init_process_group
+    mindspore.mint.distributed.all_gather
+    mindspore.mint.distributed.all_gather_into_tensor
+    mindspore.mint.distributed.all_reduce
+    mindspore.mint.distributed.all_to_all
+    mindspore.mint.distributed.all_to_all_single
+    mindspore.mint.distributed.barrier
+    mindspore.mint.distributed.batch_isend_irecv
+    mindspore.mint.distributed.broadcast
     mindspore.mint.distributed.destroy_process_group
+    mindspore.mint.distributed.gather
+    mindspore.mint.distributed.get_backend
+    mindspore.mint.distributed.get_global_rank
+    mindspore.mint.distributed.get_group_rank
+    mindspore.mint.distributed.get_process_group_ranks
     mindspore.mint.distributed.get_rank
     mindspore.mint.distributed.get_world_size
+    mindspore.mint.distributed.init_process_group
+    mindspore.mint.distributed.irecv
+    mindspore.mint.distributed.isend
+    mindspore.mint.distributed.new_group
+    mindspore.mint.distributed.P2POp
+    mindspore.mint.distributed.recv
+    mindspore.mint.distributed.reduce
+    mindspore.mint.distributed.reduce_scatter
+    mindspore.mint.distributed.reduce_scatter_tensor
+    mindspore.mint.distributed.scatter
+    mindspore.mint.distributed.send

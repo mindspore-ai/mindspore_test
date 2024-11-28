@@ -23,9 +23,63 @@ Please see the `msrun start up
 <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
 for more details.
 """
-from mindspore.mint.distributed.distributed import init_process_group, destroy_process_group, get_rank, get_world_size
-
+from __future__ import absolute_import
+from mindspore.mint.distributed.distributed import (
+    init_process_group,
+    destroy_process_group,
+    get_rank,
+    get_world_size,
+    new_group,
+    get_backend,
+    get_global_rank,
+    get_process_group_ranks,
+    get_group_rank,
+    all_reduce,
+    all_gather_into_tensor,
+    all_to_all,
+    all_to_all_single,
+    reduce_scatter_tensor,
+    isend,
+    irecv,
+    send,
+    recv,
+    barrier,
+    broadcast,
+    reduce,
+    P2POp,
+    batch_isend_irecv,
+    gather,
+    scatter,
+    all_gather,
+    reduce_scatter,
+)
 
 __all__ = [
-    "init_process_group", "destroy_process_group", "get_rank", "get_world_size"
+    "init_process_group",
+    "destroy_process_group",
+    "get_rank",
+    "get_world_size",
+    "new_group",
+    "get_backend",
+    "get_global_rank",
+    "get_process_group_ranks",
+    "get_group_rank",
+    "all_reduce",
+    "all_gather_into_tensor",
+    "all_to_all",
+    "all_to_all_single",
+    "reduce_scatter_tensor",
+    "isend",
+    "irecv",
+    "send",
+    "recv",
+    "gather",
+    "scatter",
+    "all_gather",
+    "reduce_scatter",
+    "barrier",
+    "broadcast",
+    "reduce",
+    "P2POp",
+    "batch_isend_irecv",
 ]
