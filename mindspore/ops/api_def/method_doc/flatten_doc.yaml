@@ -1,11 +1,10 @@
 flatten:
   description: |
-    flatten(self, start_dim=0, end_dim=-1) -> Tensor
+    flatten(start_dim=0, end_dim=-1) -> Tensor
 
     Flatten a tensor along dimensions from `start_dim` to `end_dim`.
 
     Args:
-        self (Tensor): The self Tensor.
         start_dim (int, optional): The first dimension to flatten. Default: ``0`` .
         end_dim (int, optional): The last dimension to flatten. Default: ``-1`` .
 
@@ -14,7 +13,6 @@ flatten:
         If `self` is a 0-dimensional Tensor, a 1-dimensional Tensor will be returned.
 
     Raises:
-        TypeError: If `self` is not a Tensor.
         TypeError: If `start_dim` or `end_dim` is not int.
         ValueError: If `start_dim` is greater than `end_dim` after canonicalized.
         ValueError: If `start_dim` or `end_dim` is not in range of [-self.dim, self.dim-1].
@@ -31,13 +29,12 @@ flatten:
         >>> print(output.shape)
         (24,)
     
-    .. method:: Tensor.flatten(self, order='C', *, start_dim=0, end_dim=-1) -> Tensor
+    .. method:: Tensor.flatten(order='C', *, start_dim=0, end_dim=-1) -> Tensor
         :noindex:
 
     Flatten a tensor along dimensions from `start_dim` to `start_dim`.
 
     Args:
-        self (Tensor): The self Tensor.
         order (str, optional): Only ``'C'`` and ``'F'`` are supported.
             ``'C'`` means to flatten in row-major (C-style) order.
             ``'F'`` means to flatten in column-major (Fortran-style) order. Default: ``'C'`` .
@@ -51,7 +48,6 @@ flatten:
         If `self` is a 0-dimensional Tensor, a 1-dimensional Tensor will be returned.
 
     Raises:
-        TypeError: If `self` is not a Tensor.
         TypeError: If `order` is not string type.
         ValueError: If `order` is string type, but not ``'C'`` or ``'F'``.
         TypeError: If `start_dim` or `end_dim` is not int.
