@@ -76,7 +76,7 @@ def read_file(save_path):
     return content
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_load_not_convert_tensormove():
     """
     Feature: Auto monad feature: record the value of load.
@@ -90,13 +90,16 @@ def test_load_not_convert_tensormove():
         save_path = "./test_load_not_convert_tensormove"
         context.set_context(save_graphs=True, save_graphs_path=save_path)
         x = Tensor(np.array(1), ms.int32)
-        graph_forword_net = ForwardNet()
-        graph_backword_net = BackwardNet(graph_forword_net)
-        graph_backword_net(x)
-        content = read_file(save_path)
-        tensormove_set = re.findall('= TensorMove', content)
-        try:
-            shutil.rmtree(save_path)
-        except FileNotFoundError:
-            pass
-        assert not tensormove_set
+        with pytest.raises(RuntimeError) as info:
+            graph_forword_net = ForwardNet()
+            graph_backword_net = BackwardNet(graph_forword_net)
+            graph_backword_net(x)
+            content = read_file(save_path)
+            tensormove_set = re.findall('= TensorMove', content)
+            try:
+                shutil.rmtree(save_path)
+            except FileNotFoundError:
+                pass
+            assert not tensormove_set
+        assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+                in str(info.value))

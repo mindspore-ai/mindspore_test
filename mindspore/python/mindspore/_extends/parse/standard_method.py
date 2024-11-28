@@ -4462,14 +4462,17 @@ def outer(input, vec2):
     """
     return F.outer(input, vec2)
 
+
 def sigmoid(input):
     r"""
     For details, please refer to :func:`mindspore.ops.sigmoid`.
     """
     return F.sigmoid(input)
 
+
 def _getitem(data, index):
     return multitype_ops.getitem(data, index)
+
 
 def _setitem(data, index, value):
     return multitype_ops.setitem(data, index, value)

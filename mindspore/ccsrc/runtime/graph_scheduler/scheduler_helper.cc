@@ -520,7 +520,7 @@ void SchedulerHelper::AddPartialArrow(ControlActor *const from_actor, ControlAct
   auto op_arrow = std::make_shared<DataArrow>(from_index, to_actor->GetAID(), to_index);
   (void)from_actor->output_partial_arrows_.emplace_back(op_arrow);
   to_actor->input_partials_num_++;
-  (void)to_actor->input_partial_arrow_aids_.emplace_back(from_actor->GetAID());
+  (void)to_actor->input_partial_arrow_aids_.emplace_back(from_actor->GetAID(), op_arrow.get());
 }
 
 void SchedulerHelper::AddBranchIDArrow(ControlActor *const from_actor, ControlActor *const to_actor) {
@@ -568,7 +568,7 @@ void SchedulerHelper::AddPartialArrowForExitActor(ExitActor *const exit_actor, C
                 << " to actor:" << to_actor->GetAID() << " to index:" << to_index;
   auto partial_arrow = std::make_shared<DataArrow>(from_index, to_actor->GetAID(), to_index);
   (void)exit_actor->output_branch_partial_arrows_[branch_id].emplace_back(partial_arrow);
-  (void)to_actor->input_partial_arrow_aids_.emplace_back(exit_actor->GetAID());
+  (void)to_actor->input_partial_arrow_aids_.emplace_back(exit_actor->GetAID(), partial_arrow.get());
 }
 
 void SchedulerHelper::AddControlArrowForExitActor(ExitActor *from_actor, AbstractActor *to_actor, int branch_id) {
@@ -591,21 +591,6 @@ void SchedulerHelper::AddFormalParameterDeviceTensor(ControlActor *const from_ac
     return;
   }
 
-  // Collect backend parameters with dynamic shapes.
-  auto base_shape = input_node->Shape();
-  if (input_node->isa<Parameter>() && base_shape != nullptr &&
-      ((base_shape->isa<abstract::Shape>() && base_shape->IsDynamic()) ||
-       base_shape->isa<abstract::DynamicSequenceShape>())) {
-    if (from_index >= from_actor->backend_parameters_.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#Invalid from index:" << from_index
-                                 << " for actor:" << from_actor->GetAID()
-                                 << " vector size:" << from_actor->backend_parameters_.size();
-    }
-    MS_LOG(INFO) << "Add dynamic shape backend parameter:" << input_node->DebugString() << " index:" << from_index
-                 << " for actor:" << from_actor->GetAID();
-    (void)from_actor->backend_parameters_[from_index].emplace_back(input_node);
-  }
-
   if (!common::AnfAlgo::HasAbstractRef(input_node)) {
     return;
   }
@@ -614,6 +599,8 @@ void SchedulerHelper::AddFormalParameterDeviceTensor(ControlActor *const from_ac
   MS_EXCEPTION_IF_NULL(device_tensor);
   (void)from_actor->ref_formal_parameter_device_tensors_[from_index].insert(device_tensor);
   if (graph->IsRefOutputMapValue({input_node, 0})) {
+    MS_LOG(DEBUG) << "Add device address:" << device_tensor << " from index:" << from_index
+                  << " parameter:" << input_node->DebugString() << " for actor:" << from_actor->GetAID();
     (void)from_actor->ref_node_formal_parameter_device_tensors_[from_index].insert(device_tensor);
   }
 
@@ -1098,7 +1085,6 @@ void CheckControlActorValid(const ActorSet *actor_set) {
       auto &device_tensors = ref_node_formal_parameter_device_tensor.second;
       for (auto iter = device_tensors.begin(); iter != device_tensors.end(); ++iter) {
         if (((*device_tensors.begin())->format() != (*iter)->format()) ||
-            ((*device_tensors.begin())->GetDeviceType() != (*iter)->GetDeviceType()) ||
             ((*device_tensors.begin())->type_id() != (*iter)->type_id())) {
           MS_LOG(INTERNAL_EXCEPTION) << "#dmsg#Runtime error info:#dmsg#" << control_actor->GetAID().Name()
                                      << " does not support the ref node formal parameters with different format.";

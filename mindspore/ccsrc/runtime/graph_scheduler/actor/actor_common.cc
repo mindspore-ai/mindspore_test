@@ -382,8 +382,11 @@ void UpdateRefCount(DeviceTensor *const device_tensor, bool is_max_ref_count) {
   MS_EXCEPTION_IF_NULL(device_tensor);
   if (is_max_ref_count) {
     device_tensor->set_original_ref_count(SIZE_MAX);
+    MS_LOG(DEBUG) << "Set origin ref count max for device address:" << device_tensor;
   } else {
     device_tensor->IncreaseOriginalRefCount();
+    MS_LOG(DEBUG) << "Add origin ref count for device address:" << device_tensor
+                  << " origin ref count:" << device_tensor->original_ref_count();
   }
   device_tensor->ResetRefCount();
 }
@@ -703,6 +706,25 @@ std::string GenerateActorIdByKernel(const AnfNodePtr &node) {
   auto id = std::to_string(actor_index++) + "_" + node->fullname_with_scope();
   actor_ids[node.get()] = id;
   return id;
+}
+
+mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::vector<DeviceTensor *> &device_tensors) {
+  mindspore::HashMap<const void *, std::vector<size_t>> ptr_positions;
+  mindspore::HashMap<size_t, size_t> repeat_index;
+  for (size_t i = 0; i < device_tensors.size(); ++i) {
+    if (device_tensors[i] != nullptr && device_tensors[i]->GetPtr() != nullptr) {
+      ptr_positions[device_tensors[i]->GetPtr()].emplace_back(i);
+    }
+  }
+  for (const auto &pair : ptr_positions) {
+    if (pair.second.size() <= 1) {
+      continue;
+    }
+    for (size_t i = 1; i < pair.second.size(); ++i) {
+      repeat_index[pair.second[i]] = pair.second[0];
+    }
+  }
+  return repeat_index;
 }
 }  // namespace runtime
 }  // namespace mindspore

@@ -13,9 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 import os
+import pytest
 import re
 import shutil
-import pytest
 import numpy as np
 from mindspore.nn import Cell
 from mindspore import context, Tensor, Parameter
@@ -24,7 +24,7 @@ import mindspore.ops as ops
 from mindspore.ops import functional as F
 from mindspore.ops import composite as C
 import mindspore as ms
-from mindspore import jit
+from mindspore import jit, nn
 from mindspore.nn import TrainOneStepCell, Momentum
 from tests.mark_utils import arg_mark
 
@@ -190,7 +190,7 @@ def read_file(save_path):
     return content
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_load_convert_tensormove():
     """
     Feature: Auto monad feature: record the value of load.
@@ -199,24 +199,27 @@ def test_load_convert_tensormove():
     """
 
     if ms.context.get_context('mode') == 0:
-        # set MS_DEV_SIDE_EFFECT_LOAD_ELIM = 0/1/2
-        os.environ['MS_DEV_SIDE_EFFECT_LOAD_ELIM'] = '1'
-        save_path = "./test_load_convert_tensormove"
-        context.set_context(save_graphs=True, save_graphs_path=save_path)
-        x = Tensor(np.array(1), ms.int32)
-        graph_forword_net = ForwardNet()
-        graph_backword_net = BackwardNet(graph_forword_net)
-        output_except = (Tensor(np.array(3), ms.int32),)
-        graph_mode_grads = graph_backword_net(x)
-        content2 = read_file(save_path)
-        tensormove_set = re.findall('= TensorMove', content2)
-        context.set_context(save_graphs=False)
-        try:
-            shutil.rmtree(save_path)
-        except FileNotFoundError:
-            pass
-        assert len(tensormove_set) == 3
-        assert np.all(graph_mode_grads == output_except)
+        with pytest.raises(RuntimeError) as info:
+            # set MS_DEV_SIDE_EFFECT_LOAD_ELIM = 0/1/2
+            os.environ['MS_DEV_SIDE_EFFECT_LOAD_ELIM'] = '1'
+            save_path = "./test_load_convert_tensormove"
+            context.set_context(save_graphs=True, save_graphs_path=save_path)
+            x = Tensor(np.array(1), ms.int32)
+            graph_forword_net = ForwardNet()
+            graph_backword_net = BackwardNet(graph_forword_net)
+            output_except = (Tensor(np.array(3), ms.int32),)
+            graph_mode_grads = graph_backword_net(x)
+            content2 = read_file(save_path)
+            tensormove_set = re.findall('= TensorMove', content2)
+            context.set_context(save_graphs=False)
+            try:
+                shutil.rmtree(save_path)
+            except FileNotFoundError:
+                pass
+            assert len(tensormove_set) == 3
+            assert np.all(graph_mode_grads == output_except)
+        assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+                in str(info.value))
 
 
 class ForwardNet2(Cell):
@@ -511,7 +514,8 @@ def test_control_while_for_if_break_parameter():
     ms_grad(net)(Tensor(2), Tensor(20), Tensor(np.random.rand(4, 4, 4), dtype=ms.float32))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_parameter_shape_in_auto_monad():
     """
     Feature: Auto monad feature.
@@ -564,3 +568,66 @@ def test_parameter_shape_in_auto_monad():
 
     assert (graph_div_weight == pyantive_div_weight).all()
     assert (graph_out == pyantive_out).all()
+
+
+class ControlMixedWhileIf(nn.Cell):
+    def __init__(self):
+        super().__init__()
+        self.assign = P.Assign()
+        self.var = ms.Parameter(ms.Tensor([1], ms.float32), name="var")
+
+    @jit
+    def construct(self, x, y, z, c2, c4):
+        out = self.assign(self.var, c4)
+        while x < c2:
+            self.assign(self.var, c4)
+            y = self.var
+            while y < c2 and x < c2:
+                if 2 * y < c2:
+                    y = y + 2
+                else:
+                    y = y + 1
+            out = out + y
+            self.assign(self.var, c4)
+            z = self.var
+            while z < c2:
+                z = z + 1
+            out = out + z
+            x = x + 1
+        out = out + x
+        while x < 2 * c2:
+            self.assign(self.var, c4)
+            y = self.var
+            x = x + 1
+            while y < c2:
+                self.assign(self.var, c4)
+                z = self.var
+                while z < c2:
+                    z = z + 1
+                if x < c2:
+                    y = y - 1
+                else:
+                    y = y + 1
+                out = out + z
+            out = out + y
+        out = out + x
+        return out
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_mixed_while_if():
+    """
+    Feature: Auto monad feature: record the value of load.
+    Description: record the value of load.
+    Expectation: No exception.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x = np.array(2).astype(np.int32)
+    y = np.array(14).astype(np.int32)
+    z = np.array(1).astype(np.int32)
+    c2 = Tensor([14], ms.int32)
+    c4 = Tensor([0], ms.int32)
+    net = ControlMixedWhileIf()
+    output = net(Tensor(x), Tensor(y), Tensor(z), c2, c4)
+    expect = np.array(3318).astype(np.int32)
+    assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
+    context.set_context(mode=context.GRAPH_MODE)

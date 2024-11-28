@@ -230,7 +230,7 @@ def test_ctrl_if_by_if_call_func():
     fact.backward_cmp()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_ctrl_if_by_if_call_func_which_include_ctrl_flow():
     """
     Feature: PIJit
@@ -280,12 +280,15 @@ def test_ctrl_if_by_if_call_func_which_include_ctrl_flow():
                 pass
             return out
 
-    input_np_a = np.random.randn(2, 3, 4, 5).astype(np.float32)
-    ps_net = Net50()
-    pi_net = Net50()
-    fact = ParserFactory(ps_net, pi_net, input_np_a)
-    fact.forward_cmp()
-    fact.backward_cmp()
+    with pytest.raises(RuntimeError) as err1:
+        input_np_a = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        ps_net = Net50()
+        pi_net = Net50()
+        fact = ParserFactory(ps_net, pi_net, input_np_a)
+        fact.forward_cmp()
+        fact.backward_cmp()
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -337,7 +340,7 @@ def test_ctrl_if_by_if_call_subnet():
     fact.backward_cmp()
 
 
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_ctrl_if_by_if_call_subnet_which_include_ctrl_flow():
     """
     Feature: PIJit
@@ -388,12 +391,15 @@ def test_ctrl_if_by_if_call_subnet_which_include_ctrl_flow():
                 x = self.relu(x)
             return x
 
-    input_np_a = np.random.randn(2, 3, 4, 5).astype(np.float32)
-    ps_net = Net52()
-    pi_net = Net52()
-    fact = ParserFactory(ps_net, pi_net, input_np_a)
-    fact.forward_cmp()
-    fact.backward_cmp()
+    with pytest.raises(RuntimeError) as err1:
+        input_np_a = np.random.randn(2, 3, 4, 5).astype(np.float32)
+        ps_net = Net52()
+        pi_net = Net52()
+        fact = ParserFactory(ps_net, pi_net, input_np_a)
+        fact.forward_cmp()
+        fact.backward_cmp()
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

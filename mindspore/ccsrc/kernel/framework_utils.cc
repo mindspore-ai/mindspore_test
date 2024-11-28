@@ -698,16 +698,6 @@ void GetFuncGraphOutputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNode
   }
 }
 
-bool IsWeightBoundary(const AnfNodePtr &node) {
-  if (node->isa<ValueNode>()) {
-    return true;
-  }
-  if (node->isa<Parameter>() && common::AnfAlgo::IsParameterWeight(node->cast<ParameterPtr>())) {
-    return true;
-  }
-  return false;
-}
-
 std::vector<int64_t> GetReduceAttrAxis(const CNodePtr &cnode) {
   if (common::AnfAlgo::GetInputTensorNum(cnode) != 1 || AnfAlgo::GetOutputElementNum(cnode) != 1) {
     MS_LOG(INTERNAL_EXCEPTION) << "The reduce node [" << cnode->DebugString()

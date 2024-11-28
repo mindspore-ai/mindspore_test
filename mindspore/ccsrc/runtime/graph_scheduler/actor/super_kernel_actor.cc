@@ -465,9 +465,10 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
   for (const auto &output_index_to_copy_address : kernel_actor->copy_output_device_tensors_) {
     const auto &output_index = output_index_to_copy_address.first;
     const auto &dest_device_address = output_index_to_copy_address.second.first.get();
-    const auto &dest_device_context = output_index_to_copy_address.second.second;
+    const auto &dest_device_context = output_index_to_copy_address.second.second.first;
     const auto &src_device_address = kernel_actor->output_device_tensors_.at(output_index);
     const auto &src_device_context = kernel_actor->device_contexts_[0];
+    const auto &ref_output_device_address = output_index_to_copy_address.second.second.second;
 
     if (kernel_actor->is_dynamic_shape_) {
       // For dynamic shape case.
@@ -482,9 +483,12 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
 
     // Allocate memory.
     if (dest_device_address->kernel_tensor()->device_ptr() != nullptr) {
-      MS_LOG_WITH_NODE(EXCEPTION, kernel_actor->kernel_)
-        << "Memory leak detected in copy output device address for kernel: "
-        << kernel_actor->kernel_->fullname_with_scope();
+      if (ref_output_device_address.empty()) {
+        MS_LOG_WITH_NODE(EXCEPTION, kernel_actor->kernel_)
+          << "Memory leak detected in copy output device address for kernel: "
+          << kernel_actor->kernel_->fullname_with_scope();
+      }
+      dest_device_context->device_res_manager_->FreeMemory(dest_device_address);
     }
     std::vector<DeviceTensor *> mem_alloc_list = {dest_device_address};
     MemoryManagerActor::GetInstance()->AllocateMemory(&mem_alloc_list, dest_device_context, context,
@@ -501,7 +505,29 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
                     << ", src device address: " << src_device_address;
       return false;
     }
-
+    if (!ref_output_device_address.empty()) {
+      MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << src_device_address
+                    << " type:" << src_device_address->GetDeviceType() << " and " << dest_device_address
+                    << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
+      DeviceTensorCopyStore::GetInstance().Insert(src_device_address, dest_device_address);
+      for (const auto &ref_device_address : ref_output_device_address) {
+        MS_EXCEPTION_IF_NULL(ref_device_address);
+        if (ref_device_address->GetDeviceType() != dest_device_address->GetDeviceType()) {
+          MS_LOG_WITH_NODE(EXCEPTION, kernel_actor->kernel_)
+            << "Invalid ref device address:" << ref_device_address << " type:" << ref_device_address->GetDeviceType()
+            << " src device address:" << dest_device_address << " type:" << dest_device_address->GetDeviceType()
+            << " for actor:" << GetAID();
+        }
+        MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << ref_device_address
+                      << " type:" << ref_device_address->GetDeviceType() << " and " << dest_device_address
+                      << " type:" << dest_device_address->GetDeviceType() << " for actor:" << GetAID();
+        DeviceTensorCopyStore::GetInstance().Insert(ref_device_address, dest_device_address);
+        ref_device_address->set_ptr(dest_device_address->GetMutablePtr());
+        MS_LOG(DEBUG) << "Set ptr:" << dest_device_address->GetMutablePtr()
+                      << " from device address:" << dest_device_address << " to:" << ref_device_address
+                      << " for actor:" << GetAID();
+      }
+    }
     // Update ref count.
     MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(src_device_address, src_device_context, GetAID().Name());
     MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(dest_device_address, dest_device_context, GetAID().Name());
@@ -1235,6 +1261,8 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
 
   bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||
                                           SchedulerHelper::IsIgnoredInputAddress(kernel_actor, input_index);
+  MS_LOG(DEBUG) << "Kernel:" << kernel->fullname_with_scope() << " input kernel:" << input_kernel->fullname_with_scope()
+                << " need copy:" << need_not_copy_output_device_addr << " for actor:" << GetAID();
   if (need_not_copy_output_device_addr) {
     UpdateRefCount(input_device_tensor.get(), false);
     kernel_actor->SetInputDeviceTensor(input_device_tensor.get(), input_index);
@@ -1253,8 +1281,9 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
     input_copy_kernel_tensor->set_device_ptr(nullptr);
 
     auto input_copy_device_address = device_context->device_res_manager_->CreateDeviceAddress(input_copy_kernel_tensor);
-    auto ret_pair =
-      copy_output_device_tensors.emplace(output_index, std::make_pair(input_copy_device_address, device_context));
+    auto ret_pair = copy_output_device_tensors.emplace(
+      output_index,
+      std::make_pair(input_copy_device_address, std::make_pair(device_context, std::vector<DeviceTensor *>())));
     if (ret_pair.second) {
       iter = ret_pair.first;
     } else {
@@ -1266,6 +1295,26 @@ void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_
   const auto &input_copy_device_address = iter->second.first;
   MS_EXCEPTION_IF_NULL(input_copy_device_address);
   UpdateRefCount(input_copy_device_address.get(), false);
+  if (kernel_actor->modifiable_ref_input_indexes_.count(input_index) > 0) {
+    MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << input_copy_device_address
+                  << " type:" << input_copy_device_address->GetDeviceType() << " and " << input_device_tensor
+                  << " type:" << input_device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+    DeviceTensorCopyStore::GetInstance().Insert(input_copy_device_address.get(), input_device_tensor.get());
+    if (kernel_actor->kernel_info_ != nullptr) {
+      const auto &ref_map = kernel_actor->kernel_info_->out_in_ref_map();
+      auto index_iter =
+        std::find_if(ref_map.begin(), ref_map.end(),
+                     [input_index](const std::pair<size_t, size_t> &pair) { return pair.second == input_index; });
+      if (index_iter != ref_map.end() && kernel_actor->output_device_tensors_.size() > index_iter->first &&
+          kernel_actor->output_device_tensors_[index_iter->first] != nullptr) {
+        UpdateRefCount(input_copy_device_address.get(), true);
+        iter->second.second.second.emplace_back(kernel_actor->output_device_tensors_[index_iter->first]);
+        MS_LOG(DEBUG) << "Add dst device address:" << kernel_actor->output_device_tensors_[index_iter->first]
+                      << " for input copy device address:" << input_copy_device_address
+                      << " for actor:" << kernel_actor->GetAID();
+      }
+    }
+  }
   kernel_actor->SetInputDeviceTensor(input_copy_device_address.get(), input_index);
   kernel_actor->memory_free_list_[input_index] = input_copy_device_address.get();
 }

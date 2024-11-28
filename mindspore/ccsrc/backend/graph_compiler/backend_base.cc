@@ -953,6 +953,27 @@ bool HasSwitchNode(const FuncGraphPtr &func_graph) {
   });
 }
 
+bool HasAbstractRefOutput(const abstract::AbstractBasePtr &abs) {
+  if (abs == nullptr) {
+    return false;
+  }
+  if (abs->isa<abstract::AbstractSequence>()) {
+    const auto &seq_abs = abs->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(seq_abs);
+    if (seq_abs->dynamic_len()) {
+      return false;
+    }
+    if (std::any_of(seq_abs->elements().begin(), seq_abs->elements().end(),
+                    [](const abstract::AbstractBasePtr &sub_abs) { return HasAbstractRefOutput(sub_abs); })) {
+      return true;
+    }
+  }
+  if (abs->isa<abstract::AbstractRefTensor>()) {
+    return true;
+  }
+  return false;
+}
+
 bool IsNodeValid(const AnfNodePtr &node) {
   if (node == nullptr) {
     return false;
@@ -980,6 +1001,8 @@ bool IsNodeValid(const AnfNodePtr &node) {
                    << " for partial node:" << node->DebugString();
       return false;
     }
+  } else if (common::AnfAlgo::IsCallNode(node) && HasAbstractRefOutput(node->abstract())) {
+    return false;
   }
   return true;
 }

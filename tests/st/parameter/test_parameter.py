@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -314,11 +314,10 @@ def test_parameter_argument_and_fv(mode):
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
-def test_parameter_argument_grad(mode):
+def test_parameter_argument_grad():
     """
     Feature: Parameter argmument in top func graph.
     Description: Use Parameter as input argmument, and pass it to varargs.
@@ -336,7 +335,7 @@ def test_parameter_argument_grad(mode):
             ms.ops.Assign()(y, param)
             return param
 
-    context.set_context(mode=mode)
+    context.set_context(mode=context.PYNATIVE_MODE)
     param = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='param')
     x = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='x')
     y = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='y')
@@ -352,3 +351,24 @@ def test_parameter_argument_grad(mode):
     assert np.array_equal(param.asnumpy(), bparam.asnumpy())
     assert np.array_equal(x.asnumpy(), bx.asnumpy())
     assert np.array_equal(y.asnumpy(), by.asnumpy())
+
+
+    context.set_context(mode=context.GRAPH_MODE)
+    with pytest.raises(RuntimeError) as err1:
+        param = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='param')
+        x = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='x')
+        y = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='y')
+        net = ParameterArgumentCell()
+        net(param, x, y)
+
+        bparam = Parameter(Tensor(np.array([[0, 0], [0, 0]]), ms.float32), name='bparam')
+        bx = Parameter(Tensor(np.array([[4.0, -8.0], [-2.0, -5.0]]), ms.float32), name='bx')
+        by = Parameter(Tensor(np.array([[1, 0], [1, 1]]), ms.float32), name='by')
+        grad_by_list = ms.ops.GradOperation(get_by_list=True)
+        grad_by_list(net, ParameterTuple(net.trainable_params()))(bparam, bx, by)
+
+        assert np.array_equal(param.asnumpy(), bparam.asnumpy())
+        assert np.array_equal(x.asnumpy(), bx.asnumpy())
+        assert np.array_equal(y.asnumpy(), by.asnumpy())
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))

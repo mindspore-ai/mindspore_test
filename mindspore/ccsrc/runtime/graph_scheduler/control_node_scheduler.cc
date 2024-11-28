@@ -21,6 +21,7 @@
 #include "runtime/graph_scheduler/inline_control_flow_scheduler.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "runtime/graph_scheduler/actor/actor_dump.h"
 
 namespace mindspore {
 namespace runtime {
@@ -57,18 +58,10 @@ bool is_need_copy_device_tensor(const AnfNodePtr &backend_node, size_t index) {
   if (real_backend_node != nullptr && (!real_backend_node->isa<CNode>())) {
     return false;
   }
-
-  if (common::AnfAlgo::HasAbstractRef(backend_node)) {
-    return false;
-  }
-
   auto kernel_graph = AnfAlgo::FetchKernelGraph(backend_node.get());
   MS_EXCEPTION_IF_NULL(kernel_graph);
   if (kernel_graph->IsInRefOutputMap({backend_node, index})) {
-    if (!kernel_graph->is_graph_run_mode()) {
-      return false;
-    }
-    const auto &origin_node = kernel_graph->GetRefCorrespondOutput({backend_node, index}).first;
+    const auto &origin_node = kernel_graph->GetRefNodeRecursive({backend_node, index}).first;
     MS_EXCEPTION_IF_NULL(origin_node);
     if (origin_node->isa<ValueNode>() || origin_node->isa<Parameter>()) {
       return false;
@@ -832,11 +825,13 @@ void ControlNodeScheduler::ClearActorData(const ControlActorSet *control_actor_s
 
   for (auto &entrance_actor : control_actor_set->entrance_actors_) {
     MS_EXCEPTION_IF_NULL(entrance_actor);
+    entrance_actor->created_device_tensors_.clear();
     entrance_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
   }
 
   for (auto &stack_actor : control_actor_set->stack_actors_) {
     MS_EXCEPTION_IF_NULL(stack_actor);
+    stack_actor->created_device_tensors_.clear();
     stack_actor->memory_free_lists_ = std::queue<std::vector<DeviceTensor *>>();
   }
 
@@ -1472,10 +1467,11 @@ void ControlNodeScheduler::LinkArrowByValueNode(const AnfNodePtr &value_node, Co
           << " for value node:" << value_node->DebugString() << " to actor:" << to_actor->GetAID();
       }
     }
-    to_actor->local_device_tensors_[to_index] = AnfAlgo::GetMutableOutputAddr(value_node, from_index, false).get();
-    to_actor->local_device_tensors_[to_index]->SetNodeIndex(value_node, from_index);
-    MS_LOG(DEBUG) << "Add local device tensor:" << to_actor->local_device_tensors_[to_index] << " index:" << to_index
-                  << " for actor:" << to_actor->GetAID() << " from index:" << from_index;
+    to_actor->local_device_tensors_[to_index] = {AnfAlgo::GetMutableOutputAddr(value_node, from_index, false).get(),
+                                                 value_node};
+    to_actor->local_device_tensors_[to_index].first->SetNodeIndex(value_node, from_index);
+    MS_LOG(DEBUG) << "Add local device tensor:" << to_actor->local_device_tensors_[to_index].first
+                  << " index:" << to_index << " for actor:" << to_actor->GetAID() << " from index:" << from_index;
   }
 }
 
@@ -2447,6 +2443,534 @@ bool ControlNodeScheduler::IsNoInputActor(const ControlActor *control_actor) con
   MS_EXCEPTION_IF_NULL(control_actor);
   return (control_actor->input_datas_num_ == 0 && control_actor->input_controls_num_ == 0 &&
           control_actor->input_partials_num_ == 0 && control_actor->input_branch_ids_num_ == 0);
+}
+
+std::vector<std::string> ControlNodeScheduler::GetInputAids(
+  AbstractActor *const actor, const ControlNodeParserPtr &parser,
+  const std::unordered_map<std::string, std::string> &exit_to_gather, const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(parser);
+  MS_EXCEPTION_IF_NULL(func_graph);
+  if (!IsControlFlowActor(actor->type())) {
+    MS_LOG(EXCEPTION) << "Invalid actor:" << actor->GetAID() << " for control actor topo sort.";
+  }
+  if (actor->type() == KernelTransformType::kEntranceActor) {
+    return {};
+  }
+  const auto &control_actor = dynamic_cast<ControlActor *>(actor);
+  MS_EXCEPTION_IF_NULL(control_actor);
+  std::vector<std::string> input_aids;
+
+  auto get_relative_aid = [&exit_to_gather, &control_actor, &func_graph](const std::string &aid) {
+    const auto &actor = FetchActor(aid);
+    MS_EXCEPTION_IF_NULL(actor);
+    MS_EXCEPTION_IF_NULL(func_graph);
+    if (aid.find(kExitActorNameSuffix) != std::string::npos) {
+      const auto &exit_actor = dynamic_cast<ExitActor *>(actor);
+      MS_EXCEPTION_IF_NULL(exit_actor);
+      if (exit_actor->node() != nullptr) {
+        auto key = exit_actor->GetAID().Name() + control_actor->GetAID().Name();
+        const auto &iter = exit_to_gather.find(key);
+        if (iter == exit_to_gather.end()) {
+          MS_LOG(EXCEPTION) << "Failed to get gather actor by from actor:" << exit_actor->GetAID()
+                            << " to:" << control_actor->GetAID();
+        }
+        return iter->second;
+      }
+    }
+    if (!IsControlFlowActor(actor->type())) {
+      if (control_actor->type() != KernelTransformType::kExitActor) {
+        MS_LOG(EXCEPTION) << "Invalid input actor:" << actor->GetAID() << " for actor:" << control_actor->GetAID();
+      }
+      const auto &stack_actor_name = GetStackActorNameByExitName(control_actor->GetAID().Name());
+      const auto &stack_actor = FetchActor(stack_actor_name);
+      if (stack_actor == nullptr) {
+        return func_graph->ToString() + kEntranceActorNameSuffix;
+      }
+      return stack_actor_name;
+    }
+    return aid;
+  };
+
+  std::for_each(control_actor->input_data_arrow_aids().begin(), control_actor->input_data_arrow_aids().end(),
+                [&input_aids, &get_relative_aid](const std::pair<AID, DataArrow *> &pair) {
+                  input_aids.emplace_back(get_relative_aid(pair.first.Name()));
+                });
+  std::for_each(control_actor->input_control_arrow_aids().begin(), control_actor->input_control_arrow_aids().end(),
+                [&input_aids, &get_relative_aid](const std::pair<AID, ControlArrow *> &pair) {
+                  input_aids.emplace_back(get_relative_aid(pair.first.Name()));
+                });
+  std::for_each(control_actor->input_partial_arrow_aids().begin(), control_actor->input_partial_arrow_aids().end(),
+                [&input_aids, &get_relative_aid](const std::pair<AID, DataArrow *> &pair) {
+                  input_aids.emplace_back(get_relative_aid(pair.first.Name()));
+                });
+  std::for_each(control_actor->input_branch_id_arrow_aids().begin(), control_actor->input_branch_id_arrow_aids().end(),
+                [&input_aids](const AID &aid) { input_aids.emplace_back(aid.Name()); });
+  MS_LOG(DEBUG) << "Actor:" << actor->GetAID() << " input aid num:" << input_aids.size();
+  for (const auto &aid : input_aids) {
+    MS_LOG(DEBUG) << "Input aid:" << aid << " for actor:" << actor->GetAID();
+  }
+  return input_aids;
+}
+
+namespace {
+const char kStubActorNameSuffix[] = "_StubActor";
+class StubActor : public AbstractActor {
+ public:
+  explicit StubActor(const std::string &name, KernelTransformType type, const AID *recorder_aid,
+                     const vector<FuncGraph *> &graphs, const std::string &exit_actor_name)
+      : AbstractActor(name, type, recorder_aid), graphs_(graphs), exit_actor_name_(exit_actor_name) {}
+  ~StubActor() override = default;
+  void AddInputAid(const AID &aid, DataArrow *arrow) {
+    input_data_arrow_aids_.emplace_back(std::make_pair(aid, arrow));
+  }
+  std::vector<DataArrowPtr> arrows_;
+  std::vector<FuncGraph *> graphs_;
+  std::string exit_actor_name_;
+};
+std::string GetActorDumpName(AbstractActor *const actor) {
+  MS_EXCEPTION_IF_NULL(actor);
+  switch (actor->type()) {
+    case KernelTransformType::kEntranceActor:
+      return "EntranceActor";
+    case KernelTransformType::kExitActor:
+      return "ExitActor";
+    case KernelTransformType::kGatherActor:
+      return "GatherActor";
+    case KernelTransformType::kSwitchActor:
+      return "SwitchActor";
+    case KernelTransformType::kStackActor:
+      return "StackActor";
+    case KernelTransformType::kUnknown:
+      if (actor->GetAID().Name().find(kStubActorNameSuffix) != std::string::npos) {
+        std::string name = "RunGraph[";
+        const auto &stub_actor = dynamic_cast<StubActor *>(actor);
+        MS_EXCEPTION_IF_NULL(stub_actor);
+        for (size_t i = 0; i < stub_actor->graphs_.size(); ++i) {
+          const auto &graph = stub_actor->graphs_[i];
+          MS_EXCEPTION_IF_NULL(graph);
+          name += graph->ToString();
+          if (i + 1 < stub_actor->graphs_.size()) {
+            name += ", ";
+          }
+        }
+        name += "]";
+        return name;
+      }
+    default:
+      return actor->GetAID().Name();
+  }
+}
+struct InputInfo {
+  std::string name;
+  size_t index;
+};
+
+std::string GetValueNodeName(const ValueNodePtr &value_node) {
+  MS_EXCEPTION_IF_NULL(value_node);
+  if (value_node->value() != nullptr) {
+    if (value_node->value()->isa<Scalar>()) {
+      return value_node->value()->DumpText();
+    }
+    return value_node->value()->ToString();
+  }
+  return value_node->DebugString();
+}
+
+void GetNameForStubActor(AbstractActor *const actor, DataArrow *const dst_arrow, std::string *name, size_t *index) {
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(dst_arrow);
+  MS_EXCEPTION_IF_NULL(name);
+  MS_EXCEPTION_IF_NULL(index);
+  const auto &stub_actor = dynamic_cast<StubActor *>(actor);
+  MS_EXCEPTION_IF_NULL(stub_actor);
+  const auto &from_actor = FetchActor(*name);
+  if (from_actor == nullptr || from_actor->type() != KernelTransformType::kSuperKernelActor ||
+      stub_actor->graphs_.empty() || stub_actor->graphs_[0] == nullptr) {
+    return;
+  }
+  const auto &super_kernel_actor = dynamic_cast<SuperKernelActor *>(from_actor);
+  MS_EXCEPTION_IF_NULL(super_kernel_actor);
+  MS_EXCEPTION_IF_NULL(super_kernel_actor->graph());
+  *name = stub_actor->exit_actor_name_ + super_kernel_actor->graph()->ToString() + kStubActorNameSuffix;
+  for (size_t i = 0; i < super_kernel_actor->output_data_arrows().size(); ++i) {
+    const auto &arrow = super_kernel_actor->output_data_arrows()[i];
+    if (arrow == nullptr || arrow.get() != dst_arrow) {
+      continue;
+    }
+    if (i >= super_kernel_actor->output_data_nodes().size()) {
+      return;
+    }
+    const auto &outputs = common::AnfAlgo::GetAllOutputWithIndex(super_kernel_actor->graph()->output());
+    auto output_pair = std::make_pair(super_kernel_actor->output_data_nodes()[i], IntToSize(arrow->from_output_index_));
+    const auto &output_iter = std::find(outputs.begin(), outputs.end(), output_pair);
+    if (output_iter != outputs.end()) {
+      *index = output_iter - outputs.begin();
+    }
+    return;
+  }
+}
+
+void GetNameForExitActor(AbstractActor *const actor, DataArrow *const dst_arrow,
+                         const std::map<KernelWithIndex, std::pair<AbstractActor *, KernelWithIndex>,
+                                        session::KernelWithIndexCmp> &graph_output_to_actor,
+                         std::string *name, size_t *index) {
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(dst_arrow);
+  MS_EXCEPTION_IF_NULL(name);
+  MS_EXCEPTION_IF_NULL(index);
+  const auto &exit_actor = dynamic_cast<ExitActor *>(actor);
+  MS_EXCEPTION_IF_NULL(exit_actor);
+  if (exit_actor->node() != nullptr) {
+    return;
+  }
+  size_t input_index = dst_arrow->to_input_index_;
+  if (input_index >= exit_actor->formal_parameters().size()) {
+    MS_LOG(EXCEPTION) << "Invalid input index:" << input_index << " for actor:" << exit_actor->GetAID();
+  }
+  const auto &front_parameter = exit_actor->formal_parameters()[input_index];
+  const auto &iter = graph_output_to_actor.find(front_parameter);
+  if (iter == graph_output_to_actor.end() || iter->second.second.first == nullptr) {
+    return;
+  }
+  const auto &graph = iter->second.second.first->func_graph();
+  MS_EXCEPTION_IF_NULL(graph);
+  *name = exit_actor->GetAID().Name() + graph->ToString() + kStubActorNameSuffix;
+  const auto &outputs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
+  const auto &output_iter = std::find(outputs.begin(), outputs.end(), iter->second.second);
+  if (output_iter != outputs.end()) {
+    *index = output_iter - outputs.begin();
+  }
+}
+
+void GetInputNameForControlActor(AbstractActor *const actor, std::map<size_t, InputInfo> *input_aids,
+                                 size_t *max_index) {
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(input_aids);
+  MS_EXCEPTION_IF_NULL(max_index);
+  const auto &control_actor = dynamic_cast<ControlActor *>(actor);
+  MS_EXCEPTION_IF_NULL(control_actor);
+  for (const auto &pair : control_actor->input_partial_arrow_aids()) {
+    MS_EXCEPTION_IF_NULL(pair.second);
+    size_t input_index = pair.second->to_input_index_;
+    (*input_aids)[input_index] = {pair.first.Name(), IntToSize(pair.second->from_output_index_)};
+    *max_index = (*max_index > input_index ? *max_index : input_index);
+  }
+  for (const auto &pair : control_actor->local_partials()) {
+    MS_EXCEPTION_IF_NULL(pair.second);
+    (*input_aids)[pair.first] = {(pair.second->func_graph_ == nullptr ? "null" : pair.second->func_graph_->ToString()),
+                                 0};
+    *max_index = (*max_index > pair.first ? *max_index : pair.first);
+  }
+  for (const auto &pair : control_actor->local_device_tensors()) {
+    MS_EXCEPTION_IF_NULL(pair.second.second);
+    std::string name = pair.second.second->DebugString(0);
+    if (pair.second.second->isa<ValueNode>()) {
+      name = GetValueNodeName(pair.second.second->cast<ValueNodePtr>());
+    }
+    (*input_aids)[pair.first] = {name, 0};
+    *max_index = (*max_index > pair.first ? *max_index : pair.first);
+  }
+}
+
+void GetAllInputByArrow(AbstractActor *const actor,
+                        const std::map<KernelWithIndex, std::pair<AbstractActor *, KernelWithIndex>,
+                                       session::KernelWithIndexCmp> &graph_output_to_actor,
+                        std::map<size_t, InputInfo> *input_aids, size_t *max_index) {
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(input_aids);
+  MS_EXCEPTION_IF_NULL(max_index);
+  for (const auto &pair : actor->input_data_arrow_aids()) {
+    MS_EXCEPTION_IF_NULL(pair.second);
+    size_t input_index = pair.second->to_input_index_;
+    std::string name = pair.first.Name();
+    size_t index = IntToSize(pair.second->from_output_index_);
+    if (actor->type() == KernelTransformType::kExitActor) {
+      GetNameForExitActor(actor, pair.second, graph_output_to_actor, &name, &index);
+    } else if (actor->type() == KernelTransformType::kUnknown) {
+      const auto &input_actor = FetchActor(name);
+      if (input_actor == nullptr) {
+        MS_LOG(WARNING) << "Failed to get actor by name:" << name;
+        continue;
+      }
+      if (input_actor->type() == KernelTransformType::kCopyActor) {
+        if (input_actor->input_data_arrow_aids().size() == 1) {
+          name = input_actor->input_data_arrow_aids()[0].first.Name();
+        } else if (input_actor->device_tensor_store_keys().size() == 1 &&
+                   input_actor->device_tensor_store_keys()[0].second != nullptr) {
+          name = input_actor->device_tensor_store_keys()[0].second->DebugString(0);
+        }
+      }
+      GetNameForStubActor(actor, pair.second, &name, &index);
+    }
+    (*input_aids)[input_index] = {name, index};
+    *max_index = (*max_index > input_index ? *max_index : input_index);
+  }
+}
+
+// Get string of all input actor.
+std::map<size_t, InputInfo> GetInputName(AbstractActor *const actor, const ControlNodeParserPtr &parser,
+                                         const std::unordered_map<std::string, std::string> &exit_to_gather,
+                                         const std::map<KernelWithIndex, std::pair<AbstractActor *, KernelWithIndex>,
+                                                        session::KernelWithIndexCmp> &graph_output_to_actor) {
+  MS_EXCEPTION_IF_NULL(actor);
+  MS_EXCEPTION_IF_NULL(parser);
+  std::map<size_t, InputInfo> input_aids;
+  if (actor->type() == KernelTransformType::kEntranceActor) {
+    const auto &entrance_actor = dynamic_cast<EntranceActor *>(actor);
+    MS_EXCEPTION_IF_NULL(entrance_actor);
+    for (size_t i = 0; i < entrance_actor->formal_parameters().size(); ++i) {
+      const auto &formal_parameter = entrance_actor->formal_parameters()[i];
+      MS_EXCEPTION_IF_NULL(formal_parameter.first);
+      input_aids[i] = {formal_parameter.first->DebugString(0), formal_parameter.second};
+    }
+    return input_aids;
+  }
+  size_t max_index = 0;
+  // Get all inputs by input arrows.
+  GetAllInputByArrow(actor, graph_output_to_actor, &input_aids, &max_index);
+  // Get all inputs by device tensor store.
+  for (const auto &pair : actor->device_tensor_store_keys()) {
+    MS_EXCEPTION_IF_NULL(pair.second);
+    std::string name = pair.second->DebugString(0);
+    if (pair.second->isa<ValueNode>()) {
+      name = GetValueNodeName(pair.second->cast<ValueNodePtr>());
+    }
+    input_aids[pair.first] = {name, 0};
+    max_index = (max_index > pair.first ? max_index : pair.first);
+  }
+
+  // Get all inputs for control actor.
+  if (IsControlFlowActor(actor->type())) {
+    GetInputNameForControlActor(actor, &input_aids, &max_index);
+  }
+  for (auto &pair : input_aids) {
+    const auto &iter = exit_to_gather.find(pair.second.name + actor->GetAID().Name());
+    if (iter != exit_to_gather.end()) {
+      MS_LOG(DEBUG) << "Replace input aid for dump from:" << pair.second.name
+                    << " to:" << iter->second + kStubActorNameSuffix << " for actor:" << actor->GetAID();
+      pair.second.name = iter->second + kStubActorNameSuffix;
+    }
+  }
+  if (max_index == 0 || max_index + 1 == input_aids.size()) {
+    return input_aids;
+  }
+  if (actor->type() == KernelTransformType::kUnknown && input_aids.size() <= max_index) {
+    std::vector<size_t> invalid_index;
+    for (size_t i = 0; i < max_index; ++i) {
+      if (input_aids.find(i) == input_aids.end()) {
+        invalid_index.emplace_back(i);
+      }
+    }
+    if (input_aids.size() + invalid_index.size() == max_index + 1) {
+      for (const auto &i : invalid_index) {
+        input_aids[i] = {"para_U", 0};
+      }
+      return input_aids;
+    }
+  }
+  for (const auto &pair : input_aids) {
+    MS_LOG(DEBUG) << "index:" << pair.first << " input:" << pair.second.name << " index:" << pair.second.index;
+  }
+  MS_LOG(EXCEPTION) << " invalid input size:" << max_index + 1 << " for actor:" << actor->GetAID();
+}
+
+std::vector<AbstractActorPtr> InsertExecuteActor(std::vector<AbstractActor *> *actors,
+                                                 const ControlNodeParserPtr &parser) {
+  MS_EXCEPTION_IF_NULL(actors);
+  MS_EXCEPTION_IF_NULL(parser);
+  std::vector<AbstractActorPtr> new_actors;
+  std::vector<AbstractActor *> old_actors = *actors;
+  actors->clear();
+  std::map<std::string, std::vector<KernelGraphPtr>> exit_actor_name_to_kernel_graphs;
+  for (const auto &group : parser->kernel_graph_group_infos()) {
+    MS_EXCEPTION_IF_NULL(group);
+    std::vector<KernelGraphPtr> graphs(group->graphs_.begin(), group->graphs_.end());
+    std::sort(graphs.begin(), graphs.end(), [](const KernelGraphPtr &graph1, const KernelGraphPtr &graph2) {
+      MS_EXCEPTION_IF_NULL(graph1);
+      MS_EXCEPTION_IF_NULL(graph2);
+      return graph1->graph_id() < graph2->graph_id();
+    });
+    exit_actor_name_to_kernel_graphs[group->group_name_ + kExitActorNameSuffix] = graphs;
+  }
+  for (const auto &actor : old_actors) {
+    MS_EXCEPTION_IF_NULL(actor);
+    if (!IsControlFlowActor(actor->type())) {
+      MS_LOG(EXCEPTION) << "Invalid actor:" << actor->GetAID() << " for control actor dump.";
+    }
+    const auto &control_actor = dynamic_cast<ControlActor *>(actor);
+    MS_EXCEPTION_IF_NULL(control_actor);
+    if (control_actor->node() != nullptr && common::AnfAlgo::IsCallNode(control_actor->node())) {
+      actors->emplace_back(actor);
+      const auto &func_graphs = parser->FetchFuncGraphbyCallNode(control_actor->node());
+      std::string actor_name = control_actor->GetAID().Name() + kStubActorNameSuffix;
+      std::vector<FuncGraph *> graphs;
+      std::for_each(func_graphs.begin(), func_graphs.end(),
+                    [&graphs](const auto &func_graph) { graphs.emplace_back(func_graph.get()); });
+      auto stub_actor = std::make_shared<StubActor>(actor_name, KernelTransformType::kUnknown, nullptr, graphs, "");
+      MS_EXCEPTION_IF_NULL(stub_actor);
+      auto data_arrow = std::make_shared<DataArrow>(0, stub_actor->GetAID(), 0);
+      MS_EXCEPTION_IF_NULL(data_arrow);
+      stub_actor->arrows_.emplace_back(data_arrow);
+      stub_actor->AddInputAid(control_actor->GetAID(), data_arrow.get());
+      new_actors.emplace_back(stub_actor);
+      actors->emplace_back(stub_actor.get());
+      continue;
+    } else if (control_actor->node() == nullptr && control_actor->type() == KernelTransformType::kExitActor) {
+      const auto &iter = exit_actor_name_to_kernel_graphs.find(control_actor->GetAID().Name());
+      if (iter == exit_actor_name_to_kernel_graphs.end()) {
+        MS_LOG(EXCEPTION) << "Invalid exit actor:" << control_actor->GetAID();
+      }
+      for (const auto &graph : iter->second) {
+        MS_EXCEPTION_IF_NULL(graph);
+        std::vector<FuncGraph *> graphs = {graph.get()};
+        auto stub_actor =
+          std::make_shared<StubActor>(control_actor->GetAID().Name() + graph->ToString() + kStubActorNameSuffix,
+                                      KernelTransformType::kUnknown, nullptr, graphs, control_actor->GetAID().Name());
+        MS_EXCEPTION_IF_NULL(stub_actor);
+        new_actors.emplace_back(stub_actor);
+        actors->emplace_back(new_actors.back().get());
+        const auto &super_kernel_actor = FetchActor(graph->ToString() + kSuperKernelActorNameSuffix);
+        if (super_kernel_actor != nullptr) {
+          std::for_each(super_kernel_actor->input_data_arrow_aids().begin(),
+                        super_kernel_actor->input_data_arrow_aids().end(),
+                        [&stub_actor](const auto &pair) { stub_actor->AddInputAid(pair.first, pair.second); });
+          stub_actor->set_device_tensor_store_keys(super_kernel_actor->device_tensor_store_keys());
+        }
+      }
+    }
+    actors->emplace_back(actor);
+  }
+  return new_actors;
+}
+}  // namespace
+
+void ControlNodeScheduler::DumpControlActorInfo(
+  const ExitActorPtr &exit_actor, const ControlNodeParserPtr &parser,
+  const std::unordered_map<std::string, std::string> &exit_to_gather,
+  const std::map<KernelWithIndex, std::pair<AbstractActor *, KernelWithIndex>, session::KernelWithIndexCmp>
+    &graph_output_to_actor,
+  std::ofstream &ofs) {
+  MS_EXCEPTION_IF_NULL(exit_actor);
+  MS_EXCEPTION_IF_NULL(parser);
+  const auto &node = exit_actor->node();
+  MS_EXCEPTION_IF_NULL(node);
+  const auto &func_graph = node->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto get_input_aid_func = [this, &parser, &exit_to_gather, &func_graph](AbstractActor *const actor) {
+    return GetInputAids(actor, parser, exit_to_gather, func_graph);
+  };
+  std::vector<AbstractActor *> actors = TopoSortForActor(exit_actor.get(), get_input_aid_func);
+  auto new_actors = InsertExecuteActor(&actors, parser);
+  MS_LOG(DEBUG) << "Topo sort size:" << actors.size() << " for exit actor:" << exit_actor->GetAID();
+  ofs << "\nActor for func graph:" << func_graph->ToString() << "\n";
+  size_t i = 0;
+  std::unordered_map<std::string, size_t> relative_index;
+  for (auto actor : actors) {
+    MS_EXCEPTION_IF_NULL(actor);
+    ofs << "%" << std::to_string(i) << " = " << GetActorDumpName(actor) << "(";
+    relative_index[actor->GetAID().Name()] = i++;
+    const auto &input_names = GetInputName(actor, parser, exit_to_gather, graph_output_to_actor);
+    for (const auto &pair : input_names) {
+      const auto &input_name = pair.second.name;
+      size_t input_index = pair.second.index;
+      if (relative_index.find(input_name) == relative_index.end()) {
+        ofs << input_name;
+      } else {
+        ofs << "%" << std::to_string(relative_index[input_name]) << "[" << std::to_string(input_index) << "]";
+      }
+      if (pair.first + 1 != input_names.size()) {
+        ofs << ", ";
+      }
+    }
+    ofs << ")\n";
+  }
+}
+
+void CollectExitToGather(const std::vector<ExitActorPtr> &func_graph_exit_actors,
+                         const std::map<int, std::string> &branch_id_to_aid,
+                         std::unordered_map<std::string, std::string> *exit_actor_to_gather_actor) {
+  MS_EXCEPTION_IF_NULL(exit_actor_to_gather_actor);
+  for (const auto &exit_actor : func_graph_exit_actors) {
+    MS_EXCEPTION_IF_NULL(exit_actor);
+    for (const auto &pair : exit_actor->output_branch_data_arrows()) {
+      if (pair.first == 0) {
+        continue;
+      }
+      if (branch_id_to_aid.find(pair.first) == branch_id_to_aid.end()) {
+        MS_LOG(EXCEPTION) << "Invalid data arrow branch id:" << pair.first
+                          << " for exit actor:" << exit_actor->GetAID();
+      }
+      for (const auto &arrow : pair.second) {
+        MS_EXCEPTION_IF_NULL(arrow);
+        (*exit_actor_to_gather_actor)[exit_actor->GetAID().Name() + arrow->to_op_id_.Name()] =
+          branch_id_to_aid.at(pair.first);
+      }
+    }
+    for (const auto &pair : exit_actor->output_branch_control_arrows()) {
+      if (pair.first == 0) {
+        continue;
+      }
+      if (branch_id_to_aid.find(pair.first) == branch_id_to_aid.end()) {
+        MS_LOG(EXCEPTION) << "Invalid control arrow branch id:" << pair.first
+                          << " for exit actor:" << exit_actor->GetAID();
+      }
+      for (const auto &aid : pair.second) {
+        (*exit_actor_to_gather_actor)[exit_actor->GetAID().Name() + aid.Name()] = branch_id_to_aid.at(pair.first);
+      }
+    }
+
+    for (const auto &pair : exit_actor->output_branch_partial_arrows()) {
+      if (pair.first == 0) {
+        continue;
+      }
+      if (branch_id_to_aid.find(pair.first) == branch_id_to_aid.end()) {
+        MS_LOG(EXCEPTION) << "Invalid partial arrow branch id:" << pair.first
+                          << " for exit actor:" << exit_actor->GetAID();
+      }
+      for (const auto &arrow : pair.second) {
+        MS_EXCEPTION_IF_NULL(arrow);
+        (*exit_actor_to_gather_actor)[exit_actor->GetAID().Name() + arrow->to_op_id_.Name()] =
+          branch_id_to_aid.at(pair.first);
+      }
+    }
+  }
+}
+
+void ControlNodeScheduler::DumpFormatControlActorSet(
+  const ActorSet *actor_set, const GraphCompilerInfo &graph_compiler_info,
+  const std::map<KernelWithIndex, std::pair<AbstractActor *, KernelWithIndex>, session::KernelWithIndexCmp>
+    &graph_output_to_actor,
+  std::ofstream &ofs) {
+  if (actor_set == nullptr || actor_set->control_actors_ == nullptr ||
+      actor_set->control_actors_->exit_actors_.empty() || graph_compiler_info.control_node_parser_ == nullptr ||
+      !graph_compiler_info.control_node_parser_->IsInited()) {
+    return;
+  }
+  try {
+    MS_LOG(DEBUG) << "Dump format control actor set start.";
+    std::vector<ExitActorPtr> func_graph_exit_actors;
+    for (const auto &exit_actor : actor_set->control_actors_->exit_actors_) {
+      if (exit_actor == nullptr || exit_actor->node() == nullptr) {
+        continue;
+      }
+      func_graph_exit_actors.emplace_back(exit_actor);
+    }
+    std::map<int, std::string> branch_id_to_aid;
+    for (const auto &pair : graph_compiler_info.control_node_parser_->call_node_to_branch_id_) {
+      MS_EXCEPTION_IF_NULL(pair.first);
+      branch_id_to_aid[pair.second] = GetActorName(pair.first);
+    }
+    std::unordered_map<std::string, std::string> exit_actor_to_gather_actor;
+    CollectExitToGather(func_graph_exit_actors, branch_id_to_aid, &exit_actor_to_gather_actor);
+    for (const auto &exit_actor : func_graph_exit_actors) {
+      DumpControlActorInfo(exit_actor, graph_compiler_info.control_node_parser_, exit_actor_to_gather_actor,
+                           graph_output_to_actor, ofs);
+    }
+    MS_LOG(DEBUG) << "Dump format control actor set end.";
+  } catch (std::exception &e) {
+    MS_LOG(INFO) << "Dump format control actor failed, reason:" << e.what();
+  }
 }
 }  // namespace runtime
 }  // namespace mindspore

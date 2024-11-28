@@ -132,6 +132,11 @@ void EntranceActor::FetchInput(OpContext<DeviceTensor> *const context) {
         SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
       }
       input_device_tensors_[device_tensor.first] = device_tensor.second;
+      if (device_tensor.second != nullptr) {
+        MS_LOG(DEBUG) << "Entrance actor:" << GetAID() << " receive device tensor:" << device_tensor.second
+                      << " ptr:" << device_tensor.second->GetPtr() << " type:" << device_tensor.second->GetDeviceType()
+                      << " index:" << device_tensor.first;
+      }
     }
 
     // Collect the partials.

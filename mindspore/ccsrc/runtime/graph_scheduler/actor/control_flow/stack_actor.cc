@@ -321,6 +321,12 @@ void StackActor::FetchInput(OpContext<DeviceTensor> *const context) {
     }
   }
   ControlActor::FetchInput(context);
+  for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
+    const auto &device_tensor = input_device_tensors_[i];
+    MS_LOG(DEBUG) << "Input device tensor:" << device_tensor
+                  << " ptr:" << (device_tensor == nullptr ? nullptr : device_tensor->GetPtr())
+                  << " for actor:" << GetAID();
+  }
 }
 
 void StackActor::EraseInput(const OpContext<DeviceTensor> *const context) {

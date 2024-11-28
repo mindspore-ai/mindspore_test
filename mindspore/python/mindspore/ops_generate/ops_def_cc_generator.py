@@ -76,6 +76,7 @@ class OpsDefCcGenerator(BaseGenerator):
             signature_code = generate_cc_op_signature(op_proto.op_args_signature, inputs_args)
             enable_dispatch = "true" if op_proto.op_dispatch and op_proto.op_dispatch.enable else "false"
             is_view = "true" if op_proto.op_view else "false"
+            is_graph_view = "true" if op_proto.op_graph_view else "false"
             op_def_cc = self.OP_PROTO_TEMPLATE.replace(class_name=class_name,
                                                        input_args=input_args_str,
                                                        return_args=return_args_str,
@@ -83,6 +84,7 @@ class OpsDefCcGenerator(BaseGenerator):
                                                        indexes=cc_index_str,
                                                        enable_dispatch=enable_dispatch,
                                                        is_view=is_view,
+                                                       is_graph_view=is_graph_view,
                                                        func_impl_declaration=func_impl_declaration_str,
                                                        func_impl_define=func_impl_define)
             gen_cc_code += op_def_cc

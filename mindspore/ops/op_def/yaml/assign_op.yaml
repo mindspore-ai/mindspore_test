@@ -14,3 +14,4 @@ assign:
     returns:
         output:
             dtype: tensor
+            inplace: variable

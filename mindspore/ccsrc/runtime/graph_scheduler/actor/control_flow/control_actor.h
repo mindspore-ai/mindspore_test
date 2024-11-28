@@ -67,7 +67,11 @@ class ControlActor : public MemoryAwareActor {
   const std::vector<DataArrowPtr> &output_partial_arrows() const { return output_partial_arrows_; }
   const std::vector<AID> &output_branch_id_arrows() const { return output_branch_id_arrows_; }
   const std::unordered_map<size_t, OpPartialPtr> &local_partials() const { return local_partials_; }
-  const std::vector<AID> &input_partial_arrow_aids() const { return input_partial_arrow_aids_; }
+  const std::unordered_map<size_t, std::pair<DeviceTensor *, AnfNodePtr>> &local_device_tensors() const {
+    return local_device_tensors_;
+  }
+  const std::vector<KernelWithIndex> &formal_parameters() const { return formal_parameters_; }
+  const std::vector<std::pair<AID, DataArrow *>> &input_partial_arrow_aids() const { return input_partial_arrow_aids_; }
   const std::vector<AID> &input_branch_id_arrow_aids() const { return input_branch_id_arrow_aids_; }
   const std::map<size_t, std::set<DeviceTensorPtr>> &ref_formal_parameter_device_tensors() const {
     return ref_formal_parameter_device_tensors_;
@@ -109,7 +113,9 @@ class ControlActor : public MemoryAwareActor {
   bool CheckRunningCondition(const OpContext<DeviceTensor> *context) const override;
   void UpdateOutputData(OpData<DeviceTensor> *const output_data, const DataArrowPtr &data_arrow,
                         const AnfNodePtr &output_node, OpContext<DeviceTensor> *const context) override;
-
+  void CreateHeterDeviceTensor(DeviceTensor *const node_device_tensor, DeviceTensor *const input_device_tensor,
+                               DeviceContext *const device_context, size_t index,
+                               OpContext<DeviceTensor> *const context, const AnfNodePtr &node);
   void SendOutput(OpContext<DeviceTensor> *const context) override;
   void EraseInput(const OpContext<DeviceTensor> *context) override;
 
@@ -143,6 +149,7 @@ class ControlActor : public MemoryAwareActor {
   // The exit actor needs to create a new device address and take out the ptr from the device tensor come from
   // the kernel actor. These new created device tensors are stored in the created device tensors.
   std::vector<DeviceTensorPtr> created_device_tensors_;
+  std::map<std::pair<int, device::DeviceType>, DeviceTensorPtr> created_heter_device_tensors_;
   std::vector<DeviceTensorPtr> last_step_created_device_tensors_;
   // In control flow, when the argument is not a dynamic len tuple but the parameter is, need create a new
   // real make tuple node for it.
@@ -153,7 +160,7 @@ class ControlActor : public MemoryAwareActor {
   size_t input_branch_ids_num_{0};
 
   // The dependent input actors.
-  std::vector<AID> input_partial_arrow_aids_;
+  std::vector<std::pair<AID, DataArrow *>> input_partial_arrow_aids_;
   std::vector<AID> input_branch_id_arrow_aids_;
 
   // Output Arrows.
@@ -171,7 +178,7 @@ class ControlActor : public MemoryAwareActor {
   // Partial data in local. When partial is only funcgraph without real parameter, it is stored inside the actor.
   std::unordered_map<size_t, OpPartialPtr> local_partials_;
   // Device tensor in control node, but not in kernel graph.
-  std::unordered_map<size_t, DeviceTensor *> local_device_tensors_;
+  std::unordered_map<size_t, std::pair<DeviceTensor *, AnfNodePtr>> local_device_tensors_;
 
   // Cache output data by output index to modify the output data effectively.
   std::vector<std::vector<OpData<DeviceTensor> *>> output_data_by_output_index_;
@@ -182,10 +189,6 @@ class ControlActor : public MemoryAwareActor {
   // formal parameter. Used to update the ptr of device tensors when receive the real parameters for ref nodes.
   std::map<size_t, std::set<DeviceTensorPtr>> ref_formal_parameter_device_tensors_;
   std::map<size_t, std::set<DeviceTensorPtr>> ref_node_formal_parameter_device_tensors_;
-
-  // Backend parameters in the kernel graph.In the dynamic shape, when parameters are passed between the kernel
-  // graphs, the shape in the backend parameters needs to be updated.
-  std::vector<std::vector<AnfNodePtr>> backend_parameters_;
 
   // Count the time cost bewtween this actor to the end actors, when this actor is executed, set current time to the
   // start_time_ of the end actors and then when the end actors are executed, it will count the time cost between its

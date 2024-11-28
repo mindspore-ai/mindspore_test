@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,12 @@ PrimitivePy::PrimitivePy(const py::object &python_obj)
   (void)Primitive::SetAttrs(adapter_->attrs_);
   Primitive::set_prim_type(adapter_->prim_type_);
   Primitive::set_const_prim(adapter_->const_prim_);
-  Primitive::set_inplace_prim(adapter_->inplace_prim_);
+  bool exist_rw_write = std::any_of(adapter_->signatures_.begin(), adapter_->signatures_.end(),
+                                    [](const Signature &sig) { return sig.rw == SignatureEnumRW::kRWWrite; });
+  if (exist_rw_write) {
+    Primitive::set_inplace_prim(true);
+    MS_LOG(DEBUG) << "Has inplace attr, " << adapter_->name_;
+  }
   Primitive::set_const_input_indexes(adapter_->const_input_indexes_);
   SetHookFn(adapter_->hook_fn_, adapter_->hook_type_);
   set_instance_name(adapter_->instance_name_);

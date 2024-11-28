@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import pytest
 from tests.st.compiler.control.cases_register import case_register
 from mindspore import context
 from mindspore import Tensor, nn
@@ -60,14 +61,17 @@ def test_if_after_for_in_while():
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    if_after_for_in_while_net = IfAfterForInWhileNet()
-    net = GradNet(if_after_for_in_while_net)
+    with pytest.raises(RuntimeError) as info:
+        if_after_for_in_while_net = IfAfterForInWhileNet()
+        net = GradNet(if_after_for_in_while_net)
 
-    forward_net = IfAfterForInWhileNet()
-    graph_forward_res = forward_net(x)
-    graph_backward_res = net(x)
+        forward_net = IfAfterForInWhileNet()
+        graph_forward_res = forward_net(x)
+        graph_backward_res = net(x)
 
-    expect_forward_res = Tensor([-463], mstype.int32)
-    expect_backward_res = (Tensor([1], mstype.int32),)
-    assert graph_forward_res == expect_forward_res
-    assert graph_backward_res == expect_backward_res
+        expect_forward_res = Tensor([-463], mstype.int32)
+        expect_backward_res = (Tensor([1], mstype.int32),)
+        assert graph_forward_res == expect_forward_res
+        assert graph_backward_res == expect_backward_res
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))

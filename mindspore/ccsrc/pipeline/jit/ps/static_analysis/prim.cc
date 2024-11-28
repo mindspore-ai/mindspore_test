@@ -49,6 +49,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/array_op_name.h"
+#include "ir/signature.h"
 #include "ops_utils/op_utils.h"
 #include "ops/infer_info/abstract_infer_info_adapter.h"
 #include "ops/infer_info/infer_info_utils.h"
@@ -183,6 +184,70 @@ CNodePtr GetInputsAfterUnpackCall(const CNodePtr &source_node, const AnalysisEng
     }
   }
   return fg->NewCNodeInOrder(new_inputs);
+}
+
+AbstractBasePtr ConvertTensorToRef(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  if (abs->isa<abstract::AbstractRefTensor>()) {
+    return abs;
+  }
+  auto tensor_abs = dyn_cast<abstract::AbstractTensor>(abs);
+  MS_EXCEPTION_IF_NULL(tensor_abs);
+  std::stringstream ss;
+  ss << tensor_abs.get();
+  return std::make_shared<abstract::AbstractRefTensor>(tensor_abs, std::make_shared<RefKey>(ss.str()));
+}
+
+AbstractBasePtr AddRefKeyForArgs(const AbstractBasePtr &output_abs, const AbstractBasePtrList &input_args,
+                                 const std::vector<size_t> &rw_write_indexes,
+                                 const std::vector<int64_t> &inplace_indexes) {
+  // Convert input tensor to ref if this tensor is rw_write.
+  for (const auto &index : rw_write_indexes) {
+    if (!input_args[index]->isa<AbstractRefTensor>()) {
+      auto ref_tensor = ConvertTensorToRef(input_args[index]);
+      input_args[index]->set_inplace_abstract(ref_tensor);
+    }
+  }
+  if (inplace_indexes.size() == 0 || output_abs == nullptr) {
+    return output_abs;
+  }
+  // If output is a tensor.
+  if (output_abs->isa<AbstractTensor>()) {
+    auto inplace_index = inplace_indexes[0];
+    if (inplace_index != -1) {
+      auto res_abs = input_args[inplace_index];
+      return res_abs->isa<AbstractRefTensor>() ? res_abs : res_abs->inplace_abstract();
+    }
+    return output_abs;
+  }
+  // If output is a tuple or a list of tensors.
+  AbstractBasePtrList output_list;
+  if (output_abs->isa<AbstractSequence>()) {
+    // Get outputs after infer.
+    const auto &output_args = output_abs->cast<AbstractSequencePtr>()->elements();
+    if (inplace_indexes.size() > output_args.size()) {
+      MS_LOG(EXCEPTION) << "The number of outputs must be greater than the inplace_indexes."
+                        << " But got the number of outputs: " << output_args.size() << ". the number of inplace_indexes"
+                        << inplace_indexes.size();
+    }
+    for (size_t i = 0; i < inplace_indexes.size(); ++i) {
+      auto inplace_index = inplace_indexes[i];
+      if (inplace_index != -1) {
+        auto outi_arg = input_args[inplace_index]->isa<AbstractRefTensor>()
+                          ? input_args[inplace_index]
+                          : input_args[inplace_index]->inplace_abstract();
+        (void)output_list.emplace_back(outi_arg);
+      } else {
+        (void)output_list.emplace_back(output_args[i]);
+      }
+    }
+    std::copy(output_args.begin() + inplace_indexes.size(), output_args.end(), std::back_inserter(output_list));
+    if (output_abs->isa<AbstractTuple>()) {
+      return std::make_shared<abstract::AbstractTuple>(output_list);
+    }
+    return std::make_shared<abstract::AbstractList>(output_list);
+  }
+  return output_abs;
 }
 }  // namespace
 
@@ -1300,10 +1365,59 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
   }
 }
 
+AbstractBasePtr UpdateViewOpsAbstract(const AbstractBasePtr &res, const AbstractBasePtrList &args) {
+  MS_EXCEPTION_IF_NULL(res);
+  if (!res->isa<abstract::AbstractTensor>() && !res->isa<abstract::AbstractTuple>()) {
+    MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+  }
+
+  // Update the abstract of first input of view operation.
+  auto arg0_tensor = dyn_cast<abstract::AbstractTensor>(args[0]);
+  auto new_input_arg = ConvertTensorToRef(arg0_tensor);
+  args[0]->set_inplace_abstract(new_input_arg);
+
+  // Update the abstract of view operation.
+  AbstractBasePtr new_res = res;
+  if (res->isa<abstract::AbstractTensor>()) {
+    // The output of the view operator shares the same address with the first input of the operator.
+    new_res = ConvertTensorToRef(res);
+  } else if (res->isa<abstract::AbstractTuple>()) {
+    // Update the elements of output.
+    AbstractBasePtrList output_list;
+    const auto &res_args = res->cast<abstract::AbstractTuplePtr>()->elements();
+    for (size_t i = 0; i < res_args.size(); ++i) {
+      auto ele = res_args[i];
+      MS_EXCEPTION_IF_NULL(ele);
+      if (ele->isa<abstract::AbstractRefTensor>()) {
+        (void)output_list.emplace_back(ele);
+        continue;
+      }
+      if (!ele->isa<abstract::AbstractTensor>()) {
+        MS_LOG(EXCEPTION) << "The abstract of view operation is exception:" << res->ToString();
+      }
+      auto ele_abs = dyn_cast<abstract::AbstractTensor>(ele);
+      auto new_ele_abs = ConvertTensorToRef(ele_abs);
+      (void)output_list.emplace_back(new_ele_abs);
+      ele->set_inplace_abstract(new_ele_abs);
+    }
+    new_res = std::make_shared<abstract::AbstractTuple>(output_list);
+  }
+  MS_LOG(DEBUG) << "The new abstract of view operation is:" << new_res->ToString();
+  return new_res;
+}
+
 AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrList &args) {
   if (op_def_ != nullptr) {
+    MS_LOG(DEBUG) << "prim_func_: " << prim_func_->ToString();
+    const auto &rw_write_indexes = rw_write_input_indexes();
+    const auto &inplace_indexes = inplace_input_indexes();
     if (op_def_->func_impl_.GeneralInferRegistered()) {
-      return ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
+      auto res = ops::DoGeneralInfer(prim_func_, args, frontend_func_impl_);
+      if (graph_view_prim()) {
+        MS_LOG(DEBUG) << "View prim infer.";
+        return UpdateViewOpsAbstract(res, args);
+      }
+      return inplace_prim() ? AddRefKeyForArgs(res, args, rw_write_indexes, inplace_indexes) : res;
     } else {
       (void)op_def_->func_impl_.CheckValidation(prim_func_, args);
       if (frontend_func_impl_ != nullptr) {
@@ -1314,7 +1428,12 @@ AbstractBasePtr PrimitiveFunctionEvaluator::CheckAndInfer(const AbstractBasePtrL
       }
       auto type = op_def_->func_impl_.InferType(prim_func_, args);
       auto shape = op_def_->func_impl_.InferShape(prim_func_, args);
-      return MakeAbstract(shape, type);
+      auto res = MakeAbstract(shape, type);
+      if (graph_view_prim()) {
+        MS_LOG(DEBUG) << "View prim infer.";
+        return UpdateViewOpsAbstract(res, args);
+      }
+      return inplace_prim() ? AddRefKeyForArgs(res, args, rw_write_indexes, inplace_indexes) : res;
     }
   }
   MS_LOG(INTERNAL_EXCEPTION) << "Find infer function failed, primitive: " << prim_func_->ToString();
@@ -1383,7 +1502,10 @@ EvalResultPtr StandardPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
       return std::make_shared<EvalResult>(abs_base, std::make_shared<AttrValueMap>(added_attrs));
     }
   }
-  abs_base = eval_impl_.InferShapeAndType(nullptr, prim_, args);
+  auto output_abs = eval_impl_.InferShapeAndType(nullptr, prim_, args);
+  const auto &rw_write_indexes = rw_write_input_indexes();
+  const auto &inplace_indexes = inplace_input_indexes();
+  abs_base = inplace_prim() ? AddRefKeyForArgs(output_abs, args, rw_write_indexes, inplace_indexes) : output_abs;
   MS_EXCEPTION_IF_NULL(abs_base);
   prim_->EndRecordAddAttr();
   const auto &added_attrs = prim_->evaluate_added_attrs();

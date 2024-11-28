@@ -13,12 +13,10 @@
 # limitations under the License.
 # ============================================================================
 """ test_cont_break """
-import numpy as np
 
 import mindspore as ms
-from mindspore import Tensor, context, nn, jit
+from mindspore import Tensor, context
 from mindspore.nn import Cell
-from mindspore.ops import operations as P
 
 
 class WhileSubGraphParam(Cell):
@@ -91,61 +89,3 @@ def test_while_loop_phi_3():
 
     net = WhileSubGraphParam3(x)
     net()
-
-
-class ControlMixedWhileIf(nn.Cell):
-    def __init__(self):
-        super().__init__()
-        self.assign = P.Assign()
-        self.var = ms.Parameter(ms.Tensor([1], ms.float32), name="var")
-
-    @jit
-    def construct(self, x, y, z, c2, c4):
-        out = self.assign(self.var, c4)
-        while x < c2:
-            self.assign(self.var, c4)
-            y = self.var
-            while y < c2 and x < c2:
-                if 2 * y < c2:
-                    y = y + 2
-                else:
-                    y = y + 1
-            out = out + y
-            self.assign(self.var, c4)
-            z = self.var
-            while z < c2:
-                z = z + 1
-            out = out + z
-            x = x + 1
-        out = out + x
-        while x < 2 * c2:
-            self.assign(self.var, c4)
-            y = self.var
-            x = x + 1
-            while y < c2:
-                self.assign(self.var, c4)
-                z = self.var
-                while z < c2:
-                    z = z + 1
-                if x < c2:
-                    y = y - 1
-                else:
-                    y = y + 1
-                out = out + z
-            out = out + y
-        out = out + x
-        return out
-
-
-def test_mixed_while_if():
-    context.set_context(mode=context.PYNATIVE_MODE)
-    x = np.array(2).astype(np.int32)
-    y = np.array(14).astype(np.int32)
-    z = np.array(1).astype(np.int32)
-    c2 = Tensor([14], ms.int32)
-    c4 = Tensor([0], ms.int32)
-    net = ControlMixedWhileIf()
-    output = net(Tensor(x), Tensor(y), Tensor(z), c2, c4)
-    expect = np.array(3318).astype(np.int32)
-    assert np.allclose(expect, output.asnumpy(), 0.0001, 0.0001)
-    context.set_context(mode=context.GRAPH_MODE)

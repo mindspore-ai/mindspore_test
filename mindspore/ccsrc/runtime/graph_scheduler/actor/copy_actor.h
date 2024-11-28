@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <set>
 #include "utils/hash_map.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/actor/memory_aware_actor.h"
@@ -79,6 +80,8 @@ class CopyActor : public MemoryAwareActor {
   DeviceTensorPtr output_;
   // The output size needs to be updated in the dynamic shape scene.
   bool is_need_update_output_size_;
+  // The ref internal parameter device address of the copy actor output.
+  std::set<DeviceTensorPtr> ref_parameter_device_tensors_;
 };
 
 using CopyActorPtr = std::shared_ptr<CopyActor>;

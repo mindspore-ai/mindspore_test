@@ -36,7 +36,7 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              Minimum, RealDiv, FloorDiv, Floor, FloorMod, Ceil,
                              Acosh, Cosh, Asinh, Sinc, Sinh, Equal, NotEqual,
                              Greater, GreaterEqual, Gcd, LogicalNot, LogicalAnd, LogicalOr,
-                             LogicalXor, Cos, ACos, Sin, Asin, Abs, Round, Atan, Atanh, Atan2,
+                             LogicalXor, Cos, ACos, Sin, Asin, Abs, Round, Atan, Atanh, Atan2, AssignSub,
                              LinSpace, MatrixDeterminant, LogMatrixDeterminant, Erfinv, Conj,
                              Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
@@ -249,58 +249,6 @@ class AddV2(Primitive):
     def __init__(self):
         """Initialize AddV2"""
         self.init_prim_io_names(inputs=['x', 'y'], outputs=['output'])
-
-
-class AssignSub(Primitive):
-    """
-    Updates a `Parameter` by subtracting a value from it.
-
-    Refer to :func:`mindspore.ops.assign_sub` for more details.
-
-    Inputs:
-        - **variable** (Parameter) - The `Parameter`.
-          :math:`(N,*)` where :math:`*` means, any number of additional dimensions, its rank be should be less than 8.
-        - **value** (Union[numbers.Number, Tensor]) - The value to be subtracted from the `variable`.
-          It must have the same shape as `variable` if it is a Tensor.
-
-    Outputs:
-        Tensor, has the same data type and shape as original `variable`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops, nn
-        >>> from mindspore.common.initializer import initializer
-        >>> class Net(nn.Cell):
-        ...     def __init__(self):
-        ...         super(Net, self).__init__()
-        ...         self.AssignSub = ops.AssignSub()
-        ...         self.variable = mindspore.Parameter(initializer(1, [1], mindspore.int32), name="global_step")
-        ...
-        ...     def construct(self, x):
-        ...         self.AssignSub(self.variable, x)
-        ...         return self.variable
-        ...
-        >>> net = Net()
-        >>> value = Tensor(np.ones([1]).astype(np.int32)*100)
-        >>> output = net(value)
-        >>> print(net.variable.asnumpy())
-        [-99]
-    """
-
-    __mindspore_signature__ = (
-        sig.make_sig('val', sig.sig_rw.RW_WRITE, dtype=sig.sig_dtype.T),
-        sig.make_sig('value', dtype=sig.sig_dtype.T)
-    )
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize AssignSub"""
-        self.init_prim_io_names(inputs=['val', 'value'], outputs=['val'])
-        self.add_prim_attr('side_effect_mem', True)
 
 
 class _Reduce(PrimitiveWithCheck):

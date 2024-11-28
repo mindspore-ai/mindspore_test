@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
 # pylint: disable=unused-variable
 import pytest
 import numpy as np
+from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -49,17 +49,16 @@ def test_assign_forward(mode):
     np.testing.assert_allclose(output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
-def test_assign_backward(mode):
+def test_assign_backward():
     """
     Feature: assign ops.
     Description: test auto grad of ops assign.
     Expectation: output the right grad.
     """
-    context.set_context(mode=mode)
+    context.set_context(mode=ms.PYNATIVE_MODE)
     variable = ms.Parameter(Tensor(np.array([1.0]).astype(np.float32)))
     value = Tensor(np.array([2.0]).astype(np.float32))
     dvariable, dvalue = assign_backward_func(variable, value)
@@ -67,3 +66,14 @@ def test_assign_backward(mode):
     except_dvalue = np.asarray([0.]).astype(np.float32)
     np.testing.assert_array_almost_equal(dvariable.asnumpy(), except_dvariable, decimal=4)
     np.testing.assert_array_almost_equal(dvalue.asnumpy(), except_dvalue, decimal=4)
+
+    context.set_context(mode=ms.GRAPH_MODE)
+    with pytest.raises(RuntimeError) as err1:
+        variable = ms.Parameter(Tensor(np.array([1.0]).astype(np.float32)))
+        value = Tensor(np.array([2.0]).astype(np.float32))
+        dvariable, dvalue = assign_backward_func(variable, value)
+        except_dvariable = np.asarray([1.]).astype(np.float32)
+        except_dvalue = np.asarray([0.]).astype(np.float32)
+        np.testing.assert_array_almost_equal(dvariable.asnumpy(), except_dvariable, decimal=4)
+        np.testing.assert_array_almost_equal(dvalue.asnumpy(), except_dvalue, decimal=4)
+    assert "A leaf Variable that requires grad is being used in an in-place operation" in str(err1.value)

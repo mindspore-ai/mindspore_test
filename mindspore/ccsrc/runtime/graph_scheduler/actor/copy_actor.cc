@@ -97,6 +97,28 @@ void CopyActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
+    if (device_tensor_store_keys_.empty()) {
+      MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor_[0]
+                    << " type:" << output_device_tensor_[0]->GetDeviceType() << " and " << input_device_tensor_[0]
+                    << " type:" << input_device_tensor_[0]->GetDeviceType() << " for copy actor:" << GetAID();
+      DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor_[0], input_device_tensor_[0]);
+      for (const auto &device_tensor : ref_parameter_device_tensors_) {
+        MS_EXCEPTION_IF_NULL(device_tensor);
+        MS_LOG(DEBUG) << "Add device tensor copy store for device address:" << output_device_tensor_[0]
+                      << " type:" << output_device_tensor_[0]->GetDeviceType() << " and " << device_tensor
+                      << " type:" << device_tensor->GetDeviceType() << " for copy actor:" << GetAID();
+        DeviceTensorCopyStore::GetInstance().Insert(output_device_tensor_[0], device_tensor.get());
+        if (device_tensor->GetDeviceType() != output_device_tensor_[0]->GetDeviceType()) {
+          MS_LOG(WARNING) << "Invalid ref device address:" << device_tensor
+                          << " type:" << device_tensor->GetDeviceType() << " and:" << output_device_tensor_[0]
+                          << " type:" << output_device_tensor_[0]->GetDeviceType();
+          continue;
+        }
+        device_tensor->set_ptr(output_device_tensor_[0]->GetMutablePtr());
+        MS_LOG(DEBUG) << "Set ptr:" << device_tensor->GetPtr() << " from device address:" << output_device_tensor_[0]
+                      << " to:" << device_tensor << " in actor:" << GetAID();
+      }
+    }
     output_device_tensor_[0]->kernel_tensor()->SetType(input_device_tensor_[0]->kernel_tensor()->GetType());
     output_device_tensor_[0]->kernel_tensor()->SetShape(input_device_tensor_[0]->kernel_tensor()->GetShape());
     output_device_tensor_[0]->set_user_data(input_device_tensor_[0]->user_data());

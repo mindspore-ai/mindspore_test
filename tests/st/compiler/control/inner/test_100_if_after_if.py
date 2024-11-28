@@ -1,4 +1,4 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2021-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import pytest
 from tests.st.compiler.control.cases_register import case_register
 from mindspore import context
 from mindspore import Tensor, nn
@@ -147,11 +148,14 @@ def test_if_after_if():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    x = Tensor(2, mstype.int32)
-    y = Tensor(5, mstype.int32)
-    expect1 = Tensor(13, mstype.int32)
-    expect2 = (Tensor(0, mstype.int32), Tensor(1, mstype.int32))
-    control_flow_if_after_if(IfAfterIfNet, x, y, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor(2, mstype.int32)
+        y = Tensor(5, mstype.int32)
+        expect1 = Tensor(13, mstype.int32)
+        expect2 = (Tensor(0, mstype.int32), Tensor(1, mstype.int32))
+        control_flow_if_after_if(IfAfterIfNet, x, y, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
 
 
 @case_register.level1
@@ -163,11 +167,14 @@ def test_if_after_if_01():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    x = Tensor(2, mstype.int32)
-    y = Tensor(5, mstype.int32)
-    expect1 = Tensor(13, mstype.int32)
-    expect2 = (Tensor(0, mstype.int32), Tensor(1, mstype.int32))
-    control_flow_if_after_if(IfAfterIfNet1, x, y, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor(2, mstype.int32)
+        y = Tensor(5, mstype.int32)
+        expect1 = Tensor(13, mstype.int32)
+        expect2 = (Tensor(0, mstype.int32), Tensor(1, mstype.int32))
+        control_flow_if_after_if(IfAfterIfNet1, x, y, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
 
 
 @case_register.level1
@@ -195,11 +202,14 @@ def test_if_after_if_03():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    x = Tensor(2, mstype.int32)
-    y = Tensor(5, mstype.int32)
-    expect1 = Tensor(19, mstype.int32)
-    expect2 = (Tensor(5, mstype.int32), Tensor(2, mstype.int32))
-    control_flow_if_after_if(IfAfterIfNet3, x, y, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor(2, mstype.int32)
+        y = Tensor(5, mstype.int32)
+        expect1 = Tensor(19, mstype.int32)
+        expect2 = (Tensor(5, mstype.int32), Tensor(2, mstype.int32))
+        control_flow_if_after_if(IfAfterIfNet3, x, y, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))
 
 
 @case_register.level1
@@ -210,8 +220,11 @@ def test_if_after_if_04():
     Description: Test control flow in graph mode.
     Expectation: No exception.
     """
-    x = Tensor(2, mstype.int32)
-    y = Tensor(5, mstype.int32)
-    expect1 = Tensor(19, mstype.int32)
-    expect2 = (Tensor(5, mstype.int32), Tensor(2, mstype.int32))
-    control_flow_if_after_if(IfAfterIfNet4, x, y, expect1, expect2)
+    with pytest.raises(RuntimeError) as info:
+        x = Tensor(2, mstype.int32)
+        y = Tensor(5, mstype.int32)
+        expect1 = Tensor(19, mstype.int32)
+        expect2 = (Tensor(5, mstype.int32), Tensor(2, mstype.int32))
+        control_flow_if_after_if(IfAfterIfNet4, x, y, expect1, expect2)
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation."
+            in str(info.value))

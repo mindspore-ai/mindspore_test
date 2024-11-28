@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
+import pytest
 import numpy as np
 from tests.st.compiler.control.cases_register import case_register
 from mindspore.common import dtype as mstype
@@ -75,7 +76,7 @@ def test_forward_gpu():
     assert graph_mode_out == Tensor(np.array(9), mstype.int32)
 
 
-@case_register.level0
+@case_register.level1
 @case_register.target_ascend
 def test_backward():
     """
@@ -87,8 +88,12 @@ def test_backward():
     y = Tensor(np.array(3), mstype.int32)
     # Graph Mode
     context.set_context(mode=context.GRAPH_MODE)
-    graph_forward_net = ForwardNet(max_cycles=3)
-    graph_backward_net = BackwardNet(graph_forward_net)
-    graph_mode_grads = graph_backward_net(x, y)
 
-    assert graph_mode_grads == (Tensor(np.array(9), mstype.int32), Tensor(np.array(3), mstype.int32))
+    with pytest.raises(RuntimeError) as err1:
+        graph_forward_net = ForwardNet(max_cycles=3)
+        graph_backward_net = BackwardNet(graph_forward_net)
+        graph_mode_grads = graph_backward_net(x, y)
+
+        assert graph_mode_grads == (Tensor(np.array(9), mstype.int32), Tensor(np.array(3), mstype.int32))
+    assert ("One of the variables needed for gradient computation has been modified by an inplace operation"
+            in str(err1.value))

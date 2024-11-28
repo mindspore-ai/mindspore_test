@@ -684,7 +684,7 @@ EvalResultPtr Evaluator::EvalUndeterminedArgs(const AbstractBasePtrList &args_ab
 }
 
 EvalResultPtr TrivialPrimEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list,
-                                        const AnfNodeConfigPtr &) {
+                                        const AnfNodeConfigPtr &out_conf) {
   AbstractBasePtrList args_abs_list = EvaluateArguments(args_conf_list);
 
   EvalResultPtr res;
@@ -718,13 +718,6 @@ EvalResultPtr TrivialPrimEvaluator::Run(AnalysisEnginePtr engine, const ConfigPt
       std::rethrow_exception(std::current_exception());
     }
   }
-  MS_EXCEPTION_IF_NULL(res);
-  // Update the input abstract for inplace primitive.
-  if (inplace_prim() && !args_abs_list.empty() && args_abs_list[0] != res->abstract()) {
-    MS_LOG(DEBUG) << "Set inplace abstract, " << args_abs_list[0]->ToString() << " -> " << res->abstract()->ToString();
-    // Always update the inplace abstract.
-    args_abs_list[0]->set_inplace_abstract(res->abstract());
-  }
   return res;
 }
 
@@ -735,16 +728,7 @@ EvalResultPtr TransitionPrimEvaluator::Run(AnalysisEnginePtr engine, const Confi
     MS_LOG(INTERNAL_EXCEPTION) << "Size should be greater than 0, during running " << identifier_;
   }
   AbstractBasePtrList args_abs_list = EvaluateArguments(args_conf_list);
-  EvalResultPtr res = EvalPrim(engine, args_abs_list, args_conf_list[0], out_conf);
-  MS_EXCEPTION_IF_NULL(res);
-  // Update the input abstract for inplace primitive.
-  if (inplace_prim() && !args_abs_list.empty() && args_abs_list[0] != res->abstract()) {
-    MS_LOG(DEBUG) << "Set inplace abstract, " << args_abs_list[0]->ToString() << " -> " << res->abstract()->ToString();
-    // Always update the inplace abstract.
-    args_abs_list[0]->set_inplace_abstract(res->abstract());
-  }
-  // No need to cache.
-  return res;
+  return EvalPrim(engine, args_abs_list, args_conf_list[0], out_conf);
 }
 
 EvalResultPtr SymbolicPrimEvaluator::Run(AnalysisEnginePtr, const ConfigPtrList &args_conf_list,

@@ -157,6 +157,8 @@ class HostQueueDataSourceActor : public DataSourceActor {
 
   // The location of the data node in the data source actor.
   std::map<KernelWithIndex, size_t> data_node_position_map_;
+  // The index of different device context for the same parameter.
+  std::vector<std::pair<size_t, size_t>> heter_index_pair_;
 };
 
 using DataSourceActorPtr = std::shared_ptr<DataSourceActor>;

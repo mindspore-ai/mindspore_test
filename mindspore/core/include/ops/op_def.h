@@ -76,6 +76,7 @@ struct OpDef {
   OpFuncImpl &func_impl_;
   bool enable_dispatch_;
   bool is_view_;
+  bool is_graph_view_;
 };
 
 using OpDefPtr = OpDef *;

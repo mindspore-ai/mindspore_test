@@ -301,6 +301,7 @@ OpDef g${class_name} = {
   /*.func_impl_=*/${func_impl_define},
   /*.enable_dispatch_ =*/${enable_dispatch},
   /*.is_view_ =*/${is_view},
+  /*.is_graph_view_ =*/${is_graph_view},
 };
 REGISTER_PRIMITIVE_OP_DEF(${class_name}, &g${class_name});
 """)
