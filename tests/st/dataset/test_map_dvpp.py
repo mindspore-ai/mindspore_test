@@ -37,6 +37,7 @@ data_dir = "/home/workspace/mindspore_dataset/910B_dvpp/testImageNetData2/train"
 result_data_dir = "/home/workspace/mindspore_dataset/910B_dvpp/testAscend910BDvpp"
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_map_with_pyfunc_with_multi_op_process_mode():
     """
     Feature: Map op with pyfunc contains dvpp ops & cpu ops
@@ -77,6 +78,7 @@ def test_map_with_pyfunc_with_multi_op_process_mode():
         assert item[0].dtype == np.float32
 
 
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_map_with_pyfunc_with_multi_op_thread_mode():
     """
     Feature: Map op with pyfunc contains dvpp ops & cpu ops
@@ -135,7 +137,6 @@ def map_with_dvpp_resize(num_workers=1, python_multiprocess=False):
         assert (check_img == item[0]).all()
         assert item[0].shape == (224, 224, 3)
         assert item[0].dtype == np.uint8
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     class RandomAccessDataset:
@@ -295,7 +296,7 @@ def map_with_dvpp_resize(num_workers=1, python_multiprocess=False):
     assert count == 6
 
 
-def test_map_with_dvpp_resize():
+def union_map_with_dvpp_resize():
     """
     Feature: Map op
     Description: Test map with dvpp resize operation
@@ -313,7 +314,7 @@ def test_map_with_dvpp_resize():
     map_with_dvpp_resize(8, True)
 
 
-def test_map_with_dvpp_resize_mixed_op():
+def map_with_dvpp_resize_mixed_op():
     """
     Feature: Map op
     Description: Test map with dvpp resize operation and mixed op
@@ -623,11 +624,10 @@ def map_with_dvpp_decode(num_workers=1, python_multiprocess=False):
         assert (check_img == item[0]).all()
         assert item[0].shape == (224, 224, 3)
         assert item[0].dtype == np.uint8
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
 
-def test_map_with_dvpp_decode():
+def union_map_with_dvpp_decode():
     """
     Feature: Map op
     Description: Test map with dvpp decode operation
@@ -645,7 +645,7 @@ def test_map_with_dvpp_decode():
     map_with_dvpp_decode(8, True)
 
 
-def test_map_with_dvpp_decode_with_pre_pyfun():
+def map_with_dvpp_decode_with_pre_pyfun():
     """
     Feature: Map op
     Description: Test map with dvpp decode operation and with pre pyfunc
@@ -672,11 +672,10 @@ def test_map_with_dvpp_decode_with_pre_pyfun():
         assert (check_img == item[0]).all()
         assert item[0].shape == (224, 224, 3)
         assert item[0].dtype == np.uint8
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
 
-def test_map_with_dvpp_decode_mixed_op():
+def map_with_dvpp_decode_mixed_op():
     """
     Feature: Map op
     Description: Test map with dvpp decode operation and mixed op
@@ -883,7 +882,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         assert np.allclose(item1[0], item2[0], 1e-6)
         assert item1[0].shape == (224, 224, 3)
         assert item1[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # 1HWC
@@ -907,7 +905,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (224, 224, 3)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # CHW
@@ -941,7 +938,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         assert np.allclose(item1[0], item2[0], 1e-6)
         assert item1[0].shape == (3, 224, 224)
         assert item1[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # 1CHW
@@ -968,7 +964,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (3, 224, 224)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # HW
@@ -994,7 +989,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (224, 224)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # HW1
@@ -1020,7 +1014,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (224, 224)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # 1HW
@@ -1047,7 +1040,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (224, 224)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # 1HW1
@@ -1073,7 +1065,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (224, 224)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # 11HW
@@ -1100,7 +1091,6 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (224, 224)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
     # float32 HWC
@@ -1126,11 +1116,10 @@ def map_with_dvpp_normalize(num_workers=1, python_multiprocess=False):
         count += 1
         assert item[0].shape == (224, 224, 3)
         assert item[0].dtype == np.float32
-        print("count: {}".format(count), flush=True)
     assert count == 6
 
 
-def test_map_with_dvpp_normalize():
+def union_map_with_dvpp_normalize():
     """
     Feature: Map op
     Description: Test map with dvpp normalize operation
@@ -1148,7 +1137,7 @@ def test_map_with_dvpp_normalize():
     map_with_dvpp_normalize(8, True)
 
 
-def test_map_with_dvpp_normalize_mixed_op():
+def map_with_dvpp_normalize_mixed_op():
     """
     Feature: Map op
     Description: Test map with dvpp mixed operation
@@ -1727,7 +1716,7 @@ def test_map_with_dvpp_perspective_with_exception():
     assert "The input tensor is not of shape [H,W], [H,W,C] or [N,H,W,C]." in str(info.value)
 
 
-def test_map_with_dvpp_shape_and_type():
+def map_with_dvpp_shape_and_type():
     """
     Feature: Map op
     Description: Test map with dvpp output_shapes and output_types
@@ -1755,48 +1744,30 @@ def test_map_with_dvpp_shape_and_type():
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_basic_transforms_multi_worker_mode():
-    """
-    Feature: Test DVPP transforms with multi-threading/multi-processing mode
-    Description: Test dvpp basic transforms together to reduce st time.
-    Expectation: SUCCESS
-    """
-    test_map_with_pyfunc_with_multi_op_process_mode()
-    test_map_with_pyfunc_with_multi_op_thread_mode()
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_basic_transforms_pipeline():
     """
     Feature: Mix DVPP & CPU basic transforms in pipeline mode
     Description: Test dvpp basic transforms together to reduce st time.
     Expectation: SUCCESS
     """
-    test_map_with_dvpp_resize()
-    test_map_with_dvpp_resize_mixed_op()
-    test_map_with_dvpp_decode()
-    test_map_with_dvpp_decode_with_pre_pyfun()
-    test_map_with_dvpp_decode_mixed_op()
-    test_map_with_dvpp_normalize()
-    test_map_with_dvpp_normalize_mixed_op()
-    test_map_with_dvpp_shape_and_type()
+    union_map_with_dvpp_resize()
+    map_with_dvpp_resize_mixed_op()
+    union_map_with_dvpp_decode()
+    map_with_dvpp_decode_with_pre_pyfun()
+    map_with_dvpp_decode_mixed_op()
+    union_map_with_dvpp_normalize()
+    map_with_dvpp_normalize_mixed_op()
+    map_with_dvpp_shape_and_type()
 
 
 if __name__ == '__main__':
     test_map_with_pyfunc_with_multi_op_process_mode()
     test_map_with_pyfunc_with_multi_op_thread_mode()
-    test_map_with_dvpp_resize()
-    test_map_with_dvpp_resize_mixed_op()
     test_map_with_dvpp_resize_with_exception()
-    test_map_with_dvpp_decode()
-    test_map_with_dvpp_decode_mixed_op()
     test_map_with_dvpp_decode_with_exception()
-    test_map_with_dvpp_decode_with_pre_pyfun()
-    test_map_with_dvpp_normalize()
-    test_map_with_dvpp_normalize_mixed_op()
     test_map_with_dvpp_normalize_exception()
     test_map_with_dvpp_horizontal_flip_with_exception()
     test_map_with_dvpp_vertical_flip_with_exception()
     test_map_with_dvpp_resize_crop_with_exception()
     test_map_with_dvpp_perspective_with_exception()
-    test_map_with_dvpp_shape_and_type()
+    test_basic_transforms_pipeline()
