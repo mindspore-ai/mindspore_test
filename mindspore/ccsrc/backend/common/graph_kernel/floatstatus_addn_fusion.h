@@ -51,9 +51,10 @@ namespace mindspore::graphkernel {
  *   %3 = subgraph2(%1, %0)
  *   %4 = subgraph2(%2, %0)
  *   %5 = MakeTuple(%3, %4)
- *   %6 = Depend(%0, %5)
- *   %7 = op3(%6)
- *   return %7
+ *   %6 = UpdateState(U, %5)
+ *   %7 = Load(%0, %6)
+ *   %8 = op3(%7)
+ *   return %8
  *    }
  */
 class FloatStatusAddNFusion : public InplaceAssignBuilder {

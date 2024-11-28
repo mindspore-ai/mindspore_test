@@ -30,22 +30,14 @@
 
 namespace mindspore::graphkernel {
 bool IsUpdateState(const std::pair<AnfNodePtr, int> &user) {
-  if (common::GetEnv("MS_DEV_GK_NO_DEPEND") == "1") {
-    return IsPrimitiveCNode(user.first, prim::kPrimUpdateState);
-  }
-  return IsPrimitiveCNode(user.first, prim::kPrimUpdateState) ||
-         (IsPrimitiveCNode(user.first, prim::kPrimDepend) && user.second > 1);
+  return IsPrimitiveCNode(user.first, prim::kPrimUpdateState);
 }
 
 AnfNodePtrList GetUpdateStateList(const FuncGraphPtr &func_graph) {
   auto todos = TopoSort(func_graph->get_return());
   AnfNodePtrList result;
-  (void)std::copy_if(todos.begin(), todos.end(), std::back_inserter(result), [](const AnfNodePtr &node) {
-    if (common::GetEnv("MS_DEV_GK_NO_DEPEND") == "1") {
-      return IsPrimitiveCNode(node, prim::kPrimUpdateState);
-    }
-    return IsPrimitiveCNode(node, prim::kPrimUpdateState) || IsPrimitiveCNode(node, prim::kPrimDepend);
-  });
+  (void)std::copy_if(todos.begin(), todos.end(), std::back_inserter(result),
+                     [](const AnfNodePtr &node) { return IsPrimitiveCNode(node, prim::kPrimUpdateState); });
   return result;
 }
 

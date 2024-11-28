@@ -111,14 +111,17 @@ void FloatStatusAddNFusion::ProcessFloatStatusAddN(const FuncGraphPtr &main_grap
   maketuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(out_abs_list));
   main_graph->AddNode(maketuple_node);
 
-  // Insert Depend
-  AnfNodePtrList depend_inputs = {NewValueNode(prim::kPrimDepend), broadcast_to_node, maketuple_node};
-  auto depend_node = main_graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(broadcast_to_node->abstract());
-  main_graph->AddNode(depend_node);
+  // Insert UpdateState - Load
+  auto us_node =
+    main_graph->NewCNode(AnfNodePtrList{NewValueNode(prim::kPrimUpdateState), NewValueNode(kUMonad), maketuple_node});
+  us_node->set_abstract(kUMonad->ToAbstract());
+  main_graph->AddNode(us_node);
+  auto load_node = main_graph->NewCNode(AnfNodePtrList{NewValueNode(prim::kPrimLoad), broadcast_to_node, us_node});
+  load_node->set_abstract(broadcast_to_node->abstract());
+  main_graph->AddNode(load_node);
 
   // Remove AddN
-  (void)mng->Replace(addn, depend_node);
+  (void)mng->Replace(addn, load_node);
 }
 
 bool FloatStatusAddNFusion::Run(const FuncGraphPtr &func_graph) {
