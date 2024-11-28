@@ -435,7 +435,7 @@ from mindspore.ops.function.math_func import isnan_ext as isnan
 # 1007
 from mindspore.ops.auto_generate import t_ext as t
 from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
-
+from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
 
 #1023
@@ -1259,6 +1259,42 @@ def einsum(equation, *operands):
             raise ValueError(f"For einsum, the element of 'operands' can't be dynamic shape or dynamic rank.")
 
     return _einsum(_equation, _operands)
+
+
+def equal(input, other):
+    r"""
+    Computes the equivalence between two tensors.
+
+    Note:
+        `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
+
+    .. warning:
+            This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The first input.
+        other (Tensor): The second input.
+
+    Returns:
+        bool.
+
+    Raises:
+        TypeError: If `input` or `other` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> x = Tensor([1, 2, 3], mindspore.int32)
+        >>> y = Tensor([1, 2, 4], mindspore.int32)
+        >>> output = mint.equal(x, y)
+        >>> print(output)
+        False
+    """
+    result = equal_ext_op(input, other)
+    return result.item()
 
 
 def item(input):
