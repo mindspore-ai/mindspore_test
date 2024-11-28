@@ -1,6 +1,6 @@
 assign_add:
     description: |
-        Updates a `Parameter` by adding a value to it.
+        Updates a `Parameter` or `Tensor` by adding a value to it.
 
         Args of `variable` and `value` comply with the implicit type conversion rules to make the data types consistent.
         If they have different data types, the lower priority data type will be converted to
@@ -9,13 +9,13 @@ assign_add:
         and the data type is consistent with the Tensor data type involved in the operation.
 
         Note:
-            Since `variable` is a data type Parameter, the data type cannot be changed,
+            Since `variable` is a data type Parameter or Tensor, the data type cannot be changed,
             so only the type of `value` is allowed to be promoted to the type of `variable`.
             And the conversion type supported by different devices will be different,
             it is recommended to use the same data type when using this operator.
 
         Args:
-            variable (Parameter): The `Parameter`.
+            variable (Parameter, Tensor): The `Parameter` or `Tensor`.
                 :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
             value (Union[Tensor, Number]): The value to be added to the `variable`.
                 If `value` is a number, the number is automatically converted to Tensor.
@@ -27,8 +27,8 @@ assign_add:
 
         Raises:
             TypeError: If `value` is neither Number nor Tensor.
-            RuntimeError: If the data type of `variable` and `value` conversion of Parameter
-                        is required when data type conversion of Parameter is not supported.
+            RuntimeError: If the data type of `variable` and `value` conversion of Parameter or Tensor
+                        is required when data type conversion of Parameter or Tensor is not supported.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
