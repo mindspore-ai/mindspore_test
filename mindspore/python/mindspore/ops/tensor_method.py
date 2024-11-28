@@ -237,7 +237,7 @@ from mindspore.ops.auto_generate import sin
 # 96 size
 
 # 97 sort
-from mindspore.ops.function.array_func import sort, sort_ext
+from mindspore.ops.function.array_func import sort
 # 98 split
 from mindspore.ops.function.array_func import split
 # 99 sqrt
@@ -863,8 +863,8 @@ def deprecated_tensor_sort(input_x, axis=-1, descending=False):
     return sort(input_x, axis, descending)
 
 
-def tensor_sort_ext(input, *, dim=-1, descending=False, stable=False):
-    return sort_ext(input, dim=dim, descending=descending, stable=stable)
+def tensor_sort(input, dim=-1, descending=False, stable=False):
+    return sort(input, dim, descending)
 
 
 # 98 split
