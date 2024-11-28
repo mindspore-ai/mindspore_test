@@ -496,6 +496,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             self.__dict__.update(state)
         Tensor_.__setstate__(self, value)
 
+    def __array__(self, dtype=None):
+        """support create numpy array from tensor."""
+        if dtype is None:
+            return self.asnumpy()
+        return self.asnumpy().astype(dtype, copy=False)
+
     def _getitem_origin(self, index):
         """__getitem__ origin process, called by TensorPy::TensorGetItem"""
         out = tensor_operator_registry.get('_tensor_getitem_origin')(self, index)

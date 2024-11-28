@@ -152,6 +152,8 @@ def test_getitem_refactor(mode):
     assert np.allclose(np_y, ms_y.asnumpy()), f"y:{np_y} {np_y.shape}, ms_y:{ms_y} {ms_y.shape}"
     ms_y = ms_x[Tensor(0), Tensor([0, 1]), Tensor([0, 1])]
     assert np.allclose(np_y, ms_y.asnumpy()), f"y:{np_y} {np_y.shape}, ms_y:{ms_y} {ms_y.shape}"
+    ms_y = ms_x[Tensor(0), [0, Tensor(1)], [Tensor(0), Tensor(1)]]
+    assert np.allclose(np_y, ms_y.asnumpy()), f"y:{np_y} {np_y.shape}, ms_y:{ms_y} {ms_y.shape}"
 
     np_y = np.array([[0, 4], [13, 17]])
     ms_y = ms_x[[0, 1], 0:2, [0, 1]]

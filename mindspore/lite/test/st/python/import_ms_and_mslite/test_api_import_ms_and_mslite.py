@@ -399,7 +399,7 @@ def test_model_build_from_file_with_decryption():
                               dec_num_parallel=2)
     inputs = model_dec.get_inputs()
     output2 = model_dec.predict(inputs)[0].get_data_to_numpy()
-    assert np.all(output1 - output2) < 1e-6
+    assert np.all((output1 - output2) < 1e-6)
 
 
 def get_model():
