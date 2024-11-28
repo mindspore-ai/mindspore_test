@@ -17,7 +17,7 @@
 #include "infer/ops_func_impl/log_softmax_grad.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {

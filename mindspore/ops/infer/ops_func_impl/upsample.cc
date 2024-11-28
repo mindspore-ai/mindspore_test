@@ -26,7 +26,7 @@
 
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "abstract/dshape.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ir/anf.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindapi/base/types.h"

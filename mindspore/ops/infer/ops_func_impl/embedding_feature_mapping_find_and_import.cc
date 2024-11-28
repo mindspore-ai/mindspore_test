@@ -21,6 +21,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/shape_utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

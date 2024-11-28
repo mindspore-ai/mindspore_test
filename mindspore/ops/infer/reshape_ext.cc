@@ -26,7 +26,7 @@
 #include "utils/check_convert_utils.h"
 #include "ops/primitive_c.h"
 #include "mindapi/helper.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

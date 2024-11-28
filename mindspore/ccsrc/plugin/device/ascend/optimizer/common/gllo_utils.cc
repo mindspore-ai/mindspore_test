@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 #include "ir/anf.h"
-#include "ops_utils/op_utils.h"
+#include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

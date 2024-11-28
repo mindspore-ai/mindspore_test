@@ -23,7 +23,7 @@
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "base/base.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/dtype/type.h"
@@ -35,7 +35,6 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

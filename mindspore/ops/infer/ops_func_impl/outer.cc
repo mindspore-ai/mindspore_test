@@ -28,7 +28,7 @@
 #include "abstract/dshape.h"
 #include "base/base.h"
 #include "ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
 static inline bool IsValidType(TypeId t) {

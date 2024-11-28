@@ -253,8 +253,8 @@ class COMMON_EXPORT BpropIRBuilderFactory {
 #define BODYFUNC(v) [](BpropBuilder * (v)) -> NodePtrList
 
 #ifdef _MSC_VER
-#define REG_BPROP_BUILDERS_BEGIN(func_name) void Reg##func_name() {
-#define REG_BPROP_BUILDERS_END }
+#define REG_BPROP_BUILDERS_BEGIN(func_name)
+#define REG_BPROP_BUILDERS_END
 #else
 #define REG_BPROP_BUILDERS_BEGIN(func_name)
 #define REG_BPROP_BUILDERS_END

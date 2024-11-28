@@ -28,7 +28,7 @@
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "base/base.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
@@ -46,7 +46,6 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

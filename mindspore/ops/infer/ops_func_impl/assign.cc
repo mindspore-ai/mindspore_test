@@ -16,7 +16,7 @@
 #include <vector>
 #include "utils/log_adapter.h"
 #include "infer/ops_func_impl/assign.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
 ShapeArray AssignFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
