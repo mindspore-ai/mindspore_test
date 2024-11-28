@@ -41,9 +41,8 @@ TypePtr DivModFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
   auto y_dtype = input_args[kIndex1]->GetType();
 
   auto mode = input_args[kIndex2]->GetValue();
-  auto rounding_mode = GetScalarValue<int64_t>(mode);
 
-  if (rounding_mode == RoundingMode::TRUNC || rounding_mode == RoundingMode::FLOOR) {
+  if (mode != mindspore::kNone) {
     return x_dtype;
   } else {
     static std::set<int> x_set = {kNumberTypeBool,   kNumberTypeUInt8,  kNumberTypeInt8,
@@ -65,8 +64,7 @@ TypePtrList DivModFuncImpl::InferType(const PrimitivePtr &primitive, const Value
   const auto &x_dtype = x_tensor->Dtype();
   const auto &x_type_id = x_dtype->type_id();
 
-  auto rounding_mode = input_values[kIndex2]->cast<Int64ImmPtr>()->value();
-  if (rounding_mode == RoundingMode::TRUNC || rounding_mode == RoundingMode::FLOOR) {
+  if (input_values[kIndex2] != mindspore::kNone) {
     return {x_dtype};
   } else {
     static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
