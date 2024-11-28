@@ -13,13 +13,15 @@
 # limitations under the License.
 # ============================================================================
 """Test the overload functional method"""
-import numpy as np
-import pytest
-from tests.mark_utils import arg_mark
-
 import mindspore as ms
 import mindspore.nn as nn
+import numpy as np
+import pytest
 from mindspore.common.api import _pynative_executor
+
+from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.utils import test_utils
 
 
 class MeanNet(nn.Cell):
@@ -40,6 +42,20 @@ class MeanKVDisruptNet(nn.Cell):
 class MeanNetpython(nn.Cell):
     def construct(self, x, axis=None, keep_dims=False):
         return x.mean(keep_dims=keep_dims, axis=axis)
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
+
+
+@test_utils.run_with_cell
+def mean_ext_forward_func(x, axis=None, keep_dims=False, dtype=None):
+    return x.mean(axis, keep_dims, dtype)
+
+
+@test_utils.run_with_cell
+def mean_forward_func(x, axis=None, keep_dims=False):
+    return x.mean(axis, keep_dims)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -147,3 +163,27 @@ def test_method_mean_pyboost(mode):
         net(x, axis=5, keep_dims=1, dtype=None)
         _pynative_executor.sync()
     assert "Failed calling mean with " in str(error_info.value)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_mean_dynamic():
+    """
+    Feature: Test mean op.
+    Description: Test mean dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
+    axis1 = 1
+    keep_dims1 = False
+    dtype1 = None
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    axis2 = 2
+    keep_dims2 = True
+    dtype2 = None
+    TEST_OP(mean_ext_forward_func, [[ms_data1, axis1, keep_dims1, dtype1], [ms_data2, axis2, keep_dims2, dtype2]],
+            'mean_ext', disable_mode=['GRAPH_MODE'], disable_input_check=True)
+    TEST_OP(mean_forward_func, [[ms_data1, axis1, keep_dims1], [ms_data2, axis2, keep_dims2]], 'mean',
+            disable_mode=['GRAPH_MODE'], disable_yaml_check=True)
