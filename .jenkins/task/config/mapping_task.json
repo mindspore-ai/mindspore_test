@@ -220,6 +220,7 @@
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -327,6 +328,7 @@
   "Compile_GPU_X86_CentOS_Cuda11.6": {
     "DIR_ARRAY": [
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -411,6 +413,7 @@
   "Compile_GPU_X86_CentOS_Cuda10": {
     "DIR_ARRAY": [
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -491,6 +494,7 @@
   "Compile_CPU_X86_CentOS": {
     "DIR_ARRAY": [
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -573,6 +577,7 @@
   "Compile_UT": {
     "DIR_ARRAY": [
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",

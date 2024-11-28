@@ -231,7 +231,7 @@ void MsContext::RegisterInitFunc(const std::string &name, MsContext::InitDeviceT
 void MsContext::ResisterLoadPluginErrorFunc(MsContext::LoadPluginError func) { load_plugin_error_ = func; }
 
 bool MsContext::IsAscendPluginLoaded() const {
-#ifdef WITH_BACKEND
+#ifndef ENABLE_TEST
   return InitFuncMap().find("Ascend") != InitFuncMap().end();
 #else
   // for ut test
@@ -263,15 +263,16 @@ void MsContext::SetDefaultDeviceTarget() {
 
 void MsContext::SetDeviceTargetFromInner(const std::string &device_target) {
   if (seter_ != nullptr) {
+#ifndef ENABLE_TEST
     if (!InitFuncMap().empty()) {
       if (auto iter = InitFuncMap().find(device_target); iter == InitFuncMap().end()) {
         CheckEnv(device_target);
         std::string device_list = "[";
-        for (auto citer = InitFuncMap().cbegin(); citer != InitFuncMap().cend(); ++citer) {
+        for (const auto &citer : InitFuncMap()) {
           if (device_list == "[") {
-            device_list += "\'" + citer->first + "\'";
+            device_list += "\'" + citer.first + "\'";
           } else {
-            device_list += ", \'" + citer->first + "\'";
+            device_list += ", \'" + citer.first + "\'";
           }
         }
         device_list += "]";
@@ -299,6 +300,9 @@ void MsContext::SetDeviceTargetFromInner(const std::string &device_target) {
         SetEnv(device_target);
       }
     }
+#else
+    MS_LOG(INFO) << "In UT case: func map only has cpu func, so in case set ascend, no need to process func init";
+#endif
     MS_LOG(INFO) << "ms set context device target:" << device_target;
     seter_(device_target);
   }
