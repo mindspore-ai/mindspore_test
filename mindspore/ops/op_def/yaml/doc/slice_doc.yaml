@@ -4,14 +4,13 @@ slice:
 
         Refer to :func:`mindspore.ops.slice` for more details.
 
-        Args:
-            input (Tensor) - The target tensor.
-                The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
-            begin (Union[tuple, list]) - The beginning of the slice. Only constant value(>=0) is allowed.
-            size (Union[tuple, list]) - The size of the slice. Only constant value is allowed.
+        Inputs:
+            - **input_x** (Tensor): The target tensor. The shape is :math:`(N, *)` where :math:`*` means, any number of additional dimensions.
+            - **begin** (Union[tuple, list]): The beginning of the slice. Only constant value(>=0) is allowed.
+            - **size** (Union[tuple, list]): The size of the slice. Only constant value is allowed.
 
-        Returns:
-            Tensor, the shape is: input `size`, the data type is the same as `input_x`.
+        Outputs:
+            Tensor, the shape is the same as that of `size`, the data type is the same as `input_x`.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
