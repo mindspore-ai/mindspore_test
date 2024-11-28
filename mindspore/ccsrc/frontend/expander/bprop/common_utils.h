@@ -93,8 +93,8 @@ NodePtr LogSumExpGrad(Emitter *ib, const NodePtr &input, const NodePtr &dim, boo
                       const NodePtr &dout);
 NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, const NodePtr &dout,
                 const NodePtr &correction, const NodePtr &keepdim);
-NodePtr MinOrMaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
-                     const NodePtr &out, const NodePtr &dout);
+NodePtr MinOrMaxGrad(Emitter *ib, const NodePtr &x, const NodePtr &axis, bool keep_dims, const NodePtr &out,
+                     const NodePtr &dout);
 std::pair<ShapeVector, ShapeVector> SplitShapeIndex(const ShapeVector &input_shape, const ShapeVector &axis);
 NodePtr ArgminOrArgmaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
                            const NodePtr &out, const NodePtr &dout, const bool is_max);

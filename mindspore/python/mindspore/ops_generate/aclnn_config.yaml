@@ -335,6 +335,12 @@ SmoothL1LossGrad: 'aclnnSmoothL1LossBackward'
 # 301
 TrilExt: 'aclnnTril'
 
+# 510
+ReduceMax: 'aclnnAmax'
+
+# 511
+ReduceMin: 'aclnnAmin'
+
 # 520
 BincountExt: 'aclnnBincount'
 #537

@@ -2604,8 +2604,17 @@ REG_BPROP_BUILDER("ReduceMax").SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'ReduceMax', gradient not support for complex type currently.";
   } else {
-    auto dx = MinOrMaxGrad(ib, x, axis, keep_dims, out, dout);
-    return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
+    NodePtr dx;
+    auto keep_dims_opt = mindspore::GetScalarValue<bool>(keep_dims->BuildValue());
+    if (!keep_dims_opt.has_value()) {
+      auto true_branch = [&](Emitter *e) -> NodePtrList { return {MinOrMaxGrad(e, x, axis, true, out, dout)}; };
+      auto false_branch = [&](Emitter *e) -> NodePtrList { return {MinOrMaxGrad(e, x, axis, false, out, dout)}; };
+      auto keep_dims_true = ib->Equal(keep_dims, ib->Value<bool>(true));
+      dx = ib->Conditional(keep_dims_true, true_branch, false_branch);
+    } else {
+      dx = MinOrMaxGrad(ib, x, axis, keep_dims_opt.value(), out, dout);
+    }
+    return {ib->Cast(dx, ib->GetDtype(x)), ib->OutZeros(axis), ib->OutZeros(keep_dims)};
   }
 });
 
@@ -2619,8 +2628,17 @@ REG_BPROP_BUILDER("ReduceMin").SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'ReduceMin', gradient not support for complex type currently.";
   } else {
-    auto dx = MinOrMaxGrad(ib, x, axis, keep_dims, out, dout);
-    return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
+    NodePtr dx;
+    auto keep_dims_opt = mindspore::GetScalarValue<bool>(keep_dims->BuildValue());
+    if (!keep_dims_opt.has_value()) {
+      auto true_branch = [&](Emitter *e) -> NodePtrList { return {MinOrMaxGrad(e, x, axis, true, out, dout)}; };
+      auto false_branch = [&](Emitter *e) -> NodePtrList { return {MinOrMaxGrad(e, x, axis, false, out, dout)}; };
+      auto keep_dims_true = ib->Equal(keep_dims, ib->Value<bool>(true));
+      dx = ib->Conditional(keep_dims_true, true_branch, false_branch);
+    } else {
+      dx = MinOrMaxGrad(ib, x, axis, keep_dims_opt.value(), out, dout);
+    }
+    return {ib->Cast(dx, ib->GetDtype(x)), ib->OutZeros(axis), ib->OutZeros(keep_dims)};
   }
 });
 

@@ -617,19 +617,18 @@ NodePtr VarGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis_node, co
   }
 }
 
-NodePtr MinOrMaxGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &axis, const NodePtr &keep_dims,
-                     const NodePtr &out, const NodePtr &dout) {
+NodePtr MinOrMaxGrad(Emitter *ib, const NodePtr &x, const NodePtr &axis, bool keep_dims, const NodePtr &out,
+                     const NodePtr &dout) {
   auto y = out;
   auto grad = dout;
-  auto keepdims = GetValue<bool>(keep_dims->BuildValue());
-  if (!keepdims) {
+  if (!keep_dims) {
     auto output_shape_kept_dims = ib->ShapeCalc(std::make_shared<ReduceShapeShapeCalc>(), {x, axis}, {1})[0];
     y = ib->Reshape(out, output_shape_kept_dims);
     grad = ib->Reshape(dout, output_shape_kept_dims);
   }
-  auto indicators = ib->Cast(ib->Equal(y, x), ib->GetDtype(grad));
-  auto num_selected = ib->ReduceSum(indicators, axis, true, false);
-  return indicators / num_selected * grad;
+  auto indicators = ib->Cast(ib->Equal(y, x), grad->dtype());
+  auto num_selected = ib->SumExt(indicators, axis, ib->Value(true));
+  return ib->Div(grad, num_selected) * indicators;
 }
 
 inline NodePtr ScatterZeroDim(Emitter *ib, const NodePtr &input, const NodePtr &dim, const NodePtr &index,
