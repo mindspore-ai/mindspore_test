@@ -237,6 +237,9 @@ from mindspore.ops.auto_generate import mish_ext as mish  # pylint: disable=W061
 # 238
 from mindspore.ops.auto_generate import l1_loss_ext as l1_loss  # pylint: disable=W0611
 
+#254
+from mindspore.ops.auto_generate import max_unpool2d_ext as max_unpool2d
+
 # 257
 
 # 258
@@ -906,6 +909,9 @@ __all__ = [
     # 99
 
     # 100
+
+    # 254
+    'max_unpool2d',
 
     # 312
     'normalize',
