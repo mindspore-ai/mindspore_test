@@ -344,8 +344,8 @@ int AdjustInputsAndAttrsForSqueeze(const FuncGraphManagerPtr &manager, const CNo
       if (axis_input_node->isa<Parameter>() && axis_input_node->cast<ParameterPtr>()->has_default()) {
         MS_LOG(INFO) << "Origin primitive: Squeeze already has a const input, replacing it with the attribute.";
         manager->Replace(axis_input_node, new_value_node);
-        return RET_OK;
       }
+      return RET_OK;
     }
     MS_CHECK_TRUE_MSG(actual_input_num == kInputSizeTwo, RET_ERROR,
                       "Origin primitive: Squeeze must has only one or two inputs");
