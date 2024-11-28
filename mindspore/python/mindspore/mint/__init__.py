@@ -859,7 +859,7 @@ def _einsum_parse_labels(l_equationlst, operands):
     align_rank = 0
     max_labels = 53
     labels_count = [0] * max_labels
-    labels2dimlst = [None] * max_labels
+    labels2dimlst = [[-max_labels] for _ in range(max_labels)]
 
     if len(operands) != len(l_equationlst):
         raise ValueError(f"For einsum, 'operands' is not equal to specified in the 'equation', "
@@ -876,7 +876,7 @@ def _einsum_parse_labels(l_equationlst, operands):
             # Label is ellipsis
             if label == 52:
                 end_dim = len(operand_shape) - len(sub_equ) + label_num
-            if labels2dimlst[label] is None:
+            if labels2dimlst[label] == [-max_labels]:
                 labels2dimlst[label] = operand_shape[start_dim:end_dim]
                 align_rank += (end_dim - start_dim)
             else:
@@ -977,7 +977,7 @@ def _einsum_adjust_operands(operands, l_equationlst, labels2dimlst, labels_perm_
 
 def _einsum_find_dimlastop(align_rank, operands, adjust_operands):
     """Find dim last operand."""
-    dim_last_op = [0 for _ in range(align_rank)]
+    dim_last_op = [0] * align_rank
     has_zero_dim = False
     for dim in range(align_rank):
         broadcast_dim = adjust_operands[0].shape[dim]
@@ -1067,16 +1067,6 @@ def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
     return reshape(output, output_squeeze_shape)
 
 
-def _einsum_squeeze(operand, dim):
-    '''Will be replaced by mint.squeeze in the future'''
-    operand_shape = operand.shape
-    squeeze_shape = []
-    for idx in range(len(operand_shape)):
-        if idx != dim:
-            squeeze_shape.append(operand_shape[idx])
-    return reshape(operand, squeeze_shape)
-
-
 def _einsum(equation, operands):
     '''Einsum main process'''
     _l_equationlst, _r_equationlst, _arrow_exist = _einsum_parse_equation(equation)
@@ -1097,7 +1087,7 @@ def _einsum(equation, operands):
     for dim in range(_output_rank, _align_rank):
         if _dim_last_op[dim] == 0:
             if _result.shape[_reduce_dim] == 1:
-                _result = _einsum_squeeze(_result, _reduce_dim)
+                _result = squeeze(_result, _reduce_dim)
             else:
                 _result = sum(_result, _reduce_dim)
         else:
@@ -1110,11 +1100,11 @@ def _einsum(equation, operands):
         sum_dims = []
         for j in range(_output_rank, _align_rank):
             if _dim_last_op[j] < i:
-                operand = _einsum_squeeze(operand, dim)
+                operand = squeeze(operand, dim)
             elif _dim_last_op[j] == i:
                 if _result.shape[dim] == 1:
                     operand = sum(operand, dim)
-                    _result = _einsum_squeeze(_result, dim)
+                    _result = squeeze(_result, dim)
                 else:
                     sum_dims.append(dim)
                     dim += 1
@@ -1141,16 +1131,22 @@ def einsum(equation, *operands):
         The sublist format is also supported. For example, mint.einsum(op1, sublist1, op2, sublist2, ..., sublist_out).
         In this format, equation can be derived by the sublists which are made up of Python's Ellipsis and list of
         integers in [0, 52). Each operand is followed by a sublist and an output sublist is at the end.
+        Dynamic shape, dynamic rank input is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
 
     Args:
         equation (str): Notation based on the Einstein summation convention, represent the operation you want to do.
-            the value can contain only letters, commas, ellipsis and arrow.
-            The letters represent input tensor dimension, commas represent separate tensors, ellipsis indicates
-            the tensor dimension that you do not care about, the left of the arrow indicates the input tensors,
-            and the right of it indicates the desired output dimension.
+            the value can contain only letters, commas, ellipsis and arrow. The letters(must be in [a-zA-Z]) represent
+            input tensor dimension, commas(,) represent separate tensors, ellipsis indicates the tensor dimension that
+            you do not care about, the left of the arrow indicates the input tensors, and the right of it indicates the
+            desired output dimension. If there are no arrows in the equation, the letters that appear exactly once in
+            the equation will be part of the output, sorted in increasing alphabetical order. The output is computed by
+            multiplying the input operands element-wise, with their dimensions aligned based on the letters, and then
+            summing out the dimensions whose letters are not part of the output. If there is one arrow in the equation,
+            the output letters must appear at least once for some input operand and at most once for the output.
         operands (Tensor): Input tensor used for calculation. The dtype of the tensor must be the same.
 
     Returns:
