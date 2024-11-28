@@ -1,16 +1,14 @@
-#deprecated select
-select:
+#deprecated where
+where:
   args:
-    input:
-      dtype: tensor
     condition:
       dtype: tensor
+    input:
+      dtype: tensor
+      type_cast: number
     y:
       dtype: tensor
       type_cast: number
   returns:
     output:
       dtype: tensor
-  view: True
-  class:
-      name: SelectExt
