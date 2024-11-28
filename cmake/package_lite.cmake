@@ -57,6 +57,11 @@ function(__install_white_list_ops)
             COMPONENT ${RUNTIME_COMPONENT_NAME}
             )
     install(FILES
+            ${TOP_DIR}/mindspore/ops/ops_utils/op_constants.h
+            DESTINATION ${CONVERTER_ROOT_DIR}/include/ops_utils
+            COMPONENT ${RUNTIME_COMPONENT_NAME}
+            )
+    install(FILES
             ${TOP_DIR}/mindspore/ops/infer/adam.h
             ${TOP_DIR}/mindspore/ops/infer/all.h
             ${TOP_DIR}/mindspore/ops/infer/apply_momentum.h

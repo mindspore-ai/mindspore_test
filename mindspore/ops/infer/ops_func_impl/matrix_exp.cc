@@ -16,7 +16,7 @@
 #include "infer/ops_func_impl/matrix_exp.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

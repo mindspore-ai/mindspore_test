@@ -23,7 +23,7 @@
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
 #include "infer/ops_func_impl/range.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
 #define IsNoneOrAnyValue(value_ptr) ((value_ptr->isa<None>()) || (value_ptr->ContainsValueAny()))

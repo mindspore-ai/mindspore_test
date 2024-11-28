@@ -15,7 +15,7 @@
  */
 
 #include "infer/ops_func_impl/dropout_grad_ext.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

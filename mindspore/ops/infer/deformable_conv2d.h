@@ -21,7 +21,7 @@
 #include <string>
 #include "ops/base_operator.h"
 #include "mindapi/base/format.h"
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

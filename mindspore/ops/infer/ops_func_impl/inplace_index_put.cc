@@ -17,8 +17,6 @@
 #include "infer/ops_func_impl/inplace_index_put.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -34,6 +32,5 @@ std::vector<TypeId> InplaceIndexPutFuncImpl::InferType(const PrimitivePtr &primi
   MS_EXCEPTION_IF_NULL(input_infos[kIndex0]);
   return {input_infos[kIndex0]->GetType()};
 }
-REGISTER_SIMPLE_INFER(kNameInplaceIndexPut, InplaceIndexPutFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

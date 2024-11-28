@@ -1,3 +1,5 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-non-abstract-non-virtual-dtor -Wno-overloaded-virtual")
 endif()
@@ -80,7 +82,7 @@ set_property(SOURCE ${CPU_SRC_LIST}
 if(ENABLE_CPU)
     set(CPU_OBJECT_COUNT 1)
     src_separate_compile(
-        OBJECT_NAME _mindspore_plugin_device_cpu_kernel_obj
+        OBJECT_NAME _mindspore_ops_cpu_kernel_obj
         OBJECT_SIZE CPU_OBJECT_COUNT
         SRC_LIST ${CPU_SRC_LIST})
     set(CPU_KERNEL_OBJECT_COUNT "${CPU_OBJECT_COUNT}" PARENT_SCOPE)

@@ -22,7 +22,7 @@
 #include "mindapi/ir/value.h"
 #include "mindapi/ir/primitive.h"
 #include "ops/ops_func_impl/simple_infer.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

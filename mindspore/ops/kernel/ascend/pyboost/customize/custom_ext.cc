@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "runtime/device/device_address_utils.h"
-#include "mindspore/ops/kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
+#include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 
 namespace mindspore::kernel::pyboost {
 namespace {

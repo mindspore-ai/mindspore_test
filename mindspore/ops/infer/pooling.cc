@@ -34,7 +34,7 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "ops/base_operator.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore {
 namespace ops {

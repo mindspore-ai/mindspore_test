@@ -28,6 +28,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace parallel {

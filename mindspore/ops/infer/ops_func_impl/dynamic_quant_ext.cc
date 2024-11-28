@@ -19,7 +19,7 @@
 #include "abstract/dshape.h"
 #include "utils/shape_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 namespace mindspore::ops {
 BaseShapePtr DynamicQuantExtFuncImpl::InferShape(const PrimitivePtr &primitive,

@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 
 #include "abstract/abstract_value.h"
 #include "abstract/ops/op_infer.h"

@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "include/common/utils/utils.h"
+#include "ops_utils/op_constants.h"
 #include "mindapi/base/types.h"
 #include "ops/base_operator.h"
 
