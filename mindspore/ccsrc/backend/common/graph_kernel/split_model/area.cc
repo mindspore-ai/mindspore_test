@@ -62,7 +62,7 @@ bool ShapeEqual(const NodePtr &a, const NodePtr &b, bool skip_leading_one = true
 
 EdgeRelation GetRelation(const PrimOpPtr &node, const NodePtr &input) {
   if (node->compute_type() != NodePattern::ELEMWISE) {
-    return EdgeRelation::INJECTIVE;
+    return node->compute_type() == NodePattern::BROADCAST ? EdgeRelation::BROADCAST : EdgeRelation::INJECTIVE;
   }
   if (node->inputs().size() == 1) {
     // single input elemwise op has no broadcast
