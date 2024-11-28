@@ -571,6 +571,114 @@ TensorPtr TensorPy::ConvertBytesToTensor(const py::bytes &bytes_obj, const py::t
   return tensor;
 }
 
+py::object TensorPy::Item(const Tensor &tensor) {
+  auto tensor_element_count = tensor.data().size();
+  if (tensor_element_count != 1) {
+    MS_EXCEPTION(ValueError) << "For tensor.item, the size of tensor should be 1, but got " << tensor_element_count
+                             << ".";
+  }
+  tensor.data_sync();
+  auto data_type = tensor.data_type();
+  auto data = tensor.data_c();
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return py::cast(*static_cast<int8_t *>(data));
+    case TypeId::kNumberTypeUInt8:
+      return py::cast(*static_cast<uint8_t *>(data));
+    case TypeId::kNumberTypeInt16:
+      return py::cast(*static_cast<int16_t *>(data));
+    case TypeId::kNumberTypeUInt16:
+      return py::cast(*static_cast<uint16_t *>(data));
+    case TypeId::kNumberTypeInt:
+    case TypeId::kNumberTypeInt32:
+      return py::cast(*static_cast<int *>(data));
+    case TypeId::kNumberTypeUInt32:
+      return py::cast(*static_cast<uint32_t *>(data));
+    case TypeId::kNumberTypeInt64:
+      return py::cast(*static_cast<int64_t *>(data));
+    case TypeId::kNumberTypeUInt64:
+      return py::cast(*static_cast<uint64_t *>(data));
+    case TypeId::kNumberTypeFloat:
+    case TypeId::kNumberTypeFloat32:
+      return py::cast(*static_cast<float *>(data));
+    case TypeId::kNumberTypeDouble:
+    case TypeId::kNumberTypeFloat64:
+      return py::cast(*static_cast<double *>(data));
+    case TypeId::kNumberTypeBFloat16:
+      return py::cast(*static_cast<bfloat16 *>(data));
+    case TypeId::kNumberTypeBool:
+      return py::cast(*static_cast<bool *>(data));
+    default:
+      MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
+      return py::none();
+  }
+}
+
+py::object TensorPy::ItemWithIndex(const Tensor &tensor, const int index) {
+  auto tensor_element_count = tensor.data().size();
+  if (tensor_element_count <= index) {
+    MS_EXCEPTION(IndexError) << "Out of the length of tensor. Tensor length is: " << tensor_element_count
+                             << " but got index: " << index << ".";
+  }
+  tensor.data_sync();
+  auto data_type = tensor.data_type();
+  auto data = tensor.data_c();
+  switch (data_type) {
+    case TypeId::kNumberTypeInt8:
+      return py::cast(*(static_cast<int8_t *>(data) + index));
+    case TypeId::kNumberTypeUInt8:
+      return py::cast(*(static_cast<uint8_t *>(data) + index));
+    case TypeId::kNumberTypeInt16:
+      return py::cast(*(static_cast<int16_t *>(data) + index));
+    case TypeId::kNumberTypeUInt16:
+      return py::cast(*(static_cast<uint16_t *>(data) + index));
+    case TypeId::kNumberTypeInt:
+    case TypeId::kNumberTypeInt32:
+      return py::cast(*(static_cast<int *>(data) + index));
+    case TypeId::kNumberTypeUInt32:
+      return py::cast(*(static_cast<uint32_t *>(data) + index));
+    case TypeId::kNumberTypeInt64:
+      return py::cast(*(static_cast<int64_t *>(data) + index));
+    case TypeId::kNumberTypeUInt64:
+      return py::cast(*(static_cast<uint64_t *>(data) + index));
+    case TypeId::kNumberTypeFloat:
+    case TypeId::kNumberTypeFloat32:
+      return py::cast(*(static_cast<float *>(data) + index));
+    case TypeId::kNumberTypeDouble:
+    case TypeId::kNumberTypeFloat64:
+      return py::cast(*(static_cast<double *>(data) + index));
+    case TypeId::kNumberTypeBFloat16:
+      return py::cast(*(static_cast<bfloat16 *>(data) + index));
+    case TypeId::kNumberTypeBool:
+      return py::cast(*(static_cast<bool *>(data) + index));
+    default:
+      MS_EXCEPTION(TypeError) << "Not support tensor data type: " << data_type << ".";
+      return py::none();
+  }
+}
+
+py::object TensorPy::ItemWithTupleIndex(const Tensor &tensor, const py::tuple &index) {
+  int flatten_index = 0;
+  const ShapeVector &shape = tensor.shape();
+  const size_t shape_size = shape.size();
+  if (shape_size != index.size()) {
+    MS_EXCEPTION(ValueError) << "The shape of input index should be equal to the shape of tensor: " << shape_size
+                             << " But the shape of input index is: " << index.size() << ".";
+  }
+  vector<int> element_count_for_dim(shape_size, 0);
+  element_count_for_dim[shape_size - 1] = 1;
+  for (int i = shape_size - 2; i >= 0; i--) {
+    element_count_for_dim[i] = shape[i + 1] * element_count_for_dim[i + 1];
+  }
+  for (size_t i = 0; i < shape_size; ++i) {
+    flatten_index += (index[i].cast<int>() * element_count_for_dim[i]);
+  }
+  if (typeid(flatten_index) != typeid(int)) {
+    MS_EXCEPTION(TypeError) << "index type should be int. But input index is: " << index;
+  }
+  return ItemWithIndex(tensor, flatten_index);
+}
+
 py::array TensorPy::SyncAsNumpy(const Tensor &tensor) {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kAsnumpy);
   // Asnumpy should be a read-only operation and should not modify the original Tensor.
@@ -879,6 +987,9 @@ void RegMetaTensor(const py::module *m) {
     .def("_get_flattened_tensors", Tensor::GetFlattenedTensors)
     .def("_get_fusion_size", Tensor::GetFusionSize)
     .def("_is_test_stub", Tensor::CheckStub)
+    .def("item", &TensorPy::Item, "get scalar from tensor, index is None")
+    .def("item", &TensorPy::ItemWithIndex, "get scalar from tensor, dtype of index is int")
+    .def("item", &TensorPy::ItemWithTupleIndex, "get scalar from tensor, dtype of index is tuple")
     .def("from_numpy", TensorPy::MakeTensorOfNumpy, R"mydelimiter(
                              Creates a Tensor from a numpy.ndarray without copy.
 
@@ -1169,5 +1280,6 @@ void RegRowTensor(const py::module *m) {
     .def("__str__", &RowTensor::ToString)
     .def("__repr__", &RowTensor::ToString);
 }
+
 }  // namespace tensor
 }  // namespace mindspore

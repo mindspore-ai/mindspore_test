@@ -31,7 +31,6 @@ from mindspore.common.hook_handle import _TensorHookHandle
 
 from mindspore.common._utils import get_slice_num
 from mindspore.common._register_for_tensor import tensor_operator_registry
-from mindspore.common._tensor_overload import (item_mint)
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore._checkparam import check_is_number, is_stub_tensor, check_hook_fn
@@ -937,41 +936,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('bincount')(self, weights, minlength)
 
-
-    @item_mint
-    def item(self, index=None):
-        """
-        Get the item at the specified index of the tensor.
-
-        Args:
-            index (Union[None, int, tuple(int)]): The index in Tensor. Default: ``None``.
-
-        Returns:
-            A scalar, type is defined by the dtype of the Tensor.
-
-        Raises:
-            ValueError: If the length of the `index` is not equal to self.ndim.
-
-        Supported Platforms:
-            ``Ascend`` ``GPU`` ``CPU``
-
-        Examples:
-            >>> import mindspore as ms
-            >>> from mindspore import Tensor
-            >>> x = Tensor([[1, 2, 3], [4, 5, 6]], ms.float32)
-            >>> print(x.item((0, 1)))
-            2.0
-            >>> x = Tensor(1.2, ms.float32)
-            >>> print(x.item())
-            1.2
-        """
-
-        if index is not None:
-            output = self.asnumpy().item(index)
-        else:
-            output = self.asnumpy().item()
-        return output
-
     def itemset(self, *args):
         r"""
         Insert scalar into a tensor (scalar is cast to tensor's dtype, if possible).
@@ -1379,13 +1343,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('adjoint')(self)
 
-
     def angle(self):
         r"""
         For details, please refer to :func:`mindspore.ops.angle`.
         """
         return tensor_operator_registry.get('angle')(self)
-
 
     def baddbmm(self, batch1, batch2, beta=1, alpha=1):
         r"""
@@ -1726,7 +1688,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('isclose')(self, x2, rtol, atol, equal_nan)
 
-
     def isposinf(self):
         r"""
         For details, please refer to :func:`mindspore.ops.isposinf`.
@@ -1940,7 +1901,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.positive`.
         """
         return tensor_operator_registry.get("positive")(self)
-
 
     def float_power(self, other):
         r"""
@@ -3906,7 +3866,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('mvlgamma')(self, p)
 
-
     def inner(self, other):
         r"""
         For details, please refer to :func:`mindspore.ops.inner`.
@@ -4147,7 +4106,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         _index_put = tensor_operator_registry.get('index_put')(0 if accumulate is False else 1)
         return _index_put(self, values, indices)
 
-
     def index_put_(self, indices, values, accumulate=False):
         r"""
         Returns a Tensor. According to the index number of `indices` ,
@@ -4198,7 +4156,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         index_put_ = tensor_operator_registry.get('index_put_')
         return index_put_(self, indices, values, accumulate)
-
 
     def move_to(self, to, blocking=True):
         r"""
