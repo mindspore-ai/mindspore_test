@@ -19,6 +19,7 @@ from mindspore import ops
 from mindspore.mint.nn.functional import softplus
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.mark_utils import arg_mark
 
 
@@ -39,7 +40,7 @@ def softplus_forward_func(x, beta=1, threshold=20):
 
 @test_utils.run_with_cell
 def softplus_backward_func(x, beta=1, threshold=20):
-    return ops.grad(softplus_forward_func, (0))(x, beta, threshold)
+    return ms.grad(softplus_forward_func, (0))(x, beta, threshold)
 
 
 @test_utils.run_with_cell
@@ -57,7 +58,7 @@ def test_ops_softplus_forward(context_mode):
     """
     ms.set_context(jit_level='O0')
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_numpy_ndarray_by_randn((2, 3, 4, 5), np.float32, 'x')
     output = softplus_forward_func(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4)

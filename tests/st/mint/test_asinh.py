@@ -57,7 +57,7 @@ def test_asinh_std(mode):
         output = (jit(asinh_forward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
         output_grad = (jit(asinh_backward_func, jit_config=JitConfig(jit_level="O0")))(ms.Tensor(x))
 
-    np.allclose(output.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
+    np.allclose(output.asnumpy(), expect, rtol=1e-5, equal_nan=True)
     np.allclose(output_grad.asnumpy(), expect_grad, rtol=1e-5, equal_nan=True)
 
 

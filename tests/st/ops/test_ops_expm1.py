@@ -21,6 +21,7 @@ from mindspore.mint.special import expm1 as special_expm1
 from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 
 
 def generate_random_input(shape, dtype):
@@ -60,7 +61,7 @@ def test_ops_expm1_normal(context_mode):
     """
     ms.context.set_context(mode=context_mode)
     # forward
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_numpy_ndarray_by_randn((2, 3, 4, 5), np.float32, 'x')
     output_f = expm1_forward_func(ms.Tensor(x))
     output_f_special = expm1_special_forward_func(ms.Tensor(x))
     expect_f = expm1_expect_forward_func(x)

@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops, jit, JitConfig
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.mark_utils import arg_mark
 
 
@@ -48,7 +49,7 @@ def test_ops_any_forward(context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    x = generate_random_input((2, 3, 4, 5), np.float32)
+    x = generate_numpy_ndarray_by_randn((2, 3, 4, 5), np.float32, 'x')
     output = any_forward_func(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)

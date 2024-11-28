@@ -22,6 +22,7 @@ import mindspore as ms
 from mindspore.mint import xlogy
 from mindspore import ops, Tensor
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.common.random_generator import generate_numpy_ndarray_by_randn
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -92,8 +93,8 @@ def test_ops_xlogy(mode):
     Description: test function xlogy.
     Expectation: expect correct result.
     """
-    x = generate_random_input((2, 3, 4), np.float32)
-    y = np.abs(generate_random_input((2, 3, 1), np.float32)) + 0.01  # y > 0
+    x = generate_numpy_ndarray_by_randn((2, 3, 4), np.float32, 'x')
+    y = np.abs(generate_numpy_ndarray_by_randn((2, 3, 1), np.float32, 'y')) + 0.01  # y > 0
 
     expect_out = generate_expect_forward_output(x, y)
     expect_out2 = generate_expect_forward_output(x, 2)
