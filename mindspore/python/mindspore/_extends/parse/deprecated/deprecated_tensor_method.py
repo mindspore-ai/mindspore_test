@@ -161,7 +161,7 @@ deprecated_tensor_method_map = {
     # 71 nan_to_num
 
     # 72 narrow
-
+    "narrow": "deprecated_tensor_narrow",
     # 73 ne
 
     # 74 neg
@@ -177,7 +177,7 @@ deprecated_tensor_method_map = {
     # 79 numpy
 
     # 80 outer
-
+    "outer": "deprecated_tensor_outer",
     # 81 permute
 
     # 82 pow
@@ -254,7 +254,7 @@ deprecated_tensor_method_map = {
     # 117 unfold
 
     # 118 unique
-
+    "unique": "deprecated_tensor_unique",
     # 119 unsqeeze
 
     # 120 view
