@@ -407,6 +407,8 @@ PYBIND11_MODULE(_c_expression, m) {
          "Get pipeline segment split num.")
     .def("set_dump_local_norm", &ParallelContext::set_dump_local_norm, "Set dump_local_norm.")
     .def("get_dump_local_norm", &ParallelContext::dump_local_norm, "Get dump_local_norm.")
+    .def("set_dump_device_local_norm", &ParallelContext::set_dump_device_local_norm, "Set dump_device_local_norm.")
+    .def("get_dump_device_local_norm", &ParallelContext::dump_device_local_norm, "Get dump_device_local_norm.")
     .def("set_pipeline_interleave", &ParallelContext::set_pipeline_interleave, "Set pipeline interleave.")
     .def("get_pipeline_interleave", &ParallelContext::pipeline_interleave, "Get pipeline interleave.")
     .def("set_pipeline_scheduler", &ParallelContext::set_pipeline_scheduler, "Set pipeline scheduler.")
