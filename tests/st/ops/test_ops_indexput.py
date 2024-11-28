@@ -31,7 +31,7 @@ def indexput_backward_func(x1, x2, indices, accumulate=0):
     return ops.grad(indexput_forward_func, (0, 1))(x1, x2, indices, accumulate)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @test_utils.run_test_with_On
 def test_indexput_op_normal(context_mode):
