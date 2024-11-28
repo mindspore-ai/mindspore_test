@@ -87,6 +87,7 @@
       "mindspore/core/ops",
       "mindspore/core/symbolic_shape",
       "mindspore/core/utils",
+      "mindspore/ops/api_def",
       "mindspore/ops/grad",
       "mindspore/ops/infer",
       "mindspore/ops/kernel/common/pyboost",
@@ -134,6 +135,7 @@
       "mindspore/lite/tools/optimizer/fusion",
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
@@ -206,6 +208,7 @@
       "mindspore/core/ops",
       "mindspore/core/symbolic_shape",
       "mindspore/core/utils",
+      "mindspore/ops/api_def",
       "mindspore/ops/grad",
       "mindspore/ops/infer",
       "mindspore/ops/kernel/common/pyboost",
@@ -302,6 +305,7 @@
       "mindspore/core/symbolic_shape",
       "mindspore/core/utils",
       "mindspore/lite/tools/kernel_builder/ascend/tbe_and_aicpu/op_proto",
+      "mindspore/ops/api_def",
       "mindspore/ops/grad",
       "mindspore/ops/infer",
       "mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel",
@@ -392,6 +396,7 @@
       "mindspore/core/ops",
       "mindspore/core/symbolic_shape",
       "mindspore/core/utils",
+      "mindspore/ops/api_def",
       "mindspore/ops/grad",
       "mindspore/ops/infer",
       "mindspore/ops/kernel/common/pyboost",
@@ -476,6 +481,7 @@
       "mindspore/core/ops",
       "mindspore/core/symbolic_shape",
       "mindspore/core/utils",
+      "mindspore/ops/api_def",
       "mindspore/ops/grad",
       "mindspore/ops/infer",
       "mindspore/ops/kernel/common/pyboost",
@@ -552,6 +558,7 @@
       "mindspore/core/ops",
       "mindspore/core/symbolic_shape",
       "mindspore/core/utils",
+      "mindspore/ops/api_def",
       "mindspore/ops/grad",
       "mindspore/ops/infer",
       "mindspore/ops/kernel/common/pyboost",
@@ -640,6 +647,7 @@
       "mindspore/core/ops",
       "mindspore/core/symbolic_shape",
       "mindspore/core/utils",
+      "mindspore/ops/api_def",
       "mindspore/ops/grad",
       "mindspore/ops/infer",
       "mindspore/ops/kernel/common/pyboost",
@@ -733,6 +741,7 @@
       "mindspore/lite/tools/optimizer/fusion",
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/kernel/gpu/cuda_impl/cuda_ops",
       "mindspore/ops/op_def",
@@ -806,6 +815,7 @@
       "mindspore/lite/tools/optimizer/fusion",
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/op_def",
       "mindspore/python"
@@ -830,6 +840,7 @@
       "mindspore/lite/tools/benchmark",
       "mindspore/lite/tools/common",
       "mindspore/lite/tools/converter",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl"
     ],
     "LLT": [
@@ -861,6 +872,7 @@
       "mindspore/lite/tools/benchmark",
       "mindspore/lite/tools/common",
       "mindspore/lite/tools/converter",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl"
     ],
     "LLT": [
@@ -892,6 +904,7 @@
       "mindspore/lite/tools/benchmark",
       "mindspore/lite/tools/common",
       "mindspore/lite/tools/converter/quantizer",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl"
     ],
     "LLT": [
@@ -918,6 +931,7 @@
       "mindspore/lite/tools/converter/micro/coder/wrapper/fp32",
       "mindspore/lite/tools/converter/micro/coder/wrapper/int8",
       "mindspore/lite/tools/converter/micro/coder/wrapper/thread",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl"
     ],
     "LLT": [
@@ -963,6 +977,7 @@
       "mindspore/lite/tools/optimizer/fusion",
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
@@ -1012,6 +1027,7 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
@@ -1065,6 +1081,7 @@
       "mindspore/lite/tools/converter",
       "mindspore/lite/tools/cropper",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl"
     ],
     "LLT": [
@@ -1122,6 +1139,7 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
@@ -1162,6 +1180,7 @@
       "mindspore/lite/tools/converter",
       "mindspore/lite/tools/cropper",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl"
     ],
     "LLT": [
@@ -1214,6 +1233,7 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
@@ -1263,6 +1283,7 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
@@ -1312,6 +1333,7 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
@@ -1334,6 +1356,7 @@
       "mindspore/lite/tools/converter/micro/coder/wrapper/thread",
       "mindspore/lite/tools/converter/micro/providers/nnie",
       "mindspore/lite/tools/converter/quantizer",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl"
     ],
     "LLT": [
@@ -1382,6 +1405,7 @@
       "mindspore/lite/tools/optimizer/graph",
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/lite/tools/schema_gen",
+      "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def"
     ],
