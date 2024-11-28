@@ -92,6 +92,10 @@ class _ComputeGraphNode(_Node):
         if not self.is_simulation:
             os.environ["MS_ROLE"] = "MS_WORKER"
         tail_worker_process = None
+        if self.join and self.tail_worker_log != "-1" and (str(self.node_id) not in self.tail_worker_log):
+            logger.warning(f"The '--tail_worker_log' is:{self.tail_worker_log}, which is beyond the maximum of "
+                           "local_worker_num. So worker logs will not be output to console. Reset "
+                           "'--tail_worker_log', if you want to output worker logs to console.")
         with open(self.output_file, "w") as file_handle:
             worker_process = subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
             if self.join and (self.tail_worker_log == "-1" or str(self.node_id) in self.tail_worker_log):

@@ -27,6 +27,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "proto/topology.pb.h"
 #include "utils/ms_context.h"
+#include "nlohmann/json.hpp"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "ps/core/comm_util.h"
 #include "ps/core/cluster_config.h"
@@ -94,6 +95,41 @@ bool ClusterContext::Initialize() {
     MS_EXCEPTION_IF_NULL(cgn);
     actor_route_table_proxy_ = std::make_shared<ActorRouteTableProxy>(cgn);
     MS_EXCEPTION_IF_NULL(actor_route_table_proxy_);
+  } else if (VL_DISTRIBUTED >= g_ms_vlog_level_from && VL_DISTRIBUTED <= g_ms_vlog_level_to) {
+    MS_VLOG(VL_DISTRIBUTED)
+      << "The environment variable 'VLOG_v' is set to " << common::GetEnv("VLOG_v") << " includes " << VL_DISTRIBUTED
+      << ", scheduler is now dumping workers' metadata information. In large-scale cluster scenarios, "
+         "this process may take some time, but it will not affect distributed tasks.";
+    auto msn = std::dynamic_pointer_cast<distributed::cluster::topology::MetaServerNode>(node_base_);
+    MS_EXCEPTION_IF_NULL(msn);
+    try {
+      nlohmann::json servers = nlohmann::json::array();
+      for (auto &node : msn->GetComputeGraphNodes()) {
+        std::shared_ptr<topology::NodeInfo> &node_info = node.second;
+        nlohmann::json device;
+        device["role"] = node_info->role;
+        device["node_id"] = node_info->node_id;
+        device["device_id"] = node_info->device_id;
+        device["rank_id"] = node_info->rank_id;
+
+        auto it = std::find_if(servers.begin(), servers.end(),
+                               [&](const nlohmann::json &server) { return server["host_ip"] == node_info->host_ip; });
+        if (it != servers.end()) {
+          it->at("device").push_back(device);
+        } else {
+          nlohmann::json server;
+          server["device"] = nlohmann::json::array();
+          server["host_ip"] = node_info->host_ip;
+          server["host_name"] = node_info->host_name;
+          server["device"].push_back(device);
+          servers.push_back(server);
+        }
+      }
+      MS_VLOG(VL_DISTRIBUTED) << "Output metadata for compute graph nodes as json format:\n"
+                              << servers.dump(kJsonIndentation);
+    } catch (const std::exception &e) {
+      MS_LOG(WARNING) << "Failed to dump metadata to json format. Json error: " << e.what();
+    }
   }
 
   inited_ = true;
