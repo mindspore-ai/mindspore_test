@@ -209,11 +209,16 @@ Status CopyTensorToBatch(const std::shared_ptr<Tensor> &element_tensor, std::sha
   RETURN_UNEXPECTED_IF_NULL(batched_tensor);
   // ConvertRowsToTensor has confirmed that the shape of element_tensor matches the expected shape of batch_tensor
   auto element_size = element_tensor->SizeInBytes();
-  errno_t copy_status =
-    memcpy_s(reinterpret_cast<void *>((*batched_tensor)->GetMutableBuffer() + index * element_size),
-             element_tensor->SizeInBytes(), element_tensor->GetBuffer(), element_tensor->SizeInBytes());
-  CHECK_FAIL_RETURN_UNEXPECTED(copy_status == EOK,
-                               "Failed to copy tensor to batch, got error_t: " + std::to_string(copy_status));
+  auto dest = reinterpret_cast<void *>((*batched_tensor)->GetMutableBuffer() + index * element_size);
+  if (element_size < SECUREC_MEM_MAX_LEN) {
+    errno_t copy_status = memcpy_s(dest, (*batched_tensor)->SizeInBytes() - index * element_size,
+                                   element_tensor->GetBuffer(), element_size);
+    CHECK_FAIL_RETURN_UNEXPECTED(copy_status == EOK,
+                                 "Failed to copy tensor to batch, got error_t: " + std::to_string(copy_status));
+  } else {
+    void *ptr = std::memcpy(dest, element_tensor->GetBuffer(), element_size);
+    CHECK_FAIL_RETURN_UNEXPECTED(ptr == dest, "Failed to copy tensor to batch.");
+  }
   return Status::OK();
 }
 
