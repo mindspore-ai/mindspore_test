@@ -27,6 +27,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/profiler/profiling.h"
 #endif
@@ -276,7 +277,7 @@ void *DynamicMemPoolBestFit::GetMinUsingMemoryAddr() const {
 void DynamicMemPoolBestFit::SetMemPoolBlockSize(size_t available_device_mem_size) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  float mem_block_size = ms_context->get_param<float>(MS_CTX_MEMPOOL_BLOCK_SIZE);
+  float mem_block_size = runtime::RuntimeConf::GetInstance()->mem_block_increase_size();
   if (std::fabs(mem_block_size - kDefaultMempoolBlockSize) <= std::numeric_limits<float>::epsilon()) {
     return;
   }

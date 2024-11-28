@@ -58,6 +58,7 @@
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace runtime {
@@ -152,7 +153,7 @@ bool IsSwitchInlineNopNode(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     return std::find_if(cnode->inputs().begin(), cnode->inputs().end(), [](const auto &input) {
              return common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimConditionGather) ||
                     common::AnfAlgo::CheckPrimitiveType(common::AnfAlgo::VisitKernelWithReturnType(input, 0).first,

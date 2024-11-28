@@ -65,6 +65,7 @@
 #include "include/backend/debug/data_dump/overflow_dumper.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "utils/anf_utils.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore::device::ascend {
 namespace {
@@ -1021,7 +1022,7 @@ void GeKernelExecutor::DoSomas(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   // somas
   MS_LOG(DEBUG) << "Status record: start do somas.";
-  if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+  if (runtime::RuntimeConf::GetInstance()->mem_optimize_level() != kOptimizeO0) {
     auto somas = std::make_shared<AclSomas>();
     PROF_START(somas);
     bool ret = somas->Assign(kernel_graph);
@@ -1149,10 +1150,9 @@ void GeKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) c
 
 bool GeKernelExecutor::PySyncRuning(void *stream) const {
   MS_EXCEPTION_IF_NULL(res_manager_);
-  auto ms_context = MsContext::GetInstance();
   static bool sync_stream = common::IsEnableRuntimeConfig(common::kRuntimeSynchronize);
-  if ((sync_stream || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE)) &&
-      !AscendStreamMng::GetInstance().SyncStream(stream)) {
+  auto isSync = mindspore::runtime::RuntimeConf::GetInstance()->launch_blocking();
+  if ((sync_stream || isSync) && !AscendStreamMng::GetInstance().SyncStream(stream)) {
     return false;
   }
   return true;

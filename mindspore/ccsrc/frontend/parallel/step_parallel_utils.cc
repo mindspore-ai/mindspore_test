@@ -59,6 +59,7 @@
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "symbolic_shape/int_symbol.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace parallel {
@@ -3273,7 +3274,7 @@ size_t GetDeviceCapacity() {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   size_t size_from_context;
-  auto max_device_memory = context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY);
+  auto max_device_memory = runtime::RuntimeConf::GetInstance()->mem_max_size();
   float total_device_memory = 32.0f;
   if (context->ascend_soc_version() == kAscendVersion910b || context->ascend_soc_version() == kAscendVersion910_93) {
     total_device_memory = 64.0f;

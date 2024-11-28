@@ -22,6 +22,7 @@
 #include "op_def/structure_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runner.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
@@ -33,7 +34,7 @@ namespace {
 bool EnablePyNativeSyncRunning() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
-  return ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  return runtime::RuntimeConf::GetInstance()->launch_blocking();
 }
 #endif
 

@@ -44,6 +44,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/debug/common.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 
 namespace mindspore {
 namespace gpto {
@@ -2694,7 +2695,7 @@ void GPTO(const KernelGraphPtr &kernel_graph, std::vector<std::pair<CNodePtr, CN
   if (common::GetEnv("MS_ENABLE_GPTO_MEMORY_LIMIT") != "") {
     MEMORY_LIMIT = static_cast<Memory>(stoll(common::GetEnv("MS_ENABLE_GPTO_MEMORY_LIMIT")) * kGBToByte);
   } else {
-    MEMORY_LIMIT = static_cast<Memory>(context->get_param<float>(MS_CTX_MAX_DEVICE_MEMORY) * kGBToByte * memory_safety);
+    MEMORY_LIMIT = static_cast<Memory>(runtime::RuntimeConf::GetInstance()->mem_max_size() * kGBToByte * memory_safety);
   }
 
   MS_LOG(INFO) << "Memory Limit value: " << MEMORY_LIMIT;
