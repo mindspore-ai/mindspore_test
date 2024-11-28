@@ -1,5 +1,5 @@
 cumsum:
-  - op_yaml: deprecated/cumsum_op.yaml
+  - op_yaml: deprecated/cumsum_method.yaml
     py_method: deprecated_tensor_cumsum
     Ascend: py_method
     CPU: py_method

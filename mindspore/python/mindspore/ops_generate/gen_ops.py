@@ -267,7 +267,7 @@ def merge_ops_yaml(work_path):
 
     deprecated_ops_yaml_dir_path = os.path.join(work_path, K.MS_OP_DEPRECATED_DEF_YAML_PATH)
     deprecated_ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'deprecated_ops.yaml')
-    merge_files(deprecated_ops_yaml_dir_path, deprecated_ops_yaml_path, '*_op.yaml')
+    merge_files(deprecated_ops_yaml_dir_path, deprecated_ops_yaml_path, '*_method.yaml')
 
     tensor_method_doc_yaml_dir_path = os.path.join(work_path, K.MS_TENSOR_METHOD_DOC_YAML_PATH)
     tensor_method_doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'tensor_method_doc.yaml')

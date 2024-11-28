@@ -150,7 +150,7 @@ def _get_op_name_from_op_yaml(func_name: str, func_data: dict) -> str:
     if op_yaml == '':
         raise TypeError(f'For generating tensor functions, op yaml should not be empty, func name is {func_name}')
     if 'deprecated' in op_yaml:
-        op_name = op_yaml.replace('/', '_').replace('_op.yaml', '')
+        op_name = op_yaml.replace('/', '_').replace('_method.yaml', '')
     else:
         op_name = op_yaml.replace('_op.yaml', '')
     if op_name == '':

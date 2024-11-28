@@ -1,5 +1,5 @@
 prod:
-  - op_yaml: deprecated/prod_op.yaml
+  - op_yaml: deprecated/prod_method.yaml
     py_method: deprecated_tensor_prod
     Ascend: py_method
     CPU: py_method

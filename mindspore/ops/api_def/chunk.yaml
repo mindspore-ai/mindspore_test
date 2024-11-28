@@ -1,5 +1,5 @@
 chunk:
-  - op_yaml: deprecated/chunk_op.yaml
+  - op_yaml: deprecated/chunk_method.yaml
     py_method: deprecated_tensor_chunk
     Ascend: py_method
     CPU: py_method

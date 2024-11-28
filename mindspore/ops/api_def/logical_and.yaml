@@ -6,7 +6,7 @@ logical_and:
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/logical_and_op.yaml
+  - op_yaml: deprecated/logical_and_method.yaml
     py_method: tensor_logical_and
     Ascend: py_method
     CPU: py_method

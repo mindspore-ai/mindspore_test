@@ -13,7 +13,7 @@ sub:
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/sub_op.yaml
+  - op_yaml: deprecated/sub_method.yaml
     py_method: deprecated_tensor_sub # callback to python function "def deprecated_tensor_sub"
     Ascend: py_method
     CPU: py_method

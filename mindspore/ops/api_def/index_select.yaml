@@ -1,5 +1,5 @@
 index_select:
-  - op_yaml: deprecated/index_select_op.yaml
+  - op_yaml: deprecated/index_select_method.yaml
     py_method: deprecated_tensor_index_select
     Ascend: py_method
     CPU: py_method

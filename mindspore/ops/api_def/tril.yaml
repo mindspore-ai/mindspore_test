@@ -1,5 +1,5 @@
 tril:
-  - op_yaml: deprecated/tril_op.yaml
+  - op_yaml: deprecated/tril_method.yaml
     py_method: deprecated_tensor_tril # callback to python function "def deprecated_tensor_tril"
     Ascend: py_method
     CPU: py_method
