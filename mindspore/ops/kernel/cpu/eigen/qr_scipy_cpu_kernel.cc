@@ -70,11 +70,11 @@ int QRCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std:
 template <typename T>
 bool QRCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                   const std::vector<KernelTensor *> &outputs) {
-  T *a_value = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
+  T *a_value = GetDeviceAddress<T>(inputs, kIndex0);
   Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> input_a(a_value, a_row_, a_col_);
-  T *q_value = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *q_value = GetDeviceAddress<T>(outputs, kIndex0);
   Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> output_q(q_value, q_row_, q_col_);
-  T *r_value = reinterpret_cast<T *>(outputs[kIndex1]->device_ptr());
+  T *r_value = GetDeviceAddress<T>(outputs, kIndex1);
   Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> output_r(r_value, r_row_, r_col_);
 
   auto householder_qr = input_a.householderQr();

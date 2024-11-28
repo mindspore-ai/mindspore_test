@@ -59,8 +59,8 @@ template <typename T>
 bool BiasAddGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &,
                                            const std::vector<KernelTensor *> &outputs) {
-  const auto *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const auto *input_addr = GetDeviceAddress<T>(inputs, 0);
+  auto *output_addr = GetDeviceAddress<T>(outputs, 0);
 
   if (data_format_ == Format::NHWC) {
     int64_t input_shape_size = SizeToLong(input_shape_.size());
