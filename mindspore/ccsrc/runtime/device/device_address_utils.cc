@@ -943,6 +943,11 @@ void DeviceAddressUtils::CreateInputTensorAddress(const DeviceContext *device_co
   MS_LOG(DEBUG) << "Create input tensor device address " << device_address << " for " << index
                 << "th input, Shape: " << tensor->shape() << ", Type: " << TypeIdToType(tensor->data_type())->ToString()
                 << ", Size:" << tensor_size;
+
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode &&
+      !runtime::OpExecutor::GetInstance().async_for_graph()) {
+    CreateKernelTensor(device_address, tensor);
+  }
 }
 
 void DeviceAddressUtils::MallocForInput(const DeviceContext *device_context, const tensor::BaseTensorPtr &tensor,

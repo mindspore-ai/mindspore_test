@@ -30,6 +30,7 @@
 #include "include/common/utils/stub_tensor.h"
 #include "utils/simple_info.h"
 #include "ops/op_def.h"
+#include "kernel/functions/base.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
@@ -67,13 +68,15 @@ struct AsyncStatus {
   size_t custom_bprop_cell_count{0};
 };
 
-enum class OperatorType {
-  kDefault = 0,
-  kViewOp,
-  kInplaceOp,
-};
+using OperatorType = kernel::pyboost::OperatorType;
 
 struct OpGradInfo {
+  OpGradInfo() = default;
+  OpGradInfo(OperatorType op_type, PrimitivePtr prim, std::vector<ValuePtr> inputs, ValuePtr output)
+      : operator_type(op_type),
+        op_prim(std::move(prim)),
+        input_value(std::move(inputs)),
+        out_value(std::move(output)) {}
   ~OpGradInfo() {
     input_value.clear();
     out_value = nullptr;

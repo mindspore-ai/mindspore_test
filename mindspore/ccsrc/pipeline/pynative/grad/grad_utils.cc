@@ -318,36 +318,37 @@ void AutoGradUtil::BuildViewAutoGradMeta(const tensor::BaseTensorPtr &src_tensor
   }
 }
 
-void AutoGradUtil::MakeOutput(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op,
-                              size_t op_index, const tensor::BaseTensorPtr &base_view) {
-  if (op->outputs().empty()) {
-    if (!op_run_info->stub_output->isa<stub::NoneTypeNode>()) {
-      MS_LOG(EXCEPTION) << "op->outputs() size is 0, but stub_output is not a NoneTypeNode.";
-    }
-    return;
-  }
+void AutoGradUtil::SetInferOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op) {
   if (op->output_value_simple_info() != nullptr) {
-    op_run_info->op_grad_info->output_value_simple_info = op->output_value_simple_info();
-    op_run_info->op_grad_info->output_value_simple_info->is_tuple_output_ = false;
+    op_grad_info->output_value_simple_info = op->output_value_simple_info();
+    op_grad_info->output_value_simple_info->is_tuple_output_ = false;
   }
+}
+
+void AutoGradUtil::SetInferMultiOutputToGrad(const OpGradInfoPtr &op_grad_info, const kernel::pyboost::OpPtr &op) {
+  if (op->output_value_simple_info() != nullptr) {
+    op_grad_info->output_value_simple_info = op->output_value_simple_info();
+    op_grad_info->output_value_simple_info->is_tuple_output_ = true;
+  }
+}
+
+ValuePtr AutoGradUtil::MakeOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+                                  const tensor::BaseTensorPtr &base_view) {
+  // delete NoneTypeNode check.
   if (base_view != nullptr && op->outputs()[0]->storage_info() != nullptr) {
     autograd::CreationType creationType =
-      op_run_info->requires_grad ? autograd::CreationType::kDefault : autograd::CreationType::kNoGradMode;
+      requires_grad ? autograd::CreationType::kDefault : autograd::CreationType::kNoGradMode;
     BuildViewAutoGradMeta(base_view, op->outputs()[0], op_index, creationType);
-  } else if (op_run_info->requires_grad) {
+  } else if (requires_grad) {
     if (op->outputs()[0]->auto_grad_meta_data() == nullptr) {
       op->outputs()[0]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(op_index, InputType::kOpOutput));
     }
   }
-  op_run_info->real_out = op->outputs()[0];
+  return op->outputs()[0];
 }
 
-void AutoGradUtil::MakeMultiOutput(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op,
-                                   size_t op_index, const tensor::BaseTensorPtr &base_view) {
-  if (op->output_value_simple_info() != nullptr) {
-    op_run_info->op_grad_info->output_value_simple_info = op->output_value_simple_info();
-    op_run_info->op_grad_info->output_value_simple_info->is_tuple_output_ = true;
-  }
+ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+                                       const tensor::BaseTensorPtr &base_view) {
   size_t size = op->outputs().size();
   std::vector<ValuePtr> output_values(size);
   for (size_t i = 0; i < size; ++i) {
@@ -356,22 +357,18 @@ void AutoGradUtil::MakeMultiOutput(const FrontendOpRunInfoPtr &op_run_info, cons
     // Set auto grad meta data for op outputs
     if (base_view != nullptr && output_tensor->storage_info() != nullptr) {
       BuildViewAutoGradMeta(base_view, output_tensor, op_index, autograd::CreationType::kMultiOutput);
-    } else if (op_run_info->requires_grad) {
+    } else if (requires_grad) {
       if (op->outputs()[i]->auto_grad_meta_data() == nullptr) {
         op->outputs()[i]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(op_index, InputType::kOpOutput));
       }
     }
     output_values[i] = output_tensor;
   }
-  op_run_info->real_out = std::make_shared<ValueTuple>(output_values);
+  return std::make_shared<ValueTuple>(output_values);
 }
 
-void AutoGradUtil::MakeMultiOutput(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op,
-                                   size_t op_index, const ValueTuplePtr &base_view) {
-  if (op->output_value_simple_info() != nullptr) {
-    op_run_info->op_grad_info->output_value_simple_info = op->output_value_simple_info();
-    op_run_info->op_grad_info->output_value_simple_info->is_tuple_output_ = true;
-  }
+ValuePtr AutoGradUtil::MakeMultiOutput(bool requires_grad, const kernel::pyboost::OpPtr &op, size_t op_index,
+                                       const ValueTuplePtr &base_view) {
   size_t size = op->outputs().size();
   std::vector<ValuePtr> output_values(size);
   auto inputs = base_view->value();
@@ -386,14 +383,14 @@ void AutoGradUtil::MakeMultiOutput(const FrontendOpRunInfoPtr &op_run_info, cons
     // Set auto grad meta data for op output
     if (input_tensor != nullptr && output_tensor->storage_info() != nullptr) {
       BuildViewAutoGradMeta(input_tensor, output_tensor, op_index, autograd::CreationType::kDefault);
-    } else if (op_run_info->requires_grad) {
+    } else if (requires_grad) {
       if (op->outputs()[i]->auto_grad_meta_data() == nullptr) {
         op->outputs()[i]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(op_index, InputType::kOpOutput));
       }
     }
     output_values[i] = output_tensor;
   }
-  op_run_info->real_out = std::make_shared<ValueTuple>(output_values);
+  return std::make_shared<ValueTuple>(output_values);
 }
 
 void AutoGradUtil::BumpVersion(const ValuePtr &value) {

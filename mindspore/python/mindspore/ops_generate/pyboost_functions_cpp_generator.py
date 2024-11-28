@@ -101,7 +101,7 @@ class PyboostFunctionsGenerator(BaseGenerator):
             grad_args_str = self._get_grad_args_str(op_proto)
             cast_args_str = self._get_cast_to_value_str(op_proto)
             view_arg_str = self._get_view_str(op_proto.op_view, grad_args_str)
-            multi_ouptut_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
+            multi_output_str = 'Multi' if is_op_multi_output(op_proto.op_returns) else ''
             # communication operators have different func template
             function_tpl = self.PYBOOST_COMM_FUNCTION_TEMPLATE \
                 if op_proto.op_dispatch.is_comm_op else self.PYBOOST_FUNCTION_TEMPLATE
@@ -119,7 +119,8 @@ class PyboostFunctionsGenerator(BaseGenerator):
                                                      grad_args=grad_args_str,
                                                      cast_args=cast_args_str,
                                                      view_arg=view_arg_str,
-                                                     is_multi=multi_ouptut_str)
+                                                     is_multi=multi_output_str,
+                                                     operator_name=op_proto.op_name)
             pyboost_func_str = pyboost_func_str + template.NEW_LINE + template.NEW_LINE
             pyboost_op_name = op_parser.get_pyboost_name()
             pyboost_func_name = op_parser.get_pyboost_func_name()
@@ -138,6 +139,15 @@ class PyboostFunctionsGenerator(BaseGenerator):
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
         file_name = "pyboost_functions.cc"
         save_file(save_path, file_name, pyboost_func_file)
+
+
+    def _get_cast_args_with_type_str(self, op_proto, cast_args_str):
+        args_with_type = []
+        for op_arg, cast_args_name in zip(op_proto.op_args, cast_args_str):
+            input_dtype = get_input_dtype(op_arg.arg_dtype, is_optional_param(op_arg))
+            args_with_type.append("const " + input_dtype + " &" + cast_args_name)
+        return list(args_with_type)
+
 
     def _get_function_class_register(self, op_protos) -> str:
         """

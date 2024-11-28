@@ -39,6 +39,7 @@ using mindspore::profiler::ProfilerManager;
 #include "runtime/pipeline/pipeline.h"
 #include "runtime/device/device_address_utils.h"
 #include "pipeline/pynative/grad/grad_utils.h"
+#include "kernel/functions/auto_grad_reg.h"
 
 namespace mindspore {
 namespace pynative {

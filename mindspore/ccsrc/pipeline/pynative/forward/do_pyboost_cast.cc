@@ -55,22 +55,23 @@ tensor::BaseTensorPtr PyBoostCastOperation::DoAutoCast(const FrontendOpRunInfoPt
   auto cast_op = CREATE_PYBOOST_OP(Cast, cast_run_info->base_op_run_info.device_target);
   (void)cast_op->Call(t, type_id64);
   cast_run_info->requires_grad = op_run_info->requires_grad;
-  PyNativeAlgo::AutoGradUtil::MakeOutput(
-    cast_run_info, cast_op,
+  auto real_output = PyNativeAlgo::AutoGradUtil::MakeOutput(
+    op_run_info->requires_grad, cast_op,
     cast_run_info->requires_grad ? PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index()
                                  : 0);
   // Set output value to python
-  PyNativeAlgo::PyBoost::UpdateStubOutput(cast_run_info, cast_op->output_abs(), cast_op);
+  PyNativeAlgo::PyBoost::UpdateStubOutput(cast_op, cast_run_info->stub_output, cast_op->output_abs(), real_output);
   if (op_run_info->requires_grad) {
     constexpr auto input_size = 2;
     cast_run_info->input_size = input_size;
     cast_run_info->base_op_run_info.op_name = kCast;
     cast_run_info->op_grad_info->op_prim = cast_prim;
     cast_run_info->op_grad_info->input_value = {t, type_id64};
-    cast_run_info->op_grad_info->out_value = cast_run_info->real_out;
+    cast_run_info->op_grad_info->out_value = real_output;
+    PyNativeAlgo::AutoGradUtil::SetInferOutputToGrad(cast_run_info->op_grad_info, cast_op);
     PyNativeAlgo::PyBoost::DoGrad(cast_op, cast_run_info->op_grad_info, cast_run_info->async_status);
   }
-  return cast_run_info->real_out->cast<tensor::BaseTensorPtr>();
+  return real_output->cast<tensor::BaseTensorPtr>();
 }
 
 ValuePtr PyBoostCastOperation::SetTensorMixPrecisionCast(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v,
