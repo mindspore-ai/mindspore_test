@@ -29,7 +29,6 @@ void MvAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
 
 bool MvAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  MS_EXCEPTION_IF_NULL(stream_ptr);
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], cube_math_type_);
   return true;
 }

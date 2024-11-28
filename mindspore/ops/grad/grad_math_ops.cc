@@ -2740,6 +2740,19 @@ REG_BPROP_BUILDER("MatrixExp").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {ib->Slice(meta_grad, begins, sizes)};
 });
 
+REG_BPROP_BUILDER("Mv").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto vec = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  ShapeVector perm = {1, 0};
+
+  // self: ger(dout, vec.conj())
+  auto dx = ib->Emit("Outer", {dout, vec});
+  // vec: self.conj().t().mv(grad) -> dvec = ib->Mv(x^T, dout)
+  auto dvec = ib->Mv(ib->Transpose(x, perm), dout);
+  return {dx, dvec};
+});
+
 REG_BPROP_BUILDER("Complex").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);

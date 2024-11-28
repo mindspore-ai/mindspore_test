@@ -16,13 +16,10 @@
 
 #include "infer/ops_func_impl/mv.h"
 #include <algorithm>
-#include <set>
-#include <map>
 #include <vector>
 #include <memory>
 #include <string>
 #include "mindspore/ops/op_def/op_name.h"
-#include "utils/shape_utils.h"
 #include "abstract/dshape.h"
 #include "ir/primitive.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
@@ -32,49 +29,33 @@
 
 namespace mindspore {
 namespace ops {
+ShapeArray MvFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto input_shape = input_infos[kIndex0]->GetShape();
+  auto vec_shape = input_infos[kIndex1]->GetShape();
 
-BaseShapePtr MvFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                    const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_shp = input_args[kIndex0]->GetShape()->GetShapeVector();
-  auto y_shp = input_args[kIndex1]->GetShape()->GetShapeVector();
-  if (IsDynamicRank(x_shp) || IsDynamicRank(y_shp)) {
-    ShapeVector ret_shape = {};
-    return std::make_shared<abstract::Shape>(ret_shape);
+  if (input_infos[kIndex0]->IsDynamicRank() || input_infos[kIndex1]->IsDynamicRank()) {
+    // The returned rank must be 1D, so the infer shape is -1.
+    return {{abstract::Shape::kShapeDimAny}};
   }
-
-  bool dynamic_shape = IsDynamic(x_shp) || IsDynamic(y_shp);
-  if (!dynamic_shape) {
-    if (x_shp.size() != kDim2) {
-      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                               << "', the input 'input' must be a 2D dimensional Tensor, but got " << x_shp.size()
-                               << "D shape " << x_shp;
-    }
-    if (y_shp.size() != kDim1) {
-      MS_EXCEPTION(ValueError) << "For '" << primitive->name()
-                               << "', the input 'vec' must be a 1D dimensional Tensor, but got " << y_shp.size()
-                               << "D shape " << y_shp;
-    }
-    int64_t x_col = x_shp[1];
-    int64_t y_row = y_shp[0];
-    if (x_col != y_row) {
-      MS_EXCEPTION(ValueError)
-        << "For " << primitive->name()
-        << ", the row of the input 'input' should be same as the elements of the input 'vec', with input shape "
-        << x_shp << ", vec shape " << y_shp;
-    }
+  if (!input_infos[kIndex0]->IsDynamic() && !input_infos[kIndex1]->IsDynamic()) {
+    // The dimension of input tensor must be 2D, and vec tensor must be 1D.
+    MS_ASSERT_TRUE(input_shape.size() == kDim2)
+      << "For '" << primitive->name() << "', the input 'input' must be a 2D dimensional Tensor, but got "
+      << input_shape.size() << "D shape " << input_shape;
+    MS_ASSERT_TRUE(vec_shape.size() == kDim1)
+      << "For '" << primitive->name() << "', the input 'vec' must be a 1D dimensional Tensor, but got "
+      << vec_shape.size() << "D shape " << vec_shape;
+    // input_shape and vec_shape must meet the vector multiplication rules.
+    MS_ASSERT_TRUE(input_shape[1] == vec_shape[0])
+      << "For " << primitive->name()
+      << ", the row of the input 'input' should be same as the elements of the input 'vec', with input shape "
+      << input_shape << ", vec shape " << vec_shape;
   }
-
-  ShapeVector ret_shape = {x_shp[0]};
-  return std::make_shared<abstract::Shape>(ret_shape);
+  return {{input_shape[0]}};
 }
-TypePtr MvFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(prim);
-  const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
-  std::map<std::string, TypePtr> types;
-  (void)types.emplace("input", input_args[0]->GetType());
-  (void)types.emplace("vec", input_args[1]->GetType());
-  (void)CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, prim->name());
-  return input_args[0]->GetType();
+
+std::vector<TypeId> MvFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex0]->GetType()};
 }
 }  // namespace ops
 }  // namespace mindspore
