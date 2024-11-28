@@ -4,7 +4,7 @@ gather:
     
         The following figure shows the calculation process of Gather commonly:
     
-        .. image:: Gather.png
+        .. image:: ../images/Gather.png
     
         where params represents the input `input_params`, and indices represents the index to be sliced `input_indices`.
 

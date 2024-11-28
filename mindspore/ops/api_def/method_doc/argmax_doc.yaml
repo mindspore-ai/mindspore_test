@@ -29,12 +29,13 @@ argmax:
         [1 0 0]
 
     .. method:: Tensor.argmax(dim=None, keepdim=False) -> Tensor
+        :noindex:
     
     Args:
         dim (Union[int, None], optional): The dimension to reduce. If `axis` is ``None`` , the indices of the maximum value 
             within the flattened input will be returned. The value of `axis` cannot exceed the dimension of `self`. Default: ``None`` .
         keepdim (bool, optional): Whether the output tensor retains the specified
-              dimension. Ignored if `dim` is None. Default: ``False`` .
+            dimension. Ignored if `dim` is None. Default: ``False`` .
 
     Returns:
         Tensor, indices of the maximum values across a dimension.

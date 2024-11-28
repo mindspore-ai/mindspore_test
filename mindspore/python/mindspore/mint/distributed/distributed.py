@@ -2288,7 +2288,7 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
 
     Note:
         - Only the tensor in process `dst` (global rank) will keep the gathered tensor. The other process
-            will keep a tensor list which has no mathematical meaning.
+          will keep a tensor list which has no mathematical meaning.
         - The tensors must have the same shape and format in all processes of the collection.
         - Only support PyNative mode, Graph mode is not currently supported.
 
@@ -2326,6 +2326,7 @@ def gather(tensor, gather_list, dst=0, group=None, async_op=False):
             for more details.
 
             This example should be run with 2 devices.
+
         >>> import numpy as np
         >>> import mindspore as ms
         >>> import mindspore.nn as nn
