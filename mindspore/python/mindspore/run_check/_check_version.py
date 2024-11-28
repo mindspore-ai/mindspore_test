@@ -258,7 +258,7 @@ class AscendEnvChecker(EnvChecker):
 
     def __init__(self, library_path):
         self.library_path = library_path
-        self.version = ["7.3", "7.5"]
+        self.version = ["7.5", "7.6"]
 
         # env
         self.path = os.getenv("PATH")
@@ -266,7 +266,7 @@ class AscendEnvChecker(EnvChecker):
         self.ld_lib_path = os.getenv("LD_LIBRARY_PATH")
         self.ascend_opp_path = os.getenv("ASCEND_OPP_PATH")
         self.ascend_aicpu_path = os.getenv("ASCEND_AICPU_PATH")
-        if not self.ascend_opp_path is None:
+        if self.ascend_opp_path is not None:
             self.compiler_version = self.ascend_opp_path.split("opp")[0] + "compiler/version.info"
         else:
             self.compiler_version = ""
@@ -286,19 +286,13 @@ class AscendEnvChecker(EnvChecker):
 
     def check_custom_version(self):
         """custom op version check"""
-        custom_ascendc_soc_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                              "../lib/plugin/ascend/custom_ascendc_ops/op_impl/ai_core/tbe/kernel",
-                                              MSContext.get_instance().get_ascend_soc_version())
-        if not os.path.exists(custom_ascendc_soc_dir):
-            logger.debug(f"The path {custom_ascendc_soc_dir} of the custom ascend c operator does not exist.")
-            return False
 
         if not Path(self.compiler_version).is_file():
             return True
 
         cur_version = self._read_version(self.compiler_version)
         custom_version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           "../lib/plugin/ascend/custom_ascendc_ops/version.info")
+                                           "../lib/plugin/ascend/custom_ascendc_910/version.info")
         with open(custom_version_path, 'r') as f:
             all_info = f.readlines()
             for line in all_info:
@@ -372,12 +366,18 @@ class AscendEnvChecker(EnvChecker):
         curr_path = os.path.realpath(os.path.dirname(__file__))
         cust_aicpu_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicpu_ops"))
         cust_aicore_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicore_ops"))
-        cust_ascendc_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_ascendc_ops"))
+        cust_ascendc_ascend910_path = os.path.realpath(
+            os.path.join(curr_path, "../lib/plugin/ascend/custom_ascendc_910"))
+        cust_ascendc_ascend910b_path = os.path.realpath(
+            os.path.join(curr_path, "../lib/plugin/ascend/custom_ascendc_910b"))
         if os.getenv('ASCEND_CUSTOM_OPP_PATH'):
             os.environ['ASCEND_CUSTOM_OPP_PATH'] = os.environ['ASCEND_CUSTOM_OPP_PATH'] + ":" + \
-                                                   cust_ascendc_path + ":" + cust_aicore_path + ":" + cust_aicpu_path
+                                                   cust_ascendc_ascend910_path + ":" + cust_ascendc_ascend910b_path + \
+                                                   ":" + cust_aicore_path + ":" + cust_aicpu_path
         else:
-            os.environ['ASCEND_CUSTOM_OPP_PATH'] = cust_ascendc_path + ":" + cust_aicore_path + ":" + cust_aicpu_path
+            os.environ['ASCEND_CUSTOM_OPP_PATH'] = cust_ascendc_ascend910_path + ":" + \
+                                                   cust_ascendc_ascend910b_path + ":" + cust_aicore_path + ":" + \
+                                                   cust_aicpu_path
         plugin_dir = os.path.dirname(self.library_path)
         akg_dir = os.path.join(plugin_dir, "ascend")
         AscendEnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
@@ -400,7 +400,7 @@ class AscendEnvChecker(EnvChecker):
                 "Environment Variable PYTHONPATH is set. For details, refer to the installation guidelines: "
                 "https://www.mindspore.cn/install")
 
-        if self.ld_lib_path is None or not self.ld_lib_path_check_fwk in self.ld_lib_path:
+        if self.ld_lib_path is None or self.ld_lib_path_check_fwk not in self.ld_lib_path:
             logger.warning("Can not find driver so(need by mindspore-ascend). Please check whether the "
                            "Environment Variable LD_LIBRARY_PATH is set. For details, refer to the installation "
                            "guidelines: https://www.mindspore.cn/install")
