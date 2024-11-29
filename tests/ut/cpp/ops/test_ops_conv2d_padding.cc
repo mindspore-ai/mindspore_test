@@ -28,9 +28,6 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::SAME)},
                     InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
-                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
-                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
                   })
     .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
@@ -44,9 +41,6 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::SAME)},
                     InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
-                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
-                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
                   })
     .FeedExpectedOutput({{-1, 2, -1, -1}}, {kNumberTypeFloat32});
@@ -60,9 +54,6 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::SAME)},
                     InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
-                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
-                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
                   })
     .FeedExpectedOutput({{3, -1, 3, 3}}, {kNumberTypeFloat32});
@@ -76,9 +67,6 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::VALID)},
                     InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
-                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
-                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
                   })
     .FeedExpectedOutput({{-1, 2, 3, 3}}, {kNumberTypeFloat32});
@@ -92,9 +80,6 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::VALID)},
                     InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
-                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
-                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
                   })
     .FeedExpectedOutput({{3, 2, 3, 3}}, {kNumberTypeFloat32});
@@ -108,9 +93,6 @@ std::vector<GeneralInferParam> prepare_params() {
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreatePyInt(PadMode::VALID)},
                     InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
                       ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
-                    InferInfoParam{ShapeVector{}, kNumberTypeBool, CreateScalar<bool>(false)},
-                    InferInfoParam{ShapeArray{{}, {}}, kNumberTypeInt64,
-                                   ValuePtrList{CreateScalar<int64_t>(1), CreateScalar<int64_t>(1)}},
                     InferInfoParam{ShapeVector{}, kNumberTypeInt64, CreateScalar<int64_t>(1)}
                   })
     .FeedExpectedOutput({{3, 2, -1, -1}}, {kNumberTypeFloat32});
@@ -119,5 +101,5 @@ std::vector<GeneralInferParam> prepare_params() {
 }
 }  // namespace
 
-INSTANTIATE_TEST_CASE_P(ConvolutionStr, GeneralInferTest, testing::ValuesIn(prepare_params()));
+INSTANTIATE_TEST_CASE_P(Conv2DPadding, GeneralInferTest, testing::ValuesIn(prepare_params()));
 }  // namespace mindspore::ops

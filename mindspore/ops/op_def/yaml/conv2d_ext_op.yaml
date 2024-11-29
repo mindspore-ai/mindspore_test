@@ -1,5 +1,5 @@
-#operator convolution_str
-convolution_str:
+#operator conv2d_ext
+conv2d_ext:
   args:
     input:
       dtype: tensor
@@ -13,19 +13,12 @@ convolution_str:
       default: 1
       type_cast: int, list[int]
     padding:
-      dtype: int
-      default: "'valid'"
-      arg_handler: str_to_enum
+      dtype: tuple[int]
+      default: 0
+      type_cast: int, list[int]
     dilation:
       dtype: tuple[int]
       default: 1
-      type_cast: int, list[int]
-    transposed:
-      dtype: bool
-      default: False
-    output_padding:
-      dtype: tuple[int]
-      default: 0
       type_cast: int, list[int]
     groups:
       dtype: int
@@ -34,9 +27,9 @@ convolution_str:
     output:
       dtype: tensor
   class:
-      name: ConvolutionStr
+      name: Conv2DExt
   function:
       disable: True
   dispatch:
     enable: True
-    Ascend: ConvolutionStrAscend
+    Ascend: Conv2DExtAscend

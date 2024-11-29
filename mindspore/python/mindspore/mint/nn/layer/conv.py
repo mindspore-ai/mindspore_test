@@ -17,7 +17,7 @@ from __future__ import absolute_import
 
 import math
 
-from mindspore.ops.auto_generate.gen_ops_prim import Convolution, ConvolutionStr, conv3d_ext_op, conv3d_padding_op
+from mindspore.ops.auto_generate.gen_ops_prim import conv2d_ext_op, conv2d_padding_op, conv3d_ext_op, conv3d_padding_op
 from mindspore.ops.function.nn_func import pad_ext, conv_transpose2d
 from mindspore.ops.function.array_func import rank
 import mindspore.common.dtype as mstype
@@ -208,11 +208,10 @@ class Conv2d(_Conv):
               are the same when `stride` is set to ``1``.
               The amount of padding to is calculated by the operator internally, If the amount is even, it is
               uniformly distributed around the input, if it is odd, the excess amount goes to the right/bottom side.
-              If this mode is set, `padding` must be 0.
 
             - ``"valid"``: No padding is applied to the input, and the output returns the maximum
               possible height and width. Extra pixels that could not complete a full stride will
-              be discarded. If this mode is set, `padding` must be 0.
+              be discarded.
 
         padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
             ``"zeros"`` , ``"reflect"`` ``"circular"`` or ``"replicate"`` . Default: ``"zeros"`` .
@@ -299,22 +298,18 @@ class Conv2d(_Conv):
         super(Conv2d, self).__init__(in_channels, out_channels, kernel_size_, stride_, padding_, dilation_, False,
                                      twice(0), groups, bias, padding_mode, dtype)
         if isinstance(padding, str) and padding_mode == "zeros":
-            self.conv2d = ConvolutionStr()
+            self.conv2d = conv2d_padding_op
         else:
-            self.conv2d = Convolution()
+            self.conv2d = conv2d_ext_op
 
 
     def construct(self, input):
-        input_, is_batched = batchify(input, 2, "Conv2d")
         if self.padding_mode != "zeros":
-            output = self.conv2d(pad_ext(input_, self._reversed_padding, mode=self.padding_mode), self.weight,
-                                 self.bias, self.stride, (0, 0), self.dilation, False, (0, 0), self.groups)
+            output = self.conv2d(pad_ext(input, self._reversed_padding, mode=self.padding_mode), self.weight,
+                                 self.bias, self.stride, (0, 0), self.dilation, self.groups)
         else:
-            output = self.conv2d(input_, self.weight, self.bias, self.stride, self.padding, self.dilation, False,
-                                 (0, 0), self.groups)
-        if is_batched:
-            return output
-        return output.squeeze(0)
+            output = self.conv2d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        return output
 
 
 class Conv3d(_Conv):
