@@ -141,6 +141,22 @@ ops::OP_DTYPE GetOpDtypeFromAbstract(const AbstractBasePtr &abs) {
   return ops::OP_DTYPE::DT_ANY;
 }
 
+std::set<std::string> *GetMethodKwonlyArgs(const std::string &functional_name) {
+  const auto &iter = ops::tensor_method_kwonlyargs_map.find(functional_name);
+  if (iter != ops::tensor_method_kwonlyargs_map.end()) {
+    return &iter->second;
+  }
+  return nullptr;
+}
+
+std::set<std::string> *GetFunctionKwonlyArgs(const std::string &functional_name) {
+  const auto &iter = ops::function_kwonlyargs_map.find(functional_name);
+  if (iter != ops::function_kwonlyargs_map.end()) {
+    return &iter->second;
+  }
+  return nullptr;
+}
+
 void GetOpDtypeList(const std::string &prim_name, const abstract::AbstractBasePtrList &args_abs_list,
                     std::vector<ops::OP_DTYPE> *position_args_dtype,
                     std::map<std::string, ops::OP_DTYPE> *keyword_args_dtype) {
@@ -184,8 +200,8 @@ bool MatchPrimitiveWithPackArgs(const ops::OpDefPtr &op_def, const std::vector<o
   return all_int;
 }
 
-bool MatchPrimitiveArgs(const std::string &prim_name, const abstract::AbstractBasePtrList &args_abs_list,
-                        bool is_method, bool *need_pack) {
+bool MatchPrimitiveArgs(const std::string &functional_name, const std::string &prim_name,
+                        const abstract::AbstractBasePtrList &args_abs_list, bool is_method, bool *need_pack) {
   const auto &op_def = ops::GetOpDef(prim_name);
   if (op_def == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Cannot find OpDef of Primitive[" << prim_name << "].";
@@ -228,7 +244,13 @@ bool MatchPrimitiveArgs(const std::string &prim_name, const abstract::AbstractBa
     }
   }
   // Check position arguments.
+  const auto kwonly_list = is_method ? GetMethodKwonlyArgs(functional_name) : GetFunctionKwonlyArgs(functional_name);
   for (size_t i = 0; i < position_args_dtype.size(); ++i) {
+    // position argument should not be keyword-only.
+    const auto &arg_name = op_args[i].arg_name_;
+    if (kwonly_list != nullptr && kwonly_list->find(arg_name) != kwonly_list->end()) {
+      return false;
+    }
     if (!MatchPrimitiveArgDtype(prim_name, op_args[i], position_args_dtype[i])) {
       return false;
     }
@@ -319,7 +341,8 @@ std::string BuildFunctionalErrorMsg(const std::string &function_name, const std:
   std::stringstream ss;
   ss << "Failed calling " << function_name << " with \"" << function_name << "(" << result << ")\".\n";
   ss << "The valid calling should be:\n";
-  const auto &signature_map = is_method ? ops::tensor_method_overload_signature_map : ops::mint_overload_signature_map;
+  const auto &signature_map =
+    is_method ? ops::tensor_method_overload_signature_map : ops::function_overload_signature_map;
   auto it = signature_map.find(function_name);
   if (it != signature_map.end()) {
     const std::vector<std::string> &valid_arg_options = it->second;
@@ -374,7 +397,7 @@ ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
     return prim;
   }
   // Convert Function to Primitive.
-  const auto &overload_map = is_method ? ops::tensor_method_overload_map : ops::mint_overload_map;
+  const auto &overload_map = is_method ? ops::tensor_method_overload_map : ops::function_overload_map;
   const auto &iter = overload_map.find(functional_name);
   if (iter == overload_map.end()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Functional[" << functional_name << "] does not support overloading.";
@@ -385,7 +408,7 @@ ValuePtr TransformFunctionalToPrimitive(const std::string &functional_name,
   ValuePtr match_prim = nullptr;
   for (const auto &prim : prim_list) {
     const auto &prim_name = GetPrimName(prim);
-    if (MatchPrimitiveArgs(prim_name, args_abs_list, is_method, need_pack)) {
+    if (MatchPrimitiveArgs(functional_name, prim_name, args_abs_list, is_method, need_pack)) {
       match_prim = prim;
       break;
     }

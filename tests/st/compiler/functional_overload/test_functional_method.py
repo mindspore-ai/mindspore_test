@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Test the feature of functional"""
+# pylint: disable=redefined-builtin
 import pytest
 import numpy as np
 import mindspore as ms
@@ -28,7 +29,7 @@ def test_method_clamp():
     Expectation: Run success
     """
     @ms.jit
-    def func(x, min, max):  # pylint: disable=redefined-builtin
+    def func(x, min, max):
         return x.clamp(min, max)
 
     x = ms.Tensor([1, 2, 3, 4, 5])
@@ -47,7 +48,7 @@ def test_method_clamp_default():
     Expectation: Run success
     """
     @ms.jit
-    def func(x, min):  # pylint: disable=redefined-builtin
+    def func(x, min):
         return x.clamp(min)
 
     out = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2))
@@ -63,7 +64,7 @@ def test_method_clamp_any():
     Expectation: Run success
     """
     @ms.jit
-    def func(x, min, max):  # pylint: disable=redefined-builtin
+    def func(x, min, max):
         return x.clamp(min, ms.Tensor(max.asnumpy()))
 
     out = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), ms.Tensor(4))
@@ -79,7 +80,7 @@ def test_method_clamp_keyword():
     Expectation: Run success
     """
     @ms.jit
-    def func(x, min):  # pylint: disable=redefined-builtin
+    def func(x, min):
         return x.clamp(min, max=ms.Tensor(4)), x.clamp(max=3, min=1)
 
     out_clamp_tensor, out_clamp_scalar = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2))
@@ -95,7 +96,7 @@ def test_method_clamp_keyword_any():
     Expectation: Run success
     """
     @ms.jit
-    def func(x, min, max):  # pylint: disable=redefined-builtin
+    def func(x, min, max):
         return x.clamp(min=ms.Tensor(min.asnumpy())), x.clamp(2, max=int(max.asnumpy()))
 
     out_clamp_tensor, out_clamp_scalar = func(ms.Tensor([1, 2, 3, 4, 5]), ms.Tensor(2), ms.Tensor(4))
@@ -111,7 +112,7 @@ def test_method_clamp_exception():
     Expectation: Raise expected exception.
     """
     @ms.jit
-    def func(x, min, max):  # pylint: disable=redefined-builtin
+    def func(x, min, max):
         return x.clamp(min, max)
 
     with pytest.raises(TypeError) as raise_info:
@@ -163,6 +164,22 @@ def test_method_max_keyword_any():
     x = ms.Tensor([1, 2, 3, 4, 5])
     y = ms.Tensor(False)
     assert func(x, y).asnumpy() == ms.Tensor(5).asnumpy()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_method_min_exception():
+    """
+    Feature: Functional.
+    Description: Test functional feature with Tensor.min.
+    Expectation: Raise expected exception.
+    """
+    @ms.jit
+    def func(x):
+        return x.min(None, False, None)
+
+    with pytest.raises(TypeError) as raise_info:
+        func(ms.Tensor([1, 2, 3, 4, 5]))
+    assert "Failed calling min with" in str(raise_info.value)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

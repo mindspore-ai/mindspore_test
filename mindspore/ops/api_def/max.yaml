@@ -8,6 +8,7 @@ max:
 
   - op_yaml: deprecated/max_op.yaml
     py_method: deprecated_tensor_max
+    kwonlyargs: initial, where, return_indices
     Ascend: py_method
     CPU: py_method
     GPU: py_method

@@ -26,10 +26,10 @@
 
 namespace mindspore::ops {
 extern std::map<std::string, std::vector<ValuePtr>> tensor_method_overload_map;
-extern std::map<std::string, std::vector<ValuePtr>> mint_overload_map;
+extern std::map<std::string, std::vector<ValuePtr>> function_overload_map;
 extern std::map<std::string, std::set<std::string>> tensor_method_kwonlyargs_map;
-extern std::map<std::string, std::set<std::string>> mint_kwonlyargs_map;
+extern std::map<std::string, std::set<std::string>> function_kwonlyargs_map;
 extern std::map<std::string, std::vector<std::string>> tensor_method_overload_signature_map;
-extern std::map<std::string, std::vector<std::string>> mint_overload_signature_map;
+extern std::map<std::string, std::vector<std::string>> function_overload_signature_map;
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CCSRC_PIPELINE_PYNATIVE_OP_FUNCTION_AUTO_GENERATE_FUNCTIONAL_MAP_H
