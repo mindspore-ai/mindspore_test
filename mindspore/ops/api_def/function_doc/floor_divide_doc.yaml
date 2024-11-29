@@ -1,4 +1,4 @@
-floor_div:
+floor_divide:
   description: |
     Divides the first input tensor by the second input tensor element-wise and round down to the closest integer.
 
@@ -11,7 +11,7 @@ floor_div:
     .. math::
         out_{i} = \text{floor}( \frac{input_i}{other_i})
 
-    where the :math:`floor` indicates the Floor operator, for more details,
+    where the :math:`floor` indicates the Floor operator. For more details,
     please refer to the :class:`mindspore.mint.Floor` operator.
 
     .. warning::
