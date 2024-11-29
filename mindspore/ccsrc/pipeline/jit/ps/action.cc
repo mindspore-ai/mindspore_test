@@ -1970,6 +1970,7 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   (void)actions.emplace_back(std::make_pair(kInline, OptInlineAction));
 
   (void)actions.emplace_back(std::make_pair("parallel-infer-symbol", AutoParallelSymbolWithReNormalizeAction));
+
   // Do prepositive auto parallel.
   (void)actions.emplace_back(std::make_pair(kPreAutoParallel, AutoParallelAction));
   // insert virtual dataset
@@ -2026,13 +2027,6 @@ std::vector<ActionItem> VmPipeline(const ResourcePtr &resource, bool trace_flag,
     if (checker != nullptr && checker->IsNpuAsdEnable() &&
         MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode) {
       (void)actions.emplace_back(std::make_pair(kSilentCheck, SilentCheckAction));
-    }
-    if (ps::PSContext::instance()->is_worker()) {
-      if (distributed::cluster::ClusterContext::instance()->initialized()) {
-        MS_LOG(INFO) << "This worker is initialized. No need to add worker action.";
-      } else {
-        std::string server_mode = ps::PSContext::instance()->server_mode();
-      }
     }
 #endif
 

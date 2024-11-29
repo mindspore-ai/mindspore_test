@@ -72,6 +72,7 @@ const char kAutoMonadReorder[] = "auto_monad_reorder";
 const char kGetJitBpropGraph[] = "get_jit_bprop_graph";
 const char kRewriterAfterJitBprop[] = "rewriter_after_jit_bprop_graph";
 const char kEliminateSpecialOpNode[] = "eliminate_special_op_node";
+const char kWaitDistCommInitDone[] = "wait_dist_comm_init_done";
 const char kValidate[] = "validate";
 const char kLoadMindir[] = "load_mindir";
 const char kInferMindir[] = "infer_mindir";

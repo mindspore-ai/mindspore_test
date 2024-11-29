@@ -54,8 +54,6 @@ class AscendCommunicationGroup : public CommunicationGroup {
   // Return HCCL communicator because collective operations need it as a input.
   const HcclComm &hccl_communicator() const;
 
-  // Set global communicator for sub communicator.
-  void SetGlobalComm(HcclComm global_comm) { global_comm_ = global_comm; }
   // Return communicator name maintained by HCCL. This is different from the group set by user.
   std::string inner_comm_name() const;
 
@@ -65,10 +63,6 @@ class AscendCommunicationGroup : public CommunicationGroup {
 
   // HCCL communicator of this group.
   HcclComm comm_;
-
-  // The HCCL global communicator. This is used as a parameter to segment sub communicator if initializing with
-  // 'HcclCreateSubCommConfig'.
-  HcclComm global_comm_;
 
   // The config for HCCL communicator of this group.
   HcclCommConfig config_;

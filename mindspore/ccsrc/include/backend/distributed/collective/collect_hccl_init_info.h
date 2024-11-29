@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,12 @@ class BACKEND_EXPORT CollectHcclInitInfo {
   uint32_t GetBuffsize(const std::string &group_name);
   void *GetRootInfo(const std::string &group_name);
   size_t GetHcclMemSize() { return hccl_mem_size_; }
+  void Clear() {
+    hccl_mem_size_ = 0;
+    group_init_order_.clear();
+    group_with_buffsize_.clear();
+    group_with_root_info_.clear();
+  }
 
  private:
   CollectHcclInitInfo() {
