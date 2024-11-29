@@ -441,5 +441,3 @@ if(ENABLE_D)
         COMPONENT mindspore
     )
 endif()
-
-
