@@ -12,7 +12,7 @@ isneginf:
         input (Tensor): Input Tensor.
 
     Returns:
-        Tensor with the same shape as the input, where elements are `True` if the corresponding element in the `input` is negative infinity, and `Fals-e` otherwise.
+        Tensor with the same shape as the input, where elements are `True` if the corresponding element in the `input` is negative infinity, and `False` otherwise.
 
     Raises:
         TypeError: If the input is not a tensor.
