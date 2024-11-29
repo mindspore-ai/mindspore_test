@@ -50,10 +50,10 @@ bool SparseSegmentSumCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *
              static_cast<size_t>(x_shape_[kIndex0]);
   size_t m = std::accumulate(segment_shape_.begin(), segment_shape_.end(), kMultiply, std::multiplies<int>());
   auto x_shape0 = static_cast<T2>(x_shape_[kIndex0]);
-  auto dataptr = static_cast<T1 *>(inputs[kIndex0]->device_ptr());
-  auto indicesptr = static_cast<T2 *>(inputs[kIndex1]->device_ptr());
-  auto segment_idsptr = static_cast<T2 *>(inputs[kIndex2]->device_ptr());
-  auto yptr = static_cast<T1 *>(outputs[kIndex0]->device_ptr());
+  auto dataptr = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto indicesptr = GetDeviceAddress<T2>(inputs, kIndex1);
+  auto segment_idsptr = GetDeviceAddress<T2>(inputs, kIndex2);
+  auto yptr = GetDeviceAddress<T1>(outputs, kIndex0);
   if (segment_idsptr[0] != 0) {
     MS_EXCEPTION(ValueError) << "For '" << kernel_name_ << "', indices should start from 0.";
   }

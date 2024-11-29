@@ -74,9 +74,9 @@ bool LogitGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &in
 
 bool LogitGradCpuKernelMod::LaunchKernelHalf(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) const {
-  float16 *grad = static_cast<float16 *>(inputs[0]->device_ptr());
-  float16 *input = static_cast<float16 *>(inputs[1]->device_ptr());
-  float16 *output = static_cast<float16 *>(outputs[0]->device_ptr());
+  float16 *grad = GetDeviceAddress<float16>(inputs, kIndex0);
+  float16 *input = GetDeviceAddress<float16>(inputs, kIndex1);
+  float16 *output = GetDeviceAddress<float16>(outputs, kIndex0);
   size_t output_size = outputs[0]->size();
   if (memset_s(output, output_size, 0, output_size) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";
@@ -103,9 +103,9 @@ bool LogitGradCpuKernelMod::LaunchKernelHalf(const std::vector<KernelTensor *> &
 template <typename T>
 bool LogitGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) const {
-  T *grad = static_cast<T *>(inputs[0]->device_ptr());
-  T *input = static_cast<T *>(inputs[1]->device_ptr());
-  T *output = static_cast<T *>(outputs[0]->device_ptr());
+  T *grad = GetDeviceAddress<T>(inputs, kIndex0);
+  T *input = GetDeviceAddress<T>(inputs, kIndex1);
+  T *output = GetDeviceAddress<T>(outputs, kIndex0);
   size_t output_size = outputs[0]->size();
   if (memset_s(output, output_size, 0, output_size) != EOK) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', output buffer memset failed.";

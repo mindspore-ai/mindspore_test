@@ -69,9 +69,9 @@ bool ArgMinWithValueCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelT
     return false;
   }
 
-  const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output0 = reinterpret_cast<int64_t *>(outputs[0]->device_ptr());
-  auto *output1 = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  const auto *input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output0 = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto *output1 = GetDeviceAddress<T>(outputs, kIndex1);
 
   auto task = [&](size_t start, size_t end) {
     for (size_t pos = start; pos < end; pos++) {

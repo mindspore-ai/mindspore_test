@@ -56,10 +56,10 @@ bool SortCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
       axisIterator_.OuterSize() * axisIterator_.AxisSize() * axisIterator_.InnerSize() * sizeof(T)) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the memory size of inputs error.";
   }
-  auto input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto ids_addr = reinterpret_cast<size_t *>(workspace[0]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto indices = reinterpret_cast<int *>(outputs[1]->device_ptr());
+  auto input = GetDeviceAddress<T>(inputs, kIndex0);
+  auto ids_addr = GetDeviceAddress<size_t>(workspace, kIndex0);
+  auto output = GetDeviceAddress<T>(outputs, kIndex0);
+  auto indices = GetDeviceAddress<int>(outputs, kIndex1);
 
   if (outputs[0]->size() != inputs[0]->size()) {
     MS_LOG(EXCEPTION) << "For '" << kernel_name_

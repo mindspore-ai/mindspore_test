@@ -260,17 +260,17 @@ bool LSTMGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inp
   size_t offset = 0;
   SetDataHandle(user_weights_memory_, inputs[kInputWeightIndex]->device_ptr());
   offset += weight_size_;
-  SetDataHandle(user_weights_h_memory_, reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + offset);
+  SetDataHandle(user_weights_h_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + offset);
   offset += weight_h_size_;
   Reorder(&user_weights_memory_, &weights_memory_);
   Reorder(&user_weights_h_memory_, &weights_h_memory_);
   if (proj_size_ > 0) {
-    SetDataHandle(user_weights_r_memory_, reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + offset);
+    SetDataHandle(user_weights_r_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + offset);
     Reorder(&user_weights_r_memory_, &weights_r_memory_);
     offset += weight_r_size_;
   }
   if (has_bias_) {
-    SetDataHandle(bias_memory_, reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + offset);
+    SetDataHandle(bias_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + offset);
   } else {
     auto dst_ptr = GetDataHandle(bias_memory_);
     auto size = GetSize(bias_desc_);
@@ -282,22 +282,20 @@ bool LSTMGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inp
   offset = 0;
   SetDataHandle(user_diff_weights_memory_, outputs[kOutputWeightIndex]->device_ptr());
   offset += weight_size_;
-  SetDataHandle(user_diff_weights_h_memory_,
-                reinterpret_cast<float *>(outputs[kOutputWeightIndex]->device_ptr()) + offset);
+  SetDataHandle(user_diff_weights_h_memory_, GetDeviceAddress<float>(outputs, kOutputWeightIndex) + offset);
   offset += weight_h_size_;
   ResetMemory(user_diff_weights_memory_, "user weights grad");
   ResetMemory(user_diff_weights_h_memory_, "user weights iter grad");
   ResetMemory(diff_weights_memory_, "weights grad");
   ResetMemory(diff_weights_h_memory_, "weights iter grad");
   if (proj_size_ > 0) {
-    SetDataHandle(user_diff_weights_r_memory_,
-                  reinterpret_cast<float *>(outputs[kOutputWeightIndex]->device_ptr()) + offset);
+    SetDataHandle(user_diff_weights_r_memory_, GetDeviceAddress<float>(outputs, kOutputWeightIndex) + offset);
     ResetMemory(user_diff_weights_r_memory_, "user weights projection grad");
     ResetMemory(diff_weights_r_memory_, "weights projection grad");
     offset += weight_r_size_;
   }
   if (has_bias_) {
-    SetDataHandle(diff_bias_memory_, reinterpret_cast<float *>(outputs[kOutputWeightIndex]->device_ptr()) + offset);
+    SetDataHandle(diff_bias_memory_, GetDeviceAddress<float>(outputs, kOutputWeightIndex) + offset);
   }
   auto dst_ptr = GetDataHandle(diff_bias_memory_);
   auto size = GetSize(diff_bias_desc_);

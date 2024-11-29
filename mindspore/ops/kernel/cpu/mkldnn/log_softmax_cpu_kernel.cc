@@ -60,7 +60,7 @@ bool LogSoftmaxCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &i
   ExecutePrimitive();
 
   // Filter positive values
-  auto output_ptr = reinterpret_cast<float *>(outputs[0]->device_ptr());
+  auto output_ptr = GetDeviceAddress<float>(outputs, kIndex0);
   size_t num = outputs[0]->size() / sizeof(float);
 
   auto task = [output_ptr](size_t start_index, size_t end_index) {

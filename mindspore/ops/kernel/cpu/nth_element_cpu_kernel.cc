@@ -49,7 +49,7 @@ template <typename T>
 bool NthElementCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &,
                                           const std::vector<KernelTensor *> &outputs) {
-  auto *n_data = static_cast<int32_t *>(inputs[1]->device_ptr());
+  auto *n_data = GetDeviceAddress<int32_t>(inputs, kIndex1);
   input_n_val_ = *n_data;
   if (input_n_val_ < 0 || input_n_val_ >= static_cast<int>(input_shape_.back())) {
     MS_LOG(ERROR) << "For NthElement, the value of input n must be in [0, input.shape[-1]), "
@@ -61,8 +61,8 @@ bool NthElementCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inp
     input_n_val_ = static_cast<int32_t>(last_dim - input_n_val_ - 1);
   }
   size_t index = IntToSize(input_n_val_);
-  T *input_addrs = static_cast<T *>(inputs[0]->device_ptr());
-  T *output_addrs = static_cast<T *>(outputs[0]->device_ptr());
+  T *input_addrs = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addrs = GetDeviceAddress<T>(outputs, kIndex0);
   if (input_elements_ <= kParallelDataNums) {
     std::vector<T> buf(last_dim);
     for (size_t i = 0; i < output_elements_; i++) {

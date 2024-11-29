@@ -155,10 +155,10 @@ bool AdaptiveAvgPool3DCPUKernelMod::LaunchKernel(const std::vector<kernel::Kerne
   }
 
   size_t input_dims = input_dim_sizes_.size();
-  auto input_x = static_cast<SCALAR_T *>(inputs[0]->device_ptr());
+  auto input_x = GetDeviceAddress<SCALAR_T>(inputs, kIndex0);
   MS_EXCEPTION_IF_NULL(input_x);
 
-  auto output_y = static_cast<SCALAR_T *>(outputs[0]->device_ptr());
+  auto output_y = GetDeviceAddress<SCALAR_T>(outputs, kIndex0);
   MS_EXCEPTION_IF_NULL(output_y);
 
   AdaptiveCalcArgs<SCALAR_T> args;

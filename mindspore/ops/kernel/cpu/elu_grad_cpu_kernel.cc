@@ -26,9 +26,9 @@ template <typename T>
 bool EluGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &workspace,
                                        const std::vector<KernelTensor *> &outputs) {
-  const auto *input0 = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  const auto *input1 = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  const auto *input0 = GetDeviceAddress<T>(inputs, kIndex0);
+  const auto *input1 = GetDeviceAddress<T>(inputs, kIndex1);
+  auto *output = GetDeviceAddress<T>(outputs, kIndex0);
 
   size_t lens = outputs[0]->size() > 0 ? static_cast<size_t>(outputs[0]->size() / sizeof(T)) : 1;
   auto task = [input0, input1, output](const size_t start, const size_t end) {
