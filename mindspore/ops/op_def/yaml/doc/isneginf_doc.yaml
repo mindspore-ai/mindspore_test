@@ -4,7 +4,7 @@ isneginf:
 
     .. warning::
         - This is an experimental API that is subject to change.
-        - For Ascend, it is only supported on platforms above Atlas A2.
+        - This API can be used only on the Atlas A2 training series.
 
     Args:
         input (Tensor): Input Tensor.
