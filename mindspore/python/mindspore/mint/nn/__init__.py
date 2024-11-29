@@ -250,6 +250,15 @@ from mindspore.ops.function.nn_func import mse_loss_ext
 # 393
 from mindspore.mint.nn.layer.basic import Dropout2d
 
+# 406
+from mindspore.mint.nn.layer.activation import ELU
+
+# 407
+from mindspore.mint.nn.layer.basic import Flatten
+
+# 421
+from mindspore.mint.nn.layer.activation import Tanh
+
 # 674
 from mindspore.mint.nn.layer.normalization import BatchNorm1d
 
@@ -982,6 +991,12 @@ __all__ = [
 
     # 393
     'Dropout2d',
+    # 406
+    'ELU',
+    # 407
+    'Flatten',
+    # 421
+    'Tanh',
     # 556
     'LogSigmoid',
     # 674
