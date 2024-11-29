@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FLOOR_DIV_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FLOOR_DIV_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FLOOR_DIV_SCALAR_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FLOOR_DIV_SCALAR_H_
 
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API FloorDivFuncImpl : public OpFuncImpl {
+class OPS_API FloorDivScalarFuncImpl : public OpFuncImpl {
  public:
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   bool GeneralInferRegistered() const override { return true; };
 };
-class OPS_API FloorDivViewFuncImpl : public FloorDivFuncImpl {};
+class OPS_API FloorDivScalarViewFuncImpl : public FloorDivScalarFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FLOOR_DIV_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FLOOR_DIV_SCALAR_H_
