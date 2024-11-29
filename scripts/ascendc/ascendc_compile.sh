@@ -30,7 +30,7 @@ sed -i 's/\blogger.warning\b/print/g' setup.py
 vendor_name="custom_ascendc_910b"
 if [ ! -d "${ascendc_path}/${vendor_name}" ]; then
   python setup.py -o ${op_host_path} -k ${op_kernel_path} \
-    --soc_version="ascend910b;ascend910_93" \
+    --soc_version="ascend910b" \
     --vendor_name=${vendor_name}
 
   mapfile -t result_array < <(find ${tmp_compiler_path} -name ${vendor_name})
