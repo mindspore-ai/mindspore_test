@@ -17,7 +17,7 @@ mindspore.mint.distributed.send
 
     异常：
         - **TypeError** - 输入 `tensor` 的数据类型不为Tensor， dst不是int或group不是str。
-        - **ValueError** - 如果该线程的rank id 大于通信组的rank size。
+        - **ValueError** - 如果发送线程和目的线程号相同。
 
     样例：
 

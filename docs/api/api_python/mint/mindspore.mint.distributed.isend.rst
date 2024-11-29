@@ -20,7 +20,7 @@ mindspore.mint.distributed.isend
 
     异常：
         - **TypeError** -  `tensor` 不是Tensor， `dst` 不是int或 `group` 不是str。
-        - **ValueError** - 如果该线程的rank id 大于通信组的rank size。
+        - **ValueError** - 如果发送线程和目的线程号相同。
 
     样例：
 
