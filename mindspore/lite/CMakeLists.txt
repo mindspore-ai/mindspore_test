@@ -66,6 +66,9 @@ option(MSLITE_ENABLE_COVERAGE "enable code coverage" off)
 # third-party dependency source
 option(MSLITE_ENABLE_GITEE_MIRROR "enable download third_party from gitee mirror" off)
 
+# compile
+option(MSLITE_ENABLE_W_NO_ERROR "enable W_NO_ERROR" off)
+
 # === part 2. device-only options ===
 
 # backends
@@ -254,6 +257,9 @@ if(DEFINED ENV{MSLITE_MINDDATA_IMPLEMENT})
 endif()
 if(DEFINED ENV{MSLITE_TARGET_SITEAI})
     set(MSLITE_TARGET_SITEAI $ENV{MSLITE_TARGET_SITEAI})
+endif()
+if(DEFINED ENV{MSLITE_ENABLE_W_NO_ERROR})
+    set(MSLITE_ENABLE_W_NO_ERROR $ENV{MSLITE_ENABLE_W_NO_ERROR})
 endif()
 
 if(MSLITE_TARGET_SITEAI)
@@ -565,6 +571,11 @@ if(TARGET_AOS_ARM)
     endif()
 endif()
 
+if(MSLITE_ENABLE_W_NO_ERROR)
+    set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Wno-error")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-error")
+endif()
+
 message(STATUS "************MindSpore Lite Build Option:************")
 message(STATUS "\tMSLITE_GPU_BACKEND                         = \t${MSLITE_GPU_BACKEND}")
 message(STATUS "\tMSLITE_REGISTRY_DEVICE                     = \t${MSLITE_REGISTRY_DEVICE}")
@@ -613,6 +624,7 @@ message(STATUS "\tMSLITE_EXPORT_COMPUTE_IR                   = \t${MSLITE_EXPORT
 message(STATUS "\tMSLITE_ENABLE_PACKAGE_WHEEL                = \t${MSLITE_ENABLE_PACKAGE_WHEEL}")
 message(STATUS "\tMSLITE_ENABLE_OPENCV                       = \t${MSLITE_ENABLE_OPENCV}")
 message(STATUS "\tMSLITE_TARGET_SITEAI                       = \t${MSLITE_TARGET_SITEAI}")
+message(STATUS "\tMSLITE_ENABLE_W_NO_ERROR                   = \t${MSLITE_ENABLE_W_NO_ERROR}")
 
 if(NOT MSLITE_TARGET_SITEAI)
     if((MSLITE_ENABLE_CONVERTER OR MSLITE_ENABLE_TESTCASES) AND (
