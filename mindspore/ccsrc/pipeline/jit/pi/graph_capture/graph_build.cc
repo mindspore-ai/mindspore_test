@@ -5092,7 +5092,8 @@ bool MindGraphBuilder::ConvertClassType(const py::object &callable_info, CallNod
   }
   static std::map<std::string, ValuePtr> list_or_tuple_func_map = {
     {"class 'list'", std::make_shared<prim::ListFunc>("list_func")},
-    {"class 'tuple'", std::make_shared<prim::TupleFunc>("tuple_func")}};
+    {"class 'tuple'", std::make_shared<prim::TupleFunc>("tuple_func")},
+    {"class 'dict'", std::make_shared<prim::DictFunc>("dict_func")}};
   auto iter = list_or_tuple_func_map.find(class_type_name);
   if (iter != list_or_tuple_func_map.end()) {
     auto callable_value = iter->second;

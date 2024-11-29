@@ -1849,7 +1849,7 @@ def searchsorted(x, v, side='left', sorter=None):
 
     if side not in ('left', 'right'):
         raise ValueError(f"For 'Tensor.searchsorted', the argument 'side' should be one of in "
-                            f"['left', 'right'], but got {side}.")
+                         f"['left', 'right'], but got {side}.")
     if not isinstance(v, Tensor):
         v = const_utils.make_tensor(v)
     if sorter is not None:
@@ -2495,6 +2495,18 @@ def tuple_func(data):
     return ret
 
 
+def dict_func(data):
+    """Implementation of `dict`."""
+    if isinstance(data, (tuple, list)):
+        keys = F.make_tuple()
+        values = F.make_tuple()
+        for pair in data:
+            keys = keys + F.make_tuple(pair[0])
+            values = values + F.make_tuple(pair[1])
+        return F.make_dict(keys, values)
+    raise TypeError('Currently, dict() only supports tuple or list input.')
+
+
 def ms_zip(*data):
     """Packs elements in the corresponding positions in multiple sequences into tuples."""
     x = ()
@@ -2604,7 +2616,7 @@ def ms_max_one_element(x):
 def ms_max(*data):
     """Implementation of `max`."""
     len_data = get_max_min_data_len(data)
-    if len_data <= 0: # pylint: disable=no-else-raise
+    if len_data <= 0:  # pylint: disable=no-else-raise
         raise TypeError("max() requires 1 argument at least.")
     elif len_data == 1:
         x = data[0]
@@ -2680,7 +2692,7 @@ def ms_min_one_element(x):
 def ms_min(*data):
     """Implementation of `min`."""
     len_data = get_max_min_data_len(data)
-    if len_data <= 0: # pylint: disable=no-else-raise
+    if len_data <= 0:  # pylint: disable=no-else-raise
         raise TypeError("min() requires 1 argument at least.")
     elif len_data == 1:
         x = data[0]

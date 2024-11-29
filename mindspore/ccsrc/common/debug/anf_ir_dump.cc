@@ -91,15 +91,16 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::ListSliceSetItem>() || meta_func_graph->isa<prim::UnpackCall>() ||
          meta_func_graph->isa<prim::ZipOperation>() || meta_func_graph->isa<prim::ListAppend>() ||
          meta_func_graph->isa<prim::ListFunc>() || meta_func_graph->isa<prim::TupleFunc>() ||
-         meta_func_graph->isa<prim::ListInsert>() || meta_func_graph->isa<prim::DoSignatureMetaFuncGraph>() ||
-         meta_func_graph->isa<prim::VmapMatchOutAxis>() || meta_func_graph->isa<prim::VmapGeneralPreprocess>() ||
-         meta_func_graph->isa<prim::GradAux>() || meta_func_graph->isa<prim::PyExecuteGradient>() ||
-         meta_func_graph->isa<prim::MutableGradient>() || meta_func_graph->isa<prim::ZerosLike>() ||
-         meta_func_graph->isa<prim::ListAdd>() || meta_func_graph->isa<prim::StarredGetItem>() ||
-         meta_func_graph->isa<prim::StarredUnpack>() || meta_func_graph->isa<prim::StarredUnpackMerge>() ||
-         meta_func_graph->isa<prim::IterConverter>() || meta_func_graph->isa<prim::HasNext>() ||
-         meta_func_graph->isa<prim::Next>() || meta_func_graph->isa<prim::ForHalfUnrollLess>() ||
-         meta_func_graph->isa<prim::DeprecatedTensorMethod>() || meta_func_graph->isa<prim::MetaImpl>();
+         meta_func_graph->isa<prim::DictFunc>() || meta_func_graph->isa<prim::ListInsert>() ||
+         meta_func_graph->isa<prim::DoSignatureMetaFuncGraph>() || meta_func_graph->isa<prim::VmapMatchOutAxis>() ||
+         meta_func_graph->isa<prim::VmapGeneralPreprocess>() || meta_func_graph->isa<prim::GradAux>() ||
+         meta_func_graph->isa<prim::PyExecuteGradient>() || meta_func_graph->isa<prim::MutableGradient>() ||
+         meta_func_graph->isa<prim::ZerosLike>() || meta_func_graph->isa<prim::ListAdd>() ||
+         meta_func_graph->isa<prim::StarredGetItem>() || meta_func_graph->isa<prim::StarredUnpack>() ||
+         meta_func_graph->isa<prim::StarredUnpackMerge>() || meta_func_graph->isa<prim::IterConverter>() ||
+         meta_func_graph->isa<prim::HasNext>() || meta_func_graph->isa<prim::Next>() ||
+         meta_func_graph->isa<prim::ForHalfUnrollLess>() || meta_func_graph->isa<prim::DeprecatedTensorMethod>() ||
+         meta_func_graph->isa<prim::MetaImpl>();
 }
 
 void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {
@@ -161,8 +162,7 @@ void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostrings
 void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
   if (!prim->instance_name().empty()) {
     oss << " {";
-    oss << "instance name"
-        << ": ";
+    oss << "instance name" << ": ";
     oss << prim->instance_name();
     oss << "}";
   }
@@ -740,8 +740,7 @@ void DumpOperateAttrs(const AnfNodePtr &op, const std::shared_ptr<SubGraphIRInfo
     PrimitivePtr primitive = GetValueNode<PrimitivePtr>(op);
     if (!primitive->instance_name().empty()) {
       gsub->buffer << " {";
-      gsub->buffer << "instance name"
-                   << ": ";
+      gsub->buffer << "instance name" << ": ";
       gsub->buffer << primitive->instance_name();
       gsub->buffer << "}";
     }
@@ -981,8 +980,7 @@ void DumpCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph, const Ordere
 
   // Print node's name.
   if (node != sub_graph->get_return()) {
-    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ")"
-                 << " = ";
+    gsub->buffer << "  %" << gsub->local_var << "(" << node->ToString() << ")" << " = ";
     gsub->local_var_map[node] = gsub->local_var++;
   } else {
     gsub->buffer << "  ";
