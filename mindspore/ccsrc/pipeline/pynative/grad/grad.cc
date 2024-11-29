@@ -1853,6 +1853,15 @@ void GradExecutor::ClearPipelineTopCellRes() {
 void GradExecutor::ClearRes() {
   MS_LOG(DEBUG) << "Clear grad res";
   WaitBpropTask();
+  if (std::any_of(pipeline_top_cell_map_.begin(), pipeline_top_cell_map_.end(), [](const auto &cell_list) {
+        if (cell_list.second.size() > kIndex1) {
+          return true;
+        }
+        return false;
+      })) {
+    MS_LOG(INFO) << "Pipeline top cell did not be consumed, which may cause device memory leaks, if the program "
+                    "exits normally, make sure your network's set_grad() flag set correctly!";
+  }
   init_ = false;
   grad_flag_ = false;
   enable_grad_ = true;
