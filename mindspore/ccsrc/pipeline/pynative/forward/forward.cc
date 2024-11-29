@@ -115,9 +115,6 @@ ValuePtr CopyTensorValueWithNewId(const FrontendOpRunInfoPtr &op_run_info, const
     new_tensor->set_device_address(tensor->device_address());
     new_tensor->set_contiguous_callback(tensor->contiguous_callback());
     new_tensor->set_sync_status(tensor->sync_status());
-    if (op_run_info->requires_grad) {
-      PyNativeAlgo::AutoGradUtil::BuildViewAutoGradMeta(tensor, new_tensor, 0, autograd::CreationType::kCustomBprop);
-    }
     return new_tensor;
   }
   if (v->isa<ValueTuple>()) {
@@ -800,6 +797,10 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
       result[i] = CopyTensorValueWithNewId(op_run_info, op_run_info->op_grad_info->input_value[i]);
     }
     auto result_v = ConstructOutputInVM(result);
+    if (op_run_info->requires_grad) {
+      // Later we need modify hook op to view op.
+      (void)PyNativeAlgo::AutoGradUtil::SetValueGradInfo(result_v, InputType::kOpOutput);
+    }
     MS_LOG(DEBUG) << "RunOpInVM end";
     return result_v;
   }
