@@ -346,7 +346,7 @@ from mindspore.ops.function.array_func import where as where_func
 
 # 150 __eq__
 
-# 151
+# 151 fmod
 
 # 152
 
@@ -1051,7 +1051,13 @@ def tensor_inplace_scatter_value_reduce(input, dim, index, value, *, reduce):
     return inplace_scatter_value_reduce_op(input, dim, index, value, reduce=reduce)
 
 
-# 152
+# 152 fmod
+def fmod_tensor(input, other):
+    return
+
+
+def fmod_scalar(input, other):
+    return
 
 # 153
 

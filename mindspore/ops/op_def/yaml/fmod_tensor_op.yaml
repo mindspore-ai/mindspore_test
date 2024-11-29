@@ -1,0 +1,14 @@
+#operator fmod_tensor
+fmod_tensor:
+    args:
+        input:
+            dtype: tensor
+        other:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
