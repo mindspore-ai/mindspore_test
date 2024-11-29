@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/convolution.h"
+#include "infer/ops_func_impl/conv3d_ext.h"
 #include <string>
 #include <set>
 #include "utils/check_convert_utils.h"
@@ -23,11 +23,12 @@
 namespace mindspore {
 namespace ops {
 namespace {
-constexpr size_t kConvolutionInputArgsSize = 9;
+constexpr size_t kConv3dInputArgsSize = 7;
+constexpr size_t kConv3dStridePaddingDilationLen = 3;
 
-int64_t GetOutputHW(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
-                    const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &padding,
-                    const ArrayValue<int64_t> &dilation, bool transposed, const ArrayValue<int64_t> &output_padding) {
+int64_t GetOutputHWConv3d(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
+                          const ArrayValue<int64_t> &stride, const ArrayValue<int64_t> &padding,
+                          const ArrayValue<int64_t> &dilation, bool transposed, const ShapeVector &output_padding) {
   if (input_shape[shape_pos] == abstract::Shape::kShapeDimAny ||
       weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || padding.IsValueUnknown(i) ||
       dilation.IsValueUnknown(i) || stride.IsValueUnknown(i)) {
@@ -37,17 +38,13 @@ int64_t GetOutputHW(const ShapeVector &input_shape, const ShapeVector &weight_sh
   if (!transposed) {
     return (input_shape[shape_pos] + 2 * padding[i] - dilation[i] * (weight_shape[shape_pos] - 1) - 1) / stride[i] + 1;
   } else {
-    if (output_padding.IsValueUnknown(i)) {
-      return abstract::Shape::kShapeDimAny;
-    }
-
     return (input_shape[shape_pos] - 1) * stride[i] - 2 * padding[i] + dilation[i] * (weight_shape[shape_pos] - 1) +
            output_padding[i] + 1;
   }
 }
 
-inline void IndicesCheckPositiveVector(const string &arg_name, const ArrayValue<int64_t> &array,
-                                       const string &prim_name, bool exclude_zeros) {
+inline void IndicesCheckPositiveVectorConv3d(const string &arg_name, const ArrayValue<int64_t> &array,
+                                             const string &prim_name, bool exclude_zeros) {
   for (size_t i = 0; i < array.size(); ++i) {
     if (exclude_zeros) {
       if (MS_UNLIKELY(array[i] <= 0)) {
@@ -63,8 +60,8 @@ inline void IndicesCheckPositiveVector(const string &arg_name, const ArrayValue<
   }
 }
 
-void CheckRange(const std::string &arg_name, int64_t arg_value, int64_t up_bound, int64_t low_bound,
-                const std::string &prim_name) {
+void CheckRangeConv3d(const std::string &arg_name, int64_t arg_value, int64_t up_bound, int64_t low_bound,
+                      const std::string &prim_name) {
   if (arg_value < low_bound || arg_value > up_bound) {
     MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], the " << arg_name << " must be equal to ["
                              << low_bound << ", " << up_bound << "], but got " << arg_value << ".";
@@ -72,27 +69,25 @@ void CheckRange(const std::string &arg_name, int64_t arg_value, int64_t up_bound
 }
 }  // namespace
 
-ShapeArray ConvolutionFuncImpl::InferDynamicRank(const ShapeVector &input_shape,
-                                                 const ShapeVector &weight_shape) const {
+ShapeArray Conv3DExtFuncImpl::InferDynamicRank(const ShapeVector &input_shape, const ShapeVector &weight_shape) const {
   if (!IsDynamicRank(weight_shape)) {
     auto weight_shape_size = SizeToLong(weight_shape.size());
-    CheckRange("weight rank", weight_shape_size, 5, 3, "Convolution");
+    CheckRangeConv3d("weight rank", weight_shape_size, 5, 3, "Convolution");
     auto output_shape = ShapeVector(weight_shape_size, abstract::Shape::kShapeDimAny);
     output_shape[1] = weight_shape[0];
     return {output_shape};
   }
   if (!IsDynamicRank(input_shape)) {
     auto output_shape = {input_shape[0], abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny,
-                         abstract::Shape::kShapeDimAny};
+                         abstract::Shape::kShapeDimAny, abstract::Shape::kShapeDimAny};
     return {output_shape};
   }
   std::vector<int64_t> output_shape = {abstract::Shape::kShapeRankAny};
   return {output_shape};
 }
 
-ShapeArray ConvolutionFuncImpl::ConvNdInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
-                                                 const ShapeVector &input_shape,
-                                                 const ShapeVector &weight_shape) const {
+ShapeArray Conv3DExtFuncImpl::ConvNdInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                                               const ShapeVector &input_shape, const ShapeVector &weight_shape) const {
   int64_t input_rank = SizeToLong(input_shape.size());
   int64_t weight_rank = SizeToLong(weight_shape.size());
   bool is_batch = input_rank == weight_rank ? true : false;
@@ -107,7 +102,7 @@ ShapeArray ConvolutionFuncImpl::ConvNdInferShape(const PrimitivePtr &primitive, 
     auto real_shape_vector_array =
       ConvNdCommonInferShape(primitive, input_infos, _input_shape, weight_shape, output_shape);
     if (SizeToLong(real_shape_vector_array.size()) < 1) {
-      MS_LOG(EXCEPTION) << "Infer shape array size is less zero from ConvNdCommonInferShape";
+      MS_LOG(EXCEPTION) << "For [Conv3DExt], infer shape array size is less zero from ConvNdCommonInferShape";
     }
     auto real_shape_vector = real_shape_vector_array[0];
     real_shape_vector.erase(real_shape_vector.begin());
@@ -115,82 +110,60 @@ ShapeArray ConvolutionFuncImpl::ConvNdInferShape(const PrimitivePtr &primitive, 
   }
 }
 
-ShapeArray ConvolutionFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &primitive,
-                                                       const InferInfoPtrList &input_infos,
-                                                       const ShapeVector &input_shape, const ShapeVector &weight_shape,
-                                                       const ShapeVector &output_shpe) const {
+ShapeArray Conv3DExtFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                                                     const ShapeVector &input_shape, const ShapeVector &weight_shape,
+                                                     const ShapeVector &output_shpe) const {
   auto prim_name = primitive->name();
   auto nd_output_shape = output_shpe;
-  auto &transposed_info_ptr = input_infos[kIndex6];
-  auto transposed_opt = transposed_info_ptr->GetScalarValue<bool>();
-  if (!transposed_opt.has_value()) {
-    // 'Co/Ho/Wo' is unknown, if transposed is any value
-    MS_LOG(DEBUG) << "transposed_opt has no value, output_shape:" << nd_output_shape;
-    return {nd_output_shape};
-  }
-
-  auto transposed = transposed_opt.value();
-  if (transposed) {
-    auto &groups_info_ptr = input_infos[kIndex8];
-    auto groups_opt = groups_info_ptr->GetScalarValue<int64_t>();
-    if (groups_opt.has_value() && weight_shape[1] != abstract::Shape::kShapeDimAny) {
-      nd_output_shape[1] = weight_shape[1] * groups_opt.value();
-    }
-  } else {
-    nd_output_shape[1] = weight_shape[0];
-  }
+  nd_output_shape[1] = weight_shape[0];
 
   auto stride_opt = input_infos[kIndex3]->GetArrayValue<int64_t>();
   auto padding_opt = input_infos[kIndex4]->GetArrayValue<int64_t>();
   auto dilation_opt = input_infos[kIndex5]->GetArrayValue<int64_t>();
-  auto output_padding_opt = input_infos[kIndex7]->GetArrayValue<int64_t>();
-  if (!stride_opt.has_value() || !padding_opt.has_value() || !dilation_opt.has_value() ||
-      (transposed && !output_padding_opt.has_value())) {
-    MS_LOG(DEBUG) << "stride has_value:" << stride_opt.has_value() << ", paddind has_value:" << padding_opt.has_value()
-                  << ", dilation has_value:" << dilation_opt.has_value()
-                  << ", output_padding has_value:" << output_padding_opt.has_value()
-                  << ", output_shape:" << nd_output_shape;
+  if (!stride_opt.has_value() || !padding_opt.has_value() || !dilation_opt.has_value()) {
+    MS_LOG(DEBUG) << "For [Conv3DExt], stride has_value:" << stride_opt.has_value()
+                  << ", paddind has_value:" << padding_opt.has_value()
+                  << ", dilation has_value:" << dilation_opt.has_value() << ", output_shape:" << nd_output_shape;
     return {nd_output_shape};
   }
 
   const auto &stride = stride_opt.value();
   const auto &padding = padding_opt.value();
   const auto &dilation = dilation_opt.value();
-  const auto &output_padding = output_padding_opt.value();
 
   if (!IsDynamic(input_shape) && !IsDynamic(weight_shape)) {
     abstract::CheckShapeAnyAndPositive(prim_name + " x_shape", input_shape);
     abstract::CheckShapeAnyAndPositive(prim_name + " w_shape", weight_shape);
 
-    IndicesCheckPositiveVector("stride", stride, prim_name, true);
-    IndicesCheckPositiveVector("padding", padding, prim_name, false);
-    IndicesCheckPositiveVector("dilation", dilation, prim_name, true);
-    IndicesCheckPositiveVector("output_padding", output_padding, prim_name, false);
+    IndicesCheckPositiveVectorConv3d("stride", stride, prim_name, true);
+    IndicesCheckPositiveVectorConv3d("padding", padding, prim_name, false);
+    IndicesCheckPositiveVectorConv3d("dilation", dilation, prim_name, true);
+    (void)CheckAndConvertUtils::CheckInteger("stride", stride.size(), kGreaterEqual, kConv3dStridePaddingDilationLen);
+    (void)CheckAndConvertUtils::CheckInteger("padding", padding.size(), kGreaterEqual, kConv3dStridePaddingDilationLen);
+    (void)CheckAndConvertUtils::CheckInteger("dilation", dilation.size(), kGreaterEqual,
+                                             kConv3dStridePaddingDilationLen);
 
-    auto group_opt = input_infos[kIndex8]->GetScalarValue<int64_t>();
+    auto group_opt = input_infos[kIndex6]->GetScalarValue<int64_t>();
     int64_t groups = group_opt.value();
     (void)CheckAndConvertUtils::CheckInteger("groups", groups, kGreaterEqual, 1);
     auto out_channels = weight_shape[kIndex0];
     (void)CheckAndConvertUtils::CheckInteger("out_channels", out_channels, kGreaterEqual, groups);
     (void)CheckAndConvertUtils::CheckInteger("out_channels/groups", out_channels % groups, kEqual, 0);
 
-    if (transposed) {
-      (void)CheckAndConvertUtils::CheckInteger("in_channels", input_shape[kIndex1], kEqual, weight_shape[kIndex0]);
-    } else {
-      std::vector<int64_t> input_shape_with_padding;
-      std::vector<int64_t> kernel_shape_with_dilation;
+    std::vector<int64_t> input_shape_with_padding;
+    std::vector<int64_t> kernel_shape_with_dilation;
 
-      auto in_channels = input_shape[kIndex1];
-      (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
-                                               weight_shape[kIndex1]);
-      int64_t input_rank = SizeToLong(input_shape.size());
-      for (int64_t i = 2; i < input_rank; i++) {
-        input_shape_with_padding.push_back(input_shape[i] + 2 * padding[i - 2]);
-        kernel_shape_with_dilation.push_back(dilation[i - 2] * (weight_shape[i] - 1) + 1);
-        if (input_shape_with_padding.back() < kernel_shape_with_dilation.back()) {
-          MS_EXCEPTION(ValueError) << "Kernel size: " << kernel_shape_with_dilation
-                                   << " can't be greater than actual input size:" << input_shape_with_padding;
-        }
+    auto in_channels = input_shape[kIndex1];
+    (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual, weight_shape[kIndex1]);
+    int64_t input_rank = SizeToLong(input_shape.size());
+    for (int64_t i = 2; i < input_rank; i++) {
+      input_shape_with_padding.push_back(input_shape[i] + 2 * padding[i - 2]);
+      kernel_shape_with_dilation.push_back(dilation[i - 2] * (weight_shape[i] - 1) + 1);
+      if (input_shape_with_padding.back() < kernel_shape_with_dilation.back()) {
+        MS_EXCEPTION(ValueError) << "For [Conv3DExt], (Input_shape[i]{" << input_shape[i] << "} + 2 * padding[i-2]{"
+                                 << padding[i - 2] << "})can't be less then "
+                                 << "(delation[i-2]{" << dilation[i - 2] << "} * (weight_shape[i]{" << weight_shape[i]
+                                 << "} - 1) + 1).";
       }
     }
   }
@@ -198,14 +171,14 @@ ShapeArray ConvolutionFuncImpl::ConvNdCommonInferShape(const PrimitivePtr &primi
   auto feature_len = SizeToLong(nd_output_shape.size()) - 2;
   for (int i = 0; i < feature_len; i++) {
     nd_output_shape[i + 2] =
-      GetOutputHW(input_shape, weight_shape, i + 2, i, stride, padding, dilation, transposed, output_padding);
+      GetOutputHWConv3d(input_shape, weight_shape, i + 2, i, stride, padding, dilation, false, {0, 0, 0});
   }
   return {nd_output_shape};
 }
 
-ShapeArray ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  if (input_infos.size() != kConvolutionInputArgsSize) {
-    MS_LOG(EXCEPTION) << "input args size should be  " << kConvolutionInputArgsSize << ", but got "
+ShapeArray Conv3DExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  if (input_infos.size() != kConv3dInputArgsSize) {
+    MS_LOG(EXCEPTION) << "For [Conv3DExt], input args size should be  " << kConv3dInputArgsSize << ", but got "
                       << input_infos.size();
   }
 
@@ -223,12 +196,12 @@ ShapeArray ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive, const 
   if (conv_dim == 1 || conv_dim == 2 || conv_dim == 3) {
     return ConvNdInferShape(primitive, input_infos, input_shape, weight_shape);
   } else {
-    MS_LOG(EXCEPTION) << "The weight size is 2, 3, or 4.";
+    MS_LOG(EXCEPTION) << "For [Conv3DExt], The weight size is must to equal 5 for Conv3d, but get " << weight_rank;
   }
 }
 
-std::vector<TypeId> ConvolutionFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                   const InferInfoPtrList &input_infos) const {
+std::vector<TypeId> Conv3DExtFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                 const InferInfoPtrList &input_infos) const {
   return {input_infos[kIndex0]->GetType()};
 }
 }  // namespace ops

@@ -511,42 +511,64 @@ REG_BPROP_BUILDER("Convolution").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
           ib->OutZeros(group_value)};
 });
 
-REG_BPROP_BUILDER("ConvolutionStr").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Conv3DExt").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto bias = ib->GetInput(kIndex2);
   auto stride_value = ib->GetInput(kIndex3);
   auto pad_value = ib->GetInput(kIndex4);
   auto dilation_value = ib->GetInput(kIndex5);
-  auto transposed_value = ib->GetInput(kIndex6);
-  auto output_padding_value = ib->GetInput(kIndex7);
-  auto group_value = ib->GetInput(kIndex8);
+  auto group_value = ib->GetInput(kIndex6);
+  auto dout = ib->GetInput(kIndex8);
 
   auto bias_type = bias->abstract()->BuildType();
   bool bias_mask = bias_type->isa<TypeNone>() ? false : bias->need_compute_grad_out();
   std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), w->need_compute_grad_out(), bias_mask};
   auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
+  auto transposed_value = ib->EmitValue(MakeValue<bool>(false));
+  std::vector<int64_t> output_padding_vec = {0, 0, 0};
+  auto output_padding_value = ib->EmitValue(MakeValue(output_padding_vec));
 
-  auto stride_values = GetValue<std::vector<int64_t>>(stride_value->BuildValue());
-  auto dilation_values = GetValue<std::vector<int64_t>>(dilation_value->BuildValue());
+  auto x_rank = ib->GetRank(x);
+  auto w_rank = ib->GetRank(w);
+  auto batchfy = (x_rank == w_rank);
+  if (!batchfy) {
+    x = ib->ExpandDims(x, 0);
+    dout = ib->ExpandDims(dout, 0);
+  }
 
-  auto pad_values = pad_value->BuildValue();
-  auto pad_int_value = GetValue<int64_t>(pad_values);
+  auto conv3d_grad_out = ib->ConvolutionGrad(dout, x, w, bias, stride_value, pad_value, dilation_value,
+                                             transposed_value, output_padding_value, group_value, output_mask);
+  auto dx = ib->TupleGetItem(conv3d_grad_out, kIndex0);
+  if (!batchfy) {
+    dx = ib->Squeeze(dx, MakeValue(ShapeVector{0}));
+  }
 
-  std::vector<int64_t> pad_vector = {0, 0};
-  NodePtr conv2d_grad_out;
-  NodePtr dx;
+  auto dw = ib->TupleGetItem(conv3d_grad_out, kIndex1);
+  auto dbias = ib->TupleGetItem(conv3d_grad_out, kIndex2);
+  return {dx,
+          dw,
+          dbias,
+          ib->OutZeros(stride_value),
+          ib->OutZeros(pad_value),
+          ib->OutZeros(dilation_value),
+          ib->OutZeros(group_value)};
+});
 
-  if (pad_int_value == PadMode::SAME) {
-    auto k = ib->GetRank(w);
-
-    auto dim = static_cast<size_t>(k - 2);
-    auto weight_sizes = GetValue<std::vector<int64_t>>(ib->Shape(w)->BuildValue());
-    auto input_sizes = GetValue<std::vector<int64_t>>(ib->Shape(x)->BuildValue());
+DEF_PURE_SHAPE_CALC(g_convolution_str_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto input_sizes = inputs.at(kIndex0);
+    auto weight_sizes = inputs.at(kIndex1);
+    auto stride_values = inputs.at(kIndex2);
+    auto dilation_values = inputs.at(kIndex3);
+    auto dim = input_sizes.size() - 2;
 
     std::vector<int64_t> padding_l;
     std::vector<int64_t> padding_r;
-    bool symmetric_padding = true;
+    auto symmetric_padding_true = 1;
+    auto symmetric_padding_false = 0;
+    auto symmetric_padding = symmetric_padding_true;
+
     for (size_t i = 0; i < dim; ++i) {
       auto stride = stride_values.size() == 1 ? stride_values[0] : stride_values[i];
       auto dilation = dilation_values.size() == 1 ? dilation_values[0] : dilation_values[i];
@@ -565,62 +587,100 @@ REG_BPROP_BUILDER("ConvolutionStr").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
       padding_l.push_back(left);
       padding_r.push_back(right);
       if (left != right) {
-        symmetric_padding = false;
+        symmetric_padding = symmetric_padding_false;
       }
     }
-    if (symmetric_padding) {
-      pad_vector = padding_l;
-      conv2d_grad_out =
-        ib->ConvolutionGrad(ib->GetInput(kIndex10), x, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)),
-                            dilation_value, transposed_value, output_padding_value, group_value, output_mask);
 
-      dx = ib->TupleGetItem(conv2d_grad_out, 0);
+    if (symmetric_padding) {
+      std::vector<int64_t> pad_nd_temp(2 * dim, 0);
+      return {{symmetric_padding}, pad_nd_temp, padding_l, pad_nd_temp};
     } else {
       std::vector<int64_t> pad_nd(2 * dim, 0);
+      std::vector<int64_t> padding_neg_pad(2 * dim, 0);
       for (size_t i = 0; i < dim; ++i) {
         auto delta_pad = padding_r[i] - padding_l[i];
         auto pad_idx = 2 * (dim - 1 - i);  // F.pad goes from last dim to first
         if (delta_pad > 0) {
           pad_nd[pad_idx + 1] = delta_pad;
+          padding_neg_pad[pad_idx + 1] = -delta_pad;
         } else {
           pad_nd[pad_idx] = delta_pad;
           padding_l[i] = padding_r[i];
+          padding_neg_pad[pad_idx] = -delta_pad;
         }
       }
-
-      auto zero = ib->EmitValue(MakeValue<int64_t>(0));
-      auto pad_nd_new = ib->EmitValue(MakeValue(pad_nd));
-      auto x_new = ib->Emit("ConstantPadND", {x, pad_nd_new, zero});
-
-      pad_vector = padding_l;
-      auto new_dout = ib->Emit("ZerosLikeExt", {x_new, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x_new)))});
-
-      auto new_dout_shape = GetValue<std::vector<int64_t>>(ib->Shape(new_dout)->BuildValue());
-      auto x_new_shape = GetValue<std::vector<int64_t>>(ib->Shape(x_new)->BuildValue());
-      auto w_shape = GetValue<std::vector<int64_t>>(ib->Shape(w)->BuildValue());
-      auto bias_shape = GetValue<std::vector<int64_t>>(ib->Shape(bias)->BuildValue());
-
-      auto output_padding_values = GetValue<std::vector<int64_t>>(output_padding_value->BuildValue());
-      auto output_masks = GetValue<std::vector<int64_t>>(output_mask->BuildValue());
-
-      conv2d_grad_out =
-        ib->ConvolutionGrad(ib->GetInput(kIndex10), x_new, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)),
-                            dilation_value, transposed_value, output_padding_value, group_value, output_mask);
-
-      auto dout = ib->TupleGetItem(conv2d_grad_out, 0);
-      (void)std::transform(pad_nd.begin(), pad_nd.end(), pad_nd.begin(), [](const int64_t &c) { return -c; });
-      NodePtr neg_pad = ib->Value<ShapeVector>(pad_nd);
-      dx = ib->ConstantPadND(dout, neg_pad, zero);
+      return {{symmetric_padding}, pad_nd, padding_l, padding_neg_pad};
     }
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    return {1, 4, 2, 4};
+  });
+
+REG_BPROP_BUILDER("ConvolutionStr").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto w = ib->GetInput(kIndex1);
+  auto bias = ib->GetInput(kIndex2);
+  auto stride_value = ib->GetInput(kIndex3);
+  auto pad_value = ib->GetInput(kIndex4);
+  auto dilation_value = ib->GetInput(kIndex5);
+  auto transposed_value = ib->GetInput(kIndex6);
+  auto output_padding_value = ib->GetInput(kIndex7);
+  auto group_value = ib->GetInput(kIndex8);
+
+  auto bias_type = bias->abstract()->BuildType();
+  bool bias_mask = bias_type->isa<TypeNone>() ? false : bias->need_compute_grad_out();
+  std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), w->need_compute_grad_out(), bias_mask};
+  auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
+
+  auto pad_values = pad_value->BuildValue();
+  auto pad_int_value = GetValue<int64_t>(pad_values);
+
+  std::vector<int64_t> pad_vector = {0, 0};
+  NodePtr conv2d_grad_out;
+  NodePtr dx;
+
+  if (pad_int_value == PadMode::SAME) {
+    NodePtrList ret_shape = ib->ShapeCalc(g_convolution_str_shapecalc, {x, w, stride_value, dilation_value}, {2, 3});
+    const auto &symmetric_padding = ret_shape[kIndex0];
+    const auto &pad_nd = ret_shape[kIndex1];
+    const auto &padding_l = ret_shape[kIndex2];
+    const auto &padding_neg_pad = ret_shape[kIndex3];
+
+    auto zero = ib->EmitValue(MakeValue<int64_t>(0));
+    auto x_new = ib->Emit("ConstantPadND", {x, pad_nd, zero});
+
+    // // get conv2d_grad_out
+    auto d_out_ori = ib->GetInput(kIndex10);
+    auto conv2d_grad_out_true = [&](Emitter *e) -> NodePtrList {
+      return {e->ConvolutionGrad(d_out_ori, x, w, bias, stride_value, padding_l, dilation_value, transposed_value,
+                                 output_padding_value, group_value, output_mask)};
+    };
+    auto conv2d_grad_out_false = [&](Emitter *e) -> NodePtrList {
+      auto zero = e->EmitValue(MakeValue<int64_t>(0));
+      auto x_new = e->Emit("ConstantPadND", {x, pad_nd, zero});
+      return {e->ConvolutionGrad(d_out_ori, x_new, w, bias, stride_value, padding_l, dilation_value, transposed_value,
+                                 output_padding_value, group_value, output_mask)};
+    };
+    auto symmetric_padding_conditional = ib->Equal(ib->TupleGetItem(symmetric_padding, 0), ib->Value<int64_t>(1));
+    conv2d_grad_out = ib->Conditional(symmetric_padding_conditional, conv2d_grad_out_true, conv2d_grad_out_false);
+
+    // // get dx
+    auto dx_true = [&](Emitter *e) -> NodePtrList { return {e->TupleGetItem(conv2d_grad_out, 0)}; };
+
+    auto dx_false = [&](Emitter *e) -> NodePtrList {
+      auto zero = e->EmitValue(MakeValue<int64_t>(0));
+      return {e->ConstantPadND(e->TupleGetItem(conv2d_grad_out, 0), padding_neg_pad, zero)};
+    };
+    dx = ib->Conditional(symmetric_padding_conditional, dx_true, dx_false);
+
   } else if (pad_int_value == PadMode::VALID) {
     pad_vector = {0, 0};
     conv2d_grad_out =
       ib->ConvolutionGrad(ib->GetInput(kIndex10), x, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)),
                           dilation_value, transposed_value, output_padding_value, group_value, output_mask);
     dx = ib->TupleGetItem(conv2d_grad_out, 0);
-
   } else {
-    MS_LOG(EXCEPTION) << "Input padding string must be one of {'same', 'valid'}";
+    MS_LOG(EXCEPTION) << "For [ConvolutionStr], padding string must be one of {'same', 'valid'}";
   }
 
   auto dw = ib->TupleGetItem(conv2d_grad_out, 1);
@@ -633,6 +693,169 @@ REG_BPROP_BUILDER("ConvolutionStr").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
           ib->OutZeros(dilation_value),
           ib->OutZeros(transposed_value),
           ib->OutZeros(output_padding_value),
+          ib->OutZeros(group_value)};
+});
+
+DEF_PURE_SHAPE_CALC(g_conv3d_padding_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto input_sizes = inputs.at(kIndex0);
+    auto weight_sizes = inputs.at(kIndex1);
+    auto stride_values = inputs.at(kIndex2);
+    auto dilation_values = inputs.at(kIndex3);
+    auto batchfy = (input_sizes.size() == weight_sizes.size());
+    if (!batchfy) {
+      input_sizes.insert(input_sizes.begin(), 1);
+    }
+    auto dim = weight_sizes.size() - 2;
+
+    std::vector<int64_t> padding_l;
+    std::vector<int64_t> padding_r;
+    auto symmetric_padding_true = 1;
+    auto symmetric_padding_false = 0;
+    auto symmetric_padding = symmetric_padding_true;
+
+    for (size_t i = 0; i < dim; ++i) {
+      auto stride = stride_values.size() == 1 ? stride_values[0] : stride_values[i];
+      auto dilation = dilation_values.size() == 1 ? dilation_values[0] : dilation_values[i];
+      auto inputSize = input_sizes[i + 2];
+      auto kernelSize = weight_sizes[i + 2];
+      auto total_padding = dilation * (kernelSize - 1);
+      if (stride > 2 && (total_padding % 2 == 1)) {
+        auto wiggle_room = inputSize % stride - 1;
+        if (wiggle_room > 0) {
+          --total_padding;
+        }
+      }
+      auto left = total_padding / 2;
+      auto right = total_padding - left;
+
+      padding_l.push_back(left);
+      padding_r.push_back(right);
+      if (left != right) {
+        symmetric_padding = symmetric_padding_false;
+      }
+    }
+
+    if (symmetric_padding) {
+      std::vector<int64_t> pad_nd_temp(2 * dim, 0);
+      auto _batchfy = batchfy ? 1 : 0;
+      return {{symmetric_padding}, pad_nd_temp, padding_l, pad_nd_temp, {_batchfy}};
+    } else {
+      std::vector<int64_t> pad_nd(2 * dim, 0);
+      std::vector<int64_t> padding_neg_pad(2 * dim, 0);
+      for (size_t i = 0; i < dim; ++i) {
+        auto delta_pad = padding_r[i] - padding_l[i];
+        auto pad_idx = 2 * (dim - 1 - i);  // F.pad goes from last dim to first
+        if (delta_pad > 0) {
+          pad_nd[pad_idx + 1] = delta_pad;
+          padding_neg_pad[pad_idx + 1] = -delta_pad;
+        } else {
+          pad_nd[pad_idx] = delta_pad;
+          padding_l[i] = padding_r[i];
+          padding_neg_pad[pad_idx] = -delta_pad;
+        }
+      }
+      auto _batchfy = batchfy ? 1 : 0;
+      return {{symmetric_padding}, pad_nd, padding_l, padding_neg_pad, {_batchfy}};
+    }
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    return {1, 6, 3, 6, 1};
+  });
+
+REG_BPROP_BUILDER("Conv3DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto w = ib->GetInput(kIndex1);
+  auto bias = ib->GetInput(kIndex2);
+  auto stride_value = ib->GetInput(kIndex3);
+  auto pad_value = ib->GetInput(kIndex4);
+  auto dilation_value = ib->GetInput(kIndex5);
+  auto group_value = ib->GetInput(kIndex6);
+  auto dout = ib->GetInput(kIndex8);
+
+  auto bias_type = bias->abstract()->BuildType();
+  bool bias_mask = bias_type->isa<TypeNone>() ? false : bias->need_compute_grad_out();
+  std::vector<int64_t> output_mask_vec = {x->need_compute_grad_out(), w->need_compute_grad_out(), bias_mask};
+  auto output_mask = ib->EmitValue(MakeValue(output_mask_vec));
+  auto transposed_value = ib->EmitValue(MakeValue<bool>(false));
+  std::vector<int64_t> output_padding_vec = {0, 0, 0};
+  auto output_padding_value = ib->EmitValue(MakeValue(output_padding_vec));
+
+  auto stride_values = GetValue<std::vector<int64_t>>(stride_value->BuildValue());
+  auto dilation_values = GetValue<std::vector<int64_t>>(dilation_value->BuildValue());
+
+  auto pad_values = pad_value->BuildValue();
+  auto pad_int_value = GetValue<int64_t>(pad_values);
+
+  std::vector<int64_t> pad_vector = {0, 0, 0};
+  NodePtr conv2d_grad_out;
+  NodePtr dx, s_dx, b_x, b_dout;
+
+  NodePtrList ret_shape = ib->ShapeCalc(g_conv3d_padding_shapecalc, {x, w, stride_value, dilation_value}, {2, 3});
+  auto &batchfy = ret_shape[kIndex4];
+  auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, 0), ib->Value<int64_t>(1));
+  auto cond_out_batchfy = ib->Conditional(
+    batchfy_conditional,
+    [&](Emitter *e) -> NodePtrList {
+      return {x, dout};
+    },
+    [&](Emitter *e) -> NodePtrList {
+      return {e->ExpandDims(x, 0), e->ExpandDims(dout, 0)};
+    });
+  b_x = ib->TupleGetItem(cond_out_batchfy, 0);
+  b_dout = ib->TupleGetItem(cond_out_batchfy, 1);
+  if (pad_int_value == PadMode::SAME) {
+    const auto &symmetric_padding = ret_shape[kIndex0];
+    const auto &pad_nd = ret_shape[kIndex1];
+    const auto &padding_l = ret_shape[kIndex2];
+    const auto &padding_neg_pad = ret_shape[kIndex3];
+
+    auto zero = ib->EmitValue(MakeValue<int64_t>(0));
+    auto x_new = ib->Emit("ConstantPadND", {b_x, pad_nd, zero});
+
+    // // get conv_grad_out
+    auto conv2d_grad_out_true = [&](Emitter *e) -> NodePtrList {
+      return {e->ConvolutionGrad(b_dout, b_x, w, bias, stride_value, padding_l, dilation_value, transposed_value,
+                                 output_padding_value, group_value, output_mask)};
+    };
+    auto conv2d_grad_out_false = [&](Emitter *e) -> NodePtrList {
+      auto zero = e->EmitValue(MakeValue<int64_t>(0));
+      auto x_new = e->Emit("ConstantPadND", {b_x, pad_nd, zero});
+      return {e->ConvolutionGrad(b_dout, x_new, w, bias, stride_value, padding_l, dilation_value, transposed_value,
+                                 output_padding_value, group_value, output_mask)};
+    };
+    auto symmetric_padding_conditional = ib->Equal(ib->TupleGetItem(symmetric_padding, 0), ib->Value<int64_t>(1));
+    conv2d_grad_out = ib->Conditional(symmetric_padding_conditional, conv2d_grad_out_true, conv2d_grad_out_false);
+
+    // // get dx
+    auto dx_true = [&](Emitter *e) -> NodePtrList { return {e->TupleGetItem(conv2d_grad_out, 0)}; };
+
+    auto dx_false = [&](Emitter *e) -> NodePtrList {
+      auto zero = e->EmitValue(MakeValue<int64_t>(0));
+      return {e->ConstantPadND(e->TupleGetItem(conv2d_grad_out, 0), padding_neg_pad, zero)};
+    };
+    dx = ib->Conditional(symmetric_padding_conditional, dx_true, dx_false);
+  } else if (pad_int_value == PadMode::VALID) {
+    conv2d_grad_out =
+      ib->ConvolutionGrad(b_dout, b_x, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)), dilation_value,
+                          transposed_value, output_padding_value, group_value, output_mask);
+    dx = ib->TupleGetItem(conv2d_grad_out, 0);
+  } else {
+    MS_LOG(EXCEPTION) << "For [Conv3DPadding], Input padding string must be one of {'same', 'valid'}";
+  }
+
+  s_dx = ib->Conditional(
+    batchfy_conditional, [&](Emitter *e) -> NodePtrList { return {dx}; },
+    [&](Emitter *e) -> NodePtrList { return {e->Squeeze(dx, MakeValue(ShapeVector{0}))}; });
+
+  auto dw = ib->TupleGetItem(conv2d_grad_out, 1);
+  auto dbias = ib->TupleGetItem(conv2d_grad_out, 2);
+  return {s_dx,
+          dw,
+          dbias,
+          ib->OutZeros(pad_value),
+          ib->OutZeros(stride_value),
+          ib->OutZeros(dilation_value),
           ib->OutZeros(group_value)};
 });
 

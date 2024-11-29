@@ -37,6 +37,18 @@ std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::BaseTensorPtr &se
   *offset_ptr += step;
   return {seed_value, offset_value};
 }
+
+bool ConvNDBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
+  const auto dim_count_no_batch = num_spatial_dims + 1;
+  const auto dim_count_batch = dim_count_no_batch + 1;
+  auto origin_shape_dim = SizeToLong(input_shape.size());
+  const auto is_batched = (origin_shape_dim == dim_count_batch);
+  if (origin_shape_dim != dim_count_no_batch && !is_batched) {
+    MS_LOG(EXCEPTION) << "Expected " << dim_count_no_batch << "D (unbatched) or " << dim_count_batch
+                      << "D (batched) input to " << func_name << ", but got input of size: " << origin_shape_dim;
+  }
+  return is_batched;
+}
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

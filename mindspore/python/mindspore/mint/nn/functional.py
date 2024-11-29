@@ -66,7 +66,7 @@ from mindspore.ops.auto_generate import prelu
 # 20
 
 # 21
-
+from mindspore.ops.function.nn_func import conv3d_ext as conv3d
 # 22
 
 # 23
@@ -751,6 +751,7 @@ __all__ = [
     # 20
     'cross_entropy',
     # 21
+    'conv3d',
     'nll_loss',
     # 22
 

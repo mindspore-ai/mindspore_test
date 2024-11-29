@@ -126,6 +126,7 @@
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "singleton-comparison"
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "inconsistent-return-statements"
 "mindspore/mindspore/ops/kernel/ascend/ascendc/cmake/"                                               "superfluous-parens"
+"mindspore/mindspore/python/mindspore/mint/nn/layer/conv.py"
 
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "missing-docstring"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/cmake/util"                                               "len-as-condition"
@@ -275,7 +276,8 @@
 "mindspore/tests/st/ops/test_ops_sinh.py"
 "mindspore/tests/st/mint/test_syncbatchnorm_msrun.py"                                                   "line-too-long"
 "mindspore/tests/st/mint/test_inner_syncbatchnorm_msrun.py"                                             "line-too-long"
-"mindspore/tests/st/ops/ascend/test_batch_norm_gather_stats_with_counts.py"                             "too-many-function-args"
+"mindspore/tests/st/ops/ascend/test_batch_norm_gather_stats_with_counts.py"
+"mindspore/tests/st/nn/test_mint_conv3d_ext.py"
 
 #MindSpore Lite
 "mindspore/mindspore/ops/kernel/cpu/nnacl/experimental/HPC-generator/generator.py"                                         "redefined-builtin"

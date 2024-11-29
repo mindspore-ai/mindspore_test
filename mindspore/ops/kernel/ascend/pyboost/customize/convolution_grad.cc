@@ -61,11 +61,6 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
       PyBoostUtils::MallocOpOutputs(op->device_context(), op->outputs());
 
       const auto &dout_shape = dout_tensor->shape();
-      const size_t dout_dims = 4;
-      if (dout_shape.size() != dout_dims) {
-        MS_LOG(EXCEPTION) << "dout_shape must be 4, but got:" << dout_shape;
-      }
-
       const size_t c_axis = 1;
       // Only `NCHW` support in Ascend, so the index of `C` is 1.
       std::vector<int64_t> bias_size = {dout_shape[c_axis]};

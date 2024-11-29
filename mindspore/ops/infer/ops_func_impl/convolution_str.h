@@ -28,6 +28,7 @@ class OPS_API ConvolutionStrFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  BaseShapePtr DynamicRankInfer(const std::vector<AbstractBasePtr> &input_args) const;
 };
 }  // namespace ops
 }  // namespace mindspore
