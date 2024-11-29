@@ -377,6 +377,9 @@ from mindspore.ops import triu
 # 308
 from mindspore.ops.auto_generate import mm_ext as mm
 
+# 382
+from mindspore.ops.function.math_func import dstack
+
 # 538
 from mindspore.ops.function.math_func import histc_ext as histc
 
@@ -2182,6 +2185,9 @@ __all__ = [
 
     # 308
     'mm',
+
+    # 382
+    'dstack',
 
     # 406
     'allclose',
