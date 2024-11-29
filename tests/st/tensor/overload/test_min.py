@@ -69,17 +69,18 @@ def test_method_min_python(mode):
     with pytest.raises(TypeError) as error_info:
         net(x, axis=0, keepdims=False, initial=9, where=None, return_indices=False)
         _pynative_executor.sync()
-    assert "Failed calling Min with " in str(error_info.value)
+    assert "Failed calling min with " in str(error_info.value)
 
     with pytest.raises(TypeError) as error_info:
-        net(x, axis=0, keepdims=False, initial=True, where=ms.Tensor([False, True]), return_indices=False)
+        net(x, axis=0, keepdims=False, initial=ms.Tensor([False, True]), where=ms.Tensor([False, True]),
+            return_indices=False)
         _pynative_executor.sync()
-    assert "Failed calling Min with " in str(error_info.value)
+    assert "Failed calling min with " in str(error_info.value)
 
     with pytest.raises(TypeError) as error_info:
         net(x, axis=0, keepdims=False, initial=9, where=ms.Tensor([False, True]), return_indices=1)
         _pynative_executor.sync()
-    assert "Failed calling Min with " in str(error_info.value)
+    assert "Failed calling min with " in str(error_info.value)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
