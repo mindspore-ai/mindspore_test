@@ -249,9 +249,9 @@ from mindspore.ops.auto_generate import square
 # 102 std
 
 # 103 sub
-
+from mindspore.ops.auto_generate import sub
 # 104 sum
-
+from mindspore.ops.function.math_func import sum
 # 105 swapaxes
 
 # 106 t
@@ -263,7 +263,7 @@ from mindspore.ops.operations.manually_defined import tile
 # 109 tolist
 
 # 110 topk
-
+from mindspore.ops.function.array_func import topk
 # 111 transpose
 
 # 112 tril
@@ -887,8 +887,24 @@ def tensor_square(input):
 # 102 std
 
 # 103 sub
+def deprecated_tensor_sub(input, y):
+    if isinstance(input, (tuple, list)):
+        input = sequence_to_tensor(input, F.dtype(y))
+    if isinstance(y, (tuple, list)):
+        y = sequence_to_tensor(y, F.dtype(input))
+    return sub(input, y)
+
 
 # 104 sum
+def deprecated_tensor_sum(input, axis=None, dtype=None, keepdims=False, initial=None):
+    if initial is None:
+        res = sum(input, axis, keepdims, dtype=dtype)
+    else:
+        res = sum(input, axis, keepdims, dtype=dtype) + initial
+    if dtype is not None and (dtype == mstype.bool_):
+        res = res.astype(mstype.bool_)
+    return res
+
 
 # 105 swapaxes
 
@@ -911,6 +927,13 @@ def deprecated_tensor_tile(input, reps):
 # 109 tolist
 
 # 110 topk
+def tensor_topk(input, k, dim=-1, largest=True, sorted=True):
+    return topk(input, k, dim, largest, sorted)
+
+
+def deprecated_tensor_topk(input, k, dim=None, largest=True, sorted=True):
+    return topk(input, k, dim, largest, sorted)
+
 
 # 111 transpose
 

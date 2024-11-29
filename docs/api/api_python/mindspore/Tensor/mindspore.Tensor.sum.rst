@@ -1,7 +1,27 @@
 mindspore.Tensor.sum
 ====================
 
-.. py:method:: mindspore.Tensor.sum(axis=None, dtype=None, keepdims=False, initial=None)
+.. py:method:: Tensor.sum(dim=None, keepdim=False, *, dtype=None)
+
+    计算指定维度上Tensor元素的总和。
+
+    .. Note::
+        - 带有张量类型的 `dim` 仅用于与旧版本兼容，不推荐使用。
+
+    参数：
+        - **dim** (Union[None, int, tuple(int), list(int), Tensor]) - 指定维度，在该维度方向上进行求和运算。默认值： ``None`` 。如果参数值为 ``None`` ，会计算输入Tensor中所有元素的和。如果 `dim` 为负数，则从最后一维开始往第一维计算。如果 `dim` 为整数元组或列表，会对该元组或列表指定的所有 `dim` 方向上的元素进行求和。必须在 :math:`[-self.ndim, self.ndim)` 范围内。
+        - **keepdim** (bool) - 输出Tensor是否保留了 `dim` 。默认值为 ``False``。如果这个参数为 ``True`` ，保留这些缩小的尺寸并且长度为1。如果这个参数为 ``False`` ，不保留这些尺寸。
+        - **dtype** (:class:`mindspore.dtype`) - 返回Tensor所期望的数据类型。默认值： ``None`` 。
+
+    返回值：
+        Tensor。返回输入Tensor中指定dim维度的元素总和。
+
+    异常：
+        - **TypeError** - 如果 `dim` 不是int，tuple(int)， list(int)， Tensor or None。
+        - **ValueError** - 如果 `dim` 没有在 :math:`[-self.ndim, self.ndim)` 范围中。
+        - **TypeError** - 如果 `keepdim` 不是bool。
+
+    .. py:method:: mindspore.Tensor.sum(axis=None, dtype=None, keepdims=False, initial=None)
 
     返回指定维度上数组元素的总和。
 

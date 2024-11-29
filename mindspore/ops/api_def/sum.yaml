@@ -1,0 +1,14 @@
+sum:
+  - op_yaml: sum_ext_op.yaml
+    py_method: deprecated_tensor_sum # callback to python function "def deprecated_tensor_sum"
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/sum_op.yaml
+    py_method: deprecated_tensor_sum # callback to python function "def deprecated_tensor_sum"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

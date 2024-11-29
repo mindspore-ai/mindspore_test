@@ -1,0 +1,21 @@
+sub:
+  - op_yaml: sub_op.yaml
+    py_method: deprecated_tensor_sub # callback to python function "def deprecated_tensor_sub"
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: sub_ext_op.yaml
+    py_method: deprecated_tensor_sub # callback to python function "def deprecated_tensor_sub"
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/sub_op.yaml
+    py_method: deprecated_tensor_sub # callback to python function "def deprecated_tensor_sub"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
