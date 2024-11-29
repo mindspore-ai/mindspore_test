@@ -89,6 +89,158 @@ std::vector<BaseTensorPtr> GetNewTensor(const std::shared_ptr<OpRunner> &op, con
 }
 }  // namespace
 
+std::tuple<ShapeVector, ShapeArray> TransposeToFront(const ShapeVector &x_shape, const ShapeArray &index_shapes) {
+  ShapeVector fin_x_shape;
+  ShapeArray fin_index_shapes;
+  for (size_t i = 0; i < index_shapes.size(); ++i) {
+    auto idx_shape = index_shapes[i];
+    auto x_size = x_shape[i];
+    if (!(idx_shape.size() == 9 && std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; }))) {
+      fin_index_shapes.push_back(idx_shape);
+      fin_x_shape.push_back(x_size);
+    }
+  }
+
+  for (size_t i = 0; i < index_shapes.size(); ++i) {
+    auto idx_shape = index_shapes[i];
+    auto x_size = x_shape[i];
+    if (idx_shape.size() == 9 && std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; })) {
+      fin_index_shapes.push_back(idx_shape);
+      fin_x_shape.push_back(x_size);
+    }
+  }
+  return std::make_tuple(std::move(fin_x_shape), std::move(fin_index_shapes));
+}
+
+bool IndexContiguous(const ShapeArray &index_shape) {
+  auto isEmpty = [](const ShapeVector &idx_shape) {
+    return idx_shape.size() == 9 && std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; });
+  };
+  auto isNoEmpty = [](const ShapeVector &idx_shape) {
+    return !(idx_shape.size() == 9 && std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; }));
+  };
+  auto start = std::find_if(index_shape.begin(), index_shape.end(), isNoEmpty);
+  auto stop = std::find_if(index_shape.rbegin(), index_shape.rend(), isNoEmpty);
+  auto it = std::find_if(start, stop.base(), isEmpty);
+  return it == stop.base();
+}
+
+ShapeVector ExpandShape(const ShapeVector &a, const ShapeVector &b) {
+  // infer a complete shape
+  int64_t dimsA = a.size();
+  int64_t dimsB = b.size();
+  int64_t ndim = dimsA > dimsB ? dimsA : dimsB;
+  ShapeVector expanded_shape(ndim);
+  for (int64_t i = ndim - 1; i >= 0; --i) {
+    int64_t offset = ndim - 1 - i;
+    int64_t dimA = dimsA - 1 - offset;
+    int64_t dimB = dimsB - 1 - offset;
+    auto sizeA = (dimA >= 0) ? a[dimA] : 1;
+    auto sizeB = (dimB >= 0) ? b[dimB] : 1;
+    if (sizeA != sizeB && sizeA != 1 && sizeB != 1) {
+      MS_EXCEPTION(ValueError) << "For 'Index'"
+                               << ", the size of tensor 'a' should match the size of tensor 'b' at dimension " << i
+                               << ", but got a size " << sizeA << ", b size " << sizeB << ".";
+    }
+    expanded_shape[i] = sizeA == 1 ? sizeB : sizeA;
+  }
+  return expanded_shape;
+}
+
+ShapeArray ExpandIndexShape(const ShapeArray &to_expand) {
+  // expands a list of Tensors; ignores empty tensors
+  bool first = true;
+  ShapeVector tmp_shape;
+  ShapeArray expanded_shapes(to_expand.size());
+  for (size_t i = 0; i < to_expand.size(); ++i) {
+    auto elem_shape = to_expand[i];
+    if (elem_shape.size() == 9 && std::all_of(elem_shape.begin(), elem_shape.end(), [](int i) { return i == 0; })) {
+      expanded_shapes[i] = elem_shape;
+      continue;
+    }
+    if (first) {
+      tmp_shape = elem_shape;
+      first = false;
+    } else {
+      tmp_shape = ExpandShape(tmp_shape, elem_shape);
+    }
+    expanded_shapes[i] = tmp_shape;
+  }
+  return expanded_shapes;
+}
+
+ShapeVector GetIndexShape(ShapeVector x_shape, ShapeArray indices) {
+  // 1. Get the expanded index shape.
+  auto expand_index_shapes = ExpandIndexShape(indices);
+  while (expand_index_shapes.size() < x_shape.size()) {
+    ShapeVector empty_shape = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    expand_index_shapes.emplace_back(empty_shape);
+  }
+
+  // 2. If the non-empty tensor in the index is not contiguous, move it to the front to make it contiguous.
+  ShapeVector fin_x_shape = x_shape;
+  ShapeArray fin_index_shapes = expand_index_shapes;
+  if (!IndexContiguous(expand_index_shapes)) {
+    fin_x_shape.clear();
+    fin_index_shapes.clear();
+    std::tie(fin_x_shape, fin_index_shapes) = TransposeToFront(x_shape, expand_index_shapes);
+  }
+
+  // 3. Get the position and shape information of non-empty tensors in an index.
+  int64_t dims_before = 0;
+  int64_t dims_after = 0;
+  int64_t dims_indexed = 0;
+  ShapeVector replacement_shape;
+  ShapeVector indexed_sizes;
+  for (size_t dim = 0; dim < fin_index_shapes.size(); dim++) {
+    auto idx_shape = fin_index_shapes[dim];
+    if (idx_shape.size() == 9 && std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; })) {
+      if (dims_indexed == 0) {
+        dims_before++;
+      } else {
+        dims_after++;
+      }
+    } else {
+      dims_indexed++;
+      replacement_shape = idx_shape;
+      indexed_sizes.push_back(fin_x_shape[dim]);
+    }
+  }
+
+  // 4. If the input tensor has shape 0 but the index tensor does not, report error.
+  if (std::find(indexed_sizes.begin(), indexed_sizes.end(), 0) != indexed_sizes.end() &&
+      std::find(replacement_shape.begin(), replacement_shape.end(), 0) == replacement_shape.end()) {
+    MS_EXCEPTION(ValueError) << "For 'Index', if the input tensor of dimension with size 0"
+                             << ", the index tensor should same"
+                             << ", but index is out of bounds for dimension with size 0";
+  }
+
+  // 5. Replaces the indexed part in the shape of the input tensor with the shape of the index.
+  ShapeVector out_shape(fin_x_shape);
+  int64_t end = dims_before + dims_indexed;
+  out_shape.erase(out_shape.begin() + dims_before, out_shape.begin() + end);
+  out_shape.insert(out_shape.begin() + dims_before, replacement_shape.begin(), replacement_shape.end());
+
+  return out_shape;
+}
+
+bool IsExpandableTo(ShapeVector shape, ShapeVector desired) {
+  // True if `shape` can be broadcasted to `desired`
+  size_t ndim = shape.size();
+  size_t target_dim = desired.size();
+  if (ndim > target_dim) {
+    return false;
+  }
+  for (size_t i = 0; i < ndim; i++) {
+    int64_t size = shape[ndim - i - 1];
+    int64_t target = desired[target_dim - i - 1];
+    if (size != target && size != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
 tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                      const BaseTensorPtr &input_tensor,
                                                      const ValueTuplePtr &indices_tensor_list,
@@ -107,6 +259,16 @@ tensor::BaseTensorPtr InplaceIndexPutAscendCustomize(const std::shared_ptr<OpRun
   }
 
   auto new_indices_tensor_vector = GetNewTensor(op, input_tensor, indices_tensor_vector);
+  ShapeArray new_indices_shape;
+
+  std::transform(new_indices_tensor_vector.begin(), new_indices_tensor_vector.end(),
+                 std::back_insert_iterator(new_indices_shape),
+                 [](const BaseTensorPtr tensor_ptr) { return tensor_ptr->shape(); });
+
+  auto index_res_shape = GetIndexShape(input_shape, new_indices_shape);
+  MS_CHECK_VALUE(
+    IsExpandableTo(values_shape, index_res_shape),
+    "For 'InplaceIndexPut', shape mismatch: value tensor of shape cannot be broadcast to indexing result of shape.");
   auto accumulate_imm = GetValue<bool>(accumulate);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor, new_indices_tensor_vector,
                                 values_tensor);
