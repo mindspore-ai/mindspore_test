@@ -1,7 +1,14 @@
 all:
-  op_yaml: reduce_all_op.yaml
-  py_method: tensor_all
-  Ascend: pyboost
-  CPU: pyboost
-  GPU: pyboost
-  interface: tensor
+  - op_yaml: reduce_all_op.yaml
+    py_method: tensor_all
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/reduce_all_method.yaml
+    py_method: deprecated_tensor_all
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

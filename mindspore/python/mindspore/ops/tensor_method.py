@@ -29,7 +29,7 @@ from mindspore import Tensor
 # 3 common import
 from mindspore.common import dtype as mstype
 # 4 common import
-
+from mindspore.common import COOTensor
 # 5 common import
 
 # 6 common import
@@ -389,14 +389,18 @@ def tensor_masked_fill(input_x, mask, value):
 # 3 abs
 def tensor_abs(input):
     return abs(input)
+
+
 # 4 __abs__
 
 # 5 add
-def tensor_add_ext(input, other, alpha=1):
-    return add_ext(input, other, alpha)
+def tensor_add_ext(input, other, *, alpha=1):
+    return add_ext(input, other, alpha=alpha)
 
 
 def deprecated_tensor_add(input, other):
+    if isinstance(other, COOTensor):
+        return other + input
     if isinstance(other, (tuple, list)):
         other = sequence_to_tensor(other, F.dtype(input))
     return add(input, other)
@@ -405,6 +409,10 @@ def deprecated_tensor_add(input, other):
 # 6 all
 def tensor_all(x, axis=None, keep_dims=False):
     return all(x, axis, keep_dims)
+
+
+def deprecated_tensor_all(x, dim=None, keepdim=False):
+    return all(x, dim, keepdim)
 
 
 # 7 allclose
@@ -886,6 +894,8 @@ def tensor_square(input):
 
 # 103 sub
 def deprecated_tensor_sub(input, y):
+    if isinstance(y, COOTensor):
+        return F.tensor_scatter_sub(input, y.indices, y.values)
     if isinstance(input, (tuple, list)):
         input = sequence_to_tensor(input, F.dtype(y))
     if isinstance(y, (tuple, list)):

@@ -53,6 +53,7 @@ static std::unordered_map<std::string, ops::OP_DTYPE> type_str_map = {
 static std::unordered_map<std::string, ops::OP_DTYPE> type_not_in_yaml_str_map = {
   {"tuple[any]", ops::OP_DTYPE::DT_TUPLE_ANY},
   {"list[any]", ops::OP_DTYPE::DT_LIST_ANY},
+  {"any", ops::OP_DTYPE::DT_ANY},
 };
 
 // information of single parameter

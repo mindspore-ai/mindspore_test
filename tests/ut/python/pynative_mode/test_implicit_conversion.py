@@ -111,10 +111,9 @@ def test_float_tensor_and_str_add():
     y = "ok"
     with pytest.raises(TypeError) as er:
         ret = x + y
-    assert "Failed calling add with" in str(er.value)
-    assert "add(string)" in str(er.value)
-    assert "Tensor.add(other=<number,Tensor>, alpha=<number>)" in str(
-        er.value) or "Tensor.add(other=<Tensor,number>, alpha=<number>)" in str(er.value)
+    assert "Failed calling Add with" in str(er.value)
+    assert "Add()(input=Tensor, other=string)" in str(er.value)
+    assert "Add()(input=<Number, Tensor>, other=<Number, Tensor>)" in str(er.value)
 
 
 def test_float_tensor_and_tuple_add():
