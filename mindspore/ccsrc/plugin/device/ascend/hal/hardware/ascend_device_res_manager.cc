@@ -136,13 +136,7 @@ bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint3
   MS_EXCEPTION_IF_NULL(address);
   MS_EXCEPTION_IF_NULL(mem_manager_);
 
-  if (IsEnableRefMode() && (address->GetDeviceType() != device_context_->GetDeviceType())) {
-    MS_LOG(EXCEPTION) << "The device address type is wrong: type name in address:"
-                      << GetDeviceNameByType(static_cast<const DeviceType>(address->GetDeviceType()))
-                      << ", type name in context:" << device_context_->device_context_key().device_name_;
-  }
-
-  if (address->GetPtr() != nullptr) {
+  if (address->pointer_ref_count()->ptr() != nullptr) {
     MS_LOG(ERROR) << "Memory leak detected!";
     return false;
   }
@@ -194,7 +188,8 @@ bool AscendDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint3
 
   address->set_ptr(device_ptr);
   address->set_from_mem_pool(true);
-  if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+  static bool enable_memory_tracker = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+  if (enable_memory_tracker) {
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, address, device_ptr);
   }
   return true;

@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
+
+#include <algorithm>
 #include <string>
 #include <unordered_map>
-#include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
+
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "utils/ms_context.h"
@@ -204,6 +207,60 @@ DynamicMemPool *AscendMemoryManager::GetMemoryPool() {
     memory_pool_ = &(AscendMemoryPool::GetInstance());
   }
   return memory_pool_;
+}
+
+void EnhancedAscendMemoryManager::Initialize() {
+  AscendMemoryManager::Initialize();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK) << "EnhancedAscendMemoryManager initialize.";
+  alloc_costs_.clear();
+}
+
+void EnhancedAscendMemoryManager::Finalize() {
+  AscendMemoryManager::Finalize();
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK) << "EnhancedAscendMemoryManager finalize";
+  std::sort(alloc_costs_.begin(), alloc_costs_.end());
+  // Calculate mean and median, then print them.
+  auto total_size = alloc_costs_.size();
+  if (total_size == 0) {
+    MS_LOG(WARNING) << "No memory operation.";
+    return;
+  }
+  double median = 0;
+  if (total_size & 1) {
+    median = (alloc_costs_[total_size >> 1] + alloc_costs_[(total_size >> 1) + 1]) >> 1;
+  } else {
+    median = alloc_costs_[total_size >> 1];
+  }
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK) << "EnhancedAscendMemoryManager median : " << median << "ns.";
+
+  double sum = std::accumulate(alloc_costs_.begin(), alloc_costs_.end(), 0.0);
+  double mean = sum / total_size;
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK) << "EnhancedAscendMemoryManager mean : " << mean << "ns.";
+
+  const double cost_high_water = 1800;
+  if (median > cost_high_water || mean > cost_high_water) {
+    MS_LOG(ERROR) << "EnhancedAscendMemoryManager check failed, median : " << median << ", mean : " << mean;
+  }
+}
+
+void *EnhancedAscendMemoryManager::MallocMemFromMemPool(size_t size, bool from_persistent_mem, bool need_recycle,
+                                                        uint32_t stream_id) {
+  auto start_tick = GetCurrentTick();
+  auto ret = AscendMemoryManager::MallocMemFromMemPool(size, from_persistent_mem, need_recycle, stream_id);
+  auto cost = GetCurrentTick() - start_tick;
+  (void)alloc_costs_.emplace_back(cost);
+  MS_VLOG(VL_RUNTIME_FRAMEWORK_MEMORY_ALLOCATE_CHECK) << "Malloc memory cost : " << cost << "ns.";
+  return ret;
+}
+
+bool EnhancedAscendMemoryManager::MallocContinuousMemFromMemPool(const DeviceAddressPtrList &addr_list,
+                                                                 size_t total_size, std::vector<size_t> size_list,
+                                                                 uint32_t stream_id) {
+  auto start_tick = GetCurrentTick();
+  auto ret = AscendMemoryManager::MallocContinuousMemFromMemPool(addr_list, total_size, size_list, stream_id);
+  auto cost = GetCurrentTick() - start_tick;
+  (void)alloc_costs_.emplace_back(cost);
+  return ret;
 }
 }  // namespace ascend
 }  // namespace device
