@@ -51,6 +51,15 @@ const BaseRef CastFloatStatusReshapeFusion::DefinePattern() const {
 
 const AnfNodePtr FloatStatusBaseFusion::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                 const EquivPtr &equiv) const {
+  auto mng = func_graph->manager();
+  if (mng == nullptr) {
+    mng = Manage(func_graph, false);
+    func_graph->set_manager(mng);
+  }
+  auto &users = mng->node_users()[node];
+  if (!(users.size() == 1 && IsPrimitiveCNode(users.back().first, prim::kPrimAddN))) {
+    return nullptr;
+  }
   auto input_node = opt::GetAnfNodeByVar(equiv, input_);
   auto axis_node = opt::GetAnfNodeByVar(equiv, axis_);
   auto isfinite_node = opt::GetAnfNodeByVar(equiv, isfinite_prim_);

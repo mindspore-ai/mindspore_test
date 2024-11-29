@@ -54,8 +54,8 @@ class ComplexNet(nn.Cell):
         a_overflow = tensor_ascend_grad_overflow(a)
         b_overflow = tensor_ascend_grad_overflow(b)
         d_overflow = tensor_ascend_grad_overflow(d)
-        g = self.addn((a_overflow, b_overflow, d_overflow))
-        return f, d, g
+        g = self.addn((a_overflow, b_overflow))
+        return f, d, g, d_overflow
 
 
 def get_output(net, args, args_dyn=None, enable_graph_kernel=False):
