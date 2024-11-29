@@ -40,7 +40,7 @@ from ..auto_generate import (
     Argmax, ArgMaxExt, ReverseV2, Diag, Eye, ScatterNd,
     ResizeNearestNeighborV2, GatherNd, GatherD, Range, MaskedFill, RightShift,
     NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
-    MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum,
+    MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, UniqueConsecutive,
     ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
     SearchSorted, TypeAs, Meshgrid, Squeeze, Slice)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
@@ -583,65 +583,6 @@ class Unique(Primitive):
     @prim_attr_register
     def __init__(self):
         self.init_prim_io_names(inputs=['x'], outputs=['output'])
-
-
-class UniqueConsecutive(Primitive):
-    """
-    Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Refer to :func:`mindspore.ops.unique_consecutive` for more details.
-
-    Args:
-        return_idx (bool, optional): Whether to return the index of where the element in the original input
-            maps to the position in the output. Default: ``False`` .
-        return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
-        axis (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
-            returned. If specified, it must be int32 or int64. Default: ``None`` .
-
-    Inputs:
-        - **x** (Tensor) - The input tensor.
-
-    Outputs:
-        A tensor or a tuple of tensors containing tensor objects (`output`, `idx`, `counts`).
-
-        - `output` has the same type as `x` and is used to represent the output list of unique scalar elements.
-        - If `return_idx` is True, there will be an additional returned tensor, `idx`,
-          which has the same shape as `x` and represents
-          the index of where the element in the original input maps to the position in the output.
-        - If `return_counts` is True, there will be an additional returned tensor, `counts`,
-          which represents the number of occurrences for each unique value or tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore import dtype as mstype
-        >>> x = Tensor(np.array([1, 1, 2, 2, 3, 1, 1, 2]), mstype.int32)
-        >>> unique_consecutive = ops.UniqueConsecutive(True, True, None)
-        >>> output, idx, counts = unique_consecutive(x)
-        >>> print(output)
-        [1 2 3 1 2]
-        >>> print(idx)
-        [0 0 1 1 2 3 3 4]
-        >>> print(counts)
-        [2 2 1 2 1]
-    """
-
-    @prim_attr_register
-    def __init__(self, return_idx=False, return_counts=False, axis=None):
-        """Initialize UniqueConsecutive"""
-        self.init_prim_io_names(inputs=['x'], outputs=['output'])
-        validator.check_value_type("return_idx", return_idx, [bool], self.name)
-        validator.check_value_type("return_counts", return_counts, [bool], self.name)
-        validator.check_value_type("axis", axis, [int, type(None)], self.name)
-        self.add_prim_attr("return_idx", return_idx)
-        self.add_prim_attr("return_counts", return_counts)
-        self.add_prim_attr("axis", axis)
 
 
 class SparseGatherV2(Primitive):
