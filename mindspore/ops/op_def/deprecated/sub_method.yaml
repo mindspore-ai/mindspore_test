@@ -6,7 +6,7 @@ sub:
       type_cast: number, list[any], tuple[any]
     y:
       dtype: tensor
-      type_cast: number, list[any], tuple[any]
+      type_cast: any
   returns:
     outputs:
       dtype: tensor

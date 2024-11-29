@@ -5,7 +5,7 @@ add:
       dtype: tensor
     other:
       dtype: tensor
-      type_cast: number, list[any], tuple[any]
+      type_cast: any
   returns:
     output:
       dtype: tensor
