@@ -21,6 +21,7 @@
 #include <vector>
 #include <functional>
 #include <csignal>
+#include <future>
 #include <memory>
 #include "utils/ms_context.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -205,19 +206,18 @@ bool CollectiveManager::Initialize() {
     RETURN_IF_FALSE_WITH_LOG(InitDeviceCommLib(), "Failed to initialize device communication library.");
     PROF_END(InitDeviceBackend);
 
-    // Step 4: Create global communication group.
+    // Step 4: Create global communication group asynchronizely
     MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+    bool async = IsAsyncInitGlobalComm();
     auto group_name = device_comm_lib_instance_->global_group_name();
     PROF_START(CreateGlobalCommunicationGroup);
-    RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_),
+    RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_, async),
                              "Failed to create group " + group_name);
+    if (async) {
+      SubmitCreateDeviceCommTask(group_name);
+    }
     PROF_END(CreateGlobalCommunicationGroup);
   }
-  MS_LOG(INFO) << "Start initializing hccl watchdog on device side...";
-  RETURN_IF_FALSE_WITH_LOG(
-    device_comm_lib_instance_->InitializeWatchDog(global_rank_id_, global_rank_size_, local_rank_id_),
-    "Failed to hccl watchdog on device side.");
-  MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
 
   MS_LOG(INFO) << "End initializing collective communication for backend: " << device_type;
   inited_ = true;
@@ -321,9 +321,10 @@ bool CollectiveManager::GetLocalGroupRankAndSize(const std::vector<uint32_t> &gr
 }
 
 bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
-                                                 const std::vector<uint32_t> &group_ranks) {
+                                                 const std::vector<uint32_t> &group_ranks, bool async) {
   PROF_START(distributed_create_group);
-  MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks;
+  MS_LOG(WARNING) << "Start to create communication group: " << group_name << " " << group_ranks
+                  << ", async: " << async;
   if (std::find(group_ranks.begin(), group_ranks.end(), global_rank_id_) == group_ranks.end()) {
     MS_LOG(WARNING) << "This rank: " << global_rank_id_ << " is not in the group ranks: " << group_ranks
                     << ". This may cause some exception when initializing the group.";
@@ -369,106 +370,31 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
     checker->SetPipelineStage(local_group_rank);
   }
 
-  // Step 3: Generate device information of the root node.
-  CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
-  if (group_name.compare(0, 4, "mccl") == 0 &&
-      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    group = host_comm_lib_instance_->GetGroup(group_name);
-  }
-  MS_EXCEPTION_IF_NULL(group);
-  std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
-  void *root_info = nullptr;
-  if (rank_table_file_path.empty() || cluster::ClusterContext::instance()->enable_cross_cluster()) {
-    bool ret = false;
-    size_t root_info_size = 0;
-    PROF_START(GenerateRootInfo);
-    root_info = group->GenerateRootInfo(&root_info_size);
-    PROF_END(GenerateRootInfo);
-    MS_EXCEPTION_IF_NULL(root_info);
-
-    // Step 4: Broadcast the device root information to all nodes on host side.
-    PROF_START(BroadcastUniqueID);
-    while (!ret) {
-      RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
-                               "Broadcast for device root info failed on the host side.");
-      ret = true;
-      // In disaster recovery scenarios, it is necessary to ensure that the unique id obtained from the Scheduler is a
-      // newly generated one.
-      if (RecoveryContext::GetInstance()->enable_recovery()) {
-        ret = CheckUniqueIDLatest(group_name, root_info_size, root_info);
-        if (!ret) {
-          // The time interval for querying latest unique id from scheduler: 3 second.
-          constexpr uint32_t kWaitDuration = 3;
-          std::this_thread::sleep_for(std::chrono::seconds(kWaitDuration));
-        }
+  if (async) {
+    // If this is in async manner, it's user's duty to call SubmitCreateDeviceCommTask and join the result.
+    MS_LOG(WARNING) << "This group's communicator is async created " << group_name;
+    return true;
+  } else {
+    auto global_group_name = device_comm_lib_instance_->global_group_name();
+    if (group_name != global_group_name &&
+        MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode) {
+      // When this is graph mode and sub-group, initialize this sub-group in backend_base.cc(lazy).
+      CollectHcclInitInfo::GetInstance()->SetInitOrder(group_name);
+      MS_LOG(INFO) << "The communicator on device side is not created yet. It will be initialized during graph "
+                      "compilation. Please use it after compilation is done.";
+    } else {
+      // To ensure the initialization order of async and sync created communicators, we invoke submit and wait methods
+      // for sync ones.
+      SubmitCreateDeviceCommTask(group_name);
+      if (!WaitCommInitDone(group_name)) {
+        MS_LOG(EXCEPTION) << "Failed to wait for communicator of " << group_name
+                          << " init done. Please check ERROR log above.";
       }
-      MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
     }
-    PROF_END(BroadcastUniqueID);
   }
-  auto instance = CollectHcclInitInfo::GetInstance();
-  instance->SetRootInfo(group_name, root_info);
-  auto global_group_name = device_comm_lib_instance_->global_group_name();
-  if (group_name == global_group_name ||
-      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    return InitCommunicationGroup(group_name);
-  }
-  // world group is already inited, so do not emplace_back global_group_name.
-  instance->SetInitOrder(group_name);
+
   PROF_END(distributed_create_group);
   return true;
-}
-
-bool CollectiveManager::InitCommunicationGroup(const std::string &group_name, int32_t hccl_buffsize) {
-  auto instance = CollectHcclInitInfo::GetInstance();
-  uint32_t buffsize = 0;
-  if (hccl_buffsize > 0) {
-    buffsize = hccl_buffsize;
-  } else {
-    static std::string hccl_buffer_size_env = common::GetEnv("HCCL_BUFFSIZE");
-    if (!hccl_buffer_size_env.empty()) {
-      MS_LOG(INFO) << "The hccl buff size is: " << hccl_buffer_size_env;
-      int default_size = 0;
-      try {
-        default_size = stoi(hccl_buffer_size_env);
-      } catch (const std::exception &e) {
-        MS_LOG(EXCEPTION) << "Invalid argument: " << e.what() << " when parse " << hccl_buffer_size_env;
-      }
-      if (default_size < 0) {
-        MS_LOG(EXCEPTION) << "the value of `HCCL_BUFFSIZE` must be greater than zero.";
-      }
-      buffsize = default_size;
-    }
-  }
-  instance->SetBuffsize(group_name, buffsize);
-  // Step 5: Initialize communication group on the device side.
-  if (!common::GetEnv(kSimulationLevel).empty()) {
-    MS_LOG(WARNING) << "This is simulation mode with level " << common::GetEnv(kSimulationLevel)
-                    << ". Skip init communication group.";
-    return true;
-  }
-  void *root_info = instance->GetRootInfo(group_name);
-  CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
-  MS_EXCEPTION_IF_NULL(group);
-  std::function<bool()> init_device_comm_group_func = [&, this]() {
-    MS_EXCEPTION_IF_NULL(device_ctx_);
-    device_ctx_->Initialize();
-    return group->Initialize(root_info);
-  };
-  MS_LOG(WARNING) << "Begin initialize communication group on the device side: " << group_name;
-
-  // Timeout limit in seconds to wait finish initializing device communication group.
-  int64_t comm_init_timout = GetCommunicatorInitTimeout();
-  PROF_START(InitDeviceCommunicator);
-  // Initialize communication group on the device side in thread with timeout limit.
-  bool ret = ExecuteFuncInThread(init_device_comm_group_func, comm_init_timout, "init_device_comm_group_func",
-                                 "to initialize communicator for group " + group_name);
-  PROF_END(InitDeviceCommunicator);
-  if (!ret) {
-    MS_LOG(ERROR) << "Failed to create comm group on device side for " << group_name;
-  }
-  MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
-  return ret;
 }
 
 bool CollectiveManager::DestroyCommunicationGroup(const std::string &group_name) {
@@ -560,6 +486,11 @@ bool CollectiveManager::Finalize() {
     inited_ = false;
     finalized_ = true;
     need_init_ = false;
+    stop_init_comm_ = true;
+    task_queue_blocker_.notify_one();
+    if (run_init_comm_task_thread_.joinable()) {
+      run_init_comm_task_thread_.join();
+    }
     return true;
   };
 
@@ -782,6 +713,214 @@ bool CollectiveManager::ResumeHcclComm() {
   MS_LOG(INFO) << "Resume hccl comm, and clear force stop state.";
   UCEException::GetInstance().set_force_stop_flag(false);
   return true;
+}
+
+bool CollectiveManager::CreateDeviceCommunicator(const std::string &group_name, const int32_t buffsize) {
+  MS_LOG(INFO) << "Create device communicator for " << group_name;
+
+  // When this is ascend platform, set buffersize for HCCL communicator.
+  std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device_type == kAscendDevice) {
+    SetCommBuffSize(group_name, buffsize);
+  }
+
+  // Step 1: Generate device information of the root node.
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
+  if (group_name.compare(0, 4, "mccl") == 0 &&
+      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    group = host_comm_lib_instance_->GetGroup(group_name);
+  }
+  MS_EXCEPTION_IF_NULL(group);
+  std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
+  bool ret = false;
+  void *root_info;
+  if (rank_table_file_path.empty() || cluster::ClusterContext::instance()->enable_cross_cluster()) {
+    size_t root_info_size = 0;
+    PROF_START(GenerateRootInfo);
+    root_info = group->GenerateRootInfo(&root_info_size);
+    PROF_END(GenerateRootInfo);
+    MS_EXCEPTION_IF_NULL(root_info);
+
+    // Step 2: Broadcast the device root information to all nodes on host side.
+    PROF_START(BroadcastUniqueID);
+    while (!ret) {
+      RETURN_IF_FALSE_WITH_LOG(host_comm_lib_instance_->BroadcastUniqueID(group_name, root_info_size, root_info),
+                               "Broadcast for device root info failed on the host side.");
+      ret = true;
+      // In disaster recovery scenarios, it is necessary to ensure that the unique id obtained from the Scheduler is a
+      // newly generated one.
+      if (RecoveryContext::GetInstance()->enable_recovery()) {
+        ret = CheckUniqueIDLatest(group_name, root_info_size, root_info);
+        if (!ret) {
+          // The time interval for querying latest unique id from scheduler: 3 second.
+          constexpr uint32_t kWaitDuration = 3;
+          std::this_thread::sleep_for(std::chrono::seconds(kWaitDuration));
+        }
+      }
+      MS_LOG(INFO) << "Successfully send/fetch unqiueid for communication group " << group_name;
+    }
+    PROF_END(BroadcastUniqueID);
+  }
+
+  // Step 3: Initialize communication group on the device side.
+  std::function<bool()> init_device_comm_group_func = [&, this]() {
+    MS_EXCEPTION_IF_NULL(device_ctx_);
+    device_ctx_->Initialize();
+    return group->Initialize(root_info);
+  };
+  MS_LOG(WARNING) << "Begin initialize communication group on the device side: " << group_name;
+  // Timeout limit in seconds to wait finish initializing device communication group.
+  int64_t comm_init_timout = GetCommunicatorInitTimeout();
+  PROF_START(InitDeviceCommunicator);
+  // Initialize communication group on the device side in thread with timeout limit.
+  ret = ExecuteFuncInThread(init_device_comm_group_func, comm_init_timout, "init_device_comm_group_func",
+                            "to initialize communicator for group " + group_name);
+  PROF_END(InitDeviceCommunicator);
+  if (!ret) {
+    MS_LOG(ERROR) << "Failed to create comm group on device side for " << group_name;
+  }
+  MS_LOG(WARNING) << "End initialize communication group on the device side: " << group_name;
+  return ret;
+}
+
+bool CollectiveManager::IsAsyncInitGlobalComm() {
+  // Use async manner when three conditions below are satisfied.
+  // 1.Runtime dev config is not set to false.
+  // 2.This is graph mode.
+  // 3.This is NOT using rank table. Ranktable time cost is little and has temporal sequence problems, so use sync
+  // manner.
+  // 4.This is NOT simulation.
+  // 5.This NOT using mpirun. OpenMPI has hanging issues when invoking its interfaces in multiple threads.
+  const auto &is_async_str = common::GetConfigValue(common::kRuntimeConf, common::kRuntimeAsyncInitComm);
+  bool async_conf = (is_async_str != "false" && is_async_str != "False");
+  bool is_graph = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
+  bool use_rank_table = !common::GetEnv("RANK_TABLE_FILE").empty();
+  bool simulation = !common::GetEnv(kSimulationLevel).empty();
+  bool use_mpi = common::UseMPI();
+  bool result = (async_conf && is_graph && !use_rank_table && !simulation && !use_mpi);
+  MS_LOG(INFO) << "Async initialize global comm: " << result << ". async_conf: " << async_conf
+               << ", is_graph: " << is_graph << ", use_rank_table: " << use_rank_table << ", simulation: " << simulation
+               << ", use_mpi: " << use_mpi;
+  return result;
+}
+
+bool CollectiveManager::WaitAllCommInitDone() {
+  // This is a shared lock so the cost is little, but we need to guarantee there's no threa-safe issue.
+  // Because WaitCommInitDone also acquires this lock, we just copy this task_list_ and release the lock immediately to
+  // avoid dead lock.
+  std::unique_lock<std::mutex> lock(task_queue_mutex_);
+  auto group_name_list = task_list_;
+  lock.unlock();
+  for (const std::string &group_name : group_name_list) {
+    if (!WaitCommInitDone(group_name)) {
+      MsException::Instance().CheckException();
+      return false;
+    }
+  }
+  MS_LOG(INFO) << "All device communictor is initialized. You can launch communication operators after this step.";
+  return true;
+}
+
+bool CollectiveManager::WaitCommInitDone(const std::string &group_name) {
+  std::unique_lock<std::mutex> lock(task_queue_mutex_);
+  // If the task is not submitted, throw exception.
+  if (!std::any_of(task_list_.begin(), task_list_.end(),
+                   [&group_name](const auto &name) { return name == group_name; })) {
+    MS_LOG(EXCEPTION)
+      << "The group " << group_name
+      << " init task is not submitted yet. Please check if SubmitCreateDeviceCommTask is invoked for this group";
+  }
+  lock.unlock();
+
+  std::unique_lock<std::mutex> result_lock(init_result_mutex_);
+  MS_LOG(INFO) << "Start waiting for communciator of " << group_name << " to be done...";
+  // This will always unblock because there's timeout window for every device communicator.
+  result_blocker_.wait(result_lock, [&]() { return group_name_to_result_.count(group_name) != 0; });
+  if (!group_name_to_result_[group_name].first) {
+    MS_LOG(EXCEPTION) << "Communicator of group " << group_name
+                      << " inited: failed. Result: " << group_name_to_result_[group_name].second;
+  }
+  MS_LOG(INFO) << "Communicator of group " << group_name << " inited: success.";
+
+  return true;
+}
+
+void CollectiveManager::SubmitCreateDeviceCommTask(const std::string &group_name, const int32_t buffsize) {
+  if (!run_init_comm_task_thread_.joinable()) {
+    run_init_comm_task_thread_ = std::thread(&CollectiveManager::RunInitCommTasks, this);
+    MS_LOG(INFO) << "Launch init comm thread.";
+  }
+  std::unique_lock<std::mutex> lock(task_queue_mutex_);
+  init_comm_task_queue_.push(std::make_pair(group_name, buffsize));
+  task_list_.push_back(group_name);
+  task_queue_blocker_.notify_one();
+  MS_LOG(INFO) << "Submit init communicator task for " << group_name
+               << ". Call 'WaitCommInitDone' later to wait initialization to be done.";
+}
+
+void CollectiveManager::SetCommBuffSize(const std::string &group_name, const int32_t buffsize) {
+  auto instance = CollectHcclInitInfo::GetInstance();
+  uint32_t res = 0;
+  if (buffsize > 0) {
+    res = buffsize;
+  } else {
+    static std::string hccl_buffer_size_env = common::GetEnv("HCCL_BUFFSIZE");
+    if (!hccl_buffer_size_env.empty()) {
+      MS_LOG(INFO) << "The hccl buff size is: " << hccl_buffer_size_env;
+      int default_size = 0;
+      try {
+        default_size = stoi(hccl_buffer_size_env);
+      } catch (const std::exception &e) {
+        MS_LOG(EXCEPTION) << "Invalid argument: " << e.what() << " when parse " << hccl_buffer_size_env;
+      }
+      if (default_size < 0) {
+        MS_LOG(EXCEPTION) << "the value of `HCCL_BUFFSIZE` must be greater than zero.";
+      }
+      res = default_size;
+    }
+  }
+  instance->SetBuffsize(group_name, res);
+}
+
+void CollectiveManager::RunInitCommTasks() {
+  while (!stop_init_comm_) {
+    std::unique_lock<std::mutex> lock(task_queue_mutex_);
+    // Block until there's task or thread is stopped.
+    task_queue_blocker_.wait(lock, [&]() { return !init_comm_task_queue_.empty() || stop_init_comm_; });
+
+    if (stop_init_comm_) {
+      MS_LOG(INFO) << "Initialize communciator thread is stopped.";
+      break;
+    }
+
+    // When execute to this code, the queue should not be empty.
+    auto task_element = init_comm_task_queue_.front();
+    init_comm_task_queue_.pop();
+    // Release the lock to avoid blocking when submitting tasks in asynchronize process.
+    lock.unlock();
+
+    std::string group_name = task_element.first;
+    int32_t buffsize = task_element.second;
+    std::unique_lock<std::mutex> result_lock(init_result_mutex_);
+    try {
+      MS_LOG(INFO) << "Create device communicator in thread for group: " << group_name;
+      if (!CreateDeviceCommunicator(group_name, buffsize)) {
+        MS_LOG(EXCEPTION) << "Failed to init communicator asynchronizely for group " << group_name
+                          << ". Please check ERROR log.";
+      }
+      group_name_to_result_[group_name] = std::make_pair(true, "");
+      result_blocker_.notify_one();
+    } catch (std::exception &e) {
+      std::string err_info = "Init communicator for group " + group_name + " exception info: " + e.what();
+      group_name_to_result_[group_name] = std::make_pair(false, err_info);
+      result_blocker_.notify_one();
+      MsException::Instance().SetException();
+      // If fail to initialize any communicator, exit immediately and stop the thread.
+      stop_init_comm_ = true;
+      continue;
+    }
+  }
 }
 }  // namespace collective
 }  // namespace distributed

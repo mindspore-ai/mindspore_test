@@ -236,9 +236,17 @@ void InitCommGroup(const FuncGraphPtr &root_graph) {
       MS_LOG(WARNING) << "For group: " << group_name << ", the hccl_buffsize is inited by " << env_name
                       << ", and the value is " << init_hccl_buffsize << " MB.";
     }
-    distributed::collective::CollectiveManager::instance()->InitCommunicationGroup(group_name, init_hccl_buffsize);
+    distributed::collective::CollectiveManager::instance()->SubmitCreateDeviceCommTask(group_name, init_hccl_buffsize);
+    if (!distributed::collective::CollectiveManager::instance()->WaitCommInitDone(group_name)) {
+      MS_LOG(EXCEPTION) << "Failed to wait for communicator of " << group_name
+                        << " init done in backend phase. Please check ERROR log above.";
+    }
   }
-  MS_LOG(WARNING) << "The total memory occupied by HCCL is: " << instance->GetHcclMemSize() << " MB.";
+  MS_LOG(WARNING) << "The HBM occupied by HCCL of graph: " << root_graph->ToString() << " is "
+                  << instance->GetHcclMemSize() << " MB.";
+  // Clear initialization info after this step so new graphs could be compiled and not communicator will be initialized
+  // twice.
+  instance->Clear();
 }
 }  // namespace
 
@@ -1004,6 +1012,7 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   PROF_START(InitCommGroup);
   InitCommGroup(root_graph);
   PROF_END(InitCommGroup);
+  (void)distributed::collective::CollectiveManager::instance()->WaitAllCommInitDone();
   bool pynative_with_jit_call_graph = func_graph->has_flag(kFlagPyNativeWithJitCallGraph);
   if (!pynative_with_jit_call_graph) {
     UnifyMindIR(root_graph);
