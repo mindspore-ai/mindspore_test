@@ -54,6 +54,7 @@ constexpr auto kAvgPoolGradVmOpName = "AvgPoolGradVm";
 constexpr auto kAvgPoolOpName = "AvgPool";
 constexpr auto kAvgPoolV1OpName = "AvgPoolV1";
 constexpr auto kConvolutionGradOpName = "ConvolutionGrad";
+constexpr auto kConv2DExtGradOpName = "ConvolutionGrad";
 constexpr auto kConvolutionStrGradOpName = "ConvolutionStrGrad";
 constexpr auto kConv2DBackpropFilterOpName = "Conv2DBackpropFilter";
 constexpr auto kConv2DBackpropFilterDOpName = "Conv2DBackpropFilterD";

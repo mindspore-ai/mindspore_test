@@ -66,6 +66,11 @@
 "mindspore/mindspore/ccsrc/pipeline/jit/pi/python_adapter/pycore.c"                                 "readability/casting"
 "mindspore/mindspore/ops/kernel/ascend/pyboost/customize/batch_norm_gather_stats_with_counts.h"    "whitespace/line_length"
 "mindspore/mindspore/ops/kernel/ascend/opapi/aclnn/conv3d_padding_aclnn_kernel.h"            "runtime/references"
+"mindspore/mindspore/ops/kernel/ascend/opapi/aclnn/conv2d_padding_aclnn_kernel.cc"            "runtime/references"
+"mindspore/mindspore/ops/kernel/ascend/opapi/aclnn/conv2d_padding_aclnn_kernel.h"            "runtime/references"
+"mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv2d_padding.cc"                  "runtime/references"
+"mindspore/mindspore/ops/kernel/ascend/pyboost/customize/conv2d_padding.h"                  "runtime/references"
+
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"

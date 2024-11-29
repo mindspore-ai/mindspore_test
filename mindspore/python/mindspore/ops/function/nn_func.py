@@ -53,9 +53,9 @@ from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d
                                          upsample_linear1d_op, upsample_bilinear2d_op, upsample_bicubic2d_op,
                                          upsample_trilinear3d_impl, fill_scalar_op, floor_op, nllloss_2d_op,
                                          masked_fill_op, masked_select, ones, flatten_ext, conv_transpose2d)
-from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, ConstantPadND, MaxPoolWithIndices, \
-    PromptFlashAttention, MaxPoolWithMask, ConvolutionStr
-from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_padding_op
+from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, MaxPoolWithIndices, \
+    PromptFlashAttention, MaxPoolWithMask
+from mindspore.ops.auto_generate.gen_ops_prim import conv3d_ext_op, conv3d_padding_op, conv2d_ext_op, conv2d_padding_op
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
 from mindspore.ops.auto_generate import softshrink
@@ -6226,10 +6226,10 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
             - same: Adopts the way of completion. The height and width of the output will be equal to
               the input `x` divided by stride. The padding will be evenly calculated in top and bottom,
               left and right possiblily. Otherwise, the last extra padding will be calculated from the bottom
-              and the right side. If this mode is set, `padding` must be 0.
+              and the right side.
 
             - valid: Adopts the way of discarding. The possible largest height and width of output will be returned
-              without padding. Extra pixels will be discarded. If this mode is set, `padding` must be 0.
+              without padding. Extra pixels will be discarded.
 
             If `padding` is one integer, the paddings of top, bottom, left and right are the same, equal to padding.
             If `padding` is a tuple/list with 2 integers, the padding of top adn bottom is padding[0],
@@ -6261,11 +6261,10 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     Examples:
         >>> import mindspore
         >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.nn_func import conv2d_ext
+        >>> from mindspore import Tensor, ops, mint
         >>> x = Tensor(np.ones([10, 32, 32, 32]), mindspore.float32)
         >>> weight = Tensor(np.ones([32, 32, 3, 3]), mindspore.float32)
-        >>> output = conv2d_ext(x, weight)
+        >>> output = mint.nn.functional.conv2d(x, weight)
         >>> print(output.shape)
         (10, 32, 30, 30)
     """
@@ -6277,11 +6276,9 @@ def conv2d_ext(input, weight, bias=None, stride=1, padding=0, dilation=1, groups
     if isinstance(padding, int):
         padding = twice(padding)
     if isinstance(padding, (tuple, list)):
-        conv = _get_cache_prim(Convolution)()
-        return conv(input, weight, bias, stride, padding, dilation, False, (0, 0), groups)
+        return conv2d_ext_op(input, weight, bias, stride, padding, dilation, groups)
     if isinstance(padding, str):
-        conv = _get_cache_prim(ConvolutionStr)()
-        return conv(input, weight, bias, stride, padding, dilation, False, (0, 0), groups)
+        return conv2d_padding_op(input, weight, bias, stride, padding, dilation, groups)
     raise TypeError(f"For conv2d, the parameter 'padding' must be a tuple/list " \
                     f"or a string, but got {type(padding)}")
 
