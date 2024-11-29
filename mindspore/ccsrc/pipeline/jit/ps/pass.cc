@@ -571,6 +571,9 @@ OptPassGroupMap GetA1A2(const opt::irpass::OptimizeIRPassLib &irpass) {
   auto opt_a = GetOptPassesA(irpass);
   constexpr auto a1_a2_len = 11;
   OptPassGroupMap a1_a2(opt_a.begin(), opt_a.begin() + a1_a2_len);
+  opt::irpass::OptimizeIRPassLib irpass_inline;
+  opt::OptPassConfig inline_pass = opt::OptPassConfig({irpass_inline.inline_});
+  (void)a1_a2.emplace_back("parallel_inline_pass", inline_pass);
   return a1_a2;
 }
 
@@ -1170,12 +1173,9 @@ bool PipelineParallelScheduler(const ResourcePtr &resource) {
     auto manager = resource->manager();
     auto stage = parallel::InferStage();
     auto pp_scheduler = parallel_context->pipeline_scheduler();
-    std::shared_ptr<parallel::PipelineScheduler> scheduler = nullptr;
-    if (pp_scheduler == parallel::kPipeline1F1B) {
-      scheduler = std::make_shared<parallel::InterleavedScheduler>(manager, root, stage, stage_num);
-    } else if (pp_scheduler == parallel::kPipelineGpipe) {
-      scheduler = std::make_shared<parallel::GpipeInterleavedScheduler>(manager, root, stage, stage_num);
-    } else {
+    std::shared_ptr<parallel::PipelineScheduler> scheduler =
+      parallel::SchedulerCreator::Instance().Create(pp_scheduler, manager, root, stage, stage_num);
+    if (!scheduler) {
       MS_LOG(EXCEPTION) << "Unsupported pipeline parallel scheduler: " << pp_scheduler;
     }
     scheduler->GetBorderNode();

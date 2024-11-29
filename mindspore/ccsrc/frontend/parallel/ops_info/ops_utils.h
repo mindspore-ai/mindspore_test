@@ -24,6 +24,7 @@ namespace parallel {
 constexpr size_t MAX_RECURSIVE_DEPTH = 100000;
 constexpr int64_t MAX_MICRO_BATCH_NUM = 4096;
 constexpr int64_t MAX_INTERLEAVE_NUM = 128;
+constexpr int64_t MAX_SEQ_CHUNK_NUM = 64;
 constexpr size_t PRELU_INPUTS_SIZE = 2;
 constexpr size_t PRELU_OUTPUTS_SIZE = 1;
 constexpr size_t PRELU_SECOND_INPUT_SIZE = 1;
@@ -728,6 +729,7 @@ constexpr char CUSTOM[] = "Custom";
 // pipeline
 constexpr size_t PIPELINE_FUSTION_OFFSET = 100;
 constexpr char MICRO[] = "micro";
+constexpr char SEQ_CHUNK[] = "seq_chunk";
 constexpr char ENABLE_PIPELINE_MEMORY_OPTIMIZE[] = "ENABLE_PIPELINE_MEMORY_OPTIMIZE";
 constexpr char DST_GLOBAL_RANK[] = "dst_global_rank";
 constexpr char SRC_GLOBAL_RANK[] = "src_global_rank";
@@ -758,6 +760,7 @@ constexpr char GROUP_BACK[] = "group_back";
 constexpr char MIRROR_MICRO_STEP_OPERATOR[] = "_MirrorMicroStepOperator";
 constexpr char PARAMETER_MICRO[] = "parameter_micro";
 constexpr char VIRTUAL_ASSIGN_ADD[] = "_VirtualAssignAdd";
+constexpr char VIRTUAL_ASSIGN_KV_CACHE[] = "_VirtualAssignKvCache";
 constexpr char VIRTUAL_ACCU_GRAD[] = "_VirtualAccuGrad";
 constexpr char ACCU_GRAD[] = "accu_grad";
 constexpr char PARAMETER_START[] = "parameter_start";

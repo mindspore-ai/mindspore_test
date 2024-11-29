@@ -31,105 +31,6 @@
 
 namespace mindspore {
 namespace parallel {
-void GpipeInterleavedScheduler::GetBackwardBorderNode(const CNodePtr &cnode) {
-  auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
-  auto micro = GetValue<int64_t>(cnode->GetPrimalAttr(MICRO));
-  Border border = {cnode, chunk, micro};
-  Border border_cell = {nullptr, chunk, micro};
-  if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-    if (cnode->HasPrimalAttr(PIPELINE_BEGIN)) {
-      auto bwd_cell = GetCellBySend(cnode);
-      MS_EXCEPTION_IF_NULL(bwd_cell);
-      if (stage_ == stage_num_ - 1 && chunk == chunk_num_ - 1) {
-        Border bwd_begin = {bwd_cell, chunk, micro};
-        bwd_begin_.emplace_back(bwd_begin);
-        border_cell.border = bwd_cell;
-        bwd_cell_.emplace_back(border_cell);
-      }
-      bwd_end_.emplace_back(border);
-    }
-    if (cnode->HasPrimalAttr(PIPELINE_END)) {
-      auto bwd_cell = GetCellByReceive(cnode, manager_);
-      MS_EXCEPTION_IF_NULL(bwd_cell);
-      if (stage_ == 0 && chunk == 0) {
-        Border bwd_end = {bwd_cell, chunk, micro};
-        bwd_end_.emplace_back(bwd_end);
-      }
-      border_cell.border = bwd_cell;
-      bwd_cell_.emplace_back(border_cell);
-      bwd_begin_.emplace_back(border);
-    }
-    if (cnode->HasPrimalAttr(PIPELINE_PARAM)) {
-      bwd_params_.emplace_back(border);
-    }
-  }
-}
-
-void GpipeInterleavedScheduler::GetChunkNum(const std::vector<AnfNodePtr> &all_nodes) {
-  for (auto &node : all_nodes) {
-    if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
-      continue;
-    }
-    auto cnode = node->cast<CNodePtr>();
-    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
-      continue;
-    }
-    auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
-    chunk_num_ = (chunk + 1) > chunk_num_ ? (chunk + 1) : chunk_num_;
-  }
-}
-
-void GpipeInterleavedScheduler::GetBorderNode() {
-  auto all_nodes = DeepScopedGraphSearch(root_->get_return());
-  GetChunkNum(all_nodes);
-  for (auto &node : all_nodes) {
-    if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
-      continue;
-    }
-    auto cnode = node->cast<CNodePtr>();
-    if (!cnode->HasPrimalAttr(CHUNK) || !cnode->HasPrimalAttr(MICRO)) {
-      continue;
-    }
-    auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
-    auto micro = GetValue<int64_t>(cnode->GetPrimalAttr(MICRO));
-    micro_size_ = (micro + 1) > micro_size_ ? (micro + 1) : micro_size_;
-    Border border = {cnode, chunk, micro};
-    Border border_cell = {nullptr, chunk, micro};
-    if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
-      GetBackwardBorderNode(cnode);
-      continue;
-    }
-    if (cnode->HasPrimalAttr(PIPELINE_BEGIN)) {
-      auto fwd_cell = GetCellByReceive(cnode, manager_);
-      MS_EXCEPTION_IF_NULL(fwd_cell);
-      if (stage_ == stage_num_ - 1 && chunk == chunk_num_ - 1) {
-        Border fwd_end = {fwd_cell, chunk, micro};
-        fwd_end_.emplace_back(fwd_end);
-      }
-      border_cell.border = fwd_cell;
-      fwd_cell_.emplace_back(border_cell);
-      fwd_begin_.emplace_back(border);
-      continue;
-    }
-    if (cnode->HasPrimalAttr(PIPELINE_END)) {
-      auto fwd_cell = GetCellBySend(cnode);
-      MS_EXCEPTION_IF_NULL(fwd_cell);
-      if (stage_ == 0 && chunk == 0) {
-        Border fwd_begin = {fwd_cell, chunk, micro};
-        fwd_begin_.emplace_back(fwd_begin);
-        border_cell.border = fwd_cell;
-        fwd_cell_.emplace_back(border_cell);
-      }
-      fwd_end_.emplace_back(border);
-      continue;
-    }
-    if (cnode->HasPrimalAttr(PIPELINE_PARAM)) {
-      fwd_params_.emplace_back(border);
-      continue;
-    }
-  }
-}
-
 static bool SortFuncBetweenMicro(const BorderPair &b_i, const BorderPair &b_j, bool is_backward) {
   auto micro_i = b_i.first.micro;
   auto micro_j = b_j.first.micro;
@@ -341,5 +242,10 @@ void GpipeInterleavedScheduler::OptimizerShardCommReorder() {
     manager_->SetEdge(begin_node, 1, depend);
   }
 }
+SchedulerRegisterAction PipelineSchedulerGpipe(parallel::kPipelineGpipe, [](const FuncGraphManagerPtr &manager,
+                                                                            const FuncGraphPtr &root, int64_t stage,
+                                                                            int64_t stage_num) {
+  return std::make_shared<parallel::GpipeInterleavedScheduler>(manager, root, stage, stage_num);
+});
 }  // namespace parallel
 }  // namespace mindspore

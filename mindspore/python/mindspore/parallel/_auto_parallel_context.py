@@ -76,6 +76,7 @@ class _PipelineConfig:
 class _PipelineScheduler:
     PIPELINE_1F1B = "1f1b"
     PIPELINE_GPIPE = "gpipe"
+    PIPELINE_SEQPIPE = "seqpipe"
 
 
 class _AutoParallelContext:
@@ -914,7 +915,8 @@ class _AutoParallelContext:
             pipeline_config[pp_interleave])
 
         Validator.check_string(pipeline_config[pp_scheduler], [_PipelineScheduler.PIPELINE_1F1B,
-                                                               _PipelineScheduler.PIPELINE_GPIPE])
+                                                               _PipelineScheduler.PIPELINE_GPIPE,
+                                                               _PipelineScheduler.PIPELINE_SEQPIPE])
         if not pipeline_config[pp_interleave] and pipeline_config[pp_scheduler] != _PipelineScheduler.PIPELINE_1F1B:
             raise ValueError(f"When pipeline_interleave is False, {pp_scheduler} is not supported")
 

@@ -1682,6 +1682,27 @@ class _VirtualAssignAdd(PrimitiveWithInfer):
 virtual_assign_add = _VirtualAssignAdd()
 
 
+class _VirtualAssignKvCache(PrimitiveWithInfer):
+    """
+    Auto parallel virtual operator. Do nothing in forward, do Assign kv cache in backward. It is only for
+    internal use of parallel modules and cannot be called by users.
+
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        """Initialize _VirtualAssignAdd."""
+        self.add_prim_attr('order_enforce_skip', True)
+        self.add_prim_attr('side_effect_backprop_mem', True)
+
+    def infer_shape(self, x_shape, y_shape, kv_equal_shape):
+        return x_shape
+
+    def infer_dtype(self, x_dtype, y_dtype, kv_equal_dtype):
+        return x_dtype
+virtual_assign_kv_cache = _VirtualAssignKvCache()
+
+
 class _VirtualAccuGrad(PrimitiveWithInfer):
     """
     Auto parallel virtual operator. Do nothing in forward, return y in backward. It is only for

@@ -630,7 +630,7 @@ void ParallelPostprocessor::PipelinePostProcessStep1() {
     } else {
       pipeline_processor->GraphPartition(processor_context_->all_nodes);
     }
-
+    AddVirtualAssignKvCache(processor_context_->root);
     pipeline_processor->ElimGraphStage();
     pipeline_processor->ModifyParameterList();
   }

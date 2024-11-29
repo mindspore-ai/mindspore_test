@@ -109,6 +109,11 @@ bool PipelineInterleave::MainGraph() {
 void PipelineInterleave::CreateSendReceiveGroup() {
   MS_EXCEPTION_IF_NULL(g_device_manager);
   auto rank_list = g_device_manager->GetDeviceListBetweenStage();
+  if (rank_list.size() == g_device_manager->DeviceNum()) {
+    group_ = {g_device_manager->world_group(), g_device_manager->world_group(), g_device_manager->world_group(),
+              g_device_manager->world_group()};
+    return;
+  }
   auto dev_list = g_device_manager->CreateDeviceListByRankList(rank_list);
   Group forward_send_group;
   auto forward_send_group_name = g_device_manager->GenerateGroupNameByRanks(rank_list) + SEND;
@@ -896,8 +901,9 @@ void PipelinePostProcess::ModifySendRecvAttr(const std::vector<AnfNodePtr> &all_
   }
 }
 
-static int64_t CalSrTag(int64_t order, int64_t micro, int64_t interleave_index) {
-  return order * MAX_MICRO_BATCH_NUM * MAX_INTERLEAVE_NUM + interleave_index * MAX_INTERLEAVE_NUM + micro;
+static int64_t CalSrTag(int64_t order, int64_t micro, int64_t interleave_index, int64_t seq_chunk) {
+  return order * MAX_MICRO_BATCH_NUM * MAX_INTERLEAVE_NUM + seq_chunk * MAX_SEQ_CHUNK_NUM +
+         interleave_index * MAX_INTERLEAVE_NUM + micro;
 }
 
 AnfNodePtr PipelinePostProcess::GenNewNodeFromOld(const AnfNodePtr &node, const AnfNodePtr &input, int64_t micro,
@@ -908,7 +914,11 @@ AnfNodePtr PipelinePostProcess::GenNewNodeFromOld(const AnfNodePtr &node, const 
   auto cloned_prim = prim->Clone();
   auto attrs = prim->attrs();
   auto order = GetValue<int64_t>(old->GetPrimalAttr(ORDER));
-  auto sr_tag = CalSrTag(order, micro, index);
+  int64_t seq_chunk = 0;
+  if (old->HasPrimalAttr(SEQ_CHUNK)) {
+    seq_chunk = GetValue<int64_t>(old->GetPrimalAttr(SEQ_CHUNK));
+  }
+  auto sr_tag = CalSrTag(order, micro, index, seq_chunk);
   attrs[SR_TAG] = MakeValue(sr_tag);
   cloned_prim->SetAttrs(attrs);
   std::vector<AnfNodePtr> new_node_input = {NewValueNode(cloned_prim), input};
@@ -942,9 +952,16 @@ std::vector<AnfNodePtr> PipelinePostProcess::GenerateMainGraphSend(const std::ve
     }
     auto micro_value = GetValue<int64_t>(micro);
     auto send_input = CreateTupleGetItemNode(main_graph_, node, i);
+    if (node->cast<CNodePtr>()->HasPrimalAttr(SEQ_CHUNK)) {
+      send->cast<CNodePtr>()->AddPrimalAttr(SEQ_CHUNK, node->cast<CNodePtr>()->GetPrimalAttr(SEQ_CHUNK));
+    }
     auto new_send = GenNewNodeFromOld(send, send_input, micro_value, index_value)->cast<CNodePtr>();
     new_send->AddPrimalAttr(PIPELINE_END, micro);
     new_send->AddPrimalAttr(MICRO, micro);
+    MS_EXCEPTION_IF_NULL(node->cast<CNodePtr>());
+    if (node->cast<CNodePtr>()->HasPrimalAttr(SEQ_CHUNK)) {
+      new_send->AddPrimalAttr(SEQ_CHUNK, node->cast<CNodePtr>()->GetPrimalAttr(SEQ_CHUNK));
+    }
     sends.emplace_back(new_send);
   }
   return sends;
@@ -962,11 +979,17 @@ AnfNodePtr PipelinePostProcess::GenerateMainGraphRecv(const AnfNodePtr &fg_node,
   } else {
     auto index = cuser->GetPrimalAttr(INDEX);
     MS_EXCEPTION_IF_NULL(index);
+    if (cuser->HasPrimalAttr(SEQ_CHUNK)) {
+      recv->cast<CNodePtr>()->AddPrimalAttr(SEQ_CHUNK, cuser->GetPrimalAttr(SEQ_CHUNK));
+    }
     auto index_value = GetValue<int64_t>(index);
     new_recv = GenNewNodeFromOld(recv, crecv->input(1), GetValue<int64_t>(cuser->GetPrimalAttr(MICRO)), index_value);
     new_recv->cast<CNodePtr>()->AddPrimalAttr(PIPELINE_BEGIN, cuser->GetPrimalAttr(MICRO));
   }
   new_recv->cast<CNodePtr>()->AddPrimalAttr(MICRO, cuser->GetPrimalAttr(MICRO));
+  if (cuser->HasPrimalAttr(SEQ_CHUNK)) {
+    new_recv->cast<CNodePtr>()->AddPrimalAttr(SEQ_CHUNK, cuser->GetPrimalAttr(SEQ_CHUNK));
+  }
   manager_->AddEdge(cuser, new_recv);
   return new_recv;
 }
@@ -1049,8 +1072,12 @@ void PipelinePostProcess::LabelInterleaveIndex() {
     auto micro = cusr->GetPrimalAttr(MICRO);
     MS_EXCEPTION_IF_NULL(micro);
     auto micro_value = GetValue<int64_t>(micro);
+    if (cusr->HasPrimalAttr(SEQ_CHUNK)) {
+      auto seq_chunk = GetValue<int64_t>(cusr->GetPrimalAttr(SEQ_CHUNK));
+      micro_value = micro_value * MAX_MICRO_BATCH_NUM + seq_chunk;
+    }
     if (!std::count(micro_visited.begin(), micro_visited.end(), micro_value)) {
-      micro_visited.emplace_back(micro_value);
+      (void)micro_visited.emplace_back(micro_value);
     } else {
       index += 1;
     }
