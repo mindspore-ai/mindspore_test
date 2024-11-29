@@ -1456,6 +1456,7 @@ void PyBoost::DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&
         continue;
       }
       runtime::DeviceAddressUtils::CreateKernelTensor(device_address, output);
+      output->data_sync(true);
     }
     for (const auto &input : op_inputs) {
       if (input->isa<tensor::BaseTensor>()) {
