@@ -547,7 +547,7 @@ int CpuFp16SubGraph::PreProcess() {
   }
   for (auto kernel : this->nodes_) {
     for (auto tensor : kernel->out_tensors()) {
-      if (kernel->type() == schema::PrimitiveType_Cast) {
+      if (kernel->type() == schema::PrimitiveType_Cast || kernel->type() == schema::PrimitiveType_QuantDTypeCast) {
         continue;
       }
       if (tensor->data_type() == kNumberTypeFloat32) {
