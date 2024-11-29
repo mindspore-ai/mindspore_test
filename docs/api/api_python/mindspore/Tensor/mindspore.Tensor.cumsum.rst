@@ -1,7 +1,7 @@
 mindspore.Tensor.cumsum
 =======================
 
-.. py:method:: mindspore.Tensor.cumsum(dim, dtype=None)
+.. py:method:: mindspore.Tensor.cumsum(dim, *, dtype=None)
 
     计算输入Tensor `self` 沿轴 `dim` 的累积和。
 
@@ -10,6 +10,8 @@ mindspore.Tensor.cumsum
 
     参数：
         - **dim** (int) - 累积和计算的轴。
+
+    关键字参数：
         - **dtype** (:class:`mindspore.dtype`, 可选) - 输出数据类型。如果不为None，则输入会转化为 `dtype`。这有利于防止数值溢出。如果为None，则输出和输入的数据类型一致。默认值： ``None`` 。
 
     返回：
