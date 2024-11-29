@@ -36,9 +36,9 @@ from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, F
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, \
+    unique_consecutive_impl
 from mindspore.ops.operations.array_ops import (
-    UniqueConsecutive,
     MatrixDiagV3,
     MatrixDiagPartV3,
     MatrixSetDiagV3,
@@ -60,7 +60,6 @@ from mindspore.ops.operations.array_ops import (
 from mindspore.common import Tensor
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore import _checkparam as validator
-from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._utils.utils import ms_arrange
 
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
@@ -1654,11 +1653,10 @@ def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
         [2 2 1 2 1]
     """
 
-    if not isinstance(input, (Tensor, Tensor_)):
-        raise TypeError("For 'unique_consecutive', 'input' must be Tensor.")
-    unique_consecutive_op = _get_cache_prim(
-        UniqueConsecutive)(return_idx, return_counts, axis)
-    output, idx, counts = unique_consecutive_op(input)
+    if not F.isconstant(return_idx) or not F.isconstant(return_counts):
+        raise ValueError(
+            f"For 'unique_consecutive', 'return_inverse' and 'return_counts' cannot be mutable")
+    output, idx, counts = unique_consecutive_impl(input, return_idx, return_counts, axis)
     if return_idx and return_counts:
         return output, idx, counts
     if return_idx:

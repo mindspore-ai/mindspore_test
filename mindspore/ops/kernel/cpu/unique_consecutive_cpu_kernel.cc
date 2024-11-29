@@ -23,13 +23,13 @@
 #include <functional>
 #include "include/common/thread_pool.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
-#include "mindspore/ops/infer/unique_consecutive.h"
+#include "mindspore/ops/infer/ops_func_impl/unique_consecutive.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
 // Value check constant
-constexpr size_t kUniqueConsecutiveInputsNum = 1;
+constexpr size_t kUniqueConsecutiveInputsNum = 4;
 constexpr size_t kUniqueConsecutiveOutputsNum = 3;
 // Attr default value constant
 constexpr int64_t kNone = 1000;
@@ -147,25 +147,25 @@ bool UniqueConsecutiveCpuKernelMod::Init(const std::vector<KernelTensor *> &inpu
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
     return false;
   }
-  // Get attrs from primitive.
-  auto axis_ptr = primitive_->GetAttr("axis");
-  return_idx_ = GetValue<bool>(primitive_->GetAttr("return_idx"));
-  return_counts_ = GetValue<bool>(primitive_->GetAttr("return_counts"));
-  // Get input shape
-  if (axis_ptr == nullptr || GetValue<int64_t>(axis_ptr) == kNone) {
-    axis_ = kNone;
-  } else {
-    axis_ = GetValue<int64_t>(axis_ptr);
-  }
   return true;
 }
 
 int UniqueConsecutiveCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
                                           const std::vector<KernelTensor *> &outputs) {
   auto ret = KernelMod::Resize(inputs, outputs);
-  input_shape_ = inputs[0]->GetShapeVector();
+  // Get attrs from primitive.
+  return_idx_ = inputs[kIndex1]->GetValueWithCheck<bool>();
+  return_counts_ = inputs[kIndex2]->GetValueWithCheck<bool>();
+  input_shape_ = inputs[kIndex0]->GetShapeVector();
   int64_t input_size = SizeToLong(input_shape_.size());
-  axis_ = axis_ < 0 ? (axis_ + input_size) : axis_;
+
+  auto axis_type_ = inputs[kIndex3]->GetType();
+  MS_EXCEPTION_IF_NULL(axis_type_);
+  axis_ = kNone;
+  if (!axis_type_->isa<TypeNone>()) {
+    axis_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
+    axis_ = axis_ < 0 ? (axis_ + input_size) : axis_;
+  }
   return ret;
 }
 
@@ -207,13 +207,11 @@ void UniqueConsecutiveCpuKernelMod::UniqueConsecutiveNone(const std::vector<Kern
       idx_shape_ = input_shape_;
     } else {
       idx_shape_.clear();
-      idx_shape_.push_back(0);
     }
     if (return_counts_) {
       count_shape_ = output_shape_;
     } else {
       count_shape_.clear();
-      count_shape_.push_back(0);
     }
   } else {
     output_shape_.push_back(0);
@@ -221,13 +219,11 @@ void UniqueConsecutiveCpuKernelMod::UniqueConsecutiveNone(const std::vector<Kern
       idx_shape_ = input_shape_;
     } else {
       idx_shape_.clear();
-      idx_shape_.push_back(0);
     }
     if (return_counts_) {
-      count_shape_ = input_shape_;
+      count_shape_ = output_shape_;
     } else {
       count_shape_.clear();
-      count_shape_.push_back(0);
     }
   }
 }
@@ -243,14 +239,6 @@ void UniqueConsecutiveCpuKernelMod::UniqueConsecutiveDim(const std::vector<Kerne
   MS_EXCEPTION_IF_NULL(output_count);
   auto num_zero_dims = std::count(input_shape_.begin(), input_shape_.end(), 0);
   int64_t dim0 = input_shape_[static_cast<size_t>(axis_)];
-  // Set the idx shape
-  if (return_idx_) {
-    idx_shape_.clear();
-    idx_shape_.push_back(dim0);
-  } else {
-    idx_shape_.clear();
-    idx_shape_.push_back(0);
-  }
   // Some check
   if (dim0 == 0) {
     if (num_zero_dims != 1) {
@@ -259,9 +247,19 @@ void UniqueConsecutiveCpuKernelMod::UniqueConsecutiveDim(const std::vector<Kerne
     } else {
       output_shape_.push_back(0);
       count_shape_.push_back(0);
+      idx_shape_.push_back(0);
       return;
     }
   }
+
+  // Set the idx shape
+  if (return_idx_) {
+    idx_shape_.clear();
+    idx_shape_.push_back(dim0);
+  } else {
+    idx_shape_.clear();
+  }
+
   if (num_zero_dims != 0) {
     MS_LOG(EXCEPTION) << "For 'UniqueConsecutive', there are 0 sized dimensions, and they aren't selected by 'axis', "
                          "so unique cannot be applied.";
@@ -272,9 +270,10 @@ void UniqueConsecutiveCpuKernelMod::UniqueConsecutiveDim(const std::vector<Kerne
     std::vector<std::vector<T1>> out_data_;
     out_data_.push_back(data_[0]);
     auto p = data_[0];
+    output_idx[0] = static_cast<T2>(0);
     T2 *q = output_count;
     T2 last = 0;
-    for (size_t i = 0; i < static_cast<size_t>(dim0); i++) {
+    for (size_t i = 1; i < static_cast<size_t>(dim0); i++) {
       if (!std::equal(data_[i].begin(), data_[i].end(), p.begin())) {
         p = data_[i];
         out_data_.push_back(data_[i]);
@@ -299,7 +298,6 @@ void UniqueConsecutiveCpuKernelMod::UniqueConsecutiveDim(const std::vector<Kerne
       count_shape_.push_back(out_data_.size());
     } else {
       count_shape_.clear();
-      count_shape_.push_back(0);
     }
   } else {
     return UniqueConsecutiveNone<T1, T2>(inputs, outputs);
@@ -315,12 +313,12 @@ bool UniqueConsecutiveCpuKernelMod::LaunchKernel(const std::vector<KernelTensor 
   output_shape_.clear();
   idx_shape_.clear();
   count_shape_.clear();
+
   if (axis_ == kNone) {
     UniqueConsecutiveNone<T1, T2>(inputs, outputs);
   } else {
     UniqueConsecutiveDim<T1, T2>(inputs, outputs);
   }
-
   return true;
 }
 
@@ -343,6 +341,9 @@ void UniqueConsecutiveCpuKernelMod::UpdateOutputShapeAndSize(const std::vector<K
   {                                                                                                  \
     KernelAttr()                                                                                     \
       .AddInputAttr(ms_value_type)                                                                   \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                                              \
+      .AddInputAttr(kObjectTypeNumber, kNumberTypeBool)                                              \
+      .AddOptionalInputAttr(kObjectTypeNumber, ms_index_type)                                        \
       .AddOutputAttr(ms_value_type)                                                                  \
       .AddOutputAttr(ms_index_type)                                                                  \
       .AddOutputAttr(ms_index_type),                                                                 \
@@ -354,9 +355,11 @@ const std::vector<std::pair<KernelAttr, UCKernelRunFunc>> &UniqueConsecutiveCpuK
   static const std::vector<std::pair<KernelAttr, UCKernelRunFunc>> func_list = {
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeComplex64, int64_t, std::complex<float>),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeComplex128, int64_t, std::complex<double>),
+    CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeBFloat16, int64_t, bfloat16),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeFloat16, int64_t, float16),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeFloat32, int64_t, float),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeFloat64, int64_t, double),
+    CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeBool, int64_t, bool),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeInt8, int64_t, int8_t),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeInt16, int64_t, int16_t),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeInt32, int64_t, int32_t),
@@ -367,9 +370,11 @@ const std::vector<std::pair<KernelAttr, UCKernelRunFunc>> &UniqueConsecutiveCpuK
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt64, kNumberTypeUInt64, int64_t, uint64_t),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeComplex64, int32_t, std::complex<float>),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeComplex128, int32_t, std::complex<double>),
+    CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeBFloat16, int32_t, bfloat16),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeFloat16, int32_t, float16),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeFloat32, int32_t, float),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeFloat64, int32_t, double),
+    CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeBool, int32_t, bool),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeInt8, int32_t, int8_t),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeInt16, int32_t, int16_t),
     CPU_UNIQUE_CONSECUTIVE_KERNEL_REGISTER(kNumberTypeInt32, kNumberTypeInt32, int32_t, int32_t),

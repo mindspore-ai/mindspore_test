@@ -6,6 +6,7 @@ mindspore.mint.unique
     对输入Tensor中元素去重。
 
     在 `return_inverse=True` 时，会返回一个索引Tensor，包含输入Tensor中的元素在输出Tensor中的索引；
+
     在 `return_counts=True` 时，会返回一个Tensor，表示输出元素在输入中的个数。
 
     参数：

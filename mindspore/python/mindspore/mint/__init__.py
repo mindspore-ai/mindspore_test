@@ -1723,6 +1723,67 @@ def swapaxes(input, axis0, axis1):
     return transpose(input, axis0, axis1)
 
 
+def unique_consecutive(input, return_inverse=False, return_counts=False, dim=None):
+    r"""
+    Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
+
+    When `return_inverse=True` , it returns a tensor containing the indices of the elements in the input tensor
+    within the output tensor.
+
+    When `return_counts=True` , it returns a tensor representing the number of occurrences of each output element
+    in the input.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor.
+        return_inverse (bool, optional): Whether to return the index of where the element in the original input
+            maps to the position in the output. Default: ``False`` .
+        return_counts (bool, optional): Whether to return the counts of each unique element. Default: ``False`` .
+        dim (int, optional): The dimension to apply unique. If ``None`` , the unique of the flattened input is
+            returned. If specified, it must be int32 or int64. Default: ``None`` .
+
+    Returns:
+        A tensor or a tuple of tensors containing tensor objects (`output`, `inverse_indices`, `counts`).
+
+        - **output** (Tensor): the output tensor has the same type as `input` and represents the output list of
+          unique scalar elements.
+        - **inverse_indices** (Tensor, optional): if `return_inverse` is True, there will be an additional returned
+          tensor `inverse_indices`. `inverse_indices` has the same shape as `input` and represents the index of where
+          the element in the original input maps to the position in the output.
+        - **counts** (Tensor, optional):  if `return_counts` is True, there will be an additional returned tensor
+          `counts`. `counts` has the same shape as `output` or `output.shape[dim]` if dim was specified and represents
+          the number of occurrences for each unique value or tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not supported.
+        TypeError: If `return_inverse` is not a bool.
+        TypeError: If `return_counts` is not a bool.
+        TypeError: If `dim` is not an int.
+        ValueError: If `dim` is not in the range of :math:`[-ndim, ndim-1]`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> from mindspore import dtype as mstype
+        >>> x = Tensor(np.array([1, 1, 2, 2, 3, 1, 1, 2]), mstype.int64)
+        >>> output, inverse_indices, counts = mint.unique_consecutive(x, True, True, None)
+        >>> print(output)
+        [1 2 3 1 2]
+        >>> print(inverse_indices)
+        [0 0 1 1 2 3 3 4]
+        >>> print(counts)
+        [2 2 1 2 1]
+    """
+
+    return ops.function.array_func.unique_consecutive(input, return_inverse, return_counts, dim)
+
+
 def zeros(size, *, dtype=None):
     """
     Creates a tensor filled with 0 with shape described by `size` and fills it with value 0 in type of `dtype`.
@@ -2231,6 +2292,9 @@ __all__ = [
 
     # 588
     'var_mean',
+
+    # 586
+    'unique_consecutive',
 
     # 610
     'nan_to_num',
