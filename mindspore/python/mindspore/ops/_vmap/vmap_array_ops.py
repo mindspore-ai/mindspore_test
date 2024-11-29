@@ -15,6 +15,7 @@
 
 """array_ops vmap impl."""
 from __future__ import absolute_import
+from enum import Enum
 
 import mindspore
 import mindspore.numpy as mnp
@@ -1488,16 +1489,19 @@ def get_meshgrid_vmap_rule(prim, axis_size):
     """VmapRule for `P.Meshgrid` operation."""
     if isinstance(prim, str):
         prim = Primitive(prim)
-    indexing = prim.indexing
 
-    def vmap_rule(*inputs_bdim):
-        is_all_none, result = vmap_general_preprocess(prim, *inputs_bdim)
+    class Indexing(Enum):
+        ij = 0
+        xy = 1
+
+    def vmap_rule(inputs_bdim, indexing_bdim):
+        is_all_none, result = vmap_general_preprocess(prim, inputs_bdim, indexing_bdim)
         if is_all_none:
             return result
 
         if not isinstance(inputs_bdim, (tuple)):
             _raise_value_error("The inputs of P.Meshgrid is not tuple.")
-        args = inputs_bdim[0]
+        args = inputs_bdim
         if len(args) <= 1:
             _raise_value_error(
                 "The input number of P.Meshgrid must be greater than 1.")
@@ -1518,7 +1522,9 @@ def get_meshgrid_vmap_rule(prim, axis_size):
         output_shape.insert(0, axis_size)
         ones_shape.insert(0, axis_size)
 
-        if indexing == "xy":
+        indexing, _ = indexing_bdim
+
+        if indexing == Indexing.xy.value:
             output_shape[1], output_shape[2] = output_shape[2], output_shape[1]
         shape = tuple(output_shape)
 
@@ -1531,7 +1537,7 @@ def get_meshgrid_vmap_rule(prim, axis_size):
         for each_arg in args:
             x, bdim = each_arg
             x = _bdim_at_front(x, bdim, axis_size)
-            shape_index = (1 - index) if (index <= 1 and indexing == "xy") else index
+            shape_index = (1 - index) if (index <= 1 and indexing == Indexing.xy.value) else index
             ones_shape[shape_index + 1] = output_shape[shape_index + 1]
             x = P.Reshape()(x, tuple(ones_shape))
             output = P.Mul()(x, ones_tensor)
