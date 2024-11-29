@@ -144,6 +144,7 @@
 #include "tools/optimizer/fusion/ffn_custom_pass.h"
 #include "tools/optimizer/graph/make_list_pass.h"
 #include "tools/optimizer/fusion/flash_attention_fusion.h"
+#include "tools/optimizer/fusion/flash_attention_tik_fusion.h"
 #include "tools/optimizer/fusion/groupnormsilu_fusion.h"
 #include "tools/optimizer/fusion/adjust_resize_dims_pass.h"
 #include "tools/optimizer/fusion/gnsnz_pass.h"
@@ -831,6 +832,7 @@ bool AnfTransform::StoreBuiltinPass(const std::shared_ptr<ConverterPara> &param)
     {"MakeListPass", std::make_shared<opt::MakeListPass>(), true},
     {"FlashAttentionFusion", std::make_shared<opt::FlashAttentionFusion>(param->aclModelOptionCfgParam.op_attrs_map),
      false},
+    {"FlashAttentionTikPass", std::make_shared<opt::FlashAttentionTikPass>(), false},
     {"GNSNZPass", std::make_shared<opt::GNSNZPass>(), false},
     {"GroupNormSiluFusion", std::make_shared<opt::GroupNormSiluFusion>(), false},
     {"GeGluV2Fusion", std::make_shared<opt::GeGluV2Fusion>(), false},
