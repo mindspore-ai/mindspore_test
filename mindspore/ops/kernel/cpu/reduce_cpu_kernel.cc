@@ -378,8 +378,8 @@ bool ReduceCpuKernelFunc<T>::RunFunc(const std::vector<kernel::KernelTensor *> &
                                      const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kReduceOutputsNum, kernel_name_);
   size_t input_size = inputs[0]->size() / sizeof(T);
-  auto *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   if (need_skip_execute_) {
     auto ret = memcpy_s(output_addr, outputs[0]->size(), input_addr, inputs[0]->size());
     if (ret != EOK) {

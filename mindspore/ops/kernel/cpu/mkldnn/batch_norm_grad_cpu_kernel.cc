@@ -103,7 +103,7 @@ void BatchNormGradCpuKernelMod::InitWorkspaceSize(const std::vector<KernelTensor
 bool BatchNormGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
                                        const std::vector<kernel::KernelTensor *> &workspace,
                                        const std::vector<kernel::KernelTensor *> &outputs) {
-  auto wksp_in = reinterpret_cast<float *>(workspace[SCALE_BIAS]->device_ptr());
+  auto wksp_in = GetDeviceAddress<float>(workspace, SCALE_BIAS);
   auto scale_ret = memcpy_s(wksp_in, workspace[SCALE_BIAS]->size(), inputs[SCALE]->device_ptr(), inputs[SCALE]->size());
   if (scale_ret != EOK) {
     MS_LOG(EXCEPTION) << "Scale memcpy error!";
@@ -123,7 +123,7 @@ bool BatchNormGradCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *>
   SetArgumentHandle(DNNL_ARG_DIFF_SCALE_SHIFT, workspace[DIFF_SCALE_BIAS]->device_ptr());
   ExecutePrimitive();
 
-  auto wksp_out = reinterpret_cast<float *>(workspace[DIFF_SCALE_BIAS]->device_ptr());
+  auto wksp_out = GetDeviceAddress<float>(workspace, DIFF_SCALE_BIAS);
   auto diff_scale_ret =
     memcpy_s(outputs[DSCALE]->device_ptr(), outputs[DSCALE]->size(), wksp_out, inputs[SCALE]->size());
   if (diff_scale_ret != EOK) {

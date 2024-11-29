@@ -98,13 +98,13 @@ bool CTCGreedyDecoderCpuKernelMod::LaunchKernel(const std::vector<kernel::Kernel
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the number of outputs should be " << kOutputNum << ", but got "
                       << outputs.size() << " output(s).";
   }
-  auto inputs_x = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto sequence_length = reinterpret_cast<int32_t *>(inputs[kIndex1]->device_ptr());
+  auto inputs_x = GetDeviceAddress<T>(inputs, kIndex0);
+  auto sequence_length = GetDeviceAddress<int32_t>(inputs, kIndex1);
 
-  auto decoded_indices = reinterpret_cast<int64_t *>(outputs[kIndex0]->device_ptr());
-  auto decoded_values = reinterpret_cast<int64_t *>(outputs[kIndex1]->device_ptr());
-  auto decoded_shape = reinterpret_cast<int64_t *>(outputs[kIndex2]->device_ptr());
-  auto log_probability = reinterpret_cast<T *>(outputs[kIndex3]->device_ptr());
+  auto decoded_indices = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  auto decoded_values = GetDeviceAddress<int64_t>(outputs, kIndex1);
+  auto decoded_shape = GetDeviceAddress<int64_t>(outputs, kIndex2);
+  auto log_probability = GetDeviceAddress<T>(outputs, kIndex3);
 
   int ret = memset_s(log_probability, sizeof(T) * batch_size_, 0, sizeof(T) * batch_size_);
   if (ret != EOK) {

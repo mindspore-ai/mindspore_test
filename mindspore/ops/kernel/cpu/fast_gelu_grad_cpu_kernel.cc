@@ -33,11 +33,11 @@ bool FastGeLUGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
                                             const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kFastGeluGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kFastGeluGradOutputsNum, kernel_name_);
-  T *input1 = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
+  T *input1 = GetDeviceAddress<T>(inputs, kIndex0);
   MS_ERROR_IF_NULL_W_RET_VAL(input1, false);
-  T *input2 = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
+  T *input2 = GetDeviceAddress<T>(inputs, kIndex1);
   MS_ERROR_IF_NULL_W_RET_VAL(input2, false);
-  T *output = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *output = GetDeviceAddress<T>(outputs, kIndex0);
   MS_ERROR_IF_NULL_W_RET_VAL(output, false);
 
   const size_t lens = outputs[0]->size() > 0 ? static_cast<size_t>(outputs[0]->size() / sizeof(T)) : 1;
