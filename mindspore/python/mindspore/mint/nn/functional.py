@@ -251,6 +251,9 @@ from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
 # 324
 from mindspore.ops.auto_generate import elu_ext as elu
 
+# 421
+from mindspore.ops.auto_generate import flatten_ext as flatten
+
 # 426
 from mindspore.ops.function.clip_func import clamp
 # 427
@@ -936,4 +939,6 @@ __all__ = [
     'adaptive_avg_pool2d',
     # 393
     'dropout2d',
+    # 421
+    'flatten'
 ]
