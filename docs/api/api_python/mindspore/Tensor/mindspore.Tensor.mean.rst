@@ -26,6 +26,7 @@ mindspore.Tensor.mean
         - **TypeError** - 如果 `keep_dims` 不是bool。
         - **ValueError** - 如果 `axis` 超出取值范围。
 
-.. py:method:: mindspore.Tensor.mean(axis=None, keep_dims=False)
+    .. py:method:: mindspore.Tensor.mean(axis=None, keep_dims=False)
+        :noindex:
 
     详情请参考 :func:`mindspore.ops.mean`。

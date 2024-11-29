@@ -8695,7 +8695,7 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
 
           - :math:`N` of parameter `query` must be equal to `num_heads`. :math:`N` of parameter `key` and parameter
             `value` must be equal to `num_key_value_heads`.
-          - `num_heads` must be divisible by `num_key_value_heads` and `num_heads` divided by `num_key_value_heads
+          - `num_heads` must be divisible by `num_key_value_heads` and `num_heads` divided by `num_key_value_heads`
             can not be greater than 64.
           - When `query` dtype is bfloat16, D axis should align with 16.
           - Each element of `actual_seq_lengths` must not exceed q_S and element
@@ -8783,7 +8783,7 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
             Default: ``1``.
 
     Returns:
-        attention_out (Tensor) - Output tensor, has the same shape as` query` of
+        attention_out (Tensor) - Output tensor, has the same shape as `query` of
         :math:`(B, q_S, q_H)` / :math:`(B, q_N, q_S, q_D)`.
         Output dtype is determined by multiple factors, please refer to Note above for details.
 
