@@ -76,7 +76,7 @@ from mindspore.ops.function.array_func import repeat_interleave_ext as repeat_in
 # 13
 from mindspore.ops.functional import flip
 # 14
-
+from mindspore.ops.auto_generate import mv
 # 15
 from mindspore.ops.auto_generate import flatten_ext as flatten
 # 16
@@ -1869,7 +1869,7 @@ __all__ = [
     # 13
     "flip",
     # 14
-
+    'mv',
     # 15
     'flatten',
     # 16
