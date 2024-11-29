@@ -17,19 +17,19 @@ from __future__ import absolute_import
 
 import math
 
-from mindspore.ops.auto_generate.gen_ops_prim import Convolution, ConvolutionStr
+from mindspore.ops.auto_generate.gen_ops_prim import Convolution, ConvolutionStr, conv3d_ext_op, conv3d_padding_op
 from mindspore.ops.function.nn_func import pad_ext, conv_transpose2d
 from mindspore.ops.function.array_func import rank
 import mindspore.common.dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer, HeUniform, Uniform, _calculate_fan_in_and_fan_out
 from mindspore import _checkparam as Validator
-from mindspore._checkparam import twice
+from mindspore._checkparam import twice, triple
 from mindspore._extends import cell_attr_register
 from mindspore.nn.cell import Cell
 from mindspore.ops.functional import isconstant
 
-__all__ = ['Conv2d', 'ConvTranspose2d']
+__all__ = ['Conv2d', 'ConvTranspose2d', 'Conv3d']
 
 
 class _Conv(Cell):
@@ -325,6 +325,173 @@ class Conv2d(_Conv):
         if is_batched:
             return output
         return output.squeeze(0)
+
+
+class Conv3d(_Conv):
+    r"""
+    3D convolution layer.
+
+    Applies a 3D convolution over an input tensor. The input tensor is typically of
+    shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})`, where :math:`N` is batch size, :math:`C`
+    is channel number, :math:`D, H, W` are the depth, height and width of the feature graph, respectively.
+
+    The output is calculated based on formula:
+
+    .. math::
+
+        \text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) +
+        \sum_{k = 0}^{C_{in} - 1} \text{ccor}({\text{weight}(C_{\text{out}_j}, k), \text{X}(N_i, k)})
+
+    where :math:`bias` is the output channel bias, :math:`ccor` is
+    the `cross-correlation <https://en.wikipedia.org/wiki/Cross-correlation>`_,
+    :math:`weight` is the convolution kernel value and :math:`X` represents the input feature map.
+
+    Here are the indices' meanings:
+
+    - :math:`i` corresponds to the batch number, the range is :math:`[0, N-1]`,
+      where :math:`N` is the batch size of the input.
+
+    - :math:`j` corresponds to the output channel, the range is :math:`[0, C_{out}-1]`,
+      where :math:`C_{out}` is the number of
+      output channels, which is also equal to the number of kernels.
+
+    - :math:`k` corresponds to the input channel, the range is :math:`[0, C_{in}-1]`,
+      where :math:`C_{in}` is the number of
+      input channels, which is also equal to the number of channels in the convolutional kernels.
+
+    Therefore, in the above formula, :math:`{bias}(C_{\text{out}_j})` represents the bias of the :math:`j`-th
+    output channel, :math:`{weight}(C_{\text{out}_j}, k)` represents the slice of the :math:`j`-th convolutional
+    kernel in the :math:`k`-th channel, and :math:`{X}(N_i, k)` represents the slice of the :math:`k`-th input
+    channel in the :math:`i`-th batch of the input feature map.
+
+    The shape of the convolutional kernel is given by :math:`(\text{kernel_size[0]},\text{kernel_size[1]})`,
+    where :math:`\text{kernel_size[0]}`
+    and :math:`\text{kernel_size[1]}` are the height and width of the kernel, respectively.
+    If we consider the input and output channels as well as the `groups` parameter, the complete kernel shape
+    will be :math:`(C_{out}, C_{in} / \text{groups}, \text{kernel_size[0]}, \text{kernel_size[1]})`,
+    where `groups` is the number of groups dividing `x`'s input channel when applying groups convolution.
+
+    For more details about convolution layer, please refer to `Gradient Based Learning Applied to Document Recognition
+    <http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf>`_.
+
+    .. warnings:
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        in_channels (int): The channel number of the input tensor of the Conv3d layer.
+        out_channels (int): The channel number of the output tensor of the Conv3d layer.
+        kernel_size (Union[int, tuple[int]]): Specifies the height and width of the 3D convolution kernel.
+            The data type is an integer or a tuple of two integers. An integer represents the height
+            and width of the convolution kernel. A tuple of two integers represents the height
+            and width of the convolution kernel respectively.
+        stride (Union[int, tuple[int]], optional): The movement stride of the 3D convolution kernel.
+            The data type is an integer or a tuple of three integers. An integer represents the movement step size
+            in both height and width directions. A tuple of three integers represents the movement step size in the depth, height
+            and width directions respectively. Default: ``1`` .
+        padding (Union[int, tuple[int], str], optional): The number of padding
+            on the depth, height and width directions of the input.
+            The data type is an integer or string {`valid`, `same`} or a tuple of three integers.
+            The value should be greater than or equal to 0. Default: ``0`` .
+
+            - ``"same"``: Pad the input around its edges so that the shape of input and output
+              are the same when `stride` is set to ``1``.
+              The amount of padding to is calculated by the operator internally, If the amount is even, it is
+              uniformly distributed around the input, if it is odd, the excess amount goes to the right/bottom side.
+              If this mode is set, `padding` must be 0.
+
+            - ``"valid"``: No padding is applied to the input, and the output returns the maximum
+              possible height and width. Extra pixels that could not complete a full stride will
+              be discarded. If this mode is set, `padding` must be 0.
+
+        padding_mode (str, optional): Specifies the padding mode with a padding value of 0. It can be set to:
+            ``"zeros"`` , ``"reflect"`` ``"circular"`` or ``"replicate"`` . Default: ``"zeros"`` .
+        dilation (Union(int, tuple[int]), optional): Controlling the space between the kernel points. Default: ``1`` .
+        groups (int, optional): Splits filter into groups, `in_channels` and `out_channels` must be
+            divisible by `groups`. If the groups is equal to `in_channels` and `out_channels`. Default: ``1`` .
+        bias (bool, optional): Whether the Conv3d layer has a bias parameter. Default: ``True`` .
+        dtype (mindspore.dtype) – Dtype of Parameters. Default: mstype.float32 .
+
+    Inputs:
+        - **x** (Tensor) - Tensor of shape :math:`(N, C_{in}, D_{in}, H_{in}, W_{in})` \
+          or :math:`(N, H_{in}, D_{in}, W_{in}, C_{in})`.
+
+    Outputs:
+        Tensor of shape :math:`(N, C_{out}, D_{out}, H_{out}, W_{out})`.
+
+        padding is ``'same'``:
+
+        .. math::
+            \begin{array}{ll} \\
+                D_{out} = \left \lceil{\frac{D_{in}}{\text{stride[0]}}} \right \rceil \\
+                H_{out} = \left \lceil{\frac{H_{in}}{\text{stride[1]}}} \right \rceil \\
+                W_{out} = \left \lceil{\frac{W_{in}}{\text{stride[2]}}} \right \rceil \\
+            \end{array}
+
+        padding is ``'valid'``:
+
+        .. math::
+            \begin{array}{ll} \\
+                D_{out} = \left \lceil{\frac{D_{in} - \text{dilation[0]} \times (\text{kernel_size[0]} - 1) }
+                {\text{stride[0]}}} \right \rceil \\
+                H_{out} = \left \lceil{\frac{H_{in} - \text{dilation[1]} \times (\text{kernel_size[1]} - 1) }
+                {\text{stride[1]}}} \right \rceil \\
+                W_{out} = \left \lceil{\frac{W_{in} - \text{dilation[2]} \times (\text{kernel_size[2]} - 1) }
+                {\text{stride[2]}}} \right \rceil \\
+            \end{array}
+
+    Raises:
+        TypeError: If `in_channels`, `out_channels` or `groups` is not an int.
+        TypeError: If `kernel_size`, `stride`, `padding` or `dilation` is neither an int not a tuple.
+        ValueError: If `in_channels`, `out_channels`, `kernel_size`, `stride` or `dilation` is less than 1.
+        ValueError: If `padding` is less than 0.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> net = mint.nn.Conv3d(120, 10, 4)
+        >>> x = Tensor(np.ones([1, 120, 10, 23, 34]), mindspore.float32)
+        >>> output = net(x).shape
+        >>> print(output)
+        (1, 10, 7, 20, 31)
+    """
+    @cell_attr_register
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 bias=True,
+                 padding_mode='zeros',
+                 dtype=None):
+        """Initialize Conv3d."""
+        kernel_size_ = triple(kernel_size)
+        stride_ = triple(stride)
+        padding_ = padding if isinstance(padding, str) else triple(padding)
+        dilation_ = triple(dilation)
+        if not dtype:
+            dtype = mstype.float32
+        super(Conv3d, self).__init__(in_channels, out_channels, kernel_size_, stride_, padding_, dilation_, False,
+                                     triple(0), groups, bias, padding_mode, dtype)
+        if isinstance(padding, str) and padding_mode == "zeros":
+            self.conv3d = conv3d_padding_op
+        else:
+            self.conv3d = conv3d_ext_op
+
+
+    def construct(self, input):
+        if self.padding_mode != "zeros":
+            output = self.conv3d(pad_ext(input, self._reversed_padding, mode=self.padding_mode), self.weight,
+                                 self.bias, self.stride, (0, 0, 0), self.dilation, self.groups)
+        else:
+            output = self.conv3d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        return output
 
 
 def batchify(input, num_spatial_dims, ops_name):

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/convolution_str_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/conv3d_padding_aclnn_kernel.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -31,54 +31,105 @@
 namespace mindspore {
 namespace kernel {
 
-void ConvolutionStrAscend::SetExpandTensor(KernelTensor *input_tensor, const std::vector<KernelTensor *> &inputs) {
+std::vector<int64_t> Conv3DPaddingAscend::GetOriginStrides(const std::vector<int64_t> &shape) {
+  if (shape.empty()) {
+    return {};
+  }
+
+  std::vector<int64_t> ret(shape.size(), 1);
+  int64_t strides = 1;
+  for (size_t i = shape.size() - 1; i > 0; --i) {
+    strides *= shape[i];
+    ret[i - 1] = strides;
+  }
+  return ret;
+}
+
+TensorStorageInfoPtr Conv3DPaddingAscend::CreateTensorStorageInfoPtr(const std::vector<int64_t> &shape) {
+  size_t offset = 0;
+  const std::vector<int64_t> expand_shape_ori = shape;
+  const std::vector<int64_t> expand_shape_new = shape;
+  auto expand_stride_ori = GetOriginStrides(expand_shape_ori);
+  auto expand_stride_new = expand_stride_ori;
+  return std::make_shared<TensorStorageInfo>(expand_shape_new, expand_stride_new, offset, expand_shape_ori,
+                                             expand_stride_ori, true);
+}
+
+template <typename T>
+void Conv3DPaddingAscend::SetTensorStorageInfo(T kernel_tensor, const ShapeVector &shape) {
+  kernel_tensor->SetShapeVector(shape);
+  TensorStorageInfoPtr tensor_storage_info = CreateTensorStorageInfoPtr(shape);
+  kernel_tensor->set_tensor_storage_info(tensor_storage_info);
+}
+
+void Conv3DPaddingAscend::SetExpandTensor(KernelTensor *input_tensor, const std::vector<KernelTensor *> &inputs) {
   input_tensor->SetType(inputs[kIndex0]->GetType());
   input_tensor->SetShape(std::make_shared<abstract::TensorShape>(pad_nd_shape_));
 }
 
-void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                            const std::vector<KernelTensor *> &outputs) {
+bool Conv3DPaddingAscend::CalcPaddingMode(std::vector<int64_t> &padding_l, std::vector<int64_t> &padding_r,
+                                          const ShapeVector &input_sizes, const ShapeVector &weight_sizes,
+                                          const std::vector<int64_t> &stride_, const std::vector<int64_t> &dilation_) {
+  bool symmetric_padding = true;
+  auto k = SizeToLong(weight_sizes.size());
+  auto dim = static_cast<size_t>(k - 2);
+  for (size_t i = 0; i < dim; ++i) {
+    auto stride = stride_.size() == 1 ? stride_[0] : stride_[i];
+    auto dilation = dilation_.size() == 1 ? dilation_[0] : dilation_[i];
+    auto inputSize = input_sizes[i + 2];
+    auto kernelSize = weight_sizes[i + 2];
+    auto total_padding = dilation * (kernelSize - 1);
+    if (stride > 2 && (total_padding % 2 == 1)) {
+      auto wiggle_room = inputSize % stride - 1;
+      if (wiggle_room > 0) {
+        --total_padding;
+      }
+    }
+    auto left = total_padding / 2;
+    auto right = total_padding - left;
+
+    padding_l.push_back(left);
+    padding_r.push_back(right);
+    if (left != right) {
+      symmetric_padding = false;
+    }
+  }
+  return symmetric_padding;
+}
+
+void Conv3DPaddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                           const std::vector<KernelTensor *> &outputs) {
   ClearOpsWorkSpaceList();
   expand_indices_.clear();
 
   stride_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex3]);
   padding_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]);
   dilation_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex5]);
-  transposed_ = transform::ConvertKernelTensor<bool>(inputs[kIndex6]);
-  output_padding_ = transform::ConvertKernelTensor<std::vector<int64_t>>(inputs[kIndex7]);
-  groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex8]);
-
-  auto &input_sizes = inputs[kIndex0]->GetShape()->GetShapeVector();
+  groups_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex6]);
+  auto input_sizes = inputs[kIndex0]->GetShape()->GetShapeVector();
+  auto output_sizes = outputs[kIndex0]->GetShape()->GetShapeVector();
   auto &weight_sizes = inputs[kIndex1]->GetShape()->GetShapeVector();
+  is_batchfy_ = (input_sizes.size() == weight_sizes.size());
+  if (!is_batchfy_) {
+    input_sizes.insert(input_sizes.begin(), 1);
+    output_sizes.insert(output_sizes.begin(), 1);
+    SetTensorStorageInfo<KernelTensor *>(inputs[kIndex0], input_sizes);
+    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], output_sizes);
+  }
+
   auto k = SizeToLong(weight_sizes.size());
   auto dim = static_cast<size_t>(k - 2);
+  output_padding_ = std::vector<int64_t>(dim, 0);
   pad_vector_ = std::vector<int64_t>(dim, 0);
+
   if (padding_ == PadMode::SAME) {
+    MS_LOG(INFO) << "Conv3DPaddingAscend: padmode is same";
     std::vector<int64_t> padding_l;
     std::vector<int64_t> padding_r;
-    bool symmetric_padding = true;
-    for (size_t i = 0; i < dim; ++i) {
-      auto stride = stride_.size() == 1 ? stride_[0] : stride_[i];
-      auto dilation = dilation_.size() == 1 ? dilation_[0] : dilation_[i];
-      auto inputSize = input_sizes[i + 2];
-      auto kernelSize = weight_sizes[i + 2];
-      auto total_padding = dilation * (kernelSize - 1);
-      if (stride > 2 && (total_padding % 2 == 1)) {
-        auto wiggle_room = inputSize % stride - 1;
-        if (wiggle_room > 0) {
-          --total_padding;
-        }
-      }
-      auto left = total_padding / 2;
-      auto right = total_padding - left;
+    bool symmetric_padding = CalcPaddingMode(padding_l, padding_r, input_sizes, weight_sizes, stride_, dilation_);
 
-      padding_l.push_back(left);
-      padding_r.push_back(right);
-      if (left != right) {
-        symmetric_padding = false;
-      }
-    }
     if (symmetric_padding) {
+      MS_LOG(INFO) << "Conv3DPaddingAscend: symmetric padding.";
       pad_vector_ = padding_l;
       GetWorkspaceForResizeConvolutionStr(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_,
                                           dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
@@ -136,22 +187,27 @@ void ConvolutionStrAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &i
       }
     }
   } else if (padding_ == PadMode::VALID) {
+    MS_LOG(INFO) << "Conv3DPaddingAscend: padmode is valid";
     GetWorkspaceForResizeConvolutionStr(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], stride_, pad_vector_,
                                         dilation_, transposed_, output_padding_, groups_, outputs[kIndex0],
                                         OpApiUtil::GetCubeMathType(OpApiUtil::IsAllowConvHF32()));
   } else {
     MS_LOG(EXCEPTION) << "Input padding string must be one of {'same', 'valid'}";
   }
+
+  if (!is_batchfy_) {
+    output_sizes.erase(output_sizes.begin());
+    SetTensorStorageInfo<KernelTensor *>(outputs[kIndex0], output_sizes);
+  }
 }
 
-bool ConvolutionStrAscend::Launch(const std::vector<KernelTensor *> &inputs,
-                                  const std::vector<KernelTensor *> &workspace,
-                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool Conv3DPaddingAscend::Launch(const std::vector<KernelTensor *> &inputs,
+                                 const std::vector<KernelTensor *> &workspace,
+                                 const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   if (need_ConstantPadNd_) {
-    KernelTensor *output_ptr;
     input_expand_.set_device_ptr(workspace[workspace.size() - expand_count_]->device_ptr());
-    output_ptr = &input_expand_;
+    KernelTensor *output_ptr = &input_expand_;
     KernelTensor *input_ptr = &input_expand_;
     RunOpConstantPadNd(stream_ptr, workspace, inputs[kIndex0], pad_nd_, zero_, output_ptr);
 
@@ -166,6 +222,6 @@ bool ConvolutionStrAscend::Launch(const std::vector<KernelTensor *> &inputs,
   return true;
 }
 
-MS_ACLNN_KERNEL_FACTORY_REG(ConvolutionStr, ConvolutionStrAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(Conv3DPadding, Conv3DPaddingAscend);
 }  // namespace kernel
 }  // namespace mindspore

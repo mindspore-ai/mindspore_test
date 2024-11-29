@@ -54,6 +54,7 @@ from mindspore.nn.layer import ReLU
 from mindspore.nn.layer.basic import DropoutExt as Dropout
 # 15
 from mindspore.mint.nn.layer.conv import Conv2d, ConvTranspose2d
+from mindspore.mint.nn.layer.conv import Conv3d
 # 16
 from mindspore.nn.layer import LogSoftmaxExt as LogSoftmax
 # 17
@@ -284,7 +285,7 @@ class NLLLoss(Cell):
     :math:`N` is the batch size, :math:`c` belonging to :math:`[0, C-1]` is class index,
     where :math:`C` is the number of classes.
 
-    If `reduction` is not ``'None'`` (default ``'mean'``), then
+    If `reduction` is not ``None`` (default ``'mean'``), then
 
     .. math::
 
@@ -312,7 +313,7 @@ class NLLLoss(Cell):
 
     Inputs:
         - **input** (Tensor) - :math:`(N)` or :math:`(N, C)` where `C = number of classes` or :math:`(N, C, H, W)`
-          in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)` (for high-dimensional data).
+          in case of 2D Loss, or :math:`(N, C, d_1, d_2, ..., d_K)`.
           `input` is expected to be log-probabilities, data type must be float16 or float32 or bfloat16(only supported
           by Atlas A2 training series products).
         - **target** (Tensor) - :math:`(N)` or :math:`(N, d_1, d_2, ..., d_K)` for
@@ -791,7 +792,7 @@ __all__ = [
     # 18
     'PReLU',
     # 19
-
+    'Conv3d',
     # 20
 
     # 21

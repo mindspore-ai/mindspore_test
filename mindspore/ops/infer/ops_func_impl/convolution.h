@@ -26,8 +26,16 @@ namespace mindspore {
 namespace ops {
 class OPS_API ConvolutionFuncImpl : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  ShapeArray ConvNdInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                              const ShapeVector &input_shape, const ShapeVector &weight_shape) const;
+  ShapeArray ConvNdCommonInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                                    const ShapeVector &input_shape, const ShapeVector &weight_shape,
+                                    const ShapeVector &output_shpe) const;
+  ShapeArray InferDynamicRank(const ShapeVector &input_shape, const ShapeVector &weight_shape) const;
+
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
 };
 }  // namespace ops
 }  // namespace mindspore

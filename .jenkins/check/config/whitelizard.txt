@@ -57,6 +57,7 @@ mindspore/mindspore/python/mindspore/ops/function/nn_func.py:max_unpool1d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:pad
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv1d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d
+mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv3d_ext
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:conv2d
 mindspore/mindspore/python/mindspore/ops/function/nn_func.py:cross_entropy_ext
 mindspore/mindspore/python/mindspore/ops/function/math_func.py:cov
@@ -471,3 +472,4 @@ mindspore/mindspore/python/mindspore/train/dataset_helper.py:connect_network_wit
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_utils.cc:mindspore::parallel::IntroduceConstraints
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/tensor_redistribution.cc:mindspore::parallel::TensorRedistribution::CalculateFromTensorShape
 mindspore/mindspore/lite/providers/nnie/src/custom_infer.cc:mindspore::nnie::CustomInterface::Infer
+mindspore/mindspore/ops/infer/ops_func_impl/convolution_str.cc::mindspore::ops::ConvolutionStrFuncImpl::InferShape

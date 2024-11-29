@@ -23,9 +23,9 @@
 namespace mindspore {
 namespace ops {
 namespace {
-int64_t GetOutputHW(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
-                    const ArrayValue<int64_t> &stride, const mindspore::PadMode &padding_enum,
-                    const ArrayValue<int64_t> &dilation) {
+int64_t GetOutputHWConvStr(const ShapeVector &input_shape, const ShapeVector &weight_shape, size_t shape_pos, size_t i,
+                           const ArrayValue<int64_t> &stride, const mindspore::PadMode &padding_enum,
+                           const ArrayValue<int64_t> &dilation) {
   if (input_shape[shape_pos] == abstract::Shape::kShapeDimAny ||
       weight_shape[shape_pos] == abstract::Shape::kShapeDimAny || dilation.IsValueUnknown(i) ||
       stride.IsValueUnknown(i)) {
@@ -34,14 +34,16 @@ int64_t GetOutputHW(const ShapeVector &input_shape, const ShapeVector &weight_sh
   if (padding_enum == PadMode::SAME) {
     return input_shape[shape_pos];
   } else if (padding_enum != PadMode::VALID) {
-    MS_EXCEPTION(ValueError) << "Input padding string must be one of {'same', 'valid'}";
+    MS_EXCEPTION(ValueError) << "For primitive[ConvolutionStr], input padding string must be one of {'same', 'valid'}";
   }
-  std::vector<int64_t> padding = {0, 0};
+
+  int64_t dim = SizeToLong(weight_shape.size()) - 2;
+  std::vector<int64_t> padding = std::vector<int64_t>(dim, 0);
   return (input_shape[shape_pos] + 2 * padding[i] - dilation[i] * (weight_shape[shape_pos] - 1) - 1) / stride[i] + 1;
 }
 
-inline void IndicesCheckPositiveVector(const string &arg_name, const ArrayValue<int64_t> &array,
-                                       const string &prim_name, bool exclude_zeros) {
+inline void IndicesCheckPositiveVectorConvStr(const string &arg_name, const ArrayValue<int64_t> &array,
+                                              const string &prim_name, bool exclude_zeros) {
   for (size_t i = 0; i < array.size(); ++i) {
     if (exclude_zeros) {
       if (MS_UNLIKELY(array[i] <= 0)) {
@@ -58,56 +60,53 @@ inline void IndicesCheckPositiveVector(const string &arg_name, const ArrayValue<
 }
 }  // namespace
 
-BaseShapePtr ConvolutionStrFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                const std::vector<AbstractBasePtr> &input_args) const {
-  const auto conv2d_shape_size = 4;
-  auto prim_name = primitive->name();
+BaseShapePtr ConvolutionStrFuncImpl::DynamicRankInfer(const std::vector<AbstractBasePtr> &input_args) const {
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto weight_shape_ptr = input_args[kIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_shape_ptr);
-  MS_EXCEPTION_IF_NULL(weight_shape_ptr);
   const auto &input_shape = input_shape_ptr->GetShapeVector();
   const auto &weight_shape = weight_shape_ptr->GetShapeVector();
   auto padding_opt = GetScalarValue<int64_t>(input_args[kIndex4]->GetValue());
-  int64_t Co = abstract::Shape::kShapeDimAny;
-  int64_t Ho = abstract::Shape::kShapeDimAny;
-  int64_t Wo = abstract::Shape::kShapeDimAny;
-  int64_t N = abstract::Shape::kShapeDimAny;
-
-  if (IsDynamicRank(input_shape) || IsDynamicRank(weight_shape)) {
-    if (!IsDynamicRank(input_shape)) {
-      (void)CheckAndConvertUtils::CheckInteger("input rank", SizeToLong(input_shape.size()), kEqual, conv2d_shape_size,
-                                               prim_name);
-      N = input_shape[kIndex0];
-      if (padding_opt.has_value()) {
-        mindspore::PadMode padding_enum_value = static_cast<mindspore::PadMode>(padding_opt.value());
-        if (padding_enum_value == PadMode::SAME) {
-          Ho = input_shape[kIndex2];
-          Wo = input_shape[kIndex3];
+  if (!IsDynamicRank(input_shape)) {
+    int64_t input_dim = SizeToLong(input_shape.size());
+    auto output_shape = ShapeVector(input_dim, abstract::Shape::kShapeDimAny);
+    output_shape[0] = input_shape[kIndex0];
+    if (padding_opt.has_value()) {
+      mindspore::PadMode padding_enum_value = static_cast<mindspore::PadMode>(padding_opt.value());
+      if (padding_enum_value == PadMode::SAME) {
+        for (int i = 2; i < input_dim; i++) {
+          output_shape[i] = input_shape[i];
         }
       }
-      auto output_shape = {N, Co, Ho, Wo};
-      return std::make_shared<abstract::Shape>(output_shape);
     }
-    if (!IsDynamicRank(weight_shape)) {
-      (void)CheckAndConvertUtils::CheckInteger("weight rank", SizeToLong(weight_shape.size()), kEqual,
-                                               conv2d_shape_size, prim_name);
-      Co = weight_shape[kIndex0];
-      auto output_shape = {N, Co, Ho, Wo};
-      return std::make_shared<abstract::Shape>(output_shape);
-    }
-    std::vector<int64_t> output_shape = {abstract::Shape::kShapeRankAny};
     return std::make_shared<abstract::Shape>(output_shape);
   }
+  if (!IsDynamicRank(weight_shape)) {
+    int64_t weight_dim = SizeToLong(weight_shape.size());
+    auto output_shape = ShapeVector(weight_dim, abstract::Shape::kShapeDimAny);
+    output_shape[1] = weight_shape[kIndex0];
+    return std::make_shared<abstract::Shape>(output_shape);
+  }
+  std::vector<int64_t> output_shape = {abstract::Shape::kShapeRankAny};
+  return std::make_shared<abstract::Shape>(output_shape);
+}
 
-  // Support conv2d first
-  int64_t input_rank = SizeToLong(input_shape.size());
-  int64_t weight_rank = SizeToLong(weight_shape.size());
-  (void)CheckAndConvertUtils::CheckInteger("input rank", input_rank, kEqual, conv2d_shape_size, prim_name);
-  (void)CheckAndConvertUtils::CheckInteger("weight rank", weight_rank, kEqual, conv2d_shape_size, prim_name);
+BaseShapePtr ConvolutionStrFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                const std::vector<AbstractBasePtr> &input_args) const {
+  auto prim_name = primitive->name();
+  auto input_shape_ptr = input_args[kIndex0]->GetShape();
+  auto weight_shape_ptr = input_args[kIndex1]->GetShape();
+  const auto &input_shape = input_shape_ptr->GetShapeVector();
+  const auto &weight_shape = weight_shape_ptr->GetShapeVector();
+  auto padding_opt = GetScalarValue<int64_t>(input_args[kIndex4]->GetValue());
 
-  N = input_shape[kIndex0];
-  Co = weight_shape[kIndex0];
+  if (IsDynamicRank(input_shape) || IsDynamicRank(weight_shape)) {
+    return DynamicRankInfer(input_args);
+  }
+
+  int64_t nd_output_shape_len = SizeToLong(weight_shape.size());
+  auto nd_output_shape = ShapeVector(nd_output_shape_len, abstract::Shape::kShapeDimAny);
+  nd_output_shape[0] = input_shape[kIndex0];
+  nd_output_shape[1] = weight_shape[kIndex0];
 
   if (padding_opt.has_value()) {
     mindspore::PadMode padding_enum = static_cast<mindspore::PadMode>(padding_opt.value());
@@ -115,7 +114,7 @@ BaseShapePtr ConvolutionStrFuncImpl::InferShape(const PrimitivePtr &primitive,
     if (transposed_opt.has_value()) {
       auto transposed = transposed_opt.value();
       if (transposed) {
-        MS_EXCEPTION(ValueError) << "ConvolutionStr is not supported transposed=Ture";
+        MS_EXCEPTION(ValueError) << "ConvolutionStr is not supported transposed=True";
       }
     }
 
@@ -123,28 +122,56 @@ BaseShapePtr ConvolutionStrFuncImpl::InferShape(const PrimitivePtr &primitive,
     auto dilation_opt = GetArrayValue<int64_t>(input_args[kIndex5]);
     if (!stride_opt.has_value() || !dilation_opt.has_value()) {
       if (padding_enum == PadMode::SAME) {
-        Ho = input_shape[kIndex2];
-        Wo = input_shape[kIndex3];
+        for (int i = 2; i < nd_output_shape_len; i++) {
+          nd_output_shape[i] = input_shape[i];
+        }
       }
-      auto output_shape = {N, Co, Ho, Wo};
-      MS_LOG(DEBUG) << "stride has_value:" << stride_opt.has_value()
-                    << ", dilation has_value:" << dilation_opt.has_value() << ", output_shape:" << output_shape;
-      return std::make_shared<abstract::Shape>(output_shape);
+      return std::make_shared<abstract::Shape>(nd_output_shape);
     }
     const auto &stride = stride_opt.value();
     const auto &dilation = dilation_opt.value();
-    IndicesCheckPositiveVector("stride", stride, prim_name, true);
-    IndicesCheckPositiveVector("dilation", dilation, prim_name, true);
+    IndicesCheckPositiveVectorConvStr("stride", stride, prim_name, true);
+    IndicesCheckPositiveVectorConvStr("dilation", dilation, prim_name, true);
 
-    constexpr size_t h_begin_pos = 2;  // 'NCHW', the pos of 'H' is 2
-    constexpr size_t w_begin_pos = 3;  // 'NCHW', the pos of 'W' is 3
-    Ho = GetOutputHW(input_shape, weight_shape, h_begin_pos, 0, stride, padding_enum, dilation);
-    Wo = GetOutputHW(input_shape, weight_shape, w_begin_pos, 1, stride, padding_enum, dilation);
-    auto output_shape = {N, Co, Ho, Wo};
-    return std::make_shared<abstract::Shape>(output_shape);
+    auto output_padding_opt = GetArrayValue<int64_t>(input_args[kIndex7]);
+    if (output_padding_opt.has_value()) {
+      const auto &output_padding = output_padding_opt.value();
+      IndicesCheckPositiveVectorConvStr("output_padding", output_padding, prim_name, false);
+    }
+
+    if (!IsDynamic(input_shape) && !IsDynamic(weight_shape)) {
+      abstract::CheckShapeAnyAndPositive(prim_name + " x_shape", input_shape);
+      abstract::CheckShapeAnyAndPositive(prim_name + " w_shape", weight_shape);
+
+      auto group_opt = GetScalarValue<int64_t>(input_args[kIndex8]->GetValue());
+      if (stride_opt.has_value()) {
+        int64_t groups = group_opt.value();
+        auto in_channels = input_shape[kIndex1];
+        (void)CheckAndConvertUtils::CheckInteger("groups", groups, kGreaterEqual, 1);
+        (void)CheckAndConvertUtils::CheckInteger("out_channels", nd_output_shape[1], kGreaterEqual, groups);
+        (void)CheckAndConvertUtils::CheckInteger("out_channels/groups", nd_output_shape[1] % groups, kEqual, 0);
+        (void)CheckAndConvertUtils::CheckInteger("in_channels/groups", in_channels / groups, kEqual,
+                                                 weight_shape[kIndex1]);
+      }
+
+      if (!input_args[kIndex2]->isa<abstract::AbstractNone>()) {
+        auto bias_shape_vec = input_args[kIndex2]->GetShape()->GetShapeVector();
+        if (!IsDynamicRank(bias_shape_vec) && !IsDynamic(bias_shape_vec)) {
+          int64_t bias_rank = SizeToLong(bias_shape_vec.size());
+          const auto bias_shape_size = 1;
+          (void)CheckAndConvertUtils::CheckInteger("bias rank", bias_rank, kEqual, bias_shape_size, prim_name);
+          (void)CheckAndConvertUtils::CheckInteger("bias of size", bias_shape_vec[kIndex0], kEqual,
+                                                   weight_shape[kIndex0]);
+        }
+      }
+    }
+
+    for (int i = 2; i < nd_output_shape_len; i++) {
+      nd_output_shape[i] = GetOutputHWConvStr(input_shape, weight_shape, i, i - 2, stride, padding_enum, dilation);
+    }
+    return std::make_shared<abstract::Shape>(nd_output_shape);
   } else {
-    auto output_shape = {N, Co, Ho, Wo};
-    return std::make_shared<abstract::Shape>(output_shape);
+    return std::make_shared<abstract::Shape>(nd_output_shape);
   }
 }
 

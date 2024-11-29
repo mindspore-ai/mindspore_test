@@ -285,6 +285,7 @@ LeakyReLUGradExt: 'aclnnLeakyReluBackward'
 # 98
 ConvolutionStr: 'aclnnConvolution'
 ConvolutionStrGrad: 'aclnnConvolutionBackward'
+Conv3DExt: 'aclnnConvolution'
 # 99
 
 # 100

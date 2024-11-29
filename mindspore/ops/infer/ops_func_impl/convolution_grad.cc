@@ -26,39 +26,28 @@ namespace {
 constexpr size_t kConvolutionGradInputArgsSize = 11;
 constexpr size_t kConvolutionGradInputDims = 4;
 }  // namespace
-BaseShapePtr ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  if (input_args.size() != kConvolutionGradInputArgsSize) {
-    MS_LOG(EXCEPTION) << "input args size should be " << kConvolutionGradInputArgsSize << ", but got "
-                      << input_args.size();
-  }
-
-  auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
-  auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
-  auto dout_shape_ptr = input_args[kInputIndex0]->GetShape();
-  const auto &dout_shape = dout_shape_ptr->GetShapeVector();
+ShapeArray ConvolutionGradFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                               const InferInfoPtrList &input_infos) const {
+  auto x_shape = input_infos[kInputIndex1]->GetShape();
+  auto weight_shape = input_infos[kInputIndex2]->GetShape();
+  auto dout_shape = input_infos[kInputIndex0]->GetShape();
 
   auto get_bias_grad_shape = [dout_shape]() {
     if (IsDynamicRank(dout_shape) || IsDynamic(dout_shape)) {
       return abstract::Shape::kShapeDimAny;
     }
-    if (dout_shape.size() != kConvolutionGradInputDims) {
-      MS_LOG(EXCEPTION) << "dout_shape size should be " << kConvolutionGradInputDims << ", but got "
-                        << dout_shape.size();
-    }
     return dout_shape[1];
   };
 
   ShapeVector bias_grad_shape = {get_bias_grad_shape()};
-  return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{
-    x_shape_ptr, weight_shape_ptr, std::make_shared<abstract::Shape>(bias_grad_shape)});
+  return {x_shape, weight_shape, bias_grad_shape};
 }
 
-TypePtr ConvolutionGradFuncImpl::InferType(const PrimitivePtr &primitive,
-                                           const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_type_ptr = input_args[kInputIndex1]->GetType();
-  auto weight_type_ptr = input_args[kInputIndex2]->GetType();
-  return std::make_shared<Tuple>(std::vector<TypePtr>{x_type_ptr, weight_type_ptr, x_type_ptr});
+std::vector<TypeId> ConvolutionGradFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                       const InferInfoPtrList &input_infos) const {
+  auto x_type_ptr = input_infos[kInputIndex1]->GetType();
+  auto weight_type_ptr = input_infos[kInputIndex2]->GetType();
+  return {x_type_ptr, weight_type_ptr, x_type_ptr};
 }
 }  // namespace ops
 }  // namespace mindspore
