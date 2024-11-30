@@ -100,8 +100,7 @@ bool AscendCommunicationGroup::Finalize() {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   (void)CALL_ASCEND_API(aclrtSetDevice, device_id);
-  RETURN_IF_FALSE_WITH_LOG(HcclCommDestroy(comm_) == static_cast<int32_t>(HCCL_SUCCESS),
-                           "Failed to destroy HCCL communicator.");
+  (void)HcclCommDestroy(comm_);
   (void)CALL_ASCEND_API(aclrtResetDevice, device_id);
   initialized_ = false;
   comm_ = nullptr;
