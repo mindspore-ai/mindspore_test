@@ -65,7 +65,7 @@ bool IsShapeOp(const CNodePtr &cnode) { return IsTargetOp(cnode, SHAPE_OP); }
 TensorRedistributionPtr GetTensorRedistributionFromCNode(const CNodePtr &node) {
   OperatorInfoPtr distribute_operator = GetDistributeOperator(node);
   if (distribute_operator == nullptr) {
-    MS_LOG(WARNING) << node->fullname_with_scope() << " has no OperatorInfo.";
+    MS_LOG(INFO) << node->fullname_with_scope() << " has no OperatorInfo.";
     return nullptr;
   }
   if (IsReshapeOp(node)) {
