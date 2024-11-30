@@ -36,6 +36,9 @@ class AcmeFusedMatmulElemBase : public AcmeKernelMod {
                                const std::vector<KernelTensor *> &ms_inputs,
                                const std::vector<KernelTensor *> &ms_outputs) override;
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
+
+ private:
+  acme::MatmulParam param_;
 };
 
 class AcmeFusedMatmulElemUnary : public AcmeFusedMatmulElemBase {

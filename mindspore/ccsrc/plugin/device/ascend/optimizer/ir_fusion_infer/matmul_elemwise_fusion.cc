@@ -55,6 +55,10 @@ const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, c
   if (!ms_context->IsEnableInferBoost()) {
     return nullptr;
   }
+  auto const &soc_version = ms_context->ascend_soc_version();
+  if (!soc_version.empty() && soc_version != "ascend910b" && soc_version != "ascend910_93") {
+    return nullptr;
+  }
 
   auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   bool enable_matmul_elemwise =

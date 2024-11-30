@@ -32,31 +32,27 @@ acme::AcmeOpPtr AcmeFusedMatmulElemBase::CreateKernel(const acme::InputsImmutabl
                                                       const acme::OutputsImmutableInfoList &outputs,
                                                       const std::vector<KernelTensor *> &ms_inputs,
                                                       const std::vector<KernelTensor *> &ms_outputs) {
-  acme::MatmulParam param;
-  param.transpose_a = primitive_->HasAttr("is_trans_a") ? GetValue<bool>(primitive_->GetAttr("is_trans_a")) : false;
-  param.transpose_b = primitive_->HasAttr("is_trans_b") ? GetValue<bool>(primitive_->GetAttr("is_trans_b")) : false;
+  param_.transpose_a = primitive_->HasAttr("is_trans_a") ? GetValue<bool>(primitive_->GetAttr("is_trans_a")) : false;
+  param_.transpose_b = primitive_->HasAttr("is_trans_b") ? GetValue<bool>(primitive_->GetAttr("is_trans_b")) : false;
   auto value_str = primitive_->GetAttr("ElemwiseType");
   MS_EXCEPTION_IF_NULL(value_str);
   std::string elemwise_type = GetValue<std::string>(value_str);
   if (elemwise_type == matmul_elemwise_fusion_relu_str) {
-    param.with_relu = true;
+    param_.with_relu = true;
   } else if (elemwise_type == matmul_elemwise_fusion_gelu_str) {
-    param.with_gelu = true;
+    param_.with_gelu = true;
   } else if (elemwise_type == matmul_elemwise_fusion_biasadd_str) {
-    param.with_bias = true;
+    param_.with_bias = true;
   } else if (elemwise_type == matmul_elemwise_fusion_biasadd_fastgelu_str) {
-    param.with_bias_fastgelu = true;
+    param_.with_bias_fastgelu = true;
   }
-  param.enable_shuffle = false;  // the real definition is in acme
-  param.enable_dequant = false;
-  return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
+  param_.enable_shuffle = false;  // the real definition is in acme
+  param_.enable_dequant = false;
+  return acme::CreateMatmulOp(inputs, outputs, param_, acme::kAcmeMatMulOpName);
 }
 
 uint64_t AcmeFusedMatmulElemBase::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
-  auto value_str = primitive_->GetAttr("ElemwiseType");
-  MS_EXCEPTION_IF_NULL(value_str);
-  std::string elemwise_type = GetValue<std::string>(value_str);
-  return AcmeTilingCache::GenerateKey(kernel_name_, inputs, elemwise_type);
+  return AcmeTilingCache::GenerateKey(kernel_name_, inputs, param_);
 }
 
 MS_ACME_KERNEL_FACTORY_REG(FusedMatmulElemBinary, acme::kAcmeMatMulOpName, AcmeFusedMatmulElemBinary);
