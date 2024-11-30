@@ -38,6 +38,7 @@ from mindspore.ops.function.array_func import empty_like
 from mindspore.ops.function.math_func import isclose
 from mindspore.ops.auto_generate import abs
 from mindspore.ops.auto_generate import clone
+from mindspore.ops.function.array_func import full_like_ext as full_like
 # 1
 from mindspore.ops.function.math_func import divide, div
 from mindspore.ops.auto_generate import topk_ext as topk
@@ -392,6 +393,12 @@ from mindspore.ops.auto_generate import logaddexp_ext as logaddexp
 
 # 557
 from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
+
+# 582
+from mindspore.ops.function.math_func import std_mean_ext as std_mean
+
+# 588
+from mindspore.ops.function.math_func import var_mean_ext as var_mean
 
 # 610
 from mindspore.ops.function.math_func import nan_to_num
@@ -1844,6 +1851,7 @@ __all__ = [
     'isclose',
     'empty',
     'empty_like',
+    'full_like',
     # 1
     'div',
     'divide',
@@ -2217,6 +2225,12 @@ __all__ = [
 
     # 557
     'logsumexp',
+
+    # 582
+    'std_mean',
+
+    # 588
+    'var_mean',
 
     # 610
     'nan_to_num',
