@@ -234,6 +234,7 @@ class BACKEND_EXPORT PyBoostUtils {
     return result;
   }
   static BaseTensorPtr ScalarToTensor(const ScalarPtr &scalar);
+  static BaseTensorPtr ScalarToTensor(const ScalarPtr &scalar, const TypePtr &tensor_dtype);
 
   static uint32_t cur_stream_id() { return cur_stream_id_; }
 
