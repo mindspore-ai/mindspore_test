@@ -300,7 +300,8 @@ std::string GetWeightsObjIdsByWeights(const py::object &weights) {
 
 class BpropCallback final : public expander::bprop::PynativeCallback {
  public:
-  explicit BpropCallback(const OpGradInfoPtr &op_grad_info_ptr) : op_grad_info(op_grad_info_ptr) {}
+  BpropCallback(const OpGradInfoPtr &op_grad_info_ptr, const GradParamPtr &grad_param_ptr)
+      : op_grad_info(op_grad_info_ptr), grad_param(grad_param_ptr) {}
   const std::string &opname() const override { return op_grad_info->op_prim->name(); }
   ValuePtr *GetInput(size_t index) const override { return &op_grad_info->input_value.at(index); }
   ValuePtrList *GetInputs() const override { return &op_grad_info->input_value; }
@@ -309,11 +310,22 @@ class BpropCallback final : public expander::bprop::PynativeCallback {
     return PyNativeAlgo::Common::IsConstant(op_grad_info->input_value_grad_type[index]);
   }
   void FreeDeviceAddress(ValuePtr *value) const override {
-    *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
+    if (value == this->GetOutput()) {
+      if (op_grad_info->used_in_bprop_graph) {
+        MS_LOG(DEBUG) << "The output of " << opname() << " is used in bprop graph.";
+        PyNativeAlgo::Common::SetOutputUsedInBpropGraph(*value);
+      } else {
+        *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
+        grad_param->out_used_in_bporp_graph = false;
+      }
+    } else {
+      *value = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(*value);
+    }
   }
 
  private:
   const OpGradInfoPtr &op_grad_info;
+  const GradParamPtr &grad_param;
 };
 
 GradParamPtr CreateOpGradParam(const FrontendOpRunInfoPtr &op_run_info, const TopCellInfoPtr &top_cell) {
@@ -322,7 +334,7 @@ GradParamPtr CreateOpGradParam(const FrontendOpRunInfoPtr &op_run_info, const To
   op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
   auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, top_cell->use_dynamic_shape_process());
   if (!top_cell->is_high_order_top_cell()) {
-    BpropExpander::FreeUselessValues(BpropCallback(op_run_info->op_grad_info));
+    BpropExpander::FreeUselessValues(BpropCallback(op_run_info->op_grad_info, grad_param));
   }
   return grad_param;
 }
