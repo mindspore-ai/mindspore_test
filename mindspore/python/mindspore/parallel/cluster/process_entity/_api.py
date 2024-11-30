@@ -16,6 +16,7 @@
 import os
 import re
 import sys
+import signal
 import subprocess
 import mindspore.log as logger
 from ._utils import _generate_cmd_args_list, _generate_cmd_args_list_with_core, _generate_url,\
@@ -80,7 +81,7 @@ class _ComputeGraphNode(_Node):
             os.environ["MS_NODE_ID"] = str(self.node_id)
         os.environ["MS_ROLE"] = "MS_WORKER"
         with open(self.output_file, "w") as file_handle:
-            return subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
+            return subprocess.Popen(self.args_list, preexec_fn=os.setsid, stdout=file_handle, stderr=subprocess.STDOUT)
 
 
 class _ProcessManager:
@@ -268,7 +269,7 @@ class _ProcessManager:
                 logger.warning("There's worker exits with exception, kill all other workers.")
                 for p in self.cgn_processes:
                     if p.poll() is None:
-                        p.kill()
+                        os.killpg(os.getpgid(p.pid), signal.SIGKILL)
                 break
             elif len(success_cgn_processes) == len(self.cgn_processes):
                 logger.info("All workers successfully exit!")
