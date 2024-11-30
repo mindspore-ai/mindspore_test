@@ -16,6 +16,7 @@
 import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor
+from mindspore import log as logger
 from mindspore.ops import operations as P
 import mindspore.common.dtype as mstype
 from mindspore._c_expression import _set_format
@@ -95,8 +96,74 @@ class AtbBoostBase:
             tensor = _set_format(tensor, FORMAT_NZ)
         return tensor
 
+    def _convert_qkv_concat_weight(self, param_dict):
+        """convert qkv concat weight"""
+        for i in range(self.num_layers):
+            # qkv weight concat
+            wq_weight_name = f"model.layers.{i}.attention.wq.weight"
+            wk_weight_name = f"model.layers.{i}.attention.wk.weight"
+            wv_weight_name = f"model.layers.{i}.attention.wv.weight"
+            qkv_concat_weight_name = f"model.layers.{i}.attention.w_qkv.weight"
+            if wq_weight_name not in param_dict:
+                break
+            wq_weight = param_dict[wq_weight_name].asnumpy()
+            wk_weight = param_dict[wk_weight_name].asnumpy()
+            wv_weight = param_dict[wv_weight_name].asnumpy()
+            qkv_weight = np.concatenate((wq_weight, wk_weight, wv_weight), 0)
+            param_dict[qkv_concat_weight_name] = Parameter(
+                qkv_weight, name=qkv_concat_weight_name
+            )
+
+            # gate hidden weight concat
+            ffn_gate_weight_name = f"model.layers.{i}.feed_forward.w1.weight"
+            ffn_hidden_weight_name = f"model.layers.{i}.feed_forward.w3.weight"
+            gate_hidden_concat_weight_name = (
+                f"model.layers.{i}.feed_forward.w_gate_hidden.weight"
+            )
+
+            ffn_gate_weight = param_dict[ffn_gate_weight_name].asnumpy()
+            ffn_hidden_weight = param_dict[ffn_hidden_weight_name].asnumpy()
+            gate_hidden_weight = np.concatenate((ffn_gate_weight, ffn_hidden_weight), 0)
+            param_dict[gate_hidden_concat_weight_name] = Parameter(
+                gate_hidden_weight, name=gate_hidden_concat_weight_name
+            )
+
+            param_dict.pop(wq_weight_name)
+            param_dict.pop(wk_weight_name)
+            param_dict.pop(wv_weight_name)
+            param_dict.pop(ffn_gate_weight_name)
+            param_dict.pop(ffn_hidden_weight_name)
+            logger.info(f"transform: {qkv_concat_weight_name}")
+            logger.info(f"transform: {gate_hidden_concat_weight_name}")
+
+        for i in range(self.num_layers):
+            # qkv bias concat
+            wq_bias_name = f"model.layers.{i}.attention.wq.bias"
+            wk_bias_name = f"model.layers.{i}.attention.wk.bias"
+            wv_bias_name = f"model.layers.{i}.attention.wv.bias"
+            qkv_concat_bias_name = f"model.layers.{i}.attention.w_qkv.bias"
+            if wq_bias_name not in param_dict:
+                break
+
+            wq_bias_weight = param_dict[wq_bias_name].asnumpy()
+            wk_bias_weight = param_dict[wk_bias_name].asnumpy()
+            wv_bias_weight = param_dict[wv_bias_name].asnumpy()
+            qkv_bias_weight = np.concatenate(
+                (wq_bias_weight, wk_bias_weight, wv_bias_weight), 0
+            )
+            param_dict[qkv_concat_bias_name] = Parameter(
+                qkv_bias_weight, name=qkv_concat_bias_name
+            )
+
+            param_dict.pop(wq_bias_name)
+            param_dict.pop(wk_bias_name)
+            param_dict.pop(wv_bias_name)
+            logger.info(f"transform: {qkv_concat_bias_name}")
+        return param_dict
+
     def set_weights(self, parm_dict, dtype=mstype.float16):
         """set weights for llm boost"""
+        self._convert_qkv_concat_weight(parm_dict)
         embedding_weight_name = "model.tok_embeddings.embedding_weight"
         attention_norm_name = "attention_norm"
         qkv_name = "attention.w_qkv"
@@ -272,7 +339,8 @@ class AtbBoostBase:
         if self.is_first_iteration:
             attention_mask = self.attn_mask
         else:
-            position_ids = batch_valid_length - 1
+            if position_ids is None:
+                position_ids = batch_valid_length - 1
             attention_mask = self.placeholder
             lm_head_indices = self.lm_head_indices_fake
 
