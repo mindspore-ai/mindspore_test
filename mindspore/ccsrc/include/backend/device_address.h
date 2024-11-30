@@ -202,9 +202,7 @@ class DeviceAddress : public mindspore::DeviceSync {
     return true;
   }
   // Asynchronously copy device memory to device side.
-  virtual bool AsyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
-    return true;
-  }
+  virtual bool AsyncDeviceToDevice(const DeviceAddress *) const { return true; }
   virtual bool CopyDeviceToHost(void *dst, const void *src, const size_t &size) const { return true; }
   virtual bool CopyHostToDevice(void *dst, const void *src, const size_t &size) const { return true; }
   virtual void DeviceSynchronizerInit() { MS_LOG(EXCEPTION) << "Not implemented."; }
@@ -490,6 +488,9 @@ class DeviceAddress : public mindspore::DeviceSync {
   void SetDevicePtr(void *ptr) const { address_common_->pointer_ref_count_->set_ptr(ptr); }
 
   void SetTypeId(TypeId type) const { address_common_->dtype_id_ = type; }
+  virtual bool AsyncDeviceToDevice(const ShapeVector &, size_t, TypeId, const void *, const std::string &) const {
+    return true;
+  }
 
   ShapeVector device_shape_{};
   // {node, out_index}

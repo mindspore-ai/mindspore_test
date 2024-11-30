@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_DEVICE_ADDRESS_H_
 #define MINDSPORE_CCSRC_RUNTIME_DEVICE_CPU_CPU_DEVICE_ADDRESS_H_
 
@@ -62,6 +63,7 @@ class BACKEND_EXPORT CPUDeviceAddress : public DeviceAddress {
   bool SyncHostToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *host_ptr,
                         const std::string &format) const override;
   bool SyncDeviceToDevice(const DeviceSync *src_device_addr) const override;
+  bool AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const override;
   bool SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                           const std::string &format) const override;
 

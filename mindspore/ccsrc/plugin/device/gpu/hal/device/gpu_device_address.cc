@@ -201,9 +201,26 @@ bool GPUDeviceAddress::SyncDeviceToDevice(const DeviceSync *src_device_addr) con
   }
 }
 
-bool GPUDeviceAddress::SyncDeviceToDevice(const ShapeVector &, size_t size, TypeId type, const void *src_ptr,
+bool GPUDeviceAddress::SyncDeviceToDevice(const ShapeVector &shape, size_t size, TypeId type, const void *src_ptr,
                                           const std::string &format) const {
-  MS_LOG(DEBUG) << "SyncDeviceToDevice, dst(address:" << GetDevicePtr() << " format:" << DeviceAddress::format()
+  bool ret = AsyncDeviceToDevice(shape, size, type, src_ptr, format);
+  if (!ret) {
+    return ret;
+  }
+  auto &stream = GPUDeviceManager::GetInstance().default_stream();
+  return GPUDeviceManager::GetInstance().SyncStream(stream);
+}
+
+bool GPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
+  MS_EXCEPTION_IF_NULL(src_device_addr);
+  MS_LOG(DEBUG) << "Async gpu device address from:" << src_device_addr << " to:" << this;
+  return AsyncDeviceToDevice(src_device_addr->host_shape(), src_device_addr->GetSize(), src_device_addr->type_id(),
+                             src_device_addr->GetPtr(), src_device_addr->format());
+}
+
+bool GPUDeviceAddress::AsyncDeviceToDevice(const ShapeVector &, size_t size, TypeId type, const void *src_ptr,
+                                           const std::string &format) const {
+  MS_LOG(DEBUG) << "AsyncDeviceToDevice, dst(address:" << GetDevicePtr() << " format:" << DeviceAddress::format()
                 << ", type_id:" << TypeIdLabel(type_id()) << ", size:" << GetSize() << "), src(address:" << src_ptr
                 << "format:" << format << ", type_id:" << TypeIdLabel(type) << ", size:" << size << ")";
   if (GetDevicePtr() == src_ptr) {
@@ -242,7 +259,7 @@ bool GPUDeviceAddress::SyncDeviceToDevice(const ShapeVector &, size_t size, Type
     MS_LOG(ERROR) << "CopyDeviceMemToDeviceAsync failed";
     return false;
   }
-  return GPUDeviceManager::GetInstance().SyncStream(stream);
+  return true;
 }
 
 bool GPUDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) const {

@@ -233,6 +233,10 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
   return true;
 }
 
+bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
+  return SyncDeviceToDevice(src_device_addr);
+}
+
 bool CPUDeviceAddress::SyncDeviceToDevice(const DeviceSync *src_device_addr) const {
   MS_EXCEPTION_IF_NULL(src_device_addr);
   auto src_cpu_device = dynamic_cast<const CPUDeviceAddress *>(src_device_addr);
