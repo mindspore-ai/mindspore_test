@@ -59,6 +59,7 @@ void RegRandomNormal(py::module *m);
 namespace pynative {
 void RegPyNativeExecutor(const py::module *m);
 void RegisterPyBoostFunction(py::module *m);
+void RegisterCustomizeFunction(py::module *m);
 void RegisterFunctional(py::module *m);
 }  // namespace pynative
 namespace kernel::pyboost {
