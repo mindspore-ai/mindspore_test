@@ -43,7 +43,7 @@ from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
 from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
-                                         cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op,
+                                         cosh, nan_to_num, norm_op, lp_norm_v2_op, linalg_vector_norm_op, std_op,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
@@ -4501,6 +4501,7 @@ def vander(x, N=None):
     exponent = F.expand_dims(exponent, 0)
     return F.tensor_pow(x, exponent)
 
+
 def var_ext(input, dim=None, *, correction=1, keepdim=False):
     r"""
     Calculates the variance over the dimensions specified by `dim`. `dim` can be a single dimension, list of
@@ -4559,6 +4560,66 @@ def var_ext(input, dim=None, *, correction=1, keepdim=False):
         [[ 4.333333, 12.333333, 9.333333]]
     """
     return var_op(input, dim, correction, keepdim)
+
+
+def std_ext(input, dim=None, *, correction=1, keepdim=False):
+    r"""
+    Calculates the standard deviation over the dimensions specified by `dim`. `dim` can be a single dimension, list of
+    dimensions, or None to reduce over all dimensions.
+
+    The standard deviation (:math:`\sigma`) is calculated as:
+
+    .. math::
+        \sigma =\sqrt{\frac{1}{N-\delta N}\sum_{j-1}^{N-1}\left(s e l f_{i j}-\overline{x_{i}}\right)^{2}}
+
+    where :math:`x` is the sample set of elements, :math:`\bar{x}` is the sample mean, :math:`N` is the number
+    of samples and :math:`\delta N` is the `correction`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The tensor used to calculate the standard deviation.
+        dim (None, int, tuple(int), optional): The dimension or dimensions to reduce. Defaults to ``None``.
+            If ``None``, all dimensions are reduced.
+
+    Keyword Args:
+        correction (int, optional): The difference between the sample size and sample degrees of freedom. Defaults
+            to Bessel’s correction. Defaults to ``1``.
+        keepdim (bool, optional): Whether the output tensor has dim retained or not. If ``True`` , keep these
+            reduced dimensions and the length is 1. If ``False``, don't keep these dimensions. Defaults to ``False``.
+
+    Returns:
+        Tensor, the standard deviation.
+        Suppose the shape of `input` is :math:`(x_0, x_1, ..., x_R)`:
+
+        - If `dim` is () and `keepdim` is set to ``False`` , returns a 0-D Tensor, indicating the standard deviation of
+          all elements in `input`.
+        - If `dim` is int, e.g. ``1`` and `keepdim` is set to ``False`` , then the returned Tensor has shape
+          :math:`(x_0, x_2, ..., x_R)`.
+        - If `dim` is tuple(int) or list(int), e.g. ``(1, 2)`` and `keepdim` is set to ``False`` , then the returned
+          Tensor has shape :math:`(x_0, x_3, ..., x_R)`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `input` is not in bfloat16, float16, float32.
+        TypeError: If `dim` is not one of the followings: None, int, tuple.
+        TypeError: If `correction` is not an int.
+        TypeError: If `keepdim` is not a bool.
+        ValueError: If `dim` is out of range :math:`[-input.ndim, input.ndim)`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import mint, Tensor
+        >>> input = Tensor(np.array([[1, 2, 3], [-1, 1, 4]]).astype(np.float32))
+        >>> output = ops.std_ext(input, dim=1, correction=1, keepdim=False)
+        >>> print(output)
+        [1.      2.5166113]
+    """
+    return std_op(input, dim, correction, keepdim)
 
 
 def var(input, axis=None, ddof=0, keepdims=False):
