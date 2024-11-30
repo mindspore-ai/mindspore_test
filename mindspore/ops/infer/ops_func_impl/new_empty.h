@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ops/direct_ops.h"
-#include "include/common/pybind_api/api_register.h"
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NEW_EMPTY_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NEW_EMPTY_H_
 
-namespace mindspore::kernel::pyboost {
-void RegDirectOps(py::module *m) {
-  m->def("pyboost_empty", &mindspore::kernel::pyboost::Empty, "Empty");
-  m->def("pyboost_empty_like", &mindspore::kernel::pyboost::EmptyLike, "EmptyLike");
-  m->def("pyboost_new_empty", &mindspore::kernel::pyboost::NewEmpty, "NewEmpty");
-}
-}  // namespace mindspore::kernel::pyboost
+#include <set>
+#include <vector>
+#include "ops/ops_func_impl/op_func_impl.h"
+#include "ops/base_operator.h"
+#include "mindspore/ops/op_def/op_name.h"
+
+namespace mindspore {
+namespace ops {
+// Don't really use this class, just for op_def
+class OPS_API NewEmptyFuncImpl : public OpFuncImpl {};
+}  // namespace ops
+}  // namespace mindspore
+
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NEW_EMPTY_H_

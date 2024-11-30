@@ -73,6 +73,7 @@ from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
 from mindspore._c_expression import pyboost_empty
 from mindspore._c_expression import pyboost_empty_like
+from mindspore._c_expression import pyboost_new_empty
 from mindspore.common._stub_tensor import _convert_stub
 
 arg_max_with_value_ = ArgMaxWithValue()
@@ -613,6 +614,10 @@ def empty_like(input, *, dtype=None, device=None):
     """
 
     return _convert_stub(pyboost_empty_like([input, dtype, device]))
+
+
+def new_empty(input, size, dtype, device):
+    return _convert_stub(pyboost_new_empty([input, size, dtype, device]))
 
 
 def ravel(input):
