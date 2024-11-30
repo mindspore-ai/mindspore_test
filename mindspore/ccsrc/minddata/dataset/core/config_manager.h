@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_CORE_CONFIG_MANAGER_H_
 
 #include <atomic>
+#include <map>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -319,6 +320,18 @@ class ConfigManager {
   // @notes This method is used for internal processing, using enum type
   ErrorSamplesMode error_samples_mode() const { return error_samples_mode_; }
 
+  // setter function
+  // @param tensor_copy - Whether dataset iterator creates a Tensor from numpy.ndarray without copy.
+  // @param parallel_convert - Whether dataset iterator starts a thread to organize Tensors to output.
+  void set_iterator_mode(const bool tensor_copy, const bool parallel_convert) {
+    iterator_mode_["do_copy"] = tensor_copy;
+    iterator_mode_["parallel_convert"] = parallel_convert;
+  }
+
+  // getter function
+  // @return - iterator mode map contains the value of `do_copy` and `parallel_convert`.
+  const std::map<std::string, bool> &get_iterator_mode() const { return iterator_mode_; }
+
  private:
   // Private helper function that takes a nlohmann json format and populates the settings
   // @param j - The json nlohmann json info
@@ -356,6 +369,7 @@ class ConfigManager {
   bool fast_recovery_{true};     // Used for failover scenario to recover quickly or produce same augmentations
   bool debug_mode_flag_{false};  // Indicator for debug mode
   ErrorSamplesMode error_samples_mode_{ErrorSamplesMode::kReturn};  // The method to process erroneous samples
+  std::map<std::string, bool> iterator_mode_;
 };
 }  // namespace dataset
 }  // namespace mindspore
