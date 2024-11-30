@@ -221,6 +221,8 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   Status InvokeBatchMapFunc(TensorTable *input, TensorTable *output, CBatchInfo info, bool *concat_batch);
 #endif
 
+  void UpdateCounterAndSendEOE(TensorRow *const row);
+
   int32_t start_batch_size_;
   const bool drop_;                                     // bool for whether to drop remainder or not
   const bool pad_;                                      // bool for whether to perform padding on tensor

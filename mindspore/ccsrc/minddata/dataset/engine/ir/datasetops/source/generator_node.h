@@ -40,12 +40,12 @@ class GeneratorNode : public MappableSourceNode {
   GeneratorNode(const py::function &generator_function, const std::vector<std::string> &column_names,
                 const std::vector<DataType> &column_types, int64_t source_len, std::shared_ptr<SamplerObj> sampler,
                 uint32_t num_parallel_workers,
-                std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime);
+                std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime, bool has_batch_sampler);
 
   /// \brief Constructor
   GeneratorNode(const py::function &generator_function, const std::shared_ptr<SchemaObj> &schema, int64_t source_len,
                 std::shared_ptr<SamplerObj> sampler, uint32_t num_parallel_workers,
-                std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime);
+                std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime, bool has_batch_sampler);
 
   /// \brief Destructor
   ~GeneratorNode() override;
@@ -76,6 +76,10 @@ class GeneratorNode : public MappableSourceNode {
   Status GetShardId(int32_t *shard_id) override;
 
   bool IsSizeDefined() override { return false; }
+
+  /// \brief Check for batch sampler.
+  /// \return Contain batch sampler or not.
+  bool HasBatchSampler() const { return has_batch_sampler_; }
 
   /// \brief Record the vector of Repeat/EpochCtrl nodes that are ancestors of this node
   /// \param[in] the ancestor node
@@ -121,6 +125,7 @@ class GeneratorNode : public MappableSourceNode {
   uint32_t num_parallel_workers_;
   int64_t source_len_;  // Length of the dataset source provided by the user, -1 means it's unknown
   std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;
+  bool has_batch_sampler_;
 
   /// \brief Base-class override for accepting IRNodePass visitor
   /// \param[in] p The node to visit

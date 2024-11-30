@@ -19,7 +19,9 @@ SequentialSampler, SubsetRandomSampler, and WeightedRandomSampler.
 Users can also define a custom sampler by extending from the Sampler class.
 """
 
+import copy
 import numbers
+
 import numpy as np
 import mindspore._c_dataengine as cde
 import mindspore.dataset as ds
@@ -253,6 +255,7 @@ class Sampler(BuiltinSampler):
         self.dataset_size = 0
         self.child_sampler = None
         self.num_samples = num_samples
+        self.batch_sizes = []
 
     def __iter__(self):
         """
@@ -278,16 +281,33 @@ class Sampler(BuiltinSampler):
     def _get_indices(self):
         sampler_iter = iter(self)
         ret = []
+        batch_sizes = []
         for _ in range(self.num_samples):
             try:
                 idx = next(sampler_iter)
-                ret.append(idx)
+                # The idx can be either a number (for sampler) or a list (for batch sampler).
+                # If number, we convert it to list first. So they can be handled in the same way.
+                if isinstance(idx, numbers.Number):
+                    idx = [idx]
+                    # normal sampler does not have batch sizes
+                    batch_sizes.append(0)
+                else:
+                    # Using extend instead of append will flatten the list, so we need to save the
+                    # batch size information here.
+                    batch_sizes.append(len(idx))
+                ret.extend(idx)
             except StopIteration:
                 break
+        self.batch_sizes.append(batch_sizes)
         indices = np.array(ret)
         if indices.dtype == object:
             raise RuntimeError("Fetched indices can not be converted to a valid ndarray.")
         return indices
+
+    def _get_batch_sizes(self):
+        if not self.batch_sizes:
+            return []
+        return self.batch_sizes.pop(0)
 
     # Instance fetcher
     # Do not override this method!
@@ -818,7 +838,11 @@ class IterSampler(Sampler):
 
     def __init__(self, sampler, num_samples=None):
         if num_samples is None:
-            num_samples = len(list(sampler))
+            if hasattr(sampler, "__len__"):
+                num_samples = len(sampler)
+            else:
+                # counting on a copied sampler to prevent changing the random state of the original one
+                num_samples = len(list(copy.deepcopy(sampler)))
         super().__init__(num_samples=num_samples)
         self.sampler = sampler
 

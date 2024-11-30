@@ -46,7 +46,7 @@ from mindspore import log as logger
 from .datasets import UnionBaseDataset, MappableDataset, Schema, to_list, _PythonMultiprocessing, _check_shm_usage
 from . import samplers
 from .queue import _SharedQueue
-from .validators import check_generatordataset, check_numpyslicesdataset, check_paddeddataset
+from .validators import check_generator_dataset, check_numpy_slices_dataset, check_padded_dataset
 from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
     get_enable_watchdog, get_debug_mode, get_seed, set_seed
 from ..core.datatypes import mstypelist_to_detypelist
@@ -690,6 +690,7 @@ class _GeneratorWorkerMp(multiprocessing.Process):
 
 class _GeneratorWrapper:
     """Wrapper the generator so that it can be iterated multiple times in GeneratorDataset."""
+
     def __init__(self, generator):
         self.generator = generator
         self.generator_new, self.generator = itertools.tee(self.generator)
@@ -744,6 +745,11 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set to -1,
             shared memory will be dynamically allocated with the actual size of data. This is only used if
             ``python_multiprocessing`` is set to True. Default: ``None`` , allocate shared memory dynamically.
+        batch_sampler (Iterable, optional): Similar to `sampler` , but returns a batch of indices at a time, the
+            corresponding data will be combined into a batch. Mutually exclusive with `num_samples` , `shuffle` ,
+            `num_shards` , `shard_id` and `sampler` . Default: ``None`` , do not use batch sampler.
+        collate_fn (Callable[List[numpy.ndarray]], optional): Define how to merge a list of data into a batch.
+            Only valid if `batch_sampler` is used. Default: ``None`` , do not use collation function.
 
     Raises:
         RuntimeError: If source raises an exception during execution.
@@ -754,6 +760,11 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         ValueError: If `num_shards` is specified but shard_id is None.
         ValueError: If shard_id is specified but `num_shards` is None.
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
+        TypeError: If `batch_sampler` is not iterable.
+        ValueError: If `batch_sampler` is specified together with `num_samples` ,
+            `shuffle` , `num_shards` , `shard_id` and `sampler`.
+        TypeError: If `collate_fn` is not callable.
+        ValueError: If `collate_fn` is specified while `batch_sampler` is None.
 
     Tutorial Examples:
         - `Load & Process Data With Dataset Pipeline
@@ -847,10 +858,10 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         >>> dataset = ds.GeneratorDataset(source=[(np.array(0),), (np.array(1),), (np.array(2),)], column_names=["col"])
     """
 
-    @check_generatordataset
+    @check_generator_dataset
     def __init__(self, source, column_names=None, column_types=None, schema=None, num_samples=None,
                  num_parallel_workers=1, shuffle=None, sampler=None, num_shards=None, shard_id=None,
-                 python_multiprocessing=True, max_rowsize=None):
+                 python_multiprocessing=True, max_rowsize=None, batch_sampler=None, collate_fn=None):
         super().__init__(num_parallel_workers=num_parallel_workers, sampler=sampler, num_samples=num_samples,
                          shuffle=shuffle, num_shards=num_shards, shard_id=shard_id)
         if isinstance(source, builtins.zip):
@@ -891,18 +902,39 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             self.schema = schema
             if not isinstance(schema, Schema):
                 self.schema = Schema(schema)
+
+        self.has_batch_sampler = False
+        if batch_sampler is not None:
+            self.has_batch_sampler = True
+            if not isinstance(batch_sampler, samplers.BuiltinSampler):
+                self.sampler = samplers.IterSampler(batch_sampler)
+            else:
+                self.sampler = batch_sampler
+
         # Move get dataset_size by len from parse to here, because self.source will
         # lose attribution of '__len__' after deepcopy.
+        self._calculate_source_length()
+
+        self.max_rowsize = max_rowsize if max_rowsize is not None else -1
+        self.sample_fn = None
+        # Ignore batch_info in the input parameter.
+        self.collate_fn = (lambda *args: collate_fn(*args[:-1])) if collate_fn is not None else None
+
+    def _calculate_source_length(self):
+        """Calculate the source length according to the source and sampler."""
         self.source_len = -1  # unknown
         if hasattr(self.source, "__len__"):
             self.source_len = len(self.source)
 
             # if user defined sampler, update the self.source_len
             if isinstance(self.sampler, samplers.Sampler) or hasattr(self.sampler, "__iter__"):
-                self.source_len = len(list(sampler))
-
-        self.max_rowsize = max_rowsize if max_rowsize is not None else -1
-        self.sample_fn = None
+                if self.sampler.num_samples is not None:
+                    self.source_len = self.sampler.num_samples
+                elif hasattr(self.sampler, "__len__"):
+                    self.source_len = len(self.sampler)
+                else:
+                    # counting on a copied sampler to prevent changing the random state of the original one
+                    self.source_len = len(list(copy.deepcopy(self.sampler)))
 
     def __deepcopy__(self, memodict):
         if id(self) in memodict:
@@ -913,18 +945,20 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         type_check(index, (int, np.number), "index")
         if not hasattr(self.source, "__getitem__"):
             raise RuntimeError("Dataset don't support randomized access.")
+        if self.has_batch_sampler:
+            raise RuntimeError("GeneratorDataset with batch_sampler does not support random access.")
         if not hasattr(self, "generator_op"):
             dataset = copy.deepcopy(self)
             self.prepared_source = _generator_fn_wrapper(_cpp_sampler_fn, self.source)
             if self.schema is None:
                 dataset.generator_node = cde.GeneratorNode(self.prepared_source, self.column_names, self.column_types,
-                                                           self.source_len, self.sampler, 1, None)
+                                                           self.source_len, self.sampler, 1, None, False)
             else:
                 schema = self.schema
                 if isinstance(schema, Schema):
                     schema = self.schema.cpp_schema
                 dataset.generator_node = cde.GeneratorNode(self.prepared_source, schema, self.source_len,
-                                                           self.sampler, 1, None)
+                                                           self.sampler, 1, None, False)
             self.generator_op = dataset.generator_node.Build()
         sample_id = self.generator_op.GetMappedIndex(index)
         return self.source[sample_id]
@@ -941,9 +975,11 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
     def split(self, sizes, randomize=True):
         if hasattr(self.source, "__getitem__"):
-            # If the source has __getitem__ attribute, call the split method of MappableDataset.
-            # Otherwise, call the split method of Dataset.
-            return super().split(sizes, randomize)
+            if not self.has_batch_sampler:
+                # If the source has __getitem__ attribute, call the split method of MappableDataset.
+                # Otherwise, call the split method of Dataset.
+                return super().split(sizes, randomize)
+            logger.warning("The performance of split will be degraded since batch_sampler is detected.")
         return super(MappableDataset, self).split(sizes, randomize)
 
     def prepare_multiprocessing(self):
@@ -980,12 +1016,12 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         self.prepare_multiprocessing()
         if self.schema is None:
             return cde.GeneratorNode(self.prepared_source, self.column_names, self.column_types, self.source_len,
-                                     self.sampler, self.num_parallel_workers, self.sample_fn)
+                                     self.sampler, self.num_parallel_workers, self.sample_fn, self.has_batch_sampler)
         schema = self.schema
         if isinstance(schema, Schema):
             schema = self.schema.cpp_schema
         return cde.GeneratorNode(self.prepared_source, schema, self.source_len, self.sampler,
-                                 self.num_parallel_workers, self.sample_fn)
+                                 self.num_parallel_workers, self.sample_fn, self.has_batch_sampler)
 
     def __validate_memory_usage(self):
         """
@@ -1145,7 +1181,7 @@ class NumpySlicesDataset(GeneratorDataset):
         >>> dataset = ds.NumpySlicesDataset(data=dict(df), shuffle=False)
     """
 
-    @check_numpyslicesdataset
+    @check_numpy_slices_dataset
     def __init__(self, data, column_names=None, num_samples=None, num_parallel_workers=1, shuffle=None, sampler=None,
                  num_shards=None, shard_id=None):
         dataset = _NumpySlicesDataset(data, column_names)
@@ -1198,7 +1234,7 @@ class PaddedDataset(GeneratorDataset):
         >>> dataset = ds.PaddedDataset(padded_samples=data)
     """
 
-    @check_paddeddataset
+    @check_padded_dataset
     def __init__(self, padded_samples):
         dataset = _PaddedDataset(padded_samples)
         super().__init__(dataset, column_names=dataset.column_names, num_shards=None, shard_id=None, shuffle=False)

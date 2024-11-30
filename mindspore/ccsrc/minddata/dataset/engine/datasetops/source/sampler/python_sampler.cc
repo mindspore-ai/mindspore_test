@@ -16,6 +16,8 @@
 
 #include "minddata/dataset/engine/datasetops/source/sampler/python_sampler.h"
 
+#include <algorithm>
+#include <string>
 #include <utility>
 
 #include "minddata/dataset/kernels/data/data_utils.h"
@@ -27,6 +29,23 @@ PythonSamplerRT::PythonSamplerRT(int64_t num_samples, py::object py_sampler_inst
     : SamplerRT(num_samples, samples_per_tensor),
       need_to_reset_(false),
       py_sampler_instance(std::move(py_sampler_instance)) {}
+
+Status PythonSamplerRT::GetBatchSizes(std::deque<int64_t> *batch_sizes) {
+  RETURN_UNEXPECTED_IF_NULL(batch_sizes);
+  *batch_sizes = std::deque<int64_t>();
+  {
+    py::gil_scoped_acquire gil_acquire;
+    try {
+      py::object py_ret = py_sampler_instance.attr("_get_batch_sizes")();
+      auto sizes = py::cast<py::list>(py_ret);
+      (void)std::transform(sizes.begin(), sizes.end(), std::back_inserter(*batch_sizes),
+                           [](const auto &size) { return py::cast<int64_t>(size); });
+    } catch (const py::error_already_set &e) {
+      RETURN_STATUS_UNEXPECTED(e.what());
+    }
+  }
+  return Status::OK();
+}
 
 Status PythonSamplerRT::GetNextSample(TensorRow *out) {
   RETURN_UNEXPECTED_IF_NULL(out);
@@ -49,6 +68,9 @@ Status PythonSamplerRT::GetNextSample(TensorRow *out) {
         std::shared_ptr<Tensor> ids_from_np;
         RETURN_IF_NOT_OK(Tensor::CreateFromNpArray(np_sample_ids, &ids_from_np));  // copy numpy to tensor
         // date type of sample ids got from numpy is not sure on different platforms, so cast it to int64
+        CHECK_FAIL_RETURN_UNEXPECTED(
+          ids_from_np->type().IsInt(),
+          "Python sampler should return index of type integer, but got: " + ids_from_np->type().ToString());
         RETURN_IF_NOT_OK(TypeCast(ids_from_np, &sample_ids, DataType(DataType::DE_INT64)));
 
         if (HasChildSampler()) {
@@ -100,6 +122,15 @@ Status PythonSamplerRT::InitSampler() {
 
 Status PythonSamplerRT::ResetSampler(const bool failover_reset) {
   if (failover_reset) {
+    {
+      py::gil_scoped_acquire gil_acquire;
+      try {
+        (void)py_sampler_instance.attr("_get_indices")();
+        (void)py_sampler_instance.attr("_get_batch_sizes")();
+      } catch (const py::error_already_set &e) {
+        RETURN_STATUS_UNEXPECTED(e.what());
+      }
+    }
     return Status::OK();
   }
   CHECK_FAIL_RETURN_UNEXPECTED(need_to_reset_, "[Internal ERROR] ResetSampler() called early or late.");
