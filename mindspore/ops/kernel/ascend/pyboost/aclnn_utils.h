@@ -210,6 +210,8 @@ bool IsAllowConvHF32();
 
 std::pair<int64_t, int64_t> UpdateGeneratorState(const tensor::BaseTensorPtr &seed, const tensor::BaseTensorPtr &offset,
                                                  int64_t step = 12);
+
+bool ConvNDBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

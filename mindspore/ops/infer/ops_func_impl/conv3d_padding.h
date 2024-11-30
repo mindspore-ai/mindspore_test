@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_GRAD_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_GRAD_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV3D_PADDING_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV3D_PADDING_H_
 
 #include <memory>
 #include <vector>
@@ -24,8 +24,15 @@
 
 namespace mindspore {
 namespace ops {
-class OPS_API ConvolutionGradFuncImpl : public OpFuncImpl {
+class OPS_API Conv3DPaddingFuncImpl : public OpFuncImpl {
  public:
+  ShapeArray ConvNdInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                              const ShapeVector &input_shape, const ShapeVector &weight_shape) const;
+  ShapeArray ConvNdCommonInferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos,
+                                    const ShapeVector &input_shape, const ShapeVector &weight_shape,
+                                    const ShapeVector &output_shpe) const;
+  ShapeArray InferDynamicRank(const ShapeVector &input_shape, const ShapeVector &weight_shape) const;
+
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   bool GeneralInferRegistered() const override { return true; };
@@ -33,4 +40,4 @@ class OPS_API ConvolutionGradFuncImpl : public OpFuncImpl {
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONVOLUTION_GRAD_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_CONV3D_PADDING_H_
