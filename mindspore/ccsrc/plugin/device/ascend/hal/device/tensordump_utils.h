@@ -29,22 +29,6 @@
 
 namespace mindspore::device::ascend {
 const std::pair<string, string> tensordump_mapping{"ms_tensor_dump", "TensorDump"};
-class AsyncFileWriter {
- public:
-  explicit AsyncFileWriter(size_t thread_nums);
-  ~AsyncFileWriter();
-  void Submit(std::function<void()> func);
-
- private:
-  void WorkerThread();
-
-  std::vector<std::thread> threads;
-  std::queue<std::function<void()>> tasks;
-  std::mutex queue_mutex;
-  std::condition_variable cv;
-  std::atomic_bool stop = false;
-  std::atomic_bool threads_started = false;
-};
 
 class TensorDumpUtils {
  public:
@@ -53,11 +37,10 @@ class TensorDumpUtils {
   TensorDumpUtils() = default;
   TensorDumpUtils(const TensorDumpUtils &) = delete;
   TensorDumpUtils &operator=(const TensorDumpUtils &) = delete;
-  void AsyncSaveDatasetToNpyFile(const ScopeAclTdtDataset &dataset);
+  void SaveDatasetToNpyFile(const ScopeAclTdtDataset &dataset);
 
  private:
-  std::string TensorNameToArrayName(const std::string &tensor_name, const std::string &data_type);
-  AsyncFileWriter file_writer{4};
+  std::string TensorNameToArrayName(std::string tensor_name, const std::string &data_type);
 };
 
 }  // namespace mindspore::device::ascend

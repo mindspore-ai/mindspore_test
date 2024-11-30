@@ -28,8 +28,8 @@ def print_(*input_x):
     Once set, the output will be saved in the file specified by print_file_path.
     :func:`mindspore.parse_print` can be employed to reload the data.
     For more information, please refer to :func:`mindspore.set_context` and :func:`mindspore.parse_print`.
-    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-    to solve operator execution failure when outputting big tensor or outputting tensor intensively.
+    In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
 
     Note:
         In pynative mode, please use python print function.
@@ -107,8 +107,8 @@ def tensordump(file_name, tensor, mode='out'):
     - id: An auto increment ID.
 
     Note:
-        - In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
-          to solve operator execution failure when outputting big tensor or outputting tensor intensively.
+        - In Ascend platform with graph mode, the environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+          can be set to solve operator execution failure when outputting big tensor or outputting tensor intensively.
         - The operator of tensordump doesn't support in control flow.
         - If current parallel mode is STAND_ALONE, mode should only be 'out'.
         - Parameter mode will be set to 'out' if user doesn't configure it.
