@@ -1,0 +1,12 @@
+#operator frac
+frac:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  function:
+    name: frac_ext
+  dispatch:
+    enable: True

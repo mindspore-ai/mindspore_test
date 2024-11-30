@@ -1,0 +1,30 @@
+frac:
+    description: |
+        Calculates the fractional part of each element in the input.
+
+        .. math::
+            out_i = input_i - \lfloor |input_i| \rfloor * sgn(input_i)
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            input (Tensor): The input Tensor.
+
+        Returns:
+            Tensor, has the same shape and type as input.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> x = Tensor([2, 4.2, -2.5], mindspore.float16)
+            >>> output = ops.frac_ext(x)
+            >>> print(output)
+              [ 0.      0.1992 -0.5   ]
