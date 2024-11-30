@@ -20,6 +20,7 @@
 #include <utility>
 #include <unordered_map>
 #include <unordered_set>
+#include "base/bfloat16.h"
 #include "plugin/device/ascend/kernel/dvm/dvm_kernel_mod.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -130,7 +131,7 @@ TypeId GetValueNodeType(const AnfNodePtr &node) {
     type_id = value_type->type_id();
   }
   if (type_id != TypeId::kNumberTypeFloat32 && type_id != TypeId::kNumberTypeFloat16 &&
-      type_id != TypeId::kNumberTypeInt32) {
+      type_id != TypeId::kNumberTypeInt32 && type_id != TypeId::kNumberTypeBFloat16) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Data type of scalar value input only supports float, but got: "
                                       << TypeIdToString(type_id) << " node: " << node->fullname_with_scope();
   }
@@ -298,6 +299,8 @@ class OpBuilder {
         auto scalar = GetScalarFromNode<int32_t>(scalar_node);
         op = scalar_index ? kernel_->Binary(binary_type, GetInput(common_node), scalar)
                           : kernel_->Binary(binary_type, scalar, GetInput(common_node));
+      } else {
+        MS_LOG(EXCEPTION) << "Some input of node " << node->fullname_with_scope() << " has unsupported dtype";
       }
     } else {
       op = kernel_->Binary(binary_type, GetInput(inputs[0]), GetInput(inputs[1]));
@@ -467,6 +470,10 @@ class OpBuilder {
     } else if (type_id == kNumberTypeInt32) {
       auto scalar = GetScalarFromNode<int32_t>(node);
       op = kernel_->Broadcast(scalar, shape, v_type_id, empty_input_);
+    } else if (type_id == kNumberTypeBFloat16) {
+      auto scalar = GetScalarFromNode<bfloat16>(node);
+      auto fp32_scalar = static_cast<float>(scalar);
+      op = kernel_->Broadcast(fp32_scalar, shape, dvm::DType::kFloat32, empty_input_);
     }
     if (empty_input_) {
       empty_input_ = false;  // now we have a fake input
