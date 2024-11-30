@@ -42,6 +42,7 @@
 #include "runtime/device/multi_stream_controller.h"
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/pynative/graph_adapter.h"
+#include "runtime/pipeline/pipeline.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "utils/log_adapter.h"
 #include "utils/llm_manager.h"
@@ -57,6 +58,7 @@
 
 #include "include/common/utils/compile_cache_context.h"
 #include "include/common/debug/common.h"
+#include "include/common/utils/stub_tensor.h"
 
 namespace mindspore {
 namespace compile {
@@ -734,6 +736,48 @@ bool MindRTBackendBase::LoadBackendInfo() {
   return true;
 }
 
+bool MindRTBackendBase::CheckEnableGraphPipeline(const std::shared_ptr<GraphCompilerInfo> &graph_compiler_info) {
+  MS_EXCEPTION_IF_NULL(graph_compiler_info);
+
+  bool enable_graph_pipeline = IsEnableGraphPipeline();
+  if (!enable_graph_pipeline) {
+    return false;
+  }
+
+  bool is_pynative_in_kbk_mode =
+    (ms_execution_mode_ == kPynativeMode) && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_);
+  if (!is_pynative_in_kbk_mode) {
+    return false;
+  }
+
+  bool is_pynative_bprop_graph = root_graph_->has_flag(kFlagIsPynativeBpropGraph);
+  if (is_pynative_bprop_graph) {
+    return false;
+  }
+
+  bool enable_run_graph_by_single_op =
+    std::any_of(graph_compiler_info->graphs_.begin(), graph_compiler_info->graphs_.end(),
+                [](const KernelGraphPtr &graph) { return graph->has_flag(kFlagEnableRunGraphBySingleOp); });
+  if (enable_run_graph_by_single_op) {
+    return false;
+  }
+
+  for (const auto &graph : graph_compiler_info->graphs_) {
+    MS_EXCEPTION_IF_NULL(graph);
+    if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(), [&](const CNodePtr &kernel) {
+          MS_EXCEPTION_IF_NULL(kernel);
+          return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute";
+        })) {
+      MS_LOG(INFO) << "Disable pynative and graph pipeline for graph: " << graph_compiler_info->name_
+                   << ", because the graph contains PyExecute op.";
+      return false;
+    }
+  }
+
+  MS_LOG(INFO) << "Enable pynative and graph pipeline for graph: " << graph_compiler_info->name_;
+  return true;
+}
+
 namespace {
 bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type,
                            device::RunMode run_mode) {
@@ -905,6 +949,9 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
     runtime::GraphScheduler::GetInstance().Schedule(actor_set);
     PROF_END(GraphScheduler);
   }
+
+  enable_graph_pipeline_ = CheckEnableGraphPipeline(graph_compiler_info);
+
   const ActorInfo &actor_info = graph_compiler_info->name_;
   (void)actor_to_graph_compiler_info_.emplace(graph_compiler_info->name_, std::move(graph_compiler_info));
 
@@ -1490,6 +1537,11 @@ void MindRTBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef
     if (!is_embedding_cache_server) {
       actor_set->output_actor_->UpdateOutputDeviceAddress();
     }
+    if (enable_graph_pipeline_) {
+      MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << actor_set->name_
+                    << ", early stop ConstructOutputs.";
+      return;
+    }
 
     // Fetch outputs.
     auto &output_tensors = actor_set->output_actor_->outputs();
@@ -1513,6 +1565,15 @@ void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompile
       auto value = utils::cast<tensor::BaseTensorPtr>(arg);
       runtime::DeviceAddressUtils::ConvertContiguousTensorSync(value);
       runtime::DeviceAddressUtils::CreateKernelTensor(value);
+    } else if (utils::isa<stub::TensorNode>(arg)) {
+      auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
+      MS_EXCEPTION_IF_NULL(tensor_stub);
+      auto value = tensor_stub->WaitValue();
+      MS_EXCEPTION_IF_NULL(value);
+      auto tensor = value->cast<tensor::BaseTensorPtr>();
+      MS_EXCEPTION_IF_NULL(tensor);
+      runtime::DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+      runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
     } else if (utils::isa<ValuePtr>(arg)) {
       auto value = utils::cast<ValuePtr>(arg);
       MS_EXCEPTION_IF_NULL(value);
@@ -1568,9 +1629,6 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   }
   MS_EXCEPTION_IF_NULL(graph_iter->second);
   const auto &graph_compiler_info = *(graph_iter->second);
-  // For pynative and graph mix execution.
-  WaitTaskFinish();
-  WaitMultiStream(graph_compiler_info);
 
   // Run in the pynative mode.
   MS_EXCEPTION_IF_NULL(outputs);
@@ -1578,11 +1636,12 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   if (ms_execution_mode_ == kPynativeMode && !pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_)) {
     // The tensor needs to be converted to contiguous before being given to the actors.
     // After the view feature is supported in the graph mode, the following code will be deleted.
-    ContiguousArgs(args, graph_compiler_info);
     RunGraphByCondition(actor_info, graph_compiler_info, args, outputs);
     return;
   }
 
+  WaitTaskFinish();
+  WaitMultiStream(graph_compiler_info);
   MS_LOG(INFO) << "Status record: start run actor: " << actor_info;
   uint64_t start_time_ = profiler::GetClockSyscnt();
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
@@ -2004,7 +2063,8 @@ std::shared_ptr<GraphCompilerInfo> MindRTBackendBase::ConstructGraphCompilerInfo
 
   return std::make_shared<GraphCompilerInfo>(graphs, device_contexts, tensors_mask, input_tensors, control_nodes_,
                                              root_graph->parameters(), parser, outputs_order, outputs_num,
-                                             root_graph->GetPositionalArgsCount(), name, false, strategy, compile_func);
+                                             root_graph->GetPositionalArgsCount(), name, false, strategy, compile_func,
+                                             root_graph->phase());
 }
 
 void MindRTBackendBase::ParseControlNodes(const GraphCompilerInfo &graph_compile_info) {

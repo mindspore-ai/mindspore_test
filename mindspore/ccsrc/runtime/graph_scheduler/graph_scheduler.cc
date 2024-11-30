@@ -106,7 +106,7 @@ bool GetNeedSyncStream(const GraphCompilerInfo &graph_compiler_info) {
   MS_EXCEPTION_IF_NULL(ms_context);
   static const bool enable_internal_kernel = ms_context->IsEnableInferBoost();
   static auto enable_syn = common::GetEnv("MS_SYNC_RUN");
-  if ((enable_internal_kernel || IsTwoPhaseInfer()) && enable_syn != "on") {
+  if ((enable_internal_kernel || IsInferPhase(graph_compiler_info.graph_phase_)) && enable_syn != "on") {
     return false;
   }
   const auto &graphs = graph_compiler_info.graphs_;
@@ -836,7 +836,7 @@ void GraphScheduler::Schedule(const ActorSet *actor_set) {
 }
 
 void GraphScheduler::RefreshContextAndThreadPool(ActorSet *const actor_set, ActorThreadPool *const thread_pool) {
-  if (IsTwoPhaseInfer()) {
+  if (IsInferPhase(actor_set->graph_phase_)) {
     // GE backend's memory optimization litmits the thread number to be 1, but the memory is not a problem in inference
     // so the multi-thread can be enabled.
     return;
@@ -1182,6 +1182,7 @@ ActorSet *GraphScheduler::Fetch(const ActorInfo &actor_info) const {
 ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) {
   auto actor_set = std::make_shared<ActorSet>(graph_compiler_info.name_);
   MS_EXCEPTION_IF_NULL(actor_set);
+  actor_set->graph_phase_ = graph_compiler_info.graph_phase_;
   (void)actors_.emplace(actor_set->name_, actor_set);
 
   TryEnableKbkSubGraphExecMode(graph_compiler_info, actor_set.get());
@@ -1567,8 +1568,8 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
         if (host_queue_ds_actor == nullptr) {
           auto actor_name = graph_compiler_info.name_ + kHostDSActorNameSuffix;
           MS_LOG(INFO) << "Create host queue data source actor: " << actor_name;
-          host_queue_ds_actor = std::make_shared<HostQueueDataSourceActor>(actor_name, 1, memory_manager_aid_, nullptr,
-                                                                           nullptr, host_queue);
+          host_queue_ds_actor = std::make_shared<HostQueueDataSourceActor>(
+            actor_name, 1, memory_manager_aid_, nullptr, nullptr, host_queue, graph_compiler_info.graph_phase_);
           InsertActor(host_queue_ds_actor.get());
           (void)data_source_actors.emplace_back(host_queue_ds_actor);
         }
@@ -1754,8 +1755,8 @@ std::vector<SuperKernelActorPtr> GraphScheduler::BuildSuperKernelActor(const Gra
     }
     graph->CacheRootWeight(root_weights);
     auto actor_name = graph->ToString() + kSuperKernelActorNameSuffix;
-    auto super_kernel_actor =
-      std::make_shared<SuperKernelActor>(actor_name, graph, device_context, memory_manager_aid_, debug_aid_, nullptr);
+    auto super_kernel_actor = std::make_shared<SuperKernelActor>(
+      actor_name, graph, graph_compiler_info.graph_phase_, device_context, memory_manager_aid_, debug_aid_, nullptr);
     MS_EXCEPTION_IF_NULL(super_kernel_actor);
     InsertActor(super_kernel_actor.get());
     (void)super_kernel_actors.emplace_back(super_kernel_actor);

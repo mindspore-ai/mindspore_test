@@ -41,7 +41,7 @@ from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore._c_expression import GraphExecutor_, Tensor, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
-    _ms_memory_recycle, _bind_device_ctx
+    _ms_memory_recycle, _bind_device_ctx, StubNode
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_pynative_parallel, \
     _is_in_auto_parallel_mode, _is_parallel_mode
@@ -150,6 +150,8 @@ def _convert_python_data(data):
         return PythonCOOTensor(coo_tensor=data)
     if isinstance(data, RowTensor) and not isinstance(data, PythonRowTensor):
         return PythonRowTensor(row_tensor=data)
+    if isinstance(data, StubNode):
+        return ms.common._stub_tensor._convert_stub(data)
     if data.__class__ is tuple:
         # Handle namedtuple since its type is tuple.
         if hasattr(data, "_fields"):

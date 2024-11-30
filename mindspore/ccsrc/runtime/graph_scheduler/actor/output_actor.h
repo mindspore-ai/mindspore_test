@@ -31,6 +31,7 @@
 #include "runtime/hardware/device_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/common/utils/stub_tensor.h"
 #include "ir/tensor.h"
 
 namespace mindspore {
@@ -81,6 +82,9 @@ class OutputActor : public AbstractActor {
     current_count_ = 0;
   }
 
+  // Set the stub output node and flatten them to vector by output position.
+  void SetStubOutput(const stub::StubNodePtr &stub_output);
+
  protected:
   void Init() override;
 
@@ -113,6 +117,9 @@ class OutputActor : public AbstractActor {
   size_t current_outputs_num_;
 
   std::map<KernelWithIndex, DeviceTensorPtr> output_node_to_tensor_device_address_;
+
+  // All flatten stub node(TensorNode, ScalarNode, StubString) by output position, used in graph pipeline case.
+  std::vector<stub::StubNodePtr> flatten_stub_nodes_{};
 };
 
 using OutputActorPtr = std::shared_ptr<OutputActor>;

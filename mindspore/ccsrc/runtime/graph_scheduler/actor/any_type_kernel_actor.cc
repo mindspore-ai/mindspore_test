@@ -36,7 +36,7 @@ std::mutex AnyTypeKernelActor::instance_lock_;
 AnyTypeKernelActor::AnyTypeKernelActor(const std::string &name, const KernelGraphPtr &graph,
                                        const DeviceContext *device_context, const AID &memory_manager_aid,
                                        const AID *debug_aid, const AID *recorder_aid, KernelTransformType type)
-    : SuperKernelActor(name, graph, device_context, memory_manager_aid, debug_aid, recorder_aid, type) {}
+    : SuperKernelActor(name, graph, "", device_context, memory_manager_aid, debug_aid, recorder_aid, type) {}
 
 void AnyTypeKernelActor::RunOpData(OpData<DeviceTensor> *const input_data, OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(input_data);

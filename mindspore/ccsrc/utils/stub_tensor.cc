@@ -274,6 +274,32 @@ void SequenceNode::SetException(const std::exception_ptr &e_ptr) {
   StubNode::SetException(e_ptr);
 }
 
+bool StringNode::SetAbstract(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  if (!abs->isa<abstract::AbstractScalar>()) {
+    return false;
+  }
+
+  return StubNode::SetAbstract(abs);
+}
+
+void StringNode::SetValue(const ValuePtr &val) {
+  MS_EXCEPTION_IF_NULL(val);
+  if (!val->isa<StringImm>()) {
+    MS_LOG(EXCEPTION) << "Expect a StringImm value for StringNode, but got: " << val->ToString();
+  }
+  StubNode::SetValue(val);
+}
+
+bool ScalarNode::SetAbstract(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  if (!abs->isa<abstract::AbstractScalar>()) {
+    return false;
+  }
+
+  return StubNode::SetAbstract(abs);
+}
+
 bool AnyTypeNode::SetAbstract(const AbstractBasePtr &abs) {
   real_node_ = MakeStubNode(abs->BuildType());
   auto flag = real_node_->SetAbstract(abs);
@@ -307,6 +333,138 @@ std::pair<py::object, StubNodePtr> MakeTopNode(const TypePtr &type) {
   auto top = MakeStubNode(type);
   auto ret = MakeOutput(top);
   return std::make_pair(ret, top);
+}
+
+std::pair<StubNodePtr, bool> MakeStubNode(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  MS_LOG(INFO) << "Make stub node for Abstract: " << abs->ToString();
+  const auto &type = abs->GetType();
+  MS_EXCEPTION_IF_NULL(type);
+  const auto &shape = abs->GetShape();
+  MS_EXCEPTION_IF_NULL(shape);
+
+  if (type->IsSameTypeId(TensorType::kTypeId)) {
+    auto node = std::make_shared<TensorNode>();
+    if (!shape->IsDynamic()) {
+      node->SetAbstract(abs);
+    }
+    return {node, true};
+  } else if (type->IsSameTypeId(Tuple::kTypeId) || type->IsSameTypeId(List::kTypeId)) {
+    const auto &seq_abs = abs->cast<abstract::AbstractSequencePtr>();
+    MS_EXCEPTION_IF_NULL(seq_abs);
+    if (seq_abs->dynamic_len()) {
+      MS_LOG(INFO) << "Can not support dynamic tuple/list type to create a StubNode.";
+      return {nullptr, false};
+    }
+    const auto &elements = seq_abs->elements();
+    auto node = std::make_shared<SequenceNode>(elements.size());
+    node->StubNode::SetAbstract(seq_abs);
+    for (size_t i = 0; i < elements.size(); ++i) {
+      auto elem_pair = MakeStubNode(elements[i]);
+      if (!elem_pair.second) {
+        return {nullptr, false};
+      }
+      MS_EXCEPTION_IF_NULL(elem_pair.first);
+      node->SetElement(i, elem_pair.first);
+    }
+    return {node, true};
+  } else if (type->IsSameTypeId(String::kTypeId)) {
+    MS_LOG(DEBUG) << "Make stub string node";
+    auto str_node = std::make_shared<StringNode>();
+    const auto &string_value = abs->GetValue();
+    if (string_value && string_value->isa<StringImm>()) {
+      str_node->SetValue(string_value);
+      MS_LOG(DEBUG) << "Make stub string node, value: " << string_value->ToString();
+    } else {
+      MS_LOG(INFO) << "There is no string value in abstract: " << abs->ToString();
+      return {nullptr, false};
+    }
+    if (!str_node->SetAbstract(abs)) {
+      MS_LOG(INFO) << "Set abstract for StringNode failed, abstract: " << abs->ToString();
+      return {nullptr, false};
+    }
+    return {str_node, true};
+  } else if (type->IsFromTypeId(Number::kTypeId)) {
+    MS_LOG(DEBUG) << "Make stub scalar node";
+    auto scalar_node = std::make_shared<ScalarNode>();
+    const auto &scalar_value = abs->GetValue();
+    if (scalar_value && !scalar_value->isa<ValueAny>()) {
+      scalar_node->SetValue(scalar_value);
+      MS_LOG(DEBUG) << "Make stub scalar node, value: " << scalar_node->ToString();
+    }
+    if (!scalar_node->SetAbstract(abs)) {
+      MS_LOG(INFO) << "Set abstract for ScalarNode failed, abstract: " << abs->ToString();
+      return {nullptr, false};
+    }
+    return {scalar_node, true};
+  }
+  MS_LOG(INFO) << "Unsupported stub tensor for type: " << type->ToString();
+  return {nullptr, false};
+}
+
+void FlattenStubNode(const StubNodePtr &node, std::vector<StubNodePtr> *flatten_stub_nodes) {
+  MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(flatten_stub_nodes);
+  auto seq = node->cast<std::shared_ptr<SequenceNode>>();
+  if (seq) {
+    auto &elements = seq->Elements();
+    for (size_t i = 0; i < elements.size(); ++i) {
+      FlattenStubNode(elements[i], flatten_stub_nodes);
+    }
+  } else {
+    flatten_stub_nodes->push_back(node);
+  }
+}
+
+py::object StubNodeToPyObject(const StubNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (node->isa<TensorNode>()) {
+    auto tensor = node->cast<std::shared_ptr<TensorNode>>();
+    return py::cast(tensor);
+  } else if (node->isa<SequenceNode>()) {
+    auto seq = node->cast<std::shared_ptr<SequenceNode>>();
+    MS_EXCEPTION_IF_NULL(seq);
+    auto abs = node->ToAbstract();
+    MS_EXCEPTION_IF_NULL(abs);
+
+    auto &elements = seq->Elements();
+    py::tuple out(elements.size());
+    for (size_t i = 0; i < elements.size(); ++i) {
+      out[i] = StubNodeToPyObject(elements[i]);
+    }
+    if (abs->isa<abstract::AbstractTuple>()) {
+      return out;
+    } else if (abs->isa<abstract::AbstractList>()) {
+      return out.cast<py::list>();
+    } else {
+      MS_LOG(EXCEPTION) << "The abstract of SequenceNode should be AbstractTuple or AbstractList, but got: "
+                        << abs->ToString();
+    }
+  } else if (node->isa<StringNode>()) {
+    MS_LOG(DEBUG) << "Begin wait value for stub string node.";
+    const auto &value = node->WaitValue();
+    MS_LOG(DEBUG) << "End wait value for stub string node.";
+    MS_EXCEPTION_IF_NULL(value);
+    const auto &string_value = value->cast<StringImmPtr>();
+    if (!string_value) {
+      MS_LOG(EXCEPTION) << "Expect a StringImm in stub string node, but got: " << value->ToString();
+    }
+    py::str res = string_value->value();
+    return res;
+  } else if (node->isa<ScalarNode>()) {
+    MS_LOG(DEBUG) << "Begin wait value for stub scalar node.";
+    const auto &value = node->WaitValue();
+    MS_LOG(DEBUG) << "End wait value for stub scalar node.";
+    MS_EXCEPTION_IF_NULL(value);
+    const auto &scalar_value = value->cast<ScalarPtr>();
+    if (scalar_value) {
+      return ScalarPtrToPyData(scalar_value);
+    }
+    const auto &tensor = value->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    return CheckAndConvertToScalar(tensor, node->ToAbstract());
+  }
+  MS_EXCEPTION(NotSupportError) << "Unsupported stub node: " << node->ToString() << " to py::object.";
 }
 
 void RegStubNodes(const py::module *m) {

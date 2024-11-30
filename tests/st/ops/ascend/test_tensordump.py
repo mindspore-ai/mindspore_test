@@ -133,6 +133,7 @@ def test_tensordump_when_jit(mode):
     x = np.array([[1, 2, 3, 4], [5, 6, 7, 8]]).astype(np.float32)
     input_x = Tensor(x)
     x, x1, x2, x3 = dump_tensor(input_x, str(path))
+    x.asnumpy()
     time.sleep(0.1)
     name2file = find_npy_files(path)
     assert np.allclose(x.asnumpy(), np.load(name2file["input"]))

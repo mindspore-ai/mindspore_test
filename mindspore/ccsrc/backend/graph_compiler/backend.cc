@@ -59,6 +59,8 @@
 #include "runtime/device/device_address_utils.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "runtime/pipeline/pipeline.h"
+#include "runtime/pipeline/task/run_graph_task.h"
+#include "include/common/utils/stub_tensor.h"
 
 namespace mindspore {
 namespace compile {
@@ -399,6 +401,17 @@ void CreateKernelTensor(const BaseRef &arg) {
     for (const auto &value : sequence_value) {
       CreateKernelTensor(value);
     }
+  } else if (utils::isa<stub::TensorNode>(arg)) {
+    auto tensor_stub = utils::cast<std::shared_ptr<stub::TensorNode>>(arg);
+    MS_EXCEPTION_IF_NULL(tensor_stub);
+    auto value = tensor_stub->WaitValue();
+    MS_EXCEPTION_IF_NULL(value);
+    auto tensor = value->cast<tensor::BaseTensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
+    if (device_address != nullptr) {
+      runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
+    }
   } else {
     MS_LOG(DEBUG) << "Only tensor need create KernelTensor";
   }
@@ -410,8 +423,19 @@ void CreateKernelTensor(const VectorRef &args) {
   }
 }
 
+MindRTBackend::~MindRTBackend() {
+  if (enable_graph_pipeline_) {
+    GilReleaseWithCheck gil_release;
+    runtime::Pipeline::Get().frontend_stage()->Wait();
+  }
+}
+
 runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphCompilerInfo &graph_compiler_info,
                                                                  const VectorRef &args, bool no_multi_graph) {
+  WaitTaskFinish();
+  WaitMultiStream(graph_compiler_info);
+  ContiguousArgs(args, graph_compiler_info);
+  WaitTaskFinish();
   auto graphs = graph_compiler_info.graphs_;
   auto device_contexts = graph_compiler_info.device_contexts_;
   CreateKernelTensor(args);
@@ -424,11 +448,21 @@ runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphComp
     if (graph->is_any_type_input()) {
       continue;
     }
+    auto input_tensors = GetRunGraphInputs(graph_compiler_info, args);
+    if (enable_graph_pipeline_) {
+      for (const auto &tensors : input_tensors) {
+        for (const auto &tensor : tensors) {
+          if (tensor) {
+            tensor->set_need_pipeline_sync(true);
+          }
+        }
+      }
+    }
+
     if (no_multi_graph) {
       MS_LOG(INFO) << "Replace parameter format";
       // The input tensors of heterogeneous graphs or control flow graphs are null.
       // Need to get tensor after ParseControlNodes.
-      auto input_tensors = GetRunGraphInputs(graph_compiler_info, args);
       pynative::GraphAdapter::ReplaceGraphParameterProperties(graph, input_tensors.at(i), device_contexts[i]);
     }
     (void)graph_compiler_->CompileGraphImpl(graph, device_contexts[i]);
@@ -472,10 +506,9 @@ runtime::ActorSet *MindRTBackend::RealCompileGraphBeforeRunActor(const GraphComp
 void MindRTBackend::RunGraphByActors(const ActorInfo &actor_info, const GraphCompilerInfo &graph_compiler_info,
                                      const VectorRef &args, VectorRef *outputs) {
   MS_LOG(INFO) << "Status record: begin run actor: " << actor_info;
-  WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   auto graphs = graph_compiler_info.graphs_;
-  auto device_contexts = graph_compiler_info.device_contexts_;
+  auto &device_contexts = graph_compiler_info.device_contexts_;
   if (device_contexts.size() != graphs.size()) {
     MS_LOG(EXCEPTION) << "Graphs size " << graphs.size() << " is not equal to device_contexts size "
                       << device_contexts.size();
@@ -487,8 +520,59 @@ void MindRTBackend::RunGraphByActors(const ActorInfo &actor_info, const GraphCom
   auto actor_set = runtime::GraphScheduler::GetInstance().Fetch(actor_info);
   if (actor_set == nullptr) {
     actor_set = RealCompileGraphBeforeRunActor(graph_compiler_info, args, no_multi_graph);
+    first_step_ = true;
+  }
+  MS_EXCEPTION_IF_NULL(actor_set);
+
+  if (enable_graph_pipeline_) {
+    // 1. Construct stub output.
+    MS_EXCEPTION_IF_NULL(root_graph_);
+    const auto output_node = root_graph_->output();
+    MS_EXCEPTION_IF_NULL(output_node);
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kOutputProcess,
+                                       "MakeStubNode");
+    auto stub_output_pair = stub::MakeStubNode(output_node->abstract());
+    if (stub_output_pair.second) {
+      MS_LOG(DEBUG) << "Enable pynative graph pipeline for actor set: " << actor_info;
+      // 2. Async run graph.
+      auto &stub_output = stub_output_pair.first;
+      MS_EXCEPTION_IF_NULL(stub_output);
+      outputs->push_back(stub_output);
+
+      auto run_graph_task = std::make_shared<runtime::RunGraphTask>(
+        [=, &graph_compiler_info]() {
+          actor_set->output_actor_->SetStubOutput(stub_output);
+          RunActorSet(actor_info, actor_set, graph_compiler_info, args, no_multi_graph, outputs);
+        },
+        stub_output);
+      GilReleaseWithCheck release_gil;
+      runtime::Pipeline::Get().frontend_stage()->Push(run_graph_task);
+      return;
+    }
+    enable_graph_pipeline_ = false;
+    MS_LOG(INFO)
+      << "Failed to create Stub output, encountered an unsupported output type for graph: " << actor_info
+      << ". Currently, only output types that include: Tensor, Scalar, String, fixed-length Sequence, are "
+         "supported. The single op and graph pipeline has been disabled, so the performance will not be improved.";
   }
 
+  RunActorSet(actor_info, actor_set, graph_compiler_info, args, no_multi_graph, outputs);
+}
+
+void MindRTBackend::RunActorSet(const ActorInfo &actor_info, runtime::ActorSet *actor_set,
+                                const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
+                                bool no_multi_graph, VectorRef *outputs) {
+  if (!first_step_) {
+    WaitTaskFinish();
+    WaitMultiStream(graph_compiler_info);
+    ContiguousArgs(args, graph_compiler_info);
+    WaitTaskFinish();
+  } else {
+    first_step_ = false;
+  }
+
+  auto graphs = graph_compiler_info.graphs_;
+  auto &device_contexts = graph_compiler_info.device_contexts_;
   if (root_graph_->has_flag(kFlagIsPynativeBpropGraph)) {
     for (size_t i = 0; i < graphs.size(); ++i) {
       graph_adapter_.UpdateForwardOutputInBpropGraph(graphs[i], device_contexts[i], no_multi_graph);
@@ -535,6 +619,9 @@ void MindRTBackend::RunMsGradGraph(const CNodePtr &kernel, const VectorRef &args
 
 void MindRTBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_info, const VectorRef &args,
                                        VectorRef *outputs) {
+  WaitTaskFinish();
+  WaitMultiStream(graph_compiler_info);
+  ContiguousArgs(args, graph_compiler_info);
   WaitTaskFinish();
 
   MS_LOG(INFO) << "Status record: begin run graph by single op";

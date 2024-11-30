@@ -742,6 +742,7 @@ static const std::vector<DataConvertFuncPtr> &GetDataConvertFuncs() {
     std::make_shared<ByTypeDataConvertFunc<Tensor>>(ObjCast<TensorPtr>),
     std::make_shared<ByAttrDataConvertFunc>(ConvertMsClass, PYTHON_MS_CLASS),
     std::make_shared<ByTypeDataConvertFunc<BaseTensor>>(ObjCast<BaseTensorPtr>),
+    std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ConvertTensorNode),
     std::make_shared<ByTypeDataConvertFunc<py::tuple>>(ConvertTuple),
     std::make_shared<ByTypeDataConvertFunc<py::list>>(ConvertList),
     std::make_shared<ByTypeDataConvertFunc<py::bool_>>(PyCast<BoolImm, bool>),
@@ -778,6 +779,7 @@ static const std::vector<DataConvertFuncPtr> &GetStubDataConvertFuncs() {
   static const std::vector<DataConvertFuncPtr> data_convert_funcs{
     std::make_shared<ByFuncDataConvertFunc>([](const py::object &obj) -> bool { return IsStubTensor(obj); },
                                             PyStubNodeCast),
+    std::make_shared<ByTypeDataConvertFunc<stub::TensorNode>>(ObjCast<std::shared_ptr<stub::TensorNode>>),
     std::make_shared<ByTypeDataConvertFunc<py::tuple>>(ConvertStubTuple),
     std::make_shared<ByTypeDataConvertFunc<py::list>>(ConvertStubList),
   };

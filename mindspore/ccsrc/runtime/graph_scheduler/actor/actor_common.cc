@@ -726,5 +726,9 @@ mindspore::HashMap<size_t, size_t> GetRepeatDeviceAddressIndexPair(const std::ve
   }
   return repeat_index;
 }
+
+bool IsInferPhase(const std::string &phase) {
+  return phase.find("prefill") != std::string::npos || phase.find("increment") != std::string::npos;
+}
 }  // namespace runtime
 }  // namespace mindspore

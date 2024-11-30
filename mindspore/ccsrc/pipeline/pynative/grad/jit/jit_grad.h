@@ -53,7 +53,7 @@ class Jit {
  private:
   void GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                     const FuncGraphPtr &primal_func_graph, const FuncGraphPtr &jit_grad_graph,
-                    const CNodePtr &added_node, const ValuePtr &added_out_v);
+                    const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase);
   // Update device address of value node in grad graph by forward tensors.
   void RunReplace(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const;
   void ReplaceAddedCnodeActualOutput(const CNodePtr &added_node, const ValuePtrList &total_output_tensors) const;
@@ -66,7 +66,8 @@ class Jit {
                        const FuncGraphPtr &ms_func_graph, CNodePtr *jit_cnode) const;
   // create grad param for jit fprop graph and connect it with previous op
   GradParamPtr CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
-                                  const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph);
+                                  const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph,
+                                  const std::string &graph_phase);
   void UpdateAddCnodeFoward(const OpGradInfoPtr &op_grad_info, const GradExecutor *grad_executor,
                             const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase);
   void RecordForwardGraphForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,

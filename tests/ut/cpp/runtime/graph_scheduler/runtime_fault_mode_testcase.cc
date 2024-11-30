@@ -492,7 +492,7 @@ TEST_F(RuntimeFaultModeTest, InvalidActorSet) {
   // Build data source actor.
   auto host_queue = std::make_shared<HostTensorQueue>();
   auto host_queue_ds_actor =
-    std::make_shared<HostQueueDataSourceActor>(actor_name, 1, memory_manager_aid, nullptr, nullptr, host_queue);
+    std::make_shared<HostQueueDataSourceActor>(actor_name, 1, memory_manager_aid, nullptr, nullptr, host_queue, "");
   actor_set->data_source_actors_.emplace_back(host_queue_ds_actor);
 
   // Build data prepare actor.
@@ -506,7 +506,7 @@ TEST_F(RuntimeFaultModeTest, InvalidActorSet) {
   KernelMapPosition origin_outputs_order;
   auto graph_compiler_info = std::make_shared<GraphCompilerInfo>(
     graphs, device_contexts, tensors_mask, input_tensors, control_nodes, origin_parameters_order, parser,
-    origin_outputs_order, 2, 2, actor_name, false, GraphExecutionStrategy::kPipeline, nullptr);
+    origin_outputs_order, 2, 2, actor_name, false, GraphExecutionStrategy::kPipeline, nullptr, "");
   auto data_prepare_actor = std::make_shared<DataPrepareActor>(
     actor_name, memory_manager_aid, nullptr, nullptr, graph_compiler_info.get(), host_queue_ds_actor, host_queue);
   actor_set->data_prepare_actor_ = data_prepare_actor;
@@ -515,8 +515,8 @@ TEST_F(RuntimeFaultModeTest, InvalidActorSet) {
   DeviceContextKey device_context_key{"CPU", 0};
   auto device_context = std::make_shared<TestDeviceContext>(device_context_key);
   auto graph = std::make_shared<KernelGraph>();
-  auto super_kernel_actor =
-    std::make_shared<SuperKernelActor>(actor_name, graph, device_context.get(), memory_manager_aid, nullptr, nullptr);
+  auto super_kernel_actor = std::make_shared<SuperKernelActor>(actor_name, graph, "", device_context.get(),
+                                                               memory_manager_aid, nullptr, nullptr);
   actor_set->super_kernel_actors_.emplace_back(super_kernel_actor);
 
   // Build output actor.

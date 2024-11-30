@@ -45,11 +45,13 @@ struct OutputMemoryInfo {
 // The Super kernel actor is used to represent the sink executing of graph which is the combination of kernels.
 class SuperKernelActor : public DebugAwareActor {
  public:
-  SuperKernelActor(const std::string &name, const KernelGraphPtr &graph, const DeviceContext *device_context,
-                   const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid,
-                   KernelTransformType type = KernelTransformType::kSuperKernelActor)
+  SuperKernelActor(const std::string &name, const KernelGraphPtr &graph, const std::string &graph_phase,
+                   const DeviceContext *device_context, const AID &memory_manager_aid, const AID *debug_aid,
+                   const AID *recorder_aid, KernelTransformType type = KernelTransformType::kSuperKernelActor)
       : DebugAwareActor(name, type, recorder_aid, memory_manager_aid, debug_aid, nullptr),
         graph_(graph),
+        graph_phase_(graph_phase),
+        is_infer_phase_(IsInferPhase(graph_phase)),
         enable_kbk_sub_graph_execute_(EnableKbkSubGraphExecute()),
         enable_trace_memory_(EnableTraceMemory()) {
     (void)device_contexts_.emplace_back(device_context);
@@ -139,6 +141,11 @@ class SuperKernelActor : public DebugAwareActor {
 
   friend class GraphScheduler;
   KernelGraphPtr graph_;
+
+  // The phase of the root graph this super actor belongs to.
+  std::string graph_phase_;
+  // Whether the super kernel actor is a infer 'prefill' or 'increment' graph or not.
+  bool is_infer_phase_;
 
   // In the scheduler, check whether the parameters need to be copied after lunch. Only when the parameter has
   // the ref attribute and is directly used by the kernel in the graph, it needs to be copied.

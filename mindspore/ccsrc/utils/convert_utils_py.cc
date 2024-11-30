@@ -370,6 +370,12 @@ static ValueNameToConverterVector value_name_to_converter = {
      tuple_container[0] = value->cast<tensor::MetaTensorPtr>();
      return tuple_container[0];
    }},
+  // StubNode: Tensor, Tuple/List, Scalar, String
+  {stub::StubNode::kTypeId,
+   [](const ValuePtr &value, const AbstractBasePtr &) -> py::object {
+     auto stub_node = value->cast<stub::StubNodePtr>();
+     return stub::StubNodeToPyObject(stub_node);
+   }},
   // CSRTensor
   {tensor::CSRTensor::kTypeId,
    [](const ValuePtr &value, const AbstractBasePtr &) -> py::object {
@@ -914,6 +920,12 @@ std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle &obj) {
   }
   MS_EXCEPTION_IF_NULL(stub_abs);
   return {dyn_cast<abstract::Shape>(stub_abs->BuildShape())->shape(), stub_abs->BuildType()};
+}
+
+ValuePtr ConvertTensorNode(const py::object &obj) {
+  auto tensor_node = obj.cast<std::shared_ptr<stub::TensorNode>>();
+  MS_EXCEPTION_IF_NULL(tensor_node);
+  return tensor_node->WaitValue();
 }
 
 ValuePtr ShallowCopyTensorValue(const ValuePtr &value) {

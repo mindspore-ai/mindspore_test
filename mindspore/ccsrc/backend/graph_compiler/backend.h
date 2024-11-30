@@ -72,7 +72,7 @@ class BACKEND_EXPORT MindRTBackend : public MindRTBackendBase {
  public:
   MindRTBackend(const std::string &backend_name, const std::string &device_name, uint32_t device_id)
       : MindRTBackendBase(backend_name, device_name, device_id) {}
-  ~MindRTBackend() override = default;
+  ~MindRTBackend() override;
 
   // Execute all tasks in queue when lazy build is enabled in PyNative mode.
   void WaitTaskFinish() const override;
@@ -101,6 +101,10 @@ class BACKEND_EXPORT MindRTBackend : public MindRTBackendBase {
   // Clean the compilation cache to avoid memory leakage in dynamic shape scenarios.
   void ClearResource();
 
+  void RunActorSet(const ActorInfo &actor_info, runtime::ActorSet *actor_set,
+                   const GraphCompilerInfo &graph_compiler_info, const VectorRef &args, bool no_multi_graph,
+                   VectorRef *outputs);
+
   // Cache output tensor ref count of kernels for back propagation graph in PyNative mode.
   std::map<GraphId, std::map<KernelWithIndex, size_t>> cnode_ref_counts_;
 
@@ -109,6 +113,8 @@ class BACKEND_EXPORT MindRTBackend : public MindRTBackendBase {
 
   OpBackend op_backend_;
   pynative::GraphAdapter graph_adapter_;
+
+  bool first_step_{true};
 };
 using MindRTBackendPtr = std::shared_ptr<compile::MindRTBackend>;
 }  // namespace compile

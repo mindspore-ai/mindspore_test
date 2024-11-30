@@ -310,7 +310,8 @@ void Jit::MakeCNodeForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExe
 }
 
 GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
-                                     const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph) {
+                                     const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph,
+                                     const std::string &graph_phase) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(grad_executor);
   PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, jit_forward_graph);
@@ -335,7 +336,7 @@ GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, co
   auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, grad_executor->use_dynamic_shape_process());
   grad_param->is_control_flow = compile_info_.is_control_flow_;
 
-  grad_param->has_added_v = jit_compile_info_[graph_phase_].has_added_v_;
+  grad_param->has_added_v = jit_compile_info_[graph_phase].has_added_v_;
   grad_param->is_jit_graph = true;
   // As long as the jit is in the process of dynamic shape,
   // let it run actor execution to avoid backend pass
@@ -343,7 +344,7 @@ GradParamPtr Jit::CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, co
 
   grad_param->fg = jit_grad_graph;
   grad_param->source_fg = jit_forward_graph;
-  grad_param->graph_cache_key = graph_phase_;
+  grad_param->graph_cache_key = graph_phase;
   grad_param->jit_out_has_dict = JitOutputHasDict(op_run_info->op_grad_info->out_abs);
   return grad_param;
 }
@@ -363,9 +364,10 @@ void Jit::RecordForwardGraphForJit(const FrontendOpRunInfoPtr &op_run_info, cons
 
 void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                        const FuncGraphPtr &primal_func_graph, const FuncGraphPtr &jit_grad_graph,
-                       const CNodePtr &added_node, const ValuePtr &added_out_v) {
+                       const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase) {
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_EXCEPTION_IF_NULL(grad_executor);
+  compile_info_ = jit_compile_info_.at(graph_phase);
   // Step 1: Get jit op info
   const auto &top_cell = grad_executor->top_cell();
   top_cell->GetOpInfo(op_run_info->op_grad_info, op_run_info->base_op_run_info.op_name, true);
@@ -380,7 +382,7 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   MS_LOG(DEBUG) << "jit actual output value: " << op_run_info->real_out->ToString() << ", output id "
                 << PyNativeAlgo::Common::GetIdByValue(op_run_info->real_out);
 
-  auto &&grad_param = CreateJitGradParam(op_run_info, grad_executor, primal_func_graph, jit_grad_graph);
+  auto &&grad_param = CreateJitGradParam(op_run_info, grad_executor, primal_func_graph, jit_grad_graph, graph_phase);
   auto auto_grad_cell_ptr = grad_executor->top_cell()->auto_grad_cell_ptr();
   grad_executor->dynamic_shape()->CheckNodeDynamic(grad_executor->top_cell(), grad_param->op_grad_info,
                                                    grad_param->graph_cache_key);
@@ -596,17 +598,18 @@ py::object Jit::GradJit(const py::object &out, const py::args &args) {
     graph_phase_.clear();
     return ret;
   }
-  compile_info_ = jit_compile_info_.at(graph_phase_);
+
   ValuePtr added_out_v = nullptr;
   const auto &op_run_info =
     GetOpRunInfo(out, args, graph_phase_, jit_forward_graph->modify_output(), jit_forward_graph, &added_out_v);
   PyNativeAlgo::Common::DumpGraphIR("jit_forward_graph.ir", jit_forward_graph);
   auto jit_grad_graph = executor->GetJitGradGraph(graph_phase_);
-  if (compile_info_.is_dynamic_shape_) {
+  if (jit_compile_info_.at(graph_phase_).is_dynamic_shape_) {
     grad_executor->set_use_dynamic_shape_process(true);
   }
+
   GradJitInner(op_run_info, grad_executor.get(), executor->GetJitPrimalFuncGraph(graph_phase_), jit_grad_graph,
-               GetAddedNode(jit_forward_graph), added_out_v);
+               GetAddedNode(jit_forward_graph), added_out_v, graph_phase_);
   Reset();
   return ret;
 }

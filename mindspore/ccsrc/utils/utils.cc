@@ -335,6 +335,17 @@ bool IsMemoryPoolRecycle() {
   return disable_ge_kernel && optimize_mem && enable_ref_mode && mode == kGraphMode && task_sink;
 }
 
+bool IsEnableGraphPipeline() {
+#ifndef WITH_BACKEND
+  // Disabled graph pipeline in UT scenario, because the scenario does not use the MS backend, but instead uses the VM
+  // backend.
+  return false;
+#endif
+
+  static bool enable_graph_pipeline = !common::IsDisableRuntimeConfig(common::kRuntimeGraphPipeline);
+  return enable_graph_pipeline && (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode);
+}
+
 size_t GetSystemMemorySize(const std::string &key) {
 #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__)
   return SIZE_MAX;

@@ -62,6 +62,7 @@ struct Common {
   static ValueTuplePtr ConvertStubNodeToValueTuple(const ValueTuplePtr &v, bool need_contiguous, bool requires_grad);
   static std::optional<ValueTuplePtr> ConvertStubNodeToValueTuple(const std::optional<ValueTuplePtr> &v,
                                                                   bool need_contiguous, bool requires_grad);
+  static ValuePtr StubNodeToValueInner(const ValuePtr &v);
   static void GetConstInputToAttr(const PrimitivePtr &op_prim, const std::string &op_name,
                                   const std::string &device_target, bool is_dynamic_shape,
                                   mindspore::HashSet<size_t> *input_to_attr_index);

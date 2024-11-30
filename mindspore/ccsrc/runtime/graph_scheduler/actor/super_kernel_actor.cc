@@ -270,7 +270,7 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
   FetchInputDeviceTensor(context);
   if (!already_fetch_persistent_device_tensor_) {
     FetchPersistentDeviceTensor();
-    already_fetch_persistent_device_tensor_ = IsTwoPhaseInfer();
+    already_fetch_persistent_device_tensor_ = is_infer_phase_;
   }
 
   TrackInputMemory();
@@ -675,11 +675,9 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
   if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
     MemoryManagerActor::GetInstance()->AllocateSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
   }
-  const auto &phase = PhaseManager::GetInstance().phase();
-  bool is_increment_graph = (phase.find("increment") != std::string::npos);
-  if (enable_trace_memory_ && graph_->is_dynamic_shape() && is_increment_graph) {
+  if (enable_trace_memory_ && graph_->is_dynamic_shape() && (graph_phase_.find("increment") != std::string::npos)) {
     MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
-                  << ", phase: " << phase;
+                  << ", phase: " << graph_phase_;
     UpdateMemoryTraceMangerStatus(context);
     if (IsRunningFailed(context)) {
       // Maybe allocate memory failed, early stop to run graph.
