@@ -118,10 +118,10 @@ bool GatherDCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs
     MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the address size of output must be " << output_size
                       << ", but got " << outputs[0]->size() << ".";
   }
-  auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *dim = reinterpret_cast<int64_t *>(inputs[1]->device_ptr());
-  auto *index = reinterpret_cast<I *>(inputs[2]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto *input = GetDeviceAddress<T>(inputs, 0);
+  auto *dim = GetDeviceAddress<int64_t>(inputs, 1);
+  auto *index = GetDeviceAddress<I>(inputs, 2);
+  auto output = GetDeviceAddress<T>(outputs, 0);
 
   int32_t input_rank = SizeToInt(input_shape_.size());
   int32_t copy_dim = LongToInt(*dim);

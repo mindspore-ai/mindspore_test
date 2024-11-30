@@ -76,7 +76,7 @@ int ParameterizedTruncatedNormalCpuKernelMod::Resize(const std::vector<KernelTen
 
 template <typename T>
 T ParameterizedTruncatedNormalCpuKernelMod::GetBatchSizeCheckDims(const std::vector<KernelTensor *> &inputs) {
-  auto output_shape = reinterpret_cast<T *>(inputs[0]->device_ptr());
+  auto output_shape = GetDeviceAddress<T>(inputs, 0);
   return output_shape[0];
 }
 
@@ -84,7 +84,7 @@ template <typename T_shape, typename T>
 bool ParameterizedTruncatedNormalCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                                             const std::vector<KernelTensor *> &,
                                                             const std::vector<KernelTensor *> &outputs) {
-  auto output_shape = reinterpret_cast<T_shape *>(inputs[0]->device_ptr());
+  auto output_shape = GetDeviceAddress<T_shape>(inputs, 0);
   size_t input_shape_num = inputs[0]->size() / sizeof(T_shape);
   // check shape
   auto batch_size = output_shape[0];
@@ -93,11 +93,11 @@ bool ParameterizedTruncatedNormalCpuKernelMod::LaunchKernel(const std::vector<Ke
     sample_size *= output_shape[i];
   }
 
-  auto output_data = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto means = reinterpret_cast<T *>(inputs[kInput1]->device_ptr());
-  auto stdevs = reinterpret_cast<T *>(inputs[kInput2]->device_ptr());
-  auto minvals = reinterpret_cast<T *>(inputs[kInput3]->device_ptr());
-  auto maxvals = reinterpret_cast<T *>(inputs[kInput4]->device_ptr());
+  auto output_data = GetDeviceAddress<T>(outputs, 0);
+  auto means = GetDeviceAddress<T>(inputs, kInput1);
+  auto stdevs = GetDeviceAddress<T>(inputs, kInput2);
+  auto minvals = GetDeviceAddress<T>(inputs, kInput3);
+  auto maxvals = GetDeviceAddress<T>(inputs, kInput4);
 
   std::vector<T *> params = {means, stdevs, minvals, maxvals};
 

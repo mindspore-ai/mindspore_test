@@ -88,6 +88,8 @@ void SparseMatrixNNZCpuKernelMod::DoLaunch(const std::vector<kernel::KernelTenso
                                            const std::vector<kernel::KernelTensor *> &outputs) {
   auto batch_pointers_x = static_cast<T *>(inputs[kInputIndex1]->device_ptr());
   auto output_addr = static_cast<int32_t *>(outputs[kOutputIndex0]->device_ptr());
+  MS_EXCEPTION_IF_NULL(batch_pointers_x);
+  MS_EXCEPTION_IF_NULL(output_addr);
 
   int64_t curr = 0;
   for (size_t i = 1; i < batch_size_ + 1; i++) {

@@ -63,9 +63,9 @@ template <typename T>
 bool MatrixSolveCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                            const std::vector<kernel::KernelTensor *> &,
                                            const std::vector<kernel::KernelTensor *> &outputs) {
-  auto matrix_ptr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  auto rhs_ptr = reinterpret_cast<T *>(inputs[kIndex1]->device_ptr());
-  auto output_ptr = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  auto matrix_ptr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto rhs_ptr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto output_ptr = GetDeviceAddress<T>(outputs, kIndex0);
 
   const size_t matrix_batch_size = LongToSize(m_ * m_);
   const size_t rhs_batch_size = LongToSize(m_ * k_);

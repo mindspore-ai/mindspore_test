@@ -74,8 +74,8 @@ bool DepthToSpaceCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTens
     MS_LOG(EXCEPTION) << "For " << kernel_name_ << ", the input should have a rank of 4, but got input of rank "
                       << input_rank;
   }
-  auto input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  auto input_addr = GetDeviceAddress<T>(inputs, 0);
+  auto output_addr = GetDeviceAddress<T>(outputs, 0);
   size_t size = inputs[0]->size() / sizeof(T);
   auto input_shape = input_shape_;
   auto output_shape = output_shape_;
