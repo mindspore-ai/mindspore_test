@@ -690,6 +690,7 @@ void Resource::GetCompileCacheResource(const py::list &compile_cache_dep_files, 
       << "The env MS_DEV_FORCE_USE_COMPILE_CACHE has been set. It will force to use the compile cache without "
          "checking whether the network has been changed. Please note the correctness.";
   } else {
+    MsProfileStatGuard stat_guard("InitCompileCache", "compile_cache", true);
     MS_EXCEPTION_IF_NULL(compile_cache_consistent);
     if (!*compile_cache_consistent) {
       MS_LOG(WARNING) << "Check the consistency of dependency files hash failed. Execute all the compilation actions.";
