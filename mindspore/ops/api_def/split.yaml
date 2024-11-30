@@ -13,7 +13,7 @@ split:
     GPU: py_method
     interface: tensor, function
 
-  - op_yaml: deprecated/split_op.yaml
+  - op_yaml: deprecated/split_method.yaml
     py_method: deprecated_tensor_split # callback to python function "def deprecated_tensor_split"
     Ascend: py_method
     CPU: py_method

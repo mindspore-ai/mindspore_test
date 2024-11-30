@@ -6,7 +6,7 @@ gather:
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/gather_op.yaml
+  - op_yaml: deprecated/gather_method.yaml
     py_method: deprecated_tensor_gather
     Ascend: py_method
     CPU: py_method

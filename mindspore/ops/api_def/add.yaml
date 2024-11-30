@@ -13,7 +13,7 @@ add:
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/add_op.yaml
+  - op_yaml: deprecated/add_method.yaml
     py_method: deprecated_tensor_add
     Ascend: py_method
     CPU: py_method

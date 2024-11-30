@@ -1,5 +1,5 @@
 flatten:
-  - op_yaml: deprecated/flatten_op.yaml
+  - op_yaml: deprecated/flatten_method.yaml
     py_method: deprecated_tensor_flatten
     Ascend: py_method
     CPU: py_method

@@ -1,5 +1,5 @@
 sort:
-  - op_yaml: deprecated/sort_op.yaml
+  - op_yaml: deprecated/sort_method.yaml
     py_method: deprecated_tensor_sort
     Ascend: py_method
     CPU: py_method

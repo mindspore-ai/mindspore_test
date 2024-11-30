@@ -6,7 +6,7 @@ where:
     GPU: pyboost
     interface: tensor
 
-  - op_yaml: deprecated/where_op.yaml
+  - op_yaml: deprecated/where_method.yaml
     py_method: deprecated_tensor_where
     Ascend: py_method
     CPU: py_method

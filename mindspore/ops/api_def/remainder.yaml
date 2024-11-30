@@ -20,7 +20,7 @@ remainder:
     GPU: py_method
     interface: function
 
-  - op_yaml: deprecated/remainder_op.yaml
+  - op_yaml: deprecated/remainder_method.yaml
     py_method: deprecated_tensor_remainder
     Ascend: py_method
     CPU: py_method
