@@ -38,12 +38,13 @@ mindspore.Tensor.add
           它们必须能够广播到一个共同的shape。
         - `self`、`other`和 `alpha` 遵守隐式类型转换规则以使数据类型
           保持一致。
-        - 只支持动态图模式。
 
     参数：
         - **other** (Union[Tensor, number.Number, bool]) - `other` 是一个 number.Number、一个 bool 或一个数据类型为
           `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 或
           `bool_ <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 的Tensor。
+
+    关键字参数：
         - **alpha** (number.Number) - 应用于 `other` 的缩放因子，默认值为 ``1``。
 
     返回：
