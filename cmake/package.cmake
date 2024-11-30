@@ -51,12 +51,6 @@ install(
 )
 
 install(
-    TARGETS _data_dump
-    DESTINATION ${INSTALL_BASE_DIR}
-    COMPONENT mindspore
-)
-
-install(
     TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore

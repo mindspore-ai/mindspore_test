@@ -23,7 +23,7 @@ import csv
 
 import mindspore
 import mindspore.nn as nn
-from mindspore import Tensor, _data_dump, Callback, dataset, Model
+from mindspore import Tensor, _c_expression, Callback, dataset, Model
 from mindspore.ops import operations as P
 from mindspore.nn import Cell
 from mindspore.nn import Dense
@@ -706,21 +706,21 @@ class StopAtStep(Callback):
         self.start_step = start_step
         self.stop_step = stop_step
         # pylint: disable=W0212
-        _data_dump._dump_set_dynamic()
+        _c_expression._dump_set_dynamic()
 
     def on_train_step_begin(self, run_context):
         cb_params = run_context.original_args()
         step_num = cb_params.cur_step_num
         if step_num == self.start_step:
             # pylint: disable=W0212
-            _data_dump._dump_start()
+            _c_expression._dump_start()
 
     def on_train_step_end(self, run_context):
         cb_params = run_context.original_args()
         step_num = cb_params.cur_step_num
         if step_num == self.stop_step:
             # pylint: disable=W0212
-            _data_dump._dump_stop()
+            _c_expression._dump_stop()
 
 class Net1(nn.Cell):
     """The test net"""

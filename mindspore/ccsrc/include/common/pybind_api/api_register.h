@@ -82,6 +82,10 @@ void RegProfilerManager(const py::module *m);
 void RegProfiler(const py::module *m);
 }  // namespace profiler
 
+namespace dump {
+void RegDumpControl(py::module *m);
+}
+
 namespace prim {
 void RegCompositeOpsGroup(const py::module *m);
 }
