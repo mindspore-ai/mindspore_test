@@ -40,6 +40,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
         self.k_prim_op_template = template.Template("prim::kPrim${camel_op_name}")
         self.tensor_method_kwonlyargs_map_template = template.Template(
             "{\"${camel_op_name}\", {${kw_only_args_list}}},")
+        self.tensor_method_varargs_map_template =\
+            template.Template("{\"${op_name}\", ${vararg_index}},")
         self.deprecated_method_decl_template = template.Template(
             "auto ${dep_op_name} = std::make_shared<prim::DeprecatedTensorMethod>(\"${dep_op_name}\", \"${op_name}\");")
         self.functional_method_map_template = template.Template("{\"${op_name}\", {${sort_func_method_list_str}}},")
@@ -85,6 +87,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
         mint_overload_list = self._get_functional_mint_map(mint_func_protos_data, alias_func_mapping)
         tensor_method_kw_only_args_list = self._get_tensor_method_kwonlyargs_map(tensor_method_protos_data)
         mint_kw_only_args_list = self._get_mint_kwonlyargs_map(mint_func_protos_data, alias_func_mapping)
+        tensor_varargs_map_list = self._get_tensor_varargs_map_list(tensor_method_protos_data)
+        mint_varargs_map_list = self._get_mint_varargs_map_list(mint_func_protos_data, alias_func_mapping)
         funcs_sig_map_list = (
             self._get_func_sigs_list(tensor_method_protos_data, alias_func_mapping, is_tensor_method=True))
         funcs_mint_sigs_map = (
@@ -95,6 +99,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                                     mint_map=mint_overload_list,
                                                     tensor_method_kwonlyargs_map=tensor_method_kw_only_args_list,
                                                     mint_kwonlyargs_map=mint_kw_only_args_list,
+                                                    tensor_varargs_map=tensor_varargs_map_list,
+                                                    mint_varargs_map=mint_varargs_map_list,
                                                     tensor_method_sigs_map=funcs_sig_map_list,
                                                     mint_sigs_map=funcs_mint_sigs_map))
         save_path = os.path.join(work_path, K.PIPELINE_PYBOOST_FUNC_GEN_PATH)
@@ -381,3 +387,68 @@ class FunctionalMapCppGenerator(BaseGenerator):
             self._get_and_append_single_op_kw_only_args_list(func_protos,
                                                              mint_kw_only_args_list)
         return mint_kw_only_args_list
+
+    def _get_and_append_single_op_varargs_list(self, func_protos, single_op_varargs_list):
+        """
+        Extracts variable arguments from a list of function prototypes and appends them to a list.
+
+        Args:
+            func_protos (list): A list of function prototypes.
+            single_op_varargs_list (list): The list to append the variable arguments to.
+
+        Returns:
+            None
+        """
+        for func_proto in func_protos:
+            varargs = func_proto.varargs
+            args = func_proto.op_proto.op_args
+            op_name = func_proto.op_proto.op_class.name
+            if varargs:
+                if len(varargs) != 1:
+                    raise ValueError(
+                        f'There must be only one variable argument. But got {len(vararg_index)} in {op_name}')
+                vararg_index = [i for i in range(len(args)) if args[i].arg_name == varargs[0]]
+                if len(vararg_index) != 1:
+                    raise ValueError(
+                        f'The variable arguments list of {op_name} is wrong, please check.')
+                single_op_varargs_list.append(
+                    self.tensor_method_varargs_map_template.replace(op_name=op_name,
+                                                                    vararg_index=vararg_index[0])
+                )
+
+    def _get_tensor_varargs_map_list(self, tensor_method_protos_data):
+        """
+        Generates a list of variable arguments for tensor methods.
+
+        Args:
+            tensor_method_protos_data (dict): A dictionary of tensor method prototype data.
+
+        Returns:
+            list: A list of formatted strings representing the Variable arguments.
+        """
+        tensor_method_varargs_list = []
+        for _, func_protos in tensor_method_protos_data.items():
+            self._get_and_append_single_op_varargs_list(func_protos,
+                                                        tensor_method_varargs_list)
+        return tensor_method_varargs_list
+
+    def _get_mint_varargs_map_list(self, mint_func_protos_data, alias_func_mapping):
+        """
+        Generates a list of variable arguments for mint functions.
+
+        Args:
+            mint_func_protos_data (dict): A dictionary of mint function prototype data.
+            alias_func_mapping (dict): A dictionary mapping original function names to alias function names.
+
+        Returns:
+            list: A list of formatted strings representing the variable arguments.
+        """
+        mint_varargs_list = []
+        for func_api_name, func_protos in mint_func_protos_data.items():
+            self._get_and_append_single_op_varargs_list(func_protos,
+                                                        mint_varargs_list)
+
+            if mint_varargs_list and func_api_name in alias_func_mapping:
+                self._get_and_append_single_op_varargs_list(func_protos,
+                                                            mint_varargs_list)
+        return mint_varargs_list

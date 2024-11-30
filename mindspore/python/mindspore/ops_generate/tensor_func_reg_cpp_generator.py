@@ -251,7 +251,8 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             func_name = func_proto.func_name
             class_name = func_proto.op_proto.op_class.name
             device_dispatcher_str = self._get_device_dispatchers_str(func_proto)
-            signature_str = self._generate_single_signature_str(func_proto.op_proto, func_proto.kw_only_args)
+            signature_str = self._generate_single_signature_str(func_proto.op_proto, func_proto.kw_only_args,\
+                                                                func_proto.varargs)
             op_args = func_proto.op_proto.op_args
             max_size = len(op_args)
             self_index = self._get_input_tensor_index(func_proto)
@@ -336,7 +337,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             if not first_sig:
                 sig_str += ',\n'
             first_sig = False
-            sig_str += self._generate_single_signature_str(op_proto, tensor_proto.kw_only_args)
+            sig_str += self._generate_single_signature_str(op_proto, tensor_proto.kw_only_args, tensor_proto.varargs)
         return sig_str
 
     def _is_input_arg(self, arg_name, op_name):
@@ -347,7 +348,7 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             res = True
         return res
 
-    def _generate_single_signature_str(self, op_proto: OpProto, kw_only_args) -> str:
+    def _generate_single_signature_str(self, op_proto: OpProto, kw_only_args, varargs) -> str:
         """
         Generates a single function signature string for the given operation prototype.
 
@@ -380,7 +381,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 for cast_type in arg.type_cast:
                     arg_dtype += '|'
                     arg_dtype += cast_type
-            single_arg += f"{arg_dtype} {arg_name}"
+            if varargs:
+                single_arg += f"{arg_dtype} *{arg_name}"
+            else:
+                single_arg += f"{arg_dtype} {arg_name}"
             if arg.as_init_arg:
                 arg_default = str(arg.default)
                 single_arg += '='

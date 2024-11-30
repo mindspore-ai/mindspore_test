@@ -70,18 +70,20 @@ struct FunctionParameter {
   bool allow_none_{false};
   std::string name_;
   bool is_any_{false};
+  bool allow_vararg_{false};
 };
 
 // single overload
 struct FunctionSignature {
   explicit FunctionSignature(const std::string &fmt, int index);
-  // bind with real args
   bool CheckParamValid(const py::object &obj, const FunctionParameter &param);
   bool Parse(const py::list &args, const py::dict &kwargs, py::list *python_args);
 
   std::string name_;
   std::vector<FunctionParameter> params_;
   size_t max_args_;
+  // e.g. allow input.reshape(1, 2, 3) parse as input.reshape((1, 2, 3))
+  bool allow_int_as_list_;
   int index_;
 };
 
