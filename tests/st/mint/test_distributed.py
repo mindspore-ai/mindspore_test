@@ -698,9 +698,11 @@ def test_hccl_send():
     with pytest.raises(TypeError):
         send(1)
     with pytest.raises(TypeError):
-        send(input_tensor, src="test")
+        send(input_tensor, dst="test")
     with pytest.raises(TypeError):
         send(input_tensor, group=1)
+    with pytest.raises(ValueError):
+        send(input_tensor, dst=rank)
 
 
 def test_hccl_recv():
@@ -773,9 +775,11 @@ def test_hccl_isend():
     with pytest.raises(TypeError):
         isend(1)
     with pytest.raises(TypeError):
-        isend(input_tensor, src="test")
+        isend(input_tensor, dst="test")
     with pytest.raises(TypeError):
         isend(input_tensor, group=1)
+    with pytest.raises(ValueError):
+        isend(input_tensor, dst=rank)
 
 
 def test_hccl_irecv():

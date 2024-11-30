@@ -1486,8 +1486,8 @@ def send(tensor, dst=0, group=None, tag=0):
             be received by the Receive op with the same "tag". Default: 0. It is a reserved parameter currently.
 
     Raises:
-        TypeError: If the `tensor` is not Tensor, `dst` is not an int or `group` is not a str。
-        ValueError: If the rank ID of the process is greater than the rank size of the communication group.
+        TypeError: If the `tensor` is not Tensor, `dst` is not an int or `group` is not a str.
+        ValueError: If the `dst` process rank id is same as the current process.
 
     Supported Platforms:
         ``Ascend``
@@ -1526,9 +1526,15 @@ def send(tensor, dst=0, group=None, tag=0):
             "The argument 'group' must be type of string, "
             "but got 'group' type : {}.".format(type(group))
         )
+    if get_rank() == dst:
+        raise ValueError(
+            "Invalid destination rank: destination rank should not be the same as "
+            "the rank of the current process."
+        )
     _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
     output = dist_comm_isend_op(tensor, _dst, group, tag)
     _deal_comm_outputs(output, False)
+
 
 
 def recv(tensor, src=0, group=None, tag=0):
@@ -1626,8 +1632,8 @@ def isend(tensor, dst=0, group=None, tag=0):
         CommHandle, it is an async work handle.
 
     Raises:
-        TypeError: If the `tensor` is not Tensor, `dst` is not an int or `group` is not a str。
-        ValueError: If the rank ID of the process is greater than the rank size of the communication group.
+        TypeError: If the `tensor` is not Tensor, `dst` is not an int or `group` is not a str.
+        ValueError: If the `dst` process rank id is same as the current process.
 
     Supported Platforms:
         ``Ascend``
@@ -1666,6 +1672,11 @@ def isend(tensor, dst=0, group=None, tag=0):
         raise TypeError(
             "The argument 'group' must be type of string, "
             "but got 'group' type : {}.".format(type(group))
+        )
+    if get_rank() == dst:
+        raise ValueError(
+            "Invalid destination rank: destination rank should not be the same as "
+            "the rank of the current process."
         )
     _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
     output = dist_comm_isend_op(tensor, _dst, group, tag)
