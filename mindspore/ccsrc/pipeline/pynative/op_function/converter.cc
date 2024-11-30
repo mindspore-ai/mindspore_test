@@ -532,10 +532,8 @@ bool FunctionSignature::Parse(const py::list &args, const py::dict &kwargs, py::
   size_t nargs = args ? args.size() : 0;
   size_t nkwargs = kwargs ? kwargs.size() : 0;
   size_t arg_pos = 0;
-  bool as_intlist =
-    (max_args_ == 1) && (params_[0].type_ == OP_DTYPE::DT_LIST_INT || params_[0].type_ == OP_DTYPE::DT_TUPLE_INT);
 
-  if (nargs > max_args_ && !as_intlist) {
+  if (nargs > max_args_ && !allow_int_as_list_) {
     return false;
   }
   for (auto &param : params_) {
@@ -552,7 +550,7 @@ bool FunctionSignature::Parse(const py::list &args, const py::dict &kwargs, py::
         nkwargs--;
       }
     }
-    bool check_arg_as_intlist = !is_kwd && (arg_pos == kIndex1) && as_intlist;
+    bool check_arg_as_intlist = !is_kwd && (arg_pos == kIndex1) && allow_int_as_list_;
     if (!obj) {
       if (!param.optional_) {
         return false;
@@ -571,7 +569,8 @@ bool FunctionSignature::Parse(const py::list &args, const py::dict &kwargs, py::
   return nkwargs == 0;
 }
 
-FunctionSignature::FunctionSignature(const std::string &fmt, int index) : max_args_(0), index_(index) {
+FunctionSignature::FunctionSignature(const std::string &fmt, int index)
+    : max_args_(0), allow_int_as_list_(false), index_(index) {
   auto open_paren = fmt.find('(');
   if (open_paren == std::string::npos) {
     MS_LOG(EXCEPTION) << "parse failed";
@@ -604,6 +603,7 @@ FunctionSignature::FunctionSignature(const std::string &fmt, int index) : max_ar
         max_args_++;
       }
       params_.emplace_back(param_str);
+      allow_int_as_list_ |= params_.back().allow_vararg_;
     } else {
       has_kwonlyargs = true;
     }
@@ -656,6 +656,11 @@ FunctionParameter::FunctionParameter(const std::string &fmt) {
   } else {
     optional_ = false;
     name_ = name_str;
+  }
+  auto varargs = name_str.find('*');
+  if (varargs != std::string::npos) {
+    allow_vararg_ = true;
+    name_ = name_.substr(1);
   }
 }
 
