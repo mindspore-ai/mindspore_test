@@ -47,7 +47,7 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "dtype_to_type_id": ["int", "type"],
                                 "to_kernel_size": ["tuple[int]", "list[int]", "int"],
                                 "to_strides": ["tuple[int]", "list[int]", "int"],
-                                "str_to_enum": ["int", "str"],
+                                "str_to_enum": ["str"],
                                 "to_pair": ["tuple[int]", "list[int]", "int", "float"],
                                 "to_dilations": ["tuple[int]", "list[int]", "int"],
                                 "to_output_padding": ["tuple[int]", "list[int]", "int"],
