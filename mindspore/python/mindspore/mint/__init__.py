@@ -871,8 +871,8 @@ def _einsum_parse_labels(l_equationlst, operands):
     """Parse left script of equation."""
     align_rank = 0
     max_labels = 53
+    ellipsis_dimnum = 0
     labels_count = [0] * max_labels
-    labels2dimlst = [[-max_labels] for _ in range(max_labels)]
 
     if len(operands) != len(l_equationlst):
         raise ValueError(f"For einsum, 'operands' is not equal to specified in the 'equation', "
@@ -883,67 +883,70 @@ def _einsum_parse_labels(l_equationlst, operands):
         label_num = 0
         operand_shape = list(operands[idx].shape)
         for label in sub_equ:
+            dim_num = 1
             label_num += 1
             end_dim = start_dim + 1
 
             # Label is ellipsis
             if label == 52:
                 end_dim = len(operand_shape) - len(sub_equ) + label_num
-            if labels2dimlst[label] == [-max_labels]:
-                labels2dimlst[label] = operand_shape[start_dim:end_dim]
-                align_rank += (end_dim - start_dim)
-            else:
-                if labels2dimlst[label] != operand_shape[start_dim:end_dim]:
-                    raise ValueError(f"For einsum, one label in 'equation' can only represent the same dimension "
-                                     f"in 'operands', but '{_einsum_convert_sublist_to_label(label, True)}' "
-                                     f"represented different dimensions.")
+                dim_num = end_dim - start_dim
+                if ellipsis_dimnum != 0 and ellipsis_dimnum != dim_num:
+                    raise ValueError(f"For einsum, an ellipsis in 'equation' can only represent the same numbers of "
+                                     f"dimensions in 'operands'.")
+                ellipsis_dimnum = dim_num
+            if labels_count[label] == 0:
+                align_rank += dim_num
             labels_count[label] += 1
-            start_dim = end_dim
+            start_dim += dim_num
         if label_num != len(sub_equ) or start_dim != len(operand_shape):
             raise ValueError(f"For einsum, the numbers of labels specified in the 'equation' does not match "
                              f"'operands[{idx}]'.")
-    return labels2dimlst, labels_count, align_rank
+    return ellipsis_dimnum, labels_count, align_rank
 
 
-def _einsum_infer_output(r_equationlst, arrow_exist, labels2dimlst, labels_count):
+def _einsum_infer_output(r_equationlst, arrow_exist, ellipsis_dimnum, labels_count):
     """Parse right script of equation and infer output shape."""
     idx = 0
     idle_idx = -1
-    output_shape = []
+    output_rank = 0
     labels_perm_idx = [idle_idx] * 53
 
     if arrow_exist:
         for label in r_equationlst:
             if labels_count[label] != 0:
-                output_shape += labels2dimlst[label]
                 if labels_perm_idx[label] != idle_idx:
                     raise ValueError(f"For einsum, '{_einsum_convert_sublist_to_label(label, True)}' or {label} in "
                                      f"sublist format has appears more than once in output subscript.")
+                dimnum = 1
+                if label == 52:
+                    dimnum = ellipsis_dimnum
                 labels_perm_idx[label] = idx
-                idx += len(labels2dimlst[label])
+                output_rank += dimnum
+                idx += dimnum
             else:
                 raise ValueError(f"For einsum, the label to the right of arrow in the 'equation' must appear on "
                                  f"left, but '{_einsum_convert_sublist_to_label(label, True)}' does not.")
     else:
         if labels_count[52] != 0:
-            output_shape += labels2dimlst[52]
+            output_rank += ellipsis_dimnum
             labels_perm_idx[52] = idx
-            idx += len(labels2dimlst[52])
+            idx += ellipsis_dimnum
         for label, count in enumerate(labels_count):
             if count == 1:
-                output_shape += labels2dimlst[label]
+                output_rank += 1
                 labels_perm_idx[label] = idx
-                idx += len(labels2dimlst[label])
+                idx += 1
 
     for label, count in enumerate(labels_count):
         if count != 0 and labels_perm_idx[label] == idle_idx:
             labels_perm_idx[label] = idx
             idx += 1
 
-    return output_shape, labels_perm_idx
+    return output_rank, labels_perm_idx
 
 
-def _einsum_adjust_operands(operands, l_equationlst, labels2dimlst, labels_perm_idx, align_rank):
+def _einsum_adjust_operands(operands, l_equationlst, ellipsis_dimnum, labels_perm_idx, align_rank):
     """Align operands to output as possible."""
     # Unsqueeze miss dimensions to make all operands has same rank, compute diagonal if operand has same label.
     # Then use _labels_perm_idx to transpose all operands to align dimensions with output.
@@ -969,7 +972,7 @@ def _einsum_adjust_operands(operands, l_equationlst, labels2dimlst, labels_perm_
             else:
                 label_dims[label] = dim
                 if label == 52:
-                    for ell_idx in range(len(labels2dimlst[label])):
+                    for ell_idx in range(ellipsis_dimnum):
                         align_axis[labels_perm_idx[label] + ell_idx] = dim
                         dim += 1
                 else:
@@ -1083,17 +1086,19 @@ def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
 def _einsum(equation, operands):
     '''Einsum main process'''
     _l_equationlst, _r_equationlst, _arrow_exist = _einsum_parse_equation(equation)
-    _labels2dimlst, _labels_count, _align_rank = _einsum_parse_labels(_l_equationlst, operands)
-    _output_shape, _labels_perm_idx = _einsum_infer_output(_r_equationlst, _arrow_exist, _labels2dimlst, _labels_count)
-    _output_rank = len(_output_shape)
-
-    _adjust_operands = _einsum_adjust_operands(operands, _l_equationlst, _labels2dimlst, _labels_perm_idx, _align_rank)
+    _ellipsis_dimnum, _labels_count, _align_rank = _einsum_parse_labels(_l_equationlst, operands)
+    _output_rank, _labels_perm_idx = _einsum_infer_output(_r_equationlst, _arrow_exist, _ellipsis_dimnum, _labels_count)
+    _adjust_operands = _einsum_adjust_operands(operands, _l_equationlst, _ellipsis_dimnum, _labels_perm_idx,
+                                               _align_rank)
     _dim_last_op, _has_zero_dim = _einsum_find_dimlastop(_align_rank, operands, _adjust_operands)
     _result = _adjust_operands[0]
 
     # Fast path if operands has zero dim.
     if _has_zero_dim:
-        return zeros(_output_shape, dtype=_result.dtype)
+        output_shape = []
+        for dim in range(_output_rank):
+            output_shape.append(_adjust_operands[_dim_last_op[dim]].shape[dim])
+        return zeros(output_shape, dtype=_result.dtype)
 
     # Sum or squeeze dimensions that is 1 for all rest operands.
     _reduce_dim = _output_rank
