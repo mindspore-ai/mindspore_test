@@ -161,10 +161,11 @@ class AscendMemoryViewer(BaseViewer):
 
     def __init__(self, **kwargs):
         super().__init__()
+        self._enable_profile_memory = kwargs.get("profile_memory", False)
         self._rank_id = kwargs.get("rank_id", 0)
         self._output_path = kwargs.get("ascend_profiler_output_path")
         self._framework_path = kwargs.get("framework_path")
-        self._mindstudio_profiler_output_path = kwargs.get("mindstudio_profiler_output_path")
+        self._msprof_profiler_output_path = kwargs.get("msprof_profile_output_path")
         self._ge_memory_record = []
         self._ms_memory_record = []
 
@@ -172,6 +173,8 @@ class AscendMemoryViewer(BaseViewer):
         """
         Save memory data
         """
+        if not self._enable_profile_memory:
+            return
         try:
             self._copy_npu_module_mem_csv()
             self._parse_memory_record()
@@ -181,7 +184,7 @@ class AscendMemoryViewer(BaseViewer):
     def _copy_npu_module_mem_csv(self):
         """Generate npu_module_mem.csv"""
         npu_module_mem_file_list = FileManager.get_csv_file_list_by_start_name(
-            self._mindstudio_profiler_output_path, "npu_module_mem"
+            self._msprof_profiler_output_path, "npu_module_mem"
         )
         target_file_path = os.path.join(
             self._output_path, "npu_module_mem.csv"
@@ -205,7 +208,7 @@ class AscendMemoryViewer(BaseViewer):
     def _parse_ge_memory_record(self):
         """Parse ge memory record data"""
         memory_record_file_list = FileManager.get_csv_file_list_by_start_name(
-            self._mindstudio_profiler_output_path, "memory_record"
+            self._msprof_profiler_output_path, "memory_record"
         )
         for file in memory_record_file_list:
             data = FileManager.read_csv_file(file)
@@ -225,7 +228,7 @@ class AscendMemoryViewer(BaseViewer):
     def _get_app_reserved_memory(self) -> list:
         """Get the reserved memory of the application from npu_mem.csv"""
         npu_module_mem_file_list = FileManager.get_csv_file_list_by_start_name(
-            self._mindstudio_profiler_output_path, "npu_mem"
+            self._msprof_profiler_output_path, "npu_mem"
         )
         app_mems = []
         for file in npu_module_mem_file_list:
