@@ -34,7 +34,7 @@ from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
 from mindspore.ops.auto_generate import Cummin, BatchMatMul, BernoulliExt, lin_space_ext_op, BitwiseAndScalar,\
     BitwiseAndTensor, BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor,\
-    RemainderTensorScalar, RemainderScalarTensor, std_mean_op, var_mean_op
+    RemainderTensorScalar, RemainderScalarTensor, std_mean_op, var_mean_op, InplaceErfinv
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
@@ -188,7 +188,8 @@ dtype_ = P.DType()
 eps_ = P.Eps()
 erf_ = P.Erf()
 erfc_ = P.Erfc()
-erfinv_ = P.Erfinv()
+erfinv_ext_ = P.Erfinv()
+inplace_erfinv_ = InplaceErfinv()
 exp2_ = P.Pow()
 expand_dims_ = P.ExpandDims()
 fill_v2_ = P.FillV2()
@@ -2828,6 +2829,45 @@ def eps(x):
         [1.1920929e-07 1.1920929e-07 1.1920929e-07 1.1920929e-07]
     """
     return eps_(x)
+
+
+def erfinv_(input):
+    r"""
+    Update the `input` tensor in-place by computing the inverse error function with `input`, which is defined in the
+    range `(-1, 1)` as:
+
+    .. math::
+
+
+        erfinv(erf(input)) = input
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The input tensor to compute with.
+
+    Returns:
+
+        Tensor.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `input.dtype` is not one of: bool, int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([0, 0.5, -0.9]), mindspore.float32)
+        >>> output = ops.erfinv_(input)
+        >>> print(output)
+        [ 0.          0.47693613 -1.1630869 ]
+    """
+    return inplace_erfinv_(input)
 
 
 def linspace(start, end, steps):
