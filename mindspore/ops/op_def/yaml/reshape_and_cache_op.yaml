@@ -19,3 +19,6 @@ reshape_and_cache:
   returns:
     out:
       dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: ReshapeAndCacheAscend
