@@ -36,7 +36,7 @@ namespace kernel {
 // 线程安全
 class AcmeKernelInfo {
  public:
-  AcmeKernelInfo(const std::string &name) { kernel_name_ = name; }
+  AcmeKernelInfo() {}
 
   virtual ~AcmeKernelInfo() = default;
 
@@ -49,6 +49,7 @@ class AcmeKernelInfo {
   virtual bool Launch(const device::DeviceContext *device_context, const TilingCacheItemPtr tilingptr,
                       const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
                       void *stream_ptr);
+  void SetKernelName(const std::string &name) override { kernel_name_ = name; }
 
  protected:
   virtual acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
@@ -103,7 +104,7 @@ std::shared_ptr<AcmeKernelInfo> GetAcmeKernelInfo(
       MS_LOG(WARNING) << "Acme can't find op[" << kernelname << "]";
       return nullptr;
     }
-
+    kernel_info->SetKernelName(kernelname);
     auto ret = kernel_info->Init();
     if (!ret) {
       return nullptr;

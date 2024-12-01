@@ -67,7 +67,7 @@ bool AcmeKernelInfo::Init(const std::vector<tensor::BaseTensorPtr> &inputs,
   return true;
 }
 
-uint64_t AcmeKernelInfo::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+uint64_t AcmeKernelInfo::GenerateTilingKey(const std::vector<tensor::BaseTensorPtr> &inputs) {
   return AcmeTilingCache::GenerateKey(kernel_name_, inputs);
 }
 
@@ -161,7 +161,7 @@ void AcmeKernelInfo::FreeWorkspace(const device::DeviceContext *device_context) 
 }
 
 bool AcmeKernelInfo::Launch(const device::DeviceContext *device_context, const TilingCacheItemPtr tilingptr,
-                            const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
+                            const std::vector<tensor::BaseTensorPtr> &inputs, const std::vector<tensor::BaseTensorPtr> &outputs,
                             void *stream_ptr) {
   UpdateAddr(inputs, outputs);
   MallocWorkspace(device_context);
