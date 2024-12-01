@@ -28,7 +28,7 @@ from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _r
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
 from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op, inplace_normal_op, inplace_index_add_op
-from mindspore.ops.auto_generate import inplace_copy_op
+from mindspore.ops.auto_generate import inplace_copy_op, inplace_uniform_op, inplace_erfinv_op
 from mindspore.ops.auto_generate import inplace_scatter_add as inplace_scatter_add_
 
 from ... import _checkparam as validator
@@ -4102,6 +4102,16 @@ def erfinv(input):
     return F.erfinv(input)
 
 
+def erfinv_(input):
+    r"""
+    For details, please refer to :func:`mindspore.Tensor.erfinv_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    return inplace_erfinv_op(input)
+
+
 def less_equal(input, other):
     r"""
     Computes the boolean value of :math:`input\_x <= other` element-wise.
@@ -4464,6 +4474,19 @@ def uniform(input, from_=0., to=1., generator=None):
     Generates random numbers in the half-open interval [from_, to).
     """
     return F.uniform_ext(input, from_, to, generator)
+
+
+def uniform_(input, from_=0, to=1, *, generator=None):
+    r"""
+    For details, please refer to :func:`mindspore.Tensor.uniform_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_) # pylint: disable=protected-access
+    return inplace_uniform_op(input, from_, to, seed, offset)
 
 
 def amin(input, axis=None, keep_dims=False):

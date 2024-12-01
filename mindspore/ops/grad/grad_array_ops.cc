@@ -2124,13 +2124,12 @@ REG_BPROP_BUILDER("NormalFloatFloat").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).
 
 REG_BPROP_BUILDER("UniformExt").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("InplaceUniform").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("InplaceUniform").SetUnusedInputs({i5, i6}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto from = ib->GetInput(kIndex1);
   auto to = ib->GetInput(kIndex2);
   auto seed = ib->GetInput(kIndex3);
   auto offset = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
   auto dx = ib->ZerosLikeExt(x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
   return {dx, ib->OutZeros(from), ib->OutZeros(to), ib->OutZeros(seed), ib->OutZeros(offset)};
 });

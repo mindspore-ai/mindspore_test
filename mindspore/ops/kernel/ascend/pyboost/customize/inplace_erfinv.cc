@@ -28,7 +28,6 @@ namespace pyboost {
 tensor::BaseTensorPtr InplaceErfinvAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                                    const BaseTensorPtr &input_tensor) {
   MS_LOG(DEBUG) << "aclnnInplaceErfinv call start";
-  OpRunner::InferOpOutput(op, input_tensor);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
   op->set_outputs({input_tensor});

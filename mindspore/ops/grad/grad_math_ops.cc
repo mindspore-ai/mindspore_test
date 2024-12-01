@@ -3036,6 +3036,23 @@ REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+inline static bool CloneInplaceInputFuncForInplaceErfinv(const PynativeCallback &cb) {
+  if (!cb.IsNotRequiresGrad(kIndex0)) {
+    return true;
+  }
+  return false;
+}
+
+REG_BPROP_BUILDER("InplaceErfinv").CloneInplaceInput(CloneInplaceInputFuncForInplaceErfinv).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto x_type = ib->GetDtype(x);
+  auto exp_self_erfinv_pow_2 = ib->Exp(ib->PowTensorScalar(out, ib->Value(2)));
+  auto dx = ib->Mul(ib->Mul(ib->Tensor(sqrt(pi) / 2, x_type), exp_self_erfinv_pow_2), dout);
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Bernoulli").FreeUselessValues_IO({}, {}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("BernoulliExt").FreeUselessValues_IO({i1, i2}, {}).SetBody(BODYFUNC(ib) {

@@ -24,12 +24,6 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-const std::set<TypeId> erfinv_valid_types = {kNumberTypeUInt8,   kNumberTypeInt8,     kNumberTypeInt16,
-                                             kNumberTypeInt32,   kNumberTypeInt64,    kNumberTypeFloat16,
-                                             kNumberTypeFloat32, kNumberTypeBFloat16, kNumberTypeBool};
-}  // namespace
-
 ShapeArray InplaceErfinvFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   return {input_infos[kInputIndex0]->GetShape()};
 }
@@ -37,8 +31,6 @@ ShapeArray InplaceErfinvFuncImpl::InferShape(const PrimitivePtr &primitive, cons
 std::vector<TypeId> InplaceErfinvFuncImpl::InferType(const PrimitivePtr &primitive,
                                                      const InferInfoPtrList &input_infos) const {
   auto input_type = input_infos[kInputIndex0]->GetType();
-  auto prim_name = primitive->name();
-  (void)CheckAndConvertUtils::CheckTypeIdValid("input", input_type, erfinv_valid_types, prim_name);
   return {input_type};
 }
 }  // namespace ops

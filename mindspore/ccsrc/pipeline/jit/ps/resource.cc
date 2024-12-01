@@ -293,6 +293,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"fills", std::string("fills")},                                    // P.fills
        {"fill_diagonal", std::string("fill_diagonal")},                    // P.FillDiagonal()
        {"uniform", std::string("uniform")},                                // P.UniformExt()
+       {"uniform_", std::string("uniform_")},                              // inplace_uniform_op()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
        {"clamp", std::string("clamp")},                                    // clamp()
        {"clamp_", std::string("clamp_")},                                  // clamp_()
@@ -435,6 +436,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"conj", std::string("conj")},                                      // conj()
        {"cross", std::string("cross")},                                    // cross()
        {"erfinv", std::string("erfinv")},                                  // erfinv()
+       {"erfinv_", std::string("erfinv_")},                                // inplace_erfinv_op()
        {"less_equal", std::string("less_equal")},                          // less_equal()
        {"fold", std::string("fold")},                                      // fold()
        {"unfold", std::string("unfold")},                                  // unfold()

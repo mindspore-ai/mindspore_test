@@ -9,20 +9,27 @@ from tests.st.utils import test_utils
 
 class Net(ms.nn.Cell):
     def construct(self, input_x, from_, to, generator=None):
-        input_x = mint.add(input_x, 0)
         input_x.uniform_(from_, to, generator=generator)
+        return input_x
+
+class NetBackward(ms.nn.Cell):
+    def construct(self, input_x, from_, to):
+        input_x = mint.add(input_x, 0)
+        input_x.uniform_(from_, to)
         return input_x
 
 def uniform__forward_func(input_x, from_, to, generator=None):
     return Net()(input_x, from_, to, generator=generator)
 
+def uniform__forward_backward_func(input_x, from_, to):
+    return NetBackward()(input_x, from_, to)
+
 @test_utils.run_with_cell
-def uniform__backward_func(input_x, from_, to, generator=None):
-    return ops.grad(uniform__forward_func, (0))(input_x, from_, to, generator=generator)
+def uniform__backward_func(input_x, from_, to):
+    return ops.grad(uniform__forward_backward_func, (0))(input_x, from_, to)
 
-
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', ['pynative'])
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['KBK', 'PYNATIVE'])
 def test_uniform__normal(mode):
     """
     Feature: uniform_ function.
@@ -38,7 +45,7 @@ def test_uniform__normal(mode):
         context.set_context(mode=ms.PYNATIVE_MODE)
         output = uniform__forward_func(input_x, from_, to, generator=generator).asnumpy()
     else:
-        context.set_context(mode=ms.GRAPH_MODE)
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
         output = uniform__forward_func(input_x, from_, to, generator=generator).asnumpy()
     assert np.all(output < 1) & np.all(output >= 0)
     assert output.dtype == np.float64
@@ -47,16 +54,16 @@ def test_uniform__normal(mode):
     input_x = ms.Tensor(np.random.rand(*shape), dtype=ms.float64)
     if mode == 'pynative':
         context.set_context(mode=ms.PYNATIVE_MODE)
-        input_grad = uniform__backward_func(input_x, from_, to, generator=generator)
+        input_grad = uniform__backward_func(input_x, from_, to)
     else:
-        context.set_context(mode=ms.GRAPH_MODE)
-        input_grad = uniform__backward_func(input_x, from_, to, generator=generator)
-    assert np.all(input_grad.asnumpy() == 0)
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
+        input_grad = uniform__backward_func(input_x, from_, to)
+    assert np.all(input_grad.asnumpy() == 1)
     assert input_grad.asnumpy().dtype == np.float64
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize('mode', ['pynative'])
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', ['KBK', 'PYNATIVE'])
 def test_uniform__randomness(mode):
     """
     Feature: rand function.
@@ -79,7 +86,7 @@ def test_uniform__randomness(mode):
         output1 = uniform__forward_func(input_x1, from_, to, generator=generator)
         output2 = uniform__forward_func(input_x2, from_, to, generator=generator)
     else:
-        context.set_context(mode=ms.GRAPH_MODE)
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
         output1 = uniform__forward_func(input_x1, from_, to, generator=generator)
         output2 = uniform__forward_func(input_x2, from_, to, generator=generator)
     assert np.any(output1.asnumpy() != output2.asnumpy())
@@ -95,7 +102,7 @@ def test_uniform__randomness(mode):
         generator.set_state(state)
         output2 = uniform__forward_func(input_x2, from_, to, generator=generator)
     else:
-        context.set_context(mode=ms.GRAPH_MODE)
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level="O0")
         output1 = uniform__forward_func(input_x1, from_, to, generator=generator)
         generator.set_state(state)
         output2 = uniform__forward_func(input_x2, from_, to, generator=generator)

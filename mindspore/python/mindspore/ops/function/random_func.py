@@ -29,9 +29,10 @@ from mindspore.ops.operations.random_ops import RandomShuffle, RandomChoiceWithM
 from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
-from mindspore.ops.auto_generate import UniformExt, InplaceUniform, NormalTensorTensor, \
+from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
     NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
     Randn, RandnLike, RandInt, RandIntLike, RandpermExt, InplaceRandom, InplaceNormal
+from mindspore.ops.auto_generate.gen_ops_prim import inplace_uniform_op
 
 inplace_normal_ = InplaceNormal()
 normal_tensor_tensor_op = NormalTensorTensor()
@@ -46,7 +47,6 @@ shape_ = P.Shape()
 top_k_ = P.TopK()
 randperm_ext_ = RandpermExt()
 uniform_ext_ = UniformExt()
-inplace_uniform_ = InplaceUniform()
 rand_ext_ = RandExt()
 rand_like_ext_ = RandLikeExt()
 multinomial_ext_ = MultinomialExt()
@@ -349,7 +349,7 @@ def uniform_(input, from_=0, to=1, *, generator=None):
     if generator is None:
         generator = default_generator
     seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
-    return inplace_uniform_(input, from_, to, seed, offset)
+    return inplace_uniform_op(input, from_, to, seed, offset)
 
 
 @_function_forbid_reuse

@@ -1766,6 +1766,8 @@ ValuePtr ConvertTensorToNumber(const py::object &obj) {
       return ConvertPythonFloatToScalarValue(static_cast<double *>(GetTensorDataPtr(tensor))[0]);
     case kNumberTypeFloat32:
       return ConvertPythonFloatToScalarValue(static_cast<float *>(GetTensorDataPtr(tensor))[0]);
+    case kNumberTypeFloat16:
+      return ConvertPythonFloatToScalarValue(static_cast<float>(static_cast<float16 *>(GetTensorDataPtr(tensor))[0]));
     default:
       MS_EXCEPTION(TypeError) << "Can not convert " << tensor->ToString() << " to number";
   }
