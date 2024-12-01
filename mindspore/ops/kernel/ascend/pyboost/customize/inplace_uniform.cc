@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "kernel/ascend/pyboost/customize/uniform_ext.h"
+#include "kernel/ascend/pyboost/customize/inplace_uniform.h"
 #include <memory>
+#include <string>
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/op_register.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
@@ -25,7 +26,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
+double GetScalarValue(const std::shared_ptr<Scalar> &scalar, const string &scalar_name) {
   if (scalar->isa<BoolImm>()) {
     return GetValue<bool>(scalar);
   } else if (scalar->isa<Int32Imm>()) {
@@ -37,41 +38,38 @@ double GetScalarValue(const std::shared_ptr<Scalar> &scalar) {
   } else if (scalar->isa<FP64Imm>()) {
     return GetValue<double>(scalar);
   } else {
-    MS_EXCEPTION(TypeError) << "Unsupported type: " << scalar->type_name();
+    MS_EXCEPTION(TypeError) << "For Pyboost InplaceUniform, the input " << scalar_name
+                            << " does not support dtype: " << scalar->type_name();
   }
 }
 }  // namespace
 
-tensor::BaseTensorPtr UniformExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor_tensor,
-                                                const ScalarPtr &a, const ScalarPtr &b, const BaseTensorPtr &seed,
-                                                const BaseTensorPtr &offset) {
-  MS_LOG(DEBUG) << "UniformExt call start";
-  OpRunner::InferOpOutput(op, tensor_tensor, a, b, seed, offset);
-  // ValueTuple to std::vector
+tensor::BaseTensorPtr InplaceUniformAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                                    const BaseTensorPtr &input_tensor, const ScalarPtr &from,
+                                                    const ScalarPtr &to, const BaseTensorPtr &seed,
+                                                    const BaseTensorPtr &offset) {
+  MS_LOG(DEBUG) << "aclnnInplaceUniform call start";
+  OpRunner::InferOpOutput(op, input_tensor, from, to, seed, offset);
 
   // Convert ValuePtr to c++ scalar
-  // Convert ValuePtr to c++ scalar
-  double a_imm = GetScalarValue(a);
-  double b_imm = GetScalarValue(b);
+  double from_imm = GetScalarValue(from, "from");
+  double to_imm = GetScalarValue(to, "to");
 
   auto [seed_imm, offset_imm] = UpdateGeneratorState(seed, offset);
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), tensor_tensor);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
+  op->set_outputs({input_tensor});
 
   // Async
   PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, tensor_tensor, a_imm, b_imm, seed_imm, offset_imm]() {
-      MS_LOG(DEBUG) << "Run device task UniformExt end";
+    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, from_imm, to_imm, seed_imm, offset_imm]() {
+      MS_LOG(DEBUG) << "Run device task aclnnInplaceUniform start";
       auto device_context = op->device_context();
-      const auto &outputs = op->outputs();
       // Malloc for input tensors
-      PyBoostUtils::MallocOpInputs(device_context, tensor_tensor);
-      // Malloc for output tensors
-      PyBoostUtils::MallocOpOutputs(device_context, outputs);
+      PyBoostUtils::MallocOpInputs(device_context, input_tensor);
 
-      LAUNCH_ACLNN(aclnnInplaceUniform, device_context, op->stream_id(), outputs[0], a_imm, b_imm,
+      LAUNCH_ACLNN(aclnnInplaceUniform, device_context, op->stream_id(), input_tensor, from_imm, to_imm,
                    static_cast<uint64_t>(seed_imm), static_cast<uint64_t>(offset_imm));
-      MS_LOG(DEBUG) << "Run device task UniformExt end";
+      MS_LOG(DEBUG) << "Run device task aclnnInplaceUniform end";
     }));
   return op->output(0);
 }

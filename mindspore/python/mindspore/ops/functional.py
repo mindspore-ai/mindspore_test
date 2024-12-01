@@ -20,8 +20,8 @@ from mindspore.common._register_for_tensor import tensor_operator_registry
 from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
-from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext
-from mindspore.ops.function.random_func import random_, uniform_ext, normal_
+from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext, erfinv_
+from mindspore.ops.function.random_func import random_, uniform_ext, uniform_, normal_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
 from mindspore.ops.operations._sequence_ops import TensorToTuple
@@ -283,6 +283,7 @@ setattr(tensor_operator_registry, 'bmm', bmm)
 setattr(tensor_operator_registry, 'conj', conj)
 setattr(tensor_operator_registry, 'cross', cross)
 setattr(tensor_operator_registry, 'erfinv', erfinv)
+setattr(tensor_operator_registry, 'erfinv_', erfinv_)
 setattr(tensor_operator_registry, 'less_equal', less_equal)
 setattr(tensor_operator_registry, 'lcm', lcm)
 setattr(tensor_operator_registry, 'ldexp', ldexp)
@@ -337,6 +338,7 @@ setattr(tensor_operator_registry, 'reducesum', P.ReduceSum)
 setattr(tensor_operator_registry, 'tensor_slice', tensor_slice)
 setattr(tensor_operator_registry, 'select', select)
 setattr(tensor_operator_registry, 'uniform', uniform_ext)
+setattr(tensor_operator_registry, 'uniform_', uniform_)
 setattr(tensor_operator_registry, 'gather', gather)
 setattr(tensor_operator_registry, 'gather_d', gather_d)
 setattr(tensor_operator_registry, 'gather_elements', gather_elements)

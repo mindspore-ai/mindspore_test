@@ -356,5 +356,11 @@ LogSumExp: 'aclnnLogSumExp'
 Swiglu: 'aclnnSwiGlu'
 SwigluGrad: 'aclnnSwiGluGrad'
 
+# 813
+InplaceErfinv: 'aclnnInplaceErfinv'
+
 # 1039
 InplaceFloor: 'aclnnInplaceFloor'
+
+# 1045
+InplaceUniform: 'aclnnInplaceUniform'
