@@ -179,6 +179,10 @@ class ProfilerParameters:
                     "The parameter 'host_stack' is deprecated,"
                     " please use 'with_stack' instead."
                 )
+            elif key == "timeline_limit":
+                warnings.warn(
+                    "The parameter 'timeline_limit' is deprecated and will have no effect"
+                )
 
     def _set_schedule(self, **kwargs):
         if "schedule" in kwargs and isinstance(kwargs["schedule"], Schedule):

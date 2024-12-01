@@ -18,6 +18,7 @@ from typing import Dict, Tuple, Optional, Any, List
 from mindspore import log as logger
 from mindspore.profiler.analysis.parser.base_parser import BaseParser
 from mindspore.profiler.common.file_manager import FileManager
+from mindspore.profiler.common.constant import ProfilerActivity
 from mindspore.profiler.common.exceptions.exceptions import (
     ProfilerPathErrorException,
     ProfilerRawFileException
@@ -37,8 +38,8 @@ class MindDataParser(BaseParser):
 
     def __init__(self, next_parser: Optional[BaseParser] = None, **kwargs):
         super().__init__(next_parser)
-
-        self._device_id = kwargs.get("device_id")
+        self._device_id = kwargs.get("rank_id") if (ProfilerActivity.NPU.value in
+                                                    kwargs.get("activities")) else kwargs.get("device_id")
         self._output_path = kwargs.get("framework_path")
         self._file_paths = self._setup_file_paths()
 

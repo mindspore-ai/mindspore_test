@@ -36,7 +36,6 @@ from mindspore.profiler.common.profiler_info import ProfilerInfo
 from mindspore.profiler.analysis.task_manager import TaskManager
 from mindspore.profiler.analysis.time_converter import TimeConverter
 from mindspore.profiler.analysis.parser.ascend_cann_parser import AscendMsprofParser
-from mindspore.profiler.analysis.parser.base_parser import DummyParser
 from mindspore.profiler.analysis.parser.ms_framework_parser import FrameworkParser
 from mindspore.profiler.analysis.parser.ms_minddata_parser import MindDataParser
 from mindspore.profiler.analysis.parser.framework_cann_relation_parser import FrameworkCannRelationParser
@@ -225,9 +224,9 @@ class NPUProfilerAnalysis:
         task_mgr = TaskManager()
         task_mgr.create_flow(
             AscendMsprofParser(**kwargs),
-            FrameworkParser(**kwargs).register_post_hook(
-                MsDatasetViewer(**kwargs).save
-            ),
+            FrameworkParser(**kwargs)
+            .register_post_hook(MsDatasetViewer(**kwargs).save)
+            .register_post_hook(AscendMemoryViewer(**kwargs).save),
             FrameworkCannRelationParser()
             .register_post_hook(AscendTimelineViewer(**kwargs).save)
             .register_post_hook(AscendKernelDetailsViewer(**kwargs).save)
@@ -248,13 +247,6 @@ class NPUProfilerAnalysis:
                 show_process=False,
             )
 
-        enable_profile_memory = kwargs.get("profile_memory", False)
-        if enable_profile_memory:
-            task_mgr.create_flow(
-                DummyParser().register_post_hook(AscendMemoryViewer(**kwargs).save),
-                flow_name="memory_flow",
-                show_process=False,
-            )
         task_mgr.run()
         logger.info(json.dumps(task_mgr.cost_time, indent=4))
 

@@ -19,6 +19,7 @@ from collections import defaultdict
 from typing import List, Dict, Any
 
 from mindspore import log as logger
+from mindspore.profiler.common.constant import ProfilerActivity
 from mindspore.profiler.analysis.viewer.base_viewer import BaseViewer
 from mindspore.profiler.common.file_manager import FileManager
 from mindspore.profiler.common.exceptions.exceptions import (
@@ -40,7 +41,8 @@ class MindDataPipelineRawViewer(BaseViewer):
 
     def __init__(self, **kwargs):
         super().__init__()
-        self._device_id = kwargs.get("device_id")
+        self._device_id = kwargs.get("rank_id") if (ProfilerActivity.NPU.value in
+                                                    kwargs.get("activities")) else kwargs.get("device_id")
         self._save_path = os.path.join(
             kwargs.get("ascend_profiler_output_path"),
             self._FILE_NAME.format(self._device_id)
@@ -111,9 +113,11 @@ class MindDataPipelineRawViewer(BaseViewer):
             child_node = dict_op_id_info.get(child_op_id)
             if not child_node:
                 continue
-            metrics = child_node.get('metrics', {})
-            if not metrics.get('output_queue'):
-                queue.queue.extend(child_node.get('children', []))  # todo: 效验queue.extand()
+            metrics = child_node.get('metrics')
+            if not metrics or not metrics.get('output_queue'):
+                children = child_node.get('children', [])
+                if children:
+                    queue.queue.extend(children)
             else:
                 new_child_op_ids.append(child_op_id)
 
@@ -131,7 +135,8 @@ class MindDataPipelineRawViewer(BaseViewer):
         Raises:
             ValueError: If the queue size is None or the queue length is 0.
         """
-        output_queue_info = op_node.get('metrics', {}).get('output_queue', {})
+        metrics = op_node.get('metrics')
+        output_queue_info = metrics.get('output_queue', {}) if metrics else {}
         queue_size = output_queue_info.get('size')
         queue_length = output_queue_info.get('length')
 
@@ -170,7 +175,8 @@ class MindDataPiplineSummaryViewer(BaseViewer):
 
     def __init__(self, **kwargs):
         super().__init__()
-        self._device_id = kwargs.get("device_id")
+        self._device_id = kwargs.get("rank_id") if (ProfilerActivity.NPU.value in
+                                                    kwargs.get("activities")) else kwargs.get("device_id")
         self._device_queue_file_found = None
         self._save_paths = {
             file_type: os.path.join(kwargs.get("ascend_profiler_output_path"), file_name.format(self._device_id))
@@ -275,6 +281,9 @@ class MindDataPiplineSummaryViewer(BaseViewer):
         prev_time = 0
 
         for line_data in device_trace_info:
+            if len(line_data.split(" ")) < 5:
+                logger.warning("Invalid device trace data: %s", line_data)
+                continue
             record = [int(d) for d in line_data.split(" ")][0:5]
             if record[2] < 2:  # skip 1st batch
                 prev_time = record[4]
