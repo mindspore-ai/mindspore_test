@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindformers import LlamaConfig, TransformerOpParallelConfig, LlamaForCausalLM, build_context
 from mindformers.tools.register import MindFormerConfig
 from mindspore import set_seed
-from mindspore.common.parameter import no_init_parameters
+from mindspore.nn.utils import no_init_parameters
 from infer_qwen import generate_input_ids
 
 
@@ -75,7 +75,8 @@ def run_qwen_1p_bs1(args):
 
     inputs_ids = generate_input_ids(1, 10)
     outputs = model.generate(inputs_ids, max_length=20, do_sample=False)
-    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int32)
+    EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 112013, 58939, 26026,
+                           120500, 90532, 65153, 50947, 91544, 121978, 54324], dtype=np.int32)
     assert (EXPECT_RES == outputs).all()
 
 
