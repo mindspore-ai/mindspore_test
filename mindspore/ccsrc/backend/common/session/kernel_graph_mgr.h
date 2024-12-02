@@ -138,9 +138,18 @@ class BACKEND_EXPORT KernelGraphMgr {
   void ConstructKernelGraphInner(const FuncGraphPtr &func_graph, std::vector<KernelGraphPtr> *all_out_graph,
                                  DeviceType device_target, const KernelGraphPtr &graph);
 
-  std::vector<KernelGraphPtr> ConstructMultiKernelGraphByCache(const nlohmann::json &model_json);
-  std::vector<KernelGraphPtr> ConstructSingleKernelGraphByCache(const nlohmann::json &model_json,
-                                                                std::vector<KernelGraphPtr> *all_out_graph);
+  std::vector<KernelGraphPtr> ConstructMultiKernelGraphByCache(
+    const nlohmann::json &model_json, const std::map<GraphId, KernelGraphPtr> &kernel_graphids_for_mindir,
+    const std::map<GraphId, mindspore::HashMap<std::string, AnfNodePtr>> &graph_ids_node_name);
+  std::vector<KernelGraphPtr> ConstructSingleKernelGraphByCache(
+    const nlohmann::json &model_json, std::vector<KernelGraphPtr> *all_out_graph,
+    const std::map<GraphId, KernelGraphPtr> &kernel_graphids_for_mindir,
+    const std::map<GraphId, mindspore::HashMap<std::string, AnfNodePtr>> &graph_ids_node_name);
+  void BuildGraphAndAttrForSingleCache(
+    const nlohmann::json &model_json, std::vector<KernelGraphPtr> *all_out_graph,
+    const std::map<GraphId, KernelGraphPtr> &graphid_to_graph,
+    const std::map<GraphId, mindspore::HashMap<std::string, AnfNodePtr>> &graph_ids_node_name,
+    mindspore::HashMap<std::string, AnfNodePtr> *name_to_node);
 
   mindspore::HashMap<GraphId, std::shared_ptr<KernelGraph>> graphs_;
   mindspore::HashMap<AnfNodePtr, AnfNodePtr> partial_parameters_map_;
