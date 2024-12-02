@@ -17,13 +17,17 @@
 #ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_
 #define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_AVAILABILITY_SILENT_CHECK_ASCEND_SILENT_CHECK_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
 #include <vector>
 #include <memory>
 #include <string>
+#include "ir/dtype/number.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "kernel/kernel.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "kernel/common/pyboost/op_runner.h"
 #include "availability/silent_check/silent_check.h"
@@ -36,7 +40,6 @@ using BaseTensor = tensor::BaseTensor;
 using BaseTensorPtr = tensor::BaseTensorPtr;
 using kernel::pyboost::OpRunner;
 
-const char kAttrNeedSilentCheck[] = "need_silent_check";
 using device::DeviceAddressPtr;
 using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
@@ -125,31 +128,74 @@ class DynamicSilentChecker : public SilentCheckerBase {
 };
 
 // silent checker implementation for static graph
-class CheckState {
- public:
-  CheckState() = default;
-  ~CheckState() = default;
 
- public:
-  uint8_t is_first_;
+// SilentCheckV2 computing flow
+// [dout] --> Norm(aclnnNorm) --> aclnnSilentCheck{step, sfda} --> [comm-operator]
 
-  KernelTensorPtr val = nullptr;
+// SilentCheckV3 computing flow
+// ====================================================================
+// first time call                        | non-first time call
+// ---------------------------------------+----------------------------
+// [dout]                                 | [dout]
+//   v                                    |   v
+// Square(aclnnMul)                       | Square(aclnnMul)
+//   v                                    |   v
+// Max(aclnnMax)                          | Max(aclnnMax)
+//   |   \   \                            |   |
+//   |    |  Cast(aclnnCast)              |   |
+//   |    |    v                          |   |
+//   |    |  NotEqual(aclnnNeTensor)      |   |
+//   |    v    v                          |   |
+//   |   MaskedSelect(aclnnMaskedSelect)  |   |
+//   |     v                              |   |
+//   |   Median(aclnnMedian)              |   |
+//   v   /                                |   v
+// aclnnSilentCheck{step, avg}            | aclnnSilentCheck{step, avg}
+//   v                                    |   v
+// [comm-operator]                        | [comm-operator]
+
+struct DeviceAddrInfo {
+  DeviceAddressPtr dev_addr;
+  size_t max_size;
+};
+
+struct OpExecState {
+  kernel::KernelModPtr kernel;
+  KernelTensorPtr workspace;
+  DeviceAddrInfo *output;
+  std::string op_name;
+};
+
+struct CheckState {
+  bool is_first_call = true;
+
+  // for saving state of silent check
+  KernelTensorPtr step = nullptr;  // for silent check v2 and v3
+  KernelTensorPtr sfda = nullptr;  // for silent check v2
+  KernelTensorPtr avg = nullptr;   // for silent check v3
+
+  KernelTensorPtr dst_size = nullptr;
+  KernelTensorPtr dst_stride = nullptr;
+  KernelTensorPtr dst_offset = nullptr;
+
   KernelTensorPtr square = nullptr;
+  KernelTensorPtr cast = nullptr;
   KernelTensorPtr ne = nullptr;
   KernelTensorPtr masked_select = nullptr;
-  KernelTensorPtr max = nullptr;
-  KernelTensorPtr sfda = nullptr;
-  KernelTensorPtr step = nullptr;
+  // In SilentCheckV3, input `val` and `max` are same
+  KernelTensorPtr val = nullptr;
   KernelTensorPtr result = nullptr;
 
-  DeviceAddressPtr worspace_addr = nullptr;
-
-  DeviceAddressPtr worspace_norm = nullptr;
-  DeviceAddressPtr worspace_square = nullptr;
-  DeviceAddressPtr worspace_ne = nullptr;
-  DeviceAddressPtr worspace_masked_select = nullptr;
-  DeviceAddressPtr worspace_median = nullptr;
-  DeviceAddressPtr worspace_max = nullptr;
+  // kernel modules for checking
+  OpExecState kernel_norm = {nullptr, nullptr, nullptr};
+  OpExecState kernel_square = {nullptr, nullptr, nullptr};
+  OpExecState kernel_max = {nullptr, nullptr, nullptr};
+  OpExecState kernel_cast = {nullptr, nullptr, nullptr};
+  OpExecState kernel_ne = {nullptr, nullptr, nullptr};
+  OpExecState kernel_masked_select = {nullptr, nullptr, nullptr};
+  OpExecState kernel_median = {nullptr, nullptr, nullptr};
+  // used by both SilentCheckV2 and SilentCheckV3
+  OpExecState kernel_silent_check = {nullptr, nullptr, nullptr};
 };
 using CheckStatePtr = std::shared_ptr<CheckState>;
 
@@ -157,50 +203,62 @@ class SilentChecker {
  public:
   static SilentChecker &GetInstance();
   ~SilentChecker();
-  void RegisterCheck(const kernel::KernelModPtr &kernel_mod);
-  void InitializeCheck(const kernel::KernelModPtr &kernel_mod, const kernel::KernelTensor *dout);
+  void InitOpExecState(OpExecState *op_exec_state, const std::string &op_name,
+                       const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
+                       DeviceAddrInfo *output);
+
+  void LaunchOperator(const OpExecState *op_exec_state, const std::vector<KernelTensor *> &inputs,
+                      const std::vector<KernelTensor *> &outputs, KernelTensor *output_tensor, void *stream_ptr);
+
+  void RegisterCheck(const kernel::KernelModPtr &kernel_mod, const kernel::KernelTensor *dout);
   void ExecuteCheck(const kernel::KernelMod *kernel_mod, const kernel::KernelTensor *dout, void *stream_ptr);
   void UpdateDeviceContext(const DeviceContext *device_context) { device_context_ = device_context; }
 
  private:
-  SilentChecker(const DeviceContext *device_context);
+  explicit SilentChecker(const DeviceContext *device_context);
 
   void LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchSilentCheckAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchSilentCheckV2Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+
   void LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchCastAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchNotEqualAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchMaskedSelectAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchMedainAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
-  void LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchSilentCheckV3Async(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
 
-  KernelTensorPtr GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value = nullptr);
+  KernelTensorPtr GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value = nullptr,
+                                       bool alloc_dev = false);
 
   std::unordered_map<const kernel::KernelMod *, CheckStatePtr> check_states_;
   const DeviceContext *device_context_ = nullptr;
-
-  // kernel modules for checking
-  kernel::KernelModPtr kernel_norm_ = nullptr;
-  kernel::KernelModPtr kernel_silent_check_ = nullptr;
-  kernel::KernelModPtr kernel_square_ = nullptr;
-  kernel::KernelModPtr kernel_notequal_ = nullptr;
-  kernel::KernelModPtr kernel_masked_select_ = nullptr;
-  kernel::KernelModPtr kernel_median_ = nullptr;
-  kernel::KernelModPtr kernel_max_ = nullptr;
 
   // constants used by aclnnNorm
   KernelTensorPtr p_scalar_ = nullptr;
   KernelTensorPtr dim_ = nullptr;
   KernelTensorPtr keep_dim_ = nullptr;
-
+  // constants used by aclnnNeTensor to find no-zero values
   KernelTensorPtr zero_ = nullptr;
 
-  // constants used by aclnnSilentCheck
-  KernelTensorPtr c_min_steps_ = nullptr;
-  KernelTensorPtr c_thresh_l1_ = nullptr;
-  KernelTensorPtr c_coeff_l1_ = nullptr;
-  KernelTensorPtr c_thresh_l2_ = nullptr;
-  KernelTensorPtr c_coeff_l2_ = nullptr;
-  KernelTensorPtr npu_asd_detect_ = nullptr;
+  // constants used by aclnnSilentCheck and aclnnSilentCheckV3
+  KernelTensorPtr c_thresh_l1_ = nullptr;     // for silent check v2 and v3
+  KernelTensorPtr c_thresh_l2_ = nullptr;     // for silent check v2 and v3
+  KernelTensorPtr npu_asd_detect_ = nullptr;  // for silent check v2 and v3
+  KernelTensorPtr c_min_steps_ = nullptr;     // for silent check v2
+  KernelTensorPtr c_coeff_l1_ = nullptr;      // for silent check v2
+  KernelTensorPtr c_coeff_l2_ = nullptr;      // for silent check v2
+  KernelTensorPtr beta1_ = nullptr;           // for silent check v3
+
+  // fields for computing
+  DeviceAddrInfo out_val_ = {nullptr, 0};            // norm or max's output
+  DeviceAddrInfo out_square_ = {nullptr, 0};         // square output
+  DeviceAddrInfo out_cast_ = {nullptr, 0};           // cast output
+  DeviceAddrInfo out_ne_ = {nullptr, 0};             // not equal output
+  DeviceAddrInfo out_masked_select_ = {nullptr, 0};  // masked select output
+  DeviceAddrInfo out_result_ = {nullptr, 0};         // silent check result
+
+  DeviceAddrInfo workspace_ = {nullptr, 0};  // workspace for silent check related operators
 };
 }  // namespace ascend
 }  // namespace silentcheck

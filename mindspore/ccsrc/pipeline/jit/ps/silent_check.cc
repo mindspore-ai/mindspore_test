@@ -56,6 +56,7 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
+#include "availability/silent_check/silent_check.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -438,9 +439,9 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
       // add attriute "need_silent_check" to primitive
       auto prim = GetCNodePrimitive(cnode);
       if (prim != nullptr) {
-        MS_VLOG(50005) << "Add attribute 'need_silent_check' to prim " << prim->name() << " "
-                       << cnode->fullname_with_scope();
-        prim->AddAttr("need_silent_check", MakeValue<bool>(true));
+        MS_VLOG(VL_ASCEND_SILENT_CHECK) << "Add attribute " << silentcheck::kAttrNeedSilentCheck << " to prim "
+                                        << prim->name() << " " << cnode->fullname_with_scope();
+        prim->AddAttr(silentcheck::kAttrNeedSilentCheck, MakeValue<bool>(true));
       }
     }
     return changed;
