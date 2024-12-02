@@ -4434,6 +4434,35 @@ REG_BPROP_BUILDER("VarMean").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   return {var_mean_grad, ib->OutZeros(dim), ib->OutZeros(correction), ib->OutZeros(keepdim)};
 });
 
+REG_BPROP_BUILDER("NanSum").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto keep_dims = ib->GetInput(kIndex2);
+  auto dtype = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto axis_type = axis->abstract()->BuildType();
+  MS_EXCEPTION_IF_NULL(axis_type);
+  if (axis_type->isa<TypeNone>()) {
+    axis = ib->Value<std::vector<int64_t>>({});
+  }
+
+  NodePtr dx;
+  auto keep_dims_opt = mindspore::GetScalarValue<bool>(keep_dims->BuildValue());
+  if (!keep_dims_opt.has_value()) {
+    auto true_branch = [&](Emitter *e) -> NodePtrList { return {SumGrad(e, input, axis, dout, true)}; };
+    auto false_branch = [&](Emitter *e) -> NodePtrList { return {SumGrad(e, input, axis, dout, false)}; };
+    auto keep_dims_true = ib->Equal(keep_dims, ib->Value<bool>(true));
+    dx = ib->Conditional(keep_dims_true, true_branch, false_branch);
+  } else {
+    dx = SumGrad(ib, input, axis, dout, keep_dims_opt.value());
+  }
+
+  auto div_tensor = ib->Emit("LogicalNot", {ib->Emit("NotEqual", {input, input})});
+  dx = ib->Mul(dx, div_tensor);
+  return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims), ib->OutZeros(dtype)};
+});
+
 DEF_PURE_SHAPE_CALC(g_prod_ext)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     auto input_shape = inputs.at(0);
