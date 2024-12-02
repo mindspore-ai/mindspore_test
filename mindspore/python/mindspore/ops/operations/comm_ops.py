@@ -18,6 +18,7 @@
 from __future__ import absolute_import
 from __future__ import division
 
+import os
 from mindspore.common import Tensor
 from mindspore import _checkparam as validator
 from mindspore.communication.management import get_rank, get_group_size, GlobalComm, _get_group, _host_distribute
@@ -100,7 +101,9 @@ def check_collective_target_dtype(data_name, data_dtype, prim_name):
 def check_hcom_group_valid(group, prim_name=None):
     """Check if hcom group is valid."""
     msg_prefix = f"For '{prim_name}', the" if prim_name else "The"
-    if not _host_distribute() and context.get_context("mode") == context.PYNATIVE_MODE and \
+    sim_level = os.getenv("MS_SIMULATION_LEVEL")
+    no_sim = (sim_level is None or sim_level.strip() == '')
+    if no_sim and (not _host_distribute()) and context.get_context("mode") == context.PYNATIVE_MODE and \
             group != GlobalComm.WORLD_COMM_GROUP:
         raise RuntimeError(f"{msg_prefix} 'group' only support 'hccl_world_group' in pynative mode, but got "
                            f"'group': {group}. Please start by using mpi-run.")

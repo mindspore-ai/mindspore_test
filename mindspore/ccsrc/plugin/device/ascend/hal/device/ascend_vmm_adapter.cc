@@ -105,7 +105,7 @@ void MoveBackMappedHandle(std::map<DeviceMemPtr, aclrtDrvMemHandle> *mapped_vmm_
 };  // namespace
 
 size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr addr, const size_t max_size) {
-  if (common::IsNeedProfileMemory()) {
+  if (common::IsDryRun()) {
     MS_LOG(EXCEPTION) << "VMM is not supported in dry run mode.";
   }
   MS_EXCEPTION_IF_NULL(addr);
@@ -217,7 +217,7 @@ size_t AscendVmmAdapter::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
 }
 
 size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_t size) {
-  if (common::IsNeedProfileMemory()) {
+  if (common::IsDryRun()) {
     MS_LOG(EXCEPTION) << "VMM is not supported in dry run mode.";
   }
   MS_LOG(DEBUG) << "Eager free device mem addr :" << addr << ", size :" << size

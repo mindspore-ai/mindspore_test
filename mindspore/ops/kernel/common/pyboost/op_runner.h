@@ -22,7 +22,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <tuple>
 #include "ir/scalar.h"
+#include "symbolic_shape/symbol.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils.h"
 #include "ir/tensor.h"
@@ -33,6 +35,7 @@
 #include "ops/infer_info/infer_info_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "kernel/common/pyboost/comm_handle.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace tensor {
@@ -116,15 +119,77 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
     op->InferOutput(args...);
   }
 
-  void ProfileMemoryInfo() {
-    static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker);
-    if (!(MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) || enable_trace_mem)) {
+  void ProfileTrackerTask() {
+    static bool enable_trace_mem = device::tracker::MemTrackerManager::GetInstance().IsEnabled();
+    if (MS_LIKELY(!enable_trace_mem)) {
       return;
     }
-
+    skip_tracker_ = false;
     PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_]() {
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", primitive->name(), "");
+      // wait for event
+      runtime::Pipeline::Get().launch_stage()->Wait();
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddNestedTask, "PyNative", primitive->name(), "");
     }));
+  }
+
+  template <typename... Args>
+  void ProfileTrackerInput(const Args &... args) {
+    if (MS_LIKELY(skip_tracker_)) {
+      return;
+    }
+    std::vector<tensor::BaseTensorPtr> tensors;
+    (CollectTrackerTensor(args, &tensors), ...);
+
+    PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_, tensors]() {
+      for (const auto &tensor : tensors) {
+        MS_EXCEPTION_IF_NULL(tensor);
+        const auto &device_sync = tensor->device_address();
+        auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+        if (device_address == nullptr) {
+          MS_LOG(WARNING) << "Tracker: input tensor device address is nullptr, primitive: " << primitive->name();
+          continue;
+        }
+        MS_EXCEPTION_IF_NULL(device_address);
+        if (device_address->GetPtr() == nullptr) {
+          MS_LOG(WARNING) << "Tracker: input tensor device ptr is nullptr, primitive: " << primitive->name();
+          continue;
+        }
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+          MarkTensorAsInput, "PyNative", device_address->device_name(), device_address->GetPtr(),
+          device_address->type_id(), device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
+      }
+    }));
+  }
+
+  template <typename... Args>
+  void ProfileTrackerOutput(const std::tuple<Args...> &tuple) {
+    if (MS_LIKELY(skip_tracker_)) {
+      return;
+    }
+    std::vector<tensor::BaseTensorPtr> tensors;
+    std::apply([this, &tensors](const Args &... args) { (CollectTrackerTensor(args, &tensors), ...); }, tuple);
+    TrackerOutputTensors(tensors);
+  }
+
+  template <typename T>
+  void ProfileTrackerOutput(const std::vector<T> &vals) {
+    if (MS_LIKELY(skip_tracker_)) {
+      return;
+    }
+    std::vector<tensor::BaseTensorPtr> tensors;
+    for (const auto &val : vals) {
+      CollectTrackerTensor(val, &tensors);
+    }
+    TrackerOutputTensors(tensors);
+  }
+
+  void ProfileTrackerOutput(const ValuePtr &val) {
+    if (MS_LIKELY(skip_tracker_)) {
+      return;
+    }
+    std::vector<tensor::BaseTensorPtr> tensors;
+    CollectTrackerTensor(val, &tensors);
+    TrackerOutputTensors(tensors);
   }
 
   void UpdateOutputShape(const BaseTensorPtr &tensor, const ShapeVector &shape) {
@@ -161,6 +226,51 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   size_t stream_id_{kDefaultStreamIndex};
   ValueSimpleInfoPtr output_value_simple_info_;
   inline static pynative::AbstractConverter kAbstractConverter;
+  bool skip_tracker_{true};
+
+ private:
+  void CollectTrackerTensor(const ValuePtr &val, std::vector<tensor::BaseTensorPtr> *tensors) {
+    auto tensor = std::dynamic_pointer_cast<tensor::BaseTensor>(val);
+    if (tensor != nullptr) {
+      tensors->emplace_back(tensor);
+    }
+  }
+
+  void CollectTrackerTensor(const ValueTuplePtr &tensor_tuple, std::vector<tensor::BaseTensorPtr> *tensors) {
+    for (const auto &val : tensor_tuple->value()) {
+      CollectTrackerTensor(val, tensors);
+    }
+  }
+
+  template <typename T>
+  void CollectTrackerTensor(const std::optional<T> &opt, std::vector<tensor::BaseTensorPtr> *tensors) {
+    if (opt.has_value()) {
+      CollectTrackerTensor(opt.value(), tensors);
+    }
+  }
+
+  void TrackerOutputTensors(const std::vector<tensor::BaseTensorPtr> &tensors) {
+    PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([primitive = primitive_, tensors]() {
+      for (const auto &tensor : tensors) {
+        MS_EXCEPTION_IF_NULL(tensor);
+        const auto &device_sync = tensor->device_address();
+        auto device_address = std::static_pointer_cast<device::DeviceAddress>(device_sync);
+        if (device_address == nullptr) {
+          MS_LOG(WARNING) << "Tracker: input tensor device address is nullptr, primitive: " << primitive->name();
+          continue;
+        }
+        MS_EXCEPTION_IF_NULL(device_address);
+        if (device_address->GetPtr() == nullptr) {
+          MS_LOG(WARNING) << "Tracker: input tensor device ptr is nullptr, primitive: " << primitive->name();
+          continue;
+        }
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
+          MarkTensorAsOutput, "PyNative", device_address->device_name(), device_address->GetPtr(),
+          device_address->type_id(), device_address->GetShapeVector(), device_address->GetTensorStorageInfo());
+      }
+      device::tracker::CALL_MEMORY_TRACKER(DelNestedTask);
+    }));
+  }
 };
 using OpPtr = std::shared_ptr<OpRunner>;
 }  // namespace pyboost

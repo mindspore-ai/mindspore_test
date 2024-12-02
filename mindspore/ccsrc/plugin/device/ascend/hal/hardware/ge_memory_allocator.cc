@@ -149,7 +149,7 @@ DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_graph, c
   MS_EXCEPTION_IF_NULL(res_manager);
   void *mem = need_not_alloc ? nullptr : res_manager->AllocateMemory(tensor_size);
 
-  if (common::IsNeedProfileMemory() && !need_not_alloc) {
+  if (IsNeedProfilieMemoryLog() && !need_not_alloc) {
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: ValueNodeOutput, size:" << tensor_size
                     << ", graph: " << kernel_graph->ToString() << ", node: " << output_node->fullname_with_scope()
                     << ", device address addr: " << mem;
@@ -318,7 +318,7 @@ void AllocConstMemory(const transform::RunOptions &options, const KernelGraphPtr
   if (memory == nullptr) {
     MS_LOG(EXCEPTION) << "Allocate memory failed, memory size:" << memory_size << ", graph: " << graph->ToString();
   }
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: ConstMemory, size: " << memory_size
                     << ", graph: " << graph->ToString() << ", device address addr: " << memory;
   }
@@ -444,7 +444,7 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, cons
   auto memory = res_manager->AllocateMemory(memory_size);
   output_addr->set_ptr(memory);
   output_addr->SetSize(memory_size);
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: UnusedInput, size:" << memory_size
                     << ", graph: " << kernel_graph->ToString() << ", node: " << input_node->fullname_with_scope()
                     << ", device address addr: " << memory;
@@ -459,7 +459,7 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, Kern
   MS_EXCEPTION_IF_NULL(tensor);
   auto memory = res_manager->AllocateMemory(tensor->size());
   tensor->set_device_ptr(memory);
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, alloc type: UnusedInput, size:" << tensor->size()
                     << ", graph: " << kernel_graph->ToString() << ", device address addr: " << memory;
   }

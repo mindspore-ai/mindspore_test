@@ -244,7 +244,7 @@ inline bool IsNeedMemoryStatistic() {
   return !need_statistic.empty() && need_statistic != "0";
 }
 
-inline bool IsNeedProfileMemory() {
+inline bool IsDryRun() {
   static const char kLaunchSkippedEnv[] = "MS_KERNEL_LAUNCH_SKIP";
   static const char kSimulationLevel[] = "MS_SIMULATION_LEVEL";
   static const auto launch_skipped = GetEnv(kLaunchSkippedEnv);

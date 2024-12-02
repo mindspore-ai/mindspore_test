@@ -5,8 +5,7 @@
     // Create device address for input tensors
     PyBoostUtils::PrepareOpInputs(device_context_, op->stream_id(), ${call_tensors});
     PyBoostUtils::CreateOutputTensor(device_context_, ${input}, storage_info_list, &outputs_);
-
-    ProfileMemoryInfo();
+    ProfileTrackerTask();
     // Async
     PyBoostUtils::DispatchRun(
       std::make_shared<runtime::PyBoostDeviceTask>(
@@ -18,6 +17,8 @@
         }
       )
     );
+    ProfileTrackerInput(${call_args});
+    ProfileTrackerOutput(${return_values});
   } else {
     MS_LOG_EXCEPTION << "View unsupported:" << primitive_->name() <<" or input ERROR";
   }

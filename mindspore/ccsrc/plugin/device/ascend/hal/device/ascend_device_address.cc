@@ -187,7 +187,7 @@ void AscendDeviceAddress::SyncMemory(void *dst, const void *src, uint64_t size, 
     if (!ret) {
       MS_LOG(EXCEPTION) << "Sync stream error!";
     }
-    if (!common::IsNeedProfileMemory()) {
+    if (!common::IsDryRun()) {
       auto ret_rt_memcpy = CALL_ASCEND_API(aclrtMemcpy, dst, size, src, size, kind);
       if (ret_rt_memcpy != ACL_ERROR_NONE) {
         MS_EXCEPTION(DeviceProcessError) << "aclrtMemcpy failed";

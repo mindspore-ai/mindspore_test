@@ -62,7 +62,11 @@ void CommonCommAscendFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorP
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeLaunchTask,
                                        op_name, false);
 
+    device::tracker::CALL_MEMORY_TRACKER(UpdateTask, "PyNative",
+                                         {{device::tracker::kStreamId, std::to_string(comm_stream_id)}});
+    device::tracker::CALL_MEMORY_TRACKER(CacheLastTask);
     CommUtils::GetInstance().SyncOpStream(device_context, op_stream_id, comm_stream_id);
+    device::tracker::CALL_MEMORY_TRACKER(EmptyCache);
     auto comm_stream_ptr = device::ascend::AscendStreamMng::GetInstance().GetStream(comm_stream_id);
 
     if (launch_func) {
