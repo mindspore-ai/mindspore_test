@@ -77,7 +77,7 @@ def test_acos_dynamic_shape():
     TEST_OP(acos_forward_func, [[tensor_1], [tensor_2]], 'acos_ext', disable_mode=['GRAPH_MODE'])
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_acos_bfloat16(mode):
     """
