@@ -386,8 +386,9 @@ CNodePtr InferenceMatmulSplitFusion::CreateQuantbatchmatmulSplitNode(const FuncG
   auto input_scale = qbmm_cnode->input(kIndex3);
   MS_EXCEPTION_IF_NULL(input_scale);
   const std::set<TypeId> support_dtype = {kNumberTypeInt8};
-  if (!CheckSupportDataType(input_x, support_dtype) || !CheckMatMulDataFormat(qbmm_cnode) ||
-      !CheckSplitSize(input_w, split_cnode)) {
+  const std::set<TypeId> support_output_dtype = {kNumberTypeFloat16};
+  if (!CheckSupportDataType(input_x, support_dtype) || !CheckSupportDataType(qbmm_cnode, support_output_dtype) ||
+      !CheckMatMulDataFormat(qbmm_cnode) || !CheckSplitSize(input_w, split_cnode)) {
     return nullptr;
   }
 
