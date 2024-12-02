@@ -36,6 +36,8 @@ class ParallelStrategy {
   void DumpProfileParallelStrategy(const FuncGraphPtr &func_graph);
   void SaveParallelStrategyToFile();
   std::string GetParallelStrategyForReport();
+  void SetOutputPath(const std::string &output_path);
+  void ClearOutputPath();
 
  private:
   std::shared_ptr<irpb::ProfilingParallel> GetProfilingParallel();
@@ -47,6 +49,7 @@ class ParallelStrategy {
   bool has_got_parallel_strategy_data_ = false;
   std::shared_ptr<irpb::ProfilingParallel> cache_profiling_parallel_pb_;
   std::string graph_proto_str_;
+  std::string output_path_;
 };
 }  // namespace ascend
 }  // namespace profiler

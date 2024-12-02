@@ -13,22 +13,25 @@
 # limitations under the License.
 # ============================================================================
 """Process bar."""
+import os
 import sys
 import time
 from typing import Iterable, Optional, Any
+import threading
 
 
 class ProcessBar:
     """
     A progress bar for tracking the progress of an iterable or a process with a known total.
     """
+    BLANK_SPACE_NUM = 20
 
     def __init__(
             self,
             iterable: Optional[Iterable] = None,
             desc: str = "",
             bar_length: int = 20,
-            update_interval: float = 0.1,
+            update_interval: float = 1.0,
     ):
         """
         Initialize the ProcessBar.
@@ -59,13 +62,29 @@ class ProcessBar:
 
         self.iterable: Iterable = iterable
         self.total: int = len(iterable)
-        self.desc: str = desc
+        self.desc: str = f"[{os.getpid()}] {desc}"
         self.bar_length: int = bar_length
         self.update_interval: float = update_interval
         self.current: int = 0
         self.cur_item_name: Optional[str] = None
         self.start_time: float = time.time()
         self.last_update_time: float = self.start_time
+        self._stop_refresh = False
+        self._refresh_thread = None
+        self._start_auto_refresh()
+
+    def _start_auto_refresh(self) -> None:
+        """
+        Start auto refresh thread.
+        """
+        def refresh_loop():
+            while not self._stop_refresh:
+                if self.current > 0:
+                    self._print_progress(time.time())
+                time.sleep(self.update_interval)
+
+        self._refresh_thread = threading.Thread(target=refresh_loop, daemon=True)
+        self._refresh_thread.start()
 
     def update(self, n: int = 1, item_name: Optional[str] = None) -> None:
         """
@@ -77,10 +96,6 @@ class ProcessBar:
         """
         self.current += n
         self.cur_item_name = item_name
-        now = time.time()
-        if now - self.last_update_time >= self.update_interval:
-            self._print_progress(now)
-            self.last_update_time = now
 
     def _print_progress(self, now: float) -> None:
         """
@@ -100,6 +115,8 @@ class ProcessBar:
                 f"{self.current}/{self.total} {self.cur_item_name} "
                 f"Elapsed: {int(elapsed)}s ETA: {int(eta)}s"
             )
+            # 添加额外的空格和回车来清除可能的残留字符
+            text = text + ' ' * self.BLANK_SPACE_NUM + '\r'
             sys.stdout.write(text)
             sys.stdout.flush()
 
@@ -115,7 +132,16 @@ class ProcessBar:
         """
         if self.iterable is None:
             raise ValueError("Must provide an iterable")
-        for item in self.iterable:
-            yield item
-            self.update(item_name=item.__class__.__name__)
-        sys.stdout.write("\n")
+        try:
+            for item in self.iterable:
+                yield item
+                self.update(item_name=item.__class__.__name__)
+            # 在迭代结束后，确保最后一次更新被显示
+            self._print_progress(time.time())
+        finally:
+            # 停止刷新线程并等待其结束
+            self._stop_refresh = True
+            if self._refresh_thread:
+                self._refresh_thread.join()
+            # 确保最后打印一个换行
+            sys.stdout.write("\n")

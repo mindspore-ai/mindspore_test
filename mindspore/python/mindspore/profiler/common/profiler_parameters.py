@@ -52,8 +52,6 @@ class ProfilerParameters:
 
     TYPE_INDEX = 0
     VALUE_INDEX = 1
-    ENABLE_STATUS = "on"
-    DISABLE_STATUS = "off"
 
     def __init__(self, **kwargs):
         self.is_set_schedule: bool = False
@@ -97,30 +95,17 @@ class ProfilerParameters:
             Dict[str, str]: A dictionary of NPU profiler parameters.
         """
         return {
-            "output": self.output_path,
-            "training_trace": self._convert_bool_to_status(ProfilerActivity.NPU in self.activities),
+            "profile_memory": self.profile_memory,
             "aic_metrics": self.aicore_metrics.value,
-            "profile_memory": self._convert_bool_to_status(
-                self.profile_memory and ProfilerActivity.NPU in self.activities
-            ),
-            "l2_cache": self._convert_bool_to_status(
-                self.l2_cache and ProfilerActivity.NPU in self.activities
-            ),
-            "hbm_ddr": self._convert_bool_to_status(
-                self.hbm_ddr and ProfilerActivity.NPU in self.activities
-            ),
-            "pcie": self._convert_bool_to_status(
-                self.pcie and ProfilerActivity.NPU in self.activities
-            ),
-            "parallel_strategy": self._convert_bool_to_status(self.parallel_strategy),
-            "profiler_level": (
-                self.profiler_level.value
-                if self.profiler_level and ProfilerActivity.NPU in self.activities
-                else self.DISABLE_STATUS
-            ),
-            "with_stack": self._convert_bool_to_status(
-                self.with_stack and ProfilerActivity.CPU in self.activities
-            )
+            "l2_cache": self.l2_cache,
+            "hbm_ddr": self.hbm_ddr,
+            "pcie": self.pcie,
+            "parallel_strategy": self.parallel_strategy,
+            "profiler_level": self.profiler_level.value,
+            "aicore_metrics": self.aicore_metrics.value,
+            "with_stack": self.with_stack,
+            "cpu_trace": ProfilerActivity.CPU in self.activities,
+            "npu_trace": ProfilerActivity.NPU in self.activities,
         }
 
     def _check_params_type(self) -> None:
@@ -203,9 +188,3 @@ class ProfilerParameters:
         if name in self.PARAMS:
             return getattr(self, name)
         raise AttributeError(f"'{self.__class__.__name__}' has no attribute '{name}'")
-
-    def _convert_bool_to_status(self, condition):
-        """
-        Convert bool to on or off string for npu profiler cpp backend.
-        """
-        return self.ENABLE_STATUS if condition else self.DISABLE_STATUS
