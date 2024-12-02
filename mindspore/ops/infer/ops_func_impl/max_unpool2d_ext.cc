@@ -72,9 +72,10 @@ ShapeArray MaxUnpool2DExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   if (input_infos[kInputIndex0]->IsDynamicRank()) {
     return {in_shape};
   }
-
-  auto last_dim = in_shape.size() - 1;
+  const int64_t input_num_dims = SizeToLong(in_shape.size());
+  auto last_dim = input_num_dims - 1;
   ShapeVector out_shape = input_infos[kInputIndex0]->IsDynamic() ? input_infos[kInputIndex1]->GetShape() : in_shape;
+  CheckAndConvertUtils::CheckInRange("dim of input", input_num_dims, kIncludeBoth, {3, 4}, primitive->name());
   if (input_infos[kInputIndex5]->IsNone()) {
     if (input_infos[kInputIndex0]->IsDynamic() && input_infos[kInputIndex1]->IsDynamic()) {
       out_shape[last_dim - 1] = -1;
