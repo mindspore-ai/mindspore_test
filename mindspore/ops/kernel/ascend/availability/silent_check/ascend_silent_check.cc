@@ -515,6 +515,17 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
   // create kernel modules
   kernel_norm_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameNorm);
   MS_EXCEPTION_IF_NULL(kernel_norm_);
+  kernel_square_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameSquare);
+  MS_EXCEPTION_IF_NULL(kernel_square_);
+  kernel_notequal_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameNotEqual);
+  MS_EXCEPTION_IF_NULL(kernel_notequal_);
+  kernel_masked_select_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameMaskedSelect);
+  MS_EXCEPTION_IF_NULL(kernel_masked_select_);
+  kernel_median_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameMedianExt);
+  MS_EXCEPTION_IF_NULL(kernel_median_);
+  kernel_max_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameMax);
+  MS_EXCEPTION_IF_NULL(kernel_max_);
+
   kernel_silent_check_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(ops::kNameSilentCheckV2);
   MS_EXCEPTION_IF_NULL(kernel_silent_check_);
 
@@ -524,6 +535,7 @@ SilentChecker::SilentChecker(const DeviceContext *device_context) : device_conte
                                         MakeValue(std::vector<int64_t>{}));
   // p_scalar_ = GenerateKernelTensor(kNumberTypeFloat32, ShapeVector{}, MakeValue<float>(2.0));
   keep_dim_ = std::make_shared<KernelTensor>(nullptr, kBool, MakeValue(false));
+  zero_ = GenerateKernelTensor(kNumberTypeInt8, ShapeVector{1}, MakeValue<int8_t>(0));
 
   // create constants used by aclnnSilentCheck
   auto upper_thresh = parse_thresh("NPU_ASD_UPPER_THRESH", "1000000,10000", 3);
@@ -561,8 +573,16 @@ void SilentChecker::InitializeCheck(const kernel::KernelModPtr &kernel_mod, cons
     MS_LOG(EXCEPTION) << "Not find check state for kenrel mod with name " << kernel_mod->primitive()->name();
   }
   auto &state = iter->second;
+  state->is_first_ = 1;
   state->val = GenerateKernelTensor(dout->dtype_id(), ShapeVector{});
-  state->sfda = GenerateKernelTensor(kNumberTypeFloat32, ShapeVector{3});
+  state->square = GenerateKernelTensor(dout->dtype_id(), dout->GetShapeVector());
+  state->ne = GenerateKernelTensor(kNumberTypeBool, dout->GetShapeVector());
+  int64_t num_elems = 1;
+  for (const auto &dim : dout->GetShapeVector()) {
+    num_elems *= dim;
+  }
+  state->masked_select = GenerateKernelTensor(dout->dtype_id(), ShapeVector{num_elems});
+  state->sfda = GenerateKernelTensor(dout->dtype_id(), ShapeVector{3});
   state->step = GenerateKernelTensor(kNumberTypeInt64, ShapeVector{1});
   state->result = GenerateKernelTensor(kNumberTypeInt32, ShapeVector{1});
 }
@@ -583,7 +603,18 @@ void SilentChecker::ExecuteCheck(const kernel::KernelMod *kernel_mod, const kern
     return;
   }
   auto &state = iter->second;
-  LaunchNormAsync(dout, state, stream_ptr);
+  MS_VLOG(5003) << "dout.shape=" << dout->GetShapeVector();
+  if (state->is_first_) {
+    LaunchSquareAsync(dout, state, stream_ptr);
+    LaunchNotEqualAsync(dout, state, stream_ptr);
+    LaunchMaskedSelectAsync(dout, state, stream_ptr);
+    LaunchMedainAsync(dout, state, stream_ptr);
+    state->is_first_ = 0;
+  } else {
+    LaunchSquareAsync(dout, state, stream_ptr);
+    LaunchMaxAsync(dout, state, stream_ptr);
+  }
+  // LaunchNormAsync(dout, state, stream_ptr);
   LaunchSilentCheckAsync(dout, state, stream_ptr);
 }
 
@@ -597,14 +628,131 @@ void SilentChecker::LaunchNormAsync(const KernelTensor *dout, const CheckStatePt
     MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
   }
   auto work_space = kernel_norm_->GetWorkspaceSizeList();
+  MS_VLOG(50002) << "work_space=" << work_space;
   if (!work_space.empty() && work_space[0] != 0) {
-    state->worspace_addr =
+    state->worspace_norm =
       runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
-    workspace.emplace_back(state->worspace_addr->kernel_tensor().get());
+    workspace.emplace_back(state->worspace_norm->kernel_tensor().get());
   }
 
   if (!kernel_norm_->Launch(inputs, workspace, outputs, stream_ptr)) {
     MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_norm_->primitive()->name() << " failed.";
+  }
+}
+
+void SilentChecker::LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
+  vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout)};
+  vector<KernelTensor *> outputs{state->square.get()};
+  vector<KernelTensor *> workspace;
+
+  auto ret = kernel_square_->Resize(inputs, outputs);
+  if (ret) {
+    MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
+  }
+  auto work_space = kernel_square_->GetWorkspaceSizeList();
+  MS_VLOG(50002) << "work_space=" << work_space;
+  if (!work_space.empty() && work_space[0] != 0) {
+    state->worspace_square =
+      runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    workspace.emplace_back(state->worspace_square->kernel_tensor().get());
+  }
+
+  if (!kernel_square_->Launch(inputs, workspace, outputs, stream_ptr)) {
+    MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_square_->primitive()->name() << " failed.";
+  }
+}
+
+void SilentChecker::LaunchNotEqualAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
+  vector<KernelTensor *> inputs{state->square.get(), zero_.get()};
+  vector<KernelTensor *> outputs{state->ne.get()};
+  vector<KernelTensor *> workspace;
+
+  auto ret = kernel_notequal_->Resize(inputs, outputs);
+  if (ret) {
+    MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
+  }
+  auto work_space = kernel_notequal_->GetWorkspaceSizeList();
+  MS_VLOG(50002) << "work_space=" << work_space;
+  if (!work_space.empty() && work_space[0] != 0) {
+    state->worspace_ne =
+      runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    workspace.emplace_back(state->worspace_ne->kernel_tensor().get());
+  }
+
+  if (!kernel_notequal_->Launch(inputs, workspace, outputs, stream_ptr)) {
+    MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_notequal_->primitive()->name() << " failed.";
+  }
+}
+
+void SilentChecker::LaunchMaskedSelectAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
+  vector<KernelTensor *> inputs{const_cast<KernelTensor *>(dout), state->ne.get()};
+  vector<KernelTensor *> outputs{state->masked_select.get()};
+  vector<KernelTensor *> workspace;
+  int64_t num_elems = 1;
+  for (const auto &dim : dout->GetShapeVector()) {
+    num_elems *= dim;
+  }
+  state->masked_select->SetShapeVector({num_elems});
+  MS_VLOG(50005) << "before shape=" << state->masked_select->GetShapeVector();
+
+  auto ret = kernel_masked_select_->Resize(inputs, outputs);
+  if (ret) {
+    MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
+  }
+  auto work_space = kernel_masked_select_->GetWorkspaceSizeList();
+  MS_VLOG(50002) << "work_space=" << work_space;
+  if (!work_space.empty() && work_space[0] != 0) {
+    state->worspace_masked_select =
+      runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    workspace.emplace_back(state->worspace_masked_select->kernel_tensor().get());
+  }
+
+  if (!kernel_masked_select_->Launch(inputs, workspace, outputs, stream_ptr)) {
+    MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_notequal_->primitive()->name() << " failed.";
+  }
+}
+
+void SilentChecker::LaunchMedainAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
+  vector<KernelTensor *> inputs{state->masked_select.get()};
+  vector<KernelTensor *> outputs{state->val.get()};
+  vector<KernelTensor *> workspace;
+
+  auto ret = kernel_median_->Resize(inputs, outputs);
+  if (ret) {
+    MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
+  }
+  auto work_space = kernel_median_->GetWorkspaceSizeList();
+  MS_VLOG(50002) << "work_space=" << work_space;
+  if (!work_space.empty() && work_space[0] != 0) {
+    state->worspace_median =
+      runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    workspace.emplace_back(state->worspace_median->kernel_tensor().get());
+  }
+
+  if (!kernel_median_->Launch(inputs, workspace, outputs, stream_ptr)) {
+    MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_median_->primitive()->name() << " failed.";
+  }
+}
+
+void SilentChecker::LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr) {
+  vector<KernelTensor *> inputs{state->square.get()};
+  vector<KernelTensor *> outputs{state->val.get()};
+  vector<KernelTensor *> workspace;
+
+  auto ret = kernel_max_->Resize(inputs, outputs);
+  if (ret) {
+    MS_LOG(EXCEPTION) << "Call Resize error, error id is " << ret;
+  }
+  auto work_space = kernel_max_->GetWorkspaceSizeList();
+  MS_VLOG(50002) << "work_space=" << work_space;
+  if (!work_space.empty() && work_space[0] != 0) {
+    state->worspace_max =
+      runtime::DeviceAddressUtils::CreateWorkspaceAddress(device_context_, kDefaultStreamIndex, work_space[0]);
+    workspace.emplace_back(state->worspace_max->kernel_tensor().get());
+  }
+
+  if (!kernel_max_->Launch(inputs, workspace, outputs, stream_ptr)) {
+    MS_LOG(EXCEPTION) << "Device do silent check, launch " << kernel_max_->primitive()->name() << " failed.";
   }
 }
 
