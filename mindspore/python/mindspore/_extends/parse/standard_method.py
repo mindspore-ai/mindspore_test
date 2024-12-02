@@ -39,7 +39,7 @@ from ...ops import operations as P
 from ...ops import composite
 from ...ops.operations import array_ops
 from ...ops.composite import MultitypeFuncGraph, env_get, hyper_add, \
-    zeros_like, ones_like, repeat_elements, multitype_ops
+    zeros_like, ones_like, repeat_elements, multitype_ops, _ones_like_for_grad
 from ...ops.composite.multitype_ops import _constexpr_utils as const_utils
 from ...ops.composite.multitype_ops import _compile_utils as compile_utils
 from ...ops.operations._inner_ops import Format
@@ -52,7 +52,7 @@ from ...ops.operations._sequence_ops import ListAppend, ListInsert, SequenceMax,
     SequenceIndex
 
 __all__ = ['MultitypeFuncGraph', 'env_get',
-           'hyper_add', 'zeros_like', 'ones_like']
+           'hyper_add', 'zeros_like', 'ones_like', '_ones_like_for_grad']
 
 shape_ = P.Shape()
 dtype_ = P.DType()

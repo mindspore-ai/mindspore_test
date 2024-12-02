@@ -29,6 +29,7 @@
 #include "pipeline/jit/pi/external.h"
 #include "include/common/utils/tensor_py.h"
 #include "pybind_api/ir/primitive_py.h"
+#include "frontend/operator/composite/composite.h"
 
 namespace mindspore {
 constexpr auto kAdapterFlag = "adapter_flag";
@@ -401,6 +402,33 @@ std::vector<py::object> AbstractWrapper::GetDictKeysObject() const {
     }
     return ConvertToPyObject(e.first);
   });
+  return ret;
+}
+
+void AbstractWrapper::UpdateGradInfo(const ValuePtr &meta) {
+  MS_EXCEPTION_IF_NULL(meta);
+  auto grad = meta->cast<prim::GradOperationPtr>();
+  MS_EXCEPTION_IF_NULL(grad);
+  grad_info_.get_all_ = grad->get_all_;
+  grad_info_.get_by_list_ = grad->get_by_list_;
+  grad_info_.sens_param_ = grad->sens_param_;
+  grad_info_.get_by_position_ = grad->get_by_position_;
+  grad_info_.has_aux_ = grad->has_aux_;
+  grad_info_.get_value_ = grad->get_value_;
+  grad_info_.return_ids_ = grad->return_ids_;
+  grad_info_.merge_forward_ = grad->merge_forward_;
+}
+
+std::vector<py::object> AbstractWrapper::GetSliceInputsPyObject() const {
+  MS_EXCEPTION_IF_NULL(abstract_);
+  if (!abstract_->isa<abstract::AbstractSlice>()) {
+    MS_LOG(EXCEPTION) << "Can not get slice input for abstract: " << abstract_->ToString();
+  }
+  auto abstract_slice = abstract_->cast<abstract::AbstractSlicePtr>();
+  std::vector<py::object> ret;
+  (void)ret.emplace_back(ConvertToPyObject(abstract_slice->start()));
+  (void)ret.emplace_back(ConvertToPyObject(abstract_slice->stop()));
+  (void)ret.emplace_back(ConvertToPyObject(abstract_slice->step()));
   return ret;
 }
 }  // namespace mindspore

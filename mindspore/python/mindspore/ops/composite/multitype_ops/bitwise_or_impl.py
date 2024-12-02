@@ -50,7 +50,8 @@ def _scalar_bitwise_or_tensor(x, y):
     return F.bitwise_or(x, y)
 
 
-@bitwise_or.register_default()
+# pylint: disable=protected-access
+@bitwise_or._register_default()
 def default_bitwsie_or(x, y):
     """Default function for bitwise_or."""
     return x | y

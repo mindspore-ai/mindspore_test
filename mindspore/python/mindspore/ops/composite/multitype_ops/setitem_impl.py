@@ -877,7 +877,8 @@ def _map_tensor_setitem(map_tensor, key_tensor, value_tensor):
     return map_tensor
 
 
-@setitem.register_default()
+# pylint: disable=protected-access
+@setitem._register_default()
 def default_getitem(x, y, z):
     """Default function for setitem."""
     x[y] = z

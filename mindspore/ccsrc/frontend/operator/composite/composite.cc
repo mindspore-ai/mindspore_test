@@ -1272,7 +1272,7 @@ void GradOperation::GradByParameter(const FuncGraphPtr &k_child, const AnfNodePt
   if (sens_param_) {
     bprop_arg = k_child->add_parameter();
   } else {
-    auto ones_like = prim::GetPythonOps("ones_like");
+    auto ones_like = prim::GetPythonOps("_ones_like_for_grad");
     bprop_arg = k_child->NewCNodeInOrder({NewValueNode(ones_like), f_app});
   }
   AnfNodePtr b_app = k_child->NewCNodeInOrder({bprop, bprop_arg});

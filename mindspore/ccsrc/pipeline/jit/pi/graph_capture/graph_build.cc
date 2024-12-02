@@ -38,6 +38,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "ir/cell.h"
+#include "ir/func_graph_cloner.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
@@ -2798,7 +2799,7 @@ void MindGraphBuilder::RollbackSideEffectRecords() {
 
 FuncGraphPtr MindGraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder,
                                                  const std::vector<ValueNode *> &args, CallNode *call_node) {
-  bool succ = subgraph_builder->FGAddOutput(false);
+  bool succ = subgraph_builder->FGAddOutput();
   if (!succ) {
     return nullptr;
   }
@@ -4409,34 +4410,35 @@ bool MindGraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
   return true;
 }
 
-bool MindGraphBuilder::FGAddOutput(bool is_top_graph) {
+bool MindGraphBuilder::FGAddOutput() {
   if (GetGraph()->GetRetVal() == nullptr) {
     MS_LOG(INFO) << "Add output failed, graph ret value is null";
     return false;
   }
   ValueNode *ret = GetGraph()->GetRetVal();
-  if (FGBuilder()->AddOutput(ret->abstract_wrapper(), is_top_graph)) {
+  if (FGBuilder()->AddOutput(ret->abstract_wrapper(), false)) {
     MS_LOG(DEBUG) << "Add output success for value node: " << ret->ToString();
   } else {
     MS_LOG(INFO) << "Add output fail for value node: " << ret->ToString();
     return false;
   }
-
-  // Top graph doesn't need to handle side effect nodes here. GraphAnalyzer will handle it later.
-  if (!is_top_graph) {
-    bool succ = FGAddSideEffectOutput(is_top_graph);
-    if (!succ) {
-      return false;
-    }
+  bool succ = FGAddSideEffectOutput();
+  if (succ) {
+    MS_LOG(DEBUG) << "Add graph output success, total outputs num: " << FGBuilder()->GetOutputSize()
+                  << ", side effect num: " << side_effect_outputs_.size();
+  } else {
+    MS_LOG(INFO) << "Add graph output failed, total outputs num: " << FGBuilder()->GetOutputSize()
+                 << ", side effect num: " << side_effect_outputs_.size();
   }
-  MS_LOG(INFO) << "Add graph output success, total outputs num: " << FGBuilder()->GetOutputSize()
-               << ", side effect num: " << side_effect_outputs_.size();
-  return true;
+  return succ;
 }
 
-bool MindGraphBuilder::FGAddSideEffectOutput(bool is_top_graph) {
+bool MindGraphBuilder::FGAddSideEffectOutput() {
   for (ValueNode *node : side_effect_outputs_) {
-    bool succ = FGBuilder()->AddOutput(node->abstract_wrapper(), is_top_graph);
+    auto stop_gradient_node = FGBuilder()->AddNode(prim::kPrimStopGradient, {node->abstract_wrapper()});
+    MS_EXCEPTION_IF_NULL(stop_gradient_node);
+    node->set_abstract_wrapper(stop_gradient_node);
+    bool succ = FGBuilder()->AddOutput(node->abstract_wrapper(), false);
     if (succ) {
       MS_LOG(DEBUG) << "Add side effect output success: " << node->ToString();
     } else {
@@ -4685,14 +4687,11 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> MindGraphBuilder::Buil
     MS_LOG(INFO) << "Failed to get function graph builder for forward graph.";
     return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(nullptr, bind_helper);
   }
-  MS_EXCEPTION_IF_NULL(fg->output());
-  auto fg_output_abs = fg->output()->abstract();
-  MS_EXCEPTION_IF_NULL(fg_output_abs);
-  bool need_filter = FuncGraphBuilder::CheckInvalidGradForwardOutput(fg_output_abs);
-  if (bind_vargs.size() != 0 || need_filter) {
+  fg = BasicClone(fg);
+  if (bind_vargs.size() != 0) {
     MS_LOG(INFO) << "Build call graph for forward graph.";
     std::vector<size_t> arg_len = {bind_args.size(), bind_vargs.size(), bind_kwargs.size()};
-    auto outer_fg = FuncGraphBuilder::BuildCallForwardGraphForGrad(fg, arg_len, is_cell, need_filter);
+    auto outer_fg = FuncGraphBuilder::BuildCallForwardGraphForGrad(fg, arg_len, is_cell);
     return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(outer_fg, bind_helper);
   }
 
@@ -4929,6 +4928,7 @@ py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReaso
     MS_LOG(INFO) << "Build forward fg failed.";
     return py::object();
   }
+  auto forward_graph_builder = std::dynamic_pointer_cast<MindGraphBuilder>(this->sub_graph);
 
   if (py::isinstance<Cell>(forward_net_object)) {
     HandleCustomBProp(forward_fg, forward_net_object);
@@ -4942,13 +4942,52 @@ py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReaso
     MS_LOG(INFO) << "input wrapper is: " << input_wrapper->ToString();
   }
   auto ret = FGBuilder()->BuildGradNode(grad_net_wrapper, forward_fg, inputs_wrapper);
+  MS_EXCEPTION_IF_NULL(ret);
   if (ret != nullptr) {
     call_node->SetVobj(AObject::Convert(ret));
     call_node->set_abstract_wrapper(ret);
     *stop_reason = StopTraceReason::kNonStopTrace;
   }
   HandleRegisterHook(forward_fg, stop_reason);
+  HandleGradForwardSideEffect(forward_fg, ret, forward_graph_builder, call_node);
   return py::object();
+}
+
+void MindGraphBuilder::HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
+                                                   const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node) {
+  const auto &side_effect_outputs = subgraph_builder->side_effect_outputs();
+  if (side_effect_outputs.empty() || !grad->grad_info().get_value_) {
+    return;
+  }
+  // For value_and_grad with forward net side effect,
+  // the output is format ((real_forward, side_effect_output), real_grad)
+  // Need to adjust abstract wrapper for call node to (real_forward, real_grad) and adjust side_effect_outputs as well.
+  MS_EXCEPTION_IF_NULL(forward_fg->output());
+  auto grad_abstract = grad->abstract();
+  MS_EXCEPTION_IF_NULL(grad_abstract);
+  if (!grad_abstract->isa<abstract::AbstractTuple>()) {
+    return;
+  }
+
+  AbstractWrapperPtr forward_idx = FGBuilder()->AddLocalVariable(py::int_(0));
+  auto forward = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {grad, forward_idx});
+  MS_EXCEPTION_IF_NULL(forward);
+  AbstractWrapperPtr grad_idx = FGBuilder()->AddLocalVariable(py::int_(1));
+  auto real_grad = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {grad, grad_idx});
+  MS_EXCEPTION_IF_NULL(real_grad);
+  AbstractWrapperPtr real_forward_idx = FGBuilder()->AddLocalVariable(py::int_(0));
+  auto real_forward = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {forward, real_forward_idx});
+  MS_EXCEPTION_IF_NULL(real_forward);
+  for (size_t i = 0; i < side_effect_outputs.size(); ++i) {
+    AbstractWrapperPtr cur_idx = FGBuilder()->AddLocalVariable(py::int_(i + 1));
+    auto cur_side_effect_output = FGBuilder()->AddNode(prim::kPrimTupleGetItem, {forward, cur_idx});
+    MS_EXCEPTION_IF_NULL(cur_side_effect_output);
+    side_effect_outputs[i]->set_abstract_wrapper(cur_side_effect_output);
+  }
+  auto real_ret = FGBuilder()->AddNode(prim::kPrimMakeTuple, {real_forward, real_grad});
+  MS_EXCEPTION_IF_NULL(real_ret);
+  call_node->SetVobj(AObject::Convert(real_ret));
+  call_node->set_abstract_wrapper(real_ret);
 }
 
 bool MindGraphBuilder::IsGradCallable(ValueNode *node) {

@@ -52,7 +52,36 @@ def _scalar_pow_tensor(x, y):
     return F.tensor_pow(x, y)
 
 
-@pow_.register_default()
+@pow_.register("Tuple", "Tensor")
+def _tuple_pow_tensor(x, y):
+    """Returns x ** y where x is a tuple and y is a tensor. """
+    x = utils.sequence_to_tensor(x, y.dtype)
+    return F.tensor_pow(x, y)
+
+
+@pow_.register("Tensor", "Tuple")
+def _tensor_pow_tuple(x, y):
+    """Returns x ** y where x is a tensor and y is a tuple. """
+    y = utils.sequence_to_tensor(y, x.dtype)
+    return F.tensor_pow(x, y)
+
+
+@pow_.register("List", "Tensor")
+def _list_pow_tensor(x, y):
+    """Returns x ** y where x is a list and y is a tensor. """
+    x = utils.sequence_to_tensor(x, y.dtype)
+    return F.tensor_pow(x, y)
+
+
+@pow_.register("Tensor", "List")
+def _tensor_pow_list(x, y):
+    """Returns x ** y where x is a tensor and y is a list. """
+    y = utils.sequence_to_tensor(y, x.dtype)
+    return F.tensor_pow(x, y)
+
+
+# pylint: disable=protected-access
+@pow_._register_default()
 def default_pow(x, y):
     """Default function for pow."""
     return x ** y

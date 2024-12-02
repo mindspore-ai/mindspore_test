@@ -106,7 +106,8 @@ def _less_list(x, y):
     return _seq.list_lt()(x, y)
 
 
-@less.register_default()
+# pylint: disable=protected-access
+@less._register_default()
 def default_less(x, y):
     """Default function for less."""
     return x < y

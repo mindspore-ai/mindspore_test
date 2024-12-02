@@ -948,3 +948,201 @@ def test_with_no_grad():
 
     match_array(o1, o2)
     assert_no_graph_break(net.block.construct, call_count=1)  # call_count=1, should recompile
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_value_and_grad_operation():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            ret = x + y
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = ops.value_and_grad(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    ret = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert np.all(ret[0].asnumpy() == np.array([3, 3, 3]))
+    assert np.all(ret[1].asnumpy() == np.array([1, 1, 1]))
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_value_and_grad_operation_with_kwargs():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, *vargs):
+            x = vargs[0]
+            y = vargs[1]
+            ret = x + y
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = ops.value_and_grad(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    ret = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert np.all(ret[0].asnumpy() == np.array([3, 3, 3]))
+    assert np.all(ret[1].asnumpy() == np.array([1, 1, 1]))
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_value_and_grad_operation_with_invalid_output():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            ret = x + y
+            return ret, slice(x, 1, 2), None, "a"
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = ops.value_and_grad(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1,])
+    b = Tensor([2,])
+    ret = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert np.all(ret[0][0].asnumpy() == np.array([3,]))
+    assert ret[0][1] == slice(Tensor([1,]), 1, 2)
+    assert ret[0][2] is None
+    assert ret[0][3] == "a"
+    assert np.all(ret[1].asnumpy() == np.array([1,]))
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_value_and_grad_operation_with_side_effect():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            self.a = 1
+            ret = x + y
+            return ret, slice(x, 1, 2), None, "a"
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = ops.value_and_grad(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1,])
+    b = Tensor([2,])
+    ret = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert np.all(ret[0][0].asnumpy() == np.array([3,]))
+    assert ret[0][1] == slice(Tensor([1,]), 1, 2)
+    assert ret[0][2] is None
+    assert ret[0][3] == "a"
+    assert net.a == 1
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_value_and_grad_operation_with_side_effect_2():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            self.a = x - y
+            ret = x + y
+            return ret, slice(x, 1, 2), None, "a"
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = ops.value_and_grad(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1,])
+    b = Tensor([2,])
+    ret = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert isinstance(ret, tuple)
+    assert len(ret) == 2
+    assert np.all(ret[0][0].asnumpy() == np.array([3,]))
+    assert ret[0][1] == slice(Tensor([1,]), 1, 2)
+    assert ret[0][2] is None
+    assert ret[0][3] == "a"
+    assert np.all(net.a.asnumpy() == np.array([-1,]))

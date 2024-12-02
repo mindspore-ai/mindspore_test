@@ -329,7 +329,8 @@ def _string_equal_number(x, y):
     return False
 
 
-@equal.register_default()
+# pylint: disable=protected-access
+@equal._register_default()
 def default_equal(x, y):
     """Default function for equal."""
     return x == y
