@@ -287,6 +287,7 @@ constexpr auto kBackendFrontAnfExt = "backend_front_anf_ext";
 constexpr auto kBackendAddTensorMove = "backend_add_tensor_move";
 constexpr auto kIncludeNotCutAttrAnf = "include_not_cut_attr_anf";
 constexpr auto kIncludeRealBackendAttrAnf = "include_real_backend_flag_anf";
+constexpr auto kGraphIdsSingleCache = "graph_ids_for_single_cache";
 
 // recompute and parallel
 constexpr auto kRecomputeInsert = "recompute_insert";
