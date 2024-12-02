@@ -89,7 +89,7 @@ def test_net_3d_int16(context_mode):
     assert np.array_equal(output, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 def test_forward_dynamic_shape():
     """
