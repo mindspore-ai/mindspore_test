@@ -35,6 +35,7 @@
 #include "runtime/graph_scheduler/optimizer/multi_actor_fusion.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/runtime_conf/runtime_conf.h"
+#include "runtime/runtime_conf/thread_bind_core.h"
 #include "include/common/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
@@ -92,6 +93,8 @@ using distributed::recovery::RecoveryContext;
 namespace {
 constexpr char kNumaEnableEnv[] = "MS_ENABLE_NUMA";
 constexpr char kNumaEnableEnv2[] = "DATASET_ENABLE_NUMA";
+constexpr char kMainThread[] = "main";
+constexpr char kRuntimeThread[] = "runtime";
 
 // For the transform state synchronization.
 constexpr char kTransformFinishPrefix[] = "TRANSFORM_FINISH_";
@@ -515,6 +518,9 @@ void GraphScheduler::Initialize() {
     return;
   }
   init_ = true;
+
+  auto &bind_core_manager = ThreadBindCore::GetInstance();
+  numa_cpus_ = bind_core_manager.get_thread_bind_core_list(kRuntimeThread);
 
   BindNumaNode();
   (void)kKernelTypeToLinkFunc.emplace(KernelTransformType::kDeviceDataSourceActor,
@@ -992,6 +998,9 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   SignalGuard sg(IntHandler);
 #endif
+
+  auto &bind_core_manager = ThreadBindCore::GetInstance();
+  bind_core_manager.bind_thread_core(kMainThread);
 
   CheckUceBeforeGraphRun(actor_set);
 

@@ -17,11 +17,11 @@
 The runtime interface.
 """
 
-from mindspore.runtime.executor import launch_blocking, dispatch_threads_num
+from mindspore.runtime.executor import launch_blocking, dispatch_threads_num, set_cpu_affinity
 from mindspore.runtime.memory import set_memory
 
 __all__ = [
-    "launch_blocking", "dispatch_threads_num", "set_memory"
+    "launch_blocking", "dispatch_threads_num", "set_memory", "set_cpu_affinity"
 ]
 
 __all__.sort()
