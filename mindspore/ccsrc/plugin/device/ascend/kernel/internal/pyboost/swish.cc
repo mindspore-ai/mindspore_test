@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/internal/pyboost/reshape_and_cache.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/swish.h"
 
 #include <memory>
 #include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeReshapeAndCache::CreateKernel(const acme::InputsImmutableInfoList &inputs,
+acme::AcmeOpPtr AcmeKernelInfoSwish::CreateKernel(const acme::InputsImmutableInfoList &inputs,
                                                   const acme::OutputsImmutableInfoList &outputs,
                                                   const std::vector<tensor::BaseTensorPtr> &ms_inputs,
                                                   const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
-  return acme::CreateReshapeAndCacheOp(inputs, outputs, acme::kAcmeReshapeAndCacheOpName);
+  return acme::CreateSwishOp(inputs, outputs, acme::kAcmeSwishOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, acme::kAcmeReshapeAndCacheOpName, AcmeReshapeAndCache);
+
+MS_ACME_KERNEL_INFO_FACTORY_REG(SiLU, acme::kAcmeSwishOpName, AcmeSwish);
 }  // namespace kernel
 }  // namespace mindspore

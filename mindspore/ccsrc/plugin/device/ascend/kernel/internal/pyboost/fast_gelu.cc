@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/kernel/internal/pyboost/reshape_and_cache.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/fast_gelu.h"
 
 #include <memory>
 #include "kernel/kernel.h"
 
 namespace mindspore {
 namespace kernel {
-acme::AcmeOpPtr AcmeReshapeAndCache::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                  const acme::OutputsImmutableInfoList &outputs,
-                                                  const std::vector<tensor::BaseTensorPtr> &ms_inputs,
-                                                  const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
-  return acme::CreateReshapeAndCacheOp(inputs, outputs, acme::kAcmeReshapeAndCacheOpName);
+acme::AcmeOpPtr AcmeKernelInfoFastGeLU::CreateKernel(const acme::InputsImmutableInfoList &inputs,
+                                                     const acme::OutputsImmutableInfoList &outputs,
+                                                     const std::vector<tensor::BaseTensorPtr> &ms_inputs,
+                                                     const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
+  return acme::CreateFastGeLUOp(inputs, outputs, acme::kAcmeFastGeLUOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(ReshapeAndCache, acme::kAcmeReshapeAndCacheOpName, AcmeReshapeAndCache);
+MS_ACME_KERNEL_INFO_FACTORY_REG(FastGeLU, acme::kAcmeFastGeLUOpName, AcmeFastGeLU);
 }  // namespace kernel
 }  // namespace mindspore
