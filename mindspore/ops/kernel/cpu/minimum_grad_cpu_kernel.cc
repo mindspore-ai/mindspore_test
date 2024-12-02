@@ -211,11 +211,11 @@ template <typename T>
 bool MinimumGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &,
                                            const std::vector<KernelTensor *> &outputs) {
-  auto *x_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  auto *y_addr = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  auto *dout_addr = reinterpret_cast<T *>(inputs[2]->device_ptr());
-  auto *dx_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto *dy_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
+  auto *x_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  auto *y_addr = GetDeviceAddress<T>(inputs, kIndex1);
+  auto *dout_addr = GetDeviceAddress<T>(inputs, kIndex2);
+  auto *dx_addr = GetDeviceAddress<T>(outputs, kIndex0);
+  auto *dy_addr = GetDeviceAddress<T>(outputs, kIndex1);
 
   size_t x_tensor_len = GetTensorLen(x_shape_);
   size_t y_tensor_len = GetTensorLen(y_shape_);

@@ -193,10 +193,10 @@ bool FractionalMaxPoolWithFixedKsizeCPUKernelMod::DoComputeWithRandomSamplesType
 template <typename scalar_t, typename random_sample_t>
 bool FractionalMaxPoolWithFixedKsizeCPUKernelMod::ComputeTemplate(const std::vector<KernelTensor *> &inputs,
                                                                   const std::vector<KernelTensor *> &outputs) const {
-  scalar_t *input_ptr = static_cast<scalar_t *>(inputs[0]->device_ptr());
-  random_sample_t *random_samples_ptr = static_cast<random_sample_t *>(inputs[1]->device_ptr());
-  scalar_t *output_ptr = static_cast<scalar_t *>(outputs[0]->device_ptr());
-  int64_t *argmax_ptr = static_cast<int64_t *>(outputs[1]->device_ptr());
+  scalar_t *input_ptr = GetDeviceAddress<scalar_t>(inputs, kIndex0);
+  random_sample_t *random_samples_ptr = GetDeviceAddress<random_sample_t>(inputs, kIndex1);
+  scalar_t *output_ptr = GetDeviceAddress<scalar_t>(outputs, kIndex0);
+  int64_t *argmax_ptr = GetDeviceAddress<int64_t>(outputs, kIndex1);
   MS_EXCEPTION_IF_NULL(input_ptr);
   MS_EXCEPTION_IF_NULL(random_samples_ptr);
   MS_EXCEPTION_IF_NULL(output_ptr);

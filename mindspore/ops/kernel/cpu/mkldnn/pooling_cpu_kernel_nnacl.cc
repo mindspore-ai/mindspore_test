@@ -431,8 +431,8 @@ template <typename T>
 bool PoolingCpuKernelNnaclMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                             const std::vector<kernel::KernelTensor *> &,
                                             const std::vector<kernel::KernelTensor *> &outputs) {
-  T *input_addr = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
-  T *output_addr = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
+  T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   CTask task =
     pool_mode_ == MEAN_POOLING ? KernelAvgPool<T>(input_addr, output_addr) : KernelMaxPool<T>(input_addr, output_addr);
   ParallelLaunch(task, output_num_, 1.0);
@@ -456,8 +456,8 @@ bool PoolingCpuKernelNnaclMod::Launch(const std::vector<kernel::KernelTensor *> 
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), 1, kernel_name_);
 
   if (use_channel_last_) {
-    float *input_addr = reinterpret_cast<float *>(inputs[kIndex0]->device_ptr());
-    float *output_addr = reinterpret_cast<float *>(outputs[kIndex0]->device_ptr());
+    float *input_addr = GetDeviceAddress<float>(inputs, kIndex0);
+    float *output_addr = GetDeviceAddress<float>(outputs, kIndex0);
     float *transpose_out = GetDeviceAddress<float>(workspaces, 0);
     float *pooling_out = GetDeviceAddress<float>(workspaces, 1);
     LaunchPoolingChannelLastFp32(input_addr, transpose_out, pooling_out, output_addr);

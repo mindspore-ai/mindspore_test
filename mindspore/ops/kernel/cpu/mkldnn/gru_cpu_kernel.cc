@@ -155,13 +155,11 @@ bool GRUCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
                              const std::vector<kernel::KernelTensor *> &,
                              const std::vector<kernel::KernelTensor *> &outputs) {
   SetDataHandle(user_weights_memory_, inputs[kInputWeightIndex]->device_ptr());
-  SetDataHandle(user_weights_h_memory_,
-                reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + weight_size_);
+  SetDataHandle(user_weights_h_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + weight_size_);
   Reorder(&user_weights_memory_, &weights_memory_);
   Reorder(&user_weights_h_memory_, &weights_h_memory_);
   if (has_bias_) {
-    SetDataHandle(bias_memory_,
-                  reinterpret_cast<float *>(inputs[kInputWeightIndex]->device_ptr()) + weight_size_ + weight_h_size_);
+    SetDataHandle(bias_memory_, GetDeviceAddress<float>(inputs, kInputWeightIndex) + weight_size_ + weight_h_size_);
   } else {
     auto size = GetSize(bias_desc_);
     auto ret = memset_s(GetDataHandle(bias_memory_), size, 0, size);

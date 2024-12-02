@@ -237,7 +237,7 @@ bool PoolingCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
   SetArgumentHandle(DNNL_ARG_DST, outputs[0]->device_ptr());
   ExecutePrimitive();
 
-  T *dst = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  T *dst = GetDeviceAddress<T>(outputs, kIndex0);
   if (divisor_override_ != 0) {
     ReComputeDivisor(dst);
     return true;

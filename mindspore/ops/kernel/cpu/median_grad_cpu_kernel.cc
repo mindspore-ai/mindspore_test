@@ -157,10 +157,10 @@ bool MedianGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inp
 template <typename T1, typename T2>
 bool MedianGradCpuKernelMod::GlobalMedianGradCompute(const std::vector<KernelTensor *> &inputs,
                                                      const std::vector<KernelTensor *> &outputs) const {
-  auto y_grad = static_cast<T1 *>(inputs[0]->device_ptr());
-  auto x = static_cast<T1 *>(inputs[1]->device_ptr());
-  auto y = static_cast<T1 *>(inputs[2]->device_ptr());
-  auto x_grad = static_cast<T2 *>(outputs[0]->device_ptr());
+  auto y_grad = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto x = GetDeviceAddress<T1>(inputs, kIndex1);
+  auto y = GetDeviceAddress<T1>(inputs, kIndex2);
+  auto x_grad = GetDeviceAddress<T2>(outputs, kIndex0);
 
   int64_t count_repeat = 0;
   for (size_t i = 0; i < input1_num_elements_; i++) {
@@ -192,9 +192,9 @@ bool MedianGradCpuKernelMod::GlobalMedianGradCompute(const std::vector<KernelTen
 template <typename T1, typename T2>
 bool MedianGradCpuKernelMod::MedianGradCompute(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
-  auto y_grad = static_cast<T1 *>(inputs[0]->device_ptr());
-  auto indices = static_cast<int64_t *>(inputs[3]->device_ptr());
-  auto x_grad = static_cast<T2 *>(outputs[0]->device_ptr());
+  auto y_grad = GetDeviceAddress<T1>(inputs, kIndex0);
+  auto indices = GetDeviceAddress<int64_t>(inputs, kIndex3);
+  auto x_grad = GetDeviceAddress<T2>(outputs, kIndex0);
 
   for (size_t i = 0; i < input1_num_elements_; i++) {
     *(x_grad + i) = 0;

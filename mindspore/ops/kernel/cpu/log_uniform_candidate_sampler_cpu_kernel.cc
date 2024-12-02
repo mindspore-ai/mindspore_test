@@ -110,12 +110,12 @@ int LogUniformCandidateSamplerCpuKernel::Resize(const std::vector<KernelTensor *
 bool LogUniformCandidateSamplerCpuKernel::Launch(const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<KernelTensor *> &workspace,
                                                  const std::vector<KernelTensor *> &outputs) {
-  int64_t *true_classes = static_cast<int64_t *>(inputs.at(0)->device_ptr());
+  int64_t *true_classes = GetDeviceAddress<int64_t>(inputs, kIndex0);
   auto true_classes_size = inputs.at(0)->size();
   size_t true_classes_len = static_cast<size_t>(true_classes_size / sizeof(int64_t));
-  int64_t *sampled_candidates = static_cast<int64_t *>(outputs.at(0)->device_ptr());
-  float *true_expected_count = static_cast<float *>(outputs.at(1)->device_ptr());
-  float *sampled_expected_count = static_cast<float *>(outputs.at(2)->device_ptr());
+  int64_t *sampled_candidates = GetDeviceAddress<int64_t>(outputs, kIndex0);
+  float *true_expected_count = GetDeviceAddress<float>(outputs, kIndex1);
+  float *sampled_expected_count = GetDeviceAddress<float>(outputs, kIndex2);
 
   auto gen = generator_.ReserveSamples32(reserveSamplesNr_);
 
