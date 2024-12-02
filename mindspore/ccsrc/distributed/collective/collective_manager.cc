@@ -50,6 +50,7 @@ CollectiveManager::CollectiveManager()
       global_rank_id_(0),
       local_rank_id_(0),
       global_rank_size_(1),
+      local_rank_size_(1),
       global_group_ranks_({}),
       device_lib_supported_(true),
       need_host_collective_(false) {}
@@ -543,6 +544,8 @@ uint32_t CollectiveManager::global_rank_size() const { return global_rank_size_;
 
 uint32_t CollectiveManager::local_rank_id() const { return local_rank_id_; }
 
+uint32_t CollectiveManager::local_rank_size() const { return local_rank_size_; }
+
 bool CollectiveManager::InitHostCommlib() {
   device::DeviceContextKey host_key = {"CPU", 0};
   host_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
@@ -649,6 +652,7 @@ bool CollectiveManager::AssignLocalRank() {
                            "GetLocalGroupRankAndSize for world group failed.");
   host_comm_lib_instance_->SetLocalGroupRank(host_comm_lib_instance_->global_group_name(), local_rank_id_);
   host_comm_lib_instance_->SetLocalGroupSize(host_comm_lib_instance_->global_group_name(), local_group_size);
+  local_rank_size_ = local_group_size;
 
   MS_LOG(INFO) << "The local rank id assigned for this process is " << local_rank_id_;
   MS_LOG(INFO) << "The env 'DEVICE_ID' assigned for this process is: " << common::GetEnv("DEVICE_ID");
