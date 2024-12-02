@@ -20,7 +20,7 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
-from mindspore import ops, context, mint
+from mindspore import context, mint
 
 
 @test_utils.run_with_cell
@@ -30,10 +30,9 @@ def unfold_forward_func(input_tensor, kernel_size, dilation=1, padding=0, stride
 
 @test_utils.run_with_cell
 def unfold_backward_func(input_tensor, kernel_size, dilation=1, padding=0, stride=1):
-    return ops.grad(unfold_forward_func, (0,))(input_tensor, kernel_size, dilation, padding, stride)
+    return ms.grad(unfold_forward_func, (0,))(input_tensor, kernel_size, dilation, padding, stride)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_unfold(mode):
     """

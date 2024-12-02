@@ -72,7 +72,7 @@ def ops_binary_cases(ops_case, *, binary_data_path=None, debug_info=False):
         raise TypeError(f'ops_case is invalid.')
     # If you want to run in local environment, please use your own local path
     if binary_data_path is None:
-        binary_data_path = '../../../../../../../workspace/mindspore_dataset/mindspore-tests-benchmark'
+        binary_data_path = '/home/workspace/mindspore_dataset/mindspore-tests-benchmark'
 
     def decorator(fn):
         if fn is None:

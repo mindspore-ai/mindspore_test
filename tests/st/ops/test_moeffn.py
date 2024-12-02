@@ -120,7 +120,6 @@ expect = np.array([[12.805, 9.766, 8.98, 12.16],
                    [9.82, 9.91, 10.79, 12.32]])
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ffn_forward_net():
     """
     Feature: Test moeffn in kbk and pynative mode.
@@ -134,7 +133,6 @@ def test_ffn_forward_net():
     assert np.allclose(output.asnumpy(), expect, rtol=1e-1)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_ffn_forward_mode(mode):
     """

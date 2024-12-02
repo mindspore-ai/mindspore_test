@@ -53,7 +53,7 @@ def fill__forward_func(input_x, vec2):
 
 
 @arg_mark(
-    plat_marks=["platform_ascend", "platform_ascend910b"],
+    plat_marks=["platform_ascend"],
     level_mark="level0",
     card_mark="onecard",
     essential_mark="essential",

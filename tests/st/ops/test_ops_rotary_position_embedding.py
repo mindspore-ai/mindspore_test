@@ -54,7 +54,6 @@ def rotary_position_embedding_backward_func(input_x, input_cos, input_sin, mode)
     return ms.grad(rotary_position_embedding_forward_func, (0, 1, 2))(input_x, input_cos, input_sin, mode)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('ms_type', [mstype.float32, mstype.float16, mstype.bfloat16])
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize('mode_value', [0, 1])

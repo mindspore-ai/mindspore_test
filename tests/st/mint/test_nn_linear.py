@@ -110,12 +110,6 @@ def test_mint_nn_linear_binary_cases_910a(mode):
     mint_nn_linear_binary_case1(loss=1e-03, mode=mode)
 
 
-@arg_mark(
-    plat_marks=["platform_ascend910b"],
-    level_mark="level0",
-    card_mark="onecard",
-    essential_mark="essential",
-)
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
 def test_mint_nn_linear_binary_cases_910b(mode):
     """

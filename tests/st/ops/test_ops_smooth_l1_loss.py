@@ -71,8 +71,8 @@ def smooth_l1_loss_vmap_func(inputx, target, reduction="mean", beta=1.0):
                     out_axes=(0))(inputx, target, reduction, beta)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows',
-                      'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK", "graph"])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
 def test_ops_smooth_l1_loss_normal(mode, reduction):
