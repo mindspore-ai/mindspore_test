@@ -46,7 +46,7 @@ void PynativeCallback::DeprecatedFreeDeviceAddress(const mindspore::HashSet<size
     if (idx < inputs.size()) {
       FreeDeviceAddress(&inputs[idx]);
       MS_LOG(DEBUG) << "Clear device address for input[" << idx << "] of " << opname();
-    } else {
+    } else if (idx == inputs.size()) {
       FreeDeviceAddress(GetOutput());
       MS_LOG(DEBUG) << "Clear device address for output of " << opname();
     }
