@@ -75,6 +75,7 @@ struct FaGradCompareMethod {
 namespace mindspore {
 namespace parallel {
 namespace {
+constexpr int kRingStep2 = 2;
 
 std::string GetPreviousStr(std::string origin_str) {
   size_t underscore_pos = origin_str.find('_');
@@ -1053,8 +1054,9 @@ void ReplaceDqAdd(const FuncGraphPtr &graph,
     }
     int second_number = GetSecondNumber(GetValue<std::string>(grad_fa_node->GetPrimalAttr(RING_ATTENTION_INDEX)));
     if (second_number < sp_num - 1) {
-      if (second_number == sp_num - 2) {
-        tmp_node = NewAddNode(make_tuple_node->input(second_number + 1), make_tuple_node->input(second_number + 2));
+      if (second_number == sp_num - kRingStep2) {
+        tmp_node =
+          NewAddNode(make_tuple_node->input(second_number + 1), make_tuple_node->input(second_number + kRingStep2));
       } else {
         tmp_node = NewAddNode(make_tuple_node->input(second_number + 1), tmp_node);
       }
