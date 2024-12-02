@@ -54,7 +54,7 @@ REG_BPROP_BUILDER("Generator").SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("IOU").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 
-REG_BPROP_BUILDER("SyncBatchNorm").SetUnusedInputs({i2, i3, i4}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SyncBatchNorm").FreeUselessValues_IO({i2, i3, i4}, {i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto scale = ib->GetInput(kIndex1);
   auto mean = ib->GetInput(kIndex3);
