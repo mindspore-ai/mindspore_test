@@ -131,12 +131,25 @@ class CheckState {
   ~CheckState() = default;
 
  public:
+  uint8_t is_first_;
+
   KernelTensorPtr val = nullptr;
+  KernelTensorPtr square = nullptr;
+  KernelTensorPtr ne = nullptr;
+  KernelTensorPtr masked_select = nullptr;
+  KernelTensorPtr max = nullptr;
   KernelTensorPtr sfda = nullptr;
   KernelTensorPtr step = nullptr;
   KernelTensorPtr result = nullptr;
 
   DeviceAddressPtr worspace_addr = nullptr;
+
+  DeviceAddressPtr worspace_norm = nullptr;
+  DeviceAddressPtr worspace_square = nullptr;
+  DeviceAddressPtr worspace_ne = nullptr;
+  DeviceAddressPtr worspace_masked_select = nullptr;
+  DeviceAddressPtr worspace_median = nullptr;
+  DeviceAddressPtr worspace_max = nullptr;
 };
 using CheckStatePtr = std::shared_ptr<CheckState>;
 
@@ -154,6 +167,11 @@ class SilentChecker {
 
   void LaunchNormAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
   void LaunchSilentCheckAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchSquareAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchNotEqualAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchMaskedSelectAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchMedainAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
+  void LaunchMaxAsync(const KernelTensor *dout, const CheckStatePtr &state, void *stream_ptr);
 
   KernelTensorPtr GenerateKernelTensor(TypeId dtype_id, const ShapeVector &shape, const ValuePtr &value = nullptr);
 
@@ -163,11 +181,18 @@ class SilentChecker {
   // kernel modules for checking
   kernel::KernelModPtr kernel_norm_ = nullptr;
   kernel::KernelModPtr kernel_silent_check_ = nullptr;
+  kernel::KernelModPtr kernel_square_ = nullptr;
+  kernel::KernelModPtr kernel_notequal_ = nullptr;
+  kernel::KernelModPtr kernel_masked_select_ = nullptr;
+  kernel::KernelModPtr kernel_median_ = nullptr;
+  kernel::KernelModPtr kernel_max_ = nullptr;
 
   // constants used by aclnnNorm
   KernelTensorPtr p_scalar_ = nullptr;
   KernelTensorPtr dim_ = nullptr;
   KernelTensorPtr keep_dim_ = nullptr;
+
+  KernelTensorPtr zero_ = nullptr;
 
   // constants used by aclnnSilentCheck
   KernelTensorPtr c_min_steps_ = nullptr;
