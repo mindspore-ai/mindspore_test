@@ -35,7 +35,7 @@
 #include "frontend/operator/composite/unpack_call.h"
 #include "pipeline/pynative/op_function/auto_generate/functional_map.h"
 #include "include/common/utils/tensor_py.h"
-#include "include/common/utils/hook.h"
+#include "pipeline/pynative/grad/variable.h"
 
 namespace mindspore {
 namespace {
@@ -166,11 +166,11 @@ bool FuncGraphBuilder::HasRegisterHook(const py::object &obj) {
     return false;
   }
   auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
-  auto grad_meta = tensor->auto_grad_meta_data();
-  if (grad_meta == nullptr || !grad_meta->is_register_hook()) {
+  const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
+  if (grad_meta_data == nullptr || !grad_meta_data->is_register_hook()) {
     return false;
   }
-  return !grad_meta->backward_hooks().empty();
+  return !grad_meta_data->backward_hooks().empty();
 }
 
 // HasRegisterHook must be called before calling this function and the return value must be True
@@ -180,7 +180,8 @@ py::list FuncGraphBuilder::GetRegisterHookList(const py::object &obj) {
   }
   py::list hook_fn_list;
   auto tensor = py::cast<tensor::BaseTensorPtr>(obj);
-  auto backward_hooks = tensor->auto_grad_meta_data()->backward_hooks();
+  const auto &grad_meta_data = pynative::autograd::impl::get_autograd_meta_impl(tensor);
+  const auto &backward_hooks = grad_meta_data->backward_hooks();
   for (const auto &[id, hook] : backward_hooks) {
     auto hook_map = hook->hook_map_;
     MS_EXCEPTION_IF_CHECK_FAIL(hook_map.size() == kSizeOne, "Tensor hook just work on one tensor value.");
