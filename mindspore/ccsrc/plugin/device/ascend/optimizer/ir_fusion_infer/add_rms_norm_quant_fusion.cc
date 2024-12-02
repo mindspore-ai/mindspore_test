@@ -25,7 +25,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"
-#include "plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 #include "utils/shape_utils.h"
 
 namespace mindspore {
