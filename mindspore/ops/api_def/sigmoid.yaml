@@ -1,6 +1,6 @@
 sigmoid:
   op_yaml: sigmoid_op.yaml
-  py_method: tensor_sigmoid # callback to python function "def tensor_select"
+  py_method: tensor_sigmoid # callback to python function "def tensor_sigmoid"
   Ascend: pyboost
   CPU: pyboost
   GPU: pyboost
