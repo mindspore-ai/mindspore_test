@@ -41,7 +41,7 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
                              CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc, Sign, Polar,
-                             IsInf)
+                             IsInf, Lerp, LerpScalar)
 
 
 def _infer_shape_reduce(x, axis, keep_dims, prim_name):
@@ -1854,41 +1854,6 @@ class EqualCount(PrimitiveWithInfer):
     def __init__(self):
         """Initialize EqualCount"""
         self.init_prim_io_names(inputs=['x', 'y'], outputs=['output'])
-
-
-class Lerp(Primitive):
-    """
-    Does a linear interpolation of two tensors start and end based on a float or tensor weight.
-
-    Refer to :func:`mindspore.ops.lerp` for more details.
-
-    Inputs:
-        - **start** (Tensor) - The tensor with the starting points. Data type must be float16, float32 or float64.
-        - **end** (Tensor) - The tensor with the ending points. Data type must be the same as `start`.
-        - **weight** (Union[float, Tensor]) - The weight for the interpolation formula. Must be a float
-          or a scalar tensor with float16 or float32 data type.
-
-    Outputs:
-        Tensor, has the same type and shape as input `start`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> start = Tensor(np.array([1., 2., 3., 4.]), mindspore.float32)
-        >>> end = Tensor(np.array([10., 10., 10., 10.]), mindspore.float32)
-        >>> lerp = ops.Lerp()
-        >>> output = lerp(start, end, 0.5)
-        >>> print(output)
-        [5.5 6. 6.5 7. ]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        self.init_prim_io_names(inputs=['start', 'end', 'weight'], outputs=['output'])
 
 
 class IsNan(Primitive):

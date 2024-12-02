@@ -1,0 +1,15 @@
+#operator lerp_scalar
+lerp_scalar:
+  args:
+    input:
+      dtype: tensor
+    end:
+      dtype: tensor
+    weight:
+      dtype: float
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
+    Ascend: LerpScalarAscend

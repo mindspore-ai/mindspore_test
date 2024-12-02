@@ -200,6 +200,7 @@ from .math_func import (
     tensor_le,
     le,
     lerp,
+    lerp_ext,
     norm,
     vector_norm,
     matrix_norm,
