@@ -80,7 +80,7 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
       return;
     }
 
-    if (common::IsNeedProfileMemory()) {
+    if (IsNeedProfilieMemoryLog()) {
       auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor);
       MS_LOG(WARNING) << "Need Profile Memory, alloc type: MemoryManagerActor, device address class ptr: "
                       << output_address << ", device address size: " << device_tensor->GetSize()
@@ -398,10 +398,11 @@ void MemoryManagerActor::FreeSomasMemory(SomasInfo *const somas_info, const Devi
   }
 
   // Somas decrease the ref count.
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "SomasOutput", "");
   for (auto &output_address : somas_info->graph_output_device_addresses_) {
     output_address->set_from_mem_pool(true);
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(UpdateMemInfo, output_address,
-                                                   device::tracker::MemType::kSomasOutput);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(), device::tracker::MemType::kSomasOutput,
+                                                   output_address->GetSize(), output_address);
     device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, output_address, output_address->GetPtr());
     FreeMemoryByRefCount(output_address, device_context, from_aid.Name());
   }

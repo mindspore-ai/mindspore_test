@@ -134,7 +134,7 @@ class BACKEND_EXPORT AscendMemoryPool {
     return enable_debugger || enable_pre_act_log || enable_debug_log ||
            MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) ||
            common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
-           common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) || common::IsNeedProfileMemory();
+           common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat) || common::IsDryRun();
   }
 
   static std::string ParseDebugConfig(std::string input, std::string config) {

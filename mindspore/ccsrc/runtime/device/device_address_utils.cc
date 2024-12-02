@@ -1026,6 +1026,11 @@ void DeviceAddressUtils::CreateKernelTensor(const device::DeviceAddressPtr &devi
   if (device_address->kernel_tensor() != nullptr) {
     return;
   }
+  {
+    GilReleaseWithCheck no_gil;
+    // DeviceAddress is used by backebd queue.
+    runtime::Pipeline::Get().backend_stage()->Wait();
+  }
   const auto &address_common = device_address->address_common();
   MS_EXCEPTION_IF_NULL(address_common);
   auto real_kernel_tensor = std::make_shared<kernel::KernelTensor>(
@@ -1061,6 +1066,11 @@ void DeviceAddressUtils::CreateKernelTensor(const device::DeviceAddressPtr &devi
   MS_EXCEPTION_IF_NULL(device_address);
   if (device_address->kernel_tensor() != nullptr) {
     return;
+  }
+  {
+    GilReleaseWithCheck no_gil;
+    // DeviceAddress is used by backebd queue.
+    runtime::Pipeline::Get().backend_stage()->Wait();
   }
   const auto address_common = device_address->address_common();
   MS_EXCEPTION_IF_NULL(address_common);

@@ -17,11 +17,15 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_MEM_TRACKER_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_MEM_TRACKER_H_
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <map>
 #include <utility>
 #include <memory>
+#include <tuple>
+#include "ir/tensor_storage_info.h"
+#include "mindapi/base/type_id.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
@@ -31,13 +35,16 @@
 namespace mindspore {
 namespace device {
 namespace tracker {
+// keys
+const char kStreamId[] = "stream_id";
+const char kEvent[] = "event";
+
 enum class MemType : int {
   kWeight,
   kConstantValue,
   kKernel,
   kGraphOutput,
   kSomas,
-  kInSideSomas,
   kSomasOutput,
   kGeConst,
   kGeFixed,
@@ -54,7 +61,6 @@ const std::map<MemType, std::string> MemTypeToStr = {{MemType::kWeight, "Weight"
                                                      {MemType::kKernel, "Kernel"},
                                                      {MemType::kGraphOutput, "GraphOutput"},
                                                      {MemType::kSomas, "Somas"},
-                                                     {MemType::kInSideSomas, "InSideSomas"},
                                                      {MemType::kSomasOutput, "SomasOutput"},
                                                      {MemType::kGeConst, "GeConst"},
                                                      {MemType::kGeFixed, "GeFixed"},
@@ -72,6 +78,7 @@ struct TaskInfo {
   std::string graph_name;
   std::string task_name;
   int64_t time_stamp;
+  std::unordered_map<std::string, std::string> attrs;
   // The code location of task execution
   std::string file_name;
   size_t line_num;
@@ -93,6 +100,8 @@ struct MemBlockInfo {
   size_t actual_peak_memory;
   size_t size;
   std::string pool_name;
+  size_t last_write_stream_id;
+  size_t last_write_time_stamp;
 
   // Record mem info for profiling
   double real_start_time{-1};
@@ -109,7 +118,9 @@ struct MemBlockInfo {
         stream_id(0),
         actual_peak_memory(0),
         size(0),
-        pool_name() {}
+        pool_name(),
+        last_write_stream_id(0),
+        last_write_time_stamp(0) {}
 };
 
 using MemBlockInfoPtr = std::shared_ptr<MemBlockInfo>;
@@ -160,12 +171,16 @@ class BACKEND_EXPORT MemTracker {
  public:
   virtual void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                        const std::string &file_name, size_t line_num) = 0;
+  virtual void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
+                             const std::string &file_name, size_t line_num) = 0;
+  virtual void DelNestedTask() = 0;
+  virtual void UpdateTask(const std::string &task_name, const std::unordered_map<std::string, std::string> &attrs) = 0;
+  virtual void CacheLastTask() = 0;
+  virtual void EmptyCache() = 0;
   virtual void AddMemInfo(const std::string &task_name, MemType type, size_t size, DeviceAddress *device_address,
                           const std::string &file_name, size_t line_num) = 0;
   virtual void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr,
                                      MemType mem_type, const std::string &file_name, size_t line_num) = 0;
-  virtual void UpdateMemInfo(const DeviceAddress *device_address, MemType mem_type, const std::string &file_name,
-                             size_t line_num) = 0;
   virtual void AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name,
                              size_t actual_peak_memory, size_t in_used_size, size_t total_size, uint32_t stream_id) = 0;
   virtual void FreeMemBlock(DeviceMemPtr device_addr, size_t in_used_size, size_t total_size) = 0;
@@ -173,8 +188,12 @@ class BACKEND_EXPORT MemTracker {
                            size_t line_num) = 0;
   virtual void BindDevicePtr(DeviceAddress *kernel_tensor, DeviceMemPtr device_ptr, const std::string &file_name,
                              size_t line_num) = 0;
-  virtual void UpdateDevicePtrInfo(DeviceMemPtr device_ptr, MemType mem_type, const std::string &task_name,
-                                   const std::string &file_name, size_t line_num) = 0;
+  virtual void MarkTensorAsInput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
+                                 TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
+                                 const std::string &file_name, size_t line_num) = 0;
+  virtual void MarkTensorAsOutput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
+                                  TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
+                                  const std::string &file_name, size_t line_num) = 0;
 
   virtual void Dump() = 0;
   virtual void UpdateProfilingPos() = 0;
@@ -189,12 +208,16 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
  public:
   void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                const std::string &file_name, size_t line_num) override;
+  void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
+                     const std::string &file_name, size_t line_num) override;
+  void DelNestedTask() override;
+  void UpdateTask(const std::string &task_name, const std::unordered_map<std::string, std::string> &attrs) override;
+  void CacheLastTask() override;
+  void EmptyCache() override;
   void AddMemInfo(const std::string &task_name, MemType type, size_t size, DeviceAddress *device_address,
                   const std::string &file_name, size_t line_num) override;
   void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr, MemType mem_type,
                              const std::string &file_name, size_t line_num) override;
-  void UpdateMemInfo(const DeviceAddress *device_address, MemType mem_type, const std::string &file_name,
-                     size_t line_num) override;
   void AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name, size_t actual_peak_memory,
                      size_t in_used_size, size_t total_size, uint32_t stream_id) override;
   void FreeMemBlock(DeviceMemPtr device_addr, size_t in_used_size, size_t total_size) override;
@@ -202,38 +225,40 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
                    size_t line_num) override;
   void BindDevicePtr(DeviceAddress *device_address, DeviceMemPtr device_ptr, const std::string &file_name,
                      size_t line_num) override;
-  void UpdateDevicePtrInfo(DeviceMemPtr device_ptr, MemType mem_type, const std::string &task_name,
-                           const std::string &file_name, size_t line_num) override;
   void Dump() override;
   void UpdateProfilingPos() override;
   void DumpProfilingMemInfo(const std::string &path, const std::string &file_name) override;
+  void MarkTensorAsInput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
+                         TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
+                         const std::string &file_name, size_t line_num) override;
+  void MarkTensorAsOutput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
+                          TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
+                          const std::string &file_name, size_t line_num) override;
 
   bool IsEnabled() override { return true; }
-  std::pair<std::string, std::string> GetPath();
+  std::tuple<std::string, std::string, std::string> GetPath();
   MemoryTrackerEnabled(const MemoryTrackerEnabled &) = delete;
   MemoryTrackerEnabled &operator=(const MemoryTrackerEnabled &) = delete;
 
  private:
   MemoryTrackerEnabled() = default;
   ~MemoryTrackerEnabled() override = default;
-  bool WithPythonStack() {
-    static bool is_pynative = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode;
-    // PythonStack is no need in graph mode.
-    return is_pynative;
-  }
 
   MemInfoPtr NewMemInfo(const std::string &task_name, MemType type, size_t size, KernelTensorPtr kernel_tensor,
                         const std::string &file_name, size_t line_num);
-
+  std::map<DeviceMemPtr, MemBlockInfoPtr>::iterator FindMemBlock(DeviceMemPtr device_ptr, const std::string &file_name,
+                                                                 size_t line_num);
   void AddMemInfoForKernelTensor(const std::string &task_name, MemType type, size_t size, KernelTensorPtr kernel_tensor,
                                  const std::string &file_name, size_t line_num);
   std::mutex mutex_;
   int64_t time_stamp_ = 0;
+  int64_t nested_num_ = 0;
   size_t last_profiling_pos_{0};  // Prevent the same data from being dumped.
   // for dump
   bool has_dump = false;
   bool is_init_enable_hccl_ = false;
   bool enable_hccl_ = false;
+  TaskInfoPtr cache = nullptr;
   std::vector<TaskInfoPtr> task_list_;
   std::vector<MemInfoPtr> mem_info_list_;
   std::vector<MemBlockInfoPtr> mem_block_list_;
@@ -244,8 +269,7 @@ class BACKEND_EXPORT MemoryTrackerEnabled : public MemTracker {
   // device address -> mem info
   std::map<DeviceAddress *, MemInfoPtr> device_address_mem_map;
   // device addr -> mem block info
-  std::map<DeviceMemPtr, MemBlockInfoPtr> device_mem_block_map;  // for somas
-  std::map<DeviceMemPtr, MemBlockInfoPtr> real_device_mem_block_map;
+  std::map<DeviceMemPtr, MemBlockInfoPtr> device_mem_block_map;
   static MemoryTrackerEnabled &getInstance() {
     static MemoryTrackerEnabled instance;
     return instance;
@@ -259,12 +283,16 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   // mock
   void AddTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
                const std::string &file_name, size_t line_num) override {}
+  void AddNestedTask(const std::string &task_name, const std::string &node_name, const std::string &graph_name,
+                     const std::string &file_name, size_t line_num) override {}
+  void DelNestedTask() override {}
+  void UpdateTask(const std::string &task_name, const std::unordered_map<std::string, std::string> &attrs) override{};
+  void CacheLastTask() override{};
+  void EmptyCache() override{};
   void AddMemInfo(const std::string &task_name, MemType type, size_t size, DeviceAddress *device_address,
                   const std::string &file_name, const size_t line_num) override {}
   void AddCompileTimeMemInfo(const std::string &task_name, size_t size, DeviceMemPtr device_ptr, MemType mem_type,
                              const std::string &file_name, size_t line_num) override {}
-  void UpdateMemInfo(const DeviceAddress *device_address, MemType mem_type, const std::string &file_name,
-                     size_t line_num) override {}
   void AllocMemBlock(DeviceMemPtr device_addr, size_t size, const std::string &pool_name, size_t actual_peak_memory,
                      size_t in_used_size, size_t total_size, uint32_t stream_id) override {}
   void FreeMemBlock(DeviceMemPtr device_addr, size_t in_used_size, size_t total_size) override {}
@@ -272,11 +300,15 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
                    size_t line_num) override {}
   void BindDevicePtr(DeviceAddress *device_address, DeviceMemPtr device_ptr, const std::string &file_name,
                      size_t line_num) override {}
-  void UpdateDevicePtrInfo(DeviceMemPtr device_ptr, MemType mem_type, const std::string &task_name,
-                           const std::string &file_name, size_t line_num) override {}
+  void MarkTensorAsInput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
+                         TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
+                         const std::string &file_name, size_t line_num) override{};
+  void MarkTensorAsOutput(const std::string &task_name, const std::string &device_name, DeviceMemPtr device_ptr,
+                          TypeId dtype, const ShapeVector &shape, TensorStorageInfoPtr tensor_info,
+                          const std::string &file_name, size_t line_num) override{};
   void Dump() override {}
   void UpdateProfilingPos() override {}
-  void DumpProfilingMemInfo(const std::string &path, const std::string &file_name) {}
+  void DumpProfilingMemInfo(const std::string &path, const std::string &file_name) override {}
   bool IsEnabled() override { return false; }
   MemoryTrackerDisabled(const MemoryTrackerDisabled &) = delete;
   MemoryTrackerDisabled &operator=(const MemoryTrackerDisabled &) = delete;
@@ -290,11 +322,71 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
   }
 };
 
+namespace graph {
+struct TrackerTensor {
+  std::string ToString();
+  std::string DtypeToString();
+  std::string ShapeToString();
+  std::string TensorInfoToString();
+  MemBlockInfoPtr mem_block;
+  TensorStorageInfoPtr tensor_info;
+  ShapeVector shape;
+  TypeId dtype;
+};
+using TrackerTensorPtr = std::shared_ptr<TrackerTensor>;
+
+struct TrackerOperator {
+  std::vector<TrackerTensorPtr> inputs;
+  std::vector<TrackerTensorPtr> outputs;
+  std::string ToString();
+  void ValidateMemoryUsage(const std::vector<std::vector<size_t>> &dep);
+  std::string name();
+  TaskInfoPtr task_info;
+};
+using TrackerOperatorPtr = std::shared_ptr<TrackerOperator>;
+
+struct MultiStreamDependency {
+  std::vector<std::vector<size_t>> dependency;
+  std::map<std::string, std::vector<size_t>> event_map;
+  void Init(size_t stream_num);
+  void RecordEvent(size_t stream_id, const std::string &event_id, size_t time_stamp);
+  void WaitEvent(size_t stream_id, const std::string &event_id);
+};
+
+class BACKEND_EXPORT GraphTracker {
+ public:
+  static GraphTracker &getInstance() {
+    static GraphTracker instance;
+    return instance;
+  }
+  GraphTracker(const GraphTracker &) = delete;
+  GraphTracker &operator=(const GraphTracker &) = delete;
+  TrackerTensorPtr AddTensor(MemBlockInfoPtr mem_block, TypeId dtype, const ShapeVector &shape,
+                             TensorStorageInfoPtr tensor_info);
+  void AddOperator(TaskInfoPtr task_info);
+  TrackerOperatorPtr GetOperator(TaskInfoPtr task_info);
+  void Dump(const std::string &graph_path);
+  void CacheLastTask();
+  void EmptyCache();
+
+ private:
+  GraphTracker() = default;
+  void InitStreamSize();
+  MultiStreamDependency dep_;
+  std::mutex mutex_;
+  std::vector<TrackerTensorPtr> tensors_;
+  std::vector<TrackerOperatorPtr> operators_;
+  std::unordered_map<TaskInfoPtr, TrackerOperatorPtr> task_operator_map_;
+  TrackerOperatorPtr cache = nullptr;
+};
+}  // namespace graph
+
 class BACKEND_EXPORT MemTrackerManager {
  public:
   static MemTracker &GetInstance() {
-    static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker);
-    if (MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) || enable_trace_mem) {
+    static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker) ||
+                                   MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM);
+    if (enable_trace_mem) {
       return MemoryTrackerEnabled::getInstance();
     } else {
       return MemoryTrackerDisabled::getInstance();

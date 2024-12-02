@@ -82,7 +82,7 @@ class AscendVmmAdapter {
       return false;
     }
 
-    if (common::IsNeedProfileMemory()) {
+    if (common::IsDryRun()) {
       MS_LOG(INFO) << "Dry run, vmm is disabled.";
       return false;
     }

@@ -621,6 +621,8 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
     auto stream_id = DefaultStream();
     auto total_align_size = device::MemoryManager::GetCommonAlignSize(total_size);
     auto device_ptr = mem_manager_->MallocMemFromMemPool(total_align_size, false, false, stream_id);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", total_align_size, device_ptr,
+                                                   device::tracker::MemType::kContinuousMemory);
     if (!device_ptr) {
       MS_LOG(EXCEPTION) << "Alloc device memory failed!";
     }
@@ -646,6 +648,9 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
         device_address->SyncDeviceToDevice(tensor->device_address().get());
       }
       tensor->set_device_address(device_address);
+      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", device_address->device_name(),
+                                                     device_ptr, tensor->data_type(), tensor->shape(),
+                                                     tensor->storage_info());
       ptr += before_padding_sizes[i];
     }
     std::vector<size_t> after_padding_sizes(before_padding_sizes.size());
@@ -691,6 +696,10 @@ std::pair<vector<size_t>, vector<size_t>> GeDeviceResManager::AllocDeviceMemoryF
       device_address->SyncDeviceToDevice(tensor->device_address().get());
     }
     tensor->set_device_address(device_address);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, "PyNative", before_padding_sizes[i], ptr,
+                                                   device::tracker::MemType::kContinuousMemory);
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, "PyNative", device_address->device_name(), ptr,
+                                                   tensor->data_type(), tensor->shape(), tensor->storage_info());
   }
   return std::make_pair(before_padding_sizes, after_padding_sizes);
 }

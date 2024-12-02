@@ -489,11 +489,7 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
       }
       MS_LOG(DEBUG) << "Set ptr:" << device_ptr << " to device address:" << output_device_tensors_[i]
                     << " in actor:" << GetAID();
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(),
-                                                     device::tracker::MemType::kInSideSomas,
-                                                     output_device_tensors_[i]->GetSize(), output_device_tensors_[i]);
       output_device_tensors_[i]->set_ptr(device_ptr);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, output_device_tensors_[i], device_ptr);
     }
   }
 
@@ -504,11 +500,7 @@ void KernelActor::SetSomasMemory(OpContext<DeviceTensor> *const context) const {
       auto device_ptr = GetSomasDevicePtr(somas_workspace[i].first);
       // In this scenario, the Init function can ensure that the pointer of the relevant operation is not nullptr.
       // In order to perform performance, the pointer validity is not checked here.
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(
-        AddMemInfo, GetAID().Name(), device::tracker::MemType::kInSideSomas, workspace_device_tensors_[i]->GetSize(),
-        workspace_device_tensors_[i]);
       workspace_device_tensors_[i]->set_ptr(device_ptr);
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, workspace_device_tensors_[i], device_ptr);
     }
   }
 }
@@ -1065,7 +1057,8 @@ void KernelActor::ResizeKernelMod() {
   }
 }
 namespace {
-void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors, const std::string &actor_name,
+void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors,
+                      const std::vector<DeviceTensor *> &output_device_tensors, const std::string &actor_name,
                       const std::vector<bool> &depend_shape_input_list) {
   for (size_t i = 0, end = input_device_tensors.size(); i < end; i++) {
     // Skip shape depend inputs.
@@ -1076,7 +1069,18 @@ void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors, c
     if (device_addr == nullptr || !device_addr->IsPtrValid()) {
       continue;
     }
-    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(UseMemBlock, actor_name, device_addr->GetPtr());
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsInput, actor_name, device_addr->device_name(),
+                                                   device_addr->GetPtr(), device_addr->type_id(),
+                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
+  }
+  for (size_t i = 0, end = output_device_tensors.size(); i < end; i++) {
+    auto device_addr = output_device_tensors[i];
+    if (device_addr == nullptr || !device_addr->IsPtrValid()) {
+      continue;
+    }
+    device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(MarkTensorAsOutput, actor_name, device_addr->device_name(),
+                                                   device_addr->GetPtr(), device_addr->type_id(),
+                                                   device_addr->GetShapeVector(), device_addr->GetTensorStorageInfo());
   }
 }
 }  // namespace
@@ -1101,7 +1105,7 @@ bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context) 
 
 bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
-    TrackInputMemory(input_device_tensors_, GetAID().Name(), depend_shape_input_list_);
+    TrackInputMemory(input_device_tensors_, output_device_tensors_, GetAID().Name(), depend_shape_input_list_);
   }
 
   if (EnableExecuteOrderDump()) {

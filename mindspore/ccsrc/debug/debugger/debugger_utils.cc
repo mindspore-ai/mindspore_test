@@ -37,6 +37,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/config_manager.h"
 #include "kernel/kernel.h"
+#include "proto/debug_graph.pb.h"
 
 constexpr int kFailure = 1;
 constexpr auto kInput = "input";

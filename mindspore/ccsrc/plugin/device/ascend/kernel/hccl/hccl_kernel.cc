@@ -153,7 +153,7 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
     return false;
   }
 
-  if (common::GetEnv(kSimulationLevel).empty() && !common::IsNeedProfileMemory()) {
+  if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
 #ifdef ENABLE_INTERNAL_KERNELS
     std::unordered_set<std::string> lccl_enabled_groups =
       MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();

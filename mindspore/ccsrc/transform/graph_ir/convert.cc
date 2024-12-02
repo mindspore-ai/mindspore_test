@@ -4116,7 +4116,7 @@ void DfGraphConvertor::AddCommAttrForHcclNode(const CNodePtr &node, const Operat
     (void)converted_op->SetAttr("group", hccl_inner_comm_name);
     return;
   }
-  if (common::GetEnv(kSimulationLevel).empty() && !common::IsNeedProfileMemory()) {
+  if (common::GetEnv(kSimulationLevel).empty() && !common::IsDryRun()) {
     if (common::UseHostCollective() && !hccl::HcclAdapter::GetInstance().UseHcclCM()) {
       // For HcclCommInitRootInfo manner, set 'group' and 'comm' attrs. 'group' attr value should be hccl's inner comm
       // name.

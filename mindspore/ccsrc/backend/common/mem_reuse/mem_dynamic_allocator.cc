@@ -86,7 +86,7 @@ DeviceMemPtr DynamicMemPoolBestFit::AllocTensorMem(size_t size, bool from_persis
   }
 #endif
 
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool alloc, total mem: " << TotalMemStatistics()
                     << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                     << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -415,7 +415,7 @@ DeviceMemPtr DynamicMemPoolBestFit::CreateMemBlockAndMemBuf(size_t size, bool fr
 
 size_t DynamicMemPoolBestFit::CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool) {
   auto device_free_mem_size = free_mem_size();
-  if (device_free_mem_size < size && common::IsNeedProfileMemory()) {
+  if (device_free_mem_size < size && common::IsDryRun()) {
     device_free_mem_size = size;
   }
   if (device_free_mem_size < size) {
@@ -644,7 +644,7 @@ void DynamicMemPoolBestFit::CombineMemBuf(const DynamicMemBlockPtr &mem_block,
   }
 #endif
 
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool free, total mem: " << TotalMemStatistics()
                     << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                     << ", used by event mem: " << TotalUsedByEventMemStatistics()

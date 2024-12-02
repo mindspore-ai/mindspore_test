@@ -9,7 +9,7 @@ ${create_input_address}
 ${inplace_process}
 // Create device address for output tensors
 PyBoostUtils::PrepareOpOutputs(device_context_, op->stream_id(), outputs_);
-ProfileMemoryInfo();
+ProfileTrackerTask();
 // Async
 PyBoostUtils::DispatchRun(
 std::make_shared<runtime::PyBoostDeviceTask>([this, op, ${call_args_with_tensor}]() {
@@ -40,5 +40,7 @@ std::make_shared<runtime::PyBoostDeviceTask>([this, op, ${call_args_with_tensor}
 )
 );
 op->CreateOutputSimpleInfoForView();
+ProfileTrackerInput(${call_args});
+ProfileTrackerOutput(${return_values});
 MS_LOG(DEBUG) << op_name() << " call end";
 return ${return_values};
