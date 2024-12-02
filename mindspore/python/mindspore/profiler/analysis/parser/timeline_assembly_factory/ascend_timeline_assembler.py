@@ -91,17 +91,21 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         if not fwk_pool:
             return
 
+        fwk_to_fwk_flows = self._create_fwk_to_fwk_flow(fwk_pool)
+        self.trace_view_container.add_trace_events(fwk_to_fwk_flows)
+
         # Collect kernel launch events
         for event in fwk_pool.get_complete_events():
             if any(keyword in event.name for keyword in EventConstant.KERNEL_LAUNCH_KEYWORDS):
                 self.trace_view_container.kernel_launch_op_event[event.tid].append(event)
 
+        hardware_pool = self.trace_view_container.get_pool_by_name(TimelineLayerName.ASCEND_HARDWARE.value)
+        if not hardware_pool:
+            return
+
         # Create and add flows
         fwk_to_hardware_flows = self._create_fwk_to_hardware_flow()
         self.trace_view_container.add_trace_events(fwk_to_hardware_flows)
-
-        fwk_to_fwk_flows = self._create_fwk_to_fwk_flow(fwk_pool)
-        self.trace_view_container.add_trace_events(fwk_to_fwk_flows)
 
     def _create_fwk_to_hardware_flow(self) -> List[Dict]:
         """Create flow events between framework and hardware events."""

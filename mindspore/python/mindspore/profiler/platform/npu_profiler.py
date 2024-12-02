@@ -24,11 +24,10 @@ from mindspore import log as logger
 import mindspore._c_dataengine as cde
 import mindspore._c_expression as c_expression
 
-from mindspore.profiler.analysis.viewer.ascend_communication_viewer import AscendCommunicationViewer
 from mindspore.profiler.common.registry import PROFILERS
 from mindspore.profiler.common.constant import DeviceTarget, ProfilerActivity
 
-from mindspore._c_expression import _framework_profiler_enable_mi
+from mindspore._c_expression import _framework_profiler_enable_mi, _framework_profiler_disable_mi
 from mindspore.profiler.common.profiler_context import ProfilerContext
 from mindspore.profiler.platform.base_profiler import BaseProfiler
 from mindspore.profiler.common.profiler_path_manager import ProfilerPathManager
@@ -43,6 +42,7 @@ from mindspore.profiler.analysis.viewer.ms_dataset_viewer import MsDatasetViewer
 from mindspore.profiler.analysis.viewer.ascend_timeline_viewer import AscendTimelineViewer
 from mindspore.profiler.analysis.viewer.ascend_kernel_details_viewer import AscendKernelDetailsViewer
 from mindspore.profiler.analysis.viewer.ascend_step_trace_time_viewer import AscendStepTraceTimeViewer
+from mindspore.profiler.analysis.viewer.ascend_communication_viewer import AscendCommunicationViewer
 from mindspore.profiler.analysis.viewer.ascend_integrate_viewer import AscendIntegrateViewer
 from mindspore.profiler.analysis.viewer.ascend_memory_viewer import AscendMemoryViewer
 from mindspore.profiler.analysis.viewer.ms_minddata_viewer import (
@@ -63,17 +63,14 @@ class NpuProfiler(BaseProfiler):
         self._prof_info = ProfilerInfo()
         self._prof_path_mgr = ProfilerPathManager()
         self._prof_path_mgr.set_ascend_ms_dir()
-        self._profiler = None
-        if ProfilerActivity.NPU in self._prof_ctx.activities:
-            self._profiler = c_expression.Profiler.get_instance(
-                DeviceTarget.NPU.value
-            )
-            # initialize profiler backend
-            self._profiler.init(
-                self._prof_ctx.ascend_ms_dir,
-                int(self._prof_ctx.device_id),
-                json.dumps(self._prof_ctx.npu_profiler_params),
-            )
+
+        self._profiler = c_expression.Profiler.get_instance(DeviceTarget.NPU.value)
+        # initialize profiler backend
+        self._profiler.init(
+            self._prof_ctx.ascend_ms_dir,
+            int(self._prof_ctx.device_id),
+            json.dumps(self._prof_ctx.npu_profiler_params),
+        )
 
         # record original profiler params
         self._prof_info.profiler_parameters = self._prof_ctx.original_params
@@ -113,6 +110,7 @@ class NpuProfiler(BaseProfiler):
             self._profiler.stop()
 
         if ProfilerActivity.CPU in self._prof_ctx.activities:
+            _framework_profiler_disable_mi()
             self._prof_mgr.set_profile_framework("NULL")
             logger.info("NpuProfiler stop disable framework")
 
@@ -141,6 +139,7 @@ class NPUProfilerAnalysis:
     """
     NPU profiler analysis interface
     """
+
     @classmethod
     def online_analyse(cls):
         """
@@ -150,8 +149,13 @@ class NPUProfilerAnalysis:
         cls._run_tasks(**ProfilerContext().to_dict())
 
     @classmethod
-    def offline_analyse(cls, path: str, pretty: bool,
-                        step_list: Optional[List[int]], data_simplification: bool) -> None:
+    def offline_analyse(
+            cls,
+            path: str,
+            pretty: bool,
+            step_list: Optional[List[int]],
+            data_simplification: bool,
+    ) -> None:
         """Analyze profiling data in offline mode."""
         cls._pre_analyse_offline(path, pretty, step_list, data_simplification)
         cls._run_tasks(**ProfilerContext().to_dict())
@@ -162,82 +166,124 @@ class NPUProfilerAnalysis:
         Pre-process for online analysis
         """
         prof_ctx = ProfilerContext()
-        prof_dir = glob.glob(os.path.join(prof_ctx.ascend_ms_dir, "PROF_*"))
-        if not prof_dir:
-            logger.error(f"No PROF_* directory found in {prof_ctx.ascend_ms_dir}")
-            return
+        if ProfilerActivity.NPU in prof_ctx.activities:
+            prof_dir = glob.glob(os.path.join(prof_ctx.ascend_ms_dir, "PROF_*"))
+            if not prof_dir:
+                logger.error(f"No PROF_* directory found in {prof_ctx.ascend_ms_dir}")
+                return
 
-        prof_ctx.msprof_profile_path = prof_dir[0]
-        ProfilerPathManager().clean_analysis_cache()
-        ProfilerPathManager().create_output_path()
-        ProfilerInfo().load_time_parameters(
-            prof_ctx.msprof_profile_path,
-            prof_ctx.msprof_profile_host_path
-        )
-        TimeConverter.init_parameters(**ProfilerInfo().time_parameters)
+            prof_ctx.msprof_profile_path = prof_dir[0]
+            ProfilerPathManager().clean_analysis_cache()
+            ProfilerPathManager().create_output_path()
+            ProfilerInfo().load_time_parameters(
+                prof_ctx.msprof_profile_path, prof_ctx.msprof_profile_host_path
+            )
+            TimeConverter.init_parameters(**ProfilerInfo().time_parameters)
+
+        elif prof_ctx.activities == [ProfilerActivity.CPU]:
+            ProfilerPathManager().create_output_path()
+            TimeConverter.init_parameters(freq=100.0, cntvct=0, localtime_diff=0)
 
     @classmethod
-    def _pre_analyse_offline(cls, ascend_ms_dir: str, pretty: bool, step_list: Optional[List[int]],
-                             data_simplification: bool) -> None:
+    def _pre_analyse_offline(
+            cls,
+            ascend_ms_dir: str,
+            pretty: bool,
+            step_list: Optional[List[int]],
+            data_simplification: bool,
+    ) -> None:
         """Pre-process profiling data for offline analysis."""
-        prof_dir = glob.glob(os.path.join(ascend_ms_dir, "PROF_*"))
-        if not prof_dir:
-            logger.error(f"No PROF_* directory found in {ascend_ms_dir}")
-            return
-
-        # get device_id and rank_id from ascend_ms_dir
-        device_id = cls.get_device_id(prof_dir[0])
+        prof_info = ProfilerInfo()
         rank_id = cls.get_rank_id(ascend_ms_dir)
-
+        prof_info.load_info(ascend_ms_dir, rank_id)
         prof_ctx = ProfilerContext()
         prof_ctx.set_params()
-        prof_path_mgr = ProfilerPathManager()
-
-        prof_info = ProfilerInfo()
-
-        # set PROF_XXX path
-        prof_ctx.ascend_ms_dir = ascend_ms_dir
-        prof_ctx.msprof_profile_path = prof_dir[0]
-        prof_info.load_time_parameters(
-            prof_ctx.msprof_profile_path,
-            prof_ctx.msprof_profile_host_path
-        )
-        prof_ctx.rank_id = rank_id
-        prof_ctx.device_id = device_id
-        prof_ctx.pretty = pretty
-        prof_ctx.step_list = step_list
-        prof_ctx.data_simplification = data_simplification
-        prof_path_mgr.clean_analysis_cache()
-        prof_path_mgr.create_output_path()
-
-        prof_info.load_info(ascend_ms_dir, prof_ctx.rank_id)
         prof_ctx.load_offline_profiler_params(prof_info.profiler_parameters)
         prof_ctx.jit_level = prof_info.jit_level
         prof_ctx.context_mode = prof_info.context_mode
-        TimeConverter.init_parameters(**prof_info.time_parameters)
+
+        if ProfilerActivity.NPU in prof_ctx.activities:
+            prof_dir = glob.glob(os.path.join(ascend_ms_dir, "PROF_*"))
+            if not prof_dir:
+                logger.error(f"No PROF_* directory found in {ascend_ms_dir}")
+                return
+            device_id = cls.get_device_id(prof_dir[0])
+            prof_path_mgr = ProfilerPathManager()
+
+            # set PROF_XXX path
+            prof_ctx.ascend_ms_dir = ascend_ms_dir
+            prof_ctx.msprof_profile_path = prof_dir[0]
+            prof_info.load_time_parameters(
+                prof_ctx.msprof_profile_path, prof_ctx.msprof_profile_host_path
+            )
+            prof_ctx.rank_id = rank_id
+            prof_ctx.device_id = device_id
+            prof_ctx.pretty = pretty
+            prof_ctx.step_list = step_list
+            prof_ctx.data_simplification = data_simplification
+            prof_path_mgr.clean_analysis_cache()
+            prof_path_mgr.create_output_path()
+            TimeConverter.init_parameters(**prof_info.time_parameters)
+        elif [ProfilerActivity.CPU] == prof_ctx.activities:
+            prof_ctx.ascend_ms_dir = ascend_ms_dir
+            ProfilerPathManager().create_output_path()
+            TimeConverter.init_parameters(freq=100.0, cntvct=0, localtime_diff=0)
 
     @classmethod
     def _run_tasks(cls, **kwargs) -> None:
         """
         Run tasks for online analysis
         """
+        task_mgr = cls._construct_task_mgr(**kwargs)
+        task_mgr.run({})
+        logger.info(json.dumps(task_mgr.cost_time, indent=4))
+
+    @classmethod
+    def _construct_task_mgr(cls, **kwargs) -> TaskManager:
+        """
+        Construct task manager based on activities and parameters
+        """
         task_mgr = TaskManager()
+        activities = kwargs.get("activities", [])
+        enable_data_process = kwargs.get("data_process", False)
+
+        # CANN flow parser
+        cann_flow_parsers = []
+        if ProfilerActivity.NPU.value in activities:
+            cann_flow_parsers.append(
+                AscendMsprofParser(**kwargs).register_post_hook(
+                    AscendMemoryViewer(**kwargs).save
+                )
+            )
+
+        if ProfilerActivity.CPU.value in activities:
+            cann_flow_parsers.append(
+                FrameworkParser(**kwargs).register_post_hook(
+                    MsDatasetViewer(**kwargs).save
+                )
+            )
+
+        if ProfilerActivity.NPU.value in activities:
+            cann_flow_parsers.append(
+                FrameworkCannRelationParser()
+                .register_post_hook(AscendTimelineViewer(**kwargs).save)
+                .register_post_hook(AscendKernelDetailsViewer(**kwargs).save)
+                .register_post_hook(AscendStepTraceTimeViewer(**kwargs).save)
+                .register_post_hook(AscendIntegrateViewer(**kwargs).save)
+                .register_post_hook(AscendCommunicationViewer(**kwargs).save)
+            )
+        elif ProfilerActivity.CPU.value in activities:
+            cann_flow_parsers.append(
+                FrameworkCannRelationParser().register_post_hook(
+                    AscendTimelineViewer(**kwargs).save
+                )
+            )
+
         task_mgr.create_flow(
-            AscendMsprofParser(**kwargs),
-            FrameworkParser(**kwargs)
-            .register_post_hook(MsDatasetViewer(**kwargs).save)
-            .register_post_hook(AscendMemoryViewer(**kwargs).save),
-            FrameworkCannRelationParser()
-            .register_post_hook(AscendTimelineViewer(**kwargs).save)
-            .register_post_hook(AscendKernelDetailsViewer(**kwargs).save)
-            .register_post_hook(AscendStepTraceTimeViewer(**kwargs).save)
-            .register_post_hook(AscendIntegrateViewer(**kwargs).save)
-            .register_post_hook(AscendCommunicationViewer(**kwargs).save),
-            flow_name="cann_flow",
-            show_process=True,
+            *cann_flow_parsers, flow_name="cann_flow", show_process=True
         )
 
-        enable_data_process = kwargs.get("data_process", False)
+        # MindData flow parser
         if enable_data_process:
             task_mgr.create_flow(
                 MindDataParser(**kwargs)
@@ -247,8 +293,7 @@ class NPUProfilerAnalysis:
                 show_process=False,
             )
 
-        task_mgr.run()
-        logger.info(json.dumps(task_mgr.cost_time, indent=4))
+        return task_mgr
 
     @staticmethod
     def get_rank_id(ascend_ms_dir: str) -> str:

@@ -133,6 +133,8 @@ class ProfilerContext:
         params = self._profiler_params_mgr.npu_profiler_params
         # update framework_path for profile memory
         params["framework_path"] = self._profiler_path_mgr.framework_path
+        params["rank_id"] = int(self._rank_id)
+        params["device_id"] = int(self._device_id)
         return params
 
     @property
