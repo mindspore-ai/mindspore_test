@@ -25,7 +25,7 @@ from mindspore.ops.composite.multitype_ops.mod_impl import mod
 from mindspore.ops.composite.multitype_ops.getitem_impl import getitem
 from mindspore.ops.composite.multitype_ops.setitem_impl import setitem
 from mindspore.ops.composite.multitype_ops.zeros_like_impl import zeros_like
-from mindspore.ops.composite.multitype_ops.ones_like_impl import ones_like
+from mindspore.ops.composite.multitype_ops.ones_like_impl import ones_like, _ones_like_for_grad
 from mindspore.ops.composite.multitype_ops.equal_impl import equal
 from mindspore.ops.composite.multitype_ops.not_equal_impl import not_equal
 from mindspore.ops.composite.multitype_ops.less_impl import less
@@ -75,5 +75,6 @@ __all__ = [
     'right_shift',
     'in_',
     'not_in_',
-    'invert'
+    'invert',
+    '_ones_like_for_grad'
 ]

@@ -818,6 +818,9 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
   if (abstract == nullptr) {
     return false;
   }
+  if (abstract->isa<abstract::AbstractSlice>() && abstract->BuildValue() != kValueAny) {
+    return true;
+  }
   if (abstract->isa<abstract::AbstractSequence>()) {
     const auto elements = abstract->cast<abstract::AbstractSequencePtr>()->elements();
     return std::all_of(elements.begin(), elements.end(), IsValidGraphOutput);
@@ -1240,6 +1243,14 @@ bool MindGraphAnalyzer::NeedSkipAddGraphOutput(ValueNode *node) {
       node->ClearInputs();
       node->SetOpcode(LOAD_CONST);
       return true;
+    } else if (PySlice_Check(op)) {
+      const auto &slice_inputs = node->abstract_wrapper()->GetSliceInputsPyObject();
+      auto start = graph_->NewValueNode(AObject::Convert(slice_inputs[0]), LOAD_CONST, -1, {});
+      auto stop = graph_->NewValueNode(AObject::Convert(slice_inputs[1]), LOAD_CONST, -1, {});
+      auto step = graph_->NewValueNode(AObject::Convert(slice_inputs[2]), LOAD_CONST, -1, {});
+      auto ret = graph_->NewValueNode(AObject::Convert(op), BUILD_SLICE, 3, {start, stop, step});
+      GetCaptureInfo().replaced_nodes_[node] = ret;
+      GetCaptureInfo().outputs_optimize_.operations.push_back(ret);
     }
   }
   // remove duplicate data

@@ -197,9 +197,7 @@ class FuncGraphBuilder {
                                    const AbstractWrapperPtrList &inputs);
 
   static FuncGraphPtr BuildCallForwardGraphForGrad(const FuncGraphPtr &fg, const std::vector<size_t> &arg_len,
-                                                   bool is_cell, bool need_filter);
-
-  static bool CheckInvalidGradForwardOutput(const AbstractBasePtr &abs);
+                                                   bool is_cell);
 
   AbstractWrapperPtr AddTopGraphArgInput(const py::object &object);
 
@@ -268,8 +266,6 @@ class FuncGraphBuilder {
 
   AbstractWrapperPtr HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
                                 const AbstractWrapperPtrList &inputs);
-
-  static AnfNodePtr BuildFilterNode(const AnfNodePtr &node, const AbstractBasePtr &abs, const FuncGraphPtr &fg);
 
   static AbstractBasePtr BuildAbstractForInputObject(const py::object &object);
 

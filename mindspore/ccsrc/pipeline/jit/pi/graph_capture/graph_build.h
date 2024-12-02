@@ -374,6 +374,7 @@ class MindGraphBuilder : public GraphBuilder {
   bool HandleKWParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
   bool UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *call_node) override;
   ValueNode *HandleCallClass(CallNode *call_node) override;
+  std::vector<ValueNode *> side_effect_outputs() { return side_effect_outputs_; }
 
  private:
   void FGAddTopInputs();
@@ -383,6 +384,8 @@ class MindGraphBuilder : public GraphBuilder {
                                       const GraphBuilderPtr &subgraph = nullptr);
   bool IsGradCallable(ValueNode *node);
   py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
+  void HandleGradForwardSideEffect(const FuncGraphPtr &forward_fg, const AbstractWrapperPtr &grad,
+                                   const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node);
 
   py::object HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
                                     StopTraceReason *stop_reason);
@@ -395,8 +398,8 @@ class MindGraphBuilder : public GraphBuilder {
   void RollbackSideEffectRecords();
   FuncGraphPtr BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder, const std::vector<ValueNode *> &args,
                                  CallNode *call_node);
-  bool FGAddOutput(bool is_top_graph);
-  bool FGAddSideEffectOutput(bool is_top_graph);
+  bool FGAddOutput();
+  bool FGAddSideEffectOutput();
   bool HandleSubGraphOutput(const AbstractWrapperPtr &output, const MindGraphBuilderPtr &subgraph_builder,
                             CallNode *call_node);
   AbstractWrapperPtr FGTupleGetItem(const AbstractWrapperPtr &tuple, int index);

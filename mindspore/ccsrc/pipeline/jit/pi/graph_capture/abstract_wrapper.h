@@ -34,6 +34,17 @@ class AbstractWrapper;
 using AbstractWrapperPtr = std::shared_ptr<AbstractWrapper>;
 using AbstractWrapperPtrList = std::vector<AbstractWrapperPtr>;
 
+struct GradInfo {
+  bool get_all_;
+  bool get_by_list_;
+  bool sens_param_;
+  bool get_by_position_;
+  bool has_aux_;
+  bool get_value_;
+  bool return_ids_;
+  bool merge_forward_;
+};
+
 class AbstractWrapper {
  public:
   explicit AbstractWrapper(const AbstractBasePtr &abstract) : abstract_(abstract) {}
@@ -45,6 +56,10 @@ class AbstractWrapper {
 
   std::vector<py::object> GetDictKeysObject() const;
 
+  GradInfo grad_info() const { return grad_info_; }
+  void UpdateGradInfo(const ValuePtr &meta);
+  std::vector<py::object> GetSliceInputsPyObject() const;
+
   static py::object ConvertToPyObject(const AbstractWrapperPtr &wrapper);
   static py::object ConvertToPyObject(const AbstractBasePtr &abstract);
   static py::object FetchPythonObject(const AbstractWrapperPtr &wrapper);
@@ -52,6 +67,7 @@ class AbstractWrapper {
 
  private:
   AbstractBasePtr abstract_;
+  GradInfo grad_info_;
 };
 }  // namespace mindspore
 

@@ -149,16 +149,6 @@ bool FunctionShouldBeParseInAst(const py::object &obj) {
   }
   return func_names.find(py::cast<std::string>(obj.attr("__name__"))) != func_names.end();
 }
-
-bool IsTensorOrNumber(const AbstractBasePtr &abs) {
-  if (abs->isa<abstract::AbstractTensor>()) {
-    return true;
-  }
-  if (abs->isa<abstract::AbstractScalar>() && abs->BuildType()->isa<Number>()) {
-    return true;
-  }
-  return false;
-}
 }  // namespace
 
 bool FuncGraphBuilder::HasRegisterHook(const py::object &obj) {
@@ -1081,80 +1071,13 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
   }
   auto abstract_wrapper = std::make_shared<AbstractWrapper>(final_node->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, final_node);
+  abstract_wrapper->UpdateGradInfo(meta);
   MS_LOG(INFO) << "Build final node " << final_node->DebugString() << " with abstract " << final_abs->ToString();
   return abstract_wrapper;
 }
 
-bool FuncGraphBuilder::CheckInvalidGradForwardOutput(const AbstractBasePtr &abs) {
-  MS_EXCEPTION_IF_NULL(abs);
-  if (abs->isa<abstract::AbstractSequence>()) {
-    auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
-    const auto &elements = abs_seq->elements();
-    return std::any_of(elements.begin(), elements.end(),
-                       [](const auto &e) { return CheckInvalidGradForwardOutput(e); });
-  }
-  if (abs->isa<abstract::AbstractDictionary>()) {
-    auto abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
-    const auto &key_value_elements = abs_dict->elements();
-    return std::any_of(key_value_elements.begin(), key_value_elements.end(),
-                       [](const auto &pair) { return CheckInvalidGradForwardOutput(pair.second); });
-  }
-  return !IsTensorOrNumber(abs);
-}
-
-AnfNodePtr FuncGraphBuilder::BuildFilterNode(const AnfNodePtr &node, const AbstractBasePtr &abs,
-                                             const FuncGraphPtr &fg) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(abs);
-  if (IsTensorOrNumber(abs)) {
-    return node;
-  }
-  if (abs->isa<abstract::AbstractSequence>()) {
-    auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
-    const auto &abs_seq_elements = abs_seq->elements();
-    auto seq_prim = abs->isa<abstract::AbstractList>() ? prim::kPrimMakeList : prim::kPrimMakeTuple;
-    auto getitem_prim = abs->isa<abstract::AbstractList>() ? prim::kPrimTupleGetItem : prim::kPrimListGetItem;
-    AnfNodePtrList new_sequence_inputs = {NewValueNode(seq_prim)};
-    for (size_t i = 0; i < abs_seq_elements.size(); ++i) {
-      const auto &element_abs = abs_seq_elements[i];
-      AnfNodePtrList cur_getitem_inputs = {NewValueNode(getitem_prim), node, NewValueNode(static_cast<int64_t>(i))};
-      auto cur_node = fg->NewCNodeInOrder(cur_getitem_inputs);
-      auto filter_cur_node = BuildFilterNode(cur_node, element_abs, fg);
-      if (filter_cur_node == nullptr) {
-        continue;
-      }
-      (void)new_sequence_inputs.emplace_back(filter_cur_node);
-    }
-    if (new_sequence_inputs.size() == 1) {
-      return nullptr;
-    }
-    return fg->NewCNodeInOrder(new_sequence_inputs);
-  }
-  if (abs->isa<abstract::AbstractDictionary>()) {
-    auto abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
-    const auto &key_value_elements = abs_dict->elements();
-    AnfNodePtrList new_sequence_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    for (size_t i = 0; i < key_value_elements.size(); ++i) {
-      const auto &cur_pair = key_value_elements[i];
-      auto cur_key = NewValueNode(cur_pair.first->BuildValue());
-      AnfNodePtrList cur_getitem_inputs = {NewValueNode(prim::kPrimDictGetItem), node, cur_key};
-      auto cur_node = fg->NewCNodeInOrder(cur_getitem_inputs);
-      auto filter_cur_node = BuildFilterNode(cur_node, cur_pair.second, fg);
-      if (filter_cur_node == nullptr) {
-        continue;
-      }
-      (void)new_sequence_inputs.emplace_back(filter_cur_node);
-    }
-    if (new_sequence_inputs.size() == 1) {
-      return nullptr;
-    }
-    return fg->NewCNodeInOrder(new_sequence_inputs);
-  }
-  return nullptr;
-}
-
 FuncGraphPtr FuncGraphBuilder::BuildCallForwardGraphForGrad(const FuncGraphPtr &fg, const std::vector<size_t> &arg_len,
-                                                            bool is_cell, bool need_filter) {
+                                                            bool is_cell) {
   MS_LOG(INFO) << "Build outer fg for vargs scene.";
   auto origin_forward_abs = fg->output()->abstract();
   MS_EXCEPTION_IF_NULL(origin_forward_abs);
@@ -1186,23 +1109,8 @@ FuncGraphPtr FuncGraphBuilder::BuildCallForwardGraphForGrad(const FuncGraphPtr &
     (void)call_forward_inputs.emplace_back(NewValueNode(0));
   }
   auto call_forward_node = outer_fg->NewCNodeInOrder(call_forward_inputs);
-  if (!need_filter) {
-    outer_fg->set_output(call_forward_node);
-    return outer_fg;
-  }
-
-  auto filter_fg = std::make_shared<FuncGraph>();
-  auto input = filter_fg->add_parameter();
-  SetParameterName(input);
-  auto filter_fg_output = BuildFilterNode(input, origin_forward_abs, filter_fg);
-  if (filter_fg_output != nullptr) {
-    filter_fg->set_output(filter_fg_output);
-    auto filter_node = outer_fg->NewCNodeInOrder({NewValueNode(filter_fg), call_forward_node});
-    outer_fg->set_output(filter_node);
-  } else {
-    MS_LOG(WARNING) << "Build filter fg failed.";
-    outer_fg->set_output(call_forward_node);
-  }
+  call_forward_node->set_abstract(origin_forward_abs);
+  outer_fg->set_output(call_forward_node);
   return outer_fg;
 }
 

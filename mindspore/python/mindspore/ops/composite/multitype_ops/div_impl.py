@@ -181,7 +181,8 @@ def _tensor_div_list(x, y):
     return F.tensor_div(x, y)
 
 
-@div.register_default()
+# pylint: disable=protected-access
+@div._register_default()
 def default_div(x, y):
     """Default function for div."""
     if y != 0:

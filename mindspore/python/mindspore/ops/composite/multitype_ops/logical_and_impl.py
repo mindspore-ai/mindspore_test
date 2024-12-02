@@ -54,7 +54,8 @@ def _logical_and_tensor(x, y):
     return F.logical_and(x, y)
 
 
-@logical_and.register_default()
+# pylint: disable=protected-access
+@logical_and._register_default()
 def default_logical_and(x, y):
     """Default function for logical and."""
     return x and y
