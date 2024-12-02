@@ -2459,10 +2459,13 @@ class Cell(Cell_):
             else:
                 outputs = self.construct(outputs, **kwargs)
         if isinstance(outputs, tuple):
-            outputs = self._cell_backward_hook(*outputs)
+            new_outputs = self._cell_backward_hook(*outputs)
         else:
-            outputs = self._cell_backward_hook(outputs)
-        return outputs
+            new_outputs = self._cell_backward_hook(outputs)
+        # if outputs is (X,) and new_outpus is X
+        if isinstance(outputs, tuple) and not isinstance(new_outputs, tuple):
+            new_outputs = (new_outputs,)
+        return new_outputs
 
     def set_param_ps(self, recurse=True, init_in_server=False):
         """
