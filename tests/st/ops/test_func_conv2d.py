@@ -19,7 +19,6 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import ops
 from mindspore.mint.nn.functional import conv2d
-from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
 
@@ -32,7 +31,6 @@ class Net2d(nn.Cell):
         return self.mint_conv2d(input_x, weight, bias, stride, padding, dilation, groups)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_conv2d_default(mode):
     """
@@ -76,7 +74,6 @@ def test_ops_conv2d_default(mode):
     assert np.allclose(output.asnumpy(), expected, atol=1e-4, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_conv2d_padding_same(mode):
     """
@@ -119,7 +116,6 @@ def test_ops_conv2d_padding_same(mode):
     assert np.allclose(output.asnumpy(), expected, atol=1e-4, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_conv2d_with_bf16():
     """
     Feature: The weight init of conv2d with type of bfloat16.
@@ -145,8 +141,6 @@ def test_conv2d_with_bf16():
     assert np.allclose(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
 def test_conv2d_dynamic():
     """
     Feature: mint.nn.functional.conv2d
@@ -169,7 +163,6 @@ def test_conv2d_dynamic():
             disable_nontensor_dynamic_type="STATIC_LEN")
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_conv2d_backward(context_mode):
     """
@@ -221,7 +214,6 @@ def test_conv2d_backward(context_mode):
     assert np.allclose(grad_output[2].asnumpy(), expected_bias_grad, atol=1e-4, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_conv2d_vmap(context_mode):
     """

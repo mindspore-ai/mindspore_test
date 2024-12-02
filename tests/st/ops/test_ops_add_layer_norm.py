@@ -57,7 +57,6 @@ def add_layer_norm_backward_func(x1, x2, gamma, beta, epsilon, additionalOut):
     return ms.grad(add_layer_norm_forward_func, (0, 2, 3))(x1, x2, gamma, beta, epsilon, additionalOut)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('tensor_type', [mstype.float32, mstype.float16, mstype.bfloat16])
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize('addtion_out', [True, False])

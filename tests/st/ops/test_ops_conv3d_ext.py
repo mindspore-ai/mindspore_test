@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import numpy as np
 import pytest
 import mindspore as ms
@@ -30,7 +29,6 @@ class Net3d(nn.Cell):
         return self.mint_conv3d(input_x, weight, bias, stride, padding, dilation, groups)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_ops_conv3d_default(mode):
     """
@@ -92,8 +90,6 @@ def test_ops_conv3d_default(mode):
     assert np.allclose(grad_output[2].asnumpy(), expect_bias_grad, atol=1e-4, rtol=1e-4)
 
 
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_ops_conv3d_batchfy(mode):
     """

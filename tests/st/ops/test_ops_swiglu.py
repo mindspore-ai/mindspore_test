@@ -54,8 +54,6 @@ def swiglu_backward_func(x, dim):
     return ms.grad(swiglu_forward_func, (0))(x, dim)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 @pytest.mark.parametrize('dim', [0, 2, -1])
 @test_utils.run_test_with_On

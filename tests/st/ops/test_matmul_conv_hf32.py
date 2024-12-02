@@ -15,7 +15,6 @@
 import pytest
 import numpy as np
 from tests.st.utils import test_utils
-from tests.mark_utils import arg_mark
 from mindspore import Tensor, context
 from mindspore import ops, mint
 
@@ -63,8 +62,6 @@ def set_mode(mode):
         context.set_context(mode=context.PYNATIVE_MODE)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["KBK", "PYBOOST"])
 def test_hf32(mode):
     """
