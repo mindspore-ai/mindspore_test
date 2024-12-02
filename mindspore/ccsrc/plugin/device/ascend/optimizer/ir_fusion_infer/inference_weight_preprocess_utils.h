@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_INFERENCE_WEIGHT_PREPROCESS_UTILS_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_INFERENCE_WEIGHT_PREPROCESS_UTILS_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_IR_FUSION_INFER_INFERENCE_WEIGHT_PREPROCESS_UTILS_H_
+#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_IR_FUSION_INFER_INFERENCE_WEIGHT_PREPROCESS_UTILS_H_
 
 #include <vector>
 #include <functional>
@@ -53,9 +53,9 @@ void SortWeightNodeList(AnfNodePtrList *node_list);
 
 std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node);
 
-std::shared_ptr<ValueNode> ConvertFp16BiasToInt32(const AnfNodePtr &bias_node, const AnfNodePtr &scale_node,
-                                                  const bool &with_allreduce);
+std::shared_ptr<ValueNode> ConvertBiasToInt32(const AnfNodePtr &bias_node, const AnfNodePtr &scale_node,
+                                              const bool &with_allreduce, const TypeId &dtype);
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_INFERENCE_WEIGHT_PREPROCESS_UTILS_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_IR_FUSION_INFER_INFERENCE_WEIGHT_PREPROCESS_UTILS_H_
