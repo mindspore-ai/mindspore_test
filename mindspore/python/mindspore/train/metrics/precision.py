@@ -75,7 +75,7 @@ class Precision(EvaluationBase):
     def update(self, *inputs):
         """
         Updates the internal evaluation result with `y_pred` and `y`. In the multi-label cases, the elements of
-            :math:`y` and :math:`y_pred` must be 0 or 1.
+        :math:`y` and :math:`y_pred` must be 0 or 1.
 
         Args:
             inputs: Input `y_pred` and `y`. `y_pred` and `y` are Tensor, list or numpy.ndarray.

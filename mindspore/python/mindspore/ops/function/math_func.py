@@ -4300,6 +4300,8 @@ def logspace(start, end, steps, base=10, *, dtype=mstype.float32):
         end (Union[float, Tensor]): End value of interval.
         steps (int): The steps must be a non-negative integer.
         base (int, optional): The base must be a non-negative integer. Default: ``10`` .
+
+    Keyword Args:
         dtype (mindspore.dtype, optional): The dtype of output. Default: ``mstype.float32`` .
 
     Returns:
@@ -12251,6 +12253,8 @@ def vecdot(x, y, *, axis=-1):
         y (Tensor): Second batch of vectors. The shape of Tensor is :math:`(*,N)`
             where :math:`*` means, any number of additional dimensions. Supporting broadcasting.
             The dtype of Tensor should be one of the following types: float, double, int, complex64 and complex128.
+
+    Keyword Args:
         axis (int): Dimension across which to calculate the dot product. Default: ``-1`` .
 
     Returns:

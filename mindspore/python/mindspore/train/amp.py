@@ -843,6 +843,8 @@ def custom_mixed_precision(network, *, white_list=None, black_list=None, dtype=m
 
     Args:
         network (Cell): Definition of the network.
+
+    Keyword Args:
         white_list (list[Primitive, Cell], optional): White list of custom mixed precision. Defaults: ``None`` , means
             white list is not used.
         black_list (list[Cell], optional): Black list of custom mixed precision. Defaults: ``None`` , means

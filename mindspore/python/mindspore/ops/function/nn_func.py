@@ -8586,6 +8586,8 @@ def max_pool2d_ext(input, kernel_size, stride=None, padding=0, dilation=1, *, ce
             strides, or a tuple of two int numbers that represent height and width of movement respectively.
             Default: ``0`` .
         dilation (Union[int, tuple[int]]): Control the stride of elements in the kernel. Default: ``1`` .
+
+    Keyword Args:
         ceil_mode (bool): Whether to use ceil instead of floor to calculate output shape. Default: ``False`` .
         return_indices (bool): Whether to output the indices of max value. Default: ``False`` .
 
