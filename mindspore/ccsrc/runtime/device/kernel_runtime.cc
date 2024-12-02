@@ -119,7 +119,6 @@ constexpr size_t kMinInputSize = 2;
 KernelRuntime::TbeLaunchKernelModCallBack KernelRuntime::tbe_call_ = nullptr;
 KernelRuntime::~KernelRuntime() {
   stream_ = nullptr;
-  copy_data_stream_ = nullptr;
   communication_stream_ = nullptr;
 }
 
