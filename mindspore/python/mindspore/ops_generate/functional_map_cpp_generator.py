@@ -176,7 +176,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
             arg_valid_types = self._parse_arg_type_list(func_api_name, arg_name, arg_valid_types)
             single_arg = f'{arg_name}=<' + ','.join(arg_valid_types) + '>'
             if first_arg:
-                args_str += single_arg
+                if tensor_proto.kw_only_args and not kw_args_init_flag and arg_name == tensor_proto.kw_only_args[0]:
+                    args_str += "*, " + single_arg
+                else:
+                    args_str += single_arg
                 first_arg = False
             else:
                 if tensor_proto.kw_only_args and not kw_args_init_flag and arg_name == tensor_proto.kw_only_args[0]:

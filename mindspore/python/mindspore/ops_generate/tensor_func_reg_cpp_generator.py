@@ -420,7 +420,6 @@ class TensorFuncRegCppGenerator(BaseGenerator):
             single_arg = ''
             if not first_arg:
                 single_arg = ', '
-            first_arg = False
             arg_handler = arg.arg_handler
             if arg_handler != '':
                 if arg_handler in self.arg_handler_map:
@@ -440,9 +439,10 @@ class TensorFuncRegCppGenerator(BaseGenerator):
                 single_arg += '='
                 single_arg += arg_default
             if kw_only_args and not kw_args_init_flag and arg_name == kw_only_args[0]:
-                single_arg = ", *" + single_arg
+                single_arg = ("*, " if first_arg else ", *") + single_arg
                 kw_args_init_flag = True
             args_str += single_arg
+            first_arg = False
         return args_str + ')"'
 
     def _get_dispatch_cases(self, func_protos):
