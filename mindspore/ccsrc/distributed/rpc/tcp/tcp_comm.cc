@@ -36,6 +36,7 @@ void DoDisconnect(int fd, Connection *conn, uint32_t error, int soError) {
                  << ", events: " << error << ", errno: " << soError << " " << strerror(soError);
   }
 
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Disconnect conn fd : " << conn->socket_fd << ".";
   conn->state = ConnectionState::kDisconnecting;
   conn->error_code = soError;
   conn->event_callback(conn);
@@ -135,6 +136,7 @@ void OnAccept(int server, uint32_t events, void *arg) {
   conn->is_remote = true;
   conn->recv_event_loop = tcpmgr->recv_event_loop_;
   conn->send_event_loop = tcpmgr->send_event_loop_;
+  conn->event_loop_group_ = tcpmgr->event_loop_group_;
 
   conn->conn_mutex = tcpmgr->conn_mutex_;
   conn->message_handler = tcpmgr->message_handler_;
@@ -246,6 +248,7 @@ void TCPComm::ReadCallBack(void *connection) {
   if (conn == nullptr) {
     return;
   }
+  MS_VLOG(VL_DISTRIBUTED_FD) << "Read callback connection : " << connection << ", fd : " << conn->socket_fd << ".";
   int count = 0;
   int retval = 0;
   do {
@@ -262,9 +265,9 @@ void TCPComm::EventCallBack(void *connection) {
     return;
   }
   if (conn->state == ConnectionState::kConnected) {
-    conn->conn_mutex->lock();
+    conn->mutex_.lock();
     (void)conn->Flush();
-    conn->conn_mutex->unlock();
+    conn->mutex_.unlock();
   } else if (conn->state == ConnectionState::kDisconnecting) {
     std::lock_guard<std::mutex> lock(*conn_mutex_);
     auto current_conn = conn_pool_->FindConnection(conn->destination);
@@ -275,8 +278,8 @@ void TCPComm::EventCallBack(void *connection) {
         return;
       }
     }
-    MS_LOG(INFO) << "The connection state is kDisconnecting. Start disconnecting from " << conn->source << " to "
-                 << conn->destination;
+    MS_LOG(INFO) << "The connection fd : " << conn->socket_fd << " state is kDisconnecting. Start disconnecting from "
+                 << conn->source << " to " << conn->destination;
     conn_pool_->DeleteConnection(conn->destination);
   }
 }
@@ -287,15 +290,15 @@ void TCPComm::WriteCallBack(void *connection) {
     return;
   }
   if (conn->state == ConnectionState::kConnected) {
-    conn->conn_mutex->lock();
+    conn->mutex_.lock();
     (void)conn->Flush();
-    conn->conn_mutex->unlock();
+    conn->mutex_.unlock();
   }
 }
 
 /* static method */
 int TCPComm::ReceiveMessage(Connection *conn) {
-  std::lock_guard<std::mutex> lock(*conn->conn_mutex);
+  std::lock_guard<std::mutex> lock(conn->mutex_);
   conn->CheckMessageType();
   switch (conn->recv_message_type) {
     case ParseType::kTcpMsg:
@@ -343,6 +346,7 @@ int TCPComm::DoConnect(Connection *conn, const struct sockaddr *sa, socklen_t sa
     }
     return RPC_ERROR;
   }
+  conn->state = ConnectionState::kConnecting;
   return RPC_OK;
 }
 
@@ -358,7 +362,6 @@ bool TCPComm::Send(MessageBase *msg, size_t *const send_bytes, bool sync) {
     return false;
   }
   auto task = [msg, send_bytes, this] {
-    std::lock_guard<std::mutex> lock(*conn_mutex_);
     // Search connection by the target address
     std::string destination = msg->to.Url();
     Connection *conn = conn_pool_->FindConnection(destination);
@@ -369,6 +372,7 @@ bool TCPComm::Send(MessageBase *msg, size_t *const send_bytes, bool sync) {
       return false;
     }
 
+    std::lock_guard<std::mutex> lock(conn->mutex_);
     if (conn->send_message_queue.size() >= SENDMSG_QUEUELEN) {
       MS_LOG(WARNING) << "The message queue is full(max len:" << SENDMSG_QUEUELEN
                       << ") and the name of dropped message is: " << msg->name.c_str() << ", fd: " << conn->socket_fd
@@ -416,7 +420,7 @@ bool TCPComm::Flush(const std::string &dst_url) {
     MS_LOG(ERROR) << "Can not find the connection to url: " << dst_url;
     return false;
   } else {
-    std::lock_guard<std::mutex> lock(*(conn->conn_mutex));
+    std::lock_guard<std::mutex> lock(conn->mutex_);
     return (conn->Flush() >= 0);
   }
 }

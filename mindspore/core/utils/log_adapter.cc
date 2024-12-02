@@ -804,6 +804,8 @@ void DispVerboseLogTags() {
     {VL_DISP_VLOG_TAGS, "log level for printing vlog tags already been used"},
     {VL_PRINT_DUMP_V0, "verbose level0 for print and tensordump, etc."},
     {VL_PRINT_DUMP_V1, "verbose level1 for print and tensordump, etc."},
+    {VL_DISTRIBUTED_FD, "log for cluster under layer socket operation"},
+    {VL_DISTRIBUTED_TRACE, "log for cluster business message"},
   };
 
   for (auto &[tag, desc] : used_tags) {

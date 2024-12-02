@@ -93,6 +93,7 @@ const char kRuntimeGeKernel[] = "ge_kernel";
 const char kAclnnViewOp[] = "MS_DEV_VIEW_OP";
 const char kRuntimeCache[] = "backend_compile_cache";
 const char kRuntimeCopyAsync[] = "copy_async";
+const char kRuntimeClusterThreadNum[] = "cluster_thread_num";
 // Runtime debug config.
 const char kRuntimeSynchronize[] = "synchronize";
 const char kRuntimeMemoryTrack[] = "memory_track";
