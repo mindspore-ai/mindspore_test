@@ -48,6 +48,7 @@ import mindspore
 import mindspore.nn as nn
 from mindspore import context
 from mindspore import log as logger
+from mindspore.log import vlog_print
 from mindspore._checkparam import check_input_data, check_input_dataset
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
@@ -1201,8 +1202,12 @@ def _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter
     ckpt_file_name = _check_ckpt_file_name(ckpt_file_name, format)
     if format == "safetensors":
         with safe_open(ckpt_file_name, framework='np') as f:
+            sf_load_time_start = time.time()
             for k in f.keys():
                 parameter_dict[k] = Parameter(Tensor.from_numpy(f.get_tensor(k)))
+            sf_load_time_end = time.time()
+            cost_time = sf_load_time_end - sf_load_time_start
+            vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load safetensors cost time:{cost_time}.")
         return
     checkpoint_list = _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check)
     try:
@@ -1346,6 +1351,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         - `Saving and Loading the Model - Saving and Loading the Model Weight
           <https://mindspore.cn/tutorials/en/master/beginner/save_load.html#saving-and-loading-the-model-weight>`_
     """
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Begin load checkpoint.")
     specify_prefix = _check_prefix(specify_prefix)
     filter_prefix = _check_prefix(filter_prefix)
     dec_key = Validator.check_isinstance('dec_key', dec_key, (type(None), bytes))
@@ -1392,6 +1398,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
     if _warm_up_host_cache_enabled(parameter_dict):
         _warm_up_host_cache_post_process(is_worker, net_dict, warm_up_dict)
 
+    vlog_print("1", "ME", __file__, sys._getframe().f_lineno, "Load checkpoint is finished.")
     return parameter_dict
 
 
@@ -1555,7 +1562,12 @@ def _parse_ckpt_proto(ckpt_file_name, dec_key, dec_mode, crc_check):
     try:
         if dec_key is None:
             with _ckpt_fs.open(ckpt_file_name, *_ckpt_fs.open_args) as f:
+                ckpt_load_time_start = time.time()
                 pb_content = f.read()
+                ckpt_load_time_end = time.time()
+                cost_time = ckpt_load_time_end - ckpt_load_time_start
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Load ckpt cost time:{cost_time}.")
+
         else:
             pb_content = _decrypt(ckpt_file_name, dec_key, len(dec_key), dec_mode)
             if pb_content is None:

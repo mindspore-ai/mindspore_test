@@ -16,8 +16,6 @@
 from __future__ import absolute_import
 
 import os
-import threading
-from datetime import datetime
 import json
 from collections.abc import Iterable
 
@@ -513,17 +511,6 @@ def parse_hccl_file(hccl_file_path):
             rankid_dict[int(device["rank_id"])] = device["device_ip"]
 
     return rankid_dict
-
-
-def vlog_print(level, module, file, line, message):
-    '''Read environment variable VLOG_v and print to log'''
-    if os.environ.get("VLOG_v") == level:
-        now = datetime.now()
-        formatted_time = now.strftime("%Y-%m-%d-%H:%M:%S.%f")[:-3] + f".{now.microsecond // 1000}"
-        path = 'mindspore' + file.split("mindspore")[-1]
-        pid = os.getpid()
-        thread_id = threading.get_ident()
-        print(f"[V{level}] {module}({pid},{thread_id},python):{formatted_time} [{path}:{line}] {message}", flush=True)
 
 
 def _progress_bar(iterable, total=None):
