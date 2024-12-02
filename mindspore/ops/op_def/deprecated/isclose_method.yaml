@@ -1,9 +1,9 @@
-#operator isclose
+#deprecated isclose
 isclose:
   args:
     input:
       dtype: tensor
-    other:
+    x2:
       dtype: tensor
     rtol:
       dtype: float
@@ -22,10 +22,3 @@ isclose:
   returns:
     output:
       dtype: tensor
-  class:
-    name: IsClose
-  function:
-    disable: True
-  dispatch:
-    enable: True
-    Ascend: IsCloseAscend

@@ -112,7 +112,7 @@ deprecated_tensor_method_map = {
     # 47 is_contiguous
 
     # 48 isclose
-
+    "isclose": "deprecated_tensor_isclose",
     # 49 isfinite
 
     # 50 isnan

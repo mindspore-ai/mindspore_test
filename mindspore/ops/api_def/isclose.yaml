@@ -1,0 +1,14 @@
+isclose:
+  - op_yaml: isclose_op.yaml
+    py_method: deprecated_tensor_isclose # callback to python function "def deprecated_tensor_isclose"
+    Ascend: pyboost
+    CPU: pyboost
+    GPU: pyboost
+    interface: tensor
+
+  - op_yaml: deprecated/isclose_method.yaml
+    py_method: deprecated_tensor_isclose # callback to python function "def deprecated_tensor_isclose"
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
