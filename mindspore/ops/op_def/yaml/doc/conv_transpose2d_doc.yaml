@@ -1,12 +1,13 @@
 conv_transpose2d:
     description: |
-        Applies a 2D transposed convolution operator over an input image composed of several input planes.,
+        Applies a 2D transposed convolution operator over an input image composed of several input planes,
         sometimes also called deconvolution (although it is not an actual deconvolution).
 
         Refer to :func:`mindspore.mint.nn.ConvTranspose2D` for more details.
 
         .. warning::
             - This is an experimental API that is subject to change or deletion.
+            - In the scenario where inputs are non-contiguous, `output_padding` must be less than `stride` .
 
         Args:
             input (Tensor): input tensor of shape :math:`(minibatch, in\_channels, iH, iW)` or :math:`(in\_channels, iH, iW)` .
