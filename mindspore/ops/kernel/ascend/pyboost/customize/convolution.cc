@@ -15,7 +15,10 @@
  */
 
 #include "kernel/ascend/pyboost/customize/convolution.h"
+#include <cstdint>
 #include <memory>
+#include <vector>
+#include "include/common/utils/utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
@@ -23,6 +26,13 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
+void ExpandParamIfNeeded(std::vector<int64_t> *const param, size_t expect_dim) {
+  if (param->size() == kIndex1) {
+    param->insert(param->end(), expect_dim - kIndex1, param->at(kIndex0));
+  }
+}
+}  // namespace
 tensor::BaseTensorPtr ConvolutionAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                                  const BaseTensorPtr &weight_tensor,
                                                  const std::optional<BaseTensorPtr> &bias_tensor,
@@ -32,10 +42,16 @@ tensor::BaseTensorPtr ConvolutionAscendCustomize(const std::shared_ptr<OpRunner>
   OpRunner::InferOpOutput(op, input_tensor, weight_tensor, bias_tensor, stride, pad, dilation, transposed,
                           output_padding, group);
   // Convert ValueTuple to std::vector
+  const auto &weight_shape = weight_tensor->shape();
+  auto spatial_len = weight_shape.size() - kIndex2;
   std::vector<int64_t> pad_vector = ConvertValueTupleToVector<int64_t>(pad);
+  ExpandParamIfNeeded(&pad_vector, spatial_len);
   std::vector<int64_t> stride_vector = ConvertValueTupleToVector<int64_t>(stride);
+  ExpandParamIfNeeded(&stride_vector, spatial_len);
   std::vector<int64_t> dilation_vector = ConvertValueTupleToVector<int64_t>(dilation);
+  ExpandParamIfNeeded(&dilation_vector, spatial_len);
   std::vector<int64_t> output_padding_vector = ConvertValueTupleToVector<int64_t>(output_padding);
+  ExpandParamIfNeeded(&output_padding_vector, spatial_len);
   // Convert ValuePtr to c++ scalar
   auto transposed_imm = GetValue<bool>(transposed);
   auto group_imm = GetValue<int64_t>(group);
