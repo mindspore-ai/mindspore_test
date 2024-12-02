@@ -1018,12 +1018,17 @@ class P2POp:
     def __new__(cls, op, tensor, peer, group=None, tag=0):
         if isinstance(op, str):
             op_name = op
+            if op_name not in ["isend", "irecv"]:
+                raise ValueError(
+                    f"Expected ``op`` to be of type ``isend`` or ``irecv``, but got {op_name}"
+                )
         else:
+            if op not in [isend, irecv]:
+                raise ValueError(
+                    f"Expected ``op`` to be of type ``isend`` or ``irecv``, but got {op}"
+                )
             op_name = op.__name__
-        if op_name not in ["isend", "irecv"]:
-            raise ValueError(
-                f"Expected ``op`` to be of type ``isend`` or `irecv``, but got {op_name}"
-            )
+
         if not isinstance(tensor, (Tensor, Tensor_)):
             raise TypeError(
                 f"Expected ``tensor`` to be Tensor, but got {type(tensor)}."
