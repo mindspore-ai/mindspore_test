@@ -13,15 +13,15 @@
 # limitations under the License.
 # ============================================================================
 """Test the overload functional method"""
-import mindspore as ms
-import mindspore.nn as nn
 import numpy as np
 import pytest
-from mindspore.common.api import _pynative_executor
-
 from tests.mark_utils import arg_mark
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
+
+import mindspore as ms
+import mindspore.nn as nn
+from mindspore.common.api import _pynative_executor
 
 
 class MeanNet(nn.Cell):

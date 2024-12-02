@@ -40,11 +40,13 @@ def generate_random_input(shape, dtype):
 
 
 @test_utils.run_with_cell
+# pylint: disable=redefined-builtin
 def topk_ext_forward_func(x, k, dim=-1, largest=True, sorted=True):
     return x.topk(k, dim, largest, sorted)
 
 
 @test_utils.run_with_cell
+# pylint: disable=redefined-builtin
 def topk_forward_func(x, k, dim=None, largest=True, sorted=True):
     return x.topk(k, dim, largest, sorted)
 
