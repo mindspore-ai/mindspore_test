@@ -285,7 +285,8 @@ def _type_convert(param, new_param, strict_load):
                             {param.data.dtype, new_param.data.dtype}.issubset(int_type)):
         logger.warning(f"The type of {new_param.name}:{new_param.data.dtype} in 'parameter_dict' is different from "
                        f"the type of it in 'net':{param.data.dtype}, then the type convert from "
-                       f"{new_param.data.dtype} to {param.data.dtype} in the network.")
+                       f"{new_param.data.dtype} to {param.data.dtype} in the network. May consume additional memory "
+                       f"and time")
         return True
     return False
 
