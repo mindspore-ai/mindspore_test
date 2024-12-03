@@ -702,7 +702,11 @@ bool SilentCheckPass(const ResourcePtr &resource) {
     return true;
   }
   // find last grad node in graphs
-  silent_check->GetLastGradNode();
+  auto enable_last_grad = common::GetEnv("MS_DEV_CHECK_LAST_GRAD");
+  bool disable_last_grad = (enable_last_grad == "false" || enable_last_grad == "False" || enable_last_grad == "0");
+  if (!disable_last_grad) {
+    silent_check->GetLastGradNode();
+  }
   // insert silent check operator for root graph
   silent_check->Run(root_graph);
 
