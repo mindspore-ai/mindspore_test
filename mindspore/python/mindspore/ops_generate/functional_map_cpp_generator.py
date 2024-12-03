@@ -278,9 +278,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                                             sort_func_method_list_str=sort_func_method_list))
 
             if func_api_name in alias_func_mapping:
-                deprecated_method_decl_list.append(
-                    self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
-                                                                sort_func_method_list_str=sort_func_method_list))
+                for alias in alias_func_mapping[func_api_name]:
+                    deprecated_method_decl_list.append(
+                        self.functional_method_map_template.replace(op_name=alias,
+                                                                    sort_func_method_list_str=sort_func_method_list))
 
         return deprecated_method_decl_list
 
@@ -307,9 +308,10 @@ class FunctionalMapCppGenerator(BaseGenerator):
                 self.functional_method_map_template.replace(op_name=func_api_name,
                                                             sort_func_method_list_str=mint_func_list))
             if func_api_name in alias_func_mapping:
-                mint_func_decl_list.append(
-                    self.functional_method_map_template.replace(op_name=alias_func_mapping[func_api_name],
-                                                                sort_func_method_list_str=mint_func_list))
+                for alias in alias_func_mapping[func_api_name]:
+                    mint_func_decl_list.append(
+                        self.functional_method_map_template.replace(op_name=alias,
+                                                                    sort_func_method_list_str=mint_func_list))
         return mint_func_decl_list
 
     def _get_and_append_single_op_kw_only_args_list(self, func_api_name, func_protos, single_op_kw_only_args_list):
@@ -368,7 +370,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                                              mint_kw_only_args_list)
 
             if mint_kw_only_args_list and func_api_name in alias_func_mapping:
-                self._get_and_append_single_op_kw_only_args_list(alias_func_mapping[func_api_name],
-                                                                 func_protos,
-                                                                 mint_kw_only_args_list)
+                for alias_func_name in alias_func_mapping[func_api_name]:
+                    self._get_and_append_single_op_kw_only_args_list(alias_func_name,
+                                                                     func_protos,
+                                                                     mint_kw_only_args_list)
         return mint_kw_only_args_list
