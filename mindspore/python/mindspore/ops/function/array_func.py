@@ -36,7 +36,7 @@ from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, F
     Unique2, SortExt, NonZero, NonZeroExt, Scatter, ScatterValue, NewOnes, NewZeros
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, \
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, concat_impl, \
     unique_consecutive_impl
 from mindspore.ops.operations.array_ops import (
     MatrixDiagV3,
@@ -6698,6 +6698,10 @@ def hstack(tensors):
     This is equivalent to concatenation along the second axis, except for 1-D tensors
     where it concatenates along the first axis.
 
+    .. note::
+        Dynamic rank input of 8-D tensors with type float64 is not supported in `graph mode (mode=mindspore.GRAPH_MODE)
+        <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_.
+
     Args:
         tensors (Union[tuple[Tensor], list[Tensor]]): A sequence of tensors. The
             tensors must have the same shape along all but the second axis, except
@@ -6737,11 +6741,8 @@ def hstack(tensors):
     if not tuple_of_tensor:
         raise ValueError(
             "For hstack, the input must have at least 1 tensor, but got 0.")
-    if tuple_of_tensor[0].ndim <= 1:
-        _concat = _get_cache_prim(P.Concat)(0)
-        return _concat(tuple_of_tensor)
-    _concat = _get_cache_prim(P.Concat)(1)
-    return _concat(tuple_of_tensor)
+    axis = 0 if tuple_of_tensor[0].ndim == 1 else 1
+    return concat_impl(tuple_of_tensor, axis)
 
 
 @constexpr

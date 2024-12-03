@@ -451,6 +451,9 @@ from mindspore.ops.functional_overload import add
 # 720
 from mindspore.ops.functional_overload import sub
 
+# 739
+from mindspore.ops.function.array_func import hstack
+
 # 887
 from mindspore.ops.auto_generate import log2_ext as log2
 
@@ -2064,6 +2067,9 @@ __all__ = [
 
     # 708
     'std',
+
+    # 739
+    'hstack',
 
     # 887
     'log2',
