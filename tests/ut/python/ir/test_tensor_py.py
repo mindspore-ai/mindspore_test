@@ -277,3 +277,21 @@ def test_create_np_array_from_tensor():
     assert n.dtype == np.int64
     assert n.shape == (2, 2)
     assert np.allclose(n, np.array([[1, 2], [3, 4]]))
+
+
+def test_tensor_contains():
+    """
+    Feature: Tensor __contains__ method.
+    Description: Test tensor __contains__ method.
+    Expectation: Success.
+    """
+    t = ms.Tensor([1, 2])
+    assert 1 in t
+    assert ms.Tensor(1) in t
+    assert ms.Tensor([1]) in t
+    assert 3 not in t
+    assert ms.Tensor(3) not in t
+    assert ms.Tensor([3]) not in t
+    assert 'a' not in t
+    assert [1] not in t
+    assert np.array(1) not in t
