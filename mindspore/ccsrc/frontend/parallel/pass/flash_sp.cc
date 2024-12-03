@@ -1001,7 +1001,9 @@ void UpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNodePt
                            int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1, int64_t input_layout,
                            int fa_index, int index, TypeId output_type_id, bool is_last_update = false,
                            bool need_split = false) {
-  CNodePtr split_max_0, split_sum_0, split_attn_0;
+  CNodePtr split_max_0;
+  CNodePtr split_sum_0;
+  CNodePtr split_attn_0;
   if (need_split) {
     auto split_max = NewSplitNode(*history_max, kDim2, kIndex2);
     *history_max = NewTupleGetItemNode(split_max, kIndex1);
@@ -2036,7 +2038,7 @@ CNodePtr CreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr &m
     SetFAInputs(nullptr, key_node, value_node, attn_node, operator_info, eod_masks, sp_num, i, pos, Shape{fa_s1, fa_s2},
                 &fa_inputs, &first_actual_mask, &full_mask);
 
-    local_fa_node = NewFlashAttentionScoreNode(fa_inputs, fa_index, i, true);
+    local_fa_node = NewFlashAttentionScoreNode(fa_inputs, fa_index, i, false);
     common::AnfAlgo::CopyNodeAttrs(fa_score_node, local_fa_node);
 
     if (i != sp_num - 1) {
@@ -2529,7 +2531,9 @@ CNodePtr CreateReplaceRingAttentionCP(const FuncGraphManagerPtr &manager,
   auto pos = GetPosInSpDevice(flash_score_info_ptr, static_cast<int>(rank_id));
   CNodePtr local_fa_node;
   CNodePtr last_fa_node;
-  CNodePtr history_max, history_sum, acc_attention;
+  CNodePtr history_max;
+  CNodePtr history_sum;
+  CNodePtr acc_attention;
   CNodePtr last_send_node;
   CNodePtr last_recv_node;
   CNodePtr send_node;
@@ -2603,6 +2607,9 @@ void CreateAndReplaceRingAttentionFAScore(const FuncGraphManagerPtr &manager,
   CNodePtr cnode;
   bool has_dyn_shape = IsDynamicShape(fa_score_node);
   if (enable_ra_context_parallel) {
+    if (has_dyn_shape) {
+      MS_LOG(EXCEPTION) << "Ring attention cp don't support dynamic shape currently.";
+    }
     cnode = CreateReplaceRingAttentionCP(manager, origin_nodes_topological, fa_score_node, fsp_info, i);
   } else if (use_send_recv) {
     if (!has_dyn_shape) {
