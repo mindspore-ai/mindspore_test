@@ -11,7 +11,7 @@ mindspore.mint.distributed.all_gather_into_tensor
     参数：
         - **output_tensor** (Tensor) - 输出待汇聚操作的Tensor，如果组中的device数量为N，则输出Tensor的shape为 :math:`(N*x_1, x_2, ..., x_R)` 。
         - **input_tensor** (Tensor) - 输入待汇聚操作的Tensor，Tensor的shape为 :math:`(x_1, x_2, ..., x_R)` 。
-        - **group** (str，可选) - 通信组名称，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：

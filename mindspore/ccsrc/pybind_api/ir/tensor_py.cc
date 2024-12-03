@@ -909,6 +909,11 @@ void RegMetaTensor(const py::module *m) {
            return TensorPy::MakeTensor(py::array(input), type_ptr);
          }),
          py::arg("input"), py::arg("dtype") = nullptr)
+    .def(py::init([](const py::bytes &input, const TypePtr &type_ptr) {
+           return TensorPy::MakeTensor(py::array(input), type_ptr);
+         }),
+         py::arg("input"), py::arg("dtype") = nullptr)
+
     // We only suppot array/bool_/int_/float_/list/tuple/complex pybind objects as tensor input,
     // and array/bool_/int_/float_/list/tuple init will be matched above, other pybind objects
     // input will raise error except complex data type.

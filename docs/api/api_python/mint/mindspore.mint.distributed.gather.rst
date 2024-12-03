@@ -15,7 +15,7 @@ mindspore.mint.distributed.gather
         - **tensor** (Tensor) - 输入待聚合的Tensor。
         - **gather_list** (list[Tensor]) - 聚合后的Tensor列表。
         - **dst** (int，可选) - 表示发送源的进程编号。只有该进程会接收聚合后的张量。默认值： ``0`` 。
-        - **group** (str，可选) - 通信组名称，如果为 ``None`` ， Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
+        - **group** (str，可选) - 通信组名称，如果为 ``None`` ，Ascend平台表示为 ``"hccl_world_group"`` 。 默认值： ``None`` 。
         - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：

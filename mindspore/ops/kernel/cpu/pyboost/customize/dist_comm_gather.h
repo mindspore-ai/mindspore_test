@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_SCATTER_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_SCATTER_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_GATHER_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_GATHER_H_
 
 #include <vector>
 #include <memory>
@@ -28,10 +28,10 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-void DistCommScatterAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &other_tensor,
-                                    const ValueTuplePtr &scatter_list, const Int64ImmPtr &rank_size,
-                                    const Int64ImmPtr &src, const Int64ImmPtr &rank_id, const StringImmPtr &group);
+void DistCommGatherCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+                                const ValueTuplePtr &gather_list, const Int64ImmPtr &rank_size, const Int64ImmPtr &dst,
+                                const Int64ImmPtr &rank_id, const StringImmPtr &group);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_SCATTER_H_
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_KERNEL_PYBOOST_CUSTOMIZE_DIST_COMM_GATHER_H_
