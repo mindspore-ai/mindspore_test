@@ -39,17 +39,17 @@ class SubPythonNet2(nn.Cell):
 
 
 class SubPyboostNet(nn.Cell):
-    def construct(self, x, other, alpha=1):
+    def construct(self, x, other, *, alpha=1):
         return x.sub(other, alpha=alpha)
 
 
 class SubPyboostNet1(nn.Cell):
-    def construct(self, x, other, alpha=1):
+    def construct(self, x, other, *, alpha=1):
         return x.__sub__(other, alpha=alpha)
 
 
 class SubPyboostNet2(nn.Cell):
-    def construct(self, x, other, alpha=1):
+    def construct(self, x, other, *, alpha=1):
         return x.__isub__(other, alpha=alpha)
 
 
@@ -63,7 +63,7 @@ def sub_forward_func1(x, y):
 
 
 @test_utils.run_with_cell
-def sub_forward_func2(x, other, alpha=1):
+def sub_forward_func2(x, other, *, alpha=1):
     return x.sub(other, alpha=alpha)
 
 
