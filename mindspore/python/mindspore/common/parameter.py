@@ -22,7 +22,6 @@ import os
 import sys
 import math
 import numbers
-from contextlib import contextmanager
 import numpy as np
 from mindspore import log as logger
 from mindspore.log import _LogActionOnce
@@ -53,16 +52,6 @@ PARAMETER_NAME_PREFIX_MAX_LEN = 1024
 
 # Global variable for parameter unique key.
 _GLOBAL_PARAMETER_KEY = -1
-
-
-@contextmanager
-def no_init_parameters():
-    init_class = globals()["Parameter"]
-    setattr(init_class, "init_param", False)
-    try:
-        yield
-    finally:
-        setattr(init_class, "init_param", True)
 
 
 def _is_in_auto_parallel_mode():
@@ -988,9 +977,7 @@ class Parameter(Tensor_):
         """
         if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
             raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
-        if hasattr(self, "init_param") and self.init_param:
-            return self
-        if self.init_mode is None:
+        if self.init_mode is None or not self.has_init:
             return self
         if self.inited_param is not None:
             return self.inited_param
