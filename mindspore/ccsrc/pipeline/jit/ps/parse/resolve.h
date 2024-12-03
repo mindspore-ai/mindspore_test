@@ -227,6 +227,10 @@ AnfNodePtr ResolveClassObjectWithAttr(const py::object &cls_obj, const AnfNodePt
 
 AnfNodePtr ResolveInterpretedObjectOfSetAttr(const AnfNodePtr &target_node, const AnfNodePtr &attr_node,
                                              const AnfNodePtr &value_node);
+
+bool IsParameterObject(const py::object &obj);
+bool ContainsParameter(const py::object &obj);
+
 // Check if node is cnode with getitem.
 bool IsGetItemCNode(const AnfNodePtr &node);
 
