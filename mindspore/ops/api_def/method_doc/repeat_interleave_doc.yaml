@@ -46,7 +46,8 @@ repeat_interleave:
          [3 4]
          [3 4]]
 
-    .. method:: Tensor.repeat_interleave(repeats, dim=None):
+    .. method:: Tensor.repeat_interleave(repeats, dim=None) -> Tensor
+        :noindex:
 
     Repeat elements of a tensor along an dim, like `numpy.repeat`.
 
