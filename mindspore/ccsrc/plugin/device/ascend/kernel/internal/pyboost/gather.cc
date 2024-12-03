@@ -26,11 +26,10 @@ acme::AcmeOpPtr AcmeKernelInfoGather::CreateKernel(const acme::InputsImmutableIn
                                                    const std::vector<tensor::BaseTensorPtr> &ms_inputs,
                                                    const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   acme::GatherParam param;
-  // param.axes.emplace_back(ms_inputs[kIndex2]->GetValueWithCheck<int64_t>());
-  // param.batch_dims = ms_inputs[kIndex3]->GetValueWithCheck<int64_t>();
+//  param.axes.emplace_back(ms_inputs[kIndex2]->GetValueWithCheck<int64_t>());
+//  param.batch_dims = ms_inputs[kIndex3]->GetValueWithCheck<int64_t>();
   return acme::CreateGatherOp(inputs, outputs, param, acme::kAcmeGatherOpName);
 }
-
-MS_ACME_KERNEL_INFO_FACTORY_REG(Gather, acme::kAcmeGatherOpName, AcmeGather);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Gather, acme::kAcmeGatherOpName, AcmeKernelInfoGather);
 }  // namespace kernel
 }  // namespace mindspore

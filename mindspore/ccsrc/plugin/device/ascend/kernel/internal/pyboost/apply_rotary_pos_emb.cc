@@ -27,15 +27,14 @@ acme::AcmeOpPtr AcmeKernelInfoApplyRotaryPosEmb::CreateKernel(const acme::Inputs
                                                               const std::vector<tensor::BaseTensorPtr> &ms_inputs,
                                                               const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   acme::ApplyRotaryPosEmbParam param;
-  auto last_input = ms_inputs.at(kIndex5);
-  if (last_input->dtype_id() == TypeId::kNumberTypeInt64) {
-    // param.cos_format = static_cast<int32_t>(last_input->GetValue<int64_t>().value());
-  } else {
-    MS_LOG(EXCEPTION) << "ApplyRotaryPosEmb input[5] dtype is not kNumberTypeInt64";
-  }
+//  auto last_input = ms_inputs.at(kIndex5);
+//  if (last_input->dtype_id() == TypeId::kNumberTypeInt64) {
+//    param.cos_format = static_cast<int32_t>(last_input->GetValue<int64_t>().value());
+//  } else {
+//    MS_LOG(EXCEPTION) << "ApplyRotaryPosEmb input[5] dtype is not kNumberTypeInt64";
+//  }
   return acme::CreateApplyRotaryPosEmbOp(inputs, outputs, param, acme::kAcmeApplyRotaryPosEmbOpName);
 }
-
-MS_ACME_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, acme::kAcmeApplyRotaryPosEmbOpName, AcmeApplyRotaryPosEmb);
+MS_ACME_KERNEL_INFO_FACTORY_REG(ApplyRotaryPosEmb, acme::kAcmeApplyRotaryPosEmbOpName, AcmeKernelInfoApplyRotaryPosEmb);
 }  // namespace kernel
 }  // namespace mindspore

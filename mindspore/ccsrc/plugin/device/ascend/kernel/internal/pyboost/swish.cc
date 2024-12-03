@@ -28,6 +28,6 @@ acme::AcmeOpPtr AcmeKernelInfoSwish::CreateKernel(const acme::InputsImmutableInf
   return acme::CreateSwishOp(inputs, outputs, acme::kAcmeSwishOpName);
 }
 
-MS_ACME_KERNEL_INFO_FACTORY_REG(SiLU, acme::kAcmeSwishOpName, AcmeSwish);
+MS_ACME_KERNEL_INFO_FACTORY_REG(SiLU, acme::kAcmeSwishOpName, AcmeKernelInfoSwish);
 }  // namespace kernel
 }  // namespace mindspore

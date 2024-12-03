@@ -33,6 +33,6 @@ acme::AcmeOpPtr AcmeKernelInfoQuantBatchMatmul::CreateKernel(const acme::InputsI
   param.enable_dequant = true;
   return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(QuantBatchMatmul, acme::kAcmeMatMulOpName, AcmeQuantBatchMatmul);
+MS_ACME_KERNEL_INFO_FACTORY_REG(QuantBatchMatmul, acme::kAcmeMatMulOpName, AcmeKernelInfoQuantBatchMatmul);
 }  // namespace kernel
 }  // namespace mindspore

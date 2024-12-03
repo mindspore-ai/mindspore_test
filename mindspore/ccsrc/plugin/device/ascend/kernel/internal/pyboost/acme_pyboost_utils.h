@@ -70,17 +70,17 @@ void GatherTilingHash(const T &arg, const Args &... args) {
 // 创建acme算子主要看输入的数据类型和属性
 template <typename... Args>
 uint64_t CalcAcmeOpApiHash(const std::string &arg, const Args &... args) {
-  g_hash_offset = 0;
+  transform::g_hash_offset = 0;
   GatherOpHash(arg, args...);
-  return calc_hash_id();
+  return transform::calc_hash_id();
 }
 
 // acme算子tiling还需要包含输入的shape和属性是否变化
 template <typename... Args>
 uint64_t CalcAcmeOpTilingHash(const std::string &arg, const Args &... args) {
   GatherTilingHash(arg, args...);
-  return calc_hash_id();
+  return transform::calc_hash_id();
 }
 
-}  // namespace mindspore::transform
+}  // namespace mindspore::kernel
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_PYBOOST_CACHE_H_

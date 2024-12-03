@@ -21,13 +21,12 @@
 #include <utility>
 
 #include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
-#include "acme/include/acme.h"
 
 namespace mindspore {
 namespace kernel {
 class AcmeKernelInfoApplyRotaryPosEmb : public AcmeKernelInfo {
  public:
-  AcmeKernelInfoApplyRotaryPosEmb() : AcmeKernelInfo() {}
+  AcmeKernelInfoApplyRotaryPosEmb() : AcmeKernelInfo(std::move("ApplyRotaryPosEmb")) {}
   ~AcmeKernelInfoApplyRotaryPosEmb() = default;
 
  protected:

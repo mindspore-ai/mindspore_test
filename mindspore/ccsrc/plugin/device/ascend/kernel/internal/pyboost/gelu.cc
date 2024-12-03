@@ -27,6 +27,6 @@ acme::AcmeOpPtr AcmeKernelInfoGeLU::CreateKernel(const acme::InputsImmutableInfo
                                                  const std::vector<tensor::BaseTensorPtr> &ms_outputs) {
   return acme::CreateGeLUOp(inputs, outputs, acme::kAcmeGeLUOpName);
 }
-MS_ACME_KERNEL_INFO_FACTORY_REG(GeLU, acme::kAcmeGeLUOpName, AcmeGeLU);
+MS_ACME_KERNEL_INFO_FACTORY_REG(GeLU, acme::kAcmeGeLUOpName, AcmeKernelInfoGeLU);
 }  // namespace kernel
 }  // namespace mindspore

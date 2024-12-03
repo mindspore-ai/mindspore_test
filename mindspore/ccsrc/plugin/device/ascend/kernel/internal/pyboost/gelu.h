@@ -20,14 +20,13 @@
 #include <vector>
 #include <utility>
 
-#include "plugin/device/ascend/kernel/internal/acme_kernel_mod.h"
-#include "acme/include/acme.h"
+#include "plugin/device/ascend/kernel/internal/pyboost/acme_kernel_info.h"
 
 namespace mindspore {
 namespace kernel {
 class AcmeKernelInfoGeLU : public AcmeKernelInfo {
  public:
-  AcmeKernelInfoGeLU() : AcmeKernelInfo() {}
+  AcmeKernelInfoGeLU() : AcmeKernelInfo(std::move("GeLU")) {}
   ~AcmeKernelInfoGeLU() = default;
 
  protected:

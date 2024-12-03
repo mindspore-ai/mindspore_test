@@ -30,6 +30,6 @@ acme::AcmeOpPtr AcmeKernelInfoTranspose::CreateKernel(const acme::InputsImmutabl
   return acme::CreateTransposeOp(inputs, outputs, param, acme::kAcmeTransposeOpName);
 }
 
-MS_ACME_KERNEL_INFO_FACTORY_REG(Transpose, acme::kAcmeTransposeOpName, AcmeTranspose);
+MS_ACME_KERNEL_INFO_FACTORY_REG(Transpose, acme::kAcmeTransposeOpName, AcmeKernelInfoTranspose);
 }  // namespace kernel
 }  // namespace mindspore
