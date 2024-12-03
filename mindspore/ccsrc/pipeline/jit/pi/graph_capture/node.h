@@ -229,6 +229,22 @@ class CallNode : public ValueNode {
   std::vector<ValueNode *> params_;  // extra values for inline function
 };
 
+class IterNode : public ValueNode {
+ public:
+  IterNode(ValueNode *iterable, AObject *vobj, int opcode, int oparg, const std::vector<ValueNode *> &inputs = {})
+      : ValueNode(vobj, opcode, oparg, inputs), iterable_(iterable), index_(0) {}
+  ~IterNode() override = default;
+
+  ValueNode *iterable() const { return iterable_; }
+  void set_iterable(ValueNode *iterable_node) { iterable_ = iterable_node; }
+  size_t index() const { return index_; }
+  void set_index(size_t idx) { index_ = idx; }
+
+ private:
+  ValueNode *iterable_;
+  size_t index_;
+};
+
 bool IsNonLocalValue(ValueNode *i);
 }  // namespace pijit
 }  // namespace mindspore

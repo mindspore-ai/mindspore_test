@@ -171,6 +171,9 @@ class MindGraphAnalyzer : public GraphAnalyzer {
   GraphBuilderPtr graph_builder_ = nullptr;
 
  private:
+  // Collect top-graph closure side-effect nodes.
+  void CollectClosureSideEffect();
+
   ValueNode *MutateSequenceNode(ValueNode *node);
   ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
   std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);

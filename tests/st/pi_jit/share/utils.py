@@ -2,6 +2,7 @@ import numpy as onp
 from mindspore import Tensor
 from mindspore import dtype as mstype
 from mindspore import ops
+from mindspore.common._stub_tensor import StubTensor
 from mindspore._c_expression import get_code_extra
 from mindspore.common._pijit_context import PIJitCaptureContext
 
@@ -32,6 +33,25 @@ def match_array(actual, expected, error=0, err_msg=''):
         onp.testing.assert_equal(actual, expected, err_msg=err_msg)
 
 
+def assert_equal(expected, actual, decimal=7, err_msg=''):
+    if isinstance(expected, (list, tuple)):
+        assert type(expected) is type(actual)
+        assert len(expected) == len(actual)
+        for l, r in zip(expected, actual):
+            assert_equal(l, r, decimal=decimal, err_msg=err_msg)
+    elif isinstance(expected, dict):
+        assert type(expected) is type(actual)
+        assert len(expected) == len(actual)
+        for k in expected:
+            assert k in actual
+            assert_equal(expected[k], actual[k], decimal=decimal, err_msg=err_msg)
+    elif isinstance(expected, (Tensor, StubTensor)):
+        assert isinstance(actual, Tensor)
+        match_array(actual, expected, error=decimal, err_msg=err_msg)
+    else:
+        assert expected == actual, f'expect: {expected}, actual: {actual}'
+
+
 def _count_unequal_element(data_expected, data_me, rtol, atol):
     assert data_expected.shape == data_me.shape
     total_count = len(data_expected.flatten())
@@ -40,7 +60,7 @@ def _count_unequal_element(data_expected, data_me, rtol, atol):
     loss_count = onp.count_nonzero(greater)
     assert (loss_count / total_count) < rtol, \
         "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}". \
-        format(data_expected[greater], data_me[greater], error[greater])
+            format(data_expected[greater], data_me[greater], error[greater])
 
 
 def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
@@ -91,6 +111,7 @@ def nptype_to_mstype(type_):
         None: None
     }[type_]
 
+
 def is_empty(variable):
     if variable is None:
         return True
@@ -101,11 +122,11 @@ def is_empty(variable):
     return False
 
 
-def assert_executed_by_graph_mode(func, call_count: int = None):
+def assert_executed_by_graph_mode(func, *, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
+    assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
     assert len(jcr['code']['phase_']) > 0
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
@@ -114,7 +135,16 @@ def assert_no_graph_break(func, *, call_count: int = None):
     jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
-    assert jcr['break_count_'] == 0
+    assert jcr['break_count_'] == 0, f'break_count expect: 0, actual: {jcr["break_count_"]}'
+    if call_count is not None:
+        assert jcr['code']['call_count_'] == call_count
+
+
+def assert_has_graph_break(func, *, break_count: int = 1, call_count: int = None):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == break_count, f'break_count expect: {break_count}, actual: {jcr["break_count_"]}'
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
 

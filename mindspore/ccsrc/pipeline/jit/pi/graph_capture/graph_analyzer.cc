@@ -720,6 +720,7 @@ void MindGraphAnalyzer::Analyze() {
     return result;
   };
 
+  CollectClosureSideEffect();
   OptimizeSideEffectRecord();
 
   auto origin_stop_bci = graph_->GetStopTraceBci();
@@ -777,6 +778,37 @@ void MindGraphAnalyzer::Analyze() {
     param_index++;
   }
   need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
+}
+
+void MindGraphAnalyzer::CollectClosureSideEffect() {
+  if (graph_->GetFrame(0).GetClosures().empty()) {
+    return;
+  }
+  const std::vector<CellVarNode *> &closures = graph_->GetFrame(0).GetClosures();
+  std::vector<CellVarNode *> nodes;
+  if (graph_->GetStopTraceBci() == -1) {
+    // If no graph break, we only need to restore free-variables. Because cell-variables are equivalent to
+    // local-variables and do not need to be restored.
+    int cellvar_size = PyCodeWrapper(graph_->GetCodeObj()).CellVarsSize();
+    nodes.insert(nodes.begin(), closures.begin() + cellvar_size, closures.end());
+  } else {
+    nodes.insert(nodes.begin(), closures.begin(), closures.end());
+  }
+
+  for (const CellVarNode *cell_node : nodes) {
+    if (cell_node == &ValueNode::kUnboundLocal || cell_node->GetCellOper().empty()) {
+      continue;
+    }
+    const std::vector<ValueNode *> &cell_ops = cell_node->GetCellOper();
+    auto it = std::find_if(cell_ops.rbegin(), cell_ops.rend(), [](ValueNode *node) {
+      return node->GetOpcode() == STORE_DEREF || node->GetOpcode() == DELETE_DEREF;
+    });
+    if (it == cell_ops.rend() || (*it)->GetOpcode() == DELETE_DEREF) {
+      // Currently, the recovery of DELETE_DEREF is not supported.
+      continue;
+    }
+    graph_->GetSideEffect()->Record(*it);
+  }
 }
 
 // check whether the node can be added to the output of the graph

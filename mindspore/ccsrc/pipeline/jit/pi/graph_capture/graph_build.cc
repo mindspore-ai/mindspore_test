@@ -670,6 +670,16 @@ bool GraphBuilder::DoLocalAccess(const Instr &instr) {
   return true;
 }
 
+namespace {
+bool IsFreeVar(PyCodeObject *code, int closure_index) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(INFO) << "Python 3.11 is not supported";
+  throw py::error_already_set();
+#endif
+  return closure_index >= PyCodeWrapper(code).CellVarsSize();
+}
+}  // namespace
+
 bool GraphBuilder::DoCellAccess(const Instr &instr) {
   int opcode = instr.op();
   int oparg = instr.arg();
@@ -681,21 +691,26 @@ bool GraphBuilder::DoCellAccess(const Instr &instr) {
     push(frame_.Closure(oparg));
   } else if (opcode == LOAD_DEREF) {
     MS_EXCEPTION_IF_NULL(frame_.Closure(oparg)->GetValue());
-    // This ValueNode was pre-created in the GraphBuilder constructor, with its bci set to 0.
-    // As far as we know, there's no need to modify the ValueNode's bci to be current bytecode's bci.
     push(frame_.Closure(oparg)->GetValue());
   } else if (opcode == STORE_DEREF) {
+    if (IsFreeVar(graph_->GetCodeObj(), oparg) && !IsTopGraph()) {
+      // The side-effect of free-variable STORE_DEREF in subgraph will be supported later.
+      graph_->StopTraceAt(cur_bci_, kStopTraceByteCode_Unsupported);
+      return false;
+    }
     value = pop();
     bool is_same = value->GetOpcode() == LOAD_DEREF && frame_.Closure(oparg) == frame_.Closure(value->GetOparg());
     if (!is_same) {
       node = NewValueNode(nullptr, instr, {value});
-      graph_->GetSideEffect()->Record(node);
       frame_.Closure(oparg)->SetValue(value);
       frame_.Closure(oparg)->AddCellOper(node);
     }
   } else if (opcode == DELETE_DEREF) {
+    if (IsFreeVar(graph_->GetCodeObj(), oparg) && !IsTopGraph()) {
+      graph_->StopTraceAt(cur_bci_, kStopTraceByteCode_Unsupported);
+      return false;
+    }
     node = NewValueNode(nullptr, instr, {});
-    graph_->GetSideEffect()->Record(node);
     frame_.Closure(oparg)->SetValue(&ValueNode::kUnboundLocal);
     frame_.Closure(oparg)->AddCellOper(node);
   } else {
@@ -1487,11 +1502,19 @@ bool GraphBuilder::DoListToTuple(const Instr &instr) {
 }
 
 bool GraphBuilder::DoGetIter(const Instr &instr) {
-  auto obj = pop();
-  auto o = obj->GetVobj();
-  auto iter = NewValueNode(o ? o->GetIter() : AObject::MakeAObject(AObject::kTypeAnyValue), instr, {obj});
-  push(iter);
-  iter->marker_ = 0;
+  ValueNode *iterable = pop();
+  AObject *iterable_vobj = iterable->GetVobj();
+  AObject *iterator_vobj = iterable_vobj ? iterable_vobj->GetIter() : AObject::MakeAObject(AObject::kTypeAnyValue);
+
+  std::vector<ValueNode *> inputs{iterable};
+  auto *iter_node = graph_->allocator().NewNode<IterNode>(iterable, iterator_vobj, instr.op(), instr.arg(), inputs);
+  iter_node->SetGraph(graph_);
+  iter_node->set_bci(cur_bci_);
+  iter_node->SetLineNo(instr.line());
+  graph_->GetTracedNodes().push_back(iter_node);
+
+  push(iter_node);
+  iter_node->marker_ = 0;
   return true;
 }
 
@@ -1733,6 +1756,7 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
   ValueNode *arg = inputs[1];
   ValueNode *arg2 = inputs.size() > 2 ? inputs[2] : nullptr;
   if (origin->GetOpcode() != BUILD_LIST && origin->GetOpcode() != BUILD_MAP) {
+    MS_LOG(INFO) << "Stack node should be BUILD_LIST or BUILD_MAP, but actual is: " << origin->ToString();
     return nullptr;
   }
   std::vector<ValueNode *> build_inputs = origin->getInputs();
@@ -1762,11 +1786,14 @@ ValueNode *GraphBuilder::ReplaceMergeOp(int opcode, const std::vector<ValueNode 
     build_inputs.push_back(arg2);
     opcode = BUILD_MAP;
   } else {
+    MS_LOG(INFO) << "Unsupported bytecode: " << Opcode(opcode).name();
     return nullptr;
   }
   std::for_each(build_inputs.begin(), build_inputs.end(), [this](ValueNode *i) { this->push(i); });
-  int oparg = build_inputs.size() / div;
-  DoBuildOp({opcode, oparg});
+  int oparg = SizeToInt(build_inputs.size()) / div;
+  if (!DoBuildOp({opcode, oparg})) {
+    return nullptr;
+  }
   return pop();
 }
 
@@ -3562,9 +3589,14 @@ bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1
 }
 
 bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
+  MS_LOG(DEBUG) << "Start do sequence FOR_ITER";
+  auto *iter_node = dynamic_cast<IterNode *>(seek(0));
+  if (iter_node == nullptr) {
+    MS_LOG(INFO) << "TOS node should be IterNode, but actual is: " << seek(0)->ToString();
+    return false;
+  }
   // check for iter
-  ValueNode *iter_node = seek(0);
-  ValueNode *seq_node = iter_node->input(0);
+  ValueNode *seq_node = iter_node->iterable();
   PyObject *seq = seq_node->GetVobj()->GetPyObject().ptr();
   if (seq == nullptr) {
     MS_LOG(INFO) << "no sequence object for loop";
@@ -3577,17 +3609,17 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
     return false;
   }
 
-  int &index = iter_node->marker_;
-  bool is_tuple = seq_node->GetVobj()->GetType() == AObject::kTypeTuple;
-  if (is_tuple) {
-    if (index != 0) {
-      seq_node = seek(1);
-    } else {
-      DoLoadConst({LOAD_CONST, 0, py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
-      push(iter_node->input(0));
-      DoCall({CALL_FUNCTION, 1});
-      std::swap(seek(0), seek(1));
+  int index = SizeToInt(iter_node->index());
+  if (index == 0 && seq_node->GetVobj()->GetType() == AObject::kTypeTuple) {
+    DoLoadConst({LOAD_CONST, 0, py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
+    push(seq_node);
+    if (!DoCall({CALL_FUNCTION, 1})) {
+      MS_LOG(INFO) << "Failed to convert sequence to tuple";
+      return false;
     }
+    ValueNode *new_tuple_node = pop();
+    iter_node->set_iterable(new_tuple_node);
+    seq_node = new_tuple_node;
   }
   if (index == 0 && !GuardLoopSequence(graph_, seq_node)) {
     // loop start.
@@ -3596,31 +3628,19 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci) {
   }
 
   if (index >= size) {
+    MS_LOG(DEBUG) << "Loop end";
     pop();
-    if (is_tuple) {
-      pop();
-    }
     cur_bci_ = jump_bci;
     return true;
   }
 
-  PyObject *item = PySequence_GetItem(seq, index);
-  if (item == nullptr) {
-    MS_LOG(INFO) << "trace for iter got an error " << py::error_already_set().what();
-    PyErr_Clear();
+  push(seq_node);
+  DoLoadConst({LOAD_CONST, -1, py::object(py::int_(index))});
+  if (!DoItemAccess({BINARY_SUBSCR, 0})) {
     return false;
   }
 
-  py::object index_object = py::int_(index);
-  ValueNode *index_node = NewValueNode(AObject::Convert(index_object), LOAD_CONST, -1, {});
-  push(seq_node);
-  push(index_node);
-  DoItemAccess({BINARY_SUBSCR, 0});
-  ValueNode *item_node = pop();
-  Py_DECREF(item);
-
-  index++;
-  push(item_node);
+  iter_node->set_index(index + 1);
   cur_bci_ = cur_bci_ + 1;
   return true;
 }
@@ -3629,10 +3649,12 @@ static bool CheckForIterEnumerate(ValueNode *iter_node) {
   ValueNode *enumerate_node = iter_node->input(0);
   if (enumerate_node->GetOpcode() != CALL_FUNCTION || iter_node->bci() - 1 != enumerate_node->bci()) {
     // enumerate object maybe alive, shouldn't reduce it
+    MS_LOG(INFO) << "Unsupported enumerate node: " << enumerate_node->ToString();
     return false;
   }
   PyObject *enumerate = enumerate_node->GetVobj()->GetPyObject().ptr();
   if (enumerate == nullptr) {
+    MS_LOG(INFO) << "enumerate() python object is null!";
     return false;
   }
 
@@ -3642,12 +3664,14 @@ static bool CheckForIterEnumerate(ValueNode *iter_node) {
   PyObject *iterable = iterable_node->GetVobj()->GetPyObject().ptr();
   if (iterable == nullptr || !PySequence_Check(iterable) || !GuardLoopSequence(iter_node->GetGraph(), iterable_node)) {
     // just support sequence iteration
+    MS_LOG(INFO) << "Unsupported iterable node: " << iterable_node->ToString();
     return false;
   }
   return true;
 }
 
 bool GraphBuilder::TraceRunForIterEnumerate(int jump_bci) {
+  MS_LOG(DEBUG) << "Start do enumerate FOR_ITER";
   ValueNode *iter_node = seek(0);
   if (iter_node->marker_ == 0) {
     if (!CheckForIterEnumerate(iter_node)) {
@@ -3709,10 +3733,12 @@ bool GraphBuilder::TraceRunForIterEnumerate(int jump_bci) {
 static bool CheckForIterZip(ValueNode *iter_node) {
   ValueNode *zip_node = iter_node->input(0);
   if (zip_node->GetOpcode() != CALL_FUNCTION || iter_node->bci() - 1 != zip_node->bci()) {
+    MS_LOG(INFO) << "Unsupported zip node: " << zip_node->ToString();
     return false;
   }
   PyObject *zip = zip_node->GetVobj()->GetPyObject().ptr();
   if (zip == nullptr) {
+    MS_LOG(INFO) << "zip() python object is null!";
     return false;
   }
   MS_EXCEPTION_IF_NULL(iter_node->GetGraph());
@@ -3725,12 +3751,14 @@ static bool CheckForIterZip(ValueNode *iter_node) {
                                    (!IsTensorPyObject(iterable) || !graph->GuardValueNode(iterable_node, GDeduce)));
   });
   if (iter != iterable_nodes.end()) {
+    MS_LOG(INFO) << "Unsupported iterable node: " << (*iter)->ToString();
     return false;
   }
   return true;
 }
 
 bool GraphBuilder::TraceRunForIterZip(int jump_bci) {
+  MS_LOG(DEBUG) << "Start do zip FOR_ITER";
   ValueNode *iter_node = seek(0);
   int *index = &iter_node->marker_;
   if ((*index) == 0) {
@@ -3791,23 +3819,86 @@ bool GraphBuilder::TraceRunForIterZip(int jump_bci) {
   return true;
 }
 
-bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
-  ValueNode *iter_node = seek(0);
-  ValueNode *dict_node;
-  int &index = iter_node->marker_;
-  if (index == 0) {
-    ValueNode *dict_item_node = iter_node->input(0);
-    DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
-    push(dict_item_node);
-    DoCall({CALL_FUNCTION, 1});
-    std::swap(seek(0), seek(1));
-    dict_node = seek(1);
-    if (!dict_item_node->IsConstantValue()) {
-      MS_LOG(ERROR) << "guard dict keys failed node: [ << " << dict_item_node;
-    }
-  } else {
-    dict_node = seek(1);
+bool GraphBuilder::TraceRunForIterDict(int jump_bci) {
+  MS_LOG(DEBUG) << "Start do dict FOR_ITER";
+  auto *iter_node = dynamic_cast<IterNode *>(seek(0));
+  if (iter_node == nullptr) {
+    MS_LOG(INFO) << "TOS node should be IterNode, but actual is: " << seek(0)->ToString();
+    return false;
   }
+  MS_EXCEPTION_IF_NULL(iter_node->iterable());
+
+  size_t index = iter_node->index();
+  if (index == 0) {
+    ValueNode *dict_node = iter_node->iterable();
+    push(dict_node);
+    DoAttrAccess({LOAD_METHOD, 0, "keys"});
+    DoCall({CALL_METHOD, 0});
+    ValueNode *keys_node = pop();
+    DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
+    push(keys_node);
+    if (!DoCall({CALL_FUNCTION, 1})) {
+      MS_LOG(INFO) << "Fail to convert dict keys to tuple";
+      return false;
+    }
+    auto tuple_node = pop();
+    MS_EXCEPTION_IF_CHECK_FAIL(tuple_node->GetOpcode() == CALL_FUNCTION, "opcode should be CALL_FUNCTION");
+    iter_node->set_iterable(tuple_node);
+    if (!tuple_node->has_abstract_wrapper()) {
+      MS_LOG(INFO) << "Fail to do dict get keys: " << dict_node->ToString();
+      return false;
+    }
+  }
+
+  ValueNode *keys_node = iter_node->iterable();
+  AbstractWrapperPtr keys_wrapper = keys_node->abstract_wrapper();
+  MS_EXCEPTION_IF_CHECK_FAIL(keys_wrapper != nullptr && keys_wrapper->abstract() != nullptr, "abstract is NULL!");
+  auto keys_abstract = keys_wrapper->abstract()->cast<abstract::AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(keys_abstract);
+
+  if (index >= keys_abstract->size()) {
+    MS_LOG(DEBUG) << "End loop";
+    pop();
+    cur_bci_ = jump_bci;
+    return true;
+  }
+
+  push(keys_node);
+  DoLoadConst({LOAD_CONST, -1, py::object(py::int_(index))});
+  if (!DoItemAccess({BINARY_SUBSCR, 0})) {
+    return false;
+  }
+  iter_node->set_index(index + 1);
+  cur_bci_ = cur_bci_ + 1;
+  return true;
+}
+
+bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
+  MS_LOG(DEBUG) << "Start do dict iterators FOR_ITER";
+  auto *iter_node = dynamic_cast<IterNode *>(seek(0));
+  if (iter_node == nullptr) {
+    MS_LOG(INFO) << "TOS node should be IterNode, but actual is: " << seek(0)->ToString();
+    return false;
+  }
+  MS_EXCEPTION_IF_NULL(iter_node->iterable());
+
+  int index = SizeToInt(iter_node->index());
+  if (index == 0) {
+    ValueNode *dict_item_node = iter_node->iterable();
+    DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyTuple_Type))});
+    push(iter_node->iterable());
+    if (!DoCall({CALL_FUNCTION, 1})) {
+      MS_LOG(INFO) << "Fail to convert to tuple";
+      return false;
+    }
+    ValueNode *tuple_node = pop();
+    iter_node->set_iterable(tuple_node);
+    if (!dict_item_node->IsConstantValue()) {
+      MS_LOG(INFO) << "Is not constant value, guard failed: " << dict_item_node->ToString();
+    }
+  }
+
+  ValueNode *dict_node = iter_node->iterable();
   py::object key;
   py::object dict = dict_node->GetVobj()->GetPyObject();
   if (dict.ptr() == nullptr) {
@@ -3824,40 +3915,47 @@ bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
   if (key.ptr() == nullptr) {
     // for end
     pop();  // iter node
-    pop();  // dict node
     cur_bci_ = jump_bci;
     return true;
   }
-  ValueNode *key_node = NewValueNode(AObject::Convert(py::int_(index)), LOAD_CONST, -1, {});
+
   push(dict_node);
-  push(key_node);
-  DoItemAccess({BINARY_SUBSCR, 0});
-  index++;
+  DoLoadConst({LOAD_CONST, -1, py::object(py::int_(index))});
+  if (!DoItemAccess({BINARY_SUBSCR, 0})) {
+    return false;
+  }
+  iter_node->set_index(index + 1);
   cur_bci_ = cur_bci_ + 1;
   return true;
 }
 
 bool GraphBuilder::TraceRunForIter(const Instr &instr) {
   MS_EXCEPTION_IF_NULL(instr.extra_jump());
-
   // check for iter
   ValueNode *iter_node = seek(0);
-  AObject *iterable = iter_node->getInputs().size() > 0 ? iter_node->input(0)->GetVobj() : nullptr;
+  AObject *iterable = iter_node->getInputs().empty() ? nullptr : iter_node->input(0)->GetVobj();
   bool succ;
   if (iter_node->GetOpcode() != GET_ITER) {
-    MS_LOG(DEBUG) << "FOR_ITER without GET_ITER";
+    MS_LOG(INFO) << "FOR_ITER without GET_ITER";
     succ = false;
   } else if (iterable == nullptr) {
+    MS_LOG(INFO) << "iterable is null!";
     succ = false;
   } else if (iterable->GetTypeObject() == &PyEnum_Type) {
     succ = TraceRunForIterEnumerate(instr.extra_jump()->bci());
   } else if (iterable->GetTypeObject() == &PyZip_Type) {
     succ = TraceRunForIterZip(instr.extra_jump()->bci());
+  } else if (iterable->GetPyObject().ptr() != nullptr && py::isinstance<py::dict>(iterable->GetPyObject())) {
+    succ = TraceRunForIterDict(instr.extra_jump()->bci());
   } else if (iterable->GetTypeObject() == &PyDictKeys_Type || iterable->GetTypeObject() == &PyDictValues_Type ||
              iterable->GetTypeObject() == &PyDictItems_Type) {
     succ = TraceRunForIterDictItems(instr.extra_jump()->bci());
-  } else {
+  } else if (iterable->GetPyObject().ptr() != nullptr && PySequence_Check(iterable->GetPyObject().ptr())) {
     succ = TraceRunForIterSequence(instr.extra_jump()->bci());
+  } else {
+    MS_LOG(INFO) << "Unsupported iterable type: "
+                 << (iterable->GetTypeObject() != nullptr ? iterable->GetTypeObject()->tp_name : "NULL");
+    succ = false;
   }
   if (!succ) {
     if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
@@ -3969,11 +4067,9 @@ bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node) {
 }
 
 static void LogPrunBranch(ValueNode *cond, const Instr &instr, const GraphJitConfig &conf) {
-  MS_LOG(DEBUG) << "trace run prune branch failed [" << cond->ToString() << "]";
+  MS_LOG(INFO) << "Fail to prune branch, instr: " << instr.ToString() << ", condition: " << cond->ToString();
   if (conf.GetBoolConfig(GraphJitConfig::kPrintGuard)) {
     GRAPH_JIT_LOG_F("Fail to prune bytecode [%s]!\n", instr.ToString().c_str());
-  } else {
-    MS_LOG(DEBUG) << "Fail to prune bytecode [" << instr.ToString() << "]!\n";
   }
 
   if (conf.GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
