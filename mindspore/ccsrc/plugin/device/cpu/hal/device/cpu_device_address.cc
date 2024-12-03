@@ -233,6 +233,11 @@ bool CPUDeviceAddress::SyncHostToDevice(const ShapeVector &, size_t size, TypeId
   return true;
 }
 
+bool CPUDeviceAddress::AsyncHostToDevice(size_t size, TypeId type, const void *host_ptr) const {
+  // cpu not provide async copy, call sync copy instead
+  return SyncHostToDevice({}, size, type, host_ptr, "");
+}
+
 bool CPUDeviceAddress::AsyncDeviceToDevice(const DeviceAddress *src_device_addr) const {
   return SyncDeviceToDevice(src_device_addr);
 }
