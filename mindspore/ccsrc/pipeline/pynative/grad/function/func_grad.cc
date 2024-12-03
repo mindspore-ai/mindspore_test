@@ -937,7 +937,7 @@ OrderedSet<FuncVariablePtr>::reverse_iterator FuncGrad::GetLastNodeReverseIter()
 }
 
 void FuncGrad::WeightNodeNotInGradButHasTensorHook(const FuncVariablePtr &variable, const BackwardNodePtr &fn) const {
-  if (!variable->is_leaf() || !HasTensorHook(fn->op_output())) {
+  if (is_run_recompute_ || !variable->is_leaf() || !HasTensorHook(fn->op_output())) {
     return;
   }
   const auto &v = fn->op_output();
