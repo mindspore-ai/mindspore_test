@@ -1,0 +1,46 @@
+inplace_hardtanh:
+    description: |
+        Update the `input` tensor in-place by computing the hardtanh activation function `input`, The activation 
+        function is defined as:
+
+        .. math::
+            \text{hardtanh}(input) = \begin{cases}
+             max\_val, & \text{ if } input > max\_val \\
+             min\_val, & \text{ if } input < min\_val \\
+             input, & \text{ otherwise. }
+            \end{cases}
+
+        Linear region range :math:`[min\_val, max\_val]` can be adjusted using `min_val` and `max_val`.
+
+        Hardtanh Activation Function Graph:
+    
+        .. image:: ../images/Hardtanh.png
+            :align: center
+
+        .. warning::
+            This is an experimental optimizer API that is subject to change.
+
+        Args:
+            input (Tensor): Input Tensor.
+            min_val (Union[bool, int, float], optional): Minimum value of the linear region range. Default: ``-1.0`` .
+            max_val (Union[bool, int, float], optional): Maximum value of the linear region range. Default: ``1.0`` .
+
+        Returns:
+            Tensor.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+            TypeError: If dtype of `min_val` is neither float nor int.
+            TypeError: If dtype of `max_val` is neither float nor int.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor, mint
+            >>> x = Tensor([-1, -2, 0, 2, 1], mindspore.float16)
+            >>> mint.hardtanh_(x, min_val=-1.0, max_val=1.0)
+            >>> print(x)
+            [-1. -1.  0.  1.  1.]
