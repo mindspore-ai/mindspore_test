@@ -25,7 +25,6 @@
 
 namespace mindspore {
 namespace pijit {
-
 using InferFunc = bool (*)(CallNode *, GraphBuilder *);
 InferFunc FindInferFunc(const py::object &callable, bool trace_flag = false);
 
@@ -38,6 +37,7 @@ bool JustCallAndSetResWithArgs(CallNode *call_node, const std::vector<py::object
 bool CheckJitConstexpr(const py::object &func);
 bool CheckMSConstexpr(const py::object &func);
 bool CheckBuiltinFuncOrMethod(const py::object &func);
+bool IsPSJitFunction(const py::object &callable_info);
 
 }  // namespace pijit
 }  // namespace mindspore

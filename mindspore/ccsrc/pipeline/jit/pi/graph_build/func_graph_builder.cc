@@ -299,7 +299,7 @@ AbstractBasePtr FuncGraphBuilder::EvalValue(const ValuePtr &value, const Abstrac
     }
     return nullptr;
   } catch (const std::exception &e) {
-    MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString();
+    MS_LOG(INFO) << "Failed to EvalValue for value: " << value->ToString() << ". The exception:\n" << e.what();
     return nullptr;
   }
 }
@@ -1209,7 +1209,8 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
 AbstractWrapperPtr FuncGraphBuilder::AddNode(const ValuePtr &callable_value,
                                              const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   if (!callable_value->ToAbstract()->isa<abstract::AbstractFunction>()) {
-    MS_LOG(INFO) << "The value " << callable_value->ToString() << " is not callable.";
+    MS_LOG(INFO) << "The value " << callable_value->ToString() << " is not callable. The abstract is "
+                 << callable_value->ToAbstract()->ToString();
     return nullptr;
   }
 

@@ -1185,3 +1185,191 @@ def test_subgraph_with_primitive_output_2():
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0
     assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit
+    def cal_func(x, y):
+        if x > 1:
+            return y + 1
+        return y + 2
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y):
+        return cal_func(x, y)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_2():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit
+    def cal_func(*vargs):
+        x = vargs[0]
+        y = vargs[1]
+        if x > 1:
+            return y + 1
+        return y + 2
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(x, y):
+        return cal_func(x, y)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_3():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+
+    @jit
+    def cal_func(**kwargs):
+        x = kwargs["x"]
+        y = kwargs["y"]
+        if x > 1:
+            return y + 1
+        return y + 2
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return cal_func(y=n, x=m)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_4():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, x, y):
+            if x > 1:
+                return y + 1
+            return y + 2
+
+    net = Net()
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return net(m, n)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_5():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, *vargs):
+            x = vargs[0]
+            y = vargs[1]
+            if x > 1:
+                return y + 1
+            return y + 2
+
+    net = Net()
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return net(m, n)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_function_decorated_with_PSJIT_run_ast_6():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit
+        def construct(self, **kwargs):
+            x = kwargs["x"]
+            y = kwargs["y"]
+            if x > 1:
+                return y + 1
+            return y + 2
+
+    net = Net()
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def foo(m, n):
+        return net(y=n, x=m)
+
+    a = Tensor([2])
+    b = Tensor([1, 2, 3])
+    ret = foo(a, b)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
+    jcr = get_code_extra(getattr(foo, "__wrapped__", foo))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    assert len(jcr['code']['phase_']) > 0
