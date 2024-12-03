@@ -22,6 +22,9 @@
 #include "backend/common/graph_kernel/core/split_schemer.h"
 
 namespace mindspore::graphkernel {
+constexpr auto kNeedResetKernelInfo = "need_reset_kernel_info";
+constexpr auto kNeedKernelInfo = "need_kernel_info";
+
 class GraphKernelSplitter : public opt::Pass {
  public:
   explicit GraphKernelSplitter(const std::string &name = "graph_kernel_splitter") : Pass(name) {}
@@ -31,5 +34,7 @@ class GraphKernelSplitter : public opt::Pass {
   virtual SplitSchemerPtr GetSplitSchema(const std::string &processor);
 };
 using GraphKernelSplitterPtr = std::shared_ptr<GraphKernelSplitter>;
+
+void SetKernelInfo(const FuncGraphPtr &func_graph);
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_SPLITTER_H_
