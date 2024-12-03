@@ -335,7 +335,8 @@ TrilExt: 'aclnnTril'
 
 # 520
 BincountExt: 'aclnnBincount'
-
+#537
+HardtanhGrad: 'aclnnHardtanhBackward'
 # 538
 HistcExt: 'aclnnHistc'
 
