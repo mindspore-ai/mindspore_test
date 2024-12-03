@@ -42,7 +42,8 @@ class Conv3DPaddingAscend : public AclnnKernelMod {
   void ConvolutionSameMode(KernelTensor *input_tensor, KernelTensor *weight_tensor, KernelTensor *bias_tensor,
                            const std::vector<KernelTensor *> &outputs);
   std::vector<int64_t> GetOriginStrides(const std::vector<int64_t> &shape);
-  TensorStorageInfoPtr CreateTensorStorageInfoPtr(const std::vector<int64_t> &shape);
+  TensorStorageInfoPtr CreateTensorStorageInfoPtr(const std::vector<int64_t> &new_shape,
+                                                  const TensorStorageInfoPtr &old_tensor_storage_info);
   template <typename T>
   void SetTensorStorageInfo(T kernel_tensor, const ShapeVector &shape);
   bool CalcPaddingMode(std::vector<int64_t> &padding_l, std::vector<int64_t> &padding_r, const ShapeVector &input_sizes,

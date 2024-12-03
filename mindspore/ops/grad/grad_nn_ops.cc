@@ -778,8 +778,8 @@ DEF_PURE_SHAPE_CALC(g_conv3d_padding_shapecalc)
     auto symmetric_padding = symmetric_padding_true;
 
     for (size_t i = 0; i < dim; ++i) {
-      auto stride = stride_values.size() == 1 ? stride_values[0] : stride_values[i];
-      auto dilation = dilation_values.size() == 1 ? dilation_values[0] : dilation_values[i];
+      auto stride = stride_values.size() == 1 ? stride_values[kIndex0] : stride_values[i];
+      auto dilation = dilation_values.size() == 1 ? dilation_values[kIndex0] : dilation_values[i];
       auto inputSize = input_sizes[i + 2];
       auto kernelSize = weight_sizes[i + 2];
       auto total_padding = dilation * (kernelSize - 1);
@@ -854,19 +854,20 @@ REG_BPROP_BUILDER("Conv3DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
   NodePtr conv2d_grad_out;
   NodePtr dx, s_dx, b_x, b_dout;
 
-  NodePtrList ret_shape = ib->ShapeCalc(g_conv3d_padding_shapecalc, {x, w, stride_value, dilation_value}, {2, 3});
+  NodePtrList ret_shape =
+    ib->ShapeCalc(g_conv3d_padding_shapecalc, {x, w, stride_value, dilation_value}, {kIndex2, kIndex3});
   auto &batchfy = ret_shape[kIndex4];
-  auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, 0), ib->Value<int64_t>(1));
+  auto batchfy_conditional = ib->Equal(ib->TupleGetItem(batchfy, kIndex0), ib->Value<int64_t>(1));
   auto cond_out_batchfy = ib->Conditional(
     batchfy_conditional,
     [&](Emitter *e) -> NodePtrList {
       return {x, dout};
     },
     [&](Emitter *e) -> NodePtrList {
-      return {e->ExpandDims(x, 0), e->ExpandDims(dout, 0)};
+      return {e->ExpandDims(x, kIndex0), e->ExpandDims(dout, kIndex0)};
     });
-  b_x = ib->TupleGetItem(cond_out_batchfy, 0);
-  b_dout = ib->TupleGetItem(cond_out_batchfy, 1);
+  b_x = ib->TupleGetItem(cond_out_batchfy, kIndex0);
+  b_dout = ib->TupleGetItem(cond_out_batchfy, kIndex1);
   if (pad_int_value == PadMode::SAME) {
     const auto &symmetric_padding = ret_shape[kIndex0];
     const auto &pad_nd = ret_shape[kIndex1];
@@ -887,22 +888,22 @@ REG_BPROP_BUILDER("Conv3DPadding").SetUnusedInputs({i7}).SetBody(BODYFUNC(ib) {
       return {e->ConvolutionGrad(b_dout, x_new, w, bias, stride_value, padding_l, dilation_value, transposed_value,
                                  output_padding_value, group_value, output_mask)};
     };
-    auto symmetric_padding_conditional = ib->Equal(ib->TupleGetItem(symmetric_padding, 0), ib->Value<int64_t>(1));
+    auto symmetric_padding_conditional = ib->Equal(ib->TupleGetItem(symmetric_padding, kIndex0), ib->Value<int64_t>(1));
     conv2d_grad_out = ib->Conditional(symmetric_padding_conditional, conv2d_grad_out_true, conv2d_grad_out_false);
 
     // // get dx
-    auto dx_true = [&](Emitter *e) -> NodePtrList { return {e->TupleGetItem(conv2d_grad_out, 0)}; };
+    auto dx_true = [&](Emitter *e) -> NodePtrList { return {e->TupleGetItem(conv2d_grad_out, kIndex0)}; };
 
     auto dx_false = [&](Emitter *e) -> NodePtrList {
       auto zero = e->EmitValue(MakeValue<int64_t>(0));
-      return {e->ConstantPadND(e->TupleGetItem(conv2d_grad_out, 0), padding_neg_pad, zero)};
+      return {e->ConstantPadND(e->TupleGetItem(conv2d_grad_out, kIndex0), padding_neg_pad, zero)};
     };
     dx = ib->Conditional(symmetric_padding_conditional, dx_true, dx_false);
   } else if (pad_int_value == PadMode::VALID) {
     conv2d_grad_out =
       ib->ConvolutionGrad(b_dout, b_x, w, bias, stride_value, ib->EmitValue(MakeValue(pad_vector)), dilation_value,
                           transposed_value, output_padding_value, group_value, output_mask);
-    dx = ib->TupleGetItem(conv2d_grad_out, 0);
+    dx = ib->TupleGetItem(conv2d_grad_out, kIndex0);
   } else {
     MS_LOG(EXCEPTION) << "For [Conv3DPadding], Input padding string must be one of {'same', 'valid'}";
   }

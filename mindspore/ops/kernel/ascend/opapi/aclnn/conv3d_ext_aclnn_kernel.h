@@ -33,7 +33,8 @@ class Conv3DExtAscend : public AclnnKernelMod {
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape);
-  TensorStorageInfoPtr CreateTensorStorageInfoPtr(const std::vector<int64_t> &shape);
+  TensorStorageInfoPtr CreateTensorStorageInfoPtr(const std::vector<int64_t> &new_shape,
+                                                  const TensorStorageInfoPtr &old_tensor_storage_info);
   template <typename T>
   void SetTensorStorageInfo(T kernel_tensor, ShapeVector shape);
 
