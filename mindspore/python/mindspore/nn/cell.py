@@ -32,7 +32,8 @@ from mindspore import context
 from mindspore._c_expression import init_pipeline, update_func_graph_hyper_params, Cell_, FuncGraph, MixedPrecisionType
 from mindspore import _checkparam as Validator
 from mindspore.common import dtype as mstype
-from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, _no_grad
+from mindspore.common.api import _cell_graph_executor, _pynative_executor, _get_args_for_run, cells_compile_cache, \
+    _no_grad
 from mindspore.common.api import _generate_branch_control_input, _convert_python_data, _get_args_for_run_predict
 from mindspore.common.api import _process_dyn_args, _generate_dyn_compile_args
 from mindspore.common.parameter import Parameter, ParameterTuple
@@ -44,6 +45,7 @@ from mindspore.parallel.shard import Shard
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
+
 
 class Cell(Cell_):
     """
@@ -2592,6 +2594,7 @@ class Cell(Cell_):
         """
         if context.get_context("mode") == context.PYNATIVE_MODE:
             self._recompute_cell = recompute_registry.get()(self.construct)
+            self._add_recompute_flag()
             return
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
@@ -2693,6 +2696,18 @@ class Cell(Cell_):
             self._jit_config_dict = network.jit_config_dict
         if hasattr(network, "_amp_level"):
             self._amp_level = getattr(network, "_amp_level")
+
+    def _add_recompute_flag(self):
+        """
+        Set pynative cell recomputed.
+        """
+        if not self._has_config_recompute:
+            self._has_config_recompute = True
+        else:
+            logger.info("The recompute interface can be configured only once."
+                        " If the parent cell is configured, the child cell should not be configured")
+        for cell in self.cells():
+            cell._add_recompute_flag()
 
 
 class GraphCell(Cell):
