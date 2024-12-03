@@ -64,6 +64,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/rms_norm_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_rms_norm_quant_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_quant_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/add_cast_rms_norm_cast_fusion.h"
 #include "plugin/device/ascend/optimizer/ge/avg_pool_grad_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
@@ -175,6 +176,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->Add(std::make_shared<opt::ShapeReshapeFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::ShapeReshapeFusion2>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::AddRmsNormQuantFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::AddCastRmsNormCastQuantFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::RmsNormQuantFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::AddRmsNormFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::AddCastRmsNormCastFusion>(), graphkernel::OptLevel_0);
