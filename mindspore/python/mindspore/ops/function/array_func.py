@@ -38,6 +38,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor, Meshgrid
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
 from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim, meshgrid_impl, \
     unique_consecutive_impl
+from mindspore.ops.functional_overload import min, max
 from mindspore.ops.operations.array_ops import (
     MatrixDiagV3,
     MatrixDiagPartV3,
@@ -5762,85 +5763,6 @@ def _init_and_select_elem(input, initial, where, cmp_fn):  # pylint: disable=red
     return input
 
 
-def max(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylint: disable=redefined-outer-name
-    """
-    Calculates the maximum value along with the given axis for the input tensor. It returns the maximum values and
-    indices.
-
-    Note:
-        - In auto_parallel and semi_auto_parallel mode, the first output index can not be used.
-        - When `axis` is ``None``, `keepdims` and subsequent parameters have no
-          effect. At the same time, the index is fixed to return 0.
-
-    .. warning::
-        - If there are multiple maximum values, the index of the first maximum value is used.
-        - The value range of "axis" is [-dims, dims - 1]. "dims" is the dimension length of "input".
-
-    Also see: :class:`mindspore.ops.ArgMaxWithValue`.
-
-    Args:
-        input (Tensor): The input tensor, can be any dimension. Complex tensor is not supported for now.
-        axis (int): The dimension to reduce. When `axis` is ``None``, computing the maximum value of all elements
-            in `input` .Default: ``None`` .
-        keepdims (bool): Whether to reduce dimension, if true, the output will keep same dimension with the input,
-            the output will reduce dimension if false. Default: ``False`` .
-
-    Keyword Args:
-        initial (scalar, optional): The minimum value of an output element. Must be present to allow computation
-            on empty slice. Default: ``None`` .
-        where (Tensor[bool], optional): A Tensor indicating whether to replace the primitive value in `input`
-            with the value in `initial`. If ``True`` , do not replace, otherwise replace. For the index of ``True``
-            in `where`, the corresponding value in `initial` must be assigned. Default: ``None`` , which indicates
-            ``True`` by default.
-
-    Returns:
-        tuple (Tensor), tuple of 2 tensors, containing the corresponding index and the maximum value of the input
-        tensor.
-
-        - values (Tensor) - The maximum value of input tensor, with the same shape as index, and same dtype as x.
-        - index (Tensor) - The index for the maximum value of the input tensor, with dtype int64. If `keepdims`
-          is true, the shape of output tensors is :math:`(input_1, input_2, ..., input_{axis-1}, 1, input_{axis+1},
-          ..., input_N)` . Otherwise, the shape is :math:`(input_1, input_2, ..., input_{axis-1}, input_{axis+1},
-          ..., input_N)` .
-
-    Raises:
-        TypeError: If `input` is not Tensor.
-        TypeError: If `keepdims` is not a bool.
-        TypeError: If `axis` is not an int.
-        TypeError: If `initial` is not a number.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output, index = ops.max(x)
-        >>> print(output, index)
-        0.7 0
-        >>> y = Tensor(np.array([[0.0, 0.3, 0.4, 0.5, 0.1],
-        ...                      [3.2, 0.4, 0.1, 2.9, 4.0]]), mindspore.float32)
-        >>> output, index = ops.max(y, axis=0, keepdims=True)
-        >>> print(output, index)
-        [[3.2 0.4 0.4 2.9 4. ]] [[1 1 0 1 1]]
-    """
-    if not input.shape:
-        return (input, Tensor(0, dtype=mstype.int64))
-    if axis is None:
-        return (max_(input), Tensor(0, dtype=mstype.int64))
-    if initial is not None and not isinstance(initial, numbers.Number):
-        raise TypeError(
-            f"For 'max', 'initial' must be a scalar, but got {type(initial)}")
-    if axis is not None and not isinstance(axis, int):
-        raise TypeError(f"For 'max', 'axis' must be int, but got {type(axis)}")
-    input = _init_and_select_elem(input, initial, where, ops.maximum)
-    argmax_with_value_op = _get_cache_prim(ArgMaxWithValue)(axis, keepdims)
-    indices, values = argmax_with_value_op(input)
-    return values, indices
-
-
 def argmax(input, dim=None, keepdim=False):
     """
     Return the indices of the maximum values of a tensor across a dimension.
@@ -5884,78 +5806,6 @@ def argmax(input, dim=None, keepdim=False):
     if keepdim and not is_dim_none:
         out = expand_dims(out, dim)
     return out
-
-
-def min(input, axis=None, keepdims=False, *, initial=None, where=None):  # pylint: disable=redefined-outer-name
-    """
-    Calculates the minimum value along with the given axis for the input tensor. It returns the minimum values and
-    indices.
-
-    Note:
-        - In auto_parallel and semi_auto_parallel mode, the first output index can not be used.
-        - When `axis` is ``None``, `keepdims` and subsequent parameters have no
-          effect. At the same time, the index is fixed to return 0.
-
-    .. warning::
-        - If there are multiple minimum values, the index of the first minimum value is used.
-        - The value range of "axis" is [-dims, dims - 1]. "dims" is the dimension length of "x".
-
-    Args:
-        input (Tensor): The input tensor, can be any dimension. Complex tensor is not supported for now.
-        axis (int): The dimension to reduce. Default: ``None`` .
-        keepdims (bool): Whether to reduce dimension, if ``True`` the output will keep the same dimension as the input,
-            the output will reduce dimension if ``False`` . Default: ``False`` .
-
-    Keyword Args:
-        initial (scalar, optional): The maximum value of an output element. Must be present to allow computation
-            on empty slice. Default: ``None`` .
-        where (Tensor[bool], optional): A Tensor indicating whether to replace the primitive value in `input`
-            with the value in `initial`. If ``True`` , do not replace, otherwise replace. For the index of ``True``
-            in `where`, the corresponding value in `initial` must be assigned. Default: ``None`` , which indicates
-            ``True``  by default.
-
-    Returns:
-        tuple (Tensor), tuple of 2 tensors, containing the corresponding index and the minimum value of the input
-        tensor.
-
-        - **values** (Tensor) - The minimum value of input tensor, with the same
-          shape as `index`, and same dtype as `x`.
-        - **index** (Tensor) - The index for the minimum value of the input tensor, with dtype int32. If `keepdims`
-          is true, the shape of output tensors is :math:`(input_1, input_2, ..., input_{axis-1}, 1, input_{axis+1},
-          ..., input_N)` . Otherwise, the shape is :math:`(input_1, input_2, ..., input_{axis-1}, input_{axis+1},
-          ..., input_N)` .
-
-    Raises:
-        TypeError: If `x` is not Tensor.
-        TypeError: If `keepdims` is not a bool.
-        TypeError: If `axis` is not an int.
-        TypeError: If `initial` is not a number.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output, index = ops.min(x, keepdims=True)
-        >>> print(output, index)
-        0.0 0
-    """
-    if not input.shape:
-        return (input, Tensor(0, dtype=mstype.int64))
-    if axis is None:
-        return (min_(input), Tensor(0, dtype=mstype.int64))
-    if initial is not None and not isinstance(initial, numbers.Number):
-        raise TypeError(
-            f"For 'min', 'initial' must be a scalar, but got {type(initial)}")
-    if axis is not None and not isinstance(axis, int):
-        raise TypeError(f"For 'min', 'axis' must be int, but got {type(axis)}")
-    input = _init_and_select_elem(input, initial, where, ops.minimum)
-    argmin_with_value_op = _get_cache_prim(ArgMinWithValue)(axis, keepdims)
-    indices, values = argmin_with_value_op(input)
-    return values, indices
 
 
 def aminmax(input, *, axis=0, keepdims=False):
@@ -7266,107 +7116,6 @@ def gather_ext(input, dim, index):
          [0.5   0.5]]
     """
     return gather_d_op(input, dim, index)
-
-
-def max_ext(input, dim=None, keepdim=False):
-    """
-    Calculates the maximum value along with the given dimension for the input tensor.
-
-    Args:
-        input (Tensor): The input tensor, can be any dimension. Complex tensor is not supported for now.
-        dim (int, optional): The dimension to reduce. Default: ``None`` .
-        keepdim (bool, optional): Whether to reduce dimension, if true, the output will keep same dimension
-            with the input, the output will reduce dimension if false. Default: ``False`` .
-
-    Returns:
-        Tensor if `dim` is the default value ``None`` , the maximum value of input tensor, with the shape :math:`()` ,
-        and same dtype as `input`.
-
-        tuple (Tensor) if `dim` is not the default value ``None`` , tuple of 2 tensors, containing the maximum
-        value of the input tensor along the given dimension `dim` and the corresponding index.
-
-        - **values (Tensor)** - The maximum value of input tensor along the given dimension `dim`, with same dtype as
-          `input`. If `keepdim` is ``True`` , the shape of output tensors is :math:`(input_1, input_2, ...,
-          input_{axis-1}, 1, input_{axis+1}, ..., input_N)` . Otherwise, the shape is :math:`(input_1, input_2, ...,
-          input_{axis-1}, input_{axis+1}, ..., input_N)` .
-        - **index (Tensor)** - The index for the maximum value of the input tensor along the given dimension `dim`, with
-          the same shape as `values`.
-
-    Raises:
-        ValueError: If `dim` is the default value ``None`` and `keepdim` is not ``False`` .
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import max_ext
-        >>> y = Tensor(np.array([[0.0, 0.3, 0.4, 0.5, 0.1],
-        ...                      [3.2, 0.4, 0.1, 2.9, 4.0]]), mindspore.float32)
-        >>> output, index = max_ext(y, 0, True)
-        >>> print(output, index)
-        [[3.2 0.4 0.4 2.9 4. ]] [[1 1 0 1 1]]
-    """
-    if dim is None:
-        if keepdim is not False:
-            raise ValueError(
-                f"For 'max', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
-        return max_(input)
-    argmax_with_value_op = _get_cache_prim(ArgMaxWithValue)(dim, keepdim)
-    indices, values = argmax_with_value_op(input)
-    return values, indices
-
-
-def min_ext(input, dim=None, keepdim=False):
-    """
-    Calculates the minimum value along with the given dimension for the input tensor.
-
-    Args:
-        input (Tensor): The input tensor, can be any dimension. Complex tensor is not supported for now.
-        dim (int, optional): The dimension to reduce. Default: ``None`` .
-        keepdim (bool, optional): Whether to reduce dimension, if true, the output will keep same dimension
-            with the input, the output will reduce dimension if false. Default: ``False`` .
-
-    Returns:
-        Tensor if `dim` is the default value ``None`` , the minimum value of input tensor, with the shape :math:`()` ,
-        and same dtype as `input`.
-
-        tuple (Tensor) if `dim` is not the default value ``None`` , tuple of 2 tensors, containing the minimum value
-        of the input tensor along the given dimension `dim` and the corresponding index.
-
-        - **values (Tensor)** - The minimum value of input tensor along the given dimension `dim`, with same dtype as
-          `input`. If `keepdim` is ``True`` , the shape of output tensors is :math:`(input_1, input_2, ...,
-          input_{axis-1}, 1, input_{axis+1}, ..., input_N)` . Otherwise, the shape is :math:`(input_1, input_2, ...,
-          input_{axis-1}, input_{axis+1}, ..., input_N)` .
-        - **index (Tensor)** - The index for the minimum value of the input tensor along the given dimension `dim`,
-          with the same shape as `values`.
-
-    Raises:
-        ValueError: If `dim` is the default value ``None`` and `keepdim` is not ``False`` .
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.array_func import min_ext
-        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output, index = min_ext(x, 0, keepdim=True)
-        >>> print(output, index)
-        [0.0] [0]
-    """
-    if dim is None:
-        if keepdim is not False:
-            raise ValueError(
-                f"For 'min', the `keepdim` must be False when the `dim` is None, but got {keepdim}")
-        return min_(input)
-    argmin_with_value_op = _get_cache_prim(ArgMinWithValue)(dim, keepdim)
-    indices, values = argmin_with_value_op(input)
-    return values, indices
 
 
 def one_hot_ext(tensor, num_classes):

@@ -62,3 +62,24 @@ def test_tensor_max(mode):
     expect_indices = Tensor(np.array([1, 1]), ms.int32)
     assert np.allclose(output_x.asnumpy(), expect_x.asnumpy())
     assert np.allclose(indices.asnumpy(), expect_indices.asnumpy())
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
+def test_tensor_max_overload(mode):
+    """
+    Feature: Functional.
+    Description: Test tensor method overload x.max(dim, keep_dims=False)
+    Expectation: Run success
+    """
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+    x = ms.Tensor(np.arange(4).reshape((2, 2)).astype(np.float32))
+    net = Net(x)
+    dim = 0
+    keep_dims = False
+    output, index = net(dim, keep_dims)
+    assert np.allclose(output.asnumpy(), np.array([2.0, 3.0]))
+    assert np.allclose(index.asnumpy(), np.array([1, 1]))
