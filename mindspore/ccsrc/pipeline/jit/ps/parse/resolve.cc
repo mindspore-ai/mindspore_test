@@ -286,34 +286,6 @@ AnfNodePtr TransformFuncValueNode(const FuncGraphManagerPtr &manager, const Func
   return nullptr;
 }
 
-bool IsParameterObject(const py::object &obj) { return py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj); }
-
-bool ContainsParameter(const py::object &obj) {
-  if (IsParameterObject(obj) || py::hasattr(obj, "__parameter_tuple__")) {
-    return true;
-  }
-  if ((py::isinstance<py::tuple>(obj) || py::isinstance<py::list>(obj)) && py::len(obj) != 0) {
-    // NamedTuple
-    if (py::hasattr(obj, "_fields")) {
-      return false;
-    }
-    auto tuple = obj.cast<py::tuple>();
-    for (size_t i = 0; i < tuple.size(); ++i) {
-      if (ContainsParameter(tuple[i])) {
-        return true;
-      }
-    }
-  } else if (py::isinstance<py::dict>(obj)) {
-    auto dict = obj.cast<py::dict>();
-    for (auto item : dict) {
-      auto item_value = py::cast<py::object>(item.second);
-      if (ContainsParameter(item_value)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
 }  // namespace
 
 void Resolver::ConvertLoadedGraph(const FuncGraphPtr &func_graph, const ValuePtr &value) {
@@ -456,6 +428,40 @@ AnfNodePtr Resolver::ResolveObjectAndAddToManager(const FuncGraphManagerPtr &man
   }
   fallback::SetPyObjectToNode(resolved_node, obj);
   return resolved_node;
+}
+
+bool IsParameterObject(const py::object &obj) {
+  return obj.ptr() != nullptr && py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj);
+}
+
+bool ContainsParameter(const py::object &obj) {
+  if (obj.ptr() == nullptr) {
+    return false;
+  }
+  if (IsParameterObject(obj) || py::hasattr(obj, "__parameter_tuple__")) {
+    return true;
+  }
+  if ((py::isinstance<py::tuple>(obj) || py::isinstance<py::list>(obj)) && py::len(obj) != 0) {
+    // NamedTuple
+    if (py::hasattr(obj, "_fields")) {
+      return false;
+    }
+    auto tuple = obj.cast<py::tuple>();
+    for (size_t i = 0; i < tuple.size(); ++i) {
+      if (ContainsParameter(tuple[i])) {
+        return true;
+      }
+    }
+  } else if (py::isinstance<py::dict>(obj)) {
+    auto dict = obj.cast<py::dict>();
+    for (auto item : dict) {
+      auto item_value = py::cast<py::object>(item.second);
+      if (ContainsParameter(item_value)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool Resolver::ResolveObjectToNode(const AnfNodePtr &origin_node, const py::object &obj, AnfNodePtr *const node,

@@ -239,8 +239,9 @@ class FuncGraphBuilder {
   static bool CheckGraphOutput(const AbstractBasePtr &abs);
 
   AnfNodePtr ConvertObjToNode(const py::object &input_obj);
-
   AnfNodePtr ConvertParameterTupleToNode(const py::object &input_obj);
+  AnfNodePtr ConvertPyTupleListToNode(const py::object &obj);
+  AnfNodePtr ConvertPyDictToNode(const py::dict &dict);
 
   AbstractWrapperPtr AddNodeWithAbstract(const ValuePtr &value, const AbstractWrapperPtrList &inputs_abstract_wrapper,
                                          const AbstractBasePtr &abstract);

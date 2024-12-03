@@ -72,8 +72,6 @@ bool Mutable(const py::object &obj, const ValuePtr &value = nullptr) {
   return py::hasattr(obj, mutable_attr) && py::cast<bool>(py::getattr(obj, mutable_attr));
 }
 
-bool IsParameter(const py::object &obj) { return py::hasattr(obj, "__parameter__") && tensor::IsTensorPy(obj); }
-
 bool TensorArgMutable(const py::object &obj, const ValuePtr &value) {
   if (!value->isa<tensor::MetaTensor>()) {
     return false;
@@ -206,7 +204,7 @@ AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input
   std::vector<AbstractBasePtr> inputs_abs;
   parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
   for (const auto &obj : tuple_obj) {
-    if (!IsParameter(py::cast<py::object>(obj))) {
+    if (!parse::IsParameterObject(py::cast<py::object>(obj))) {
       MS_LOG(INFO) << "Encounter non parameter object in parameter tuple object: " << py::str(obj);
       return nullptr;
     }
@@ -247,7 +245,22 @@ void FuncGraphBuilder::UpdateParameterFuncGraph(const AnfNodePtr &node) {
 }
 
 AnfNodePtr FuncGraphBuilder::ConvertObjToNode(const py::object &input_obj) {
-  if (IsParameter(input_obj)) {
+  if (input_obj.ptr() == nullptr) {
+    MS_LOG(INFO) << "Failed to convert input object to value, python object is null!";
+    return nullptr;
+  }
+  if (!parse::ContainsParameter(input_obj)) {
+    ValuePtr val = ConvertPyObjToValue(input_obj);
+    if (val == nullptr) {
+      MS_LOG(INFO) << "Failed to convert input object to value: " << py::str(input_obj);
+      return nullptr;
+    }
+    // Constant value input scene, the object should be converted to value node.
+    auto node = NewValueNode(val);
+    node->set_abstract(val->ToAbstract());
+    return node;
+  }
+  if (parse::IsParameterObject(input_obj)) {
     // Add the fv parameter and set its abstract.
     parse::Resolver resolver(parse::Parser::GetTopFuncGraph());
     auto ret = resolver.ResolveParameterObj(graph_, input_obj);
@@ -258,14 +271,56 @@ AnfNodePtr FuncGraphBuilder::ConvertObjToNode(const py::object &input_obj) {
   if (parameter_tuple_object != nullptr) {
     return parameter_tuple_object;
   }
-  auto val = ConvertPyObjToValue(input_obj);
-  if (val == nullptr) {
-    MS_LOG(INFO) << "The input object " << py::str(input_obj) << " convert to value failed.";
-    return nullptr;
+  if (py::isinstance<py::tuple>(input_obj) || py::isinstance<py::list>(input_obj)) {
+    return ConvertPyTupleListToNode(input_obj);
   }
-  // Constant value input scene, the object should be converted to value node.
-  auto node = NewValueNode(val);
-  node->set_abstract(val->ToAbstract());
+  if (py::isinstance<py::dict>(input_obj)) {
+    auto dict = input_obj.cast<py::dict>();
+    return ConvertPyDictToNode(dict);
+  }
+  MS_LOG(INFO) << "The Parameter in obj '" << py::str(input_obj) << "' with nested structure is not supported."
+               << " Currently only single Parameter, ParameterTuple or Parameters in tuple/list/dict are supported.";
+  return nullptr;
+}
+
+AnfNodePtr FuncGraphBuilder::ConvertPyTupleListToNode(const py::object &obj) {
+  PrimitivePtr prim = py::isinstance<py::tuple>(obj) ? prim::kPrimMakeTuple : prim::kPrimMakeList;
+  std::vector<AnfNodePtr> args{NewValueNode(prim)};
+  std::vector<AbstractBasePtr> args_abs;
+
+  auto tuple = obj.cast<py::tuple>();
+  for (auto &elem : tuple) {
+    AnfNodePtr node = ConvertObjToNode(py::cast<py::object>(elem));
+    if (node == nullptr || node->abstract() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert tuple/list element to node";
+      return nullptr;
+    }
+    args.push_back(node);
+    args_abs.push_back(node->abstract());
+  }
+  auto node = NewCNode(std::move(args), parse::Parser::GetTopFuncGraph());
+  node->set_abstract(std::make_shared<abstract::AbstractTuple>(args_abs));
+  return node;
+}
+
+AnfNodePtr FuncGraphBuilder::ConvertPyDictToNode(const py::dict &dict) {
+  std::vector<AnfNodePtr> keys{NewValueNode(prim::kPrimMakeTuple)};
+  std::vector<AnfNodePtr> values{NewValueNode(prim::kPrimMakeTuple)};
+  std::vector<abstract::AbstractElementPair> kv_abs;
+  for (auto &item : dict) {
+    AnfNodePtr key = ConvertObjToNode(py::cast<py::object>(item.first));
+    AnfNodePtr value = ConvertObjToNode(py::cast<py::object>(item.second));
+    if (key == nullptr || value == nullptr || key->abstract() == nullptr || value->abstract() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert dict element to node";
+      return nullptr;
+    }
+    keys.push_back(key);
+    values.push_back(value);
+    (void)kv_abs.emplace_back(std::make_pair(key->abstract(), value->abstract()));
+  }
+  FuncGraphPtr fg = parse::Parser::GetTopFuncGraph();
+  auto node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), fg->NewCNode(keys), fg->NewCNode(values)});
+  node->set_abstract(std::make_shared<abstract::AbstractDictionary>(kv_abs));
   return node;
 }
 
@@ -438,7 +493,7 @@ bool FuncGraphBuilder::IsParameterSequence(const py::object &object) {
     return false;
   }
   if (std::any_of(object_tuple.begin(), object_tuple.end(),
-                  [](const auto &element) { return !IsParameter(py::cast<py::object>(element)); })) {
+                  [](const auto &element) { return !parse::IsParameterObject(py::cast<py::object>(element)); })) {
     return false;
   }
   return true;
@@ -649,6 +704,10 @@ AbstractWrapperPtr FuncGraphBuilder::AddSubGraphInput(const AbstractWrapperPtr a
     return nullptr;
   }
   auto node = GetNodeByWrapper(abstract_wrapper);
+  if (node == nullptr) {
+    MS_LOG(INFO) << "Failed to add input for abstract wrapper: " << abstract_wrapper->ToString();
+    return nullptr;
+  }
   AbstractBasePtr para_abs = node->abstract();
   if (para_abs == nullptr) {
     MS_LOG(INFO) << "Failed to add input for abstract wrapper: " << abstract_wrapper->ToString();
