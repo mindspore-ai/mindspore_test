@@ -176,6 +176,13 @@ void KernelActor::InitIsMonadInput() {
 
 void KernelActor::InitInputInfo() {
   for (size_t i = 0; i < real_input_num_; ++i) {
+    if (is_monad_input_[i]) {
+      auto build_info = kernel_info_->GetMutableSelectKernelBuildInfo();
+      MS_EXCEPTION_IF_NULL(build_info);
+      (void)real_input_data_infos_.emplace_back(std::make_shared<InputDataInfo>(
+        build_info->GetInputFormat(i), ShapeVector{}, 0, build_info->GetInputDeviceType(i)));
+      continue;
+    }
     const auto &input_device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(kernel_, i, false);
     MS_EXCEPTION_IF_NULL(input_device_tensor);
     (void)real_input_data_infos_.emplace_back(
