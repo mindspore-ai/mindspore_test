@@ -2747,6 +2747,26 @@ REG_BPROP_BUILDER("ArgMinWithValue").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) 
   return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
 });
 
+REG_BPROP_BUILDER("MaxDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto keep_dims = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = ArgminOrArgmaxGrad(ib, x, axis, keep_dims, out, dout, true, true);
+  return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
+});
+
+REG_BPROP_BUILDER("MinDim").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto axis = ib->GetInput(kIndex1);
+  auto keep_dims = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
+  auto dx = ArgminOrArgmaxGrad(ib, x, axis, keep_dims, out, dout, false, true);
+  return {dx, ib->OutZeros(axis), ib->OutZeros(keep_dims)};
+});
+
 REG_BPROP_BUILDER("ComplexAbs").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);

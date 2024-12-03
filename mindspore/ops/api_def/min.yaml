@@ -12,4 +12,11 @@ min:
     Ascend: pyboost
     CPU: pyboost
     GPU: pyboost
-    interface: tensor
+    interface: tensor, function
+
+  - op_yaml: min_dim_op.yaml
+    py_method: tensor_mindim
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor, function

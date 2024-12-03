@@ -17,7 +17,7 @@ from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.ops.primitive import constexpr
 from mindspore.common.tensor import Tensor
-from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
+from mindspore.ops.function.array_func import gather_ext as gather
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
 from mindspore.mint.nn.functional import sigmoid
 from mindspore.mint.nn import functional
@@ -45,7 +45,7 @@ from mindspore.ops.function.math_func import roll
 # 2
 from mindspore.ops.function.math_func import sin
 # 3
-from mindspore.ops.functional_overload import clamp
+from mindspore.ops.functional_overload import clamp, min, max
 from mindspore.ops.functional_overload import clip
 from mindspore.ops.functional_overload import fmod
 # 4
@@ -455,7 +455,7 @@ from mindspore.ops.auto_generate.pyboost_inner_prim import squeeze_impl
 from mindspore.ops.auto_generate.gen_ops_prim import equal_ext_op
 
 
-#1023
+# 1023
 from mindspore.ops.function.array_func import unbind_ext as unbind
 
 
@@ -817,7 +817,8 @@ def _einsum_convert_sublist_to_label(num, ell_num=False):
         return chr(num + ord('A'))
     if 26 <= num < 52:
         return chr(num + ord('a') - 26)
-    raise ValueError(f'For einsum, the number in sublist must be in range [0, 52), but got {num}')
+    raise ValueError(
+        f'For einsum, the number in sublist must be in range [0, 52), but got {num}')
 
 
 def _einsum_convert_label_to_index(label):
@@ -829,7 +830,8 @@ def _einsum_convert_label_to_index(label):
         return label_num - ord('a') + 26
     if label_num == ord('.'):
         return 52
-    raise ValueError(f'For einsum, the label in equation must be in [a-zA-Z] or ., but got {label}')
+    raise ValueError(
+        f'For einsum, the label in equation must be in [a-zA-Z] or ., but got {label}')
 
 
 def _einsum_convert_sublist(equation, *operands):
@@ -852,18 +854,21 @@ def _einsum_convert_sublist(equation, *operands):
             operands_tmp = list([equation]) + list(operands[1::2])
         equation = equation_tmp
         operands = tuple(operands_tmp)
-    if len(operands) == 0: # pylint: disable=len-as-condition
-        raise ValueError("For einsum, the 'operands' must have at least one operand.")
+    if len(operands) == 0:  # pylint: disable=len-as-condition
+        raise ValueError(
+            "For einsum, the 'operands' must have at least one operand.")
     return equation, operands
 
 
 def _einsum_check_inputargs(equation, operands):
     """Check equation and operands."""
     if not isinstance(equation, str):
-        raise TypeError(f"For einsum, 'equation' must be a str, but got {type(equation)}.")
+        raise TypeError(
+            f"For einsum, 'equation' must be a str, but got {type(equation)}.")
     for operand in operands:
         if not isinstance(operand, Tensor):
-            raise TypeError(f"For einsum, members of 'operands' must be Tensor, but got {type(operand)}.")
+            raise TypeError(
+                f"For einsum, members of 'operands' must be Tensor, but got {type(operand)}.")
 
 
 @constexpr
@@ -876,7 +881,8 @@ def _einsum_parse_equation(equation):
     if '->' in equation:
         l_equation, r_equation = equation.split('->', 1)
         if l_equation == '':
-            raise ValueError('For einsum, equation must contain characters to the left fo the arrow.')
+            raise ValueError(
+                'For einsum, equation must contain characters to the left fo the arrow.')
     else:
         l_equation = equation
 
@@ -891,13 +897,15 @@ def _einsum_parse_equation(equation):
         if '.' in subequation and ('...' not in subequation or subequation.count('.') != 3):
             raise ValueError(f"For einsum, an ellipsis in the equation must include three continuous \'.\', "
                              f"and can only be found once.")
-        subequation_lst = [_einsum_convert_label_to_index(label) for label in subequation.replace('...', '.')]
+        subequation_lst = [_einsum_convert_label_to_index(
+            label) for label in subequation.replace('...', '.')]
         l_equationlst.append(subequation_lst)
 
     if "." in r_equation and ('...' not in r_equation or r_equation.count('.') != 3):
         raise ValueError(f"For einsum, an ellipsis in the equation must include three continuous \'.\', "
                          f"and can only be found once.")
-    r_equationlst = [_einsum_convert_label_to_index(label) for label in r_equation.replace('...', '.')]
+    r_equationlst = [_einsum_convert_label_to_index(
+        label) for label in r_equation.replace('...', '.')]
 
     return l_equationlst, r_equationlst, ('->' in equation)
 
@@ -1120,12 +1128,16 @@ def _einsum_multiplication(sum_dims, l_tensor, r_tensor):
 
 def _einsum(equation, operands):
     '''Einsum main process'''
-    _l_equationlst, _r_equationlst, _arrow_exist = _einsum_parse_equation(equation)
-    _ellipsis_dimnum, _labels_count, _align_rank = _einsum_parse_labels(_l_equationlst, operands)
-    _output_rank, _labels_perm_idx = _einsum_infer_output(_r_equationlst, _arrow_exist, _ellipsis_dimnum, _labels_count)
+    _l_equationlst, _r_equationlst, _arrow_exist = _einsum_parse_equation(
+        equation)
+    _ellipsis_dimnum, _labels_count, _align_rank = _einsum_parse_labels(
+        _l_equationlst, operands)
+    _output_rank, _labels_perm_idx = _einsum_infer_output(
+        _r_equationlst, _arrow_exist, _ellipsis_dimnum, _labels_count)
     _adjust_operands = _einsum_adjust_operands(operands, _l_equationlst, _ellipsis_dimnum, _labels_perm_idx,
                                                _align_rank)
-    _dim_last_op, _has_zero_dim = _einsum_find_dimlastop(_align_rank, operands, _adjust_operands)
+    _dim_last_op, _has_zero_dim = _einsum_find_dimlastop(
+        _align_rank, operands, _adjust_operands)
     _result = _adjust_operands[0]
 
     # Fast path if operands has zero dim.
@@ -1273,7 +1285,8 @@ def einsum(equation, *operands):
 
     for operand in _operands:
         if ops.is_sequence_shape_unknown(operand.shape) or ops.is_sequence_value_unknown(operand.shape):
-            raise ValueError(f"For einsum, the element of 'operands' can't be dynamic shape or dynamic rank.")
+            raise ValueError(
+                f"For einsum, the element of 'operands' can't be dynamic shape or dynamic rank.")
 
     return _einsum(_equation, _operands)
 
