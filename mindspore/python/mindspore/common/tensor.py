@@ -529,6 +529,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     def shape(self):
         """
         For details, please refer to :func:`mindspore.ops.shape`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> print(x.shape)
+            (2, 2)
         """
         return self._shape
 
@@ -541,7 +548,16 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     @property
     def dtype(self):
-        """Return the dtype of the tensor (:class:`mindspore.dtype`)."""
+        """
+        Return the dtype of the tensor (:class:`mindspore.dtype`).
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([1, 2], dtype=np.float32))
+            >>> print(x.dtype)
+            Float32
+        """
         return self._dtype
 
     @property
@@ -3888,6 +3904,15 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         Accessing this property is equivalent to Calling self.adjoint().
         For details, please refer to :func:`mindspore.ops.adjoint`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[0. + 0.j, 1. + 1.j], [2. + 2.j, 3. + 3.j]]))
+            >>> output = x.mH
+            >>> print(output)
+            [[0.-0.j 2.-2.j]
+             [1.-1.j 3.-3.j]]
         """
         return self.adjoint()
 
@@ -3897,6 +3922,14 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Returns the Tensor that exchanges the last two dimensions.
         Accessing the attribute, x.mT, is equal to calling the method, x.swapaxes(-2, -1).
         For details, please refer to :func:`mindspore.Tensor.swapaxes`.
+
+        Examples:
+            >>> from mindspore import Tensor
+            >>> import numpy as np
+            >>> x = Tensor(np.ones((2, 3, 4)))
+            >>> output = x.mT
+            >>> print(output.shape)
+            (2, 4, 3)
         """
         return self.swapaxes(-2, -1)
 
