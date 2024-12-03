@@ -23,9 +23,9 @@
 #include "include/common/utils/utils.h"
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "common/debug/profiler/profiling_python.h"
-#include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
+#include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
 #include "plugin/device/ascend/hal/profiler/memory_profiling.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
 #include "runtime/hardware/device_context_manager.h"
@@ -265,7 +265,6 @@ void AscendProfiler::Stop() {
     ProfilingDataDumper::GetInstance().Stop();
     MS_LOG(INFO) << "Stop AscendProfiler cpu trace";
   }
-
   StepProfilingEnable(false);
   MS_LOG(INFO) << "Stop AscendProfiler end";
 }

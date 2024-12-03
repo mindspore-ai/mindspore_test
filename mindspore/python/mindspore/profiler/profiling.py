@@ -65,6 +65,7 @@ from mindspore.profiler.parser.ascend_integrate_generator import AscendIntegrate
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 from mindspore.profiler.parser.ascend_analysis.constant import Constant
+from mindspore.profiler.parser.ascend_op_memory_viewer import AscendOpMemoryViewer
 from mindspore.profiler.common.util import timeit
 
 
@@ -1380,10 +1381,6 @@ class Profiler:
         target_timeline_path = os.path.join(ascend_profiler_output_path, f"trace_view.json")
         PathManager.copy_file(source_timeline_path, target_timeline_path)
 
-        src_op_mem_file = os.path.join(self._output_path, f"operator_memory_{dev_id}.csv")
-        dst_op_mem_file = os.path.join(ascend_profiler_output_path, f"operator_memory.csv")
-        PathManager.copy_file(src_op_mem_file, dst_op_mem_file)
-
         ms_output_path = os.path.realpath(
             os.path.join(source_path, os.path.pardir, 'mindstudio_profiler_output'))
         static_op_mem_path = os.path.join(ms_output_path, f"static_op_mem_*.csv")
@@ -1402,6 +1399,7 @@ class Profiler:
         self._ascend_graph_communicate_analyse(source_path, ascend_profiler_output_path)
         AscendIntegrateGenerator(source_path, ascend_profiler_output_path).parse()
         AscendMemoryGenerator(self._output_path, self._rank_id, source_path, ascend_profiler_output_path).parse()
+        AscendOpMemoryViewer(self._framework_path, ascend_profiler_output_path).save()
 
     def _ascend_graph_cluster_analyse(self, source_path, ascend_profiler_output_path):
         """Analyse step trace time info"""

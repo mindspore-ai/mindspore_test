@@ -23,7 +23,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -39,23 +38,6 @@ namespace device {
 constexpr size_t kDecimalPrecision = 3;
 
 class AbstractDynamicMemPool;
-
-struct JsonBuilder {
-  JsonBuilder() { buffer_ << "{"; }
-
-  template <typename T>
-  void Append(std::string key, T value) {
-    buffer_ << "\"" << key << "\":" << value << ",";
-  }
-
-  std::string ToString() {
-    buffer_.seekp(-1, buffer_.cur);
-    buffer_ << "}";
-    return buffer_.str();
-  }
-
-  std::stringstream buffer_;
-};
 
 class Lock {
  public:
@@ -82,7 +64,7 @@ class BACKEND_EXPORT LockGuard {
 struct MemBlock;
 
 using MemBufStatus = DynamicMemBufStatus;
-struct MemBuf : EventBase {
+struct BACKEND_EXPORT MemBuf : EventBase {
   explicit MemBuf(size_t size, void *addr, uint32_t stream_id, MemBlock *mem_block, MemBufStatus status);
 
   MemBuf() = delete;
@@ -422,6 +404,10 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
     return addr_mem_buf_allocators_;
   }
 
+  std::unordered_map<std::pair<uint32_t, uint32_t>, std::set<MemBuf *>, pair_hash> &stream_pair_mem_bufs() {
+    return stream_pair_mem_bufs_;
+  }
+
   const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
 
   MemStat &mem_stat() { return mem_stat_; }
@@ -451,69 +437,6 @@ class BACKEND_EXPORT AbstractDynamicMemPool : virtual public DynamicMemPool {
   size_t last_eager_free_count_{0};
   Lock lock_;
 };
-
-struct BACKEND_EXPORT MemoryTimeEvent {
-  // Creation time of address in ns.
-  uint64_t created_at_{0};
-
-  // Device address.
-  void *addr_{nullptr};
-
-  // Size of memory allocation.
-  size_t size_{0};
-
-  // Whether allocation from persistent memory.
-  uint8_t from_persistent_{false};
-
-  // Whether allocated memory is persistent.
-  uint8_t is_persistent_{false};
-
-  // Stream id of address.
-  uint32_t stream_id_{0};
-
-  // pynative or graph or ge.
-  uint8_t run_mode_{0};
-
-  // Used size of memory pool.
-  size_t used_size_{0};
-
-  // Peak size of memory pool.
-  size_t peak_size_{0};
-
-  // Allocate size of memory pool.
-  size_t alloc_size_{0};
-
-  // Memory size that referred by event.
-  size_t used_by_event_size_{0};
-
-  // Eager free memory size.
-  size_t eager_free_size_{0};
-
-  // Owner of this address.
-  std::string owner_;
-
-  // Data type of this address.
-  uint8_t alloc_type_;
-
-  std::string ToJson() {
-    JsonBuilder builder;
-    builder.Append("created_at_", created_at_);
-    builder.Append("addr_", addr_);
-    builder.Append("size_", size_);
-    builder.Append("from_persistent_", from_persistent_);
-    builder.Append("stream_id_", stream_id_);
-    builder.Append("run_mode_", run_mode_);
-    builder.Append("used_size_", used_size_);
-    builder.Append("peak_size_", peak_size_);
-    builder.Append("alloc_size_", alloc_size_);
-    builder.Append("used_by_event_size_", used_by_event_size_);
-    builder.Append("eager_free_size_", eager_free_size_);
-    builder.Append("owner_", owner_);
-    builder.Append("alloc_type_", alloc_type_);
-    return builder.ToString();
-  }
-};
-using MemoryTimeEventPtr = std::shared_ptr<MemoryTimeEvent>;
 
 class BACKEND_EXPORT AbstractEnhancedDynamicMemPool : public AbstractDynamicMemPool {
  public:
