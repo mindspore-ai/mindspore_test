@@ -1,7 +1,7 @@
 mindspore.mint.nn.Conv3d
 =============================
 
-.. py:class:: mindspore.nn.Conv3d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', dtype=None)
+.. py:class:: mindspore.mint.nn.Conv3d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros', dtype=None)
 
     三维卷积层。
 
@@ -41,7 +41,7 @@ mindspore.mint.nn.Conv3d
         - **out_channels** (int) - Conv3d层输出Tensor的空间维度。
         - **kernel_size** (Union[int, tuple[int]]) - 指定三维卷积核的高度和宽度。数据类型是整数或两个整数的元组。整数表示卷积核的高度和宽度。两个整数的元组分别表示卷积核的高度和宽度。
         - **stride** (Union[int, tuple[int]]，可选) - 三维卷积核的移动步长。数据类型为整型或三个整型的tuple。一个整数表示在深度、高度和宽度方向的移动步长均为该值。三个整数的tuple分别表示在深度、高度和宽度方向的移动步长。默认值： ``1`` 。
-        - **padding** (Union[int, tuple[int], str]，可选) - 输入的深度、高度和宽度方向上的填充数。数据类型是整数或字符串{ `valid` ， `same` }或三个整数的元组。该值应大于或等于0。默认值：“0”。
+        - **padding** (Union[int, tuple[int], str]，可选) - 输入的深度、高度和宽度方向上的填充数。数据类型是整数或字符串{ `valid` ， `same` }或三个整数的元组。该值应大于或等于0。默认值： ``0`` 。
 
           - ``"same"``：在输入的边缘加上衬垫，这样当 `stride` 设置为“1”时，输入和输出的形状是相同的。填充量由运算符内部计算。如果填充量是偶数，则均匀分布在输入周围，如果填充量为奇数，则多余的填充量会流向右侧/底部。
             如果设置了此模式，则 `padding` 必须为0。

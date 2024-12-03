@@ -39,10 +39,22 @@ std::vector<int64_t> Conv3DExtAscend::GetOriStrides(const std::vector<int64_t> &
   return ret;
 }
 
-TensorStorageInfoPtr Conv3DExtAscend::CreateTensorStorageInfoPtr(const std::vector<int64_t> &shape) {
+TensorStorageInfoPtr Conv3DExtAscend::CreateTensorStorageInfoPtr(const std::vector<int64_t> &new_shape,
+                                                                 const TensorStorageInfoPtr &old_tensor_storage_info) {
+  if (old_tensor_storage_info != nullptr) {
+    const auto &shape = old_tensor_storage_info->shape;
+    const auto &strides = old_tensor_storage_info->strides;
+    // create new tensor info
+    auto new_strides(strides);
+    new_strides.insert(new_strides.begin(), shape[0] * strides[0]);
+    return std::make_shared<TensorStorageInfo>(
+      new_shape, new_strides, old_tensor_storage_info->storage_offset, old_tensor_storage_info->ori_shape,
+      old_tensor_storage_info->ori_strides, old_tensor_storage_info->is_contiguous, old_tensor_storage_info->ori_size);
+  }
+
   size_t offset = 0;
-  const std::vector<int64_t> expand_shape_ori = shape;
-  const std::vector<int64_t> expand_shape_new = shape;
+  const std::vector<int64_t> expand_shape_ori = new_shape;
+  const std::vector<int64_t> expand_shape_new = new_shape;
   auto expand_stride_ori = GetOriStrides(expand_shape_ori);
   auto expand_stride_new = expand_stride_ori;
   return std::make_shared<TensorStorageInfo>(expand_shape_new, expand_stride_new, offset, expand_shape_ori,
@@ -50,9 +62,10 @@ TensorStorageInfoPtr Conv3DExtAscend::CreateTensorStorageInfoPtr(const std::vect
 }
 
 template <typename T>
-void Conv3DExtAscend::SetTensorStorageInfo(T kernel_tensor, ShapeVector shape) {
-  kernel_tensor->SetShapeVector(shape);
-  TensorStorageInfoPtr tensor_storage_info = CreateTensorStorageInfoPtr(shape);
+void Conv3DExtAscend::SetTensorStorageInfo(T kernel_tensor, ShapeVector new_shape) {
+  const auto &old_storage_info = kernel_tensor->tensor_storage_info();
+  TensorStorageInfoPtr tensor_storage_info = CreateTensorStorageInfoPtr(new_shape, old_storage_info);
+  kernel_tensor->SetShapeVector(new_shape);
   kernel_tensor->set_tensor_storage_info(tensor_storage_info);
 }
 
