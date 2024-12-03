@@ -398,6 +398,7 @@ bool GraphKernelBuild::Run(const FuncGraphPtr &func_graph) {
       mng->KeepRoots({func_graph});
     }
   }
+  SetKernelInfo(func_graph);
 
   return changed;
 }
