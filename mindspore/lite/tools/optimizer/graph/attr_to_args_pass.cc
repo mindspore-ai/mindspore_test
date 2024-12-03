@@ -26,289 +26,89 @@
 namespace mindspore {
 namespace opt {
 namespace {
-static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
-  {"LogSoftmax",
-   {
-     "axis",
-   }},
-  {"ArgMin",
-   {
-     "axis",
-     "output_type",
-   }},
+
+static const std::map<std::string, std::vector<std::pair<std::string, size_t>>> kAttrMapNeedAdjust = {
+  {"LogSoftmax", {{"axis", 2}}},
+  {"ArgMin", {{"axis", 2}, {"output_type", 3}}},
   {"PromptFlashAttention",
-   {
-     "num_heads",
-     "scale_value",
-     "pre_tokens",
-     "next_tokens",
-     "input_layout",
-     "num_key_value_heads",
-     "sparse_mode",
-     "inner_precise",
-   }},
-  {"BroadcastTo",
-   {
-     "shape",
-   }},
-  {"ArgMaxV2",
-   {
-     "axis",
-     "output_type",
-   }},
-  {"ArgMaxWithValue",
-   {
-     "axis",
-     "keep_dims",
-   }},
-  {"AvgPool",
-   {
-     "kernel_size",
-     "strides",
-     "pad_mode",
-     "data_format",
-   }},
-  {"ApplyRotaryPosEmb",
-   {
-     "layout",
-   }},
+   {{"num_heads", 13},
+    {"scale_value", 14},
+    {"pre_tokens", 15},
+    {"next_tokens", 16},
+    {"input_layout", 17},
+    {"num_key_value_heads", 18},
+    {"sparse_mode", 19},
+    {"inner_precise", 20}}},
+  {"BroadcastTo", {{"shape", 2}}},
+  {"ArgMaxV2", {{"axis", 2}, {"output_type", 3}}},
+  {"ArgMaxWithValue", {{"axis", 2}, {"keep_dims", 3}}},
+  {"AvgPool", {{"kernel_size", 2}, {"strides", 3}, {"pad_mode", 4}, {"data_format", 5}}},
+  {"ApplyRotaryPosEmb", {{"layout", 6}}},
   {"StridedSlice",
-   {
-     "begin_mask",
-     "end_mask",
-     "ellipsis_mask",
-     "new_axis_mask",
-     "shrink_axis_mask",
-   }},
-  {"BatchNorm",
-   {
-     "is_training",
-     "epsilon",
-     "momentum",
-     "data_format",
-   }},
-  {"FusedBatchNorm",
-   {
-     "is_training",
-     "epsilon",
-     "momentum",
-     "data_format",
-   }},
-  {"Elu",
-   {
-     "alpha",
-   }},
-  {"Gather",
-   {
-     "batch_dims",
-   }},
-  {"LayerNorm",
-   {
-     "begin_norm_axis",
-     "begin_params_axis",
-     "epsilon",
-   }},
-  {"LayerNormV3",
-   {
-     "begin_norm_axis",
-     "begin_params_axis",
-     "epsilon",
-   }},
-  {"Range",
-   {
-     "maxlen",
-   }},
-  {"Concat",
-   {
-     "axis",
-   }},
-  {"ConcatV2",
-   {
-     "axis",
-   }},
-  {"CumSum",
-   {
-     "exclusive",
-     "reverse",
-   }},
-  {"ReduceAll",
-   {
-     "keep_dims",
-   }},
-  {"ReduceMax",
-   {
-     "keep_dims",
-   }},
-  {"ReduceMin",
-   {
-     "keep_dims",
-   }},
-  {"ReduceMean",
-   {
-     "keep_dims",
-   }},
-  {"ReduceSum",
-   {
-     "keep_dims",
-     "skip_mode",
-   }},
-  {"Split",
-   {
-     "axis",
-     "output_num",
-   }},
-  {"SplitD",
-   {
-     "split_dim",
-     "num_split",
-   }},
-  {"ResizeBicubic",
-   {
-     "align_corners",
-     "half_pixel_centers",
-   }},
-  {"ResizeBilinear",
-   {
-     "size",
-     "align_corners",
-     "half_pixel_centers",
-   }},
-  {"ResizeNearestNeighbor",
-   {
-     "size",
-     "align_corners",
-     "half_pixel_centers",
-   }},
-  {"ResizeBilinearV2",
-   {
-     "align_corners",
-     "half_pixel_centers",
-   }},
-  {"ResizeNearestNeighborV2",
-   {
-     "align_corners",
-     "half_pixel_centers",
-   }},
-  {"ReverseV2",
-   {
-     "axis",
-   }},
-  {"MatMul",
-   {
-     "transpose_a",
-     "transpose_b",
-   }},
-  {"MatMulV2",
-   {
-     "transpose_a",
-     "transpose_b",
-   }},
-  {"Meshgrid",
-   {
-     "indexing",
-   }},
-  {"NanToNum",
-   {
-     "nan",
-     "posinf",
-     "neginf",
-   }},
-  {"BatchMatMul",
-   {
-     "transpose_a",
-     "transpose_b",
-   }},
-  {"Softmax",
-   {
-     "axis",
-   }},
-  {"Softshrink",
-   {
-     "lambd",
-   }},
-  {"Squeeze",
-   {
-     "axis",
-   }},
+   {{"begin_mask", 5}, {"end_mask", 6}, {"ellipsis_mask", 7}, {"new_axis_mask", 8}, {"shrink_axis_mask", 9}}},
+  {"BatchNorm", {{"is_training", 6}, {"epsilon", 7}, {"momentum", 8}, {"data_format", 9}}},
+  {"FusedBatchNorm", {{"is_training", 6}, {"epsilon", 7}, {"momentum", 8}, {"data_format", 9}}},
+  {"Elu", {{"alpha", 2}}},
+  {"Gather", {{"batch_dims", 4}}},
+  {"LayerNorm", {{"begin_norm_axis", 4}, {"begin_params_axis", 5}, {"epsilon", 6}}},
+  {"LayerNormV3", {{"begin_norm_axis", 4}, {"begin_params_axis", 5}, {"epsilon", 6}}},
+  {"Range", {{"maxlen", 4}}},
+  {"Concat", {{"axis", 2}}},
+  {"ConcatV2", {{"axis", 2}}},
+  {"CumSum", {{"exclusive", 3}, {"reverse", 4}}},
+  {"ReduceAll", {{"keep_dims", 3}}},
+  {"ReduceMax", {{"keep_dims", 3}}},
+  {"ReduceMin", {{"keep_dims", 3}}},
+  {"ReduceMean", {{"keep_dims", 3}}},
+  {"ReduceSum", {{"keep_dims", 3}, {"skip_mode", 4}}},
+  {"Split", {{"axis", 2}, {"output_num", 3}}},
+  {"SplitD", {{"split_dim", 2}, {"num_split", 3}}},
+  {"ResizeBicubic", {{"align_corners", 3}, {"half_pixel_centers", 4}}},
+  {"ResizeBilinear", {{"size", 2}, {"align_corners", 3}, {"half_pixel_centers", 4}}},
+  {"ResizeNearestNeighbor", {{"size", 2}, {"align_corners", 3}, {"half_pixel_centers", 4}}},
+  {"ResizeBilinearV2", {{"align_corners", 3}, {"half_pixel_centers", 4}}},
+  {"ResizeNearestNeighborV2", {{"align_corners", 3}, {"half_pixel_centers", 4}}},
+  {"ReverseV2", {{"axis", 2}}},
+  {"MatMul", {{"transpose_a", 3}, {"transpose_b", 4}}},    // special
+  {"MatMulV2", {{"transpose_a", 3}, {"transpose_b", 4}}},  // special
+  {"Meshgrid", {{"indexing", 2}}},
+  {"NanToNum", {{"nan", 2}, {"posinf", 3}, {"neginf", 4}}},
+  {"BatchMatMul", {{"transpose_a", 3}, {"transpose_b", 4}}},
+  {"Softmax", {{"axis", 2}}},
+  {"Softshrink", {{"lambd", 2}}},
+  {"Squeeze", {{"axis", 2}}},
   {"FusedInferAttentionScore",
-   {
-     "num_heads",
-     "scale_value",
-     "pre_tokens",
-     "next_tokens",
-     "input_layout",
-     "num_key_value_heads",
-     "sparse_mode",
-     "inner_precise",
-     "block_size",
-     "antiquant_mode",
-     "softmax_lse_flag",
-   }},
+   {{"num_heads", 18},
+    {"scale_value", 19},
+    {"pre_tokens", 20},
+    {"next_tokens", 21},
+    {"input_layout", 22},
+    {"num_key_value_heads", 23},
+    {"sparse_mode", 24},
+    {"inner_precise", 25},
+    {"block_size", 26},
+    {"antiquant_mode", 27},
+    {"softmax_lse_flag", 28}}},
   {"IncreFlashAttention",
-   {
-     "num_heads",
-     "input_layout",
-     "scale_value",
-     "num_key_value_heads",
-     "block_size",
-     "inner_precise",
-   }},
-  {"GridSampler3D",
-   {
-     "interpolation_mode",
-     "padding_mode",
-     "align_corners",
-   }},
-  {"GridSampler2D",
-   {
-     "interpolation_mode",
-     "padding_mode",
-     "align_corners",
-   }},
-  {"WeightQuantBatchMatmul",
-   {
-     "transpose_x",
-     "transpose_weight",
-     "antiquant_group_size",
-   }},
-  {"QuantBatchMatmul",
-   {
-     "transpose_x1",
-     "transpose_x2",
-     "dtype",
-   }},
-  {"GroupedMatmul",
-   {
-     "split_item",
-     "group_type",
-   }},
-  {"BinaryCrossEntropy",
-   {
-     "reduction",
-   }},
-  {"Cross",
-   {
-     "dim",
-   }},
-  {"Triu",
-   {
-     "diagonal",
-   }},
-  {"SmoothL1Loss",
-   {
-     "beta",
-     "reduction",
-   }},
-  {"TensorScatterElements",
-   {
-     "axis",
-     "reduction",
-     "reduce",
-   }},
+   {{"num_heads", 16},
+    {"input_layout", 17},
+    {"scale_value", 18},
+    {"num_key_value_heads", 19},
+    {"block_size", 20},
+    {"inner_precise", 21}}},
+  {"GridSampler3D", {{"interpolation_mode", 3}, {"padding_mode", 4}, {"align_corners", 5}}},
+  {"GridSampler2D", {{"interpolation_mode", 3}, {"padding_mode", 4}, {"align_corners", 5}}},
+  {"WeightQuantBatchMatmul", {{"transpose_x", 8}, {"transpose_weight", 9}, {"antiquant_group_size", 10}}},
+  {"QuantBatchMatmul", {{"transpose_x1", 7}, {"transpose_x2", 8}, {"dtype", 9}}},
+  {"GroupedMatmul", {{"split_item", 9}, {"group_type", 10}}},
+  {"BinaryCrossEntropy", {{"reduction", 4}}},
+  {"Cross", {{"dim", 3}}},
+  {"Triu", {{"diagonal", 2}}},
+  {"SmoothL1Loss", {{"beta", 3}, {"reduction", 4}}},
+  {"TensorScatterElements", {{"axis", 4}, {"reduction", 5}, {"reduce", 5}}}  // reduce OR reduction is passed
 };
 
 constexpr size_t kMatMulInputSizeWithBias = 6;  // primitive, x1, x2, bias, transpose_a, transpose_b
-constexpr size_t kPFAOriginInputSize = 12;
 constexpr size_t kInputSizeTwo = 2;
 constexpr size_t kInputSizeThree = 3;
 constexpr auto kMatMulOpName = "MatMul";
@@ -330,7 +130,7 @@ int AdjustInputsAndAttrsForSqueeze(const FuncGraphManagerPtr &manager, const CNo
   auto actual_input_num = node_inputs.size();
   const auto &attrs_adjust = kAttrMapNeedAdjust.at(kSqueezeOpName);
   const auto &origin_attrs = origin_prim->attrs();
-  auto attrs_name = attrs_adjust[0];
+  auto attrs_name = attrs_adjust.begin()->first;
   // Create new primitive and inherit the origin attributes.
   if (origin_attrs.count(attrs_name) != 0) {
     // Convert the specific attr to input and erase the specific attr.
@@ -356,60 +156,41 @@ int AdjustInputsAndAttrsForSqueeze(const FuncGraphManagerPtr &manager, const CNo
   return RET_OK;
 }
 
-int AdjustInputsAndAttrsForPFA(const FuncGraphManagerPtr &manager, const CNodePtr &cnode,
-                               const mindspore::PrimitivePtr &origin_prim) {
-  auto node_inputs = cnode->inputs();
-  auto actual_input_num = node_inputs.size();
-  // First input of cnode is Primitive, so an extra none is padded.
-  auto pad_none_size = kPFAOriginInputSize - actual_input_num + 1;
-  auto none_input = NewValueNode(std::make_shared<None>());
-  none_input->set_abstract(std::make_shared<abstract::AbstractNone>());
-  node_inputs.insert(node_inputs.end(), pad_none_size, none_input);
-  cnode->set_inputs(node_inputs);
-
-  const auto &attrs_adjust_pfa = kAttrMapNeedAdjust.at(kPromptFlashAttentionOpName);
-  const auto &origin_attrs_custom = origin_prim->attrs();
-  // Create new primitive and inherit the origin attributes.
-  for (const auto &attr : attrs_adjust_pfa) {
-    if (origin_attrs_custom.count(attr) == 0) {
-      MS_LOG(INFO) << "Origin primitive: Custom has no attribute : " << attr << ", pad none for PromptFlashAttention.";
-      auto none_attribute = NewValueNode(std::make_shared<None>());
-      none_attribute->set_abstract(std::make_shared<abstract::AbstractNone>());
-      manager->AddEdge(cnode, none_attribute);
-    } else {
-      // Convert the specific attr to input and erase the specific attr.
-      auto attr_value = origin_prim->GetAttr(attr);
-      MS_CHECK_TRUE_MSG(attr_value != nullptr, RET_ERROR, "attr_value is nullptr");
-      auto new_value_node = std::make_shared<ValueNode>(attr_value);
-      MS_CHECK_TRUE_MSG(new_value_node != nullptr, RET_ERROR, "new_value_node is nullptr");
-      new_value_node->set_abstract(attr_value->ToAbstract());
-      manager->AddEdge(cnode, new_value_node);
-    }
-  }
-  return RET_OK;
-}
-
 int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
   auto cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr");
   const auto &origin_prim = GetCNodePrimitive(node);
   MS_CHECK_TRUE_MSG(origin_prim != nullptr, RET_ERROR, "origin_prim is nullptr");
   auto prim_name = origin_prim->name();
-  if ((prim_name == kCustomOpName &&
-       GetValue<std::string>(origin_prim->GetAttr("type")) == kPromptFlashAttentionOpName) ||
-      (prim_name == kPromptFlashAttentionOpName)) {
-    return AdjustInputsAndAttrsForPFA(manager, cnode, origin_prim);
-  }
   if (prim_name == kSqueezeOpName) {
     return AdjustInputsAndAttrsForSqueeze(manager, cnode, origin_prim);
+  }
+  if (prim_name == kCustomOpName) {
+    prim_name = GetValue<std::string>(origin_prim->GetAttr("type"));
+    if (kAttrMapNeedAdjust.find(prim_name) == kAttrMapNeedAdjust.end()) {
+      MS_LOG(INFO) << "Custom with type: '" << prim_name << "' does not need to do attr_to_args conversion.";
+      return RET_OK;
+    }
   }
   const auto &attrs_adjust = kAttrMapNeedAdjust.at(prim_name);
   const auto &origin_attrs = origin_prim->attrs();
 
+  auto node_inputs = cnode->inputs();
+  auto actual_input_num = node_inputs.size();
+  // Pad none for optional input, first input of cnode is Primitive, so an extra none is padded.
+  if (attrs_adjust.begin()->second > actual_input_num) {
+    auto pad_none_size = attrs_adjust.begin()->second - actual_input_num;
+    auto none_input = NewValueNode(std::make_shared<None>());
+    none_input->set_abstract(std::make_shared<abstract::AbstractNone>());
+    node_inputs.insert(node_inputs.end(), pad_none_size, none_input);
+    cnode->set_inputs(node_inputs);
+  }
+
   // Create new primitive and inherit the origin attributes.
   MS_LOG(INFO) << "Begin to convert Primitive to Primitive_Func for node: " << node->DebugString()
                << "new name: " << prim_name;
-  for (const auto &attr : attrs_adjust) {
+  for (const auto &attr_pair : attrs_adjust) {
+    auto attr = attr_pair.first;
     if (origin_attrs.count(attr) != 0) {
       // Convert the specific attr to input and erase the specific attr.
       auto attr_value = origin_prim->GetAttr(attr);
@@ -418,8 +199,13 @@ int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &
       MS_CHECK_TRUE_MSG(new_value_node != nullptr, RET_ERROR, "new_value_node is nullptr");
       new_value_node->set_abstract(attr_value->ToAbstract());
       manager->AddEdge(cnode, new_value_node);
+    } else {
+      MS_LOG(INFO) << "Origin primitive " << prim_name << " has no attribute : " << attr << ", pad none for "
+                   << prim_name << ".";
+      auto none_attribute = NewValueNode(std::make_shared<None>());
+      none_attribute->set_abstract(std::make_shared<abstract::AbstractNone>());
+      manager->AddEdge(cnode, none_attribute);
     }
-    MS_LOG(INFO) << "Origin primitive: " << prim_name << " has no attribute : " << attr;
   }
 
   if ((prim_name == kMatMulOpName || prim_name == kMatMulV2OpName) &&
@@ -456,8 +242,7 @@ bool AttrToArgsPass::Run(const FuncGraphPtr &func_graph) {
     if (prim == nullptr) {
       continue;
     }
-    if (kAttrMapNeedAdjust.find(prim->name()) == kAttrMapNeedAdjust.end() &&
-        !(prim_name == kCustomOpName && GetValue<std::string>(prim->GetAttr("type")) == kPromptFlashAttentionOpName)) {
+    if (kAttrMapNeedAdjust.find(prim->name()) == kAttrMapNeedAdjust.end() && !(prim_name == kCustomOpName)) {
       continue;
     }
     if (ConvertAttrToArgsForNode(node, manager) != RET_OK) {
