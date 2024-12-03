@@ -740,7 +740,6 @@
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_MINDIR",
-      "Smoke_Lite_X86_Server_Inference_X86_Cloud_Gpu",
       "Smoke_Lite_import_ms_and_mslite",
       "Smoke_Lite_X86_Cloud_Onnx",
       "Smoke_Lite_X86_Cloud_TF",
