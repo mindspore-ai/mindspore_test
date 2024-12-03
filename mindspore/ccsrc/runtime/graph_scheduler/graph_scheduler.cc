@@ -630,6 +630,10 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   if (debugger->DebuggerBackendEnabled()) {
     debugger_actor_need = true;
   }
+  // If dump hooker tool is enabled
+  if (common::GetEnv("MS_HOOK_ENABLE") == "on") {
+    debugger_actor_need = true;
+  }
 #endif
   if (debugger_actor_need) {
     auto debug_actor = std::make_shared<DebugActor>();
