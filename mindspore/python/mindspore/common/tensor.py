@@ -45,7 +45,7 @@ np_types = (np.int8, np.int16, np.int32, np.int64,
 def _check_input_data_type(input_data):
     """Check the type of input_data for Tensor"""
     validator.check_value_type('input_data', input_data,
-                               (Tensor_, Tensor, np.ndarray, np.str_, list, tuple, float, int, bool, complex),
+                               (Tensor_, Tensor, np.ndarray, np.str_, list, tuple, float, int, bool, complex, bytes),
                                'Tensor')
     valid_dtypes = (np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64,
                     np.float16, np.float32, np.float64, np.bool_, np.str_, np.complex64, np.complex128)

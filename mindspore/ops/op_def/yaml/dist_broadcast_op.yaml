@@ -16,3 +16,4 @@ dist_comm_broadcast:
         enable: True
         is_comm_op: True
         Ascend: DistCommBroadcastAscend
+        CPU: DistCommBroadcastCPU

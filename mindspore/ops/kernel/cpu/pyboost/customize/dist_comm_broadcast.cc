@@ -1,0 +1,63 @@
+/**
+ * Copyright 2024 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "kernel/cpu/pyboost/customize/dist_comm_broadcast.h"
+#include <memory>
+#include <utility>
+#include <string>
+#include "kernel/common/pyboost/customize/op_common.h"
+#if defined(__linux__) && defined(WITH_BACKEND)
+#include "plugin/device/cpu/hal/hardware/ms_collective_comm_lib.h"
+#endif
+
+namespace mindspore {
+namespace kernel {
+#if defined(__linux__) && defined(WITH_BACKEND)
+using device::CollectiveOpReduceType::Reduce_Sum;
+using device::cpu::kMCCLGlobalGroupName;
+using device::cpu::MsCollectiveCommLib;
+#endif
+namespace pyboost {
+void DistCommBroadcastCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &tensor,
+                                   const Int64ImmPtr &src, const StringImmPtr &group) {
+#if defined(__linux__) && defined(WITH_BACKEND)
+  PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, tensor);
+  op->set_outputs({tensor});
+  auto src_rank = GetValue<int64_t>(src);
+  auto run_func = [op, tensor, src_rank, group]() {
+    auto device_context = op->device_context();
+    PyBoostUtils::MallocOpInputs(device_context, tensor);
+    const auto &input_address_info =
+      PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), op->input_abs(), tensor);
+    auto in_addr = input_address_info.first;
+    const auto &group_str = GetValue<std::string>(group);
+    size_t type_len = GetDataTypeSize(in_addr[0]->dtype_id());
+    bool ret = MsCollectiveCommLib::GetInstance().Broadcast(in_addr[0]->device_ptr(), in_addr[0]->device_ptr(),
+                                                            in_addr[0]->size() / type_len, in_addr[0]->dtype_id(),
+                                                            src_rank, group_str);
+    if (!ret) {
+      MS_LOG(EXCEPTION) << "Broadcast failed.";
+    }
+  };
+  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(run_func));
+#else
+  MS_LOG(EXCEPTION) << "The CPU op broadcast is only supported on linux platform.";
+#endif
+}
+
+}  // namespace pyboost
+}  // namespace kernel
+}  // namespace mindspore

@@ -369,6 +369,10 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
 
   // Step 3: Generate device information of the root node.
   CommunicationGroupPtr group = device_comm_lib_instance_->GetGroup(group_name);
+  if (group_name.compare(0, 4, "mccl") == 0 &&
+      MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    group = host_comm_lib_instance_->GetGroup(group_name);
+  }
   MS_EXCEPTION_IF_NULL(group);
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
   bool ret = false;
