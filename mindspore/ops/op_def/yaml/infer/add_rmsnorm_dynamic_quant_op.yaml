@@ -1,0 +1,33 @@
+#operator AddRmsNormDynamicQuant
+add_rmsnorm_dynamic_quant:
+  args:
+    x1:
+      dtype: tensor
+    x2:
+      dtype: tensor
+    gamma:
+      dtype: tensor
+    smooth_scale1:
+      dtype: tensor
+    smooth_scale2:
+      dtype: tensor
+      default: None
+    epsilon:
+      dtype: float
+      default: 1e-5
+  returns:
+    quant1:
+      dtype: tensor
+    quant2:
+      dtype: tensor
+    x:
+      dtype: tensor
+    scale1:
+      dtype: tensor
+    scale2:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    name: AddRmsNormDynamicQuant
+    disable: True
