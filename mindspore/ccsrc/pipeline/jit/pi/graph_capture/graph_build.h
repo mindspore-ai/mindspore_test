@@ -250,6 +250,7 @@ class GraphBuilder {
   bool TraceRunForIterSequence(int jump_bci);
   bool TraceRunForIterEnumerate(int jump_bci);
   bool TraceRunForIterZip(int jump_bci);
+  bool TraceRunForIterDict(int jump_bci);
   bool TraceRunForIterDictItems(int jump_bci);
 
   // bytecode operations
@@ -326,6 +327,8 @@ class GraphBuilder {
   FrameStates excFrame_;
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
+
+  bool IsTopGraph() const { return this == root_; }
 
   ValueNode *GetCallFunctionNode(ValueNode *node, PyObject *dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);

@@ -154,6 +154,8 @@ bool SideEffect::Record(ValueNode *node, Type type, std::string name) {
     type = kDefault;
     name = opcode == STORE_SUBSCR ? kSetItem : kDelItem;
   } else if (Opcode(opcode).IsCall() && CheckCallRecord(node, type, name)) {
+  } else if (opcode == STORE_DEREF) {
+    // No action needed
   } else {
     MS_LOG(INFO) << "unimplemented side-effect " << node->ToString();
     return false;
