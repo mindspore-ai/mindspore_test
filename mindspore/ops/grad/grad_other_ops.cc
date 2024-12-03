@@ -51,6 +51,7 @@ REG_BPROP_BUILDER("RandLikeExt").SetUnusedInputs({i0, i1, i2, i3}).SetBody(Retur
 REG_BPROP_BUILDER("RandnLike").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("RandIntLike").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 REG_BPROP_BUILDER("Generator").SetBody(ReturnZeros);
+REG_BPROP_BUILDER("InplaceRandom").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("IOU").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);
 

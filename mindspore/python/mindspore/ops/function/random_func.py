@@ -31,7 +31,7 @@ from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
     NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
-    Randn, RandnLike, RandInt, RandIntLike, RandpermExt
+    Randn, RandnLike, RandInt, RandIntLike, RandpermExt, InplaceRandom
 
 normal_tensor_tensor_op = NormalTensorTensor()
 normal_tensor_float_op = NormalTensorFloat()
@@ -52,6 +52,7 @@ randn_ = Randn()
 randn_like_ = RandnLike()
 randint_ = RandInt()
 randint_like_ = RandIntLike()
+inplace_random_ = InplaceRandom()
 generator_step_ = Tensor(12, mstype.int64)
 
 
@@ -1338,6 +1339,51 @@ def randint_like_ext(input, low, high, *, dtype=None):
     seed, offset = default_generator._step(  # pylint: disable=protected-access
         generator_step_)
     return randint_like_(input, low, high, seed, offset, dtype)
+
+
+@_function_forbid_reuse
+def random_(input, from_=0, to=None, *, generator=None):
+    r"""
+    Fill the input tensor with numbers sampled from a discrete uniform distribution
+    over an interval :math:`[low, high)`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): input tensor.
+        from_ (int, optional): the lower bound of the generated random number. Default: 0.
+        to (int, optional): the upper bound of the generated random number. By default it's the upper limit of
+            the input data type. Default: ``None``.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+
+    Returns:
+        The input tensor.
+
+    Raises:
+        TypeError: If `from_` or `to` is not integer.
+        ValueError: If `from_` >= `to`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> from mindspore import Tensor, ops
+        >>> a = Tensor([[2, 3, 4], [1, 2, 3]])
+        >>> from_ = 0
+        >>> to = 5
+        >>> print(ops.function.random_func.random_(a, from_, to).shape)
+        (2, 3)
+    """
+    if not generator:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return inplace_random_(input, from_, to, seed, offset)
 
 
 @_function_forbid_reuse

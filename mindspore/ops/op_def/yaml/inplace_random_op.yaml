@@ -1,0 +1,32 @@
+#operator inplace_random
+inplace_random:
+    args:
+        input:
+            dtype: tensor
+        from_:
+            dtype: int
+            type_cast: Tensor
+            default: 0
+        to:
+            dtype: int
+            type_cast: Tensor
+            default: None
+        seed:
+            dtype: tensor
+            default: 0
+        offset:
+            dtype: tensor
+            default: 0
+    args_signature:
+        rw_write: input
+    labels:
+        side_effect_mem: True
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        Ascend: InplaceRandomAscend
