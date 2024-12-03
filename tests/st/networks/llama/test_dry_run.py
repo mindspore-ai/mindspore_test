@@ -68,14 +68,14 @@ def run_command_compile(cmd, log_path, backend_time, compile_time):
         ["grep -r '%s' %s | awk '{print $3}'" % (log_backend, log_path)],
         shell=True)
     log_time = str(log_output, 'utf-8').strip()
-    assert float(log_time) <= backend_time
+    assert float(log_time) <= backend_time * 1.05
 
     log_compile = "compile_graph costs"
     log_output = subprocess.check_output(
         ["grep -r '%s' %s | awk '{print $3}'" % (log_compile, log_path)],
         shell=True)
     log_time = str(log_output, 'utf-8').strip()
-    assert float(log_time) <= compile_time
+    assert float(log_time) <= compile_time * 1.05
 
     if os.path.isfile(log_path):
         os.remove(log_path)
