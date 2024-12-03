@@ -38,9 +38,9 @@ mindspore.ops.Custom
 
                - "xxx.so"文件生成：
 
-                 1) GPU平台：给定用户定义的"xxx.cu"文件（例如"{path}/add.cu"），使用nvcc命令进行编译（例如"nvcc --shared -Xcompiler -fPIC -o add.so add.cu"）。
+                 1) GPU平台：给定用户定义的"xxx.cu"文件（例如"{path}/add.cu"），使用nvcc命令进行编译（例如 :code:`nvcc --shared -Xcompiler -fPIC -o add.so add.cu`）。
 
-                 2) CPU平台：给定用户定义的"xxx.cc"文件（例如"{path}/add.cc"），使用g++/gcc命令进行编译（例如"g++ --shared -fPIC  -o add.so add.cc"）。
+                 2) CPU平台：给定用户定义的"xxx.cc"文件（例如"{path}/add.cc"），使用g++/gcc命令进行编译（例如 :code:`g++ --shared -fPIC -o add.so add.cc`）。
 
                - 定义"xxx.cc"/"xxx.cu"文件：
 
