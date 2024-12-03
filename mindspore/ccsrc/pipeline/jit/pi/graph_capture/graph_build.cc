@@ -4961,7 +4961,7 @@ bool MindGraphBuilder::ConvertClassType(const py::object &callable_info, CallNod
   return false;
 }
 
-std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(const py::object &callable_info) const {
+std::pair<bool, py::object> MindGraphBuilder::ConvertCallableObject(const py::object &callable_info) const {
   bool should_parse_in_ast = false;
   if (MindFGForbiddenConvertFunc(callable_info)) {
     return std::make_pair(should_parse_in_ast, callable_info);
@@ -4989,22 +4989,32 @@ std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(con
     }
     should_parse_in_ast = match;
   }
+
+  if (IsPSJitFunction(callable_info)) {
+    MS_LOG(INFO) << "Callable object " << py::str(callable_info) << " is decorated by PSJit, parse with ast.";
+    should_parse_in_ast = true;
+  }
+
   return std::make_pair(should_parse_in_ast, callable_info);
 }
 
 void MindGraphBuilder::FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info,
                                         const std::vector<ValueNode *> &args, StopTraceReason *stop_reason) {
+  const auto &callable_object =
+    py::isinstance<mindspore::Cell>(callable_info)
+      ? py::reinterpret_steal<py::object>(PyObject_GetAttrString(callable_info.ptr(), "construct"))
+      : callable_info;
   // Need to add unpack call when handling kwargs.
   if (call_node->GetOpcode() == CALL_FUNCTION_KW) {
-    auto res = FGBuilder()->AddNodeCallFunctionKw(callable_info, HandleInputArgs(args));
+    auto res = FGBuilder()->AddNodeCallFunctionKw(callable_object, HandleInputArgs(args));
     UpdateNodeInfo(res, call_node, stop_reason);
     return;
   } else if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
-    auto res = FGBuilder()->AddNodeCallFunctionEx(callable_info, HandleInputArgs(args));
+    auto res = FGBuilder()->AddNodeCallFunctionEx(callable_object, HandleInputArgs(args));
     UpdateNodeInfo(res, call_node, stop_reason);
     return;
   }
-  FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+  FGAddNode(call_node, callable_object, HandleInputArgs(args), stop_reason);
 }
 
 // fix cyclomatic complexity
@@ -5055,7 +5065,7 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     return py::object();
   }
 
-  auto convert_result = ConvertBuiltInMethodOrFunction(callable_info);
+  auto convert_result = ConvertCallableObject(callable_info);
   callable_info = convert_result.second;
   bool should_parse_in_ast = convert_result.first;
 
@@ -5069,6 +5079,9 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     const auto &call_node_inputs = call_node->getInputs();
     (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
     FGAddNodeWithAst(call_node, callable_info, args, stop_reason);
+    if (!call_node->has_abstract_wrapper()) {
+      MS_LOG(INFO) << "Build graph by ast failed for node: " << call_node->ToString();
+    }
     return py::object();
   }
   if (FGBuilder()->CheckCallable(callable_info)) {

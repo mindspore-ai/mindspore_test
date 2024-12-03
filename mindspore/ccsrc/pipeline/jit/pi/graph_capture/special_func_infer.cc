@@ -1298,6 +1298,16 @@ static FuncKey FindFuncKey(const py::object &callable) {
   return res;
 }
 
+bool IsPSJitFunction(const py::object &callable_info) {
+  if (callable_info.ptr() == nullptr) {
+    return false;
+  }
+  if (FindFuncKey(callable_info) == FUNC_KEY_PSJIT_CODE) {
+    return true;
+  }
+  return false;
+}
+
 bool CheckJitConstexpr(const py::object &func) {
   if (func.ptr() == nullptr) {
     return false;

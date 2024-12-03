@@ -420,7 +420,7 @@ class MindGraphBuilder : public GraphBuilder {
   AbstractWrapperPtrList HandleInputsForGrad(CallNode *call_node, BindArgumentsHelper<ValueNode *> forward_inputs);
   void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
   bool ConvertClassType(const py::object &callable_info, CallNode *call_node, StopTraceReason *stop_reason);
-  std::pair<bool, py::object> ConvertBuiltInMethodOrFunction(const py::object &callable_info) const;
+  std::pair<bool, py::object> ConvertCallableObject(const py::object &callable_info) const;
 
   std::string co_name_;
   // Side effect outputs of this graph (including the side effect outputs of all its sub-graphs).
