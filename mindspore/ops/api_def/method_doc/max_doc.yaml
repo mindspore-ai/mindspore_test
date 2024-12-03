@@ -56,20 +56,3 @@ max:
         [2. 3.]
         >>> print(indices)
         [1 1]
-
-    .. method:: Tensor.max() -> Tensor
-        :noindex:
-    
-    Returns the maximum value of all elements in `self` .
-    
-    Returns:
-        Tensor - Returns the maximum value of each row of `self` .
-    
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> x = Tensor(np.array([0.0, 0.4, 0.6, 0.7, 0.1]), mindspore.float32)
-        >>> output = x.max()
-        >>> print(output)
-        [0.7]
