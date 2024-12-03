@@ -27,6 +27,20 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
+namespace {
+bool ConvNDBatchify(const ShapeVector &input_shape, const int64_t num_spatial_dims, const std::string &func_name) {
+  const auto dim_count_no_batch = num_spatial_dims + 1;
+  const auto dim_count_batch = dim_count_no_batch + 1;
+  auto origin_shape_dim = SizeToLong(input_shape.size());
+  const auto is_batched = (origin_shape_dim == dim_count_batch);
+  if (origin_shape_dim != dim_count_no_batch && !is_batched) {
+    MS_LOG(EXCEPTION) << "Expected " << dim_count_no_batch << "D (unbatched) or " << dim_count_batch
+                      << "D (batched) input to " << func_name << ", but got input of size: " << origin_shape_dim;
+  }
+  return is_batched;
+}
+}  // namespace
+
 tensor::BaseTensorPtr ConvTranspose2DAscendCustomize(
   const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor, const BaseTensorPtr &weight_tensor,
   const std::optional<BaseTensorPtr> &bias_tensor, const ValueTuplePtr &stride, const ValueTuplePtr &padding,

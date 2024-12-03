@@ -72,7 +72,7 @@ void CheckRangeConv3d(const std::string &arg_name, int64_t arg_value, int64_t up
 ShapeArray Conv3DExtFuncImpl::InferDynamicRank(const ShapeVector &input_shape, const ShapeVector &weight_shape) const {
   if (!IsDynamicRank(weight_shape)) {
     auto weight_shape_size = SizeToLong(weight_shape.size());
-    CheckRangeConv3d("weight rank", weight_shape_size, 5, 3, "Convolution");
+    CheckRangeConv3d("weight rank", weight_shape_size, kIndex5, kIndex3, "Convolution");
     auto output_shape = ShapeVector(weight_shape_size, abstract::Shape::kShapeDimAny);
     output_shape[1] = weight_shape[0];
     return {output_shape};
@@ -102,7 +102,7 @@ ShapeArray Conv3DExtFuncImpl::ConvNdInferShape(const PrimitivePtr &primitive, co
     auto real_shape_vector_array =
       ConvNdCommonInferShape(primitive, input_infos, _input_shape, weight_shape, output_shape);
     if (SizeToLong(real_shape_vector_array.size()) < 1) {
-      MS_LOG(EXCEPTION) << "For [Conv3DExt], infer shape array size is less zero from ConvNdCommonInferShape";
+      MS_LOG(EXCEPTION) << "For [Conv3DExt], the size of shape is less zero from function[ConvNdCommonInferShape]";
     }
     auto real_shape_vector = real_shape_vector_array[0];
     real_shape_vector.erase(real_shape_vector.begin());
