@@ -635,6 +635,78 @@ class GELU(Cell):
     def construct(self, input):
         return F.gelu(input)
 
+class Hardtanh(Cell):
+    r"""
+    Activation function Hardtanh.
+
+    Refer to :func:`mindspore.mint.nn.functional.hardtanh` for more details.
+
+    Hardtanh Activation Function Graph:
+
+    .. image:: ../images/Hardtanh.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float32)
+        >>> hardtanh = mint.nn.Hardtanh(min_val=-1.0, max_val=1.0)
+        >>> output = hardtanh(x)
+        >>> print(output)
+        [-1. -1.  0.  1.  1.]
+    """
+
+    def __init__(self, min_val=-1.0, max_val=1.0, inplace=False):
+        """Initialize ReLU6"""
+        super(Hardtanh, self).__init__()
+        self.min_val = min_val
+        self.max_val = max_val
+        self.inplace = inplace
+
+    def construct(self, input):
+        if self.inplace:
+            return F.hardtanh_(input, self.min_val, self.max_val)
+        return F.hardtanh_op(input, self.min_val, self.max_val)
+
+
+class ReLU6(Cell):
+    r"""
+    Activation function ReLU6.
+
+    Refer to :func:`mindspore.mint.nn.functional.relu6` for more details.
+
+    ReLU6 Activation Function Graph:
+
+    .. image:: ../images/ReLU6.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> relu6 = mint.nn.ReLU6()
+        >>> output = relu6(input)
+        >>> print(output)
+        [[0. 4. 0.]
+        [2. 0. 6.]]
+    """
+
+    def __init__(self, inplace=False):
+        """Initialize ReLU6"""
+        super(ReLU6, self).__init__()
+        self.inplace = inplace
+
+    def construct(self, input):
+        return F.relu6(input, self.inplace)
+
 
 class Mish(Cell):
     r"""
@@ -1013,6 +1085,9 @@ __all__ = [
     'ELU',
     # 407
     'Flatten',
+    # 412
+    'Hardtanh',
+    'ReLU6',
     # 421
     'Tanh',
     # 556

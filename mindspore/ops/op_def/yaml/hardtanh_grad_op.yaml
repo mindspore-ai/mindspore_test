@@ -1,0 +1,20 @@
+#operator hardtanh_grad
+hardtanh_grad:
+  args:
+    dout:
+      dtype: tensor
+    input:
+      dtype: tensor
+    min_val:
+      dtype: number
+      default: -1
+    max_val:
+      dtype: number
+      default: 1
+  returns:
+    output:
+      dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True

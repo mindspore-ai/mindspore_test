@@ -261,6 +261,9 @@ from mindspore.ops.function.math_func import norm_ext
 # 428
 from mindspore.ops.functional import broadcast_to
 
+# 537
+from mindspore.ops.auto_generate import hardtanh as hardtanh_op
+from mindspore.ops.auto_generate import inplace_hardtanh as hardtanh_
 # 556
 from mindspore.ops.function.nn_func import logsigmoid_ext as logsigmoid
 
@@ -269,6 +272,105 @@ from mindspore.ops.auto_generate import adaptive_avg_pool1d
 from mindspore.ops.functional import adaptive_avg_pool2d_ext as adaptive_avg_pool2d
 from mindspore.ops.function.nn_func import cross_entropy_ext as cross_entropy
 from mindspore.ops.function.nn_func import nll_loss_ext as nll_loss
+
+
+def hardtanh(input, min_val=-1.0, max_val=1.0, inplace=False):
+    r"""
+     Applies the hardtanh activation function element-wise. The activation function is defined as:
+
+     .. math::
+         \text{hardtanh}(input) = \begin{cases}
+             max\_val, & \text{ if } input > max\_val \\
+             min\_val, & \text{ if } input < min\_val \\
+             input, & \text{ otherwise. }
+         \end{cases}
+
+     Linear region range :math:`[min\_val, max\_val]` can be adjusted using `min_val` and `max_val`.
+
+     Hardtanh Activation Function Graph:
+
+     .. image:: ../images/Hardtanh.png
+         :align: center
+
+    .. warning::
+        This is an experimental optimizer API that is subject to change.
+
+     Args:
+         input (Tensor): Input Tensor.
+         min_val (Union[bool, int, float], optional): Minimum value of the linear region range. Default: ``-1.0`` .
+         max_val (Union[bool, int, float], optional): Maximum value of the linear region range. Default: ``1.0`` .
+         inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+     Returns:
+         Tensor, with the same dtype and shape as `input`.
+
+     Raises:
+         TypeError: If `input` is not a Tensor.
+         TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+         TypeError: If dtype of `min_val` is neither float nor int.
+         TypeError: If dtype of `max_val` is neither float nor int.
+
+     Supported Platforms:
+         ``Ascend``
+
+     Examples:
+         >>> import mindspore
+         >>> from mindspore import Tensor, mint
+         >>> x = Tensor([-1, -2, 0, 2, 1], mindspore.float16)
+         >>> output = mint.nn.functional.hardtanh(x, min_val=-1.0, max_val=1.0, inplace=False)
+         >>> print(output)
+         [-1. -1.  0.  1.  1.]
+     """
+    if inplace:
+        return hardtanh_(input, min_val, max_val)
+    return hardtanh_op(input, min_val, max_val)
+
+
+def relu6(input, inplace=False):
+    r"""
+    Computes ReLU (Rectified Linear Unit) upper bounded by 6 of input tensors element-wise.
+
+        .. math::
+
+            \text{ReLU6}(input) = \min(\max(0,input), 6)
+
+        It returns :math:`\min(\max(0,input), 6)` element-wise.
+
+        ReLU6 Activation Function Graph:
+
+        .. image:: ../images/ReLU6.png
+            :align: center
+
+        .. warning::
+            This is an experimental optimizer API that is subject to change.
+
+        Args:
+            input (Tensor): input Tensor. Dtype is in int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+            inplace (bool, optional): Whether to apply erasing inplace. Default: ``False``.
+
+        Returns:
+            Tensor, with the same dtype and shape as the `input`.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+            TypeError: If dtype of `input` is not one of: int8, int16, int32, int64, uint8, float16, float32, bfloat16.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, mint
+            >>> x = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+            >>> result = mint.nn.functional.relu6(x)
+            >>> print(result)
+            [[0. 4. 0.]
+             [2. 0. 6.]]
+    """
+    if inplace:
+        return hardtanh_(input, 0, 6)
+    return hardtanh_op(input, 0, 6)
 
 
 def binary_cross_entropy(input, target, weight=None, reduction='mean'):
@@ -941,5 +1043,9 @@ __all__ = [
     # 393
     'dropout2d',
     # 421
-    'flatten'
+    'flatten',
+    # 537
+    'hardtanh',
+    'hardtanh_',
+    'relu6',
 ]
