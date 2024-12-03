@@ -375,6 +375,10 @@ DeviceMemPtr AbstractDynamicMemPool::AllocTensorMem(size_t size, bool from_persi
   return mem_buf_allocator.first->addr_;
 }
 
+// Strategy when vmm is disable:
+//    Persistent memory:  First malloc form its own pool, if fails, try to malloc from common pool.
+//    Common memory:  First malloc from its own pool, if fails, it will try to expand the pool.
+//                    If the expansion fails, try to malloc from persistent pool.
 std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_t align_size, bool from_persistent_mem,
                                                                            uint32_t stream_id) {
   auto allocator = GetMemBufAllocator(align_size, from_persistent_mem, stream_id);
@@ -382,9 +386,9 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
   if (MS_UNLIKELY(mem_buf == nullptr)) {
     // Enable malloc from another allocator when from_persistent_mem is true and vmm is not enabled.
     if (!enable_vmm_ && from_persistent_mem) {
-      auto another_allocator = GetMemBufAllocator(align_size, !from_persistent_mem, stream_id);
-      mem_buf = another_allocator->Malloc(align_size);
-      allocator = another_allocator;
+      auto common_allocator = GetMemBufAllocator(align_size, false, stream_id);
+      mem_buf = common_allocator->Malloc(align_size);
+      allocator = common_allocator;
     }
 
     if (MS_UNLIKELY(mem_buf == nullptr)) {
@@ -399,11 +403,22 @@ std::pair<MemBuf *, MemBufAllocator *> AbstractDynamicMemPool::AllocMemBuf(size_
       if (MS_UNLIKELY(mem_buf == nullptr)) {
         mem_buf = allocator->MallocExpandBlock(align_size);
         if (MS_UNLIKELY(mem_buf == nullptr)) {
-          MS_LOG(INFO) << "Alloc tensor mem failed and try to sync all events to release memory.";
-          (void)DoSyncAllEvents();
-          mem_buf = allocator->Malloc(align_size);
+          if (MS_LIKELY(!from_persistent_mem)) {
+            // Common pool expand block failed, try to malloc from persistent pool.
+            auto persistent_allocator = GetMemBufAllocator(align_size, true, stream_id);
+            mem_buf = persistent_allocator->Malloc(align_size);
+            if (MS_LIKELY(mem_buf != nullptr)) {
+              allocator = persistent_allocator;
+            }
+          }
+
           if (MS_UNLIKELY(mem_buf == nullptr)) {
-            return std::make_pair(nullptr, nullptr);
+            MS_LOG(INFO) << "Alloc tensor mem failed and try to sync all events to release memory.";
+            (void)DoSyncAllEvents();
+            mem_buf = allocator->Malloc(align_size);
+            if (MS_UNLIKELY(mem_buf == nullptr)) {
+              return std::make_pair(nullptr, nullptr);
+            }
           }
         }
       }
@@ -1114,6 +1129,11 @@ MemoryTimeEventPtr AbstractEnhancedDynamicMemPool::GenFreeMemoryTimeEvent(const 
   time_event->addr_ = const_cast<void *>(addr);
   const size_t time_event_free_size = -1;
   time_event->size_ = time_event_free_size;
+  time_event->used_size_ = mem_stat_.used_size_;
+  time_event->peak_size_ = mem_stat_.peak_size_;
+  time_event->alloc_size_ = mem_stat_.alloc_size_;
+  time_event->used_by_event_size_ = mem_stat_.used_by_event_size_;
+  time_event->eager_free_size_ = mem_stat_.eager_free_size_;
   return time_event;
 }
 }  // namespace device

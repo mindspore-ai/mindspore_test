@@ -393,10 +393,11 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->alloc_continuous_tensor_mem_, 1);
 
   enhanced_pool->FreeTensorMem(nullptr);
-  EXPECT_EQ(pool->free_tensor_mem_, 1);
+  EXPECT_EQ(pool->free_tensor_mem_, 0);
+  EXPECT_EQ(pool->do_free_tensor_mem_, 1);
 
   enhanced_pool->DoFreeTensorMem(nullptr);
-  EXPECT_EQ(pool->do_free_tensor_mem_, 1);
+  EXPECT_EQ(pool->do_free_tensor_mem_, 2);
   EXPECT_EQ(pool->actual_peak_statistics_.Get(), 1);
 
   enhanced_pool->FreePartTensorMems({}, {}, {});
@@ -412,13 +413,13 @@ TEST_F(TestAscendMemoryPool, test_default_enhanced_ascend_memory_pool_proxy) {
   EXPECT_EQ(pool->record_event_, 1);
 
   enhanced_pool->WaitEvent(0, 0, 0);
-  EXPECT_EQ(pool->wait_event_, 1);
+  EXPECT_EQ(pool->wait_event_, 0);
 
   enhanced_pool->WaitEvent(0, 0);
-  EXPECT_EQ(pool->wait_event_, 2);
+  EXPECT_EQ(pool->wait_event_, 0);
 
   enhanced_pool->SyncAllEvents();
-  EXPECT_EQ(pool->sync_all_events_, 1);
+  EXPECT_EQ(pool->sync_all_events_, 0);
 
   enhanced_pool->AlignMemorySize(1);
   EXPECT_EQ(pool->align_memory_size_.Get(), 2);

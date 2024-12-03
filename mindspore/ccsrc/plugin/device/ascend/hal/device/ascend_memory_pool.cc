@@ -20,6 +20,8 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include <set>
+
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
@@ -38,7 +40,7 @@ DefaultAscendMemoryPool::DefaultAscendMemoryPool() {
 }
 
 AscendMemoryTimeEvent::AscendMemoryTimeEvent(int32_t device_id, const MemoryTimeEventPtr &memory_time_event)
-    : BaseReportData(device_id, "memory_time_event"), memory_time_event_(memory_time_event) {
+    : BaseReportData(device_id, "mindspore.memory_usage"), memory_time_event_(memory_time_event) {
   stream_ptr_ = AscendStreamMng::GetInstance().GetStream(memory_time_event_->stream_id_);
 }
 
@@ -93,25 +95,36 @@ void FillTidAndPid(const std::unique_ptr<AscendMemoryTimeEvent> &ascend_mmemory_
 
 std::vector<uint8_t> AscendMemoryTimeEvent::encode() {
   std::vector<uint8_t> result;
-  EncodeIntoUInt8(device_id, &result);
-  EncodeIntoUInt8(memory_time_event_->created_at_, &result);
-  EncodeIntoUInt8(reinterpret_cast<size_t>(memory_time_event_->addr_), &result);
-  EncodeIntoUInt8(memory_time_event_->size_, &result);
-  EncodeIntoUInt8(memory_time_event_->from_persistent_, &result);
-  EncodeIntoUInt8(memory_time_event_->is_persistent_, &result);
-  EncodeIntoUInt8(memory_time_event_->stream_id_, &result);
-  EncodeIntoUInt8(memory_time_event_->run_mode_, &result);
-  EncodeIntoUInt8(memory_time_event_->used_size_, &result);
-  EncodeIntoUInt8(memory_time_event_->peak_size_, &result);
-  EncodeIntoUInt8(memory_time_event_->alloc_size_, &result);
-  EncodeIntoUInt8(memory_time_event_->used_by_event_size_, &result);
-  EncodeIntoUInt8(memory_time_event_->eager_free_size_, &result);
+  EncodeIntoUInt8<int32_t>(device_id, &result);
+  EncodeIntoUInt8<uint64_t>(tid_, &result);
+  EncodeIntoUInt8<uint64_t>(pid_, &result);
+  EncodeIntoUInt8<uint64_t>(memory_time_event_->created_at_, &result);
+  EncodeIntoUInt8<size_t>(reinterpret_cast<size_t>(memory_time_event_->addr_), &result);
+  EncodeIntoUInt8<size_t>(memory_time_event_->size_, &result);
+  EncodeIntoUInt8<size_t>(memory_time_event_->used_size_, &result);
+  EncodeIntoUInt8<size_t>(memory_time_event_->peak_size_, &result);
+  EncodeIntoUInt8<size_t>(memory_time_event_->alloc_size_, &result);
+  EncodeIntoUInt8<size_t>(memory_time_event_->used_by_event_size_, &result);
+  EncodeIntoUInt8<size_t>(memory_time_event_->eager_free_size_, &result);
+  EncodeIntoUInt8<size_t>(reinterpret_cast<size_t>(stream_ptr_), &result);
+  EncodeIntoUInt8<uint32_t>(memory_time_event_->stream_id_, &result);
+  EncodeIntoUInt8<uint8_t>(memory_time_event_->from_persistent_, &result);
+  EncodeIntoUInt8<uint8_t>(memory_time_event_->is_persistent_, &result);
+  EncodeIntoUInt8<uint8_t>(memory_time_event_->run_mode_, &result);
+  EncodeIntoUInt8<uint8_t>(memory_time_event_->alloc_type_, &result);
   EncodeStringIntoUInt8(memory_time_event_->owner_, &result);
-  EncodeIntoUInt8(memory_time_event_->alloc_type_, &result);
-  EncodeIntoUInt8(reinterpret_cast<size_t>(stream_ptr_), &result);
-  EncodeIntoUInt8(tid_, &result);
-  EncodeIntoUInt8(pid_, &result);
-  return result;
+
+  std::vector<uint8_t> tlv_result;
+  uint16_t data_type = static_cast<uint16_t>(profiler::ascend::OpRangeDataType::NAME);
+  for (size_t i = 0; i < sizeof(uint16_t); i++) {
+    (void)tlv_result.emplace_back(data_type >> (i * 8) & 0xff);
+  }
+  uint32_t length = result.size();
+  for (size_t i = 0; i < sizeof(uint32_t); i++) {
+    (void)tlv_result.emplace_back(length >> (i * 8) & 0xff);
+  }
+  tlv_result.insert(tlv_result.end(), result.cbegin(), result.cend());
+  return tlv_result;
 }
 
 DefaultEnhancedAscendMemoryPool::DefaultEnhancedAscendMemoryPool(const DefaultAscendMemoryPoolPtr &instance)
@@ -152,7 +165,7 @@ DeviceMemPtr DefaultEnhancedAscendMemoryPool::AllocTensorMem(size_t size, bool f
   instance_->ReportMemoryPoolInfo();
 
   // Adapt for dry run.
-  if (common::IsNeedProfileMemory()) {
+  if (IsNeedProfilieMemoryLog()) {
     MS_LOG(WARNING) << "Need Profile Memory, Memory pool alloc, total mem: " << TotalMemStatistics()
                     << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                     << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -214,7 +227,8 @@ std::vector<DeviceMemPtr> DefaultEnhancedAscendMemoryPool::AllocContinuousTensor
 
 void DefaultEnhancedAscendMemoryPool::FreeTensorMem(const DeviceMemPtr &device_addr) {
   MS_LOG(DEBUG) << "Free tensor mem, device addr : " << device_addr << ".";
-  instance_->FreeTensorMem(device_addr);
+  LockGuard lock(instance_->lock());
+  DoFreeTensorMem(device_addr);
 }
 
 bool DefaultEnhancedAscendMemoryPool::DoFreeTensorMem(const DeviceMemPtr &device_addr) {
@@ -224,7 +238,7 @@ bool DefaultEnhancedAscendMemoryPool::DoFreeTensorMem(const DeviceMemPtr &device
     instance_->ReportMemoryPoolInfo();
 
     // Adapt for dry run.
-    if (common::IsNeedProfileMemory()) {
+    if (IsNeedProfilieMemoryLog()) {
       MS_LOG(WARNING) << "Need Profile Memory, Memory pool free, total mem: " << TotalMemStatistics()
                       << ", peak mem: " << UsedMemPeakStatistics() << ", in use mem: " << TotalUsedMemStatistics()
                       << ", used by event mem: " << TotalUsedByEventMemStatistics()
@@ -325,9 +339,96 @@ const std::pair<size_t, size_t> DefaultEnhancedAscendMemoryPool::FreeIdleMemsByE
   return {eager_free_size, real_free_size};
 }
 
+bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id,
+                                                uint32_t memory_stream_id) {
+  LockGuard lock(instance_->lock());
+  auto key = std::make_pair(user_stream_id, memory_stream_id);
+  auto iter = instance_->stream_pair_mem_bufs().find(key);
+  if (iter == instance_->stream_pair_mem_bufs().end()) {
+    return false;
+  }
+
+  auto mem_bufs_ = iter->second;
+  for (const auto &mem_buf : mem_bufs_) {
+    mem_buf->WaitEvent(task_id_on_stream, user_stream_id);
+    // Remove event and try to free memory.
+    if (mem_buf->IsEventNotUsed()) {
+      (void)iter->second.erase(mem_buf);
+      instance_->mem_stat().used_by_event_size_ -= mem_buf->size_;
+      if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
+        // Force clear all mem bufs.
+        for (auto &stream_pair_mem_bufs : instance_->stream_pair_mem_bufs()) {
+          (void)stream_pair_mem_bufs.second.erase(mem_buf);
+        }
+        (void)DoFreeTensorMem(mem_buf->addr_);
+      }
+    }
+  }
+  return true;
+}
+
+bool DefaultEnhancedAscendMemoryPool::WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) {
+  LockGuard lock(instance_->lock());
+  for (auto &stream_pair_mem_bufs : instance_->stream_pair_mem_bufs()) {
+    const auto &[user_stream, memory_stream] = stream_pair_mem_bufs.first;
+    if (memory_stream != memory_stream_id) {
+      continue;
+    }
+    auto mem_bufs = stream_pair_mem_bufs.second;
+    for (const auto &mem_buf : mem_bufs) {
+      mem_buf->WaitEvent(task_id_on_stream, user_stream);
+      // Remove event and try to free memory.
+      if (mem_buf->IsEventNotUsed()) {
+        (void)stream_pair_mem_bufs.second.erase(mem_buf);
+        instance_->mem_stat().used_by_event_size_ -= mem_buf->size_;
+        if (mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
+          // Force clear all mem bufs.
+          for (auto &kv : instance_->stream_pair_mem_bufs()) {
+            (void)kv.second.erase(mem_buf);
+          }
+          (void)DoFreeTensorMem(mem_buf->addr_);
+        }
+      }
+    }
+  }
+  return true;
+}
+
+bool DefaultEnhancedAscendMemoryPool::SyncAllEvents() {
+  LockGuard lock(instance_->lock());
+  if (stream_pair_mem_bufs().empty()) {
+    return false;
+  }
+
+  std::set<MemBuf *> carry_event_mem_bufs;
+  for (const auto &stream_pair_mem_buf : instance_->stream_pair_mem_bufs()) {
+    for (const auto &mem_buf : stream_pair_mem_buf.second) {
+      (void)carry_event_mem_bufs.emplace(mem_buf);
+    }
+  }
+  for (auto &mem_buf : carry_event_mem_bufs) {
+    if (mem_buf->SyncAllEvents() && mem_buf->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
+      (void)DoFreeTensorMem(mem_buf->addr_);
+    }
+  }
+
+  instance_->stream_pair_mem_bufs().clear();
+  return true;
+}
+
 BestFitAscendMemoryPool::BestFitAscendMemoryPool() {
   MS_LOG(WARNING) << "BestFitAscendMemoryPool constructed, older memory allocator is enabled.";
   SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
+}
+
+void BestFitAscendMemoryPool::ReportMemoryTimeEvent(const MemoryTimeEventPtr &time_event) {
+  int32_t device_id = GetDeviceId();
+  auto ascend_memory_time_event = std::make_unique<AscendMemoryTimeEvent>(device_id, time_event);
+  if (time_event->stream_id_ != UINT32_MAX) {
+    ascend_memory_time_event->stream_ptr_ = AscendStreamMng::GetInstance().GetStream(time_event->stream_id_);
+  }
+  FillTidAndPid(ascend_memory_time_event);
+  profiler::ascend::ProfilingDataDumper::GetInstance().Report(std::move(ascend_memory_time_event));
 }
 
 // Initialize static member in AscendMemoryPool.

@@ -66,20 +66,20 @@ struct AscendMemoryTimeEvent : profiler::ascend::BaseReportData {
 
   std::vector<uint8_t> encode() override;
 
-  MemoryTimeEventPtr memory_time_event_{nullptr};
-
-  void *stream_ptr_{nullptr};
-
   uint64_t tid_{0};
 
   uint64_t pid_{0};
 
+  void *stream_ptr_{nullptr};
+
+  MemoryTimeEventPtr memory_time_event_{nullptr};
+
   std::string ToJson() {
     JsonBuilder builder;
-    builder.Append("memory_time_event_", memory_time_event_ ? memory_time_event_->ToJson() : nullptr);
-    builder.Append("stream_ptr_", stream_ptr_);
     builder.Append("tid_", tid_);
     builder.Append("pid_", pid_);
+    builder.Append("stream_ptr_", stream_ptr_);
+    builder.Append("memory_time_event_", memory_time_event_ ? memory_time_event_->ToJson() : nullptr);
     return builder.ToString();
   }
 };
@@ -135,15 +135,11 @@ class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public DefaultAscendMemor
     return instance_->RecordEvent(task_id_on_stream, user_stream_id, memory_stream_addresses, event);
   }
 
-  bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) override {
-    return instance_->WaitEvent(task_id_on_stream, user_stream_id, memory_stream_id);
-  }
+  bool WaitEvent(int64_t task_id_on_stream, uint32_t user_stream_id, uint32_t memory_stream_id) override;
 
-  bool WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) override {
-    return instance_->WaitEvent(task_id_on_stream, memory_stream_id);
-  }
+  bool WaitEvent(int64_t task_id_on_stream, uint32_t memory_stream_id) override;
 
-  bool SyncAllEvents() override { return instance_->SyncAllEvents(); }
+  bool SyncAllEvents() override;
 
   size_t AlignMemorySize(size_t size) const override { return instance_->AlignMemorySize(size); }
 
@@ -277,6 +273,8 @@ class BACKEND_EXPORT BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSu
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
 
   std::string GetMemoryPoolType() const override { return "BestFitAscendMemoryPool"; }
+
+  void ReportMemoryTimeEvent(const MemoryTimeEventPtr &time_event) override;
 };
 
 class BACKEND_EXPORT AscendMemoryPool {
@@ -309,6 +307,9 @@ class BACKEND_EXPORT AscendMemoryPool {
   AscendMemoryPool() {}
 
   static bool UseOldMemoryPool() {
+    if (common::IsDisableAllocConfig(common::kAllocMemoryPool)) {
+      return false;
+    }
     return IsDisableGeKernel() || common::IsEnableAllocConfig(common::kAllocMemoryPool);
   }
 

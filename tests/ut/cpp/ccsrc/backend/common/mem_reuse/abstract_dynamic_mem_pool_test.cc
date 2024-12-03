@@ -480,9 +480,7 @@ TEST_F(TestAbstractDynamicMemPool, test_memory_reserved_dize) {
 
 class LinearDynamicMemPoolWithoutVmm : public LinearDynamicMemPool {
  public:
-  LinearDynamicMemPoolWithoutVmm() {
-    SetEnableVmm(false);
-  }
+  LinearDynamicMemPoolWithoutVmm() { SetEnableVmm(false); }
 
   size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr) override {
     auto ret = LinearDynamicMemPool::AllocDeviceMem(size, addr);
@@ -533,7 +531,7 @@ TEST_F(TestAbstractDynamicMemPool, test_common_malloc_from_persistent) {
   EXPECT_TRUE(more_memory == nullptr);
   mem_pool->FreeTensorMem(persistent_memory);
   more_memory = mem_pool->AllocTensorMem(1, false);
-  EXPECT_TRUE(more_memory == nullptr);
+  EXPECT_TRUE(more_memory != nullptr);
   mem_pool->FreeTensorMem(common_memory);
   mem_pool->FreeTensorMem(more_memory);
 }
