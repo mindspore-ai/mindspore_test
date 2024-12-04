@@ -23,7 +23,6 @@
 #include "include/common/utils/utils.h"
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "common/debug/profiler/profiling_python.h"
-#include "include/backend/mem_reuse/mem_tracker.h"
 #include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
@@ -331,6 +330,21 @@ void AscendProfiler::StepStop() {
     aclProfStepInfo_ = nullptr;
   }
   aclStream_ = nullptr;
+}
+
+void AscendProfiler::MstxMark(const std::string &message, void *stream) {
+  MS_LOG(INFO) << "Ascend mstx mark, message: " << message;
+  MstxMgr::GetInstance().Mark(message.c_str(), stream);
+}
+
+int AscendProfiler::MstxRangeStart(const std::string &message, void *stream) {
+  MS_LOG(INFO) << "Ascend mstx range start, message: " << message;
+  return MstxMgr::GetInstance().RangeStart(message.c_str(), stream);
+}
+
+void AscendProfiler::MstxRangeEnd(int range_id) {
+  MS_LOG(INFO) << "Ascend mstx range end, range_id: " << range_id;
+  MstxMgr::GetInstance().RangeEnd(range_id);
 }
 
 }  // namespace ascend

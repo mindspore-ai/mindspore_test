@@ -100,6 +100,9 @@ class AscendProfiler : public Profiler {
   void StepStop() override;
   void StepProfilingEnable(const bool enable_flag) override;
   void OpDataProducerEnd() override { return; }
+  void MstxMark(const std::string &message, void *stream = nullptr) override;
+  int MstxRangeStart(const std::string &message, void *stream = nullptr) override;
+  void MstxRangeEnd(int range_id) override;
 
  protected:
   void SaveProfileData() override { return; }

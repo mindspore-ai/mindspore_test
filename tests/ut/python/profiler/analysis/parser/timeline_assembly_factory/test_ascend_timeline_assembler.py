@@ -20,6 +20,7 @@ from decimal import Decimal
 from mindspore.profiler.common.constant import EventConstant, TimelineLayerName, FileConstant
 from mindspore.profiler.analysis.parser.timeline_event.fwk_event import FwkCompleteEvent
 from mindspore.profiler.analysis.parser.timeline_event.msprof_event import MsprofCompleteEvent
+from mindspore.profiler.analysis.parser.timeline_event.timeline_event_pool import TimelineEventPool
 from mindspore.profiler.analysis.parser.timeline_assembly_factory.ascend_timeline_assembler import (
     AscendTimelineAssembler
 )
@@ -48,8 +49,10 @@ class TestAscendTimelineAssembler(unittest.TestCase):
         self.fwk_kbk_op_data = self._create_fwk_kbk_model_data()
         self.fwk_graph_op_data = self._create_fwk_graph_model_data()
         self.fwk_pynative_op_data = self._create_fwk_pynative_model_data()
+        self.mstx_op_fwk_data = self._create_mstx_fwk_data()
         self.cpu_op_data = ["Default/network-TrainOneStepCell/Add;Add;1500,200,2"]
         self.msprof_data = self._create_msprof_data()
+        self.msprof_tx_data = self._create_msprof_tx_data()
 
     def _create_base_fwk_data(self, op_name, op_type, start_us, end_us, thread_id):
         """Create base framework operation data."""
@@ -94,6 +97,17 @@ class TestAscendTimelineAssembler(unittest.TestCase):
                 "flow_op", 500000, 1000000, 2)
         ]
 
+    def _create_mstx_fwk_data(self):
+        """Create framework operation data for mstx."""
+        return [
+            self._create_base_fwk_data(
+                "mstx_mark_op",
+                "mstx", 1000000, 2000000, 100),
+            self._create_base_fwk_data(
+                "mstx_range_start_op",
+                "mstx", 2500000, 3500000, 100)
+        ]
+
     def _create_msprof_data(self):
         """Create Msprof operation data."""
         self.msprof_cann_data = self._create_msprof_event("node@launch", 100, 100, 1500)
@@ -113,6 +127,47 @@ class TestAscendTimelineAssembler(unittest.TestCase):
 
         return [self.msprof_cann_data, self.msprof_hardware_data, self.msprof_meta_data,
                 self.flow_start_event, self.flow_end_event]
+
+    def _create_msprof_tx_data(self):
+        """Create Msprof operation data."""
+        msprof_tx_mark_event = self._create_msprof_event("mark", 100, 100, 1500)
+        msprof_hardware_tx_mark_event = self._create_msprof_event(
+            "mark", 200, 200, 2000)
+
+        msprof_tx_mark_flow_start_event = self._create_flow_event(
+            "mark_flow_start", EventConstant.START_FLOW, 100, 100, "flow1", 1700)
+        msprof_tx_mark_flow_end_event = self._create_flow_event(
+            "mark_flow_end", EventConstant.END_FLOW, 200, 200, "flow1", 2000)
+
+        msprof_tx_range_event = self._create_msprof_event("range", 100, 100, 3000)
+        msprof_hardware_tx_range_event = self._create_msprof_event(
+            "range", 200, 200, 3500)
+
+        msprof_tx_range_flow_start_event = self._create_flow_event(
+            "range_flow_start", EventConstant.START_FLOW, 100, 100, "flow2", 3200)
+        msprof_tx_range_flow_end_event = self._create_flow_event(
+            "range_flow_end", EventConstant.END_FLOW, 200, 200, "flow2", 3500)
+
+        msprof_tx_meta_data = {
+            "name": EventConstant.PROCESS_NAME,
+            "ph": EventConstant.META_EVENT,
+            "pid": 100,
+            "tid": 0,
+            "args": {"name": TimelineLayerName.MSTX.value}
+        }
+
+        msprof_meta_data = {
+            "name": EventConstant.PROCESS_NAME,
+            "ph": EventConstant.META_EVENT,
+            "pid": 200,
+            "tid": 0,
+            "args": {"name": TimelineLayerName.ASCEND_HARDWARE.value}
+        }
+
+        return [msprof_tx_mark_event, msprof_hardware_tx_mark_event, msprof_tx_mark_flow_start_event,
+                msprof_tx_mark_flow_end_event, msprof_tx_range_event, msprof_hardware_tx_range_event,
+                msprof_tx_range_flow_start_event, msprof_tx_range_flow_end_event, msprof_tx_meta_data,
+                msprof_meta_data]
 
     def _create_msprof_event(self, name, pid, tid, ts, dur=1000, ph=EventConstant.COMPLETE_EVENT):
         """Create Msprof event data."""
@@ -214,6 +269,22 @@ class TestAscendTimelineAssembler(unittest.TestCase):
             # 6 cpu op events and 5 msprof events and 7 fwk events and 7 scope layer events and 4 flow events
             self.assertEqual(len(container.get_trace_view()), 29)
 
+    def test_assemble_events_should_create_events_when_input_valid_data_in_mstx_with_level_none(self):
+        """Should create events for all operation types when input data is valid in mstx with level none."""
+        with (mock.patch("mindspore.profiler.analysis.time_converter.TimeConverter.convert_syscnt_to_timestamp_us",
+                         side_effect=lambda x: Decimal(x) / Decimal('1000'))):
+            data = {
+                "mindspore_op_list": self.mstx_op_fwk_data,
+                "cpu_op_lines": [],
+                "msprof_timeline": self.msprof_tx_data
+            }
+
+            self.assembler.assemble(data)
+
+            container = self.assembler.trace_view_container
+            # 10 msprof events and 7 fwk events and 4 flow events
+            self.assertEqual(len(container.get_trace_view()), 21)
+
     def test_assemble_should_handle_empty_input_when_data_is_empty(self):
         """Should handle empty input data when input dictionary is empty."""
         empty_data = {
@@ -263,6 +334,65 @@ class TestAscendTimelineAssembler(unittest.TestCase):
                 self.assertEqual(end_flow["cat"], EventConstant.MINDSPORE_NPU_FLOW_CAT)
                 self.assertEqual(start_flow["id"], "3000")  # Using hardware event ts as id
                 self.assertEqual(end_flow["id"], "3000")
+
+    def test_create_fwk_to_mstx_flow_should_create_flow_events_when_mstx_events_exist(self):
+        """Should create flow events between framework and mstx events.
+        Timeline visualization:
+            Framework Layer:
+                   ts(1000)                                                          te(2000)
+            tid1    |-------------------- mstx_range_event_1 ---------------------------|
+                                                           ts(1600)            te(1900)
+            tid2                                           |-- mstx_range_event_2 --|
+
+            MSTX Layer:
+                        ts(1200)                                                te(1900)
+            tid1        |------------------- mstx_range_event_1 -------------------|
+                                                           ts(1650)        te(1850)
+            tid2                                            |-mstx_range_event_2-|
+        """
+
+        fwk_mstx_event_1 = FwkCompleteEvent(self._create_base_fwk_data(
+            "mstx_range_event_1",
+            "mstx", 1000000, 2000000, 100))
+
+        mstx_event_1 = MsprofCompleteEvent({
+            "name": "mstx_range_event_1",
+            "ph": EventConstant.COMPLETE_EVENT,
+            "pid": 100,
+            "tid": 100,
+            "ts": 1200,
+            "dur": 700
+        })
+
+        fwk_mstx_event_2 = FwkCompleteEvent(self._create_base_fwk_data(
+            "mstx_range_event_2",
+            "mstx", 1600000, 1900000, 200))
+
+        mstx_event_2 = MsprofCompleteEvent({
+            "name": "mstx_range_event_2",
+            "ph": EventConstant.COMPLETE_EVENT,
+            "pid": 100,
+            "tid": 200,
+            "ts": 1650,
+            "dur": 200
+        })
+
+        # Create and setup MSTX pool
+        mstx_pool = TimelineEventPool(TimelineLayerName.MSTX.value)
+        mstx_pool.add_event(mstx_event_1)
+        mstx_pool.add_event(mstx_event_2)
+
+        # Create and setup framework pool
+        fwk_pool = TimelineEventPool(TimelineLayerName.MINDSPORE.value)
+        fwk_pool.add_event(fwk_mstx_event_1)
+        fwk_pool.add_event(fwk_mstx_event_2)
+
+        with mock.patch("mindspore.profiler.analysis.time_converter.TimeConverter.convert_syscnt_to_timestamp_us",
+                        side_effect=lambda x: Decimal(x) / Decimal('1000')):
+            flow_dicts = self.assembler._create_fwk_to_mstx_flow(mstx_pool, fwk_pool)
+
+            # Verify flow events were created
+            self.assertEqual(len(flow_dicts), 4)
 
     def test_create_fwk_to_fwk_flow_should_create_flow_events_when_matching_events_exist(self):
         """Should create flow events between framework events."""

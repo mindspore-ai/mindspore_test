@@ -15,6 +15,7 @@
 """Timeline assembler for Ascend device."""
 from typing import List, Dict, Any
 from decimal import Decimal
+from collections import defaultdict
 
 from mindspore import log as logger
 from mindspore.profiler.common.constant import EventConstant, TimelineLayerName
@@ -91,19 +92,26 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
         if not fwk_pool:
             return
 
+        # Create and add fwk to fwk flows
         fwk_to_fwk_flows = self._create_fwk_to_fwk_flow(fwk_pool)
         self.trace_view_container.add_trace_events(fwk_to_fwk_flows)
+
+        # Create and add fwk to mstx flows
+        mstx_pool = self.trace_view_container.get_pool_by_name(TimelineLayerName.MSTX.value)
+        if mstx_pool:
+            fwk_to_mstx_flows = self._create_fwk_to_mstx_flow(mstx_pool, fwk_pool)
+            self.trace_view_container.add_trace_events(fwk_to_mstx_flows)
+
+        hardware_pool = self.trace_view_container.get_pool_by_name(TimelineLayerName.ASCEND_HARDWARE.value)
+        if not hardware_pool:
+            return
 
         # Collect kernel launch events
         for event in fwk_pool.get_complete_events():
             if any(keyword in event.name for keyword in EventConstant.KERNEL_LAUNCH_KEYWORDS):
                 self.trace_view_container.kernel_launch_op_event[event.tid].append(event)
 
-        hardware_pool = self.trace_view_container.get_pool_by_name(TimelineLayerName.ASCEND_HARDWARE.value)
-        if not hardware_pool:
-            return
-
-        # Create and add flows
+        # Create and add fwk to hardware flows
         fwk_to_hardware_flows = self._create_fwk_to_hardware_flow()
         self.trace_view_container.add_trace_events(fwk_to_hardware_flows)
 
@@ -178,6 +186,43 @@ class AscendTimelineAssembler(BaseTimelineAssembler):
             )
 
         return fwk_to_fwk_flows
+
+    def _create_fwk_to_mstx_flow(self, mstx_pool: TimelineEventPool, fwk_pool: TimelineEventPool) -> List[Dict]:
+        """Create flow events between framework and mstx events."""
+        fwk_mstx_api_event_group_by_tid = defaultdict(list)
+        for event in fwk_pool.get_complete_events():
+            if EventConstant.MSTX_KEYWORD in event.name:
+                fwk_mstx_api_event_group_by_tid[event.tid].append(event)
+
+        fwk_to_mstx_flows = []
+        mstx_event_group_by_tid = mstx_pool.complete_event
+
+        for tid, mstx_event_list in mstx_event_group_by_tid.items():
+            sorted_fwk_mstx_api_events = sorted(fwk_mstx_api_event_group_by_tid.get(tid, []), key=lambda x: x.ts)
+            sorted_mstx_events = sorted(mstx_event_list, key=lambda x: x.ts)
+
+            index = 0
+            for mstx_event in sorted_mstx_events:
+                while index < len(sorted_fwk_mstx_api_events):
+                    fwk_event = sorted_fwk_mstx_api_events[index]
+                    if mstx_event.ts < fwk_event.ts:
+                        break
+                    if mstx_event.ts <= fwk_event.te:
+                        mstx_event.parent = fwk_event
+                        fwk_event.children.append(mstx_event)
+                        fwk_to_mstx_flows.extend(
+                            self._create_flow_events(
+                                fwk_event,
+                                mstx_event,
+                                EventConstant.MSTX_FLOW_NAME,
+                                EventConstant.MSTX_FLOW_CAT,
+                            )
+                        )
+                        index += 1
+                        break
+                    index += 1
+
+        return fwk_to_mstx_flows
 
     @staticmethod
     def _create_flow_events(start_event: BaseEvent, end_event: BaseEvent,
