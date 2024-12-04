@@ -12,28 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import numpy as np
-import os
-import pytest
-from tests.mark_utils import arg_mark
+"""Test the overload functional method"""
 import mindspore as ms
-from mindspore import Tensor
+import mindspore.nn as nn
+import numpy as np
+import pytest
 
-@arg_mark(plat_marks=['platform_ascend910b'],
-          level_mark='level1',
+from tests.mark_utils import arg_mark
+
+
+class IsNanNet(nn.Cell):
+    def construct(self, x):
+        return x.isnan()
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
-@pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
-def test_tensor_isnan(mode):
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_method_isfinite(mode):
     """
-    Feature: tensor.isnan
-    Description: Verify the result of isnan
-    Expectation: success
+    Feature: Functional.
+    Description: Test functional feature with Tensor.isnan.
+    Expectation: Run success
     """
-    os.environ['MS_TENSOR_API_ENABLE_MINT'] = '1'
-    ms.set_context(mode=mode)
-    t = Tensor([1, float('nan'), 2])
-    output = t.isnan()
-    except_output = [False, True, False]
-    assert np.array_equal(output.asnumpy(), except_output)
-    del os.environ['MS_TENSOR_API_ENABLE_MINT']
+    ms.set_context(mode=mode, jit_config={"jit_level": "O0"})
+
+    net = IsNanNet()
+    x = ms.Tensor([1, float('nan'), 2])
+    output = net(x)
+    expected = np.array([False, True, False], dtype=np.bool_)
+    assert np.allclose(output.asnumpy(), expected)

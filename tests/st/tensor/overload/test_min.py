@@ -16,6 +16,8 @@
 import numpy as np
 import pytest
 from tests.mark_utils import arg_mark
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.utils import test_utils
 
 import mindspore as ms
 import mindspore.nn as nn
@@ -30,6 +32,20 @@ class MinPythonNet(nn.Cell):
 class MinPyboostNet(nn.Cell):
     def construct(self, x):
         return x.min()
+
+
+def generate_random_input(shape, dtype):
+    return np.random.randn(*shape).astype(dtype)
+
+
+@test_utils.run_with_cell
+def min_forward_func1(x):
+    return x.min()
+
+
+@test_utils.run_with_cell
+def min_forward_func2(x, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
+    return x.min(axis, keepdims, initial=initial, where=where, return_indices=return_indices)
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'],
@@ -99,3 +115,25 @@ def test_method_min_pyboost(mode):
     x = ms.Tensor(np.arange(4).reshape((2, 2)).astype(np.float32))
     output = net(x)
     assert np.allclose(output.asnumpy(), 0.0)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level1',
+          card_mark='onecard',
+          essential_mark='unessential')
+def test_tensor_min_dynamic():
+    """
+    Feature: Test min op.
+    Description: Test min dynamic shape.
+    Expectation: the result match with expected result.
+    """
+    ms_data1 = ms.Tensor(generate_random_input((4, 3, 6), np.float32))
+    axis1 = None
+    keepdims1 = False
+    ms_data2 = ms.Tensor(generate_random_input((5, 2, 7, 3), np.float32))
+    axis2 = None
+    keepdims2 = False
+    TEST_OP(min_forward_func1, [[ms_data1, axis1], [ms_data2]],
+            'min', disable_mode=['GRAPH_MODE'])
+    TEST_OP(min_forward_func2, [[ms_data1, axis1, keepdims1], [ms_data2, axis2, keepdims2]], 'min',
+            disable_mode=['GRAPH_MODE'], disable_input_check=True, disable_yaml_check=True)
