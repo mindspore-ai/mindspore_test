@@ -1948,6 +1948,13 @@ def clamp(x, min=None, max=None):
     return F.clamp(x, min, max)
 
 
+def clamp_(x, min=None, max=None):
+    """
+    Clamps all elements in `x` into the range `[min, max]`.
+    """
+    return F.clamp_(x, min, max)
+
+
 def clip(x, min=None, max=None):
     """
     Clamps all elements in `x` into the range `[min, max]`.
