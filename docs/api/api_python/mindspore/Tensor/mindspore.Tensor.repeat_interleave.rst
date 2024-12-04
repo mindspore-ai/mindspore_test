@@ -22,6 +22,7 @@ mindspore.Tensor.repeat_interleave
         Tensor，值沿指定轴复制。如果输入的shape为 :math:`(s1, s2, ..., sn)` ，轴为i，则输出的shape为 :math:`(s1, s2, ..., si * repeats, ..., sn)` 。输出的数据类型与输入相同。
 
     .. py:method:: mindspore.Tensor.repeat_interleave(repeats, dim=None)
+        :noindex:
 
     沿着轴重复Tensor的元素，类似 `numpy.repeat`。
 
