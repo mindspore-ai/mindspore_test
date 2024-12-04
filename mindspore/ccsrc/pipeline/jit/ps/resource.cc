@@ -501,6 +501,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"lu_solve", std::string("lu_solve")},                              // lu_solve()
        {"masked_scatter", std::string("masked_scatter")},                  // masked_scatter()
        {"index_put", std::string("index_put")},                            // index_input()
+       {"index_put_", std::string("index_put_")},                          // index_put_()
        {"aminmax", std::string("aminmax")},                                // aminmax()
        {"quantile", std::string("quantile")},                              // quantile()
        {"nanquantile", std::string("nanquantile")},                        // nanquantile()

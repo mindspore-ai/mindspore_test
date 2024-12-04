@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INDEX_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INDEX_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INNER_INPLACE_INDEX_PUT_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INNER_INPLACE_INDEX_PUT_H_
 
 #include <vector>
 #include <tuple>
-#include "mindapi/base/types.h"
 #include "ops/ops_func_impl/op_func_impl.h"
-#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API IndexFuncImpl : public OpFuncImpl {
+class OPS_API InnerInplaceIndexPutFuncImpl : public OpFuncImpl {
  public:
-  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   bool GeneralInferRegistered() const override { return true; };
   ShapeVector CheckAndCalOutputShapeInTupleCase(const ShapeVector &x_shape, const ShapeArray &indices_shapes) const;
 
@@ -36,8 +34,8 @@ class OPS_API IndexFuncImpl : public OpFuncImpl {
                                                        const ShapeArray &index_shapes) const;
   bool IndexContiguous(const ShapeArray &index_shape) const;
   ShapeArray ExpandIndexShape(const ShapeArray &to_expand) const;
+  bool IsExpandableTo(const ShapeVector &shape, const ShapeVector &desired) const;
 };
 }  // namespace ops
 }  // namespace mindspore
-
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INDEX_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INNER_INPLACE_INDEX_PUT_H_
