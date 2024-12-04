@@ -1583,6 +1583,17 @@ REG_BPROP_BUILDER("Expm1").FreeUselessValues_I({}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("Exp2").SetBody(BODYFUNC(ib) {
+  constexpr const float LOG_2 = 0.693147;
+  auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+
+  // dx = dout * ln2 * 2^x -> dx = dout * ln2 * out
+  auto dx = ib->Mul(dout, ib->Mul(out, ib->Tensor(LOG_2, ib->GetDtype(out))));
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Minimum").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);

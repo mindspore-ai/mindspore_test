@@ -1987,6 +1987,16 @@ REG_BPROP_BUILDER("ScatterUpdate").SetUnusedInputs({i0, i2, i3}).SetBody(BODYFUN
   return {dx, ib->OutZeros(indices), updates_grad};
 });
 
+REG_BPROP_BUILDER("InplaceNormal").SetUnusedInputs({i0, i1, i2, i3, i4, i5, i6}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto mean = ib->GetInput(kIndex1);
+  auto std = ib->GetInput(kIndex2);
+  auto seed = ib->GetInput(kIndex3);
+  auto offset = ib->GetInput(kIndex4);
+  auto dx = ib->ZerosLikeExt(x, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  return {dx, ib->OutZeros(mean), ib->OutZeros(std), ib->OutZeros(seed), ib->OutZeros(offset)};
+});
+
 REG_BPROP_BUILDER("NormalTensorTensor").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
 
 REG_BPROP_BUILDER("NormalTensorFloat").SetUnusedInputs({i0, i1, i2, i3, i4, i5}).SetBody(ReturnZeros);
