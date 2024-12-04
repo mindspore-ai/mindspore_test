@@ -155,9 +155,9 @@ def generate_arg_handler_files(work_path):
     check_change_and_replace_file(dst_arg_dtype_cast_path, tmp_arg_dtype_cast_path)
 
 
-def gen_tensor_func_code(work_path, func_protos, alias_api_mapping):
+def gen_tensor_func_code(work_path, op_protos, func_protos, alias_api_mapping):
     generator = TensorFuncRegCppGenerator()
-    generator.generate(work_path, func_protos, alias_api_mapping)
+    generator.generate(work_path, op_protos, func_protos, alias_api_mapping)
 
 
 def gen_functional_map_code(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping):
@@ -216,7 +216,7 @@ def main():
     # generate aclnn kernelmod register
     generate_aclnn_reg_file(work_path, op_protos)
     # generate tensor_py func code
-    gen_tensor_func_code(work_path, tensor_method_protos, alias_api_mapping)
+    gen_tensor_func_code(work_path, op_protos, tensor_method_protos, alias_api_mapping)
     # generate functional map code
     gen_functional_map_code(work_path, tensor_method_protos, mint_func_protos, alias_api_mapping)
     # generate _tensor_docs.py that attaches docs to tensor func APIs when import mindspore

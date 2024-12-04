@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/tensor_func_reg.h"
+#include "pybind_api/ir/arg_handler.h"
+#include "pybind_api/ir/tensor_api/tensor_api.h"
+#include "pipeline/pynative/op_function/converter.h"
 
 namespace mindspore {
 namespace tensor {
 
-void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class) {
-    ${func_def_body}
-}
+${tenosr_func_call_body}
+
 }  // namespace tensor
 }  // namespace mindspore

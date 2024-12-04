@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
-#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
+#ifndef MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_UTILS_H_
+#define MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_UTILS_H_
 
 #include <memory>
-#include "mindspore/core/include/ir/tensor.h"
-#include "mindspore/core/include/ir/base_tensor.h"
 #include "utils/ms_context.h"
 #include "pybind11/pybind11.h"
 
@@ -42,13 +40,24 @@ class StubTensorConverter {
   std::unique_ptr<StubTensorConverterImpl> impl_;
 };
 
-${func_header_body}
+enum TensorPyboostMethod : int {
+  ${tensor_methods}
+};
 
-${func_def_list}
+class TensorPyboostMethodRegister {
+ public:
+  using PyBoostOp = std::function<py::object(const py::list &args)>;
+  static void Register(const TensorPyboostMethod methodName, const PyBoostOp &op) { methods_[methodName] = op; }
 
-inline py::object ToPython(const py::object &object) { return StubTensorConverter::GetInstance().ToPython(object); };
+  static const PyBoostOp &GetOp(TensorPyboostMethod methodName) { return methods_[methodName]; }
 
-void RegTensorFunc(py::class_<Tensor, BaseTensor, std::shared_ptr<Tensor>> *tensor_class);
+ private:
+  inline static std::unordered_map<TensorPyboostMethod, PyBoostOp> methods_;
+};
+
+inline py::object ToPython(const py::object &object) { return StubTensorConverter::GetInstance().ToPython(object); }
+
 }  // namespace tensor
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_REG_H_
+
+#endif  // MINDSPORE_MINDSPORE_CCSRC_PYBIND_API_IR_TENSOR_FUNC_UTILS_H_

@@ -98,7 +98,8 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_CPU_Win_Level0"
@@ -140,7 +141,8 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_Windows_AVX"
@@ -220,7 +222,8 @@
       "mindspore/ops/op_def",
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
-      "mindspore/python"
+      "mindspore/python",
+      ".gitignore"
     ],
     "ENVIRONMENT": "MACOS"
   },
@@ -325,7 +328,8 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Ascend",
@@ -412,7 +416,8 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_GPU"
@@ -575,7 +580,8 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "mindspore/python",
-      "tests/st"
+      "tests/st",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_CPU_CentOS_Level0_Group1",
@@ -665,7 +671,8 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "tests/ut",
-      "mindspore/python"
+      "mindspore/python",
+      ".gitignore"
     ],
     "LLT": [
       "UT_CPP",
@@ -755,7 +762,8 @@
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/kernel/gpu/cuda_impl/cuda_ops",
       "mindspore/ops/op_def",
-      "mindspore/python"
+      "mindspore/python",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_MINDIR",
@@ -829,7 +837,8 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/op_def",
-      "mindspore/python"
+      "mindspore/python",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_CLOUD_ASCEND",
@@ -853,7 +862,8 @@
       "mindspore/lite/tools/common",
       "mindspore/lite/tools/converter",
       "mindspore/ops/api_def",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -886,7 +896,8 @@
       "mindspore/lite/tools/common",
       "mindspore/lite/tools/converter",
       "mindspore/ops/api_def",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_TF",
@@ -919,7 +930,8 @@
       "mindspore/lite/tools/common",
       "mindspore/lite/tools/converter/quantizer",
       "mindspore/ops/api_def",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_SIM_SD3403"
@@ -947,7 +959,8 @@
       "mindspore/lite/tools/converter/micro/coder/wrapper/int8",
       "mindspore/lite/tools/converter/micro/coder/wrapper/thread",
       "mindspore/ops/api_def",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_CROP"
@@ -995,7 +1008,8 @@
       "mindspore/lite/tools/optimizer/parallel",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_Linux_TFLITE"
@@ -1046,7 +1060,8 @@
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1100,7 +1115,8 @@
       "mindspore/lite/tools/cropper",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1160,7 +1176,8 @@
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1201,7 +1218,8 @@
       "mindspore/lite/tools/cropper",
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_AVX512_CAFFE",
@@ -1256,7 +1274,8 @@
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_ASAN"
@@ -1307,7 +1326,8 @@
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_SIM_SD3403"
@@ -1381,7 +1401,8 @@
       "mindspore/lite/tools/converter/micro/providers/nnie",
       "mindspore/lite/tools/converter/quantizer",
       "mindspore/ops/api_def",
-      "mindspore/ops/kernel/cpu/nnacl"
+      "mindspore/ops/kernel/cpu/nnacl",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM32_3516D"
@@ -1432,7 +1453,8 @@
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      "mindspore/ops/op_def"
+      "mindspore/ops/op_def",
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM32_3516D"
