@@ -1517,7 +1517,7 @@ void ExecutorPy::ReleaseResourceOnException(const py::object &phase) {
 }
 
 bool ExecutorPy::Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs,
-                         const py::object &phase, bool) {
+                         const py::object &phase) {
   bool res = false;
   HandleExceptionRethrow(
     [this, &res, &source, &args, &kwargs, &phase]() {

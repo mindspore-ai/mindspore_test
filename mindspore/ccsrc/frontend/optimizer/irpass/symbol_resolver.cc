@@ -24,6 +24,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "pipeline/jit/ps/fallback.h"
+#include "pipeline/jit/ps/parse/resolve.h"
 
 namespace mindspore {
 namespace opt {
@@ -44,22 +45,25 @@ AnfNodePtr Resolver::operator()(const OptimizerPtr &optimizer, const AnfNodePtr 
     auto attr_node = attr.GetNode(node);
     MS_LOG(DEBUG) << "Handle getattr, object_node: " << object_node->DebugString()
                   << ", attr_node: " << attr_node->DebugString();
+    auto resource = std::dynamic_pointer_cast<pipeline::Resource>(optimizer->resource());
+    MS_EXCEPTION_IF_NULL(resource);
+    parse::Resolver resolver(resource->func_graph());
     // {prim::kPrimGetAttr, {getitem, {prim::kPrimResolve, namespace, symbol}, index}, attr}
     // {prim::kPrimGetAttr, {getitem, {prim::kPrimGetAttr, ResolveNode, member}, index}, attr}
     if (parse::IsGetItemCNode(object_node)) {
-      return parse::ResolveGetItemWithAttr(optimizer->manager(), object_node, attr_node, node);
+      return resolver.ResolveGetItemWithAttr(optimizer->manager(), object_node, attr_node, node);
     }
     // {prim::kPrimGetAttr, {prim::kPrimResolve, namespace, symbol}, attr}
     if (IsPrimitiveCNode(object_node, prim::kPrimResolve)) {
       // 'node' is getattr node.
-      return parse::ResolveSymbolWithAttr(optimizer->manager(), object_node, attr_node, node);
+      return resolver.ResolveSymbolWithAttr(optimizer->manager(), object_node, attr_node, node);
     }
     // {prim::kPrimGetAttr, namespace, attr}
     if (IsValueNode<parse::NameSpace>(object_node)) {
       auto name_space = GetValueNode<parse::NameSpacePtr>(object_node);
       auto attr_str = GetValue<std::string>(GetValueNode(attr_node));
       parse::SymbolPtr symbol = std::make_shared<parse::Symbol>(attr_str);
-      auto res = parse::ResolveSymbol(optimizer->manager(), name_space, symbol, node);
+      auto res = resolver.ResolveSymbol(optimizer->manager(), name_space, symbol, node);
       // If object has no attribute, res will be null. The attribute may not be used.
       // Let getattr be resolved in static_analysis.
       if (IsValueNode<TypeNull>(res)) {
@@ -117,7 +121,10 @@ AnfNodePtr Resolver::operator()(const OptimizerPtr &optimizer, const AnfNodePtr 
     auto name_space = GetValueNode<parse::NameSpacePtr>(ns_node.GetNode(node));
     auto symbol = GetValueNode<parse::SymbolPtr>(sym_node.GetNode(node));
     auto manager = optimizer->manager();
-    auto res = parse::ResolveSymbol(manager, name_space, symbol, node);
+    auto fg_resource = std::dynamic_pointer_cast<pipeline::Resource>(optimizer->resource());
+    MS_EXCEPTION_IF_NULL(fg_resource);
+    parse::Resolver resolver(fg_resource->func_graph());
+    auto res = resolver.ResolveSymbol(manager, name_space, symbol, node);
     MS_LOG(DEBUG) << "Finish ResolveSymbol, namespace: " << name_space->ToString() << ", symbol: " << symbol->ToString()
                   << ", result: " << (res != nullptr ? res->ToString() : "null");
     // If object has no attribute, res will be null. The attribute may not be used.

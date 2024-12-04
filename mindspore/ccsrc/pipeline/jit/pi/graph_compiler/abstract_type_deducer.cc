@@ -75,7 +75,7 @@ void PrepareEvalFuncGraph(const AnfNodePtr &func, AbstractBasePtrList *args_spec
   }
   auto func_graph = GetValueNode<FuncGraphPtr>(func);
   pipeline::ResourcePtr res = std::make_shared<pipeline::Resource>();
-  res->set_func_graph(func_graph);
+  res->set_func_graph(parse::Parser::GetTopFuncGraph());
   res->set_args_abs(*args_spec);
   parse::ResolveFuncGraph(func_graph, res);
   ExpandFuncGraphVarargs(func_graph, args_spec);

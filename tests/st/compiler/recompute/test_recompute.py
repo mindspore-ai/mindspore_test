@@ -667,10 +667,48 @@ def test_recompute_cell_and_op_recompute_with_tuple_outputs2():
     grad_net(x)
 
 
-def test_recompute_block_recompute_with_jit():
+def test_recompute_block_recompute_with_jit1():
     """
-    Feature: Recompute with lazy inline.
+    Feature: Recompute cell with jit.
     Description: Each block is set recompute by the cell recompute api and run grad in jit.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+
+    class OuterBlock(Cell):
+        def __init__(self):
+            super(OuterBlock, self).__init__()
+            self.block = Block()
+
+        def construct(self, x):
+            return self.block(x)
+
+    class Net(Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.blocks = nn.CellList()
+            for _ in range(3):
+                b = OuterBlock()
+                b.recompute()
+                self.blocks.append(b)
+
+        def construct(self, x):
+            out = x
+            for i in range(3):
+                out = self.blocks[i](out)
+            return out
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    x = Tensor(np.ones((8, 128, 16, 32)).astype(np.float32))
+    net = Net()
+    grad_net = GradInJit(net)
+    grad_net(x)
+
+
+def test_recompute_block_recompute_with_jit2():
+    """
+    Feature: Recompute cell with jit.
+    Description: Each block is set recompute by the cell recompute api and run grad in jit.
+                 And do recompute before inlined.
     Expectation: Run successfully and the memory usage is reduced.
     """
 

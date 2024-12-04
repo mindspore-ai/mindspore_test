@@ -51,10 +51,20 @@ def run_testcase(testcase_name, expect_memory_usage):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_recompute_cell_recompute_with_jit():
+def test_recompute_cell_recompute_with_jit1():
     """
     Feature: Recompute with lazy inline.
     Description: Each block is set recompute by the cell recompute api and run grad in jit.
     Expectation: Run successfully and the memory usage is reduced.
     """
-    run_testcase("test_recompute_block_recompute_with_jit", 45)
+    run_testcase("test_recompute_block_recompute_with_jit1", 46)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_recompute_cell_recompute_with_jit2():
+    """
+    Feature: Recompute with lazy inline.
+    Description: Each block is set recompute by the cell recompute api and run grad in jit.
+    Expectation: Run successfully and the memory usage is reduced.
+    """
+    run_testcase("test_recompute_block_recompute_with_jit2", 45)

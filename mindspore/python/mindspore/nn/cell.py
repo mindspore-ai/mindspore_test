@@ -2562,8 +2562,9 @@ class Cell(Cell_):
         if not self._has_config_recompute:
             self._has_config_recompute = True
         else:
-            raise RuntimeError("The recompute interface can be configured only once."
-                               " When the parent cell is configured, the child cell should not be configured")
+            logger.warning("The recompute interface can be configured only once."
+                           " When the parent cell is configured, the child cell should not be configured")
+            return
         self._set_recompute_scope(mode)
         if mode and not output_recompute:
             self.add_flags(output_no_recompute=True)
