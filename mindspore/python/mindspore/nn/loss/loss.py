@@ -682,7 +682,7 @@ class SmoothL1Loss(LossBase):
         ValueError: If shape of `logits` is not the same as `labels`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
         TypeError: If `beta` is not a float, int or bool.
-        ValueError: If `beta` is less than or equal to 0.
+        RuntimeError: If `beta` is less than or equal to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

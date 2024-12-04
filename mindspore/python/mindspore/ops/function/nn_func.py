@@ -4705,7 +4705,7 @@ def smooth_l1_loss(input, target, beta=1.0, reduction='none'):
         ValueError: If shape of `input` is not the same as `target`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
         TypeError: If `beta` is not a float, int or bool.
-        ValueError: If `beta` is less than or equal to 0.
+        RuntimeError: If `beta` is less than or equal to 0.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
