@@ -53,8 +53,9 @@ void CheckInferShape(const std::string &name, const ShapeVector &input_shape, co
 }
 
 TypeId CheckInferType(const std::string &name, const TypeId type) {
-  static const std::set<TypeId> valid_types = {kNumberTypeInt8,    kNumberTypeInt32,    kNumberTypeFloat16,
-                                               kNumberTypeFloat32, kNumberTypeBFloat16, kNumberTypeComplex64};
+  static const std::set<TypeId> valid_types = {kNumberTypeInt8,     kNumberTypeInt32,   kNumberTypeInt64,
+                                               kNumberTypeFloat16,  kNumberTypeFloat32, kNumberTypeBFloat16,
+                                               kNumberTypeComplex64};
   (void)CheckAndConvertUtils::CheckTypeIdValid("input", type, valid_types, name);
   return type;
 }

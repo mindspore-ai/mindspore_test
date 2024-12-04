@@ -30,6 +30,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import (inner_comm_all_reduce_op, 
 from mindspore._c_expression import CommHandle as CommHandle_
 from mindspore._c_expression.typing import Type
 from mindspore import jit_class
+from mindspore.common.api import _pynative_executor
 
 __all__ = [
     'all_reduce',
@@ -881,10 +882,15 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
     return _op()
 
 
-def _deal_comm_outputs(output, async_op):
+def _deal_comm_outputs(output, async_op, exec_sync=False):
+    """
+    deal with comm ops outputs.
+    """
     if isinstance(output, tuple):
         if not async_op:
             output[1].wait()
+            if exec_sync:
+                _pynative_executor.sync()
             return (output[0], None)
         return output
 

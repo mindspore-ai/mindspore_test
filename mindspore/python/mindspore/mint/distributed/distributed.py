@@ -1470,7 +1470,7 @@ def barrier(group=None, async_op=False, device_ids=None):
             f"The argument 'async_op' must be a bool, but got {type(async_op)}."
         )
     output = dist_comm_barrier_op(group)
-    _, handle = _deal_comm_outputs(output, async_op)
+    _, handle = _deal_comm_outputs(output, async_op, True)
     return handle
 
 
