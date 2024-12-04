@@ -392,6 +392,11 @@ class GraphExecutor {
   virtual void Finalize() { return; }
   virtual void OptimizeBeforeCompileGraph(const KernelGraphPtr &graph) { return; }
   virtual bool CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) { return true; }
+  // lite used
+  virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,
+                        std::vector<tensor::Tensor> *outputs, const std::map<string, string> &compile_options) {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
   virtual bool RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::TensorPtr> &inputs,
                         std::vector<tensor::TensorPtr> *outputs, const std::map<string, string> &compile_options) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
