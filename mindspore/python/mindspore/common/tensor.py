@@ -1321,6 +1321,14 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             ret = tensor_operator_registry.get("add_")(self, other, alpha)
         return ret
 
+    def sub_(self, other, *, alpha=1):
+        """
+        For details, please refer to :func:`mindspore.mint.sub`.
+        """
+        if isinstance(other, Tensor):
+            return tensor_operator_registry.get("sub_tensor_")(self, other, alpha)
+        return tensor_operator_registry.get("sub_scalar_")(self, other, alpha)
+
     def subtract(self, other, *, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.subtract`.

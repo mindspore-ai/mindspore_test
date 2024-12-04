@@ -58,6 +58,7 @@
 "mindspore/mindspore/ops/grad/grad_linalg_ops.cc"                       "internalAstError"
 "mindspore/mindspore/ops/grad/grad_clip_ops.cc"                         "internalAstError"
 "mindspore/mindspore/ops/grad/grad_scalar_ops.cc"                       "internalAstError"
+"mindspore/mindspore/ops/grad/grad_other_ops.cc"                        "internalAstError"
 "mindspore/mindspore/ccsrc/backend/common/expander/fallback/inner_ops.cc"                             "internalAstError"
 "mindspore/mindspore/ccsrc/backend/common/expander/fallback/nn_ops.cc"                                "internalAstError"
 "mindspore/mindspore/ccsrc/backend/common/expander/fallback/math_ops.cc"                              "internalAstError"

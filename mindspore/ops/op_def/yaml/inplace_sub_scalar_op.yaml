@@ -1,0 +1,25 @@
+#operator inplace_sub_scalar
+inplace_sub_scalar:
+  args:
+    input:
+      dtype: tensor
+    other:
+      dtype: number
+    alpha:
+      dtype: number
+      default: 1
+  args_signature:
+    rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  labels:
+    side_effect_mem: True
+  class:
+    name: InplaceSubScalar
+  function:
+    name: sub_scalar_
+  dispatch:
+    enable: True
+    Ascend: InplaceSubScalarAscend
