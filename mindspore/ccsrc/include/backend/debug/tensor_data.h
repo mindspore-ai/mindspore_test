@@ -31,6 +31,7 @@
 
 constexpr size_t kFloat32Size = 4;
 constexpr size_t kFloat64Size = 8;
+constexpr size_t kUint1NumPerByte = 8;
 
 namespace mindspore {
 typedef enum DbgDataType : unsigned int {
@@ -437,7 +438,7 @@ class TensorData {
       this->data_type_size_ = 0;
     } else if (type_name_lower == "uint1") {
       this->data_type_ = DbgDataType::DT_UINT1;
-      this->data_type_size_ = sizeof(uint8_t) / 8;
+      this->data_type_size_ = sizeof(uint8_t) / kUint1NumPerByte;
     } else {
       if (!ConvertNpyStringToDbgType(type_name_lower)) {
         MS_LOG(EXCEPTION) << "Unexpected type name: " << type_name;
