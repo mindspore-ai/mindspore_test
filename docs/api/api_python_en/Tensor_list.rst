@@ -267,6 +267,7 @@
     mindspore.Tensor.numpy
     mindspore.Tensor.nonzero
     mindspore.Tensor.norm
+    mindspore.Tensor.normal_
     mindspore.Tensor.not_equal
     mindspore.Tensor.outer
     mindspore.Tensor.orgqr

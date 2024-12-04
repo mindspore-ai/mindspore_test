@@ -97,7 +97,7 @@ from mindspore.ops.functional import mul
 # 22
 from mindspore.ops.functional import cumprod
 # 23
-
+from mindspore.ops.auto_generate import exp2
 # 24
 
 # 25
@@ -1979,7 +1979,7 @@ __all__ = [
     # 22
     'cumprod',
     # 23
-
+    'exp2',
     # 24
 
     # 25

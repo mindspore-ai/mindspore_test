@@ -15,7 +15,7 @@
 """mint module."""
 from __future__ import absolute_import
 
-from mindspore.ops.auto_generate import erfc, expm1, sinc, log1p, round_op
+from mindspore.ops.auto_generate import erfc, expm1, exp2, sinc, log1p, round_op
 from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
 
 
@@ -56,6 +56,7 @@ def round(input):
 __all__ = [
     'erfc',
     'expm1',
+    'exp2',
     'round',
     'sinc',
     'log1p',

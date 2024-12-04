@@ -109,6 +109,7 @@ Pointwise Operations
     mindspore.mint.erfc
     mindspore.mint.erfinv
     mindspore.mint.exp
+    mindspore.mint.exp2
     mindspore.mint.expm1
     mindspore.mint.fix
     mindspore.mint.floor
@@ -457,6 +458,7 @@ Pointwise Operations
     :template: classtemplate.rst
 
     mindspore.mint.special.erfc
+    mindspore.mint.special.exp2
     mindspore.mint.special.expm1
     mindspore.mint.special.log1p
     mindspore.mint.special.log_softmax
