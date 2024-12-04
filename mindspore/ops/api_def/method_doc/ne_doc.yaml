@@ -2,46 +2,4 @@ ne:
   description: |
     ne(other) -> Tensor
     
-    Computes the non-equivalence of two tensors element-wise.
-    
-    Note:
-        - `self` and `other` comply with the implicit type conversion rules to make the data types 
-          consistent.
-        - The `other` can be a tensor or a scalar.
-        - When `other` is a tensor, the shapes of `self` and `other` could be broadcast.
-        - When `other` is a scalar, it could only be a constant.
-        - Broadcasting is supported.
-    
-    .. math::
-    
-        out_{i} =\begin{cases}
-        & \text{True,    if } tensor_{i} \ne other_{i} \\
-        & \text{False,   if } tensor_{i} = other_{i}
-        \end{cases}
-    
-    Args:
-        other (Union[Tensor, number.Number, bool]): `other` is a number.Number or
-            a bool or a tensor whose data type is number.Number and bool.
-    
-    Returns:
-        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
-    
-    Raises:
-        TypeError: If `other` is not one of the following: Tensor, Number, bool.
-    
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-    
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> x = Tensor([1, 2, 3], mindspore.float32)
-        >>> output = x.ne(2.0)
-        >>> print(output)
-        [ True False  True]
-        >>>
-        >>> x = Tensor([1, 2, 3], mindspore.int32)
-        >>> y = Tensor([1, 2, 4], mindspore.int32)
-        >>> output = x.ne(y)
-        >>> print(output)
-        [False False  True]
+    Alias for :func:`mindspore.Tensor.not_equal`.
