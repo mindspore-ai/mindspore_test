@@ -85,9 +85,9 @@ AdaptiveAvgPool2DGradExt: 'aclnnAdaptiveAvgPool2dBackward'
 # 1
 Xlogy: 'aclnnXLogYTensor'
 # 2
-
+IndexFillScalar: 'aclnnIndexFillTensor'
 # 3
-
+IndexFillTensor: 'aclnnIndexFillTensor'
 # 4
 CumminExt: 'aclnnCummin'
 # 5

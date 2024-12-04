@@ -1796,6 +1796,39 @@ REG_BPROP_BUILDER("Index").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   return {dy, ib->OutZeros(indices)};
 });
 
+REG_BPROP_BUILDER("IndexFillScalar").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
+  auto dim = ib->GetInput(kIndex1);
+  auto indices = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto zero_value = ib->ZerosLike(value);
+  auto x_grad = ib->Emit("IndexFillScalar", {dout, dim, indices, zero_value});
+  return {x_grad, ib->OutZeros(dim), ib->OutZeros(indices), ib->OutZeros(value)};
+});
+
+REG_BPROP_BUILDER("IndexFillTensor").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto indices = ib->GetInput(kIndex2);
+  auto value = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto zero_value = ib->ZerosLike(value);
+  auto false_value = ib->Value(false);
+
+  NodePtr value_grad = nullptr;
+  if (value->need_compute_grad_out()) {
+    auto index_unsorted = ib->Unique2(indices, false_value, false_value, false_value);
+    auto index_unsorted_first = ib->TupleGetItem(index_unsorted, kIndex0);
+    auto index_select_answer = ib->Emit("IndexSelect", {dout, dim, index_unsorted_first});
+    value_grad = ib->SumExt(index_select_answer, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
+  } else {
+    value_grad = ib->OutZeros(value);
+  }
+  auto x_grad = x->need_compute_grad_out() ? ib->Emit("IndexFillScalar", {dout, dim, indices, ib->Value<int64_t>(0)})
+                                           : ib->OutZeros(x);
+  return {x_grad, ib->OutZeros(dim), ib->OutZeros(indices), value_grad};
+});
+
 REG_BPROP_BUILDER("UnsortedSegmentSum").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {
   auto segment_ids = ib->GetInput(kIndex1);
   auto num_segments = ib->GetInput(kIndex2);
