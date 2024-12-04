@@ -49,7 +49,7 @@ FuncGraphPtr OptimizeForwardGraph(const FuncGraphPtr &bprop_func_graph, bool nee
   if (need_renormalize) {
     // Renormalize, infer shape and set abstract for all nodes in graph
     abstract::AbstractBasePtrList args_abs;
-    auto parameters = bprop_func_graph->parameters();
+    const auto &parameters = bprop_func_graph->parameters();
     (void)std::transform(parameters.begin(), parameters.end(), std::back_inserter(args_abs),
                          [](const AnfNodePtr &p) -> AbstractBasePtr { return p->abstract(); });
     MS_LOG(INFO) << "Start renormalizing for graph: " << bprop_func_graph->ToString();
@@ -153,7 +153,6 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
       MS_LOG(WARNING) << "Can not find cached resource for func graph: " << fg->ToString();
     }
     resource = std::make_shared<pipeline::Resource>();
-    fg->set_flag(kFlagIsPynativeBpropGraph, true);
     resource->set_func_graph(fg);
     auto manager = resource->manager();
     manager->AddFuncGraph(resource->func_graph(), true);
@@ -168,6 +167,43 @@ BaseRef GetGraphResult(const FuncGraphPtr &fg, const VectorRef &arg_list, bool c
   auto result = (*run)(arg_list);
   MS_LOG(INFO) << "Finish running funcgraph: " << fg->ToString() << " , result: " << result.ToString();
   return result;
+}
+
+// Helper function to handle forward result
+py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr &forward_fg,
+                               const AbstractBasePtr &origin_forward_output_abs,
+                               const pynative::GradParamPtr &grad_param, bool need_reuse_forward_node) {
+  MS_EXCEPTION_IF_NULL(forward_result);
+  MS_EXCEPTION_IF_NULL(forward_fg);
+  if (!need_reuse_forward_node) {
+    return pipeline::BaseRefToPyDataWithUserData(forward_result, origin_forward_output_abs);
+  }
+  grad_param->added_args.clear();
+  if (utils::isa<VectorRef>(forward_result)) {
+    MS_LOG(INFO) << "Run forward graph: " << forward_fg->ToString() << " in sync pipeline mode.";
+    auto vector_result = utils::cast<VectorRef>(forward_result);
+    auto result = vector_result[kIndex0];
+    VectorRef add_args(vector_result.begin() + 1, vector_result.end());
+    grad_param->added_args = add_args;
+    return pipeline::BaseRefToPyDataWithUserData(result, origin_forward_output_abs);
+  } else {
+    MS_LOG(INFO) << "Run forward graph: " << forward_fg->ToString() << " in async pipeline mode.";
+    const auto &output = forward_fg->output();
+    MS_EXCEPTION_IF_NULL(output);
+    const auto &output_abs = output->abstract();
+    MS_EXCEPTION_IF_NULL(output_abs);
+    auto py_forward_result = pipeline::BaseRefToPyDataWithUserData(forward_result, output_abs);
+    py::tuple ret_tuple = py::cast<py::tuple>(py_forward_result);
+    if (!py::isinstance<py::tuple>(ret_tuple) || !ret_tuple.size()) {
+      MS_LOG(EXCEPTION) << "Forward output is not valid for fg: " << forward_fg->ToString()
+                        << " , output: " << py::str(py_forward_result);
+    }
+    std::transform(ret_tuple.begin() + 1, ret_tuple.end(), std::back_inserter(grad_param->added_args),
+                   [](const auto &element) {
+                     return pynative::PyNativeAlgo::DataConvert::PyObjToValue(py::cast<py::object>(element));
+                   });
+    return ret_tuple[kIndex0];
+  }
 }
 }  // namespace
 
@@ -212,17 +248,12 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
   ValuePtr forward_output_value = grad_param->op_grad_info->out_value;
   AbstractBasePtr origin_forward_output_abs = grad_param->op_grad_info->out_abs;
   MS_EXCEPTION_IF_NULL(origin_forward_output_abs);
+  MS_EXCEPTION_IF_NULL(forward_fg);
   if (need_forward_result) {
     MS_LOG(INFO) << "Start run forward graph result";
     auto forward_result = GetGraphResult(forward_fg, arg_list, cache_hit, grad_param->graph_cache_key);
-    py::object py_forward_result;
-    if (need_reuse_forward_node) {
-      auto vector_result = utils::cast<VectorRef>(forward_result);
-      forward_result = vector_result[kIndex0];
-      VectorRef added_args(vector_result.begin() + 1, vector_result.end());
-      grad_param->added_args = added_args;
-    }
-    py_forward_result = pipeline::BaseRefToPyDataWithUserData(forward_result, origin_forward_output_abs);
+    py::object py_forward_result =
+      HandleForwardResult(forward_result, forward_fg, origin_forward_output_abs, grad_param, need_reuse_forward_node);
     MS_LOG(DEBUG) << "Run forward graph get result: " << py::str(py_forward_result);
     forward_output_value = pynative::PyNativeAlgo::DataConvert::PyObjToValue(py_forward_result);
     grad_param->op_grad_info->out_value = forward_output_value;

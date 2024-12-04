@@ -67,8 +67,10 @@ void ComplexPreprocess(const AnfNodePtr &input, const CNodePtr &din) {
   din->AddAttr(kAttrCheckComplex, MakeValue(true));
 }
 
-void CopyPrimivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const FuncGraphManagerPtr &manager) {
+void CopyPrimitivePtrForFpropReplace(const FuncGraphPtr &primal_graph, const FuncGraphManagerPtr &manager) {
   MS_EXCEPTION_IF_NULL(primal_graph);
+  MS_LOG(INFO) << "Copy primitive value node for fprop replace in gradjit function for fg: "
+               << primal_graph->ToString();
   auto value_nodes = primal_graph->value_nodes();
   for (const auto &value_pair : value_nodes) {
     const auto &node = value_pair.first;
@@ -807,7 +809,10 @@ void DFunctor::MapValueObject() {
   // Map ValueNode.
   auto manager = resources_->manager();
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
-    CopyPrimivePtrForFpropReplace(primal_graph_, manager);
+    const auto &pynative_grad_executor = pynative::PyNativeExecutor::grad_executor();
+    if (pynative_grad_executor->RequiresGrad()) {
+      CopyPrimitivePtrForFpropReplace(primal_graph_, manager);
+    }
   }
   auto &value_nodes = primal_graph_->value_nodes();
   for (const auto &value_pair : value_nodes) {
