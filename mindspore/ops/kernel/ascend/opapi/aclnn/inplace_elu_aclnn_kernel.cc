@@ -1,5 +1,5 @@
 /**
- * Copyright 2024 Huawei Technologies Co., Ltd
+ * Copyright 2025 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "kernel/ascend/opapi/aclnn/elu_ext_aclnn_kernel.h"
-#include <map>
-#include <memory>
-#include <functional>
+#include "kernel/ascend/opapi/aclnn/inplace_elu_aclnn_kernel.h"
+#include <vector>
 #include "ir/tensor.h"
-#include "runtime/device/kernel_runtime.h"
 #include "plugin/device/ascend/acl_ir/acl_helper.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore {
 namespace kernel {
-
-void EluExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                    const std::vector<KernelTensor *> &outputs) {
+void InplaceEluAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                                const std::vector<KernelTensor *> &outputs) {
   TypeId data_type = inputs[kIndex0]->dtype_id();
   if (data_type == kNumberTypeFloat64) {
     MS_LOG(EXCEPTION) << "Unsupported input dtype: float64, because aclnnEluBackward does not support dtype: float64";
@@ -34,16 +30,17 @@ void EluExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   alpha_ = device::ascend::ConvertKernelTensor<ScalarPtr>(inputs[kIndex1]);
   MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), scale_);
   MAKE_SCALAR(1.f, inputs[kIndex0]->dtype_id(), input_scale_);
-  GetWorkspaceForResize(inputs[kIndex0], alpha_, scale_, input_scale_, outputs[kIndex0]);
+
+  GetWorkspaceForResize(inputs[kIndex0], alpha_, scale_, input_scale_);
 }
 
-bool EluExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                          const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool InplaceEluAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
+                                      const std::vector<KernelTensor *> &workspace,
+                                      const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], alpha_, scale_, input_scale_, outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], alpha_, scale_, input_scale_);
   return true;
 }
-
-MS_ACLNN_KERNEL_FACTORY_REG(EluExt, EluExtAscend);
+MS_ACLNN_KERNEL_FACTORY_REG(InplaceElu, InplaceEluAclnnKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

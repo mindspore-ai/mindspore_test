@@ -1,11 +1,11 @@
-mindspore.mint.nn.functional.elu
-================================
+mindspore.mint.nn.functional.elu\_
+==================================
 
-.. py:function:: mindspore.mint.nn.functional.elu(input, alpha=1.0, inplace=False)
+.. py:function:: mindspore.mint.nn.functional.elu_(input, alpha=1.0)
 
     指数线性单元激活函数。
 
-    对输入的每个元素计算ELU。该激活函数定义如下：
+    对输入的每个元素原地计算ELU。该激活函数定义如下：
 
     .. math::
         ELU_{i} =
@@ -26,12 +26,11 @@ mindspore.mint.nn.functional.elu
 
     参数：
         - **input** (Tensor) - ELU的输入，为任意维度的Tensor。
-        - **alpha** (float, 可选) - ELU的alpha值，数据类型为float。默认值： ``1.0``。
-        - **inplace** (bool, 可选) - 是否使用原地更新模式，数据类型为bool。默认值： ``False``。
+        - **alpha** (float, 可选) - ELU的alpha值，数据类型为float且必须大于0。默认值： ``1.0`` 。
 
     返回：
         Tensor，输出的shape和数据类型与 `input` 相同。
 
     异常：
         - **RuntimeError** - 如果 `input` 的数据类型不是float16、float32或bfloat16。
-        - **TypeError** - 如果 `alpha` 不是float。
+        - **TypeError** - 如果 `alpha` 的数据类型不是float。

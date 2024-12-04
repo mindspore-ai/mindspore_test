@@ -136,7 +136,7 @@ class FuncBuilder : public BpropBuilder {
                             const NodePtr &dtype) override;
   NodePtr DropoutGradExt(const NodePtr &input, const NodePtr &mask, const NodePtr &p) override;
   NodePtr EluExt(const NodePtr &input, const NodePtr &alpha) override;
-  NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha) override;
+  NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha, const NodePtr &is_result) override;
   NodePtr EmbeddingDenseBackward(const NodePtr &grad, const NodePtr &indices, const NodePtr &num_weights,
                                  const NodePtr &padding_idx, const NodePtr &scale_grad_by_freq) override;
   NodePtr Embedding(const NodePtr &input, const NodePtr &weight, const NodePtr &padding_idx, const NodePtr &max_norm,

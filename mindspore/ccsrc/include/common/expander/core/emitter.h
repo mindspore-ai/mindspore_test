@@ -490,8 +490,8 @@ class COMMON_EXPORT Emitter {
     return Emit("DropoutGradExt", {input, mask, p});
   }
   virtual NodePtr EluExt(const NodePtr &input, const NodePtr &alpha) { return Emit("EluExt", {input, alpha}); }
-  virtual NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha) {
-    return Emit("EluGradExt", {dout, x, alpha});
+  virtual NodePtr EluGradExt(const NodePtr &dout, const NodePtr &x, const NodePtr &alpha, const NodePtr &is_result) {
+    return Emit("EluGradExt", {dout, x, alpha, is_result});
   }
   virtual NodePtr EmbeddingDenseBackward(const NodePtr &grad, const NodePtr &indices, const NodePtr &num_weights,
                                          const NodePtr &padding_idx, const NodePtr &scale_grad_by_freq) {

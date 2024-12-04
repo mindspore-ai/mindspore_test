@@ -25,30 +25,33 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 tensor::BaseTensorPtr EluGradExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &dy_tensor,
-                                                const BaseTensorPtr &x_tensor, const ScalarPtr &alpha) {
-  OpRunner::InferOpOutput(op, dy_tensor, x_tensor, alpha);
+                                                const BaseTensorPtr &x_or_out_tensor, const ScalarPtr &alpha,
+                                                const BoolImmPtr &is_result) {
+  const auto is_result_imm = GetValue<bool>(is_result);
+  OpRunner::InferOpOutput(op, dy_tensor, x_or_out_tensor, alpha, is_result);
 
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), dy_tensor, x_tensor);
+  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), dy_tensor, x_or_out_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
   // Async
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, dy_tensor, x_tensor, alpha]() {
-    MS_LOG(DEBUG) << "Run device task EluGradExt start";
-    auto device_context = op->device_context();
-    const auto &outputs = op->outputs();
-    // Malloc for input tensors
-    PyBoostUtils::MallocOpInputs(device_context, dy_tensor, x_tensor);
-    // Malloc for output tensors
-    PyBoostUtils::MallocOpOutputs(device_context, outputs);
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, dy_tensor, x_or_out_tensor, alpha, is_result_imm]() {
+      MS_LOG(DEBUG) << "Run device task EluGradExt start";
+      auto device_context = op->device_context();
+      const auto &outputs = op->outputs();
+      // Malloc for input tensors
+      PyBoostUtils::MallocOpInputs(device_context, dy_tensor, x_or_out_tensor);
+      // Malloc for output tensors
+      PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-    // Convert ValuePtr to c++ scalar
-    static const ScalarPtr scale = std::make_shared<FP32Imm>(1.f);
-    static const ScalarPtr input_scale = std::make_shared<FP32Imm>(1.f);
+      // Convert ValuePtr to c++ scalar
+      static const ScalarPtr scale = std::make_shared<FP32Imm>(1.f);
+      static const ScalarPtr input_scale = std::make_shared<FP32Imm>(1.f);
 
-    LAUNCH_ACLNN(aclnnEluBackward, device_context, op->stream_id(), dy_tensor, alpha, scale, input_scale, false,
-                 x_tensor, outputs[0]);
-    MS_LOG(DEBUG) << "Run device task EluGradExt end";
-  }));
+      LAUNCH_ACLNN(aclnnEluBackward, device_context, op->stream_id(), dy_tensor, alpha, scale, input_scale,
+                   is_result_imm, x_or_out_tensor, outputs[0]);
+      MS_LOG(DEBUG) << "Run device task EluGradExt end";
+    }));
   return op->output(0);
 }
 }  // namespace pyboost

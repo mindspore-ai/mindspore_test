@@ -2616,7 +2616,15 @@ REG_BPROP_BUILDER("EluExt").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto alpha = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
-  auto dx = ib->EluGradExt(dout, x, alpha);
+  auto dx = ib->EluGradExt(dout, x, alpha, ib->Value<bool>(false));
+  return {dx, ib->OutZeros(alpha)};
+});
+
+REG_BPROP_BUILDER("InplaceElu").SetBody(BODYFUNC(ib) {
+  auto alpha = ib->GetInput(kIndex1);
+  auto out = ib->GetInput(kIndex2);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->EluGradExt(dout, out, alpha, ib->Value<bool>(true));
   return {dx, ib->OutZeros(alpha)};
 });
 

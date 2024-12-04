@@ -140,7 +140,8 @@ class ELU(Cell):
         \alpha * (\exp(x_i) - 1), &\text{otherwise.}
         \end{cases}
 
-    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter.
+    where :math:`x_i` represents the element of the input and :math:`\alpha` represents the `alpha` parameter, and
+    `alpha` represents the smoothness of the ELU.
 
     ELU Activation Function Graph:
 
@@ -151,16 +152,18 @@ class ELU(Cell):
         This is an experimental API that is subject to change or deletion.
 
     Args:
-        alpha (float, optional): The alpha value of ELU, the data type is float. Default: ``1.0`` .
+        alpha (float, optional): The alpha value of ELU, the data type is float. Default: ``1.0``.
+        inplace (bool, optional): Whether to use inplace mode, the data type is bool. Default: ``False``.
 
     Inputs:
         - **input** (Tensor) - The input of ELU is a Tensor of any dimension.
 
     Outputs:
-        Tensor, with the same type and shape as the `input`.
+        Tensor, with the same shape and type as the `input`.
 
     Raises:
-        TypeError: If `alpha` is not a float.
+        RuntimeError: If the dtype of `input` is not float16, float32 or bfloat16.
+        TypeError: If the dtype of `alpha` is not float.
 
     Supported Platforms:
         ``Ascend``
@@ -176,13 +179,14 @@ class ELU(Cell):
         [-0.63212055  -0.86466473  0.  2.  1.]
     """
 
-    def __init__(self, alpha=1.0):
+    def __init__(self, alpha=1.0, inplace=False):
         """Initialize ELU."""
         super(ELU, self).__init__()
         self.alpha = alpha
+        self.inplace = inplace
 
     def construct(self, input):
-        return mint.nn.functional.elu(input, self.alpha)
+        return mint.nn.functional.elu(input, self.alpha, self.inplace)
 
 
 class GLU(Cell):
