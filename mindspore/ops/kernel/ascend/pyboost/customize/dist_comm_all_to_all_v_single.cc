@@ -100,7 +100,8 @@ void DistCommAllToAllVSingleAscendCustomize(const std::shared_ptr<OpRunner> &op,
                                             const BaseTensorPtr &input_tensor, const StringImmPtr &group,
                                             const ValueTuplePtr &send_numel_list, const ValueTuplePtr &recv_numel_list,
                                             const Int64ImmPtr &rank_size, const BoolImmPtr &split_sizes_empty) {
-  OpRunner::InferOpOutput(op, other_tensor, input_tensor, group, send_numel_list, recv_numel_list);
+  OpRunner::InferOpOutput(op, other_tensor, input_tensor, group, send_numel_list, recv_numel_list, rank_size,
+                          split_sizes_empty);
 
   PyBoostUtils::PrepareOpInputs(op->device_context(), kDefaultStreamIndex, other_tensor, input_tensor);
   // PyBoostUtils::PrepareOpOutputs(op->device_context(), kDefaultStreamIndex, op->outputs());
