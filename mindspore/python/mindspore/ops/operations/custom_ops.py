@@ -251,11 +251,13 @@ class Custom(ops.PrimitiveWithInfer):
 
                  - "xxx.so" file generation:
 
-                   1) GPU Platform: Given user defined "xxx.cu" file (ex. "{path}/add.cu"), use nvcc command to compile
-                   it.(ex. "nvcc --shared -Xcompiler -fPIC -o add.so add.cu")
+                   1) GPU Platform: Given user defined "xxx.cu" file (ex. "{path}/add.cu"),
+                   use nvcc command to compile
+                   it.(ex. :code:`nvcc --shared -Xcompiler -fPIC -o add.so add.cu`)
 
-                   2) CPU Platform: Given user defined "xxx.cc" file (ex. "{path}/add.cc"), use g++/gcc command to
-                   compile it.(ex. "g++ --shared -fPIC  -o add.so add.cc")
+                   2) CPU Platform: Given user defined "xxx.cc" file (ex. "{path}/add.cc"),
+                   use g++/gcc command to
+                   compile it.(ex. :code:`g++ --shared -fPIC -o add.so add.cc`)
 
                  - Define a "xxx.cc"/"xxx.cu" file:
 
