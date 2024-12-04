@@ -4329,6 +4329,46 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         return Tensor_._offload(self)
 
 
+    def normal_(self, mean=0, std=1, *, generator=None):
+        r"""
+        Update the `self` tensor in place by generating random numbers sampled from the normal
+        distribution which constructed by the parameters `mean` and `std`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            mean (number, optional): the mean of normal distribution. With float data type.
+                Default: ``0``.
+            std (number, optional): the std of normal distribution. With float data type.
+                Default: ``1``.
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None``, uses the default pseudorandom number generator.
+
+        Returns:
+            A tensor that is filled with random numbers that follow a normal distribution and
+            that has the same type and shape as the `self` tensor.
+
+        Raises:
+            TypeError: If the dtype of `mean` or `std` is not one of: bool, int, float, complex.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> x = mindspore.Tensor(np.array([[1, 2], [3, 4]]), dtype=mindspore.float32)
+            >>> output = x.normal_()
+            >>> print(output)
+            [[0.2788825 1.3305743]
+             [1.244194 1.16303174]]
+        """
+        return tensor_operator_registry.get('normal_')(self, mean=mean, std=std, generator=generator)
+
+
 def _vm_compare(*args):
     """Implement `vm_compare` for tensor."""
     if args:

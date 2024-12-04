@@ -31,8 +31,9 @@ from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
     NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
-    Randn, RandnLike, RandInt, RandIntLike, RandpermExt, InplaceRandom
+    Randn, RandnLike, RandInt, RandIntLike, RandpermExt, InplaceRandom, InplaceNormal
 
+inplace_normal_ = InplaceNormal()
 normal_tensor_tensor_op = NormalTensorTensor()
 normal_tensor_float_op = NormalTensorFloat()
 normal_float_tensor_op = NormalFloatTensor()
@@ -725,6 +726,52 @@ def choice_with_mask(input_x, count=256, seed=None):
 def is_cpu_backend():
     """Check if the CPU is used"""
     return context.get_context('device_target') == 'CPU'
+
+
+@_function_forbid_reuse
+def normal_(input, mean=0, std=1, *, generator=None):
+    r"""
+    Update the `input` tensor in place by generating random numbers sampled from the normal
+    distribution which constructed by the parameters `mean` and `std`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The origin input tensor.
+        mean (number, optional): the mean of normal distribution. With float data type.
+            Default: ``0``.
+        std (number, optional): the std of normal distribution. With float data type.
+            Default: ``1``.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+
+    Returns:
+        A tensor that is filled with random numbers that follow a normal distribution and
+        that has the same type and shape as the `self` tensor.
+
+    Raises:
+        TypeError: If the dtype of `mean` or `std` is not one of: bool, int, float, complex.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> x = mindspore.Tensor(np.array([[1, 2], [3, 4]]), dtype=mindspore.float32)
+        >>> output = x.normal_()
+        >>> print(output)
+        [[0.2788825 1.3305743]
+         [1.244194 1.16303174]]
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(  # pylint: disable=protected-access
+        generator_step_)
+    return inplace_normal_(input, mean, std, seed, offset)
 
 
 def normal_ext(mean=0.0, std=1.0, size=None, generator=None):

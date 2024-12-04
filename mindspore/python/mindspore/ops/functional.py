@@ -21,7 +21,7 @@ from mindspore.ops import _constants
 from mindspore.ops.function import *
 from mindspore.ops.function.array_func import chunk_ext, zero_
 from mindspore.ops.function.math_func import all, argmax_ext, float_power_ext
-from mindspore.ops.function.random_func import random_, uniform_ext
+from mindspore.ops.function.random_func import random_, uniform_ext, normal_
 from mindspore.ops import operations as P
 from mindspore.ops.operations import array_ops
 from mindspore.ops.operations._sequence_ops import TensorToTuple
@@ -464,6 +464,7 @@ setattr(tensor_operator_registry, 'swapaxes', swapaxes)
 setattr(tensor_operator_registry, 'swapdims', swapdims)
 setattr(tensor_operator_registry, 'repeat_elements', repeat_elements)
 setattr(tensor_operator_registry, 'top_k', top_k)
+setattr(tensor_operator_registry, 'normal_', normal_)
 
 __all__ = [name for name in dir() if name[0] != "_"]
 __all__.remove('Primitive')
