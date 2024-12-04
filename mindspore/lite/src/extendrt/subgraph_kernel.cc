@@ -17,8 +17,8 @@
 namespace mindspore::kernel {
 bool SubgraphKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                             const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  std::vector<tensor::TensorPtr> in;
-  std::vector<tensor::TensorPtr> out;
+  std::vector<tensor::Tensor> in;
+  std::vector<tensor::Tensor> out;
   std::map<string, string> compile_options;
   executor_->RunGraph(subgraph_, in, &out, compile_options);
   return true;
