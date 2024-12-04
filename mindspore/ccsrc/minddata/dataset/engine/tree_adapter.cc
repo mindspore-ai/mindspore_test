@@ -375,7 +375,7 @@ Status TreeAdapter::Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t i
 Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs, int64_t global_step,
                             int64_t dataset_size, bool independent_dataset) {
   RETURN_UNEXPECTED_IF_NULL(input_ir);
-  VLOG_FLOW("Dataset Pipeline TreeAdapter Complie start.");
+  VLOG_FLOW("Dataset Pipeline TreeAdapter Compile started.");
   uint64_t start_time = GetSyscnt();
   input_ir_ = input_ir;
   tree_state_ = kCompileStateIRGraphBuilt;
@@ -435,7 +435,7 @@ Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_
   RETURN_IF_NOT_OK(Build(root_ir_, init_epoch));
   tree_state_ = kCompileStateReady;
   RETURN_IF_NOT_OK(CollectPipelineInfo("Pipeline", "Compile", start_time));
-  VLOG_FLOW("Dataset Pipeline TreeAdapter Complie finished.");
+  VLOG_FLOW("Dataset Pipeline TreeAdapter Compile finished.");
   return Status::OK();
 }
 
@@ -662,7 +662,7 @@ Status TreeAdapter::LaunchSubprocess() {
 #endif
 
 Status TreeAdapter::Launch() {
-  VLOG_FLOW("Dataset Pipeline Launch.");
+  VLOG_FLOW("Dataset Pipeline launched.");
   RETURN_IF_NOT_OK(CheckTreeIfNull());
 
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
