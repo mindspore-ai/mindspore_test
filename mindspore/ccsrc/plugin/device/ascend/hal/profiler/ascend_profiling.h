@@ -114,6 +114,7 @@ class AscendProfiler : public Profiler {
   void InitAclConfig();
   aclprofAicoreMetrics GetAicMetrics() const;
   uint64_t GetAclProfMask(aclprofAicoreMetrics aicMetrics);
+  void InitFwkMemProfiling();
   void StartFwkMemProfiling();
   void StopFwkMemProfiling();
   AscendProfilerConfig config_;
