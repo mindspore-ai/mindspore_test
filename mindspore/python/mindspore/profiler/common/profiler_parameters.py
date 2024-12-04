@@ -46,7 +46,7 @@ class ProfilerParameters:
         "pcie": (bool, False),
         "sync_enable": (bool, True),
         "data_simplification": (bool, True),
-        "schedule": (Schedule, Schedule(wait=0, active=1)),
+        "schedule": ("Schedule", None),
         "on_trace_ready": (Optional[Callable[..., Any]], None)
     }
 
@@ -54,6 +54,7 @@ class ProfilerParameters:
     VALUE_INDEX = 1
 
     def __init__(self, **kwargs):
+        self.PARAMS["schedule"] = (Schedule, Schedule(wait=0, active=1))
         self.is_set_schedule: bool = False
         self._set_schedule(**kwargs)
         self._check_deprecated_params(**kwargs)
