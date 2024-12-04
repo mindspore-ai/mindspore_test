@@ -31,10 +31,13 @@ class AcmeFlashAttentionScore : public AcmeKernelMod {
   ~AcmeFlashAttentionScore() = default;
 
  protected:
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
                                const acme::OutputsImmutableInfoList &outputs,
                                const std::vector<KernelTensor *> &ms_inputs,
                                const std::vector<KernelTensor *> &ms_outputs) override;
+  void *GetParam() override { return &param_; }
+  uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
   bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:

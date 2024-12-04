@@ -18,11 +18,19 @@
 
 #include <memory>
 #include "kernel/kernel.h"
-#include "plugin/device/ascend/kernel/internal/acme/acme_helper.h"
+#include "utils/llm_manager.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_utils.h"
 
 namespace mindspore {
 namespace kernel {
+bool AcmeFlashAttentionScore::Init(const std::vector<KernelTensor *> &inputs,
+                                   const std::vector<KernelTensor *> &outputs) {
+  auto &llm_manager = LLMManager::GetInstance();
+  llm_manager.add_force_resize_kernel(kernel_name_);
+  MS_LOG(INFO) << "Force op '" << kernel_name_ << "' to be resized to update op param 'seq_len'";
+  return AcmeKernelMod::Init(inputs, outputs);
+}
+
 acme::AcmeOpPtr AcmeFlashAttentionScore::CreateKernel(const acme::InputsImmutableInfoList &inputs_ii,
                                                       const acme::OutputsImmutableInfoList &outputs_ii,
                                                       const std::vector<KernelTensor *> &ms_inputs,
@@ -46,12 +54,35 @@ acme::AcmeOpPtr AcmeFlashAttentionScore::CreateKernel(const acme::InputsImmutabl
 
 bool AcmeFlashAttentionScore::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
                                              const std::vector<KernelTensor *> &outputs) {
-  bool q_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &param_.q_seq_len);
-  bool kv_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex9], &param_.kv_seq_len);
+  bool kv_need_recreate = false;
+  if (inputs[kIndex9]->type_id() == kObjectTypeTuple) {
+    kv_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex9], &param_.kv_seq_len);
+  } else {
+    kv_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "batch_valid_length", &param_.kv_seq_len);
+  }
+
+  bool q_need_recreate = kv_need_recreate;
+  if (inputs[kIndex8]->type_id() == kObjectTypeTuple) {
+    q_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex8], &param_.q_seq_len);
+  } else {
+    auto &llm_manager = LLMManager::GetInstance();
+    auto seq_length_tensor = llm_manager.get_graph_input("q_seq_lens");
+    if (seq_length_tensor != nullptr && seq_length_tensor->size() != 0) {
+      q_need_recreate = GetSeqLenFromGraphAndCheckUpadate(kernel_name_, "q_seq_lens", &param_.q_seq_len);
+    } else {
+      param_.q_seq_len = param_.kv_seq_len;
+    }
+  }
+
   if (q_need_recreate || kv_need_recreate) {
     return true;
   }
   return AcmeKernelMod::IsNeedRecreate(inputs, outputs);
+}
+
+uint64_t AcmeFlashAttentionScore::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  // User defined CacheKey, the inputs should include all the factors which will affect tiling result.
+  return AcmeTilingCache::GenerateKey(kernel_name_, inputs, param_.q_seq_len, param_.kv_seq_len);
 }
 
 MS_ACME_KERNEL_FACTORY_REG(FlashAttentionScore, acme::kAcmeFlashAttentionScoreOpName, AcmeFlashAttentionScore);

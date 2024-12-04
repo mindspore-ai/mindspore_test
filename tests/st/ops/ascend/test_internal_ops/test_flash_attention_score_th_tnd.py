@@ -209,9 +209,9 @@ class FlashAttentionScoreNet(Cell):
         self.net = FlashAttentionScore(head_num=q_heads, scale_value=tor, input_layout=layout)
 
     def construct(self, query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix,
-                  actual_seq_qlen=None, actual_seq_kvlen=None):
+                  q_seq_lens=None, batch_valid_length=None):
         output = self.net(query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix,
-                          actual_seq_qlen=actual_seq_qlen, actual_seq_kvlen=actual_seq_kvlen)[3]
+                          q_seq_lens, batch_valid_length)[3]
         return output
 
 
