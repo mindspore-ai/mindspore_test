@@ -292,6 +292,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"uniform", std::string("uniform")},                                // P.UniformExt()
        {"ptp", std::string("ptp")},                                        // P.reduce_max() - P.reduce_min()
        {"clamp", std::string("clamp")},                                    // clamp()
+       {"clamp_", std::string("clamp_")},                                  // clamp_()
        {"clip", std::string("clamp")},                                     // clamp()
        {"__bool__", std::string("tensor_bool")},                           // C.tensor_bool
        {"argmax", std::string("argmax")},                                  // P.Argmax()

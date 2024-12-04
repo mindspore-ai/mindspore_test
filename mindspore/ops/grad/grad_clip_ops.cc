@@ -141,17 +141,6 @@ REG_BPROP_BUILDER("InplaceClampTensor").SetUnusedInputs({i3}).SetBody(BODYFUNC(i
   bool min_type_none = ib->GetDtype(min)->isa<TypeNone>();
   bool max_type_none = ib->GetDtype(max)->isa<TypeNone>();
 
-  if (!min_type_none) {
-    if (ib->GetDtype(x)->type_id() != ib->GetDtype(min)->type_id()) {
-      min = ib->Cast(min, ib->GetDtype(x)->type_id());
-    }
-  }
-  if (!max_type_none) {
-    if (ib->GetDtype(x)->type_id() != ib->GetDtype(max)->type_id()) {
-      max = ib->Cast(max, ib->GetDtype(x)->type_id());
-    }
-  }
-
   if (!min_type_none && !max_type_none) {
     auto is_in_Interval = ib->LogicalAnd(ib->GreaterEqual(x, min), ib->LessEqual(x, max));
     auto is_lt_min = ib->LogicalAnd(ib->Less(x, min), ib->Less(min, max));
