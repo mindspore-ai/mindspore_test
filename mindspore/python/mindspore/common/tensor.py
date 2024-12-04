@@ -501,6 +501,12 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             return self.asnumpy()
         return self.asnumpy().astype(dtype, copy=False)
 
+    def __contains__(self, element):
+        """support 'in' operator."""
+        if isinstance(element, (Tensor, numbers.Number)):
+            return (element == self).any().item()
+        return False
+
     def _getitem_origin(self, index):
         """__getitem__ origin process, called by TensorPy::TensorGetItem"""
         out = tensor_operator_registry.get('_tensor_getitem_origin')(self, index)
