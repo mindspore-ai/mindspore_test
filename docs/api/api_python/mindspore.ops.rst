@@ -801,3 +801,17 @@ CSR函数
     mindspore.ops.csr_square
     mindspore.ops.csr_tan
     mindspore.ops.csr_tanh
+
+MC2 函数
+----------------
+
+.. warning::
+    这些是实验性API，后续可能修改或删除。
+
+.. mscnplatwarnautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.all_gather_matmul
+    mindspore.ops.matmul_reduce_scatter

@@ -13,20 +13,22 @@
 # limitations under the License.
 # ============================================================================
 
-import os
+from functools import lru_cache, wraps
 import inspect
+import os
+
 import numpy as np
-from functools import wraps, lru_cache
 
 
 class OpsBinaryCase:
-    def __init__(self, input_info, output_info, extra_info=''):
+    def __init__(self, input_info, output_info, extra_info='', is_parallel=False):
         if not isinstance(input_info, list) or not isinstance(output_info, list):
             raise TypeError(f'In OpsBinaryCase, input_info and output_info must be list, but got ' \
                             f'input_info({type(input_info)}), output_info({type(output_info)}).')
         self.input_info = input_info
         self.output_info = output_info
         self.extra_info = extra_info
+        self.is_parallel = is_parallel
         self.check_info()
 
     def check_info(self):
@@ -121,6 +123,10 @@ def ops_binary_cases_read_data(ops_case, cases_path, case_name, debug_info):
             print(f'ops_binary_cases got output_files[{idx}]: {file_path}')
     input_binary_data = read_file_by_list(input_files)
     output_binary_data = read_file_by_list(output_files)
+    if ops_case.is_parallel:
+        rank = int(os.environ.get('RANK_ID'))
+        input_binary_data = input_binary_data[rank * len(ops_case.input_info):(rank + 1) * len(ops_case.input_info)]
+        output_binary_data = output_binary_data[rank * len(ops_case.output_info):(rank + 1) * len(ops_case.output_info)]
     ops_case.check_ops_case(input_binary_data, output_binary_data)
     return input_binary_data, output_binary_data
 

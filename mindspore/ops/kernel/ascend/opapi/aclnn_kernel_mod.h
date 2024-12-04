@@ -280,7 +280,6 @@ class AclnnKernelMod : public KernelMod {
     auto attr_value = primitive_->GetAttr(attr_name);
     return GetValue<T>(attr_value);
   }
-  std::string GetCommName(const std::string &group);
 
   aclOpExecutor *executor_{nullptr};
   CallBackFunc release_func_{nullptr};
