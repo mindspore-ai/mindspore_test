@@ -41,7 +41,7 @@ def _run_optim_adamw_amsgrad_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_cor
     denom = F.cast(mint.div(mint.sqrt(max_exp_avg_sq), sqrt_bias_correction2), max_exp_avg_sq.dtype)
     denom = mint.add(denom, eps)
 
-    delta_param = mint.mul(neg_step_size, mint.div(exp_avg_tmp, denom))
+    delta_param = mint.mul(F.cast(neg_step_size, max_exp_avg_sq.dtype), mint.div(exp_avg_tmp, denom))
     F.assign(exp_avg, exp_avg_tmp)
     F.assign(exp_avg_sq, exp_avg_sq_tmp)
     assign_add(parameters, delta_param)
@@ -59,7 +59,7 @@ def _run_optim_adamw_opt(beta1, beta2, eps, neg_step_size, sqrt_bias_correction2
     denom = F.cast(mint.div(mint.sqrt(exp_avg_sq_tmp), sqrt_bias_correction2), exp_avg_sq_tmp.dtype)
     denom = mint.add(denom, eps)
 
-    delta_param = mint.mul(neg_step_size, mint.div(exp_avg_tmp, denom))
+    delta_param = mint.mul(F.cast(neg_step_size, exp_avg_sq_tmp.dtype), mint.div(exp_avg_tmp, denom))
     F.assign(exp_avg, exp_avg_tmp)
     F.assign(exp_avg_sq, exp_avg_sq_tmp)
     assign_add(parameters, delta_param)
