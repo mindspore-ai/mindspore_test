@@ -4211,7 +4211,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Raises:
             TypeError: If the dtype of the "self Tensor" is not equal to the dtype of `values`.
             TypeError: If the dtype of `indices` is not tuple[Tensor], list[Tensor].
-            TypeError: If the dtype of tensors in `indices` are not bool, uint8, int32 or int64.
+            TypeError: If the dtypes of tensors in `indices` are not bool, uint8, int32 or int64.
             TypeError: If the dtype of tensors in `indices` are inconsistent.
             TypeError: If the dtype of `accumulate` is not bool.
             ValueError: If rank(`values`) is not 1-D.

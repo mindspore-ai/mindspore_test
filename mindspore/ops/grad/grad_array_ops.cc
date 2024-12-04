@@ -1792,8 +1792,15 @@ REG_BPROP_BUILDER("Index").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto indices = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto zero_x = ib->Zeros(ib->Shape(x), ib->Value(static_cast<int64_t>(ib->GetDtypeId(x))));
+  // Indices is tuple[tensor]
+  std::vector<ShapeVector> indices_shapes = indices->shapes();
+  auto indices_nums = indices_shapes.size();
+  NodePtrList indices_res;
+  for (size_t i = 0; i < indices_nums; ++i) {
+    indices_res.push_back(ib->OutZeros(ib->TupleGetItem(indices, i)));
+  }
   auto dy = ib->Emit("InplaceIndexPut", {zero_x, indices, dout, ib->Value(true)});
-  return {dy, ib->OutZeros(indices)};
+  return {dy, ib->MakeTuple(indices_res)};
 });
 
 REG_BPROP_BUILDER("UnsortedSegmentSum").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) {

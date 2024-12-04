@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-#include <functional>
-#include <memory>
-#include <map>
-#include <set>
-#include <string>
-#include <utility>
 #include <algorithm>
-#include "infer/ops_func_impl/index.h"
-#include "utils/check_convert_utils.h"
+#include <tuple>
+#include <utility>
+#include "infer/ops_func_impl/inner_inplace_index_put.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace ops {
-constexpr size_t kIndexEmptyShape = 9;
-
-std::vector<TypeId> IndexFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+constexpr size_t kInnerInplaceIndexPutMinNum = 4;
+constexpr size_t kInnerInplaceIndexPutEmptyShape = 9;
+std::vector<TypeId> InnerInplaceIndexPutFuncImpl::InferType(const PrimitivePtr &primitive,
+                                                            const InferInfoPtrList &input_infos) const {
+  MS_EXCEPTION_IF_NULL(input_infos[kIndex0]);
   return {input_infos[kIndex0]->GetType()};
 }
 
-ShapeArray IndexFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+ShapeArray InnerInplaceIndexPutFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                                    const InferInfoPtrList &input_infos) const {
   const auto &x_tensor = input_infos[kIndex0];
   auto op_name = primitive->name();
   MS_EXCEPTION_IF_NULL(x_tensor);
@@ -50,35 +50,56 @@ ShapeArray IndexFuncImpl::InferShape(const PrimitivePtr &primitive, const InferI
     } else {
       auto elements = indices->GetSequenceElements();
       ShapeArray shapes;
-      std::transform(elements.begin(), elements.end(), std::back_inserter(shapes), [](const InferInfoPtr &info) {
-        return (info->GetType() == kNumberTypeBool || info->GetType() == kNumberTypeUInt8)
-                 ? ShapeVector({abstract::TensorShape::kShapeRankAny})
-                 : info->GetShape();
-      });
+      std::transform(elements.begin(), elements.end(), std::back_inserter(shapes),
+                     [](const InferInfoPtr &info) { return info->GetShape(); });
       output_shape = CheckAndCalOutputShapeInTupleCase(x_shape, shapes);
     }
   } else {
     ShapeArray shapes;
-    std::transform(input_infos.begin() + kIndex1, input_infos.end(), std::back_inserter(shapes),
-                   [](const InferInfoPtr &info) {
-                     return (info->GetType() == kNumberTypeBool || info->GetType() == kNumberTypeUInt8)
-                              ? ShapeVector({abstract::TensorShape::kShapeRankAny})
-                              : info->GetShape();
-                   });
+    std::transform(input_infos.begin() + kIndex1, input_infos.end() - kIndex2, std::back_inserter(shapes),
+                   [](const InferInfoPtr &info) { return info->GetShape(); });
     output_shape = CheckAndCalOutputShapeInTupleCase(x_shape, shapes);
   }
-  return {output_shape};
+  auto infos_size = input_infos.size();
+  if (infos_size < kInnerInplaceIndexPutMinNum) {
+    MS_LOG(EXCEPTION) << "For 'InnerInplaceIndexPut', inputs should be " << kInnerInplaceIndexPutMinNum
+                      << " at least, bug got " << infos_size;
+  }
+  auto &value = input_infos[infos_size - kIndex2];
+  auto value_shape = value->GetShape();
+  if (!IsDynamic(value_shape) && !IsDynamic(output_shape)) {
+    MS_CHECK_VALUE(IsExpandableTo(value_shape, output_shape),
+                   "For 'InplaceIndexPut', shape mismatch: value tensor of shape [" + ShapeVectorToString(value_shape) +
+                     "] cannot be broadcast to indexing result of shape [" + ShapeVectorToString(output_shape) + "].");
+  }
+  return {input_infos[kIndex0]->GetShape()};
 }
 
-ShapeVector IndexFuncImpl::CheckAndCalOutputShapeInTupleCase(const ShapeVector &x_shape,
-                                                             const ShapeArray &indices_shapes) const {
+bool InnerInplaceIndexPutFuncImpl::IsExpandableTo(const ShapeVector &shape, const ShapeVector &desired) const {
+  // True if `shape` can be broadcasted to `desired`
+  size_t ndim = shape.size();
+  size_t target_dim = desired.size();
+  if (ndim > target_dim) {
+    return false;
+  }
+  for (size_t i = 0; i < ndim; i++) {
+    int64_t size = shape[ndim - i - 1];
+    int64_t target = desired[target_dim - i - 1];
+    if (size != target && size != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+ShapeVector InnerInplaceIndexPutFuncImpl::CheckAndCalOutputShapeInTupleCase(const ShapeVector &x_shape,
+                                                                            const ShapeArray &indices_shapes) const {
   // 1. Get the expanded index shape.
   if (x_shape.size() < indices_shapes.size()) {
     MS_EXCEPTION(ValueError) << "For 'Index', too many indices for tensor of dimension " << x_shape.size() << " (got "
                              << indices_shapes.size() << ")";
   }
   auto expand_index_shapes = ExpandIndexShape(indices_shapes);
-  if (expand_index_shapes.size() == 1 && IsDynamicRank(expand_index_shapes[0])) {
+  if (expand_index_shapes.size() == 1 && IsDynamicRank(expand_index_shapes[kIndex0])) {
     return ShapeVector({abstract::TensorShape::kShapeRankAny});
   }
   while (expand_index_shapes.size() < x_shape.size()) {
@@ -103,7 +124,7 @@ ShapeVector IndexFuncImpl::CheckAndCalOutputShapeInTupleCase(const ShapeVector &
   ShapeVector indexed_sizes;
   for (size_t dim = 0; dim < fin_index_shapes.size(); dim++) {
     auto idx_shape = fin_index_shapes[dim];
-    if (idx_shape.size() == kIndexEmptyShape &&
+    if (idx_shape.size() == kInnerInplaceIndexPutEmptyShape &&
         std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; })) {
       if (dims_indexed == 0) {
         dims_before++;
@@ -133,14 +154,14 @@ ShapeVector IndexFuncImpl::CheckAndCalOutputShapeInTupleCase(const ShapeVector &
   return out_shape;
 }
 
-std::tuple<ShapeVector, ShapeArray> IndexFuncImpl::TransposeToFront(const ShapeVector &x_shape,
-                                                                    const ShapeArray &index_shapes) const {
+std::tuple<ShapeVector, ShapeArray> InnerInplaceIndexPutFuncImpl::TransposeToFront(
+  const ShapeVector &x_shape, const ShapeArray &index_shapes) const {
   ShapeVector fin_x_shape;
   ShapeArray fin_index_shapes;
   for (size_t i = 0; i < index_shapes.size(); ++i) {
     auto idx_shape = index_shapes[i];
     auto x_size = x_shape[i];
-    if (!(idx_shape.size() == kIndexEmptyShape &&
+    if (!(idx_shape.size() == kInnerInplaceIndexPutEmptyShape &&
           std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; }))) {
       fin_index_shapes.push_back(idx_shape);
       fin_x_shape.push_back(x_size);
@@ -150,7 +171,7 @@ std::tuple<ShapeVector, ShapeArray> IndexFuncImpl::TransposeToFront(const ShapeV
   for (size_t i = 0; i < index_shapes.size(); ++i) {
     auto idx_shape = index_shapes[i];
     auto x_size = x_shape[i];
-    if (idx_shape.size() == kIndexEmptyShape &&
+    if (idx_shape.size() == kInnerInplaceIndexPutEmptyShape &&
         std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; })) {
       fin_index_shapes.push_back(idx_shape);
       fin_x_shape.push_back(x_size);
@@ -159,13 +180,13 @@ std::tuple<ShapeVector, ShapeArray> IndexFuncImpl::TransposeToFront(const ShapeV
   return std::make_tuple(std::move(fin_x_shape), std::move(fin_index_shapes));
 }
 
-bool IndexFuncImpl::IndexContiguous(const ShapeArray &index_shape) const {
+bool InnerInplaceIndexPutFuncImpl::IndexContiguous(const ShapeArray &index_shape) const {
   auto isEmpty = [](const ShapeVector &idx_shape) {
-    return idx_shape.size() == kIndexEmptyShape &&
+    return idx_shape.size() == kInnerInplaceIndexPutEmptyShape &&
            std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; });
   };
   auto isNoEmpty = [](const ShapeVector &idx_shape) {
-    return !(idx_shape.size() == kIndexEmptyShape &&
+    return !(idx_shape.size() == kInnerInplaceIndexPutEmptyShape &&
              std::all_of(idx_shape.begin(), idx_shape.end(), [](int i) { return i == 0; }));
   };
   auto start = std::find_if(index_shape.begin(), index_shape.end(), isNoEmpty);
@@ -174,14 +195,14 @@ bool IndexFuncImpl::IndexContiguous(const ShapeArray &index_shape) const {
   return it == stop.base();
 }
 
-ShapeArray IndexFuncImpl::ExpandIndexShape(const ShapeArray &to_expand) const {
+ShapeArray InnerInplaceIndexPutFuncImpl::ExpandIndexShape(const ShapeArray &to_expand) const {
   // expands a list of Tensors; ignores empty tensors
   bool first = true;
   ShapeVector tmp_shape;
   ShapeArray expanded_shapes(to_expand.size());
   for (size_t i = 0; i < to_expand.size(); ++i) {
     const auto &elem_shape = to_expand[i];
-    if (elem_shape.size() == kIndexEmptyShape &&
+    if (elem_shape.size() == kInnerInplaceIndexPutEmptyShape &&
         std::all_of(elem_shape.begin(), elem_shape.end(), [](int i) { return i == 0; })) {
       expanded_shapes[i] = elem_shape;
       continue;
@@ -190,7 +211,7 @@ ShapeArray IndexFuncImpl::ExpandIndexShape(const ShapeArray &to_expand) const {
       tmp_shape = elem_shape;
       first = false;
     } else {
-      tmp_shape = CalBroadCastShape(tmp_shape, elem_shape, "Index", "indices_x", "indices_y");
+      tmp_shape = CalBroadCastShape(tmp_shape, elem_shape, "InnerIndex", "indices_x", "indices_y");
     }
     if (IsDynamicRank(tmp_shape)) {
       return {{abstract::TensorShape::kShapeRankAny}};
@@ -200,6 +221,7 @@ ShapeArray IndexFuncImpl::ExpandIndexShape(const ShapeArray &to_expand) const {
   return expanded_shapes;
 }
 
-REGISTER_SIMPLE_INFER(kNameIndex, IndexFuncImpl)
+REGISTER_SIMPLE_INFER(kNameInnerInplaceIndexPut, InnerInplaceIndexPutFuncImpl)
+
 }  // namespace ops
 }  // namespace mindspore
