@@ -3,6 +3,7 @@
     "DIR_ARRAY": [
       ".jenkins",
       ".clang-format",
+      "setup.py",
       "docker",
       "docs",
       "mindspore/lite/examples",
@@ -31,12 +32,11 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
-      "cmake/package.cmake",
-      "cmake/package_mac.cmake",
-      "cmake/package_win.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -114,7 +114,6 @@
       "tests/mark_utils.py",
       "tests/st",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -126,7 +125,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -165,7 +165,6 @@
       "mindspore/ops/op_def",
       "mindspore/ops/CMakeLists.txt",
       "mindspore/ops/cmake/ops_host.cmake",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl",
       ".gitignore"
     ],
@@ -178,12 +177,11 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
-      "cmake/package.cmake",
-      "cmake/package_mac.cmake",
-      "cmake/package_win.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -260,7 +258,6 @@
       "mindspore/python",
       "tests/mark_utils.py",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "ENVIRONMENT": "MACOS"
@@ -271,15 +268,12 @@
       ".gitignore",
       ".gitattributes",
       "scripts",
-      "cmake/package.cmake",
-      "cmake/package_plugin.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
-      "cmake/package.cmake",
-      "cmake/package_mac.cmake",
-      "cmake/package_win.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -381,7 +375,6 @@
       "tests/mark_utils.py",
       "tests/st",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -394,16 +387,12 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package.cmake",
-      "cmake/package_plugin.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
-      "cmake/gpu_env_setup.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
-      "cmake/package.cmake",
-      "cmake/package_mac.cmake",
-      "cmake/package_win.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -487,7 +476,6 @@
       "tests/mark_utils.py",
       "tests/st",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -499,16 +487,12 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package.cmake",
-      "cmake/package_plugin.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
-      "cmake/gpu_env_setup.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
-      "cmake/package.cmake",
-      "cmake/package_mac.cmake",
-      "cmake/package_win.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -590,7 +574,6 @@
       "mindspore/ops/view",
       "mindspore/python",
       "tests/mark_utils.py",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "ENVIRONMENT": "LINUX"
@@ -599,15 +582,12 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package.cmake",
-      "cmake/package_plugin.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
-      "cmake/package.cmake",
-      "cmake/package_mac.cmake",
-      "cmake/package_win.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
@@ -685,7 +665,6 @@
       "tests/mark_utils.py",
       "tests/st",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -700,9 +679,9 @@
     "DIR_ARRAY": [
       "graphengine",
       ".gitignore",
+      "cmake",
+      "setup.py",
       ".gitattributes",
-      "cmake/package.cmake",
-      "cmake/package_plugin.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
       "mindspore/ccsrc/include",
@@ -788,7 +767,6 @@
       "tests/ut",
       "mindspore/python",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -816,7 +794,8 @@
       "graphengine",
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -890,7 +869,6 @@
       "mindspore/ops/op_def",
       "mindspore/python",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -907,7 +885,8 @@
       "graphengine",
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -976,7 +955,6 @@
       "mindspore/ops/op_def",
       "mindspore/python",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -993,7 +971,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/core/include",
       "mindspore/core/mindrt/src",
@@ -1006,7 +985,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1025,7 +1003,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -1045,7 +1024,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1067,7 +1045,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/core/include",
       "mindspore/core/mindrt/src",
@@ -1084,7 +1063,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1096,7 +1074,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -1118,7 +1097,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1130,7 +1108,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -1174,7 +1153,6 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
       "mindspore/ops/CMakeLists.txt",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl",
       ".gitignore"
     ],
@@ -1187,7 +1165,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -1234,7 +1213,6 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
       "mindspore/ops/CMakeLists.txt",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl",
       ".gitignore"
     ],
@@ -1273,7 +1251,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -1295,7 +1274,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1315,9 +1293,9 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "mindspore/lite/cmake",
+      "cmake",
+      "setup.py",
       "include/api",
-      "cmake/package_lite.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/optimizer",
@@ -1364,7 +1342,6 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1389,7 +1366,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/minddata/dataset/api",
       "mindspore/ccsrc/minddata/dataset/callback",
@@ -1411,7 +1389,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1427,7 +1404,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -1474,7 +1452,6 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1486,7 +1463,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -1533,7 +1511,6 @@
       "mindspore/ops/op_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/CMakeLists.txt",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl",
       ".gitignore"
     ],
@@ -1546,7 +1523,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -1593,7 +1571,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/op_def",
       "mindspore/ops/CMakeLists.txt",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "ENVIRONMENT": "LITE"
@@ -1602,7 +1579,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/core/include",
       "mindspore/core/mindrt/include",
@@ -1622,7 +1600,6 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [
@@ -1634,7 +1611,8 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
-      "cmake/package_lite.cmake",
+      "cmake",
+      "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
       "mindspore/ccsrc/include",
@@ -1682,7 +1660,6 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
       ".gitignore",
-      "cmake/external_libs/openssl.cmake",
       "third_party/patch/openssl"
     ],
     "LLT": [

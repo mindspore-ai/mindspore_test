@@ -21,7 +21,7 @@ declare session_id failed_tests
 echo
 
 ################################################################################
-# Cache testing: cache_admin argument testing                                  #
+# Cache testing: dataset-cache argument testing                                  #
 # Summary: Various tests that expect to get failure messages returned          #
 ################################################################################
 

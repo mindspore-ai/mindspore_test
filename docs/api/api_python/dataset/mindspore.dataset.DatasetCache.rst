@@ -8,7 +8,7 @@ mindspore.dataset.DatasetCache
     关于单节点数据缓存的使用，请参阅 `单节点数据缓存教程 <https://www.mindspore.cn/docs/zh-CN/master/model_train/dataset/cache.html>`_ 。
 
     参数：
-        - **session_id** (int) - 当前数据缓存客户端的会话ID，用户在命令行开启缓存服务端后可通过 `cache_admin -g` 获取。
+        - **session_id** (int) - 当前数据缓存客户端的会话ID，用户在命令行开启缓存服务端后可通过 `dataset-cache -g` 获取。
         - **size** (int, 可选) - 设置数据缓存服务可用的内存大小。默认值： ``0`` ，表示内存使用没有限制。
         - **spilling** (bool, 可选) - 如果共享内存不足，是否将溢出部分缓存到磁盘。默认值： ``False`` 。
         - **hostname** (str, 可选) - 数据缓存服务客户端的主机IP。默认值： ``None`` ，表示使用默认主机IP 127.0.0.1。
