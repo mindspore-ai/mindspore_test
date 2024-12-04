@@ -78,6 +78,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_allreduce_add_fusion.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/remove_fa_tensor_to_tuple_ops.h"
 #include "utils/phase.h"
 #include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
@@ -187,6 +188,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   pm->Add(std::make_shared<opt::MatmulElemReluFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::MatmulElemGeluFusion>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::QbmmAllReduceAddFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::RemoveFATensorToTupleOps>(), graphkernel::OptLevel_0);
 #endif  // ENABLE_INTERNAL_KERNELS
 
   auto passes = pm->Passes();
