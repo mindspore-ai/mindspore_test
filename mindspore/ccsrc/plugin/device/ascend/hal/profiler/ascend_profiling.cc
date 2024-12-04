@@ -128,13 +128,6 @@ void AscendProfiler::InitAclConfig() {
     }
   }
 
-  if (config_.profileMemory) {
-    auto msContext = MsContext::GetInstance();
-    msContext->set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, config_.frameworkDataPath);
-    msContext->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, true);
-    MS_LOG(INFO) << "profile_memory enabled, save path:" << config_.frameworkDataPath;
-  }
-
   aclprofAicoreMetrics aicMetrics = GetAicMetrics();
   uint64_t mask = GetAclProfMask(aicMetrics);
   uint32_t deviceList[1] = {config_.deviceId};
@@ -186,8 +179,10 @@ void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id,
   InitAscendProfilerConfig(profiling_path, device_id, profiling_options);
 
   if (config_.cpuTrace) {
+    ProfilingFrameworkData::Device_Id = config_.rankId;
     ProfilingDataDumper::GetInstance().Init(config_.frameworkDataPath, config_.rankId);
     profiler::ascend::ParallelStrategy::GetInstance()->SetOutputPath(config_.frameworkDataPath);
+    InitFwkMemProfiling();
     MS_LOG(INFO) << "cpu_trace is enabled";
   }
 
@@ -196,6 +191,15 @@ void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id,
     MS_LOG(INFO) << "npu_trace is enabled";
   }
   init_flag_ = true;
+}
+
+void AscendProfiler::InitFwkMemProfiling() {
+  if (config_.profileMemory) {
+    auto msContext = MsContext::GetInstance();
+    msContext->set_param<std::string>(MS_CTX_PROF_MEM_OUTPUT_PATH, config_.frameworkDataPath);
+    msContext->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, true);
+    MS_LOG(INFO) << "profile_memory enabled, save path:" << config_.frameworkDataPath;
+  }
 }
 
 void AscendProfiler::StartFwkMemProfiling() {
