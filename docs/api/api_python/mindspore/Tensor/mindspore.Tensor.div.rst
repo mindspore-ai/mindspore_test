@@ -1,7 +1,7 @@
 mindspore.Tensor.div
 ====================
 
-.. py:method:: mindspore.Tensor.div(y, *, rounding_mode=None)
+.. py:method:: mindspore.Tensor.div(other, *, rounding_mode=None)
 
     逐元素计算当前Tensor除以输入的另一个Tensor的商。
 
@@ -14,7 +14,7 @@ mindspore.Tensor.div
         - 两个输入遵循隐式类型转换规则，使数据类型保持一致。
 
     参数：
-        - **y** (Union[Tensor, Number, bool]) - 另一个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
+        - **other** (Union[Tensor, Number, bool]) - 另一个输入，为数值型，或bool，或数据类型为数值型或bool的Tensor。
 
     关键字参数：
         - **rounding_mode** (str, 可选) - 应用于结果的舍入类型。三种类型被定义为 ``None`` 、 ``"floor"`` 和 ``"trunc"`` 。默认值： ``None`` 。
@@ -27,5 +27,5 @@ mindspore.Tensor.div
         Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或数字较高的。
 
     异常：
-        - **TypeError** - 如果 `self` 和 `y` 不是以下之一：Tensor、Number、bool。
+        - **TypeError** - 如果 `self` 和 `other` 不是以下之一：Tensor、Number、bool。
         - **ValueError** - 如果 `rounding_mode` 不是以下之一： ``None`` 、 ``"floor"`` 、 ``"trunc"`` 。
