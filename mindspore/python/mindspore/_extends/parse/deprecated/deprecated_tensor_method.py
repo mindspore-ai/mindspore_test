@@ -108,7 +108,7 @@ deprecated_tensor_method_map = {
     # 45 int
 
     # 46 inverse
-
+    "inverse": "deprecated_tensor_inverse",
     # 47 is_contiguous
 
     # 48 isclose
