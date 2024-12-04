@@ -65,6 +65,7 @@ MS_OP_DEF_YAML_PATH = "mindspore/ops/op_def/yaml"
 MS_OP_DEPRECATED_DEF_YAML_PATH = "mindspore/ops/op_def/deprecated"
 MS_OP_API_YAML_PATH = "mindspore/ops/api_def"
 MS_TENSOR_METHOD_DOC_YAML_PATH = "mindspore/ops/api_def/method_doc"
+MS_MINT_FUNC_DOC_YAML_PATH = "mindspore/ops/api_def/function_doc"
 MS_MINT_FUNC_PATH = "mindspore/python/mindspore/mint"
 PY_AUTO_GEN_PATH = "mindspore/python/mindspore/ops/auto_generate"
 PY_OPS_GEN_PATH = "mindspore/python/mindspore/ops_generate"
@@ -73,6 +74,7 @@ PIPELINE_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/pipeline/pynative/op_function/
 RUNTIME_PYBOOST_FUNC_GEN_PATH = "mindspore/ccsrc/runtime/pynative/op_function/auto_generate"
 TENSOR_FUNC_REGISTER_PATH = "mindspore/ccsrc/pybind_api/ir/"
 ADD_TENSOR_DOCS_PY_PATH = "mindspore/python/mindspore/common"
+ADD_MINT_DOCS_PY_PATH = "mindspore/python/mindspore/mint"
 
 # yaml keys def
 OP_KEYS = {'args', 'args_signature', 'returns', 'function', 'class', 'view', 'dispatch', 'labels'}

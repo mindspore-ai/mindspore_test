@@ -22,3 +22,5 @@ class ${class_name}Functional : public Functional {
   }
 };
 
+static std::shared_ptr<${class_name}Functional> ${func_name}_instance = std::make_shared<${class_name}Functional>();
+

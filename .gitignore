@@ -122,6 +122,7 @@ mindspore/python/mindspore/ops_generate/deprecated_ops.yaml
 mindspore/python/mindspore/ops_generate/ops_doc.yaml
 mindspore/python/mindspore/ops_generate/api_def.yaml
 mindspore/python/mindspore/ops_generate/tensor_method_doc.yaml
+mindspore/python/mindspore/ops_generate/mint_func_doc.yaml
 mindspore/python/mindspore/ops_generate/inner_ops.yaml
 mindspore/python/mindspore/ops_generate/inner_ops_doc.yaml
 mindspore/python/mindspore/mint/functional_overload.py
