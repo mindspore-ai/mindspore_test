@@ -29,8 +29,10 @@ __all__ = [
     "ProfilerActivity",
     "AicoreMetrics",
     "DynamicProfilerMonitor",
+    "mstx"
 ]
 
+from mindspore.profiler.mstx import Mstx as mstx
 from mindspore.profiler.profiler import Profiler
 from mindspore.profiler.profiler import tensor_board_trace_handler
 from mindspore.profiler.schedule import Schedule as schedule
