@@ -36,12 +36,13 @@ class AcmeFlashAttentionScore : public AcmeKernelMod {
                                const acme::OutputsImmutableInfoList &outputs,
                                const std::vector<KernelTensor *> &ms_inputs,
                                const std::vector<KernelTensor *> &ms_outputs) override;
-  void *GetParam() override { return &param_; }
+  bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
-  bool IsNeedRecreate(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
+  bool UpdateSeqLen(const std::vector<KernelTensor *> &inputs);
   acme::FlashAttentionScoreParam param_;
+  bool created_flag_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore

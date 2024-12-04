@@ -31,29 +31,7 @@ bool AcmeFlashAttentionScore::Init(const std::vector<KernelTensor *> &inputs,
   return AcmeKernelMod::Init(inputs, outputs);
 }
 
-acme::AcmeOpPtr AcmeFlashAttentionScore::CreateKernel(const acme::InputsImmutableInfoList &inputs_ii,
-                                                      const acme::OutputsImmutableInfoList &outputs_ii,
-                                                      const std::vector<KernelTensor *> &ms_inputs,
-                                                      const std::vector<KernelTensor *> &ms_outputs) {
-  if (ms_inputs.size() <= kIndex17) {
-    MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", inputs number should be larger than " << kIndex17
-                      << ", but got " << ms_inputs.size();
-  }
-  param_.mask_dtype = TransAcmeDataType(ms_inputs[kIndex6]->dtype_id());
-  param_.mask_dims = ms_inputs[kIndex6]->GetShapeVector();
-  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
-  param_.tor = ms_inputs[kIndex12]->GetValueWithCheck<float>();
-  param_.pre_tokens = static_cast<int32_t>(ms_inputs[kIndex13]->GetValueWithCheck<int64_t>());
-  param_.next_tokens = static_cast<int32_t>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
-  param_.inner_precise = static_cast<int32_t>(ms_inputs[kIndex15]->GetValueWithCheck<int64_t>());
-  param_.input_layout = static_cast<int32_t>(ms_inputs[kIndex16]->GetValueWithCheck<int64_t>());
-  param_.sparse_mode = static_cast<int32_t>(ms_inputs[kIndex17]->GetValueWithCheck<int64_t>());
-
-  return acme::CreateFlashAttentionScoreOp(inputs_ii, outputs_ii, param_, acme::kAcmeFlashAttentionScoreOpName);
-}
-
-bool AcmeFlashAttentionScore::IsNeedRecreate(const std::vector<KernelTensor *> &inputs,
-                                             const std::vector<KernelTensor *> &outputs) {
+bool AcmeFlashAttentionScore::UpdateSeqLen(const std::vector<KernelTensor *> &inputs) {
   bool kv_need_recreate = false;
   if (inputs[kIndex9]->type_id() == kObjectTypeTuple) {
     kv_need_recreate = ConvertSeqLenToVectorAndCheckUpadate(inputs[kIndex9], &param_.kv_seq_len);
@@ -74,10 +52,51 @@ bool AcmeFlashAttentionScore::IsNeedRecreate(const std::vector<KernelTensor *> &
     }
   }
 
-  if (q_need_recreate || kv_need_recreate) {
+  return q_need_recreate || kv_need_recreate;
+}
+
+acme::AcmeOpPtr AcmeFlashAttentionScore::CreateKernel(const acme::InputsImmutableInfoList &inputs_ii,
+                                                      const acme::OutputsImmutableInfoList &outputs_ii,
+                                                      const std::vector<KernelTensor *> &ms_inputs,
+                                                      const std::vector<KernelTensor *> &ms_outputs) {
+  if (ms_inputs.size() <= kIndex17) {
+    MS_LOG(EXCEPTION) << "For op " << kernel_name_ << ", inputs number should be larger than " << kIndex17
+                      << ", but got " << ms_inputs.size();
+  }
+  param_.mask_dtype = TransAcmeDataType(ms_inputs[kIndex6]->dtype_id());
+  param_.mask_dims = ms_inputs[kIndex6]->GetShapeVector();
+  param_.head_num = static_cast<int32_t>(ms_inputs[kIndex10]->GetValueWithCheck<int64_t>());
+  param_.tor = ms_inputs[kIndex12]->GetValueWithCheck<float>();
+  param_.pre_tokens = static_cast<int32_t>(ms_inputs[kIndex13]->GetValueWithCheck<int64_t>());
+  param_.next_tokens = static_cast<int32_t>(ms_inputs[kIndex14]->GetValueWithCheck<int64_t>());
+  param_.inner_precise = static_cast<int32_t>(ms_inputs[kIndex15]->GetValueWithCheck<int64_t>());
+  param_.input_layout = static_cast<int32_t>(ms_inputs[kIndex16]->GetValueWithCheck<int64_t>());
+  param_.sparse_mode = static_cast<int32_t>(ms_inputs[kIndex17]->GetValueWithCheck<int64_t>());
+
+  (void)UpdateSeqLen(ms_inputs);
+
+  created_flag_ = true;
+  return acme::CreateFlashAttentionScoreOp(inputs_ii, outputs_ii, param_, acme::kAcmeFlashAttentionScoreOpName);
+}
+
+bool AcmeFlashAttentionScore::UpdateParam(const std::vector<KernelTensor *> &inputs,
+                                          const std::vector<KernelTensor *> &outputs) {
+  if (created_flag_) {
+    // the q_seq_len and batch_valid_length are inited in CreateKernel, so there is no need to load them again
+    created_flag_ = false;
     return true;
   }
-  return AcmeKernelMod::IsNeedRecreate(inputs, outputs);
+
+  if (UpdateSeqLen(inputs)) {
+    auto ret = acme_op_->UpdateParam(&param_);
+    if (ret != acme::kAcmeOk) {
+      MS_LOG(ERROR) << "AcmeFlashAttentionScore UpdateParam failed, kernel_name: " << kernel_name_;
+      return false;
+    }
+    return true;
+  }
+
+  return true;
 }
 
 uint64_t AcmeFlashAttentionScore::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
