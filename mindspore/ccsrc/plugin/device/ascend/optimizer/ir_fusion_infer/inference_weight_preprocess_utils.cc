@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_weight_preprocess_utils.h"
 #include <string>
 #include <limits>
 #include <memory>
@@ -91,7 +91,7 @@ std::shared_ptr<ValueNode> ConvertWeightsToNewType(const AnfNodePtr &weight_node
     tensor_type = std::make_shared<TensorType>(kFloat32);
     ConvertDataType<float16, float>(assist_tensor->data_c(), ori_data, shape[0], need_rank_offset, global_rank_id);
   } else {
-    MS_LOG(EXCEPTION) << "type_id " << TypeIdToString(w_type_id) << " is unexpected, only support int8 or fp16.";
+    MS_LOG(EXCEPTION) << "type_id " << TypeIdToString(w_type_id) << " is unexpected, only support int8 or float16.";
   }
 
   return CreateValueNode(assist_tensor, tensor_type);
@@ -215,8 +215,8 @@ void SortWeightNodeList(AnfNodePtrList *node_list) {
   });
 }
 
-std::shared_ptr<ValueNode> ConvertFp16BiasToInt32(const AnfNodePtr &bias_node, const AnfNodePtr &scale_node,
-                                                  const bool &with_allreduce) {
+std::shared_ptr<ValueNode> ConvertBiasToInt32(const AnfNodePtr &bias_node, const AnfNodePtr &scale_node,
+                                              const bool &with_allreduce, const TypeId &dtype) {
   auto bias_param = GetParamFromLoad(bias_node->cast<CNodePtr>(), true);
   MS_EXCEPTION_IF_NULL(bias_param);
   auto scale_param = GetParamFromLoad(scale_node->cast<CNodePtr>(), false);
@@ -239,30 +239,54 @@ std::shared_ptr<ValueNode> ConvertFp16BiasToInt32(const AnfNodePtr &bias_node, c
   auto len = shape[0];
 
   auto rank_offset = need_rank_offset ? global_rank_id * len : 0;
-  /**
-   * logic:
-   * (1) scale[int64] -> scale[int32] -> scale[float32];
-   * (2) bias[fp16] -> bias[fp32];
-   * (3) res = div(bias, scale) [fp64] -> round[fp64]
-   * (4) res[fp64] -> res[int64] -> clamp[int32]
-   */
   const double int32_max = static_cast<double>(std::numeric_limits<int32_t>::max());
   const double int32_min = static_cast<double>(std::numeric_limits<int32_t>::min());
   void *dst_data = assist_tensor->data_c();
-  float16 *bias_data_t = reinterpret_cast<float16 *>(bias_data) + rank_offset;
-  int64_t *scale_data_t = reinterpret_cast<int64_t *>(scale_data) + rank_offset;
-  int32_t *dst_data_t = reinterpret_cast<int32_t *>(dst_data);
-  for (int i = 0; i < len; i++) {
-    if (global_rank_id == 0 || (!with_allreduce)) {
-      int32_t scale_int32 = static_cast<int32_t>(scale_data_t[i]);
-      float scale_fp32 = int32_to_float(scale_int32);
-      double bias_fp64 = static_cast<double>(bias_data_t[i]);
-      double res_fp64 = std::clamp(round(bias_fp64 / scale_fp32), int32_min, int32_max);
-      dst_data_t[i] = static_cast<int32_t>(res_fp64);
-    } else {
-      dst_data_t[i] = 0;
+  if (dtype == TypeId::kNumberTypeFloat16) {
+    /**
+     *  Logic when dtype is kNumberTypeFloat16:
+     * (1) scale[int64] -> scale[int32] -> scale[float32];
+     * (2) bias[float16] -> bias[float32];
+     * (3) res = div(bias, scale) [fp64] -> round[fp64]
+     * (4) res[fp64] -> res[int64] -> clamp[int32]
+     */
+    float16 *bias_data_t = reinterpret_cast<float16 *>(bias_data) + rank_offset;
+    int64_t *scale_data_t = reinterpret_cast<int64_t *>(scale_data) + rank_offset;
+    int32_t *dst_data_t = reinterpret_cast<int32_t *>(dst_data);
+    for (int i = 0; i < len; i++) {
+      if (global_rank_id == 0 || (!with_allreduce)) {
+        int32_t scale_int32 = static_cast<int32_t>(scale_data_t[i]);
+        float scale_fp32 = int32_to_float(scale_int32);
+        double bias_fp64 = static_cast<double>(bias_data_t[i]);
+        double res_fp64 = std::clamp(round(bias_fp64 / scale_fp32), int32_min, int32_max);
+        dst_data_t[i] = static_cast<int32_t>(res_fp64);
+      } else {
+        dst_data_t[i] = 0;
+      }
     }
+  } else if (dtype == TypeId::kNumberTypeBFloat16) {
+    /**  Logic when dtype is kNumberTypeBFloat16:
+     * (1) scale[float32];
+     * (2) bias[bfloat16] -> bias[float32];
+     * (3) res = div(bias, scale) [fp64] -> round[fp64]
+     * (4) res[fp64] -> res[int64] -> clamp[int32]
+     */
+    bfloat16 *bias_data_t = reinterpret_cast<bfloat16 *>(bias_data) + rank_offset;
+    float *scale_fp32 = reinterpret_cast<float *>(scale_data) + rank_offset;
+    int32_t *dst_data_t = reinterpret_cast<int32_t *>(dst_data);
+    for (int i = 0; i < len; i++) {
+      if (global_rank_id == 0 || (!with_allreduce)) {
+        double bias_fp64 = static_cast<double>(bias_data_t[i]);
+        double res_fp64 = std::clamp(round(bias_fp64 / scale_fp32[i]), int32_min, int32_max);
+        dst_data_t[i] = static_cast<int32_t>(res_fp64);
+      } else {
+        dst_data_t[i] = 0;
+      }
+    }
+  } else {
+    return nullptr;  // unsupported dtypes
   }
+
   return CreateValueNode(assist_tensor, tensor_type);
 }
 

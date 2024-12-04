@@ -16,7 +16,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_ADD_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_ADD_FUSION_H_
 
-#include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_fusion_base.h"
+#include "plugin/device/ascend/optimizer/ir_fusion_infer/inference_qbmm_fusion_base.h"
 #include <string>
 
 namespace mindspore {
