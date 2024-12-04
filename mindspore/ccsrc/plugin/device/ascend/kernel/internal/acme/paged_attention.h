@@ -32,18 +32,31 @@ class AcmePagedAttention : public AcmeKernelMod {
 
  protected:
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
-  void CreateOpParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
                                const acme::OutputsImmutableInfoList &outputs,
                                const std::vector<KernelTensor *> &ms_inputs,
                                const std::vector<KernelTensor *> &ms_outputs) override;
-  bool IsParamChanged() override;
-  void *GetParam() override { return &param_; }
+  bool UpdateParam(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
 
  private:
+  inline void CheckLookahead() {
+    param_.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeNone;
+    auto enable_lookahead =
+      std::any_of(param_.q_seq_len.begin(), param_.q_seq_len.end(), [](int32_t seq_len) { return seq_len > 1; });
+
+    if (enable_lookahead) {
+      if (has_attn_mask_) {
+        param_.mask_type = acme::PagedAttentionParam::MaskType::kMaskTypeLookAhead;
+      }
+    } else {
+      param_.q_seq_len.clear();
+    }
+  }
+
   acme::PagedAttentionParam param_;
-  bool init_{false};
+  bool created_flag_{false};
+  bool has_attn_mask_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore
