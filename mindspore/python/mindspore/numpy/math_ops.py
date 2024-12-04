@@ -4290,6 +4290,8 @@ def argmin(a, axis=None):
         [0 0]
     """
     a = _to_tensor(a)
+    if a.dtype == mstype.bool_:
+        a = a.astype(mstype.int32)
     return a.argmin(axis)
 
 
