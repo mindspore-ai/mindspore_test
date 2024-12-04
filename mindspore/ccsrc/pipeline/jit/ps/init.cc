@@ -627,6 +627,7 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("initialized", &CollectiveManager::initialized, "Returns whether distributed module is initialized.")
     .def("create_group", &CollectiveManager::CreateCommunicationGroup, "Create collective group.")
     .def("destroy_group", &CollectiveManager::DestroyCommunicationGroup, "Destroy collective group.")
+    .def("get_group_map", &CollectiveManager::get_group_map, "Get the group map")
     .def("get_local_rank_id", &CollectiveManager::GetLocalRankId, "Get the node rank id.")
     .def("get_local_group_size", &CollectiveManager::GetLocalGroupSize, "Get the node rank id.")
     .def("get_world_rank_from_group_rank", &CollectiveManager::GetWorldRankFromGroupRank,
