@@ -128,7 +128,7 @@ def run_dump_uint1():
                 assert statistic_item['Min Value'] == '1' or '0'
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_acl_dump_uint1():
     """

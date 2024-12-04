@@ -48,7 +48,7 @@ def softplus_vmap_func(x, beta=1, threshold=20):
     return ops.vmap(softplus_forward_func, in_axes=(0, None, None), out_axes=0)(x, beta, threshold)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_softplus_forward(context_mode):
     """
