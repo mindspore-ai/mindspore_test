@@ -1950,7 +1950,10 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
   MS_EXCEPTION_IF_NULL(out_node);
   FuncGraphPtr func_graph = out_node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
-  auto new_node = parse::ResolveSymbol(func_graph->manager(), name_space, symbol, out_node);
+  AnalysisEnginePtr eng = out_conf->engine();
+  MS_EXCEPTION_IF_NULL(eng);
+  parse::Resolver resolver(eng->top_func_graph());
+  auto new_node = resolver.ResolveSymbol(func_graph->manager(), name_space, symbol, out_node);
   if (new_node == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Resolve node failed";
   }
@@ -1971,8 +1974,6 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
     MS_EXCEPTION_IF_NULL(out_cnode);
     constexpr auto default_index = 3;
     auto default_node = out_cnode->input(default_index);
-    auto eng = out_conf->engine();
-    MS_EXCEPTION_IF_NULL(eng);
     auto fn_conf = eng->MakeConfig(default_node, out_conf->context(), out_conf->func_graph());
     return eng->ForwardConfig(out_conf, fn_conf);
   }
@@ -1986,8 +1987,6 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
     }
   }
 
-  AnalysisEnginePtr eng = out_conf->engine();
-  MS_EXCEPTION_IF_NULL(eng);
   AnfNodeConfigPtr fn_conf = eng->MakeConfig(new_node, out_conf->context(), out_conf->func_graph());
   return eng->ForwardConfig(out_conf, fn_conf);
 }

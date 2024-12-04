@@ -126,6 +126,8 @@ std::vector<PassItem> GetJitPasses(const ResourcePtr &resource, bool build_top_g
     (void)jit_passes.emplace_back(kRemoveDupValue, RemoveValueNodeDuplicationsPassForJit);
     (void)jit_passes.emplace_back(kPartialUnusedArgsEliminate, PartialUnusedArgsEliminatePass);
     (void)jit_passes.emplace_back(kEnvironConv, EnvironConversionPass);
+    (void)jit_passes.emplace_back(kAddRecomputation, AddRecomputationPass);
+    (void)jit_passes.emplace_back(kCseAfterRecomputation, OptAfterRecomputeGroup);
     (void)jit_passes.emplace_back(kAutoMonadReorder, OrderEnforceAction);
     (void)jit_passes.emplace_back(kGetJitBpropGraph, GetJitBpropGraph);
     (void)jit_passes.emplace_back(kRewriterAfterJitBprop, RewriterAfterOptAPassAfterJitBprop);

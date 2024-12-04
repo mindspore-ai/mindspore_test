@@ -667,6 +667,7 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
     {{"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
      {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", GetJitOptPassA1(irpass)},
+     {"recompute_prepare", opt::OptPassConfig({irpass.set_cell_output_no_recompute_})},
      {"updatestate_depend_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateDependEliminater())},
      {"updatestate_assign_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateAssignEliminater())},
      {"updatestate_loads_eliminate", opt::OptPassConfig(opt::irpass::UpdatestateLoadsEliminater())},
@@ -689,7 +690,8 @@ OptPassGroupMap GetJitOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
      {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
      {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},
-     {"cse", opt::OptPassConfig(opt::CSEPass(false))}});
+     {"cse", opt::OptPassConfig(opt::CSEPass(false))},
+     {"replace_applicator", opt::OptPassConfig({irpass.replace_applicator_})}});
   return map_a;
 }
 
@@ -1595,8 +1597,8 @@ std::vector<PassItem> kVmPasses = {
   {kTupleTransform, OptPassTransformGraphGroup},
   {kPartialUnusedArgsEliminate, PartialUnusedArgsEliminatePass},
   {"add_cache_embedding", AddCacheEmbeddingPass},
-  {"add_recomputation", AddRecomputationPass},
-  {"cse_after_recomputation", OptAfterRecomputeGroup},
+  {kAddRecomputation, AddRecomputationPass},
+  {kCseAfterRecomputation, OptAfterRecomputeGroup},
   {kEnvironConv, EnvironConversionPass},
   {"swap_dp_allreduce_reducescatter", SwapDpAllReduceReduceScatterPass},
   {"bias_add_comm_swap", BiasAddCommSwap},

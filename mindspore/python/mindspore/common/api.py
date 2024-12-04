@@ -110,8 +110,7 @@ def _check_recompile(obj, compile_args, kwargs, full_function_name, create_time,
                 logger.info(f"The {echo_function_name} has been compiled again. "
                             f"{tips} ")
             else:
-                tips = "Try to decorate the function with @jit(hash_args=...) " \
-                       "or @jit(compile_once=True) to reduce the compile time. " \
+                tips = "Try to reuse the function object decorated by @jit to reduce the compile time. " \
                        "For more details, get instructions about `jit` at " \
                        "https://www.mindspore.cn/search?inputValue=jit."
                 logger.warning(f"The {echo_function_name} has been compiled again. "
@@ -733,7 +732,7 @@ class _JitExecutor:
                 setattr(self.fn.__func__, "__jit_function__", True)
             else:
                 setattr(self.fn, "__jit_function__", True)
-            is_compile = self._graph_executor.compile(self.fn, compile_args, kwargs, phase, True)
+            is_compile = self._graph_executor.compile(self.fn, compile_args, kwargs, phase)
             if isinstance(self.fn, types.MethodType):
                 delattr(self.fn.__func__, "__jit_function__")
             else:
@@ -741,7 +740,7 @@ class _JitExecutor:
         else:
             if isinstance(self.obj, ms.nn.Cell):
                 self._graph_executor.set_weights_values(self.obj.parameters_dict())
-            is_compile = self._graph_executor.compile(self.obj, compile_args, kwargs, phase, True)
+            is_compile = self._graph_executor.compile(self.obj, compile_args, kwargs, phase)
 
         if not is_compile:
             raise RuntimeError("Executor compile failed.")
@@ -876,6 +875,13 @@ attr_op = {"__str__": lambda x: x.__str__(),
            }
 
 
+def _is_inner_func(func):
+    """Check whether the func is an inner func which needs hash_args parameter."""
+    # This is a workaround for inner api, should fix it later.
+    inner_func = ["after_shard", "_wrap_container"]
+    return func.__name__ in inner_func
+
+
 def _get_obj_id(input_obj):
     """Get hash id of single object."""
     obj_id = ".".join(
@@ -899,9 +905,10 @@ def _get_hash_obj(options):
 
 
 def _check_options(options):
-    deprecated_args = {'mode': 'capture_mode', 'input_signature': 'dynamic',
+    """Check whether there are deprecated parameters in the dict `options`."""
+    deprecated_args = {'mode': 'capture_mode', 'input_signature': 'dynamic', 'hash_args: ': '',
                        'jit_config': 'jit_level, fullgraph or options', 'compile_once': ''}
-    for key in deprecated_args.keys():
+    for key in deprecated_args:
         if key in options:
             log = f"For 'jit', the parameter '{key}' has been deprecated."
             value = deprecated_args.get(key)
@@ -1002,11 +1009,11 @@ def jit(
     infer_boost = options['infer_boost'] if 'infer_boost' in options else "off"
     exc_mode = options['exc_mode'] if 'exc_mode' in options else "auto"
     jit_config = JitConfig(jit_level=jit_level, exc_mode=exc_mode, jit_syntax_level=jit_syntax_level,
-                           infer_boost=infer_boost,  backend=backend, options=options_str)
+                           infer_boost=infer_boost, backend=backend, options=options_str)
 
     def wrap_func(func):
         nonlocal hash_obj
-        if hash_obj is None:
+        if hash_obj is None or not _is_inner_func(func):
             hash_obj = int(time.time() * 1e9)
 
         @wraps(func)
@@ -1761,7 +1768,7 @@ class _CellGraphExecutor:
         else:
             jit_config_dict = JitConfig().jit_config_dict
             self._graph_executor.set_jit_config(jit_config_dict)
-        result = self._graph_executor.compile(obj, args, kwargs, phase, self._use_vm_mode())
+        result = self._graph_executor.compile(obj, args, kwargs, phase)
         obj.compile_cache.add(phase)
         if not result:
             raise RuntimeError("Executor compile failed.")
@@ -2004,4 +2011,4 @@ def flops_collection(phase='train'):
 _cell_graph_executor = _CellGraphExecutor()
 _pynative_executor = _PyNativeExecutor()
 
-__all__ = ['ms_function', 'ms_memory_recycle', 'ms_class', 'jit', 'jit_class', 'flops_collection']
+__all__ = ['ms_memory_recycle', 'jit', 'jit_class', 'flops_collection']

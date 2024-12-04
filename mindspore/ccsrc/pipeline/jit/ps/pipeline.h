@@ -64,8 +64,7 @@ class Pipeline {
 
 class ExecutorPy : public std::enable_shared_from_this<ExecutorPy> {
  public:
-  bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase,
-               bool use_vm);
+  bool Compile(const py::object &source, const py::tuple &args, const py::dict &kwargs, const py::object &phase);
   py::object Run(const py::tuple &args, const py::object &phase);
   void set_enable_tuple_broaden(bool enable_tuple_broaden) { enable_tuple_broaden_ = enable_tuple_broaden; }
   // Generate a key for mapping function graph

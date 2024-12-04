@@ -369,6 +369,7 @@ abstract::AnalysisResult AbstractAnalyze(const ValuePtr &func, const abstract::A
   auto infer_graph = func->isa<FuncGraph>() ? func->cast<FuncGraphPtr>() : ConstructGraphForEval(func, args_abs);
   auto manager = Manage(infer_graph, true);
   auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
+  engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
   return AbstractAnalyze(engine, infer_graph, args_abs, false, clear);
 }
 
@@ -380,6 +381,7 @@ abstract::AnalysisResult AbstractAnalyzeWithResourceClean(const ValuePtr &func,
   resource->set_func_graph(infer_graph);
 
   auto engine = resource->engine();
+  engine->set_top_func_graph(parse::Parser::GetTopFuncGraph());
   auto res = AbstractAnalyze(engine, infer_graph, args_abs, false, true);
 
   JitExecutorPy::GetInstance()->CleanCompileRes(resource);
@@ -421,6 +423,7 @@ FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_g
   MS_EXCEPTION_IF_NULL(resource);
   MS_LOG(DEBUG) << "Renormalize start";
   auto engine = resource->engine();
+  engine->set_top_func_graph(resource->func_graph());
 
   abstract::AnalysisResult result;
   {
@@ -435,29 +438,6 @@ FuncGraphPtr Renormalize(const ResourcePtr &resource, const FuncGraphPtr &func_g
   }
 
   MS_LOG(DEBUG) << "Renormalize end";
-  return res;
-}
-
-FuncGraphPtr Renormalize(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
-  auto func_abs = func->ToAbstract();
-  if (!func_abs->isa<abstract::AbstractFunction>()) {
-    MS_LOG(EXCEPTION) << "The value: " << func->ToString() << " is not a callable object.";
-  }
-  auto func_graph = ConstructGraphForEval(func, args_abs);
-  auto manager = Manage(func_graph, true);
-  auto engine = std::make_shared<abstract::AnalysisEngine>(abstract::GetPrimEvaluatorConstructors(), manager);
-
-  abstract::AnalysisResult result;
-  {
-    MsProfileStatGuard stat_guard("renormalize.infer");
-    result = AbstractAnalyze(engine, func_graph, args_abs, false);
-  }
-  FuncGraphPtr res;
-  {
-    MsProfileStatGuard stat_guard("renormalize.specialize");
-    res = ProgramSpecialize(engine, func_graph, result.context);
-  }
-
   return res;
 }
 
@@ -1243,7 +1223,7 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   AnalysisResult result;
   {
     MsProfileStatGuard stat_guard("type_inference.infer");
-    result = AbstractAnalyze(resource->engine(), resource->func_graph(), GetArgsAbs(resource), resource->is_load());
+    result = AbstractAnalyze(engine, resource->func_graph(), GetArgsAbs(resource), resource->is_load());
   }
   (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kAbstractAnalyze, start_time, profiler::GetClockSyscnt(),
                                   0);

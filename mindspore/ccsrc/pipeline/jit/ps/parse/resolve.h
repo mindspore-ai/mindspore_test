@@ -191,19 +191,42 @@ class ClassType final : public PyObjectWrapper {
 };
 using ClassTypePtr = std::shared_ptr<ClassType>;
 
-// Resolve symbol in namespace.
-AnfNodePtr ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr &name_space, const SymbolPtr &symbol,
-                         const AnfNodePtr &node);
-AnfNodePtr ResolveSymbolWithAttr(const FuncGraphManagerPtr &manager, const AnfNodePtr &object_node,
-                                 const AnfNodePtr &attr_node, const AnfNodePtr &node);
-AnfNodePtr ResolveGetItemWithAttr(const FuncGraphManagerPtr &manager, const AnfNodePtr &getitem_node,
-                                  const AnfNodePtr &attr_node, const AnfNodePtr &node);
+class Resolver {
+ public:
+  explicit Resolver(const FuncGraphPtr &top_func_graph) : top_func_graph_(top_func_graph) {}
+  virtual ~Resolver() = default;
+
+  AnfNodePtr ResolveParameterObj(const FuncGraphPtr &func_graph, const py::object &obj);
+  bool ResolveObjectToNode(const AnfNodePtr &origin_node, const py::object &obj, AnfNodePtr *const node,
+                           bool is_element_obj = false);
+  // Resolve symbol in namespace.
+  AnfNodePtr ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr &name_space, const SymbolPtr &symbol,
+                           const AnfNodePtr &node);
+  AnfNodePtr ResolveSymbolWithAttr(const FuncGraphManagerPtr &manager, const AnfNodePtr &object_node,
+                                   const AnfNodePtr &attr_node, const AnfNodePtr &node);
+  AnfNodePtr ResolveGetItemWithAttr(const FuncGraphManagerPtr &manager, const AnfNodePtr &getitem_node,
+                                    const AnfNodePtr &attr_node, const AnfNodePtr &node);
+
+ private:
+  AnfNodePtr ResolveObjectAndAddToManager(const FuncGraphManagerPtr &manager, const py::object &obj,
+                                          const AnfNodePtr &node);
+  AnfNodePtr ResolveCellWithAttr(const FuncGraphManagerPtr &manager, const py::object &obj,
+                                 const AnfNodePtr &resolve_node, const AnfNodePtr &attr,
+                                 const AnfNodePtr &get_attr_node);
+  AnfNodePtr ResolveSequenceWithAttr(const FuncGraphManagerPtr &manager, const py::object &obj,
+                                     const AnfNodePtr &resolve_node, const AnfNodePtr &attr,
+                                     const CNodePtr &get_attr_node);
+  AnfNodePtr ConvertObjectToNode(const AnfNodePtr &origin_node, const py::object &obj, const FuncGraphPtr &func_graph,
+                                 bool is_element_obj);
+  void ConvertLoadedGraph(const FuncGraphPtr &func_graph, const ValuePtr &value);
+
+  FuncGraphPtr top_func_graph_{nullptr};
+};
+
 AnfNodePtr ResolveClassObjectWithAttr(const py::object &cls_obj, const AnfNodePtr &attr, const AnfNodePtr &node);
 
 AnfNodePtr ResolveInterpretedObjectOfSetAttr(const AnfNodePtr &target_node, const AnfNodePtr &attr_node,
                                              const AnfNodePtr &value_node);
-
-AnfNodePtr ResolveParameterObj(const FuncGraphPtr &func_graph, const py::object &obj);
 // Check if node is cnode with getitem.
 bool IsGetItemCNode(const AnfNodePtr &node);
 
@@ -215,8 +238,6 @@ bool ResolveFuncGraph(const FuncGraphPtr &func_graph, const pipeline::ResourceBa
 bool ResolveAll(const FuncGraphManagerPtr &manager);
 
 py::object GetSymbolObject(const NameSpacePtr &name_space, const SymbolPtr &symbol, const AnfNodePtr &node);
-bool ResolveObjectToNode(const AnfNodePtr &origin_node, const py::object &obj, AnfNodePtr *const node,
-                         bool is_element_obj = false);
 ValuePtr GetParameterValue(const py::object &param_obj);
 }  // namespace parse
 }  // namespace mindspore

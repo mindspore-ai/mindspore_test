@@ -537,7 +537,8 @@ AnfNodePtr FunctionBlock::DoResolve(const AnfNodePtr &node, const std::shared_pt
     return node;
   }
   AnfNodePtr resolved_node = nullptr;
-  bool success = ResolveObjectToNode(node, obj, &resolved_node);
+  Resolver resolver(Parser::GetTopFuncGraph());
+  bool success = resolver.ResolveObjectToNode(node, obj, &resolved_node);
   if (!success || resolved_node == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Parse Resolve convert failed." << node->DebugString()
                                << ", ns: " << name_space->ToString() << ", sym: " << resolve_symbol->ToString();
