@@ -17,7 +17,6 @@
 from __future__ import absolute_import
 
 from copy import copy
-from contextlib import contextmanager
 
 import time
 import os
@@ -55,42 +54,6 @@ PARAMETER_NAME_PREFIX_MAX_LEN = 1024
 
 # Global variable for parameter unique key.
 _GLOBAL_PARAMETER_KEY = -1
-
-
-@contextmanager
-def no_init_parameters():
-    r"""
-     In scenarios where a checkpoint is loaded, parameters within the network instantiation will be
-     instantiated and occupy physical memory. Loading a checkpoint will replace the parameter values.
-     Decorator can be applied during network instantiation to add an attribute `init_param` to all
-     parameters within the current Cell, setting it to `init_param=False` .
-     When `init_param=False` is detected, the initialization of the parameters is skipped,
-     and the parameters are assigned values directly from the checkpoint during loading,
-     which can optimize performance and reduce physical memory usage.
-
-     Note:
-         Initialization of parameters created with `initializer` can only be skipped.
-         Parameters created by `Tensor` or `numpy` cannot be skipped.
-
-     Examples:
-         >>> from mindspore.common.parameter import no_init_parameters
-         >>> # 1. Add a decorator to the network that requires delayed initialization
-         >>> with no_init_parameters():
-         >>> # After instantiation, all parameters in the net are not initialized
-         >>>    net = Net()
-         >>> # 2. Load checkpoint parameters to the net
-         >>> load_checkpoint(ckpt_file, net=net)
-         >>> # 3. After loading the checkpoint, manually call init_parameters_data() to initialize
-         >>> #    the uninitialized parameters in the net if need. If the network is executed,
-         >>> #    the framework will automatically call this interface.
-         >>> net.init_parameters_data()
-    """
-    init_class = globals()["Parameter"]
-    setattr(init_class, "init_param", False)
-    try:
-        yield
-    finally:
-        setattr(init_class, "init_param", True)
 
 
 def _is_in_auto_parallel_mode():
@@ -1006,9 +969,7 @@ class Parameter(Tensor_):
         """
         if self.is_default_input_init and self.is_in_parallel != _is_in_auto_parallel_mode():
             raise RuntimeError("Must set or change parallel mode before any initializer Tensor created.")
-        if hasattr(self, "init_param") and self.init_param:
-            return self
-        if self.init_mode is None:
+        if self.init_mode is None or not self.has_init:
             return self
         if self.inited_param is not None:
             return self.inited_param
