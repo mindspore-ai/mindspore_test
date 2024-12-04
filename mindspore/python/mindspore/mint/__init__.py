@@ -1269,7 +1269,7 @@ def equal(input, other):
         `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
 
     .. warning:
-            This is an experimental API that is subject to change or deletion.
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         input (Tensor): The first input.
