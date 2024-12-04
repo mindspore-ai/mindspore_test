@@ -212,8 +212,7 @@ Status CopyTensorToBatch(const std::shared_ptr<Tensor> &element_tensor, std::sha
   auto src = reinterpret_cast<const void *>(element_tensor->GetBuffer());
   auto dest = reinterpret_cast<void *>((*batched_tensor)->GetMutableBuffer() + index * element_size);
   if (element_size < SECUREC_MEM_MAX_LEN) {
-    auto batch_tensor_size = static_cast<size_t>((*batched_tensor)->SizeInBytes());
-    errno_t copy_status = memcpy_s(dest, batch_tensor_size - index * element_size, src, element_size);
+    errno_t copy_status = memcpy_s(dest, element_size, src, element_size);
     CHECK_FAIL_RETURN_UNEXPECTED(copy_status == EOK,
                                  "Failed to copy tensor to batch, got error_t: " + std::to_string(copy_status));
   } else {
