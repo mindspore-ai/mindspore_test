@@ -38,7 +38,7 @@ include(CPack)
 set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Installation directory for libraries")
 set(INSTALL_PY_DIR ".")
 set(INSTALL_BASE_DIR ".")
-set(INSTALL_BIN_DIR "bin")
+set(INSTALL_BIN_DIR "utils/bin")
 set(INSTALL_CFG_DIR "config")
 set(INSTALL_LIB_DIR "lib")
 set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
@@ -94,7 +94,7 @@ if(ENABLE_MINDDATA)
     )
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         install(
-            TARGETS cache_admin cache_server
+            TARGETS dataset-cache dataset-cache-server
             OPTIONAL
             DESTINATION ${INSTALL_BIN_DIR}
             COMPONENT mindspore

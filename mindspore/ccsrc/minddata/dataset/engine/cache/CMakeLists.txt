@@ -74,8 +74,8 @@ if(ENABLE_CACHE)
       set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
   endif()
 
-  add_executable(cache_server cache_main.cc)
-  target_link_libraries(cache_server
+  add_executable(dataset-cache-server cache_main.cc)
+  target_link_libraries(dataset-cache-server
       engine-cache-server
       _c_dataengine
       _c_mindrecord
@@ -86,39 +86,39 @@ if(ENABLE_CACHE)
       pthread
       -ldl)
   if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(cache_server mindspore::grpc++)
+    target_link_libraries(dataset-cache-server mindspore::grpc++)
   else()
-    target_link_libraries(cache_server
+    target_link_libraries(dataset-cache-server
         -Wl,--no-as-needed
         mindspore::grpc++
         -Wl,--as-needed)
   endif()
 
   if(USE_GLOG)
-    target_link_libraries(cache_server mindspore::glog)
+    target_link_libraries(dataset-cache-server mindspore::glog)
   endif()
 
   if(NUMA_FOUND)
-    target_link_libraries(cache_server numa)
+    target_link_libraries(dataset-cache-server numa)
   endif()
 
-  add_executable(cache_admin cache_admin.cc cache_admin_arg.cc)
-  target_link_libraries(cache_admin _c_dataengine _c_mindrecord ${PYTHON_LIBRARIES} pthread -ldl)
+  add_executable(dataset-cache cache_admin.cc cache_admin_arg.cc)
+  target_link_libraries(dataset-cache _c_dataengine _c_mindrecord ${PYTHON_LIBRARIES} pthread -ldl)
   if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(cache_admin mindspore::protobuf mindspore_core)
+    target_link_libraries(dataset-cache mindspore::protobuf mindspore_core)
   else()
-    target_link_libraries(cache_admin
+    target_link_libraries(dataset-cache
         -Wl,--start-group mindspore::protobuf mindspore_core -Wl,--end-group)
   endif()
 
   if(USE_GLOG)
-    target_link_libraries(cache_admin mindspore::glog)
+    target_link_libraries(dataset-cache mindspore::glog)
   endif()
 
   add_dependencies(engine-cache-server generated_engine_files)
 
-  set_target_properties(cache_admin PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/..:${ORIGIN_PATH}/../lib)
-  set_target_properties(cache_server PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/..:${ORIGIN_PATH}/../lib)
+  set_target_properties(dataset-cache PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/../..:${ORIGIN_PATH}/../../lib)
+  set_target_properties(dataset-cache-server PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/../..:${ORIGIN_PATH}/../../lib)
 else()
   ms_protobuf_generate(CACHE_PROTO_SRCS CACHE_PROTO_HDRS cache_grpc.proto)
   target_sources(engine-cache-client PUBLIC ${CACHE_PROTO_SRCS})

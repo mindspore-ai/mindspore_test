@@ -44,9 +44,10 @@ class DatasetCache:
         >>> import subprocess
         >>> import mindspore.dataset as ds
         >>>
-        >>> # Create a cache instance with command line `cache_admin --start` and create a session with `cache_admin -g`
-        >>> # After creating cache with a valid session, get session id with command `cache_admin --list_sessions`
-        >>> command = "cache_admin --list_sessions | tail -1 | awk -F ' ' '{{print $1;}}'"
+        >>> # Create a cache instance with command line `dataset-cache --start`
+        >>> # Create a session with `dataset-cache -g`
+        >>> # After creating cache with a valid session, get session id with command `dataset-cache --list_sessions`
+        >>> command = "dataset-cache --list_sessions | tail -1 | awk -F ' ' '{{print $1;}}'"
         >>> session_id = subprocess.getoutput(command).split('\n')[-1]
         >>> some_cache = ds.DatasetCache(session_id=int(session_id), size=0)
         >>>
@@ -93,7 +94,7 @@ class DatasetCache:
             >>> import mindspore.dataset as ds
             >>>
             >>> # In example above, we created cache with a valid session id
-            >>> command = "cache_admin --list_sessions | tail -1 | awk -F ' ' '{{print $1;}}'"
+            >>> command = "dataset-cache --list_sessions | tail -1 | awk -F ' ' '{{print $1;}}'"
             >>> id = subprocess.getoutput(command).split('\n')[-1]
             >>> some_cache = ds.DatasetCache(session_id=int(id), size=0)
             >>>
