@@ -1,0 +1,14 @@
+inverse:
+  - op_yaml: matrix_inverse_ext_op.yaml
+    py_method: tensor_inverse
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor
+
+  - op_yaml: deprecated/inverse_method.yaml
+    py_method: deprecated_tensor_inverse
+    Ascend: py_method
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

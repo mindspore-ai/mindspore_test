@@ -1718,12 +1718,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('inv')(self)
 
-    def inverse(self):
-        r"""
-        For details, please refer to :func:`mindspore.ops.inverse`.
-        """
-        return tensor_operator_registry.get('inverse')(self)
-
     def invert(self):
         r"""
         For details, please refer to :func:`mindspore.ops.invert`.
