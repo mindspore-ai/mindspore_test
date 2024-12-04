@@ -19,6 +19,7 @@
 #include "include/common/utils/utils.h"
 #include "ir/tensor.h"
 #include "runtime/device/kernel_runtime.h"
+#include "mindspore/ccsrc/transform/acl_ir/op_api_util.h"
 
 namespace mindspore {
 namespace kernel {
@@ -26,7 +27,7 @@ void QuantBatchMatmulAllReduceAscend::InitializeCommonAttributes() {
   trans_a_ = GetRequiredAttr<bool>(kAttrIsTransA);
   trans_b_ = GetRequiredAttr<bool>(kAttrIsTransB);
   group_ = GetRequiredAttr<std::string>(kAttrGroup);
-  hccl_inner_comm_name_ = GetCommName(group_);
+  hccl_inner_comm_name_ = mindspore::transform::OpApiUtil::GetCommName(group_);
   reduce_op_ = GetRequiredAttr<std::string>(kAttrOp);
 }
 
