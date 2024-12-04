@@ -1,10 +1,10 @@
 #operator divmod
 divmod:
     args:
-        x:
+        input:
             dtype: tensor
             type_cast: number
-        y:
+        other:
             dtype: tensor
             type_cast: number
         rounding_mode:
@@ -12,7 +12,7 @@ divmod:
             default: None
             arg_handler: str_to_enum
     args_signature:
-        dtype_group: (x, y), (rounding_mode)
+        dtype_group: (input, other), (rounding_mode)
     returns:
         output:
             dtype: tensor
