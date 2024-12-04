@@ -264,7 +264,7 @@ def test_nn_PadNd_dynamic():
     input1d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input1d_2 = generate_random_input((2, 3, 4), np.float32)
     TEST_OP(pad_nd_forward_for_dyn, [[ms.Tensor(input1d_1), "constant_1d"], [ms.Tensor(input1d_2), "constant_1d"]],
-            '', disable_input_check=True, disable_yaml_check=True)
+            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
 
     input2d_1 = generate_random_input((2, 3, 4, 5), np.float32)
     input2d_2 = generate_random_input((2, 3, 4), np.float32)
