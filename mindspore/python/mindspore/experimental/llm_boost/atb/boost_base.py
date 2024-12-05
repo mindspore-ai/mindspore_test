@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """boost base class"""
+from enum import Enum
 import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor
@@ -25,6 +26,18 @@ from mindspore.experimental.llm_boost.utils import get_real_rank, get_real_group
 from mindspore.common.initializer import Zero
 
 FORMAT_NZ = "FRACTAL_NZ"
+BUILDIN_BACKEND_NAME = "ATB"
+
+
+class PositionEmbeddingType(int, Enum):
+    ROPE = 0
+    ALIBI = 1
+    ABSOLUTE = 2
+
+
+class NormType(int, Enum):
+    RMS_NORM = 0
+    LAYER_NORM = 1
 
 
 class AttentionMask:
@@ -60,6 +73,7 @@ class AtbBoostBase:
 
     def __init__(self, config):
         super().__init__()
+        self.backend_name = BUILDIN_BACKEND_NAME
         self.is_first_iteration = False
         self.config = config
         self.dtype = config.compute_dtype
@@ -73,7 +87,7 @@ class AtbBoostBase:
             self.need_nz = config.need_nz
         self.placeholder = Tensor(np.zeros(1), dtype=self.dtype)
         self.lm_head_indices_fake = Tensor([0], dtype=mstype.int64)
-        self.position_embedding_type = "ROPE"
+        self.position_embedding_type = PositionEmbeddingType.ROPE
         self.add_norm_enable = True
         self.max_decode_length = self.config.max_decode_length
         self.max_base_len = 128
