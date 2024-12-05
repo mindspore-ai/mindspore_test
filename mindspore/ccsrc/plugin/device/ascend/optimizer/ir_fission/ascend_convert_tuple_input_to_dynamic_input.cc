@@ -47,7 +47,7 @@ const AnfNodePtr AscendConvertTupleInputToDynamicInput::Process(const FuncGraphP
     prim::kPrimPrint,         prim::kPrimConcat,        prim::kPrimAccumulateNV2,  prim::kPrimMeshgrid,
     prim::kPrimTensorSummary, prim::kPrimDynamicStitch, prim::kPrimParallelConcat, prim::kPrimIncreFlashAttention,
     prim::kPrimIdentityN,     prim::kPrimConcatOffset,  prim::kPrimAllFinite,      prim::kPrimFusedInferAttentionScore,
-    prim::kPrimGroupedMatmul, prim::kPrimStackExt};
+    prim::kPrimGroupedMatmul, prim::kPrimStackExt,      prim::kPrimInnerIndex,     prim::kPrimInnerInplaceIndexPut};
 
   static const PrimitiveSet need_unfold_control_node = {prim::kPrimSwitchLayer, prim::kPrimCall, prim::kPrimSwitch,
                                                         prim::kPrimCallInline};

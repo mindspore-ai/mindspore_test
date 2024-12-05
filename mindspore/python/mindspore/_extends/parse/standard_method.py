@@ -26,7 +26,7 @@ from mindspore.common.sparse_tensor import RowTensorInner
 from mindspore.ops.composite.base import _append, _insert, _pop, _list_clear, _reverse, \
     _extend, _dict_setitem, _dict_clear, _haskey, _update, _fromkeys
 from mindspore.ops.operations._sequence_ops import TensorToTuple
-from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op
+from mindspore.ops.auto_generate import trace_v2_op, inplace_addmm_op, inplace_index_put_op
 
 from ... import _checkparam as validator
 from ..._checkparam import check_is_number, check_reshape_shp, check_axis_in_range, \
@@ -4426,6 +4426,16 @@ def index_put(input, indices, values, accumulate=False):
     check_bool_type(accumulate, 'accumulate', 'Tensor.index_put')
     _index_put = array_ops.IndexPut(0 if accumulate is False else 1)
     return _index_put(input, values, indices)
+
+
+def index_put_(input, indices, values, accumulate=False):
+    r"""
+    For details, please refer to :func:`mindspore.Tensor.index_put_`.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+    """
+    return inplace_index_put_op(input, indices, values, accumulate)
 
 
 def aminmax(input, *, axis=0, keepdims=False):

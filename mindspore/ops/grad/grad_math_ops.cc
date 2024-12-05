@@ -1836,7 +1836,14 @@ REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
   auto dout = ib->GetInput(kIndex5);
   auto accumulate_value = GetValue<bool>(accumulate->BuildValue());
   auto zeros = ib->ZerosLikeExt(values, ib->Value(static_cast<int64_t>(ib->GetDtypeId(values))));
-  NodePtr values_grad;
+  // Indices is tuple[tensor]
+  std::vector<ShapeVector> indices_shapes = indices->shapes();
+  auto indices_nums = indices_shapes.size();
+  NodePtrList indices_res;
+  for (size_t i = 0; i < indices_nums; ++i) {
+    indices_res.push_back(ib->OutZeros(ib->TupleGetItem(indices, i)));
+  }
+  NodePtr values_grad = nullptr;
   if (values->need_compute_grad_out()) {
     values_grad = ib->Emit("Index", {dout, indices});
     auto values_shape = ib->GetShape(values);
@@ -1849,16 +1856,18 @@ REG_BPROP_BUILDER("InplaceIndexPut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(
   } else {
     values_grad = ib->OutZeros(values);
   }
-  NodePtr dx;
+  NodePtr dx = nullptr;
   if (input->need_compute_grad_out()) {
-    dx = dout;
+    auto dout_clone = ib->Emit("Clone", {dout});
     if (!accumulate_value) {
-      dx = ib->Emit("InplaceIndexPut", {dx, indices, zeros, accumulate});
+      dx = ib->Emit("InplaceIndexPut", {dout_clone, indices, zeros, accumulate});
+    } else {
+      dx = dout_clone;
     }
   } else {
     dx = ib->OutZeros(input);
   }
-  return {dx, ib->OutZeros(indices), values_grad, ib->OutZeros(accumulate)};
+  return {dx, ib->MakeTuple(indices_res), values_grad, ib->OutZeros(accumulate)};
 });
 
 REG_BPROP_BUILDER("IndexSelect").SetBody(BODYFUNC(ib) {

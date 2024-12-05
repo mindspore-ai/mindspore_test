@@ -118,6 +118,7 @@ ArgSort: 'aclnnArgsort'
 # 16
 InplaceIndexPut: 'aclnnIndexPutImpl'
 InnerIndex: 'aclnnIndex'
+InnerInplaceIndexPut: 'aclnnIndexPutImpl'
 # 17
 
 # 18
