@@ -38,6 +38,7 @@
 #include "include/backend/debug/common/csv_writer.h"
 #include "abstract/utils.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "debug/debugger/debugger_utils.h"
 #ifdef ENABLE_DEBUGGER
 #include "ops/op_def.h"
 #include "debug/debug_services.h"
@@ -134,7 +135,8 @@ void E2eDump::DumpOutput(const session::KernelGraph *graph, const std::string &d
   }
 }
 
-void E2eDump::DumpOutputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger) {
+void E2eDump::DumpOutputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger,
+                                   const DeviceContext *device_context) {
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   if (!dump_json_parser.OutputNeedDump()) {
     return;
@@ -146,16 +148,22 @@ void E2eDump::DumpOutputSingleNode(const CNodePtr &node, const std::string &dump
     return;
   }
   DumpJsonParser::GetInstance().MatchKernel(kernel_name);
-  DumpOutputImpl(node, trans_flag, dump_path, &kernel_name, debugger);
+  DumpOutputImpl(node, trans_flag, dump_path, &kernel_name, debugger, device_context);
 }
 
 void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
-                             std::string *kernel_name, const Debugger *debugger) {
+                             std::string *kernel_name, const Debugger *debugger, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(node);
   GetFileKernelName(NOT_NULL(kernel_name));
   auto output_size = AnfAlgo::GetOutputTensorNum(node);
+  std::vector<size_t> valid_indexes;
+  if (device_context != nullptr) {
+    valid_indexes = GetValidDumpIndex(node, output_size, false, device_context);
+  }
   for (size_t j = 0; j < output_size; ++j) {
-    if (!AnfAlgo::OutputAddrExist(node, j)) {
+    if (!AnfAlgo::OutputAddrExist(node, j) ||
+        (device_context != nullptr &&
+         std::find(valid_indexes.begin(), valid_indexes.end(), j) == valid_indexes.end())) {
       continue;
     }
     auto addr = AnfAlgo::GetOutputAddr(node, j);
@@ -234,7 +242,8 @@ void E2eDump::DumpInput(const session::KernelGraph *graph, const std::string &du
   }
 }
 
-void E2eDump::DumpInputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger) {
+void E2eDump::DumpInputSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger,
+                                  const DeviceContext *device_context) {
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   if (!dump_json_parser.InputNeedDump()) {
     return;
@@ -246,7 +255,7 @@ void E2eDump::DumpInputSingleNode(const CNodePtr &node, const std::string &dump_
     return;
   }
   DumpJsonParser::GetInstance().MatchKernel(kernel_name);
-  DumpInputImpl(node, trans_flag, dump_path, &kernel_name, debugger);
+  DumpInputImpl(node, trans_flag, dump_path, &kernel_name, debugger, device_context);
 }
 
 tensor::TensorPtr GetConvertedTensorFromIgnoredInput(const AnfNodePtr node, size_t idx) {
@@ -344,11 +353,18 @@ void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_p
 }
 
 void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
-                            std::string *kernel_name, const Debugger *debugger) {
+                            std::string *kernel_name, const Debugger *debugger, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(node);
   GetFileKernelName(NOT_NULL(kernel_name));
   auto input_size = common::AnfAlgo::GetInputTensorNum(node);
+  std::vector<size_t> valid_indexes;
+  if (device_context != nullptr) {
+    valid_indexes = GetValidDumpIndex(node, input_size, true, device_context);
+  }
   for (size_t j = 0; j < input_size; ++j) {
+    if (device_context != nullptr && std::find(valid_indexes.begin(), valid_indexes.end(), j) == valid_indexes.end()) {
+      continue;
+    }
     auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, j);
     auto input = kernel_with_index.first;
     auto index = kernel_with_index.second;
@@ -763,13 +779,14 @@ void E2eDump::DumpData(const session::KernelGraph *graph, uint32_t rank_id, cons
  * Runtime category: MindRT.
  * Description: This function is for dumping a single node. It is used for mindrt in GPU and Ascend kernel-by-kernel.
  */
-bool E2eDump::DumpSingleNodeData(const CNodePtr &node, uint32_t graph_id, uint32_t rank_id, const Debugger *debugger) {
+bool E2eDump::DumpSingleNodeData(const CNodePtr &node, uint32_t graph_id, uint32_t rank_id, const Debugger *debugger,
+                                 const DeviceContext *device_context) {
   bool success = false;
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   if (dump_json_parser.DumpEnabledForIter()) {
     std::string dump_path = GenerateDumpPath(graph_id, rank_id);
-    DumpInputSingleNode(node, dump_path, debugger);
-    DumpOutputSingleNode(node, dump_path, debugger);
+    DumpInputSingleNode(node, dump_path, debugger, device_context);
+    DumpOutputSingleNode(node, dump_path, debugger, device_context);
     if (dump_json_parser.save_args_flag()) {
       DumpArgsSingleNode(node, dump_path, debugger);
     }
