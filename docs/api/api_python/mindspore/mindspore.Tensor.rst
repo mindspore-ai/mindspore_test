@@ -256,6 +256,7 @@ mindspore.Tensor
     mindspore.Tensor.numpy
     mindspore.Tensor.nonzero
     mindspore.Tensor.norm
+    mindspore.Tensor.normal_
     mindspore.Tensor.not_equal
     mindspore.Tensor.outer
     mindspore.Tensor.orgqr
@@ -266,6 +267,7 @@ mindspore.Tensor
     mindspore.Tensor.prod
     mindspore.Tensor.ptp
     mindspore.Tensor.rad2deg
+    mindspore.Tensor.random_
     mindspore.Tensor.random_categorical
     mindspore.Tensor.ravel
     mindspore.Tensor.real

@@ -14,7 +14,7 @@ mindspore.nn.MultiheadAttention
 
     参数：
         - **embed_dim** (int) - 模型的总维数。
-        - **num_heads** (int) - 并行注意力头的数量。`num_heads` 需要能够整除 `embed_dim`（每个头的维数为 `embed_dim // num_heads`）。
+        - **num_heads** (int) - 并行注意力头的数量。`num_heads` 需要能够整除 `embed_dim` （每个头的维数为 `embed_dim // num_heads` ）。
         - **dropout** (float) - 应用到输入 `attn_output_weights` 上的随机丢弃比例. 默认值： ``0.0``。
         - **has_bias** (bool) - 是否给输入、输出投射层添加偏置。默认值： ``True``。
         - **add_bias_kv** (bool) - 是否给key、value序列的零维添加偏置。默认值： ``False``。

@@ -9,8 +9,8 @@ topk:
           the display order of calculation results may be inconsistent when `sorted` is False.
     
     If the `self` is a one-dimensional Tensor, finds the `k` largest or smallest entries in the Tensor,
-    and outputs its value and index as a Tensor. values[`k`] is the `k` largest item in `self`,
-    and its index is indices [`k`].
+    and outputs its value and index as a Tensor. `values[k]` is the `k` largest item in `self`,
+    and its index is `indices[k]` .
     
     For a multi-dimensional matrix,
     calculates the first or last `k` entries in a given dimension, therefore:
