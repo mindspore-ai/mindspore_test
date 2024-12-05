@@ -36,6 +36,7 @@
       ".gitattributes",
       "cmake",
       "setup.py",
+      "third_party",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
@@ -116,7 +117,6 @@
       "mindspore/python",
       "tests/mark_utils.py",
       ".gitignore",
-      "third_party/patch/openssl",
       "tests/device_utils.py",
       "tests/st"
     ],
@@ -131,6 +131,8 @@
       "mindspore/core/mindrt/CMakeLists.txt",
       ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -172,7 +174,6 @@
       "mindspore/ops/op_def",
       "mindspore/ops/CMakeLists.txt",
       "mindspore/ops/cmake/ops_host.cmake",
-      "third_party/patch/openssl",
       ".gitignore"
     ],
     "LLT": [
@@ -184,6 +185,8 @@
     "DIR_ARRAY": [
       "CMakeLists.txt",
       ".gitignore",
+      "third_party",
+      "cmake",
       ".gitattributes",
       "cmake",
       "setup.py",
@@ -267,7 +270,6 @@
       "mindspore/ops/kernel/CMakeLists.txt",
       "tests/mark_utils.py",
       ".gitignore",
-      "third_party/patch/openssl",
       "tests/device_utils.py",
       "mindspore/python"
     ],
@@ -278,6 +280,8 @@
       "graphengine",
       "CMakeLists.txt",
       ".gitignore",
+      "third_party",
+      "cmake",
       ".gitattributes",
       "scripts",
       "mindspore/ccsrc/CMakeLists.txt",
@@ -389,7 +393,6 @@
       "mindspore/python",
       "tests/mark_utils.py",
       ".gitignore",
-      "third_party/patch/openssl",
       "tests/device_utils.py",
       "tests/st"
     ],
@@ -403,10 +406,11 @@
     "DIR_ARRAY": [
       "CMakeLists.txt",
       ".gitignore",
+      "third_party",
+      "cmake",
       ".gitattributes",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
-      "cmake",
       "setup.py",
       "mindspore/core/mindrt/CMakeLists.txt",
       "mindspore/ccsrc/include",
@@ -494,7 +498,6 @@
       "mindspore/python",
       "tests/mark_utils.py",
       ".gitignore",
-      "third_party/patch/openssl",
       "tests/device_utils.py",
       "tests/st"
     ],
@@ -513,6 +516,7 @@
       "cmake",
       "setup.py",
       "mindspore/core/mindrt/CMakeLists.txt",
+      "third_party",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/CMakeLists.txt",
@@ -596,7 +600,6 @@
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
       "tests/mark_utils.py",
-      "third_party/patch/openssl",
       "tests/device_utils.py",
       "mindspore/python"
     ],
@@ -606,6 +609,7 @@
     "DIR_ARRAY": [
       "CMakeLists.txt",
       ".gitignore",
+      "third_party",
       ".gitattributes",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
@@ -691,7 +695,6 @@
       "mindspore/python",
       "tests/mark_utils.py",
       ".gitignore",
-      "third_party/patch/openssl",
       "tests/device_utils.py",
       "tests/st"
     ],
@@ -710,6 +713,7 @@
       "cmake",
       "setup.py",
       ".gitattributes",
+      "third_party",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
       "mindspore/core/mindrt/CMakeLists.txt",
@@ -796,8 +800,7 @@
       "mindspore/ops/view",
       "tests/ut",
       "mindspore/python",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "UT_CPP",
@@ -823,8 +826,9 @@
     "DIR_ARRAY": [
       "graphengine",
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -903,8 +907,7 @@
       "mindspore/ops/kernel/gpu/cuda_impl/cuda_ops",
       "mindspore/ops/op_def",
       "mindspore/python",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_MINDIR",
@@ -919,8 +922,9 @@
     "DIR_ARRAY": [
       "graphengine",
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -994,8 +998,7 @@
       "mindspore/ops/kernel/cpu",
       "mindspore/ops/op_def",
       "mindspore/python",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_CLOUD_ASCEND",
@@ -1010,8 +1013,9 @@
   "Compile_Lite_Java": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/lite/cmake",
       "mindspore/lite/tools/providers/triton/backend/src",
@@ -1027,8 +1031,7 @@
       "mindspore/lite/tools/converter",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1045,8 +1048,9 @@
   "Compile_Lite_ARM64": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/lite/cmake",
       "mindspore/lite/tools/providers/triton/backend/src",
@@ -1069,8 +1073,7 @@
       "mindspore/lite/tools/converter",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_TF",
@@ -1090,9 +1093,10 @@
   "Compile_Lite_ARM64_SD3403": {
     "DIR_ARRAY": [
       ".gitignore",
+      "cmake",
+      "third_party",
       ".gitattributes",
       "cmake",
-      "setup.py",
       "mindspore/lite/cmake",
       "mindspore/lite/tools/providers/triton/backend/src",
       "mindspore/core/mindrt/CMakeLists.txt",
@@ -1111,8 +1115,7 @@
       "mindspore/lite/tools/converter/quantizer",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_SIM_SD3403"
@@ -1122,8 +1125,9 @@
   "Compile_Lite_ARM64_CROP": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/lite/cmake",
       "mindspore/lite/tools/providers/triton/backend/src",
@@ -1148,8 +1152,7 @@
       "mindspore/lite/tools/converter/micro/coder/wrapper/thread",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM64_CROP"
@@ -1159,8 +1162,9 @@
   "Compile_Lite_ARM64_Linux": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -1209,7 +1213,6 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
       "mindspore/ops/CMakeLists.txt",
-      "third_party/patch/openssl",
       ".gitignore"
     ],
     "LLT": [
@@ -1220,8 +1223,9 @@
   "Compile_Lite_X86": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -1273,7 +1277,6 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
       "mindspore/ops/CMakeLists.txt",
-      "third_party/patch/openssl",
       ".gitignore"
     ],
     "LLT": [
@@ -1310,8 +1313,9 @@
   "Compile_Lite_X86_SSE": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/lite/cmake",
       "mindspore/lite/tools/providers/triton/backend/src",
@@ -1336,8 +1340,7 @@
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1355,6 +1358,8 @@
   "Compile_Lite_X86_AVX": {
     "DIR_ARRAY": [
       ".gitignore",
+      "cmake",
+      "third_party",
       ".gitattributes",
       "cmake",
       "setup.py",
@@ -1408,8 +1413,7 @@
       "mindspore/ops/CMakeLists.txt",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_Cloud_Onnx",
@@ -1432,8 +1436,9 @@
   "Compile_Lite_X86_AVX512": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/lite/cmake",
       "mindspore/lite/tools/providers/triton/backend/src",
@@ -1459,8 +1464,7 @@
       "mindspore/lite/tools/schema_gen",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_AVX512_CAFFE",
@@ -1474,8 +1478,9 @@
   "Compile_Lite_X86_ASAN": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -1525,8 +1530,7 @@
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_X86_ASAN"
@@ -1536,8 +1540,9 @@
   "Compile_Lite_X86_SD3403": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -1589,7 +1594,6 @@
       "mindspore/ops/op_def",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/CMakeLists.txt",
-      "third_party/patch/openssl",
       ".gitignore"
     ],
     "LLT": [
@@ -1600,8 +1604,9 @@
   "Compile_Lite_X86_KERNEL_EXECUTOR": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -1651,16 +1656,16 @@
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/api_def",
       "mindspore/ops/op_def",
-      "mindspore/ops/CMakeLists.txt",
-      "third_party/patch/openssl"
+      "mindspore/ops/CMakeLists.txt"
     ],
     "ENVIRONMENT": "LITE"
   },
   "Compile_Lite_ARM32_3516D": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/lite/cmake",
       "mindspore/lite/tools/providers/triton/backend/src",
@@ -1683,8 +1688,7 @@
       "mindspore/lite/tools/converter/quantizer",
       "mindspore/ops/api_def",
       "mindspore/ops/kernel/cpu/nnacl",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM32_3516D"
@@ -1694,8 +1698,9 @@
   "Compile_Lite_X86_3516D": {
     "DIR_ARRAY": [
       ".gitignore",
-      ".gitattributes",
       "cmake",
+      "third_party",
+      ".gitattributes",
       "setup.py",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/lite/cmake",
@@ -1747,8 +1752,7 @@
       "mindspore/ops/CMakeLists.txt",
       "mindspore/ops/kernel/cpu/nnacl",
       "mindspore/ops/op_def",
-      ".gitignore",
-      "third_party/patch/openssl"
+      ".gitignore"
     ],
     "LLT": [
       "Smoke_Lite_ARM32_3516D"
