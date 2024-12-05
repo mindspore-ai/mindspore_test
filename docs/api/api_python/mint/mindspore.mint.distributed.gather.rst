@@ -23,7 +23,7 @@ mindspore.mint.distributed.gather
 
     异常：
         - **TypeError** - 输入 `tensor` 的数据类型不为Tensor， `gather_list` 不为Tensor列表。
-        - **TypeError** - `dst`不是int， `group` 不是str或  `async_op` 不是bool。
+        - **TypeError** - `dst` 不是int， `group` 不是str或  `async_op` 不是bool。
         - **TypeError** - `gather_list` 的大小不为通信组大小。
         - **TypeError** -  `tensor` 的数据类型和shape与 `gather_list` 中所有元素存在不一致。
         - **RuntimeError** - 如果目标设备无效，或者后端无效，或者分布式初始化失败。

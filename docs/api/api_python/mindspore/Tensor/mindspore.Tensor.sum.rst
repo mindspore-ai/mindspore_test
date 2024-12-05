@@ -1,7 +1,7 @@
 mindspore.Tensor.sum
 ====================
 
-.. py:method:: Tensor.sum(dim=None, keepdim=False, *, dtype=None)
+.. py:method:: mindspore.Tensor.sum(dim=None, keepdim=False, *, dtype=None)
 
     计算指定维度上Tensor元素的总和。
 

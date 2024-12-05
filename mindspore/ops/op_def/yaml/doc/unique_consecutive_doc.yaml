@@ -3,7 +3,7 @@ unique_consecutive:
         Returns the elements that are unique in each consecutive group of equivalent elements in the input tensor.
 
         .. warning::
-        This is an experimental API that is subject to change or deletion.
+            This is an experimental API that is subject to change or deletion.
 
         Refer to :func:`mindspore.ops.unique_consecutive` for more details.
 
@@ -22,10 +22,10 @@ unique_consecutive:
 
             - `output` has the same type as `x` and is used to represent the output list of unique scalar elements.
             - If `return_idx` is True, there will be an additional returned tensor, `idx`,
-                which has the same shape as `x` and represents
-                the index of where the element in the original input maps to the position in the output.
+              which has the same shape as `x` and represents
+              the index of where the element in the original input maps to the position in the output.
             - If `return_counts` is True, there will be an additional returned tensor, `counts`,
-                which represents the number of occurrences for each unique value or tensor.
+              which represents the number of occurrences for each unique value or tensor.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
