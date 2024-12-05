@@ -35,6 +35,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 
 static constexpr const auto kHcclPluginFileName = "libhccl_plugin.so";
 
@@ -75,6 +76,7 @@ static std::map<std::string, std::string> GenHcclOptions(uint32_t device_id, std
 }
 
 namespace mindspore::hccl {
+using mindspore::profiler::ascend::MstxRange;
 namespace {
 const char kDefaultGroup[] = "__default_group";
 constexpr uint32_t kDeviceNumOfServer = 8;
@@ -319,6 +321,7 @@ HcclResult HcclAdapter::HcclBroadcast(void *buf, uint64_t count, HcclDataType da
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, hccl_comm), stream);
   return launch_hccl_broadcast_(buf, count, dataType, root, hccl_comm, stream);
 }
 
@@ -328,6 +331,7 @@ HcclResult HcclAdapter::HcclAllReduce(void *send_buf, void *recv_buf, uint64_t c
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, hccl_comm), stream);
   return launch_hccl_all_reduce_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
 }
 
@@ -337,11 +341,13 @@ HcclResult HcclAdapter::HcclReduce(void *send_buf, void *recv_buf, uint64_t coun
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, hccl_comm), stream);
   return launch_hccl_reduce_(send_buf, recv_buf, count, dataType, op, root, hccl_comm, stream);
 }
 
 HcclResult HcclAdapter::HcclScatter(void *send_buf, void *recv_buf, uint64_t count, HcclDataType dataType,
                                     uint32_t root, HcclComm comm, aclrtStream stream) const {
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, comm), stream);
   return launch_hccl_scatter_(send_buf, recv_buf, count, dataType, root, comm, stream);
 }
 
@@ -351,6 +357,7 @@ HcclResult HcclAdapter::HcclReduceScatter(void *send_buf, void *recv_buf, uint64
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, hccl_comm), stream);
   return launch_hccl_reduce_scatter_(send_buf, recv_buf, count, dataType, op, hccl_comm, stream);
 }
 
@@ -360,6 +367,7 @@ HcclResult HcclAdapter::HcclAllGather(void *send_buf, void *recv_buf, uint64_t c
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, hccl_comm), stream);
   return launch_hccl_all_gather_(send_buf, recv_buf, count, dataType, hccl_comm, stream);
 }
 
@@ -369,6 +377,7 @@ HcclResult HcclAdapter::HcclSend(void *send_buf, uint64_t count, HcclDataType da
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, hccl_comm), stream);
   return launch_hccl_send_(send_buf, count, dataType, destRank, hccl_comm, stream);
 }
 
@@ -378,6 +387,7 @@ HcclResult HcclAdapter::HcclRecv(void *recv_buf, uint64_t count, HcclDataType da
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, count, dataType, hccl_comm), stream);
   return launch_hccl_recv_(recv_buf, count, dataType, srcRank, hccl_comm, stream);
 }
 
@@ -395,6 +405,9 @@ HcclResult HcclAdapter::HcclBatchISendIRecv(HcclSendRecvItem *sendRecvInfo, uint
   if (MS_UNLIKELY(dry_run)) {
     return HCCL_SUCCESS;
   }
+  MstxRange range(
+    mindspore::profiler::ascend::GetMstxHcomMsg(__func__, sendRecvInfo[0].count, sendRecvInfo[0].dataType, comm),
+    stream);
   return launch_hccl_batch_isend_irecv_(sendRecvInfo, itemNum, comm, stream);
 }
 
@@ -672,6 +685,9 @@ HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::Hccl
   CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_to_allv_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, static_cast<uint64_t>(params.sendcounts.size()),
+                                                              dataType, hccl_comm),
+                  stream);
   return launch_hccl_all_to_allv_(send_buf, params.sendcounts.data(), params.sdispls.data(), dataType, recv_buf,
                                   params.recvcounts.data(), params.rdispls.data(), dataType, hccl_comm, stream);
 }
@@ -685,6 +701,7 @@ HcclResult HcclAdapter::HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclA
   CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_to_all_);
   MS_EXCEPTION_IF_NULL(hccl_comm);
+  MstxRange range(mindspore::profiler::ascend::GetMstxHcomMsg(__func__, params.sendcount, dataType, hccl_comm), stream);
   return launch_hccl_all_to_all_(send_buf, params.sendcount, dataType, recv_buf, params.recvcount, dataType, hccl_comm,
                                  stream);
 }

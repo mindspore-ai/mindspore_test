@@ -31,7 +31,7 @@ aclprofDestroyStepInfoFunObj aclprofDestroyStepInfo_ = nullptr;
 
 void LoadProfApiSymbol(const std::string &ascend_path) {
   std::string profiler_plugin_path = ascend_path + "lib64/libmsprofiler.so";
-  auto handler = GetLibHandler(profiler_plugin_path);
+  auto handler = GetLibHandler(profiler_plugin_path, true);
   if (handler == nullptr) {
     MS_LOG(WARNING) << "Dlopen " << profiler_plugin_path << " failed!" << dlerror();
     return;
