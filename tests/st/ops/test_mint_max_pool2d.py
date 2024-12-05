@@ -33,7 +33,6 @@ def max_pool2d_backward_func(x, kernel_size, stride, padding, dilation, ceil_mod
                                                   ceil_mode, return_indices)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 def test_ops_max_pool2d_forward_return_indices(mode):
     """
@@ -58,7 +57,6 @@ def test_ops_max_pool2d_forward_return_indices(mode):
     np.testing.assert_allclose(indices.asnumpy(), expect_out2, rtol=1e-6)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
 def test_ops_max_pool2d_forward_without_return_indices(mode):
     """

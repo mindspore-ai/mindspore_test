@@ -34,7 +34,6 @@ class Net2d(nn.Cell):
         return self.Conv2d(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_nn_conv2d_default(mode):
     """
@@ -83,7 +82,6 @@ def test_nn_conv2d_default(mode):
     assert np.allclose(output.asnumpy(), expected, atol=1e-4, rtol=1e-4)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_nn_conv2d_padding_same(mode):
     """

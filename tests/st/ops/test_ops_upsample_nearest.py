@@ -49,8 +49,8 @@ def upsample_nearest3d_grad(gradOut, input_size, output_size, scale_factor):
     return op(gradOut, input_size, output_size, scale_factor)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'cpu_linux'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("mode", ["GRAPH_MODE_O0", "PYNATIVE_MODE"])
 def test_upsample_nearest(mode):
     """

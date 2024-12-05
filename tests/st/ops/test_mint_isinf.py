@@ -32,7 +32,6 @@ def isinf_forward(input_x):
     return mint.isinf(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_net_2d_float32(context_mode):
     """

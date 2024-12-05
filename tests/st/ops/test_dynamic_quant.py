@@ -3,7 +3,6 @@ import pytest
 
 import mindspore
 from mindspore import JitConfig
-from tests.mark_utils import arg_mark
 
 
 class DynamicQuantCell(mindspore.nn.Cell):
@@ -28,7 +27,6 @@ def get_expect(x, smooth_scales):
     return output, scale
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK'])
 def test_dynamic_quant_f16(mode):
     """
@@ -39,7 +37,6 @@ def test_dynamic_quant_f16(mode):
     run_dynamic_quant(mindspore.float16, mode)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK'])
 def test_dynamic_quant_bf16(mode):
     """

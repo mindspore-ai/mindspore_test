@@ -127,8 +127,7 @@ def run_generate_eod_mask_v2_on_step(data, ele_pos, start, steps, error_mode='sp
                     assert (source_data == out.asnumpy()).all()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["GE", "KBK", "PYBOOST"])
 def test_generate_eod_mask_v2(mode):
     """

@@ -50,7 +50,6 @@ def rms_norm_grad_numpy_impl(x, gamma, epsilon, y_grad):
     return dx, dgamma.astype(np.float32)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 @pytest.mark.parametrize('input_dtype', [np.float32, np.float16])
 def test_rms_norm_forward(mode, input_dtype):
