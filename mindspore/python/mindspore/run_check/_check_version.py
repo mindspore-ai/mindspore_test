@@ -386,6 +386,7 @@ class AscendEnvChecker(EnvChecker):
                                                    cust_aicpu_path
         # Ignore ge infer missing error. To be removed after infers are completed.
         os.environ['FAST_IGNORE_INFER_ERROR'] = "1"
+        os.environ['IGNORE_INFER_ERROR'] = "1"
         plugin_dir = os.path.dirname(self.library_path)
         akg_dir = os.path.join(plugin_dir, "ascend")
         AscendEnvChecker._concat_variable('LD_LIBRARY_PATH', akg_dir)
