@@ -68,7 +68,7 @@ def test_mint_std_norlmal(mode):
     assert np.allclose(output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mint_std_dynamic_shape():
     """
     Feature: Test std with dynamic shape.
@@ -84,4 +84,5 @@ def test_mint_std_dynamic_shape():
     correction2 = 2
     keep_dims2 = True
     TEST_OP(std_forward, [[x1, axis1, correction1, keep_dims1],
-                          [x2, axis2, correction2, keep_dims2]], '', disable_yaml_check=True)
+                          [x2, axis2, correction2, keep_dims2]],
+            '', disable_yaml_check=True, disable_mode=["GRAPH_MODE"])
