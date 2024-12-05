@@ -34,6 +34,9 @@ bool GuardConstCallNodeParam(CallNode *call_node, Graph *sub_graph, int max_guar
 bool JustCallAndSetRes(CallNode *call_node, GraphBuilder *g = nullptr);
 bool JustCallAndSetResWithArgs(CallNode *call_node, const std::vector<py::object> &args, GraphBuilder *g = nullptr);
 
+// check a variable is not referenced by other object
+bool IsReferencedVariable(ValueNode *);
+
 bool CheckJitConstexpr(const py::object &func);
 bool CheckMSConstexpr(const py::object &func);
 bool CheckBuiltinFuncOrMethod(const py::object &func);

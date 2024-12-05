@@ -1030,6 +1030,13 @@ static void TensorAssignValue(CallNode *call_node, GraphBuilder *parent, ValueNo
   bool is_referenced = false;
   parent->ReplaceAll(old_node, new_node, &is_referenced);
   parent->ReplaceAll(call_node, new_node, &is_referenced);
+  is_referenced = IsReferencedVariable(old_value);
+  MS_LOG(INFO) << "check the node is referenced: " << is_referenced << " [" << old_value->ToString();
+  if (!is_referenced) {
+    // a new local variable and it's not referenced, modify operations is not side effect
+    // just replaced old_value by new_value and remove modify operations
+    return;
+  }
   parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
   parent->GetGraph()->GetSideEffect()->Record(call_node, type, name);
 }
@@ -1332,6 +1339,75 @@ bool CheckBuiltinFuncOrMethod(const py::object &func) {
   }
   FuncKey k = KeyFinderFuncId(func);
   return k == FUNC_KEY_BUILTIN_FUNC;
+}
+
+static bool IsNewVariable(ValueNode *node) {
+  Opcode op(node->GetOpcode());
+  if ((op == BINARY_SUBSCR || op.IsBinaryMath()) && node->input(0)->GetVobj()->GetType() == AObject::kTypeTensor) {
+    // specialization of Tensor
+    return true;
+  }
+  if (op.IsBuildOp() || (op.IsBinaryMath() && op.MayDelete()) || op.IsUnaryMath()) {
+    // builtin type create, binary math without inplace, unary math
+    return true;
+  }
+  if (!op.IsCall()) {
+    // unknown source or operations
+    return false;
+  }
+  AObject::Type callable_type = node->input(0)->GetVobj()->GetType();
+  AObject::Type result_type = node->GetVobj() ? node->GetVobj()->GetType() : AObject::kTypeAnyValue;
+  if (callable_type == AObject::kTypeType) {
+    // type call, create a new object
+    return true;
+  }
+  if (node->GetType() != ValueNode::Call) {
+    return false;
+  }
+  CallNode *cn = static_cast<CallNode *>(node);
+  if (cn->GetSubGraph() != nullptr && cn->GetSubGraph()->GetRetVal() != nullptr) {
+    // resusive check function return value
+    return IsNewVariable(cn->GetSubGraph()->GetRetVal());
+  }
+  if (result_type == AObject::kTypeTensor) {
+    // tensor operations always create a new Tensor
+    return true;
+  }
+  return false;
+}
+
+static bool CheckReferenced(Graph *graph, ValueNode *target) {
+  for (auto maybe_ref : graph->GetTracedNodes()) {
+    Opcode op(maybe_ref->GetOpcode());
+    if (op.MayDelete()) {
+      continue;  // only read the variable
+    }
+    const auto &used = maybe_ref->getInputs();
+    if (used.end() == std::find(used.begin(), used.end(), target)) {
+      continue;  // not used target
+    }
+    if (op.IsBuildOp()) {
+      // the target is a elements of container, check container reference and liveness when optimize sideeffect
+      return true;
+    }
+    if (maybe_ref->GetType() == ValueNode::Call) {
+      Graph *sub_graph = static_cast<CallNode *>(maybe_ref)->GetSubGraph();
+      if (sub_graph == nullptr || CheckReferenced(sub_graph, target)) {
+        return true;
+      }
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+bool IsReferencedVariable(ValueNode *target) {
+  if (!IsNewVariable(target)) {
+    return true;
+  }
+  // NOTE: it's temporary solution before object reference graph completed
+  return CheckReferenced(target->GetGraph(), target);
 }
 
 }  // namespace pijit
