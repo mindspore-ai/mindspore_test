@@ -157,12 +157,19 @@ class _ProcessManager:
             os.environ["MS_SIMULATION_LEVEL"] = str(self.sim_level)
         elif os.getenv("MS_SIMULATION_LEVEL"):
             self.is_simulation = True
+            self.sim_rank_id = int(os.getenv("RANK_ID", "-1"))
             if os.getenv("RANK_SIZE"):
                 self.exported_rank_size = os.getenv("RANK_SIZE")
         # If sim_rank_id is set, single worker can be started.
-        if self.is_simulation and self.sim_rank_id:
+        if self.is_simulation and (self.sim_rank_id != -1):
+            logger.info(f"Simulation rank id is set to {self.sim_rank_id}, will dryrun a single process.")
             self.worker_num = 1
             self.local_worker_num = 1
+        if self.is_simulation and self.worker_num > 128:
+            self.worker_num = 1
+            self.local_worker_num = 1
+            logger.warning(f"In dryrun case, worker num is set to larger than 128. "
+                           "To avoid a system clash, worker num is set to 1.")
 
         self.cmd = args.task_script
         self.cmd_args = args.task_script_args
@@ -236,9 +243,6 @@ class _ProcessManager:
                            "You can access 'RANK_ID' environment variable after calling "
                            "'mindspore.communication.init()'")
 
-        if self.is_simulation and self.sim_rank_id and self.worker_num != 1:
-            raise ValueError(f"Simulation rank_id is set, worker_num must be 1, but got {self.worker_num}.")
-
         for i in range(self.local_worker_num):
             os.environ["DEVICE_ID"] = str(i)
             node_id, log_name = self._get_node_id_and_log_path(i)
@@ -251,7 +255,7 @@ class _ProcessManager:
                 os.environ["RANK_ID"] = str(node_id)
                 logger.warning(f"Start worker process with rank id:{node_id}, log file:{log_name}. "
                                "Environment variable [RANK_ID] is exported.")
-            if self.is_simulation and self.sim_rank_id:
+            if self.is_simulation and (self.sim_rank_id != -1):
                 # Reset RANK_ID env to sim_rank_id if sim_rank_id is set.
                 os.environ["RANK_ID"] = str(self.sim_rank_id)
 
