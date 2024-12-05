@@ -437,7 +437,36 @@ if sys.version_info >= (3, 8):
 
         Args:
             cfg_path (str): Dynamic profile json config file directory. The requirement is a shared path
-                that can be accessed by all nodes.
+                that can be accessed by all nodes. The parameters of the json configuration file are as follows:
+
+                - start_step (int, required) - Sets the step number at which the Profiler starts collecting data.
+                  It is a relative value, with the first step of training being 1. The default value is -1, indicating
+                  that data collection will not start during the entire training process.
+                - stop_step (int, required) - Sets the step number at which the Profiler stops collecting data. It is
+                  a relative value, with the first step of training being 1. The stop_step must be greater than or
+                  equal to start_step. The default value is -1, indicating that data collection will not start during
+                  the entire training process.
+                - aicore_metrics (int, optional) - Sets the collection of AI Core metric data, with the same range of
+                  values as the Profiler. The default value is -1, indicating that AI Core metrics are not collected.
+                - profiler_level (int, optional) - Sets the level of performance data collection, where 0 represents
+                  ProfilerLevel.Level0, 1 represents ProfilerLevel.Level1, and 2 represents ProfilerLevel.Level2. The
+                  default value is 0, indicating the ProfilerLevel.Level0 collection level.
+                - activities (int, optional) - Sets the devices for performance data collection, where 0 represents
+                  CPU+NPU, 1 represents CPU, and 2 represents NPU. The default value is 0, indicating the collection
+                  of CPU+NPU performance data.
+                - analyse_mode (int, optional) - Sets the mode for online analysis, corresponding to the analyse_mode
+                  parameter of the mindspore.Profiler.analyse interface, where 0 represents "sync" and 1 represents
+                  "async". The default value is -1, indicating that online analysis is not used.
+                - parallel_strategy (bool, optional) - Sets whether to collect parallel strategy performance data,
+                  where true means to collect and false means not to collect. The default value is false, indicating
+                  that parallel strategy performance data is not collected.
+                - with_stack (bool, optional) - Sets whether to collect call stack information, where true means to
+                  collect and false means not to collect. The default value is false, indicating that call stack
+                  information is not collected.
+                - data_simplification (bool, optional) - Sets whether to enable data simplification, where true means
+                  to enable and false means not to enable. The default value is true, indicating that data
+                  simplification is enabled.
+
             output_path (str, optional): Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): The polling period of the monitoring process, in seconds.
                 Default value: ``2``.
