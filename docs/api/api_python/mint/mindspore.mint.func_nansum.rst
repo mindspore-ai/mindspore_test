@@ -6,8 +6,8 @@ mindspore.mint.nansum
     计算 `input` 指定维度元素的和，将非数字(NaNs)处理为零。
 
     .. warning::
-        仅支持 Atlas A2 训练系列产品。
-        这是一个实验性API，后续可能修改或删除。
+        - 仅支持 Atlas A2 训练系列产品。
+        - 这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **input** (Tensor) - 输入Tensor。
@@ -20,11 +20,11 @@ mindspore.mint.nansum
     返回：
         Tensor，输入 `input` 指定维度的元素和，将非数字(NaNs)处理为零。
 
-        - 如果 `dim` 为None，且 `keep_dims` 为False，
+        - 如果 `dim` 为None，且 `keepdim` 为False，
           则输出一个零维Tensor，表示输入Tensor中所有元素的和。
-        - 如果 `dim` 为int，值为2，并且 `keep_dims` 为False，
+        - 如果 `dim` 为int，值为2，并且 `keepdim` 为False，
           则输出的shape为： :math:`(input_1, input_3, ..., input_R)` 。
-        - 如果 `dim` 为tuple(int)或list(int)，值为(2, 3)，并且 `keep_dims` 为False，
+        - 如果 `dim` 为tuple(int)或list(int)，值为(2, 3)，并且 `keepdim` 为False，
           则输出的shape为 :math:`(input_1, input_4, ..., input_R)` 。
 
     异常：
