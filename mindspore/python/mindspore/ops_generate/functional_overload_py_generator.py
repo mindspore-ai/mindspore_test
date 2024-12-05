@@ -46,10 +46,6 @@ class FunctionalOverloadPyGenerator(BaseGenerator):
             '    """\n${docstr}\n    """\n'
             '    return _${cpp_func_name}_instance(*args, **kwargs)\n\n\n'
         )
-        self.mint_def_template_without_doc = Template(
-            'def ${mint_func_name}(*args, **kwargs):\n'
-            '    return _${cpp_func_name}_instance(*args, **kwargs)\n\n\n'
-        )
 
     def generate(self, work_path, mint_func_protos_data, function_doc_data, alias_api_mapping):
         """
@@ -60,26 +56,21 @@ class FunctionalOverloadPyGenerator(BaseGenerator):
             function_doc_data (dict): A dictionary mapping function names to their docstring data.
             alias_api_mapping (dict): A dictionary mapping aliases to their prototype data.
         """
+        validate_func_docs(mint_func_protos_data, function_doc_data, alias_api_mapping)
         import_mint_list, mint_init_list, mint_def_list, add_to_all_list = [], [], [], []
         for mint_api_name, _ in mint_func_protos_data.items():
-            func_template = self.mint_def_template_without_doc \
-                if mint_api_name not in function_doc_data else self.mint_def_template
-
-            func_doc_data = function_doc_data.get(mint_api_name, None)
-            if func_doc_data is not None:
-                func_doc_data = func_doc_data["description"]
-            func_docstr = _format_docstring(func_doc_data)
-
+            func_docstr = _format_docstring(function_doc_data[mint_api_name]["description"])
             import_mint_list.append(self.import_mint_template.replace(cpp_func_name=mint_api_name))
-            mint_def_list.append(func_template.replace(mint_func_name=mint_api_name,
-                                                       docstr=func_docstr,
-                                                       cpp_func_name=mint_api_name))
+            mint_def_list.append(self.mint_def_template.replace(mint_func_name=mint_api_name,
+                                                                docstr=func_docstr,
+                                                                cpp_func_name=mint_api_name))
             add_to_all_list.append(f'"{mint_api_name}",\n')
             if mint_api_name in alias_api_mapping:
                 for alias_api_name in alias_api_mapping[mint_api_name]:
-                    mint_def_list.append(func_template.replace(mint_func_name=alias_api_name,
-                                                               docstr=func_docstr,
-                                                               cpp_func_name=mint_api_name))
+                    func_docstr = _format_docstring(function_doc_data[alias_api_name]["description"])
+                    mint_def_list.append(self.mint_def_template.replace(mint_func_name=alias_api_name,
+                                                                        docstr=func_docstr,
+                                                                        cpp_func_name=mint_api_name))
                     add_to_all_list.append(f'"{alias_api_name}",\n')
 
         func_overload_py_file = self.FUNCTIONAL_OVERLOAD_PY_TEMPLATE.replace(import_mint_list=import_mint_list,
@@ -100,3 +91,20 @@ def _format_docstring(docstring, indent_size=4):
     formatted_lines = ([' ' * indent_size + lines[0]] +
                        [' ' * indent_size + line if line.strip() else line for line in lines[1:]])
     return '\n'.join(formatted_lines)
+
+
+def validate_func_docs(mint_func_protos_data, function_doc_data, alias_api_mapping):
+    """
+    Ensure that the generated API includes corresponding docstrings; otherwise, raise an error to prompt the developer.
+    """
+    mint_api_names = set(mint_func_protos_data.keys())
+    mint_doc_names = set(function_doc_data.keys())
+    all_api_names = set()
+    for mint_api_name in mint_api_names:
+        if mint_api_name in alias_api_mapping:
+            all_api_names = all_api_names.union(set(alias_api_mapping[mint_api_name]))
+    all_api_names = all_api_names.union(mint_api_names)
+    missing_docs = mint_doc_names - all_api_names
+    if missing_docs:
+        raise KeyError(f"Missing valid API references for the following doc names: {missing_docs}, "
+                       f"please check if their doc.yaml files are defined in mindspore/ops/api_def/function_doc.")
