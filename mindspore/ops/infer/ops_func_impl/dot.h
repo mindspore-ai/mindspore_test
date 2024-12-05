@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_DOT_H_
-#define MINDSPORE_CORE_OPS_DOT_H_
+#ifndef MINDSPORE_OPS_OPS_FUNC_IMPL_DOT_H_
+#define MINDSPORE_OPS_OPS_FUNC_IMPL_DOT_H_
 
 #include <vector>
-#include "mindapi/base/macros.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 
-namespace mindspore {
-namespace ops {
+namespace mindspore::ops {
 class OPS_API DotFuncImpl : public OpFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const override;
+  ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
+  bool GeneralInferRegistered() const override { return true; };
 };
-}  // namespace ops
-}  // namespace mindspore
+}  // namespace mindspore::ops
 
-#endif  // MINDSPORE_CORE_OPS_DOT_H_
+#endif  // MINDSPORE_OPS_OPS_FUNC_IMPL_DOT_H_
