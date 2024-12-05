@@ -469,7 +469,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
 
                         # let the quit event notify the worker process to exit
                         w.join(timeout=5)
-                        if w.is_alive():
+                        if _PythonMultiprocessing.is_process_alive(w.pid):
                             # if the worker process did not exit, it may hang, try to terminate it
                             w.terminate()
                             w.close()
