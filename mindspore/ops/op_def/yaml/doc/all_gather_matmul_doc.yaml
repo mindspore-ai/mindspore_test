@@ -11,10 +11,6 @@ all_gather_matmul:
         .. warning::
             This is an experimental API that is subject to change or deletion.
 
-        .. note::
-            When using this interface, please ensure that the driver firmware package and CANN package are both the
-            matching 8.0.RC2 version or a higher version, otherwise an error will be reported, such as BUS ERROR.
-
         Args:
             input (Tensor): The left matrix of matmul, the dtype supports float16 and bfloat16, the shape supports 2
                 dimensions, and the data format supports ND.
@@ -41,7 +37,9 @@ all_gather_matmul:
             - gather_out (Tensor) - The result of allgather. If gather_output is ``False`` , ``gather_out`` returns a
               tensor with shape 0.
 
-        .. note::
+        Note:
+            - When using this interface, please ensure that the driver firmware package and CANN package are both the
+              matching 8.0.RC2 version or a higher version, otherwise an error will be reported, such as BUS ERROR.
             - The shape of ``input`` is (m, k), the shape of ``x2`` is (k, n), k is required to be equal, and the value
               range of k is [256, 65535). The shape of ``output`` is (m * world_size, n), and the shape of
               ``gather_out`` is (m * world_size, k).
