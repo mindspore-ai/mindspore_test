@@ -200,7 +200,11 @@ bool GraphBuilder::ReplaceAll(ValueNode *old_node, ValueNode *new_node, bool *is
     BUILD_TUPLE, BUILD_LIST, BUILD_SET, BUILD_MAP, BUILD_CONST_KEY_MAP,
   };
 
-  // check reference relationship
+  /**
+   * check reference relationship, find id_map, check them at reference graph...
+   * remove this code after build a object reference graph, use function IsReferencedVariable of reference graph
+   * to check it
+   */
   const auto &nodes = graph_->GetTracedNodes();
   bool find = std::any_of(nodes.begin(), nodes.end(), [&old_node](ValueNode *node) {
     if (Opcode(node->GetOpcode()).MayDelete() && ref_op.find(node->GetOpcode()) == ref_op.end()) {
@@ -2720,10 +2724,10 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
     MS_LOG(INFO) << "Add input fail for new subgraph->TraceRun: " << py::str(func);
     return StopTraceReason::kStopTraceFunc_ArgHandle_Unsupported;
   }
+  call_node->SetSubGraph(sg->GetGraph());
   auto reason = sg->TraceRun();
   MS_LOG(INFO) << "new subgraph->TraceRun end: " << py::str(func);
 
-  call_node->SetSubGraph(sg->GetGraph());
   sg->CollectSideEffectOutputs();
   auto sub_ret = sg->GetGraph()->GetRetVal();
   if (sub_ret == nullptr || !sub_ret->has_abstract_wrapper()) {

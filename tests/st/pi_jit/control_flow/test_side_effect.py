@@ -977,3 +977,51 @@ def test_subgraph_break_and_reset_side_effect_node_3():
     match_array(o1, o2)
     match_array(net1.a, net2.a)
     assert_graph_break(net2.construct)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("has_side_effect", [False, True])
+def test_side_effect_eliminate(has_side_effect : bool):
+    """
+    Feature: Side-effect handle
+    Description: Validate side effect optimize
+    Expectation: No exception
+    """
+    if not has_side_effect:
+        pytest.skip("Variable escape analysis not implement. For this case, the variable 't' is escaped if 'r[1]' returned")
+
+    @jit(mode="PIJit")
+    def func(has_side_effect : bool, x : Tensor = Tensor([3])):
+        t = Tensor([1])
+        r = [[t + t], [t]]
+        t[:] = x
+        return r[has_side_effect]
+
+    excepted = func.__wrapped__(has_side_effect)
+    result = func(has_side_effect)
+    assert excepted == result
+    if not has_side_effect:
+        assert_executed_by_graph_mode(func)
+    else:
+        assert_no_graph_break(func)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_eliminate_2():
+    """
+    Feature: Side-effect handle
+    Description: Validate side effect optimize
+    Expectation: No exception
+    """
+    @jit(mode="PIJit")
+    def func(x : Tensor = Tensor([3, 3])):
+        t = Tensor.new_zeros(x, x.shape)
+        t[:1] = 1
+        t = t + x
+        t[1:] = 1
+        return t + x
+
+    excepted = func.__wrapped__()
+    result = func()
+    assert (excepted == result).all()
+    assert_executed_by_graph_mode(func)
