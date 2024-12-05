@@ -321,13 +321,12 @@ class TFTRegister(Callback):
         cur_rank = get_rank()
         enable_local_copy = False
         enable_arf = False
-        enable_zit = False
         enable_tls = False
         tls_key_dir = ""
 
         if cur_rank == self._controller_rank_id:
             logger.info(f"Begin to start tft controller on rank_id:{cur_rank}")
-            self.tft.tft_init_controller(cur_rank, world_size, enable_local_copy, enable_arf, enable_zit)
+            self.tft.tft_init_controller(cur_rank, world_size, enable_local_copy, enable_arf)
             self.tft.tft_start_controller(self._controller_ip, self._controller_port, enable_tls, tls_key_dir)
             logger.info("Finish start tft controller.")
 
