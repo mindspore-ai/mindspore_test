@@ -52,7 +52,8 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
                                          bincount_ext, rotated_iou_op, cat, narrow, var_op, pow, pow_scalar_tensor_op,
-                                         frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op)
+                                         frac_ext, pow_tensor_scalar_op, not_equal_op, isinf, addmv_op,
+                                         addbmm_op, addmm_op)
 
 
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
@@ -5157,6 +5158,103 @@ def addbmm(input, batch1, batch2, *, beta=1, alpha=1):
         raise TypeError(f"For 'addbmm', parameter 'beta' must be an int or float, but got {type(beta)}.")
     bmm_res = batch_matmul_(batch1, batch2)
     return beta * input + alpha * (bmm_res.sum(axis=0))
+
+
+def addbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
+    r"""
+    Applies batch matrix multiplication to `batch1` and `batch2`, with a reduced add step and add `input` to the result.
+
+    The optional values `alpha` and `beta` are the matrix-matrix product between `batch1` and `batch2` and the scale
+    factor for the added tensor `input` respectively. If `beta` is 0, then `input` will be ignored.
+
+    .. math::
+        output = \beta input + \alpha (\sum_{i=0}^{b-1} {batch1_i @ batch2_i})
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): Tensor to be added.
+        batch1 (Tensor): The first batch of tensor to be multiplied.
+        batch2 (Tensor): The second batch of tensor to be multiplied.
+
+    Keyword Args:
+        beta (Union[int, float], optional): Multiplier for `input`. Default: ``1`` .
+        alpha (Union[int, float], optional): Multiplier for `batch1` @ `batch2`. Default: ``1`` .
+
+    Returns:
+        Tensor, has the same dtype as `input`.
+
+    Raises:
+        TypeError: If `alpha` or `beta` is not an int or float.
+        ValueError: If `batch1`, `batch2` cannot apply batch matrix multiplication.
+        ValueError: If `batch1` and `batch2` are not 3-D tensors.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> m = np.ones((3, 3)).astype(np.float32)
+        >>> arr1 = np.arange(24).astype(np.float32).reshape((2, 3, 4))
+        >>> arr2 = np.arange(24).astype(np.float32).reshape((2, 4, 3))
+        >>> a = Tensor(arr1)
+        >>> b = Tensor(arr2)
+        >>> c = Tensor(m)
+        >>> output = ops.addbmm_ext(c, a, b)
+        >>> print(output)
+        [[ 949. 1009. 1069.]
+         [1285. 1377. 1469.]
+         [1621. 1745. 1869.]]
+    """
+    return addbmm_op(input, batch1, batch2, beta, alpha)
+
+
+def addmm_ext(input, mat1, mat2, *, beta=1, alpha=1):
+    r"""
+    Performs a matrix multiplication of the 2-D matrices mat1 and mat2. The matrix input is added to the final result.
+    The formula is defined as follows:
+
+    .. math::
+        output = \beta input + \alpha (mat1 @ mat2)
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): matrix to be added, the shape must be broadcastable with mat1 @ mat2.
+        mat1 (Tensor): the first matrix to be matrix multiplied, must be 2-D Tensor, with the same shape of the input.
+        mat2 (Tensor): the second matrix to be matrix multiplied, must be 2-D Tensor, with the same shape of the input.
+
+    Keyword Args:
+        beta (Union[float, int], optional): multiplier for input. Default: ``1`` .
+        alpha (Union[float, int], optional): multiplier for :math:`mat1 @ mat2`. Default: ``1`` .
+
+    Returns:
+        Tensor, with the same dtype as `input` and the same shape as mat1 @ mat2.
+
+    Raises:
+        TypeError: If the type of `input`, `mat1` or `mat2` is not Tensor.
+        TypeError: If the types of `input`, `mat1`, `mat2` are different.
+        ValueError: If `mat1` and `mat2` are not 2-D tensors.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, mint
+        >>> input = Tensor(np.ones([3, 3]).astype(np.float32))
+        >>> mat1 = Tensor(np.ones([3, 4]).astype(np.float32))
+        >>> mat2 = Tensor(np.ones([4, 3]).astype(np.float32))
+        >>> output =  ops.function.math_func.addmm_ext(input, mat1, mat2)
+        >>> print(output)
+        [[5. 5. 5.]
+         [5. 5. 5.]
+         [5. 5. 5.]]
+    """
+    return addmm_op(input, mat1, mat2, beta, alpha)
 
 
 def addmm(input, mat1, mat2, *, beta=1, alpha=1):
