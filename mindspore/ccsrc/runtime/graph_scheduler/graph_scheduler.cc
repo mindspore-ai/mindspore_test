@@ -1533,6 +1533,22 @@ void GraphScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCompilerI
   any_type_graph_scheduler_.Optimize(actor_set, graph_output_to_actor_);
 }
 
+std::map<KernelWithIndex, std::vector<DeviceTensor *>> CollectRefDeviceTensor(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors;
+  for (const auto &pair : graph->GetRefMap()) {
+    MS_EXCEPTION_IF_NULL(pair.first.first);
+    const auto &origin_node_with_index = graph->GetRefNodeRecursive(pair.first);
+    if (origin_node_with_index.first->isa<Parameter>() &&
+        AnfAlgo::OutputAddrExist(pair.first.first, pair.first.second) &&
+        AnfAlgo::OutputAddrExist(origin_node_with_index.first, origin_node_with_index.second)) {
+      ref_device_tensors[origin_node_with_index].emplace_back(
+        AnfAlgo::GetMutableOutputAddr(pair.first.first, pair.first.second, false).get());
+    }
+  }
+  return ref_device_tensors;
+}
+
 std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const GraphCompilerInfo &graph_compiler_info,
                                                                      const HostTensorQueuePtr &host_queue) {
   std::vector<DataSourceActorPtr> data_source_actors;
@@ -1547,7 +1563,7 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
     // Build host queue data source actor.
     const std::vector<AnfNodePtr> &input_nodes = graph->input_nodes();
     const auto &root_parameters = graph_compiler_info.origin_parameters_order_;
-
+    auto ref_device_tensors = CollectRefDeviceTensor(graph);
     for (size_t j = 0; j < input_nodes.size(); j++) {
       const auto &input_node = input_nodes[j];
       MS_EXCEPTION_IF_NULL(input_node);
@@ -1609,6 +1625,14 @@ std::vector<DataSourceActorPtr> GraphScheduler::BuildDataSourceActor(const Graph
           }
         }
         (void)host_queue_ds_actor->data_node_with_indexs_.emplace_back(input_node, 0);
+        auto iter = ref_device_tensors.find({input_node, 0});
+        if (iter != ref_device_tensors.end()) {
+          host_queue_ds_actor->ref_device_tensors_[{input_node, 0}] = iter->second;
+          for (const auto &device_tensor : iter->second) {
+            MS_LOG(DEBUG) << "Add ref device tensor:" << device_tensor
+                          << " for input node:" << input_node->DebugString();
+          }
+        }
         (void)host_queue_ds_actor->device_contexts_.emplace_back(device_context);
         (void)host_queue_ds_actor->data_node_position_map_.emplace(KernelWithIndex(input_node, 0), data_node_position);
         // In control flow, need to rely on the front node to find the location of the corresponding real parameter.

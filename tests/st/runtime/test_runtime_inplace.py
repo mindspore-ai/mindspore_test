@@ -1215,3 +1215,29 @@ def test_heter_inplace_dynamic_shape():
 
     assert out1 == 37
     assert np.all(out2.asnumpy() == [37, 37, 37])
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_cnode_execute_twice():
+    """
+    Feature: Support tensor inplace.
+    Description: Support tensor inplace.
+    Expectation: Run success.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.assignadd = P.AssignAdd()
+
+        def construct(self, x, y):
+            return self.assignadd(x, y)
+
+    x1 = ms.Tensor(2)
+    y1 = ms.Tensor(3)
+    x2 = ms.Tensor(4)
+    y2 = ms.Tensor(6)
+    net = Net()
+    out1 = net(x1, y1)
+    assert out1 == 5
+    out2 = net(x2, y2)
+    assert out2 == 10

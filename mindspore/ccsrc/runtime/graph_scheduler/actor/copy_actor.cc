@@ -87,12 +87,17 @@ void CopyActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
   }
 
   if (input_device_tensor_[0]->GetSize() != output_device_tensor_[0]->GetSize()) {
-    MS_LOG(WARNING) << GetAID().Name() << " copy size is not equal, input size:" << input_device_tensor_[0]->GetSize()
-                    << ", output size:" << output_device_tensor_[0]->GetSize();
+    MS_LOG(WARNING) << GetAID().Name() << " copy size is not equal, input device tensor:" << input_device_tensor_[0]
+                    << " size:" << input_device_tensor_[0]->GetSize()
+                    << ", output device tensor:" << output_device_tensor_[0]
+                    << "size:" << output_device_tensor_[0]->GetSize();
   }
 
   {
     ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kCopyData, GetAID().Name());
+    MS_LOG(DEBUG) << "Copy device tensor from device address:" << input_device_tensor_[0]
+                  << " type:" << input_device_tensor_[0]->GetDeviceType() << " to " << output_device_tensor_[0]
+                  << " type:" << output_device_tensor_[0]->GetDeviceType() << " for copy actor:" << GetAID();
     if (!Copy(output_device_tensor_[0], input_device_tensor_[0])) {
       std::string error_info = "Copy device tensor failed: " + GetAID().Name();
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);

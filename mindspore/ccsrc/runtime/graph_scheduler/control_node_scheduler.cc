@@ -623,8 +623,9 @@ void ParseRealIndex(const mindspore::HashMap<size_t, size_t> &dynamic_len_index,
         indexes.emplace_back(j + start_index);
       }
       real_indexes->emplace_back(indexes, true);
+      size_t old_index = start_index;
       start_index += tmp_dynamic_len_index[start_index];
-      tmp_dynamic_len_index.erase(start_index);
+      tmp_dynamic_len_index.erase(old_index);
     } else {
       std::vector<size_t> indexes{start_index};
       real_indexes->emplace_back(indexes, false);
@@ -2800,7 +2801,8 @@ std::vector<AbstractActorPtr> InsertExecuteActor(std::vector<AbstractActor *> *a
     }
     const auto &control_actor = dynamic_cast<ControlActor *>(actor);
     MS_EXCEPTION_IF_NULL(control_actor);
-    if (control_actor->node() != nullptr && common::AnfAlgo::IsCallNode(control_actor->node())) {
+    if (control_actor->type() == KernelTransformType::kGatherActor && control_actor->node() != nullptr &&
+        common::AnfAlgo::IsCallNode(control_actor->node())) {
       actors->emplace_back(actor);
       const auto &func_graphs = parser->FetchFuncGraphbyCallNode(control_actor->node());
       std::string actor_name = control_actor->GetAID().Name() + kStubActorNameSuffix;
