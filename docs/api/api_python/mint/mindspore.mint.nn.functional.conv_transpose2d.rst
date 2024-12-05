@@ -9,10 +9,11 @@ mindspore.mint.nn.functional.conv_transpose2d
 
     .. warning::
         - 这是一个实验性API，后续可能修改或删除。
+        - 在输入非连续场景下， `output_padding` 必须小于 `stride` 。
 
     参数：
         - **input** (Tensor) - 输入Tensor，shape为 :math:`(minibatch, in\_channels, iH, iW)` 或 :math:`(in\_channels, iH, iW)` 。
-        - **input** (Tensor) - 卷积核，shape为 :math:`(in\_channels, \frac{out\_channels}{\text{groups}}, kH, kW)` 。
+        - **weight** (Tensor) - 卷积核，shape为 :math:`(in\_channels, \frac{out\_channels}{\text{groups}}, kH, kW)` 。
         - **bias** (Tensor, 可选) - 偏置，shape为 :math:`(out\_channels)` 。默认值： ``None`` 。
         - **stride** (Union[int, tuple(int), list[int]], 可选) - 卷积的步长。可以为1个整数或1个元组 :math:`(sH, sW)` 。默认值： ``1`` 。
         - **padding** (Union[int, tuple(int), list[int]], 可选) - :math:`dilation * (kernel\_size - 1) - padding` 零填充将添加到输入中每个维度的两侧。可以为1个整数或1个元组 :math:`(padH, padW)` 。默认值： ``0`` 。
