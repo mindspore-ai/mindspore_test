@@ -71,6 +71,14 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   /// \return Status The status code returned
   Status operator()() override;
 
+  /// Method of calculating sample ids
+  /// @return Status The status code returned
+  Status CalculatedSampleId();
+
+  /// Get sample ids
+  /// @return Status The status code returned
+  Status GetMappedIndex(int64_t index, int64_t *out_index);
+
   /// Overrides base class reset method.  When an operator does a reset, it cleans up any state
   /// info from it's previous execution and then initializes itself so that it can be executed
   /// again.
@@ -115,6 +123,7 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   int64_t num_rows_sampled_;
 
   py::object generator_;
+  std::vector<int64_t> sample_ids_;
 
   WaitPost wp_;
 
