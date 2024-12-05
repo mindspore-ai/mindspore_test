@@ -640,7 +640,7 @@ def smooth_l1_loss(input, target, reduction='mean', beta=1.0):
         RuntimeError: If dtype of `input` or `target` is not one of float16, float32, bfloat16.
         ValueError: If shape of `input` is not the same as `target`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
-        RuntimeError: If `beta` is not a float, int or bool.
+        TypeError: If `beta` is not a float, int or bool.
         RuntimeError: If `beta` is less than 0.
 
     Supported Platforms:

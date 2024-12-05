@@ -60,4 +60,4 @@ mindspore.nn.SmoothL1Loss
         - **ValueError** - `logits` 与 `labels` 的shape不同。
         - **ValueError** - `reduction` 不是 ``'none'`` ， ``'mean'`` 和 ``'sum'`` 中的任一者。
         - **TypeError** - `beta` 不是float，bool或int。
-        - **ValueError** - `beta` 小于等于0。
+        - **RuntimeError** - `beta` 小于等于0。
