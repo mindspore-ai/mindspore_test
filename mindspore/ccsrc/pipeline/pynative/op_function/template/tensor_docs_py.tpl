@@ -18,7 +18,12 @@ from mindspore._c_expression import _add_docstr as add_docstr
 
 
 def attach_docstr(method, docstr):
-    add_docstr(getattr(Tensor, method), docstr)
-
+    try:
+        add_docstr(getattr(Tensor, method), docstr)
+    except Exception as e:
+        raise AttributeError(
+            f"Failed to attach docstring to Tensor.{method}.\n"
+            f"Please check if there is a duplicate Tensor.{method} in tensor.py."
+        )
 
 ${add_doc_statements}
