@@ -159,11 +159,12 @@ class HostQueueDataSourceActor : public DataSourceActor {
   HostTensorQueuePtr host_queue_;
   // Input data nodes fetch data from host queue.
   std::vector<KernelWithIndex> data_node_with_indexs_;
-
   // The location of the data node in the data source actor.
   std::map<KernelWithIndex, size_t> data_node_position_map_;
   // The index of different device context for the same parameter.
   std::vector<std::pair<size_t, size_t>> heter_index_pair_;
+  // The ref relationship of device address.
+  std::map<KernelWithIndex, std::vector<DeviceTensor *>> ref_device_tensors_;
 
   // Whether the super kernel actor is a infer 'prefill' or 'increment' graph or not.
   bool is_infer_phase_;

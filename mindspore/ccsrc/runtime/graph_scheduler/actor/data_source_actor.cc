@@ -465,6 +465,16 @@ void HostQueueDataSourceActor::ReleaseData() {
       auto [node, index] = old_address->GetNodeIndex();
       new_address->SetNodeIndex(node, index);
       AnfAlgo::SetOutputAddr(new_address, data_node_with_index.second, data_node_with_index.first.get());
+      if (ref_device_tensors_.find(data_node_with_index) == ref_device_tensors_.end()) {
+        continue;
+      }
+      for (const auto &device_tensor : ref_device_tensors_[data_node_with_index]) {
+        if (device_tensor != nullptr) {
+          MS_LOG(DEBUG) << "Set pointer ref count from device address:" << new_address << " to:" << device_tensor
+                        << " for data source node:" << data_node_with_index.first->DebugString();
+          device_tensor->set_pointer_ref_count(new_address->pointer_ref_count());
+        }
+      }
     }
   }
 }

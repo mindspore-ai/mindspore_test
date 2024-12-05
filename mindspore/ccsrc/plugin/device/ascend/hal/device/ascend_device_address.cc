@@ -617,7 +617,7 @@ bool AscendDeviceAddress::SyncHostToDeviceImpl(const ShapeVector &shape, size_t 
       auto host_tmp = std::vector<uint8_t>(GetSize());
       sync_ok = trans::TransDataType(type_args, host_tmp.data());
       if (!sync_ok) {
-        MS_LOG(ERROR) << "Trans data type failed.";
+        MS_LOG(ERROR) << "Trans data type failed for device address:" << this;
         return false;
       }
       CopyHostToDevice(host_tmp.data(), GetSize(), tensor_data);
