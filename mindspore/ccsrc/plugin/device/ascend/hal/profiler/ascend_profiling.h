@@ -38,6 +38,7 @@ struct AscendProfilerConfig {
   bool hbmDdr{false};
   bool pcie{false};
   bool withStack{false};
+  bool mstx{false};
   bool parallelStrategy{false};
   bool cpuTrace{false};
   bool npuTrace{false};
@@ -48,7 +49,7 @@ struct AscendProfilerConfig {
 
   AscendProfilerConfig() = default;
   AscendProfilerConfig(uint32_t deviceId, uint32_t rankId, bool profileMemory, bool l2Cache, bool hbmDdr, bool pcie,
-                       bool withStack, bool parallelStrategy, const std::string &profilerLevel,
+                       bool withStack, bool mstx, bool parallelStrategy, const std::string &profilerLevel,
                        const std::string &aicoreMetrics, const std::string &outputPath,
                        const std::string &frameworkDataPath)
       : deviceId(deviceId),
@@ -58,6 +59,7 @@ struct AscendProfilerConfig {
         hbmDdr(hbmDdr),
         pcie(pcie),
         withStack(withStack),
+        mstx(mstx),
         parallelStrategy(parallelStrategy),
         profilerLevel(profilerLevel),
         aicoreMetrics(aicoreMetrics),

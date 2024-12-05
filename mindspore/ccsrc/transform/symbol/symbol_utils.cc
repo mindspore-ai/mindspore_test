@@ -31,8 +31,13 @@ namespace transform {
 static bool load_ascend_api = false;
 static bool load_simulation_api = false;
 
-void *GetLibHandler(const std::string &lib_path) {
-  auto handler = dlopen(lib_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+void *GetLibHandler(const std::string &lib_path, bool if_global) {
+  void *handler = nullptr;
+  if (if_global) {
+    handler = dlopen(lib_path.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+  } else {
+    handler = dlopen(lib_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+  }
   if (handler == nullptr) {
     MS_LOG(INFO) << "Dlopen " << lib_path << " failed!" << dlerror();
   }

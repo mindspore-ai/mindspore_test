@@ -23,6 +23,8 @@
 #include "include/common/utils/utils.h"
 #include "common/debug/profiler/profiling_framework_data.h"
 #include "common/debug/profiler/profiling_python.h"
+#include "include/backend/mem_reuse/mem_tracker.h"
+#include "plugin/device/ascend/hal/profiler/mstx/mstx_mgr.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
 #include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
@@ -93,6 +95,7 @@ void AscendProfiler::InitAscendProfilerConfig(const std::string &profiling_path,
   config_.aicoreMetrics = options["aicore_metrics"];
   config_.cpuTrace = options["cpu_trace"];
   config_.npuTrace = options["npu_trace"];
+  config_.mstx = options["mstx"];
   config_.outputPath = profiling_path;
 
   is_parallel_strategy = config_.parallelStrategy;
@@ -169,6 +172,10 @@ uint64_t AscendProfiler::GetAclProfMask(aclprofAicoreMetrics aicMetrics) {
     mask |= ACL_PROF_TASK_MEMORY;
     MS_LOG(INFO) << "profile_memory is enabled, mask is " << mask;
   }
+  if (config_.mstx) {
+    mask |= ACL_PROF_MSPROFTX;
+    MS_LOG(INFO) << "mstx is enabled, mask is " << mask;
+  }
   return mask;
 }
 
@@ -225,6 +232,9 @@ void AscendProfiler::Start() {
     if (aclRet != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Failed call aclprofStart function. error_code : " << static_cast<int>(aclRet);
     }
+    if (config_.mstx) {
+      MstxMgr::GetInstance().Enable();
+    }
     MS_LOG(INFO) << "Start AscendProfiler npu trace";
   }
 
@@ -245,6 +255,9 @@ void AscendProfiler::Stop() {
   MS_LOG(INFO) << "Stop AscendProfiler begin";
 
   if (config_.npuTrace) {
+    if (config_.mstx) {
+      MstxMgr::GetInstance().Disable();
+    }
     aclError aclRet = CALL_ASCEND_API(aclprofStop, aclConfig_);
     if (aclRet != ACL_SUCCESS) {
       MS_LOG(EXCEPTION) << "Failed call aclprofStop function. error_code : " << static_cast<int>(aclRet);
