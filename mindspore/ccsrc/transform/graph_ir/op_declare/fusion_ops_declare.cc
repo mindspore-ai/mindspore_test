@@ -17,6 +17,8 @@
 #include "transform/graph_ir/op_declare/fusion_ops_declare.h"
 #include <vector>
 #include <string>
+#include "mindspore/ops/infer/ops_func_impl/all_gather_matmul.h"
+#include "mindspore/ops/infer/ops_func_impl/matmul_reduce_scatter.h"
 
 namespace mindspore::transform {
 // PromptFlashAttention
@@ -157,21 +159,29 @@ INPUT_ATTR_MAP(FusedInferAttentionScore) = {
 OUTPUT_MAP(FusedInferAttentionScore) = {{kIndex0, OUTPUT_DESC(attention_out)}, {kIndex1, OUTPUT_DESC(softmax_lse)}};
 REG_ADPT_DESC(FusedInferAttentionScore, "FusedInferAttentionScore", ADPT_DESC(FusedInferAttentionScore))
 
-// MatmulReduceScatter
-INPUT_MAP(MatmulReduceScatter) = {{1, INPUT_DESC(x1)}, {2, INPUT_DESC(x2)}, {3, INPUT_DESC(bias)}};
-ATTR_MAP(MatmulReduceScatter) = {{"reduce_op", ATTR_DESC(reduce_op, AnyTraits<std::string>())},
-                                 {"is_trans_a", ATTR_DESC(is_trans_a, AnyTraits<bool>())},
-                                 {"is_trans_b", ATTR_DESC(is_trans_b, AnyTraits<bool>())},
-                                 {"comm_turn", ATTR_DESC(comm_turn, AnyTraits<int64_t>())}};
+const std::vector<std::string> MatmulReduceScatterReduceOp = {"sum"};
+INPUT_MAP(MatmulReduceScatter) = {{mindspore::ops::kMatmulReduceScatterInputInputIndex + 1, INPUT_DESC(x1)},
+                                  {mindspore::ops::kMatmulReduceScatterInputX2Index + 1, INPUT_DESC(x2)},
+                                  {mindspore::ops::kMatmulReduceScatterInputBiasIndex + 1, INPUT_DESC(bias)}};
+INPUT_ATTR_MAP(MatmulReduceScatter) = {
+  {mindspore::ops::kMatmulReduceScatterInputReduceOpIndex + 1,
+   ATTR_DESC(reduce_op, AnyTraits<GEEnumToStr>(), MatmulReduceScatterReduceOp)},
+  {mindspore::ops::kMatmulReduceScatterInputCommTurnIndex + 1, ATTR_DESC(comm_turn, AnyTraits<int64_t>())},
+  {mindspore::ops::kMatmulReduceScatterInputTransInputIndex + 1, ATTR_DESC(is_trans_a, AnyTraits<bool>())},
+  {mindspore::ops::kMatmulReduceScatterInputTransX2Index + 1, ATTR_DESC(is_trans_b, AnyTraits<bool>())}};
+ATTR_MAP(MatmulReduceScatter) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(MatmulReduceScatter) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(MatmulReduceScatter, kNameMatmulReduceScatter, ADPT_DESC(MatmulReduceScatter))
 
-// AllGatherMatmul
-INPUT_MAP(AllGatherMatmul) = {{1, INPUT_DESC(x1)}, {2, INPUT_DESC(x2)}, {3, INPUT_DESC(bias)}};
-ATTR_MAP(AllGatherMatmul) = {{"is_trans_a", ATTR_DESC(is_trans_a, AnyTraits<bool>())},
-                             {"is_trans_b", ATTR_DESC(is_trans_b, AnyTraits<bool>())},
-                             {"gather_index", ATTR_DESC(gather_index, AnyTraits<int64_t>())},
-                             {"comm_turn", ATTR_DESC(comm_turn, AnyTraits<int64_t>())}};
+INPUT_MAP(AllGatherMatmul) = {{mindspore::ops::kAllGatherMatmulInputInputIndex + 1, INPUT_DESC(x1)},
+                              {mindspore::ops::kAllGatherMatmulInputX2Index + 1, INPUT_DESC(x2)},
+                              {mindspore::ops::kAllGatherMatmulInputBiasIndex + 1, INPUT_DESC(bias)}};
+INPUT_ATTR_MAP(AllGatherMatmul) = {
+  {mindspore::ops::kAllGatherMatmulInputGatherIndexIndex + 1, ATTR_DESC(gather_index, AnyTraits<int64_t>())},
+  {mindspore::ops::kAllGatherMatmulInputCommTurnIndex + 1, ATTR_DESC(comm_turn, AnyTraits<int64_t>())},
+  {mindspore::ops::kAllGatherMatmulInputTransInputIndex + 1, ATTR_DESC(is_trans_a, AnyTraits<bool>())},
+  {mindspore::ops::kAllGatherMatmulInputTransX2Index + 1, ATTR_DESC(is_trans_b, AnyTraits<bool>())}};
+ATTR_MAP(AllGatherMatmul) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(AllGatherMatmul) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(gather_out)}};
 REG_ADPT_DESC(AllGatherMatmul, kNameAllGatherMatmul, ADPT_DESC(AllGatherMatmul))
 

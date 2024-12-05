@@ -38,6 +38,11 @@
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/core/include/ops/infer_info/infer_info.h"
+#include "mindspore/core/include/abstract/dshape.h"
+#if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
+#include "mindspore/ccsrc/include/backend/distributed/collective/collective_manager.h"
+#endif
 
 namespace mindspore::ops {
 constexpr auto kBitSize = 64;
@@ -316,6 +321,31 @@ OPS_API std::vector<int64_t> CalBroadCastShapeV3(const std::vector<int64_t> &x_s
 OPS_API int ConvertReductionForAclnn(Reduction reduction);
 OPS_API size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size);
 OPS_API ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector);
+
+static inline void CheckRank(const InferInfoPtr &infer_info, size_t supported_rank, const std::string &op_name,
+                             const std::string &input_name) {
+  auto actual_rank = infer_info->GetShape().size();
+  if (!infer_info->IsDynamicRank() && actual_rank != supported_rank) {
+    MS_LOG(EXCEPTION) << op_name << ": The rank of " << input_name << " must be " << supported_rank << ", but get "
+                      << actual_rank;
+  }
+}
+
+static inline bool IsShapeKnown(const InferInfoPtr &infer_info, size_t index) {
+  return !infer_info->IsDynamicRank() && infer_info->GetShape()[index] != mindspore::abstract::Shape::kShapeDimAny;
+}
+
+static inline void CheckWorldSize(const std::string &group, int64_t world_size, const std::string &op_name) {
+#if (defined(ENABLE_CPU) && !defined(_WIN32) && !defined(__APPLE__))
+  const auto &collective_manager = mindspore::distributed::collective::CollectiveManager::instance();
+  if (collective_manager->initialized()) {
+    auto expected_world_size = collective_manager->GetLocalGroupSize(group);
+    if (world_size != expected_world_size) {
+      MS_LOG(EXCEPTION) << op_name << ": world_size must be " << expected_world_size << ", but got " << world_size;
+    }
+  }
+#endif
+}
 
 #define RETURN_IF_OPTIONAL_HAS_VALUE(opt) \
   do {                                    \

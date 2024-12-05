@@ -801,3 +801,17 @@ CSR Functions
     mindspore.ops.csr_square
     mindspore.ops.csr_tan
     mindspore.ops.csr_tanh
+
+MC2 Functions
+-------------
+
+.. warning::
+    These are experimental APIs that are subject to change or deletion.
+
+.. mscnplatwarnautosummary::
+    :toctree: ops
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.ops.all_gather_matmul
+    mindspore.ops.matmul_reduce_scatter

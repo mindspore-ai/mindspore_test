@@ -30,6 +30,8 @@
 #include "transform/symbol/acl_compiler_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm/dummy_ascend_collective_comm_lib.h"
 
 namespace mindspore::transform {
 namespace {
@@ -174,6 +176,13 @@ void OpApiUtil::GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std:
   if (!special_inputs.empty()) {
     common::AnfAlgo::SetNodeAttr(kAttrAclSpecialInputFormat, MakeValue(special_inputs), node);
   }
+}
+
+std::string OpApiUtil::GetCommName(const std::string &group) {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    return device::DummyAscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+  }
+  return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
 }
 
 uint8_t AclUtil::KeepOriginDType() {
