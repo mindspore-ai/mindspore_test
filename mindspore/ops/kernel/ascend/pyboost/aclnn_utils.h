@@ -64,8 +64,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
 #define GET_EXECUTOR_FOR_PYBOOST(aclnn_api, ...)                                                  \
   [](const std::string &api_str, const auto &... args) -> auto {                                  \
     if (capacity_ == 0) {                                                                         \
-      auto [ws_size, executor, release_func] = GEN_EXECUTOR(api_str, args...);                    \
-      ProcessCache cache = nullptr;                                                               \
+      auto [ws_size, executor, cache, release_func] = GEN_EXECUTOR(api_str, args...);             \
       std::function<void()> update_func = nullptr;                                                \
       return std::make_tuple(ws_size, executor, cache, release_func, update_func);                \
     }                                                                                             \
@@ -166,7 +165,14 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
      auto &... args) -> auto {                                                                                \
     static std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;                           \
     static std::list<CacheTuple> hash_cache_;                                                                 \
-    static const size_t capacity_{1024};                                                                      \
+    static size_t capacity_{1024};                                                                            \
+    static std::string capaticy_from_user = common::GetCacheCapaticy();                                       \
+    static bool not_set_capaticy = true;                                                                      \
+    if (!capaticy_from_user.empty() && not_set_capaticy) {                                                    \
+      capacity_ = std::stoull(capaticy_from_user);                                                            \
+      not_set_capaticy = false;                                                                               \
+      MS_LOG(INFO) << "Set aclnn cache queue length of pyboost to " << capacity_;                             \
+    }                                                                                                         \
     runtime::Pipeline::Get().WaitForward();                                                                   \
     runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,                              \
                                              runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false); \
