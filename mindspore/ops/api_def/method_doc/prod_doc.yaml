@@ -77,7 +77,7 @@ prod:
           [5.31441e+05]]]
 
 
-    .. method:: Tensor.prod(axis, keep_dims, dtype)-> Tensor
+    .. method:: Tensor.prod(axis=None, keep_dims=False, dtype=None)-> Tensor
         :noindex:
 
     For more details, please refer to :func:`mindspore.ops.prod`.

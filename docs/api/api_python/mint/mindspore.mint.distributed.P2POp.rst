@@ -1,7 +1,7 @@
 mindspore.mint.distributed.P2POp
 =====================================
 
-.. py:function:: mindspore.mint.distributed.P2POp(op, tensor, peer, group=None, tag=0)
+.. py:class:: mindspore.mint.distributed.P2POp(op, tensor, peer, group=None, tag=0)
 
     用于存放关于'isend'、'irecv'相关的信息， 并用于 `batch_isend_irecv` 接口的入参。
 

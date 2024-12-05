@@ -19,7 +19,7 @@ mindspore.mint.distributed.broadcast
         CommHandle，若 `async_op` 是True，CommHandle是一个异步工作句柄。若 `async_op` 是False，CommHandle将返回None。
 
     异常：
-        - **TypeError** - `tensor` 的数据类型不为Tensor，`src`不是int， `group` 不是str或  `async_op` 不是bool。
+        - **TypeError** - `tensor` 的数据类型不为Tensor，`src` 不是int， `group` 不是str或  `async_op` 不是bool。
         - **RuntimeError** - 如果目标设备无效，或者后端无效，或者分布式初始化失败。
 
     样例：

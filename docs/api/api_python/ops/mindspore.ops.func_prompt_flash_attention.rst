@@ -40,7 +40,7 @@ mindspore.ops.prompt_flash_attention
 
           - int8输入，int8输出：必须提供 `deq_scale1`、 `quant_scale1`、 `deq_scale2` 和 `quant_scale2` 参数。 `quant_offset2` 是可选的（如果未提供，默认值为0）。
           - int8输入，float16输出：必须提供 `deq_scale1`、 `quant_scale1` 和 `deq_scale2` 参数。如果提供 `quant_offset2` 或 `quant_scale2`，将导致错误。
-          - float16或bfloat16输入，int8输出：必须提供 `quant_scale2` 参数。 `quant_offset2` 是可选的（如果未提供，默认值为0）。如果提供 `deq_scale1`、 `quant_scale1`或 `deq_scale2` 参数，将导致错误。
+          - float16或bfloat16输入，int8输出：必须提供 `quant_scale2` 参数。 `quant_offset2` 是可选的（如果未提供，默认值为0）。如果提供 `deq_scale1`、 `quant_scale1` 或 `deq_scale2` 参数，将导致错误。
           - int8输出：
 
             - per-channel格式的 `quant_scale2` 和 `quant_offset2` 不支持有左填充、Ring Attention或D轴未对齐到32字节的情况。
@@ -61,8 +61,8 @@ mindspore.ops.prompt_flash_attention
         - **key** (Tensor) - 公式中的输入K，数据类型与 `query` 相同。shape为 :math:`(B, kv_S, kv_H)` 或 :math:`(B, kv_N, kv_S, kv_D)` 。
         - **value** (Tensor) - 公式中的输入V，数据类型与 `query` 相同。shape为 :math:`(B, kv_S, kv_H)` 或 :math:`(B, kv_N, kv_S, kv_D)` 。
         - **attn_mask** (Tensor，可选) - 注意力掩码Tensor，数据类型为bool、int8、uint8或float16。每个元素中，0/False表示保留，1/True表示丢弃。如果 `sparse_mode` 为0或1，其shape可以是 :math:`(q_S, kv_S)`、 :math:`(B, q_S, kv_S)`、 :math:`(1, q_S, kv_S)`、 :math:`(B, 1, q_S, kv_S)` 或 :math:`(1, 1, q_S, kv_S)` 。如果 `sparse_mode` 为2、3或4，其shape应为 :math:`(2048, 2048)`、 :math:`(1, 2048, 2048)` 或 :math:`(1, 1, 2048, 2048)` 。默认值为 ``None`` 。        
-        - **actual_seq_lengths** (Union[Tensor, tuple[int], list[int]]，可选) - 描述 `query` 每个批次的实际序列长度，数据类型为int64。shape为:math:`(B,)`，每个元素应为正整数。默认值为 ``None`` 。
-        - **actual_seq_lengths_kv** (Union[Tensor, tuple[int], list[int]]，可选) - 描述 `key`或 `value` 每个批次的实际序列长度，数据类型为int64。shape为 :math:`(B,)` ，每个元素应为正整数。默认值为 ``None`` 。
+        - **actual_seq_lengths** (Union[Tensor, tuple[int], list[int]]，可选) - 描述 `query` 每个批次的实际序列长度，数据类型为int64。shape为 :math:`(B,)` ，每个元素应为正整数。默认值为 ``None`` 。
+        - **actual_seq_lengths_kv** (Union[Tensor, tuple[int], list[int]]，可选) - 描述 `key` 或 `value` 每个批次的实际序列长度，数据类型为int64。shape为 :math:`(B,)` ，每个元素应为正整数。默认值为 ``None`` 。
         - **pse_shift** (Tensor，可选) - 位置编码Tensor，数据类型为float16或bfloat16。输入Tensor shape为 :math:`(B, N, q_S, kv_S)` 或 :math:`(1, N, q_S, kv_S)` 。默认值为 ``None`` 。
           - q_S必须大于等于query的S长度，kv_S必须大于等于key的S长度。
           - 如果 `pse_shift` 的数据类型为float16， `query` 应为float16或int8，这种情况下会自动启用高精度模式。

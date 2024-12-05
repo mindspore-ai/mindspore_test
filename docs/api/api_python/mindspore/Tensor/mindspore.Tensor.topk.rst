@@ -8,7 +8,7 @@ mindspore.Tensor.topk
     .. warning::
         - 如果 `sorted` 设置为False，由于不同平台上的内存布局和遍历方法不同：当 `sorted` 为False时，计算结果的显示顺序可能不一致。
 
-    如果 `self` 是一维Tensor，则查找Tensor中 `k` 个最大或最小元素，并且将其值和索引输出为Tensor。 `values[`k`]` 是 `self` 中 `k` 个最大元素，同时其索引值为 `indices[`k`]` 。
+    如果 `self` 是一维Tensor，则查找Tensor中 `k` 个最大或最小元素，并且将其值和索引输出为Tensor。 `values[k]` 是 `self` 中 `k` 个最大元素，同时其索引值为 `indices[k]` 。
 
     对于多维矩阵，计算给定维度中最大或最小的 `k` 个元素，因此：
 
