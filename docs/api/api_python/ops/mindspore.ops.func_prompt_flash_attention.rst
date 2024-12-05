@@ -117,3 +117,31 @@ mindspore.ops.prompt_flash_attention
         - **RuntimeError** - 输入layout为BSH并且kv_h不能被 `num_key_value_heads` 整除。
         - **RuntimeError** - `query`、 `key` 和 `value` 的D轴不相同。
         - **RuntimeError** - 后量化per-channel情况下，D轴未对齐到32字节。
+
+
+        - **query** (Tensor) - 公式中的输入Q，数据类型float16或bfloat16。shape为 :math:`(B, 1, H)` / :math:`(B, N, 1, D)` 。
+        - **key** (Tensor) - 公式中的输入K，数据类型为float16、bfloat16或int8。shape为 :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)` 。
+        - **value** (Tensor) - 公式中的输入V，数据类型为float16、bfloat16或int8。shape为 :math:`(B, S, kvH)` / :math:`(B, kvN, S, D)` 。
+        - **attn_mask** (Tensor，可选) - 注意力掩码Tensor，数据类型为bool、int8或uint8。shape为 :math:`(B, S)` / :math:`(B, 1, S)` / :math:`(B, 1, 1, S)` 。默认值： ``None`` 。
+        - **actual_seq_lengths** (Union[Tensor, tuple[int], list[int]]，可选) - 描述每个输入的实际序列长度，数据类型为int32或int64。shape为 :math:`(B, )`。默认值: ``None``。
+        - **pse_shift** (Tensor，可选) - 位置编码Tensor，数据类型为float16或bfloat16。
+            输入Tensorshape为 :math:`(1, N, 1, S)` / :math:`(B, N, 1, S)`。默认值: ``None``。
+        - **dequant_scale1** (Tensor，可选) - 量化参数，数据类型为uint64或float32。当前未使能。默认值: ``None``。
+        - **quant_scale1** (Tensor，可选) - 量化参数，数据类型为float32。当前未使能。默认值: ``None``。
+        - **dequant_scale2** (Tensor，可选): 量化参数，数据类型为uint64或float32。当前未使能。默认值: ``None``。
+        - **quant_scale2** (Tensor，可选) - 后量化参数，数据类型为float32。shape为 :math:`(1,)`。默认值: ``None``。
+        - **quant_offset2** (Tensor，可选) - 后量化参数，数据类型为float32。shape为 :math:`(1,)`。默认值: ``None``。
+        - **antiquant_scale** (Tensor，可选) - 伪量化参数，数据类型为float16或bfloat16。
+          当 `input_layout` 为 `'BNSD'` 时，shape为 :math:`(2, kvN, 1, D)`；当 `input_layout` 为 `'BSH'` 时，shape为 :math:`(2, kvH)`。默认值: ``None``。
+        - **antiquant_offset** (Tensor，可选) - 伪量化参数，数据类型为float16或bfloat16。
+          当 `input_layout` 为 `'BNSD'` 时，shape为 :math:`(2, kvN, 1, D)`；当 `input_layout` 为 `'BSH'` 时，shape为 :math:`(2, kvH)`。默认值: ``None``。
+        - **block_table** (Tensor，可选) - Tensor，数据类型为int32。shape为 :math:`(B, max\_block\_num\_per\_seq)`，
+          其中 :math:`max\_block\_num\_per\_seq = ceil(\frac{max(actual\_seq\_length)}{block\_size} )`。默认值: ``None``。
+        - **num_heads** (int，可选) - 头的数量。
+        - **input_layout** (str，可选) - 输入qkv的数据布局，支持 ``'BSH'`` 和 ``'BNSD'``。默认值: ``'BSH'``。
+        - **scale_value** (double，可选) - 表示缩放系数的值，用作计算中的标量。默认值: ``1.0``。
+        - **num_key_value_heads** (int，可选) - 用于GQA算法的 `key` / `value` 头数。如果 `key` 和 `value`具有相同的头数，则值为0，使用 `num_heads`。默认值: ``0``。
+        - **block_size** (int，可选) - 页注意力中存储在每个KV块中的最大标记数。默认值: ``0``。
+        - **inner_precise** (int，可选) - 一个 {0, 1} 中的整数，指定计算模式。 ``0`` 为高精度模式（适用于float16 数据类型）， ``1`` 为高性能模式。默认值为 ``1`` 。
+        - **kv_padding_size** (Tensor，可选) - Tensor，数据类型为int64。值的范围为
+          :math:`0\le kv\_padding\_size \le  S-max(actual\_seq\_length)`。shape为 :math:`()` 或 :math:`(1,)`。默认值: ``None``。

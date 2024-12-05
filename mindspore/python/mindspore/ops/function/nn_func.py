@@ -8865,6 +8865,8 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
                           num_heads=1, input_layout='BSH', scale_value=1.0, num_key_value_heads=0,
                           block_size=0, inner_precise=1, kv_padding_size=None):
     r"""
+    The interface for incremental inference.
+
     B -- Batch size
 
     N -- Num heads
@@ -8894,50 +8896,47 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
     becoming too large, it is usually scaled by dividing it by the square root of :math:`d` and perform softmax
     normalization on each row, yields a matrix of :math:`n\times d` after multiplying :math:`V`.
 
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
     Note:
-      - If there is no input parameter and no default value, None needs to be passed.
-      - The shape of the tensor corresponding to the key and value parameters needs to be completely consistent.
-      - :math:`N` of parameter query is equal with num_heads. :math:`N` of parameter key and parameter value is equal
-        with num_key_value_heads. num_heads is a multiple of num_key_value_heads.
+      - If there is no input parameter and no default value, ``None`` needs to be passed.
+      - The shape of the tensor corresponding to the `key` and `value` parameters needs to be completely consistent.
+      - :math:`N` of parameter `query` is equal with `num_heads`. :math:`N` of parameter `key` and parameter `value`
+        is equal with `num_key_value_heads`. `num_heads` is a multiple of `num_key_value_heads`.
       - Quantization
 
-        - When the data type of query, key, and value is float16 and the data type of output is int8, the input
-          parameter quant_scale2 is required and quant_offset2 is optional.
-        - When antiquant_scale exists, key and value need to be passed by int8. antiquant_offset is optional.
-        - The data type of antiquant_scale and antiquant_offset should be consistency with that of query.
-      - pse_shift
+        - When the data type of `query`, `key`, and `value` is float16 and the data type of output is int8, the input
+          parameter `quant_scale2` is required and `quant_offset2` is optional.
+        - When `antiquant_scale` exists, `key` and `value` need to be passed by int8. `antiquant_offset` is optional.
+        - The data type of `antiquant_scale` and `antiquant_offset` should be consistenct with that of `query`.
+      - `pse_shift`
 
-        - The pse_shift data type needs to be consistent with the query data type, and only supports D-axis alignment,
+        - The `pse_shift` data type needs to be consistent with `query`, and only supports D-axis alignment,
           which means that the D-axis can be divided by 16.
       - Page attention:
 
-        - The necessary condition for enabling page attention is that the block_table exists, and the key
-          and value are arranged in a contiguous memory according to the index in the block_table. The support for
-          key and value dtypes is float16/bfloat16/int8.
-        - In the enabling scenario of page attention, 16 alignment is required when input types of key and value are
-          float16/bfloat16, and 32 alignment is required when input types of key and value are int8. It is
-          recommended to use 128.
+        - The necessary condition for enabling page attention is that the `block_table` exists, and the `key`
+          and `value` are arranged in a contiguous memory according to the index in the `block_table`. The support
+          dtype for `key` and `value` is float16/bfloat16/int8.
+        - In the enabling scenario of page attention, 16 alignment is required when input types of `key`
+          and `value` are float16/bfloat16, and 32 alignment is required when input dtype of `key` and `value`
+          is int8. It is recommended to use 128.
         - The maximum max_block_num_per_seq currently supported by blocktable is 16k, and exceeding 16k will result
           in interception and error messages; If you encounter :math:`S` being too large and causing
-          max_block_num_per_seq to exceed 16k, you can increase the block_size to solve the problem.
-        - The multiplication of all dimensions of the shape of the parameters key and value in the page attention
+          max_block_num_per_seq to exceed 16k, you can increase the `block_size` to solve the problem.
+        - The multiplication of all dimensions of the shape of the parameters `key` and `value` in the page attention
           scenario cannot exceed the representation range of int32.
         - When performing per-channel post quantization, page attention cannot be enabled simultaneously.
-      - kv_padding_size:
+      - `kv_padding_size`:
 
         - The calculation formula for the starting point of KV cache transfer is
           :math:`S-kv\_padding\_size-actual\_seq\_lengths`. The calculation formula for the transfer endpoint of KV
           cache is :math:`S-kv\_padding\_size`. When the starting or ending point of the KV cache transfer is less
           than 0, the returned data result is all 0.
-        - When kv_padding_size is less than 0, it will be set to 0.
-        - kv_padding_size needs to be enabled together with the actual_seq_lengths parameter, otherwise it is
+        - When `kv_padding_size` is less than 0, it will be set to 0.
+        - `kv_padding_size` needs to be enabled together with the `actual_seq_lengths` parameter, otherwise it is
           considered as the KV right padding scene.
         - It needs to be enabled together with the atten_mask parameter and ensure that the meaning of atten_mask is
           correct, that is, it can correctly hide invalid data. Otherwise, it will introduce accuracy issues.
-        - kv_padding_size does not support page attention scenarios
+        - `kv_padding_size` does not support page attention scenarios
 
     Args:
         query (Tensor): The query tensor with data type of float16 or bfloat16.
@@ -8972,20 +8971,42 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
             :math:`(B, max\_block\_num\_per\_seq)`,
             where :math:`max\_block\_num\_per\_seq = ceil(\frac{max(actual\_seq\_length)}{block\_size} )`.
             Default: ``None``.
-        num_heads (int): The number of heads.
-        input_layout (str): The data layout of the input qkv, support 'BSH' and 'BNSD'. Default ``'BSH'``.
-        scale_value (double): The scale value indicating the scale coefficient, which is used as the scalar of
-            Muls in the calculation. Default: ``1.0``.
-        num_key_value_heads (int): Head numbers of key/value which are used in GQA algorithm.
-            The value 0 indicates if the key and value have the same head nums, use numHeads.  Default: ``0``.
-        block_size (int): The maximum number of tokens stored in each block of KV in page attention. Default: ``0``.
-        inner_precise (int): Default: ``1``.
+        num_heads (int, optional): The number of heads.
+        input_layout (str, optional): The data layout of the input qkv, support 'BSH' and 'BNSD'. Default ``'BSH'``.
+        scale_value (double, optional): The scale value indicating the scale coefficient, which is used as
+            the scalar of Muls in the calculation. Default: ``1.0``.
+        num_key_value_heads (int, optional): Head numbers of `key`/`value` which are used in GQA algorithm.
+            The value 0 indicates if the `key` and `value` have the same head nums, use numHeads.  Default: ``0``.
+        block_size (int, optional): The maximum number of tokens stored in each block of KV in page attention.
+            Default: ``0``.
+        inner_precise (int, optional): An int number from {0, 1} indicates computing mode.
+            ``0`` for high precision mode for float16 dtype. ``1`` for high performance mode.
+            Default: ``1``.
         kv_padding_size (Tensor, optional): The tensor with data type of int64. The range of values is
             :math:`0\le kv\_padding\_size \le  S-max(actual\_seq\_length)`. The shape is :math:`()` or :math:`(1,)`.
             Default: ``None``.
 
     Returns:
         attention_out (Tensor), the shape is :math:`(B, 1, H)` / :math:`(B, N, 1, D)`.
+
+    Raises:
+        TypeError: dtype of `query` is not float16 or bfloat16.
+        TypeError: `key` and `value` don't have the same dtype.
+        TypeError: dtype of `attn_mask` is not bool, int8 or uint8.
+        TypeError: dtype of `pse_shift` is not bfloat16 or float16.
+        TypeError: `scale_value` is not a double number.
+        TypeError: `input_layout` is not a string.
+        TypeError: `num_key_value_heads` or `num_heads` is not an int.
+        TypeError: `inner_precise` is not an int.
+        TypeError: `quant_scale1` is not Tensor of type float32.
+        TypeError: `quant_scale2` is not Tensor of type float32.
+        TypeError: `quant_offset2` is not Tensor of type float32.
+        ValueError: size of `actual_seq_lengths` is not 1 or B.
+        ValueError: `input_layout` is a string but of `(BSH)` or `(BNSD)`.
+        ValueError: `num_heads` is not divisible by Q_H.
+        ValueError: `num_heads` is not divisible by `num_key_value_heads`.
+        RuntimeError: `num_heads` is not greater than 0.
+        RuntimeError: `attn_mask` shape is not valid.
 
     Supported Platforms:
         ``Ascend``
