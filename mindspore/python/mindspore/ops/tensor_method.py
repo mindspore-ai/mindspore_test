@@ -223,7 +223,7 @@ from mindspore.ops.function.math_func import round
 # 90 rsqrt
 from mindspore.ops.auto_generate import rsqrt
 # 91 scatter
-
+from mindspore.ops.function.array_func import scatter
 # 92 scatter_add
 from mindspore.ops.function.array_func import tensor_scatter_add
 # 93 select
@@ -836,6 +836,13 @@ def tensor_rsqrt(input):
 
 
 # 91 scatter
+def tensor_scatter(input, dim, index, src):
+    return scatter(input, dim, index, src)
+
+
+def deprecated_tensor_scatter(input, axis, index, src):
+    return scatter(input, axis, index, src)
+
 
 # 92 scatter_add
 def tensor_scatter_add_empty(input, dim, index, src):

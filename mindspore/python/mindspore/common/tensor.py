@@ -1496,12 +1496,6 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         other = _cast(other, self.dtype)
         return tensor_operator_registry.get('bitwise_right_shift')(self, other)
 
-    def scatter(self, axis, index, src):
-        """
-        For details, please refer to :func:`mindspore.ops.scatter`.
-        """
-        return tensor_operator_registry.get('scatter')(self, axis, index, src)
-
     def scatter_mul(self, indices, updates):
         """
         For details, please refer to :func:`mindspore.ops.scatter_mul`.
