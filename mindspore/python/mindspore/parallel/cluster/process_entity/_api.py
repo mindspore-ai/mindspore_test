@@ -16,6 +16,7 @@
 import os
 import re
 import sys
+import signal
 import subprocess
 import socket
 import mindspore.log as logger
@@ -97,7 +98,8 @@ class _ComputeGraphNode(_Node):
                            "local_worker_num. So worker logs will not be output to console. Reset "
                            "'--tail_worker_log', if you want to output worker logs to console.")
         with open(self.output_file, "w") as file_handle:
-            worker_process = subprocess.Popen(self.args_list, stdout=file_handle, stderr=subprocess.STDOUT)
+            worker_process = subprocess.Popen(self.args_list, preexec_fn=os.setsid, stdout=file_handle,
+                                              stderr=subprocess.STDOUT)
             if self.join and (self.tail_worker_log == "-1" or str(self.node_id) in self.tail_worker_log):
                 tail_worker_process = self.output_to_console()
             return worker_process, tail_worker_process
@@ -296,7 +298,7 @@ class _ProcessManager:
                 logger.warning("There's worker exits with exception, kill all other workers.")
                 for p in self.cgn_processes:
                     if p.poll() is None:
-                        p.kill()
+                        os.killpg(os.getpgid(p.pid), signal.SIGKILL)
                 for p_tail in self.tail_cgn_processes:
                     if p_tail is not None:
                         logger.debug("There's worker exits with exception, kill tail process:{p_tail.pid}.")
