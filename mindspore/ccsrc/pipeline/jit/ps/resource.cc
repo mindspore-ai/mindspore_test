@@ -324,6 +324,7 @@ BuiltInTypeMap &GetMethodMap() {
        {"slice_scatter", std::string("slice_scatter")},                    // slice_scatter()
        {"select_scatter", std::string("select_scatter")},                  // select_scatter()
        {"norm", std::string("norm")},                                      // norm()
+       {"normal_", std::string("normal_")},                                // normal_()
        {"unsorted_segment_min", std::string("unsorted_segment_min")},      // P.UnsortedSegmentMin()
        {"unsorted_segment_max", std::string("unsorted_segment_max")},      // P.UnsortedSegmentMax()
        {"unsorted_segment_prod", std::string("unsorted_segment_prod")},    // P.UnsortedSegmentProd()

@@ -18,7 +18,9 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_INPLACE_NORMAL_H_
 
 #include <vector>
+#include <set>
 #include "ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {
@@ -27,6 +29,9 @@ class OPS_API InplaceNormalFuncImpl : public OpFuncImpl {
   ShapeArray InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   std::vector<TypeId> InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const override;
   bool GeneralInferRegistered() const override { return true; };
+
+  // For aclnn GetWorkspace
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex3, kInputIndex4}; };
 };
 }  // namespace ops
 }  // namespace mindspore

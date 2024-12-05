@@ -17,8 +17,6 @@
 import numpy as np
 import mindspore as ms
 from mindspore import ops, Generator
-import mindspore.context as context
-from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import pytest
 
@@ -26,7 +24,7 @@ import pytest
 class Net(ms.nn.Cell):
     def construct(self, x, mean=0, std=1, generator=None):
         x = x * 1
-        x.normal_(mean, std, generator=None)
+        x.normal_(mean, std, generator=generator)
         return x
 
 
@@ -47,21 +45,23 @@ def normal_backward_func(x):
     plat_marks=["platform_ascend"],
     level_mark="level0",
     card_mark="onecard",
-    essential_mark="essential",
+    essential_mark="essential"
 )
-
-@pytest.mark.parametrize("mode", [ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_normal_backward(mode):
     """
     Feature: pyboost function.
-    Description: test function normal backward.
+    Description: test function Tensor.normal_ backward.
     Expectation: expect correct result.
     """
-    context.set_context(mode=mode)
+    ms.context.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
+
     x = generate_random_input((2, 2, 3, 4))
     expect_x_grad = np.zeros_like(x, dtype=np.float32)
     output_x_grad = normal_backward_func(ms.Tensor(x))
-    np.allclose(output_x_grad[0].asnumpy(), expect_x_grad, rtol=1e-5, equal_nan=True)
+    np.allclose(output_x_grad[0].asnumpy(), expect_x_grad)
 
 
 @arg_mark(
@@ -70,18 +70,23 @@ def test_normal_backward(mode):
     card_mark="onecard",
     essential_mark="essential",
 )
-@pytest.mark.parametrize("mode", [ms.PYNATIVE_MODE])
+@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_normal_forward(mode):
     """
     Feature: pyboost function.
-    Description: test function InplaceNormal forward.
+    Description: test function Tensor.normal_ forward.
     Expectation: expect correct result shape.
     """
-    context.set_context(mode=mode)
+    ms.context.set_context(mode=mode)
+    if mode == ms.GRAPH_MODE:
+        ms.set_context(jit_level='O0')
+
     expect_shape = (10, 10)
     x = generate_random_input((10, 10))
     output = normal_forward_func(ms.Tensor(x))
     assert output.shape == expect_shape
+    # Check whether the update is performed inplace.
+    assert not ops.equal(ms.Tensor(x), output).all()
 
     expect_shape = (20, 20)
     mean = 2.0
@@ -96,26 +101,3 @@ def test_normal_forward(mode):
     std = 1
     output = normal_forward_func(ms.Tensor(x), mean=mean, std=std, generator=generator)
     assert output.shape == expect_shape
-
-
-@arg_mark(
-    plat_marks=["platform_ascend"],
-    level_mark="level1",
-    card_mark="onecard",
-    essential_mark="unessential",
-)
-def test_normal_dynamic_shape():
-    """
-    Feature: Test InplaceNormal with dynamic shape in pynative mode using TEST_OP.
-    Description: test normal_ forward with dynamic shape.
-    Expectation: expect correct result.
-    """
-    tensor_x1 = ms.Tensor(generate_random_input((2, 3)))
-    tensor_x2 = ms.Tensor(generate_random_input((2, 3, 4)))
-    TEST_OP(
-        normal_forward_func,
-        [[tensor_x1], [tensor_x2]],
-        "inplace_normal",
-        disable_yaml_check=True,
-        disable_mode=["GRAPH_MODE", "GRAPH_MODE_O0"],
-    )

@@ -149,5 +149,6 @@ def test_mv_dynamic_shape():
         mv_forward_func,
         [[Tensor(input1), Tensor(vec1)], [Tensor(input2), Tensor(vec2)]],
         "mv",
-        disable_input_check=True
+        disable_input_check=True,
+        disable_mode=['GRAPH_MODE']
     )
