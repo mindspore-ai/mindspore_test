@@ -427,6 +427,10 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 subprocess_file_descriptor = w.sentinel
                 st = time.time()
                 while _PythonMultiprocessing.is_process_alive(w.pid):
+                    process = psutil.Process(w.pid)
+                    if process.status() == psutil.STATUS_ZOMBIE:
+                        process.kill()
+                        break
                     time.sleep(0.01)  # sleep 10ms, waiting for the subprocess exit
                     if time.time() - st > check_interval:
                         logger.warning("Waiting for the subprocess worker [{}] to exit.".format(w.pid))
