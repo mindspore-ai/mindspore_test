@@ -183,6 +183,7 @@ def check_op_registed(op_name, manual=False):
     class_name = ''.join(word.capitalize() for word in op_name.split('_'))
     return (class_name in manual_registed_ops) if manual else (class_name in registed_ops)
 
+
 def generate_aclnn_reg_code(yaml_data):
     """generate aclnn register code"""
     current_path = os.path.dirname(os.path.realpath(__file__))

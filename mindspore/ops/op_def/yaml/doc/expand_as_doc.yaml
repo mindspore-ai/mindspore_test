@@ -15,7 +15,7 @@ expand_as:
             ValueError: If the shape of `other` and `input` are incompatible.
 
         Supported Platforms:
-            ``Ascend``expa
+            ``Ascend``
 
         Examples:
             >>> import numpy as np
