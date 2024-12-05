@@ -398,3 +398,4 @@ Dynamic LR函数
     mindspore.nn.Flatten
     mindspore.nn.Identity
     mindspore.nn.Unflatten
+    mindspore.nn.utils.no_init_parameters
