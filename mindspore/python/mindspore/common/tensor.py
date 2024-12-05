@@ -345,12 +345,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         return out
 
     def __bool__(self):
-        data = self.asnumpy()
-        if data.shape == ():
-            return bool(data)
-        if data.shape == (1,):
-            return bool(data[0])
-        raise ValueError("The truth value of an array with more than one element is ambiguous.")
+        return bool(self._item())
 
     @staticmethod
     def _convert_scalar_(data, func, message):
@@ -952,6 +947,29 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             value = value.stub_sync()
         self.assign_value_cpp(value)
         return self
+
+    def item(self):
+        """
+        Return the value of this tensor as standard Python number.
+        This only works for tensors with one element.
+
+        Returns:
+            A scalar, type is defined by the dtype of the Tensor.
+
+        Raises:
+            ValueError: If the count of value in tensor is more than one.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor
+            >>> x = Tensor(1.2, ms.float32)
+            >>> print(x.item())
+            1.2
+        """
+        return self._item()
 
     def itemset(self, *args):
         r"""
