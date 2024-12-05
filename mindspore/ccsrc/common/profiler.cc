@@ -198,7 +198,7 @@ void ProfilerAnalyzer::Clear() noexcept {
 
   // Dump json data.
   DumpJsonData();
-#ifdef WITH_BACKEND
+#ifndef ENABLE_TEST
   json_infos_.clear();
 #endif
   data_.clear();

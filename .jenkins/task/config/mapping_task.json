@@ -231,6 +231,7 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -341,6 +342,7 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -428,6 +430,7 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -510,6 +513,7 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/cmake",
       "mindspore/ccsrc/backend/common/expander/fallback",
@@ -595,6 +599,7 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "cmake/package.cmake",
       "mindspore/ccsrc/include",
       "mindspore/ccsrc/backend/common/expander/fallback",
       "mindspore/ccsrc/backend/common/graph_kernel",
