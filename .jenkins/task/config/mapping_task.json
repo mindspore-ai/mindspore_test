@@ -5,7 +5,6 @@
       ".clang-format",
       "docker",
       "docs",
-      "scripts",
       "README.md",
       "Readme.md",
       "readme.md",
@@ -232,6 +231,7 @@
     "DIR_ARRAY": [
       ".gitignore",
       ".gitattributes",
+      "scripts",
       "cmake/package.cmake",
       "mindspore/ccsrc/CMakeLists.txt",
       "mindspore/ccsrc/availability",
