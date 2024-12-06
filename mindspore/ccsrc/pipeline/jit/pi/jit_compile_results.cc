@@ -36,6 +36,7 @@ void JitCompileResults::FreeCallback(void *ptr) {
 
 Py_ssize_t JitCompileResults::InitIndex() {
   if (tss_ == nullptr) {
+    MS_LOG(INFO) << "Initialize jcr key. Thread is " << std::this_thread::get_id();
     tss_ = PyThread_tss_alloc();
     PyThread_tss_create(tss_);
   }
