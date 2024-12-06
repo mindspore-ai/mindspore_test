@@ -1,0 +1,15 @@
+#operator take
+take:
+  args:
+    input:
+      dtype: tensor
+    index:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: Take
+  dispatch:
+    enable: True
+    Ascend: TakeAscend

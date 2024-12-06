@@ -1,0 +1,7 @@
+put_:
+    op_yaml: inplace_put_op.yaml
+    py_method: tensor_put_
+    Ascend: pyboost
+    CPU: py_method
+    GPU: py_method
+    interface: tensor

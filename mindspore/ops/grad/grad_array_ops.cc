@@ -3407,5 +3407,49 @@ REG_BPROP_BUILDER("AsStrided").FreeUselessValues_IO({i0}, {}).SetBody(BODYFUNC(i
     ib->AsStrided(storage, ib->Value(input_shape), ib->Value(input_strides), ib->Value(input_effective_offset));
   return {input_grad, ib->OutZeros(size), ib->OutZeros(strides_node), ib->OutZeros(offset)};
 });
+
+REG_BPROP_BUILDER("Take").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto index = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto input_zero = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  auto grad = ib->Emit("InplacePut", {input_zero, index, dout, ib->Value<bool>(true)});
+  return {grad, ib->OutZeros(index)};
+});
+
+REG_BPROP_BUILDER("InplacePut").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto index = ib->GetInput(kIndex1);
+  auto source = ib->GetInput(kIndex2);
+  auto accumulate = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  NodePtr grad;
+  auto type_node = ib->Value(static_cast<int64_t>(ib->GetDtypeId(source)));
+  auto accumulate_opt = mindspore::GetScalarValue<bool>(accumulate->BuildValue());
+  if (input->need_compute_grad_out()) {
+    if (!accumulate_opt.has_value()) {
+      auto grad_true_branch = [&](Emitter *e) -> NodePtrList {
+        return {InplacePutGrad(e, index, source, true, dout, type_node)};
+      };
+      auto grad_false_branch = [&](Emitter *e) -> NodePtrList {
+        return {InplacePutGrad(e, index, source, false, dout, type_node)};
+      };
+      auto accumulate_true = ib->Equal(accumulate, ib->Value<bool>(true));
+      grad = ib->Conditional(accumulate_true, grad_true_branch, grad_false_branch);
+    } else {
+      grad = InplacePutGrad(ib, index, source, accumulate_opt.value(), dout, type_node);
+    }
+  } else {
+    grad = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(input))));
+  }
+  NodePtr source_grad;
+  if (source->need_compute_grad_out()) {
+    source_grad = ib->Reshape(ib->Emit("Take", {dout, index}), ib->Shape(source));
+  } else {
+    source_grad = ib->OutZeros(source);
+  }
+  auto index_grad = ib->OutZeros(index);
+  return {grad, index_grad, source_grad, ib->OutZeros(accumulate)};
+});
 REG_BPROP_BUILDERS_END
 }  // namespace mindspore::expander::bprop

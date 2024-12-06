@@ -117,6 +117,7 @@ switch_layer = Primitive('switch_layer')
 reduced_shape = Primitive("reduced_shape")
 # shape_mul:input must be shape multiply elements in tuple(shape)
 shape_mul = _sequence_ops.shape_mul()
+put_ = auto_generate.put_
 
 setattr(tensor_operator_registry, 'tuple_to_tensor',
         _sequence_ops.TupleToTensor)
@@ -307,6 +308,7 @@ setattr(tensor_operator_registry, 'ormqr', ormqr)
 setattr(tensor_operator_registry, 'masked_scatter', array_ops.MaskedScatter)
 setattr(tensor_operator_registry, 'index_put', array_ops.IndexPut)
 setattr(tensor_operator_registry, 'index_put_', auto_generate.index_put_)
+setattr(tensor_operator_registry, 'put_', put_)
 setattr(tensor_operator_registry, 'quantile', quantile)
 setattr(tensor_operator_registry, 'nanquantile', nanquantile)
 setattr(tensor_operator_registry, 'orgqr', orgqr)

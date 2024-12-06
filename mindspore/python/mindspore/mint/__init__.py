@@ -424,6 +424,9 @@ from mindspore.ops.auto_generate import logsumexp_ext as logsumexp
 # 582
 from mindspore.ops.function.math_func import std_mean_ext as std_mean
 
+# 584
+from mindspore.ops.function.array_func import take
+
 # 588
 from mindspore.ops.function.math_func import var_mean_ext as var_mean
 
@@ -2046,6 +2049,9 @@ __all__ = [
 
     # 582
     'std_mean',
+
+    # 584
+    'take',
 
     # 588
     'var_mean',

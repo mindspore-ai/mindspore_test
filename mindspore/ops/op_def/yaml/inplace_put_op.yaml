@@ -1,0 +1,27 @@
+#operator inplace_put
+inplace_put:
+    args:
+        input:
+            dtype: tensor
+        index:
+            dtype: tensor
+        source:
+            dtype: tensor
+        accumulate:
+            dtype: bool
+            default: False
+    args_signature:
+        rw_write: input
+    labels:
+        side_effect_mem: True
+    returns:
+        output:
+            dtype: tensor
+            inplace: input
+    class:
+        name: InplacePut
+    function:
+        name: put_
+    dispatch:
+        enable: True
+        Ascend: InplacePutAscend

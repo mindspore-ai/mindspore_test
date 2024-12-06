@@ -1232,6 +1232,13 @@ def pow(x, y):  # pylint: disable=redefined-builtin
     return F.pow(x, y)
 
 
+def put_(x, index, source, accumulate=False):  # pylint: disable=redefined-builtin
+    """
+    Copies the elements from source into the positions specified by index.
+    """
+    return F.put_(x, index, source, accumulate)
+
+
 def log(x):
     """
     Calculate the logarithm of Tensor.

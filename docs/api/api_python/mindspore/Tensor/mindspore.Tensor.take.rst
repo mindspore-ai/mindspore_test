@@ -21,3 +21,20 @@ mindspore.Tensor.take
 
     异常：
         - **ValueError** - `axis` 超出范围，或 `mode` 被设置为 ``'raise'`` 、 ``'wrap'`` 和 ``'clip'`` 以外的值。
+
+    .. py:method:: mindspore.Tensor.take(index)
+        :noindex:
+
+    选取给定索引 `index` 处的 `self` 元素。
+
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
+    参数：
+        - **index** (LongTensor) - 输入张量的索引张量。
+    
+    返回：
+        Tensor，shape与索引的shape相同。
+
+    异常：
+        - **TypeError** - 如果 `index` 的数据类型不是long。
