@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_GLU_H_
-#define MINDSPORE_CORE_OPS_GLU_H_
-#include <memory>
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "infer/ops_func_impl/glu_grad.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameGLU = "GLU";
-class OPS_API GLU : public BaseOperator {
- public:
-  MIND_API_BASE_MEMBER(GLU);
-  GLU() : BaseOperator(kNameGLU) { InitIOName({"x"}, {"output"}); }
-  void Init(int64_t axis);
-  void set_axis(int64_t axis);
-  int64_t get_axis() const;
-};
+ShapeArray GluGradFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {input_infos[kIndex1]->GetShape()};
+}
+
+std::vector<TypeId> GluGradFuncImpl::InferType(const PrimitivePtr &primitive,
+                                               const InferInfoPtrList &input_infos) const {
+  return {input_infos[kInputIndex1]->GetType()};
+}
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_GLU_H_

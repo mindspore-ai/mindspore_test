@@ -185,6 +185,63 @@ class ELU(Cell):
         return mint.nn.functional.elu(input, self.alpha)
 
 
+class GLU(Cell):
+    r"""
+    Computes GLU (Gated Linear Unit activation function) of the input tensor.
+
+    .. math::
+        {GLU}(a, b)= a \otimes \sigma(b)
+
+    where :math:`a` is the first half of the `input` Tensor after `input` is split and :math:`b` is the second half.
+
+    Here :math:`\sigma` is the sigmoid function, and :math:`\otimes` is the Hadamard product.
+    See `Language Modeling with Gated Convluational Networks <https://arxiv.org/abs/1612.08083>`_ .
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        dim (int, optional): The dimension to split the input `input`. The value range is `[-r, r)` where `r`
+            is the number of dimensions of `input`. Default: ``-1`` , the last dimension in `input`.
+
+    Inputs:
+        - **input** (Tensor) - Tensor to be calculated. Dtype is floating point and the shape
+          is :math:`(\ast_1, N, \ast_2)` where `*` means, any number of additional dimensions. :math:`N`
+          is required to be an even number, where :math:`N` is the size of `input` on the dimension
+          selected by `dim`.
+
+    Outputs:
+        Tensor, the same dtype as the `input`, with the shape :math:`(\ast_1, M, \ast_2)` where :math:`M=N/2`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor or `dim` is not an int.
+        IndexError: If the value of `dim` is out of the range of `[-r, r)`, where `r` is the number
+            of dimensions of `input`.
+        RuntimeError: If dtype of `input` is not supported.
+        RuntimeError: If the length of `input` in the dimension selected by `dim` is not even.
+
+    Supported Platforms:
+        ``Ascend`` ``CPU``
+
+    Examples:
+        >>> import mindspore as ms
+        >>> m = ms.mint.nn.GLU()
+        >>> input = ms.Tensor([[0.1,0.2,0.3,0.4],[0.5,0.6,0.7,0.8]])
+        >>> output = m(input)
+        >>> print(output)
+        [[0.05744425 0.11973753]
+         [0.33409387 0.41398472]]
+    """
+
+    def __init__(self, dim=-1):
+        """Initialize GLU."""
+        super().__init__("GLU")
+        self.dim = dim
+
+    def construct(self, input):
+        return mint.nn.functional.glu(input, self.dim)
+
+
 class Tanh(Cell):
     r"""
     Applies the Tanh function element-wise, returns a new tensor with the hyperbolic tangent of the elements of input.
@@ -239,5 +296,6 @@ __all__ = [
     'LogSigmoid',
     'SiLU',
     'ELU',
+    'GLU',
     'Tanh',
 ]

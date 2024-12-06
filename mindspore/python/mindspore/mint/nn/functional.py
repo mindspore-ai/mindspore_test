@@ -260,7 +260,8 @@ from mindspore.ops.function.clip_func import clamp
 from mindspore.ops.function.math_func import norm_ext
 # 428
 from mindspore.ops.functional import broadcast_to
-
+# 536
+from mindspore.ops.function.nn_func import glu_ext as glu
 # 537
 from mindspore.ops.auto_generate import hardtanh as hardtanh_op
 from mindspore.ops.auto_generate import inplace_hardtanh as hardtanh_
@@ -1044,6 +1045,8 @@ __all__ = [
     'dropout2d',
     # 421
     'flatten',
+    # 536
+    'glu',
     # 537
     'hardtanh',
     'hardtanh_',

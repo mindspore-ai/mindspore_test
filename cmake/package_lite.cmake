@@ -138,7 +138,6 @@ function(__install_white_list_ops)
             ${TOP_DIR}/mindspore/ops/infer/custom.h
             ${TOP_DIR}/mindspore/ops/infer/split_with_overlap.h
             ${TOP_DIR}/mindspore/ops/infer/ragged_range.h
-            ${TOP_DIR}/mindspore/ops/infer/glu.h
             ${TOP_DIR}/mindspore/ops/infer/tensor_array.h
             ${TOP_DIR}/mindspore/ops/infer/tensor_array_read.h
             ${TOP_DIR}/mindspore/ops/infer/tensor_array_write.h

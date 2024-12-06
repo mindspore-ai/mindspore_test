@@ -73,9 +73,12 @@ uint32_t GluGradCpuKernel::GluGradCompute(CpuKernelContext &ctx) {
   Tensor *input_x = ctx.Input(1);
   Tensor *output_y = ctx.Output(0);
 
-  auto axis = ctx.GetAttr("axis");
+  auto *axis = ctx.Input(2);
   CUST_KERNEL_CHECK_NULLPTR(ctx, axis, KERNEL_STATUS_PARAM_INVALID, "Get attr[axis] failed");
-  int64_t dim = axis->GetInt();
+  CUST_KERNEL_CHECK_NULLPTR(ctx, axis->GetData(), KERNEL_STATUS_PARAM_INVALID, "Get attr[axis] failed");
+  CUST_KERNEL_CHECK_FALSE(ctx, (axis->GetDataType() == DT_INT64), KERNEL_STATUS_PARAM_INVALID,
+                          "Data type of axis is not support, axis data type is [%u].", axis->GetDataType());
+  int64_t dim = *static_cast<int64_t *>(axis->GetData());
   auto input_x_shape = input_x->GetTensorShape();
   int64_t rank = input_x_shape->GetDims();
   if (dim < -rank || dim >= rank) {

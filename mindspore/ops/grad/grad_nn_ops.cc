@@ -1702,11 +1702,12 @@ REG_BPROP_BUILDER("MirrorPad").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(paddings)};
 });
 
-REG_BPROP_BUILDER("GLU").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
-  auto x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
-  auto dx = ib->Emit("GluGrad", {dout, x}, {{"axis", ib->GetAttr("axis")}});
-  return {dx};
+REG_BPROP_BUILDER("GLU").FreeUselessValues_O({}).SetBody(BODYFUNC(ib) {
+  const auto x = ib->GetInput(kIndex0);
+  const auto axis = ib->GetInput(kIndex1);
+  const auto dout = ib->GetInput(kIndex3);
+  const auto dx = ib->Emit("GluGrad", {dout, x, axis});
+  return {dx, ib->OutZeros(axis)};
 });
 
 REG_BPROP_BUILDER("MaxPoolWithArgmaxV2").FreeUselessValues_O({i0}).SetBody(BODYFUNC(ib) {
