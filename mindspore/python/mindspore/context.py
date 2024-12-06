@@ -846,6 +846,8 @@ class _Context:
                                 (ms_ctx_param.enable_allreduce_slice_to_reducescatter, bool),
                             "enable_interleave_split_concat_branch":
                                 (ms_ctx_param.enable_interleave_split_concat_branch, bool),
+                            "enable_interleave_parallel_branch":
+                                (ms_ctx_param.enable_interleave_parallel_branch, bool),
                             "enable_offloading_packed_experts": (ms_ctx_param.enable_offloading_packed_experts, bool),
                             "compute_communicate_fusion_level":
                                 (ms_ctx_param.compute_communicate_fusion_level, int),
@@ -1651,6 +1653,10 @@ def set_context(**kwargs):
                 for branches formed by split and concat operators with ``enable_interleave`` attribute. It is typical
                 used in MoE parallel scenario. After splitting the input data, each slice of data is processed by the
                 MoE module, and then the branch results are concatenated. When the optimization is enable,
+                communication and computation will be executed in parallel between branches. Default: ``False``.
+              - enable_interleave_parallel_branch (bool): Enable communication computation parallel optimization
+                for parallel branches with ``parallel_branch`` attribute in branches merge node. It is typical
+                used in MoE parallel scenario with routed and shared expert. When the optimization is enable,
                 communication and computation will be executed in parallel between branches. Default: ``False``.
             - host_scheduling_max_threshold(int): The max threshold to control whether the dynamic shape process is
               used when run the static graph, the default value is 0. When the number of operations in the static graph
