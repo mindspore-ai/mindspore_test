@@ -1,5 +1,5 @@
 divide:
   description: |
-    divide(y, *, rounding_mode=None) -> Tensor
+    divide(other, *, rounding_mode=None) -> Tensor
 
-    For details, please refer to :func:'mindspore.Tensor.div'
+    Alias for :func:`mindspore.Tensor.div`.
