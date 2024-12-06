@@ -75,6 +75,7 @@ struct FaGradCompareMethod {
 namespace mindspore {
 namespace parallel {
 namespace {
+constexpr int kRingStep2 = 2;
 
 std::string GetPreviousStr(std::string origin_str) {
   size_t underscore_pos = origin_str.find('_');
@@ -478,40 +479,6 @@ std::shared_ptr<OperatorInfo> GetAttentionInfo(const std::map<std::string, AnfNo
   return operator_info;
 }
 
-void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map, const FuncGraphPtr &graph,
-                       std::map<int64_t, AnfNodePtr> *attention_out_map, std::map<int64_t, AnfNodePtr> *softmax_max_map,
-                       std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *dout_map) {
-  auto manager = graph->manager();
-  for (auto it = (*grad_fa_map).rbegin(); it != (*grad_fa_map).rend(); ++it) {
-    auto cur_grad_fa_node = it->second->cast<CNodePtr>();
-    size_t underscore_pos = (it->first).find('_');
-    if (underscore_pos == std::string::npos) {
-      MS_LOG(ERROR) << "Flash_Index ERROR";
-    }
-
-    std::string first_number_str = (it->first).substr(0, underscore_pos);
-    int first_number = std::stoi(first_number_str);
-    auto dout_node = dout_map->find(first_number)->second;
-    auto softmax_max_node = softmax_max_map->find(first_number)->second;
-    auto softmax_sum_node = softmax_sum_map->find(first_number)->second;
-    auto attention_out_node = attention_out_map->find(first_number)->second;
-    MS_EXCEPTION_IF_NULL(dout_node);
-    MS_EXCEPTION_IF_NULL(softmax_max_node);
-    MS_EXCEPTION_IF_NULL(softmax_sum_node);
-    MS_EXCEPTION_IF_NULL(attention_out_node);
-    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputDyIndex + kIndex1,
-                     dout_node->cast<CNodePtr>()->input(kIndex2));
-    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxMaxIndex + kIndex1,
-                     softmax_max_node);
-    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxSumIndex + kIndex1,
-                     softmax_sum_node);
-    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxOutIndex + kIndex1,
-                     cur_grad_fa_node->input(kIndex7));
-    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputAttentionInIndex + kIndex1,
-                     attention_out_node);
-  }
-}
-
 void WaitForAllInputs(CNodePtr *later_node, CNodePtr *fromer_node, const FuncGraphPtr &graph) {
   auto manager = graph->manager();
   auto later_node_input = (*later_node)->input(1);
@@ -785,6 +752,52 @@ void CreateParameterWhenLazyInline(const FuncGraphPtr &fwd_graph, const FuncGrap
   }
 }
 
+void ChangeFAGradInput(std::map<std::string, AnfNodePtr, FaGradCompareMethod> *grad_fa_map, const FuncGraphPtr &graph,
+                       std::map<int64_t, AnfNodePtr> *attention_out_map, std::map<int64_t, AnfNodePtr> *softmax_max_map,
+                       std::map<int64_t, AnfNodePtr> *softmax_sum_map, std::map<int64_t, AnfNodePtr> *dout_map) {
+  auto manager = graph->manager();
+  for (auto it = (*grad_fa_map).rbegin(); it != (*grad_fa_map).rend(); ++it) {
+    auto cur_grad_fa_node = it->second->cast<CNodePtr>();
+    size_t underscore_pos = (it->first).find('_');
+    std::string first_number_str = (it->first).substr(0, underscore_pos);
+    int first_number = std::stoi(first_number_str);
+
+    auto dout_node = dout_map->find(first_number)->second;
+    auto softmax_max_node = softmax_max_map->find(first_number)->second;
+    auto softmax_sum_node = softmax_sum_map->find(first_number)->second;
+    auto attention_out_node = attention_out_map->find(first_number)->second;
+    MS_EXCEPTION_IF_NULL(dout_node);
+    MS_EXCEPTION_IF_NULL(softmax_max_node);
+    MS_EXCEPTION_IF_NULL(softmax_sum_node);
+    MS_EXCEPTION_IF_NULL(attention_out_node);
+
+    auto fwd_graph = softmax_max_node->func_graph();
+    auto bck_graph = cur_grad_fa_node->func_graph();
+    if (fwd_graph != bck_graph) {
+      vector<AnfNodePtr> inputs = {softmax_max_node, softmax_sum_node, attention_out_node};
+      vector<AnfNodePtr> outputs;
+      CreateParameterWhenLazyInline(fwd_graph, bck_graph, inputs, &outputs);
+      if (outputs.size() != inputs.size()) {
+        MS_LOG(EXCEPTION) << "The output size is not equal to input size when enable ring attention.";
+      }
+      softmax_max_node = outputs[kIndex0];
+      softmax_sum_node = outputs[kIndex1];
+      attention_out_node = outputs[kIndex2];
+    }
+
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputDyIndex + kIndex1,
+                     dout_node->cast<CNodePtr>()->input(kIndex2));
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxMaxIndex + kIndex1,
+                     softmax_max_node);
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxSumIndex + kIndex1,
+                     softmax_sum_node);
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputSoftmaxOutIndex + kIndex1,
+                     cur_grad_fa_node->input(kIndex7));
+    manager->SetEdge(cur_grad_fa_node, ops::FASGradInputIndex::kFASGradInputAttentionInIndex + kIndex1,
+                     attention_out_node);
+  }
+}
+
 void PrepareFAGradInput(const FuncGraphPtr &graph,
                         const std::map<std::string, AnfNodePtr, FaGradCompareMethod> &grad_fa_map,
                         const std::map<int64_t, AnfNodePtr> &attention_out_map,
@@ -1053,8 +1066,9 @@ void ReplaceDqAdd(const FuncGraphPtr &graph,
     }
     int second_number = GetSecondNumber(GetValue<std::string>(grad_fa_node->GetPrimalAttr(RING_ATTENTION_INDEX)));
     if (second_number < sp_num - 1) {
-      if (second_number == sp_num - 2) {
-        tmp_node = NewAddNode(make_tuple_node->input(second_number + 1), make_tuple_node->input(second_number + 2));
+      if (second_number == sp_num - kRingStep2) {
+        tmp_node =
+          NewAddNode(make_tuple_node->input(second_number + 1), make_tuple_node->input(second_number + kRingStep2));
       } else {
         tmp_node = NewAddNode(make_tuple_node->input(second_number + 1), tmp_node);
       }
