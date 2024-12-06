@@ -1208,7 +1208,12 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
   }
 
   std::vector<KernelTensor *> cross_stream_kernel_tensors;
+  size_t index = 0;
   for (const auto &input_kernel_tensor : input_kernel_tensors_) {
+    if (is_monad_input_[index++]) {
+      continue;
+    }
+    MS_EXCEPTION_IF_NULL(input_kernel_tensor);
     if (input_kernel_tensor->stream_id() == stream_id) {
       continue;
     }
