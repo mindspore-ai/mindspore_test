@@ -1,0 +1,10 @@
+#deprecated expand_as
+expand_as:
+  args:
+    input:
+      dtype: tensor
+    x:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor

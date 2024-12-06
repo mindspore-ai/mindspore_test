@@ -82,7 +82,7 @@ deprecated_tensor_method_map = {
     # 32 expand
 
     # 33 expand_as
-
+    "expand_as": "deprecated_tensor_expand_as",
     # 34 flatten
     "flatten": "deprecated_tensor_flatten",
     # 35 flip
