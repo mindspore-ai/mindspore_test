@@ -18,6 +18,7 @@
 #include <memory>
 #include <utility>
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
+#include "runtime/runtime_conf/runtime_conf.h"
 #include "mindspore/ops/kernel/common/pyboost/customize/searchsorted.h"
 
 namespace mindspore {
@@ -29,7 +30,7 @@ tensor::BaseTensorPtr SearchSortedGPUCustomize(const std::shared_ptr<OpRunner> &
                                                const BoolImmPtr &right) {
   MS_LOG(DEBUG) << "SearchSorted call start";
   (void)SearchSortedCustomizeCall(op, sorted_sequence, values, sorter, dtype, right);
-  static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
+  auto sync = runtime::RuntimeConf::GetInstance()->launch_blocking();
   if (sync && !op->device_context()->device_res_manager_->SyncAllStreams()) {
     MS_LOG(EXCEPTION) << "SyncStream failed for op SearchSorted.";
   }

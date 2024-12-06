@@ -22,9 +22,16 @@ from mindspore import _checkparam as Validator
 from mindspore import log as logger
 
 
+
 def launch_blocking():
     """
-    Control the execution mode of device operations.
+    Whether to enable synchronous execution.
+    Default: ``False`` . When the value is set to ``False`` , the operator is executed asynchronously on the
+    device. When an error occurs in the execution of the operator, the specific error script code location
+    cannot be located. When this API is called , the value will be changed to true, the operator is executed
+    synchronously on the device. It will reduce the execution performance of the program. At this time, when
+    an error occurs in the execution of the operator, the location of the error script code can be located
+    according to the call stack of the error.
 
     Note:
         - No parameters are required.
@@ -36,15 +43,23 @@ def launch_blocking():
         >>> ms.set_device("Ascend", 1)
         >>> ms.runtime.launch_blocking()
     """
+    _check_runtime_conf_env_valid()
+    if RuntimeConf.get_instance().is_launch_blocking():
+        raise RuntimeError(
+            "The 'mindspore.runtime.launch_blocking()' cannot be set repeatedly."
+        )
     return RuntimeConf.get_instance().set_launch_blocking()
+
 
 @args_type_check(threads_num=int)
 def dispatch_threads_num(threads_num):
     """
     Set the threads number of runtime used.
 
+    The framework set the runtime number of threads are 5 by default.
+
     Args:
-        threads_num (int): The threads number of runtime used. Default: ``5``.
+        threads_num (int): The threads number of runtime used.
 
     Examples:
         >>> import mindspore as ms
@@ -79,8 +94,8 @@ def set_cpu_affinity(enable_affinity, affinity_cpu_list=None):
           1. `cat /sys/fs/cgroup/cpuset/cpuset.cpus`, to obtain the available CPU resources on the environment; if the
              execution of this command fails, the bind-core function will not take effect.
           2. `npu-smi info -m`, get the available NPU resources on the environment; if the execution of this command
-             fails, the bind-core policy will be generated only based on the available CPU resources, without considering
-             the device affinity.
+             fails, the bind-core policy will be generated only based on the available CPU resources,
+             without considering the device affinity.
           3. `npu-smi -t board -i {NPU_ID} -c {CHIP_ID}`, get NPU details based on the logical ID of the device; if
              the execution of this command fails, the bind-core policy is generated based on the available CPU resources
              only, regardless of device affinity.

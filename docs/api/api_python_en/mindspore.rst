@@ -56,6 +56,8 @@ Context
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.set_device
+    mindspore.set_deterministic
     mindspore.set_context
     mindspore.get_context
     mindspore.set_auto_parallel_context

@@ -25,8 +25,10 @@ def threads_num(num):
     """
     Set the threads number of CPU kernel used.
 
+    The framework set the threads number of CPU kernel used are ``25`` by default.
+
     Args:
-        num (int): The threads number of CPU kernel used. Default: ``25``.
+        num (int): The threads number of CPU kernel used.
 
     Examples:
         >>> import mindspore as ms

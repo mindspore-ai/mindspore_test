@@ -115,9 +115,10 @@
       "mindspore/ops/kernel/CMakeLists.txt",
       "mindspore/python",
       "tests/mark_utils.py",
-      "tests/st",
       ".gitignore",
-      "third_party/patch/openssl"
+      "third_party/patch/openssl",
+      "tests/device_utils.py",
+      "tests/st"
     ],
     "LLT": [
       "Smoke_CPU_Win_Level0"
@@ -264,10 +265,11 @@
       "mindspore/ops/cmake/ops_host.cmake",
       "mindspore/ops/CMakeLists.txt",
       "mindspore/ops/kernel/CMakeLists.txt",
-      "mindspore/python",
       "tests/mark_utils.py",
       ".gitignore",
-      "third_party/patch/openssl"
+      "third_party/patch/openssl",
+      "tests/device_utils.py",
+      "mindspore/python"
     ],
     "ENVIRONMENT": "MACOS"
   },
@@ -385,9 +387,10 @@
       "mindspore/ops/view",
       "mindspore/python",
       "tests/mark_utils.py",
-      "tests/st",
       ".gitignore",
-      "third_party/patch/openssl"
+      "third_party/patch/openssl",
+      "tests/device_utils.py",
+      "tests/st"
     ],
     "LLT": [
       "Smoke_Ascend",
@@ -489,9 +492,10 @@
       "mindspore/ops/view",
       "mindspore/python",
       "tests/mark_utils.py",
-      "tests/st",
       ".gitignore",
-      "third_party/patch/openssl"
+      "third_party/patch/openssl",
+      "tests/device_utils.py",
+      "tests/st"
     ],
     "LLT": [
       "Smoke_GPU"
@@ -590,9 +594,10 @@
       "mindspore/ops/op_def",
       "mindspore/ops/ops_utils",
       "mindspore/ops/view",
-      "mindspore/python",
       "tests/mark_utils.py",
-      "third_party/patch/openssl"
+      "third_party/patch/openssl",
+      "tests/device_utils.py",
+      "mindspore/python"
     ],
     "ENVIRONMENT": "LINUX"
   },
@@ -684,9 +689,10 @@
       "mindspore/ops/view",
       "mindspore/python",
       "tests/mark_utils.py",
-      "tests/st",
       ".gitignore",
-      "third_party/patch/openssl"
+      "third_party/patch/openssl",
+      "tests/device_utils.py",
+      "tests/st"
     ],
     "LLT": [
       "Smoke_CPU_CentOS_Level0",

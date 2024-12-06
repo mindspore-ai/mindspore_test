@@ -32,9 +32,8 @@ namespace mindspore::compile {
 namespace {
 #if !defined(__APPLE__)
 bool EnablePyNativeSyncRunning() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  return runtime::RuntimeConf::GetInstance()->launch_blocking();
+  bool sync_stream = runtime::RuntimeConf::GetInstance()->launch_blocking();
+  return sync_stream;
 }
 #endif
 
