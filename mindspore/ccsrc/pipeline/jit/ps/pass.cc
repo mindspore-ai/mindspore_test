@@ -356,6 +356,10 @@ bool parallel_mode() {
 }
 
 void AddParallelRenormalize(OptPassGroupMap *map_a) {
+  auto update_top_fg = [](const FuncGraphPtr &root, const opt::OptimizerPtr &) {
+    parse::Parser::UpdateTopFuncGraph(root);
+    return false;
+  };
   if (parallel_mode()) {
     auto parallel_end_opt =
       find_if(map_a->begin(), map_a->end(), [](auto opt_pair) { return opt_pair.first == "meta_fg_expand"; });
@@ -363,6 +367,7 @@ void AddParallelRenormalize(OptPassGroupMap *map_a) {
       opt::irpass::OptimizeIRPassLib irpass;
       opt::OptPassConfig cast_eliminate_pass = opt::OptPassConfig({irpass.cast_eliminate_});
       auto iter = map_a->insert(parallel_end_opt, {"cast_eliminate", cast_eliminate_pass});
+      iter = map_a->insert(iter, {"update_top_fg", opt::OptPassConfig(update_top_fg)});
       (void)map_a->insert(iter, {"parallel_renormalize", opt::OptPassConfig::Renormalize()});
     }
   }

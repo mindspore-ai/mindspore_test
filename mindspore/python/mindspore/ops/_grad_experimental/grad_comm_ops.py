@@ -16,7 +16,7 @@
 """Generate bprop for comm ops"""
 from __future__ import division
 from __future__ import absolute_import
-from mindspore import Tensor
+from mindspore import Tensor, Parameter
 import mindspore.common.dtype as mstype
 from mindspore.ops import functional as F
 from mindspore.communication import get_rank, get_group_size
@@ -37,6 +37,9 @@ from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from mindspore.ops.operations import _grad_ops as G
 import mindspore as ms
 
+_device_local_norm = None
+if ms.get_auto_parallel_context("dump_device_local_norm"):
+    _device_local_norm = Parameter(Tensor(0.0, mstype.float32), name="_device_local_norm", requires_grad=False)
 
 @bprop_getters.register(AllReduce)
 def get_bprop_all_reduce(self):
@@ -247,10 +250,15 @@ def get_bprop_mirror_micro_step_operator(self):
     reduce_sum = P.ReduceSum(keep_dims=False)
     square = P.Square()
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
+    dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
 
     def bprop(x, z, out, dout):
-        if dump_local_norm:
-            z = F.depend(z, ln_print("dump local norm: ", param_name, reduce_sum(square((z)))))
+        if dump_local_norm or dump_device_local_norm:
+            _norm = reduce_sum(square((z)))
+            if dump_local_norm:
+                z = F.depend(z, ln_print("dump local norm: ", param_name, _norm))
+            if dump_device_local_norm:
+                z = F.depend(z, F.assign_add(_device_local_norm, cast(_norm, _device_local_norm.dtype)))
         real_grad = z
         assign_out = dout
         if issubclass_(F.typeof(dout), mstype.tensor_type):
@@ -373,6 +381,7 @@ def get_bprop_micro_step_all_gather(self):
     reduce_sum = P.ReduceSum(keep_dims=False)
     square = P.Square()
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
+    dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
 
     def bprop(x, z, out, dout):
         if with_mirror_operator:
@@ -383,8 +392,12 @@ def get_bprop_micro_step_all_gather(self):
                 real_grad = F.tensor_mul(real_grad, scale)
             return (real_grad, cast(out_tensor, dtype(z)))
         z = F.depend(z, dout)
-        if dump_local_norm:
-            z = F.depend(z, ln_print("dump local norm: ", param_name, reduce_sum(square((z)))))
+        if dump_local_norm or dump_device_local_norm:
+            _norm = reduce_sum(square((z)))
+            if dump_local_norm:
+                z = F.depend(z, ln_print("dump local norm: ", param_name, _norm))
+            if dump_device_local_norm:
+                z = F.depend(z, F.assign_add(_device_local_norm, cast(_norm, _device_local_norm.dtype)))
         if not do_mirror:
             return (z, cast(out_tensor, dtype(z)))
         real_grad = reduce_scatter(z)
@@ -586,6 +599,7 @@ def get_bprop_mirror_operator(self):
 
     dev_num_r = 1.0
     dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
+    dump_device_local_norm = ms.get_auto_parallel_context("dump_device_local_norm")
     if dev_num > 1:
         dev_num_r = 1.0 / dev_num
         all_reduce = AllReduce(group=group)
@@ -608,8 +622,12 @@ def get_bprop_mirror_operator(self):
             all_reduce.set_prim_instance_name(instance_name)
 
     def bprop(x, out, dout):
-        if dump_local_norm:
-            dout = F.depend(dout, ln_print("dump local norm: ", param_name, reduce_sum(square((dout)))))
+        if dump_local_norm or dump_device_local_norm:
+            _norm = reduce_sum(square((dout)))
+            if dump_local_norm:
+                dout = F.depend(dout, ln_print("dump local norm: ", param_name, _norm))
+            if dump_device_local_norm:
+                dout = F.depend(dout, F.assign_add(_device_local_norm, cast(_norm, _device_local_norm.dtype)))
 
         if dev_num == 1:
             return (dout,)
