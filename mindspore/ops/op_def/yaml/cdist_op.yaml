@@ -1,0 +1,14 @@
+#operator cdist
+cdist:
+  args:
+    input_x:
+      dtype: tensor
+    input_y:
+      dtype: tensor
+    p:
+      dtype: float
+      default: 2.0
+      prim_init: True
+  returns:
+    output:
+      dtype: tensor

@@ -21,7 +21,6 @@
 #include <memory>
 #include <map>
 #include <functional>
-#include "mindspore/ops/infer/grad/cdist_grad.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "include/common/factory/ms_factory.h"
 namespace mindspore {
