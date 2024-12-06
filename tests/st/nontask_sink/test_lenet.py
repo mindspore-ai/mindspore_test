@@ -129,6 +129,7 @@ class GradWrap(nn.Cell):
 
 
 def test_ascend_lenet():
+    np.random.seed(1)
     epoch_size = 20
     batch_size = 32
     inputs = Tensor(np.ones([batch_size, 1, 32, 32]).astype(np.float32))
@@ -241,6 +242,7 @@ def test_ascend_lenet_grad_by_list_tuple():
     Description: Grad with Parameters as input type and fv. list or tuple as fv of grad.
     Expectation: No exception.
     """
+    np.random.seed(1)
     epoch_size = 20
     batch_size = 32
     inputs = Tensor(np.ones([batch_size, 1, 32, 32]).astype(np.float32))

@@ -29,7 +29,7 @@ def add_rms_norm_backward_func(x1, x2, gamma, epsilon):
     x1_grad, x2_grad, gamma_grad = ops.grad(add_rms_norm_forward_func, (0, 1, 2))(x1, x2, gamma, epsilon)
     return x1_grad, x2_grad, gamma_grad
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_add_rms_norm_forward_backward(mode):
     """
