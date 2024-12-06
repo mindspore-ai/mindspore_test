@@ -15,6 +15,7 @@
 
 """ define marks """
 import pytest
+from tests.st.common.random_generator import set_numpy_global_seed
 
 
 def arg_mark(plat_marks, level_mark, card_mark, essential_mark):
@@ -38,6 +39,7 @@ def arg_mark(plat_marks, level_mark, card_mark, essential_mark):
         func = getattr(pytest.mark, level_mark)(func)
         func = getattr(pytest.mark, card_mark)(func)
         func = getattr(pytest.mark, essential_mark)(func)
+        set_numpy_global_seed()
         return func
 
     return decorator
