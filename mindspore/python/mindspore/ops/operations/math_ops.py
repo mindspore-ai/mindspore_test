@@ -31,7 +31,7 @@ from mindspore.ops.primitive import Primitive, PrimitiveWithInfer, PrimitiveWith
 from mindspore._c_expression import Tensor as Tensor_
 from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, ReduceAll, ReduceAny,
                              ReduceMax, ReduceMin, ReduceProd, Betainc, Neg, MatMul, BatchMatMul,
-                             Mul, Square, Rsqrt, Sqrt, Reciprocal, Pow, Exp,
+                             Mul, Square, Rsqrt, Sqrt, Reciprocal, Pow, Exp, Cdist,
                              Logit, ReduceStd, Expm1, Log, Log1p, Erf, Erfc,
                              Minimum, RealDiv, FloorDiv, Floor, FloorMod, Ceil,
                              Acosh, Cosh, Asinh, Sinc, Sinh, Equal, NotEqual,
@@ -498,50 +498,6 @@ class Lcm(Primitive):
     @prim_attr_register
     def __init__(self):
         self.init_prim_io_names(inputs=['x1', 'x2'], outputs=['y'])
-
-
-class Cdist(Primitive):
-    """
-    Computes batched the p-norm distance between each pair of the two collections of row vectors.
-
-    Refer to :func:`mindspore.ops.cdist` for more details.
-
-    Args:
-        p (float, optional): P value for the p-norm distance to calculate between each vector pair, P ∈ [0,∞].
-            Default: ``2.0`` .
-
-    Inputs:
-        - **input_x** (Tensor) - Input tensor of shape :math:`(B, P, M)`.
-          When :math:`B` is equal to 0, it means this dimension can be ignored,
-          i.e. shape of the tensor is :math:`(P, M)`.
-        - **input_y** (Tensor) - Input tensor of shape :math:`(B, R, M)` with the same dtype as `input_x`.
-
-    Outputs:
-        Tensor, has the same dtype as `input_x`, which shape is :math:`(B, P, R)`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[[1.0, 1.0], [2.0, 2.0]]]).astype(np.float32))
-        >>> input_y = Tensor(np.array([[[3.0, 3.0], [3.0, 3.0]]]).astype(np.float32))
-        >>> op = ops.Cdist(p=2.0)
-        >>> output = op(input_x, input_y)
-        >>> print(output)
-        [[[2.8284273 2.8284273]
-          [1.4142137 1.4142137]]]
-    """
-
-    @prim_attr_register
-    def __init__(self, p=2.0):
-        """Initialize Cdist"""
-        validator.check_value_type("p", p, [float], self.name)
-        if (p < 0 or np.isnan(p)):
-            raise ValueError('Cdist p must be a non-negative value, but got `{p}`.')
-        self.init_prim_io_names(inputs=['input_x', 'input_y'], outputs=['output'])
 
 
 class LpNorm(Primitive):

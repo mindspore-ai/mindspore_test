@@ -24,8 +24,11 @@ namespace kernel {
 namespace {
 constexpr size_t kCdistInputDimsMin = 2;
 
-const std::vector<KernelAttr> kernel_attr = {
-  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32)}};
+const std::vector<KernelAttr> kernel_attr = {{KernelAttr()
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kNumberTypeFloat32)
+                                                .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32)
+                                                .AddOutputAttr(kNumberTypeFloat32)}};
 }  // namespace
 
 void CdistCpuKernelMod::InitFunc(float p) {
@@ -43,16 +46,6 @@ void CdistCpuKernelMod::InitFunc(float p) {
 }
 
 bool CdistCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  p_ = GetValue<float>(primitive_->GetAttr(ops::kP));
-  auto input_type_id = inputs[0]->dtype_id();
-  switch (input_type_id) {
-    case kNumberTypeFloat32:
-      InitFunc(p_);
-      break;
-    default:
-      MS_LOG(ERROR) << "cdist kernel does not support " << TypeIdToString(input_type_id);
-      return false;
-  }
   return true;
 }
 
@@ -61,22 +54,41 @@ int CdistCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
   if ((ret = KernelMod::Resize(inputs, outputs)) != 0) {
     return ret;
   }
-  std::vector<int64_t> in_shape0 = inputs[0]->GetShapeVector();
-  std::vector<int64_t> in_shape1 = inputs[1]->GetShapeVector();
+  p_ = inputs[kIndex2]->GetValueWithCheck<float>();
+  auto input_type_id = inputs[kIndex0]->dtype_id();
+  switch (input_type_id) {
+    case kNumberTypeFloat32:
+      InitFunc(p_);
+      break;
+    default:
+      MS_LOG(ERROR) << "cdist kernel does not support " << TypeIdToString(input_type_id);
+      return false;
+  }
+  std::vector<int64_t> in_shape0 = inputs[kIndex0]->GetShapeVector();
+  std::vector<int64_t> in_shape1 = inputs[kIndex1]->GetShapeVector();
   auto in_shape_size = in_shape0.size();
   if (in_shape1.size() != in_shape_size || in_shape_size < kCdistInputDimsMin) {
     MS_LOG(ERROR) << "invalid input shape, input0 shape size " << in_shape_size << ", input1 shape size "
                   << in_shape1.size() << ", kernel_name_ " << kernel_name_;
     return KRET_RESIZE_FAILED;
   }
+  for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
+    if (in_shape0[i] != in_shape1[i]) {
+      MS_LOG(ERROR) << "invalid input shape, the batch shape of input0 must be the same as the shape of input1 ,but "
+                       "got 'input0_shape["
+                    << i << "]': " << in_shape0[i] << " and 'input1_shape[" << i << "]': " << in_shape1[i]
+                    << ", kernel_name_ " << kernel_name_;
+      return KRET_RESIZE_FAILED;
+    }
+  }
   batch_ = 1;
   for (size_t i = 0; i < in_shape_size - kCdistInputDimsMin; i++) {
     batch_ *= in_shape0[i];
   }
 
-  r0_ = in_shape0[in_shape_size - 2];
-  m_ = in_shape0[in_shape_size - 1];
-  r1_ = in_shape1[in_shape_size - 2];
+  r0_ = in_shape0[in_shape_size - kIndex2];
+  m_ = in_shape0[in_shape_size - kIndex1];
+  r1_ = in_shape1[in_shape_size - kIndex2];
 
   thread_num_ = std::min(static_cast<size_t>(batch_), pool_->GetKernelThreadNum());
 
@@ -125,9 +137,9 @@ int CdistRun(void *cdata, int task_id, float lhs_scale, float rhs_scale) {
 
 bool CdistCpuKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                const std::vector<KernelTensor *> &outputs) {
-  in_data0_ = inputs[0]->device_ptr();
-  in_data1_ = inputs[1]->device_ptr();
-  out_data_ = outputs[0]->device_ptr();
+  in_data0_ = inputs[kIndex0]->device_ptr();
+  in_data1_ = inputs[kIndex1]->device_ptr();
+  out_data_ = outputs[kIndex0]->device_ptr();
   int ret = pool_->ParallelLaunch(CdistRun, this, thread_num_);
   if (ret != 0) {
     MS_LOG(ERROR) << "CdistCpuKernelMod ParallelLaunch failed, error_code[" << ret << "]";
