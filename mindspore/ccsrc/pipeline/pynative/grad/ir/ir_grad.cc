@@ -371,6 +371,13 @@ CNodePtr IrGrad::GetBPropCNode(const GradParamPtr &grad_param, const AnfNodePtrL
                                const FuncGraphPtr &bprop_graph, bool cache_hit, AnfNodePtr *const tape_dout) {
   AnfNodePtrList bprop_inputs(args.begin(), args.end());
   bool is_jit_dynamic_shape = grad_param->is_jit_graph && grad_param->use_dynamic_shape_process;
+  // Save replace info in first time
+  if (!cache_hit && is_jit_dynamic_shape && grad_param->has_added_v &&
+      common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1") {
+    const auto &jit = PyNativeExecutor::grad_executor()->jit();
+    jit->SaveForwardOutputTensorInfoInBpropGraph(bprop_graph, grad_param->graph_cache_key);
+  }
+
   // Call by tape_
   MS_EXCEPTION_IF_NULL(tape_dout);
   *tape_dout =

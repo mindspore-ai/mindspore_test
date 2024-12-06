@@ -33,7 +33,8 @@
 #include "frontend/optimizer/fallback_rewriter.h"
 namespace mindspore {
 namespace ad {
-mindspore::HashMap<std::string, std::pair<FuncGraphPtr, FuncGraphPtr>> pass_grad_graph_;
+mindspore::HashMap<std::string, std::pair<FuncGraphPtr, FuncGraphPtr>> pass_grad_graph_param_;
+mindspore::HashMap<std::string, FuncGraphPtr> pass_grad_graph_valuenode_;
 mindspore::HashMap<std::string, pipeline::ResourcePtr> jit_forward_resource;
 
 namespace {
@@ -207,7 +208,7 @@ py::object HandleForwardResult(const BaseRef &forward_result, const FuncGraphPtr
 }
 }  // namespace
 
-std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_param) {
+std::pair<bool, FuncGraphPtr> GetBpropGraphWithParamalization(const pynative::GradParamPtr &grad_param) {
   MS_EXCEPTION_IF_NULL(grad_param);
   MS_EXCEPTION_IF_NULL(grad_param->op_grad_info);
 
@@ -224,8 +225,8 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
                << " , is func grad: " << grad_param->is_func_grad;
 
   // 1. Check cache for existing graphs
-  const auto it = pass_grad_graph_.find(grad_param->graph_cache_key);
-  bool cache_hit = it != pass_grad_graph_.end();
+  const auto it = pass_grad_graph_param_.find(grad_param->graph_cache_key);
+  bool cache_hit = it != pass_grad_graph_param_.end();
   if (cache_hit) {
     MS_LOG(DEBUG) << "Get ad grad graph by cache";
     std::tie(forward_fg, after_opt_fg) = it->second;
@@ -283,15 +284,98 @@ std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_p
       after_opt_fg = LiftingClone(after_opt_fg);
     }
     if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
-      pass_grad_graph_[grad_param->graph_cache_key] = {forward_fg, after_opt_fg};
+      pass_grad_graph_param_[grad_param->graph_cache_key] = {forward_fg, after_opt_fg};
     }
     pynative::PyNativeAlgo::Common::DumpGraphIR("opt_backward.ir", after_opt_fg);
   }
   return std::make_pair(cache_hit, after_opt_fg);
 }
 
+std::pair<bool, FuncGraphPtr> GetBpropGraphWithValueNodeReplacement(const pynative::GradParamPtr &grad_param) {
+  MS_EXCEPTION_IF_NULL(grad_param);
+  FuncGraphPtr after_opt_fg = nullptr;
+  // Find ad graph in cache
+  const auto it = pass_grad_graph_valuenode_.find(grad_param->graph_cache_key);
+  bool cache_hit = (it != pass_grad_graph_valuenode_.end());
+  if (cache_hit) {
+    MS_LOG(DEBUG) << "Get ad grad graph by cache";
+    after_opt_fg = grad_param->is_control_flow ? it->second : BasicClone(it->second);
+  } else {
+    auto bprop_builder = std::make_shared<FuncGraph>();
+    bprop_builder->debug_info()->set_name("bprop_builder");
+
+    // grad_param->fg --> K(func)
+    AnfNodePtrList fprop_app_inputs{NewValueNode(BasicClone(grad_param->fg))};
+    for (size_t index = 0; index < grad_param->op_grad_info->input_abs.size(); ++index) {
+      auto param = bprop_builder->add_parameter();
+      param->set_abstract(grad_param->op_grad_info->input_abs[index]);
+      auto value = grad_param->op_grad_info->input_value[index];
+      if (value->isa<tensor::BaseTensor>()) {
+        const auto &tensor = value->cast<tensor::BaseTensorPtr>();
+        if (tensor->is_parameter()) {
+          param->set_default_param(tensor);
+        }
+      }
+      (void)fprop_app_inputs.emplace_back(param);
+    }
+    // (result, bprop) = K(func)(inputs)
+    auto fprop_app = bprop_builder->NewCNode(fprop_app_inputs);
+    // Get bprop from fprop_fg, it is 2th output of fprop_fg
+    auto get_bprop = bprop_builder->NewCNode(
+      {NewValueNode(prim::kPrimTupleGetItem), fprop_app, NewValueNode(static_cast<int64_t>(kIndex1))});
+
+    AnfNodePtrList node_list{get_bprop};
+    auto dout = bprop_builder->add_parameter();
+    dout->set_abstract(grad_param->op_grad_info->out_abs);
+    (void)node_list.emplace_back(dout);
+    // df, dinputs = bprop(dout)
+    auto call_bprop = bprop_builder->NewCNode(node_list);
+
+    AnfNodePtrList actual_out{NewValueNode(prim::kPrimMakeTuple)};
+    for (size_t i = 0; i < grad_param->input_size; ++i) {
+      // Index 0 env, skip
+      auto out =
+        bprop_builder->NewCNode({NewValueNode(prim::kPrimTupleGetItem), call_bprop, NewValueNode(SizeToLong(i + 1))});
+      (void)actual_out.emplace_back(out);
+    }
+    bprop_builder->set_output(bprop_builder->NewCNode(actual_out));
+    // Call pass for optimize graph, such as inline
+    ClearFuncGraphCNodeAbstract(bprop_builder);
+    after_opt_fg = OptimizeBpropGraph(bprop_builder, grad_param);
+    if (grad_param->is_func_grad) {
+      PlantFuncGradBpropGraphDout(after_opt_fg, grad_param->input_size, grad_param->op_grad_info->out_abs);
+    }
+    if (grad_param->is_func_grad && grad_param->is_control_flow) {
+      after_opt_fg = LiftingClone(after_opt_fg);
+    }
+    if (grad_param->is_jit_graph || !grad_param->use_dynamic_shape_process) {
+      // Control flow no need do valuenode replacement, just return the original funcgraph
+      pass_grad_graph_valuenode_[grad_param->graph_cache_key] =
+        grad_param->is_control_flow ? after_opt_fg : BasicClone(after_opt_fg);
+    }
+    pynative::PyNativeAlgo::Common::DumpGraphIR("opt_backward.ir", after_opt_fg);
+  }
+  VectorRef arg_list;
+  std::transform(grad_param->op_grad_info->input_value.begin(), grad_param->op_grad_info->input_value.end(),
+                 std::back_inserter(arg_list), [](const ValuePtr &value) { return value; });
+  grad_param->args = arg_list;
+  return std::make_pair(cache_hit, after_opt_fg);
+}
+
+// Entrance for gradjit get bprop graph
+std::pair<bool, FuncGraphPtr> GetBpropGraph(const pynative::GradParamPtr &grad_param) {
+  static bool enable_valuenode_replace = (common::GetCompileConfig("PYNATIVE_JIT_GRAD_MODE") == "1");
+  MS_LOG(INFO) << "Process bprop graph with enable valuenode replacement method : " << enable_valuenode_replace;
+  if (enable_valuenode_replace) {
+    return GetBpropGraphWithValueNodeReplacement(grad_param);
+  } else {
+    return GetBpropGraphWithParamalization(grad_param);
+  }
+}
+
 void ClearGradCache() {
-  pass_grad_graph_.clear();
+  pass_grad_graph_valuenode_.clear();
+  pass_grad_graph_param_.clear();
   jit_forward_resource.clear();
 }
 
