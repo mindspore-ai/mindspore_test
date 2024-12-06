@@ -217,6 +217,12 @@ void CaptureContext::SetContext(const py::args &va, const py::kwargs &kw) {
     pi_jit_should_compile(args.fn_, py::dict(), args.input_signature_);
     jcr = GetJitCompileResults(args.fn_);
   }
+  if (jcr == nullptr) {
+    MS_LOG(ERROR) << "mark compile failed. Thread is " << std::this_thread::get_id() << " function is "
+                  << std::string(py::str(PyFunction_GET_CODE(args.fn_)));
+    this->Disable();
+    return;
+  }
   if (config_ == nullptr) {
     config_ = jcr->conf();
   } else {
