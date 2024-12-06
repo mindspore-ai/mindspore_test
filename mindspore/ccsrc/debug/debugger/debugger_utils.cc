@@ -502,6 +502,9 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
                               "." + type_str;
 
       auto host_shape = tensor_info.host_shape;
+      if (host_type == kNumberTypeInt4) {
+        host_shape.back() *= 2;
+      }
       mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
       MS_EXCEPTION_IF_NULL(out_tensor);
       size_t host_size = LongToSize(out_tensor->data().nbytes());
@@ -516,7 +519,6 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       size_t device_size = tensor_info.device_size;
       if (host_type == kNumberTypeInt4) {
         host_size /= 2;
-        device_size /= 2;
       }
       if (host_size > device_size) {
         MS_LOG(ERROR) << "Dump host size " << host_size << " greater than device size " << device_size;
