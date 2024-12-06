@@ -29,9 +29,9 @@ void TExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
   auto x_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
   auto rank = x_shape.size();
-  if (rank == 2) {
+  if (rank == kDim2) {
     dims_ = {1, 0};
-  } else if (rank == 1) {
+  } else if (rank == kDim1) {
     dims_ = {0};
   }
   GetWorkspaceForResize(inputs[kIndex0], dims_, outputs[kIndex0]);
