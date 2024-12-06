@@ -252,6 +252,7 @@
   },
   "Compile_Ascend_ARM_CentOS": {
     "DIR_ARRAY": [
+      "graphengine",
       ".gitignore",
       ".gitattributes",
       "scripts",
@@ -662,6 +663,7 @@
   },
   "Compile_UT": {
     "DIR_ARRAY": [
+      "graphengine",
       ".gitignore",
       ".gitattributes",
       "cmake/package.cmake",
@@ -775,6 +777,7 @@
   },
   "Compile_Lite_X86_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "graphengine",
       ".gitignore",
       ".gitattributes",
       "cmake/package_lite.cmake",
@@ -863,6 +866,7 @@
   },
   "Compile_Lite_ARM64_CLOUD_FUSION_TRITON": {
     "DIR_ARRAY": [
+      "graphengine",
       ".gitignore",
       ".gitattributes",
       "cmake/package_lite.cmake",
