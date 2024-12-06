@@ -8654,15 +8654,11 @@ def prompt_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths
     r"""
     The interface for fully inference.
 
-    B -- Batch size
-
-    N -- Num heads
-
-    S -- Sequence length
-
-    D -- Head dim
-
-    H -- Hidden size
+    - B: Batch size
+    - N: Num of attention heads
+    - S: Sequence length
+    - D: Head dim
+    - H: Hidden layer size
 
     Self attention constructs an attention model based on the relationship between input samples themselves. The
     principle is to assume that there is an input sample sequence :math:`x` of length :math:`n`, and each
@@ -8869,21 +8865,15 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
     r"""
     The interface for incremental inference.
 
-    B -- Batch size
+    - B: Batch size
+    - N: Num of attention heads
+    - kvN: Num of `key` / `value` heads
+    - S: Sequence length
+    - D: Head dim
+    - H: Hidden layer size
+    - kvH: Hidden size of `key` / `value`
 
-    N -- Num heads
-
-    kvN -- Num key value heads
-
-    S -- Sequence length
-
-    D -- Head dim
-
-    H -- Hidden size
-
-    kvH -- Hidden size of key value
-
-    where :math:`H=N\times D`, :math:`kvH=kvN\times D`
+    where :math:`H=N\times D`, :math:`kvH=kvN\times D`.
 
     Self attention constructs an attention model based on the relationship between input samples themselves. The
     principle is to assume that there is a length of the input sample sequence :math:`x` of :math:`n`, and each
@@ -8965,10 +8955,10 @@ def incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=
             The shape is :math:`(1,)`. Default: ``None``.
         antiquant_scale (Tensor, optional): Pseudo Quantitative parametor, the tensor with data type of float16 or
             bfloat16. The shape is :math:`(2, kvN, 1, D)` when input_layout is 'BNSD' or :math:`(2, kvH)` when
-          input_layout is 'BSH'. Default: ``None``.
+            input_layout is 'BSH'. Default: ``None``.
         antiquant_offset (Tensor, optional): Pseudo Quantitative parametor, the tensor with data type of float16 or
             bfloat16. The shape is :math:`(2, kvN, 1, D)` when input_layout is 'BNSD' or :math:`(2, kvH)` when
-          input_layout is 'BSH'. Default: ``None``.
+            input_layout is 'BSH'. Default: ``None``.
         block_table (Tensor, optional): The tensor with data type of int32. The shape is
             :math:`(B, max\_block\_num\_per\_seq)`,
             where :math:`max\_block\_num\_per\_seq = ceil(\frac{max(actual\_seq\_length)}{block\_size} )`.

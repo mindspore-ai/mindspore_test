@@ -2259,11 +2259,11 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Args:
             dim (int): Which dim to scatter. Accepted range is [-r, r) where r = rank(`self`).
             index (Tensor): The index of `self` to do scatter operation whose data type must
-              be mindspore.int32 or mindspore.int64. Same rank as `self`. Except for the dimension
-              specified by `dim`, size of each dimension of `index` must be less than or equal to the size of
-              the corresponding dimension of `self`.
+                be int32 or int64. Same rank as `self`. Except for the dimension
+                specified by `dim`, size of each dimension of `index` must be less than or equal to the size of
+                the corresponding dimension of `self`.
             src (Tensor): The tensor doing the scatter operation with `self`, has the same type as `self` and
-              the size of each dimension must be greater than or equal to that of `index`.
+                the size of each dimension must be greater than or equal to that of `index`.
 
         Returns:
             Tensor, has the same shape and type as `self`.

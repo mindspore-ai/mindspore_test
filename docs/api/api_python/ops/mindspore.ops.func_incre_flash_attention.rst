@@ -1,21 +1,23 @@
 mindspore.ops.incre_flash_attention
 ===================================
 
-.. py:function:: mindspore.ops.incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=None, pse_shift=None,
-                                                     dequant_scale1=None, quant_scale1=None, dequant_scale2=None, quant_scale2=None,
-                                                     quant_offset2=None, antiquant_scale=None, antiquant_offset=None,block_table=None,
-                                                     num_heads=1,input_layout='BSH', scale_value=1.0, num_key_value_heads=0,
-                                                    block_size=0,inner_precise=1, kv_padding_size=None)
+.. py:function:: mindspore.ops.incre_flash_attention(query, key, value, attn_mask=None, actual_seq_lengths=None, pse_shift=None, \
+                                                     dequant_scale1=None, quant_scale1=None, dequant_scale2=None, quant_scale2=None, \
+                                                     quant_offset2=None, antiquant_scale=None, antiquant_offset=None,block_table=None, \
+                                                     num_heads=1,input_layout='BSH', scale_value=1.0, num_key_value_heads=0, \
+                                                     block_size=0,inner_precise=1, kv_padding_size=None)
 
     增量推理场景接口。
 
-    b：batch维
-    N：头数
-    kvN： `key` 值头数
-    S：序列长度
-    D：头维度
-    H：隐藏层大小
-    kvH： `key` 值的隐藏层大小
+    - b：batch维
+    - N：注意力头数
+    - kvN： `key` / `value` 头数
+    - S：序列长度
+    - D：头维度
+    - H：隐藏层大小
+    - kvH： `key` / `value` 的隐藏层大小
+
+    其中 :math:`H=N\times D`, :math:`kvH=kvN\times D` 。
 
     self-attention（自注意力）利用输入样本自身的关系构建了一种注意力模型。其原理是假设有一个长度为 :math:`n` 的输入样本序列 :math:`x` ， :math:`x` 的每个元素都是一个 :math:`d` 维向量，
     可以将每个 :math:`d` 维向量看作一个token embedding，将这样一条序列经过3个权重矩阵变换得到3个维度为 :math:`n\times d` 的矩阵。
@@ -86,7 +88,7 @@ mindspore.ops.incre_flash_attention
         - **kv_padding_size** (Tensor，可选) - Tensor，数据类型为int64。值的范围为 :math:`0\le kv\_padding\_size \le  S-max(actual\_seq\_length)` 。shape为 :math:`()` 或 :math:`(1,)` 。默认值: ``None`` 。
 
     返回：
-        attention_out (Tensor): 注意力输出Tensor，shape为 :math:`(B, 1, H)` / :math:`(B, N, 1, D)` 。
+        attention_out (Tensor)，注意力输出Tensor，shape为 :math:`(B, 1, H)` / :math:`(B, N, 1, D)` 。
 
     异常：
         - **TypeError** - `query` 的数据类型不是float16或bfloat16。
@@ -106,5 +108,3 @@ mindspore.ops.incre_flash_attention
         - **ValueError** - `num_heads` 不能被 `num_key_value_heads` 整除。
         - **RuntimeError** - `num_heads` 小于等于 0。
         - **RuntimeError** - `attn_mask` 的shape不合法。
-
-
