@@ -340,6 +340,7 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                 os.chmod(tmp_name, stat.S_IWUSR)
                 os.remove(tmp_name)
             if format == "ckpt":
+                ckpt_save_time_start = time.time()
                 with _ckpt_fs.create(tmp_name, *_ckpt_fs.create_args) as f:
                     plain_data = None
                     if enc_key is not None:
@@ -380,11 +381,18 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                             block_data = plain_data.read(max_block_size)
                     if crc_check:
                         f.write('crc_num'.encode() + crc_num.to_bytes(10, byteorder='big'))
+                ckpt_save_time_end = time.time()
+                cost_time = ckpt_save_time_end - ckpt_save_time_start
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save ckpt cost time:{cost_time}.")
             elif format == "safetensors":
                 save_dict = {}
                 for name, value in data_list.items():
                     save_dict[name] = value[2].asnumpy()
+                safetensors_save_time_start = time.time()
                 save_file(save_dict, tmp_name)
+                safetensors_save_time_end = time.time()
+                cost_time = safetensors_save_time_end - safetensors_save_time_start
+                vlog_print("1", "ME", __file__, sys._getframe().f_lineno, f"Save safetensors cost time:{cost_time}.")
             if not os.path.exists(tmp_name):
                 logger.warning(f"Rename failed, can't find {tmp_name}, it is possible that multiple processes have "
                                f"simultaneously modified a file.")
