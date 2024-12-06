@@ -1,6 +1,6 @@
 not_equal:
   description: |
-    not_equal(self, other) -> Tensor
+    not_equal(other) -> Tensor
     
     Computes the non-equivalence of two tensors element-wise.
     
@@ -19,12 +19,11 @@ not_equal:
         \end{cases}
     
     Args:
-        self (Tensor): A tensor whose data type is number or bool.
-        other (Union[Tensor, Number, bool]): The second input is a number or
-            a bool when the first input is a tensor or a tensor whose data type is number or bool.
+        other (Union[Tensor, number.Number, bool]): `other` is a number.Number or
+            a bool or a tensor whose data type is number.Number and bool.
     
     Returns:
-        Tensor, the shape is the same as the one after broadcasting,and the data type is bool.
+        Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
     
     Raises:
         TypeError: If `other` is not one of the following: Tensor, Number, bool.
