@@ -1,7 +1,7 @@
 mindspore.mint.nn.functional.relu6
 ==================================
 
-.. py:function:: mindspore.nn.functional.relu6(input, inplace=False)
+.. py:function:: mindspore.mint.nn.functional.relu6(input, inplace=False)
 
     逐元素计算输入Tensor的ReLU（修正线性单元），其上限为6。
 

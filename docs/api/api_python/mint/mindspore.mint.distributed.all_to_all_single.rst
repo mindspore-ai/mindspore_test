@@ -10,7 +10,7 @@ mindspore.mint.distributed.all_to_all_single
         - 仅支持PyNative模式，目前不支持Graph模式。
 
     参数：
-        - **output** (Tensor)- 表示从远端收集的张量结果。
+        - **output** (Tensor) - 表示从远端收集的张量结果。
         - **input** (Tensor) - 要发送到远端设备的张量。
         - **output_split_sizes** (Union(Tuple(int), List(int)), 可选) - 接收张量在0维的切分大小列表。默认值： ``None`` ，表示均匀切分。
         - **input_split_sizes** (Union(Tuple(int), List(int)), 可选) - 发送张量在0维的切分大小列表。默认值： ``None`` ，表示均匀切分。
@@ -22,8 +22,8 @@ mindspore.mint.distributed.all_to_all_single
 
     异常：
         - **TypeError** - `input` 或者 `output` 不是张量类型， `group` 不是str， `async_op` 不是bool。
-        - **TypeError** - 当 `input_split_sizes` 为空时， `input` 的第0维不能被通信组内卡数整除。
-        - **TypeError** - 当 `output_split_sizes` 为空时， `output` 的第0维不能被通信组内卡数整除。
+        - **ValueError** - 当 `input_split_sizes` 为空时， `input` 的第0维不能被通信组内卡数整除。
+        - **ValueError** - 当 `output_split_sizes` 为空时， `output` 的第0维不能被通信组内卡数整除。
 
     样例：
 
