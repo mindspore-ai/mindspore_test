@@ -729,6 +729,8 @@ static inline std::vector<int64_t> parse_list_int(const std::string &s) {
 
 bool CheckListType(const py::object &obj, const ops::OP_DTYPE &type) {
   switch (type) {
+    case OP_DTYPE::DT_ANY:
+      return true;
     case OP_DTYPE::DT_LIST_TENSOR:
       return is_tensor_list<py::list>(obj);
     case OP_DTYPE::DT_LIST_ANY:

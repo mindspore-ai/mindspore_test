@@ -52,7 +52,8 @@ class FunctionalMapCppGenerator(BaseGenerator):
                                 "to_dilations": ["tuple[int]", "list[int]", "int"],
                                 "to_output_padding": ["tuple[int]", "list[int]", "int"],
                                 "to_rates": ["tuple[int]", "list[int]", "int"]}
-        self.prompt_type_map = {"int": "int",
+        self.prompt_type_map = {"any": "any",
+                                "int": "int",
                                 "float": "float",
                                 "str": "str",
                                 "bool": "bool",
