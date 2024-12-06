@@ -29,7 +29,7 @@ from mindspore.ops.operations.random_ops import RandomShuffle, RandomChoiceWithM
 from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import randperm
 from mindspore.common.generator import default_generator
-from mindspore.ops.auto_generate import UniformExt, NormalTensorTensor, \
+from mindspore.ops.auto_generate import UniformExt, InplaceUniform, NormalTensorTensor, \
     NormalTensorFloat, NormalFloatTensor, NormalFloatFloat, RandExt, RandLikeExt, MultinomialExt, \
     Randn, RandnLike, RandInt, RandIntLike, RandpermExt, InplaceRandom, InplaceNormal
 
@@ -45,7 +45,8 @@ reshape_ = P.Reshape()
 shape_ = P.Shape()
 top_k_ = P.TopK()
 randperm_ext_ = RandpermExt()
-uniform_ = UniformExt()
+uniform_ext_ = UniformExt()
+inplace_uniform_ = InplaceUniform()
 rand_ext_ = RandExt()
 rand_like_ext_ = RandLikeExt()
 multinomial_ext_ = MultinomialExt()
@@ -297,7 +298,58 @@ def uniform_ext(tensor, a, b, generator=None):
         generator = default_generator
     seed, offset = generator._step(  # pylint: disable=protected-access
         generator_step_)
-    return uniform_(tensor, a, b, seed, offset)
+    return uniform_ext_(tensor, a, b, seed, offset)
+
+
+@_function_forbid_reuse
+def uniform_(input, from_=0, to=1, *, generator=None):
+    r"""
+    Update the `input` tensor in place by generating random numbers sampled from uniform distribution in the half-open
+    interval :math:`[from\_, to)`.
+
+    .. math::
+        P(x)= \frac{1}{to - from\_}
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Args:
+        input (Tensor): The origin input tensor.
+        from_ (Union[number.Number, Tensor], optional): The lower bound of the uniform distribution, it can be a scalar
+            value or a tensor of any dimension with a single element. Default: ``0``.
+        to (Union[number.Number, Tensor], optional): The upper bound of the uniform distribution, it can be a scalar
+            value or a tensor of any dimension with a single element. Default: ``1``.
+
+    Keyword Args:
+        generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+            Default: ``None``, uses the default pseudorandom number generator.
+
+    Returns:
+        Tensor, with the same shape and dtype as `input` tensor.
+
+   Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If dtype of `input` is not one of: bool, int8, int16, int32, int64, uint8, float16, float32, float64,
+            bfloat16.
+        TypeError: If `from_` or `to` is neither a number nor a Tensor.
+        TypeError: If dtype of `from` or `to` is not one of: bool, int8, int16, int32, int64, uint8, float32, float64.
+        ValueError: If `from_` or `to` is Tensor but contains multiple elements.
+        RuntimeError: If `from_` is larger than `to`.
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import ops
+        >>> x = ops.ones((4, 2))
+        >>> generator = mindspore.Generator()
+        >>> generator.manual_seed(100)
+        >>> result = ops.function.random_func.uniform_(x, 1., 2., generator)
+        >>> print(result.shape)
+        (4, 2)
+    """
+    if generator is None:
+        generator = default_generator
+    seed, offset = generator._step(generator_step_)  # pylint: disable=protected-access
+    return inplace_uniform_(input, from_, to, seed, offset)
 
 
 @_function_forbid_reuse

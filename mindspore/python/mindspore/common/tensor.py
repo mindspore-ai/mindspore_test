@@ -2960,6 +2960,51 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('uniform')(self, from_, to, generator)
 
+    def uniform_(self, from_=0, to=1, *, generator=None):
+        r"""
+        Update the `self` tensor in place by generating random numbers sampled from uniform distribution in the
+        half-open interval :math:`[from\_, to)`.
+
+        .. math::
+            P(x)= \frac{1}{to - from\_}
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            from_ (Union[number.Number, Tensor], optional): The lower bound of the uniform distribution, it can be a
+                scalar value or a tensor of any dimension with a single element. Default: ``0``.
+            to (Union[number.Number, Tensor], optional): The upper bound of the uniform distribution, it can be a
+                scalar value or a tensor of any dimension with a single element. Default: ``1``.
+
+        Keyword Args:
+            generator (:class:`mindspore.Generator`, optional): a pseudorandom number generator.
+                Default: ``None``, uses the default pseudorandom number generator.
+
+        Returns:
+            Return `self` Tensor.
+
+        Raises:
+            TypeError: If `from_` or `to` is neither a number nor a Tensor.
+            TypeError: If dtype of `from` or `to` is not one of: bool, int8, int16, int32, int64, uint8, float32,
+                float64.
+            ValueError: If `from_` or `to` is Tensor but contains multiple elements.
+            RuntimeError: If `from_` is larger than `to`.
+
+        Supported Platforms:
+            ``Ascend``
+
+        Examples:
+            >>> import mindspore
+            >>> x = mindspore.ops.ones((4, 2))
+            >>> generator = mindspore.Generator()
+            >>> generator.manual_seed(100)
+            >>> output = x.uniform_(1., 2., generator)
+            >>> print(output.shape)
+            (4, 2)
+        """
+        return tensor_operator_registry.get('uniform_')(self, from_=from_, to=to, generator=generator)
+
     def var(self, axis=None, ddof=0, keepdims=False):
         """
         Compute the variance along the specified axis.
@@ -3774,6 +3819,15 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         For details, please refer to :func:`mindspore.ops.erfinv`.
         """
         return tensor_operator_registry.get('erfinv')(self)
+
+    def erfinv_(self):
+        r"""
+        In-place version of erfinv(), for details, please refer to :func:`mindspore.ops.erfinv`.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+        """
+        return tensor_operator_registry.get('erfinv_')(self)
 
     def lcm(self, other):
         r"""

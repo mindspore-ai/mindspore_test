@@ -1,0 +1,16 @@
+#operator inplace_erfinv
+inplace_erfinv:
+  args:
+    input:
+      dtype: tensor
+  args_signature:
+      rw_write: input
+  returns:
+    output:
+      dtype: tensor
+      inplace: input
+  function:
+      disable: True
+  dispatch:
+    enable: True
+    Ascend: InplaceErfinvAscend
