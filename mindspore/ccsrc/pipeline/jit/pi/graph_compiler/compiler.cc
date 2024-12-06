@@ -296,7 +296,7 @@ CallableGraph MindCompiler::Compile(const FuncGraphPtr &func_graph, const py::tu
   }
   py::tuple new_arg = EliminateStubTensor(args);
   new_arg = EliminateSelf(new_arg, compile_info.co_name_);
-  MarkArgmentMutable(new_arg);
+  MarkArgumentMutable(new_arg);
   if (MsContext::GetInstance()->CanDump(kIntroductory)) {
     DumpIR("graph_before_compile.ir", func_graph);
   }
