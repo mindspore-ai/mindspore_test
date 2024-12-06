@@ -77,11 +77,8 @@ def run_command_compile(cmd, log_path, backend_time, compile_time):
     log_time = str(log_output, 'utf-8').strip()
     assert float(log_time) <= compile_time * 1.05
 
-    if os.path.isfile(log_path):
-        os.remove(log_path)
 
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_train_compile():
     """
     Feature: Trainer.train()
