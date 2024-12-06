@@ -384,6 +384,10 @@ void ProgramSpecializer::SpecializeFuncGraph() {
     if (old_abs == nullptr) {
       continue;
     }
+    if (old_abs->inplace_abstract() != nullptr) {
+      // Use inplace abstract.
+      node->set_abstract(old_abs->inplace_abstract());
+    }
     if (!(old_abs->isa<FuncGraphAbstractClosure>() || old_abs->isa<MetaFuncGraphAbstractClosure>() ||
           old_abs->isa<AbstractFuncUnion>() || old_abs->isa<PartialAbstractClosure>())) {
       continue;
@@ -1024,13 +1028,8 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   }
   const EvalResultPtr &conf_eval_result = GetEvalResult(conf);
   MS_EXCEPTION_IF_NULL(conf_eval_result);
-  if (conf_eval_result->abstract() != nullptr && conf_eval_result->abstract()->inplace_abstract() != nullptr) {
-    MS_LOG(DEBUG) << "Use inplace abstract, " << conf_eval_result->abstract()->inplace_abstract()->ToString();
-    new_node->set_abstract(conf_eval_result->abstract()->inplace_abstract());
-  } else {
-    new_node->set_abstract(conf_eval_result->abstract());
-  }
-
+  SyncInplaceAbstractAtJoint(conf_eval_result);
+  new_node->set_abstract(conf_eval_result->abstract());
   MS_EXCEPTION_IF_NULL(new_node->abstract());
 
   // Update PartialAbstractClosure's bound node.
@@ -1065,32 +1064,31 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
     AnfNodeConfigPtr input_conf = MakeConfig(node_input);
     MS_EXCEPTION_IF_NULL(input_conf);
     const auto &eval_result = GetEvalResult(input_conf);
+    MS_EXCEPTION_IF_NULL(eval_result);
+    SyncInplaceAbstractAtJoint(eval_result);
     const AbstractBasePtr &abs = eval_result->abstract();
-    // Check if there's an inplace abstract and use it.
-    AbstractBasePtr real_abs;
-    if (abs->inplace_abstract() == nullptr) {
-      real_abs = abs;
+    bool ignore_build_value = GetIgnoreBuildValueFlag(node_input);
+    AnfNodePtr replace_node = nullptr;
+    if (!ignore_build_value) {
+      // First try to check if node_input can be replaced by a ValueNode. If cannot, then try to check if
+      // can be replaced by another CNode from anfnode_config_map, otherwise use the replicated node.
+      replace_node = BuildPossibleValueNode(node_input, abs, attrs, node);
+    }
+    if (replace_node == nullptr) {
+      replace_node = BuildReplacedNode(input_conf);
+      MS_EXCEPTION_IF_NULL(replace_node);
+      replace_node->set_abstract(abs);
+      MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
+                    << ", NodeConfig: " << input_conf->ToString() << ", result: " << abs.get() << "/"
+                    << abs->ToString();
     } else {
-      real_abs = abs->inplace_abstract();
-      MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
+      MS_EXCEPTION_IF_NULL(abs);
+      MS_LOG(DEBUG) << "Build possible value node for node: " << node_input->DebugString()
+                    << ", real_abs: " << abs->ToString() << ", replace_node: " << replace_node->DebugString();
     }
-    AnfNodePtr replace_node = BuildReplacedNode(input_conf);
     MS_EXCEPTION_IF_NULL(replace_node);
-    replace_node->set_abstract(real_abs);
-    MS_LOG(DEBUG) << "Set replaced input[" << i << "]: " << replace_node->DebugString()
-                  << ", NodeConfig: " << input_conf->ToString() << ", result: " << real_abs.get() << "/"
-                  << real_abs->ToString();
-    if (!GetIgnoreBuildValueFlag(replace_node)) {
-      auto replace_value_node = BuildPossibleValueNode(replace_node, real_abs, attrs, node);
-      if (replace_value_node != nullptr) {
-        MS_LOG(DEBUG) << "Build possible value node for node: " << replace_node->DebugString()
-                      << ", real_abs: " << real_abs->ToString()
-                      << ", replaced value node: " << replace_value_node->DebugString();
-        replace_node = replace_value_node;
-      }
-    }
     if (enable_eliminate_unused_element) {
-      UpdateSequenceNode(replace_node, node_input, real_abs);
+      UpdateSequenceNode(replace_node, node_input, abs);
     }
     if (new_inputs[i].lock() != replace_node) {
       new_node->func_graph()->AddOwnNode(replace_node);
