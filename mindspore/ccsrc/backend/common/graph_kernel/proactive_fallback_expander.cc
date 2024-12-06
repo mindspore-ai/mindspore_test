@@ -25,6 +25,7 @@
 #include "utils/ms_context.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/common/utils/anfalgo.h"
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
 
 namespace mindspore::graphkernel {
@@ -48,7 +49,7 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
   auto nodes = TopoSort(func_graph->get_return());
   const auto &need_fallback_ops = GetFallbackOps();
   for (const auto &node : nodes) {
-    if (!node->isa<CNode>()) {
+    if (!node->isa<CNode>() || common::AnfAlgo::IsDynamicRankNode(node)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
