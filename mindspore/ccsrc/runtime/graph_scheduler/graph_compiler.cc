@@ -522,6 +522,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
 
   auto new_graph_inputs = new_kernel_graph->MutableInputs();
   MS_EXCEPTION_IF_NULL(new_graph_inputs);
+  std::vector<AnfNodePtr> new_parameters;
   // the weight index that will update through rungraph
   std::vector<uint32_t> need_update_inputs_index;
   size_t index = 0;
@@ -557,6 +558,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
       MS_LOG(EXCEPTION) << "node not in map, node: " << input->DebugString() << ", ptr:" << input;
     }
     call_inline_inputs.emplace_back(new_node);
+    new_parameters.push_back(new_node);
     new_graph_inputs->push_back(new_node);
     MS_LOG(DEBUG) << "Create new node: " << new_node->DebugString() << " for old node: " << input->DebugString();
     // for need_update_inputs_index, for parameter copy in heterogeneous
@@ -609,6 +611,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
                                call_inline);
 
   kernel_graph->set_flag(kFlagGeKernel, true);
+  new_kernel_graph->set_parameters(new_parameters);
   new_kernel_graph->SetInputNodes();
   new_kernel_graph->set_output(call_inline);
   new_kernel_graph->SetExecOrderByDefault();
