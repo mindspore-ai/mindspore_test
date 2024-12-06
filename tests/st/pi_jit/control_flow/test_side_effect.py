@@ -1015,7 +1015,9 @@ def test_side_effect_eliminate_2():
     """
     @jit(mode="PIJit")
     def func(x : Tensor = Tensor([3, 3])):
-        t = Tensor.new_zeros(x, x.shape)
+        # t = Tensor.new_zeros(x, x.shape) builtin method new_zeros of PyCapsule
+        # t = mindspore.tensor(x) fix it after Tensor constant
+        t = ops.add(x, x)
         t[:1] = 1
         t = t + x
         t[1:] = 1
